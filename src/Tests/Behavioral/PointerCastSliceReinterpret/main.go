@@ -42,9 +42,16 @@ func main() {
 	b := (*[16]byte)(unsafe.Pointer(&arr[0]))[:8]
 	fmt.Println(len(b), b[0], b[3], b[4], b[7])
 
-	// A NON-ZERO low bound. The span must start at element lo and run hi-lo, not 0..hi: this is
+	// A NON-ZERO low bound. The result must start at element lo and run hi-lo, not 0..hi: this is
 	// internal/syscall/windows's (*symbolicLinkReparseBuffer).path(), which slices [n1:n2:n2] to skip
 	// the print name and return the substitute name, and reflect's gcSlice [begin:end:end].
+	//
+	// This arm alone is SAME-element-type (uint16 -> uint16), so it is not a reinterpret at all: it
+	// takes array<uint16>.AliasPointer -- a real window over rb's own storage -- rather than the span
+	// fusion the four reinterprets above keep. Both lowerings must honor the low bound identically,
+	// which is what this case pins, and the window's own low is why the array slice extension has to
+	// resolve through m_low. See ConversionStrategies-Reference, "An element pointer reinterpreted as
+	// an array pointer ALIASES the element's storage", and the ArrayPointerElementAlias guard.
 	var rb [8]uint16
 	for i := range rb {
 		rb[i] = uint16('a' + i)

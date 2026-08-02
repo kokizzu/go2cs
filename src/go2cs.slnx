@@ -142,6 +142,7 @@
     <Project Path="Tests/Behavioral/ArrayLiteralDeclaredLength/ArrayLiteralDeclaredLength.csproj" />
     <Project Path="Tests/Behavioral/ArrayOfCrossPackageType/ArrayOfCrossPackageType.csproj" />
     <Project Path="Tests/Behavioral/ArrayPassByValue/ArrayPassByValue.csproj" />
+    <Project Path="Tests/Behavioral/ArrayPointerElementAlias/ArrayPointerElementAlias.csproj" />
     <Project Path="Tests/Behavioral/ArrayValueCopySites/ArrayValueCopySites.csproj" />
     <Project Path="Tests/Behavioral/ArrayWideIndexAddress/ArrayWideIndexAddress.csproj" />
     <Project Path="Tests/Behavioral/AtomicFieldThroughPointer/AtomicFieldThroughPointer.csproj" />

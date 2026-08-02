@@ -889,10 +889,29 @@ public static class SliceExtensions
         return source.ToArray().slice(low, high, max);
     }
 
-    // slice of a Go array helper function
+    // slice of a Go array helper function — bounds are RELATIVE to the array's own WINDOW, and the
+    // window is what bounds them. Every ordinary array spans the whole of its backing store, where
+    // that is exactly the T[] overload above; an ALIAS window (array<T>.Alias for `(*[N]T)(s)`,
+    // array<T>.AliasPointer for `(*[N]T)(unsafe.Pointer(&s[i]))`) starts at Low, so slicing it
+    // through the raw backing addressed the SOURCE's elements rather than the array's — `p[1:3]` of
+    // a window over `buf[1:]` yielded buf[1:3] instead of buf[2:4]. The Range indexer already
+    // resolved through the window (array<T>.Slice); this is the explicit-bounds path, which the
+    // `(*[N]T)(unsafe.Pointer(p))[:n:n]` idiom reaches.
     public static slice<T> slice<T>(this array<T> array, nint low = -1, nint high = -1, nint max = -1)
     {
-        return array.m_array.slice(low, high, max);
+        nint offset = array.Low;
+
+        if (offset == 0 && array.Length == array.m_array.Length)
+            return array.m_array.slice(low, high, max);
+
+        nint start = low == -1 ? 0 : low;
+        nint end = high == -1 ? array.Length : high;
+        nint bound = max == -1 ? array.Length : max;
+
+        if (start < 0 || end < start || bound < end || bound > array.Length)
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(start, end, bound, array.Length);
+
+        return new slice<T>(array.m_array, offset + start, offset + end, offset + bound);
     }
 
     // slice of a Go string helper function

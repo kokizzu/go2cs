@@ -46,6 +46,10 @@ public sealed record RegisteredTest(
 /// <param name="fixtures">
 /// Paths, relative to the package directory, of the <c>testdata</c> files the suite reads.
 /// </param>
+/// <param name="fixtureDirectories">
+/// Immediate subdirectory names of the package's own source directory, created EMPTY in the run
+/// directory so its shape matches the one <c>go test</c> shows the package.
+/// </param>
 /// <remarks>
 /// <para>
 /// This is filled in by the converter-emitted test host at startup — one <see cref="Add"/> call per
@@ -59,14 +63,25 @@ public sealed record RegisteredTest(
 /// directory rather than pointing the process at the source tree, so a test that WRITES to testdata
 /// cannot corrupt the repository and two packages cannot collide.
 /// </para>
+/// <para>
+/// <see cref="FixtureDirectories"/> completes that picture for a test that asks what its working
+/// directory CONTAINS rather than reading a known file: <c>go test</c> runs in the real source
+/// directory, where the sibling packages nested under it are present, so os's <c>TestReadDir</c>
+/// requires an <c>exec</c> subdirectory beside <c>read_test.go</c>. They are created empty and one
+/// level deep — the names are what such a test observes, and a sibling package's files belong to
+/// that package's own run. Defaulted so a test host generated before this list existed still
+/// compiles; a regenerated one always passes it.
+/// </para>
 /// </remarks>
-public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures)
+public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures, IReadOnlyList<string>? fixtureDirectories = null)
 {
     private readonly List<RegisteredTest> m_tests = [];
 
     public string Package { get; } = package;
 
     public IReadOnlyList<string> Fixtures { get; } = fixtures;
+
+    public IReadOnlyList<string> FixtureDirectories { get; } = fixtureDirectories ?? [];
 
     public IReadOnlyList<RegisteredTest> Tests => m_tests;
 

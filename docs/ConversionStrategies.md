@@ -606,10 +606,30 @@ d0 = d.ΔClone();         // sha256.cs — without the clone, checkSum destroyed
 var hash = Ꮡd0.checkSum();
 ```
 
+Go's two array-**pointer** conversions are the exception to that copying: each yields a *view* of
+storage that already exists, so `array<T>` carries a `(low, length)` window and both emit an alias
+rather than a snapshot. `(*[N]T)(s)` windows a slice; `(*[N]T)(unsafe.Pointer(p))` with `p` a `*T`
+windows the storage `p` is an element of — internal/poll's console read buffer, filled by os's own
+test through exactly this shape:
+
+```go
+d := (*[4]byte)(dst)                                        // image/png writer.go — shares dst's array
+n = copy((*[10000]uint16)(unsafe.Pointer(buf))[:n:n], s16)  // os os_windows_test.go
+```
+```csharp
+var d = Ꮡ(array<byte>.Alias(dst, 4));
+n = copy((~array<uint16>.AliasPointer(Ꮡbuf, 10000)).slice(-1, n, n), s16);
+```
+
+A write through either has to reach the caller's buffer; against a copy it is discarded silently,
+which is a wrong answer rather than a slow one. The value forms — `[4]byte(s)`, `*p` — still copy,
+exactly as Go's do.
+
 **Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference.md#slices-and-arrays) —
 named slice/array wrappers, pointer-to-array slicing, named-slice pointer reinterpretation, structural
 composite rendering, array value-copy cloning (deep for nested arrays), the
 [struct-carrying-arrays clone](ConversionStrategies-Reference.md#a-struct-carrying-array-fields-copies-through-its-generated-δclone),
+[element-pointer array aliasing](ConversionStrategies-Reference.md#an-element-pointer-reinterpreted-as-an-array-pointer-aliases-the-elements-storage)
 and slice-aliasing/write-through semantics.
 
 ---

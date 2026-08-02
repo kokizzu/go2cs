@@ -94,6 +94,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckArrayPassByValue() => CheckTarget("ArrayPassByValue");
 
     [TestMethod]
+    public void CheckArrayPointerElementAlias() => CheckTarget("ArrayPointerElementAlias");
+
+    [TestMethod]
     public void CheckArrayValueCopySites() => CheckTarget("ArrayValueCopySites");
 
     [TestMethod]

@@ -47,10 +47,11 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     internal readonly T[] m_array;
 
     // The WINDOW this array occupies inside m_array. Every ordinary construction spans the whole
-    // backing (m_low = 0, m_length = m_array.Length) — the window exists ONLY so that Go's
-    // slice-to-array-POINTER conversion, `(*[N]T)(s)`, can ALIAS the slice's storage instead of
-    // snapshotting it (see Alias below). Reads and writes therefore go through m_low/m_length,
-    // never through m_array's own bounds.
+    // backing (m_low = 0, m_length = m_array.Length) — the window exists ONLY so that Go's two
+    // array-POINTER conversions can ALIAS existing storage instead of snapshotting it: the slice
+    // form `(*[N]T)(s)` (see Alias) and the element-pointer form `(*[N]T)(unsafe.Pointer(&s[i]))`
+    // (see AliasPointer). Reads and writes therefore go through m_low/m_length, never through
+    // m_array's own bounds.
     private readonly int m_low;
     private readonly int m_length;
 
@@ -163,6 +164,54 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         return source.m_array is null
             ? new array<T>([], 0, 0)
             : new array<T>(source.m_array, (int)source.Low, (int)length);
+    }
+
+    /// <summary>
+    /// Go's element-pointer-to-array reinterpret, <c>(*[N]T)(unsafe.Pointer(p))</c> where <c>p</c>
+    /// is a <c>*T</c>: an array pointer that ALIASES the storage <paramref name="element"/> is an
+    /// element of, rather than a snapshot of it.
+    /// </summary>
+    /// <param name="element">Pointer to the element the array starts at.</param>
+    /// <param name="length">Go array length <c>N</c>.</param>
+    /// <returns>A pointer to an <c>array&lt;T&gt;</c> window that begins at
+    /// <paramref name="element"/>, when it addresses managed array/slice storage; otherwise a
+    /// pointer over its raw address.</returns>
+    /// <remarks>
+    /// <para>
+    /// This is the same aliasing requirement <see cref="Alias"/> answers for the slice form, reached
+    /// from a POINTER instead: Go's array is a view of the bytes at <c>p</c>, so a write through it
+    /// must land in the caller's buffer. os's <c>TestReadStdin</c> is the corpus witness — its
+    /// <c>poll.ReadConsole</c> fake fills internal/poll's read buffer with
+    /// <c>copy((*[10000]uint16)(unsafe.Pointer(buf))[:n:n], s16)</c>, and against a snapshot every
+    /// one of the test's 462 subtests read back zeros.
+    /// </para>
+    /// <para>
+    /// <paramref name="length"/> is CLAMPED to the storage that actually exists from the element.
+    /// Go's <c>N</c> in this idiom is a promise ("at least this many"), not a length — the huge
+    /// constants it is spelled with (<c>10000</c>, <c>1&lt;&lt;16</c>, <c>0xffff</c>) never describe
+    /// a real allocation, and the result is always immediately re-sliced to the real count. Honoring
+    /// <c>N</c> literally would put the window's own bounds past its backing store, where a
+    /// full-slice expression is an <c>ArgumentException</c> rather than the window Go asks for; a
+    /// clamped window addresses exactly the storage that is there, so an overrun surfaces as a
+    /// Go-style index panic instead of the silent corruption the same overrun is in Go.
+    /// </para>
+    /// <para>
+    /// A pointer with no managed element storage behind it — a heap box, a struct field, a native
+    /// address — keeps the raw-address route: no <c>T[]</c> exists to window, and an
+    /// <c>array&lt;T&gt;</c> can neither view native memory nor be fabricated from a scalar's bytes.
+    /// That is the raw-metal fork, unchanged here.
+    /// </para>
+    /// </remarks>
+    public static ж<array<T>> AliasPointer(ж<T>? element, nint length)
+    {
+        if (length >= 0 && element is not null && element.TryGetElementStorage(out T[]? backing, out nint index))
+        {
+            nint available = backing.Length - index;
+
+            return new ж<array<T>>(new array<T>(backing, (int)index, (int)(length < available ? length : available)));
+        }
+
+        return (ж<array<T>>)(uintptr)element!;
     }
 
     private static void checkArrayConversionLength(nint sourceLength, nint length)

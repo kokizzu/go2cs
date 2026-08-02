@@ -9,6 +9,7 @@
 // ReSharper disable UnusedParameter.Local
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -328,6 +329,42 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     }
 
     internal (IArray, int)? ArrayRef => m_arrayIndexRef;
+
+    /// <summary>
+    /// Gets the managed array/slice storage this pointer's referent is an element of, together with
+    /// the referent's ABSOLUTE index inside it.
+    /// </summary>
+    /// <param name="backing">Canonical backing store, on success.</param>
+    /// <param name="index">Referent's index inside <paramref name="backing"/>, on success.</param>
+    /// <returns><c>true</c> when the pointer addresses managed element storage; <c>false</c> for a
+    /// heap box, a struct-field reference, a native address, or a reinterpreting pointer over
+    /// differently-typed storage (no <c>T[]</c> view of which exists in the managed model).</returns>
+    /// <remarks>
+    /// Resolved through <see cref="CanonicalElement"/>, so a pointer taken through a re-sliced view
+    /// — or through an <see cref="array{T}.Alias"/> window — names the same absolute element Go's
+    /// would. The narrower <see cref="TryGetElementWindow"/> answers the same question for callers
+    /// that need a fixed-length window and have their own fallback when one does not fit;
+    /// <see cref="array{T}.AliasPointer"/> uses this one because Go's array length there is an upper
+    /// bound rather than a real extent.
+    /// </remarks>
+    internal bool TryGetElementStorage([NotNullWhen(true)] out T[]? backing, out nint index)
+    {
+        backing = null;
+        index = 0;
+
+        if (m_arrayIndexRef is null)
+            return false;
+
+        (object storage, nint absoluteIndex) = CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2);
+
+        if (storage is not T[] typed || absoluteIndex < 0 || absoluteIndex > typed.Length)
+            return false;
+
+        backing = typed;
+        index = absoluteIndex;
+
+        return true;
+    }
 
     /// <summary>
     /// Gets the <paramref name="length"/>-element slice window this pointer's referent STARTS, when

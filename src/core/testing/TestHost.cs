@@ -99,6 +99,7 @@ public static class TestHost
         try
         {
             Directory.CreateDirectory(workingDirectory);
+            CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory);
             CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
             Environment.CurrentDirectory = workingDirectory;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -173,6 +174,27 @@ public static class TestHost
     // Output-directory folder holding fixtures that reach ABOVE the package. MUST match the
     // converter's SharedFixtureStagingRoot, which emits the matching csproj <Link>.
     private const string SharedFixtureStagingRoot = "go2cs_shared_fixtures";
+
+    // Reproduces the package directory's own SHAPE: `go test` runs a package where the sibling
+    // packages nested under it are present as subdirectories, so a test that asks what its working
+    // directory contains — os's TestReadDir looks for the `exec` directory beside `read_test.go` —
+    // must find them here too. Names only, created empty: the name is what such a test observes, and
+    // a sibling package's files are staged by that package's own run. (testdata, when the suite has
+    // one, is created here too and then filled in by CopyFixtures — CreateDirectory is idempotent.)
+    private static void CreateFixtureDirectories(IReadOnlyList<string> directories, string workingDirectory)
+    {
+        foreach (string name in directories)
+        {
+            string target = Path.GetFullPath(Path.Combine(workingDirectory, name));
+
+            // A directory NAME never escapes the package directory; anything that resolves outside
+            // it did not come from the converter's enumeration and is not created.
+            if (!target.StartsWith(workingDirectory, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"fixture directory escapes run root: {name}");
+
+            Directory.CreateDirectory(target);
+        }
+    }
 
     private static void CopyFixtures(IReadOnlyList<string> fixtures, string workingDirectory, string runRoot)
     {

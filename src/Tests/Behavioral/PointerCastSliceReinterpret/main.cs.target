@@ -22,7 +22,7 @@ internal static unsafe void Main() {
     }
     nint n1 = 2;
     nint n2 = 5;
-    var sub = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡrb.at<uint16>(0))) + (int)(n1), (int)(n2) - (int)(n1)));
+    var sub = (~array<uint16>.AliasPointer(Ꮡrb.at<uint16>(0), 64)).slice(n1, n2, n2);
     fmt.Println(len(sub), sub[0], sub[1], sub[2]);
     var words = new uint32[]{0x04030201, 0x08070605}.slice();
     var tail = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡ(words, 0))) + 3, 7 - 3));

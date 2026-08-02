@@ -640,7 +640,7 @@ func TestWriteTestHostUsesCSharpClassOverride(t *testing.T) {
 		Name: "TestInternal", Kind: "test", PackageName: "value", CSharpClassName: "value_internal_test_package",
 		Source: "value_test.go", Line: 12, Status: "included",
 	}}
-	if err := writeTestHost(dir, "go", "example/value", declarations, nil, nil); err != nil {
+	if err := writeTestHost(dir, "go", "example/value", declarations, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(filepath.Join(dir, testHostFileName))
@@ -653,6 +653,70 @@ func TestWriteTestHostUsesCSharpClassOverride(t *testing.T) {
 	}
 	if strings.Contains(contents, `value_package.TestInternal`) {
 		t.Fatalf("host must not target the referenced production class:\n%s", contents)
+	}
+}
+
+// The run directory reproduces the package directory's SHAPE, not only its files: a test that asks
+// what its working directory contains (os TestReadDir looks for the `exec` subdirectory beside
+// read_test.go) must see the same immediate subdirectories `go test` shows it. Names only, sorted,
+// one level deep — and carried to the host as its own list so the fixture COPY pass is unaffected.
+func TestFixtureDirectoriesStagePackageShape(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, name := range []string{"user", "exec", "testdata"} {
+		if err := os.MkdirAll(filepath.Join(dir, name, "nested"), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "read_test.go"), []byte("package os\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	directories, err := testFixtureDirectories(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := strings.Join(directories, ","), "exec,testdata,user"; got != want {
+		t.Fatalf("fixture directories = %q, want the sorted immediate subdirectories %q", got, want)
+	}
+
+	out := t.TempDir()
+	if err := writeTestHost(out, "go", "os", nil, nil, []string{"read_test.go"}, directories); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(out, testHostFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(data)
+
+	// The fixture FILES and the directory names are separate arguments — a directory has no build
+	// output to copy, so it must not reach the fixture list the host copies from.
+	if !strings.Contains(contents, "\"read_test.go\",") {
+		t.Fatalf("host must carry the fixture files:\n%s", contents)
+	}
+	for _, name := range directories {
+		if !strings.Contains(contents, "\""+name+"\",") {
+			t.Fatalf("host must carry the %q run directory:\n%s", name, contents)
+		}
+	}
+	if strings.Index(contents, "\"read_test.go\",") > strings.Index(contents, "\"exec\",") {
+		t.Fatalf("the fixture list must precede the directory list:\n%s", contents)
+	}
+
+	// A package with NO subdirectories omits the argument entirely rather than emitting an empty
+	// array, so its host stays byte-identical to one generated before this capability existed —
+	// which is what keeps a banked host out of the diff for a run environment that did not change.
+	bare := t.TempDir()
+	if err := writeTestHost(bare, "go", "cmp", nil, nil, []string{"cmp.go"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(filepath.Join(bare, testHostFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "new string[]\r\n        {\r\n        }") || strings.Count(string(data), "new string[]") != 1 {
+		t.Fatalf("a package with no subdirectories must emit ONE array:\n%s", data)
 	}
 }
 

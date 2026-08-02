@@ -488,6 +488,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				return emission
 			}
 
+			// The array-target sibling: `(*[N]T)(unsafe.Pointer(p))` over a `*T` aliases the
+			// storage p is an element of instead of punning an `array<T>` out of its data.
+			if emission, ok := v.arrayPointerAliasEmission(callExpr, arg); ok {
+				return emission
+			}
+
 			return fmt.Sprintf("(%s)(uintptr)(%s)", targetTypeName, expr)
 		}
 
@@ -2074,6 +2080,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			return emission
 		}
 
+		// Same placement rule for the array-target sibling — it replaces the `(ж<array<T>>)(uintptr)`
+		// prefix the isPointerCast assignment below renders.
+		if emission, ok := v.arrayPointerAliasEmission(callExpr, callExpr.Args[0]); ok {
+			return emission
+		}
+
 		argTypeName := v.getExpressionTypeName(callExpr.Args[0], true)
 
 		if argTypeName == "unsafe.Pointer" {
@@ -3132,20 +3144,22 @@ func (v *Visitor) pointerReinterpretIdentitySource(callExpr *ast.CallExpr, arg a
 // go2cs surrogate does not inherit from its Go type (a Go `[2]byte` is 2 bytes; `array<byte>` is a
 // reference to a backing store). The emission is therefore uniform and golib gates it.
 //
-// A pointer-to-ARRAY target (`(*[N]T)(unsafe.Pointer(p))`) is the one shape excluded here rather than
-// at the golib gate, because for it the interception is a pure LOSS. golib can never take the managed
-// arm: `array<X>` is an 8-byte struct holding a backing-store REFERENCE, so it fails the size gate
-// against any smaller pointee and the reference gate against any numeric one — the emission would fall
-// through to exactly the address route it replaced. But the address route's TEXT is not inert: the
-// slice-of-pointer-cast fusion in convSliceExpr keys on a leading `(ж<…>` (isPointerCast) to render
-// `(*[N]T)(ptr)[:n]` as a `slice<T>` over a `ReadOnlySpan<T>` of the pointed-to memory — the only
-// CORRECT lowering of that idiom, since an `array<T>` can neither view native memory nor be
-// fabricated from a scalar's bytes. Emitting `Reinterpret` instead silently defeats that match and
-// leaves `(~box).slice(…)` over an `array<T>` whose backing reference was punned out of the pointee's
-// data: a fabricated managed reference, i.e. an AccessViolation rather than the previous correct
-// slice. Measured on internal/syscall/windows/registry.GetStringValue — the read behind
-// time.initLocalFromTZI and mime.initMimeWindows — which returned its value before and hard-faults
-// after. So array targets keep the pre-existing route in every case, fused or not.
+// A pointer-to-ARRAY target (`(*[N]T)(unsafe.Pointer(p))`) is excluded here rather than at the golib
+// gate, because `Reinterpret` can never take the managed arm for one: `array<X>` is an 8-byte struct
+// holding a backing-store REFERENCE, so it fails the size gate against any smaller pointee and the
+// reference gate against any numeric one — the emission would fall through to exactly the address
+// route it replaced. And the address route's TEXT is not inert: the slice-of-pointer-cast fusion in
+// convSliceExpr keys on a leading `(ж<…>` (isPointerCast) to render `(*[N]T)(ptr)[:n]` as a
+// `slice<T>` over a `ReadOnlySpan<T>` of the pointed-to memory — the only lowering available for an
+// array an `array<T>` can neither view (native memory) nor be fabricated from (a scalar's bytes).
+// Emitting `Reinterpret` instead silently defeats that match and leaves `(~box).slice(…)` over an
+// `array<T>` whose backing reference was punned out of the pointee's data: a fabricated managed
+// reference, i.e. an AccessViolation rather than the previous correct slice. Measured on
+// internal/syscall/windows/registry.GetStringValue — the read behind time.initLocalFromTZI and
+// mime.initMimeWindows — which returned its value before and hard-faults after. So array targets
+// keep this route whenever the source pointer's element type DIFFERS from the array's;
+// arrayPointerAliasEmission below takes the one case where the managed model has a real window
+// (same element type), and everything else here is unchanged.
 //
 // Returns a nil expression when the pattern does not apply.
 func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg ast.Expr) (ast.Expr, string, string) {
@@ -3186,6 +3200,61 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 	identContext.isPointer = true
 
 	return fmt.Sprintf("%s.Reinterpret<%s, %s>()", v.convExpr(src, []ExprContext{identContext}), srcElem, targetElem), true
+}
+
+// arrayPointerAliasEmission renders golib's element-window alias for a `(*[N]T)(unsafe.Pointer(p))`
+// whose SOURCE pointer has the SAME element type as the target array — the one array-target shape the
+// managed model can express faithfully, and the sibling of the slice form's `array<T>.Alias` (Go 1.17
+// `(*[N]T)(s)`). Reported false for every other shape, which keeps the raw-address route described on
+// pointerReinterpretManagedSource.
+//
+// Go's array here is a VIEW of the elements at p — `(*[N]T)(unsafe.Pointer(&s[i]))` addresses s's own
+// storage — so a write through it has to land in the caller's buffer. The address route cannot do
+// that: it builds a native-backed `ж<array<T>>` whose deref reads an `array<T>` STRUCT (a backing
+// reference plus bounds) out of the pointed-at DATA, i.e. a fabricated managed reference; where the
+// convSliceExpr fusion catches the `[:n]` form first it instead yields a `slice<T>` COPY of the
+// memory, whose writes go nowhere. os's `TestReadStdin` is the witness for the second: its
+// `poll.ReadConsole` fake fills internal/poll's buffer through
+// `copy((*[10000]uint16)(unsafe.Pointer(buf))[:n:n], s16)`, so every one of its 462 subtests read
+// back zeros. Same element type is what makes the window exist — a `T[]` view over differently-typed
+// storage has no managed spelling — and golib decides at RUNTIME whether the pointer actually
+// addresses managed element storage, falling back to the identical address route when it does not
+// (see array<T>.AliasPointer).
+//
+// A NAMED array target keeps the pre-existing route, matching the slice form (none in the corpus).
+func (v *Visitor) arrayPointerAliasEmission(callExpr *ast.CallExpr, arg ast.Expr) (string, bool) {
+	p, srcPtr, targetPtr := v.pointerConversionSource(callExpr, arg)
+
+	if p == nil {
+		return "", false
+	}
+
+	targetArr, ok := types.Unalias(targetPtr.Elem()).(*types.Array)
+
+	if !ok || !types.Identical(srcPtr.Elem(), targetArr.Elem()) {
+		return "", false
+	}
+
+	identContext := DefaultIdentContext()
+	identContext.isPointer = true
+
+	elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(targetArr.Elem(), false))
+
+	return fmt.Sprintf("array<%s>.AliasPointer(%s, %s)", elemName, v.convExpr(p, []ExprContext{identContext}), csNintLiteral(targetArr.Len())), true
+}
+
+// csNintLiteral renders a Go array length as a C# `nint` argument. A literal that fits in `int` binds
+// to `nint` implicitly and stays bare; a wider one types as `long`, for which no implicit conversion
+// to `nint` exists (CS1503), so it takes an explicit cast. This is not a corner case for the
+// array-POINTER form — the whole idiom is spelled with a sentinel length that stands for "as many as
+// are there", and runtime's `findnull`/`findnullw`/`gostringw` use Go's own maxima
+// (`1<<47 - 1` bytes, `1<<46 - 1` uint16s).
+func csNintLiteral(value int64) string {
+	if value >= math.MinInt32 && value <= math.MaxInt32 {
+		return strconv.FormatInt(value, 10)
+	}
+
+	return fmt.Sprintf("(nint)%d", value)
 }
 
 // pointerConversionSource peels a `(*U)(…)` pointer CONVERSION down to its source pointer

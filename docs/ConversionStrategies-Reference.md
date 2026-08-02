@@ -9612,7 +9612,51 @@ consequences follow and all three are Go's:
 
 Guarded by `SliceToArrayPointerAlias` (offset write-through, read-back through the pointer,
 value-conversion copy, deref copy, `p[:]` aliasing and `len`/`cap`, element identity, and the
-png-shaped windowed loop) and by `NamedPointerReinterpret` (`sliceToArray`).
+png-shaped windowed loop) and by `NamedPointerReinterpret` (`sliceToArray`). The POINTER-sourced
+sibling `(*[N]T)(unsafe.Pointer(p))` is
+[below](#an-element-pointer-reinterpreted-as-an-array-pointer-aliases-the-elements-storage).
+
+### An element pointer reinterpreted as an array pointer ALIASES the element's storage
+`(*[N]T)(unsafe.Pointer(p))` with `p` a `*T` is the same conversion reached from a POINTER instead
+of a slice, and it emits the same kind of window — `array<T>.AliasPointer(p, N)`, which yields the
+`ж<array<T>>` directly. It is what Go's stdlib reaches for whenever a `*T` really names a run of
+elements: os's `TestReadStdin` fake fills internal/poll's read buffer with
+`copy((*[10000]uint16)(unsafe.Pointer(buf))[:n:n], s16)`, and `syscall.Readlink` decodes a reparse
+record through `(*[0xffff]uint16)(unsafe.Pointer(&data.PathBuffer[0]))[:n:n]`.
+
+Before this the shape took the raw-address route (`(ж<array<T>>)(uintptr)(…)`), which cannot
+express it in either of its two forms. Dereferenced, that box reads an `array<T>` STRUCT — a
+backing-store reference plus bounds — out of the pointed-at *data*, i.e. a fabricated managed
+reference. Sliced, the `isPointerCast` fusion in `convSliceExpr` catches it first and produces a
+`slice<T>` COPY of the memory, so every write through it is discarded: all 462 of `TestReadStdin`'s
+subtests read back zeros (`have [0 0 0…] want [abc…]`).
+
+Three rules bound the arm, and each is a real limit of the managed model rather than a convenience:
+- **Same element type only.** `array<T>.AliasPointer` windows the pointer's own `T[]` backing; a
+  `T[]` view over differently-typed storage does not exist in C#. `(*[2]byte)(unsafe.Pointer(&x.Port))`
+  over a `uint16` keeps the address route — that is the raw-metal fork, unchanged.
+- **The window is decided at RUNTIME.** Only a pointer that actually addresses managed array/slice
+  storage has a backing to window; a heap box, a struct field or a native address falls back to the
+  identical address route inside golib, so nothing that worked before changes shape.
+- **`N` is CLAMPED to the storage that exists.** Go's `N` in this idiom is a promise, not a length —
+  it is spelled `10000` / `1<<16` / `0xffff` over buffers a few elements long and the result is
+  always immediately re-sliced to the real count. Honoring it literally would put the window's own
+  bounds past its backing store, where a full-slice expression is an exception rather than a window.
+  So `len(*p)` reports the addressable extent, not Go's `N`, in the huge-`N` case; an overrun is
+  then a Go-style index panic instead of the silent corruption the same overrun is in Go. (Where `N`
+  fits — the ordinary `(*[4]byte)(unsafe.Pointer(&s[i]))` — `len` is exactly Go's.)
+
+One latent defect in the same family fell out with it: `SliceExtensions.slice(this array<T>, …)`
+sliced the RAW backing store, ignoring `m_low`/`m_length`, so explicit bounds over ANY window —
+`Alias`'s as well as `AliasPointer`'s — addressed the source's elements rather than the array's
+(`p[1:3]` of a window over `buf[1:]` yielded `buf[1:3]`, not `buf[2:4]`). The Range indexer already
+resolved through the window; the explicit-bounds path now does too, which is the path the
+`[:n:n]` idiom takes.
+
+Guarded by `ArrayPointerElementAlias` (write-through at element 0 and at an offset, the huge-`N`
+`[:n:n]` copy shape, indexed write-through, read-back through the pointer, deref copy, `p[:]` and
+`p[1:3]` aliasing with `len`/`cap`, element identity, a Go fixed-array source, and a re-sliced
+view).
 
 ### A direct-ж method on a value field-chain boxes through the &-machinery
 A direct-ж (box-receiver) method called on a field of a plain VALUE param — netip's
