@@ -1535,9 +1535,10 @@ carry the full derivations); this is the map.
 | `.DerefOrNil()` | **silent** — a shared `default(T)` slot | Go never derefs here, because the body PROVABLY guards: a pointer param the body nil-compares, or one whose first mentioning statement re-points it without deref (`l = l.get()` normalization, entry-only). The silent zero is unobservable ONLY while the admission analysis stays conservative — this is deliberately the narrowest accessor, and shrinking it further is a recorded residual. | by BODY ANALYSIS (`collectNilSafePtrParams`: `==`/`!=` operand scan; `reassignedBeforeDerefParamName`: first-statement re-point without deref) |
 | `.DerefOrNull()` | **defers** — binds `Unsafe.NullRef<T>`, faults with Go's panic on first USE | Go defers the panic to the body's own deref point: calling a method through a nil `*T` is legal, side effects before the deref must run, and the panic lands where Go's would — after them, or never (delegated `checkValid`-style guards). | STRUCTURALLY — every direct-ж pointer RECEIVER, unconditionally (no analysis, because the accessor is faithful whether or not the body guards), in both the converter's entry/re-alias emission and go2cs-gen's `ReceiverMethodTemplate` bridge; see *A nil RECEIVER is nil-deferring, not nil-safe* |
 
-Why four and not one: `.DerefOrNull` could in principle subsume `.Value` and `.DerefOrNil` for
-POINTER PARAMETERS too — Go's rule is identical for a parameter and a receiver — and that is a
-recorded residual awaiting its own measured ruling (~3,167 parameter aliases keep `.Value` today).
+Why four and not one: `.DerefOrNull` SHOULD subsume `.Value` and `.DerefOrNil` for POINTER
+PARAMETERS too — Go's rule is identical for a parameter and a receiver — and that unification is
+**user-ruled (2026-08-02) and queued in [`CleanupBacklog.md`](CleanupBacklog.md)**, pending its own
+measured footprint (~3,167 parameter aliases keep `.Value` today).
 `.ValueSlot` is different in KIND, not in timing: it marks accesses that were never dereferences
 in Go's semantics at all, so no nil-policy accessor can replace it.
 
