@@ -43,6 +43,47 @@ public class PanicException(object? state, Exception? innerException = null) :
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public StackTrace? PanicTrace { get; private set; }
 
+    /// <summary>
+    /// Reports the panic SITE first, then the frames the panic unwound through to reach the reader —
+    /// the closest a CLR exception can come to Go's single, uninterrupted panic traceback.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The base property cannot answer this on its own. A panic reaches its reporter by being
+    /// re-raised from <c>GoFunc.HandleFinally</c> (<c>throw CapturedPanic.Value</c>, after the
+    /// deferred sequence declined to recover it), and re-raising a stored instance RESETS
+    /// <see cref="Exception.StackTrace"/> to the re-raise point. Worse, a runtime-error panic — a nil
+    /// dereference, a divide by zero — is SYNTHESIZED by <see cref="golib.RuntimeErrorPanic"/> from
+    /// the .NET exception and was never thrown at the fault site at all, so its base trace can only
+    /// ever name the re-raise. Both cases print the same useless frame: every panic in the corpus
+    /// appears to originate inside the defer machinery, and the real fault site — the whole reason a
+    /// traceback is read — is gone.
+    /// </para>
+    /// <para>
+    /// <see cref="PanicTrace"/> already holds the origin, snapshotted once at the first catch, and is
+    /// how <c>runtime.Stack</c> reproduces Go's traceback. This makes every OTHER reader — the
+    /// Phase-4 test host, an unhandled-exception dump, a debugger — see it too, without any of them
+    /// having to know the panic machinery exists.
+    /// </para>
+    /// </remarks>
+    public override string? StackTrace
+    {
+        get
+        {
+            string? unwound = base.StackTrace;
+
+            if (PanicTrace is null || PanicTrace.FrameCount == 0)
+                return unwound;
+
+            // StackTrace.ToString() terminates its final frame with a newline; Exception.StackTrace
+            // does not — so the origin concatenates onto the unwind cleanly, and trims to match the
+            // base property's shape when there is no unwind to append.
+            string origin = PanicTrace.ToString();
+
+            return unwound is null ? origin.TrimEnd() : origin + unwound;
+        }
+    }
+
     // Snapshot the throw site the first time this panic is caught. `thrown` is the exception that
     // actually travelled: for a mapped .NET runtime error (nil deref, divide by zero) THIS instance
     // was synthesized by RuntimeErrorPanic and was never thrown, so only the original carries frames.

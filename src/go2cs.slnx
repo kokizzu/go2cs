@@ -454,6 +454,7 @@
     <Project Path="Tests/Behavioral/NilPointerPanic/NilPointerPanic.csproj" />
     <Project Path="Tests/Behavioral/NilPointerParamUnsafePointer/NilPointerParamUnsafePointer.csproj" />
     <Project Path="Tests/Behavioral/NilPointerUintptr/NilPointerUintptr.csproj" />
+    <Project Path="Tests/Behavioral/NilReceiverNormalization/NilReceiverNormalization.csproj" />
     <Project Path="Tests/Behavioral/NilSliceConversion/NilSliceConversion.csproj" />
     <Project Path="Tests/Behavioral/OptionalInterfaceStructuralAssertion/OptionalInterfaceStructuralAssertion.csproj" />
     <Project Path="Tests/Behavioral/PackageNameShadowing/PackageNameShadowing.csproj" />
@@ -588,6 +589,7 @@
     <Project Path="Tests/Behavioral/StructWithDelegate/StructWithDelegate.csproj" />
     <Project Path="Tests/Behavioral/StructWithPointer/StructWithPointer.csproj" />
     <Project Path="Tests/Behavioral/SubpackageFuncTypeParam/SubpackageFuncTypeParam.csproj" />
+    <Project Path="Tests/Behavioral/SwitchBreakBeforeFallthrough/SwitchBreakBeforeFallthrough.csproj" />
     <Project Path="Tests/Behavioral/SwitchBreakInCase/SwitchBreakInCase.csproj" />
     <Project Path="Tests/Behavioral/SynthesizedDelegateChildPkg/SynthesizedDelegateChildPkg.csproj" />
     <Project Path="Tests/Behavioral/SynthesizedDelegateChildPkg/inner/SynthesizedDelegateChildPkg.inner.csproj" />

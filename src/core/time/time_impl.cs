@@ -109,6 +109,30 @@ partial class time_package
     // GODEBUG=asynctimerchan=1: unstopped timers are not GC-recovered early, and a receive that
     // races a Stop/Reset can observe one already-delivered value. Everything else here — the
     // Stop/Reset return values, the tick-drop behavior, the period phase — matches the runtime.
+    //
+    // ⚠ OPEN — a periodic timer can fire an UNBOUNDED BURST in one service pass (r36, 2026-08-02).
+    // The divergence above is scoped to the SYNC mode, and time's own TestChan shows exactly that
+    // scope: its Timer half fails only under asynctimerchan=0 (that divergence, accepted) and passes
+    // under 1 and 2. Reading the ticker rows as the same thing would be wrong — the Ticker half
+    // fails in ALL THREE modes with "extra tick" / "early done", which nothing written above
+    // explains. The mechanism is in serviceTimers below: after a periodic timer fires, `when` is
+    // advanced to `when + period*(1 + delay/period)` and the timer is re-enqueued, and the drain
+    // loop then re-peeks it against a FRESHLY read `now`. For an ordinary period the advanced `when`
+    // is comfortably in the future and the loop breaks; for a period shorter than the loop's own
+    // iteration time — testTimerChan Resets to 1ns — `when` lands one nanosecond ahead, `now` has
+    // already passed it, and the same timer fires again, and again, for as long as the pass runs.
+    // The burst is invisible while nobody is receiving (sendTime's non-blocking send onto the cap-1
+    // channel drops all but one), but testTimerChan's drainAsync is receiving: each drain1 frees the
+    // buffer slot and the still-draining burst refills it, so the two stale values an async ticker is
+    // allowed become three and `noTick` reports "extra tick". Go bounds this because its timer loop
+    // returns to the scheduler rather than re-firing one timer within a pass. The faithful fix is to
+    // fire each timer AT MOST ONCE per pass — which is also what "drop ticks to make up for slow
+    // receivers" means — but it changes the heart of the model, so it is recorded rather than taken
+    // in the tail of r36. This is the only time-LOCAL row left: not a channel-rendezvous defect
+    // (wave3's semantics hold under it) and not a GODEBUG one (t.Setenv reaches the converted
+    // godebug since r36, proven by that package's own TestGet, and reaching it changes nothing here
+    // because tick.cs never calls syncTimer). See the r36 entry in
+    // docs/Phase4/BOARD-next-validation-candidates.md.
 
     // Hidden runtime state for one Timer or Ticker. Go declares these fields on runtime.timeTimer,
     // AFTER the two fields package time can see (`C` and `initTimer`/`initTicker`); the comment in

@@ -715,7 +715,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				// the box is nil (the `Ꮡp != nil` guard excludes it). Other pointer params keep `.Value`.
 				derefAccessor := "Value"
 
-				if v.nilSafePtrParamNames.Contains(param.Name()) {
+				if v.nilSafePtrParamNames.Contains(param.Name()) || v.nilSafeEntryOnlyParamName == param.Name() {
 					derefAccessor = NilSafeDerefAccessor
 				} else if isInherentlyHeapAllocatedType(pointerType.Elem()) {
 					// The POINTEE is itself a reference type (`*error`, `*[]T`, `*map`, `**T`,
@@ -1360,10 +1360,22 @@ func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 		return
 	}
 
+	// A pointer parameter/receiver RE-POINTED before anything reads through it gets an ENTRY-ONLY
+	// nil-safe alias, and unlike the arms above it costs nothing at all: the alias it protects is
+	// overwritten by the re-alias that follows the assignment, so no read can ever reach the shared
+	// default slot and there is no wrong-answer surface to widen. (Kept out of nilSafePtrParamNames
+	// precisely so the RE-alias is not swept along — see nilSafeEntryOnlyParamName.) This is Go's
+	// nil-receiver NORMALIZATION idiom — `func (l *Location) lookup(…) { l = l.get(); … }`, where
+	// `get` maps a nil receiver to `&utcLoc` — the delegating shape called out above, but in the one
+	// form that can be proven safe rather than traded off. Without it `Time{}` (whose `loc` is nil,
+	// meaning UTC) faulted at lookup's ENTRY, before a single field was read, taking seven of time's
+	// tests with it.
+	v.nilSafeEntryOnlyParamName = v.reassignedBeforeDerefParamName(funcDecl.Body)
+
 	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
 		if n, ok := node.(*ast.BinaryExpr); ok && (n.Op == token.EQL || n.Op == token.NEQ) {
 			for _, operand := range []ast.Expr{n.X, n.Y} {
-				if ident, ok := operand.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isComparedDirectBoxReceiverIdent(ident)) {
+				if ident, ok := operand.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident)) {
 					v.nilSafePtrParamNames.Add(ident.Name)
 				}
 			}
@@ -1373,11 +1385,142 @@ func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 	})
 }
 
-// isComparedDirectBoxReceiverIdent reports whether ident is the current method's pointer receiver
-// (object identity — a shadowing local does not match) and the method is direct-ж, i.e. its
-// receiver box `Ꮡrecv` is a parameter whose entry deref alias exists to be made nil-safe. Scoped
-// to the `==`/`!=` operand scan of collectNilSafePtrParams — see the receiver paragraph there.
-func (v *Visitor) isComparedDirectBoxReceiverIdent(ident *ast.Ident) bool {
+// reassignedBeforeDerefParamName reports the name of a deref-aliased pointer parameter (or direct-ж
+// receiver) that the FIRST body statement mentioning it RE-POINTS — `p = <expr>` — without any of
+// that statement's own uses of it going through the pointee. Such a parameter's entry alias `ref var
+// p = ref Ꮡp.Value` is a placeholder that the assignment's re-alias immediately replaces, so
+// deref'ing the box to establish it is pure loss: it cannot supply a value anyone reads, and it
+// faults at entry for the nil argument the body was written to normalize.
+//
+// DELIBERATELY conservative in both directions. Only the first mentioning statement is considered
+// (a later or conditional reassignment does not prove the entry value is unread), it must be a
+// top-level statement of the body (not nested in a block, loop or `if`), and every use of the
+// parameter inside it must be non-dereferencing — a method call that binds the pointer itself
+// (`l.get()`, receiver `*Location`), a nil comparison, or the bare pointer as an argument. A field
+// selection, a value-receiver method (which auto-derefs, and so panics in Go too), or a `*p` all
+// disqualify it, leaving emission exactly as it was.
+func (v *Visitor) reassignedBeforeDerefParamName(body *ast.BlockStmt) string {
+	if body == nil {
+		return ""
+	}
+
+	for _, stmt := range body.List {
+		assign, isAssign := stmt.(*ast.AssignStmt)
+
+		// The first statement that mentions ANY qualifying parameter decides: either it re-points
+		// that parameter, or the parameter is live at entry and nothing here applies.
+		if !isAssign || assign.Tok != token.ASSIGN {
+			if v.statementMentionsDerefdPointerParam(stmt) != "" {
+				return ""
+			}
+
+			continue
+		}
+
+		target := ""
+
+		for _, lhs := range assign.Lhs {
+			ident, isIdent := lhs.(*ast.Ident)
+
+			if !isIdent {
+				continue
+			}
+
+			if v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident) {
+				target = ident.Name
+				break
+			}
+		}
+
+		if target == "" {
+			if v.statementMentionsDerefdPointerParam(stmt) != "" {
+				return ""
+			}
+
+			continue
+		}
+
+		// The assignment re-points `target`; its right-hand side may still name it, but only in a
+		// form that reads the POINTER rather than the pointee.
+		for _, rhs := range assign.Rhs {
+			if !v.exprUsesParamWithoutDeref(rhs, target) {
+				return ""
+			}
+		}
+
+		return target
+	}
+
+	return ""
+}
+
+// statementMentionsDerefdPointerParam reports the name of the first deref-aliased pointer parameter
+// (or direct-ж receiver) named anywhere in stmt, or "" when none is. Used only to establish which
+// statement is the FIRST to mention one — see reassignedBeforeDerefParamName.
+func (v *Visitor) statementMentionsDerefdPointerParam(stmt ast.Stmt) string {
+	found := ""
+
+	ast.Inspect(stmt, func(node ast.Node) bool {
+		if found != "" {
+			return false
+		}
+
+		if ident, ok := node.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident)) {
+			found = ident.Name
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// exprUsesParamWithoutDeref reports whether every occurrence of the parameter named name inside expr
+// leaves the pointee untouched. See reassignedBeforeDerefParamName for what qualifies and why.
+func (v *Visitor) exprUsesParamWithoutDeref(expr ast.Expr, name string) bool {
+	safe := true
+
+	ast.Inspect(expr, func(node ast.Node) bool {
+		if !safe {
+			return false
+		}
+
+		switch n := node.(type) {
+		case *ast.SelectorExpr:
+			ident, isIdent := n.X.(*ast.Ident)
+
+			if !isIdent || ident.Name != name {
+				return true
+			}
+
+			// A method whose RECEIVER is a pointer is handed the pointer itself. A field, or a
+			// method with a VALUE receiver, reads through it — a real dereference, which panics in
+			// Go too. (Not `Selection.Indirect()`: that reports whether a pointer was traversed to
+			// REACH the selection, which is true for every selection on a pointer operand,
+			// pointer-receiver method calls included.)
+			if !v.isPointerReceiverMethodCall(n) {
+				safe = false
+			}
+
+			return false
+		case *ast.StarExpr:
+			if ident, isIdent := n.X.(*ast.Ident); isIdent && ident.Name == name {
+				safe = false
+			}
+		}
+
+		return true
+	})
+
+	return safe
+}
+
+// isDirectBoxReceiverIdent reports whether ident is the current method's pointer receiver (object
+// identity — a shadowing local does not match) and the method is direct-ж, i.e. its receiver box
+// `Ꮡrecv` is a parameter whose entry deref alias exists to be made nil-safe. It says nothing about
+// HOW the receiver is used; the callers in collectNilSafePtrParams supply that (an `==`/`!=`
+// operand, or the target of a re-pointing assignment).
+func (v *Visitor) isDirectBoxReceiverIdent(ident *ast.Ident) bool {
 	if ident == nil || ident.Name == "" || ident.Name == "_" {
 		return false
 	}

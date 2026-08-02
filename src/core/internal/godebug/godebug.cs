@@ -28,12 +28,13 @@
 // the literal conversion of the embedded-pointer machinery faults at runtime (the generated
 // promoted-field box treats its held nil *setting as a nil POINTER dereference, so even the
 // `s.setting = lookup(...)` assignment panics). This hand-owned implementation parses $GODEBUG
-// once on first use (comma-separated key=value, later entries overriding earlier ones, matching
-// Go's backward parse) and serves every lookup from that snapshot — the behavior of a Go process
-// whose $GODEBUG never changes after startup. An unset or unlisted key yields "", Go's unset
-// default. Not carried over: bisect stack-pattern values (the `value#pattern` suffix is stripped,
-// enabling the setting unconditionally) and the runtime/metrics non-default counters
-// (IncNonDefault is inert — there is no converted metrics consumer).
+// (comma-separated key=value, later entries overriding earlier ones, matching Go's backward parse)
+// and serves every lookup from that snapshot, REPARSING whenever the variable's text changes —
+// which is what Go's update hooks accomplish, and what `Value`'s own contract below promises. An
+// unset or unlisted key yields "", Go's unset default. Not carried over: bisect stack-pattern
+// values (the `value#pattern` suffix is stripped, enabling the setting unconditionally) and the
+// runtime/metrics non-default counters (IncNonDefault is inert — there is no converted metrics
+// consumer).
 
 using System;
 using System.Collections.Generic;
@@ -111,18 +112,48 @@ public static @string Value(this ж<Setting> Ꮡs) {
     if (godebugs.Lookup(name) == nil && !s.Undocumented()) {
         throw panic("godebug: Value of name not listed in godebugs.All: " + s.name);
     }
-    return s_settings.Value.TryGetValue(name, out string? value) ? value : "";
+    return settings().TryGetValue(name, out string? value) ? value : "";
 }
 
-// The one-shot $GODEBUG snapshot: comma-separated key=value pairs, later entries overriding
-// earlier ones (Go parses backward and pins the first hit — same winner). A `value#pattern`
-// bisect suffix is stripped, keeping just the value.
-private static readonly Lazy<Dictionary<string, string>> s_settings = new(parseGodebugEnv);
+// The current $GODEBUG snapshot, paired with the raw text it was parsed from. Go keeps its cache
+// current through runtime update hooks that fire when os.Setenv rewrites $GODEBUG; with no such
+// hook here, the raw text IS the invalidation token — cheap to fetch, and a change to it is
+// exactly the event the hooks signal. Reading the variable and comparing is far cheaper than
+// re-parsing it, so a process whose $GODEBUG never changes (the overwhelming majority) parses
+// once, as the previous one-shot form did.
+//
+// A one-shot snapshot instead made `Value` unable to honor the contract stated above it, and
+// silently: `t.Setenv("GODEBUG", …)` — how Go's own suites exercise a setting, and the only way a
+// converted test can reach one — could not be observed once ANY setting had been read, which in a
+// test binary is almost always before the test that sets it runs.
+private static volatile Tuple<string, Dictionary<string, string>> s_settings =
+    new("", new Dictionary<string, string>(StringComparer.Ordinal));
 
-private static Dictionary<string, string> parseGodebugEnv() {
+private static Dictionary<string, string> settings() {
+    string raw = Environment.GetEnvironmentVariable("GODEBUG") ?? "";
+    Tuple<string, Dictionary<string, string>> current = s_settings;
+
+    if (string.Equals(current.Item1, raw, StringComparison.Ordinal))
+        return current.Item2;
+
+    Tuple<string, Dictionary<string, string>> parsed = new(raw, parseGodebugEnv(raw));
+
+    // Last writer wins, and every writer parsed the same text it observed — so whichever snapshot
+    // is published is self-consistent (the field is volatile, so the dictionary's contents are
+    // visible to whoever reads the reference). A concurrent Setenv can leave a stale one behind,
+    // exactly as it can race Go's update hook; the next lookup notices and reparses.
+    s_settings = parsed;
+
+    return parsed.Item2;
+}
+
+// Parses comma-separated key=value pairs, later entries overriding earlier ones (Go parses
+// backward and pins the first hit — same winner). A `value#pattern` bisect suffix is stripped,
+// keeping just the value.
+private static Dictionary<string, string> parseGodebugEnv(string raw) {
     Dictionary<string, string> settings = new(StringComparer.Ordinal);
 
-    foreach (string pair in (Environment.GetEnvironmentVariable("GODEBUG") ?? "").Split(',')) {
+    foreach (string pair in raw.Split(',')) {
         int eq = pair.IndexOf('=');
 
         if (eq < 0)

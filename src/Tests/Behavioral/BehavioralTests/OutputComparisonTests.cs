@@ -956,6 +956,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNilPointerUintptr() => CheckTarget("NilPointerUintptr");
 
     [TestMethod]
+    public void CheckNilReceiverNormalization() => CheckTarget("NilReceiverNormalization");
+
+    [TestMethod]
     public void CheckNilSliceConversion() => CheckTarget("NilSliceConversion");
 
     [TestMethod]
@@ -1329,6 +1332,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSubpackageFuncTypeParam() => CheckTarget("SubpackageFuncTypeParam");
+
+    [TestMethod]
+    public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
 
     [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");

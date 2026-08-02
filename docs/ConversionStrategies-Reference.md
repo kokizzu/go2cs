@@ -6469,6 +6469,46 @@ strictly *add* an `else` where one was missing and never remove one, so no alrea
 changes. Guarded by `SwitchFallthroughDefaultReturn`'s `waitShape` (non-constant case labels force the
 if-chain; verified to fail without the fix).
 
+### A `break` in a case that also `fallthrough`s must skip the fallthrough
+A case body containing a Go `break` is wrapped in `do { … } while (false)` so the `break` has a C#
+target in the if-chain lowering (the case above shows the wrapper). A case ending in `fallthrough`
+raises a `fallthrough` flag the next clause's guard reads. **A case with both** put the flag *after*
+the wrapper:
+
+```csharp
+if (exprᴛ1 == stdISO8601ColonTZ || …) { matchᴛ1 = true;
+    do {
+        if (len(value) >= 1 && value[0] == (rune)'Z') { value = value[1..]; z = ΔUTC; break; }
+    } while (false);
+    fallthrough = true;                    // ← reached by the break as well
+}
+```
+
+so the `break` — which in Go exits the **switch** — fell through instead. `time.Parse` is exactly this
+shape: RFC3339's `Z07:00` layout element consumes a literal `Z` and breaks, and the fallthrough handed
+the remaining text to the numeric-offset arm, which rejected it. Go reports
+`extra text: "07:00"`; C# reported `cannot parse "Z07:00" as "Z07:00"`, and every `Z`-terminated
+RFC3339 value routed through `Time.UnmarshalText` failed the same way.
+
+Because Go's spec requires `fallthrough` to be the final non-empty statement in its clause, "control
+reached the end of the body" *is* "the fallthrough statement was reached" — which is what lets the flag
+be raised at the end rather than at the statement. In a break-wrapped case that equivalence holds only
+**inside** the wrapper, so the assignment moves there and a `break` skips it:
+
+```csharp
+    do {
+        if (…) { …; break; }
+        fallthrough = true;
+    } while (false);
+```
+
+A case with a `fallthrough` and no switch-`break` is unaffected (no wrapper exists), as is a case whose
+only `break` belongs to a nested loop — `caseBodyHasSwitchBreak` already stops at a nested
+loop/switch/select/closure, so no wrapper is emitted and the flag stays where it was. Guarded by
+`SwitchBreakBeforeFallthrough` (the `Z`-consuming break-then-fallthrough arm, a fallthrough arm with no
+break, a nested-loop `break` that must still fall through, and a break with no fallthrough behind it —
+output-compared vs Go).
+
 ## Type Switch Statements
 For a Go type-switch, C#'s type-pattern `switch` works well. The runtime exposes the dynamic type via `.type()`, and the empty interface is `any`:
 
@@ -9906,6 +9946,65 @@ instead of raising Go's nil-deref panic — observable only by a program already
 called through actually-nil `*box` and `*embedder` pointers beside the original non-nil probes,
 output-compared vs Go; bytes' `TestNil` exercises the stdlib shape.)
 
+### A receiver RE-POINTED before first use gets a nil-safe entry alias too — the normalization idiom
+The section above covers a receiver the body **tests**. Go's other nil-receiver idiom does not test it
+at all: it *normalizes* it, by re-pointing through a helper that does the testing. `time`'s
+`Location.lookup` is the canonical case — `Time{}` carries a nil `*Location` meaning UTC, and `get`
+maps nil to `&utcLoc`:
+
+```go
+func (l *Location) lookup(sec int64) (name string, offset int, start, end int64, isDST bool) {
+	l = l.get()
+	if len(l.zone) == 0 { … }
+```
+
+The comparison predicate cannot see this — `lookup` never writes `l == nil` — so the receiver kept the
+plain `.Value` entry alias and **faulted before its first statement**, where Go returns UTC. That one
+site cost seven of `time`'s test verdicts (`TestDefaultLoc`, `TestSecondsToUTC`, `TestNanosecondsToUTC`,
+`TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestZoneBounds`), every one of them dying at entry.
+
+This is the **delegating** shape the `collectNilSafePtrParams` header warns is *not* addressed by
+widening to every direct-ж pointer receiver — that widening was measured (26 behavioral projects change
+their preamble) and deliberately declined, because it extends the arms' accepted trade-off (an unguarded
+deref of an actually-nil receiver reads the throwaway slot instead of panicking) across the whole
+corpus. The re-pointing sub-case needs no such trade, which is precisely why it is admitted separately.
+
+**The predicate, precisely** (`reassignedBeforeDerefParamName`): the **first** top-level body statement
+that mentions a deref-aliased pointer parameter or direct-ж receiver must be an `=` assignment that
+re-points it, and every use of it *inside that statement* must leave the pointee untouched — a method
+call whose **receiver is itself a pointer** (`l.get()`), a nil comparison, or the bare pointer passed as
+an argument. A field selection, a value-receiver method (which auto-derefs, and so panics in Go too), or
+a `*p` disqualifies it. Note this is **not** `types.Selection.Indirect()`: that reports whether a pointer
+was traversed to *reach* the selection, which is true of every selection on a pointer operand,
+pointer-receiver method calls included — using it rejects the very shape the predicate exists for.
+
+Under those conditions the entry alias is a placeholder that the assignment's re-alias replaces before
+anything can read it, so `DerefOrNil()` cannot hand a wrong value to anyone: unlike the compared arms,
+there is no read to be wrong. Emission for every other function is byte-identical.
+
+**This arm is ENTRY-ONLY, which is what keeps the trade-off at zero.** The nil-compared arms put the
+parameter in `nilSafePtrParamNames`, which `visitAssignStmt` also reads, so *both* aliases go nil-safe
+and an unguarded deref of an actually-nil pointer reads the throwaway slot instead of panicking. The
+re-pointing arm carries its name in `nilSafeEntryOnlyParamName` instead, so only `visitFuncDecl`'s entry
+emission consults it and the re-alias keeps the strict `.Value`: after `l = l.get()` the pointer is
+whatever the normalizer returned, and a genuine deref of a still-nil one must panic exactly as Go's
+does. (`GenericFuncCall`'s `renew` — `p = escape(p); *p += 10`, where `escape` is identity and CAN
+return nil — is the case that distinguishes them; its golden moves by one line, not two.) A parameter
+in both sets composes correctly: entry nil-safe either way, re-alias nil-safe only when the comparison
+arm asked for it.
+
+```csharp
+internal static (@string name, nint offset, int64 start, int64 end, bool isDST) lookup(this ж<ΔLocation> Ꮡl, int64 sec) {
+    …
+    ref var l = ref Ꮡl.DerefOrNil();      // was: ref Ꮡl.Value  — NRE at entry for Time{}
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;      // strict: get() cannot return nil
+```
+
+(Guarded by the `NilReceiverNormalization` behavioral test — normalize-then-read, normalize-then-*write*
+through the re-aliased receiver with a read-back proving the real slot was addressed, the same shape on a
+nil-legal pointer *parameter* rather than a receiver, and a control that reads BEFORE normalizing, which
+keeps the plain `.Value` form and still panics through a nil receiver exactly as Go does.)
+
 ### A reinterpreted raw address ALIASES native memory instead of boxing a copy
 `(ж<T>)(uintptr)` is the reinterpret seam: it turns a raw address back into a pointer. It used to
 box a **copy** of the pointed-at value —
@@ -10743,6 +10842,28 @@ local (`var b Builder` + pointer-receiver calls) heap-boxes per run where Go sta
 stack buffer (`TestIndexRune`). Neither class is a shim defect — a malloc-counting shim would
 fail the same asserts — and neither is faked.
 
+**A third class is neither, and must not be filed as either: ELIMINABLE inefficiency.** Because zero
+maps exactly, a want-zero assert is faithfully representable — so when one fails, the honest reading is
+that the converted code genuinely allocates, and the question is *what*, not *whether the unit is
+comparable*. `time`'s `TestUnmarshalTextAllocations` (`got 3784 allocs, want 0`) measured out at **3664
+bytes/run** for `Time.UnmarshalText`, and profiling `parseRFC3339` — where nearly all of it lives —
+attributes it to two shapes, both in shared machinery and both removable:
+
+| Shape | Cost | Why |
+|:--|--:|:--|
+| `s[a:b]` on a `string \| []byte`-constrained value | 48 B each | `IByteSeq<T>`'s range indexer returns the **interface**, so the `@string`/`slice<byte>` struct result is boxed |
+| `[]byte(s)` on the same (`new slice<byte>(sΔ1)`) | 48 B each | boxes the type-parameter value again to reach the interface |
+| `for i, c := range s` over a `slice<T>` | **136 B, fixed** | the range enumerator allocates once per loop, independent of length; the indexed form allocates **0** |
+
+Six `parseUint` calls at ~232 B each, the closure and delegate for `parseUint` itself (112 B), the
+fractional-second scan (~1728 B in the same shapes) and `Date` (~240 B) account for the total. None of
+it is CLR-necessary: Go monomorphizes the union-constrained generic and stack-allocates all of it, and
+nothing here is boxing that a managed model *must* do — it is boxing that the current `IByteSeq`
+modeling and range lowering happen to do. **So this row is performance work, not a disclosure
+candidate** (a disclosure is only for asserts the CLR provably cannot satisfy — see the campaign
+charter §5), and the 136-byte range enumerator is worth its own look because every converted
+`for i, v := range s` in the corpus pays it.
+
 **The disclosed-divergence manifest (2026-07-18 ruling — implemented).** These provably
 unsatisfiable divergences are disclosed at TEST level, extending the declaration-level
 "disclosed-unsupported" vocabulary: an affected package carries a hand-owned, repo-committed
@@ -11391,6 +11512,40 @@ is what stops the value from ever going stale. `Stack` appends those frames *bel
 which is where Go's traceback puts them too, since the deferred call runs on top of `gopanic`. Cost on
 the non-panicking path is zero: the CLR fills the trace at throw time anyway, and nothing is
 snapshotted unless a panic is actually caught.
+
+### EVERY reader of a panic's trace gets the origin — not just `runtime.Stack`
+
+The snapshot above served exactly one consumer. Every *other* reader — the Phase-4 test host, an
+unhandled-exception dump, a debugger — asked `Exception.StackTrace` and got the wreckage the section
+above describes, because a panic reaches its reporter by being re-raised from `GoFunc.HandleFinally`
+(`throw CapturedPanic.Value`, once the deferred sequence declined to recover it) and re-raising a
+stored instance resets the trace to the re-raise point. So **every panic in the corpus reported the
+same deepest frame — `GoFunc.HandleFinally` — regardless of where it actually faulted.** That reads as
+a defect in the defer machinery, and it hid the real one: nine of `time`'s failures were filed as a
+shared "nil pointer dereference in `HandleFinally`" when they were one nil-receiver deref in
+`Location.lookup` (see the normalization idiom above), invisible until the trace was honest.
+
+Two changes, both at the layer that owns the fact:
+
+1. **`PanicException.StackTrace` reports the panic SITE first, then the frames it unwound through** —
+   the closest a CLR exception can come to Go's single uninterrupted traceback. `PanicTrace` already
+   held the origin; overriding the property is what lets consumers see it without any of them knowing
+   the panic machinery exists. With no origin recorded the base trace is returned unchanged, so the
+   override only ever *adds*.
+2. **The origin is snapshotted at the ADOPTION POINT, `RuntimeErrorPanic.TryAsPanic`** — the one place
+   a .NET exception becomes a Go panic. A mapped runtime error (nil deref, divide by zero) is
+   synthesized there and was never thrown at the fault, so only the incoming exception carries those
+   frames; once `TryAsPanic` returns, they are gone. Doing it in each *adopter* covered only panics
+   that passed through a `GoFunc` — a function that never defers is not wrapped in one, so its fault
+   travelled raw to the reporter, which synthesized a brand-new panic with **no trace at all**. That
+   was five of the nine `time` rows: `panic: …` and nothing else.
+
+(Guarded by `GolibTests.PanicTracebackTests`: a synthesized runtime-error panic escaping a `GoFunc`, an
+explicit `panic()` surviving the re-raise, the same runtime-error panic adopted with **no** `GoFunc`
+anywhere between fault and reporter, a recovered panic that must not be reported at all, and a panic
+with no origin snapshot falling back to its intact base trace. Not a behavioral test: no converted Go
+program reads a CLR stack trace, so there is nothing to output-compare — the Go-observable half is
+`runtime.Stack`, covered above.)
 
 ### `runtime.Callers` / `Frames.Next` walk the managed stack projected to GO-LOGICAL frames
 

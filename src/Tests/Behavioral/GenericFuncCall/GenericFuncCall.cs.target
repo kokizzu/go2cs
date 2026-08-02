@@ -52,7 +52,7 @@ internal static T escape<T>(T x) {
 }
 
 internal static ж<nint> renew(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNil();
 
     Ꮡp = escape(Ꮡp); p = ref Ꮡp.Value;
     p += 10;

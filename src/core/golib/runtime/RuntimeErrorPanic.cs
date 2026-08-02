@@ -89,17 +89,29 @@ public static class RuntimeErrorPanic
     /// <param name="ex">Exception to inspect.</param>
     /// <param name="panic">Resulting panic when the exception maps to a Go runtime panic.</param>
     /// <returns><c>true</c> if <paramref name="ex"/> is (or maps to) a Go panic; otherwise <c>false</c>.</returns>
+    /// <remarks>
+    /// This is the ONE place a .NET exception becomes a Go panic, so it is also where the panic's
+    /// origin is snapshotted (<see cref="PanicException.PanicTrace"/>) — a mapped runtime error is
+    /// synthesized HERE and was never thrown at the fault site, so only <paramref name="ex"/> carries
+    /// those frames, and once this returns they are the caller's last chance to be recorded. Doing it
+    /// at the adoption point rather than in each adopter is what lets a panic that passes through NO
+    /// <c>GoFunc</c> at all — a function that never defers, so nothing wraps it — still report where
+    /// it faulted. The snapshot is once-only, so a panic re-adopted by each enclosing frame keeps the
+    /// innermost (deepest) origin, and nothing is computed on a non-panicking path.
+    /// </remarks>
     public static bool TryAsPanic(Exception ex, [NotNullWhen(true)] out PanicException? panic)
     {
         switch (ex)
         {
             case PanicException panicException:
                 panic = panicException;
+                panic.CaptureThrowSite(ex);
                 return true;
             case DivideByZeroException:
                 // Go: integer division or modulo by zero panics with a runtime error. .NET raises
                 // DivideByZeroException for the same operation; map it so recover() behaves like Go.
                 panic = IntegerDivideByZero();
+                panic.CaptureThrowSite(ex);
                 return true;
             case NullReferenceException:
                 // Go: dereferencing a nil pointer panics with "runtime error: invalid memory address
@@ -110,6 +122,7 @@ public static class RuntimeErrorPanic
                 // could not see, so the panic escaped as an unrecoverable infrastructure error.
                 // Mapping it here gives recover() Go's behavior and prints Go's message verbatim.
                 panic = NilPointerDereference();
+                panic.CaptureThrowSite(ex);
                 return true;
             default:
                 panic = null;

@@ -663,6 +663,22 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				allCasesTerminal = false
 			}
 
+			// `fallthrough` must be the final non-empty statement in its clause (Go spec), so
+			// "control reached the end of the body" IS "the fallthrough statement was reached" —
+			// which is why the flag can be raised at the end rather than at the statement. But in a
+			// break-wrapped case that only holds INSIDE the wrap: a Go `break` exits the SWITCH, so
+			// it must skip the fallthrough entirely. Raising the flag after `} while (false);` makes
+			// every break fall through instead — silently, and only in a case that has both, which is
+			// how `time.Parse` lost RFC3339's `Z` arm (it consumes the Z, breaks, and then re-entered
+			// the numeric-offset arm on the remaining text: `cannot parse "Z07:00"` where Go reports
+			// `extra text: "07:00"`).
+			if caseHasFallthroughStmt[i] && switchBreakWrap {
+				// The wrap's closer below writes its own leading newline, so this one terminates the
+				// last body statement's line and the assignment is left unterminated for it.
+				v.outputBuilder.WriteString(v.newline)
+				v.writeOutput("fallthrough = true;")
+			}
+
 			if switchBreakWrap {
 				v.indentLevel--
 				// Likewise close on its own indented line. A `"%s} while…"` format would emit the
@@ -674,7 +690,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 			v.outputBuilder.WriteString(v.newline)
 
-			if caseHasFallthroughStmt[i] {
+			if caseHasFallthroughStmt[i] && !switchBreakWrap {
 				v.writeOutputLn("fallthrough = true;")
 			}
 

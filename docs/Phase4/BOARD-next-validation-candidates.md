@@ -426,7 +426,7 @@ validating, exactly as this section said.
 *Updated 2026-08-01: the ruling landed (option (d) above) and `net` builds — see the Deadline banner.
 The init gap and the channel frog are what remain, exactly as predicted.*
 
-## `time` — builds and RUNS (2026-08-02, r35): 139 pass / 17 fail / 2 skip / 1 infra-error of 159
+## `time` — builds and RUNS (2026-08-02, r36): **145 pass / 11 fail / 2 skip / 1 infra-error of 159**
 
 `time` was opened the day the channels frog was confirmed closed. It went from **260 build errors** to
 **0**, and the host now runs the whole suite in ~60 s with **zero empty verdicts** — the timer
@@ -462,6 +462,86 @@ Guard for the six general converter/generator roots: the `PackageNameShadowing` 
 dot-importing sibling file, the named-type fold in both positions, and the sliced-literal concat —
 output-compared vs `go run`) plus `FuncLitArgCapture` case 15 for the hoist.
 
+### r36 (2026-08-02) — **145 pass / 11 fail / 2 skip / 1 infra of 159**
+
+The 17-failure table below has been worked. **Six verdicts converted** (139 → 145 pass), and the two
+diagnoses it recorded were both wrong in an instructive way — recorded here rather than deleted,
+because the way they were wrong is the reusable lesson.
+
+**The "shared `HandleFinally` NRE" was not a failure mode at all — it was the ABSENCE of a traceback.**
+`GoFunc.cs:190` is `throw CapturedPanic.Value;`, the *re-raise* site; re-raising a stored instance
+resets `Exception.StackTrace`, so every panic in the corpus named that one frame no matter where it
+faulted. The guess that followed from it — "formats a `Time` through `fmt` on its FAILURE path, so the
+reflect/fmt bridge" — was reasonable and wrong: `TestDefaultLoc` formats nothing but a `string`.
+Two golib changes made the trace honest (`PanicException.StackTrace` prefers the recorded origin;
+`RuntimeErrorPanic.TryAsPanic` snapshots it at the adoption point, which is the only place a panic that
+passes through **no** `GoFunc` — a function that never defers — can be caught in time). Five of the
+nine had been printing `panic: …` and *nothing else* for exactly that reason. With the trace visible the
+root was one frame deep and had nothing to do with `fmt`: `Location.lookup`'s entry alias deref'd a nil
+`*Location` before `l = l.get()` could normalize it — Go's nil-receiver **normalization** idiom, now a
+converter fix (see *A receiver RE-POINTED before first use…* in the strategies reference).
+
+| Was | Now |
+|:--|:--|
+| `TestDefaultLoc`, `TestNanosecondsToUTC`, `TestSecondsToUTC`, `TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestZoneBounds` | **PASS** — the `Location.lookup` entry-alias fix |
+| `TestParseErrors` | **PASS** — a `break` in a case that also `fallthrough`s fell through anyway, so RFC3339's `Z07:00` arm consumed the `Z` and then re-entered the numeric-offset arm. Converter fix; guard `SwitchBreakBeforeFallthrough` |
+| `TestUnmarshalInvalidTimes` | still fails, but its `UnmarshalText` rows went with the same fix — only `UnmarshalJSON` rows remain |
+
+**The `asynctimerchan=1` probe, answered.** Both halves of the question were live, and they split:
+
+- **`t.Setenv("GODEBUG", …)` did NOT reach the converted `godebug`** — the hand-owned package served
+  every lookup from a `Lazy` one-shot snapshot, so once *any* setting had been read (in a test binary,
+  almost always before the test that sets one runs) later changes were invisible. That contradicted the
+  contract in its own `Value` doc comment. Fixed: the snapshot is keyed on the raw `$GODEBUG` text and
+  reparsed when it changes. **A/B-proven on `internal/godebug`'s own suite** — `TestGet` (twelve
+  `t.Setenv` round-trips) fails before and passes after. This un-gates GODEBUG-dependent tests
+  corpus-wide; no validated package sets GODEBUG, so nothing banked moves.
+- **It does not un-gate `TestChan`,** because converted `time` ignores `asynctimerchan` by
+  construction (`tick.cs` never calls `syncTimer`; `time_impl.cs` is unconditionally async). The
+  divergence note is right about that.
+- **But the divergence does not explain the remaining rows either, and the split says where to look:**
+  the **Timer** half fails only in mode 0 — exactly the documented sync-mode divergence, accepted — while
+  the **Ticker** half fails in *all three* modes (`0`, `1`, `2`) with `extra tick` / `early done`. An
+  async-mode ticker failure is outside the documented divergence. **Rooted:** `serviceTimers` re-peeks
+  a periodic timer against a freshly-read `now` immediately after re-arming it, so when the period is
+  shorter than the loop's own iteration time — `testTimerChan` Resets to **1ns** — the advanced `when`
+  is already in the past and the same timer fires again, and again, for the length of the pass. The
+  burst is invisible while nobody receives (the cap-1 channel drops all but one), but `drainAsync` *is*
+  receiving: each `drain1` frees the slot and the still-draining burst refills it, so the two stale
+  values an async ticker is allowed become three. Go bounds this by returning to the scheduler rather
+  than re-firing one timer within a pass; the faithful fix is **fire each timer at most once per pass**
+  (which is also what "drop ticks to make up for slow receivers" means). Not taken in r36's tail — it
+  changes the heart of the timer model and wants its own re-gate. Recorded in `time_impl.cs`. That is
+  the live `time` row now: a ticker-model bug, not a channel-rendezvous or GODEBUG one.
+
+**`TestUnmarshalTextAllocations` — characterized, and it is NOT the disclosure class the table below
+assumed.** `AllocsPerRun`'s bytes-for-mallocs mapping is exact at zero, so a *want-zero* assert is
+faithfully representable and no unit mismatch is in play; the C# path genuinely allocates. Measured:
+`Time.UnmarshalText` = **3664 bytes/run**, essentially all of it in `parseRFC3339`, and all of it in
+shared machinery that could stop allocating — `IByteSeq<T>`'s range indexer returns the *interface*, so
+each `s[a:b]` on a `string | []byte`-constrained value boxes (48 B), `[]byte(s)` boxes again (48 B), and
+`for i, c := range s` over a `slice<T>` allocates a **fixed 136 B** enumerator per loop where the indexed
+form allocates zero. Full breakdown in the strategies reference (*a third class … ELIMINABLE
+inefficiency*). **Performance work, not a disclosure** — and the 136-byte range enumerator is a
+corpus-wide finding worth its own item.
+
+**Still open (11 fail + 1 infra):**
+
+| Count | Tests | Root | Owner |
+|--:|:--|:--|:--|
+| 8 | `TestChan` and its seven subtests | Timer half = the documented sync-mode divergence (accepted). Ticker half fails in **async** modes too → a real `time_impl.cs` ticker-model bug, per the probe above. | time |
+| 2 | `TestTimeJSON`, `TestUnmarshalInvalidTimes` | Now that the traceback is honest these read plainly, and every remaining line is the same one: `json: cannot unmarshal string into Go value of type time.Time`. `encoding/json` is not dispatching to `Time`'s `UnmarshalJSON` — the reflection bridge's method-invocation half (Tier-0 #2, Phase 3), not `time`. | reflect bridge chip |
+| 1 | `TestTruncateRound` | `math/big.mulAddVWW` is an unimplemented asm stub (`NotImplementedException`), reached through `big.Int.Mul`. | math/big arc |
+| 1 | `TestUnmarshalTextAllocations` | Eliminable allocation in the union-constraint emission + range enumerator, characterized above. | performance |
+
+So `time`'s distance is now: **one `time`-local ticker-model bug**, two verdicts waiting on the
+reflection bridge, and two rows owned elsewhere.
+
+---
+
+<details>
+<summary>The r35 table this supersedes (kept for the diagnoses, both of which were wrong)</summary>
+
 **The 17 remaining failures, rooted, none of them `time`-local machinery:**
 
 | Count | Tests | Root | Owner |
@@ -475,6 +555,8 @@ output-compared vs `go run`) plus `FuncLitArgCapture` case 15 for the hoist.
 So `time`'s distance is: one `time`-local parse bug, one probe (`asynctimerchan=1`), one shared
 reflect/fmt-bridge NRE family worth 9 verdicts, and two rows owned elsewhere. Nothing about timers,
 sleeps, tickers or channel rendezvous is in the way.
+
+</details>
 
 ## Runtime failures
 
