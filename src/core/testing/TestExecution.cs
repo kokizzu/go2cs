@@ -244,8 +244,54 @@ public sealed class TestExecution
     {
         string path = Path.Combine(m_runner.WorkingDirectory, ".tmp", SanitizeName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(path);
-        Cleanup(() => Directory.Delete(path, true));
+        Cleanup(() => RemoveAll(path));
         return path;
+    }
+
+    // Go's os.RemoveAll semantics for the TempDir cleanup: a reparse point (junction or symlink)
+    // is removed as the link itself and never traversed, and a read-only attribute is cleared
+    // before a retry the way os.Remove does on Windows. .NET's Directory.Delete(path, true)
+    // instead opens some junction targets during its recursive walk -- a junction to an
+    // NT-namespace volume root (filepath's TestNTNamespaceSymlink) fails it with
+    // UnauthorizedAccessException where Go's cleanup succeeds.
+    private static void RemoveAll(string path)
+    {
+        if (File.Exists(path))
+        {
+            DeleteEntry(new FileInfo(path));
+            return;
+        }
+
+        DirectoryInfo directory = new(path);
+
+        if (!directory.Exists)
+            return;
+
+        if ((directory.Attributes & FileAttributes.ReparsePoint) == 0)
+        {
+            foreach (FileSystemInfo entry in directory.GetFileSystemInfos())
+            {
+                if (entry is DirectoryInfo)
+                    RemoveAll(entry.FullName);
+                else
+                    DeleteEntry(entry);
+            }
+        }
+
+        DeleteEntry(directory);
+    }
+
+    private static void DeleteEntry(FileSystemInfo entry)
+    {
+        try
+        {
+            entry.Delete();
+        }
+        catch (UnauthorizedAccessException) when ((entry.Attributes & FileAttributes.ReadOnly) != 0)
+        {
+            entry.Attributes &= ~FileAttributes.ReadOnly;
+            entry.Delete();
+        }
     }
 
     public void Setenv(string key, string value)
