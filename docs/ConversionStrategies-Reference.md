@@ -5891,6 +5891,51 @@ byte-identical. (Guarded by `ReturnTupleFuncLitArg` — a slice-capturing litera
 a three-result return tuple, and a map-capturing one inside a single-result return, output-compared vs
 Go.)
 
+### A func literal inside a RANGE expression hoists its captures before the loop
+
+The fourth statement position, and the one the table-driven test idiom lands on constantly:
+
+```go
+for _, test := range []struct {
+    desc string
+    f    func()
+}{
+    {desc: "WithCancel(bg)", f: func() { c, cancel := WithCancel(bg); cancel(); <-c.Done() }},
+    …
+} {
+```
+
+The literal's snapshot declaration (`var bgʗ1 = bg;`) is a **statement**, and the composite-literal
+element position it would be written into is pure expression context. `visitRangeStmt` converted the
+range expression with `convExpr(rangeStmt.X, nil)` — no hoist target — so the decl was dumped inline
+after the `f:` argument name, and the whole file died in a syntax cascade (`context`'s `x_test.cs`:
+CS1003/CS1026/CS1002/CS1513/CS0106 ×195, from `TestAllocs` and `TestCause` alone).
+
+`visitRangeStmt` now converts the range expression into a hoist buffer and **splices** the collected
+decls in at the statement's own start — it records that offset before conversion and inserts there
+afterwards (`spliceOutput`, the positional twin of `replaceMarker`), because the `foreach` header is
+emitted much further down through a dozen different arms:
+
+```csharp
+    var bgʗ1 = bg;
+foreach (var (_, test) in new TestAllocs_type[]{
+    new(desc: "WithCancel(bg)"u8, f: () => { var (c, cancel) = WithCancel(bgʗ1); … }),
+    …
+}.slice()) {
+```
+
+The buffer is empty for a range expression with no capturing func literal, so the behavioral corpus is
+byte-identical. (Guarded by `RangeExprFuncLitCapture` — slice- and map-capturing literals as struct
+fields of a ranged composite literal, plus a bare `[]func(string)` element list, output-compared vs Go;
+its A/B reproduces the cascade exactly.)
+
+**The class, stated once:** `visitExprStmt`, `visitAssignStmt`, `visitIfStmt`, `visitForStmt`,
+`visitReturnStmt`, `visitValueSpec` and now `visitRangeStmt` each provide the pre-statement sink. The
+statement kinds that still do not — a `switch` tag, a `select` comm-clause, a bare send — have no
+demonstrated corpus site, and each would repeat this failure exactly. They are deliberately not widened
+speculatively: the tell that one has been reached is a syntax cascade whose first error sits on the line
+after a `<name>:` argument label.
+
 Handling Go `defer` / `panic` / `recover` requires that the converted function run inside a [Go function execution context](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFunc.cs). The context provides the [`defer`](https://golang.org/ref/spec#Defer_statements) call stack and the [`recover`](https://golang.org/pkg/builtin/#recover) handling; `panic` is the global [`panic`](https://golang.org/pkg/builtin/#panic) built-in (a `using static go.builtin`). The body is emitted as a lambda taking two parameters, `defer` and `recover`:
 
 ```go
@@ -9392,6 +9437,104 @@ site in the corpus for no defect. Full-stdlib footprint: two files, both package
 `SupportUnixSocket`/`SupportTCPInitialRTONoSYNRetransmissions`). (Guarded by
 `GenericResultLambdaInfer` — the `nint`/`any`/panic-terminated/two-result shapes, a concrete
 multi-result instantiation, and the parameter-position negative control, output-compared vs Go.)
+
+### A returned FUNC LITERAL is typeless in C# — both inference sites must say so
+
+Every arm above asks the same question — *does this return expression carry a natural C# type?* — and
+each was written against the Go-side shapes seen so far: an untyped `nil`, a bare constant, an untyped
+const wrapper. A Go **function literal** is a fourth shape, and it is typeless for a reason none of
+those tests notice: it is fully typed in Go, and it renders as a bare C# lambda, which has no natural
+type at all. Two independent inference sites read that answer, and `context` reached both:
+
+**The defer/recover exec wrapper.** A function whose body needs `func((defer, recover) => …)` infers
+the wrapper's `T` from the lambda's returns; `allExecWrapperReturnsAreTypeless` forces the explicit
+`func<T>` form when none contributes a type. `func (c *afterFuncContext) AfterFunc(f func()) func() bool`
+returns a literal from a defer-wrapped body, so every arm was "typed" by the old test, inference failed,
+overload resolution bound the void `GoAction` overload, and the `return` inside it was CS8030. A
+func-literal result (through parentheses) now counts as typeless like `default!` does:
+
+```csharp
+internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f) => func<Func<bool>>((defer, recover) => {
+```
+
+**A literal returned from inside another literal.** `lambdaConstReturnCastType` already casts a bare
+integer literal returned inside a lambda for exactly this reason (CS8917). Its sibling
+`lambdaFuncLitReturnCastType` names the declared result type of a returned func literal, under the same
+gates — inside a lambda only (a named function's returned literal is target-typed by its declared C#
+return type), and only when the declared result is a NAMED func type, whose emitted delegate name is
+what a cast needs:
+
+```go
+mergeCancel := func(ctx, cancelCtx Context) (Context, CancelFunc) {
+    …
+    return ctx, func() { stop(); cancel(Canceled) }
+}
+```
+```csharp
+var mergeCancel = (context.Context ctx, context.Context cancelCtx) => {
+    …
+    return (ctx, (context.CancelFunc)(() => { stopʗ1(); cancelʗ3(context.Canceled); }));
+};
+```
+
+Without the cast the tuple had no natural type, so neither did the enclosing lambda — CS8917 on the
+declaration and CS8130 at every deconstruction of its result. Naming the type is also the more faithful
+rendering: Go's declared result there *is* `CancelFunc`. An UNNAMED `func() bool` result would need the
+synthesized `Func<…>`/`Action` spelling and has no corpus site today, so it is deliberately left.
+
+### Publicization decides WHAT a type's modifier is; the test-bridge arm only decides WHERE
+
+`visitTypeSpec` writes a `[GoType]` declaration's access modifier from one of two sources, and they
+answer different questions. `packagePublicizedTypes` answers *what* the modifier must be — an
+unexported type reached by an exported field, var, or callable signature has to be `public` or C#
+rejects the referrer (CS0050/CS0051/CS0052). `testInlineTypeAccess` answers *where* it is written: a
+white-box bridge type carries its modifier inline rather than through `package_info.cs`'s
+`<TypeAccessibility>` section, because its metadata anchor can be a different test class.
+
+Asking the inline arm FIRST made it answer both — from the name alone — so a publicized bridge type
+stayed `internal`. `context`'s internal test file declares `type testingT interface{…}` and the
+exported `func XTestParentFinishesChild(t testingT)` that `x_test.go` calls; the publicization pre-pass
+records `testingT` (it runs over the test-augmented package, so the exported `*types.Func` arm fires),
+but the emission ignored it: `internal partial interface testingT` under a `public` method, CS0051 ×4.
+Publicization now outranks, and the inline arm supplies the DEFAULT:
+
+```csharp
+[GoType] public partial interface testingT {   // was: internal
+```
+
+This is why `signatureReferencesUnexportedProductionType` (which downgrades an exported *test-file*
+function whose signature names an unexported PRODUCTION type) is correctly restricted to production
+types: a test-declared type is meant to be handled by publicization, and now is.
+
+### A white-box PRODUCTION↔PRODUCTION pointer pair is already implemented — do not record it again
+
+Under the `whitebox-reference` test model the internal bridge is the SAME Go package as production, so
+a `*prodT → prodIface` cast inside an internal `_test.go` reads as local and records its own
+`[assembly: GoImplement<T, Iface>(Pointer = true)]`. Production, though, is a **referenced assembly**
+that already generated that adapter from its own record — and `InternalsVisibleTo <assembly>.tests`
+makes even an unexported adapter class reachable. The duplicate record makes go2cs-gen emit a SECOND
+adapter under a test anchor, and that copy resolves its forwarding members in the TEST class's scope:
+`context`'s `contains(pc.children, cc)` converts `*cancelCtx`/`*timerCtx` to `canceler` for a map key,
+and the duplicate bound `Done` to the unrelated `afterFuncContext.Done` extension (CS1929) while
+emitting `cancel` with an **empty body** — a silently degraded override, not merely a build error.
+
+The fix suppresses only the RECORD, which is what makes it small: `resolveAdapterNameMarkers` resolves
+a pair that reached no record to the unqualified name it would have had, and that name is production's
+own adapter, so the cast site repoints with no other change.
+
+```csharp
+!contains((~pc).children, new global::go.context_package.cancelCtxжcanceler(cc))   // production's, not a copy
+```
+
+It is gated on production ACTUALLY carrying the pair — its `package_info.cs` is loaded by
+`convertTestVariant` into `importedPointerImplements` — never assumed: a pair only the test converts
+still needs its local record. Reaching that set also required `canonicalRecordIfaceName` to strip a
+leading `global::`, which names no package and never appears in a parsed record; the deliberate
+non-collapse it documents is untouched, since a genuinely foreign pair still keys as
+`net.http_package.ΔHandler` against the record's `http_package.ΔHandler`. This is the POINTER twin of
+the value arm's `whiteboxProductionTarget` carve-out — note the pointer target arrives as a
+`*types.Pointer`, so the shared `whiteboxProductionTarget` flag (computed from the unwrapped VALUE
+form) is structurally false there and the check must unwrap and ask directly.
 
 ### A GoImplement record is gated on the method set actually satisfying the interface
 Every `[assembly: GoImplement<T, Iface>]` record makes the `ImplementGenerator` emit implementation glue whose members forward to T's like-named methods — so a record whose Go method set does NOT satisfy the interface generates a forwarder to a method that does not exist. The corpus case: net/http's `err = http2GoAwayError{LastStreamID: …, ErrCode: cc.goAway.ErrCode, …}` — the keyed composite's sparse-array `ident` context leaks the `error`-typed LHS onto each FIELD value, and the `ErrCode` field's value recorded `GoImplement<http2ErrCode, error>` even though `http2ErrCode` has only `String()`/`stringToken()` (its generated `Error() => this.Error()` was CS1929). `convertToInterfaceType` now folds a `types.Implements` check over the recorded form's method set (T for a value record, `*T` for a `ж<T>` record) into `recordableBase`, which gates both the record and the matching adapter-wrapping emissions. A conversion the Go checker admitted always passes the check, so the gate can only drop pairs a caller composed from mismatched types; a type-param-carrying target skips the check (`types.Implements` is undefined for uninstantiated generics, and the open-generic conversion emission must stay). The full-stdlib A/B for this change is exactly one removed line — the false `http2ErrCode` record. (Guarded by the NEGATIVE `KeyedLiteralIfaceAssign` behavioral test: a keyed literal assigned to an `error` variable whose field-value type has `String()` but no `Error()` — a reintroduced record fails the compile phase.)

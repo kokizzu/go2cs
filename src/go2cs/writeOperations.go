@@ -210,3 +210,25 @@ func (v *Visitor) writeComment(comment *ast.CommentGroup, targetPos token.Pos) {
 func (v *Visitor) replaceMarker(marker string, replacement string) {
 	v.replaceMarkerString(v.outputBuilder, marker, replacement)
 }
+
+// spliceOutput inserts text at an earlier byte offset of the current output builder — the
+// positional twin of replaceMarker, for a caller that recorded where its statement's own output
+// begins and only afterwards learns it must emit something ahead of it (visitRangeStmt's
+// func-literal capture snapshots). The offset must have been taken on THIS builder; a nested block
+// swaps the builder and restores it, so an offset recorded before such a call is still valid.
+func (v *Visitor) spliceOutput(offset int, text string) {
+	if text == "" {
+		return
+	}
+
+	current := v.outputBuilder.String()
+
+	if offset < 0 || offset > len(current) {
+		return
+	}
+
+	v.outputBuilder.Reset()
+	v.outputBuilder.WriteString(current[:offset])
+	v.outputBuilder.WriteString(text)
+	v.outputBuilder.WriteString(current[offset:])
+}

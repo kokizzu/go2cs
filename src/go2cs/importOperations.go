@@ -828,6 +828,20 @@ func parseExportedTypeAliasLines(lines []string) ([][2]string, error) {
 // stripLocalTypeQualifier over testLocalTypePrefixes, which is scoped to exactly the classes that
 // really do compile into the current assembly.
 func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
+	// A `global::` qualifier names no package — it is C#'s escape hatch for a shadowed root
+	// namespace, which a `-tests` closure reaches whenever an import shadows `go` (globalQualifyRooted).
+	// A package_info record never carries it, so leaving it on the USE side made the two spellings of
+	// one pair disagree for every globally-qualified cast: `global::go.context_package.canceler`
+	// against the record's `context_package.canceler`. context's internal test converts
+	// `*timerCtx`/`*cancelCtx` to `canceler` (the `contains(pc.children, …)` map key); the miss minted
+	// a DUPLICATE adapter class in the TEST class beside production's, and that duplicate bound `Done`
+	// to a same-named sibling extension (CS1929) and emitted `cancel` with an EMPTY body — a silently
+	// degraded override, not merely a build error.
+	//
+	// Stripping the qualifier does NOT collapse anything: a genuinely foreign multi-segment pair still
+	// keys as `net.http_package.ΔHandler` against the record's `http_package.ΔHandler`, so the
+	// deliberate non-collapse documented above is untouched — only the accidental prefix goes.
+	ifaceName = strings.TrimPrefix(ifaceName, "global::")
 	ifaceName = strings.TrimPrefix(ifaceName, RootNamespace+".")
 
 	if !strings.Contains(ifaceName, ".") && ifaceName != "error" {

@@ -188,14 +188,22 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 		return
 	}
 
-	// An unexported type used as an exported struct field must be emitted as public (CS0051/
-	// CS0052). Set the access modifier for the type-kind emitter below to consume.
-	if v.options.testInlineTypeAccess {
+	// An unexported type used as an exported struct field, or in an exported callable's signature,
+	// must be emitted as public (CS0050/CS0051/CS0052). Set the access modifier for the type-kind
+	// emitter below to consume.
+	//
+	// The two arms answer DIFFERENT questions and must not be exclusive: publicization decides WHAT
+	// the modifier is, testInlineTypeAccess only decides WHERE it is written. Asking the inline arm
+	// first made it also decide the value — from the name alone — so a publicized BRIDGE type stayed
+	// `internal` and its exported referrer was CS0051 (context's `testingT`, declared in the internal
+	// `context_test.go` and taken by the exported `XTestParentFinishesChild` that `x_test.go` calls).
+	// Publicization therefore outranks the default, and the inline arm supplies that default.
+	if v.isPublicizedType(typeSpec.Name) {
+		v.pendingTypeAccess = "public "
+	} else if v.options.testInlineTypeAccess {
 		// Bridge-owned named types carry accessibility inline. Their metadata anchor can be a
 		// different test class, where an accessibility-only partial would declare a second type.
 		v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
-	} else if v.isPublicizedType(typeSpec.Name) {
-		v.pendingTypeAccess = "public "
 	}
 
 	defer func() { v.pendingTypeAccess = "" }()

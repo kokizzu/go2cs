@@ -1153,6 +1153,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPublicizedInterfaceParam() => CheckTarget("PublicizedInterfaceParam");
 
     [TestMethod]
+    public void CheckRangeExprFuncLitCapture() => CheckTarget("RangeExprFuncLitCapture");
+
+    [TestMethod]
     public void CheckRangeIntIndexAppend() => CheckTarget("RangeIntIndexAppend");
 
     [TestMethod]

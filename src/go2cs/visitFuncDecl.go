@@ -1162,12 +1162,40 @@ func (v *Visitor) allExecWrapperReturnsAreTypeless(funcDecl *ast.FuncDecl) bool 
 				unreliableReturnFound = true
 				return false
 			}
+
+			// A FUNC LITERAL result is typed in Go and TYPELESS in C#: it renders as a bare
+			// lambda, which has no natural type, so it contributes nothing to the wrapper's T
+			// exactly as `default!` does. The Go-side shapes above (nil, constant) missed it —
+			// context's `func (c *afterFuncContext) AfterFunc(f func()) func() bool` returns
+			// `func() bool { … }` from a defer-wrapped body and bound the void GoAction overload
+			// (CS8030). Parens are peeled: `return (func(){…})` is the same expression.
+			if resultRendersAsBareLambda(result) {
+				unreliableReturnFound = true
+				return false
+			}
 		}
 
 		return true
 	})
 
 	return unreliableReturnFound
+}
+
+// resultRendersAsBareLambda reports whether a return result renders as a C# lambda with no natural
+// type — a Go function literal, through any number of parentheses. C# infers a value-returning exec
+// wrapper's T from its return expressions, and a lambda contributes nothing to that inference, so
+// such a result forces the explicit `func<T>` form just as an untyped `default!` does.
+func resultRendersAsBareLambda(expr ast.Expr) bool {
+	for {
+		switch e := expr.(type) {
+		case *ast.ParenExpr:
+			expr = e.X
+		case *ast.FuncLit:
+			return true
+		default:
+			return false
+		}
+	}
 }
 
 // execWrapperReturnsLackCommonType reports whether the function's top-level return statements yield,

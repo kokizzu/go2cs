@@ -21,6 +21,13 @@
 > the `net` section. The roster is **unchanged at 69** — the "66" in the paragraph above was already
 > stale when it was written, and no package banks from this arc.
 >
+> **Revised again 2026-08-02 (r35-context)**: `context` gets its own section below — five converter
+> roots closed, `T.Deadline` un-blocked, **36 of 38 verdicts match**, and two rooted failures left, one
+> owned by the reflection-bridge arc and one a measured disclosure. The roster is **unchanged at 71**:
+> nothing banks from that arc. Its most valuable measurement is a negative — the sharpest
+> select/cancellation suite in the standard library finds **no channel defect at all**, which is
+> independent confirmation of the wave3 landing.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -134,6 +141,50 @@ witnessed recorder (r32's converter increment) adds 2 `GoImplement` records to `
 deliberately NOT rebanked (charter: no partial rebanks), so sweeps show that +2 as expected drift —
 restore, don't chase — until the whole-corpus regen levels it, along with the rest of the increment's
 measured 34-file footprint.
+
+## `context` — five converter roots closed; 36 of 38 match; two rooted failures remain (2026-08-02)
+
+Attempted after the wave3 channel semantics were ground-truthed. **The channels are not the problem
+and never appear in this census** — `context`'s suite is the stdlib's sharpest select/cancellation
+exerciser (100-node cancellation trees, interlocked cancels, closed-channel `Done()` broadcast,
+`AfterFunc` registration races) and every one of those tests **passes**. That is a strong independent
+confirmation of the wave3 landing, and the single most useful thing this arc measured.
+
+Five converter roots stood between the package and a run; all five are fixed and documented in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md):
+
+| # | First diagnostic | Root | Layer |
+|--:|:--|:--|:--|
+| 1 | `CS1003`/`CS1026`/`CS1513` ×195 in `x_test.cs` | a func literal inside a `for … range` composite literal emits its capture snapshot — a STATEMENT — into the element position; `visitRangeStmt` provided no pre-statement hoist sink (the fourth statement kind to need one) | converter |
+| 2 | `CS0051` ×4 — `testingT` less accessible than `XTestParentFinishesChild` | `visitTypeSpec` asked the `testInlineTypeAccess` arm FIRST, so it decided the modifier's VALUE from the name and discarded the publicization signal | converter |
+| 3 | `CS8030` — anonymous function converted to a void-returning delegate | a returned FUNC LITERAL is typeless in C#, which `allExecWrapperReturnsAreTypeless` (written for `nil`/constants) did not count | converter |
+| 4 | `CS1929` — `timerCtx` has no `Done`, best overload wants `ж<afterFuncContext>` | the internal bridge re-recorded a production↔production pointer pair production already implements, minting a DUPLICATE adapter whose members resolved in the test class's scope (and whose `cancel` was an EMPTY body) | converter |
+| 5 | `CS8917` + `CS8130` in `example_test.cs` | a func literal returned inside another literal has no natural type, so the enclosing lambda has none either — the sibling of `lambdaConstReturnCastType` | converter |
+
+Root 1 is guarded by the `RangeExprFuncLitCapture` behavioral test (its A/B reproduces the cascade);
+roots 2–5 are `-tests`-only shapes with no behavioral-corpus expression, so `context`'s own banked
+suite is their guard when it banks.
+
+**`T.Deadline` was ALSO still capability-blocked, and that was pure staleness.** The member landed with
+the one-tree consolidation (`core/testing/testing.cs` `Deadline` + `TestHost.PackageDeadlineUtc`) but
+`supportedTestCapabilities()` was never widened, so six of context's tests — `TestDeadline`,
+`TestTimeout`, `TestSimultaneousCancels`, `TestInterlockedCancels`, `TestLayersCancel`,
+`TestLayersTimeout`, i.e. the whole tree-cancellation family — were excluded rather than run. Widened,
+with the charter §9 roster scan done first (positive control `context/x_test.go:50` + `net/net_test.go:78`
+both fire): the only validated package whose `_test.go` calls it is `os/signal`, and both of its call
+sites are in `//go:build unix` files this platform never builds. All six now run and **pass**.
+
+**Census after all six changes: 38 top-level verdicts, 36 pass, 2 fail.** The two failures are rooted
+and owned elsewhere:
+
+| Test | Root | Owner |
+|:--|:--|:--|
+| `TestValues` | `internal/reflectlite`'s `rtype.String()` is the literal Go conversion — `t.nameOff(t.Str).Name()` over a type-descriptor name offset the managed bridge never populates — so it returns `""`. `reflect`'s equivalent is hand-owned over `GoReflect.GoTypeName` (`type.cs:517` placeholder); reflectlite's mini-bridge only ever landed `Len`/`Swapper`. Symptom: `context.Background.WithValue(, c1k1)` where Go prints `WithValue(context_test.key1, c1k1)` — the `stringify` fallback arm for a key with no `String()` method. | reflection-bridge arc |
+| `TestAllocs` | `testing.AllocsPerRun` unit mismatch, the established `alloc-count-semantics` class (io, strings, bytes). MEASURED before ruling: `Background() allocs = 128.000000 want 0`, `WithValue = 754 want 3`, `WithTimeout(1ns) = 3744 want 12`, `WithCancel = 2104 want 5`, `WithTimeout(5ms) = 4876 want 8` — bytes in every case, so no allocation behavior can satisfy a count assert. A signature-pinned disclosure is warranted; it is deliberately NOT written here, since a disclosure manifest belongs with the banking commit that verifies it end to end. | context's banking arc |
+
+So `context` is **one reflectlite member plus one disclosure away from banking**, with nothing
+context-local left. Note the reflectlite gap is not context-specific: any package whose code path
+reaches `reflectlite.TypeOf(x).String()` gets an empty string today, silently.
 
 ## Build-blocked, each its own root
 

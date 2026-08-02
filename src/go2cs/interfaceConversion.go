@@ -292,6 +292,53 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 		}
 	}
 
+	// The POINTER twin of the arm above. The white-box bridge is the SAME Go package as production,
+	// so a `*prodT → prodIface` cast inside an internal `_test.go` reads as local and records the pair
+	// again — but production is a REFERENCED assembly that already generated the ж adapter from its
+	// OWN record, and `InternalsVisibleTo <assembly>.tests` makes even an unexported one reachable. The
+	// duplicate record mints a SECOND adapter class under a test anchor, and that copy resolves its
+	// forwarding members in the TEST class's scope: context's internal test converts
+	// `*cancelCtx`/`*timerCtx` to `canceler` for the `contains(pc.children, …)` map key, and the
+	// duplicate bound `Done` to the unrelated `afterFuncContext.Done` extension (CS1929) while emitting
+	// `cancel` with an EMPTY body — a silently degraded override, not merely a build error.
+	//
+	// Suppressing only the RECORD is what fixes it: resolveAdapterNameMarkers resolves a pair that
+	// reached no record to the unqualified name it would have had, which is production's own
+	// `<prodClass>.<T>ж<Iface>` — so the cast site references the real adapter with no other change.
+	// Gated on production actually carrying the pair (its package_info.cs is loaded by
+	// convertTestVariant), never assumed: a pair only the test converts still needs its local record.
+	productionPointerImplemented := false
+
+	if recordable && pointerTarget {
+		// The pointer target arrives as the *types.Pointer, so whiteboxProductionTarget (computed
+		// from the unwrapped VALUE form above) is structurally false here — unwrap and ask directly.
+		namedTarget := targetType
+
+		if ptr, ok := namedTarget.(*types.Pointer); ok {
+			namedTarget = ptr.Elem()
+		}
+
+		if named, ok := types.Unalias(namedTarget).(*types.Named); ok && v.whiteboxProductionObject(named.Obj()) {
+			if pkg := named.Obj().Pkg(); pkg != nil {
+				ifacePkgName := pkg.Name()
+
+				if ifaceNamed, ok := types.Unalias(interfaceType).(*types.Named); ok {
+					if ifacePkg := ifaceNamed.Obj().Pkg(); ifacePkg != nil {
+						ifacePkgName = ifacePkg.Name()
+					}
+				}
+
+				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
+					removeLeadingSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
+					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+
+				packageLock.Lock()
+				productionPointerImplemented = importedPointerImplements.Contains(key)
+				packageLock.Unlock()
+			}
+		}
+	}
+
 	// A LOCAL NAMED FUNC type's VALUE record also generates a per-interface adapter CLASS — a C#
 	// delegate cannot be a partial struct, so the generator takes the `<src>ᴠ<iface>` route (see the
 	// emission arm below, and flag's generated funcValue-...-Value-val.g.cs). It therefore needs the
@@ -394,7 +441,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 		packageLock.Unlock()
 	}
 
-	if (recordable || recordableValueForeign || recordableValueSameAssembly) && !targetIsOpenGeneric {
+	if ((recordable && !productionPointerImplemented) || recordableValueForeign || recordableValueSameAssembly) && !targetIsOpenGeneric {
 		// A POINTER-sourced cast records the ж<T>-wrapped name; the attribute emission unwraps
 		// it to `GoImplement<T, Iface>(Pointer = true)`, which generates the IжAdapter wrapper
 		// instead of the value-boxing partial struct (see convert-to-interface emission below).

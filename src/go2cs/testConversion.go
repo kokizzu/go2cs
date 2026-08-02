@@ -2225,6 +2225,16 @@ func supportedTestCapabilities() []string {
 		"T.Cleanup", "T.Error", "T.Errorf", "T.Fail", "T.FailNow", "T.Failed",
 		"T.Fatal", "T.Fatalf", "T.Helper", "T.Log", "T.Logf", "T.Name", "T.Parallel",
 		"T.Run", "T.Setenv", "T.Skip", "T.SkipNow", "T.Skipf", "T.Skipped", "T.TempDir", "M.Run",
+		// T.Deadline reports when the package deadline (-timeout) expires. It was the LAST
+		// unsupported member of Go 1.23's *testing.T surface, blocked only because a shim that
+		// could not name a converted `time.Time` had nothing to return; the one-tree consolidation
+		// (2026-08-01) gave core/testing a real `time` reference and the member landed with it
+		// (core/testing/testing.cs Deadline + TestHost.PackageDeadlineUtc) — the capability list
+		// simply was not widened to match. Six of context's cancellation tests were excluded for
+		// want of it, including the whole tree-cancellation family. Roster impact measured before
+		// widening (charter §9): the only validated package whose _test.go calls it is os/signal,
+		// and both call sites are in `//go:build unix` files this platform never builds.
+		"T.Deadline",
 		"testing.AllocsPerRun", "testing.CoverMode", "testing.Short", "testing.Verbose",
 		// In-process benchmarking driven from a Test function: testing.Benchmark runs a
 		// func(*B) closure and returns a BenchmarkResult, setting B.N and exposing NsPerOp

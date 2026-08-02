@@ -69,6 +69,45 @@ func (v *Visitor) lambdaConstReturnCastType(targetType types.Type, expr ast.Expr
 	return convertToCSTypeName(v.getAliasQualifiedTypeName(targetType, false))
 }
 
+// lambdaFuncLitReturnCastType is lambdaConstReturnCastType's sibling for the OTHER expression shape
+// that renders without a natural C# type: a Go FUNCTION LITERAL, which becomes a bare lambda. C#
+// infers an enclosing lambda's delegate type from its return expressions, and a bare lambda
+// contributes nothing — so `mergeCancel := func(ctx, cancelCtx Context) (Context, CancelFunc) { …
+// return ctx, func(){…} }` (context's ExampleAfterFunc_merge) left `var mergeCancel = (…) => {…}`
+// with no inferable type: CS8917, and CS8130 at every deconstruction of its result. Naming the
+// declared result type turns the returned literal into a typed value, which types the tuple, which
+// types the enclosing lambda — and it is the more faithful rendering besides, since Go's declared
+// result here IS the named `CancelFunc` delegate.
+//
+// Gated exactly like its sibling, to avoid golden churn where C# already succeeds:
+//   - only inside a lambda body (conversionInLambda) — a NAMED func's returned literal is
+//     target-typed by the method's declared return type and needs no cast;
+//   - only for a func literal (through parentheses), the shape that carries no natural type;
+//   - only when the declared result is a NAMED func type, whose emitted C# delegate name is exactly
+//     what a cast needs. An UNNAMED `func() bool` result has no corpus site today; it would need the
+//     synthesized `Func<…>`/`Action` spelling and is deliberately left until one appears.
+func (v *Visitor) lambdaFuncLitReturnCastType(targetType types.Type, expr ast.Expr) string {
+	if v.lambdaCapture == nil || !v.lambdaCapture.conversionInLambda || targetType == nil {
+		return ""
+	}
+
+	if !resultRendersAsBareLambda(expr) {
+		return ""
+	}
+
+	named, ok := types.Unalias(targetType).(*types.Named)
+
+	if !ok {
+		return ""
+	}
+
+	if _, isSig := named.Underlying().(*types.Signature); !isSig {
+		return ""
+	}
+
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(targetType, false))
+}
+
 func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 	recvIndex := -1
 	var capturedRecvName string
@@ -436,6 +475,11 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 
 						if len(narrowCast) == 0 {
 							lambdaConstCast = v.lambdaConstReturnCastType(resultParams.At(i).Type(), expr)
+						}
+
+						// Same slot, same reason (CS8917), other typeless shape — a returned func literal.
+						if len(narrowCast) == 0 && len(lambdaConstCast) == 0 {
+							lambdaConstCast = v.lambdaFuncLitReturnCastType(resultParams.At(i).Type(), expr)
 						}
 
 						if len(narrowCast) == 0 && len(lambdaConstCast) == 0 {

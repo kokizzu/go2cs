@@ -1298,7 +1298,7 @@ func TestUnsupportedTestingCapabilityIsDiscovered(t *testing.T) {
 	files := map[string]string{
 		"go.mod":        "module example/capability\n\ngo 1.23\n",
 		"value.go":      "package capability\n",
-		"value_test.go": "package capability\nimport \"testing\"\nfunc TestDeadline(t *testing.T) { _, _ = t.Deadline() }\n",
+		"value_test.go": "package capability\nimport \"testing\"\nfunc TestBlocked(t *testing.T) { testing.Benchmark(func(b *testing.B) { b.ReportAllocs() }) }\n",
 	}
 	for name, contents := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
@@ -1310,18 +1310,25 @@ func TestUnsupportedTestingCapabilityIsDiscovered(t *testing.T) {
 	analysis := analyzeTestingCapabilities(internal)
 	declarations, _ := discoverTestDeclarations(internal, testFileEntries(internal), dir, analysis, NewHashSet(supportedTestCapabilities()))
 
-	if len(declarations) != 1 || declarations[0].Name != "TestDeadline" {
-		t.Fatalf("declarations = %#v, want just TestDeadline", declarations)
+	if len(declarations) != 1 || declarations[0].Name != "TestBlocked" {
+		t.Fatalf("declarations = %#v, want just TestBlocked", declarations)
 	}
 	declaration := declarations[0]
-	if declaration.Status != "unsupported" || !strings.Contains(declaration.Reason, "T.Deadline") {
-		t.Fatalf("TestDeadline should be capability-blocked naming T.Deadline, got status %q reason %q", declaration.Status, declaration.Reason)
+	if declaration.Status != "unsupported" || !strings.Contains(declaration.Reason, "B.ReportAllocs") {
+		t.Fatalf("TestBlocked should be capability-blocked naming B.ReportAllocs, got status %q reason %q", declaration.Status, declaration.Reason)
 	}
-	if !NewHashSet(declaration.RequiredCapabilities).Contains("T.Deadline") {
-		t.Fatalf("required capabilities %v do not contain T.Deadline", declaration.RequiredCapabilities)
+	if !NewHashSet(declaration.RequiredCapabilities).Contains("B.ReportAllocs") {
+		t.Fatalf("required capabilities %v do not contain B.ReportAllocs", declaration.RequiredCapabilities)
 	}
-	if NewHashSet(supportedTestCapabilities()).Contains("T.Deadline") {
-		t.Fatal("T.Deadline unexpectedly appears in the runtime capability list")
+	if NewHashSet(supportedTestCapabilities()).Contains("B.ReportAllocs") {
+		t.Fatal("B.ReportAllocs unexpectedly appears in the runtime capability list")
+	}
+
+	// The exemplar moved (this test used to use T.Deadline, which is now supported), so pin the
+	// direction of that change too: T.Deadline must BE supported, or context's six cancellation
+	// tests silently drop out of the run set again.
+	if !NewHashSet(supportedTestCapabilities()).Contains("T.Deadline") {
+		t.Fatal("T.Deadline must be a supported capability — core/testing implements it")
 	}
 }
 

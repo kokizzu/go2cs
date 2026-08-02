@@ -170,9 +170,32 @@ func (v *Visitor) rangeVarNeedsMutableCopy(expr ast.Expr, body *ast.BlockStmt) b
 
 func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtContext) {
 	v.outputBuilder.WriteString(v.newline)
+
+	// Everything the range EXPRESSION emits must land after this newline and before the `foreach`
+	// header, which is written further below — record the splice point now.
+	hoistPos := v.outputBuilder.Len()
 	var ptrDeref string
 
+	// A func literal inside the range expression — the table-driven test idiom
+	// `for _, test := range []struct{ f func() }{{f: func(){ … bg … }}}` — emits its
+	// captured-variable snapshot declarations (`var bgʗ1 = bg;`), which are STATEMENTS and cannot
+	// appear in the composite-literal element position they would otherwise be written into
+	// (context's TestAllocs/TestCause: CS1003/CS1026/CS1002 ×195, a whole-file syntax cascade).
+	// Convert the range expression into a hoist buffer so those decls are spliced onto their own
+	// lines before the loop, exactly as visitForStmt does for a for-condition. Save/restore guards
+	// nesting (a range inside an expression that already established a sink).
+	savedHoist := v.hoistedDecls
+	hoistBuf := &strings.Builder{}
+	v.hoistedDecls = hoistBuf
 	rangeExpr := v.convExpr(rangeStmt.X, nil)
+	v.hoistedDecls = savedHoist
+
+	if hoistBuf.Len() > 0 {
+		// The buffer carries a leading newline+indent per decl and a trailing newline (convFuncLit
+		// trims the trailing indent); the newline written above already opened the line, so drop the
+		// buffer's leading one and splice the rest in ahead of anything the expression emitted.
+		v.spliceOutput(hoistPos, strings.TrimPrefix(hoistBuf.String(), v.newline))
+	}
 
 	// Resolve a type ALIAS (*types.Alias, Go 1.22+ — fiat's `type p224UntypedFieldElement =
 	// [4]uint64`) to the type it aliases: the arm dispatch below type-switches on the concrete
