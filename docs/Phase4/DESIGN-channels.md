@@ -1,5 +1,17 @@
 # DESIGN — golib channels: real rendezvous, cap/len, single-fire select, uniform-random choice
 
+> **Status: LANDED ON MASTER (integrated ~2026-07-24/25 via cherry-pick; ground-truthed 2026-08-02).**
+> The branch's commits were integrated commit-for-commit — master's `channel.cs` history carries the
+> train (`76aefaead` Unit 1 real rendezvous/cap-len/single-fire-selectgo/uniform-random,
+> `74b1a347a` per-thread frame stack, `e63836204`, `2a35b9a44`, `ccd53d3ff`, `d56b1c93b` depth-cap
+> revert) and all the guards named below exist as green behavioral projects (`ChannelRendezvous`
+> output-matches `go run` on current master). The original branch ref was deleted post-integration,
+> leaving its commits dangling — which later made this header's "pending-integration" read as an
+> open item. ⚠ The charter's 2026-07-31 Tier-0 note "the gaps are still real" was written from that
+> stale reading and was WRONG — §9's don't-trust-stale-claims trap, inside the charter. Corrected
+> 2026-08-02; the Tier-0 channels frog is CLOSED.
+>
+> *Header as it stood before the correction:*
 > **Status: IMPLEMENTED-pending-integration (2026-07-24, branch `claude/wave3-channels`).** Design
 > blessed by the user; Units 1 and 2 are implemented as specified in §3: **Unit 1** =
 > `d637e9c31` (ChanCore/selectgo golib rewrite + SelectOp registration + hardened pending slot +

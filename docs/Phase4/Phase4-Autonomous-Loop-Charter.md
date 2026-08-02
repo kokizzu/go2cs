@@ -72,14 +72,16 @@ times in the slog. **Verify branch/blocker state fresh each session** — rememb
 
 ### Tier 0 — foundational capability frogs (hardest × highest-leverage; do these first)
 
-1. **Channels / goroutine rendezvous** *(golib, possibly runtime).* FOUR known gaps: no real
-   *unbuffered* rendezvous; `make(chan T)` is conflated with `make(chan T,1)` (wrong cap/len);
-   a blocking `select` fires *every* case rather than only a ready one; `select` first-match is not
-   randomized. *(2026-07-31: base32/base64/bufio/os/signal/sync have since validated AROUND these
-   gaps — their suites don't hit the unbuffered/select semantics hard enough. The gaps are still
-   real.)* **Blocks: net/\*, time, context, and every goroutine/select/timer test that exercises
-   real rendezvous** — still the highest-leverage frog. This is a delicate concurrency
-   redesign → **use adversarial review (§7) and design WITH the user (§10).**
+1. **Channels / goroutine rendezvous — CLOSED (landed ~2026-07-24/25; ground-truthed 2026-08-02).**
+   All four gaps are fixed on master: real unbuffered rendezvous, correct cap/len, single-fire
+   selectgo, uniform-random ready-case choice (`DESIGN-channels.md`; master commits `76aefaead` et
+   seq.; guards `ChannelRendezvous`/`ChannelCapLen`/`NestedSelectRecvTarget`/`SelectOperandOnceEval`/
+   `SelectOperandSourceOrder`/`DeepSelectRecursion`, all green). ⚠ The 2026-07-31 note that
+   previously stood here — "the gaps are still real" — was written from a stale memory AFTER the
+   landing and was wrong; base32/base64/bufio/os/signal/sync validated ON the real semantics, not
+   around gaps. §9's trap, caught by ground-truthing the code. **Consequence: `time` and `context`
+   are unblocked** (their other prerequisites landed with r32); `net`'s next wall is its init gap
+   (`sync.OnceFunc` nil panic), not channels.
 
 2. **Reflection completeness — Phase 3 of the bridge** *(golib `GoReflect` + the hand-owned
    `internal/abi`/`reflect`/`internal/reflectlite` `*_impl.cs` entry points).* **Read
