@@ -28,6 +28,13 @@
 > select/cancellation suite in the standard library finds **no channel defect at all**, which is
 > independent confirmation of the wave3 landing.
 >
+> **BANKED 2026-08-02 (later): `context` validates — 57 matching + 1 disclosed → roster 72/215 =
+> 33.5%.** The reflection chip's increment 5 (reflectlite `rtype.String` over `GoReflect.GoTypeName`)
+> closed TestValues, and the banking commit filed TestAllocs' signature-pinned
+> `alloc-count-semantics` disclosure (wants 3/12/5/8 mallocs; a byte-derived shim measured
+> 128–4,876 bytes). First bank since the proof-page renderer landed — `current/context.md`
+> generated itself on the validating run.
+>
 > **Revised again 2026-08-02 (r35-os)**: `os` gets its own section below — it builds with 0 errors and
 > reaches **158 of 178 top-level tests matching + 1 disclosed**, up from 48 at the start of the arc.
 > Two converter roots and one host-killer closed; the residual is rooted row by row, and the largest
