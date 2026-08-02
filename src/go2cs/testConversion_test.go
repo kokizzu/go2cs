@@ -1496,8 +1496,11 @@ func TestPerTestCapabilityAttributionBlocksOnlyOffendingTest(t *testing.T) {
 		"value.go": "package attribution\n",
 		"value_test.go": "package attribution\n" +
 			"import \"testing\"\n" +
-			"func helperDeadline(t *testing.T) { _, _ = t.Deadline() }\n" +
-			"func TestBlocked(t *testing.T) { helperDeadline(t) }\n" +
+			// T.Deadline landed with the one-tree consolidation, so the example unsupported
+			// capability is now a B member reached from a Test through testing.Benchmark —
+			// still attributed through a helper, which is what this test exists to prove.
+			"func helperBench(t *testing.T) { testing.Benchmark(func(b *testing.B) { b.ResetTimer() }) }\n" +
+			"func TestBlocked(t *testing.T) { helperBench(t) }\n" +
 			"func TestSupported(t *testing.T) { t.Log(\"fine\") }\n",
 	}
 	for name, contents := range files {
@@ -1516,7 +1519,7 @@ func TestPerTestCapabilityAttributionBlocksOnlyOffendingTest(t *testing.T) {
 	}
 
 	blocked, ok := byName["TestBlocked"]
-	if !ok || blocked.Status != "unsupported" || !strings.Contains(blocked.Reason, "T.Deadline") {
+	if !ok || blocked.Status != "unsupported" || !strings.Contains(blocked.Reason, "B.ResetTimer") {
 		t.Fatalf("TestBlocked should be capability-blocked through its helper, got %#v", blocked)
 	}
 

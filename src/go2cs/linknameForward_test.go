@@ -64,7 +64,10 @@ func TestRecurseLinknameForwarder(t *testing.T) {
 	mainCs := readGenerated(t, filepath.Join(options.go2csPath, "src", "example.com", "lnapp", "main.cs"))
 
 	// The forwarder BODY calls the WHITELISTED linkname target with the parameter passed through.
-	if !strings.Contains(mainCs, "syscall.loadlibrary(filename)") {
+	// Fully qualified: a linkname forwarder's file need not IMPORT the target's package (that is
+	// the whole point of //go:linkname), so no using alias exists to bind a short spelling — the
+	// r35-time tzdata forwarder made this the emission rule for never-imported target packages.
+	if !strings.Contains(mainCs, "go.syscall_package.loadlibrary(filename)") {
 		t.Errorf("linkname forwarder body missing its target call (emitted a stub?):\n%s", mainCs)
 	}
 
