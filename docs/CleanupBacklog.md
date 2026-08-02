@@ -34,16 +34,24 @@
 
 ## Performance (found while validating, deliberately not disclosed as divergences)
 
-6. **The 136-byte `for range` enumerator allocation over `slice<T>`** — corpus-wide: the range
-   form allocates a fixed enumerator per loop where the indexed form allocates zero
-   (r36-time-tail's measurement inside `parseRFC3339`).
+6. ~~**The 136-byte `for range` enumerator allocation over `slice<T>`**~~ — **DONE (r37-time-os-fin,
+   2026-08-02).** `slice<T>.GetEnumerator()` returned `IEnumerator<(nint, T)>` from an iterator
+   method, so `foreach` could not bind it by pattern and every ranged loop paid a state machine plus
+   the inner `SliceEnumerator` class — exactly 136 B/loop, measured. It now returns the nested
+   `Enumerator` STRUCT (the interface members stay, explicit, for LINQ/interface consumers), and
+   go2cs-gen's `ISliceTypeTemplate` forwards the struct so named slice types get it too. Guarded at
+   zero bytes by `GolibTests/SliceRangeAllocationTests`.
+   **Successor item:** `array<T>.GetEnumerator()` is the identical iterator-method shape and was
+   deliberately left alone — Go's `range` over an array value ranges a COPY, so the eager-vs-lazy
+   capture point is a semantic question there, not a mechanical one. Wants its own measured change.
 7. **`IByteSeq<T>` interface-boxing — PROMOTED (user-ruled 2026-08-02): gates `time`'s bank.**
    The range indexer returns the interface so every `s[a:b]` boxes (48 B), and `[]byte(s)` boxes
-   again. `TestUnmarshalTextAllocations` wants ZERO allocations and the user ruled NO disclosure —
-   a want-zero is satisfiable, so softening it would spend the credibility the badges exist to
-   earn. The self-referential-generic redesign of the converter-emitted union-constraint interface
-   is therefore on `time`'s critical path, not idle-point work. (Measured remainder: 2,728 B/run
-   after the struct-enumerator fix, all in this seam.)
+   again — now the WHOLE remaining share of `time.TestUnmarshalTextAllocations` (item 6 removed the
+   six range loops' worth; measured remainder 2,728 B/run, all in this seam).
+   `TestUnmarshalTextAllocations` wants ZERO allocations and the user ruled NO disclosure — a
+   want-zero is satisfiable, so softening it would spend the credibility the badges exist to earn.
+   The self-referential-generic redesign of the converter-emitted union-constraint interface is
+   therefore on `time`'s critical path, not idle-point work.
 
 ## Test host / pipeline
 

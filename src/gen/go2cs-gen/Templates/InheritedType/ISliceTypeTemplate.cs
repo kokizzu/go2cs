@@ -65,7 +65,14 @@ internal static class ISliceTypeTemplate
 
                 public ISlice? Append(object[] elems) => ((ISlice)m_value).Append(elems);
 
-                public global::System.Collections.Generic.IEnumerator<(nint, {{targetTypeName}})> GetEnumerator() => m_value.GetEnumerator();
+                // Forwards the CONCRETE struct enumerator, not IEnumerator<(nint, T)>: `foreach` binds
+                // GetEnumerator by pattern, so a named slice type ranges with zero heap traffic exactly
+                // like the slice<T> it wraps. Returning the interface here would box on every loop entry.
+                // ISlice<T> -> IArray<T> -> IEnumerable<(nint, T)> still needs the interface member, so it
+                // becomes explicit — the boxing path, taken only when a consumer asks for the interface.
+                public global::go.slice<{{targetTypeName}}>.Enumerator GetEnumerator() => m_value.GetEnumerator();
+
+                global::System.Collections.Generic.IEnumerator<(nint, {{targetTypeName}})> global::System.Collections.Generic.IEnumerable<(nint, {{targetTypeName}})>.GetEnumerator() => ((global::System.Collections.Generic.IEnumerable<(nint, {{targetTypeName}})>)m_value).GetEnumerator();
 
                 global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => ((global::System.Collections.IEnumerable)m_value).GetEnumerator();
 
