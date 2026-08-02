@@ -360,34 +360,42 @@ converted standard library must be re-banked into `src/core` before it reaches
 mismatch, but it can only compare against the *committed* tree — it cannot detect that the committed tree
 is itself older than the published packages.
 
-### A foreign VALUE implement is keyed in ONE spelling, and trusted only for a partial struct
+### A foreign implement record is keyed in ONE spelling, and a VALUE one is trusted only for a partial struct
 
 The record scraped above answers one question at a cast site: *does the dependency's own assembly
 already implement this pair?* If it does, the bare value converts implicitly and a local
 `<pkg>_<T>ᴠ<Iface>` value adapter is dead machinery. Getting the answer wrong in either direction is
 expensive, so both halves — the KEY and the TRUST — are stated precisely here.
 
-**The key.** `valueImplementKey` composes `<declaring package>|<C# simple type>|<pkg>_package.<Iface>`
-and is called by BOTH sides: `loadPackageImplementLines`, over records parsed from a dependency's
-`package_info.cs`, and all three value arms of `convertToInterfaceType`, over a cast being converted.
-That it is one function is the whole point — the two sides used to compose it independently, over
-different alphabets, and agreed only when the dependency's import path was a single segment:
+**The key.** `implementRecordKey` composes `<declaring package>|<C# simple type>|<pkg>_package.<Iface>`
+and is called by BOTH sides of BOTH record sets: `loadPackageImplementLines`, over records parsed from a
+dependency's `package_info.cs`, and the value arms *and* the foreign-pointer arm of
+`convertToInterfaceType`, over a cast being converted. That it is one function is the whole point — the
+two sides used to compose it independently, over different alphabets, and agreed only when the
+dependency's import path was a single segment:
 
 | dependency | load side | use side | |
 |:--|:--|:--|:--|
 | `io` | `io\|noBody\|io_package.ReadCloser` | `io\|noBody\|io_package.ReadCloser` | match |
 | `encoding/binary` | `binary\|bigEndian\|binary_package.ByteOrder` | `binary\|bigEndian\|encoding.binary_package.ByteOrder` | **miss** |
 | `image/color` | `color\|ΔRGBA\|color_package.Color` | `color\|RGBA\|image.color_package.Color` | **miss** |
+| `text/template/parse` (ptr) | `parse\|ListNode\|parse_package.Node` | `parse\|ListNode\|text.template.parse_package.Node` | **miss** |
+| `go/types` (ptr) | `types\|TypeName\|go.types_package.Object` | `types\|TypeName\|types_package.Object` | **miss** |
+| `image` (ptr) | `image\|ΔRGBA\|image_package.Image` | `image\|RGBA\|image_package.Image` | **miss** |
 
 Two divergences, and the second is easy to miss because it only shows on a collision-renamed type.
 (1) The INTERFACE side: a parsed record names the recording package's own interface BARE and a foreign
 one whole (`go.image.color_package.Color`), while a cast site always renders the full namespace chain.
-`canonicalValueRecordIfaceName` drops everything ahead of the `<pkg>_package` segment, so both reduce to
-`color_package.Color`; a member path under the class (`y_package.Outer.Inner`) survives intact. The
+`canonicalImplementRecordIfaceName` drops everything ahead of the `<pkg>_package` segment, so both reduce
+to `color_package.Color`; a member path under the class (`y_package.Outer.Inner`) survives intact. The
 package CLASS must stay — the simple name alone collides, and image's `Paletted`→`image.Image` record
-must not satisfy a `Paletted`→`draw.Image` cast. (2) The TYPE side: a record carries the EMITTED C#
-name, so image/color's `RGBA` (collision-renamed against its own `RGBA()` method) is `ΔRGBA` there,
-while the use side was naming the GO type. Both sides now reduce the emitted name.
+must not satisfy a `Paletted`→`draw.Image` cast. Note that neither side is reliably the *longer* one, so
+a "strip the chain" heuristic would not do: `go/types` records its OWN `Object` fully qualified where the
+cast site renders it short, while `text/template/parse` records its own `Node` bare where the cast site
+renders it whole. Which spelling a file produces depends on its own using/alias context — which is
+exactly why a canonical form, and not either side's raw text, is the key. (2) The TYPE side: a record
+carries the EMITTED C# name, so image/color's `RGBA` (collision-renamed against its own `RGBA()` method)
+is `ΔRGBA` there, while the use side was naming the GO type. Both sides now reduce the emitted name.
 
 The DECLARING-package component is what keeps a record honest. A package may record a value pair for a
 type declared in a THIRD assembly — `image` re-declared all of image/color's models — and go2cs-gen
@@ -405,10 +413,41 @@ underlying being a non-`*types.Signature`, at the use site where `go/types` can 
 that gate the fix hands a bare delegate to an interface slot — CS0029 for net/http's
 `HandlerFunc` → `ΔHandler` in `expvar`, `net/http/cgi` and three more.
 
-**The POINTER set keeps `canonicalRecordIfaceName` un-collapsed.** Its records are adapter-class
-*existence* signals with a different trust rule and no partial-struct fallback, so matching a foreign
-package's own record there suppresses the LOCAL record the consumer needs. It carries the same two
-divergences and is worth its own increment with its own measured footprint.
+**The POINTER set shares the key and needs no trust gate.** `[assembly: GoImplement<T, Iface>(Pointer =
+true)]` is not "the declaring assembly implements this somehow" — it is exactly the shape
+`ImplementGenerator` realizes as the public adapter class `<T>ж<Iface>`, so the record's existence *is*
+the answer and there is nothing further to ask. (The delegate hazard that forces
+`valueRecordRealizesAsPartialStruct` on the value side cannot arise: a pointer record already means the
+adapter route was taken.) An earlier ruling kept this set's key un-collapsed on the reasoning that
+matching a foreign record suppresses a LOCAL record the consumer needs; that hazard is real but it is a
+*realization* question, not a *key* question, and on the pointer side it does not exist at all.
+
+One consequence had to be fixed with the key, and only the collision-renamed types reach it: a foreign
+type whose name is Δ-renamed resolves through a whole-TYPE `global using` alias (`imageꓸRGBA =
+go.image_package.ΔRGBA`), which is a single identifier rather than a path — and the adapter is a MEMBER
+of the declaring package's class, so composing onto the alias names nothing (`imageꓸRGBAжImage`, CS0246
+×11 across five packages). The foreign-adapter arm therefore rebuilds a dotless base as the file's
+package qualifier plus the type's EMITTED simple name — `image.ΔRGBAжImage`, which is exactly what the
+declaring assembly's generator composed (`image/image.cs` reads `new ΔRGBAжImage(…)` for its own casts).
+
+**Pointer footprint,** from a whole-stdlib A/B with both roots seeded (304/304 converted per side):
+31 files, **66 constructions**, every one the same edit — `new <pkg>_<T>ж<Iface>(x)` becomes
+`new <pkg>.<T>ж<Iface>(x)`, the declaring package's own adapter — plus the 37 `(Pointer = true)` records
+that existed only to generate those local classes. Zero additions anywhere and the total adapter-
+construction census is unchanged at 4348, so it is a one-for-one redirection, not a removal. By
+declaring package: `text/template/parse`→`Node` 33, `go/types`→`Object`/`ΔType` 20, `image`→`Image` 4,
+`net/http`→`RoundTripper`/`ΔHandler` 4, `net/url`→`error` 2, `net/textproto`→`error` 1,
+`go/internal/srcimporter`→`types.Importer` 1, `go/build/constraint`→`Expr` 1. `go2cs-stdlib.slnx`
+builds 0 errors on the overlaid tree.
+
+The pointer form's symptom is milder than the value form's and worth stating precisely, because it is
+what makes this an increment rather than a bug fix. The generated adapter's `Equals` compares
+`IжAdapter.Box` by reference, so a redundant local adapter and the declaring assembly's own one still
+compare equal and still alias the same object — no observable divergence was reproduced. What is wrong
+is duplication plus a **non-deterministic dynamic type**: each adapter's module initializer calls
+`AdapterRegistry.Register(typeof(ж<T>), typeof(Iface), …)`, which is first-wins, so which assembly's
+class a type-assert re-wraps into depends on assembly load order. The value form's second-identity
+failure (`image/png`'s `%v`, below) is the same defect one degree worse.
 
 **Footprint,** from a whole-stdlib A/B with both roots seeded (302/302 converted per side): 13 files,
 every changed line the same edit — `new <pkg>_<T>ᴠ<Iface>(x)` becomes `x` — plus the 16
@@ -429,9 +468,14 @@ converts its own values, a collision-renamed implementer, a second implementer, 
 the live negative; the pre-fix converter emits five adapters where the fixed one emits the func's alone.
 `ValueAdapterDynamicType` was its byte-identical complement — its sibling never converts, so its four
 adapters were real — until the declaring side began recording pairs it merely satisfies (next section),
-which is exactly that sibling's shape; its assertions now prove the bare value instead. Unit-guarded by
-`TestValueImplementKeyBothCompositionsAgree`, `TestValueImplementKeyKeepsPackageClassDiscrimination` and
-`TestValueRecordRealizesAsPartialStruct`.)
+which is exactly that sibling's shape; its assertions now prove the bare value instead. The pointer form
+is guarded by `ForeignPointerImplementSuppression`, whose sibling `tone` self-converts a
+collision-renamed `*Tone` and an ordinary `*Plain` — both must reference tone's own adapters — against
+two live negatives that must keep minting their own: `*Lone`, a pair `tone` satisfies but never records,
+and `shade.Level`, an interface with the same SIMPLE name as `tone.Level`. The pre-fix converter emits
+four local adapters there where the fixed one emits the two negatives' alone. Unit-guarded by
+`TestImplementRecordKeyBothCompositionsAgree`,
+`TestImplementRecordKeyKeepsPackageClassDiscrimination` and `TestValueRecordRealizesAsPartialStruct`.)
 
 ### A package records the pairs it SATISFIES, not only the ones it witnesses
 
@@ -6970,14 +7014,17 @@ duplicate TYPE reached the compiler as CS0102 + CS0111 ×5 + CS8646 on `rand_pac
 any short record.)
 
 The adapter's identity is exactly `<class>_package.<Type>` — the pair `ImplementGenerator` composes
-its class name from — so `canonicalRecordIfaceName` now collapses a longer chain to its last two
-segments, guarded on the penultimate segment actually being a package class so a nested type
-reference (`x.y_package.Outer.Inner`) is untouched. The EMISSION side is normalized to match:
-`stripLocalTypeQualifier` rewrites a reference naming one of THIS package's own types through the
-package's fully-qualified class back to the bare local form the attribute file's
+its class name from — so the record key collapses a longer chain to its `<pkg>_package` tail, leaving
+a nested type reference (`x.y_package.Outer.Inner`) untouched. The EMISSION side is normalized to
+match: `stripLocalTypeQualifier` rewrites a reference naming one of THIS package's own types through
+the package's fully-qualified class back to the bare local form the attribute file's
 `using static <ns>.<pkg>_package;` resolves, so the two spellings collapse in the emitting
-`HashSet`. Guarded by `TestCanonicalRecordIfaceNameCollapsesToPackageClass` and
-`TestStripLocalTypeQualifier`.
+`HashSet`. Guarded by `TestStripLocalTypeQualifier`.
+
+*(Superseded in the details, 2026-08-02: `canonicalRecordIfaceName` is retired. Both record sets now
+compose one key through `implementRecordKey` / `canonicalImplementRecordIfaceName` — same collapse
+rule, now shared rather than duplicated. See* A foreign implement record is keyed in ONE spelling,
+and a VALUE one is trusted only for a partial struct.*)*
 
 ⚠ **The collapse only reaches records the CURRENT run rendered — a stale spelling already on disk
 slips past it, because `package_info_external_test.cs` / `package_test_info.cs` are MERGE-PRESERVING** (see
@@ -7882,7 +7929,7 @@ Nothing about the *emitted* dyn interface changes except the disappearance of `�
 **golib's three hand-written interfaces joined the same mechanism.** `error` (golib), `fmt.Stringer` and `io.Reader` (the baseline stubs) predate the marker and expose plain `As<T>` helpers; `TryTypeAssert` found *those* by the same reflective probe and closed them the same way, so deleting the probe would have taken their duck-typing with it. Each is now stamped `[GoInterfaceShell(typeof(<I><>), null, "<M>")]` — their existing `<I><T>` carrier class **is** the delegate-bound generic shell, and always was — and each carrier's `(in T)` constructor became `(T)`, because `AdapterBinder` locates a shell's constructor by exact parameter type and an `in` parameter is `T&` in metadata. `null` for the object shell is deliberate rather than a gap: a reflective tier would have to reproduce these carriers' `%v`/`%T` formatting contract (`error<T>.ToString(format, provider)`), so a value-typed error still binds through the generic shell — AOT-graceful, exactly as before. Because a hand-written shell has no `ᴛBoundByPtr`/`ᴛBoundByVal` flags, the binder treats those as optional and forces the type initializer explicitly (`RuntimeHelpers.RunClassConstructor`), so an unbindable pair is still decided — and memoized — at factory-build time rather than rediscovered per construction.
 
 ### Cross-package pointer-to-interface conversions use the foreign adapter
-A pointer-sourced cast to an interface implemented by a FOREIGN type references the foreign assembly's PUBLIC adapter class - os's `err = &PathError{...}` emits `new fs.PathErrorжerror(Ꮡ(new PathError(...)))`, io/fs having generated the adapter from its own `GoImplement<PathError, error>(Pointer = true)` record. The record's existence is read from the imported package's package_info (`parseExportedPointerImplements`, the same imported-records pattern as GoTypeAlias). The existence key's INTERFACE side is the **canonical qualified name** (`canonicalRecordIfaceName` — a dotless record name qualifies with the recording package's class): the simple name alone let image's `Paletted→image.Image` record satisfy a `Paletted→draw.Image` cast, referencing the foreign adapter that implements the WRONG interface (CS1503); the value-implement records key the same way. The reference goes through the file-local package ALIAS (`fs.PathErrorжerror`, user-ruled style) via getAliasQualifiedTypeName, which also registers the using. Guarded by `CrossPkgUser` (`rep = mtr` -> `new CrossPkgLib.MeterжReporter(mtr)`; `&CrossPkgLib.Alarm{}` -> error; and the same-simple-name LOCAL `Labeled` — `var localLb Labeled = sp2` takes the LOCAL `CrossPkgLib_SensorжLabeled`, never the lib's exported `SensorжLabeled`).
+A pointer-sourced cast to an interface implemented by a FOREIGN type references the foreign assembly's PUBLIC adapter class - os's `err = &PathError{...}` emits `new fs.PathErrorжerror(Ꮡ(new PathError(...)))`, io/fs having generated the adapter from its own `GoImplement<PathError, error>(Pointer = true)` record. The record's existence is read from the imported package's package_info (`parseExportedPointerImplements`, the same imported-records pattern as GoTypeAlias). The existence key is the **shared canonical spelling** both sides compose through `implementRecordKey` — `<declaring package>|<C# simple type>|<pkg>_package.<Iface>` — exactly as the value-implement records do; keeping the package CLASS on the interface side is what stops image's `Paletted→image.Image` record from satisfying a `Paletted→draw.Image` cast and referencing the adapter that implements the WRONG interface (CS1503). The reference goes through the file-local package ALIAS (`fs.PathErrorжerror`, user-ruled style) via getAliasQualifiedTypeName, which also registers the using — except when that yields a whole-TYPE alias for a collision-renamed foreign type (`imageꓸRGBA`), which is an identifier and not a path, so the base is rebuilt as the package qualifier plus the type's EMITTED simple name (`image.ΔRGBAжImage`). Guarded by `CrossPkgUser` (`rep = mtr` -> `new CrossPkgLib.MeterжReporter(mtr)`; `&CrossPkgLib.Alarm{}` -> error; and the same-simple-name LOCAL `Labeled` — `var localLb Labeled = sp2` takes the LOCAL `CrossPkgLib_SensorжLabeled`, never the lib's exported `SensorжLabeled`).
 
 An **EXPLICIT pointer-to-interface conversion** — Go's `image.Image(dst)` with `dst *image.RGBA` (image/draw) — is the same interface cast in conversion clothing and routes through the same machinery: `isTypeConversion` probes the ORIGINAL pointer type against an interface target (the value type alone does not implement it — the elem-only probe misread the conversion as a constructor call, `new image.Image(dst)`, CS0144), and the emission re-renders the argument in its BOX form and CASTS the adapter to the interface — `((image.Image)new image_ΔRGBAжImage(Ꮡdst))` — because the adapter implements its members explicitly, and a chained member access on the conversion result (`CrossPkgLib.Labeled(sp).Label()`) cannot bind on the adapter class itself (CS1929). (Guarded by `CrossPkgUser`'s `CrossPkgLib.Labeled(sp2).Label()` / `LabeledOf(sp2)` pair, output-compared vs Go.)
 

@@ -130,40 +130,6 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	}
 }
 
-// canonicalRecordIfaceName is now the POINTER set's key composition only. A pointer record is an
-// ADAPTER-CLASS existence signal (`io.fs_package.PathErrorжerror`), so its cast-site spelling stays
-// un-collapsed: matching a foreign package's own record there suppresses the LOCAL record the
-// consumer needs, and the pointer path has no partial-struct realization to fall back on.
-//
-// The VALUE set deliberately went the other way — see valueImplementKey /
-// canonicalValueRecordIfaceName and TestValueImplementKeyBothCompositionsAgree. The hazard that
-// originally argued for non-collapse on BOTH sets (`HandlerFunc` → `ΔHandler`, CS0029 ×3 + CS1503 in
-// expvar / net/http/cgi / internal/trace/traceviewer) is a realization question, not a key question,
-// and is gated precisely there by valueRecordRealizesAsPartialStruct. The same-assembly case is
-// handled at emission (TestStripLocalTypeQualifier) instead.
-func TestCanonicalRecordIfaceNameKeepsForeignQualification(t *testing.T) {
-	cases := []struct {
-		name        string
-		ifaceName   string
-		rootPackage string
-		want        string
-	}{
-		{"bare name is qualified with the recording package class", "Source", "rand", "rand_package.Source"},
-		{"universe error stays bare", "error", "rand", "error"},
-		{"class-relative form is already canonical", "rand_package.Source", "rand", "rand_package.Source"},
-		{"a foreign cast-site chain keeps its qualification", "go.net.http_package.ΔHandler", "http", "net.http_package.ΔHandler"},
-		{"a nested type reference is left alone", "x.y_package.Outer.Inner", "y", "x.y_package.Outer.Inner"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := canonicalRecordIfaceName(tc.ifaceName, tc.rootPackage); got != tc.want {
-				t.Errorf("canonicalRecordIfaceName(%q, %q) = %q, want %q", tc.ifaceName, tc.rootPackage, got, tc.want)
-			}
-		})
-	}
-}
-
 // Blocker B: a record naming a type that compiles into THIS assembly through a fully-qualified
 // class must render in the bare local form, so the two spellings of one resolved pair collapse in
 // the emitting HashSet. Under -tests that covers the PACKAGE UNDER TEST as well as the current

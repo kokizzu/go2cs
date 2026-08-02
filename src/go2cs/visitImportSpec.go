@@ -109,7 +109,7 @@ func rootQualifySubNamespaceTypeRefs(name string) string {
 // The prefixes considered are the CURRENT package's own class plus testLocalTypePrefixes (the
 // package under test, populated only by a -tests conversion). A genuinely FOREIGN reference is
 // never stripped: matching a foreign package's record would suppress the LOCAL record its consumer
-// needs, which is the mistake documented on canonicalRecordIfaceName.
+// needs, which is the mistake documented on implementRecordKey.
 func stripLocalTypeQualifier(name string, localTypePrefix string) string {
 	prefixes := make([]string, 0, 1+len(testLocalTypePrefixes))
 

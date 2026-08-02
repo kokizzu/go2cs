@@ -665,12 +665,11 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// PathErrorжerror consumed by os - CS0029 x38).
 	{
 		pairs := parseExportedPointerImplementLines(lines)
-		sanitizedRootName := getSanitizedIdentifier(rootPackageName)
 
 		packageLock.Lock()
 
 		for _, pair := range pairs {
-			importedPointerImplements.Add(fmt.Sprintf("%s|%s|%s", sanitizedRootName, pair[0], canonicalRecordIfaceName(pair[1], rootPackageName)))
+			importedPointerImplements.Add(implementRecordKey(rootPackageName, pair[0], pair[1], rootPackageName))
 		}
 
 		packageLock.Unlock()
@@ -686,7 +685,7 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 		packageLock.Lock()
 
 		for _, pair := range pairs {
-			importedValueImplements.Add(valueImplementKey(rootPackageName, pair[0], pair[1], rootPackageName))
+			importedValueImplements.Add(implementRecordKey(rootPackageName, pair[0], pair[1], rootPackageName))
 		}
 
 		packageLock.Unlock()
@@ -808,53 +807,12 @@ func parseExportedTypeAliasLines(lines []string) ([][2]string, error) {
 	return aliases, nil
 }
 
-// canonicalRecordIfaceName reduces a GoImplement record's INTERFACE side to the canonical
-// qualified form the cast-site keys use: the RootNamespace prefix is stripped and a DOTLESS
-// name (an interface local to the recording package, or the universe `error`) is qualified
-// with the recording package's class. The SIMPLE name alone is ambiguous — image's
-// Paletted→image.Image record must not satisfy a Paletted→draw.Image cast (both reduce to
-// "Image"; image/draw referenced the foreign adapter implementing the WRONG interface,
-// CS1503).
-// NOTE (deliberate non-collapse): a record PARSED from a package_info file is class-relative
-// (`http_package.ΔHandler`) while the same interface rendered at a CAST SITE carries its whole
-// namespace chain (`go.net.http_package.ΔHandler`). Collapsing the longer form to its last two
-// segments so the two spellings key alike looks correct and is NOT: for a genuinely FOREIGN pair
-// the mismatch is load-bearing. Matching the foreign package's own record suppresses the LOCAL
-// record the consumer needs — go2cs-gen emits the implicit conversion into the assembly that
-// carries the record, and a VALUE-form foreign implement gives the consumer nothing to convert
-// through (expvar/net-http-cgi/internal-trace-traceviewer: `HandlerFunc` → `ΔHandler`, CS0029 ×3 +
-// CS1503). The same-assembly case this would have helped — a `-tests` external variant reaching
-// the package under test through its import path — is handled at EMISSION instead, by
-// stripLocalTypeQualifier over testLocalTypePrefixes, which is scoped to exactly the classes that
-// really do compile into the current assembly.
-func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
-	// A `global::` qualifier names no package — it is C#'s escape hatch for a shadowed root
-	// namespace, which a `-tests` closure reaches whenever an import shadows `go` (globalQualifyRooted).
-	// A package_info record never carries it, so leaving it on the USE side made the two spellings of
-	// one pair disagree for every globally-qualified cast: `global::go.context_package.canceler`
-	// against the record's `context_package.canceler`. context's internal test converts
-	// `*timerCtx`/`*cancelCtx` to `canceler` (the `contains(pc.children, …)` map key); the miss minted
-	// a DUPLICATE adapter class in the TEST class beside production's, and that duplicate bound `Done`
-	// to a same-named sibling extension (CS1929) and emitted `cancel` with an EMPTY body — a silently
-	// degraded override, not merely a build error.
-	//
-	// Stripping the qualifier does NOT collapse anything: a genuinely foreign multi-segment pair still
-	// keys as `net.http_package.ΔHandler` against the record's `http_package.ΔHandler`, so the
-	// deliberate non-collapse documented above is untouched — only the accidental prefix goes.
-	ifaceName = strings.TrimPrefix(ifaceName, "global::")
-	ifaceName = strings.TrimPrefix(ifaceName, RootNamespace+".")
-
-	if !strings.Contains(ifaceName, ".") && ifaceName != "error" {
-		ifaceName = getSanitizedIdentifier(rootPackageName) + PackageSuffix + "." + ifaceName
-	}
-
-	return ifaceName
-}
-
-// valueImplementKey composes the ONE spelling of a VALUE-form GoImplement pair that BOTH sides of
-// the lookup can compute — the LOAD side, reading a dependency's package_info.cs, and the USE side,
-// converting a cast. Before this existed the two sides composed from different alphabets and the
-// suppression could only ever fire for a single-segment import path:
+// implementRecordKey composes the ONE spelling of a GoImplement pair that BOTH sides of the lookup
+// can compute — the LOAD side, reading a dependency's package_info.cs, and the USE side, converting
+// a cast. It serves BOTH record sets, the VALUE form and the POINTER form, because the two sides of
+// each set diverged in exactly the same two places and there is no reason for a second naming path.
+// Before this existed the two sides composed from different alphabets and a match could only ever
+// fire for a single-segment import path:
 //
 //	image/color   load `color|ΔRGBA|color_package.Color`   use `color|RGBA|image.color_package.Color`
 //	encoding/bin. load `binary|bigEndian|binary_package.ByteOrder`
@@ -864,17 +822,23 @@ func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
 // Two divergences, both closed here. (1) The TYPE side: the record carries the emitted C# name
 // (image/color's `RGBA` is collision-renamed to `ΔRGBA`) while the use side named the GO type — so
 // every collision-renamed type missed on top of the path miss. Both sides now reduce the C# name.
-// (2) The INTERFACE side: see canonicalValueRecordIfaceName.
+// (2) The INTERFACE side: see canonicalImplementRecordIfaceName.
 //
-// The DECLARING-package component is what keeps a record trustworthy: a package may record a value
-// pair for a type declared in a THIRD assembly (image re-declares image/color's models), and
-// go2cs-gen realizes THAT as a local adapter class, not as the type implementing the interface. The
-// use side names the TARGET's package, so such a record can never satisfy a cast — `image|Alpha|…`
-// against `color|Alpha|…`.
-func valueImplementKey(declaringPackageName string, csTypeName string, ifaceName string, ifacePackageName string) string {
+// The DECLARING-package component is what keeps a record trustworthy: a package may record a pair
+// for a type declared in a THIRD assembly (image re-declares image/color's models), and go2cs-gen
+// realizes THAT as a local adapter class, not as the type implementing the interface. The use side
+// names the TARGET's package, so such a record can never satisfy a cast — `image|Alpha|…` against
+// `color|Alpha|…`.
+//
+// What the two sets do NOT share is what a matched record is trusted to MEAN. A VALUE record says
+// only that the declaring assembly implements the pair somehow, so the use site must still ask HOW
+// (valueRecordRealizesAsPartialStruct — a named FUNC type is a C# delegate and takes the adapter
+// route). A POINTER record is already an adapter-class EXISTENCE signal: `Pointer = true` is exactly
+// the shape go2cs-gen realizes as `<T>ж<Iface>`, so there is nothing further to ask.
+func implementRecordKey(declaringPackageName string, csTypeName string, ifaceName string, ifacePackageName string) string {
 	return fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(declaringPackageName),
 		removeLeadingSanitizationMarker(simpleCSTypeName(csTypeName)),
-		canonicalValueRecordIfaceName(ifaceName, ifacePackageName))
+		canonicalImplementRecordIfaceName(ifaceName, ifacePackageName))
 }
 
 // simpleCSTypeName reduces a rendered C# type name to its last dot-segment — the form both a
@@ -887,12 +851,16 @@ func simpleCSTypeName(name string) string {
 	return name
 }
 
-// canonicalValueRecordIfaceName reduces a VALUE record's INTERFACE side to the class-relative
+// canonicalImplementRecordIfaceName reduces a record's INTERFACE side to the class-relative
 // spelling. A record PARSED from a package_info file names an interface the recording package
 // declares BARE (`Color`) and a foreign one whole (`go.image.color_package.Color`), while a CAST
 // SITE always renders the whole namespace chain — so the two spellings of one pair only ever agreed
 // when the chain was a single segment. Dropping everything ahead of the `<pkg>_package` segment
-// makes them one spelling.
+// makes them one spelling. Neither direction of the divergence is the "long" one: go/types records
+// its OWN `Object` whole (`go.go.types_package.Object`) where the cast site renders it short, and
+// text/template/parse records its own `Node` bare where the cast site renders it whole. Which
+// spelling a file produces depends on its own using/alias context, which is exactly why neither
+// side's raw text can be the key.
 //
 // The SIMPLE name alone is NOT enough — image's Paletted→image.Image record must not satisfy a
 // Paletted→draw.Image cast (both reduce to "Image") — so the package class stays. A member path
@@ -903,11 +871,9 @@ func simpleCSTypeName(name string) string {
 // FOREIGN pair matching the declaring package's own record suppresses the LOCAL record the consumer
 // needs (expvar / net/http/cgi: `HandlerFunc` → `ΔHandler`, CS0029). That hazard is real but it is
 // not about the KEY: it is about HOW the declaring assembly realized the pair, and it is now gated
-// precisely, at the use site, by valueRecordRealizesAsPartialStruct.
-//
-// The POINTER set keeps canonicalRecordIfaceName: its records are ADAPTER-CLASS existence signals
-// with a different trust rule, and widening them is a separate change with its own footprint.
-func canonicalValueRecordIfaceName(ifaceName string, ifacePackageName string) string {
+// precisely, at the value use site, by valueRecordRealizesAsPartialStruct. The POINTER set needs no
+// such gate — see implementRecordKey.
+func canonicalImplementRecordIfaceName(ifaceName string, ifacePackageName string) string {
 	ifaceName = strings.TrimPrefix(ifaceName, RootNamespace+".")
 
 	if !strings.Contains(ifaceName, ".") {
@@ -1007,7 +973,7 @@ func parseExportedValueImplementLines(lines []string) [][2]string {
 
 		// The struct side reduces to its SIMPLE (last-dot-segment) name; the INTERFACE side
 		// keeps its qualifier (canonicalized at the populate site — the simple name collides
-		// across same-named interfaces, see canonicalRecordIfaceName).
+		// across same-named interfaces, see canonicalImplementRecordIfaceName).
 		pairs = append(pairs, [2]string{simpleCSTypeName(matches[1]), matches[2]})
 	}
 

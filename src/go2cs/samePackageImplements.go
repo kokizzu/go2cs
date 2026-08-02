@@ -37,7 +37,7 @@ import (
 // path convCompositeLit / convTypeAssertExpr / visitValueSpec already use — so a synthesized pair is
 // composed, keyed and pruned exactly as a real cast would compose, key and prune it. That is the
 // whole design: no second naming path can drift from the cast site's (the divergence that made the
-// FOREIGN lookup miss for six weeks — see valueImplementKey).
+// FOREIGN lookup miss for six weeks — see implementRecordKey).
 //
 // Four gates bound it, and each one is load-bearing:
 //

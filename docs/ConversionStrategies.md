@@ -1176,9 +1176,20 @@ A record is **exported**, so an importer reads it back and skips work it does no
 `d.palette[i] = color.RGBA{…}` emits exactly that — the bare struct into the `color.Color` slot — because
 image/color's assembly already carries `ΔRGBA : Color`. Only when the declaring assembly *cannot* realize the
 pair as a partial struct (a named FUNC type, which is a C# delegate — `net/http`'s `HandlerFunc`) does the
-importer wrap the value in its own `<pkg>_<T>ᴠ<Iface>` adapter class. Both halves of that decision — the one
-key spelling the record and the cast site must share, and the partial-struct trust rule — are in
-[Reference → A foreign VALUE implement is keyed in ONE spelling](ConversionStrategies-Reference.md#a-foreign-value-implement-is-keyed-in-one-spelling-and-trusted-only-for-a-partial-struct).
+importer wrap the value in its own `<pkg>_<T>ᴠ<Iface>` adapter class.
+
+A **pointer**-sourced record (`(Pointer = true)`) answers the same question for `*T`, and its answer is
+simpler: that record *is* the declaring assembly's public `<T>ж<Iface>` adapter class, so the importer
+references it rather than minting a local one. `text/template`'s `s.walk(value, t.Root)` emits
+`new parse.ListNodeжNode(t.Root)` — reaching into `text/template/parse` — not a second adapter of its own:
+
+```csharp
+state.walk(value, new parse.ListNodeжNode(t.Root));   // text/template/exec.cs
+```
+
+Both halves of that decision — the one key spelling every record and cast site share, and the
+partial-struct trust rule the VALUE form additionally needs — are in
+[Reference → A foreign implement record is keyed in ONE spelling](ConversionStrategies-Reference.md#a-foreign-implement-record-is-keyed-in-one-spelling-and-a-value-one-is-trusted-only-for-a-partial-struct).
 
 Beyond one bounded exception, a record is only written for a conversion the source **declares** — an
 assignment, a call argument, a `var _ I = T{}` witness. It is not inferred in general, because a

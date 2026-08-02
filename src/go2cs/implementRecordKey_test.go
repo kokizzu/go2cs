@@ -1,4 +1,4 @@
-// valueImplementKey_test.go - Gbtc
+// implementRecordKey_test.go - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -18,9 +18,9 @@ import (
 // redundant ᴠ value adapter (478 `color_ΔRGBAᴠColor` + 79 `binary_*ᴠByteOrder` in the corpus).
 //
 // Each case states BOTH compositions of one real pair and requires them equal:
-//   - LOAD: valueImplementKey(recordingPkg, <record's T>, <record's Iface>, recordingPkg)
-//   - USE:  valueImplementKey(targetPkg,    <rendered target>, <rendered iface>, ifacePkg)
-func TestValueImplementKeyBothCompositionsAgree(t *testing.T) {
+//   - LOAD: implementRecordKey(recordingPkg, <record's T>, <record's Iface>, recordingPkg)
+//   - USE:  implementRecordKey(targetPkg,    <rendered target>, <rendered iface>, ifacePkg)
+func TestImplementRecordKeyBothCompositionsAgree(t *testing.T) {
 	cases := []struct {
 		name string
 		// load side
@@ -80,12 +80,41 @@ func TestValueImplementKeyBothCompositionsAgree(t *testing.T) {
 			renderedIface: "error", ifacePackage: "syscall",
 			want: "syscall|Errno|error",
 		},
+		{
+			// POINTER set, 34 of its 66 corpus sites: text/template/parse records its own `Node`
+			// BARE while the cast site in text/template renders the whole chain.
+			name:             "pointer record, bare iface vs whole chain (text/template/parse)",
+			recordingPackage: "parse", recordType: "ListNode", recordIface: "Node",
+			targetPackage: "parse", renderedTarget: "text.template.parse_package.ListNode",
+			renderedIface: "text.template.parse_package.Node", ifacePackage: "parse",
+			want: "parse|ListNode|parse_package.Node",
+		},
+		{
+			// POINTER set, and the divergence runs the OTHER way — go/types records its own
+			// `Object` WHOLE where the cast site renders it short. Neither side's raw text is
+			// reliably the longer one, which is why the key is a canonical form, not a heuristic.
+			name:             "pointer record, whole iface vs short chain (go/types)",
+			recordingPackage: "types", recordType: "TypeName", recordIface: "go.go.types_package.Object",
+			targetPackage: "types", renderedTarget: "go.types_package.TypeName",
+			renderedIface: "go.types_package.Object", ifacePackage: "types",
+			want: "types|TypeName|types_package.Object",
+		},
+		{
+			// POINTER set, TYPE-side divergence: image's `RGBA` is collision-renamed to `ΔRGBA`
+			// (its `RGBA()` method), so the record and the rendered target must both reduce the
+			// EMITTED name — naming the Go type on the use side missed every renamed implementer.
+			name:             "pointer record, collision-renamed type (image)",
+			recordingPackage: "image", recordType: "ΔRGBA", recordIface: "Image",
+			targetPackage: "image", renderedTarget: "image_package.ΔRGBA",
+			renderedIface: "image_package.Image", ifacePackage: "image",
+			want: "image|ΔRGBA|image_package.Image",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			load := valueImplementKey(tc.recordingPackage, tc.recordType, tc.recordIface, tc.recordingPackage)
-			use := valueImplementKey(tc.targetPackage, tc.renderedTarget, tc.renderedIface, tc.ifacePackage)
+			load := implementRecordKey(tc.recordingPackage, tc.recordType, tc.recordIface, tc.recordingPackage)
+			use := implementRecordKey(tc.targetPackage, tc.renderedTarget, tc.renderedIface, tc.ifacePackage)
 
 			if load != tc.want {
 				t.Errorf("load-side key = %q, want %q", load, tc.want)
@@ -100,10 +129,12 @@ func TestValueImplementKeyBothCompositionsAgree(t *testing.T) {
 
 // The SIMPLE interface name alone is ambiguous — image's Paletted→image.Image record must not
 // satisfy a Paletted→draw.Image cast (both reduce to "Image"). Collapsing the namespace chain keeps
-// the package CLASS, which is what discriminates them.
-func TestValueImplementKeyKeepsPackageClassDiscrimination(t *testing.T) {
-	imageKey := valueImplementKey("image", "Paletted", "image_package.Image", "image")
-	drawKey := valueImplementKey("image", "Paletted", "image.draw_package.Image", "draw")
+// the package CLASS, which is what discriminates them. This is what the POINTER set's
+// `shade.Level` negative guards behaviorally (ForeignPointerImplementSuppression): trusting a
+// same-simple-name match there would reference the adapter for the WRONG interface, CS1503.
+func TestImplementRecordKeyKeepsPackageClassDiscrimination(t *testing.T) {
+	imageKey := implementRecordKey("image", "Paletted", "image_package.Image", "image")
+	drawKey := implementRecordKey("image", "Paletted", "image.draw_package.Image", "draw")
 
 	if imageKey == drawKey {
 		t.Fatalf("image.Image and draw.Image collapsed to one key: %q", imageKey)
@@ -120,9 +151,9 @@ func TestValueImplementKeyKeepsPackageClassDiscrimination(t *testing.T) {
 
 // A member path UNDER the package class must survive the collapse intact — the rule keeps the tail
 // from the `_package` segment on rather than taking the last two segments.
-func TestCanonicalValueRecordIfaceNameKeepsNestedMemberPath(t *testing.T) {
-	if got, want := canonicalValueRecordIfaceName("go.x.y_package.Outer.Inner", "y"), "y_package.Outer.Inner"; got != want {
-		t.Errorf("canonicalValueRecordIfaceName = %q, want %q", got, want)
+func TestCanonicalImplementRecordIfaceNameKeepsNestedMemberPath(t *testing.T) {
+	if got, want := canonicalImplementRecordIfaceName("go.x.y_package.Outer.Inner", "y"), "y_package.Outer.Inner"; got != want {
+		t.Errorf("canonicalImplementRecordIfaceName = %q, want %q", got, want)
 	}
 }
 

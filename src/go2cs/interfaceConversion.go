@@ -276,7 +276,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
+				key := implementRecordKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				// The PRODUCTION assembly already implements the pair (its package_info.cs carries
 				// the value record, loaded when the reference model bound it as an ordinary import),
@@ -328,9 +328,12 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeLeadingSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
-					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+				// Composed through implementRecordKey so this use side can never drift from the
+				// loader's spelling; its canonicalization also subsumes the earlier global::-strip
+				// (a `global::go` segment never carries the package suffix, so the segment scan
+				// drops it) — the duplicate-adapter/empty-cancel-body regression stays fixed.
+				key := implementRecordKey(pkg.Name(),
+					getCoreSanitizedIdentifier(named.Obj().Name()), interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
 				productionPointerImplemented = importedPointerImplements.Contains(key)
@@ -370,7 +373,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 				// The interface side of the key is the CANONICAL class-relative name — the
 				// simple name collides across same-named interfaces (image's
 				// Paletted→image.Image record must not satisfy a Paletted→draw.Image cast; see
-				// canonicalValueRecordIfaceName). A dotless render qualifies with the
+				// canonicalImplementRecordIfaceName). A dotless render qualifies with the
 				// INTERFACE's own package (not the target struct's).
 				ifacePkgName := pkg.Name()
 
@@ -380,7 +383,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
+				key := implementRecordKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
 				foreignValueImplExists := importedValueImplements.Contains(key)
@@ -416,7 +419,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
+				key := implementRecordKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
 				recordableValueSameAssembly = !(importedValueImplements.Contains(key) && valueRecordRealizesAsPartialStruct(targetType))
@@ -649,10 +652,16 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 
 		if named, ok := types.Unalias(namedTarget).(*types.Named); ok {
 			if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg {
-				// The interface side of the key is CANONICAL QUALIFIED — the simple name
-				// collides across same-named interfaces (image's Paletted→image.Image record
-				// satisfied a Paletted→draw.Image cast, referencing the foreign adapter that
-				// implements the WRONG interface; image/draw CS1503).
+				// The key is the SHARED spelling both sides can compute (implementRecordKey):
+				// the TYPE side from the RENDERED C# target, because the record carries the
+				// emitted name and a collision-renamed type (`ΔRGBA`, `ΔSignature`, `ΔError`)
+				// never matched its own Go name; the INTERFACE side collapsed to the
+				// class-relative tail, because neither side's raw chain is stable — go/types
+				// records its own `Object` whole where the cast site renders it short, and
+				// text/template/parse records its own `Node` bare where the cast site renders it
+				// whole. The package CLASS stays in the key: the simple name alone collides
+				// across same-named interfaces (image's Paletted→image.Image record must not
+				// satisfy a Paletted→draw.Image cast — image/draw CS1503).
 				ifacePkgName := pkg.Name()
 
 				if ifaceNamed, ok := types.Unalias(interfaceType).(*types.Named); ok {
@@ -661,9 +670,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeLeadingSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
-					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+				key := implementRecordKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
 				foreignAdapterExists := importedPointerImplements.Contains(key)
@@ -674,7 +681,22 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					// adapter suffix), not the raw package-class qualifier
 					// (`CrossPkgLib_package.…`) - user-ruled style; getAliasQualifiedTypeName both yields
 					// the aliased form and registers the file-local using for it.
-					adapterBase := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
+					aliasQualified := v.getAliasQualifiedTypeName(named, false)
+					adapterBase := convertToCSTypeName(aliasQualified)
+
+					// A COLLISION-RENAMED foreign type resolves through a WHOLE-TYPE `global using`
+					// alias (`imageꓸRGBA` = go.image_package.ΔRGBA), which is a single IDENTIFIER, not
+					// a qualified path — and the adapter is a MEMBER of the declaring package's class,
+					// so composing onto the alias names nothing (`imageꓸRGBAжImage`, CS0246). Rebuild
+					// the base as the file's package qualifier plus the type's EMITTED simple name,
+					// which is what the declaring assembly's generator composed the class from
+					// (image's own casts read `new ΔRGBAжImage(…)`). Only these types reach here:
+					// until the record key was keyed in one spelling they could never match.
+					if !strings.Contains(adapterBase, ".") {
+						if idx := strings.LastIndex(aliasQualified, "."); idx >= 0 {
+							adapterBase = aliasQualified[:idx+1] + simpleCSTypeName(targetTypeName)
+						}
+					}
 
 					return fmt.Sprintf("new %s(%s)", adapterTypeRef(adapterBase, interfaceTypeName), exprResult)
 				}

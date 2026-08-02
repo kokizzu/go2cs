@@ -253,6 +253,9 @@
     <Project Path="Tests/Behavioral/ForeignPairNumericConv/convlib/ForeignPairNumericConv.convlib.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceLib/ForeignPtrEmbedIfaceLib.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceUser/ForeignPtrEmbedIfaceUser.csproj" />
+    <Project Path="Tests/Behavioral/ForeignPointerImplementSuppression/ForeignPointerImplementSuppression.csproj" />
+    <Project Path="Tests/Behavioral/ForeignPointerImplementSuppression/shade/ForeignPointerImplementSuppression.shade.csproj" />
+    <Project Path="Tests/Behavioral/ForeignPointerImplementSuppression/tone/ForeignPointerImplementSuppression.tone.csproj" />
     <Project Path="Tests/Behavioral/ForeignValueImplementSuppression/ForeignValueImplementSuppression.csproj" />
     <Project Path="Tests/Behavioral/ForeignValueImplementSuppression/hue/ForeignValueImplementSuppression.hue.csproj" />
     <Project Path="Tests/Behavioral/FuncFieldUnexportedType/FuncFieldUnexportedType.csproj" />

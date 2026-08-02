@@ -505,10 +505,11 @@ PARAMETER heap-boxes too*.
 Both files are **banked** (2026-07-31) at the boxed emission, and both packages re-validate at their
 exact counts (base32 26, base64 17). The standing sweep drift is closed.
 
-## ~~Open~~ CLOSED — the REDUNDANT value adapter was a key mismatch (fixed 2026-07-31)
+## ~~Open~~ CLOSED — the REDUNDANT adapter was a key mismatch (value 2026-07-31, pointer 2026-08-02)
 
 **DONE.** Both halves landed at the converter: ONE key spelling shared by the record loader and the
-cast site (`valueImplementKey` / `canonicalValueRecordIfaceName`), and the func-type exclusion this
+cast site (`implementRecordKey` / `canonicalImplementRecordIfaceName`, named `valueImplementKey` /
+`canonicalValueRecordIfaceName` until the pointer set joined them), and the func-type exclusion this
 row demanded (`valueRecordRealizesAsPartialStruct`, gating on the target's Go underlying being a
 non-`*types.Signature`). Whole-stdlib A/B, both roots seeded, 302/302 converted per side: **13 files,
 497 constructions removed**, every changed line the same edit, plus the 16 records that existed only
@@ -548,19 +549,51 @@ Two corrections to the row as filed below, both measured rather than reasoned:
   different adapter kind entirely) or genuinely cross-package (`syscall.Signal`→`os.Signal`), or is
   the deliberately-excluded delegate (`net/http` `HandlerFunc`→`ΔHandler`, 8+4).
 
-Also found, not fixed: the **POINTER** set (`importedPointerImplements`) carries the same two
-divergences through `canonicalRecordIfaceName`. Its records are adapter-class *existence* signals with
-a different trust rule and no partial-struct fallback, so widening them is a separate increment with
-its own measured footprint — deliberately not folded in, on the same reasoning that deferred
-`visitStructType.go`'s field arm above.
+**The deferred POINTER increment is now DONE too (2026-08-02).** `importedPointerImplements` carried the
+same two divergences, and both sides now compose through the same shared `implementRecordKey` — no second
+naming path, and `canonicalRecordIfaceName` retired with its last caller. The trust rule really is
+different, and it turned out to be *weaker*, not stronger: `(Pointer = true)` is precisely the shape
+`ImplementGenerator` realizes as the adapter class `<T>ж<Iface>`, so the record's existence IS the
+answer and no `valueRecordRealizesAsPartialStruct` analogue is needed (the delegate hazard cannot arise
+on a set whose every member already took the adapter route). Measured before deciding, per the row's own
+discipline: an instrumented whole-stdlib run classified all 1,224 pointer lookups as 289 hits, 868
+genuine no-records, and **67 near-misses** — every one a true pair, no candidate-key regressions.
 
-Rule, both compositions, and the trust gate:
-[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A foreign VALUE implement
-is keyed in ONE spelling, and trusted only for a partial struct*. Guarded by the
+Whole-stdlib A/B, both roots seeded, 304/304 per side: **31 files, 66 constructions** rewritten from the
+consumer's local `<pkg>_<T>ж<Iface>` to the declaring package's own `<pkg>.<T>ж<Iface>`, plus the 37
+`(Pointer = true)` records that existed only to generate those local classes. Zero additions; the total
+adapter-construction census is unchanged at **4348**, so this is a one-for-one redirection rather than a
+removal — the pointer form's dead machinery is a duplicate class, not an extra allocation. By declaring
+package: `text/template/parse` 33, `go/types` 20, `image` 4, `net/http` 4, `net/url` 2, `net/textproto` 1,
+`go/internal/srcimporter` 1, `go/build/constraint` 1. `go2cs-stdlib.slnx` 0 errors on the overlaid tree;
+CNR byte-identical across all 544 behavioral packages.
+
+Two findings worth carrying forward:
+
+- **A dependent EMISSION defect that only the collision-renamed types reach.** A Δ-renamed foreign type
+  resolves through a whole-TYPE `global using` alias (`imageꓸRGBA`), which is an identifier and not a
+  path, so composing the adapter onto it names nothing — `imageꓸRGBAжImage`, CS0246 ×11 (confirmed by
+  building, not predicted). The foreign-adapter arm now rebuilds a dotless base as the package qualifier
+  plus the type's EMITTED simple name. The same latent composition sits in the neighbouring
+  same-assembly (`-tests`) arm; nothing reaches it today and it was deliberately left alone.
+- **No observable failure was reproduced, and that is the honest finding.** The generated pointer
+  adapter's `Equals` compares `IжAdapter.Box` by reference, so a redundant local adapter and the
+  declaring assembly's own one compare equal and alias the same object — unlike the value form, which
+  really did break `image/png`'s `%v`. What is wrong is duplication plus a load-order-dependent dynamic
+  type: `AdapterRegistry.Register` is first-wins, so which assembly's class a type-assert re-wraps into
+  depends on which module initializer ran first.
+
+Rule, both compositions, and the trust gates:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A foreign implement record
+is keyed in ONE spelling, and a VALUE one is trusted only for a partial struct*. Guarded by the
 `ForeignValueImplementSuppression` behavioral test (a multi-segment sibling that DOES convert its own
 values, a collision-renamed implementer, and a named FUNC type as the live negative — the pre-fix
 converter emits five adapters where the fixed one emits the func's alone), with
-`ValueAdapterDynamicType` as its byte-identical complement.
+`ValueAdapterDynamicType` as its byte-identical complement, and by the pointer sibling
+`ForeignPointerImplementSuppression` (a self-converting sibling with a collision-renamed `*Tone` and an
+ordinary `*Plain` as the positives, against two live negatives: `*Lone`, a pair the sibling satisfies but
+never records, and `shade.Level`, an interface with the same SIMPLE name — pre-fix emits four local
+adapters, fixed emits the two negatives' alone).
 
 *The row as originally filed follows.*
 
