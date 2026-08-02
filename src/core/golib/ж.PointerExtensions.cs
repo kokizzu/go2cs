@@ -51,6 +51,12 @@ namespace go;
 //   docs/Phase4/FINDING-managed-box-uintptr-lifetime.md for the failure the alias route fixed
 //   (reflect cached an address for process lifetime, and `TypeOf(x).Kind()` began reporting
 //   Invalid once that address was recycled).
+//
+//   That fallback is not exempt from the lifetime rule, it just cannot satisfy it by aliasing: an
+//   address of managed storage is a pointer only while the storage is held still, so the derived box
+//   PINS it and owns the pin (ж<T>.TryPinnedReinterpret). Where no pin can be taken the route is the
+//   bare address it always was — never assume a fallback pointer is safe to retain because the
+//   common case now is.
 // ---------------------------------------------------------------------------------------------
 
 /// <summary>
@@ -91,7 +97,10 @@ public static class PointerExtensions
     /// A box aliasing NATIVE memory keeps the address model: there the address IS the meaning, and
     /// that is the only thing correct for those call sites. A reinterpret the managed model cannot
     /// represent falls back to the same address route — i.e. to the behavior that predates this
-    /// method, never to something newly wrong.
+    /// method, never to something newly wrong — except that where the source's storage CAN be held
+    /// still, the derived box now pins it for its own lifetime rather than inheriting an address
+    /// that was pinned only for the statement that took it (see
+    /// <see cref="ж{T}.TryPinnedReinterpret{TDst}"/>).
     /// </para>
     /// </remarks>
     public static ж<TDst> Reinterpret<T, TDst>(this ж<T>? box)
@@ -114,8 +123,12 @@ public static class PointerExtensions
             return new ж<TDst>(box, ж<T>.ReinterpretRef<TDst>);
         }
 
-        // Not representable as an alias — keep the pre-existing raw-address behavior.
-        return (ж<TDst>)(uintptr)box;
+        // Not representable as an alias, so the derived pointer has to name the source's storage by
+        // ADDRESS — which is only a pointer at all while that storage is held still. Pin it for the
+        // derived box's lifetime where it can be pinned (see TryPinnedReinterpret, which also says why
+        // that is the array/slice-element reference and nothing else). Where it cannot, keep the
+        // pre-existing raw-address behavior — never something newly wrong.
+        return box.TryPinnedReinterpret<TDst>() ?? (ж<TDst>)(uintptr)box;
     }
 
     /// <summary>

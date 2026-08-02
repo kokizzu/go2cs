@@ -798,20 +798,39 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
-## `os` — 158 of 178 match + 1 disclosed; two converter roots and one host-killer closed (r35-os, 2026-08-02)
+## `os` — 159 of 178 match + 1 disclosed; the moving-crash row RETRACTED (r35-os → r36-pin, 2026-08-02)
 
 Measured with `go2cs -tests -test-action all -test-timeout 15m "<GOROOT>/src/os" src/core/os`.
-`os` builds with **0 errors** and the host runs. Progression across the arc, all from one pipeline
-command: **48 agreeing → 141 → 158**, the first jump from the build blockers, the second from the
+`os` builds with **0 errors**. Progression across the r35 arc, all from one pipeline command:
+**48 agreeing → 141 → 158**, the first jump from the build blockers, the second from the
 `readReparseLink` host-killer.
 
-| | Go | C# |
-|:--|--:|--:|
-| top-level tests | 178 (143 pass · 34 skip · 1 fail) | 166 reached (123 pass · 34 skip · 8 fail · 1 infra-error) |
-| **agreeing** | | **158** |
-| disclosed | | 1 (`TestUTF16Alloc`, alloc-count-semantics) |
-| real mismatches | | 7 |
-| unreached (host died) | | 12 |
+| | Go | C# — r35 (`620a935bf`) | C# — r36 (`af5df9e16`) |
+|:--|--:|--:|--:|
+| top-level tests | 178 (143 pass · 34 skip · 1 fail) | 166 reached (123 pass · 34 skip · 8 fail · 1 infra-error) | 174–176 reached (124–126 pass · 34 skip · 13–14 fail · 2–3 infra-error) |
+| **agreeing** | | **158** | **159–160** |
+| disclosed | | 1 (`TestUTF16Alloc`, alloc-count-semantics) | 1 (same) |
+| real mismatches | | 7 | 14 |
+| unreached | | 12 (host DIED) | 2–4 (host HANGS on the pipe family; the rest all answer) |
+
+⚠ **Read the two columns as a VISIBILITY difference, not a regression.** The crash was hiding
+failures, not successes: nine to eleven of the twelve tests the r35 host never reached now produce an
+answer, and almost all of them FAIL. Nothing that agreed stopped agreeing. The r36 column is a range
+because it rests on three COMPLETE runs at this base — one pre-fix control (175 reached, 160 agreeing)
+and two post-fix (174/159 and 176/**160**) — and the pipe family is racy: the only rows that move
+between them are `TestCloseWithBlockingReadByFd` and `TestCloseWithBlockingReadByNewFile`, which pass
+when they win their race and hang when they do not. Post-fix therefore brackets the control from both
+sides, which is the honest statement of the pin's effect on this package: **none measurable**.
+
+⚠ **Measuring `os` while another lane measures `os` does not work, and the failure looks like data.**
+Two further post-fix runs were cut short after roughly one minute each — 21 and 59 tests left with no
+verdict, a truncated result stream, and no diagnostic. They were not crashes: `go2cs_test_results.json`
+still carried the PREVIOUS run's timestamp, so those hosts died before writing it, while two sibling
+worktrees were running their own `os.tests.exe`. That is charter §9's kill-by-name hazard
+(`Get-Process os.tests | Stop-Process` matches across the whole machine), and unlike `BehavioralRunner`
+the pipeline names the host itself, so the rename defence is not available. **Check
+`go2cs_test_results.json`'s mtime before believing a short `os` run**, and do not schedule two lanes on
+one package.
 
 ### Closed in this arc
 
@@ -852,15 +871,17 @@ command: **48 agreeing → 141 → 158**, the first jump from the build blockers
 
 | Row | Cost | Root |
 |:--|--:|:--|
-| **host-killer: an ExecutionEngineException whose SITE MOVES between runs** | 12–29 | Not a defect at the crash site. Three runs died in three different places (`TestReadlink`'s AV, then `syscall.Environ`, then `syscall.encodeWTF16` under `os.MkdirAll`), and each site runs CLEAN standalone — `syscall.Environ()` was probed end-to-end in its own converted program and returns the real block. That is accumulated heap corruption, and the strongest candidate is `os_windows_test.go`'s own `createMountPoint`: it reinterprets a managed `[]byte` as a `windows.MountPointReparseBuffer` and WRITES four `uint16` fields through it. golib's `Reinterpret` cannot alias a reference-bearing struct, so the fallback hands back `(ж<TDst>)(uintptr)box` — a **transient** pinned address of a managed slice, written through after its pin expired. Remedy candidates, both bigger than a package arc: make the non-representable fallback PIN the source for the derived box's lifetime, or make it fail loudly instead of returning a stale address. A blanket "fail loudly" is NOT available — reflect's prefix-downcast idiom (`(*structType)(unsafe.Pointer(t))`) deliberately depends on the address route. |
-| `TestDirectoryJunction` | 1 | The same `createMountPoint` reinterpret, this time surfacing as a contained `IndexOutOfRangeException` at `&buf.PathBuffer[0]`. Raw metal on a non-native type, in TEST code that cannot be hand-owned — no converter or golib change can lay a managed array reference over inline OS bytes. |
+| ~~**host-killer: an ExecutionEngineException whose SITE MOVES between runs**~~ | ~~12–29~~ | **RETRACTED 2026-08-02 (r36-pin) — it does not reproduce at `af5df9e16`, and `createMountPoint` was not shown to be it.** A PRE-FIX control run of the whole suite (golib stashed back to base, `golib.dll` rebuilt and verified to lack the fix) produced **zero** `ExecutionEngineException`/`AccessViolation`, reached 175 of 178 top-level tests, and agreed on 160 — i.e. the crash the row is about did not fire at all, and the "12 unreached" figure does not hold at this commit. Two complete post-fix runs bracket it (159 and 160 agreeing), and neither of the two truncated post-fix runs (see the kill-by-name note above) shows a fault either: **zero** `ExecutionEngineException` across all five. Whatever closed the crash closed it between `620a935bf` and `af5df9e16`, in some other lane's work, not here. ⚠ The row's *diagnosis* was nonetheless a real defect and IS fixed: golib's non-representable reinterpret fallback returned a **transient** pinned address, so writes through the derived pointer landed wherever the storage had moved to. That is now pinned for the derived box's lifetime (`ж<T>.TryPinnedReinterpret`), reproduced 5-of-5 and fixed 8-of-8 by `Tests/Behavioral/ReinterpretPinLifetime`, and written up in [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *An address of MANAGED storage that outlives its statement must carry a PIN*. What it did NOT buy was any measurable change in this package — the pin is a correctness fix looking for the consumer that will need it, not the explanation for a crash that had already stopped happening. |
+| **the host HANGS instead of exiting: the blocking-pipe family** | 2–4 unreached + 6 fails | The current top row, and the one worth the next arc. `TestPipeEOF` and `TestPipeIOCloseRace` (plus, when they lose their race, `TestCloseWithBlockingReadByFd` and `TestCloseWithBlockingReadByNewFile`) start and never finish — a blocking read is not interrupted by the `Close` that is supposed to unblock it, so the host reports the run and then never exits (each pipeline invocation leaves an `os.tests.exe` behind that has to be killed by PID). The SAME root shows up as six ordinary failures, all with an EMPTY child-process output where Go reads a value: `TestHostname` (`!= system hostname of ""`), `TestExecutable` (`Child returned "[]"`), `TestGetppid` (`reports parent process id ''`), `TestStatStdin`, `TestStartProcess` (both arms), `TestRootDirAsTemp` (`exit status 2`). Those tests all read a child's stdout through `os.Pipe`. Present identically in the pre-fix control, so it is neither new nor caused by the pin fix; `TestPipeCloseRace`, `TestReadClosed`, `TestDoubleCloseError` and `TestClosedPipeRace*` all pass, so the failure is specific to *unblocking a read in progress* — `internal/poll` on Windows, not `os`. |
+| `TestDirectoryJunction` | 1 | The `createMountPoint` reinterpret, surfacing as a contained `IndexOutOfRangeException` at `&buf.PathBuffer[0]` (`ж<T>.at`). Raw metal on a non-native type, in TEST code that cannot be hand-owned — no converter or golib change can lay a managed array reference over inline OS bytes, and the pin above does not help: it makes the bytes read at that offset the buffer's REAL bytes rather than recycled memory, but a fabricated object reference is a CLR type-safety break either way. |
+| `TestCmdArgs` | 1 | Same class, different API: `syscall.CommandLineToArgv` returns a native `**[8192]*[8192]uint16`, and `(*argv)[:argc]` reads an `array<ж<array<ushort>>>` — three managed references — straight out of OS memory. Manifests as whichever garbage it read: an `ArgumentException` from `array<T>.Slice` in one run, a plain assertion failure in another. |
 | `TestReadStdin` (462 subtests) | 1 | The test's `poll.ReadConsole` fake writes into internal/poll's buffer through `(*[10000]uint16)(unsafe.Pointer(buf))`; the write lands nowhere, so every read returns zeros (`have [0 0 0…] want [abc…]`). Same class, and the general remedy is real: `(*[N]T)(unsafe.Pointer(p))` over a managed ELEMENT box should alias the backing from that element — the `array<T>.Alias` window the `SliceToArrayPointerAlias` fix already built for the slice→array-pointer form. |
 | `TestNilFileMethods` | 1 | A pointer receiver's entry preamble `ref var f = ref Ꮡf.Value;` derefs at ENTRY; Go derefs only where the body uses the pointee. `os` guards by DELEGATING (`f.checkValid("chdir")` is what asks `f == nil`), so all 15 methods panic before their guard runs. `collectNilSafePtrParams` covers only the guard spelled INLINE. **Widening it to every direct-ж receiver was implemented and MEASURED: 26 behavioral projects change their preamble to `.DerefOrNil()`** — a corpus-wide emission change that also widens the arm's accepted trade-off (an unguarded deref reads `default(T)` instead of panicking) from "a receiver the body nil-tests" to every receiver. Reverted and left as a ruling with its footprint attached; the alternative is a golib accessor that binds a NULL ref so the panic moves to first use instead of vanishing. |
 | `TestReadDir` | 1 | Environment fidelity, not conversion: the host runs each package in an isolated directory holding the staged `*.go` fixtures, so `ReadDir(".")` finds `read_test.go` but not the `exec` SUBDIRECTORY that Go's own package directory has. `os.ReadDir` itself is correct — probed against `go run` over the same 201-entry directory, byte-identical including `IsDir()`. Remedy: stage the GOROOT package directory's immediate subdirectory NAMES into the run root. Cheap, but it changes EVERY package's run environment, so it wants the full validated sweep as its gate. |
 | `TestWriteStringAlloc` | 1 | `AllocsPerRun` bounded at ZERO. Deliberately **not** disclosed: the byte-derived shim CAN report 0, so the io/strings unit-mismatch ruling does not cover it. Go's `WriteString` avoids the copy with `unsafe.Slice` over the string's own bytes; a go2cs `@string` is its own storage, so the write path allocates (measured 9088 bytes). A real divergence — an `sstring`-shaped optimization, not a disclosure. |
-| `TestRemoveAllWithExecutedProcess` | 1 | Child `exec failed: exit status 0x8000809a`, repeated. Not rooted; the child-spawn path itself works (`TestStartProcess`, `TestKillStartProcess` pass). |
-| `TestStartProcess/relative` | 1 | The relative-path arm only; the absolute arm passes. Not rooted. |
-| `TestStatLxSymLink` | intermittent | `t.TempDir()` cleanup hit a file "used by another process" — a handle the host had not released yet. Seen once. |
+| `TestRemoveAllWithExecutedProcess` | 1 | Child `exec failed: exit status 0x8000809a`, repeated. Not rooted. Spawning itself works — `TestKillStartProcess` and `TestKillFindProcess` pass, and they are the two child tests that never read the child's OUTPUT. |
+| ~~`TestStartProcess/relative`~~ → `TestStartProcess`, both arms | 1 | Corrected 2026-08-02: the absolute arm fails too, and for the same reason as the row above it — `exec … returned ""`, an empty child stdout. Folded into the blocking-pipe row; it is not a path-resolution defect. |
+| `TestStatLxSymLink` | intermittent | `t.TempDir()` cleanup hit a file "used by another process" — a handle the host had not released yet. Reproduced in both complete runs at `af5df9e16`, so it is a live flake rather than a one-off. |
 
 ⚠ **A NEW member of the `-tests`-closure production-file family, found by this arc's canaries and owed
 to the next rebank.** Since the validation-badge work (2026-08-02) every package's `.csproj` carries an

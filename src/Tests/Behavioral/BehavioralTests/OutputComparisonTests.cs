@@ -1142,6 +1142,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]
+    public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
+
+    [TestMethod]
     public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
 
     [TestMethod]

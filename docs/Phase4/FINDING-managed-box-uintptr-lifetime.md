@@ -309,6 +309,29 @@ but each is a latent AV on a live Windows path. A correct lowering needs an `arr
 that can address native memory or pun a scalar's bytes — neither is representable by today's
 `array<T>` (a wrapper over a managed `T[]`), so this is a golib data-model item, not a converter one.
 
+## Addendum (2026-08-02, `r36-pin`) — option 1 was not impossible, only NARROW, and it now covers the fallback
+
+The options above dismissed the persistent pin as unworkable because "`GCHandle.Alloc(…, Pinned)`
+cannot pin a box whose `T` contains references (`abi.Type` does), which is exactly the failing case."
+That is true of pinning **the box**, and it is why option 2 was the right ruling for the case at hand.
+It is not true of the case option 2 leaves behind — the ADDRESS-ROUTE FALLBACK, taken whenever the
+reinterpret is not representable as an alias. There the source is often an array/slice **element**
+reference, whose storage is a plain `T[]`, an object the runtime pins perfectly well; and the derived
+pointer had no pin at all, only an address a `fixed` had held for the length of one statement.
+
+So the fallback now takes a pin it OWNS: `ж<T>.TryPinnedReinterpret` pins the backing store
+`CanonicalElement` names, cross-checks that the referent really lies inside it, and hands the derived
+box a `PinnedBuffer.PinOnly` handle its finalizer releases. Every other reference kind — native alias,
+nil box, standard heap box, struct-field ref — keeps the bare address exactly as before, so `reflect`'s
+prefix-downcast family is untouched and no "fail loudly" was needed. Reproduced and guarded
+deterministically by `Tests/Behavioral/ReinterpretPinLifetime` (5 of 5 runs lose the writes before it,
+8 of 8 match Go after), the address-route sibling of the `ReinterpretPointerLifetime` guard this
+document produced.
+
+What it does **not** settle is the "recorded, not fixed" list above: the split shape, the
+number-sourced sites, and `unsafe.Pointer`'s own loss of provenance still hand out addresses that
+nothing holds still. The pin closes the one hop where a source box is in hand.
+
 ## Consequence for the campaign
 
 `go/doc/comment` **cannot bank** until this is resolved: `TestWrap`'s 10000 subtest names are part of

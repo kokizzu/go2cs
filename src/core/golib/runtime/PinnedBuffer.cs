@@ -68,6 +68,37 @@ internal class PinnedBuffer : IArray<byte>, IDisposable
         m_disposed = true;
     }
 
+    /// <summary>
+    /// Pins <paramref name="storage"/> for the returned buffer's lifetime and nothing more, or
+    /// returns <c>null</c> when the runtime refuses to pin it.
+    /// </summary>
+    /// <param name="storage">Managed object to hold still.</param>
+    /// <remarks>
+    /// <para>
+    /// The result is a PIN OWNER rather than a view: its length is zero, because the caller's
+    /// interest is that the object's address stop moving, not the bytes behind it. Everything a
+    /// buffer offers over its contents — the indexer, the span, the enumerator — is therefore empty
+    /// here, and only <see cref="Pointer"/> and the pin's own lifetime are meaningful.
+    /// </para>
+    /// <para>
+    /// <c>GCHandle</c> pins only blittable objects and throws <see cref="ArgumentException"/> for
+    /// anything else, which for a caller asking "can this be held still?" is an answer rather than a
+    /// failure — hence the <c>null</c> instead of the throw. A caller that cannot get a pin keeps
+    /// whatever it did before pinning was available.
+    /// </para>
+    /// </remarks>
+    internal static PinnedBuffer? PinOnly(object storage)
+    {
+        try
+        {
+            return new PinnedBuffer(storage, 0);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
     public unsafe byte* Pointer => (byte*)m_handle.AddrOfPinnedObject();
 
     // The pinned storage object itself (normally the byte[] the buffer wraps). PinnedBuffer is a

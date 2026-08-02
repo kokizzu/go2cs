@@ -10048,6 +10048,84 @@ managed buffer rather than aliasing it the way Go does, so writes through the re
 native memory. That is sufficient for reading a block a syscall returned (the `Environ` shape) and is
 where the seam still differs from Go.
 
+### An address of MANAGED storage that outlives its statement must carry a PIN
+
+The native-address box above is exactly right when the address IS native memory — there is nothing
+behind it the collector could move. It is a **dangling pointer** when the address points into managed
+storage, and the reinterpret fallback produces precisely that: where `(*U)(unsafe.Pointer(p))` cannot
+alias `p`'s storage in the managed model, golib names it by address instead
+(`PointerExtensions.Reinterpret` → `(ж<U>)(uintptr)box`), and the `uintptr` operator's
+
+```csharp
+fixed (void* ptr = &value.Value)
+    return (uintptr)ptr;
+```
+
+pins for **that statement** and no longer. The derived pointer outlives it. Once a collection moves
+the storage, reads through the pointer return whatever now occupies the old address — and **writes
+land in whatever now owns it**. The second is the one that matters: it is not a wrong value, it is
+silent heap corruption, and the crash surfaces later, somewhere unrelated. The corpus's clearest
+instance of the shape is `os_windows_test.go`'s `createMountPoint`, whose four `uint16` field stores
+go through a `[]byte` scratch buffer addressed as a reparse record:
+
+```go
+byteblob := make([]byte, buflen)
+buf = (*windows.MountPointReparseBuffer)(unsafe.Pointer(&byteblob[0]))
+buf.SubstituteNameOffset = target.substituteName.offset   // … and three more
+```
+
+```csharp
+var byteblob = new slice<byte>(buflen);
+buf = Ꮡ(byteblob, 0).Reinterpret<byte, windows.MountPointReparseBuffer>();
+buf.Value.SubstituteNameOffset = target.substituteName.offset;
+```
+
+**The rule: the pin's lifetime is the DERIVED POINTER's, not the address-taking statement's.** The
+fallback now asks the source box for a pinned address (`ж<T>.TryPinnedReinterpret`), and the derived
+box OWNS that pin — a `PinnedBuffer.PinOnly` handle held in the box's `m_pin` field and released by
+its finalizer when the box is collected. This is the same field and the same idiom as the fixed-array
+syscall-buffer pin (`pinnedArrayData`, above); the two uses are disjoint, since a native box never
+takes the lazy one.
+
+Only an **array/slice-element** reference can be pinned, and that is not a shortcut — it is the only
+reference kind whose storage is an object the runtime can be asked to hold still. A native alias has
+nothing managed behind it; a nil box has no storage; and the storage of a standard heap box and of a
+struct-field reference alike is a field of a `ж<T>`, which holds delegates and a nullable tuple and so
+is never blittable — `GCHandle` refuses to pin it. Those kinds keep the pre-existing address route, so
+the change is strictly additive: where a pin cannot be taken, behavior is what it was, never something
+newly wrong. That is also what keeps `reflect`'s prefix-downcast idiom
+(`(*structType)(unsafe.Pointer(t))` over a `*abi.Type`, structurally unrepresentable and deliberately
+on the address route) working unchanged — a blanket "fail loudly" was never available.
+
+The pin is **cross-checked before it is trusted**. It is taken on the backing store
+`CanonicalElement` names, which proves something only if the referent really lives inside that object,
+so the address reached through the box's own value slot must be the same byte as the address of that
+backing's element; a view whose `Source` is a detached copy fails the test and gets no pin.
+
+Guarded by `Tests/Behavioral/ReinterpretPinLifetime`, which is deterministic in both directions — it
+writes through the derived pointer before and after enough allocation churn to move and recycle the
+buffer, and reads back through both the derived pointer and the original slice. Pre-fix C# printed
+`read: false true true` / `write: false false false false false false` on 5 of 5 runs where Go prints
+all `true`; post-fix it matches Go on 8 of 8. Its sibling `ReinterpretPointerLifetime` guards the
+other half of the same contract — the ALIASING route, for reinterprets the managed model *can*
+represent.
+
+**What this is NOT evidence of.** `os`'s test host was separately observed dying with an
+`ExecutionEngineException` whose crash site moved between runs, and `createMountPoint` was the
+standing suspect. A pre-fix control run of the whole `os` suite at `af5df9e16` (golib stashed back to
+base, the rebuilt `golib.dll` verified to lack the fix) reproduced no such crash, and two complete
+post-fix runs bracket its agreeing count from both sides, so that attribution is retracted — see the
+`os` section of [`docs/Phase4/BOARD-next-validation-candidates.md`](Phase4/BOARD-next-validation-candidates.md).
+The pin defect is real and deterministic on its own evidence; it simply was not shown to be that
+host-killer.
+
+**Not fixed by this, and a different class:** a destination struct holding a managed reference where
+Go has an inline array (`PathBuffer [1]uint16` → `array<uint16>`) still fabricates an object reference
+out of whatever bytes sit at that offset when the field is read. Pinning makes those bytes the *real*
+buffer's rather than recycled memory, but a fabricated reference is a CLR type-safety break either
+way. That is the raw-metal-on-non-native-types fork (`os.readReparseLink`'s remedy is a hand-owned
+decode; `os_windows_test.go`'s `createMountPoint` is test code that cannot be hand-owned).
+
 ### `unsafe.Slice` over MANAGED element storage ALIASES it
 
 The snapshot above is the right answer for a native address and the wrong one for the far commoner

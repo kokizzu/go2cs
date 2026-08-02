@@ -86,11 +86,21 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // uintptr conversion operator below is the one that has to honor this.
     private readonly nuint m_nativeAddr;
 
-    // Lazily-created pin of this box's fixed-array backing store, kept alive for the box's lifetime so a
-    // native syscall can write into the array data and the managed reads afterward observe the result.
-    // See the uintptr/void* operators and pinnedArrayData below. Freed when the box is collected (the
-    // PinnedBuffer finalizer releases the GCHandle).
-    private PinnedBuffer? m_pinnedArrayData;
+    // A pin this box OWNS, kept alive for the box's lifetime and freed when the box is collected (the
+    // PinnedBuffer finalizer releases the GCHandle). It serves the two — mutually exclusive — cases in
+    // which a box's meaning is an ADDRESS of managed storage, and an address of managed storage is
+    // meaningless unless something holds that storage still:
+    //
+    //   1. A box whose pointee is a Go fixed array handed to a native syscall as a buffer
+    //      (`unsafe.Pointer(&arr)`): created LAZILY by pinnedArrayData below, on first conversion to
+    //      uintptr/void*, so the syscall's write and the managed reads afterward see one address.
+    //   2. A NATIVE-address box derived from managed storage by the reinterpret fallback
+    //      (TryPinnedReinterpret below): created with the box, because the address it aliases is only
+    //      valid while the storage behind it cannot move.
+    //
+    // Disjoint by construction — case 1 runs only when m_nativeAddr is 0 (the conversion operators
+    // return early for a native box), and case 2 produces nothing but native boxes.
+    private PinnedBuffer? m_pin;
 
     /// <summary>
     /// Creates a new pointer to heap allocated instance of type <typeparamref name="T"/>.
@@ -118,12 +128,15 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     }
 
     // Create a pointer that ALIASES a native address (see m_nativeAddr). A zero address is the
-    // nil pointer, matching Go's `(*T)(unsafe.Pointer(uintptr(0))) == nil`.
-    internal ж(nuint nativeAddress)
+    // nil pointer, matching Go's `(*T)(unsafe.Pointer(uintptr(0))) == nil`. An address INTO managed
+    // storage carries the pin that holds that storage still (see m_pin); a genuinely native one
+    // carries none, there being nothing the collector could move.
+    internal ж(nuint nativeAddress, PinnedBuffer? pin = null)
     {
         m_nativeAddr = nativeAddress;
         m_val = default!;
         m_isNull = nativeAddress == 0;
+        m_pin = pin;
     }
 
     /// <summary>
@@ -928,7 +941,76 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // One stable pin per box: the syscall write and the subsequent managed reads must all see the
         // same address. (Not locked — a syscall buffer is a function-local array, never shared; a rare
         // concurrent first-touch would at worst leak one pinned handle to the finalizer.)
-        m_pinnedArrayData ??= new PinnedBuffer(arr.Source, arr.Length);
-        return m_pinnedArrayData.Pointer;
+        m_pin ??= new PinnedBuffer(arr.Source, arr.Length);
+        return m_pin.Pointer;
+    }
+
+    /// <summary>
+    /// Derives a pointer that aliases this box's storage BY ADDRESS, with that storage pinned for the
+    /// derived box's lifetime — or <c>null</c> when no such pin can be taken, leaving the caller its
+    /// own fallback.
+    /// </summary>
+    /// <typeparam name="TDst">Pointee type of the derived pointer.</typeparam>
+    /// <remarks>
+    /// <para>
+    /// This is the safe form of the reinterpret fallback in
+    /// <see cref="PointerExtensions.Reinterpret{T,TDst}"/>: where the derived pointer cannot ALIAS
+    /// managed storage in the managed model, it has to name it by address, and an address of managed
+    /// storage means nothing unless the storage is held still for as long as the address is held. The
+    /// address-taking statement's own <c>fixed</c> pins for that statement and no longer, so a pointer
+    /// that outlives the statement names memory the collector is free to move and then hand to another
+    /// allocation — reads return whatever now occupies it, and WRITES land in whatever now owns it.
+    /// The second is the dangerous one: it is not a wrong value, it is silent heap corruption whose
+    /// crash surfaces later, somewhere else. `os`'s <c>createMountPoint</c> is the corpus's clearest
+    /// instance of the shape — four <c>uint16</c> field stores through
+    /// <c>(*windows.MountPointReparseBuffer)(unsafe.Pointer(&amp;b[0]))</c>. Guarded by
+    /// <c>Tests/Behavioral/ReinterpretPinLifetime</c>, which reproduces the loss deterministically —
+    /// 5 of 5 runs before the pin, 8 of 8 matching Go after it.
+    /// </para>
+    /// <para>
+    /// Only an ARRAY/SLICE-ELEMENT reference can be pinned, and that is not a shortcut — it is the only
+    /// reference kind whose storage is an object the runtime can be asked to hold still. A native alias
+    /// has nothing managed behind it; a nil box has no storage; and the storage of a standard heap box
+    /// and of a struct-field reference alike is a field of a <see cref="ж{T}"/>, which holds delegates
+    /// and a nullable tuple and so is never blittable — <c>GCHandle</c> refuses to pin it. Those kinds
+    /// keep the pre-existing address route, exactly as before; the change is additive.
+    /// </para>
+    /// <para>
+    /// The two spellings of the referent's address are CROSS-CHECKED before the pin is trusted. The pin
+    /// is taken on the backing store <see cref="CanonicalElement"/> names, and it proves something only
+    /// if the referent really does live inside that object — so the address reached through this box's
+    /// own value slot must be the same byte as the address of that backing's element. A view whose
+    /// storage is a detached copy fails that test and gets no pin.
+    /// </para>
+    /// </remarks>
+    internal unsafe ж<TDst>? TryPinnedReinterpret<TDst>()
+    {
+        if (m_nativeAddr != 0 || m_isNull || m_arrayIndexRef is null)
+            return null;
+
+        (IArray array, int index) = m_arrayIndexRef.Value;
+        (object storage, nint absoluteIndex) = CanonicalElement(array, index);
+
+        if (storage is not T[] backing || absoluteIndex < 0 || absoluteIndex >= backing.Length)
+            return null;
+
+        PinnedBuffer? pin = PinnedBuffer.PinOnly(backing);
+
+        if (pin is null)
+            return null;
+
+        // The backing cannot move from here on, so these addresses are the addresses it KEEPS —
+        // which is what makes taking them without a `fixed` legitimate, and what the derived box
+        // needs. They must name the same byte, or the object pinned is not the one the referent
+        // lives inside and the pin guarantees nothing about it.
+        void* referent = Unsafe.AsPointer(ref ValueSlot);
+
+        if (referent != Unsafe.AsPointer(ref backing[absoluteIndex]))
+        {
+            pin.Dispose();
+            return null;
+        }
+
+        return new ж<TDst>((nuint)referent, pin);
     }
 }
