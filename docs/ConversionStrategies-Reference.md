@@ -7809,6 +7809,62 @@ panic through the nil embed, assignment of a nil pointer variable, post-construc
 aliasing through the populated embed, vs Go; each half discriminates independently — without (1) the
 nil-variable assignment leg panics, without (2) the recover leg crashes with an unrecoverable NRE.)
 
+### A field promoted through an embedded POINTER is rooted at the POINTED-TO allocation
+
+A Go pointer's identity is the storage it names, and `f.pfd` for `type File struct{ *file }` is by
+definition `f.file.pfd` — one address, whichever spelling reaches it. go2cs encodes a field reference
+as **(containing allocation, field token)**, so that encoding is right only while the accessor stays
+inside the allocation it was handed. A promotion that crosses a pointer does not: the generated
+accessor deref'd on the right,
+
+```csharp
+// was — reaches the right storage, but describes the WRONG allocation
+internal static ref FD Ꮡpfd(ref File instance) => ref instance.@file.Value.pfd;
+```
+
+so `of()` rooted the resulting pointer at the outer `ж<File>` box. Reads and writes still landed in
+the real `file.pfd` (the `ref` is correct), which is why nothing looked wrong; only the *identity*
+was, and it was wrong in the one way that cannot be seen locally — `&f.pfd` taken through `*File` and
+`&file.pfd` taken through `*file` stopped being the same pointer.
+
+The accessor now takes the hop **before** the reference is built, handing the inner type's own
+accessor to the inner box:
+
+```csharp
+// now — the pointer is rooted where Go roots it
+internal static ж<FD> Ꮡpfd(ref File instance) => instance.@file.of(global::go.os_package.file.Ꮡpfd);
+```
+
+Call sites are untouched (`Ꮡf.of(File.Ꮡpfd)` still): golib gains a `FieldPtrFunc<T, TElem>` delegate
+plus matching `of`/`at` overloads, and C# picks the overload by the accessor's return type. The form
+composes for a multi-level embed (`fileWithoutReadFrom` → `*File` → `*file`) because the inner
+accessor may itself be this shape. **Value embeds keep the plain `ref` form** — their promoted fields
+live in the enclosing allocation, so the existing rooting is already right — and so does a
+**cross-package** embed, whose declaration syntax is unavailable to the generator: there the member
+list comes from metadata and can surface public fields the inner declaration never had (the reflect
+bridge's hand-added `abi.Type.sysType`/`arrayDims`, promoted into `runtime.rtype`), for which no inner
+accessor exists to name. That fallback is fail-loud, not silent — naming a missing accessor is CS0117
+at the corpus build.
+
+Two identity fixes in `golib` sit underneath it, both in `ж<T>`. A field reference's SOURCE is now
+compared by **pointer identity**, not object reference, because an `of()` chain mints a fresh
+intermediate box on every access: `Ꮡo.of(Outer.Ꮡin).of(Inner.Ꮡv)` allocates a new `ж<Inner>` each time
+it is evaluated, so `&o.in.v == &o.in.v` was **false at depth two** while correctly true at depth one.
+`Equals`, `GetHashCode` and `PointerOrderToken` resolve the source through the chain now, the way
+`ReferentObject` already did for lifetime questions.
+
+Both defects surfaced as one symptom, and it is worth recording because nothing about that symptom
+points at pointer identity: `internal/poll`'s `FD.Close` hung forever on a file whose `Read` was still
+in flight. `Close` parks on `runtime_Semacquire(&fd.csema)` until the reader's `readUnlock` →
+`destroy` → `runtime_Semrelease(&fd.csema)` wakes it, and those semaphores are keyed by pointer
+identity. The two spellings of `&fd.csema` — `os.close`'s, reached through `ж<file>`, and `os.read`'s,
+reached through `ж<File>` — landed in **different buckets**, so the release never reached the acquire.
+Everything else on the path was already faithful: `syscall.CancelIoEx` really did abort the blocking
+`ReadFile`, and the read really did return Go's `file already closed`. Guarded by
+`PipeCloseUnblocksRead` (a goroutine blocked on a pipe read, a closer, output-compared against
+`go run`) and `EmbeddedPointerFieldIdentity` (depth-2 chain equality, `map[*T]V` keying, and both
+spellings of a field promoted through an embedded pointer).
+
 ## Interfaces
 Go interfaces are duck-typed: a type implements an interface simply by having the methods. The converter emits each **user-defined** interface as a partial interface with a `[GoType]` attribute, and the **`ImplementGenerator`** source generator discovers which concrete types satisfy it and emits the implementing glue plus the implicit conversions. As a result, assigning a concrete value to an interface variable is direct — no reflection lookup or `.As(...)` call is needed:
 

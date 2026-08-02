@@ -335,6 +335,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
+    public void CheckEmbeddedPointerFieldIdentity() => CheckTarget("EmbeddedPointerFieldIdentity");
+
+    [TestMethod]
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
@@ -996,6 +999,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
+
+    [TestMethod]
+    public void CheckPipeCloseUnblocksRead() => CheckTarget("PipeCloseUnblocksRead");
 
     [TestMethod]
     public void CheckPkgLevelFuncLitLocals() => CheckTarget("PkgLevelFuncLitLocals");

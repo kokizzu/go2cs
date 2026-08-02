@@ -1156,11 +1156,18 @@ internal static bool Less(this reverse r, nint i, nint j) {
 Promoted-embed structs construct through a generated constructor (never `default`, which would leave null
 boxes). Cross-package embeds resolve through the compiled type's metadata, and pointer-receiver methods
 promoted through a value embed are routed at the call site (`t.of(timeTimer.Ꮡtimer).modify(…)`) so writes
-land on the real storage.
+land on the real storage. A field promoted through a **pointer** embed takes the hop before its reference is
+built, so its address is rooted where Go roots it — `f.pfd` for `type File struct{ *file }` *is* `f.file.pfd`,
+one address whichever spelling reaches it:
+
+```csharp
+// os/File — the generated promoted field reference
+internal static ж<FD> Ꮡpfd(ref File instance) => instance.@file.of(global::go.os_package.file.Ꮡpfd);
+```
 
 **Full detail:** [Reference → Struct Type Embedding](ConversionStrategies-Reference.md#struct-type-embedding) —
-transitive/pointer promotion, zero-value construction, cross-package (metadata) embeds, interface-adapter
-projection through embeds, and box-receiver primaries.
+transitive/pointer promotion, zero-value construction, cross-package (metadata) embeds, pointer-embed field
+identity, interface-adapter projection through embeds, and box-receiver primaries.
 
 ---
 

@@ -221,6 +221,7 @@
     <Project Path="Tests/Behavioral/ElidedNestedPtrComposite/ElidedNestedPtrComposite.csproj" />
     <Project Path="Tests/Behavioral/ElidedPtrElemIfaceAssign/ElidedPtrElemIfaceAssign.csproj" />
     <Project Path="Tests/Behavioral/ElidedStructInterfaceField/ElidedStructInterfaceField.csproj" />
+    <Project Path="Tests/Behavioral/EmbeddedPointerFieldIdentity/EmbeddedPointerFieldIdentity.csproj" />
     <Project Path="Tests/Behavioral/EmbeddedPointerNilAssign/EmbeddedPointerNilAssign.csproj" />
     <Project Path="Tests/Behavioral/EmbeddedTypeNameCollision/EmbeddedTypeNameCollision.csproj" />
     <Project Path="Tests/Behavioral/EmbeddedTypeNameCollision/inner/EmbeddedTypeNameCollision.inner.csproj" />
@@ -469,6 +470,7 @@
     <Project Path="Tests/Behavioral/ParenthesizedConcatContext/ParenthesizedConcatContext.csproj" />
     <Project Path="Tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
     <Project Path="Tests/Behavioral/PkgLevelFuncLitLocals/PkgLevelFuncLitLocals.csproj" />
+    <Project Path="Tests/Behavioral/PipeCloseUnblocksRead/PipeCloseUnblocksRead.csproj" />
     <Project Path="Tests/Behavioral/PointerArraySlice/PointerArraySlice.csproj" />
     <Project Path="Tests/Behavioral/PointerParamWalk/PointerParamWalk.csproj" />
     <Project Path="Tests/Behavioral/PointerArrayRange/PointerArrayRange.csproj" />

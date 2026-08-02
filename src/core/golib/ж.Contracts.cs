@@ -88,6 +88,37 @@ public delegate ref TElem FieldRefFunc<TElem>(object structPtr);
 public delegate ref TElem FieldRefFunc<T, TElem>(ref T structRef);
 
 /// <summary>
+/// Delegate that returns a <see cref="ж{T}"/> POINTER to a field whose storage lives in a DIFFERENT
+/// allocation than the struct it is selected from.
+/// </summary>
+/// <typeparam name="T">Struct type.</typeparam>
+/// <typeparam name="TElem">Field type.</typeparam>
+/// <param name="structRef">Reference to struct.</param>
+/// <returns>Pointer to the field, rooted at the allocation that actually contains it.</returns>
+/// <remarks>
+/// <para>
+/// This is the contract for a field promoted through an EMBEDDED POINTER — Go's
+/// <c>type File struct { *file }</c>, where <c>f.pfd</c> is by definition <c>f.file.pfd</c> and so
+/// names storage inside the <c>file</c> allocation, not inside <c>File</c>. A plain
+/// <see cref="FieldRefFunc{T,TElem}"/> can REACH that storage (its <c>ref</c> is correct, so reads
+/// and writes land in the right place) but it cannot say WHERE the storage lives, and a pointer's
+/// identity is exactly that: <see cref="ж{T}"/> encodes a field reference as (containing allocation,
+/// field token), so an accessor that silently hops to another allocation makes <c>&amp;f.pfd</c> and
+/// <c>&amp;f.file.pfd</c> — ONE address in Go — compare unequal. Everything keyed on pointer identity
+/// then splits in two: a <c>map[*T]V</c> grows a second entry for the same address, and the
+/// address-keyed runtime semaphores paired a release with a different bucket than the acquire, which
+/// is what hung <c>internal/poll</c>'s <c>Close</c> on a file whose <c>Read</c> was still in flight.
+/// </para>
+/// <para>
+/// go2cs-gen emits the promoted accessor in THIS form whenever the promotion crosses a pointer, so
+/// the hop is taken BEFORE the field reference is built and the result is rooted where Go roots it.
+/// Call sites are unchanged: <c>Ꮡf.of(File.Ꮡpfd)</c> binds to the matching <c>of</c> overload by the
+/// accessor's return type.
+/// </para>
+/// </remarks>
+public delegate ж<TElem> FieldPtrFunc<T, TElem>(ref T structRef);
+
+/// <summary>
 /// Helper class for creating a <see cref="FieldRefFunc{TElem}"/> delegate for a struct field.
 /// </summary>
 /// <typeparam name="T">Type of struct.</typeparam>
@@ -218,6 +249,19 @@ public interface IPointer<T>
     /// <param name="fieldRefFunc">Struct field reference delegate.</param>
     /// <returns>Pointer to field of struct.</returns>
     ж<TElem> of<TElem>(FieldRefFunc<T, TElem> fieldRefFunc);
+
+    /// <summary>
+    /// Gets a pointer to a field of a struct whose storage lives in another allocation — a field
+    /// promoted through an EMBEDDED POINTER (see <see cref="FieldPtrFunc{T,TElem}"/>).
+    /// </summary>
+    /// <typeparam name="TElem">Type of field.</typeparam>
+    /// <param name="fieldPtrFunc">Struct field pointer delegate.</param>
+    /// <returns>Pointer to field of struct, rooted at the allocation that contains it.</returns>
+    /// <remarks>
+    /// The accessor has already taken the hop, so this is a plain forward: whatever pointer it
+    /// returns IS the answer, and its identity is the pointed-to allocation's, exactly as Go's.
+    /// </remarks>
+    ж<TElem> of<TElem>(FieldPtrFunc<T, TElem> fieldPtrFunc) => fieldPtrFunc(ref Value);
 
     /// <summary>
     /// Gets a pointer to element at the specified index for <see cref="array{T}"/> or <see cref="slice{T}"/> types.

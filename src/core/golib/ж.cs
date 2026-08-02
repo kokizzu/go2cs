@@ -432,6 +432,17 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         }
     }
 
+    /// <inheritdoc/>
+    public ж<TElem> of<TElem>(FieldPtrFunc<T, TElem> fieldPtrFunc)
+    {
+        // No box is minted here: the accessor crossed an embedded POINTER and already rooted the
+        // reference at the allocation that holds the field, which is where Go roots it. Building a
+        // field ref over THIS box instead would name the outer allocation, and `&f.pfd` taken
+        // through the outer would stop being the same pointer as `&f.file.pfd` taken through the
+        // inner (see FieldPtrFunc's remarks).
+        return fieldPtrFunc(ref Value);
+    }
+
     // Materializes a value-type IArray implementer's lazy backing ON THE REAL STORAGE (see the
     // comment in at<Telem> below). Built once per T when T is a struct implementing IArray; the
     // constrained generic call (`value.Source` on `ref TVal`) does not box, so the wrapper's
@@ -506,6 +517,13 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// <inheritdoc cref="at{TElem}(FieldRefFunc{T,array{TElem}},nint)"/>
     public ж<TElem> at<TElem>(FieldRefFunc<slice<TElem>> fieldRefFunc, nint index) => of(fieldRefFunc).at<TElem>(index);
 
+    /// <inheritdoc cref="at{TElem}(FieldRefFunc{T,array{TElem}},nint)"/>
+    /// <remarks>The pointer-crossing promotion shapes (see <see cref="FieldPtrFunc{T,TElem}"/>).</remarks>
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, array<TElem>> fieldPtrFunc, nint index) => of(fieldPtrFunc).at<TElem>(index);
+
+    /// <inheritdoc cref="at{TElem}(FieldPtrFunc{T,array{TElem}},nint)"/>
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, slice<TElem>> fieldPtrFunc, nint index) => of(fieldPtrFunc).at<TElem>(index);
+
     /// <inheritdoc />
     public override string ToString()
     {
@@ -559,7 +577,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             (object source1, FieldRefFunc<T> _, Delegate fieldId1) = m_structFieldRef.Value;
             (object source2, FieldRefFunc<T> _, Delegate fieldId2) = other.m_structFieldRef.Value;
 
-            return ReferenceEquals(source1, source2) && fieldId1.Equals(fieldId2);
+            return SameSource(source1, source2) && fieldId1.Equals(fieldId2);
         }
 
         // Pointer into an array/slice element: same backing STORAGE and same ABSOLUTE element index
@@ -588,6 +606,34 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // to a single entry; and a box's hash MUTATES when its pointee is assigned, so a key inserted
         // while the pointee was nil can never be found again.
         return false;
+    }
+
+    // Resolves whether two field references were taken through the SAME Go pointer. A source is
+    // compared by pointer IDENTITY, not by object reference, because an `of()` chain mints a FRESH
+    // intermediate box on every access: `Ꮡo.of(Outer.Ꮡin).of(Inner.Ꮡv)` allocates a new ж<Inner>
+    // each time it is evaluated, so a reference comparison made `&o.in.v == &o.in.v` FALSE at depth
+    // two while it was correctly true at depth one. Everything that rests on pointer identity
+    // followed: a `map[*T]V` grew a second entry for the same address, and the address-keyed runtime
+    // semaphores in the hand-owned sync / internal-poll implementations paired a release with a
+    // DIFFERENT bucket than the acquire — which is why closing an os.File whose Read was still in
+    // flight blocked forever in runtime_Semacquire (&fd.csema is reached as file→pfd→csema, depth
+    // two). ReferentObject already walked the chain for lifetime questions; equality, the hash and
+    // the order token now agree with it.
+    //
+    // Only a POINTER source is resolved recursively. A source that is not a pointer box is storage
+    // in its own right, and object identity is exactly the right question for it — deferring to
+    // Equals there would compare boxed VALUES, which is never pointer identity.
+    private static bool SameSource(object source1, object source2)
+    {
+        return ReferenceEquals(source1, source2) ||
+               (source1 is INilPointer && source2 is INilPointer && source1.Equals(source2));
+    }
+
+    // The identity hash of a field reference's source, resolved through an `of()` chain on the same
+    // terms as SameSource above so equal pointers always land in the same bucket.
+    private static int SourceIdentityHash(object source)
+    {
+        return source is INilPointer parent ? parent.GetHashCode() : RuntimeHelpers.GetHashCode(source);
     }
 
     // Reduces an array-index referent to the identity of its ACTUAL storage plus the ABSOLUTE index
@@ -676,8 +722,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
 
             if (m_structFieldRef is not null)
             {
+                // The source identity is resolved through an `of()` chain (SameSource), so that the
+                // documented invariant holds at every depth: equal pointers produce equal tokens.
                 (object source, FieldRefFunc<T> _, Delegate fieldId) = m_structFieldRef.Value;
-                return unchecked((nuint)(((ulong)(uint)RuntimeHelpers.GetHashCode(source) << 32) | (uint)fieldId.GetHashCode()));
+                return unchecked((nuint)(((ulong)(uint)SourceIdentityHash(source) << 32) | (uint)fieldId.GetHashCode()));
             }
 
             // A standard heap box IS the storage it addresses — its own identity, never the held
@@ -745,7 +793,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return 0;
 
         if (m_structFieldRef is not null)
-            return RuntimeHelpers.GetHashCode(m_structFieldRef.Value.Item1);
+            return SourceIdentityHash(m_structFieldRef.Value.Item1);
 
         if (m_arrayIndexRef is not null)
         {

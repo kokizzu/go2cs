@@ -277,7 +277,27 @@ internal class StructTypeTemplate : TemplateBase
                     // struct's instance param must carry them (Δentry<K, V>, CS0305); the
                     // promoted-struct MEMBER access strips its type arguments (the property is
                     // `node`, not `node<K, V>` — internal/concurrent's entry[K,V]).
-                    result.Append($"\r\n{TypeElemIndent}{typeScope} static ref {SubstituteTypeParameters(typeName, typeArgMap)} {AddressPrefix}{GetUnsanitizedIdentifier(memberName)}(ref {StructName} instance) => ref instance.{EmbedHop(promotedStructType, promotedMemberName)}.{memberName};");
+                    string promotedFieldType = SubstituteTypeParameters(typeName, typeArgMap);
+                    string accessorRef = $"{AddressPrefix}{GetUnsanitizedIdentifier(memberName)}";
+
+                    // A promotion that crosses an EMBEDDED POINTER names storage in ANOTHER
+                    // allocation — Go's `f.pfd` for `type File struct{ *file }` IS `f.file.pfd` —
+                    // so the hop must be taken BEFORE the field reference is built. A `ref`
+                    // accessor that derefs on the right (`instance.@file.Value.pfd`) reaches the
+                    // right storage but leaves `of()` rooting the pointer at the OUTER box, and a
+                    // ж field reference's identity is (containing allocation, field token): the
+                    // same Go address then compares unequal depending on which struct it was
+                    // selected through. Emit the pointer-returning shape instead — `of` has an
+                    // overload for it, so no call site changes — and let the INNER type's own
+                    // accessor build the reference, which composes for a multi-level embed
+                    // (fileWithoutReadFrom → *File → *file) because that accessor may itself be
+                    // this shape. Value embeds keep the plain `ref` form: their promoted fields
+                    // live in the enclosing allocation, so the existing rooting is already right.
+                    string pointerEmbedInnerType = PointerEmbedInnerType(promotedStructType, promotedMemberName);
+
+                    result.Append(pointerEmbedInnerType is null
+                        ? $"\r\n{TypeElemIndent}{typeScope} static ref {promotedFieldType} {accessorRef}(ref {StructName} instance) => ref instance.{EmbedHop(promotedStructType, promotedMemberName)}.{memberName};"
+                        : $"\r\n{TypeElemIndent}{typeScope} static {PointerPrefix}<{promotedFieldType}> {accessorRef}(ref {StructName} instance) => instance.{promotedMemberName}.of({pointerEmbedInnerType}.{accessorRef});");
                 }
             }
 
@@ -723,6 +743,39 @@ internal class StructTypeTemplate : TemplateBase
     private static string EmbedHop(string promotedStructType, string memberName) =>
         StripGenericTypeArguments(GetSimpleName(promotedStructType, dropCollisionPrefix: true))
             .EndsWith(".Value", StringComparison.Ordinal) ? $"{memberName}.Value" : memberName;
+
+    // The POINTED-TO type of a pointer embed, or null when the re-rooted form cannot be emitted for
+    // it. It is what a promoted field-reference accessor must re-root at: the embed's declared type
+    // is the box `ж<Inner>`, so the pointee is its single type ARGUMENT, already fully qualified
+    // where the template got it. Detection reuses EmbedHop's own test — the `.Value` deref it appends
+    // IS the statement "this hop crosses a pointer" — so the two can never disagree about which
+    // embeds are pointers.
+    //
+    // Two cases decline, and both keep the plain `ref` form: it still reaches the right storage, and
+    // only its pointer IDENTITY keeps the pre-existing outer rooting.
+    //
+    //   - A named pointer TYPE (a generated wrapper rather than `ж<T>`) parses to no type argument,
+    //     so there is nothing to name as the inner type.
+    //   - A CROSS-PACKAGE embed, whose declaration syntax is unavailable in this compilation. The
+    //     re-rooted form names the INNER type's own `Ꮡ<member>` accessor, which exists only for the
+    //     members that type's own generator saw; a cross-package embed is enumerated from METADATA
+    //     instead (see getStructMembers), and metadata surfaces public fields the inner DECLARATION
+    //     never had — the reflect bridge's hand-added `abi.Type.sysType`/`arrayDims`, promoted into
+    //     `runtime.rtype`, have no generated accessor to name (CS0117).
+    private string? PointerEmbedInnerType(string promotedStructType, string memberName)
+    {
+        if (EmbedHop(promotedStructType, memberName) == memberName)
+            return null;
+
+        (StructDeclarationSyntax? innerDeclaration, _) = Context.GetStructDeclaration(promotedStructType);
+
+        if (innerDeclaration is null)
+            return null;
+
+        List<string> typeArguments = ParseTopLevelTypeArguments(promotedStructType);
+
+        return typeArguments.Count == 1 ? typeArguments[0] : null;
+    }
 
     private static readonly Dictionary<string, string> s_noTypeArgs = new(StringComparer.Ordinal);
 

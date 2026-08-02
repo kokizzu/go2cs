@@ -412,6 +412,62 @@ validating, exactly as this section said.
 *Updated 2026-08-01: the ruling landed (option (d) above) and `net` builds — see the Deadline banner.
 The init gap and the channel frog are what remain, exactly as predicted.*
 
+#### Ground-truthed 2026-08-02 (r37-poll scout) — the census, and the `sync.OnceFunc` row is STALE
+
+Measured on the post-r37-poll tree, one pipeline invocation
+(`-tests -test-action all -test-timeout 20m`). The wall is exactly one root, and it is **not** the one
+recorded above.
+
+| | |
+|:--|:--|
+| production + test build | **0 errors** (warnings only) |
+| Go side | 138 top-level tests |
+| C# side | **0 reached** — `status: conversion-blocked`, every row `C#=""` |
+| excluded declarations | 129 (unsupported capabilities) |
+
+**The `sync.OnceFunc` nil panic at `net/fd_windows.cs:27` does not reproduce.** That line is
+`poll.InitWSA()`, and nothing gets far enough to execute it — `InitWSA` appears nowhere in the run.
+Whatever closed it closed it uncredited, exactly the staleness charter §9 warns about; probe, don't
+inherit.
+
+**Today's blocker is the OPEN pointer-PARAMETER nil-deref row**, the one the `os` nil-receiver arc
+named as still outstanding ("the same defect is still open for pointer PARAMETERS … the complete fix
+is to give parameters the same unconditional `DerefOrNull`"). The chain is identical whether `net` is
+entered through a program or through its test host:
+
+```
+go.net_package..cctor()                          net/addrselect.cs
+  → netip.AddrFrom16                             net/netip/netip.cs
+    → go.net.netip_package..cctor()
+      → unique.Make → go.unique_package..cctor() unique/handle.cs
+        → concurrent.NewHashTrieMap
+          → concurrent.newIndirectNode(nil)      internal/concurrent/hashtriemap.cs:372
+            → PanicException: runtime error: invalid memory address or nil pointer dereference
+```
+
+```go
+func newIndirectNode[K, V comparable](parent *indirect[K, V]) *indirect[K, V] {
+	return &indirect[K, V]{node: node[K, V]{isEntry: false}, parent: parent}   // parent is nil here
+}
+```
+```csharp
+internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> Ꮡparent) {
+    ref var parent = ref Ꮡparent.Value;    // ← eager entry alias; the body never dereferences it
+    return Ꮡ(new Δindirect<K, V>(node: new node<K, V>(isEntry: false), parent: Ꮡparent));
+}
+```
+
+The body only ever uses `Ꮡparent`; the alias exists and panics. Neither `nilSafePtrParamNames`
+heuristic fires (the parameter is not nil-compared in the body and no same-package call site passes a
+literal `nil` — `NewHashTrieMap`'s does, but through a generic instantiation). So `net` is a
+**one-root wall**, and that root is already designed: the parameter arm of `DerefOrNull`. It is a
+much larger emission footprint than the receiver arm (3167 entry aliases) and wants its own
+measurement and ruling — but it now has a second package demanding it, and `unique` and
+`internal/concurrent` are blocked by the same line.
+
+Nothing beyond it is measurable yet: with zero tests reached there is no second bucket to report.
+Re-run this census the moment the parameter arm lands.
+
 ## `time` — builds and RUNS (2026-08-02, r35): 139 pass / 17 fail / 2 skip / 1 infra-error of 159
 
 `time` was opened the day the channels frog was confirmed closed. It went from **260 build errors** to
@@ -881,7 +937,9 @@ fallback pinned for one statement while the derived pointer lived on; determinis
 unblock an in-progress read on `Close`, hanging `TestPipeEOF`/`TestPipeIOCloseRace` + two siblings
 and starving six more tests of child stdout (`TestHostname`, `TestExecutable`, `TestGetppid`,
 `TestStatStdin`, both `TestStartProcess` arms, `TestRootDirAsTemp`) — its own future arc, and the
-reason pipeline invocations leak `os.tests.exe`. ⚠ Scheduling: never run two lanes against ONE
+reason pipeline invocations leak `os.tests.exe`. *(Closed 2026-08-02 by r37-poll, below — with the
+diagnosis half right: the hang was real and is fixed, but it was not in `internal/poll`, and the
+six child-stdout rows did **not** follow it.)* ⚠ Scheduling: never run two lanes against ONE
 package's pipeline — the host is named per package, so the rename defence cannot apply; the tell
 for a sibling-killed run is `go2cs_test_results.json` carrying the PREVIOUS run's mtime.
 
@@ -894,6 +952,105 @@ on base, pass 2/2 with the fix.** *Every other* test that moved, moved in BOTH a
 tests and the outcome distributions coincide (base run 2 landed on 125 pass · 14 fail · 3 infra —
 identical to the fix's run 1). **The lesson for the next arc: a single `os` run cannot attribute a
 one-test delta.** Pair every claim with a control run of the unchanged converter.
+
+### The blocking-pipe family — CLOSED 2026-08-02 (r37-poll), and it was never `internal/poll`
+
+**Measured, `-test-action all -test-timeout 35m`, three runs on the fixed tree: 165 agreeing of 178
+(twice, identically) against the banked 164, with 177 reached.** The whole blocking-pipe family flips
+from HANG to PASS — `TestPipeCloseRace`, `TestPipeIOCloseRace`, `TestFdRace`, `TestFdReadRace`,
+`TestCloseWithBlockingReadByFd`, `TestCloseWithBlockingReadByNewFile`, `TestClosedPipeRaceRead`,
+`TestClosedPipeRaceWrite` — and no run leaks an `os.tests.exe`.
+
+**The conversion of `internal/poll` was faithful all along, and so was everything under it.** Probed
+bottom-up rather than reasoned about: `syscall.CancelIoEx` really does abort a blocking `ReadFile` on
+a `CreatePipe` handle through the converted trampoline (a `syscall`-only program reproduces Go's
+`ERROR_OPERATION_ABORTED` exactly), and `FD.Read` really does return Go's `read |0: file already
+closed`. What never returned was **`FD.Close`**, parked forever in `runtime_Semacquire(&fd.csema)`
+after the reader had already finished — the stack says so directly.
+
+The root is **Go pointer identity**, in two layers, both now fixed and both corpus-wide:
+
+1. **A field promoted through an embedded POINTER was rooted at the OUTER allocation.** `os.File`
+   embeds `*file`, so `&f.pfd` reached through `ж<File>` and `&file.pfd` reached through `ж<file>`
+   were different pointers where Go has one address. `internal/poll`'s semaphores are keyed by
+   pointer identity, so `os.read`'s release and `os.close`'s acquire landed in **different buckets**.
+   go2cs-gen now emits the pointer-crossing promoted accessor in a re-rooting shape
+   (`instance.@file.of(file.Ꮡpfd)`), golib gains `FieldPtrFunc<T,TElem>` plus the matching
+   `of`/`at` overloads, and **no call site changes** — the overload is chosen by the accessor's
+   return type. 340 accessors corpus-wide take the new form; a **cross-package** embed keeps the old
+   `ref` form by design (its member list comes from metadata and can name fields the inner
+   declaration never had — `abi.Type.sysType`, promoted into `runtime.rtype`, has no generated
+   accessor to re-root through), and that fallback is fail-loud (CS0117 at the corpus build).
+2. **A field reference's SOURCE was compared by object reference, so a two-level `of()` chain broke.**
+   `Ꮡo.of(Outer.Ꮡin).of(Inner.Ꮡv)` mints a fresh intermediate box per access, so `&o.in.v == &o.in.v`
+   was **false** at depth two (true at depth one) and a `map[*T]V` grew one entry per access.
+   `ж<T>.Equals`/`GetHashCode`/`PointerOrderToken` now resolve the source through the chain, the way
+   `ReferentObject` already did.
+
+Guards: `PipeCloseUnblocksRead` (goroutine blocked on a pipe read, closer, output-compared) and
+`EmbeddedPointerFieldIdentity` (depth-2 equality, `map[*T]V` keying, both spellings of a
+pointer-embed-promoted field). Both are deterministic *neutered-fix* controls — on the base tree the
+first HANGS outright and the second prints `depth2: false`. Gates: full behavioral suite 535/535 +
+505/505 output; CNR byte-identical across all 560 behavioral packages except the two new projects;
+`go2cs-stdlib.slnx` 304 projects, 0 errors; `go test ./...` in `src/go2cs` green.
+
+**The control run answered in twenty seconds, and it is worth knowing that it can.** The five-run
+lesson above is about attributing a *one-test* delta; when the delta is a hang, the control does not
+need to finish — it needs a stack. With the change stashed and go2cs-gen rebuilt at base, `os`'s host
+was sampled 20 s in and had **three threads already parked in
+`internal.poll.Close` → `runtime_Semacquire`** — `testClosedPipeRace` twice and `TestPipeIOCloseRace`
+once, the very tests that pass on the fixed tree — plus `testPipeEOF` in the channel row below. Same
+call site, same run, before and after: that is the attribution, at a cost of one build and one sample
+rather than another 35-minute measurement.
+
+#### What the fix did NOT do — two board predictions corrected
+
+- **The six child-stdout rows do not follow.** `TestExecutable`, `TestGetppid`, `TestStatStdin`,
+  `TestRootDirAsTemp` and `TestStartProcess` still fail with an empty child result, so their root is
+  **not** pipe blocking; `TestHostname` passed in one of the three runs and failed in two, which puts
+  it in the load-sensitive class rather than either. `TestExecutable` is the sharpest specimen and
+  worth rooting next: it re-execs the host with a **relative** `cmd.Path`, `cmd.Dir` set to the
+  parent directory, and a **forged `argv[0]` of `"-"`**, then reads `CombinedOutput`. (Its failure
+  message also exposes a second, independent gap: Go renders `%q` of an empty `[]byte` as `""`, the
+  converted `fmt` renders `[]`.)
+- **The new top row is `TestPipeEOF`, and it is a CHANNEL row, not a pipe row.** With the pipe close
+  unblocked the test now runs to its end and hangs there — reproducibly, at the identical site in
+  both runs that hung (the third run instead died with `Fatal error. Internal CLR error.
+  (0x80131506)`). Captured stacks: the test's deferred `<-writerDone` waits while the **writer
+  goroutine is parked in `ChanCore<nint>.Recv` inside `channel<T>.GetEnumerator.MoveNext()` — a
+  `for range` over a channel the main goroutine has already CLOSED and drained**. A lost wakeup (or a
+  closed-and-empty receive that parks), in `golib/channel.cs`, which this lane is fenced from. It
+  does **not** reproduce in isolation: a standalone probe of the same shape — buffered channel,
+  ranging goroutine that sleeps between receives, sender that closes — terminated 10,000 times out of
+  10,000, so it needs the suite's parallel load. Deliver it to the channels lane with the stacks;
+  closing it should take `os` to 166.
+
+#### `TestCmdArgs` — the blittable-mirror remedy does NOT apply, and the reason is specific
+
+`syscall.CommandLineToArgv` returns `*[8192]*[8192]uint16` over a block the OS allocated, and the
+caller frees it: `defer syscall.LocalFree(syscall.Handle(uintptr(unsafe.Pointer(argv))))`. The
+converted wrapper makes a native-address box, so `~argv` reads an `array<ж<array<uint16>>>` **struct**
+— a managed backing reference plus bounds — out of the pointer block's own bytes, and `(*argv)[:argc]`
+then slices with fabricated bounds (`ArgumentException`). Hand-owning it to return a MANAGED
+materialization of the block fixes the walk and **breaks the free**: for a `ж<T>` whose pointee is a
+Go fixed array, `uintptr(unsafe.Pointer(p))` takes `ж.cs`'s `pinnedArrayData` path and hands back the
+real **GC-heap** data address, so `LocalFree` would be asked to free GC memory — the exact
+`STATUS_HEAP_CORRUPTION` failure mode `ж.cs`'s own banner records for the
+`GetEnvironmentStringsW`/`FreeEnvironmentStringsW` pair. That trades a contained `ArgumentException`
+for a process kill, so it was **not** done.
+
+What would close it is a pointer flavor golib does not have: a box that answers ADDRESS questions with
+the real native address while answering VALUE questions with a managed materialization — a *snapshot*
+pointer, sound precisely for read-only native output blocks. `net/lookup_windows.cs`'s DNS-record walks
+are the same shape, so it wants designing with them rather than minting for one test. Scope today is
+exactly one test: nothing in the converted stdlib calls `syscall.CommandLineToArgv` (the only other
+caller in GOROOT is the vendored `x/sys/windows` copy, which is not converted).
+
+`TestDirectoryJunction` was characterized alongside it and is **not** the same family — no native
+block, no free. Its `createMountPoint` helper is TEST code that reinterprets a managed `[]byte` as
+`windows.MountPointReparseBuffer` and writes four `uint16` fields through it, then indexes
+`&buf.PathBuffer[0]` — a `[1]uint16` inline tail standing in for kernel bytes. That is the raw-metal
+fork's stub arm, in code that cannot be hand-owned, exactly as the residual table already recorded.
 
 ### FOUND while attributing the above — `t.TempDir()` collides two tests that differ only by CASE
 
