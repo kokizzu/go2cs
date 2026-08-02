@@ -80,6 +80,16 @@
 >   explicit `typeof(object)` arm `KindOf` and `TryConvertTo` already had. Cleared gob's
 >   TestInterfaceBasic / TestInterfacePointer / TestNestedInterfaces.
 >
+> **⚠ gob is BUILD-BLOCKED as of 2026-08-02 (measured by increment 5), so the residue list below is
+> not currently observable.** `package_info_internal_test.cs` emits
+> `[assembly: GoImplement<gob_internal_test_package.Point, Pythagoras>]`, but `Pythagoras` is declared
+> in the EXTERNAL test package (`example_interface_test.go`, `package gob_test`) and gob declares a
+> SECOND, unrelated `Point` there — so the record anchored the internal variant's same-named type and
+> left the interface unqualified in a file where it is not in scope: `CS0246`, no test host, all 106
+> verdicts empty. That is test-project-model record anchoring (the `splitExternalVariantRecords` /
+> whitebox adapter-pair family), **not** reflection surface; it is recorded against that arc in
+> BOARD-next-validation-candidates.md. Re-measure gob's reflection residues only after it builds again.
+>
 > **Rooted gob residues (open, NOT disclosure candidates).** The managed `array<T>` type does not
 > carry its LENGTH, so `reflect.Type.Elem()` of a `*[N]T` loses N and gob sees a length-0 array
 > where the wire says N — `TestSingletons`, part of `TestIndirectSliceMapArray` (`Value.Elem`/
