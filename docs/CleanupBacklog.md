@@ -37,8 +37,13 @@
 6. **The 136-byte `for range` enumerator allocation over `slice<T>`** — corpus-wide: the range
    form allocates a fixed enumerator per loop where the indexed form allocates zero
    (r36-time-tail's measurement inside `parseRFC3339`).
-7. **`IByteSeq<T>` interface-boxing** — the range indexer returns the interface so every `s[a:b]`
-   boxes (48 B), and `[]byte(s)` boxes again. Same measurement site.
+7. **`IByteSeq<T>` interface-boxing — PROMOTED (user-ruled 2026-08-02): gates `time`'s bank.**
+   The range indexer returns the interface so every `s[a:b]` boxes (48 B), and `[]byte(s)` boxes
+   again. `TestUnmarshalTextAllocations` wants ZERO allocations and the user ruled NO disclosure —
+   a want-zero is satisfiable, so softening it would spend the credibility the badges exist to
+   earn. The self-referential-generic redesign of the converter-emitted union-constraint interface
+   is therefore on `time`'s critical path, not idle-point work. (Measured remainder: 2,728 B/run
+   after the struct-enumerator fix, all in this seam.)
 
 ## Test host / pipeline
 

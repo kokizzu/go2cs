@@ -1085,3 +1085,24 @@ The likely origin of both is charter §9's false-alarm trap (a): a `bin/go2cs.ex
 hmac's banking commit — regenerates hmac without the io reference and fails exactly as described.
 **Lesson to carry forward:** when a change in one language appears to alter output produced by
 another, force `go build -o bin/go2cs.exe` and re-measure before recording a coupling.
+
+## Rulings — 2026-08-02 (user; all recommended options adopted)
+
+1. **`time`/`TestUnmarshalTextAllocations`: NO disclosure.** A want-zero alloc assert is
+   satisfiable, so disclosing it would soften the doctrine the badges depend on. The `IByteSeq<T>`
+   boxing redesign (CleanupBacklog #7) is PROMOTED onto `time`'s critical path.
+2. **Capability-exclusion SANCTIONED for the provably-unownable os class** — the hostfxr
+   apphost-relocation limitation (`TestRemoveAllWithExecutedProcess`), `TestCmdArgs` (a managed
+   materialization would let Go `LocalFree` GC memory), and `TestDirectoryJunction` (raw-metal on
+   non-native types in test code). Implement via the established `unsupportedRuntimeCapabilities`
+   mechanism, WITH the mandatory §9 roster scan (positive control) before widening. This plus the
+   fixable rows is `os`'s path to a bank.
+3. **Timer mode-0 divergence ruling DEFERRED** until the recorded one-fire-per-pass timer-model
+   fix lands and reshapes the residual — no ruling on a measurement about to change.
+4. **`GoUntyped` → `GoBigConst`** (see the charter §6.1 math/big row); rides the rebank.
+5. **The native-address+managed-snapshot pointer flavor is DEFERRED** until `net`'s DNS work
+   demands it; then a design-with-user session — not designed against one test.
+6. **Whole-corpus rebank: scheduled immediately after the r37 train lands** (carries the
+   accumulated intended drift + the param-unification footprint + the `GoBigConst` rename).
+7. **NuGet release: after the rebank**, so the first badged release ships a corpus byte-current
+   with the converter.
