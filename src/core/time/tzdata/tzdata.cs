@@ -28,7 +28,9 @@ partial class tzdata_package {
 // registerLoadFromEmbeddedTZData is defined in package time.
 //
 //go:linkname registerLoadFromEmbeddedTZData time.registerLoadFromEmbeddedTZData
-internal static partial void registerLoadFromEmbeddedTZData(Func<@string, (@string, error)> _);
+internal static void registerLoadFromEmbeddedTZData(Func<@string, (@string, error)> _) {
+    go.time_package.registerLoadFromEmbeddedTZData(_);
+}
 
 [GoInit] internal static void init() {
     registerLoadFromEmbeddedTZData(loadFromEmbeddedTZData);

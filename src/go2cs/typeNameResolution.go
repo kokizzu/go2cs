@@ -742,7 +742,22 @@ func getAliasedTypeName(typeName string) string {
 				return alias
 			}
 
-			return fmt.Sprintf("%s.%s", strings.Join(parts[:len(parts)-1], "."), alias)
+			qualifier := strings.Join(parts[:len(parts)-1], ".")
+
+			// A CONST entry keeps the member qualified through the package, so the qualifier must
+			// be the file-local using ALIAS — which is Δ-renamed when a same-named child namespace
+			// is visible (importAliasOperations.go). The raw package name was carried through
+			// unchanged, so a Δ-shadowed import emitted the collision-renamed member against the
+			// UNRENAMED qualifier: `time.ΔNanosecond` where the file declares
+			// `using Δtime = time_package;` and bare `time` binds the go.time CHILD namespace
+			// (CS0234 ×44 in time's own external test files, whose blank import of time/tzdata is
+			// what puts that namespace in the assembly). Single-segment only — an already
+			// `_package`- or `global::`-qualified spelling is not an import alias and is left alone.
+			if len(parts) == 2 {
+				qualifier = importQualifier(qualifier)
+			}
+
+			return fmt.Sprintf("%s.%s", qualifier, alias)
 		}
 
 		// This reference resolves through the alias, so a DERIVED entry has earned its

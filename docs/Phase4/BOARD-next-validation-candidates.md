@@ -412,6 +412,56 @@ validating, exactly as this section said.
 *Updated 2026-08-01: the ruling landed (option (d) above) and `net` builds — see the Deadline banner.
 The init gap and the channel frog are what remain, exactly as predicted.*
 
+## `time` — builds and RUNS (2026-08-02, r35): 139 pass / 17 fail / 2 skip / 1 infra-error of 159
+
+`time` was opened the day the channels frog was confirmed closed. It went from **260 build errors** to
+**0**, and the host now runs the whole suite in ~60 s with **zero empty verdicts** — the timer
+machinery in `time_impl.cs` (one global heap on a Windows high-resolution waitable timer) holds up:
+`TestTicker`, `TestTickTimes`, `TestAfterTimes`, `TestAfterTick`, `TestTimerStopStress`,
+`TestTimerModifiedEarlier`, `TestAdjustTimers`, `TestLongAdjustTimers`, `TestAfterFuncStarvation`
+and the sleep family all pass against real rendezvous. **No channel-semantics defect was found**; the
+one channel-shaped failure is a documented model divergence, not a wave3 regression (below).
+
+Seven roots stood between the package and a build; all seven are fixed and none was `time`-specific.
+Six are in the converter or go2cs-gen, one is a hand-owned reach:
+
+| Errors | Root | Layer |
+|--:|:--|:--|
+| 1 (blocking all) | A mixed-accessibility `GoImplicitConv` pair whose less-accessible side is in ANOTHER assembly has no legal operator — skip it (`export_test.go`'s `type RuleKind int` over production `ruleKind`) | go2cs-gen |
+| 176 | A DOT-imported collision-renamed CONST/VAR emitted its raw Go name (`Second`, `UTC`, `Hour`, …) | converter |
+| 44 | A collision-renamed member kept the RAW package qualifier where the file's using is Δ-renamed (`time.ΔNanosecond` vs `Δtime.ΔNanosecond`) | converter |
+| 33 | **A local/parameter that SHADOWS a package name was resolved as the package** — `getAliasedTypeName` applied to a rendered expression; `time.Year()` → `Δtime.Year()`, `time.Month()` → `timeꓸMonth()`, `time.Hour()` → `time.ΔHour()` | converter |
+| 3 | A nested func literal's captures hoisted to the ENCLOSING statement's buffer, above the declaration they name | converter |
+| 2 | A folded constant of a NAMED type lost its type (`8 * time.Hour` → a bare `long`) — the loud half is CS1929, the silent half is `d` printing as digits | converter |
+| 1 | A concat of two SLICED string literals has no C# operator (span `+` span is literal-only) | converter |
+
+Plus the runtime blocker behind the build: `time/tzdata`'s `init()` pulls
+`time.registerLoadFromEmbeddedTZData` by `//go:linkname`, which was a throwing stub — inside a MODULE
+INITIALIZER, so a blank `import _ "time/tzdata"` took the host down before `main`. Now a real
+forwarder (see *A whitelisted target may be ORDINARY CONVERTED GO* in the reference). That fix pays
+for itself twice: with tzdata registered, `loadLocation` falls back to the embedded database, which is
+how the suite's `initTestingZone` reaches `America/Los_Angeles` at all — its hard-coded
+`../../lib/time/zoneinfo.zip` cannot resolve from the C# host's working directory.
+
+Guard for the six general converter/generator roots: the `PackageNameShadowing` behavioral test
+(a `describe(time time.Time)` parameter, a `time :=` local, Δ-qualified renamed members, a
+dot-importing sibling file, the named-type fold in both positions, and the sliced-literal concat —
+output-compared vs `go run`) plus `FuncLitArgCapture` case 15 for the hoist.
+
+**The 17 remaining failures, rooted, none of them `time`-local machinery:**
+
+| Count | Tests | Root | Owner |
+|--:|:--|:--|:--|
+| 6 | `TestChan` and its five subtests | **Documented model divergence, not a defect.** Go 1.23 made a chan-based Timer/Ticker channel SYNCHRONOUS (#37196) by coupling the channel's receive path to the timer inside the runtime; `time_impl.cs` reproduces Go's own `GODEBUG=asynctimerchan=1` mode instead, so `tim.Stop() = false, want true` and "extra tick" are exactly what that mode produces. ⚠ The `asynctimerchan=1` SUBTEST also fails, which the divergence does NOT explain — either `t.Setenv("GODEBUG", …)` does not reach the converted `godebug`, or the async model has its own bug. That subtest is the honest next probe here. | time / godebug |
+| 9 | `TestDefaultLoc`, `TestNanosecondsToUTC`, `TestSecondsToUTC`, `TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestTimeJSON`, `TestUnmarshalInvalidTimes`, `TestZoneBounds` | All die with the same `nil pointer dereference` inside `GoFunc.HandleFinally`. Every one of them formats a `Time` through `fmt` on its FAILURE path (`%#v`, `%+v`, `%v` of a struct with a `*Location`), so the NRE is plausibly SECONDARY to a comparison that already failed — the reflect/fmt bridge, not the clock. Not rooted; the next increment should print the pre-format comparison rather than reason about the stack. | reflect/fmt bridge |
+| 1 | `TestParseErrors` | A REAL parse divergence: Go reports `extra text: "07:00"` where C# reports `cannot parse "Z07:00" as "Z07:00"` — the `Z07:00` layout element consumes differently. `format.go` conversion defect, `time`-local. | time |
+| 1 | `TestTruncateRound` | `math/big.mulAddVWW` is an unimplemented asm stub (`NotImplementedException`), reached through `big.Int.Mul`. | math/big arc |
+| 1 | `TestUnmarshalTextAllocations` | `got 3784 allocs, want 0` — the established **alloc-count-semantics** unit mismatch (`AllocsPerRun` counts mallocs in Go, BYTES on the CLR). A disclosure candidate by the class `strings`/`io` already established; **not self-ruled here**. | ruling |
+
+So `time`'s distance is: one `time`-local parse bug, one probe (`asynctimerchan=1`), one shared
+reflect/fmt-bridge NRE family worth 9 verdicts, and two rows owned elsewhere. Nothing about timers,
+sleeps, tickers or channel rendezvous is in the way.
+
 ## Runtime failures
 
 | Package | State |

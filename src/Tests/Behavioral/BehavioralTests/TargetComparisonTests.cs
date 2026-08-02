@@ -1018,6 +1018,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]
+    public void CheckPackageNameShadowing() => CheckTarget("PackageNameShadowing");
+
+    [TestMethod]
     public void CheckPackageShadowParam() => CheckTarget("PackageShadowParam");
 
     [TestMethod]

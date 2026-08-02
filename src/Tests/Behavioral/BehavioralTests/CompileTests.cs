@@ -1015,6 +1015,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]
+    public void CheckPackageNameShadowing() => CheckTarget("PackageNameShadowing");
+
+    [TestMethod]
     public void CheckPackageShadowParam() => CheckTarget("PackageShadowParam");
 
     [TestMethod]

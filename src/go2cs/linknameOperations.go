@@ -85,6 +85,25 @@ func packageVarAccess(goIDName string, varType types.Type) string {
 	return getAccess(goIDName)
 }
 
+// packageFuncAccess returns the C# access modifier for a package-level FUNC. It is normally the Go
+// name's exported-ness (getAccess), with ONE exception: a func that this converter FORWARDS a
+// cross-package linkname pull to (linknameForwardTargets) is emitted `public`, because the puller
+// compiles into a different assembly and an unexported Go name would otherwise be `internal` there.
+//
+// This is deliberately far narrower than the var rule above, which publicizes on the one-arg
+// `//go:linkname` HANDLE alone. Go 1.23 carries 340 such handles outside cmd/ — publicizing every
+// one would widen the corpus's whole surface for pulls that are never emitted. The forward-target
+// list is the converter's own record of which pulls actually become a call, so gating on it moves
+// exactly the symbols that need to move. The handle is still required: it is Go's authorization for
+// the pull, and forwarding to a symbol its own package never opened would not be faithful.
+func packageFuncAccess(goIDName string, isFreeFunction bool) string {
+	if isFreeFunction && linknameHandles.Contains(goIDName) && linknameForwardTargets[currentPackagePath+"."+goIDName] {
+		return "public"
+	}
+
+	return getAccess(goIDName)
+}
+
 // typeIsPubliclyAccessible reports whether a value of type t can be exposed by a `public` member —
 // every NAMED type it references must be exported (or already publicized, or a universe type like
 // `error`). Composites recurse to their element; an anonymous struct/signature and any other shape is

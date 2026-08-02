@@ -252,5 +252,55 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 			"." + getSanitizedIdentifier(v.getIdentName(ident))
 	}
 
+	// A DOT-IMPORTED (`. "time"`) package member is referenced BARE, so there is no selector for
+	// the qualified-name resolver to rewrite — yet the member may be collision-renamed inside its
+	// own package, in which case the raw Go name binds nothing (CS0103).
+	if renamed, isRenamed := v.dotImportedRenamedMember(ident); isRenamed {
+		return renamed
+	}
+
 	return getSanitizedIdentifier(v.getIdentName(ident))
+}
+
+// dotImportedRenamedMember resolves a BARE reference to a package-level CONST or VAR declared in
+// ANOTHER package — only a dot import can produce one — to the name that package's converted form
+// actually declares, when a name collision renamed it. A foreign TYPE already resolves this way
+// through foreignAliasedTypeName, which works from go/types rather than from the source spelling
+// and so covers the bare form for free; a const/var had no equivalent, so time's external test
+// files (`. "time"`) emitted `Second`, `UTC`, `Hour`, `Minute`, `Nanosecond` and `Local` raw —
+// every one of which time Δ-renames because a `Time` METHOD shares the name (CS0103 ×176 across
+// five files). The renamed member is emitted BARE: a dot import renders as `using static
+// <pkg>_package`, which exposes it under exactly that name.
+//
+// The recorded `GoTypeAlias` entries are the single source of truth for the rename, shared with the
+// qualified path (getAliasedTypeName), so the two spellings of one Go reference can never disagree.
+// Only `const:`-marked entries are honored — a TYPE entry resolves to a `pkgꓸName` global-using
+// alias, which is the type layer's business and not a value identifier.
+func (v *Visitor) dotImportedRenamedMember(ident *ast.Ident) (string, bool) {
+	obj := v.info.ObjectOf(ident)
+
+	if obj == nil {
+		return "", false
+	}
+
+	switch obj.(type) {
+	case *types.Const, *types.Var:
+	default:
+		return "", false
+	}
+
+	pkg := obj.Pkg()
+
+	if pkg == nil || pkg == v.pkg || obj.Parent() != pkg.Scope() {
+		return "", false
+	}
+
+	plainKey := fmt.Sprintf("%s.%s", getSanitizedIdentifier(pkg.Name()), getCoreSanitizedIdentifier(obj.Name()))
+
+	packageLock.Lock()
+	alias, exists := importedTypeAliases[plainKey]
+	isConst := constImportedTypeAliases.Contains(plainKey)
+	packageLock.Unlock()
+
+	return alias, exists && isConst
 }

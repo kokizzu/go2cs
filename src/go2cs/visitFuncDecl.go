@@ -434,7 +434,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.outputBuilder.WriteString(functionPrefixMarker)
 	v.writeDoc(funcDecl.Doc, funcDecl.Pos())
 
-	functionAccess := getAccess(goFunctionName)
+	functionAccess := packageFuncAccess(goFunctionName, funcDecl.Recv == nil)
 
 	// A test-file-declared EXPORTED free function whose signature references an unexported same-
 	// package type is downgraded to `internal`: production emits that type internal and is converted
@@ -1838,6 +1838,17 @@ var linknameForwardTargets = map[string]bool{
 	// The converted runtime carries a real managed body for it — the finalizer bridge in
 	// mfinal.cs waits on GC.WaitForPendingFinalizers — so the pull has something to call.
 	"runtime.blockUntilEmptyFinalizerQueue": true,
+	// time's embedded-zoneinfo registration, pulled by time/tzdata's `init()`
+	// (`//go:linkname registerLoadFromEmbeddedTZData time.registerLoadFromEmbeddedTZData`). The
+	// FIRST entry whose implementation is ORDINARY CONVERTED Go rather than a hand-written native
+	// or golib body: `time/zoneinfo_read.go` declares it with a real body, and `time` authorizes
+	// the pull with the matching one-arg handle, so packageFuncAccess emits it public and the
+	// forwarder is an ordinary cross-assembly call. Without it, tzdata's `init()` — which a blank
+	// `import _ "time/tzdata"` now genuinely runs — threw out of a module initializer and took the
+	// whole program down before `main` (time's own tzdata_test.go is the first consumer). The pull
+	// adds a `time` project reference to time/tzdata, which is acyclic: time imports no subpackage
+	// of itself.
+	"time.registerLoadFromEmbeddedTZData": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose
@@ -1897,8 +1908,23 @@ func (v *Visitor) funcLinknameForward(funcDecl *ast.FuncDecl) (alias string, tar
 		// An explicit `import r "runtime"` is recorded in importPathAliases; otherwise the
 		// canonical alias (which importQualifier has already renamed if needed) is what
 		// visitImportSpec emitted.
+		// A linkname pull can be the ONLY edge to the target package — `time/tzdata` imports errors,
+		// syscall and unsafe, never `time`, yet its `init()` calls
+		// `time.registerLoadFromEmbeddedTZData`. Queue the path so the PROJECT reference is emitted;
+		// for a package the file already imports this is a no-op. (The var-pull arm does the same —
+		// see visitValueSpec's varLinknamePull site.)
+		v.importQueue.Add(pkgPath)
+
 		if emitted, ok := v.importPathAliases[pkgPath]; ok && emitted != "" {
 			return emitted, targetFunc, true
+		}
+
+		// No IMPORT SPEC means no `using` alias in this file, so the call must be fully qualified —
+		// the same form the var pull's forwarding property uses, which resolves inside `namespace go;`
+		// with no alias at all. A bare `time.` here would bind the `go.time` CHILD NAMESPACE (tzdata's
+		// own), not the package class: CS0234.
+		if !v.canonicalAliasImported.Contains(pkgPath) {
+			return globalQualifyRooted(RootNamespace + "." + convertImportPathToNamespace(pkgPath, PackageSuffix)), targetFunc, true
 		}
 
 		alias, _ = packageUsingAlias(pkgPath)

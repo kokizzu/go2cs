@@ -74,6 +74,29 @@ internal static void deferArgCapture(ж<box> Ꮡout) => func((defer, recover) =>
     pf.Value.x = 5;
 });
 
+internal static nint nestedArgLiteralCapture() {
+    var total = new channel<nint>(1);
+    var totalʗ1 = total;
+    run(() => {
+        var items = new nint[]{1, 2, 3}.slice();
+        var done = new channel<nint>(len(items));
+        foreach (var (i, _) in items) {
+            nint iΔ1 = i;
+            var doneʗ1 = done;
+            var itemsʗ1 = items;
+            goǃ(() => {
+                doneʗ1.ᐸꟷ(itemsʗ1[iΔ1] * 10);
+            });
+        }
+        nint sum = 0;
+        foreach ((_, _) in items) {
+            sum += ᐸꟷ(done);
+        }
+        totalʗ1.ᐸꟷ(sum);
+    });
+    return ᐸꟷ(total);
+}
+
 internal static void Main() {
     ref var m = ref heap(new box(), out var Ꮡm);
     run(() => {
@@ -151,6 +174,7 @@ internal static void Main() {
     ref var g = ref heap(new box(), out var Ꮡg);
     deferArgCapture(Ꮡg);
     fmt.Println((@string)"14:"u8, g.x);
+    fmt.Println((@string)"15:"u8, nestedArgLiteralCapture());
 }
 
 } // end main_package

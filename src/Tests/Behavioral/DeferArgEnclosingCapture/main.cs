@@ -35,7 +35,6 @@ internal static void Main() {
     ref var @base = ref heap<Tally>(out var Ꮡbase);
     @base = new Tally(total: 2, log: "d"u8);
     var baseʗ1 = @base;
-
     ((Action)(() => func((defer, recover) => {
         deferǃ((Tally t) => {
             report(deferredˢ, t, 4);
@@ -48,8 +47,6 @@ internal static void Main() {
     var done = new channel<bool>(0);
     var baseʗ3 = @base;
     var doneʗ1 = done;
-
-        var doneʗ2 = doneʗ1;
     ((Action)(() => {
         var doneʗ3 = doneʗ1;
         goǃ((Tally t) => {

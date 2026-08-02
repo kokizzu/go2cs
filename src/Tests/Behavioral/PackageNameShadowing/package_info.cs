@@ -10,16 +10,13 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using syscallꓸHandle = go.syscall_package.ΔHandle;
-global using syscallꓸSignal = go.syscall_package.ΔSignal;
-global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
 // </ImportedTypeAliases>
 
 using go;
-using static go.time.tzdata_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -49,10 +46,11 @@ using static go.time.tzdata_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-namespace go.time;
+namespace go;
 
-[GoPackage("tzdata")]
-public static partial class tzdata_package
+[GoTestMatchingConsoleOutput]
+[GoPackage("main")]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately

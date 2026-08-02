@@ -20,7 +20,7 @@ partial class time_package {
 // if it is imported.
 //
 //go:linkname registerLoadFromEmbeddedTZData
-internal static void registerLoadFromEmbeddedTZData(Func<@string, (@string, error)> f) {
+public static void registerLoadFromEmbeddedTZData(Func<@string, (@string, error)> f) {
     loadFromEmbeddedTZData = f;
 }
 

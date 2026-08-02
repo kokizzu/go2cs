@@ -1060,6 +1060,20 @@ The override fires **only** when the `new`-constructed side (the LH type: the *s
 
 A **same-assembly** pair also needs the through-underlying routing when the two named numerics have **incompatible underlyings** — internal/trace's public `type Time int64` ↔ unexported `type timestamp uint64`, converted both ways (`Time(ev.Ts)` / `timestamp(ts)`). The default `new Time((ΔTime)src.Value)` casts `src.Value` (a `ulong`, since `timestamp` is `uint64`-backed) straight to the wrapper, which routes through the wrapper's `long`-based user conversion — but `ulong`→`long` is not an implicit C# conversion, so the cast is **CS0030**. (This is the *mixed-accessibility* case: `Time` is exported and `timestamp` is not, so the operator is already relocated into the less-accessible `timestamp` struct — orthogonal to the underlying.) The generator now, for a **local** numeric pair, casts through the constructed type's underlying C# keyword when the source underlying does **not** implicitly convert to it: `new Time((long)src.Value)`, `new timestamp((ulong)src.Value)`. The source/constructed underlyings are read from each side's `[GoType("num:X")]` tag (a sibling generator cannot see the generated `Value` property), and the implicit-convertibility test is the fixed C# numeric-conversion table over the fixed-width integer/float basics. Crucially this fires **only** on pairs the default cast could not compile (the default `(Wrapper)src.Value` succeeds *iff* that same source→underlying conversion is implicit), so every already-compiling conversion stays byte-identical — the full behavioral suite's [goldens](Glossary.md#golden) are unchanged. `uintptr`-backed pairs keep the existing `nuint`-hop override; `int`/`uint` native-width wrappers are deliberately left to the default (their classification is version-sensitive and the failing corpus cases are fixed-width). (Guarded by the `NamedIntSignednessConv` behavioral test — a public `int64` ↔ unexported `uint64` named pair converted both ways, including a `^uint64(0)`→`int64` case whose `-1` result verifies the cast preserves the bit pattern exactly, output-compared vs Go; internal/trace's `timestamp`→`Time` inverse operator relies on it.)
 
+A **cross-assembly** mixed-accessibility pair has no legal form at all, and is skipped. The relocation
+above is the only remedy for a mixed pair — a C# user-defined conversion operator is necessarily
+`public` **and** must be declared in one of its two operand types — and a *foreign* type cannot host
+anything. Hosting in the local, more accessible side then exposes a type less accessible than the
+operator: **CS0056** when the foreign side is the return type, **CS0057** when it is the parameter, so
+neither direction is expressible. The shape is reachable only under the `-tests` white-box model, where
+a package's own `_test.go` declares an EXPORTED defined type over an UNEXPORTED production one — `time`'s
+`export_test.go` has `type RuleKind int` beside `zoneinfo.go`'s `type ruleKind int`, which become
+`public RuleKind` in the test assembly and `internal ruleKind` in the referenced production assembly.
+Nothing is lost by skipping: the converter renders such a conversion site as an explicit
+through-underlying cast (`(RuleKind)(nint)r.kind`), which needs no operator at all. The local side's
+accessibility comes from the GO export rule, as in the relocation above (at analysis time the `[GoType]`
+partials are modifier-less); the FOREIGN side is read from metadata, where it is already final.
+
 The recorded `GoImplicitConv` must also be able to **name the foreign type**. The recorded type name carries the foreign package's import qualifier — the DOT form `driver.IsolationLevel` for an unrenamed type, or a `ꓸ` global-using alias (`CrossPkgLibꓸGrade`) for a `Δ`-renamed one — but the attribute sits in `package_info.cs` at file scope and the generated operator lands in a `.g.cs`, neither of which carries the body files' import `using`s. A `Δ`-renamed foreign numeric resolves through its own `ꓸ` global using, but the **dot form needs a resolving `using driver = go.database.sql.driver_package;`** in `package_info.cs`'s `ImportedTypeAliases` block. The STRUCT-conversion branch of `checkForImplicitConversion` already drives that using by calling `recordConversionPackageUsing(argType)`/`(funcType)`, but the **aliased-NUMERIC branch omitted it** — so a cross-package named-numeric conversion (database/sql's `driver.IsolationLevel(opts.Isolation)`, where `sql.IsolationLevel` and `driver.IsolationLevel` are distinct named ints) left `driver` unresolved in both the attribute and the generated operator (CS0246). The numeric branch now records the same package usings. (Guarded by an extension to the `CrossPkgUser` cross-assembly test — a local `float64`-based named numeric converted to the *unrenamed* `CrossPkgLib.Celsius`, which renders in dot form and so needs the registered using; a `Δ`-renamed target like `CrossPkgLib.Grade` would have resolved via its alias and would not have caught the gap.)
 
 The same underlying routing applies when an untyped-constant **shift** is re-typed to a named numeric. An untyped shift `1 << k` is re-typed to the type it assumes from context (so it can combine with typed operands); when that resolved type is a *named* numeric, the re-type must go through the underlying — `(arenaIdx)((nuint)1 << k)`, not a bare `(arenaIdx)(1 << k)` (CS0030). The shift's *width* is likewise decided by the underlying (a `nuint`/`uint64`-backed named type shifts the left operand in that width to avoid the `int`-overflow seen for `1 << 63`). Non-named shifts are unchanged. (Guarded by the `NamedNumericShiftConv` behavioral test — wide `uint`/`uint64`-backed and narrow `uint8`-backed named types; runtime hits this on `arenaIdx(1 << arenaBits)`.)
@@ -1429,6 +1443,33 @@ every verb with and without precision, byte-compared against `go run`; ±Inf/NaN
 `PrintfWidthFlags`. The extreme values are spelled as literals because the converted `math` package's
 constants are themselves rendered lossily — `MaxFloat64` as `1.79769e+308` — which is a separate converter
 defect, deliberately not conflated with this one.)
+
+### A folded constant of a NAMED type carries its type in the fold
+
+`overflowingConstLiteral` materializes a compile-time integer constant whose value falls outside the C#
+`int32` range, because C# would otherwise evaluate the operator expression in `int32` and overflow
+(CS0220). It read the constant's type through `Underlying()`, so a constant of a *defined* type folded
+to a bare basic literal and the Go type was simply lost:
+
+```go
+d := 8 * time.Hour
+secondsEastOfUTC := int((8 * time.Hour).Seconds())
+```
+
+```csharp
+var d = 28800000000000L;                            // a C# long, not a Duration
+nint secondsEastOfUTC = (nint)(28800000000000L).Seconds();   // CS1929 — long has no Seconds
+```
+
+The compile error is the loud half; the silent half is `d`, which is now a `long` and prints as its
+digit count where a `Duration` prints `8h0m0s`. The fold now carries the named type in the same
+parenthesized `(T)(…)` shape the native-int arm uses — `(time.Duration)(28800000000000L)` — which
+`wholeExprIsCastOfType` already recognizes, so enclosing paths do not re-wrap it. The `[GoType]` wrapper
+converts implicitly from its underlying, so the cast is always legal, and Go's own parentheses around a
+method-call receiver keep the postfix `.M()` binding to the cast rather than to the literal. Only
+constants outside `int32` reach this arm at all, so the corpus footprint is the handful of computed
+`time.Duration`-class constants above that magnitude. (Guarded by the `PackageNameShadowing` behavioral
+test, case 4.)
 
 ## Nil and Zero Values
 In Go, `nil` is the equivalent of C# `null`. Where possible, converted code uses the golib [`NilType`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/NilType.cs) with a default instance called `nil` (defined in [`go.builtin`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs)). `NilType` provides comparison operators so `x == nil` / `x != nil` work across the runtime types (slices, maps, channels, pointers, interfaces), each of which defines what "nil" means for it (e.g. a `map<K,V>` whose backing dictionary is null is the nil map: reads return the zero value, `len` is 0, ranging yields nothing, and a write panics — matching Go).
@@ -2574,6 +2615,79 @@ Collisions*): there the call genuinely *is* the built-in and a same-named packag
 C# `using static go.builtin`, so the call is emitted **qualified** as `builtin.<name>(…)`. Here the
 call is not a built-in at all. (Guarded by the `BuiltinShadowLocal` behavioral test.)
 
+### A local that shadows a PACKAGE name is not a package qualifier
+
+Go lets a variable, parameter or receiver take the name of an imported package; from its declaration
+onward the identifier denotes the variable, and the package is simply unreachable in that scope. The
+standard library's own test code does this freely — `format_test.go` has both
+`func checkTime(time Time, …)` and `time := Unix(0, 1233810057012345600)` inside `TestFormat`.
+
+Every emission out of `convSelectorExpr` used to be passed through `getAliasedTypeName`, the
+QUALIFIED-NAME resolver. That function reads its argument as `<package>.<member>` and rewrites either
+half — a collision-renamed foreign member (`time.Second` → `time.ΔSecond`), a Δ-shadowed import
+qualifier (`color.RGBA` → `Δcolor.RGBA`), or a type alias (`color.RGBA` → `colorꓸRGBA`). Applied to a
+rendered *expression*, it fired on any base that merely **shared a name** with an imported package, so
+one function produced three different wrong answers depending only on which rewrite matched the member:
+
+```go
+func checkTime(time Time, test *ParseTest, t *testing.T) {
+    if time.Year() != 2010 { … }      // Year is not renamed
+    if time.Month() != February { … } // Month is a renamed TYPE
+    if time.Hour() != 21 { … }        // Hour is a renamed CONST
+```
+
+```csharp
+Δtime.Year()      // the import alias — the variable vanished
+timeꓸMonth()      // the type alias — a type used as a method
+time.ΔHour()      // the const rename applied to the METHOD name
+```
+
+The resolver is now gated on the selector's base actually **denoting a package**, asked through
+`go/types` (`selectorBaseIsPackage`, consulted by `aliasResolvedSelector`), so a shadowing binding is
+excluded by construction rather than by name. A non-package base could never resolve through the alias
+maps anyway — they are keyed `<package>.<member>` — so the gate states the property once instead of
+per emission site. This cleared 33 errors across five codes (CS7036, CS1061, CS1955, CS8130, CS1501) in
+`time`'s converted test suite alone. (Guarded by the `PackageNameShadowing` behavioral test, whose
+`describe(time time.Time)` calls all three member kinds on the shadowing parameter.)
+
+### A collision-renamed member keeps the file's RENAMED qualifier
+
+A package that collision-renames an exported const or var publishes it with the `const:` marker, which
+tells a consumer to keep the reference **qualified through the package** (`time.ΔSecond`) rather than
+alias it to a type. That arm carried the qualifier through verbatim — the raw Go package name — while
+the file's actual `using` may be Δ-renamed because a same-named child namespace is visible (see
+*importAliasOperations.go*). Both halves have to move together:
+
+```go
+import (
+    "time"
+    _ "time/tzdata"   // puts the `go.time` CHILD NAMESPACE in the assembly
+)
+… time.Nanosecond …
+```
+
+```csharp
+using Δtime = time_package;   // `time` alone would bind the go.time namespace
+…
+time.ΔNanosecond              // WRONG — CS0234, `go.time` has no ΔNanosecond
+Δtime.ΔNanosecond             // emitted now
+```
+
+The qualifier is run through `importQualifier` when — and only when — it is a single segment, so an
+already `_package`- or `global::`-qualified spelling is untouched.
+
+### A DOT-imported collision-renamed member has no selector to carry the rename
+
+`import . "time"` makes every exported member a bare identifier, which is what `time`'s external test
+files use. A foreign **type** still resolves correctly in that form, because `foreignAliasedTypeName`
+works from `go/types` rather than from the source spelling; a **const or var** had no equivalent, so
+`Second`, `Minute`, `Hour`, `Nanosecond`, `UTC` and `Local` — every one Δ-renamed in `time` because a
+`Time` method shares its name — emitted raw and bound nothing (CS0103 ×176 across five files).
+`convIdent` now resolves such a reference through the same recorded `GoTypeAlias` entries the qualified
+path uses (`dotImportedRenamedMember`), and emits the renamed member **bare**: a dot import renders as
+`using static <pkg>_package`, which exposes it under exactly that name. Only `const:`-marked entries are
+honored — a type entry resolves to a `pkgꓸName` global-using alias, which is the type layer's business.
+
 ## Multi-Result Values and Comma-Ok Forms
 Many Go functions return either a single value or a "value, ok"/"value, error" tuple, where only the declared return arity selects the behavior. You cannot differentiate C# overloads by return type alone, so the runtime types expose a second overload distinguished by an extra discard argument. For map access, the "comma-ok" read routes through a two-value indexer using the discard sentinel `ꟷ`:
 
@@ -3681,6 +3795,31 @@ context instead of discarding it. The span operand then binds golib's `operator 
 block-copies the literal's ROM bytes straight into the single result buffer — no
 `Encoding.UTF8.GetBytes` transcode, no throwaway intermediate `@string`. Two literal operands need no
 operator at all: C# folds `"x"u8 + "y"u8` into one UTF-8 literal at compile time.
+
+### A SLICED string literal in a concat needs one real `@string` operand
+
+That last sentence is the whole hazard: C#'s `+` over UTF-8 spans is a **literal-only** compile-time
+feature, and a *slice* of a literal is not a literal. Go's `format_test.go` builds a fraction the
+obvious way:
+
+```go
+nanosec, err := strconv.ParseUint("012345678"[:test.fracDigits]+"000000000"[:9-test.fracDigits], 10, 0)
+```
+
+Both operands render as `"…"u8[..n]`, i.e. two bare `ReadOnlySpan<byte>` values with no operator
+between them (CS9047). The literals deliberately keep their `u8` form — Go slices a string by **bytes**,
+so re-rendering them as C# `string` and slicing that would index by UTF-16 code units, right for ASCII
+and silently wrong for anything else. Instead the sliced operand is cast to `@string`, which gives the
+concat one real operand and lets golib's `operator +(@string, ReadOnlySpan<byte>)` (or its mirror) bind
+while the other half stays a span:
+
+```csharp
+strconv.ParseUint(((@string)"012345678"u8[..(int)(test.fracDigits)]) + "000000000"u8[..(int)(9 - test.fracDigits)], 10, 0)
+```
+
+Only `token.ADD` is affected; a **comparison** against a sliced literal already binds golib's span-aware
+operators and keeps its zero-allocation form. (Guarded by the `PackageNameShadowing` behavioral test,
+case 5.)
 
 For a slot of a **named** string type the old form did not merely cost a transcode — it did not
 compile. The generated `[GoType("@string")]` wrapper carried the span *comparison* operators but no
@@ -5989,6 +6128,31 @@ statement kinds that still do not — a `switch` tag, a `select` comm-clause, a 
 demonstrated corpus site, and each would repeat this failure exactly. They are deliberately not widened
 speculatively: the tell that one has been reached is a syntax cascade whose first error sits on the line
 after a `<name>:` argument label.
+### The enclosing statement's hoist buffer does NOT extend into a literal's BODY
+
+Those four positions all work the same way: the enclosing statement opens a hoist buffer, and a
+capturing func literal inside it writes its snapshot declarations there. The buffer is a valid position
+for **that literal's own** captures — they name bindings from the enclosing scope, which exists before
+the statement. It is not a valid position for anything the literal's **body** hoists: a statement inside
+the body opens its own buffer, and a nested literal whose captures name a binding declared *inside* this
+body would be declared outside it.
+
+`time`'s `BenchmarkStaggeredTickerLatency` nests three levels of `b.Run(…, func(b *testing.B){…})`. The
+middle literal `make`s a `stats` slice; the innermost `go func(…)` captures it. The snapshots landed in
+the OUTER literal's `b.Run(…)` statement buffer — two blocks above the declaration:
+
+```csharp
+for (nint tickersPerP = 1; …; tickersPerP++) {
+    nint tickerCount = gmp * tickersPerP;
+    var statsʗ1 = stats;                      // CS0103 — `stats` is declared below, inside bΔ2
+    bΔ1.Run(…, (ж<Δtesting.B> bΔ2) => {
+        var stats = new slice<…>(tickerCount);
+```
+
+`convFuncLit` now detaches `v.hoistedDecls` for the duration of the body walk and restores it after, so
+a nested hoist can only reach a position inside the body. The literal's own captures are unaffected —
+they are flushed before the body is converted, while the enclosing buffer is still installed. (Guarded
+by `FuncLitArgCapture` case 15.)
 
 Handling Go `defer` / `panic` / `recover` requires that the converted function run inside a [Go function execution context](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFunc.cs). The context provides the [`defer`](https://golang.org/ref/spec#Defer_statements) call stack and the [`recover`](https://golang.org/pkg/builtin/#recover) handling; `panic` is the global [`panic`](https://golang.org/pkg/builtin/#panic) built-in (a `using static go.builtin`). The body is emitted as a lambda taking two parameters, `defer` and `recover`:
 
@@ -10753,6 +10917,31 @@ Pointer/slice/string parameters (`filename`) pass through unchanged (the same go
 The target alias is **whatever the importing file actually emitted** for the target package, not the bare last path segment: an explicit `import r "runtime"` is looked up in the file's recorded import aliases, and otherwise the canonical alias is taken through the same collision-rename the import machinery applies. That rename is not hypothetical — a file that pulls from `runtime` while any `go.runtime.*` namespace is in scope emits `using Δruntime = runtime_package;`, because a bare `runtime` alias would bind the **namespace**, and a forwarder spelled `runtime.<fn>` is then CS0234 (sync's `oncefunc_test.go`).
 
 **Forwarding is gated on an explicit whitelist of hand-implemented targets** (`linknameForwardTargets` — `syscall.loadlibrary`/`loadsystemlibrary`/`getprocaddress`, the native P/Invokes in `core/syscall/dll_windows.cs`, plus `runtime.blockUntilEmptyFinalizerQueue`, the finalizer-queue drain that sync's and runtime's own tests pull and that `mfinal.cs` answers with `GC.WaitForPendingFinalizers`). This is not optional prudence: a linkname target is **indistinguishable at conversion time** from any other bodyless assembly/intrinsic Go function — `syscall.loadlibrary` and `runtime.reflectcall` are *both* bodyless `//go:` asm in Go — so only the whitelisted targets are known to have a real C# implementation to call. Every other linkname pull stays a bodyless stub, the pre-forwarder behavior: a method-receiver PUSH (`//go:linkname X reflect.(*rtype).Align`, reflect's `badlinkname.go` "pushes linknames of the methods"), a same-package pull (`//go:linkname unusedIfaceIndir reflect.ifaceIndir` inside reflect), and an unimplemented intrinsic (`//go:linkname call runtime.reflectcall`) would each otherwise emit an uncompilable forwarder (a nonexistent `reflect.(*rtype)`/`runtime.reflectcall` member, or a package alias that doesn't exist for the package's own name). Extend the whitelist when a new native linkname target gains a hand-written C# implementation — and remember the **accessibility** half: Go's linkname crosses the package boundary the way C# `public` does, so an unexported target (which the exported-ness rule emits `internal`) is invisible to the forwarder in the pulling *assembly* and must be widened where it is declared (`runtime.blockUntilEmptyFinalizerQueue` is `public` in the hand-owned `mfinal.cs` for exactly this reason). Guarded by `TestRecurseLinknameForwarder` (asserts the whitelisted `syscall.loadlibrary` forwarder body + the uintptr result bridge, and that a non-whitelisted `runtime.reflectcall` target stays a stub).
+
+**A whitelisted target may be ORDINARY CONVERTED GO, and then the converter widens it itself.** Every
+entry above answers a *hand-written* body. `time.registerLoadFromEmbeddedTZData` is the first that does
+not: `time/zoneinfo_read.go` declares it with a real Go body, `time` authorizes the pull with the
+matching one-arg handle, and `time/tzdata`'s `init()` calls it — the only edge between the two packages,
+since `time/tzdata` imports `errors`, `syscall` and `unsafe` and never `time`. Two consequences follow
+from that, and both are general:
+
+* **The accessibility half is no longer a hand-own's responsibility.** `packageFuncAccess` emits a
+  package-level free function `public` when it carries a one-arg linkname handle **and** its
+  `<pkgpath>.<name>` is a forward target. The handle alone is deliberately not enough — Go 1.23 carries
+  340 of them outside `cmd/`, and publicizing every one would widen the corpus's whole surface for pulls
+  that are never emitted. The whitelist is the converter's own record of which pulls actually become a
+  call, so gating on it moves exactly the symbols that need to move.
+* **The forwarder must be able to name a package the file never imports.** The pull queues the target's
+  path for a **project reference** (as the var-pull arm already did) and, when the file carries no import
+  spec for it, emits the call **fully qualified** — `go.time_package.registerLoadFromEmbeddedTZData(…)`,
+  which resolves inside `namespace go;` with no alias. A bare `time.` would have bound the `go.time`
+  CHILD namespace — tzdata's own — rather than the package class (CS0234).
+
+Until this landed, a blank `import _ "time/tzdata"` threw `NotImplementedException` out of a **module
+initializer** and took the whole program down before `main`, which is exactly what the blank-import
+`init` forcing made reachable. It also turns out to be what lets `time`'s test suite load zone data at
+all: with tzdata registered, `loadLocation` falls back to the embedded database when the GOROOT
+`lib/time/zoneinfo.zip` path a test hard-codes does not resolve from the C# host's working directory.
 
 **A linkname target implemented as a golib BUILTIN forwards to a bare, unqualified call** (`linknameForwardBuiltins`, a sibling map of Go linkname target → golib builtin name). Some Go compiler intrinsics live in `runtime` and are linked into another package by symbol, but their go2cs implementation is a golib builtin — in scope UNQUALIFIED via each converted project's `using static go.builtin`, so the forwarder emits `<builtin>(args)` with no package qualifier (an empty alias is the sentinel `writeLinknameForwarder` reads to drop the `<alias>.` prefix). The canonical case is **`maps.Clone`**: Go implements its worker as `runtime.mapclone` (`//go:linkname mapclone maps.clone`) and the `maps` package pulls it as a bodyless `func clone(m any) any` carrying `//go:linkname clone maps.clone` — a *same-package-named* target (`maps.clone`) whose real definition is elsewhere, so it is neither a native whitelist target nor a normal pull, and was left a **throwing** `PartialStubGenerator` stub (every `maps.Clone`/`maps.Copy`/`maps.DeleteFunc` test threw `NotImplementedException: clone: external (assembly or cgo) function is not implemented`). It now forwards:
 

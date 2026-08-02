@@ -622,6 +622,18 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		return "(nint)(" + lit + ")"
 	}
 
+	// A constant of a NAMED integer type folds to a bare basic literal, which DROPS the Go type:
+	// `8 * time.Hour` became `28800000000000L`, a C# `long`, so `(8 * time.Hour).Seconds()` had no
+	// receiver (CS1929) and `d := 8 * time.Hour` inferred `long` — the silent half, since a `long`
+	// prints as its digit count where a Duration prints `8h0m0s`. Carry the type in the fold, in the
+	// same parenthesized `(T)(…)` shape the native-int arm above uses (wholeExprIsCastOfType reads it,
+	// so enclosing paths do not re-wrap). The [GoType] wrapper converts implicitly from its underlying,
+	// so the cast is always legal, and the Go source's own parentheses around a method-call receiver
+	// keep the postfix `.M()` binding to the cast rather than to the literal.
+	if named, isNamed := tv.Type.(*types.Named); isNamed {
+		return "(" + convertToCSTypeName(v.getScopeCheckedTypeName(named)) + ")(" + lit + ")"
+	}
+
 	return lit
 }
 
@@ -846,6 +858,43 @@ func (v *Visitor) floatContextConstLiteral(expr ast.Expr) string {
 	}
 
 	return val.ExactString() + suffix
+}
+
+// exprIsSlicedStringLiteral reports whether expr is a SLICE of a string literal (`"abc"[:n]`,
+// possibly parenthesized at either level) — the shape that renders as `"abc"u8[..n]`, a bare
+// `ReadOnlySpan<byte>` rather than the UTF-8 literal C#'s span concatenation requires.
+func exprIsSlicedStringLiteral(expr ast.Expr) bool {
+	for {
+		paren, isParen := expr.(*ast.ParenExpr)
+
+		if !isParen {
+			break
+		}
+
+		expr = paren.X
+	}
+
+	sliceExpr, isSlice := expr.(*ast.SliceExpr)
+
+	if !isSlice {
+		return false
+	}
+
+	base := sliceExpr.X
+
+	for {
+		paren, isParen := base.(*ast.ParenExpr)
+
+		if !isParen {
+			break
+		}
+
+		base = paren.X
+	}
+
+	lit, isLit := base.(*ast.BasicLit)
+
+	return isLit && lit.Kind == token.STRING
 }
 
 // constExprIsIntLiteralArithmetic reports whether expr is built exclusively from INTEGER literals
@@ -1170,6 +1219,22 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 	}
 
 	leftOperand = wrapTypeParamConst(rhsType, binaryExpr.X, leftOperand)
+
+	// A SLICED string literal renders as a bare `ReadOnlySpan<byte>` (`"012345678"u8[..n]`), and C#'s
+	// `+` over UTF-8 spans is a LITERAL-only feature — a slice of a literal is not one, so
+	// `"012345678"[:n] + "000000000"[:9-n]` (time's format_test.go) had no operator at all (CS9047).
+	// Give the concat one `@string` operand and golib's `operator +(@string, ReadOnlySpan<byte>)` (and
+	// its mirror) binds, leaving the OTHER half a span. The literal deliberately keeps its `u8` form:
+	// Go slices a string by BYTES, so re-rendering it as a C# `string` and slicing that would index by
+	// UTF-16 code units — right for ASCII, silently wrong for anything else. Only token.ADD is
+	// affected; a comparison against a sliced literal already binds golib's span-aware operators.
+	if binaryExpr.Op == token.ADD {
+		if exprIsSlicedStringLiteral(binaryExpr.X) {
+			leftOperand = fmt.Sprintf("((@string)%s)", leftOperand)
+		} else if exprIsSlicedStringLiteral(binaryExpr.Y) {
+			rightOperand = fmt.Sprintf("((@string)%s)", rightOperand)
+		}
+	}
 
 	if !context.usePattenMatch {
 		// Check for comparisons between interface and pointer types. Go compares an interface

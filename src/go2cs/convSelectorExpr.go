@@ -631,6 +631,61 @@ func (v *Visitor) isPointerReceiverMethodCall(selectorExpr *ast.SelectorExpr) bo
 	return isPtr
 }
 
+// aliasResolvedSelector applies the imported-type-alias resolution (getAliasedTypeName) to a
+// rendered `base.member` — but ONLY when the selector's base actually denotes a PACKAGE.
+//
+// getAliasedTypeName is a QUALIFIED-NAME resolver: it reads its argument as `<package>.<member>`
+// and rewrites either half (a collision-renamed foreign member `time.Second` → `time.ΔSecond`, a
+// Δ-shadowed import qualifier `color.RGBA` → `Δcolor.RGBA`, a type alias `color.RGBA` →
+// `colorꓸRGBA`). Every convSelectorExpr emission used to be passed through it unconditionally,
+// which made those rewrites fire on a rendered EXPRESSION whose base merely SHARED A NAME with an
+// imported package — a local variable, parameter or field. Go allows exactly that, and the stdlib's
+// own test code does it: `format_test.go`'s `func checkTime(time Time, …)` and `TestFormat`'s
+// `time := Unix(…)` shadow the `time` import inside a package that also dot-imports it. Every
+// method call on that value was then rewritten as a package reference — `time.Year()` → `Δtime.Year()`
+// (the import alias), `time.Hour()` → `time.ΔHour()` (the const rename applied to the METHOD name),
+// `time.Month()` → `timeꓸMonth()` (the type alias) — 33 errors of five distinct codes, all from one
+// name-based rewrite applied where the AST already knows the answer.
+//
+// The base is asked through go/types, never by name, so a shadowing binding is excluded by
+// construction. Non-package bases (a field/box chain, an indexed element, a call result) can never
+// resolve through the alias maps anyway — those are keyed `<package>.<member>` — so gating here is
+// the property stated once rather than a special case per emission site.
+func (v *Visitor) aliasResolvedSelector(selectorExpr *ast.SelectorExpr, rendered string) string {
+	if !v.selectorBaseIsPackage(selectorExpr) {
+		return rendered
+	}
+
+	return getAliasedTypeName(rendered)
+}
+
+// selectorBaseIsPackage reports whether the selector qualifies a PACKAGE (`time.Second`) rather
+// than a value/type expression. Parentheses are peeled; anything that is not a bare identifier
+// bound to a *types.PkgName is not a package qualifier.
+func (v *Visitor) selectorBaseIsPackage(selectorExpr *ast.SelectorExpr) bool {
+	base := selectorExpr.X
+
+	for {
+		paren, isParen := base.(*ast.ParenExpr)
+
+		if !isParen {
+			break
+		}
+
+		base = paren.X
+	}
+
+	ident, isIdent := base.(*ast.Ident)
+
+	if !isIdent {
+		return false
+	}
+
+	_, isPackage := v.info.ObjectOf(ident).(*types.PkgName)
+
+	return isPackage
+}
+
 func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context LambdaContext) string {
 	if base, ok := selectorExpr.X.(*ast.Ident); ok {
 		if _, isPackage := v.info.ObjectOf(base).(*types.PkgName); isPackage && v.whiteboxBridgeUse(selectorExpr.Sel) {
@@ -1223,7 +1278,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 									xExpr += ".Value"
 								}
 
-								return getAliasedTypeName(fmt.Sprintf("%s.%s%s.%s", xExpr,
+								return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s%s.%s", xExpr,
 									v.structFieldBoxName(&ast.Ident{Name: embedField.Name()}, selectorExpr.X), deref, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 							}
 						}
@@ -1279,7 +1334,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 										hopPath = append(hopPath, v.structFieldBoxName(&ast.Ident{Name: hop.Name()}, selectorExpr.X))
 									}
 
-									return getAliasedTypeName(fmt.Sprintf("%s.%s.%s", v.convExpr(selectorExpr.X, nil),
+									return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s.%s", v.convExpr(selectorExpr.X, nil),
 										strings.Join(hopPath, "."), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 								}
 							}
@@ -1302,7 +1357,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 							if len(hopFields) == 1 && !embedField.Exported() && embedField.Pkg() != nil && embedField.Pkg() != v.pkg {
 								if ofIndex := strings.LastIndex(fieldAddr, ".of("); ofIndex != -1 && strings.HasSuffix(fieldAddr, ")") {
 									box := fieldAddr[:ofIndex]
-									return getAliasedTypeName(fmt.Sprintf("%s.%s", box, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+									return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", box, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 								}
 
 								// A POINTER receiver EXPRESSION that renders as the raw box — a
@@ -1316,7 +1371,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								// A pointer IDENT (raw-box local or deref-aliased param) renders its
 								// address as `<box>.of(…)` and stays with the strip above.
 								if _, xIsPtr := v.info.TypeOf(selectorExpr.X).Underlying().(*types.Pointer); xIsPtr && !v.exprIsDerefAliasedPointer(selectorExpr.X) {
-									return getAliasedTypeName(fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+									return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 								}
 							}
 
@@ -1326,7 +1381,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 									AddressPrefix, v.structFieldBoxName(&ast.Ident{Name: hopFields[k].Name()}, selectorExpr.X))
 							}
 
-							return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+							return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 						}
 					}
 				}
@@ -1341,7 +1396,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// method was marked direct-ж (so `Ꮡb` is in scope) by bodyCallsCaptureModeMethodOnReceiverField.
 	if context.isCallExpr && v.isCaptureModeMethod(selectorExpr) && v.exprIsCaptureModeFieldBase(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// Route a capture-mode method called on a heap-boxed value receiver through the ж
@@ -1370,7 +1425,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 		switch selectorExpr.X.(type) {
 		case *ast.SelectorExpr, *ast.IndexExpr:
 			fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-			return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+			return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 		}
 
 		// The receiver box is `Ꮡ`+the DECLARING-scope box-base name — which differs between a
@@ -1405,7 +1460,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			}
 		}
 
-		return getAliasedTypeName(fmt.Sprintf("%s%s.%s", AddressPrefix, recvExpr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s%s.%s", AddressPrefix, recvExpr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A (non-capture) pointer-receiver method called on a FIELD of a pointer LOCAL — `c.gp.set(v)`
@@ -1415,7 +1470,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// overload: `c.of(coro.Ꮡgp).set(v)`.
 	if context.isCallExpr && v.isPointerReceiverMethodCall(selectorExpr) && v.exprIsPointerLocalField(selectorExpr.X) && !v.exprIsAlreadyBoxedPointerFieldOrElement(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A ж-only (pointer-receiver) method called on a value field rooted at a package value global —
@@ -1426,7 +1481,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// matching pointer-receiver-method-on-global-field handling.
 	if context.isCallExpr && v.isPointerReceiverMethodCall(selectorExpr) && v.exprFieldRootsAtAddressedGlobal(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A ж-only (pointer-receiver) method called on a VALUE field reached through a POINTER
@@ -1439,7 +1494,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// exprIsPointerLocalField branch above; this covers a pointer field/chain or pointer param.)
 	if context.isCallExpr && v.isPointerReceiverMethodCall(selectorExpr) && v.exprIsValueFieldOfPointer(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A ж-only / pointer-receiver method called on a VALUE field rooted at a pointer-to-struct RVALUE —
@@ -1452,7 +1507,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// roots handled above (exprIsValueFieldOfPointerRvalue is disjoint from those predicates).
 	if context.isCallExpr && v.isPointerReceiverMethodCall(selectorExpr) && v.exprIsValueFieldOfPointerRvalue(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A DIRECT-ж (box-receiver) method called on a VALUE field-chain rooted at a deref-aliased pointer
@@ -1466,7 +1521,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// exprIsValueFieldOfPointer, which serves the broader isPointerReceiverMethodCall branch above).
 	if context.isCallExpr && v.selectorCallsDirectBoxMethod(selectorExpr) && v.exprIsValueFieldOfDerefdPointerRoot(selectorExpr.X) && !v.exprIsAlreadyBoxedPointerFieldOrElement(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A ж-only / pointer-receiver method called on a VALUE element of an addressable array/slice —
@@ -1476,7 +1531,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// `…at<T>(i)`) — never a `Ꮡ(value)` copy, which would lose an atomic write.
 	if context.isCallExpr && v.selectorCallsDirectBoxMethod(selectorExpr) && v.exprIsIndexedValueElement(selectorExpr.X) && !v.exprIsAlreadyBoxedPointerFieldOrElement(selectorExpr.X) {
 		elemAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-		return getAliasedTypeName(fmt.Sprintf("%s.%s", elemAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", elemAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 	}
 
 	// A DIRECT-ж (box-receiver) method called on a remaining VALUE field-chain — a field of a
@@ -1490,7 +1545,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			if exprType := v.getType(selectorExpr.X, false); exprType != nil {
 				if _, isPtr := exprType.Underlying().(*types.Pointer); !isPtr {
 					fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
-					return getAliasedTypeName(fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+					return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 				}
 			}
 		}
@@ -1507,14 +1562,14 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 				// Erased (pointer-core) callee positions leave the emitted list (see
 				// renderedTypeArgs); a list that erases to empty falls through to the bare form.
 				if typeArgs := v.renderedTypeArgs(selectorExpr.Sel, inst.TypeArgs); len(typeArgs) > 0 {
-					return getAliasedTypeName(fmt.Sprintf("%s.%s<%s>", v.convExpr(selectorExpr.X, xContexts),
+					return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s<%s>", v.convExpr(selectorExpr.X, xContexts),
 						v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)), strings.Join(typeArgs, ", ")))
 				}
 			}
 		}
 	}
 
-	return getAliasedTypeName(fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, xContexts), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+	return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, xContexts), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 }
 
 func (v *Visitor) getSelIdentContext(selectorExpr *ast.SelectorExpr) IdentContext {

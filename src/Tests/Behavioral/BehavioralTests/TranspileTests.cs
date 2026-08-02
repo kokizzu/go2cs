@@ -1015,6 +1015,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]
+    public void CheckPackageNameShadowing() => CheckTarget("PackageNameShadowing");
+
+    [TestMethod]
     public void CheckPackageShadowParam() => CheckTarget("PackageShadowParam");
 
     [TestMethod]

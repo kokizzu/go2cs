@@ -182,6 +182,23 @@ public class ImplicitConvGenerator : ISourceGenerator
                 hostTypeNameOverride = targetType.Name;
             }
 
+            // A mixed-accessibility pair whose LESS accessible side lives in ANOTHER assembly has no
+            // legal form at all, so skip it rather than emit an operator that cannot compile. The
+            // relocation above is the only remedy for a mixed pair — a C# user-defined conversion
+            // operator is necessarily public AND must be declared in one of its two operand types —
+            // and a FOREIGN type cannot host anything. Hosting in the local, more accessible side then
+            // exposes a type less accessible than the operator: CS0056 when the foreign side is the
+            // return type, CS0057 when it is the parameter, so neither direction is expressible.
+            // Reachable only under the -tests white-box model, where a package's own `_test.go`
+            // declares an EXPORTED defined type over an UNEXPORTED production one — time's
+            // export_test.go `type RuleKind int` beside zoneinfo.go's `type ruleKind int`, which
+            // become public RuleKind in the test assembly and internal ruleKind in the referenced
+            // production assembly. Nothing is lost by skipping: the converter renders such a
+            // conversion site as an explicit through-underlying cast (`(RuleKind)(nint)r.kind`),
+            // which needs no operator at all.
+            if (hostTypeNameOverride is null && ForeignSideIsLessAccessible(sourceType, targetType, context.Compilation.Assembly))
+                continue;
+
             // The operator's body casts `src.Value` to the constructed type; a uintptr-BACKED
             // src wrapper's Value is the golib uintptr STRUCT, and struct→ΔKind chains two user
             // conversions (CS0030 — reflect's flag→ΔKind). Hop through nuint. The backing kind
@@ -264,6 +281,26 @@ public class ImplicitConvGenerator : ISourceGenerator
             // Add the source code to the compilation
             context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{sourceTypeName}-{targetTypeName}{(inverted ? "-inv" : "")}.g.cs")), generatedSource);
         }
+    }
+
+    // True when exactly one side of the pair is declared in ANOTHER assembly and that foreign side is
+    // less accessible than the local side — the only side that could host the operator. The local
+    // side's accessibility comes from the GO export rule, not from the symbol: at analysis time the
+    // [GoType] partials are modifier-less, and the public/internal modifier lives on the
+    // TypeGenerator's own output, which a single-pass sibling generator cannot see (see the
+    // relocation block above). The FOREIGN side is read from metadata, where it is already final.
+    private static bool ForeignSideIsLessAccessible(ITypeSymbol sourceType, ITypeSymbol targetType, IAssemblySymbol thisAssembly)
+    {
+        bool sourceIsForeign = !SymbolEqualityComparer.Default.Equals(sourceType.ContainingAssembly, thisAssembly);
+        bool targetIsForeign = !SymbolEqualityComparer.Default.Equals(targetType.ContainingAssembly, thisAssembly);
+
+        if (sourceIsForeign == targetIsForeign)
+            return false;
+
+        (ITypeSymbol foreignType, ITypeSymbol localType) = sourceIsForeign ? (sourceType, targetType) : (targetType, sourceType);
+
+        return foreignType.DeclaredAccessibility != Accessibility.Public &&
+               GetScope(GetSimpleName(localType.Name, dropCollisionPrefix: true)) == "public";
     }
 
     private static string? GetNamespace(FileScopedNamespaceDeclarationSyntax? namespaceSyntax)

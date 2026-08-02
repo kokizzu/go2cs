@@ -295,9 +295,23 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.indentLevel++
 	}
 
+	// The literal's own capture declarations were flushed above, into the ENCLOSING statement's hoist
+	// buffer where they belong. That buffer is NOT a valid position for anything the BODY hoists: a
+	// statement inside the body opens its own buffer, and a nested literal whose captures reference a
+	// binding declared inside THIS body would otherwise be declared outside it. time's
+	// BenchmarkStaggeredTickerLatency nests three levels of `b.Run(…, func(b *testing.B){…})`, and the
+	// innermost `go func(…)`'s captures of `stats` — a slice `make`d in the middle literal — landed in
+	// the OUTER literal's `b.Run(…)` ExprStmt buffer: `var statsʗ1 = stats;` two blocks above the
+	// declaration of `stats` (CS0103 ×3). Detach for the body so a nested hoist can only reach a
+	// position inside it, and restore afterward so the enclosing statement keeps its own sink.
+	savedHoist := v.hoistedDecls
+	v.hoistedDecls = nil
+
 	v.pushBlock()
 	v.visitBlockStmt(funcLit.Body, blockStatementContext)
 	body := v.popBlockAppend(false)
+
+	v.hoistedDecls = savedHoist
 
 	if litNamedDefer {
 		v.indentLevel--

@@ -82,6 +82,32 @@ func deferArgCapture(out *box) {
 	pf.x = 5
 }
 
+// nestedArgLiteralCapture mirrors time's BenchmarkStaggeredTickerLatency: a func literal passed as a
+// call ARGUMENT declares a local, and a goroutine INSIDE that literal captures it. The goroutine's
+// snapshot must land inside the literal's own body — the ENCLOSING statement's hoist buffer is a
+// position above the declaration, so `var itemsʗ1 = items;` was emitted two blocks up, before `items`
+// exists (CS0103). The literal's OWN captures still belong in that outer buffer, which is why the
+// buffer is detached only for the body walk.
+func nestedArgLiteralCapture() int {
+	total := make(chan int, 1)
+	run(func() {
+		items := []int{1, 2, 3}
+		done := make(chan int, len(items))
+		for i := range items {
+			i := i
+			go func() {
+				done <- items[i] * 10
+			}()
+		}
+		sum := 0
+		for range items {
+			sum += <-done
+		}
+		total <- sum
+	})
+	return <-total
+}
+
 func main() {
 	// 1. Function literal as a call argument that takes the bare address of a local.
 	//    The closure must write through to the ORIGINAL m (not a snapshot copy).
@@ -199,4 +225,9 @@ func main() {
 	var g box
 	deferArgCapture(&g)
 	fmt.Println("14:", g.x)
+
+	// 15. A func literal passed as a call ARGUMENT whose BODY declares a local that an inner
+	//     goroutine captures — the snapshot must stay inside the literal, not hoist to the
+	//     enclosing statement's buffer (time's BenchmarkStaggeredTickerLatency shape).
+	fmt.Println("15:", nestedArgLiteralCapture())
 }

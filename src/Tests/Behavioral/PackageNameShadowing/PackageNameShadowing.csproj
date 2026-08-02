@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <RootNamespace>go.time</RootNamespace>
-    <AssemblyName>time.tzdata</AssemblyName>
+    <RootNamespace>go</RootNamespace>
+    <AssemblyName>PackageNameShadowing</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -66,14 +66,6 @@
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->
-  <PropertyGroup>
-    <GoValidationProofFile>$(go2csPath)..\docs\validation\$(GoStdLibVersion).$(GoBuildNumber)\time.tzdata.md</GoValidationProofFile>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')">
-    <None Include="$(GoValidationProofFile)" Pack="true" PackagePath="VALIDATION.md" Visible="false" />
-  </ItemGroup>
-
   <!-- Expose output of source generators as local files -->
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -124,10 +116,9 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
 
-    <ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />
-    <ProjectReference Include="$(go2csPath)core\syscall\syscall.csproj" />
+    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
-    <ProjectReference Include="$(go2csPath)core\unsafe\unsafe.csproj" />
+    <ProjectReference Include="$(go2csPath)core\time\tzdata\time.tzdata.csproj" />
   </ItemGroup>
 
 </Project>
