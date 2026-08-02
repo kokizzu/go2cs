@@ -1520,6 +1520,27 @@ In Go, `nil` is the equivalent of C# `null`. Where possible, converted code uses
 
 The same null-safe-zero-value principle applies to value types whose backing store is a reference. A zero-value `string` converts to `@string s = default!`, which runs no constructor, so the backing `byte[]` is null. Rather than [NRE](Glossary.md#nre) on the first read, `@string` treats a null backing as Go's empty string `""` for every read — length 0, no bytes to index/range, `== ""` is true, prints empty, and concatenation yields the other operand (`var s string; s += "x"` → `"x"`). Constructors still allocate, so only the `default(@string)` zero value relies on this. (Guarded by the `StringZeroValueConcat` behavioral test.)
 
+### The FOUR deref accessors of `ж<T>` — when each is needed, and how the converter picks
+
+Establishing a local `ref` over a heap box (`ref var p = ref Ꮡp.<accessor>`) looks like one
+operation but encodes four different answers to one question: **is this access the Go
+DEREFERENCE, and what does Go say happens on nil at exactly this point?** Consolidated here
+because the four members landed across separate arcs (their individual sections, linked below,
+carry the full derivations); this is the map.
+
+| Accessor | On nil | The Go semantics it encodes | How the converter KNOWS |
+|:--|:--|:--|:--|
+| `.Value` | **panics immediately** (Go's message, even on bind) | this access IS the deref, and Go panics here — the ordinary pointer use site | the DEFAULT; no special case applies |
+| `.ValueSlot` | **no check** — the slot as-is | a read of the HELD value, never a deref: when the pointee is itself reference-like, `*p` legally yields nil (`*(&err)` of a nil `error` panics in neither language), so `.Value`'s null check would fire SPURIOUSLY on a legally-held null. Identical to `.Value`'s slot in every non-throwing case. Also where nil is structurally impossible (a freshly `make`-allocated box) and in the reflection bridge's field paths. | by the POINTEE'S TYPE (reference-like pointee → slot read); see *A reference-type-pointee pointer parameter uses the nil-check-free `.ValueSlot` deref alias* |
+| `.DerefOrNil()` | **silent** — a shared `default(T)` slot | Go never derefs here, because the body PROVABLY guards: a pointer param the body nil-compares, or one whose first mentioning statement re-points it without deref (`l = l.get()` normalization, entry-only). The silent zero is unobservable ONLY while the admission analysis stays conservative — this is deliberately the narrowest accessor, and shrinking it further is a recorded residual. | by BODY ANALYSIS (`collectNilSafePtrParams`: `==`/`!=` operand scan; `reassignedBeforeDerefParamName`: first-statement re-point without deref) |
+| `.DerefOrNull()` | **defers** — binds `Unsafe.NullRef<T>`, faults with Go's panic on first USE | Go defers the panic to the body's own deref point: calling a method through a nil `*T` is legal, side effects before the deref must run, and the panic lands where Go's would — after them, or never (delegated `checkValid`-style guards). | STRUCTURALLY — every direct-ж pointer RECEIVER, unconditionally (no analysis, because the accessor is faithful whether or not the body guards), in both the converter's entry/re-alias emission and go2cs-gen's `ReceiverMethodTemplate` bridge; see *A nil RECEIVER is nil-deferring, not nil-safe* |
+
+Why four and not one: `.DerefOrNull` could in principle subsume `.Value` and `.DerefOrNil` for
+POINTER PARAMETERS too — Go's rule is identical for a parameter and a receiver — and that is a
+recorded residual awaiting its own measured ruling (~3,167 parameter aliases keep `.Value` today).
+`.ValueSlot` is different in KIND, not in timing: it marks accesses that were never dereferences
+in Go's semantics at all, so no nil-policy accessor can replace it.
+
 ### Canonical typed-nil pointer boxing
 Go's typed nil is a real value: `any((*T)(nil))` is a **non-nil** interface carrying dynamic type
 `*T`, `%T` prints `*T`, and the pervasive descriptor idiom `reflect.TypeOf((*T)(nil)).Elem()`
