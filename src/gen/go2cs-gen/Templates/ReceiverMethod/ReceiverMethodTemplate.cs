@@ -29,12 +29,20 @@ internal class ReceiverMethodTemplate : TemplateBase
     private string? m_receiverParamType;
     private string ReceiverParamType => m_receiverParamType ??= $"{PointerPrefix}<{Method.Parameters.First().type}>";
 
+    // The receiver alias is nil-DEFERRING, matching the converter's own entry preamble for a
+    // direct-ж receiver. This bridge is how a `ref T`-receiver method is reached through a box, so
+    // `.Value` deref'd at the BRIDGE — a nil receiver panicked before the method it forwards to
+    // could run at all, which is one call frame earlier than Go, where the method RUNS and only the
+    // body's own dereference panics. DerefOrNull binds a null ref instead: legal to hold and to pass
+    // on as `ref T`, and the callee's first field read/write raises the nil-pointer panic with Go's
+    // message, at Go's point — after any side effect the callee performed first. A non-nil box is
+    // unaffected (the same real slot).
     public override string TemplateBody =>
         $$"""
             [{{GeneratedCodeAttribute}}]
             {{TargetScope}} static {{Method.ReturnType}} {{Method.Name}}{{Method.GetGenericSignature()}}({{DeclParams}}){{Method.GetWhereConstraints()}}
             {
-                ref var {{ReceiverParamName}} = ref {{ReceiverBoxName}}.Value;
+                ref var {{ReceiverParamName}} = ref {{ReceiverBoxName}}.{{NilDeferringDerefAccessor}};
                 {{ReturnStatement}}{{ReceiverParamName}}.{{Method.Name}}({{CallParams}});
             }
         """;

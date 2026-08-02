@@ -16,7 +16,7 @@ internal static @unsafe.Pointer noescape(@unsafe.Pointer p) {
 }
 
 internal static void copyCheck(this ж<builder> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.addr == nil){
         b.addr = Ꮡb;
@@ -27,7 +27,7 @@ internal static void copyCheck(this ж<builder> Ꮡb) {
 }
 
 internal static void write(this ж<builder> Ꮡb, @string s) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     b.buf = append(b.buf, s.ꓸꓸꓸ);

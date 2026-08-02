@@ -14,7 +14,7 @@ internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x) {
 }
 
 internal static ж<nih> add(this ж<nih> Ꮡp, uintptr bytes) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (bytes == 0) {
         return Ꮡp;
@@ -32,7 +32,7 @@ internal static uint32 step(ж<uint32> Ꮡv) {
 }
 
 internal static uint32 second(this ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     return ~(ж<uint32>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref h), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
 }

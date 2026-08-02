@@ -40,6 +40,17 @@ public static class Symbols
     // channel wrapper template forwards these to its underlying channel<T>.
     public const string ChannelLeftOp = "ᐸꟷ";
     public const string ChannelRightOp = "ꟷᐳ";
+    // NilDeferringDerefAccessor is the golib ж<T> extension method used in place of `.Value`
+    // for a pointer RECEIVER's entry deref alias - both the converter's own preamble and the
+    // RecvGenerator bridge that reaches a `ref T` receiver through a box. Go permits calling a
+    // method through a nil `*T`: the method RUNS, and the panic happens only where the body
+    // actually dereferences the pointee, so the alias must not deref at ENTRY. Unlike
+    // NilSafeDerefAccessor (which hands back a shared default(T) slot, making a deref Go says
+    // must panic read a silent zero instead), this binds a NULL ref: legal to hold, and the
+    // first read/write through it raises the nil-pointer panic with Go's own message, at Go's
+    // own point - after any side effect the body performed first. Includes `()` as it is a
+    // method call.
+    public const string NilDeferringDerefAccessor = "DerefOrNull()";
     // The -tests package-init hook: the erasable classic-partial method a production
     // package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the
     // internal test variant's relocated-initializer file (go2cs initOrderOperations.go /

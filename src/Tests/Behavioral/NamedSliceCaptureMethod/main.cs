@@ -23,7 +23,7 @@ internal static void push(this ж<stack> Ꮡs, nint v) {
 }
 
 internal static nint pop(this ж<stack> Ꮡs) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     nint v = (s)[len(s) - 1];
     shrink(Ꮡs);

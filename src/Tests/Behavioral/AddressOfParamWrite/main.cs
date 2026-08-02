@@ -113,7 +113,7 @@ public static (nint, nint) ReadOnlyRecv(this Box bʗp) {
 }
 
 public static nint BumpedPtrRecv(this ж<Box> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     bumpBox(Ꮡb);
     return b.Tag;

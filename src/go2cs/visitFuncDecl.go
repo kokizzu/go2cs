@@ -715,7 +715,24 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				// the box is nil (the `Ꮡp != nil` guard excludes it). Other pointer params keep `.Value`.
 				derefAccessor := "Value"
 
-				if v.nilSafePtrParamNames.Contains(param.Name()) || v.nilSafeEntryOnlyParamName == param.Name() {
+				if i == 0 && funcDecl.Recv != nil && directBoxReceiver {
+					// A pointer RECEIVER is nil-DEFERRING, always. Go permits calling a method through
+					// a nil `*T`; the method runs, and the nil-pointer panic happens only where the
+					// body dereferences the pointee. The eager `ref var f = ref Ꮡf.Value;` instead
+					// deref'd at ENTRY, so every nil-tolerant method panicked before its guard could
+					// run — whether the guard is spelled INLINE (`if b == nil` — bytes' TestNil) or
+					// DELEGATED through the box (`f.checkValid("chdir")`, which is what asks
+					// `f == nil` — os's TestNilFileMethods, all fifteen *File methods).
+					//
+					// DerefOrNull binds a NULL ref for a nil box, which is legal to hold and faults on
+					// USE, so the panic is deferred to Go's own point rather than discarded: the first
+					// field read/write or whole-struct copy raises Go's message, AFTER any side effect
+					// the body performed first. That is what makes this unconditional and safe, where
+					// the nil-SAFE accessor (a shared default(T) slot — a silent zero where Go panics)
+					// could only ever be applied to the receivers a body provably guards. Non-nil
+					// receivers are unaffected: DerefOrNull routes them to the same real slot.
+					derefAccessor = NilDeferringDerefAccessor
+				} else if v.nilSafePtrParamNames.Contains(param.Name()) || v.nilSafeEntryOnlyParamName == param.Name() {
 					derefAccessor = NilSafeDerefAccessor
 				} else if isInherentlyHeapAllocatedType(pointerType.Elem()) {
 					// The POINTEE is itself a reference type (`*error`, `*[]T`, `*map`, `**T`,
@@ -1305,15 +1322,9 @@ func (v *Visitor) identIsParameter(ident *ast.Ident) bool {
 // nil-deref panic — a path that only a program already panicking in Go would observe. A param that
 // is never nil-compared keeps the plain `.Value` form. The set is reset each function.
 //
-// The RECEIVER of a direct-ж method joins the set under the same predicate: Go permits calling a
-// method through a nil pointer when the body nil-checks first (`func (b *Buffer) String() string {
-// if b == nil { return "<nil>" } … }`), and any method whose body `==`/`!=`-compares its bare
-// receiver is direct-ж (the comparison arm of bodyUsesReceiverAsPointerValue promotes it), so its
-// entry preamble `ref var b = ref Ꮡb.Value;` deref'd the box BEFORE the body's guard could run —
-// an entry NRE where Go returns cleanly (bytes TestNil). Matched by OBJECT identity (a shadowing
-// local comparison does not qualify) and gated on the direct-ж form (only it has a receiver box
-// to deref); a receiver that is never compared keeps the plain `.Value` form, so emission is
-// unchanged for every method that does not test its receiver.
+// PARAMETERS only. A pointer RECEIVER needs no membership test: it takes the nil-DEFERRING
+// accessor unconditionally (see NilDeferringDerefAccessor), which is faithful whether or not the
+// body guards, so the "does this body compare its receiver" arm this scan used to carry is gone.
 func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 	if v.nilSafePtrParamNames == nil {
 		v.nilSafePtrParamNames = HashSet[string]{}
@@ -1345,17 +1356,6 @@ func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 		}
 	}
 
-	// ⚠ A pointer RECEIVER is nil-safe here only when the body COMPARES it (the scan below). A method
-	// that tolerates a nil receiver by DELEGATING the check — os's `func (f *File) Chdir() error { if
-	// err := f.checkValid("chdir"); err != nil { return err } … }`, where `checkValid` is what asks
-	// `f == nil` — still panics in its own entry preamble before the guard can run (os's
-	// TestNilFileMethods, all 15 methods). Widening this to EVERY direct-ж pointer receiver fixes it
-	// and was measured: 26 behavioral projects change their receiver preamble from `.Value` to
-	// `.DerefOrNil()`. That is a corpus-wide emission change, and it widens the arms' accepted
-	// trade-off — an unguarded deref of an actually-nil receiver reads default(T) instead of raising
-	// Go's nil-deref panic — from "a receiver the body nil-tests" to EVERY pointer receiver, which is
-	// a silent-wrong-answer surface. Deliberately NOT taken here: it is a shared-architecture ruling
-	// with a measured footprint, recorded in docs/Phase4/BOARD-next-validation-candidates.md.
 	if funcDecl.Body == nil {
 		return
 	}
@@ -1375,6 +1375,10 @@ func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
 		if n, ok := node.(*ast.BinaryExpr); ok && (n.Op == token.EQL || n.Op == token.NEQ) {
 			for _, operand := range []ast.Expr{n.X, n.Y} {
+				// The receiver arm of this analysis is now vestigial — a direct-ж RECEIVER takes the
+				// unconditional nil-DEFERRING accessor before this set is ever consulted — but the
+				// detection stays: it still records genuine POINTER-PARAM comparisons, and pruning
+				// the receiver half belongs to a cleanup pass, not a merge.
 				if ident, ok := operand.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident)) {
 					v.nilSafePtrParamNames.Add(ident.Name)
 				}

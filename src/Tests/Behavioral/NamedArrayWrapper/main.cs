@@ -29,7 +29,7 @@ internal static void zeroTB(ж<tb> Ꮡbuf) {
 }
 
 internal static void fill(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < len(b.Value); i++) {
         b.Value[i] = (uint64)(i * 10 + 1);

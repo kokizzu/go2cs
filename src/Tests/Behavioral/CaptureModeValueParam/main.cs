@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 public static void Add(this ж<Tally> Ꮡt, nint n) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     defer(() => {
         Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);

@@ -21,13 +21,13 @@ internal static uint32 load32(ж<uint32> Ꮡp) {
 [GoType("num:uint32")] partial struct sweepClass;
 
 internal static uint64 peek(this ж<lfstack> Ꮡhead) {
-    ref var head = ref Ꮡhead.Value;
+    ref var head = ref Ꮡhead.DerefOrNull();
 
     return load64(Ꮡ((uint64)(head)));
 }
 
 internal static uint32 peek(this ж<sweepClass> Ꮡsc) {
-    ref var sc = ref Ꮡsc.Value;
+    ref var sc = ref Ꮡsc.DerefOrNull();
 
     return load32(Ꮡ((uint32)(sc)));
 }

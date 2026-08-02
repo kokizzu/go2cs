@@ -49,7 +49,7 @@ public static bool IsDr(this Record p) {
 }
 
 internal static @string describe(this ж<ledger> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     var p = Ꮡl.of(ledger.Ꮡseq);
     p.Value++;

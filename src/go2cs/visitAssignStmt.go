@@ -1402,10 +1402,16 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					// plain `.Value` getter would then throw a nil-pointer dereference (the loop guard has
 					// not yet re-checked). Use the nil-safe accessor so the re-alias yields a ref to
 					// default(T) that is never read while the box is nil. Other reassigned pointer boxes
-					// (non-nil-compared params, receivers, locals — never nil here) keep `.Value`.
+					// (non-nil-compared params, locals — never nil here) keep `.Value`.
 					derefAccessor := "Value"
 
-					if v.nilSafePtrParamNames.Contains(boxBaseName) {
+					// A repointed RECEIVER box re-aliases the way its ENTRY alias did — nil-deferring,
+					// so the re-alias never throws and a deref of the repointed pointer still panics at
+					// its own point (see NilDeferringDerefAccessor). Without this the two halves of one
+					// alias would disagree: entry says a nil receiver is legal, the re-alias throws on it.
+					if isPtrRecv, recvName := v.isPointerReceiver(); isPtrRecv && recvName == boxBaseName && isDirectBoxReceiverMethod(v.currentFuncDecl, v.info) {
+						derefAccessor = NilDeferringDerefAccessor
+					} else if v.nilSafePtrParamNames.Contains(boxBaseName) {
 						derefAccessor = NilSafeDerefAccessor
 					}
 

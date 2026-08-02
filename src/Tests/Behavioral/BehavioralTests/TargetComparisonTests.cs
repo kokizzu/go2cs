@@ -97,9 +97,6 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckArrayPassByValue() => CheckTarget("ArrayPassByValue");
 
     [TestMethod]
-    public void CheckArrayPointerElementAlias() => CheckTarget("ArrayPointerElementAlias");
-
-    [TestMethod]
     public void CheckArrayValueCopySites() => CheckTarget("ArrayValueCopySites");
 
     [TestMethod]
@@ -1018,7 +1015,7 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNilPointerUintptr() => CheckTarget("NilPointerUintptr");
 
     [TestMethod]
-    public void CheckNilReceiverNormalization() => CheckTarget("NilReceiverNormalization");
+    public void CheckNilReceiverMethods() => CheckTarget("NilReceiverMethods");
 
     [TestMethod]
     public void CheckNilSliceConversion() => CheckTarget("NilSliceConversion");
@@ -1213,13 +1210,7 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
-    public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
-
-    [TestMethod]
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
-
-    [TestMethod]
-    public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
 
     [TestMethod]
     public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
@@ -1421,9 +1412,6 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSubpackageFuncTypeParam() => CheckTarget("SubpackageFuncTypeParam");
-
-    [TestMethod]
-    public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
 
     [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");

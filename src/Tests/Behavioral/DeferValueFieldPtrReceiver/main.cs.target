@@ -24,7 +24,7 @@ partial class main_package {
 private static readonly object insideˢ = (@string)"inside:"u8;
 
 internal static void run(this ж<builder> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     defer(Ꮡb.of(builder.Ꮡc).reset);
     b.c.inc();

@@ -33,7 +33,7 @@ internal static ж<pp> newPrinter() {
 }
 
 internal static void free(this ж<pp> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.buf = p.buf[..0];
     poolPut(Ꮡp);

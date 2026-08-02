@@ -131,7 +131,7 @@ internal static (nint sum, error err) add(this ж<acc> Ꮡa, nint n) {
     nint sum = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
         defer(() => {
             {

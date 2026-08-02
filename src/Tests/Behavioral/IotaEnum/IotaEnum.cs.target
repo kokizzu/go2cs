@@ -140,7 +140,7 @@ public static ж<Type> TypeFor<T>() {
 }
 
 public static ж<Type> Elem(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Array) {
@@ -168,7 +168,7 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
 }
 
 public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Map) {
         return default!;
@@ -184,7 +184,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
 }
 
 public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Array) {
         return default!;

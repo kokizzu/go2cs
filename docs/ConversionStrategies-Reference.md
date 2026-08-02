@@ -9953,42 +9953,71 @@ behavioral test — a plain-struct `*box` where `&box{}` must compare `!= nil`, 
 methods, and a promoted-embed `*embedder` whose pre-fix value comparison NRE'd, output-compared vs Go; and
 by the re-baselined `RingPointerMethods` whose `r != nil` receiver walk now renders `Ꮡr != nil`.)
 
-### A compared receiver's deref alias is nil-safe — methods callable through a nil pointer
-The gap the box-comparison fix left open: Go legitimately **calls** methods through a nil pointer and
-panics only on an actual dereference, so the guard-first idiom returns cleanly on nil —
-`func (b *Buffer) String() string { if b == nil { return "<nil>" } … }` (bytes; its `TestNil` calls
-`b.String()` on a `var b *Buffer`). The emitted preamble deref'd the box **before** the body's guard
-could run — `ref var b = ref Ꮡb.Value;` NRE'd at entry where Go returns `"<nil>"`. The fix folds the
-**receiver** into `nilSafePtrParamNames` under the receiver-specific predicate, so the entry alias (and
-a reassigned receiver's re-alias, which reads the same set) routes through the nil-safe accessor:
+### A pointer RECEIVER's deref alias is nil-DEFERRING — the panic moves to the body, it does not vanish
+Go legitimately **calls** methods through a nil pointer: the method RUNS, and the nil-pointer panic
+happens only where the body actually dereferences the pointee. The emitted entry alias
+`ref var b = ref Ꮡb.Value;` instead dereferenced at ENTRY, so every nil-tolerant method panicked
+before it began — whichever way its guard is spelled:
+
+| Guard shape | Go | pre-fix C# |
+|:--|:--|:--|
+| INLINE — `func (b *Buffer) String() string { if b == nil { return "<nil>" } … }` (bytes `TestNil`) | returns `"<nil>"` | entry panic |
+| DELEGATED — `func (f *File) Chdir() error { if err := f.checkValid("chdir"); … }`, where `checkValid` is what asks `f == nil` (os `TestNilFileMethods`, all fifteen `*File` methods) | returns `ErrInvalid` | entry panic |
+| NONE, but a side effect first — `fmt.Println(…)` then `f.name` | prints, THEN panics | entry panic, nothing printed |
+
+The first row was closed in 2026-07 by folding a **nil-COMPARED** receiver into `nilSafePtrParamNames`
+so its alias took the nil-SAFE `DerefOrNil()`. That could not close the other two, and widening it to
+every receiver was the wrong instrument: `DerefOrNil()` hands back a shared throwaway `default(T)`
+slot, so an unguarded deref reads a **silent zero where Go panics** — acceptable only where the
+converted guard provably excludes the read (the nil-terminated pointer walk it exists for), never as a
+corpus-wide default. That widening was measured and reverted.
+
+The instrument that works is a **nil-DEFERRING** accessor, `DerefOrNull()`, which binds
+`Unsafe.NullRef<T>()` for a nil box. A null ref is legal to HOLD and to pass on as `ref T`; it faults
+on USE. So the panic is not discarded and not moved earlier — it lands exactly where Go's does:
 
 ```csharp
-public static @string String(this ж<Buffer> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
-
-    if (Ꮡb == nil) {
-        // Special case, useful in debugging.
-        return "<nil>"u8;
+public static (nint n, error err) Read(this ж<File> Ꮡf, slice<byte> b) {
+    ref var f = ref Ꮡf.DerefOrNull();          // binds; never throws
+    {
+        var errΔ1 = Ꮡf.checkValid(readˢ);      // through the BOX — Go's guard, reached
+        if (errΔ1 != default!) { return (0, errΔ1); }
     }
-    return ((@string)(b.buf[(int)(b.off)..]));
+    (n, var e) = Ꮡf.read(b);
+    return (n, f.wrapErr(readˢ, e));           // the first real deref — panics here, as Go does
 }
 ```
 
-**The predicate, precisely** (`isComparedDirectBoxReceiverIdent`, consulted by `collectNilSafePtrParams`'
-`==`/`!=` operand scan): the deref alias of a method's receiver uses `DerefOrNil()` iff (a) the body
-contains a `==`/`!=` binary expression with the **bare receiver identifier** as an operand — object
-identity via `identResolvesToReceiver`, so a shadowing local's comparison does not qualify — and (b) the
-method is **direct-ж** (only that form has a receiver box parameter whose entry deref exists to be made
-nil-safe). Condition (b) is implied by (a) — the same comparison promotes the method to direct-ж through
-`bodyUsesReceiverAsPointerValue` — but is checked explicitly so the predicate is self-contained. Every
-method that never compares its receiver keeps the plain `.Value` form byte-for-byte, and for a non-nil
-receiver `DerefOrNil()` returns the identical real slot, so the only behavioral change is at entry with
-an actually-nil receiver. The accepted trade-off is the same one documented for nil-compared pointer
-parameters above: an *unguarded* deref of an actually-nil receiver reads the throwaway default slot
-instead of raising Go's nil-deref panic — observable only by a program already panicking in Go.
-(Guarded by the `PointerReceiverNilCompare` extension — `isNil`/`notNil`/guard-first `describe`
-called through actually-nil `*box` and `*embedder` pointers beside the original non-nil probes,
-output-compared vs Go; bytes' `TestNil` exercises the stdlib shape.)
+The first field read, field write, or whole-struct copy through that ref raises
+`NullReferenceException`, which `RuntimeErrorPanic.TryAsPanic` already maps to Go's own
+`runtime error: invalid memory address or nil pointer dereference` — recoverable and printed
+verbatim. Measured, not assumed: a synthetic struct whose field sits 200 KB past the null page still
+faults as a clean `NullReferenceException` (the JIT emits an explicit check rather than relying on the
+64 KB guard page), and a converted Go struct cannot reach even that offset — Go's inline `[N]T` becomes
+a golib `array<T>`, an 8-byte managed reference — so there is no null-page cliff to fall off.
+
+**Where it is emitted.** The entry alias exists in **two** places and both take the accessor, or the
+fix is half-done:
+- the converter's own preamble for a direct-ж receiver (`visitFuncDecl`, unconditionally for
+  `i == 0 && Recv != nil && directBoxReceiver`; plus a repointed receiver's re-alias in
+  `visitAssignStmt`, so the two halves of one alias cannot disagree);
+- **go2cs-gen's `ReceiverMethodTemplate`**, the bridge that reaches a `ref T`-receiver method through a
+  box. Left eager, that bridge panicked one call frame *earlier* than Go — the `ValAnnounce` arm of the
+  guard below caught exactly this and was the reason the generator half was found at all.
+
+Because the accessor is unconditional there is no predicate to get wrong, and
+`isComparedDirectBoxReceiverIdent` — the 2026-07 receiver-specific arm of `collectNilSafePtrParams` —
+is subsumed and deleted; that scan is once again about pointer PARAMETERS only. A non-nil receiver is
+unaffected: `DerefOrNull()` routes it to `ValueSlot`, the identical real slot, which additionally
+subsumes the `isInherentlyHeapAllocatedType` → `.ValueSlot` receiver arm above (same slot, and now the
+genuinely-nil case is handled too rather than silently read).
+
+(Guarded by the `NilReceiverMethods` behavioral test, output-compared vs `go run`: a delegated
+`checkValid`-style guard that must return the error, an unconditional deref that must panic with Go's
+message, a side effect that must be observed BEFORE that panic, and a non-nil receiver read through
+both emission shapes — each panic case run through both the direct-ж preamble and the generated
+`ref`-receiver bridge. `PointerReceiverNilCompare` and bytes' `TestNil` continue to cover the inline
+guard.)
 
 ### A receiver RE-POINTED before first use gets a nil-safe entry alias too — the normalization idiom
 The section above covers a receiver the body **tests**. Go's other nil-receiver idiom does not test it

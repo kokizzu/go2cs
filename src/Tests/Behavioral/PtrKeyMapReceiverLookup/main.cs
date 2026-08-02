@@ -42,7 +42,7 @@ internal static @string label(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
 private static readonly object closedˢ = (@string)"closed"u8;
 
 internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     ref var t = ref Ꮡt.Value;
 
     deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, defer);

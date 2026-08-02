@@ -58,7 +58,7 @@ public static nint Sum(this Thing t) {
 }
 
 public static nint ValShadowField(this ж<Thing> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.val = 2;
     nint got = 0;

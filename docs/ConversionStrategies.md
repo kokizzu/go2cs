@@ -1282,6 +1282,32 @@ package-level global whose address is taken is backed by a real box so `&global`
 `ж<T>` rather than C# `ref` sidesteps escape-analysis complications, at the cost of an occasional heap
 allocation.
 
+A pointer **RECEIVER** is the one alias that must not use `Value`. Go permits calling a method through a
+nil `*T` — the method RUNS, and the panic happens only where the body dereferences the pointee, which is
+why `os`'s fifteen nil-tolerant `*File` methods return `ErrInvalid` instead of panicking. So the receiver
+alias uses `DerefOrNull()`, which binds a *null ref* for a nil box: legal to hold, and it faults on first
+use, so the panic is deferred to Go's own point rather than raised at entry (or, as a shared `default(T)`
+slot would, lost entirely):
+
+```go
+func (f *File) Chdir() error {                  // os/file_posix.go
+    if err := f.checkValid("chdir"); err != nil { return err }
+    ...
+}
+```
+```csharp
+public static error Chdir(this ж<File> Ꮡf) {    // file.cs
+    ref var f = ref Ꮡf.DerefOrNull();           // binds; a nil receiver does NOT throw here
+    { var err = Ꮡf.checkValid(chdirˢ); if (err != default!) { return err; } }
+    ...
+}
+```
+
+The fault surfaces as Go's own `runtime error: invalid memory address or nil pointer dereference`, and is
+recoverable. Detail (both emission sites — the converter preamble and go2cs-gen's `ref`-receiver bridge —
+and why the nil-SAFE accessor is a different tool):
+[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish).
+
 Pointer **equality is by address**, so `ж<T>.Equals` compares each referent shape by its real storage, not
 by the box: a struct-field ref by (source object, field identity), and an element ref by (backing array,
 absolute index). That last canonicalization is load-bearing — `Ꮡ(slice, i)` boxes the slice HEADER anew on

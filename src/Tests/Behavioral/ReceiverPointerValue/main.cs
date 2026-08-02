@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 internal static void initSelf(this ж<ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.next = Ꮡr;
 }

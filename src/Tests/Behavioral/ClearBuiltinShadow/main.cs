@@ -24,7 +24,7 @@ partial class main_package {
 }
 
 internal static void recover(this ж<guard> Ꮡg) => func((defer, recover) => {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     {
         var e = recover(); if (e != default!) {

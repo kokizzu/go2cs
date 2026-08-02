@@ -194,7 +194,7 @@ internal static @string joinPair(@string s, error err) {
 internal static ж<nint> lastN;
 
 internal static nint fillFast(this ж<worker> Ꮡw, slice<byte> b) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     lastN = Ꮡw.of(worker.Ꮡn);
     return len(b) + w.n;
@@ -221,7 +221,7 @@ internal static nint fillFast(this ж<worker> Ꮡw, slice<byte> b) {
 }
 
 internal static nint run(this ж<worker> Ꮡw, slice<byte> b) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     w.step(Ꮡw);
     return w.fill(Ꮡw, b);

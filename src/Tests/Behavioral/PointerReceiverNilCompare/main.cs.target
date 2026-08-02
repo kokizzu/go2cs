@@ -33,7 +33,7 @@ internal static bool isNil(this ж<embedder> Ꮡe) {
 private static readonly @string nilˢ = "nil"u8;
 
 internal static @string checkGuard(this ж<embedder> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (Ꮡe == nil) {
         return nilˢ;
@@ -45,7 +45,7 @@ internal static @string checkGuard(this ж<embedder> Ꮡe) {
 private static readonly @string nilˢ2 = "<nil>"u8;
 
 internal static @string describe(this ж<box> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡb == nil) {
         return nilˢ2;

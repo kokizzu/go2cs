@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 internal static ж<Ring> init(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.next = Ꮡr;
     r.prev = Ꮡr;
@@ -18,7 +18,7 @@ internal static ж<Ring> init(this ж<Ring> Ꮡr) {
 }
 
 public static ж<Ring> Next(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
@@ -27,7 +27,7 @@ public static ж<Ring> Next(this ж<Ring> Ꮡr) {
 }
 
 public static ж<Ring> Prev(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
@@ -36,16 +36,16 @@ public static ж<Ring> Prev(this ж<Ring> Ꮡr) {
 }
 
 public static ж<Ring> Move(this ж<Ring> Ꮡr, nint n) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
     }
     for (; n < 0; n++) {
-        Ꮡr = r.prev; r = ref Ꮡr.Value;
+        Ꮡr = r.prev; r = ref Ꮡr.DerefOrNull();
     }
     for (; n > 0; n--) {
-        Ꮡr = r.next; r = ref Ꮡr.Value;
+        Ꮡr = r.next; r = ref Ꮡr.DerefOrNull();
     }
     return Ꮡr;
 }

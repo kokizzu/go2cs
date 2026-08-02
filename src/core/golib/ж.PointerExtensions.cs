@@ -284,6 +284,56 @@ public static class PointerExtensions
     }
 
     /// <summary>
+    /// Nil-DEFERRING deref accessor: returns a reference to the pointed-to value, or a <em>null</em>
+    /// reference when <paramref name="box"/> is a nil pointer — so establishing the reference never
+    /// throws, and the nil-pointer panic is raised by the first read or write THROUGH it.
+    /// </summary>
+    /// <typeparam name="T">Pointed-to type.</typeparam>
+    /// <param name="box">Pointer reference, which may be <c>null</c>.</param>
+    /// <returns>
+    /// A <c>ref</c> to the value of <paramref name="box"/>, or <see cref="Unsafe.NullRef{T}"/> when
+    /// it is nil.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This is what makes a POINTER RECEIVER behave as Go's does. Go permits calling a method through
+    /// a nil <c>*T</c>: the method runs, and the panic happens only where the body actually
+    /// dereferences the pointee — which is why <c>os</c>'s fifteen nil-tolerant <c>*File</c> methods
+    /// return <c>ErrInvalid</c> rather than panicking (each delegates its guard to
+    /// <c>f.checkValid</c>, reached through the BOX, before it ever touches a field). A method's entry
+    /// alias <c>ref var f = ref Ꮡf.Value;</c> instead dereferences at ENTRY, so a nil receiver panicked
+    /// before the body could run at all.
+    /// </para>
+    /// <para>
+    /// The distinction from <see cref="DerefOrNil{T}"/> is the whole point and the two are NOT
+    /// interchangeable: <c>DerefOrNil</c> hands back a shared throwaway slot, so a deref that Go says
+    /// must panic instead reads <c>default(T)</c> — silently wrong, tolerable only where the converted
+    /// guard provably excludes the read (the nil-terminated pointer walk it exists for). This one binds
+    /// a null reference, which is legal to HOLD and faults on USE: the first field read, field write,
+    /// or whole-struct copy raises <see cref="NullReferenceException"/>, which
+    /// <see cref="RuntimeErrorPanic.TryAsPanic"/> maps to Go's
+    /// <c>runtime error: invalid memory address or nil pointer dereference</c> — recoverable, and
+    /// printed verbatim. So the panic is neither lost nor moved earlier: it lands exactly where Go's
+    /// does, AFTER any side effect the body performs first.
+    /// </para>
+    /// <para>
+    /// A non-nil box takes <see cref="ж{T}.ValueSlot"/>, not <see cref="ж{T}.Value"/>, for the reason
+    /// <c>DerefOrNil</c> does: a real box whose reference-typed value is null (a heap-boxed pointer,
+    /// slice, map, interface or func — <c>*(&amp;p)</c> in Go, which yields nil without dereferencing)
+    /// has a REAL slot, and the alias must be that slot so a write through it persists. The nil
+    /// POINTER is already handled above, so nothing that should panic reaches here.
+    /// </para>
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ref T DerefOrNull<T>(this ж<T>? box)
+    {
+        if (box is null || box.IsNilStandardPointer)
+            return ref Unsafe.NullRef<T>();
+
+        return ref box.ValueSlot;
+    }
+
+    /// <summary>
     /// Renders a pointer as a hexadecimal address token — the shape Go prints for <c>%p</c> — or
     /// <c>"&lt;nil&gt;"</c> for the nil pointer. This is what <see cref="ж{T}.ToString"/> returns;
     /// Go's own <c>%p</c>/<c>%v</c> are served by the converted <c>fmt</c> through the reflection

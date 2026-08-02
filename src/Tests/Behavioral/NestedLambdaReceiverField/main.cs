@@ -38,7 +38,7 @@ private static readonly object noteˢ = (@string)"note:"u8;
 }
 
 internal static void exec(this ж<stmt> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.runWith(() => {
         Ꮡs.Value.d.note(Ꮡs);

@@ -13,7 +13,7 @@ internal static (@string @out, error err) fprint(this ж<Config> Ꮡcfg, @string
     @string @out = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var cfg = ref Ꮡcfg.Value;
+    ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         defer(() => {
             {
