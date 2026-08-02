@@ -42,10 +42,17 @@ Write-Host "==> Clearing stale test/build processes (prior-run lock-holders)..."
 
 # Stale testhost/vstest from a PRIOR run hold the lock that breaks THIS build. Safe to kill here:
 # this script runs in a normal shell, not inside testhost, so we are not killing ourselves.
+# PATH-SCOPED, never by name alone: worktree isolation does not isolate Stop-Process, and a
+# name-wide kill takes down a SIBLING worktree's in-flight suite (exit -1, log truncated mid-line;
+# see CLAUDE.md's concurrent-session kill section — this script was the last name-wide killer).
+# Only processes whose executable lives under THIS tree (repo root, two levels up) are fair game.
+$killScopeRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 foreach ($name in @("testhost", "vstest.console", "MSBuild")) {
-    $procs = Get-Process -Name $name -ErrorAction SilentlyContinue
+    $procs = Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object {
+        $_.Path -and $_.Path.StartsWith($killScopeRoot, [System.StringComparison]::OrdinalIgnoreCase)
+    }
     if ($procs) {
-        Write-Host "    killing $($procs.Count) x $name" -ForegroundColor DarkYellow
+        Write-Host "    killing $($procs.Count) x $name (scoped to $killScopeRoot)" -ForegroundColor DarkYellow
         $procs | Stop-Process -Force -ErrorAction SilentlyContinue
     }
 }
