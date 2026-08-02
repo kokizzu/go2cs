@@ -242,7 +242,7 @@ public sealed class TestExecution
 
     public @string TempDir()
     {
-        string path = Path.Combine(m_runner.WorkingDirectory, ".tmp", SanitizeName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
+        string path = Path.Combine(m_runner.WorkingDirectory, ".tmp", TempDirName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(path);
         Cleanup(() => RemoveAll(path));
         return path;
@@ -531,6 +531,67 @@ public sealed class TestExecution
         if (string.IsNullOrEmpty(value))
             return "#00";
         return string.Concat(value.Select(ch => char.IsWhiteSpace(ch) ? '_' : char.IsControl(ch) ? '\uFFFD' : ch));
+    }
+
+    /// <summary>
+    /// Builds the per-test directory component of a <see cref="TempDir"/> path -- the sanitized test
+    /// name plus a deterministic discriminator that makes the component unique per EXACT name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="SanitizeName"/> alone is not a safe path component. It is case-PRESERVING but the
+    /// filesystem underneath is case-INSENSITIVE on Windows and macOS, so two tests whose names
+    /// differ only by case resolve to ONE directory -- <c>TestFileReaddir</c> and
+    /// <c>TestFileReadDir</c> in os's suite, both parallel, each one's <c>t.Cleanup</c> deleting the
+    /// other's tree. The whitespace folding has the same shape without any help from the filesystem:
+    /// <c>"a b"</c> and <c>"a_b"</c> sanitize to the same string.
+    /// </para>
+    /// <para>
+    /// The discriminator is a hash of the exact name rather than a counter because a temp directory
+    /// must be STABLE run to run: the same test always gets the same path, so a failed run's tree is
+    /// findable afterwards, and the whole <c>.tmp</c> layout is reproducible. A shared counter would
+    /// depend on thread interleaving under <c>-parallel</c> and change every run. Go does not need
+    /// this at all -- its <c>TempDir</c> goes through <c>os.MkdirTemp</c>, whose random suffix is
+    /// unique by construction but deliberately NOT reproducible.
+    /// </para>
+    /// <para>
+    /// A subtest's name carries <c>/</c> separators, which stay separators here: the component
+    /// nests, and the discriminator lands on the leaf, which is the only part a sibling can collide
+    /// with. Two names that share a case-folded prefix therefore share the parent directory (already
+    /// true, and harmless -- cleanup only ever removes its own leaf) and never the leaf.
+    /// </para>
+    /// </remarks>
+    private static string TempDirName(string value)
+    {
+        return $"{SanitizeName(value)}-{Fnv1a32(value):x8}";
+    }
+
+    /// <summary>
+    /// FNV-1a over the UTF-16 code units of <paramref name="value"/>, low byte first.
+    /// </summary>
+    /// <remarks>
+    /// Chosen for being short, dependency-free and identical on every platform and every run --
+    /// <see cref="string.GetHashCode()"/> is randomized per process and would give a test a new temp
+    /// directory on every run. Eight hex digits keep the path short enough not to crowd Windows'
+    /// path limit, which a long subtest name already presses against.
+    /// </remarks>
+    private static uint Fnv1a32(string value)
+    {
+        const uint OffsetBasis = 2166136261;
+        const uint Prime = 16777619;
+
+        uint hash = OffsetBasis;
+
+        unchecked
+        {
+            foreach (char ch in value)
+            {
+                hash = (hash ^ (byte)ch) * Prime;
+                hash = (hash ^ (byte)(ch >> 8)) * Prime;
+            }
+        }
+
+        return hash;
     }
 }
 

@@ -55,10 +55,13 @@
 
 ## Test host / pipeline
 
-8. **`TempDir` case-collision** — `SanitizeName(TestName)` collides test names differing only by
-   case on case-insensitive filesystems (`TestFileReaddir` vs `TestFileReadDir`, both parallel,
-   each deleting the other's dir). Remedy: disambiguate the sanitized name. Proven defect,
-   r36-nilrecv finding.
+8. ~~**`TempDir` case-collision**~~ — **DONE (r37-time-os-fin, 2026-08-02).** The path component is
+   now `TempDirName(Name)` = the sanitized name plus a deterministic 8-hex FNV-1a of the EXACT name,
+   so `TestFileReaddir` and `TestFileReadDir` no longer resolve to one directory (and the lossy
+   whitespace fold — `"a b"` vs `"a_b"` — is covered by the same discriminator). A hash rather than a
+   counter because a temp dir must be STABLE run to run; a shared counter would move with thread
+   interleaving under `-parallel`. `SanitizeName` itself is untouched — it also names subtests, where
+   the string feeds the `go test -json` differential.
 9. **`TestReporter` subtest-name escaping** — Go escapes control bytes in subtest names
    (`\x1a`), the C# host emits them raw: 924 cosmetically-paired lines in os's `TestReadStdin`
    report. Touches every package's report format → wants the full sweep as its gate.
@@ -66,16 +69,27 @@
     `-stdlib` csproj writers disagree on the 8-line validation-proof block, making every pipeline
     run dirty a validated package's production csproj (the standing `0 8` restore family). Fix =
     the `-tests` writer preserves/emits the block; removes a whole documented drift family.
+11. **`Tests/PackageTests/ConvertedTestHarness` does not build — the end-to-end `-tests` fixture is
+    dead** (found r37-time-os-fin, 2026-08-02; PRE-EXISTING, A/B'd on `fa87dd349` with a
+    master-converter binary and reproduced from a clean slate). Its production `value.cs` emits
+    `namespace go;` + `convertedtestharness_package`, while the external variant's `external_test.cs`
+    qualifies the self-import as `go2cs.convertedtestharness_package` — the module prefix of
+    `module go2cs/convertedtestharness` is treated as a namespace segment on the import side and
+    dropped on the declaration side. `error CS0234` ×2, so the pipeline never gets to run. The
+    fixture has not been touched since it was created in `fbdaf8017` (Step 2.3), so it rotted as the
+    namespace scheme evolved. Cost: the documented "run the pipeline on the harness" check in its
+    README is unavailable, and a host-behavior test added there (the `TempDir` case-collision guard
+    in `value_test.go`) passes on the Go side but cannot be exercised on the C# side.
 
 ## Repo hygiene
 
-11. **The whole-corpus rebank** — the umbrella item: ~119+ files of accumulated intended drift
+12. **The whole-corpus rebank** — the umbrella item: ~119+ files of accumulated intended drift
     (satisfies-not-witnesses records, ptrset redirections, os/time/nilrecv footprints, the Δio
     `-tests`-closure family, stale banked test sources incl. `binary_test.cs` 78/78 and csv's).
     ONE deliberate regen + bank + full sweep, its own session.
-12. **`C:\go2cs-build` debris** — ~30 stale scratch/probe/recon directories from r26–r34 (`ab*`,
+13. **`C:\go2cs-build` debris** — ~30 stale scratch/probe/recon directories from r26–r34 (`ab*`,
     `fmtcheck*`, `r3x-*` leftovers, `scratch*`, `splitmain`, …) plus the landed chip worktrees.
     Delete after confirming each is branch-landed.
-13. **ConversionStrategies-Reference.md ~line 10734** — two unrelated topics mashed onto one line
+14. **ConversionStrategies-Reference.md ~line 10734** — two unrelated topics mashed onto one line
     (reflectlite mini-bridge paragraph runs into the AllocsPerRun discussion); chip-reported,
     cosmetic.
