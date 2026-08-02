@@ -352,6 +352,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckElidedNestedPtrComposite() => CheckTarget("ElidedNestedPtrComposite");
 
     [TestMethod]
+    public void CheckElidedPtrElemIfaceAssign() => CheckTarget("ElidedPtrElemIfaceAssign");
+
+    [TestMethod]
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
@@ -407,6 +410,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckFloatFormatting() => CheckTarget("FloatFormatting");
+
+    [TestMethod]
+    public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
 
     [TestMethod]
     public void CheckForeignPointerImplementSuppression() => CheckTarget("ForeignPointerImplementSuppression");
@@ -1012,6 +1018,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]
+    public void CheckPackageNameShadowing() => CheckTarget("PackageNameShadowing");
+
+    [TestMethod]
     public void CheckPackageShadowParam() => CheckTarget("PackageShadowParam");
 
     [TestMethod]
@@ -1154,6 +1163,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPublicizedInterfaceParam() => CheckTarget("PublicizedInterfaceParam");
+
+    [TestMethod]
+    public void CheckRangeExprFuncLitCapture() => CheckTarget("RangeExprFuncLitCapture");
 
     [TestMethod]
     public void CheckRangeIntIndexAppend() => CheckTarget("RangeIntIndexAppend");
