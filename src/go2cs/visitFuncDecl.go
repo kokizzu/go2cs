@@ -1345,6 +1345,17 @@ func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
 		}
 	}
 
+	// ⚠ A pointer RECEIVER is nil-safe here only when the body COMPARES it (the scan below). A method
+	// that tolerates a nil receiver by DELEGATING the check — os's `func (f *File) Chdir() error { if
+	// err := f.checkValid("chdir"); err != nil { return err } … }`, where `checkValid` is what asks
+	// `f == nil` — still panics in its own entry preamble before the guard can run (os's
+	// TestNilFileMethods, all 15 methods). Widening this to EVERY direct-ж pointer receiver fixes it
+	// and was measured: 26 behavioral projects change their receiver preamble from `.Value` to
+	// `.DerefOrNil()`. That is a corpus-wide emission change, and it widens the arms' accepted
+	// trade-off — an unguarded deref of an actually-nil receiver reads default(T) instead of raising
+	// Go's nil-deref panic — from "a receiver the body nil-tests" to EVERY pointer receiver, which is
+	// a silent-wrong-answer surface. Deliberately NOT taken here: it is a shared-architecture ruling
+	// with a measured footprint, recorded in docs/Phase4/BOARD-next-validation-candidates.md.
 	if funcDecl.Body == nil {
 		return
 	}

@@ -182,14 +182,31 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		valueExpr = v.convertToInterfaceType(structFieldIfaceType, v.getExprType(keyValueExpr.Value), valueExpr)
 	}
 
-	if context.ident != nil {
-		keySourceType := v.getIdentType(context.ident)
+	// The interface a keyed VALUE must convert to is the composite's OWN value slot — never the type
+	// of the variable the composite is being assigned to. A composite assigned to an interface-typed
+	// variable is converted to that interface AS A WHOLE (visitAssignStmt's convertExprToInterfaceType
+	// / visitValueSpec's convInterfaceDeclValue), so applying the LHS's interface to each ELEMENT as
+	// well is a second, wrong conversion: `fsys = fstest.MapFS{"william": {Data: …}}` with `fsys` of
+	// type `fs.FS` (os's TestCopyFS) ran every `*MapFile` value through a `*MapFile`→`fs.FS` cast,
+	// whose deref-copy fallback collapses `~Ꮡ(new MapFile(…))` to the bare struct — a
+	// `map[string]*MapFile` slot holding a VALUE (CS0029 ×5). The same literal in a `var`
+	// declaration, a call argument, or assigned to its own concrete type was always correct; only
+	// the reassignment-to-an-interface path carried the LHS type down here.
+	//
+	// The LHS ident stays as the FALLBACK for a composite that does not state its slot type here
+	// (the reason it was consulted in the first place — sparse-array initializations), so a slot the
+	// composite does name decides, and an unknown one behaves exactly as before. structFieldIfaceType
+	// has already converted an interface STRUCT field above; skipping it here keeps that single.
+	valueIfaceType := valueSlotType
 
-		if keySourceType != nil {
-			if needsInterfaceCast, isEmpty := isInterface(keySourceType); needsInterfaceCast && !isEmpty {
-				valueType := v.getExprType(keyValueExpr.Value)
-				valueExpr = v.convertToInterfaceType(keySourceType, valueType, valueExpr)
-			}
+	if valueIfaceType == nil && context.ident != nil {
+		valueIfaceType = v.getIdentType(context.ident)
+	}
+
+	if structFieldIfaceType == nil && valueIfaceType != nil {
+		if needsInterfaceCast, isEmpty := isInterface(valueIfaceType); needsInterfaceCast && !isEmpty {
+			valueType := v.getExprType(keyValueExpr.Value)
+			valueExpr = v.convertToInterfaceType(valueIfaceType, valueType, valueExpr)
 		}
 	}
 

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestUTF16Alloc",
+      "class": "alloc-count-semantics",
+      "signature": " allocs, want ",
+      "reason": "exact-count AllocsPerRun asserts (want 1, for syscall.UTF16ToString and syscall.UTF16FromString): the managed shim is deliberately byte-derived (the CLR exposes no malloc counter), so a NONZERO count assert can never agree whatever the allocation behavior - measured 432 and 128, which are BYTES allocated per call, not mallocs; the same ruling io's TestMultiWriter_WriteStringSingleAlloc and strings' asserts take, see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md. Note the deliberate asymmetry: os's TestWriteStringAlloc bounds allocations at ZERO, which a byte count CAN satisfy, so it stays a strict mismatch and is recorded as a real divergence instead."
+    }
+  ]
+}

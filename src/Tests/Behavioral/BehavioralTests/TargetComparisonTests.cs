@@ -355,6 +355,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckElidedNestedPtrComposite() => CheckTarget("ElidedNestedPtrComposite");
 
     [TestMethod]
+    public void CheckElidedPtrElemIfaceAssign() => CheckTarget("ElidedPtrElemIfaceAssign");
+
+    [TestMethod]
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
@@ -410,6 +413,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckFloatFormatting() => CheckTarget("FloatFormatting");
+
+    [TestMethod]
+    public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
 
     [TestMethod]
     public void CheckForeignPtrEmbedIfaceLib() => CheckTarget("ForeignPtrEmbedIfaceLib");

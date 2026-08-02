@@ -28,6 +28,12 @@
 > select/cancellation suite in the standard library finds **no channel defect at all**, which is
 > independent confirmation of the wave3 landing.
 >
+> **Revised again 2026-08-02 (r35-os)**: `os` gets its own section below — it builds with 0 errors and
+> reaches **158 of 178 top-level tests matching + 1 disclosed**, up from 48 at the start of the arc.
+> Two converter roots and one host-killer closed; the residual is rooted row by row, and the largest
+> single item (12 unreached) is heap corruption whose crash SITE moves between runs, not a defect at
+> any of the three sites it has been credited to. `os` does not bank and the roster is unchanged at 71.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -593,6 +599,84 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
+## `os` — 158 of 178 match + 1 disclosed; two converter roots and one host-killer closed (r35-os, 2026-08-02)
+
+Measured with `go2cs -tests -test-action all -test-timeout 15m "<GOROOT>/src/os" src/core/os`.
+`os` builds with **0 errors** and the host runs. Progression across the arc, all from one pipeline
+command: **48 agreeing → 141 → 158**, the first jump from the build blockers, the second from the
+`readReparseLink` host-killer.
+
+| | Go | C# |
+|:--|--:|--:|
+| top-level tests | 178 (143 pass · 34 skip · 1 fail) | 166 reached (123 pass · 34 skip · 8 fail · 1 infra-error) |
+| **agreeing** | | **158** |
+| disclosed | | 1 (`TestUTF16Alloc`, alloc-count-semantics) |
+| real mismatches | | 7 |
+| unreached (host died) | | 12 |
+
+### Closed in this arc
+
+- **Build blocker 1 — a production type ALIAS is invisible to its own test assembly.** Under the
+  white-box reference model the production sources are not compiled into the test assembly, so the
+  `global using FileInfo = go.io.fs_package.FileInfo;` that `os/types.cs` declares is out of scope for
+  a converted `_test.go`. `export_test.go`'s `var Atime = atime` names `FileInfo` unqualified →
+  CS0246 ×2, the whole build. Fixed at the same seam the foreign-alias arm already states: a
+  same-package alias DECLARED IN A PRODUCTION FILE renders as its TARGET under
+  `testWhiteboxReference` (an alias declared by a `_test.go` emits its own `global using` and is left
+  alone). `typeNameResolution.go`; CNR byte-identical.
+- **Build blocker 2 — a `GoImplicitConv` record with NO local operand.** `os_windows_test.go`'s
+  privilege helper converts `syscall.Handle(t)` over a `syscall.Token`; both operands are foreign, so
+  `ImplicitConvGenerator` had nothing to extend and minted a phantom `partial struct ΔHandle` inside
+  `os_test_package` (CS1061 on `.Value`). Both arms of `checkForImplicitConversion` now require
+  `conversionRecordHasLocalOperand`. Guard `ForeignPairNumericConv`; CNR byte-identical. Rule:
+  [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A GoImplicitConv record
+  needs at least one LOCAL operand*.
+- **Runtime root — a keyed element inherited the LHS variable's interface.** `TestCopyFS`'s
+  `fsys = fstest.MapFS{"william": {Data: …}}` (with `fsys` an `fs.FS`) ran every `*MapFile` element
+  through a spurious `*T → Iface` cast whose deref-copy collapse turned the elided `Ꮡ(new MapFile(…))`
+  into the bare struct — CS0029 ×5. The element's target is now the composite's own value slot.
+  Guard `ElidedPtrElemIfaceAssign`; CNR byte-identical. Rule: *A keyed element's interface target is
+  the composite's own SLOT, never the LHS variable's type*.
+- **Host-killer — `os.readReparseLink`, hand-owned.** A fourth member of the raw-metal-on-non-native-
+  types fork, and the first to take the host down in `os`: the reparse-buffer structs end in
+  `PathBuffer [1]uint16`, a Go inline array standing in for the variable-length name the kernel wrote
+  after it and an 8-byte MANAGED REFERENCE in the conversion. golib correctly refuses to alias managed
+  storage for a reference-bearing struct, so the reinterpret took the raw-address route and
+  `&rb.PathBuffer[0]` resolved an object reference synthesized out of path bytes: ACCESS_VIOLATION in
+  `array<uint16>.get_Item`, at test 50 of 178. `src/core/os/file_windows_impl.cs` decodes the record
+  out of the byte slice at its documented offsets (same remedy as `dir_windows_impl.cs`);
+  `manualConversionFuncs` gains `os.readReparseLink`. ⚠ `syscall.Readlink` carries the SAME defect over
+  its own private `reparseDataBuffer`/`symbolicLinkReparseBuffer`/`mountPointReparseBuffer` copies —
+  LATENT (nothing in the validated corpus reaches it), recorded rather than fixed speculatively.
+
+### The residual, every row rooted
+
+| Row | Cost | Root |
+|:--|--:|:--|
+| **host-killer: an ExecutionEngineException whose SITE MOVES between runs** | 12–29 | Not a defect at the crash site. Three runs died in three different places (`TestReadlink`'s AV, then `syscall.Environ`, then `syscall.encodeWTF16` under `os.MkdirAll`), and each site runs CLEAN standalone — `syscall.Environ()` was probed end-to-end in its own converted program and returns the real block. That is accumulated heap corruption, and the strongest candidate is `os_windows_test.go`'s own `createMountPoint`: it reinterprets a managed `[]byte` as a `windows.MountPointReparseBuffer` and WRITES four `uint16` fields through it. golib's `Reinterpret` cannot alias a reference-bearing struct, so the fallback hands back `(ж<TDst>)(uintptr)box` — a **transient** pinned address of a managed slice, written through after its pin expired. Remedy candidates, both bigger than a package arc: make the non-representable fallback PIN the source for the derived box's lifetime, or make it fail loudly instead of returning a stale address. A blanket "fail loudly" is NOT available — reflect's prefix-downcast idiom (`(*structType)(unsafe.Pointer(t))`) deliberately depends on the address route. |
+| `TestDirectoryJunction` | 1 | The same `createMountPoint` reinterpret, this time surfacing as a contained `IndexOutOfRangeException` at `&buf.PathBuffer[0]`. Raw metal on a non-native type, in TEST code that cannot be hand-owned — no converter or golib change can lay a managed array reference over inline OS bytes. |
+| `TestReadStdin` (462 subtests) | 1 | The test's `poll.ReadConsole` fake writes into internal/poll's buffer through `(*[10000]uint16)(unsafe.Pointer(buf))`; the write lands nowhere, so every read returns zeros (`have [0 0 0…] want [abc…]`). Same class, and the general remedy is real: `(*[N]T)(unsafe.Pointer(p))` over a managed ELEMENT box should alias the backing from that element — the `array<T>.Alias` window the `SliceToArrayPointerAlias` fix already built for the slice→array-pointer form. |
+| `TestNilFileMethods` | 1 | A pointer receiver's entry preamble `ref var f = ref Ꮡf.Value;` derefs at ENTRY; Go derefs only where the body uses the pointee. `os` guards by DELEGATING (`f.checkValid("chdir")` is what asks `f == nil`), so all 15 methods panic before their guard runs. `collectNilSafePtrParams` covers only the guard spelled INLINE. **Widening it to every direct-ж receiver was implemented and MEASURED: 26 behavioral projects change their preamble to `.DerefOrNil()`** — a corpus-wide emission change that also widens the arm's accepted trade-off (an unguarded deref reads `default(T)` instead of panicking) from "a receiver the body nil-tests" to every receiver. Reverted and left as a ruling with its footprint attached; the alternative is a golib accessor that binds a NULL ref so the panic moves to first use instead of vanishing. |
+| `TestReadDir` | 1 | Environment fidelity, not conversion: the host runs each package in an isolated directory holding the staged `*.go` fixtures, so `ReadDir(".")` finds `read_test.go` but not the `exec` SUBDIRECTORY that Go's own package directory has. `os.ReadDir` itself is correct — probed against `go run` over the same 201-entry directory, byte-identical including `IsDir()`. Remedy: stage the GOROOT package directory's immediate subdirectory NAMES into the run root. Cheap, but it changes EVERY package's run environment, so it wants the full validated sweep as its gate. |
+| `TestWriteStringAlloc` | 1 | `AllocsPerRun` bounded at ZERO. Deliberately **not** disclosed: the byte-derived shim CAN report 0, so the io/strings unit-mismatch ruling does not cover it. Go's `WriteString` avoids the copy with `unsafe.Slice` over the string's own bytes; a go2cs `@string` is its own storage, so the write path allocates (measured 9088 bytes). A real divergence — an `sstring`-shaped optimization, not a disclosure. |
+| `TestRemoveAllWithExecutedProcess` | 1 | Child `exec failed: exit status 0x8000809a`, repeated. Not rooted; the child-spawn path itself works (`TestStartProcess`, `TestKillStartProcess` pass). |
+| `TestStartProcess/relative` | 1 | The relative-path arm only; the absolute arm passes. Not rooted. |
+| `TestStatLxSymLink` | intermittent | `t.TempDir()` cleanup hit a file "used by another process" — a handle the host had not released yet. Seen once. |
+
+⚠ **A NEW member of the `-tests`-closure production-file family, found by this arc's canaries and owed
+to the next rebank.** Since the validation-badge work (2026-08-02) every package's `.csproj` carries an
+eight-line *"Ship this package's versioned validation proof sheet"* block, emitted by the `-stdlib`
+driver, which has the roster. A single-package `-tests` run does not, so it regenerates the `.csproj`
+**without** those eight lines — `0 8` on `git diff --numstat`, in EVERY banked package a sweep touches.
+Confirmed on both canaries below (`path/filepath`, `io`) and on `os` itself; it predates this arc and is
+caused by no change in it. Classify it with the other `-tests`-closure files: restore, never bank, and
+let the whole-corpus regen level it.
+
+**Spot-canaries on the post-change tree, both at their banked counts:** `path/filepath` →
+`status: validated`, `matched: true`, 55 top-level (37 pass · 18 skip), 0 errors. `io` →
+`status: validated`, `matched: true`, 54 top-level, 2 disclosed, 0 errors (its production
+`package_info.cs` shows the documented `+2` satisfies-not-witnesses records — restore, don't chase).
+
 ## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
 
 Named as a class 2026-08-01, after `syscall.GetTimeZoneInformation` became the second member of it
@@ -619,7 +703,7 @@ latent — nothing in the behavioral suite or the 69-package sweep exercises the
 | ~~`findFirstFile1` / `findNextFile1`~~ | `win32finddata1` (`FileName`, `AlternateFileName`) | **FIXED 2026-08-01** — `path/filepath.EvalSymlinks` → `toNorm` → `normBase`; guarded by the `FindFirstFileData` behavioral output test |
 | `Process32First` / `Process32Next` | `ProcessEntry32` (`ExeFile`) | process enumeration |
 | `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
-| `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | `os` startup |
+| `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | ⚠ NOT `os` startup — corrected 2026-08-02 by the r35-os arc, which ran the whole suite without reaching it. Nothing in `os` calls it; in Go 1.23 the only caller is the public `syscall.GetStartupInfo`, exercised by syscall's own test. `Process32First`/`Next` above ARE reached from `os` (`TestGetppid` → `syscall.Getppid` → `getProcessEntry`) and did not fault, so that row is reached-and-working rather than latent. |
 | `FreeAddrInfoW` | `AddrinfoW` (`Canonname`, `Next`) | `net` DNS |
 | `CertEnumCertificatesInStore`, `CertFreeCertificateChain`, `CertFreeCertificateContext` | `CertContext`, `CertChainContext` | `crypto/x509` on Windows |
 

@@ -456,36 +456,7 @@ internal static (@string, error) normaliseLinkPath(@string path) => func<(@strin
     return ("", errors.New("GetFinalPathNameByHandle returned unexpected path: "u8 + s));
 });
 
-internal static (@string, error) readReparseLink(@string path) => func<(@string, error)>((defer, recover) => {
-    var (h, err) = openSymlink(path);
-    if (err != default!) {
-        return ("", err);
-    }
-    deferǃ(syscall.CloseHandle, h, defer);
-    var rdbbuf = new slice<byte>(syscall.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-    ref var bytesReturned = ref heap(new uint32(), out var ᏑbytesReturned);
-    err = syscall.DeviceIoControl(h, syscall.FSCTL_GET_REPARSE_POINT, nil, 0, Ꮡ(rdbbuf, 0), (uint32)len(rdbbuf), ᏑbytesReturned, nil);
-    if (err != default!) {
-        return ("", err);
-    }
-    var rdb = Ꮡ(rdbbuf, 0).Reinterpret<byte, windows.REPARSE_DATA_BUFFER>();
-    var exprᴛ1 = (~rdb).ReparseTag;
-    if (exprᴛ1 == syscall.IO_REPARSE_TAG_SYMLINK) {
-        var rb = rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.SymbolicLinkReparseBuffer>();
-        @string s = rb.Path();
-        if ((uint32)((~rb).Flags & (uint32)windows.SYMLINK_FLAG_RELATIVE) != 0) {
-            return (s, default!);
-        }
-        return normaliseLinkPath(s);
-    }
-    if (exprᴛ1 == windows.IO_REPARSE_TAG_MOUNT_POINT) {
-        return normaliseLinkPath((rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.MountPointReparseBuffer>()).Path());
-    }
-    { /* default: */
-        return ("", syscall.ENOENT);
-    }
-
-});
+// go2cs generated this placeholder — func readReparseLink is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // the path is not a symlink or junction but another type of reparse
 // point

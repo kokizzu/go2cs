@@ -2420,7 +2420,8 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 				// attribute cannot name K/V (internal/concurrent's indirect[K,V] GoImplicitConv
 				// record emitted GoImplicitConv<Δindirect<K, V>, ж<Δindirect<K, V>>>, CS0246 x4
 				// - and one bad record kills the whole generator run).
-				if targetTypeName != argTypeName && !wrapperConversion && !typeContainsTypeParams(argType) && !typeContainsTypeParams(funcType) {
+				if targetTypeName != argTypeName && !wrapperConversion && !typeContainsTypeParams(argType) && !typeContainsTypeParams(funcType) &&
+					v.conversionRecordHasLocalOperand(funcType, argType) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `abi.Type`); register them so package_info.cs can emit a resolving `global using`.
 					v.recordConversionPackageUsing(argType)
@@ -2493,7 +2494,7 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 
 				argTypeName := v.getCSharpTypeName(argType)
 
-				if targetTypeName != argTypeName {
+				if targetTypeName != argTypeName && v.conversionRecordHasLocalOperand(funcType, argType) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `driver.IsolationLevel`); register them so package_info.cs emits a resolving
 					// `global using` — the STRUCT-conversion branch above already does this, but the
@@ -2537,6 +2538,45 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 	}
 
 	return expr
+}
+
+// conversionRecordHasLocalOperand reports whether a GoImplicitConv record over this operand pair
+// can be REALIZED by ImplicitConvGenerator, which hosts the operator in a `partial struct` inside
+// THIS package's class. That needs at least one operand the package actually declares: the
+// generator already relocates the host when exactly one side is foreign (its "foreign SOURCE via a
+// local alias" / "foreign TARGET via a qualified reference" arms), but with NEITHER side local it
+// has nothing to extend and falls back to declaring `partial struct <simple name>` locally — a
+// PHANTOM type of that name, whose `.Value` does not exist (CS1061).
+//
+// os's `syscall.Handle(t)` over a `syscall.Token` (os_windows_test.go's privilege helper) is the
+// reached case: both operands live in `syscall`, and the aliased-numeric arm's local-anchor swap
+// just picks the other foreign one. Declining costs nothing — the call site emits the explicit
+// `(syscallꓸHandle)(uintptr)t` cast chain, which needs no generated operator, and an operator
+// between two foreign types could not be hosted in either of their assemblies from here anyway.
+func (v *Visitor) conversionRecordHasLocalOperand(funcType, argType types.Type) bool {
+	return v.typeDeclaredInConvertedPackage(funcType) || v.typeDeclaredInConvertedPackage(argType)
+}
+
+// typeDeclaredInConvertedPackage reports whether a named/aliased type is declared by the package
+// currently being converted. An unnamed type (basic, literal struct) has no declaring package and
+// answers false.
+func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
+	if t == nil || v.pkg == nil {
+		return false
+	}
+
+	var obj *types.TypeName
+
+	switch declared := t.(type) {
+	case *types.Named:
+		obj = declared.Obj()
+	case *types.Alias:
+		obj = declared.Obj()
+	default:
+		return false
+	}
+
+	return obj != nil && obj.Pkg() == v.pkg
 }
 
 func isAliasedNumericType(targetType types.Type) bool {

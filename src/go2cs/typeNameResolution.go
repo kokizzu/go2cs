@@ -296,6 +296,24 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 		}
 	}
 
+	// The SAME rule, one assembly boundary further in: under the WHITE-BOX reference model the
+	// production sources are not compiled into the test assembly, so a `global using` the PRODUCTION
+	// emission declares is not in scope for a converted `_test.go`. Go says these are one package —
+	// `export_test.go`'s `var Atime = atime` names `FileInfo` unqualified — but C# says the alias
+	// lives in the referenced assembly and nothing here declares it (CS0246, os's export_test). Render
+	// the alias's TARGET, exactly as the foreign arm above does for the same alias reached from
+	// another package. An alias DECLARED by a `_test.go` file emits its own `global using` into this
+	// assembly and is left alone, and the target is taken through types.Unalias so a non-Named target
+	// (`type buf = []byte`) resolves too — the whole alias name, not just a cross-package one, is what
+	// the assembly boundary swallows.
+	if alias, ok := t.(*types.Alias); ok && v.options.testWhiteboxReference {
+		if aliasObj := alias.Obj(); aliasObj != nil && aliasObj.Pkg() == v.pkg && !v.declaredInTestFile(aliasObj) {
+			if target := types.Unalias(t); target != t {
+				return v.getAliasQualifiedTypeName(target, isUnderlying)
+			}
+		}
+	}
+
 	if name, ok := v.liftedTypeMap[t]; ok {
 		return name
 	}

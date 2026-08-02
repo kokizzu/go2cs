@@ -271,8 +271,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// ⚠ Name-keyed, so this entry also matches os.(*File).readdir in dir_unix.go — a
 	// `-platforms linux/amd64` conversion of os would drop its (perfectly convertible) unix readdir
 	// and fail to link. Same platform caveat as runtime's lock_sema entries above.
+	// os.readReparseLink (file_windows.go) is the SAME fork at a second site: it reinterprets the
+	// byte buffer DeviceIoControl fills as windows.{SymbolicLink,MountPoint}ReparseBuffer, both of
+	// which end in `PathBuffer [1]uint16` — a Go inline array standing in for the variable-length
+	// name the OS wrote after it, and an 8-byte MANAGED REFERENCE in the conversion. golib refuses
+	// to alias managed storage for a reference-bearing struct (correctly — that is the fabrication
+	// case), so the reinterpret takes the raw-address route and `&rb.PathBuffer[0]` resolves an
+	// object reference synthesized out of path bytes: ACCESS_VIOLATION inside array<uint16>.get_Item,
+	// which KILLED the whole C# test host mid-run at os's TestReadlink and emptied every verdict
+	// after it. file_windows_impl.cs decodes the record from the byte slice at its documented
+	// offsets. openSymlink and normaliseLinkPath stay auto — they pass scalars, handles and strings.
 	"os": {
-		"File.readdir": true,
+		"File.readdir":    true,
+		"readReparseLink": true,
 	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.

@@ -218,6 +218,7 @@
     <Project Path="Tests/Behavioral/DynIfaceParamNameCollision/DynIfaceParamNameCollision.csproj" />
     <Project Path="Tests/Behavioral/ElementAddressUnsignedIndex/ElementAddressUnsignedIndex.csproj" />
     <Project Path="Tests/Behavioral/ElidedNestedPtrComposite/ElidedNestedPtrComposite.csproj" />
+    <Project Path="Tests/Behavioral/ElidedPtrElemIfaceAssign/ElidedPtrElemIfaceAssign.csproj" />
     <Project Path="Tests/Behavioral/ElidedStructInterfaceField/ElidedStructInterfaceField.csproj" />
     <Project Path="Tests/Behavioral/EmbeddedPointerNilAssign/EmbeddedPointerNilAssign.csproj" />
     <Project Path="Tests/Behavioral/EmbeddedTypeNameCollision/EmbeddedTypeNameCollision.csproj" />
@@ -248,6 +249,8 @@
     <Project Path="Tests/Behavioral/FormatTypeAdapters/FormatTypeAdapters.csproj" />
     <Project Path="Tests/Behavioral/FormatTypeAdapters/typelib/FormatTypeAdapters.typelib.csproj" />
     <Project Path="Tests/Behavioral/FuncFieldNestedTupleParam/FuncFieldNestedTupleParam.csproj" />
+    <Project Path="Tests/Behavioral/ForeignPairNumericConv/ForeignPairNumericConv.csproj" />
+    <Project Path="Tests/Behavioral/ForeignPairNumericConv/convlib/ForeignPairNumericConv.convlib.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceLib/ForeignPtrEmbedIfaceLib.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceUser/ForeignPtrEmbedIfaceUser.csproj" />
     <Project Path="Tests/Behavioral/ForeignValueImplementSuppression/ForeignValueImplementSuppression.csproj" />

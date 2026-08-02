@@ -352,6 +352,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckElidedNestedPtrComposite() => CheckTarget("ElidedNestedPtrComposite");
 
     [TestMethod]
+    public void CheckElidedPtrElemIfaceAssign() => CheckTarget("ElidedPtrElemIfaceAssign");
+
+    [TestMethod]
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
@@ -407,6 +410,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckFloatFormatting() => CheckTarget("FloatFormatting");
+
+    [TestMethod]
+    public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
 
     [TestMethod]
     public void CheckForeignPtrEmbedIfaceLib() => CheckTarget("ForeignPtrEmbedIfaceLib");
