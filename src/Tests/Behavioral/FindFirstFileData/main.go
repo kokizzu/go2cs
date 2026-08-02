@@ -228,12 +228,15 @@ func toEntry(data *syscall.Win32finddata) (entry, bool) {
 }
 
 // altName reads the 8.3 short name, which is empty for a name that already fits 8.3 (and for every
-// name where the volume has 8.3 generation disabled). The empty-buffer check is not decoration: the
-// converted syscall.UTF16ToString of an ALL-NUL buffer currently throws IndexOutOfRangeException,
-// because it ends in unsafe.String(SliceData(empty), 0) and SliceData pins a zero-length buffer
-// whose element 0 does not exist. That is a defect in the converted unsafe.String, unrelated to the
-// FindFirstFile seam this test guards, and reaching element 0 of the buffer is itself the check that
-// matters here -- an AlternateFileName field the kernel clobbered would not be readable at all.
+// name where the volume has 8.3 generation disabled). The explicit element-0 read is the check that
+// matters here: an AlternateFileName field the kernel clobbered would not be readable at all.
+//
+// It doubled as a workaround until 2026-08-02. The converted syscall.UTF16ToString of an ALL-NUL
+// buffer threw IndexOutOfRangeException, because it ends in unsafe.String(SliceData(empty), 0) and
+// SliceData hands over a zero-length buffer whose element 0 does not exist. That was a defect in
+// the converted unsafe.String, unrelated to the FindFirstFile seam this test guards; it is fixed
+// (unsafe.String returns "" for a zero length without pinning its pointer) and guarded in its own
+// right by the UnsafeStringEmpty behavioral test, so this branch is now redundant for that purpose.
 func altName(data *syscall.Win32finddata) string {
 	if data.AlternateFileName[0] == 0 {
 		return ""

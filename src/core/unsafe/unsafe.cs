@@ -649,13 +649,20 @@ public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.N
     if (n < 0)
         throw panic("len is negative");
 
-    if (ptr == nil)
-    {
-        if (n == 0)
-            return [];
+    // A zero length reads no bytes, so the pointer is never dereferenced — in Go, and now here
+    // either. SliceData over a non-nil slice of capacity 0 is documented to return a NON-nil
+    // pointer to an unspecified address, which this model materializes as an index-0 box into a
+    // zero-length backing array: pinning its referent below is an IndexOutOfRangeException rather
+    // than a read of nothing. syscall.UTF16ToString reaches exactly that — it truncates at the
+    // first NUL, so an all-NUL WCHAR buffer decodes through unsafe.String(SliceData(empty), 0),
+    // and every unset [N]uint16 field of a Win32 record is one of those. Guarded by the
+    // UnsafeStringEmpty behavioral test.
+    if (n == 0)
+        return [];
 
+    // Only a nil pointer with a NON-zero length is the panic Go specifies.
+    if (ptr == nil)
         throw panic("ptr is nil and len is not zero");
-    }
 
     // A pointer that ALIASES a native address reads its n bytes from that address (see Slice above).
     if (ptr.IsNative)

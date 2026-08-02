@@ -620,6 +620,7 @@
     <Project Path="Tests/Behavioral/UnsafePointerParamPin/UnsafePointerParamPin.csproj" />
     <Project Path="Tests/Behavioral/UnsafePointerPrint/UnsafePointerPrint.csproj" />
     <Project Path="Tests/Behavioral/UnsafePointerReinterpret/UnsafePointerReinterpret.csproj" />
+    <Project Path="Tests/Behavioral/UnsafeStringEmpty/UnsafeStringEmpty.csproj" />
     <Project Path="Tests/Behavioral/UnsignedNamedNumeric/UnsignedNamedNumeric.csproj" />
     <Project Path="Tests/Behavioral/UntypedConstArithmetic/UntypedConstArithmetic.csproj" />
     <Project Path="Tests/Behavioral/UntypedConstDefine/UntypedConstDefine.csproj" />

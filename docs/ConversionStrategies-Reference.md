@@ -9101,6 +9101,28 @@ the golib level by `GolibTests.PointerPrintTests` — a golib UNIT-test project 
 `ChannelTests` under `/tests/library/`) for runtime properties no Go↔C# output comparison can
 reach.
 
+**`unsafe.String(ptr, 0)` reads nothing, so it must not pin `ptr` either.** That same empty-buffer
+element reference reaches the string builtin, by a route the standard library takes constantly on
+Windows: `syscall.UTF16ToString` truncates its argument at the first NUL and returns
+`unsafe.String(unsafe.SliceData(buf), len(buf))`, so an **all-NUL** `[N]uint16` — every unset
+`WCHAR` field of a Win32 record (`WIN32_FIND_DATAW.cAlternateFileName` on a volume with 8.3 name
+generation disabled, `MIB_IFROW.wszName`, `PROCESSENTRY32.szExeFile`, `STARTUPINFO.lpDesktop`) —
+arrives as a zero-length `buf`. `SliceData` is documented to return a **non-nil** pointer to an
+unspecified address for a non-nil slice of capacity 0 (only a *nil* slice yields nil), which this
+model materializes as an index-0 box into a zero-length backing array; `unsafe.String` then pinned
+that referent (`fixed (byte* p = &ptr.Value)`) to build the string and threw
+`IndexOutOfRangeException` where Go returns `""`. The zero-length case now returns the empty string
+**before** the pointer is touched, which is precisely Go's rule: a run-time panic occurs only when
+`ptr` is nil *and* `len` is not zero, so a length of zero dereferences nothing whatever the pointer
+is. `SliceData` is deliberately left alone — Go specifies the non-nil-pointer-to-unspecified-address
+result for `cap == 0`, so returning nil there to dodge the deref would trade a throw for a wrong
+answer. `unsafe.Slice(ptr, 0)` needs no matching guard: its element-window route
+(`TryGetElementWindow`) already yields an empty aliasing window over a zero-length backing without a
+deref. (Guarded by the `UnsafeStringEmpty` behavioral **output** test — the all-NUL `[14]`/`[260]`
+buffers, terminated/unterminated/leading-NUL controls that keep truncation honest, and the
+`SliceData`/`StringData` zero-length matrix with non-zero-length positive controls, compared vs
+`go run`; verified to throw with the guard removed.)
+
 ### Reinterpreting a pointer to a defined type with identical underlying — `(*Base)(p)`
 A Go conversion `(*Base)(p)` where `p` is a `*Def` and `Base`/`Def` share an *identical underlying* type (one is a defined type over the other, e.g. `type pinnerBits gcBits`, or both over the same type) reinterprets the pointer. C# has no conversion between the two distinct generic instantiations `ж<Def>` and `ж<Base>`; only the `[GoType]` wrapper's **value** conversion `Def ↔ Base` exists. So the converter performs the reinterpret on the value and re-boxes it:
 ```go

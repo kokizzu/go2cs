@@ -1507,6 +1507,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUnsafePointerReinterpret() => CheckTarget("UnsafePointerReinterpret");
 
     [TestMethod]
+    public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]

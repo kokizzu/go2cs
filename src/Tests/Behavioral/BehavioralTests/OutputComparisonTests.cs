@@ -1421,6 +1421,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUnsafePointerPrint() => CheckTarget("UnsafePointerPrint");
 
     [TestMethod]
+    public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]
