@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package pprof serves via its HTTP server runtime profiling data in the format expected by the pprof visualization tool.
 
 The package is typically only imported for the side effect of registering its HTTP handlers. The handled paths all begin with /debug/pprof/. As of Go 1.22, all the paths must be requested with GET.

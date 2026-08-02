@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package testdeps provides access to dependencies needed by test execution.
 
 This package is imported by the generated main package, which passes TestDeps into testing.Main. This allows tests to use packages at run time without making those packages direct dependencies of package testing. Direct dependencies of package testing are harder to write tests for.

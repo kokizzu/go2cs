@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-45%2F45_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/regexp.html)
+
 Package regexp implements regular expression search.
 
 The syntax of the regular expressions accepted is the same general syntax used by Perl, Python, and other languages. More precisely, it is the syntax accepted by RE2 and described at [https://golang.org/s/re2syntax](https://golang.org/s/re2syntax), except for \\C. For an overview of the syntax, see the [regexp/syntax](/regexp/syntax) package.

@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package idna implements IDNA2008 using the compatibility processing defined by UTS (Unicode Technical Standard) #46, which defines a standard to deal with the transition from IDNA2003.
 
 IDNA2008 (Internationalized Domain Names for Applications), is defined in RFC 5890, RFC 5891, RFC 5892, RFC 5893 and RFC 5894. UTS #46 is defined in [https://www.unicode.org/reports/tr46](https://www.unicode.org/reports/tr46). See [https://unicode.org/cldr/utility/idna.jsp](https://unicode.org/cldr/utility/idna.jsp) for a visualization of the differences between these two standards.

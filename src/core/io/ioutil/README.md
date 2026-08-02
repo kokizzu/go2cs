@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package ioutil implements some I/O utility functions.
 
 Deprecated: As of Go 1.16, the same functionality is now provided by package [io](/io) or package [os](/os), and those implementations should be preferred in new code. See the specific function documentation for details.

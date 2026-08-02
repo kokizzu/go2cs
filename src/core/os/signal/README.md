@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/os.signal.html)
+
 Package signal implements access to incoming signals.
 
 Signals are primarily used on Unix-like systems. For the use of this package on Windows and Plan 9, see below.

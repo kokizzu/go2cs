@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package exithook provides limited support for on-exit cleanup.
 
 CAREFUL! The expectation is that Add should only be called from a safe context (e.g. not an error/panic path or signal handler, preemption enabled, allocation allowed, write barriers allowed, etc), and that the exit function F will be invoked under similar circumstances. That is the say, we are expecting that F uses normal / high-level Go code as opposed to one of the more restricted dialects used for the trickier parts of the runtime.

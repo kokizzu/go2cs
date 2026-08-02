@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package dnsmessage provides a mostly RFC 1035 compliant implementation of DNS message packing and unpacking.
 
 The package also supports messages with Extension Mechanisms for DNS (EDNS(0)) as defined in RFC 6891.

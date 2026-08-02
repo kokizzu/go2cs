@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package structs defines marker types that can be used as struct fields to modify the properties of a struct.
 
 By convention, a marker type should be used as the type of a field named "\_", placed at the beginning of a struct type definition.

@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-10%2F10_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/hash.crc32.html)
+
 Package crc32 implements the 32-bit cyclic redundancy check, or CRC-32, checksum. See [https://en.wikipedia.org/wiki/Cyclic\_redundancy\_check](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) for information.
 
 Polynomials are represented in LSB-first form also known as reversed representation.

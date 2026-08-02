@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package oldtrace implements a parser for Go execution traces from versions 1.11–1.21.
 
 The package started as a copy of Go 1.19's internal/trace, but has been optimized to be faster while using less memory and fewer allocations. It has been further modified for the specific purpose of converting traces to the new 1.22+ format.

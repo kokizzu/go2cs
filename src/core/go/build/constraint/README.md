@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-89%2F89_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/go.build.constraint.html)
+
 Package constraint implements parsing and evaluation of build constraint lines. See [https://golang.org/cmd/go/#hdr-Build\_constraints](https://golang.org/cmd/go/#hdr-Build_constraints) for documentation about build constraints themselves.
 
 This package parses both the original “// +build” syntax and the “//go:build” syntax that was added in Go 1.17. See [https://golang.org/design/draft-gobuild](https://golang.org/design/draft-gobuild) for details about the “//go:build” syntax.

@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-9%2F9_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/image.draw.html)
+
 Package draw provides image composition functions.
 
 See "The Go image/draw package" for an introduction to this package: [https://golang.org/doc/articles/image\_draw.html](https://golang.org/doc/articles/image_draw.html)

@@ -66,6 +66,14 @@
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
+  <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->
+  <PropertyGroup>
+    <GoValidationProofFile>$(go2csPath)..\docs\validation\$(GoStdLibVersion).$(GoBuildNumber)\internal.itoa.md</GoValidationProofFile>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')">
+    <None Include="$(GoValidationProofFile)" Pack="true" PackagePath="VALIDATION.md" Visible="false" />
+  </ItemGroup>
+
   <!-- Expose output of source generators as local files -->
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

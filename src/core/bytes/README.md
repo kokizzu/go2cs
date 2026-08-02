@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-81%2F88_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/bytes.html)
+
 Package bytes implements functions for the manipulation of byte slices. It is analogous to the facilities of the [strings](/strings) package.
 
 ---

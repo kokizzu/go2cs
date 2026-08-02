@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package godebug makes the settings in the $GODEBUG environment variable available to other packages. These settings are often used for compatibility tweaks, when we need to change a default behavior but want to let users opt back in to the original. For example GODEBUG=http2server=0 disables HTTP/2 support in the net/http server.
 
 In typical usage, code should declare a Setting as a global and then call Value each time the current setting value is needed:

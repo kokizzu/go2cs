@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package chacha20poly1305 implements the ChaCha20-Poly1305 AEAD and its extended nonce variant XChaCha20-Poly1305, as specified in RFC 8439 and draft-irtf-cfrg-xchacha-01.
 
 ---

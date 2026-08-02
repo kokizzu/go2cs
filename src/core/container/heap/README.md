@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/container.heap.html)
+
 Package heap provides heap operations for any type that implements heap.Interface. A heap is a tree with the property that each node is the minimum-valued node in its subtree.
 
 The minimum element in the tree is the root, at index 0.

@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package metrics provides a stable interface to access implementation-defined metrics exported by the Go runtime. This package is similar to existing functions like [runtime.ReadMemStats](/runtime#ReadMemStats) and [runtime/debug.ReadGCStats](/runtime/debug#ReadGCStats), but significantly more general.
 
 The set of metrics defined by this package may evolve as the runtime itself evolves, and also enables variation across Go implementations, whose relevant metric sets may not intersect.

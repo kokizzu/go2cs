@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-9%2F9_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/path.html)
+
 Package path implements utility routines for manipulating slash-separated paths.
 
 The path package should only be used for paths separated by forward slashes, such as the paths in URLs. This package does not deal with Windows paths with drive letters or backslashes; to manipulate operating system paths, use the [path/filepath](/path/filepath) package.

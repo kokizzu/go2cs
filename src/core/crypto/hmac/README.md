@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-172%2F172_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/crypto.hmac.html)
+
 Package hmac implements the Keyed-Hash Message Authentication Code (HMAC) as defined in U.S. Federal Information Processing Standards Publication 198. An HMAC is a cryptographic hash that uses a key to sign a message. The receiver verifies the hash by recomputing it using the same key.
 
 Receivers should be careful to use Equal to compare MACs in order to avoid timing side-channels:

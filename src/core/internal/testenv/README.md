@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package testenv provides information about what functionality is available in different testing environments run by the Go team.
 
 It is an internal package because these details are specific to the Go team's test setup (on build.golang.org) and not fundamental to tests in general.

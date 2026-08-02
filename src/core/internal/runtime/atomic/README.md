@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package atomic provides atomic operations, independent of sync/atomic, to the runtime.
 
 On most platforms, the compiler is aware of the functions defined in this package, and they're replaced with platform-specific intrinsics. On other platforms, generic implementations are made available.

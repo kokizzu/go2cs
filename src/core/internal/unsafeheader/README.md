@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package unsafeheader contains header declarations for the Go runtime's slice and string implementations.
 
 This package allows packages that cannot import "reflect" to use types that are tested to be equivalent to reflect.SliceHeader and reflect.StringHeader.

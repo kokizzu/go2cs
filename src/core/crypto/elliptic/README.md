@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package elliptic implements the standard NIST P-224, P-256, P-384, and P-521 elliptic curves over prime fields.
 
 Direct use of this package is deprecated, beyond the \[P224], \[P256], \[P384], and \[P521] values necessary to use [crypto/ecdsa](/crypto/ecdsa). Most other uses should migrate to the more efficient and safer [crypto/ecdh](/crypto/ecdh), or to third-party modules for lower-level functionality.

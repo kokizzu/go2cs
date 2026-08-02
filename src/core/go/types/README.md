@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package types declares the data types and implements the algorithms for type-checking of Go packages. Use \[Config.Check] to invoke the type checker for a package. Alternatively, create a new type checker with \[NewChecker] and invoke it incrementally by calling \[Checker.Files].
 
 Type-checking consists of several interdependent phases:

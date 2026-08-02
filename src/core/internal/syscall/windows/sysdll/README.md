@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package sysdll is an internal leaf package that records and reports which Windows DLL names are used by Go itself. These DLLs are then only loaded from the System32 directory. See Issue 14959.
 
 ---

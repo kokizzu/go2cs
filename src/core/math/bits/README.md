@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-26%2F26_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/math.bits.html)
+
 Package bits implements bit counting and manipulation functions for the predeclared unsigned integer types.
 
 Functions in this package may be implemented directly by the compiler, for better performance. For those functions the code in this package will not be used. Which functions are implemented by the compiler depends on the architecture and the Go release.

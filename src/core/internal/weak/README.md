@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 The weak package is a package for managing weak pointers.
 
 Weak pointers are pointers that explicitly do not keep a value live and must be queried for a regular Go pointer. The result of such a query may be observed as nil at any point after a weakly-pointed-to object becomes eligible for reclamation by the garbage collector. More specifically, weak pointers become nil as soon as the garbage collector identifies that the object is unreachable, before it is made reachable again by a finalizer. In terms of the C# language, these semantics are roughly equivalent to the the semantics of "short" weak references. In terms of the Java language, these semantics are roughly equivalent to the semantics of the WeakReference type.

@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See [https://csrc.nist.gov/groups/ST/toolkit/BCM/current\_modes.html](https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html) and NIST Special Publication 800-38A.
 
 ---

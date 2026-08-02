@@ -3,6 +3,8 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
+[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+
 Package raw provides an interface to interpret and emit Go execution traces. It can interpret and emit execution traces in its wire format as well as a bespoke but simple text format.
 
 The readers and writers in this package perform no validation on or ordering of the input, and so are generally unsuitable for analysis. However, they're very useful for testing and debugging the tracer in the runtime and more sophisticated trace parsers.
