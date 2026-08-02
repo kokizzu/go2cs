@@ -885,6 +885,33 @@ reason pipeline invocations leak `os.tests.exe`. ⚠ Scheduling: never run two l
 package's pipeline — the host is named per package, so the rename defence cannot apply; the tell
 for a sibling-killed run is `go2cs_test_results.json` carrying the PREVIOUS run's mtime.
 
+**Attribution was measured, not asserted — FIVE runs, and only one test is converter-determined
+(r36-nilrecv).** Three with the base converter, two with the fix. `TestNilFileMethods`: **fail 3/3
+on base, pass 2/2 with the fix.** *Every other* test that moved, moved in BOTH arms —
+`TestHostname` (2 base, 2 fix), `TestStatLxSymLink` (2, 1), `TestFileReaddir` (1, 2),
+`TestReaddirnamesOneAtATime` (1, 1), `TestProgWideChdir` (1, 0), `TestCopyFS` (0, 1),
+`TestLongPathAbs`/`TestUserConfigDir` (0, 1 each). The same-converter run-to-run spread is 3–4
+tests and the outcome distributions coincide (base run 2 landed on 125 pass · 14 fail · 3 infra —
+identical to the fix's run 1). **The lesson for the next arc: a single `os` run cannot attribute a
+one-test delta.** Pair every claim with a control run of the unchanged converter.
+
+### FOUND while attributing the above — `t.TempDir()` collides two tests that differ only by CASE
+
+`TestExecution.TempDir()` (hand-owned `src/core/testing/TestExecution.cs`) builds
+`<work>/.tmp/<SanitizeName(TestName)>/<seq>`. On a case-insensitive filesystem — the Windows default —
+`TestFileReaddir` and `TestFileReadDir` resolve to **one directory**, and `os`'s suite runs both
+`t.Parallel()`. Whichever finishes first runs its `Cleanup(() => RemoveAll(path))` and deletes the
+other's temp dir mid-test; the loser fails `open …\.tmp\TestFileReaddir\1: The system cannot find
+the file specified`. Proven directly: creating `TestFileReaddir\1` makes `Test-Path
+TestFileReadDir\1` true and leaves ONE directory, and every leftover run root under
+`%TEMP%\go2cs-tests\os\` contains exactly one of the two names, never both — while the *passing*
+test in each run is always the one that is present. Pre-existing, in the test HOST rather than in
+conversion, and independent of the nil-receiver change (it fired in a base-converter run too); the
+fix is to disambiguate the sanitized name (a case-marker suffix, or a per-execution sequence)
+rather than trust the test name to be a unique path component. `TestFileReadDir` vs
+`TestFileReaddir` is the only collision in `os`; the same generator will collide anywhere Go names
+two tests with case-only differences.
+
 ## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
 
 Named as a class 2026-08-01, after `syscall.GetTimeZoneInformation` became the second member of it
