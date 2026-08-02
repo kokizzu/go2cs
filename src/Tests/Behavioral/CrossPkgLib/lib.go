@@ -302,10 +302,14 @@ func NewBranch(label string, kind int) *Branch {
 }
 
 // Verdict is a named numeric implementing Scored via a VALUE receiver. This package deliberately
-// NEVER converts Verdict to Scored itself (no `var _ Scored = …` witness, no in-lib conversion), so
-// no value-form GoImplement record is exported — a consumer's EXPLICIT `Scored(v)` conversion must
-// record the pair locally and route through its OWN value adapter class (crypto/tls's
-// `crypto.SignerOpts(sigHash)` over the extension-method-implemented crypto.Hash, CS0030 ×4).
+// NEVER converts Verdict to Scored itself (no `var _ Scored = …` witness, no in-lib conversion) —
+// the shape crypto/tls's `crypto.SignerOpts(sigHash)` takes over crypto.Hash. Go satisfies an
+// interface structurally, so this assembly implements the pair whether or not a cast records it,
+// and the declaring side now exports the record for a pair it merely SATISFIES: the consumer's
+// EXPLICIT `Scored(v)` conversion therefore hands over the bare value and mints no local adapter.
+// SamePackageImplementNoWitness guards that rule directly; what stays guarded HERE is that the
+// exported record is what makes the plain cast legal (without it the conversion is CS0030 — the
+// foreign value type implements Score only via extension methods).
 type Verdict int
 
 func (v Verdict) Score() int { return int(v) * 10 }

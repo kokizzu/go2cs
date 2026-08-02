@@ -418,7 +418,7 @@ census is identical count for count, `HandlerFuncᴠΔHandler` included. Two sur
 because they are NOT this defect: `color.Palette`→`color.Model` (5) and `encoding/binary`'s
 `bigEndian`/`littleEndian`→`ByteOrder` (79) have no record to match at all — neither package ever
 converts that pair itself, so nothing writes the record and the local adapter is the only realization.
-A pair a package satisfies but never records is a separate root.
+A pair a package satisfies but never records is a separate root, closed by the section below.
 
 This is not merely a wasted allocation. The adapter is a **second identity** for one Go value: `reflect`
 and `fmt` see the wrapper where the Value's own type says the wrapped struct, which is how it surfaced —
@@ -427,9 +427,115 @@ not a field on the target object which is of type 'go.image_package+color_NRGBA�
 `ForeignValueImplementSuppression` behavioral test — a sibling package at a multi-segment path that
 converts its own values, a collision-renamed implementer, a second implementer, and a named FUNC type as
 the live negative; the pre-fix converter emits five adapters where the fixed one emits the func's alone.
-`ValueAdapterDynamicType` is its complement and stays byte-identical: its sibling never converts, so its
-four adapters are real. Unit-guarded by `TestValueImplementKeyBothCompositionsAgree`,
-`TestValueImplementKeyKeepsPackageClassDiscrimination` and `TestValueRecordRealizesAsPartialStruct`.)
+`ValueAdapterDynamicType` was its byte-identical complement — its sibling never converts, so its four
+adapters were real — until the declaring side began recording pairs it merely satisfies (next section),
+which is exactly that sibling's shape; its assertions now prove the bare value instead. Unit-guarded by
+`TestValueImplementKeyBothCompositionsAgree`, `TestValueImplementKeyKeepsPackageClassDiscrimination` and
+`TestValueRecordRealizesAsPartialStruct`.)
+
+### A package records the pairs it SATISFIES, not only the ones it witnesses
+
+Every `[assembly: GoImplement<T, Iface>]` the converter writes comes from a **cast it converted** —
+`convertToInterfaceType` records the pair it just emitted. Go satisfies an interface **structurally**,
+so a package can implement one of its own interfaces completely and never write a conversion:
+`encoding/binary` declares `type bigEndian struct{}` with the whole `ByteOrder` method set and exports
+`var BigEndian bigEndian`, with no `var _ ByteOrder = BigEndian` anywhere. No cast, no record — so
+`binary_package.bigEndian` was emitted as a partial struct that does **not** implement `ByteOrder`, and
+every consumer minted its own `binary_bigEndianᴠByteOrder` adapter. This is the one place where *the
+declaring assembly implements this pair* is TRUE in Go and FALSE in the emitted C#, and it is the root
+the section above measured but did not close.
+
+`recordSamePackageValueImplements` (`samePackageImplements.go`, called from `processConversion` after
+the file visits and before `writePackageInfoFile`) walks the package scope and records the VALUE-form
+pairs the package satisfies. `encoding/binary`'s metadata gains:
+
+```csharp
+// <InterfaceImplementations>
+[assembly: GoImplement<bigEndian, AppendByteOrder>]
+[assembly: GoImplement<bigEndian, ByteOrder>]
+[assembly: GoImplement<littleEndian, AppendByteOrder>]
+[assembly: GoImplement<littleEndian, ByteOrder>]
+[assembly: GoImplement<nativeEndian, AppendByteOrder>]
+[assembly: GoImplement<nativeEndian, ByteOrder>]
+// </InterfaceImplementations>
+```
+
+and every consumer hands over the bare value, its own record and adapter gone with it — `debug/dwarf`'s
+`d.Value.order = new binary_bigEndianᴠByteOrder(binary.BigEndian)` becomes
+`d.Value.order = binary.BigEndian`, and `crypto/x509`'s
+`crypto.SignerOpts signerOpts = new crypto_HashᴠSignerOpts(hashFunc)` becomes
+`crypto.SignerOpts signerOpts = hashFunc`.
+
+It records **through** `convertToInterfaceType` with an EMPTY expression — the record-only probe path
+`convCompositeLit` / `convTypeAssertExpr` / `visitValueSpec` already use, since every emission arm is
+gated on `exprResult != ""`. That is the whole design: a synthesized pair is composed, keyed and pruned
+exactly as a real cast would compose, key and prune it, so no second naming path can drift from the cast
+site's — the divergence that made the FOREIGN lookup miss for six weeks. Scope names arrive sorted, so
+the record order is deterministic across runs.
+
+**Five gates bound it, and each one is load-bearing.**
+
+* **The interface is EXPORTED.** A record is a CROSS-ASSEMBLY contract — it exists so another
+  assembly's cast can drop its local adapter — and no other assembly can name an unexported interface,
+  so a record for one could never be consulted. The package's own casts already record what it needs
+  internally.
+* **The target's underlying is NOT a `*types.Signature`.** A named FUNC type is a C# delegate, which
+  cannot be a partial struct, so `ImplementGenerator` emits an adapter CLASS for it; a consumer trusting
+  THAT record hands a bare delegate to an interface slot (CS0029 — net/http's `HandlerFunc` → `ΔHandler`).
+  This is the declaring-side half of `valueRecordRealizesAsPartialStruct` above.
+* **Neither side is GENERIC.** A type argument cannot appear in an assembly-attribute type argument
+  (CS0246) — the same exclusion `convertToInterfaceType`'s `targetIsOpenGeneric` makes.
+* **Both sides are declared in a file this run CONVERTS.** A package scope holds every file's
+  declarations, including build-constraint-excluded ones, and a record naming a type no emitted file
+  declares is CS0246.
+* **Every interface method is REALIZABLE by the generator** — it resolves on the type itself or
+  through at most ONE embedded field (`types.LookupFieldOrMethod` index length ≤ 2).
+  `ImplementGenerator` forwards a promoted member through a single embed hop and says so ("Go's
+  promotion ambiguity rules make multi-embed satisfaction rare; extend when needed"), so a deeper
+  promotion emits a forwarder through the WRONG hop: `CrossPkgUser`'s `rig` embeds
+  `CrossPkgLib.Device`, which embeds `Sensor`, where `Label` lives, and
+  `CrossPkgLib_package.Label(this.Device)` is CS1503 for want of `this.Device.Sensor`. Promotion
+  through an embedded INTERFACE is the common shape this still admits (`sort`'s `reverse` embeds
+  `Interface`; `debug/macho`'s segment types embed `LoadBytes`). The bound is deliberately
+  CONSERVATIVE rather than a model of the generator's exact reach — it costs exactly two stdlib
+  records (`net`'s `tcpConnWithoutReadFrom`/`tcpConnWithoutWriteTo`→`Conn`, whose `*TCPConn` hop the
+  generator's `embedHopDeepPaths` arm can in fact follow), neither of which has a consumer, and
+  withholding a speculative record is always safe: the consumer keeps the adapter it had before.
+
+The gates bind only the SPECULATIVE recorder. A pair the source actually casts is DEMANDED and still
+records at its cast site — promotion depth and all — so none of this narrows existing behavior.
+
+The **POINTER** method set is deliberately out of scope: `types.Implements(*T, Iface)` is the far larger
+set (548 same-package pairs in the standard library against 168 for the value set), its records are
+adapter-class *existence* signals with a different trust rule, and it is owed its own increment with its
+own measured footprint.
+
+**Footprint,** from a whole-stdlib A/B with both roots seeded (302/302 converted per side, 3690 files
+compared CRLF-normalized): **68 files**, split evenly between metadata and code. **33 records** appear
+across sixteen declaring packages; **31** go away — three dropped by the existing interface-inheritance
+prune because a newly recorded pair subsumes one a cast had recorded (`flag`'s `textValue`→`Value` under
+`Getter`, and `net`/`runtime`'s `errorString`→`error` under their own `ΔError`, which embeds it), and
+twenty-eight consumer-local foreign records that existed only to generate an adapter. **89 adapter
+constructions** disappear across 34 files — exactly the census the previous section predicted, pair for
+pair: `binary_bigEndianᴠByteOrder` 43, `binary_littleEndianᴠByteOrder` 36, `color_PaletteᴠModel` 5,
+`crypto_HashᴠSignerOpts` 5. Every changed consumer line is the same edit, the adapter construction
+unwrapped to its argument; the full stdlib solution builds with 0 errors.
+
+Most of the 33 new records have no consumer today — they are the rule stating what Go already says
+(`sort`'s `reverse`→`Interface`, `image`'s `Rectangle`→`RGBA64Image`, `debug/macho`'s five `Load`
+implementers, `io`'s `discard`→`StringWriter`), and they cost one assembly attribute each. Notably
+ABSENT is `net/http`'s `HandlerFunc`→`ΔHandler`: the delegate gate holds on the corpus instance that
+motivated it.
+
+Guarded by the `SamePackageImplementNoWitness` behavioral test — a sibling `ledger` package that
+declares an exported interface and value implementers and never converts one to the other, with all four
+negatives live rather than asserted (a named FUNC type, a pointer-only implementer, an unexported
+interface, a generic). The pre-fix converter records nothing and mints four adapters where the fixed one
+mints none; both negatives (`ledger_MeterᴠMetric`, `ledger_TallyжMetric`) are byte-identical across the
+fix. `CrossPkgLib`/`CrossPkgUser` and `ValueAdapterDynamicType` carry the same shape and re-baselined to
+the bare value. The realizability gate is guarded by COMPILE rather than by a golden, and by the corpus
+case that found it: `CrossPkgUser`'s `rig` is the depth-2 promotion, so dropping the gate puts a
+`GoImplement<rig, Labeled>` back and the suite goes red on CS1503 in the generated forwarder.
 
 ### Standard-library solution file (`.slnx`)
 

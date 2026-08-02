@@ -39,9 +39,12 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<MyCustomError, Abser>(Promoted = true)]
+[assembly: GoImplement<MyCustomError, Abser>]
 [assembly: GoImplement<counterKind, stamper>(Pointer = true)]
 [assembly: GoImplement<deviceHandle, Describer>]
+[assembly: GoImplement<leftSide, Pinger>]
 [assembly: GoImplement<link, Pinger>]
+[assembly: GoImplement<rightSide, Pinger>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

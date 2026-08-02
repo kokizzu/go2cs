@@ -330,7 +330,7 @@ internal static void Main() => func((defer, recover) => {
     var rbuf = new rune[]{(rune)'a'}.slice();
     rbuf = append(rbuf, (rune)(CrossPkgLib.Precision));
     fmt.Println(((@string)bbuf), len(rbuf), rbuf[1]);
-    var sc = ((CrossPkgLib.Scored)new CrossPkgLib_VerdictᴠScored(((CrossPkgLib.Verdict)4)));
+    var sc = ((CrossPkgLib.Scored)((CrossPkgLib.Verdict)4));
     fmt.Println(verdictScoreˢ, sc.Score());
     sc = new talliesжScored(Ꮡ(new tallies(pts: 7)));
     fmt.Println(talliesScoreˢ, sc.Score());

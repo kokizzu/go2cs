@@ -296,6 +296,14 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			}(fileEntry)
 		}
 
+		// Record the [assembly: GoImplement] pairs this package SATISFIES but never WITNESSES —
+		// a defined type whose VALUE method set implements an exported interface the SAME package
+		// declares, with no cast anywhere to record it (encoding/binary's `var BigEndian bigEndian`
+		// carries no `var _ ByteOrder = …`). Runs after the visits so it records into the same
+		// state they did, and before writePackageInfoFile so the interface-inheritance prune sees
+		// the additions. See samePackageImplements.go.
+		recordSamePackageValueImplements(fset, packageTypes, info, options, globalIdentNames, globalScope, files)
+
 		// Resolve any deferred cross-file dynamic (anonymous struct) type references
 		// now that every file's lifted names are registered in the shared registry.
 		resolveDynamicTypeMarkers(outputFileNames)

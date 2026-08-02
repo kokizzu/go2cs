@@ -51,8 +51,10 @@ using static go.main_package;
 [assembly: GoImplement<fileRdr, rdCloser>]
 [assembly: GoImplement<reversed, Animal>(Pointer = true)]
 [assembly: GoImplement<reversed, Animal>(Promoted = true)]
+[assembly: GoImplement<reversed, Animal>]
 [assembly: GoImplement<strRdr, rdr>]
 [assembly: GoImplement<wrapSink, Animal>(Promoted = true)]
+[assembly: GoImplement<wrapSink, Animal>]
 [assembly: GoImplement<wrapSink, speakShutter>(Pointer = true)]
 // </InterfaceImplementations>
 

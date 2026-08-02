@@ -38,6 +38,10 @@ using static go.ItabLateRegistration.lib_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Circle, Named>]
+[assembly: GoImplement<Circle, Sized>]
+[assembly: GoImplement<Square, Named>]
+[assembly: GoImplement<Square, Sized>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

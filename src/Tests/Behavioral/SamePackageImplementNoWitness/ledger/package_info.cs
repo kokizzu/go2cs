@@ -13,7 +13,7 @@
 // </ImportedTypeAliases>
 
 using go;
-using static go.CrossPkgLib_package;
+using static go.SamePackageImplementNoWitness.ledger_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -27,12 +27,6 @@ using static go.CrossPkgLib_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("Grade", "ΔGrade")]
-[assembly: GoTypeAlias("Marker", "ΔMarker")]
-[assembly: GoTypeAlias("Status", "ΔStatus")]
-[assembly: GoTypeAlias("Temperature", "go.CrossPkgLib_package.Celsius")]
-[assembly: GoTypeAlias("Token", "ΔToken")]
-[assembly: GoTypeAlias("ΔToken", "object")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -44,21 +38,17 @@ using static go.CrossPkgLib_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<Alarm, error>(Pointer = true)]
-[assembly: GoImplement<Device, Labeled>]
-[assembly: GoImplement<Meter, Reporter>(Pointer = true)]
-[assembly: GoImplement<Sensor, Labeled>(Pointer = true)]
-[assembly: GoImplement<Sensor, Labeled>]
-[assembly: GoImplement<Verdict, Scored>]
+[assembly: GoImplement<Counter, Metric>]
+[assembly: GoImplement<Gauge, Metric>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-namespace go;
+namespace go.SamePackageImplementNoWitness;
 
-[GoPackage("CrossPkgLib")]
-public static partial class CrossPkgLib_package
+[GoPackage("ledger")]
+public static partial class ledger_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -67,29 +57,12 @@ public static partial class CrossPkgLib_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial interface Emitter {}
-    public partial interface Labeled {}
-    public partial interface Rated {}
-    public partial interface Reporter {}
-    public partial interface Sampler {}
-    public partial interface Scored {}
-    public partial interface Sealed {}
-    public partial struct Alarm {}
-    public partial struct Branch {}
-    public partial struct Cache<T> {}
-    public partial struct Celsius {}
-    public partial struct Device {}
-    public partial struct EmitBase {}
-    public partial struct Leaf {}
-    public partial struct Meter {}
-    public partial struct Node {}
-    public partial struct Probe {}
-    public partial struct Sensor {}
-    public partial struct Ticks {}
-    public partial struct Verdict {}
-    public partial struct snapshot {}
-    public partial struct ΔGrade {}
-    public partial struct ΔMarker {}
-    public partial struct ΔStatus {}
+    internal partial interface probe {}
+    internal partial struct well {}
+    public partial interface Metric {}
+    public partial struct Box<T> {}
+    public partial struct Counter {}
+    public partial struct Gauge {}
+    public partial struct Tally {}
     // </TypeAccessibility>
 }

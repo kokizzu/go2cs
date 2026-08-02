@@ -396,7 +396,19 @@ Two corrections to the row as filed below, both measured rather than reasoned:
   match and the consumer's local adapter is the only realization. `color.Palette`→`color.Model` (5)
   survives for the same reason. **A pair a package satisfies but never records is its own root** —
   the one place where "the declaring assembly implements it" is true in Go and false in the emitted
-  C#, and a candidate for a future increment. Its whole corpus footprint, measured on the post-fix
+  C#. **That increment is now DONE** (`recordSamePackageValueImplements`, `samePackageImplements.go`):
+  the declaring side records the VALUE pairs it satisfies, behind five gates — exported interface,
+  underlying not a `*types.Signature`, neither side generic, both sides declared in a file the run
+  converts, and every interface method reachable within ONE embed hop (ImplementGenerator forwards a
+  promoted member exactly that far) — and a whole-stdlib A/B landed the prediction below exactly, 89
+  constructions across 34 files (43 + 36 + 5 + 5), alongside 33 records added and 31 removed (3
+  prune-subsumed, 28 consumer-local) across 16 declaring packages; 68 files total,
+  `go2cs-stdlib.slnx` 0 errors. `HandlerFunc`→`ΔHandler` is absent, as the delegate gate requires.
+  Owed, and the reason the depth gate is conservative: extending ImplementGenerator's promoted-member
+  forwarding past one hop would recover `net`'s two `tcpConnWithout*`→`Conn` records.
+  Guard: `SamePackageImplementNoWitness`. Rule:
+  [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A package records the
+  pairs it SATISFIES, not only the ones it witnesses*. Its whole corpus footprint, measured on the post-fix
   census by classifying every remaining `<pkg>_<T>ᴠ<Iface>` construction (is `<Iface>` declared in
   `<T>`'s own package, and is `<T>` a `partial struct` rather than an interface or a delegate?), is
   **89 constructions in 3 packages**: `encoding/binary` `bigEndian`/`littleEndian`→`ByteOrder` (79),

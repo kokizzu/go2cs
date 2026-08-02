@@ -476,11 +476,13 @@ func main() {
 	fmt.Println(string(bbuf), len(rbuf), rbuf[1]) // key: 2 2
 
 	// An EXPLICIT interface conversion whose SOURCE is a foreign named VALUE type (Verdict,
-	// value-receiver Score, deliberately NO witness in the lib) must route through THIS
-	// assembly's generated value adapter — the plain cast is CS0030: the foreign value type
-	// implements Score only via extension methods (crypto/tls's `crypto.SignerOpts(sigHash)`
-	// over crypto.Hash, ×4). The conversion result types as the INTERFACE, so the same var
-	// accepts a different implementation next (the tls signOpts reassignment shape, CS0029).
+	// value-receiver Score, deliberately NO witness in the lib). The lib now RECORDS the pair
+	// it satisfies, so this hands over the bare value; without that record the plain cast is
+	// CS0030 (the foreign value type implements Score only via extension methods) and the
+	// conversion has to route through a local value adapter — crypto/tls's
+	// `crypto.SignerOpts(sigHash)` over crypto.Hash, ×4. The conversion result types as the
+	// INTERFACE, so the same var accepts a different implementation next (the tls signOpts
+	// reassignment shape, CS0029).
 	sc := CrossPkgLib.Scored(CrossPkgLib.Verdict(4))
 	fmt.Println("verdict score:", sc.Score()) // verdict score: 40
 	sc = &tallies{pts: 7}

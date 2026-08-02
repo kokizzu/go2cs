@@ -41,6 +41,7 @@ using static go.main_package;
 [assembly: GoImplement<Float64Slice, Interface>]
 [assembly: GoImplement<reverse, Interface>(Pointer = true)]
 [assembly: GoImplement<reverse, Interface>(Promoted = true)]
+[assembly: GoImplement<reverse, Interface>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

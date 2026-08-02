@@ -11,11 +11,11 @@ partial class main_package {
 }
 
 [GoRecv] public static colorlike.Color At(this ref Img p) {
-    return new colorlike_NRGBAᴠColor(p.px);
+    return p.px;
 }
 
 [GoRecv] public static colorlike.Color Alt(this ref Img p) {
-    return new colorlike_GrayᴠColor(new colorlike.Gray(Y: 7));
+    return new colorlike.Gray(Y: 7);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -40,7 +40,7 @@ internal static void Main() {
     var want = new colorlike.NRGBA(R: 0x99, G: 0x99, B: 0x99, A: 0xff);
     fmt.Println((@string)"eq:"u8, AreEqual(got, want), AreEqual(want, got));
     fmt.Println((@string)"ne:"u8, AreEqual(got, new colorlike.NRGBA(R: 1, G: 2, B: 3, A: 4)));
-    colorlike.Color w2 = new colorlike_NRGBAᴠColor(want);
+    colorlike.Color w2 = want;
     fmt.Println(ifaceEqˢ, AreEqual(got, w2));
     var (v, ok) = got._<colorlike.NRGBA>(ᐧ);
     fmt.Println(assertˢ, ok, v.R, v.A);
@@ -79,7 +79,7 @@ internal static void Main() {
     fmt.Println(rgbaˢ, r, gg, b, a);
     var seen = new map<colorlike.Color, @string>{};
     seen[got] = fromIfaceˢ;
-    fmt.Println(mapˢ, seen[new colorlike_NRGBAᴠColor(want)], len(seen));
+    fmt.Println(mapˢ, seen[want], len(seen));
 }
 
 } // end main_package

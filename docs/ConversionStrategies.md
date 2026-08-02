@@ -1180,11 +1180,18 @@ importer wrap the value in its own `<pkg>_<T>ᴠ<Iface>` adapter class. Both hal
 key spelling the record and the cast site must share, and the partial-struct trust rule — are in
 [Reference → A foreign VALUE implement is keyed in ONE spelling](ConversionStrategies-Reference.md#a-foreign-value-implement-is-keyed-in-one-spelling-and-trusted-only-for-a-partial-struct).
 
-A record is only ever written for a conversion the source **declares** — an assignment, a call argument, a
-`var _ I = T{}` witness. It is never inferred, because a compile-time inference cannot be complete: a dynamic
-type may live in a package converted **after** the interface's own (io/fs is converted before os, so nothing in
-`fs` could record `os.dirFS`) — and an interface *literal* (`x.(interface{ Len() int })`) can never be recorded
-at all. Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
+Beyond one bounded exception, a record is only written for a conversion the source **declares** — an
+assignment, a call argument, a `var _ I = T{}` witness. It is not inferred in general, because a
+compile-time inference cannot be complete: a dynamic type may live in a package converted **after** the
+interface's own (io/fs is converted before os, so nothing in `fs` could record `os.dirFS`) — and an
+interface *literal* (`x.(interface{ Len() int })`) can never be recorded at all. The exception is the case
+where inference IS complete: when a type and an EXPORTED interface are declared in the **same** package,
+both are in hand as that package converts, so the pairs it satisfies are recorded even with no cast
+anywhere — `encoding/binary`'s `var BigEndian bigEndian` carries no `var _ ByteOrder = BigEndian`, and
+without the record every consumer minted a `binary_bigEndianᴠByteOrder` wrapper that became a second
+identity for the value (89 constructions across the stdlib). Named FUNC types, generics and the pointer
+method set are excluded — see
+[Reference → A package records the pairs it SATISFIES](ConversionStrategies-Reference.md#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses). Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
 shells** beside every non-generic, non-constraint, non-empty interface — named or anonymous alike — found
 through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and
 a reflective `object`-held shell for a value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's

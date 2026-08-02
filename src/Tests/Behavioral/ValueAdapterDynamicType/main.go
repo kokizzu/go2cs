@@ -1,13 +1,18 @@
-// Cross-assembly VALUE-adapter identity guard. A struct with a VALUE receiver, declared in a
-// SIBLING package, converted to its (also foreign) interface HERE: neither assembly can partial
-// the other, so go2cs-gen emits a value adapter CLASS wrapping a copy of the struct. Go's dynamic
-// type of that interface value is still colorlike.NRGBA, so `==`, a type assert, a type switch and
-// %T must all see through the wrapper. image's `func (p *NRGBA) At(x, y int) color.Color { return
+// Cross-assembly VALUE identity guard. A struct with a VALUE receiver, declared in a SIBLING
+// package, converted to its (also foreign) interface HERE. Go's dynamic type of that interface
+// value is colorlike.NRGBA, so `==`, a type assert, a type switch and %T must all agree with the
+// struct's own identity. image's `func (p *NRGBA) At(x, y int) color.Color { return
 // p.NRGBAAt(x, y) }` is exactly this shape — image/draw's TestDrawSrcNonpremultiplied and
 // image/gif's `ColorModel().(color.Palette)` are its downstream consumers.
 //
-// A SAME-package conversion is the negative control: it implements the interface on the struct
-// directly (no adapter) and never reproduces any of this.
+// This USED to be the value-ADAPTER site: colorlike never converts its own values to its own
+// interface, so no [assembly: GoImplement] record existed and go2cs-gen could only wrap a copy of
+// the struct in an adapter CLASS here — a SECOND IDENTITY the assertions below were written to
+// catch. The declaring side now records the pair it merely SATISFIES (samePackageImplements.go),
+// so colorlike's assembly implements Color itself and every conversion below hands over the bare
+// value; these assertions became the proof that it does. SamePackageImplementNoWitness guards
+// that rule directly, with the negatives (a named FUNC type, a pointer-only implementer, an
+// unexported interface, a generic) that must still take the adapter path.
 package main
 
 import (

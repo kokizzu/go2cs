@@ -1148,6 +1148,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRingPointerMethods() => CheckTarget("RingPointerMethods");
 
     [TestMethod]
+    public void CheckSamePackageImplementNoWitness() => CheckTarget("SamePackageImplementNoWitness");
+
+    [TestMethod]
     public void CheckSameUnderlyingNamedConv() => CheckTarget("SameUnderlyingNamedConv");
 
     [TestMethod]

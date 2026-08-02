@@ -1219,6 +1219,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckRingPointerMethods() => CheckTarget("RingPointerMethods");
 
     [TestMethod]
+    public void CheckSamePackageImplementNoWitness() => CheckTarget("SamePackageImplementNoWitness");
+
+    [TestMethod]
     public void CheckSameUnderlyingNamedConv() => CheckTarget("SameUnderlyingNamedConv");
 
     [TestMethod]

@@ -38,6 +38,8 @@ using static go.ValueAdapterDynamicType.colorlike_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Gray, Color>]
+[assembly: GoImplement<NRGBA, Color>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
