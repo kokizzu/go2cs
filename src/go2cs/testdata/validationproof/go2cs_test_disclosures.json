@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestGamma/sub",
+      "class": "alloc-count-semantics",
+      "signature": "num allocations = ",
+      "reason": "exact-count AllocsPerRun assert (want 1): the managed shim is byte-derived, so a nonzero count assert can never agree"
+    },
+    {
+      "name": "TestPipeAllocations",
+      "class": "alloc-count-semantics",
+      "signature": "too many allocations for Pipe() call: ",
+      "reason": "count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, not mallocs"
+    }
+  ]
+}

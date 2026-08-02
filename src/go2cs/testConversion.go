@@ -4115,6 +4115,13 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if !result.Matched {
 		return fmt.Errorf("Go/C# test comparison failed: %s", strings.Join(result.Errors, "; "))
 	}
+	// The differential that just proved the package is the proof: publish it as a committed page
+	// under docs/validation (no-op outside a repository checkout). See validationProofPages.go.
+	if result.Status == "validated" {
+		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, options); err != nil {
+			return fmt.Errorf("write validation proof page: %w", err)
+		}
+	}
 	if len(disclosed) > 0 {
 		classes := HashSet[string]{}
 		for _, name := range disclosed {

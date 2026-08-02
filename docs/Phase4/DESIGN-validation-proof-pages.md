@@ -80,6 +80,42 @@ sheets, each one `go test` agreeing with the C#, test by test.
 
 ## Status
 
-- **2026-08-02:** design recovered and recorded; renderer arc implementing now (proof pages +
-  index + roster links). Badge emitter + release-flow snapshot/tag: queued follow-up, needs the
-  corpus README regen and a `release-nuget` change.
+- **2026-08-02:** design recovered and recorded.
+- **2026-08-02:** **renderer LANDED** — `src/go2cs/validationProofPages.go`, hooked at the end of a
+  successful `compare` (and therefore `all`) in `compareGoAndConvertedTests`, gated on
+  `status == "validated"`. Unit-tested against a committed fixture differential
+  (`src/go2cs/testdata/validationproof/`), determinism-tested, and stability-tested. First live
+  pages: `current/cmp.md` and `current/io.md`, at their banked counts (4 / 59 + 2 disclosed).
+  Badge emitter + release-flow snapshot/tag: still queued follow-up, needs the corpus README regen
+  and a `release-nuget` change.
+
+### Where the implementation refines the spec above
+
+Recorded rather than silently diverged from:
+
+1. **The stability compare is "whole page minus the provenance LINE"**, not "everything from the
+   totals line down". Provenance is one italic line (`*Validated <date> · converter <sha>*`) and the
+   writer strips exactly that line from both the rendered text and the file on disk before
+   comparing. Strictly stronger than the line-position rule: a change to the title, the intro, or
+   the Go version also rewrites, while the date/commit alone never does.
+2. **Go version and platform are CONTENT, not provenance**, and therefore live *below* the
+   provenance line, on the totals line. A Go-version bump is a different claim and must rewrite the
+   page even if every verdict repeats.
+3. **Disclosed tests get their own section, not an inline reason column.** The verdict table stays
+   the three columns the roster reader expects (`Test | go test | go2cs`); a disclosed row's C# cell
+   reads `fail ([disclosed](#disclosed-divergences))` and the section below carries class + pinned
+   reason from the package's committed `go2cs_test_disclosures.json`.
+4. **The disclosed set is derived from disagreeing verdicts**, not parsed back out of the
+   comparison's formatted `disclosed` strings. On a validated comparison every non-agreeing pair is
+   disclosed by construction (anything else is a mismatch and never validates), and deriving it this
+   way also catches a disclosed *ancestor* rolled up from disclosed subtests — which carries no
+   manifest entry of its own and renders as class `aggregate`.
+5. **An "Excluded declarations" section was added** (not in the original spec). Without it the page
+   overclaims: `Benchmark`/`Fuzz`/`Example` declarations and capability-blocked tests are filtered
+   from *both* sides of the oracle, and a proof sheet has to say what it is not claiming.
+6. **`index.md` regenerates on every validated run**, not only when a page changed — it is
+   stability-gated too, so an unchanged roster writes nothing, and a missing or stale index heals
+   itself.
+7. **Pages are written CRLF**, matching the docs tree on disk and the converter's other generated
+   text (`README.md`); the stability compare additionally ignores CRs, so `core.autocrlf` can never
+   turn a proof page into permanent churn.

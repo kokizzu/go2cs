@@ -1,0 +1,32 @@
+{
+  "package": "pkg",
+  "status": "validated",
+  "go": {
+    "TestAlpha": "pass",
+    "TestBeta": "skip",
+    "TestGamma": "pass",
+    "TestGamma/sub": "pass",
+    "TestPipeAllocations": "pass"
+  },
+  "csharp": {
+    "TestAlpha": "pass",
+    "TestBeta": "skip",
+    "TestGamma": "fail",
+    "TestGamma/sub": "fail",
+    "TestPipeAllocations": "fail"
+  },
+  "matched": true,
+  "skipped": [
+    "TestBeta"
+  ],
+  "disclosed": [
+    "TestGamma/sub (alloc-count-semantics): exact-count AllocsPerRun assert (want 1): the managed shim is byte-derived, so a nonzero count assert can never agree",
+    "TestGamma (): ",
+    "TestPipeAllocations (alloc-count-semantics): count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, not mallocs"
+  ],
+  "excluded": [
+    "BenchmarkAlpha (benchmark): benchmark execution is deferred",
+    "ExampleAlpha (example): example execution is deferred"
+  ],
+  "errors": []
+}
