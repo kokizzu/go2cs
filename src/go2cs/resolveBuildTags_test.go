@@ -45,3 +45,30 @@ func TestResolveBuildTags(t *testing.T) {
 		})
 	}
 }
+
+// TestDefaultStdLibBuildTagsContent pins the CONTENT of the default tag set, which the table above
+// cannot: every default case there compares against defaultStdLibBuildTags itself, so dropping a tag
+// keeps the table green while silently changing which stdlib source files the corpus is built from.
+//
+// `math_big_pure_go` is load-bearing for the same reason `purego` is: it selects math/big's
+// arith_decl_pure.go (pure-Go forwarders to the `_g` implementations) over arith_decl.go, whose eight
+// declarations are bodyless because their bodies are arith_$GOARCH.s assembly. Without the tag every
+// big.Int / big.Float / big.Rat arithmetic path converts to a throwing partial stub — code that
+// compiles clean and panics on first use.
+func TestDefaultStdLibBuildTagsContent(t *testing.T) {
+	want := map[string]bool{"purego": false, "math_big_pure_go": false}
+
+	for _, tag := range defaultStdLibBuildTags {
+		if _, ok := want[tag]; !ok {
+			t.Errorf("defaultStdLibBuildTags carries an undocumented tag %q — document why the corpus needs it", tag)
+			continue
+		}
+		want[tag] = true
+	}
+
+	for tag, seen := range want {
+		if !seen {
+			t.Errorf("defaultStdLibBuildTags is missing %q; the stdlib corpus would select the assembly-backed variant", tag)
+		}
+	}
+}

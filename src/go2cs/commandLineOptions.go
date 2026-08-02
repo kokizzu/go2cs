@@ -136,7 +136,17 @@ func parseArgsInterspersed(fs *flag.FlagSet, args []string) ([]string, error) {
 // a claim go2cs can actually honor. This default applies to `-stdlib` (the whole-library corpus) AND
 // to `-tests` (see resolveBuildTags); `-recurse` end-user conversions and single-file/dir conversions
 // stay tag-neutral so the user's own build tags govern, and an explicit `-tags` overrides it verbatim.
-var defaultStdLibBuildTags = []string{"purego"}
+//
+// `math_big_pure_go` is the SAME decision under a different spelling. `purego` is the tag the crypto
+// and hash packages happen to use; math/big predates it and gates its own portable fallbacks on
+// `math_big_pure_go` instead (arith_decl_pure.go vs arith_decl.go + arith_amd64.go). Without it the
+// converter selected arith_decl.go — eight bodyless `//go:linkname`/`//go:noescape` declarations whose
+// bodies live in arith_$GOARCH.s — so `addVV`, `subVV`, `addVW`, `subVW`, `shlVU`, `shrVU`,
+// `mulAddVWW` and `addMulVVW` all became throwing partial stubs and EVERY big.Int/big.Float/big.Rat
+// arithmetic path panicked at run time while compiling clean. arith_decl_pure.go forwards each to the
+// `_g` pure-Go implementation already in arith.go, which converts and runs. Reached as a `time`
+// failure (TestTruncateRound → big.Int.Mul → mulAddVWW), but the scope is all of math/big.
+var defaultStdLibBuildTags = []string{"purego", "math_big_pure_go"}
 
 // resolveBuildTags picks the effective build tags for a conversion run. A bare `-stdlib` run and a
 // `-tests` run both apply the purego default (unless `-tags` was passed explicitly, even `-tags=` to

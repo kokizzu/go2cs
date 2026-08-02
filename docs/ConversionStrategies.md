@@ -1489,7 +1489,11 @@ them into throwing stubs that *compile* but can't *run*; `purego` selects the po
 variants with real bodies. `-stdlib` and `-tests` apply `-tags purego` **by default** (an explicit
 `-tags` replaces it, `-tags=` clears it) and print the effective tags at the start of each run —
 a `-tests` run reconverts the package's production sources, so it must reproduce the same emission.
-Every other conversion is tag-neutral. Asm-backed declarations split three ways: **purego-gated**
+Every other conversion is tag-neutral. `purego` is a *convention*, not a language rule, so the default
+set carries every portable-fallback tag the stdlib actually uses: `math/big` predates `purego` and
+spells its own `math_big_pure_go`, gating `arith_decl_pure.go` (real pure-Go forwarders) against
+`arith_decl.go`'s eight bodyless `arith_$GOARCH.s` declarations — without it every `big.Int`/`Float`/`Rat`
+arithmetic path compiled clean and threw on first use. Asm-backed declarations split three ways: **purego-gated**
 (the tag gives a real body — the common case, `crypto/sha256` et al.),
 **GOARCH-gated with no purego escape** (hand-owned, e.g.
 `internal/chacha8rand` and `hash/crc32` — whose `crc32_amd64.go` carries no build line at all, so

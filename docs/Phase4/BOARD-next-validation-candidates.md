@@ -511,12 +511,59 @@ output-compared vs `go run`) plus `FuncLitArgCapture` case 15 for the hoist.
 | 6 | `TestChan` and its five subtests | **Documented model divergence, not a defect.** Go 1.23 made a chan-based Timer/Ticker channel SYNCHRONOUS (#37196) by coupling the channel's receive path to the timer inside the runtime; `time_impl.cs` reproduces Go's own `GODEBUG=asynctimerchan=1` mode instead, so `tim.Stop() = false, want true` and "extra tick" are exactly what that mode produces. ⚠ The `asynctimerchan=1` SUBTEST also fails, which the divergence does NOT explain — either `t.Setenv("GODEBUG", …)` does not reach the converted `godebug`, or the async model has its own bug. That subtest is the honest next probe here. | time / godebug |
 | 9 | `TestDefaultLoc`, `TestNanosecondsToUTC`, `TestSecondsToUTC`, `TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestTimeJSON`, `TestUnmarshalInvalidTimes`, `TestZoneBounds` | All die with the same `nil pointer dereference` inside `GoFunc.HandleFinally`. Every one of them formats a `Time` through `fmt` on its FAILURE path (`%#v`, `%+v`, `%v` of a struct with a `*Location`), so the NRE is plausibly SECONDARY to a comparison that already failed — the reflect/fmt bridge, not the clock. Not rooted; the next increment should print the pre-format comparison rather than reason about the stack. | reflect/fmt bridge |
 | 1 | `TestParseErrors` | A REAL parse divergence: Go reports `extra text: "07:00"` where C# reports `cannot parse "Z07:00" as "Z07:00"` — the `Z07:00` layout element consumes differently. `format.go` conversion defect, `time`-local. | time |
-| 1 | `TestTruncateRound` | `math/big.mulAddVWW` is an unimplemented asm stub (`NotImplementedException`), reached through `big.Int.Mul`. | math/big arc |
+| 1 | ~~`TestTruncateRound`~~ | ~~`math/big.mulAddVWW` is an unimplemented asm stub (`NotImplementedException`), reached through `big.Int.Mul`.~~ **CLOSED 2026-08-02 (r37-time-os-fin), and it was never a `math/big` ARC — it was a build-tag selection.** math/big predates the `purego` convention and gates its portable fallbacks on its own `math_big_pure_go`, which the default tag set did not carry, so all EIGHT of `arith_decl.go`'s bodyless declarations became throwing stubs. The scope was not one test: the whole package compiled clean and could not do arithmetic — a direct probe dies inside `big.Int.SetString`, i.e. parsing a decimal string, because that is already a `mulAddVWW`. See *`purego` is not the only spelling of this decision* in ConversionStrategies-Reference.md. | ~~math/big arc~~ done |
 | 1 | `TestUnmarshalTextAllocations` | `got 3784 allocs, want 0` — the established **alloc-count-semantics** unit mismatch (`AllocsPerRun` counts mallocs in Go, BYTES on the CLR). A disclosure candidate by the class `strings`/`io` already established; **not self-ruled here**. | ruling |
 
 So `time`'s distance is: one `time`-local parse bug, one probe (`asynctimerchan=1`), one shared
 reflect/fmt-bridge NRE family worth 9 verdicts, and two rows owned elsewhere. Nothing about timers,
 sleeps, tickers or channel rendezvous is in the way.
+
+### Re-measured 2026-08-02 (r37-time-os-fin): **146 pass / 11 fail / 2 skip / 0 infra-error of 159**
+
+Measured as a same-session A/B, both arms on this tree, only `src/core/math/big` differing:
+
+| Arm | Split of 159 verdict rows (137 top-level + 22 subtests) |
+|:--|:--|
+| math/big asm stubs (the r36 state) | 145 pass · 11 fail · **1 infrastructure-error** · 2 skip — reproducing the r36 record exactly |
+| math/big pure-Go arith | **146 pass · 11 fail · 0 infrastructure-error · 2 skip** |
+
+Exactly one row moved — `TestTruncateRound`, infrastructure-error → pass — which is what the
+`math_big_pure_go` build tag was expected to do and nothing else. The **infrastructure-error column
+is now empty**, so every remaining row is a real verdict disagreement rather than a host casualty.
+
+The 11 failing rows, exhaustively, in three buckets:
+
+| Rows | Tests | Bucket |
+|--:|:--|:--|
+| 8 | `TestChan` + `asynctimerchan={0,1,2}` + their `Timer`/`Ticker` children | The **timer-model** item, recorded and deliberately not taken: `time_impl.cs` §"⚠ OPEN — a periodic timer can fire an UNBOUNDED BURST in one service pass". The Timer half under `asynctimerchan=0` is the accepted sync-mode divergence; the Ticker half fails in all three modes and is the burst. The faithful fix ("fire each timer at most once per pass") changes the heart of the model and wants its own lane. The `t.Setenv("GODEBUG", …)` half of the old ⚠ is closed — r36 proved the converted `godebug` sees it. |
+| 2 | `TestTimeJSON`, `TestUnmarshalInvalidTimes` | The reflect-bridge **chip's** rows — the last two survivors of the old 9-verdict NRE family (r36's honest traceback rooted the other seven at `Location.lookup`, and they pass). Untouched here by fence. |
+| 1 | `TestUnmarshalTextAllocations` | Alloc-count-semantics, **awaiting the coordinator's disclosure ruling** — unchanged in status, but the number moved: `got 3544` → **`got 2728`**, an exactly-predicted −816 B/run (6 × 136, the six `parseUint` range loops in `parseRFC3339`'s UTC path) from the allocation-free `slice<T>` enumerator. Also measured as an A/B on this tree; the board's older `3784` predates other r36 fixes. Nonzero remains, so a ruling is still what settles this row — see `docs/CleanupBacklog.md` item 7 (`IByteSeq<T>` interface boxing) for the next lever. |
+
+**`TestParseErrors` is gone from the failing set** (r36's `fallthrough`-placement fix), as are the
+seven `Location.lookup` rows. `time`'s distance to a bank is now: **the timer-model item, the
+reflect-bridge chip, and one ruling** — three owners, none of them the converter, and nothing
+`time`-local outside the timer model.
+
+## `math/big` — arithmetic RUNS as of 2026-08-02; one nil-argument root stands in front of a probe
+
+Until r37-time-os-fin `math/big` was in the 302-package clean compile and could not perform a single
+operation: the `math_big_pure_go` build tag was missing from the default set, so all eight of
+`arith_decl.go`'s assembly-backed declarations converted to throwing partial stubs (detail in the
+`TestTruncateRound` row above and in ConversionStrategies-Reference.md). With the tag applied, a
+direct Go-vs-C# probe — `SetString`, `Mul`, `Add`, `Sub`, `Lsh`, `Rsh`, `Quo`, `Rem`, `Exp`,
+`big.Float.Mul`, and a 64-deep `Mul` chain — is **byte-identical to `go run`**. Before the fix the
+same probe died on its first line, inside `big.Int.SetString`.
+
+**One root remains before the package's own suite is worth running: `big.Int.GCD` with nil `x`/`y`
+panics with a nil pointer dereference.** Repro is three lines —
+`new(big.Int).GCD(nil, nil, a, b)` — and `big.Rat` reaches it on the ordinary path
+(`SetFrac` → `norm` → `GCD`), so all of `big.Rat` is behind it. Go documents nil `x`/`y` as the
+*normal* non-extended call, so this is a real conversion defect, not an unsupported shape.
+Measured on BOTH the committed corpus and a fresh whole-stdlib reconvert, so it is **not** the
+pending deref-accessor rebank: `lehmerGCD`'s entry aliases already take the current
+`DerefOrNull`/`DerefOrNil` accessors in the reconverted emission and it panics identically. Not
+rooted further — it was found in passing while verifying the build-tag fix and is out of that
+lane's scope.
 
 ## Runtime failures
 
