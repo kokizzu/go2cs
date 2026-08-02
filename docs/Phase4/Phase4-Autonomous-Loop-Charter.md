@@ -388,6 +388,13 @@ Hard-won during this campaign. Read these before touching the relevant area.
   (`globalQualifyRooted` / `rootNamespaceShadowed`, guarded by `rootShadowQualification_test.go`).
   **To check a package, run the pipeline** — `go2cs -tests -test-action all <goroot-pkg> <converted-pkg>`
   — never a bare `dotnet build <pkg>.tests.csproj`.
+- **`go test ./...` in `src/go2cs` reads `../core`, so run it on a CLEAN tree.**
+  `TestStdLibMetadataInSync` regenerates `stdlib-metadata.txt` from `../core/**/package_info.cs` and
+  fails if the committed asset differs. A `-tests` pipeline run leaves the standing `package_info.cs`
+  drift behind (the satisfies-not-witnesses records: `+2` on io, `+1` on sort), which is enough to
+  fail it — reported as `stdlib-metadata.txt is STALE`, which reads exactly like a converter defect and
+  is not one. Restore the pipeline's drift FIRST, then run the converter's tests. Found 2026-08-02
+  (r37-time-os-fin) after three canary pipelines; the same tree passed once `src/core` was restored.
 - **autocrlf-only "drift":** a re-validated / agent-banked test source often shows `git status`
   modified but the **content diff is empty** (CRLF↔LF). Confirm with `git diff` before chasing.
 - **`.slnx` edits are byte-exact CRLF:** `sed`/`awk` strip CRLF — use `perl -0777` with explicit
