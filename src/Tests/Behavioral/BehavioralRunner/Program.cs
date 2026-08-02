@@ -212,16 +212,27 @@ namespace BehavioralRunner
                     continue;
                 }
 
-                ProcResult r = Exec(s_go2csExe, $"\"{projPath}\"", projPath, TranspileTimeoutMs);
+                bool ok = true;
 
-                if (r.ExitCode == 0)
+                foreach (string pkgPath in GoPackageDirs(projPath))
+                {
+                    ProcResult r = Exec(s_go2csExe, $"\"{pkgPath}\"", pkgPath, TranspileTimeoutMs);
+
+                    if (r.ExitCode == 0)
+                        continue;
+
+                    results[p].Messages.Add($"transpile exit {r.ExitCode} in {Path.GetFileName(pkgPath)}: {Truncate(r.StdErr)}");
+                    ok = false;
+                    break;
+                }
+
+                if (ok)
                 {
                     results[p].Phases[Phase.Transpile] = Status.Pass;
                 }
                 else
                 {
                     results[p].Phases[Phase.Transpile] = Status.Fail;
-                    results[p].Messages.Add($"transpile exit {r.ExitCode}: {Truncate(r.StdErr)}");
                     failed++;
                 }
             }
@@ -245,21 +256,43 @@ namespace BehavioralRunner
                 .Where(go => !go.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
+        // Every Go package directory a project owns, DEEPEST-FIRST. Most projects are a single package,
+        // but 22 carry nested sub-libraries (IoLike\FsLike, VersionedImport\vlib, …) that the converter
+        // must be invoked on separately -- and BEFORE their parent, because a sub-library's generated
+        // package_info.cs is an input to the parent's transpile (the parent reads its sibling's
+        // [assembly: GoImplement] records when deciding whether to mint a local value adapter). Walking
+        // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
+        // old converter and made the parent's golden unable to fail on a regression in that area.
+        private static string[] GoPackageDirs(string projPath) =>
+            new[] { projPath }
+                .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
+                    .Where(d => !d.Contains(@"\bin\", StringComparison.OrdinalIgnoreCase) &&
+                                !d.Contains(@"\obj\", StringComparison.OrdinalIgnoreCase))
+                    .Where(d => ProductionGoFiles(d).Length > 0))
+                .OrderByDescending(d => d.Count(c => c == Path.DirectorySeparatorChar))
+                .ThenBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
         private static bool UpToDate(string projPath)
         {
             DateTime exe = File.GetLastWriteTimeUtc(s_go2csExe);
 
-            foreach (string go in ProductionGoFiles(projPath))
+            // Nested sub-library packages count: if one of them is out of date the project must be
+            // re-transpiled, or the stale sibling records feed straight back into the parent's output.
+            foreach (string pkgPath in GoPackageDirs(projPath))
             {
-                string cs = Path.ChangeExtension(go, ".cs");
+                foreach (string go in ProductionGoFiles(pkgPath))
+                {
+                    string cs = Path.ChangeExtension(go, ".cs");
 
-                if (!File.Exists(cs))
-                    return false;
+                    if (!File.Exists(cs))
+                        return false;
 
-                DateTime csTime = File.GetLastWriteTimeUtc(cs);
+                    DateTime csTime = File.GetLastWriteTimeUtc(cs);
 
-                if (csTime <= File.GetLastWriteTimeUtc(go) || csTime <= exe)
-                    return false;
+                    if (csTime <= File.GetLastWriteTimeUtc(go) || csTime <= exe)
+                        return false;
+                }
             }
 
             return true;

@@ -49,14 +49,28 @@ try {
 }
 finally { Pop-Location }
 
-# 2. Re-transpile every behavioral project. A test-target dir is defined by Go-source presence (a *.go
-#    file), not by a .csproj (cf. commit 2cbe71947). This naturally excludes the C# tooling dirs
+# 2. Re-transpile every behavioral Go package. A test-target dir is defined by Go-source presence (a
+#    *.go file), not by a .csproj (cf. commit 2cbe71947). This naturally excludes the C# tooling dirs
 #    BehavioralTests (the MSTest runner) and BehavioralRunner (the standalone runner) — neither has Go
 #    source, so transpiling them just fails with "go: cannot find main module".
-$projects = Get-ChildItem -Path $behavioral -Directory |
-    Where-Object { Get-ChildItem $_.FullName -Filter *.go -File }
+#
+#    The walk is RECURSIVE because a project's Go source can span nested sub-library packages
+#    (IoLike\FsLike, VersionedImport\vlib, CrossPackageArrayZeroValue\bufpkg, …). Those are not
+#    decoration: a sub-library's generated package_info.cs is an INPUT to its parent's transpile — the
+#    parent reads the sibling's [assembly: GoImplement] records to decide whether to mint a local value
+#    adapter. A top-level-only walk therefore froze all 22 of them at whatever converter last touched
+#    them (17 files measurably stale by 2026-08-02) AND left the parent reading stale-but-plausible
+#    records, so a converter regression in that area could not make the parent's golden fail — a false
+#    green for the ForeignValueImplementSuppression / ValueAdapterDynamicType / SamePackageImplementNoWitness
+#    guards specifically. Order is DEEPEST-FIRST so a sub-library is regenerated before its parent
+#    consumes it.
+$projects = Get-ChildItem -Path $behavioral -Directory -Recurse |
+    Where-Object { $_.FullName -notmatch '\\(bin|obj)(\\|$)' } |
+    Where-Object { Get-ChildItem $_.FullName -Filter *.go -File } |
+    Sort-Object -Property @{ Expression = { ($_.FullName -split '\\').Count }; Descending = $true },
+                          @{ Expression = { $_.FullName }; Descending = $false }
 
-Write-Host "==> transpiling $($projects.Count) behavioral projects..." -ForegroundColor Cyan
+Write-Host "==> transpiling $($projects.Count) behavioral packages (deepest-first)..." -ForegroundColor Cyan
 # go2cs writes advisory WARNINGs to stderr (e.g. unsafe.Sizeof usage). Under $ErrorActionPreference='Stop'
 # native-command stderr surfaces as a terminating NativeCommandError and aborts the loop, so relax it here
 # and gate purely on the exit code; merge stderr into the pipeline so warnings are swallowed by Out-Null.
@@ -65,14 +79,21 @@ $ErrorActionPreference = 'Continue'
 try {
     foreach ($proj in $projects) {
         & $go2csExe $proj.FullName 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { Write-Host "    [transpile FAILED] $($proj.Name)" -ForegroundColor Red }
+        # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
+        # sub-libraries (three of them are called "inner", two "latelib").
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    [transpile FAILED] $($proj.FullName.Substring($behavioral.Length).TrimStart('\'))" -ForegroundColor Red
+        }
     }
 }
 finally { $ErrorActionPreference = $savedEAP }
 
-# 3. Report any changed generated .cs under the behavioral tree.
+# 3. Report any changed generated .cs under the behavioral tree. Both C# tooling dirs are excluded:
+#    their .cs is HAND-WRITTEN source, not converter output, so an edit to either is a deliberate
+#    harness change and reporting it as converter drift is pure noise. (BehavioralRunner was missing
+#    from this filter until 2026-08-02, so editing the runner made CNR accuse itself of a regression.)
 $changed = & git -C $repoRoot status --short -- "src/Tests/Behavioral/*.cs" |
-    Where-Object { $_ -notmatch "BehavioralTests/" }
+    Where-Object { $_ -notmatch "Behavioral(Tests|Runner)/" }
 
 if (-not $changed) {
     Write-Host "==> NO REGRESSION: generated C# is byte-identical across all behavioral projects." -ForegroundColor Green
@@ -83,8 +104,13 @@ Write-Host "==> CHANGED generated C# (inspect: intended new golden vs. regressio
 $changed | ForEach-Object { Write-Host "    $_" }
 
 if ($Revert) {
+    # Same two exclusions as the report above, and for a sharper reason: without them this checkout
+    # DESTROYS uncommitted hand-edits to the harness sources themselves (they are .cs under
+    # Tests\Behavioral, so the bare pathspec swept them up).
     Write-Host "==> -Revert: restoring changed .cs to HEAD" -ForegroundColor Cyan
-    & git -C $repoRoot checkout -- "src/Tests/Behavioral/*.cs"
+    & git -C $repoRoot checkout -- "src/Tests/Behavioral/*.cs" `
+        ":(exclude)src/Tests/Behavioral/BehavioralTests/*" `
+        ":(exclude)src/Tests/Behavioral/BehavioralRunner/*"
 }
 
 exit 1

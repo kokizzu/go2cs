@@ -219,8 +219,8 @@ public abstract class BehavioralTestBase
                 // PRODUCTION sources only: a production transpile excludes `_test.go`, so an in-package
                 // test file has no matching .cs and would pin this check permanently out of date.
                 DateTime go2csTime = File.GetLastWriteTimeUtc(go2cs);
-                FileInfo[] goFiles = Directory.GetFiles(projPath, "*.go")
-                    .Where(fileName => !fileName.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+                FileInfo[] goFiles = GoPackageDirs(projPath)
+                    .SelectMany(ProductionGoFiles)
                     .Select(fileName => new FileInfo(fileName)).ToArray();
                 bool allUpToDate = true;
 
@@ -241,9 +241,35 @@ public abstract class BehavioralTestBase
 
             int exitCode;
 
-            Assert.AreEqual(0, exitCode = Exec(go2cs, projPath), $"go2cs transpile for \"{targetProject}\" failed with exit code {exitCode:N0}");
+            foreach (string pkgPath in GoPackageDirs(projPath))
+                Assert.AreEqual(0, exitCode = Exec(go2cs, pkgPath), $"go2cs transpile for \"{targetProject}\" package \"{Path.GetFileName(pkgPath)}\" failed with exit code {exitCode:N0}");
         }
     }
+
+    // A production transpile converts the package's PRODUCTION sources only -- go/packages excludes
+    // `_test.go` -- so an in-package test file has no `.cs`, by design (it is still a real input: the
+    // converter scans the sibling test half for declarator names and for globals whose address it takes).
+    private static string[] ProductionGoFiles(string pkgPath) =>
+        Directory.GetFiles(pkgPath, "*.go")
+            .Where(fileName => !fileName.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+    // Every Go package directory a project owns, DEEPEST-FIRST. Most projects are a single package, but
+    // 22 carry nested sub-libraries (IoLike\FsLike, VersionedImport\vlib, …) that the converter must be
+    // invoked on separately -- and BEFORE their parent, because a sub-library's generated
+    // package_info.cs is an input to the parent's transpile (the parent reads its sibling's
+    // [assembly: GoImplement] records when deciding whether to mint a local value adapter). Walking
+    // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
+    // old converter and made the parent's golden unable to fail on a regression in that area.
+    private static string[] GoPackageDirs(string projPath) =>
+        new[] { projPath }
+            .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
+                .Where(dirName => !dirName.Contains(@"\bin\", StringComparison.OrdinalIgnoreCase) &&
+                                  !dirName.Contains(@"\obj\", StringComparison.OrdinalIgnoreCase))
+                .Where(dirName => ProductionGoFiles(dirName).Length > 0))
+            .OrderByDescending(dirName => dirName.Count(c => c == Path.DirectorySeparatorChar))
+            .ThenBy(dirName => dirName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     protected void CompileCSProject(string targetProject, bool forceBuild = false)
     {

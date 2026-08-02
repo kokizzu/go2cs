@@ -15,9 +15,9 @@ public static ж<PCG> NewPCG(uint64 seed) {
 }
 
 [GoRecv] public static uint64 Uint64(this ref PCG p) {
-    p.state ^= (p.state << (int)(13));
-    p.state ^= (p.state >> (int)(7));
-    p.state ^= (p.state << (int)(17));
+    p.state ^= (uint64)((p.state << (int)(13)));
+    p.state ^= (uint64)((p.state >> (int)(7)));
+    p.state ^= (uint64)((p.state << (int)(17)));
     return p.state;
 }
 
