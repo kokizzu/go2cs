@@ -23,17 +23,17 @@ internal static (@string name, nint offset) lookup(this ж<loc> Ꮡl, nint sec) 
     @string name = default!;
     nint offset = default!;
 
-    ref var l = ref Ꮡl.DerefOrNil();
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     name = l.name;
     offset = l.offset + sec;
     return (name, offset);
 }
 
 internal static @string rename(this ж<loc> Ꮡl, @string suffix) {
-    ref var l = ref Ꮡl.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
 
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     l.name += suffix;
     return l.name;
 }
@@ -46,10 +46,10 @@ internal static @string span(ж<loc> Ꮡl, nint width) {
 }
 
 internal static @string firstUseReads(this ж<loc> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     @string n = l.name;
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     return n + "/"u8 + l.name;
 }
 
