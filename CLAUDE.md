@@ -243,7 +243,7 @@ ONE stdlib in a build; there is now only one on disk.
   | `go2cs -stdlib -comments` (full reconvert) | **~195s (3m 14s)** | 600s | 304 projects; per-file work is sub-second, the cost is `go/packages` |
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
   | full `go2cs-stdlib.slnx` build | **~92s** warm (303 assemblies) | 600s | cold restore adds a few minutes |
-  | `run-validated-sweep.ps1` (full roster) | **hours** — SERIAL, and two packages dominate: `hash/maphash` ~15 min, `index/suffixarray` ~35 min | run it BACKGROUNDED | ~30 s for a typical package; use `-Filter` for anything but a final gate |
+  | `run-validated-sweep.ps1` (full roster) | **~53 min (3,154s; re-measured 2026-08-01 at the 71-package roster — the old "hours" figure is stale)** | run it BACKGROUNDED | ~30 s for a typical package; use `-Filter` for anything but a final gate |
 
   Materially *past* these means the test host has hung under lock contention, not real work — stop and
   clear it rather than waiting 10–20 min. **Re-measure and update this table when the corpus grows again**;
