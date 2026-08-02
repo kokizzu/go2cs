@@ -14,6 +14,12 @@
     -Push increments GoBuildNumber by default so every publish is a new version (commit version.props
     afterward to record the release). See -BumpBuild to force or suppress the bump.
 
+    PUBLICATION ALSO FREEZES THE PROOF. Before anything is built, docs\validation\current\ is copied
+    to docs\validation\<version>\ (write-once) and the version-pinned validation badge links in every
+    src\core\*\README.md are retargeted at it, so a published package's green badge, its proof link
+    and the VALIDATION.md it packs all describe the exact binary being pushed. Commit the snapshot,
+    the retargeted READMEs and version.props together, and tag the commit nuget-<version>.
+
     SAFETY: pushing to a public feed is an irreversible publish (a version can be unlisted, never
     deleted). This script therefore PACKS ONLY by default; it pushes nothing unless -Push is given,
     and -WhatIf reports each push without performing it. The API key is read from the NUGET_API_KEY
@@ -125,6 +131,8 @@ $propsText = [System.IO.File]::ReadAllText($versionProps)
 if ($propsText -notmatch '<GoBuildNumber>(\d+)</GoBuildNumber>') { throw "GoBuildNumber not found in $versionProps" }
 $build = [int]$Matches[1]
 
+$bumped = $false
+
 if ($doBump) {
     $newBuild = $build + 1
     if ($PSCmdlet.ShouldProcess($versionProps, "bump GoBuildNumber $build -> $newBuild")) {
@@ -132,12 +140,104 @@ if ($doBump) {
         [System.IO.File]::WriteAllText($versionProps, $propsText, $utf8NoBom)
         Write-Step "Bumped GoBuildNumber $build -> $newBuild (commit version.props to record the release)"
         $build = $newBuild
+        $bumped = $true
     }
 }
 
 if ($propsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $baseVersion = $Matches[1] } else { $baseVersion = '?' }
 $fullVersion = "$baseVersion.$build"
 Write-Step "Package version: $fullVersion   (solution: go2cs-stdlib.slnx)"
+
+# --- Validation proof snapshot + badge retarget ---------------------------------------------------
+# Every validated package's README carries a green badge whose link is VERSION-PINNED, and every
+# validated package packs that same page as VALIDATION.md. Both point at docs\validation\<version>\,
+# which is written ONCE here, at publication, and never rewritten: the proof shown for go.io 1.23.1.3
+# stays forever the proof as of that binary, while docs\validation\current\ keeps moving.
+#
+# Order matters. The snapshot is taken BEFORE the build so the .csproj Exists() guards see the files
+# they are about to pack, and the READMEs are retargeted in the same breath so the badge, the link
+# and the packed sheet are the one version being published.
+$repoRoot = Split-Path $src -Parent
+$validationDir = Join-Path $repoRoot 'docs\validation'
+$currentProofs = Join-Path $validationDir 'current'
+$versionProofs = Join-Path $validationDir $fullVersion
+
+if (-not (Test-Path $currentProofs)) {
+    Write-Warning "No validation proof pages at $currentProofs -- skipping the snapshot and badge retarget."
+} else {
+    if (Test-Path $versionProofs) {
+        # A frozen directory is write-once. Re-publishing the CURRENT version (-BumpBuild:$false, e.g.
+        # finishing a partially-failed push -- and any -WhatIf run, which declines the bump)
+        # legitimately finds its own snapshot already there; a version that was ACTUALLY bumped a
+        # moment ago finding one means the version counter and the docs tree disagree.
+        if ($bumped) { throw "Validation snapshot $versionProofs already exists for the newly bumped version $fullVersion. Frozen snapshots are write-once -- reconcile src\version.props with docs\validation before publishing." }
+        Write-Step "Validation snapshot $fullVersion already exists (write-once) -- keeping it"
+    }
+    elseif ($PSCmdlet.ShouldProcess($versionProofs, "snapshot docs\validation\current")) {
+        New-Item -ItemType Directory -Force $versionProofs | Out-Null
+        Copy-Item (Join-Path $currentProofs '*.md') $versionProofs -Force
+        Write-Step "Froze $((Get-ChildItem $versionProofs -Filter *.md).Count) validation proof page(s) at docs\validation\$fullVersion"
+    }
+
+    # Retarget the version segment of every green badge link in the converted stdlib's READMEs. Read
+    # AND write through [System.IO.File] with UTF-8/no-BOM: PS 5.1's Get-Content reads the converter's
+    # BOM-less UTF-8 as ANSI and Out-File re-encodes the damage, which is what mojibake'd the corpus's
+    # (c) signs once already. ReadAllText/WriteAllText round-trips the CRLF the converter emitted.
+    $utf8NoBomText = New-Object System.Text.UTF8Encoding($false)
+    $badgeLinkPattern = '(https://go2cs\.net/validation/)[^/]+(/)'
+    $retargeted = 0
+
+    foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
+        $text = [System.IO.File]::ReadAllText($readme.FullName)
+        if ($text -notmatch $badgeLinkPattern) { continue }
+
+        $updated = [regex]::Replace($text, $badgeLinkPattern, "`${1}$fullVersion`${2}")
+        if ($updated -eq $text) { continue }
+
+        if ($PSCmdlet.ShouldProcess($readme.FullName, "retarget validation badge link to $fullVersion")) {
+            [System.IO.File]::WriteAllText($readme.FullName, $updated, $utf8NoBomText)
+            $retargeted++
+        }
+    }
+
+    Write-Step "Retargeted $retargeted README badge link(s) to $fullVersion (commit them with version.props)"
+
+    # Consistency by construction: a converter README re-emission must now be a no-op. The badge line
+    # is composed from exactly two inputs -- the published version and the proof page's totals line --
+    # so re-deriving it here from the FROZEN snapshot and comparing byte for byte is that re-emission,
+    # without needing the Go toolchain or a 4-minute reconvert mid-release.
+    $verified = 0
+
+    foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
+        $text = [System.IO.File]::ReadAllText($readme.FullName)
+        if ($text -notmatch 'badge/Go_tests-(\d+)%2F(\d+)_validated-brightgreen') { continue }
+
+        $badgeMatched = [int]$Matches[1]
+        $badgeTotal = [int]$Matches[2]
+
+        # The dot-id itself contains dots (path.filepath), so its capture excludes only "/" and ")".
+        if ($text -notmatch 'https://go2cs\.net/validation/([^/]+)/([^)/]+)\.html') { throw "Green badge without a proof link in $($readme.FullName)" }
+
+        $linkVersion = $Matches[1]
+        $dotId = $Matches[2]
+
+        if ($linkVersion -ne $fullVersion) { throw "Green badge in $($readme.FullName) still links $linkVersion, not $fullVersion" }
+
+        $proofPage = Join-Path $versionProofs "$dotId.md"
+        if (-not (Test-Path $proofPage)) { throw "Green badge in $($readme.FullName) links a proof page that was not snapshotted: $proofPage" }
+
+        $proofText = [System.IO.File]::ReadAllText($proofPage)
+        if ($proofText -notmatch '\*\*(\d+) matched \S+ (\d+) disclosed\*\*') { throw "No totals line in $proofPage" }
+
+        if ($badgeMatched -ne [int]$Matches[1] -or $badgeTotal -ne ([int]$Matches[1] + [int]$Matches[2])) {
+            throw "Badge in $($readme.FullName) claims $badgeMatched/$badgeTotal but $proofPage records $($Matches[1]) matched + $($Matches[2]) disclosed"
+        }
+
+        $verified++
+    }
+
+    Write-Step "Verified $verified green badge(s) against the frozen $fullVersion proof pages"
+}
 
 # --- Fresh Release pack -------------------------------------------------------------------------
 New-Item -ItemType Directory -Force $OutDir | Out-Null

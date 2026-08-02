@@ -13,6 +13,11 @@ rem  The build number is bumped UP FRONT (Phase 1) so the packages that get buil
 rem  signed and pushed all carry the SAME new version -- you cannot change a
 rem  package's version after it is signed. Commit version.props after a success.
 rem
+rem  Phase 1 also FREEZES THE VALIDATION PROOF for the new version: it snapshots
+rem  docs\validation\current -> docs\validation\<version> (write-once) and retargets
+rem  the version-pinned badge links in src\core\*\README.md. Those files are part of
+rem  the release commit, not an afterthought -- see the Phase 3 notes at the end.
+rem
 rem  Requires environment variable NUGET_API_KEY for the push.
 rem  NOTE: if you abort before Phase 2 (or Phase 1 fails), version.props was
 rem  already bumped -- either re-run and let it advance, or reset it (git checkout
@@ -56,6 +61,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem --- Phase 3: record the release in git -------------------------------------
+rem  The published version, its frozen proof snapshot and the badge links that point
+rem  at it are ONE fact -- commit them together or a published badge links a
+rem  directory that is not in the repository.
+for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$x=[xml](Get-Content -Raw '%SRC%version.props'); $p=$x.Project.PropertyGroup; \"$($p.GoStdLibVersion).$($p.GoBuildNumber)\""`) do set "VER=%%v"
+
 echo.
-echo Done. Now COMMIT version.props to record the published build number.
+echo === Phase 3: record the release ===
+echo  Commit these together, then tag the commit:
+echo.
+echo    git add src\version.props docs\validation\%VER% src\core
+echo    git commit -S -m "release: go2cs converted stdlib %VER%"
+echo    git tag -a nuget-%VER% -m "NuGet publication %VER%"
+echo.
+echo  docs\validation\%VER% is FROZEN from here on -- it is the proof every
+echo  %VER% package's green badge links and packs as VALIDATION.md.
 exit /b 0
