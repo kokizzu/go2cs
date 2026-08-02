@@ -70,7 +70,12 @@ func goVersion() string {
 // package's Go doc (already rendered to Markdown) so the NuGet package carries readable docs. It is
 // idempotent via needToWriteFile, mirroring how the icon and .csproj files are written, and uses
 // CRLF line endings to match the converter's other generated text output (and avoid autocrlf churn).
-func writeReadmeFile(projectPath string, projectName string, packageDoc string) error {
+//
+// Between the attribution blockquote and the package's own documentation sits the validation badge —
+// its own paragraph, green/orange/grey per readmeValidationBadgeLine, omitted entirely when this
+// conversion cannot compose an honest one. sourceDir is the package's Go source directory, which the
+// badge needs to see the `_test.go` files the conversion itself never compiles.
+func writeReadmeFile(projectPath string, projectName string, packageDoc string, sourceDir string) error {
 	projectPath = strings.TrimRight(projectPath, string(filepath.Separator)) + string(filepath.Separator)
 	readmeFileName := projectPath + "README.md"
 
@@ -84,6 +89,11 @@ func writeReadmeFile(projectPath string, projectName string, packageDoc string) 
 	}
 
 	builder.WriteString("\n")
+
+	if badge := readmeValidationBadgeLine(projectPath, projectName, sourceDir); badge != "" {
+		builder.WriteString(badge)
+		builder.WriteString("\n\n")
+	}
 
 	if trimmed := strings.TrimSpace(packageDoc); trimmed != "" {
 		builder.WriteString(trimmed)

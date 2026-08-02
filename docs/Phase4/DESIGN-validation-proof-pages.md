@@ -88,6 +88,77 @@ sheets, each one `go test` agreeing with the C#, test by test.
   pages: `current/cmp.md` and `current/io.md`, at their banked counts (4 / 59 + 2 disclosed).
   Badge emitter + release-flow snapshot/tag: still queued follow-up, needs the corpus README regen
   and a `release-nuget` change.
+- **2026-08-02:** **badge emitter + release linkage LANDED** — the follow-up arc above, items 1 and 2.
+  Every converted stdlib README now carries a standalone validation badge; the release scripts freeze
+  and retarget the proof it links; validated packages pack that proof as `VALIDATION.md`. Detail and
+  the places reality corrected the plan are in the next section.
+
+## The badge (implemented 2026-08-02)
+
+One badge-only line per package README, its own paragraph between the attribution blockquote and the
+godoc body. No emoji, no trailing text link — **the badge IS the proof link**:
+
+| State | Badge | Links |
+|:--|:--|:--|
+| validated | `Go_tests-<m>%2F<t>_validated-brightgreen` | `go2cs.net/validation/<version>/<dot-id>.html` |
+| has tests, not yet validated | `Go_tests-not_yet_validated-orange` | `go2cs.net/ValidatedTestPackages.html` |
+| no tests | `Go_tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
+
+`<m>` is matched and `<t>` is matched + disclosed, both read off the package's living proof page, so
+the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is
+`<GoStdLibVersion>.<GoBuildNumber>` from `src/version.props`; `<dot-id>` is the import path with `/`
+replaced by `.`, the same flat name the proof pages already use.
+
+The three states **partition the corpus**, which is what makes the badge auditable rather than
+decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
+
+- **71 green** — exactly the roster of [`ValidatedTestPackages.md`](../ValidatedTestPackages.md),
+  compared row for row, with every badge's counts equal to its proof page's totals line.
+- **144 orange / 87 grey** across all 302 converted packages, reproducing the roster's own
+  denominator (215 testable) from an independent predicate: the GOROOT package's `_test.go` files are
+  PARSED and searched for a top-level `func Test…` (Go's own naming rule). Comments and string
+  literals mentioning `func Test` are everywhere in the standard library's test sources, so a
+  lexical scan would over-count.
+- **On disk that is 71 / 143 / 86 = 300 badged READMEs.** `testing` and `unsafe` are hand-owned and
+  carry no converter-emitted README at all, so their classes (orange and grey respectively) exist in
+  the predicate but not on disk.
+
+### Where the badge implementation refines the spec
+
+1. **Green requires BOTH signals.** The committed `<dot-id>.tests.csproj` beside the package says the
+   pipeline ran and its results were banked; the proof page supplies the counts. A badge is green only
+   when both agree, so it can never claim a number no committed evidence backs. A disagreement falls
+   through to the honest has-tests classification and shows up as a census miscount, which is a loud
+   failure rather than a wrong badge.
+2. **No repository context ⇒ no badge line at all.** `version.props` and `docs/validation/current/`
+   are located by the same upward walk the pipeline uses for `$(go2csPath)`. A conversion that finds
+   neither (a bare temp `-go2cspath` root, a deployed GOPATH runtime root) emits the README exactly as
+   it did before badges existed rather than a half-composed URL. The consequence is a SEED RITUAL: a
+   reconvert that must reproduce the committed READMEs byte-identically has to seed `version.props`
+   and `docs/validation` alongside `src/core`, and mirror the `src/` layout so `docs/` lands as the
+   root's sibling. Recorded in CLAUDE.md's corpus-mechanics step 1a; proven by a two-root A/B whose
+   entire `core` trees compared byte-identical.
+3. **`internal/godebug` is badged BY HAND.** Its single Go file is fully hand-owned, so
+   `unmarkedFileCount == 0` makes the conversion driver `continue` before `writeProjectFile` — its
+   `.csproj`, `package_info.cs` and README have always been hand-owned by consequence. Its badge
+   (orange) and pack block were applied by hand, byte-identical to what the converter emits for every
+   other package. It is the one package where the badge is not converter-maintained.
+4. **`VALIDATION.md` rides in the nupkg via a marker, not a template verb.** `csproj-template.xml`
+   carries `>>MARKER:VALIDATION_PACK<<` on a line of its own, substituted after the printf verbs (like
+   the friend-assembly grant, and for the same reason: a user-supplied `-csproj` template cannot know
+   about the slot). A stdlib conversion expands it into an `Exists`-guarded `<None …
+   PackagePath="VALIDATION.md" />` sourced from `$(go2csPath)..\docs\validation\$(GoStdLibVersion).$(GoBuildNumber)\<dot-id>.md`;
+   every other conversion collapses the whole line to the blank line the template always had there, so
+   behavioral and `-recurse` csproj output stays byte-identical (CNR is the proof). The block is
+   emitted for EVERY stdlib package, not only validated ones — the `Exists` guard means a package that
+   validates later starts shipping its sheet with no `.csproj` change.
+5. **The release script's "re-emission is a no-op" check is computed, not converted.** After the
+   snapshot and retarget, `push-nuget.ps1` re-derives each green badge from the frozen proof page and
+   compares it to the README byte for byte. That is the same equality a converter re-emission would
+   assert, without a Go toolchain or a 4-minute reconvert in the middle of a release.
+6. **An interim snapshot `docs/validation/1.23.1.2/` was created by hand** (a copy of `current/`, with
+   a README saying so) so the badge links resolve from the day they landed. Every later versioned
+   directory is written by `push-nuget.ps1` at publication.
 
 ### Where the implementation refines the spec above
 

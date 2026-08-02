@@ -386,15 +386,31 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` over-reports
      (vs the real 32; four hand-owned runtime/atomic/debug files joined in r14) and turns the gate into a false clobber alarm.
-  1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
+  1a. **⚠ SEED `version.props` AND `docs/validation` TOO, and MIRROR THE `src/` LAYOUT** (added
+     2026-08-02 with the README validation badges). The badge each package README carries is composed
+     from two REPOSITORY files, not from the conversion: `src/version.props` (the published version
+     that pins the proof URL) and `docs/validation/current/<dot-id>.md` (the matched/disclosed counts).
+     The converter finds both by the same upward walk it uses for `$(go2csPath)` — version.props at the
+     root holding `core/golib`, `docs/` as that root's SIBLING — and emits **no badge line at all**
+     when either is missing, which is a silent, corpus-wide README diff on overlay. So seed
+     `<tmp>/src/core`, `<tmp>/src/version.props` and `<tmp>/docs/validation`, and convert with
+     `-go2cspath <tmp>/src` so the temp root mirrors the repository. (Seeding a versioned
+     `docs/validation/<version>/` is NOT needed — the badge reads `current/`; the versioned directory
+     is only the link target and the `Exists`-guarded pack input.)
+  1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>/src` → output lands in **`<tmp>/src/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
      loading the whole type graph, so **batch** — don't invoke per package).
-  2. Overlay the fresh `.cs` **and `.csproj`** onto `src/core/<pkg>`. Since the trees unified
-     (2026-08-01) the reconvert's paths ARE the repository's paths — a straight copy, no rewriting, no
-     exceptions. A seeded reconvert of the whole stdlib is byte-identical to the committed tree
-     (2518 `.cs`/`.csproj` verified on the consolidation commit), so any diff after an overlay is a real
-     converter change.
+  2. Overlay the fresh `.cs`, **`.csproj` and `README.md`** onto `src/core/<pkg>`. Since the trees
+     unified (2026-08-01) the reconvert's paths ARE the repository's paths — a straight copy, no
+     rewriting, no exceptions. A seeded reconvert of the whole stdlib is byte-identical to the
+     committed tree (2518 `.cs`/`.csproj` verified on the consolidation commit; 300 `README.md` joined
+     the byte-identical set on 2026-08-02), so any diff after an overlay is a real converter change.
+     Two knowns that are NOT: `src/core/README.md` (a root attribution file the converter re-copies —
+     it shows modified with an EMPTY `git diff --numstat`, a pure CRLF phantom; restore it), and
+     `internal/godebug`, whose single Go file is fully hand-owned, so `unmarkedFileCount == 0` makes
+     the driver `continue` before `writeProjectFile` — its `.csproj`, `package_info.cs` **and
+     `README.md`** are hand-owned by consequence and never re-emitted.
   3. Build single packages with **`dotnet build <pkg>.csproj -c Debug`** — `src/core/Directory.Build.props`
      pins `$(go2csPath)` to the src root, so `core\golib` + the `go2cs-gen` analyzer resolve to live source
      with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92 s warm, 303 assemblies).

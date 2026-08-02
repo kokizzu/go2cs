@@ -40,6 +40,14 @@ const ProjectReferenceMarker = ">>MARKER:PROJECT_REFERENCE<<"
 
 const DynamicCastArgMarker = ">>MARKER:DYNAMIC_CAST_ARG<<"
 
+// ValidationPackMarker occupies one whole line of csproj-template.xml and is substituted AFTER the
+// template's printf verbs — like the friend-assembly grant, and for the same reason: a user-supplied
+// `-csproj` template cannot know about the slot, and a 7th verb would append a `%!s(EXTRA ...)`
+// diagnostic into every generated project. A stdlib conversion expands it into the block that packs
+// the package's versioned validation proof sheet as VALIDATION.md; every other conversion replaces it
+// with nothing, collapsing the line to the blank line the template has always had there.
+const ValidationPackMarker = ">>MARKER:VALIDATION_PACK<<"
+
 const MaxSupportedGoVersion = 23
 
 // Define package level variables
@@ -248,6 +256,12 @@ var packageBlankImportForces HashSet[string]
 
 // packageDoc holds the current package's Go doc comment rendered to Markdown, for the NuGet README.
 var packageDoc string
+
+// packageSourceDir holds the directory the current package's Go sources were loaded from — the
+// GOROOT package directory under -stdlib. The README's validation badge needs it to answer the one
+// question the converted output cannot: does this package's Go source define `Test` functions at
+// all? That is what separates an honest "not yet validated" badge from a "none to validate" one.
+var packageSourceDir string
 
 var packageLock = sync.Mutex{}
 

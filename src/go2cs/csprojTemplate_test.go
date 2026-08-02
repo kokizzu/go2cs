@@ -25,19 +25,68 @@ import (
 // test-csproj-template.xml carries `>>MARKER:…<<` placeholders. Both are substituted here exactly
 // as the emitters do, so what is validated is what actually reaches disk.
 
-func TestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
-	// Same substitution as writeProjectFile (main.go, `fmt.Sprintf(string(csprojTemplate), …)`).
+// renderCsprojTemplate applies the same two-stage substitution writeProjectFile does: the printf
+// verbs first, then the post-render markers. validationPack is the stdlib-only VALIDATION.md pack
+// block, which collapses to "" for every other conversion — both forms reach disk, so both are
+// validated here.
+func renderCsprojTemplate(outputType string, reference string, validationPack string) string {
 	contents := fmt.Sprintf(string(csprojTemplate),
-		"Exe",
+		outputType,
 		"go",
 		"TestProject",
 		time.Now().Year(),
 		"false",
-		`    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`,
+		reference,
 	)
+
+	return strings.ReplaceAll(contents, ValidationPackMarker, validationPack)
+}
+
+func TestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
+	contents := renderCsprojTemplate("Exe", `    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`, "")
+
+	if strings.Contains(contents, ">>MARKER:") {
+		t.Fatalf("csproj-template.xml has an unsubstituted marker; update renderCsprojTemplate")
+	}
 
 	if err := assertWellFormedXml(contents); err != nil {
 		t.Fatalf("csproj-template.xml does not emit well-formed XML: %v", err)
+	}
+}
+
+// The VALIDATION.md pack block is built in Go and injected into every converted stdlib .csproj, so a
+// malformed one breaks the whole published corpus at pack time. This is that block, in place.
+func TestCsprojTemplateWithValidationPackEmitsWellFormedXml(t *testing.T) {
+	block := validationPackBlock(`H:\Projects\go2cs\src\core\path\filepath\path.filepath.csproj`, Options{convertStdLib: true})
+
+	if !strings.Contains(block, `path.filepath.md`) {
+		t.Fatalf("the validation pack block does not name the package's proof sheet: %s", block)
+	}
+
+	contents := renderCsprojTemplate("Library", `    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`, block)
+
+	if !strings.Contains(contents, `PackagePath="VALIDATION.md"`) {
+		t.Fatal("the validation pack block was not substituted into the template")
+	}
+
+	if err := assertWellFormedXml(contents); err != nil {
+		t.Fatalf("csproj template with the validation pack block does not emit well-formed XML: %v", err)
+	}
+}
+
+// A non-stdlib conversion must emit the .csproj it always did: the marker's whole line collapses to
+// the blank line the template has always had between the README and source-generator sections.
+// Behavioral-test and -recurse output is byte-compared against goldens, so "no block" is not enough
+// — the surrounding bytes have to be unchanged too.
+func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
+	if block := validationPackBlock(`C:\out\src\Tests\Behavioral\Arrays\Arrays.csproj`, Options{}); block != "" {
+		t.Fatalf("a non-stdlib conversion emitted a validation pack block: %q", block)
+	}
+
+	contents := renderCsprojTemplate("Library", "", "")
+
+	if !strings.Contains(contents, "</ItemGroup>\r\n\r\n  <!-- Expose output of source generators as local files -->") {
+		t.Fatal("collapsing the validation pack marker did not leave the template's original blank line")
 	}
 }
 
@@ -46,14 +95,7 @@ func TestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 // and this guard validates the INSERTED document, the shape that actually reaches disk for every
 // package with build-selected in-package tests.
 func TestCsprojTemplateWithFriendAssemblyAccessEmitsWellFormedXml(t *testing.T) {
-	contents := fmt.Sprintf(string(csprojTemplate),
-		"Exe",
-		"go",
-		"TestProject",
-		time.Now().Year(),
-		"false",
-		`    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`,
-	)
+	contents := renderCsprojTemplate("Exe", `    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`, "")
 
 	contents = insertFriendAssemblyAccess(contents)
 
@@ -99,14 +141,7 @@ func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 func TestProjectReferenceWithXmlSpecialsStaysWellFormed(t *testing.T) {
 	reference := `..\..\pkg\R&D\"lib"\<lib>.csproj`
 
-	escaped := fmt.Sprintf(string(csprojTemplate),
-		"Library",
-		"go",
-		"TestProject",
-		time.Now().Year(),
-		"false",
-		fmt.Sprintf(`    <ProjectReference Include="%s" />`, escapeXMLAttributeValue(reference)),
-	)
+	escaped := renderCsprojTemplate("Library", fmt.Sprintf(`    <ProjectReference Include="%s" />`, escapeXMLAttributeValue(reference)), "")
 
 	if err := assertWellFormedXml(escaped); err != nil {
 		t.Fatalf("an escaped reference path does not emit well-formed XML: %v", err)
@@ -114,14 +149,7 @@ func TestProjectReferenceWithXmlSpecialsStaysWellFormed(t *testing.T) {
 
 	// Negative control: the same path unescaped must NOT parse. Without this the test would pass
 	// even if escapeXMLAttributeValue became the identity function.
-	unescaped := fmt.Sprintf(string(csprojTemplate),
-		"Library",
-		"go",
-		"TestProject",
-		time.Now().Year(),
-		"false",
-		fmt.Sprintf(`    <ProjectReference Include="%s" />`, reference),
-	)
+	unescaped := renderCsprojTemplate("Library", fmt.Sprintf(`    <ProjectReference Include="%s" />`, reference), "")
 
 	if err := assertWellFormedXml(unescaped); err == nil {
 		t.Fatal("an unescaped reference path parsed as well-formed XML, so this guard proves nothing")

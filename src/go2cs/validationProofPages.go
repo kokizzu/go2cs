@@ -28,7 +28,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -42,8 +44,42 @@ const (
 	// the content-stable portion the writer compares before deciding to rewrite.
 	proofProvenancePrefix = "*Validated "
 
+	// proofTotalsFormat is the single authority for the shape of the page's totals line. The
+	// renderer writes it and the README badge emitter reads it back — proofTotalsPattern below is
+	// DERIVED from this very string, so a badge can never claim counts in a shape the page no
+	// longer renders.
+	proofTotalsFormat = "**%d matched · %d disclosed**"
+
 	go2csRepositoryURL = "https://github.com/ritchiecarroll/go2cs"
 )
+
+// proofTotalsPattern matches a rendered totals line, built from proofTotalsFormat by escaping its
+// literal text and turning each %d into a capture group. It is deliberately not anchored at the end:
+// the rendered line continues with the Go version and platform.
+var proofTotalsPattern = regexp.MustCompile(`^` + strings.ReplaceAll(regexp.QuoteMeta(proofTotalsFormat), `%d`, `(\d+)`))
+
+// parseProofTotals recovers the matched and disclosed counts from a rendered proof page. CRs are
+// ignored so a page smudged to CRLF by autocrlf reads the same as freshly rendered text.
+func parseProofTotals(page string) (int, int, bool) {
+	for _, line := range strings.Split(strings.ReplaceAll(page, "\r", ""), "\n") {
+		match := proofTotalsPattern.FindStringSubmatch(line)
+
+		if match == nil {
+			continue
+		}
+
+		matched, matchedErr := strconv.Atoi(match[1])
+		disclosed, disclosedErr := strconv.Atoi(match[2])
+
+		if matchedErr != nil || disclosedErr != nil {
+			continue
+		}
+
+		return matched, disclosed, true
+	}
+
+	return 0, 0, false
+}
 
 // proofPageProvenance carries the page header's non-verdict facts. Date and commit are the volatile
 // pair (stripped before the stability compare); import path, Go version and platform are CONTENT —
@@ -162,7 +198,7 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		fmt.Fprintf(&page, "%s%s*\n\n", proofProvenancePrefix, provenance.date)
 	}
 
-	fmt.Fprintf(&page, "**%d matched · %d disclosed** — Go %s, `%s`, converted package\n",
+	fmt.Fprintf(&page, proofTotalsFormat+" — Go %s, `%s`, converted package\n",
 		len(names)-len(disclosed), len(disclosed), provenance.goVersion, provenance.platform)
 	fmt.Fprintf(&page, "[`src/core/%s`](%s/tree/master/src/core/%s).\n", provenance.importPath, go2csRepositoryURL, provenance.importPath)
 

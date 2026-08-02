@@ -65,7 +65,7 @@
   <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-
+>>MARKER:VALIDATION_PACK<<
   <!-- Expose output of source generators as local files -->
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

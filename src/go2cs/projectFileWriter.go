@@ -113,6 +113,35 @@ func insertFriendAssemblyAccess(projectFileContents string) string {
 	return projectFileContents[:insertAt] + friendItemGroup + projectFileContents[insertAt:]
 }
 
+// validationPackBlock renders the .csproj block that packs a converted stdlib package's versioned
+// validation proof sheet into its .nupkg as VALIDATION.md, or "" for any other conversion.
+//
+// The block is Exists-guarded on BOTH ends of the question: a package that has not validated has no
+// sheet under the versioned directory, and a build outside a repository checkout has no docs tree at
+// all — so the same emitted .csproj is correct for a validated package, an unvalidated one, and a
+// deployed GOPATH runtime root. That is what lets EVERY stdlib project carry the block: a package
+// that validates later starts shipping its sheet with no .csproj change.
+//
+// The path is composed from $(go2csPath) (the src root, pinned by src\core\Directory.Build.props)
+// and the version properties from src\version.props, which that same props file imports — so the
+// sheet a package packs is always the one for the version it is being published as.
+func validationPackBlock(projectFileName string, options Options) string {
+	if !options.convertStdLib {
+		return ""
+	}
+
+	dotID := strings.TrimSuffix(filepath.Base(projectFileName), ".csproj")
+
+	return "\r\n" +
+		"  <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->\r\n" +
+		"  <PropertyGroup>\r\n" +
+		"    <GoValidationProofFile>$(go2csPath)..\\docs\\validation\\$(GoStdLibVersion).$(GoBuildNumber)\\" + dotID + ".md</GoValidationProofFile>\r\n" +
+		"  </PropertyGroup>\r\n" +
+		"  <ItemGroup Condition=\"'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')\">\r\n" +
+		"    <None Include=\"$(GoValidationProofFile)\" Pack=\"true\" PackagePath=\"VALIDATION.md\" Visible=\"false\" />\r\n" +
+		"  </ItemGroup>\r\n"
+}
+
 func writeProjectFile(projectFileName string, projectFileContents string, outputFilePath string, pkg *types.Package, options Options) error {
 	// Get assembly output type from the package details
 	outputType := getAssemblyOutputType(pkg)
@@ -159,6 +188,13 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 			`<ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />`,
 			`<PackageReference Include="go.gen" Version="$(GoStdLibVersion)" PrivateAssets="all" />`))
 	}
+
+	// The published NuGet package carries its own audit sheet: a validated package's versioned
+	// validation proof page is packed as VALIDATION.md, so whoever extracts the .nupkg holds the
+	// per-test differential offline. Only the stdlib self-conversion has a docs/validation tree to
+	// point at, so every other conversion collapses the marker's line back to the blank line the
+	// template has always had there and emits the .csproj it always did.
+	newContents = []byte(strings.ReplaceAll(string(newContents), ValidationPackMarker, validationPackBlock(projectFileName, options)))
 
 	// Extract project references from imports
 	packageInfoMap := getImportPackageInfo(projectImports.Keys(), options)
@@ -271,7 +307,7 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 		if options.convertStdLib {
 			projectName := strings.TrimSuffix(filepath.Base(projectFileName), ".csproj")
 
-			if err := writeReadmeFile(outputFilePath, projectName, packageDoc); err != nil {
+			if err := writeReadmeFile(outputFilePath, projectName, packageDoc, packageSourceDir); err != nil {
 				return fmt.Errorf("failed to write README file for project \"%s\": %s", outputFilePath, err)
 			}
 		}
