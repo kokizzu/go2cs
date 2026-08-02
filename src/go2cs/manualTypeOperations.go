@@ -258,6 +258,12 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"rtype.Implements":   true,
 		"rtype.AssignableTo": true,
 		"methodName":         true,
+		// rtype.String reads a type-descriptor NAME OFFSET into the linker-built name blob
+		// (`t.nameOff(t.Str).Name()`) that a synthesized descriptor never populates, so it
+		// answered "" for EVERY type — silently, since the empty string is a legal name for an
+		// unnamed type. reflect's own rtype.String is already hand-owned over GoReflect.GoTypeName;
+		// this is the same answer for the mini-bridge, so the two can never disagree.
+		"rtype.String": true,
 	},
 	// os.(*File).readdir walks the raw buffer GetFileInformationByHandleEx fills by REINTERPRETING
 	// it as a Go struct — `(*windows.FILE_ID_BOTH_DIR_INFO)(entry)`. That struct is managed-referent

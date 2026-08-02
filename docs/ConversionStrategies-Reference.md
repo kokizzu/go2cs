@@ -10799,6 +10799,41 @@ encoding/gob's init + Encoder/Decoder engines (a struct round-trips end-to-end),
 `TestSerialization` (FileSet through gob, 31/31), internal/fmtsort (3/3). Registered in
 `manualConversionFuncs["reflect"]`; the banked fmtsort/go-token suites are the operational guards.
 
+**The type NAME is a descriptor read too — `reflectlite`'s `rtype.String` (2026-08-02).** The same
+class as the specialization reads above, at its quietest. Go's `rtype.String()` is
+`t.nameOff(t.Str).Name()`: `Str` is a **name offset** into the linker-built name blob, resolved by
+pointer arithmetic from the descriptor's own address. A synthesized descriptor has no blob and no
+`Str`, so the mini-bridge's `String()` answered `""` for every type — and answered it **silently**,
+because `""` is a legal name for an unnamed Go type, so nothing panicked and no read faulted; the
+empty string simply propagated into whatever the caller was building. `context`'s `stringify`
+fallback (the arm for a key type with no `String()` method) printed
+`context.Background.WithValue(, c1k1)` where Go prints
+`context.Background.WithValue(context_test.key1, c1k1)`. That is the failure mode worth recording:
+a descriptor read that cannot be honored does not always throw — this one degraded to a
+plausible-looking empty field, and only a differential caught it.
+
+`reflect`'s own `rtype.String` has been hand-owned over `GoReflect.GoTypeName` since Phase 1; this
+is the identical answer for the mini-bridge (`internal/reflectlite/type_impl.cs`, registered as
+`manualConversionFuncs["internal/reflectlite"]["rtype.String"]`), so the full bridge and the mini
+bridge cannot disagree about what a type is called. Array dims ride along exactly as on the
+`reflect` side — a descriptor that knows its length renders Go's `[N]T` rather than `[]T`. The
+managed nesting supplies the package qualifier: `key1` is declared in class
+`context_test_package`, stamped `[GoPackage("context_test")]`, so `GoQualifiedName` recovers
+`context_test.key1` — including for a `-tests` external test package, whose Go-visible package name
+is the stamp's authority rather than the class name.
+
+**Blast radius, measured rather than assumed:** within `reflectlite` only three call sites reach
+`String()` — `stringify`/`contextName` (the fix), and the `assignTo` and `elem()` **panic
+messages**, which merely become legible. No comparison logic consumes it: `rtype.Name` still
+answers `""` for every type because it gates on `HasName()`, which reads the `TFlagNamed` bit that
+`synthesizeDescriptor` never sets, and the `haveIdenticalType`/`directlyAssignable` chain that
+would consume `Name()` is dead behind the hand-owned `Implements`/`AssignableTo`. `errors` — the
+mini-bridge's other consumer — never reaches `String()` at all (`Comparable`/`Kind`/`Implements`/
+`AssignableTo`/`Elem`/`Set`/`IsNil` only), and re-validates unchanged at 61/61. Demonstrated
+consumer: `context`'s `TestValues`, 36/38 → **37/38** (the remaining failure is `TestAllocs`, the
+measured alloc-count disclosure). `rtype.Name` is the recorded next gap of this shape, deliberately
+NOT fixed without a consumer that demonstrates it.
+
 **Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
 programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
 internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token

@@ -111,6 +111,23 @@
 > the io build the board records as closed; anchor-local records now win, guarded by
 > `TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch`.)
 >
+> **Phase-3 increment 5 (SHIPPED 2026-08-02) — `reflectlite`'s `rtype.String`.** The chip's
+> `context` increment, and the quietest descriptor read yet: `String()` is
+> `t.nameOff(t.Str).Name()`, a **name OFFSET** into the linker-built name blob that a synthesized
+> descriptor never populates — so every `reflectlite.TypeOf(x).String()` in the corpus answered
+> `""`, and answered it **without faulting**, because `""` is a legal name for an unnamed type.
+> `context`'s `stringify` fallback printed `WithValue(, c1k1)` where Go prints
+> `WithValue(context_test.key1, c1k1)`. Bridged in `internal/reflectlite/type_impl.cs` over
+> `GoReflect.GoTypeName` — the same answer `reflect`'s long-hand-owned `rtype.String` and `%T`
+> give, so the full bridge and the mini bridge cannot disagree about a type's name — with array
+> dims threaded as on the `reflect` side. Blast radius is three call sites (the fix plus two panic
+> messages); `rtype.Name` is untouched and still `""` (it gates on the `TFlagNamed` bit
+> `synthesizeDescriptor` never sets), and `errors` never reaches `String()` at all. `context`:
+> 36/38 → **37/38**, leaving only the measured `TestAllocs` alloc-count disclosure its banking
+> commit owns. Full design: ConversionStrategies-Reference *The type NAME is a descriptor read
+> too*. **Recorded next gap of the same shape: `rtype.Name`** — deliberately not fixed without a
+> consumer that demonstrates it.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
 > (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases

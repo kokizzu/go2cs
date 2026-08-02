@@ -185,12 +185,18 @@ and owned elsewhere:
 
 | Test | Root | Owner |
 |:--|:--|:--|
-| `TestValues` | `internal/reflectlite`'s `rtype.String()` is the literal Go conversion — `t.nameOff(t.Str).Name()` over a type-descriptor name offset the managed bridge never populates — so it returns `""`. `reflect`'s equivalent is hand-owned over `GoReflect.GoTypeName` (`type.cs:517` placeholder); reflectlite's mini-bridge only ever landed `Len`/`Swapper`. Symptom: `context.Background.WithValue(, c1k1)` where Go prints `WithValue(context_test.key1, c1k1)` — the `stringify` fallback arm for a key with no `String()` method. | reflection-bridge arc |
+| ~~`TestValues`~~ **CLOSED 2026-08-02** | `internal/reflectlite`'s `rtype.String()` was the literal Go conversion — `t.nameOff(t.Str).Name()` over a type-descriptor name offset the managed bridge never populates — so it returned `""`. Symptom: `context.Background.WithValue(, c1k1)` where Go prints `WithValue(context_test.key1, c1k1)` — the `stringify` fallback arm for a key with no `String()` method. **Fixed by the reflection-bridge chip**: hand-owned in `internal/reflectlite/type_impl.cs` over `GoReflect.GoTypeName`, the same answer `reflect`'s `rtype.String` gives. `TestValues` passes; **context is 37/38**. | reflection-bridge arc (landed) |
 | `TestAllocs` | `testing.AllocsPerRun` unit mismatch, the established `alloc-count-semantics` class (io, strings, bytes). MEASURED before ruling: `Background() allocs = 128.000000 want 0`, `WithValue = 754 want 3`, `WithTimeout(1ns) = 3744 want 12`, `WithCancel = 2104 want 5`, `WithTimeout(5ms) = 4876 want 8` — bytes in every case, so no allocation behavior can satisfy a count assert. A signature-pinned disclosure is warranted; it is deliberately NOT written here, since a disclosure manifest belongs with the banking commit that verifies it end to end. | context's banking arc |
 
-So `context` is **one reflectlite member plus one disclosure away from banking**, with nothing
-context-local left. Note the reflectlite gap is not context-specific: any package whose code path
-reaches `reflectlite.TypeOf(x).String()` gets an empty string today, silently.
+**Update 2026-08-02 — the reflectlite member landed.** The chip hand-owned `rtype.String`, so
+`TestValues` passes and `context` is **37 of 38**, now **one disclosure away from banking** with
+nothing else outstanding: the sole remaining mismatch is `TestAllocs`, whose measured
+bytes-vs-count divergence is recorded above and whose signature-pinned manifest belongs to the
+banking commit that verifies it end to end. The gap was never context-specific — any package whose
+code path reached `reflectlite.TypeOf(x).String()` got an empty string, silently; `context` is
+simply where a differential finally asserted on one. **The next gap of that exact shape is
+`rtype.Name`**, which still answers `""` for every type (it gates on the `TFlagNamed` bit a
+synthesized descriptor never sets); it is deliberately left until a consumer demonstrates it.
 
 ## Build-blocked, each its own root
 
@@ -634,6 +640,26 @@ Two live consumers are named by the reflection arc (§6.1's adapter-type `Kind`/
 and they do NOT overlap: this row removes adapters that were never needed, while the reflection
 chip must still unwrap the ones that genuinely are (`color_PaletteᴠModel`, `syscall_ΔSignalᴠΔSignal`,
 `net_Connᴠ*`). Both are real; neither subsumes the other.
+
+> **⚠ Correction 2026-08-02 (reflection chip, ground-truthed against the code).** The
+> "`GoReflect.KindOf`/`ElementType` still report the ADAPTER class" half of that follow-up **is
+> stale and has been since 2026-07-24**: the unwrap landed in `94b5a1790` ("descriptors classify
+> the Go DYNAMIC type through adapters (R10)"), which is increment 1's own commit —
+> `KindOf` unwraps BOTH adapter shapes (`GoReflect.cs:129`, pointer-sourced → `Pointer`,
+> value-sourced → the wrapped type's kind) and `ElementType` unwraps the pointer-sourced one
+> (`:340`); `KindOf`'s own doc comment states it. Nothing here needs re-doing. This is the §9
+> ground-truth-the-code trap that cost the channels arc nine days — the row outlived its fix.
+>
+> **What genuinely remains is narrower and is a CONSISTENCY defect, not a missing feature:**
+> `ElementType` does not unwrap a **value-sourced** ᴠ-adapter, so for a ᴠ-adapter over a named
+> CONTAINER type — `color_PaletteᴠModel` is exactly one, `color.Palette` being `[]Color` — `KindOf`
+> answers `Slice` while `ElementType` answers `null`. The two are documented to mirror each other
+> and there they disagree: a Slice-kind type whose `Elem()` is invalid. It is latent rather than
+> live because descriptors never carry an adapter class in the first place — `abi.TypeOf` routes
+> through `GoDynamicTypeOf`, which unwraps before `synthType` — so no `reflect.Type.Elem()` reached
+> via `TypeOf` can hit it. Recorded, not fixed in the `rtype.String` increment: it is a separate
+> change with its own gate, and the honest guard for it is a differential over a ᴠ-adapter-held
+> named slice, not an assertion written from this paragraph.
 
 ## Open — intermittent, on an already-banked package
 

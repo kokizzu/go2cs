@@ -1133,6 +1133,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
+
+    [TestMethod]
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]

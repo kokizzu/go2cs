@@ -92,10 +92,15 @@ times in the slog. **Verify branch/blocker state fresh each session** — rememb
    (csv, 2026-07-21). **Remaining = Phase 3, the write-back & call half:** `Value.Set*` /
    addressability, `Value.Call` / `MakeFunc` dynamic invocation (testing/quick), `MakeSlice`/`MakeMap`
    round-trips (encoding/binary, encoding/gob), the `getcallersp` stub (a `PartialStubGenerator`
-   `NotImplementedException` in `runtime`; errors TestAs → `reflect.mustBeAssignableSlow`), and the
-   adapter-type follow-up flagged by R10 — `GoReflect.KindOf`/`ElementType` still report the *adapter
-   class* for `IжAdapter`/ᴠ-adapter types, where `GoTypeName` already unwraps via
-   `TryAdapterWrappedType`. **Blocks: encoding/binary, encoding/gob·json·xml, testing/quick, errors,
+   `NotImplementedException` in `runtime`; errors TestAs → `reflect.mustBeAssignableSlow`). ~~and the
+   adapter-type follow-up flagged by R10~~ — **that half is CLOSED and this text was stale**: the
+   unwrap landed 2026-07-24 in `94b5a1790` (R10, increment 1's own commit), so `KindOf` unwraps both
+   adapter shapes and `ElementType` the pointer-sourced one. All that remains of it is a narrow
+   CONSISTENCY defect — `ElementType` does not unwrap a *value-sourced* ᴠ-adapter, so a ᴠ-adapter
+   over a named container (`color_PaletteᴠModel`) classifies as `Slice` yet answers a null element
+   type — latent, since descriptors never carry an adapter class (`abi.TypeOf` unwraps via
+   `GoDynamicTypeOf` first). Detail + the correction notice: BOARD-next-validation-candidates.md.
+   **Blocks: encoding/binary, encoding/gob·json·xml, testing/quick, errors,
    math/big (#4 below), and any reflect-driven package.** Deep + architectural + multi-session →
    this one does **not** run as an inline sub-agent: it is a **coordinator-spawned independent chip,
    per §6.1.**
@@ -233,7 +238,7 @@ sub-agent, and not up front.
 
 | Arc | Scope | Spawn trigger / state |
 |---|---|---|
-| **Reflection bridge — Phase 3** (Tier-0 #2) | Design doc: `docs/Phase4/DESIGN-reflection-bridge.md`. **Substantially landed via chip increments**: `Value.Set*`, `Value.Convert`, type-relation mirrors, `MakeSlice`/`MakeMap` round-trips, canonical `reflect.Type` — enough that errors, encoding/binary, testing/quick and go/token all validate, and gob's engines RUN. **Remaining surface**: `getcallersp` (io's TestMultiReader*Flatten), `MakeFunc`, the adapter-type `Kind`/`Elem` unwrap, and gob's residues. Same chip owns the remainder; spawn its next increment on the next demonstrated consumer (io or encoding/gob). |
+| **Reflection bridge — Phase 3** (Tier-0 #2) | Design doc: `docs/Phase4/DESIGN-reflection-bridge.md`. **Substantially landed via chip increments**: `Value.Set*`, `Value.Convert`, type-relation mirrors, `MakeSlice`/`MakeMap` round-trips, canonical `reflect.Type` — enough that errors, encoding/binary, testing/quick and go/token all validate, and gob's engines RUN. Increment 4 (2026-07-31) answered `runtime.Callers`/`Frames.Next` natively, retiring the `getcallersp` row; increment 5 (2026-08-02) hand-owned `reflectlite`'s `rtype.String`, taking **`context` to 37/38** — one alloc-count disclosure from banking. **Remaining surface**: `MakeFunc`, gob's residues, and `rtype.Name` (the next descriptor-name gap of increment 5's shape, unfixed for want of a consumer). ~~the adapter-type `Kind`/`Elem` unwrap~~ — **CLOSED; that row was stale from 2026-07-24** (it landed in R10, `94b5a1790`), leaving only a latent `ElementType`-vs-`KindOf` disagreement on value-sourced ᴠ-adapters; see the correction notice in BOARD-next-validation-candidates.md. Same chip owns the remainder; spawn its next increment on the next demonstrated consumer. |
 | **math/big** (Tier-0 #4) | 189 Test funcs; its own campaign. **PREREQUISITE (user, 2026-07-31): rename the `GoUntyped` C# alias first.** `GoUntyped` (= `System.Numerics.BigInteger`, `golib.csproj` `<Using Alias>`) is the ORIGINAL name from before golib's untyped numeric wrapper structs (`UntypedInt`/`UntypedFloat`/…) existed, and now reads as if it were one of them; it is actually the arbitrary-precision carrier for untyped constants exceeding native width. Pick a better name WITH the user at arc start (candidates to seed the discussion: `GoBigConst`, `UntypedBig`, `GoBigValue` — distinct from math/big's own `big.Int` mapping, which this arc adds). Footprint measured 2026-07-31: converter emits it from 5+ `.go` files; **685 corpus files** reference it → converter + golib + one deliberate whole-corpus regen, gated as usual. Doing it BEFORE math/big avoids renaming under a much larger `BigInteger` surface. | After the reflection remainder lands (depends on it through gob/json/xml + testing/quick). |
 
 **Coordinator protocol for spawning one:**

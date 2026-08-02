@@ -64,6 +64,26 @@ partial class reflectlite_package
         return GoReflect.GoImplements(uu, tt);
     }
 
+    // ==== The type NAME (rtype.String) ====
+    // The auto form reads a name OFFSET into the linker-built name blob — `t.nameOff(t.Str).Name()`
+    // — which a synthesized descriptor never populates, so every reflectlite.TypeOf(x).String()
+    // answered "". Silently: "" is a legal name for an unnamed type, so nothing panicked and the
+    // empty string simply propagated into whatever the caller was building (context's `stringify`
+    // fallback printed `WithValue(, c1k1)` where Go prints `WithValue(context_test.key1, c1k1)`).
+    // Answered from the descriptor's carried System.Type through the SAME golib naming that backs
+    // reflect's hand-owned rtype.String and %T, so the full bridge and the mini-bridge cannot
+    // disagree about what a type is called. Array dims ride along as they do on the reflect side —
+    // a descriptor that knows its length renders Go's [N]T rather than []T.
+
+    // String returns the Go source type string (`context_test.key1`, `[]int`, `*T`).
+    internal static @string String(this rtype t)
+    {
+        if (t.Type == nil)
+            return (@string)GoReflect.GoTypeName(null);
+
+        return (@string)GoReflect.GoTypeName(t.Type.Value.sysType, t.Type.Value.arrayDims);
+    }
+
     // sysTypeOfLiteType recovers the managed System.Type a reflectlite Type wrapper describes
     // (the rtype's abi.Type carries it — synthType stamped it).
     private static System.Type? sysTypeOfLiteType(ΔType u)
