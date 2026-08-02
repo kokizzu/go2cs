@@ -126,6 +126,15 @@ With the two above settled, the host reaches **48 pass / 54 · 2 disclosed · 4 
 `os` `runtime_rand` row is the whole of what stands between `io` and a bank. Every remaining verdict
 has a named owner and must be handled by that arc rather than folded into this item.
 
+**BANKED 2026-08-01 (r32 train): `io` validates — 59 matching · 2 disclosed (alloc-count-semantics).**
+The `os.runtime_rand` hand-own landed with the os-roots lane and the four OffsetWriter tests pass; the
+probe fix and the disclosures above did the rest. One standing footprint note: the satisfies-but-never-
+witnessed recorder (r32's converter increment) adds 2 `GoImplement` records to `io`'s production
+`package_info.cs` on every `-tests` regeneration; the committed file predates the recorder and is
+deliberately NOT rebanked (charter: no partial rebanks), so sweeps show that +2 as expected drift —
+restore, don't chase — until the whole-corpus regen levels it, along with the rest of the increment's
+measured 34-file footprint.
+
 ## Build-blocked, each its own root
 
 | Package | First diagnostic | Note |
@@ -134,7 +143,7 @@ has a named owner and must be handled by that arc rather than folded into this i
 | ~~`index/suffixarray`~~ | ~~`CS0206: A non ref-returning property or indexer may not be used as an out or ref value`~~ | **DONE 2026-07-31 — 12/12, banked.** TWO go2cs-gen defects, stacked, both general. `suffixarray_test.go` declares `type index Index` — a defined type over the production struct — and Go gives it `Index`'s field set. (1) `GetStructDeclaration` resolves an underlying struct only from SOURCE, and a real MSBuild `<ProjectReference>` arrives as compiled METADATA, so under the white-box model NO members were forwarded and every `x.sa`/`x.data` was CS1061; a symbol-based fallback now resolves it, forwarding what `IsSymbolAccessibleWithin` permits — Go's exported/unexported rule projected into C#. (2) The forward was a get/set property, i.e. a VALUE, so `x.sa.len()` (a `this ref` receiver) and `&x.sa` could not bind — this row's original CS0206. It is now an `[UnscopedRef]` REF-returning property, a strict superset. Fixing (1) alone collapsed the CS1061 wall onto exactly the CS0206 recorded here: root-cause layering, the first diagnostic moving rather than clearing. Full rule: `docs/ConversionStrategies-Reference.md`, *The forwarded member must be a VARIABLE, and the underlying may be METADATA-ONLY*; guarded by the `DefinedTypeOverForeignStruct` behavioral test (whose A/B reproduces CS1061 and CS0206 separately). ⚠ `TestNew{32,64}/exhaustive3` run ~35 min in C# vs 12.4 s in Go — a performance gap, not a correctness one; `run-validated-sweep.ps1` gives the package a 60m deadline. |
 | ~~`internal/zstd`~~ | ~~`CS1929: 'testing_package.B' … 'Cleanup'`~~ | **DONE 2026-07-27 — 534/534, banked.** The `common` members are on `core/testing`'s `B`; see the retraction below. |
 | ~~`crypto/md5`~~ | ~~`CS0030: Cannot convert type 'System.Type' to 'uint'`~~ | **DONE 2026-07-31 — 11/11 (1 alloc-profile disclosure), banked.** TWO defects, both general. `unsafe.Alignof`/`Offsetof` built their `System.Type` argument by splitting the CONVERTED C# text on `.` as though it were a Go field selector, so `unsafe.Alignof(uint32(0))` emitted `(uint32)0.GetType()` — which C# parses as `(uint32)(0.GetType())`. Both now resolve the operand through `go/types` and emit `typeof(T)`. Behind it stood a second: `buf := buf` in `benchmarkSize` reads a package-level `buf` declared in `md5_test.go`, and the shadowed-global qualifier named the PRODUCTION class (`md5_package.buf`, CS0117) rather than the white-box bridge class that actually declares it. |
-| ~~`path/filepath`~~ | ~~`CS0103: The name 'ßÅælstat' does not exist`~~ | **Build blocker CLOSED 2026-07-31; `FindFirstFile` host-killer CLOSED 2026-08-01 — see below. NOT banked: splits 46 / 61, all 15 remaining on the `os`/`runtime` roots.** |
+| ~~`path/filepath`~~ | ~~`CS0103: The name 'ßÅælstat' does not exist`~~ | **Build blocker CLOSED 2026-07-31; `FindFirstFile` host-killer CLOSED 2026-08-01; BANKED 2026-08-01 (r32 train) at 61 matching — see below.** |
 | ~~`net`~~ | ~~`CS1031: Type expected`~~ | **Syntax cascade CLOSED 2026-07-31 — see below. Still does not compile: 94 SEMANTIC errors stood behind it.** |
 
 ### `path/filepath` — build blocker closed; the FindFirstFile root closed; 46 of 61 match; two runtime roots remain
@@ -193,6 +202,21 @@ over the junction it created): `TestEvalSymlinks`, `TestEvalSymlinksAboveRoot`,
 `throw`). Clearing root 1 should convert most of the fourteen to matching **skips**, exactly as
 predicted — so filepath's remaining distance is entirely `os`/`runtime` work, with nothing
 filepath-local left.
+
+**BANKED 2026-08-01 (r32 train): `path/filepath` validates — 61 matching, 20 of them
+privilege-gated skips agreeing with Go's.** The os-roots lane landed both remaining roots
+(`os.runtime_rand` → the fourteen become matching skips; `runtime.envs` → `gogetenv` works), and
+`TestBug3486` took one ruling on top: `runtime.GOROOT()` has no linker-baked `defaultGOROOT` in a
+converted assembly, so the **pipeline now exports `GOROOT` to both children** (`go test` and the C#
+host — user-ruled 2026-08-01, the run-time-export option over baking a machine path into committed
+host metadata; `testConversion.go`'s `runCommandWithTimeout`). One FOURTH root surfaced only on the
+merged tree — charter §9 layering: with the tempfile and mirror fixes in, `TestNTNamespaceSymlink`
+got far enough to create its junction-to-a-volume-root and then `t.TempDir()` cleanup died
+(`UnauthorizedAccessException`), because the host delegated to .NET's `Directory.Delete(recursive)`,
+which opens some junction targets during its walk. Go's cleanup is `os.RemoveAll`, which removes a
+reparse point AS THE LINK. `core/testing`'s `TempDir` now walks with exactly those semantics
+(reparse points deleted as links, never traversed; read-only cleared and retried) — general for
+every future junction/symlink-creating suite, `os`'s own first among them.
 
 ### `net` — syntax cascade closed; 94 semantic errors remain
 
