@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAllocs",
+      "class": "alloc-count-semantics",
+      "signature": " allocs = ",
+      "reason": "exact-count AllocsPerRun asserts over five context constructors (wants 0/3/12/5/8 mallocs): the managed shim is deliberately byte-derived (no CLR malloc counter), so the four nonzero-count asserts can never agree whatever the allocation behavior - measured 128/754/3744/2104/4876 BYTES for Background/WithValue/WithTimeout/WithCancel/WithTimeout(5ms), and one failing subtest fails the whole test; see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `container/heap` | [`container.heap.md`](current/container.heap.md) | [`src/core/container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/heap) |
 | `container/list` | [`container.list.md`](current/container.list.md) | [`src/core/container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/list) |
 | `container/ring` | [`container.ring.md`](current/container.ring.md) | [`src/core/container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/ring) |
+| `context` | [`context.md`](current/context.md) | [`src/core/context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) |
 | `crypto/hmac` | [`crypto.hmac.md`](current/crypto.hmac.md) | [`src/core/crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) |
 | `crypto/md5` | [`crypto.md5.md`](current/crypto.md5.md) | [`src/core/crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) |
 | `crypto/sha1` | [`crypto.sha1.md`](current/crypto.sha1.md) | [`src/core/crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha1) |

@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **71 / 215 testable packages validated — 33.0%**
+> ### Phase 4 progress: **72 / 215 testable packages validated — 33.5%**
 >
-> **2,496 matching test verdicts · 50 disclosed** *(updated 2026-08-01 — maintained as part of the
+> **2,553 matching test verdicts · 51 disclosed** *(updated 2026-08-02 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -46,6 +46,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/heap) | 7 | | Heap interface over a slice. · [proof](validation/current/container.heap.md) |
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. · [proof](validation/current/container.list.md) |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/container/ring) | 8 | | Circular linked list — a pointer graph. · [proof](validation/current/container.ring.md) |
+| [`context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) | 57 | 1 | Cancellation trees over real channel rendezvous — parent/child propagation, `Done` broadcast, `AfterFunc` registration races, `t.Deadline`-driven tree cancellation, value chains named through the reflectlite bridge; alloc-count disclosure. · [proof](validation/current/context.md) |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. · [proof](validation/current/crypto.hmac.md) |
 | [`crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) | 11 | 1 | MD5 — the golden digest matrix, binary marshal/unmarshal of a half-written state, large-input block handling, and `cryptotest.TestHash`'s stateful-write matrix; alloc-profile disclosure. · [proof](validation/current/crypto.md5.md) |
 | [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. · [proof](validation/current/crypto.sha1.md) |
