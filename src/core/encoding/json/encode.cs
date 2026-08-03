@@ -1025,7 +1025,7 @@ internal static (@string, error) resolveKeyName(reflectꓸValue k) {
 }
 
 internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool escapeHTML)
-    where Bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where Bytes : /* []byte | string */ IByteSeq<Bytes, byte>, new()
 {
     dst = append(dst, (byte)((rune)'"'));
     nint start = 0;
@@ -1085,7 +1085,7 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
         if (n > utf8.UTFMax) {
             n = utf8.UTFMax;
         }
-        var (c, size) = utf8.DecodeRuneInString(new @string(((Bytes)(src[(int)(i)..(int)(i + n)]))));
+        var (c, size) = utf8.DecodeRuneInString(((Bytes)(src[(int)(i)..(int)(i + n)])).ToGoString());
         if (c == utf8.RuneError && size == 1) {
             dst = append(dst, ((Bytes)(src[(int)(start)..(int)(i)])).ꓸꓸꓸ);
             dst = append(dst, ((@string)@"\ufffd"u8).ꓸꓸꓸ);

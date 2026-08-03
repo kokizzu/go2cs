@@ -505,7 +505,7 @@ internal static error errAtoi = errors.New("time: invalid number"u8);
 
 // Duplicates functionality in strconv, but avoids dependency.
 internal static (nint x, error err) atoi<bytes>(bytes s)
-    where bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
     nint x = default!;
     error err = default!;
@@ -984,7 +984,7 @@ internal static @string quote(@string s) {
 
 // isDigit reports whether s[i] is in range and is a decimal digit.
 internal static bool isDigit<bytes>(bytes s, nint i)
-    where bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
     if (len(s) <= i) {
         return false;
@@ -1696,7 +1696,7 @@ internal static bool commaOrPeriod(byte b) {
 internal static readonly @string fractionalSecondˢ = "fractional second"u8;
 
 internal static (nint ns, @string rangeErrString, error err) parseNanoseconds<bytes>(bytes value, nint nbytes)
-    where bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
     nint ns = default!;
     @string rangeErrString = default!;
@@ -1732,7 +1732,7 @@ internal static error errLeadingInt = errors.New("time: bad [0-9]*"u8); // never
 
 // leadingInt consumes the leading [0-9]* from s.
 internal static (uint64 x, bytes rem, error err) leadingInt<bytes>(bytes s)
-    where bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
     uint64 x = default!;
     bytes rem = default!;

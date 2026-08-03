@@ -582,7 +582,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if targetTypeName == "@string" {
 			// Check if it is a generic type parameter - Go will have already
 			// validated constraint, so we can just cast to string directly
-			if _, ok := v.getType(arg, false).(*types.TypeParam); ok {
+			if tp, ok := v.getType(arg, false).(*types.TypeParam); ok {
+				// A `string | []byte` UNION-constrained value takes golib's ToGoString
+				// EXTENSION rather than the @string constructor (bytealg's Rabin-Karp
+				// compares `string(s[i:j]) == string(sep)`). The constructor can only accept
+				// the sequence as an IByteSeq<byte> — C# has no generic constructor — which
+				// boxes the caller's struct on every conversion; the extension takes the
+				// concrete type as its own type parameter, so the argument passes unboxed.
+				// See the matching `[]byte(s)` case below, and golib ByteSeqExtensions.
+				if typeParamIsStringByteUnion(tp) {
+					return fmt.Sprintf("%s.ToGoString()", expr)
+				}
+
 				return fmt.Sprintf("new %s(%s)", targetTypeName, expr)
 			}
 
@@ -1995,16 +2006,19 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// the `[]byte` case.
 	callExprContext.sourceIsRuneArray = funcTypeName == "[]rune" || funcTypeName == "[]byte"
 
-	// A `[]byte(s)` conversion of a `string | []byte` union-constrained value (rendered
-	// IByteSeq<byte> at lambda params — time format_rfc3339's parseUint): the usual route
-	// binds golib's slice<T>(T[])/slice(@string) builtins, neither of which accepts the
-	// interface — and ADDING a builtin IByteSeq overload makes @string args ambiguous
-	// (CS0121, both conversions applicable). Emit the slice<byte>(IByteSeq<byte>)
-	// CONSTRUCTOR directly: for the interface-typed arg only it is applicable, sharing a
-	// boxed slice's backing and copying a string — Go's per-instantiation semantics.
+	// A `[]byte(s)` conversion of a `string | []byte` union-constrained value (time
+	// format_rfc3339's parseUint ranges `[]byte(s)`): the usual route binds golib's
+	// slice<T>(T[])/slice(@string) builtins, neither of which accepts a value of the
+	// constrained type parameter — and ADDING a builtin IByteSeq overload makes @string args
+	// ambiguous (CS0121, both conversions applicable). Emit golib's ToSlice EXTENSION: it takes
+	// the caller's CONCRETE type as its own type parameter, so the argument passes unboxed, and
+	// it keeps Go's per-instantiation semantics (a slice source shares its backing, a string
+	// source copies). A constructor cannot do this — C# has no generic constructor, so
+	// `new slice<byte>(seq)` can only accept the interface, which boxes; and a static factory
+	// cannot be named, because `using static go.builtin` shadows `slice` with a method (CS0119).
 	if funcTypeName == "[]byte" && len(callExpr.Args) == 1 {
 		if tp, ok := types.Unalias(v.getType(callExpr.Args[0], false)).(*types.TypeParam); ok && typeParamIsStringByteUnion(tp) {
-			return fmt.Sprintf("new slice<byte>(%s)", v.convExpr(callExpr.Args[0], nil))
+			return fmt.Sprintf("%s.ToSlice()", v.convExpr(callExpr.Args[0], nil))
 		}
 	}
 

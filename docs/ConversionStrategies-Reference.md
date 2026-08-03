@@ -5659,16 +5659,36 @@ behavioral test — generic `isNaN`/`less`/`eq` legs over `float64`/`float32`/`c
 `complex64`, boxed-`any` NaN equality, and a NaN-aware interface sort, values vs Go.)
 
 ### The `string | []byte` union
-C# generic constraints are conjunctive ("and"), so they cannot express Go's `string | []byte` union directly. The two members share no operators (the union is neither comparable nor additive), so a conforming body may only use the read operations common to both — indexing, `len`, and sub-slicing. These are captured by the golib read-only byte-sequence interface [`IByteSeq<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/IByteSeq.cs), which both `@string` (as `IByteSeq<byte>`) and `slice<T>` implement; the converter emits it for the union and suppresses the (spurious) lifted operator constraints:
+C# generic constraints are conjunctive ("and"), so they cannot express Go's `string | []byte` union directly. The two members share no operators (the union is neither comparable nor additive), so a conforming body may only use the read operations common to both — indexing, `len`, and sub-slicing. These are captured by the golib read-only byte-sequence interface [`IByteSeq`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/IByteSeq.cs), which both `@string` and `slice<T>` implement; the converter emits it for the union and suppresses the (spurious) lifted operator constraints:
 ```go
 func HashStr[T string | []byte](sep T) uint32 { /* uses sep[i], len(sep) */ }
 ```
 ```csharp
 public static uint32 HashStr<T>(T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 { /* … */ }
 ```
-A sub-slice of a constrained value is itself an `IByteSeq<byte>`, and Go's `string(s[lo:hi])` becomes `new @string(s[lo..hi])` via an `@string(IByteSeq<byte>)` constructor. `len` resolves through a generic `len<T>(IByteSeq<T>)` overload that is dispreferred for concrete `slice<byte>`/`@string` arguments, so existing call sites keep their specific overloads (no ambiguity). The behavioral test `StringByteUnionConstraint` exercises both the `string` and `[]byte` instantiations.
+The constraint is **self-referential** — the C# rendering of the CRTP shape, `IByteSeq<TSelf, T> : IByteSeq<T> where TSelf : IByteSeq<TSelf, T>`, instantiated at the type parameter itself. `@string` implements `IByteSeq<@string, byte>` and `slice<T>` implements `IByteSeq<slice<T>, T>`, so the sub-slice indexer returns the **concrete** sequence type rather than the interface. That extra type parameter exists purely to keep the union allocation-free (next subsection).
+
+`len` resolves through a `len<TSeq>(TSeq) where TSeq : IByteSeq` overload that is dispreferred for concrete `slice<byte>`/`@string` arguments, so existing call sites keep their specific overloads (no ambiguity). Go's `[]byte(s)` and `string(s)` over a constrained value render as the golib extensions `s.ToSlice()` and `s.ToGoString()`, each generic over the caller's concrete type; both preserve Go's per-instantiation semantics exactly (`[]byte([]byte)` shares its backing, `[]byte(string)` copies, `string(string)` is free, `string([]byte)` copies). The behavioral test `StringByteUnionConstraint` exercises both the `string` and `[]byte` instantiations across all of these.
+
+#### Allocation-free union-constrained bodies
+The interface was originally single-parameter (`IByteSeq<T>`) with an `IByteSeq<T> this[Range]` sub-slice indexer. Every member whose signature named the sequence type therefore forced a **box**, and Go bodies over this union sub-slice constantly:
+
+| Emitted shape | Boxed | Why |
+|:--|--:|:--|
+| `((bytes)(s[a..b]))` | 48 B (`slice<byte>`) / 24 B (`@string`) | the range indexer returned the INTERFACE, so the struct result was boxed — and the cast then unboxed it |
+| `len(s)` | one box per call | the overload took `IByteSeq<T>`, an interface parameter |
+| `new slice<byte>(s)` — Go's `[]byte(s)` | one box per call | the constructor took `IByteSeq<T>` |
+| `new @string(s)` — Go's `string(s)` | one box per call | the constructor took `IByteSeq<byte>` |
+
+A `parseRFC3339`-shaped body (seven sub-slices, eight `len` calls, six `[]byte(s)` conversions per parse) measured **720 B/parse** on the `slice<byte>` instantiation and **776 B/parse** on `@string` — for Go code that allocates nothing. The remedy is one idea applied four times: *never name the sequence type as an interface in a signature a generic body reaches*.
+
+- **Sub-slicing** moves to the self-referential `TSelf this[Range]`. Both implementers' public range indexers already return their own type, so this is satisfied implicitly, and the call becomes a `constrained.` direct dispatch on the value type. The converter's `((bytes)(…))` cast survives as a no-op identity conversion.
+- **`len`** takes the constrained type parameter (`len<TSeq>(TSeq) where TSeq : IByteSeq`) instead of the interface.
+- **`[]byte(s)` / `string(s)`** become the `ToSlice`/`ToGoString` **extension methods** rather than constructors. C# has no generic constructor, so a constructor can only accept the interface; and a static factory cannot even be *named* here, because converted code carries `using static go.builtin`, which shadows the `slice` and `@string` type names with the builtin conversion methods (`slice<byte>.From(s)` is CS0119 — "is a method, which is not valid in the given context"). An extension call is member access on the receiver, so it sidesteps both problems. Each folds `typeof(TSeq) == typeof(…)` to a per-instantiation constant, so the sharing case reduces to a field copy.
+
+Measured after: **0 B/parse** on `slice<byte>`, and 776 → 416 B/parse on `@string` (what remains there is the `byte[]` each `[]byte(string)` conversion must materialize — Go copies too). Guarded by GolibTests `ByteSeqAllocationTests`, which asserts the measured bytes and carries a deliberately-boxed control that must still report the old 720 B/parse. That control pins its box behind a `[MethodImpl(NoInlining)]` boundary on purpose: the JIT elides a box/unbox pair written adjacently in one method, so an inline control would report 384 B/parse and understate what the redesign is worth. The real interface indexer boxed inside a callee and returned, which is why the cost was really paid.
 
 ### Explicit type arguments come from the callee's instantiation
 A generic function's explicit type arguments are read from the CALLEE's resolved instantiation (`info.Instances`), not from the RESULT type's arguments -- the two lists differ whenever the callee has more type parameters than the result names. reflect's `rangeNum[T, N](num N) iter.Seq[T]` called `rangeNum[int8](v)`: the result `Seq[T]` carries ONE argument where the method needs TWO (CS0305). The result's own arguments still gate *whether* to emit, so a generic callee returning a plain named type keeps C# inference:
@@ -5713,7 +5733,7 @@ The golib `uintptr` struct declares the full generic-math interface set the lift
 > **Latent gap ([banked](Glossary.md#banked)):** generated `[GoType("num:*")]` wrapper structs do NOT yet declare the generic-math interfaces -- a NAMED numeric wrapper used as a union-generic type argument would CS0315. No corpus site hits this yet.
 
 ### Union-constrained sub-slices cast back to the type parameter
-A sub-slice of a `string | []byte` union-constrained value goes through the `IByteSeq<byte>` Range indexer, which returns the INTERFACE -- but Go types the result as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339, CS0266/CS0310/CS0029). The emission wraps the range forms in the explicit interface-to-type-parameter conversion -- a runtime-checked unbox that shares backing for the `[]byte` instantiation:
+A sub-slice of a `string | []byte` union-constrained value is typed by Go as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339, CS0266/CS0310/CS0029 before the cast landed). The emission wraps the range forms in an explicit conversion to the type parameter:
 ```csharp
 return parse(((T)(s[0..2]))) + parse(((T)(s[3..5])));
 ```
@@ -5721,6 +5741,8 @@ Func-literal parameters typed as the union type parameter render as the paramete
 ```csharp
 var parse = (T part) => {
 ```
+Since the constraint became self-referential (`IByteSeq<T, byte>`, above), the Range indexer returns `T` directly, so this cast is an **identity conversion that emits no IL** — it was a runtime-checked unbox of a boxed struct when the indexer returned the interface. The emission is kept because it names the type Go gives the expression; it no longer costs anything.
+
 Guarded by `StringByteUnionConstraint` (`trimHead`/`headSum`; `digitSum`).
 
 ### Spreading a union-constrained value
@@ -11205,20 +11227,24 @@ comparable*. `time`'s `TestUnmarshalTextAllocations` (`got 3784 allocs, want 0`)
 bytes/run** for `Time.UnmarshalText`, and profiling `parseRFC3339` — where nearly all of it lives —
 attributes it to two shapes, both in shared machinery and both removable:
 
-| Shape | Cost | Why |
-|:--|--:|:--|
-| `s[a:b]` on a `string \| []byte`-constrained value | 48 B each | `IByteSeq<T>`'s range indexer returns the **interface**, so the `@string`/`slice<byte>` struct result is boxed |
-| `[]byte(s)` on the same (`new slice<byte>(sΔ1)`) | 48 B each | boxes the type-parameter value again to reach the interface |
-| `for i, c := range s` over a `slice<T>` | **136 B, fixed** | the range enumerator allocates once per loop, independent of length; the indexed form allocates **0** |
+| Shape | Cost | Why | Status |
+|:--|--:|:--|:--|
+| `s[a:b]` on a `string \| []byte`-constrained value | 48 B each | `IByteSeq<T>`'s range indexer returned the **interface**, so the `@string`/`slice<byte>` struct result was boxed | **fixed** — self-referential `IByteSeq<TSelf, T>` |
+| `[]byte(s)` on the same (`new slice<byte>(sΔ1)`) | 48 B each | boxed the type-parameter value again to reach the interface | **fixed** — `ToSlice` extension |
+| `len(s)` on the same | 48 B each | the `len<T>(IByteSeq<T>)` overload took an interface parameter | **fixed** — `len<TSeq>(TSeq) where TSeq : IByteSeq` |
+| `for i, c := range s` over a `slice<T>` | **136 B, fixed** | the range enumerator allocated once per loop, independent of length; the indexed form allocates **0** | **fixed** — struct enumerator |
 
 Six `parseUint` calls at ~232 B each, the closure and delegate for `parseUint` itself (112 B), the
-fractional-second scan (~1728 B in the same shapes) and `Date` (~240 B) account for the total. None of
-it is CLR-necessary: Go monomorphizes the union-constrained generic and stack-allocates all of it, and
-nothing here is boxing that a managed model *must* do — it is boxing that the current `IByteSeq`
-modeling and range lowering happen to do. **So this row is performance work, not a disclosure
+fractional-second scan (~1728 B in the same shapes) and `Date` (~240 B) accounted for the total. None of
+it was CLR-necessary: Go monomorphizes the union-constrained generic and stack-allocates all of it, and
+nothing here was boxing that a managed model *must* do — it was boxing that the `IByteSeq`
+modeling and range lowering happened to do. **So this row was performance work, not a disclosure
 candidate** (a disclosure is only for asserts the CLR provably cannot satisfy — see the campaign
-charter §5), and the 136-byte range enumerator is worth its own look because every converted
-`for i, v := range s` in the corpus pays it.
+charter §5), and it was resolved as such: the range enumerator became a struct (every converted
+`for i, v := range s` in the corpus had been paying it), and the union-constraint boxing was removed
+wholesale by the self-referential redesign described under
+[Allocation-free union-constrained bodies](#allocation-free-union-constrained-bodies) — a
+`parseRFC3339`-shaped body over `slice<byte>` measures **0 B/parse** where it measured 720.
 
 **The disclosed-divergence manifest (2026-07-18 ruling — implemented).** These provably
 unsatisfiable divergences are disclosed at TEST level, extending the declaration-level

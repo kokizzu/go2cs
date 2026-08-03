@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using go.golib;
 
@@ -37,7 +38,7 @@ public readonly struct @string :
     ICloneable, 
     IComparisonOperators<@string, @string, bool>,
     IAdditionOperators<@string, @string, @string>,
-    IByteSeq<byte>
+    IByteSeq<@string, byte>
 {
     internal readonly byte[] m_value;
 
@@ -131,12 +132,17 @@ public readonly struct @string :
     // (slice<byte> != string) and put a ref-struct-convertible value into tuples.
     public @string this[Range range] => new(new slice<byte>(Bytes, range.Start.GetOffset(Bytes.Length), range.End.GetOffset(Bytes.Length)));
 
-    // IByteSeq<byte> — models Go's `string | []byte` union constraint. The byte indexer
-    // (this[nint]) implicitly implements IByteSeq<byte>.this[nint]; Length (int) and the
-    // @string range indexer need explicit forms to match the interface's nint/IByteSeq types.
+    // IByteSeq<@string, byte> — models Go's `string | []byte` union constraint. The byte indexer
+    // (this[nint]) implicitly implements IByteSeq<byte>.this[nint], and the @string range indexer
+    // above implicitly implements IByteSeq<@string, byte>.this[Range] — self-referential, so a
+    // generic body's sub-slice stays an @string instead of boxing into the interface. Only Length
+    // needs an explicit form, to widen @string's int Length to the interface's nint.
     nint IByteSeq.Length => Bytes.Length;
 
-    IByteSeq<byte> IByteSeq<byte>.this[Range range] => this[range];
+    // Null-safe backing array, exposed to ByteSeqExtensions.ToGoString so its `string(s)` fast
+    // path can hand the bytes straight to the result instead of copying them. Safe to share
+    // because @string is immutable — the same thing @string's own copy constructor does.
+    internal byte[] BackingBytes => Bytes;
 
     public slice<byte> Slice(int start, int length)
     {

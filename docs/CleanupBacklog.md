@@ -45,14 +45,26 @@
    **Successor item:** `array<T>.GetEnumerator()` is the identical iterator-method shape and was
    deliberately left alone — Go's `range` over an array value ranges a COPY, so the eager-vs-lazy
    capture point is a semantic question there, not a mechanical one. Wants its own measured change.
-7. **`IByteSeq<T>` interface-boxing — PROMOTED (user-ruled 2026-08-02): gates `time`'s bank.**
-   The range indexer returns the interface so every `s[a:b]` boxes (48 B), and `[]byte(s)` boxes
-   again — now the WHOLE remaining share of `time.TestUnmarshalTextAllocations` (item 6 removed the
-   six range loops' worth; measured remainder 2,728 B/run, all in this seam).
-   `TestUnmarshalTextAllocations` wants ZERO allocations and the user ruled NO disclosure — a
-   want-zero is satisfiable, so softening it would spend the credibility the badges exist to earn.
-   The self-referential-generic redesign of the converter-emitted union-constraint interface is
-   therefore on `time`'s critical path, not idle-point work.
+7. ~~**`IByteSeq<T>` interface-boxing**~~ — **DONE (r38-ibyteseq, 2026-08-03).** The constraint is now
+   self-referential (`IByteSeq<TSelf, T> : IByteSeq<T> where TSelf : IByteSeq<TSelf, T>`, emitted as
+   `where bytes : IByteSeq<bytes, byte>`), so the sub-slice indexer returns the CONCRETE type and
+   `s[a:b]` no longer boxes; `len` takes the constrained type parameter instead of the interface; and
+   `[]byte(s)`/`string(s)` became the `ToSlice`/`ToGoString` extensions, which take the caller's
+   concrete type (a constructor cannot — C# has no generic constructor — and a static factory cannot
+   even be named, because `using static go.builtin` shadows the `slice`/`@string` type names).
+   A `parseRFC3339`-shaped body over `slice<byte>` went **720 → 0 B/parse**; `@string` went 776 → 416
+   (what remains is the `byte[]` Go's `[]byte(string)` copies too). Guarded by GolibTests
+   `ByteSeqAllocationTests` with a `NoInlining`-pinned boxed control that must still read 720.
+   A/B footprint was 4 corpus files (10 constraint lines + 6 conversion sites) and one behavioral
+   golden. **Owed:** the real `time.TestUnmarshalTextAllocations` confirmation — the seam is proven
+   zero-allocation in isolation, but the 2,728 B/run figure was measured through the whole
+   `Time.UnmarshalText` chain, so the residue beyond `parseRFC3339` is unmeasured. The `time`
+   pipeline was fenced to another lane; run it on the coordinator's train.
+   **Successor item:** the converter still wraps every union sub-slice in `((bytes)(…))`, which is now
+   an identity conversion emitting no IL. It is pure noise in the rendering and `s = s[19..]` would
+   match the Go exactly; removing it means restructuring the `typeParamIsStringByteUnion` branch in
+   `convSliceExpr.go` (the branch also selects the range-indexer emission, so it cannot just be
+   dropped). Cosmetic only — deliberately not taken on an allocation-scoped lane.
 
 ## Test host / pipeline
 

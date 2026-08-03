@@ -82,7 +82,7 @@ internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte
 }
 
 internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡlocal)
-    where bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
     ref var local = ref Ꮡlocal.Value;
 
@@ -93,7 +93,7 @@ internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡloca
     var ok = true;
     var parseUint = (bytes sΔ1, nint minΔ1, nint max) => {
         nint x = default!;
-        foreach (var (_, c) in new slice<byte>(sΔ1)) {
+        foreach (var (_, c) in sΔ1.ToSlice()) {
             if (c < (rune)'0' || (rune)'9' < c) {
                 ok = false;
                 return minΔ1;

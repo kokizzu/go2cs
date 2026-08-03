@@ -5,7 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 internal static uint32 byteSum<T>(T s)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     uint32 h = default!;
     for (nint i = 0; i < len(s); i++) {
@@ -15,13 +15,13 @@ internal static uint32 byteSum<T>(T s)
 }
 
 internal static bool prefixMatch<T>(T s, T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     nint n = len(sep);
     if (len(s) < n) {
         return false;
     }
-    return new @string(((T)(s[..(int)(n)]))) == new @string(sep);
+    return ((T)(s[..(int)(n)])).ToGoString() == sep.ToGoString();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -64,11 +64,11 @@ internal static void Main() {
 }
 
 internal static nint digitSum<T>(T s)
-    where T : /* []byte | string */ IByteSeq<byte>, new()
+    where T : /* []byte | string */ IByteSeq<T, byte>, new()
 {
     var parse = (T part) => {
         nint n = 0;
-        foreach (var (_, c) in new slice<byte>(part)) {
+        foreach (var (_, c) in part.ToSlice()) {
             n = n * 10 + (nint)(c - (rune)'0');
         }
         return n;
@@ -77,7 +77,7 @@ internal static nint digitSum<T>(T s)
 }
 
 internal static T trimHead<T>(T s, nint n)
-    where T : /* []byte | string */ IByteSeq<byte>, new()
+    where T : /* []byte | string */ IByteSeq<T, byte>, new()
 {
     for (nint i = 0; i < n; i++) {
         if (len(s) > 1) {
@@ -88,19 +88,19 @@ internal static T trimHead<T>(T s, nint n)
 }
 
 internal static nint headSum<T>(T s)
-    where T : /* []byte | string */ IByteSeq<byte>, new()
+    where T : /* []byte | string */ IByteSeq<T, byte>, new()
 {
     return digitSum(trimHead(s, 1));
 }
 
 internal static byte lastByte<T>(T s)
-    where T : /* []byte | string */ IByteSeq<byte>, new()
+    where T : /* []byte | string */ IByteSeq<T, byte>, new()
 {
     return s[len(s) - 1];
 }
 
 internal static slice<byte> appendRun<Bytes>(slice<byte> dst, Bytes src)
-    where Bytes : /* []byte | string */ IByteSeq<byte>, new()
+    where Bytes : /* []byte | string */ IByteSeq<Bytes, byte>, new()
 {
     dst = append(dst, (byte)((rune)'['));
     if (len(src) > 1) {

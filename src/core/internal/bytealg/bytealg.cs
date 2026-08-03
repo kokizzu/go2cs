@@ -30,7 +30,7 @@ public static UntypedInt PrimeRK => 16777619;
 // HashStr returns the hash and the appropriate multiplicative
 // factor for use in Rabin-Karp algorithm.
 public static (uint32, uint32) HashStr<T>(T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     var hash = (uint32)0;
     for (nint i = 0; i < len(sep); i++) {
@@ -50,7 +50,7 @@ public static (uint32, uint32) HashStr<T>(T sep)
 // HashStrRev returns the hash of the reverse of sep and the
 // appropriate multiplicative factor for use in Rabin-Karp algorithm.
 public static (uint32, uint32) HashStrRev<T>(T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     var hash = (uint32)0;
     for (nint i = len(sep) - 1; i >= 0; i--) {
@@ -70,7 +70,7 @@ public static (uint32, uint32) HashStrRev<T>(T sep)
 // IndexRabinKarp uses the Rabin-Karp search algorithm to return the index of the
 // first occurrence of sep in s, or -1 if not present.
 public static nint IndexRabinKarp<T>(T s, T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     // Rabin-Karp search
     var (hashss, pow) = HashStr(sep);
@@ -79,7 +79,7 @@ public static nint IndexRabinKarp<T>(T s, T sep)
     for (nint i = 0; i < n; i++) {
         h = h * (uint32)PrimeRK + (uint32)s[i];
     }
-    if (h == hashss && new @string(((T)(s[..(int)(n)]))) == new @string(sep)) {
+    if (h == hashss && ((T)(s[..(int)(n)])).ToGoString() == sep.ToGoString()) {
         return 0;
     }
     for (nint i = n; i < len(s); ) {
@@ -87,7 +87,7 @@ public static nint IndexRabinKarp<T>(T s, T sep)
         h += (uint32)s[i];
         h -= pow * (uint32)s[i - n];
         i++;
-        if (h == hashss && new @string(((T)(s[(int)(i - n)..(int)(i)]))) == new @string(sep)) {
+        if (h == hashss && ((T)(s[(int)(i - n)..(int)(i)])).ToGoString() == sep.ToGoString()) {
             return i - n;
         }
     }
@@ -97,7 +97,7 @@ public static nint IndexRabinKarp<T>(T s, T sep)
 // LastIndexRabinKarp uses the Rabin-Karp search algorithm to return the last index of the
 // occurrence of sep in s, or -1 if not present.
 public static nint LastIndexRabinKarp<T>(T s, T sep)
-    where T : /* string | []byte */ IByteSeq<byte>, new()
+    where T : /* string | []byte */ IByteSeq<T, byte>, new()
 {
     // Rabin-Karp search from the end of the string
     var (hashss, pow) = HashStrRev(sep);
@@ -107,14 +107,14 @@ public static nint LastIndexRabinKarp<T>(T s, T sep)
     for (nint i = len(s) - 1; i >= last; i--) {
         h = h * (uint32)PrimeRK + (uint32)s[i];
     }
-    if (h == hashss && new @string(((T)(s[(int)(last)..]))) == new @string(sep)) {
+    if (h == hashss && ((T)(s[(int)(last)..])).ToGoString() == sep.ToGoString()) {
         return last;
     }
     for (nint i = last - 1; i >= 0; i--) {
         h *= PrimeRK;
         h += (uint32)s[i];
         h -= pow * (uint32)s[i + n];
-        if (h == hashss && new @string(((T)(s[(int)(i)..(int)(i + n)]))) == new @string(sep)) {
+        if (h == hashss && ((T)(s[(int)(i)..(int)(i + n)])).ToGoString() == sep.ToGoString()) {
             return i;
         }
     }

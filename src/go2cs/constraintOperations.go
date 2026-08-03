@@ -1106,9 +1106,12 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 				// (`ISlice<byte | string>` — CS1003 cascade, time/format.go's appendNano family).
 				if constraintExpr == "string|[]byte" || constraintExpr == "[]byte|string" {
 					// Go's `string | []byte` union — emit the read-only byte-sequence interface
-					// both @string and slice<byte> implement (IByteSeq<byte>); C# cannot express
-					// the "or" directly. See golib IByteSeq.
-					typeConstraint = "IByteSeq<byte>"
+					// both @string and slice<byte> implement; C# cannot express the "or" directly.
+					// SELF-REFERENTIAL in the type parameter (`IByteSeq<bytes, byte>`, the CRTP
+					// shape) so the sub-slice indexer returns the type parameter ITSELF: Go bodies
+					// sub-slice these values constantly, and an interface-typed sub-slice result
+					// boxed the concrete struct on every one. See golib IByteSeq.
+					typeConstraint = fmt.Sprintf("IByteSeq<%s, byte>", typeParamNames[i])
 					suppressLiftedConstraints = true
 				} else if strings.HasPrefix(constraintExpr, "[]") {
 					// Handle slice via ISlice interface. ISliceWrap supplies the S-preserving factory:

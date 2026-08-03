@@ -13,6 +13,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using go.golib;
 
 namespace go;
@@ -51,7 +52,7 @@ public interface ISlice<T> : IArray<T>, ISlice
 // option in the future, at least for slices that are private and used with internal package functions only.
 
 [Serializable]
-public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquatable<ISlice>, IEquatable<IArray>, ISupportMake<slice<T>>, ISliceWrap<slice<T>, T>, IByteSeq<T>
+public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquatable<ISlice>, IEquatable<IArray>, ISupportMake<slice<T>>, ISliceWrap<slice<T>, T>, IByteSeq<slice<T>, T>
 {
     internal readonly T[] m_array;
     private readonly nint m_low;
@@ -652,12 +653,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     ISlice<T> ISlice<T>.this[Range range] => this[range];
 
-    // IByteSeq<T> — models Go's `string | []byte` union constraint. Length implicitly implements
-    // IByteSeq.Length; the element indexer needs an explicit by-value form (slice<T>'s is ref T),
-    // and the range indexer an explicit IByteSeq<T> form (slice<T>'s returns slice<T>).
+    // IByteSeq<slice<T>, T> — models Go's `string | []byte` union constraint. Length implicitly
+    // implements IByteSeq.Length, and the public slice<T> range indexer implicitly implements the
+    // self-referential IByteSeq<slice<T>, T>.this[Range] — so a generic body's sub-slice stays a
+    // slice<T> instead of boxing into the interface. Only the element indexer needs an explicit
+    // form, to expose slice<T>'s `ref T` indexer as the interface's by-value read.
     T IByteSeq<T>.this[nint index] => this[index];
-
-    IByteSeq<T> IByteSeq<T>.this[Range range] => this[range];
 
     ISlice<T> ISlice<T>.Slice(int start, int length) => Slice(start, length);
 

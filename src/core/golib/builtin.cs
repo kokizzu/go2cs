@@ -1307,8 +1307,14 @@ public static partial class builtin
     /// Generic so it is only selected for an IByteSeq-constrained type parameter — overload resolution
     /// prefers the non-generic len overloads for a concrete slice/string, avoiding ambiguity with
     /// len(ISlice)/len(@string) when the argument also implements those interfaces.
+    /// <para>
+    /// The sequence is taken as the CONSTRAINED type parameter, not as the IByteSeq interface: an
+    /// interface parameter boxes the caller's struct on every call, and `len(s)` sits in the loop
+    /// condition of every union-constrained body (time's parseRFC3339 reaches it eight times per
+    /// parse). Constrained like this, the call is a `constrained.` direct dispatch on the value type.
+    /// </para>
     /// </remarks>
-    public static nint len<T>(IByteSeq<T> seq)
+    public static nint len<TSeq>(TSeq seq) where TSeq : IByteSeq
     {
         return seq.Length;
     }
