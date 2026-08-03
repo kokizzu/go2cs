@@ -2762,11 +2762,11 @@ func referenceScanTargets(line string) []string {
 // DECLARATIONS of the types the compilation NAMES — a class of dependency neither the import lists
 // nor the B2c alias scan can see.
 //
-// One rule: binding a converted type in C# requires the assemblies of the types that type's OWN
-// declaration names, and those names belong to the DECLARING package's import graph, so they appear
-// in NO test-file import and NO alias `using`. The import-derived + alias-scan set (B2c) misses
-// them, `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and
-// the test compile fails CS0012. Two declaration edges carry it:
+// One rule: binding something in C# requires the assemblies of the types ITS OWN declaration names,
+// and those names belong to the DECLARING package's import graph, so they appear in NO test-file
+// import and NO alias `using`. The import-derived + alias-scan set (B2c) misses them,
+// `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and the test
+// compile fails CS0012. Three edges carry it — two on a TYPE's declaration, one on an ACCESS:
 //
 //   - INTERFACE BASES. Go interfaces satisfy structurally and compose by embedding; C# interfaces
 //     are nominal, so the converter carries both shapes as C# inheritance at the declaration site
@@ -2786,8 +2786,15 @@ func referenceScanTargets(line string) []string {
 //     `new quick.Config(MaxCountScale: 10D)` expression, with math/rand in no import list on either
 //     side. No interface closure can reach it — `Rand` is a STRUCT.
 //
+//   - THE RECEIVER OF A MEMBER ACCESS. Resolving `x.M` requires binding x's TYPE, and when x is
+//     declared in another package that type is spelled nowhere here. `unique`'s white-box suite calls
+//     `cleanupMu.Lock()` on the production package's `var cleanupMu sync.Mutex`; the test project
+//     referenced no `sync` and the compile died `CS0012 … 'sync_package.Mutex'` twice, so the package
+//     never linked a host and had never been measured. See the seed's own minimality note below.
+//
 // Neither scan covers these because the named type itself DOES bind: its package IS referenced.
-// What is missing is a package named inside that type's own C# declaration.
+// What is missing is a package named inside that type's own C# declaration — or, for the third edge,
+// the type of a value the compilation only ever reaches THROUGH a declaration in another package.
 //
 // MINIMALITY — three gates, because over-including is its own defect (every extra reference is
 // churn across the banked corpus and a chance at a duplicate-type conflict):
@@ -2852,13 +2859,24 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 		queue = append(queue, named)
 	}
 
-	// reach records the assembly a named type the compilation must BIND lives in. Seeds never go
-	// through it — their packages are already referenced by construction; only a package named by
-	// a walked DECLARATION is an addition.
+	// reach records the assembly a named type the compilation must BIND lives in. TYPE seeds never
+	// go through it — their packages are already referenced by construction; only a package named by
+	// a walked DECLARATION is an addition (plus the member-access edge below, whose RECEIVER types
+	// are likewise spelled nowhere in the compilation).
 	reach := func(named *types.Named) {
 		object := named.Obj()
 
 		if object == nil || object.Pkg() == nil {
+			return
+		}
+
+		// `testing` is never an ADDITION for the same reason it is never a walk SOURCE
+		// (closureWalkable): it binds to the hand-owned core/testing shim, and that reference is
+		// fixed in the project template — which is why the caller strips "testing" from the
+		// import-derived set rather than passing it through as already-referenced. Every -tests
+		// compilation calls a method ON a `*testing.T`, so without this the member-access edge
+		// would hand a second, closure-derived `testing` reference to every test project.
+		if !closureWalkable(named) {
 			return
 		}
 
@@ -2914,6 +2932,31 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 
 		for _, named := range seeds.constructed {
 			fieldEdge(named)
+		}
+
+		// The MEMBER-ACCESS edge. `cleanupMu` is `var cleanupMu sync.Mutex` in unique's PRODUCTION
+		// source; the white-box suite calls `cleanupMu.Lock()`, and binding that member needs sync —
+		// a package no test file imports and no alias `using` names, whose reference the reference
+		// model deliberately does not inherit from the production assembly (that model adds only what
+		// the test files import, precisely so a package's whole import graph is not re-declared).
+		// CS0012 ×2, and `unique` never linked a host. TYPE seeds still never go through reach() —
+		// the type a test file SPELLS comes from a package it imports — but a RECEIVER's type is
+		// spelled nowhere in the compilation, which is exactly the class this function exists for.
+		//
+		// The receiver is the minimal form of the edge, and BOTH halves of that were measured against
+		// the banked roster rather than argued. Widening it to the type of every var/const/func the
+		// compilation NAMES is equally true of C#'s binding rules in the abstract and drifts **23 of
+		// 73** banked projects (bufio into compress/bzip2, internal/abi + internal/reflectlite into
+		// errors, three into hash/crc32 …), all of which compile clean today with none of it: naming
+		// a declaration does not force its signature to be materialized, ACCESSING A MEMBER of it
+		// forces the receiver's. And the seed is `_test.go`-scoped (referencedTypeSeeds), because
+		// under the reference model the production sources are not in this compilation at all;
+		// seeding from them too still drifts **13** (`castagnoliOnce.Do` in crc32.go, `cpu.X86` in
+		// math's arith, …). Both restrictions together are ZERO-drift across the banked roster:
+		// unique's own `sync` reference is the only line that changes.
+		for _, named := range seeds.memberBases {
+			reach(named)
+			enqueue(named)
 		}
 
 		// The EMPTY-literal form of the same edge, scoped to the ROOT packages. `T{}` converts to
@@ -3038,6 +3081,7 @@ type typeSeeds struct {
 	named            []*types.Named
 	constructed      []*types.Named
 	constructedEmpty []*types.Named
+	memberBases      []*types.Named
 }
 
 // referencedTypeSeeds collects those seeds from the files the test assembly actually COMPILES.
@@ -3069,6 +3113,14 @@ func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool)
 			continue
 		}
 
+		// The member-access edge is scoped to `_test.go` sources: under the REFERENCE model the
+		// production files are not in this compilation at all (the internal variant loads them
+		// alongside its own, so the scoping has to be per-FILE, not per-package), and under the
+		// recompile model they are, but that model already references every production import
+		// wholesale — so a production receiver can never be an addition either way. See
+		// declarationClosureImports.
+		isTestFile := i < len(pkg.CompiledGoFiles) && strings.HasSuffix(pkg.CompiledGoFiles[i], "_test.go")
+
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch typed := node.(type) {
 			case *ast.Ident:
@@ -3078,6 +3130,18 @@ func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool)
 
 				if object := pkg.TypesInfo.Defs[typed]; object != nil {
 					add(object.Type())
+				}
+			case *ast.SelectorExpr:
+				// The MEMBER-ACCESS edge. Resolving `x.M` in C# requires BINDING x's type, and when
+				// x is declared in another package that type is spelled nowhere in this compilation
+				// — not in an import, not in an alias `using`. `unique`'s white-box suite calls
+				// `cleanupMu.Lock()` on the production package's `var cleanupMu sync.Mutex`, the
+				// test project referenced no `sync`, and the compile died CS0012 ×2 with no host
+				// ever linking. A package-QUALIFIED selector (`sync.Mutex`, `lib.F`) is not this
+				// shape: its base is a PkgName, which has no type, so it contributes nothing — and
+				// the import that spells it already carries the reference.
+				if isTestFile {
+					seeds.memberBases = append(seeds.memberBases, namedTypesIn(pkg.TypesInfo.Types[typed.X].Type)...)
 				}
 			case *ast.CompositeLit:
 				// An IMPLICIT element literal ([]T{{…}}) carries no Type expression of its own;

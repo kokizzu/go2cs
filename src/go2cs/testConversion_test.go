@@ -1279,6 +1279,96 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	}
 }
 
+// The MEMBER-ACCESS edge (unique): resolving `x.M` requires binding x's TYPE, and when x is declared
+// in another package that type is spelled nowhere in this compilation — not in an import, not in an
+// alias `using`. unique's white-box suite calls `cleanupMu.Lock()` on the production package's
+// `var cleanupMu sync.Mutex`; the reference model does not inherit the production assembly's own
+// references, so the test compile died `CS0012 … 'sync_package.Mutex'` twice with no host ever linking.
+// Every positive below is paired with the negative that pins the boundary — the two the banked roster
+// measured are the receiver restriction (naming a declaration is not accessing a member of it) and the
+// test-file scoping (production sources are not in this compilation under the reference model).
+func TestDeclarationClosureImportsSurfacesMemberAccessEdges(t *testing.T) {
+	// The unique shape: a member access on a foreign package-level VAR whose type is declared in a
+	// third package the test never imports.
+	varDir := t.TempDir()
+	writeModuleFiles(t, varDir, map[string]string{
+		"go.mod":       "module example/valdecl\n\ngo 1.23\n",
+		"lib/lib.go":   "package lib\nimport \"sync\"\nvar Mu sync.Mutex\n",
+		"main.go":      "package valdecl\nfunc Use() int { return 1 }\n",
+		"main_test.go": "package valdecl\nimport (\n\t\"testing\"\n\n\t\"example/valdecl/lib\"\n)\nfunc TestLock(t *testing.T) { lib.Mu.Lock(); lib.Mu.Unlock() }\n",
+	})
+
+	varProduction := loadProductionForDir(t, varDir)
+	varInternal, varExternal := loadTestVariantsForDir(t, varDir)
+
+	got := declarationClosureImports([]*packages.Package{varProduction, varInternal, varExternal}, nil,
+		[]string{varProduction.PkgPath, "example/valdecl/lib", "testing"})
+
+	if len(got) != 1 || got[0] != "sync" {
+		t.Fatalf("a member access on a foreign var of type sync.Mutex must surface sync; got %v", got)
+	}
+
+	// NEGATIVE (the receiver restriction). The same lib, the same var — but the test only NAMES it,
+	// passing it along without accessing a member. Naming a declaration does not force its signature
+	// to be materialized, and widening the edge to every named declaration drifts 23 of the 73 banked
+	// projects.
+	namedOnlyDir := t.TempDir()
+	writeModuleFiles(t, namedOnlyDir, map[string]string{
+		"go.mod":       "module example/valnamed\n\ngo 1.23\n",
+		"lib/lib.go":   "package lib\nimport \"sync\"\nvar Mu sync.Mutex\nfunc Take(m *sync.Mutex) {}\n",
+		"main.go":      "package valnamed\nfunc Use() int { return 1 }\n",
+		"main_test.go": "package valnamed\nimport (\n\t\"testing\"\n\n\t\"example/valnamed/lib\"\n)\nfunc TestTake(t *testing.T) { lib.Take(&lib.Mu) }\n",
+	})
+
+	namedProduction := loadProductionForDir(t, namedOnlyDir)
+	namedInternal, namedExternal := loadTestVariantsForDir(t, namedOnlyDir)
+
+	if got := declarationClosureImports([]*packages.Package{namedProduction, namedInternal, namedExternal}, nil,
+		[]string{namedProduction.PkgPath, "example/valnamed/lib", "testing"}); len(got) != 0 {
+		t.Fatalf("naming a declaration is not accessing a member of it; got %v", got)
+	}
+
+	// NEGATIVE (the test-file scoping). The member access lives in the PRODUCTION source, which under
+	// the reference model is compiled into the referenced assembly — not into this compilation — and
+	// that assembly carries its own `sync` reference. Seeding from production too drifts 13 banked
+	// projects (crc32's `castagnoliOnce.Do`, math's `cpu.X86`, …).
+	prodOnlyDir := t.TempDir()
+	writeModuleFiles(t, prodOnlyDir, map[string]string{
+		"go.mod":       "module example/valprod\n\ngo 1.23\n",
+		"lib/lib.go":   "package lib\nimport \"sync\"\nvar Mu sync.Mutex\n",
+		"main.go":      "package valprod\nimport \"example/valprod/lib\"\nfunc Lock() { lib.Mu.Lock() }\n",
+		"main_test.go": "package valprod\nimport \"testing\"\nfunc TestLock(t *testing.T) { Lock() }\n",
+	})
+
+	prodProduction := loadProductionForDir(t, prodOnlyDir)
+	prodInternal, prodExternal := loadTestVariantsForDir(t, prodOnlyDir)
+
+	if got := declarationClosureImports([]*packages.Package{prodProduction, prodInternal, prodExternal}, nil,
+		[]string{prodProduction.PkgPath, "example/valprod/lib", "testing"}); len(got) != 0 {
+		t.Fatalf("a member access in PRODUCTION source is not in the test compilation; got %v", got)
+	}
+
+	// NEGATIVE — a package-QUALIFIED selector is not a member access on a value: its base is a
+	// PkgName, which has no type at all, and the import that spells it already carries the reference.
+	// Pinned with a foreign-typed const so a base-type edge would have something to surface.
+	qualifiedDir := t.TempDir()
+	writeModuleFiles(t, qualifiedDir, map[string]string{
+		"go.mod":       "module example/valqual\n\ngo 1.23\n",
+		"kind/kind.go": "package kind\ntype Kind int\n",
+		"lib/lib.go":   "package lib\nimport \"example/valqual/kind\"\nconst First kind.Kind = 1\n",
+		"main.go":      "package valqual\nfunc Use() int { return 1 }\n",
+		"main_test.go": "package valqual\nimport (\n\t\"testing\"\n\n\t\"example/valqual/lib\"\n)\nfunc TestConst(t *testing.T) { _ = int(lib.First) }\n",
+	})
+
+	qualProduction := loadProductionForDir(t, qualifiedDir)
+	qualInternal, qualExternal := loadTestVariantsForDir(t, qualifiedDir)
+
+	if got := declarationClosureImports([]*packages.Package{qualProduction, qualInternal, qualExternal}, nil,
+		[]string{qualProduction.PkgPath, "example/valqual/lib", "testing"}); len(got) != 0 {
+		t.Fatalf("a package-qualified selector has no receiver type to surface; got %v", got)
+	}
+}
+
 // F14b guard: a dependency that fails to resolve fails the test-project emission loudly, naming
 // the dependency — never a silent reference drop.
 func TestWriteTestProjectFailsLoudlyOnDependencyError(t *testing.T) {
