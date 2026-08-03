@@ -92,13 +92,11 @@ public static class TestHost
         // nothing else. A test may walk out of the working directory and back in by name — io/fs's
         // TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` — which a bare
         // GUID directory answers with the GUID (and, worse, with every SIBLING run still on disk).
-        string runRoot = Path.Combine(Path.GetTempPath(), "go2cs-tests", SanitizePath(registry.Package), Guid.NewGuid().ToString("N"));
-        string workingDirectory = Path.Combine(runRoot, PackageDirectoryPath(registry.Package));
+        (string runRoot, string workingDirectory) = CreateRunDirectory(registry.Package);
         options.ResolveOutputPaths(previousDirectory);
 
         try
         {
-            Directory.CreateDirectory(workingDirectory);
             CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory);
             CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
             Environment.CurrentDirectory = workingDirectory;
@@ -174,6 +172,58 @@ public static class TestHost
     // Output-directory folder holding fixtures that reach ABOVE the package. MUST match the
     // converter's SharedFixtureStagingRoot, which emits the matching csproj <Link>.
     private const string SharedFixtureStagingRoot = "go2cs_shared_fixtures";
+
+    /// <summary>
+    /// Creates this run's isolated directory pair — the run root and the package working directory
+    /// inside it — under the first base that will actually accept one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The temp directory is the right FIRST choice and the wrong ONLY choice, because it is under
+    /// test control: a Go test may repoint TMP/TEMP at anything, including somewhere that does not
+    /// exist. os's TestRootDirAsTemp re-execs the test binary with TMP and TEMP set to an
+    /// intentionally UNMOUNTED drive root — <c>findUnusedDriveLetter</c> picks a letter precisely
+    /// because <c>os.Stat</c> says it is not there — to check what <c>os.TempDir</c> reports. Go's
+    /// test binary needs no scratch space of its own and does not care; this host does, and it died
+    /// in startup with <c>DirectoryNotFoundException</c> before running a single test, which the
+    /// parent then read as a child that produced no output.
+    /// </para>
+    /// <para>
+    /// So the host's own isolation must not depend on an environment variable the suite it is
+    /// running is free to rewrite. The executable's own directory is the fallback: it exists by
+    /// construction (the host is running out of it) and is writable wherever the build put it.
+    /// </para>
+    /// </remarks>
+    private static (string runRoot, string workingDirectory) CreateRunDirectory(string package)
+    {
+        Exception? firstFailure = null;
+
+        foreach (string root in new[] { Path.GetTempPath(), AppContext.BaseDirectory })
+        {
+            // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
+            // scratch space: its own last segment is the package's directory name, and its parent
+            // holds nothing else. A test may walk out of the working directory and back in by name —
+            // io/fs's TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` —
+            // which a bare GUID directory answers with the GUID (and, worse, with every SIBLING run
+            // still on disk).
+            string runRoot = Path.Combine(root, "go2cs-tests", SanitizePath(package), Guid.NewGuid().ToString("N"));
+            string workingDirectory = Path.Combine(runRoot, PackageDirectoryPath(package));
+
+            try
+            {
+                Directory.CreateDirectory(workingDirectory);
+                return (runRoot, workingDirectory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+            {
+                firstFailure ??= ex;
+            }
+        }
+
+        throw new InvalidOperationException(
+            "testing: could not create an isolated run directory under the temp path or the test binary's own directory",
+            firstFailure);
+    }
 
     // Reproduces the package directory's own SHAPE: `go test` runs a package where the sibling
     // packages nested under it are present as subdirectories, so a test that asks what its working

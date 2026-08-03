@@ -29,6 +29,17 @@
 // something (normBase's `UTF16ToString(data.FileName[:])`), and an outright ACCESS_VIOLATION in
 // `slice<ushort>..ctor` when it did not (copyFindData's `src.FileName[..]`).
 //
+// Process32First / Process32Next are the third member, and the one whose corruption is SILENT.
+// PROCESSENTRY32W is 568 bytes ending in szExeFile[260] INLINE; the converted ProcessEntry32 holds
+// that as one `array<uint16>` reference, so the record is ~56 bytes and every field past
+// th32DefaultHeapID sits at the wrong offset. Nothing faults — the kernel simply writes a 568-byte
+// record over a 56-byte object and the caller reads whichever fields happen to land — so
+// syscall.Getppid's `pe.ParentProcessID` came back 0 and os's TestGetppid reported a child whose
+// parent was process 0. A quiet wrong ANSWER is the worst shape this class takes: the crash cases
+// above at least announce themselves. (dwSize is the mirror's business too — Go computes it as
+// `unsafe.Sizeof(procEntry)`, which in the conversion is the MANAGED size and would have failed the
+// call outright even with the layout right.)
+//
 // This is the same seam as exec_windows.go's StartProcess (_STARTUPINFOEXW) and takes the same
 // remedy, described in docs/Baseline-vs-FullConversion.md "Child-process creation": a blittable
 // mirror of the native layout, a direct P/Invoke, and an explicit field-for-field copy back into
@@ -248,5 +259,87 @@ partial class syscall_package
             LowDateTime = value.LowDateTime,
             HighDateTime = value.HighDateTime
         };
+    }
+
+    // PROCESSENTRY32W exactly as Windows lays it out: 568 bytes with szExeFile[MAX_PATH] inline.
+    // th32DefaultHeapID is ULONG_PTR, so the sequential layout pads it to an 8-byte boundary on x64
+    // just as the native header does.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeProcessEntry32
+    {
+        public uint32 Size;
+        public uint32 Usage;
+        public uint32 ProcessID;
+        public nuint DefaultHeapID;
+        public uint32 ModuleID;
+        public uint32 Threads;
+        public uint32 ParentProcessID;
+        public int32 PriClassBase;
+        public uint32 Flags;
+        public fixed uint16 ExeFile[maxPath];
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "Process32FirstW", SetLastError = true)]
+    private static extern unsafe int32 win32Process32First(nint snapshot, NativeProcessEntry32* entry);
+
+    [DllImport("kernel32.dll", EntryPoint = "Process32NextW", SetLastError = true)]
+    private static extern unsafe int32 win32Process32Next(nint snapshot, NativeProcessEntry32* entry);
+
+    // Process32First is the native transcription of the generated wrapper — see the file header for
+    // why it cannot be a literal conversion. `procEntry` is left untouched on failure, as in Go,
+    // because the kernel did not write it.
+    public static unsafe error /*err*/ Process32First(ΔHandle snapshot, ж<ProcessEntry32> ᏑprocEntry) {
+        NativeProcessEntry32 native = default;
+
+        // dwSize is an INPUT: Windows rejects the call unless it is the native record size. Go sets
+        // it in getProcessEntry from `unsafe.Sizeof(procEntry)`, which the conversion answers with
+        // the MANAGED size — so the native layout owns this field, here, where the layout is stated.
+        native.Size = (uint32)sizeof(NativeProcessEntry32);
+
+        if (win32Process32First((nint)(nuint)(uintptr)snapshot, &native) == 0) {
+            return errnoErr((Errno)(uint32)Marshal.GetLastSystemError());
+        }
+
+        copyNativeProcessEntry(&native, ᏑprocEntry);
+
+        return default!;
+    }
+
+    // Process32Next is the native transcription of the generated wrapper — see Process32First. The
+    // ordinary end of an enumeration arrives as ERROR_NO_MORE_FILES, which the Go caller's loop
+    // compares against, so the last error is reported faithfully rather than flattened.
+    public static unsafe error /*err*/ Process32Next(ΔHandle snapshot, ж<ProcessEntry32> ᏑprocEntry) {
+        NativeProcessEntry32 native = default;
+
+        native.Size = (uint32)sizeof(NativeProcessEntry32);
+
+        if (win32Process32Next((nint)(nuint)(uintptr)snapshot, &native) == 0) {
+            return errnoErr((Errno)(uint32)Marshal.GetLastSystemError());
+        }
+
+        copyNativeProcessEntry(&native, ᏑprocEntry);
+
+        return default!;
+    }
+
+    // Copies the native record into the converted ProcessEntry32. The name buffer is copied WHOLE,
+    // NULs included, for the reason copyNativeFindData gives: one entry is reused across a whole
+    // Process32Next walk, and Go reads it as `UTF16ToString(pe.ExeFile[:])`, which stops at the
+    // first NUL. Size is reported as the NATIVE size, which is what a Go caller reading it back
+    // would mean by it.
+    private static unsafe void copyNativeProcessEntry(NativeProcessEntry32* native, ж<ProcessEntry32> ᏑprocEntry) {
+        ref var procEntry = ref ᏑprocEntry.Value;
+
+        procEntry.Size = native->Size;
+        procEntry.Usage = native->Usage;
+        procEntry.ProcessID = native->ProcessID;
+        procEntry.DefaultHeapID = (uintptr)native->DefaultHeapID;
+        procEntry.ModuleID = native->ModuleID;
+        procEntry.Threads = native->Threads;
+        procEntry.ParentProcessID = native->ParentProcessID;
+        procEntry.PriClassBase = native->PriClassBase;
+        procEntry.Flags = native->Flags;
+
+        copyNativeName(native->ExeFile, ref procEntry.ExeFile, maxPath);
     }
 }

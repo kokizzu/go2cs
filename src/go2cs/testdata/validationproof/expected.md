@@ -40,7 +40,9 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 Declarations filtered from **both** sides of the comparison, and therefore not claimed above:
 `Benchmark`, `Fuzz` and `Example` declarations the converted host does not execute, plus any
-test requiring a testing capability the host does not yet provide.
+test requiring a capability the managed runtime does not provide — a `testing` member the host
+has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
+the capability it needs.
 
 - BenchmarkAlpha (benchmark): benchmark execution is deferred
 - ExampleAlpha (example): example execution is deferred

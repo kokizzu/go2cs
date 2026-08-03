@@ -73,6 +73,31 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     private readonly bool m_isNull;
     private T m_val;
 
+    // PINNABLE storage for a standard heap box, replacing m_val whenever T can be held still — a
+    // one-element array, allocated by the value constructors, that Value/ValueSlot resolve to.
+    //
+    // WHY THE VALUE CANNOT SIMPLY LIVE IN m_val. Go's `uintptr(unsafe.Pointer(&x))` names an address
+    // that STAYS VALID while native code uses it (unsafe.Pointer rules 3 and 4) — Go's collector never
+    // moves heap objects, so this is free there. The CLR's does move them, and m_val is a field of THIS
+    // object, which is a class with reference fields and therefore cannot be pinned at all
+    // (GCHandle refuses anything that contains pointers). A one-element array of an unmanaged T
+    // contains none, so it can. The address handed to a syscall is then stable for as long as the box
+    // lives (see EnsureStableAddress).
+    //
+    // WHY IT IS ALLOCATED EAGERLY AND NEVER MIGRATED. `heap<T>(out ж<T>)` hands the caller a ref
+    // ALIAS to the slot before any address is taken (`ref var done = ref heap(new uint32(), out var
+    // Ꮡdone)`), so moving the storage on first address-take would leave that alias pointing at the
+    // abandoned copy — which is precisely the bug this field exists to fix, reintroduced one level
+    // down: the kernel would write the real slot and the caller would read the stale one. The slot
+    // must therefore BE the storage from construction.
+    //
+    // Null for a T that contains references (nothing pinnable to allocate — such a value's C# layout
+    // is not a native layout either, so no syscall can meaningfully be handed its address) and for the
+    // three non-standard box kinds, which keep their storage elsewhere. The
+    // IsReferenceOrContainsReferences probe is a JIT-time constant, so the branch folds away in both
+    // directions and neither the allocation nor the test costs a managed-T box anything.
+    private readonly T[]? m_slot;
+
     // A NATIVE address this box aliases, rather than managed storage it owns (0 when this is an
     // ordinary managed box). This is the fourth reference kind, alongside the standard value, the
     // struct-field ref and the array-element ref above.
@@ -88,8 +113,8 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     private readonly nuint m_nativeAddr;
 
     // A pin this box OWNS, kept alive for the box's lifetime and freed when the box is collected (the
-    // PinnedBuffer finalizer releases the GCHandle). It serves the two — mutually exclusive — cases in
-    // which a box's meaning is an ADDRESS of managed storage, and an address of managed storage is
+    // PinnedBuffer finalizer releases the GCHandle). It serves the three — mutually exclusive — cases
+    // in which a box's meaning is an ADDRESS of managed storage, and an address of managed storage is
     // meaningless unless something holds that storage still:
     //
     //   1. A box whose pointee is a Go fixed array handed to a native syscall as a buffer
@@ -98,9 +123,13 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     //   2. A NATIVE-address box derived from managed storage by the reinterpret fallback
     //      (TryPinnedReinterpret below): created with the box, because the address it aliases is only
     //      valid while the storage behind it cannot move.
+    //   3. EVERY OTHER conversion of a managed box to uintptr/void* (EnsureStableAddress below), on
+    //      the same terms and for the same reason: whatever receives the address may still be using it
+    //      after the statement that produced it has returned.
     //
-    // Disjoint by construction — case 1 runs only when m_nativeAddr is 0 (the conversion operators
-    // return early for a native box), and case 2 produces nothing but native boxes.
+    // Disjoint by construction — cases 1 and 3 run only when m_nativeAddr is 0 (the conversion
+    // operators return early for a native box) and 3 is the fall-through of 1, and case 2 produces
+    // nothing but native boxes.
     private PinnedBuffer? m_pin;
 
     /// <summary>
@@ -109,7 +138,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// <param name="value">Source value for heap allocated reference.</param>
     public ж(in T value)
     {
-        m_val = value;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            m_val = value;
+        else
+            m_slot = [value];
     }
 
     // Create a new reference to a field in a heap allocated struct. fieldIdentity carries the
@@ -157,7 +189,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // a value, never both.
     protected ж(in T value, bool isNull)
     {
-        m_val = value;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            m_val = value;
+        else
+            m_slot = [value];
+
         m_isNull = isNull;
     }
 
@@ -182,7 +218,9 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
                 if (IsNull)
                     throw RuntimeErrorPanic.NilPointerDereference();
 
-                return ref m_val!;
+                // The pinnable slot IS the storage when it exists (see m_slot) — never a mirror of
+                // m_val, so there is only ever one authority to read or write.
+                return ref m_slot is null ? ref m_val! : ref MemoryMarshal.GetArrayDataReference(m_slot);
             }
 
             // Get reference to struct field
@@ -229,7 +267,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
                 return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
 
             if (m_structFieldRef is null && m_arrayIndexRef is null)
-                return ref m_val!;
+                return ref m_slot is null ? ref m_val! : ref MemoryMarshal.GetArrayDataReference(m_slot);
 
             if (m_structFieldRef is not null)
             {
@@ -984,6 +1022,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         if (value.Value is IArray arr && arr is not ISlice)
             return (uintptr)value.pinnedArrayData(arr);
 
+        // Hold the storage still BEFORE reading its address (see EnsureStableAddress): `fixed` pins
+        // only for its own statement, and the address outlives that statement by definition — it is
+        // being converted to an integer precisely so it can be handed somewhere else.
+        value.EnsureStableAddress();
+
         fixed (void* ptr = &value.Value)
             return (uintptr)ptr;
     }
@@ -1011,8 +1054,86 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         if (value.Value is IArray arr && arr is not ISlice)
             return value.pinnedArrayData(arr);
 
+        // Hold the storage still before reading its address — see the uintptr operator above.
+        value.EnsureStableAddress();
+
         fixed (T* ptr = &value.Value)
             return ptr;
+    }
+
+    /// <summary>
+    /// Pins the managed storage this pointer addresses, for this box's lifetime, so the address taken
+    /// from it stays valid after the statement that produced it has returned.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE DEFECT THIS EXISTS TO CLOSE. Both address operators above end in a <c>fixed</c>, which pins
+    /// for its own statement only, and both then RETURN the address as an integer — so every address
+    /// go2cs handed to native code was, strictly, a former address. It survived by luck: the window
+    /// between capture and the trampoline's <c>calli</c> is short and allocation-free. A BLOCKING
+    /// syscall reopens that window for as long as the kernel takes. `os`'s <c>TestPipeEOF</c> parks in
+    /// <c>ReadFile</c> on a pipe for 10 ms per read while the rest of a parallel suite allocates; a
+    /// gen0 collection in that window moves both the caller's <c>*uint32</c> byte-count box and the
+    /// read buffer, and the kernel then writes to neither. The count stays 0, <c>syscall.Read</c>
+    /// returns <c>(0, nil)</c>, <c>FD.eofError</c> turns that into <c>io.EOF</c> — a premature EOF whose
+    /// probability rises monotonically with parallelism, exactly as measured — and the buffer write
+    /// lands in freed heap, which is the moving-site <c>ExecutionEngineException</c> recorded beside it.
+    /// </para>
+    /// <para>
+    /// WHAT IT PINS. The ROOT managed storage behind this pointer, resolved per box kind: a standard
+    /// heap box pins its own value slot; an array/slice-element reference pins the canonical backing
+    /// array (so <c>&amp;buf[0]</c> holds <c>buf</c> itself still, not a per-access header box); a
+    /// struct-field reference recurses to the allocation that contains the field. Pinning the root is
+    /// what makes an INTERIOR address stable — the field or element cannot move without its container
+    /// moving.
+    /// </para>
+    /// <para>
+    /// WHEN IT DOES NOTHING. <see cref="GCHandle"/> pins only objects free of references, so storage
+    /// whose type contains any is left exactly as it was — a transient address, the pre-change
+    /// behavior. That is not a gap being tolerated: a converted Go value carrying managed references
+    /// has no native layout either, so its address is not something a syscall can meaningfully be
+    /// given. The change is additive — it makes stable the addresses that can be stable, and leaves
+    /// the rest no worse.
+    /// </para>
+    /// <para>
+    /// The pin is released when this box is collected (<see cref="PinnedBuffer"/>'s finalizer frees the
+    /// handle), which bounds retention by the pointer's own lifetime; a Go pointer that stays reachable
+    /// is one whose address Go also guarantees. Idempotent and unlocked, on the same terms as
+    /// <c>pinnedArrayData</c>: a concurrent first touch can at worst allocate one extra handle that the
+    /// finalizer frees.
+    /// </para>
+    /// </remarks>
+    private void EnsureStableAddress()
+    {
+        if (m_pin is not null)
+            return;
+
+        if (PinnableStorage is { } storage)
+            m_pin = PinnedBuffer.PinOnly(storage);
+    }
+
+    /// <inheritdoc/>
+    public object? PinnableStorage
+    {
+        get
+        {
+            // An element reference's storage is the canonical backing array — the same resolution
+            // equality and the order token use, so two pointers to one element pin one object.
+            if (m_arrayIndexRef is not null)
+                return CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2).storage;
+
+            // A field reference's storage is its container's, recursively: `Ꮡo.of(Ꮡin).of(Ꮡv)` hangs
+            // off a per-access intermediate box whose own storage is the outer allocation's.
+            if (m_structFieldRef is not null)
+            {
+                return m_structFieldRef.Value.Item1 is INilPointer parent
+                    ? parent.PinnableStorage
+                    : m_structFieldRef.Value.Item1 as Array;
+            }
+
+            // A standard heap box: the pinnable value slot, when T admits one (see m_slot).
+            return m_slot;
+        }
     }
 
     // Returns a stable native pointer to the first element of this box's Go fixed-array data, pinning the

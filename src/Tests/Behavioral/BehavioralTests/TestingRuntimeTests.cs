@@ -480,6 +480,80 @@ public class TestingRuntimeTests
     }
 
     [TestMethod]
+    public void SubtestNamesEscapeNonPrintableRunesTheWayGoDoes()
+    {
+        // A subtest's NAME is what the differential oracle pairs results by, so a name that renders
+        // differently from Go's produces a one-sided row on BOTH sides — `Go="pass" C#=""` beside
+        // `Go="" C#="pass"`. os's TestReadStdin feeds two inputs containing U+001A across 462
+        // subtests, which folding a non-printable to U+FFFD turned into 924 lines that read exactly
+        // like a mass failure, on a top-level test that AGREED. Go's testing.rewrite folds
+        // whitespace to `_` and escapes anything unprintable as strconv.QuoteRune's body.
+        ConcurrentQueue<string> names = new();
+        TestRegistry registry = new("runtime/names", []);
+        registry.Add("TestNames", pointer =>
+        {
+            ref testing_package.T test = ref pointer.Value;
+
+            foreach (string requested in new[] { "helloworld", "a b", "tab\there", "soft­hyphen", "plain" })
+            {
+                test.Run(requested, child => names.Enqueue(child.Value.Name().ToString()));
+            }
+        }, "runtime_test.go", 1);
+
+        Assert.AreEqual(0, TestHost.Run(registry, []));
+
+        // Every expectation below is what `go test -v` prints for the same five subtest names.
+        string[] reported = names.ToArray();
+        CollectionAssert.Contains(reported, @"TestNames/hello\x1aworld");
+        CollectionAssert.Contains(reported, "TestNames/a_b");
+        CollectionAssert.Contains(reported, "TestNames/tab_here");
+        // U+00AD SOFT HYPHEN is a FORMAT character — unprintable to Go, so it escapes rather than
+        // passing through, and the escape is the four-hex \u form rather than the two-hex \x one.
+        CollectionAssert.Contains(reported, @"TestNames/soft\u00adhyphen");
+        CollectionAssert.Contains(reported, "TestNames/plain");
+    }
+
+    [TestMethod]
+    public void ByteSliceFormatsAsItsBytesUnderTheStringVerbs()
+    {
+        // Go renders a []byte under %s/%q/%x as the BYTES, and only under %v/%d as the list of
+        // numbers — so `%q` of an empty []byte is `""`, never `"[]"`. Quoting the default rendering
+        // instead made os's TestExecutable report a child that produced nothing as
+        // `Child returned "[]"`, naming the formatter's own gap in place of the failure. (core/fmt
+        // has always been right here; this shim is the host's separate fmt-free formatter.)
+        string resultPath = Path.Combine(Path.GetTempPath(), $"go2cs-verbs-{Guid.NewGuid():N}.json");
+
+        try
+        {
+            slice<byte> nilBytes = default;
+            slice<byte> text = new byte[] { (byte)'a', (byte)'b', (byte)'\n' };
+
+            TestRegistry registry = new("runtime/verbs", []);
+            registry.Add("TestVerbs", pointer =>
+            {
+                ref testing_package.T test = ref pointer.Value;
+                test.Errorf("q=%q|%q x=%x X=%X s=|%s| v=%v", nilBytes, text, text, text, text, text);
+            }, "runtime_test.go", 1);
+
+            Assert.AreEqual(1, TestHost.Run(registry, ["--result", resultPath]));
+
+            string reported = File.ReadAllText(resultPath);
+
+            // JSON-escaped, so the quotes and the newline arrive as \" and \\n.
+            StringAssert.Contains(reported, @"q=\u0022\u0022|\u0022ab\\n\u0022");
+            StringAssert.Contains(reported, "x=61620a");
+            StringAssert.Contains(reported, "X=61620A");
+            StringAssert.Contains(reported, @"s=|ab\n|");
+            // %v keeps the sequence reading — the divergence is confined to the string verbs.
+            StringAssert.Contains(reported, "v=[");
+        }
+        finally
+        {
+            File.Delete(resultPath);
+        }
+    }
+
+    [TestMethod]
     public void FieldPointerEqualityPairsAcrossOfCalls()
     {
         // Guards the golib pointer-identity fix the Phase-4 test runtime depends on: the typed

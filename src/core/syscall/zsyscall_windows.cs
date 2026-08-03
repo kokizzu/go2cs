@@ -1149,25 +1149,9 @@ internal static error /*err*/ postQueuedCompletionStatus(ΔHandle cphandle, uint
     return err;
 }
 
-public static error /*err*/ Process32First(ΔHandle snapshot, ж<ProcessEntry32> ᏑprocEntry) {
-    error err = default!;
+// go2cs generated this placeholder — func Process32First is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var (r1, _, e1) = Syscall(procProcess32FirstW.Addr(), 2, (uintptr)snapshot, (uintptr)new @unsafe.Pointer(ᏑprocEntry), 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
-
-public static error /*err*/ Process32Next(ΔHandle snapshot, ж<ProcessEntry32> ᏑprocEntry) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall(procProcess32NextW.Addr(), 2, (uintptr)snapshot, (uintptr)new @unsafe.Pointer(ᏑprocEntry), 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func Process32Next is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ ReadConsole(ΔHandle console, ж<uint16> Ꮡbuf, uint32 toread, ж<uint32> Ꮡread, ж<byte> ᏑinputControl) {
     error err = default!;

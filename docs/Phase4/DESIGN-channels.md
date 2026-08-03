@@ -213,6 +213,16 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
   `src/Tests/GolibTests/ChannelWakeupStrainTests.cs` (ranging receiver, direct hand-off, and blocked
   select, each raced against a close under pool/GC pressure); the deterministic behavioral guards
   above prove the protocol on one interleaving, these prove it on thousands.
+  **Epilogue (2026-08-03, r38-os-fin): the row that was routed here was not in this layer at all, and
+  it was not in `internal/poll` either — it was two layers further down.** `TestPipeEOF` reached its
+  `t.Fatal` because `bufio.Reader.ReadBytes` got a premature `io.EOF`, and that came from the
+  `ж<T>` → `uintptr` conversion handing a syscall an address whose `fixed` pin had already expired: a
+  gen0 collection during the 10 ms blocking `ReadFile` moved the `*uint32` byte-count box, so the
+  kernel's write landed nowhere, `done` stayed 0, and `FD.eofError` read that as EOF. Three layers of
+  plausible attribution — channels, then poll, then handle lifetime — each dissolved on measurement.
+  The instrument above is what made the first two cheap to disprove; the third needed a different
+  one (compare the address across a forced collection), and the general lesson is the same either
+  way: **measure the layer you are accusing before you accuse it.**
 
 ## 5. Decision requested (user)
 

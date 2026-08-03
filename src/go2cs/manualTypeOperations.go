@@ -353,6 +353,14 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// FindNextFile and copyFindData above them are pure Go logic and convert faithfully.
 		"findFirstFile1": true,
 		"findNextFile1":  true,
+		// The third member, and the one that fails SILENTLY: PROCESSENTRY32W is 568 bytes ending in
+		// szExeFile[260] INLINE, where the converted ProcessEntry32 holds that as one
+		// `array<uint16>` reference — the record is ~56 bytes, every field past th32DefaultHeapID
+		// reads from the wrong offset, and nothing faults. syscall.Getppid therefore answered 0,
+		// which os's TestGetppid is the demonstrated consumer of. dwSize is an INPUT the mirror has
+		// to own as well: Go sets it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here.
+		"Process32First": true,
+		"Process32Next":  true,
 	},
 }
 

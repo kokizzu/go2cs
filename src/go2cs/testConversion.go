@@ -2264,11 +2264,18 @@ func supportedTestCapabilities() []string {
 	return capabilities
 }
 
-// unsupportedRuntimeCapabilities names non-testing symbols whose behavior the managed runtime
-// provably cannot reproduce today, keyed "<import path>.<func>". A test whose transitive closure
-// reaches one is gated to `unsupported` by the SAME mechanism that gates an unsupported testing.*
-// member — the name is a capability REQUIREMENT that supportedTestCapabilities deliberately does
-// not list.
+// unsupportedRuntimeCapabilities maps a SYMBOL — "<import path>.<func>" — to the NAME of the
+// capability that symbol requires and that the managed runtime provably cannot provide. A test whose
+// transitive closure reaches a listed symbol, or which IS one, is gated to `unsupported` by the SAME
+// mechanism that gates an unsupported testing.* member: the capability name becomes a REQUIREMENT
+// that supportedTestCapabilities deliberately does not list.
+//
+// The key is the symbol and the value is the capability because the two are not the same thing and
+// the report needs the second. Several symbols can want one capability, and a capability that is a
+// property of the HOST rather than of anything the test calls has no symbol to name at all — so a key
+// may also name the TEST DECLARATION itself, which requiredFor honors by gating a listed function on
+// its own account and not only on its callers'. What the manifest, the comparison and the proof page
+// then show is the capability ("relocatable single-file test executable"), never the bare symbol.
 //
 // Why this exists as a gate rather than a runtime failure: an unimplemented assembly primitive
 // throws a .NET NotImplementedException, and when the reaching path runs on a goroutine (a managed
@@ -2278,9 +2285,9 @@ func supportedTestCapabilities() []string {
 // the capability unsupported is both more honest and more useful — the one test is excluded and
 // disclosed by name, and the rest of the package is measurable.
 //
-// The map is EMPTY today: runtime.Goexit, its only entry, graduated when the managed shape landed —
-// an unwinding golib GoexitException that the defer machinery runs defers for, recover() cannot see,
-// and the goroutine root swallows (docs/Phase4/DESIGN-goexit.md, §2 + option C). Goexit from the
+// runtime.Goexit, the map's first and for a while only entry, graduated when the managed shape landed
+// — an unwinding golib GoexitException that the defer machinery runs defers for, recover() cannot
+// see, and the goroutine root swallows (docs/Phase4/DESIGN-goexit.md, §2 + option C). Goexit from the
 // MAIN goroutine is still unimplemented, but that case cannot be distinguished statically — a
 // function's call graph says nothing about which goroutine will run it — so it is gated where the
 // distinction actually exists, at runtime, by runtime/managed_impl.cs (a loud NotSupportedException,
@@ -2289,10 +2296,37 @@ func supportedTestCapabilities() []string {
 // Add an entry ONLY for something provably unavailable, never for something merely unimplemented;
 // and before adding one, scan every VALIDATED package for the symbol, since gating it removes those
 // tests from the run set (the mirror of the widening trap in the charter's §9). Guarded by
-// TestUnsupportedRuntimeCapabilityGate, which keeps the mechanism honest while the map is empty.
-var unsupportedRuntimeCapabilities = map[string]bool{}
+// TestUnsupportedRuntimeCapabilityGate.
+var unsupportedRuntimeCapabilities = map[string]string{
+	// The block returned by CommandLineToArgv is OS-allocated and CALLER-FREED — every Go caller ends
+	// `defer syscall.LocalFree(syscall.Handle(uintptr(unsafe.Pointer(argv))))`. Walking it needs a
+	// managed materialization of the pointer array; taking the address of one hands back the GC-heap
+	// data address (ж's pinnedArrayData path), so the deferred LocalFree would be asked to free GC
+	// memory — a STATUS_HEAP_CORRUPTION process kill in place of a contained failure. Reading the
+	// native block WITHOUT materializing it is the snapshot-pointer flavor golib does not have, and
+	// which the 2026-08-02 ruling deferred to net's DNS work rather than mint for one test.
+	"syscall.CommandLineToArgv": "native output block with caller-side LocalFree",
 
-// unsupportedRuntimeCapability reports whether fn is a listed unsupported runtime capability,
+	// createMountPoint lays a *windows.MountPointReparseBuffer over a managed []byte and writes four
+	// uint16 fields through it, then indexes &buf.PathBuffer[0] — a Go `[1]uint16` inline tail standing
+	// in for however many kernel bytes follow. The conversion of that tail is an 8-byte MANAGED
+	// REFERENCE, so no managed array reference can be laid over inline OS bytes: this is the raw-metal
+	// arm of the S1 fork, whose remedy everywhere else is to hand-own the file — unavailable here
+	// because the code is a TEST helper, which the converter regenerates by definition.
+	"os_test.createMountPoint": "raw-metal struct overlay on managed bytes",
+
+	// The one entry that names a TEST rather than a symbol, because the impossibility is a property of
+	// the host: the test copies os.Executable() — ONE file — into a temp directory 100 times and runs
+	// each copy. os.Executable() is correct (it returns the apphost, os.tests.exe), but an apphost is a
+	// stub bound at build time to a managed assembly of the same base name that must sit beside it, so
+	// a single-file copy can never run: hostfxr answers 0x8000809a LibHostAppRootFindFailure, which is
+	// byte-for-byte the code the test reports. Go's test binary is statically linked, which is the only
+	// reason its premise holds there. Satisfying it means publishing every converted test host
+	// self-contained single-file — ~70 MB and a publish rather than a build, per package.
+	"os_test.TestRemoveAllWithExecutedProcess": "relocatable single-file test executable",
+}
+
+// unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
 // returning the capability name used in the requirement set.
 func unsupportedRuntimeCapability(fn *types.Func) (string, bool) {
 	if fn == nil || fn.Pkg() == nil || fn.Type() == nil {
@@ -2304,9 +2338,9 @@ func unsupportedRuntimeCapability(fn *types.Func) (string, bool) {
 		return "", false
 	}
 
-	name := fn.Pkg().Path() + "." + fn.Name()
+	capability, blocked := unsupportedRuntimeCapabilities[fn.Pkg().Path()+"."+fn.Name()]
 
-	return name, unsupportedRuntimeCapabilities[name]
+	return capability, blocked
 }
 
 // testCapabilityAnalysis is the per-variant capability attribution input (F4): the testing.*
@@ -2383,8 +2417,8 @@ func analyzeTestingCapabilities(pkg *packages.Package) testCapabilityAnalysis {
 						// same way a testing.* member is, and gates the same way (it is absent
 						// from supportedTestCapabilities). This is keyed on the resolved OBJECT,
 						// so it catches the call however it is spelled or aliased.
-						if name, blocked := unsupportedRuntimeCapability(used); blocked {
-							direct.Add(name)
+						if capability, blocked := unsupportedRuntimeCapability(used); blocked {
+							direct.Add(capability)
 						}
 					}
 					return true
@@ -2411,6 +2445,16 @@ func (a testCapabilityAnalysis) requiredFor(fn *types.Func) HashSet[string] {
 			return
 		}
 		visited[current] = true
+
+		// A listed unsupported capability gates the function that REQUIRES it on its own account,
+		// not only its callers'. The caller-side arm (analyzeTestingCapabilities, which records the
+		// requirement at every ident that names a listed symbol) cannot reach the case where the
+		// requirement belongs to the test itself: nothing names a test, so nothing records it. That
+		// is the shape a HOST capability takes — the test calls no impossible function, it merely
+		// assumes something of the binary it runs in.
+		if capability, blocked := unsupportedRuntimeCapability(current); blocked {
+			required.Add(capability)
+		}
 
 		if direct, ok := a.direct[current]; ok {
 			required.UnionWithSet(direct)

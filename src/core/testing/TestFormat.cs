@@ -134,14 +134,15 @@ internal static class TestFormat
         switch (verb)
         {
             case 'v':
-            case 's':
             case 'd':
             case 'w':
                 return Default(arg);
+            case 's':
+                return TryGetByteText(arg, out string sText) ? sText : Default(arg);
             case 't':
                 return arg is bool boolValue ? boolValue ? "true" : "false" : BadVerb(verb, arg);
             case 'q':
-                return Quote(Default(arg));
+                return Quote(TryGetByteText(arg, out string qText) ? qText : Default(arg));
             case 'c':
                 return TryGetInt64(arg, out long rune) ? char.ConvertFromUtf32(checked((int)rune)) : BadVerb(verb, arg);
             case 'x':
@@ -166,12 +167,49 @@ internal static class TestFormat
     private static string BadVerb(char verb, object? arg) =>
         $"%!{verb}({TrimGoPrefix(builtin.GetGoTypeName(arg))}={Default(arg)})";
 
+    /// <summary>
+    /// Reports the TEXT of a <c>[]byte</c> argument — the rendering Go's string verbs give it.
+    /// </summary>
+    /// <remarks>
+    /// Under <c>%s</c>, <c>%q</c> and <c>%x</c> Go formats a byte slice as the bytes THEMSELVES, and
+    /// only <c>%v</c>/<c>%d</c> as the list of numbers: <c>%q</c> of an empty <c>[]byte</c> is
+    /// <c>""</c>, not <c>"[]"</c>. Quoting the default rendering instead is what made os's
+    /// TestExecutable report a child that produced nothing as <c>Child returned "[]"</c> — a
+    /// diagnostic that names the formatter's gap rather than the failure. (core/fmt has always been
+    /// right here; this shim is the host's own fmt-free formatter, and only it was wrong.)
+    /// </remarks>
+    private static bool TryGetByteText(object? arg, out string text)
+    {
+        if (TryGetBytes(arg, out byte[] bytes))
+        {
+            text = Encoding.UTF8.GetString(bytes);
+            return true;
+        }
+
+        text = "";
+        return false;
+    }
+
+    private static bool TryGetBytes(object? arg, out byte[] bytes)
+    {
+        if (arg is slice<byte> slice)
+        {
+            bytes = slice.ꓸꓸꓸ.ToArray();
+            return true;
+        }
+
+        bytes = [];
+        return false;
+    }
+
     private static string FormatHex(char verb, object? arg)
     {
         string hex;
 
         if (TryGetInt64(arg, out long integral))
             hex = integral.ToString("x", CultureInfo.InvariantCulture);
+        else if (TryGetBytes(arg, out byte[] bytes))
+            hex = Convert.ToHexStringLower(bytes); // the RAW bytes, which need not be valid UTF-8
         else if (arg is @string or string)
             hex = Convert.ToHexStringLower(Encoding.UTF8.GetBytes(Default(arg)));
         else

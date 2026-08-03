@@ -1348,6 +1348,16 @@ in Go, so a write through the derived pointer is visible through `p`. The conver
 `p.Reinterpret<T, U>()` rather than boxing a converted copy. `flag`'s `newBoolValue` returning
 `(*boolValue)(p)` is the shape that makes the difference visible: under the copy form a parsed flag never
 reached the caller's variable.
+And it answers **address stability**. Go's collector never moves a heap object, so
+`uintptr(unsafe.Pointer(&x))` names an address that stays valid while native code uses it; the CLR's
+does move them, so go2cs **pins** the root storage whenever a pointer's address is taken and holds it
+for that pointer's lifetime — a heap box pins its own value slot, an element ref the backing array, a
+field ref the allocation containing the field. That is also why a standard heap box keeps an unmanaged
+pointee's value in a one-element array rather than in a field of the box: a class carrying references
+cannot be pinned at all, so the value needs somewhere pinnable to live. Without this, every address
+handed to a syscall was a *former* address — a collection during a blocking `ReadFile` moved the
+byte-count box out from under the kernel, the count stayed zero, and `internal/poll` reported that as
+a premature `io.EOF`.
 
 **Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
 range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer

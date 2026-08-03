@@ -1561,27 +1561,27 @@ func TestUnsupportedTestingCapabilityIsDiscovered(t *testing.T) {
 	}
 }
 
-// The unsupported-RUNTIME-capability gate carries no entries today — runtime.Goexit, its only one,
-// graduated when the managed Goexit shape landed (docs/Phase4/DESIGN-goexit.md). An empty map makes
-// the mechanism invisible: a scan that gates nothing because the list is empty reads exactly like a
-// scan that gates nothing because the lookup is broken. This is that POSITIVE CONTROL, plus the
-// regression assertion that Goexit itself is no longer gated statically (its remaining unimplemented
-// case — Goexit from the MAIN goroutine — is not statically decidable and is gated at runtime).
+// The unsupported-RUNTIME-capability gate maps a SYMBOL to the CAPABILITY it requires, and what the
+// report shows is the capability. Guards all three properties the mechanism turns on: the lookup
+// answers with the capability rather than the symbol, it stays package-scope only, and runtime.Goexit
+// — its first entry — is no longer gated statically, its remaining unimplemented case (Goexit from the
+// MAIN goroutine) being undecidable from a call graph and therefore gated at runtime instead.
 func TestUnsupportedRuntimeCapabilityGate(t *testing.T) {
 	runtimePkg := types.NewPackage("runtime", "runtime")
 	signature := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	goexit := types.NewFunc(token.NoPos, runtimePkg, "Goexit", signature)
 
-	if name, blocked := unsupportedRuntimeCapability(goexit); blocked {
-		t.Fatalf("runtime.Goexit must no longer be statically capability-gated (matched %q)", name)
+	if capability, blocked := unsupportedRuntimeCapability(goexit); blocked {
+		t.Fatalf("runtime.Goexit must no longer be statically capability-gated (matched %q)", capability)
 	}
 
-	// Positive control: the SAME lookup must gate a listed symbol.
-	unsupportedRuntimeCapabilities["runtime.Goexit"] = true
+	// The lookup reports the CAPABILITY, never the key: several symbols can want one capability, and
+	// a host capability names no symbol a test calls at all.
+	unsupportedRuntimeCapabilities["runtime.Goexit"] = "cooperative goroutine unwind"
 	defer delete(unsupportedRuntimeCapabilities, "runtime.Goexit")
 
-	if name, blocked := unsupportedRuntimeCapability(goexit); !blocked || name != "runtime.Goexit" {
-		t.Fatalf("gate did not fire for a listed symbol: name %q, blocked %v", name, blocked)
+	if capability, blocked := unsupportedRuntimeCapability(goexit); !blocked || capability != "cooperative goroutine unwind" {
+		t.Fatalf("gate did not fire for a listed symbol: capability %q, blocked %v", capability, blocked)
 	}
 
 	// And it stays package-scope only — a METHOD named Goexit is not runtime.Goexit.
@@ -1590,6 +1590,43 @@ func TestUnsupportedRuntimeCapabilityGate(t *testing.T) {
 
 	if _, blocked := unsupportedRuntimeCapability(method); blocked {
 		t.Fatal("a method named Goexit must not match the package-scope runtime.Goexit entry")
+	}
+
+	// The standing entries must each name a capability, so nothing can be added as a bare symbol and
+	// silently surface in the report as one.
+	for symbol, capability := range unsupportedRuntimeCapabilities {
+		if capability == "" {
+			t.Fatalf("entry %q has no capability name — the report would show the bare symbol", symbol)
+		}
+	}
+}
+
+// A capability entry may name the TEST DECLARATION itself, for an impossibility that belongs to the
+// host rather than to anything the test calls (os's TestRemoveAllWithExecutedProcess, which assumes
+// the test binary is a relocatable single file). Nothing NAMES a test, so the caller-side arm of the
+// attribution can never record such a requirement — requiredFor gates a listed function on its own
+// account, and this is the control for that arm.
+func TestUnsupportedRuntimeCapabilityGatesTheDeclarationItself(t *testing.T) {
+	pkg := types.NewPackage("example_test", "example_test")
+	signature := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	subject := types.NewFunc(token.NoPos, pkg, "TestHostBound", signature)
+	bystander := types.NewFunc(token.NoPos, pkg, "TestOrdinary", signature)
+
+	unsupportedRuntimeCapabilities["example_test.TestHostBound"] = "relocatable single-file test executable"
+	defer delete(unsupportedRuntimeCapabilities, "example_test.TestHostBound")
+
+	analysis := testCapabilityAnalysis{
+		direct:   map[*types.Func]HashSet[string]{subject: {}, bystander: {}},
+		referees: map[*types.Func]map[*types.Func]bool{subject: {}, bystander: {}},
+	}
+
+	if required := analysis.requiredFor(subject); !required.Contains("relocatable single-file test executable") {
+		t.Fatalf("a listed declaration must require its own capability, got %v", required.Keys())
+	}
+
+	// Negative control: an unlisted declaration in the same package stays clean.
+	if required := analysis.requiredFor(bystander); !required.IsEmpty() {
+		t.Fatalf("an unlisted declaration must require nothing, got %v", required.Keys())
 	}
 }
 

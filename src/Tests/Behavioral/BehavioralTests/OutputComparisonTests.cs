@@ -146,6 +146,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckBuiltinShadowLocal() => CheckTarget("BuiltinShadowLocal");
 
     [TestMethod]
+    public void CheckByteSliceStringVerbs() => CheckTarget("ByteSliceStringVerbs");
+
+    [TestMethod]
     public void CheckByteTableStringConst() => CheckTarget("ByteTableStringConst");
 
     [TestMethod]

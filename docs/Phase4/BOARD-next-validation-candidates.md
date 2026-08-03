@@ -796,7 +796,16 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
-## `os` — 164 of 178 match + 1 disclosed; the unreached block is gone (r35-os → r36-os-tail, 2026-08-02)
+## `os` — 681 of 683 rows agree + 1 disclosed; ONE residual left (r35-os → r38-os-fin, 2026-08-03)
+
+> **Current state is the r38-os-fin sub-section at the END of this block** — 681 of 683 rows agreeing
+> (173 of 175 top-level), 34 matching skips, 4 capability-excluded, and exactly one real divergence
+> (`TestWriteStringAlloc`), stable across two identical pipeline runs. Everything between here and
+> there is the arc that got it there, kept for its roots and its retractions. The header below is the
+> r36 state.
+>
+> *Header as it stood before r38-os-fin:* **`os` — 164 of 178 match + 1 disclosed; the unreached block
+> is gone (r35-os → r36-os-tail, 2026-08-02)**
 
 Measured with `go2cs -tests -test-action all -test-timeout 35m "<GOROOT>/src/os" src/core/os`.
 `os` builds with **0 errors** and the host runs. Progression across the arc, all from one pipeline
@@ -1127,6 +1136,170 @@ rather than trust the test name to be a unique path component. `TestFileReadDir`
 `TestFileReaddir` is the only collision in `os`; the same generator will collide anywhere Go names
 two tests with case-only differences.
 
+### r38-os-fin (2026-08-03) — the premature-EOF root was the SYSCALL SEAM, and `os` lands on ONE residual
+
+**Measured twice, identically, `-test-action all -test-timeout 35m`: 681 of 683 rows agree
+(173 of 175 top-level), 1 disclosed, 34 matching skips, 4 capability-excluded, 1 residual.** The
+run takes about five minutes now, where the base tree's timed out at 35. Progression across the
+whole `os` arc: **48 agreeing → 141 → 158 → 164 → 681-of-683**.
+
+| | base (`85ce6744c`) | r38-os-fin |
+|:--|--:|--:|
+| host run | **timed out at 35 m**, wedged in `TestPipeEOF` | completes in ~5 m |
+| oracle error list | 937 lines (462 name-encoding PAIRS + 13 real rows) | **1** |
+| real top-level mismatches | 13 | **1** (`TestWriteStringAlloc`) |
+| rows agreeing (all levels) | not measurable — the run never finished | **681 of 683** |
+| top-level agreeing | | **173 of 175** |
+| disclosed | 1 | 1 (`TestUTF16Alloc`) |
+| capability-excluded | 1 | 4 |
+
+#### The root: every managed address handed to native code was a FORMER address
+
+`bufio.Reader.ReadBytes` over a converted `os.Pipe` returning a premature `io.EOF` only under
+parallel load — the r37-chanrace handoff, with its probability gradient (`-parallel 1`: 0/4 · `2`:
+0/4 · `4`: 1/3 · `8`: 5/5 · `16`: 2/2 · default: 100%) and its two surviving suspects — is
+**neither** a handle double-close nor a spurious zero-byte read. It is the `ж<T>` → `uintptr`
+conversion, and the file that performs it had the defect written on its own front door:
+`syscall/dll_windows.cs`'s soundness note said the argument uintptrs the zsyscall wrappers capture
+are TRANSIENT addresses that "golib's ж→uintptr conversion cannot pin across the call", and judged
+the window "short and allocation-free".
+
+It is neither, for a BLOCKING syscall. Both operators end in a `fixed` block — a pin that lasts for
+one statement — and then RETURN the address as an integer, so the window is not capture→`calli`, it
+is capture→**the kernel's write**. `testPipeEOF` parks in `ReadFile` on a pipe for 10 ms per read
+while the rest of a parallel suite allocates around it. Measured directly rather than argued: a
+`heap(new uint32(), out var Ꮡdone)` box and a `Ꮡ(buf, 0)` element pointer BOTH report a different
+address after one forced collection. The kernel then writes to neither — `done` stays 0,
+`syscall.Read` returns `(0, nil)`, `internal/poll`'s `FD.eofError` turns that into `io.EOF`.
+
+Every measured property of the row follows: monotone in parallelism (more threads ⇒ more allocation
+⇒ more collections inside the same 10 ms window); indifferent to the finalizer bridge (a control had
+already ruled that out); and the buffer's half of the same defect — 4 KB written into freed heap —
+is the moving-site `ExecutionEngineException` and the `Fatal error. Internal CLR error.` recorded
+beside it.
+
+**The fix is golib-only, and it makes the ADDRESS MODEL sound rather than patching a caller.**
+`ж<T>`'s `uintptr`/`void*` operators now pin before they read (`EnsureStableAddress`), taking a
+lifetime `GCHandle` on the ROOT storage the pointer names — a heap box pins its own value slot, an
+element reference the canonical backing array, a field reference recurses to the containing
+allocation — on exactly the terms `pinnedArrayData` already used for the fixed-array case. The
+enabler is that a standard heap box's value storage is now a one-element array for a `T` that
+contains no references (`ж<T>.m_slot`): a box is a class with reference fields and `GCHandle` refuses
+to pin anything containing pointers, so the value had nowhere pinnable to live. It is allocated
+EAGERLY and never migrated — `heap<T>(out ж<T>)` hands out a `ref` alias before any address is taken,
+so moving the storage on first address-take would strand that alias on the abandoned copy, which is
+this very bug one level down. A reference-bearing `T` gets no slot and keeps the old transient
+address; its C# layout is not a native layout either, so nothing can meaningfully be handed its
+address. `RuntimeHelpers.IsReferenceOrContainsReferences<T>()` is a JIT constant, so a managed-`T`
+box pays neither the branch nor the allocation. This also makes Go's unsafe.Pointer **rule 3**
+(pointer arithmetic through `uintptr`) sound, which it silently was not.
+
+Guard: `src/Tests/GolibTests/NativeAddressStabilityTests.cs` — a neutered-fix control across all
+four box kinds plus the reference-bearing negative case; with `EnsureStableAddress` removed every
+address assertion fails on the first forced collection. Rule in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md).
+
+**The gradient closes at every point it was measured at.** Same matrix, three host runs per point,
+`TestPipeEOF` counted as a `pass` verdict rather than as the absence of an abort:
+
+| `-parallel` | before (aborts) | after (passes) |
+|--:|:--|:--|
+| 4 | 1 of 3 | **3 of 3** |
+| 8 | 5 of 5 | **3 of 3** |
+| 16 | 2 of 2 | **3 of 3** |
+| default (24) | 6 of 6, plus 2 of 2 through the pipeline | **3 of 3**, plus 2 of 2 through the pipeline |
+
+**What it closed, in one change: 13 residual rows → 3.** `TestPipeEOF` and the whole
+child-stdout family — `TestExecutable`, `TestStatStdin`, `TestHostname`, both `TestStartProcess`
+arms, `TestRootDirAsTemp`'s spawn — because an empty child result WAS the same premature EOF, read
+through `os/exec`'s pipe. The r37-poll prediction that those six "do not follow" was right about the
+pipe-close fix and wrong about the family: they had one root after all, one layer down.
+
+#### The other four rows, each rooted and closed
+
+- **`TestGetppid` — the syscall STRUCT-PASSING seam's third member, and the one that fails SILENTLY.**
+  `PROCESSENTRY32W` is 568 bytes ending in `szExeFile[260]` INLINE; the converted `ProcessEntry32`
+  holds that as one `array<uint16>` reference, so the record is ~56 bytes and every field past
+  `th32DefaultHeapID` reads from the wrong offset. Nothing faults — the kernel writes 568 bytes over
+  a 56-byte object and the caller reads whatever lands — so `syscall.Getppid` answered **0**. Same
+  remedy as `GetTimeZoneInformation` and `findFirstFile1`/`findNextFile1`: a blittable mirror + direct
+  P/Invoke + field-for-field copy back (`syscall/zsyscall_windows_impl.cs`), with `Process32First`/
+  `Process32Next` added to `manualConversionFuncs`. `dwSize` is an INPUT the mirror owns too — Go sets
+  it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here. **The seam is now 6 wrappers,
+  not 8.** ⚠ A quiet wrong ANSWER is the worst shape this class takes; the crash cases at least
+  announce themselves.
+- **`TestRootDirAsTemp` — the host's isolation must not depend on an environment variable the suite
+  can rewrite.** The test re-execs the binary with TMP/TEMP pointed at a deliberately UNMOUNTED drive
+  root (`findUnusedDriveLetter` picks a letter *because* `os.Stat` says it is not there). Go's test
+  binary needs no scratch space; this host does, and it died in startup with
+  `DirectoryNotFoundException` before running a test, which the parent read as a child that produced
+  nothing. `TestHost.CreateRunDirectory` now tries the temp path first and falls back to
+  `AppContext.BaseDirectory`, which exists by construction because the host is running out of it.
+- **`TestStatLxSymLink` — NOT load-sensitive; Go retries Windows sharing violations and we did not.**
+  Recorded on this board as an intermittent member of the load-sensitive family; on the fixed tree it
+  reproduced **3 runs of 3** (`ERROR_SHARING_VIOLATION` on the `t.TempDir()` directory, which a WSL
+  child had been run inside). Go's own `testing.removeAll` retries `ERROR_ACCESS_DENIED` and
+  `ERROR_SHARING_VIOLATION` for ~2 s with jittered backoff (go.dev/issue/50051, /51442); the shim did
+  not, making it reproducibly less tolerant than the runtime it stands in for. Now it does, with Go's
+  timeout and backoff. 2 runs of 2 clean afterwards. **The general lesson: "intermittent" is a
+  hypothesis, not a classification — this one was deterministic once the rows in front of it cleared.**
+- **`TestReadStdin`'s 462 subtests — the NAME-ENCODING artifact is gone.** `TestExecution.SanitizeName`
+  folded every non-printable rune to U+FFFD where Go's `testing.rewrite` emits the `strconv.QuoteRune`
+  body (`\x1a`), and a subtest's NAME is what the oracle pairs by — so each of the 462 became a
+  matched pair of one-sided rows, 924 lines that read like a mass failure on a top-level test that
+  AGREED. `SanitizeName` is now Go's rewrite: `isSpace` → `_`, `unicode.IsPrint` decides, non-printable
+  takes the Go escape. `TempDirName` folds the backslash the escape introduces, since a name is also a
+  path component. Guarded by `TestingRuntimeTests.SubtestNamesEscapeNonPrintableRunesTheWayGoDoes`.
+  (The `TestFileReaddir`/`TestFileReadDir` case-collision this board also records was already closed by
+  `TempDirName`'s per-name hash.)
+
+#### Capability-exclusions — the three sanctioned by the 2026-08-02 ruling, implemented
+
+`unsupportedRuntimeCapabilities` now maps a SYMBOL to the NAME of the capability it requires, so the
+manifest, the comparison and the proof page show *"relocatable single-file test executable"* rather
+than a bare symbol. A key may name the test DECLARATION itself, which `requiredFor` honors by gating a
+listed function on its own account — the shape a HOST capability takes, since nothing NAMES a test and
+the caller-side arm can therefore never record it.
+
+| Test | Capability | Key |
+|:--|:--|:--|
+| `TestCmdArgs` | native output block with caller-side `LocalFree` | `syscall.CommandLineToArgv` |
+| `TestDirectoryJunction` | raw-metal struct overlay on managed bytes | `os_test.createMountPoint` |
+| `TestRemoveAllWithExecutedProcess` | relocatable single-file test executable | `os_test.TestRemoveAllWithExecutedProcess` |
+
+**§9 roster scan, with positive control.** All 72 validated packages' `_test.go` files scanned for the
+three keys: **zero hits**. Controls fired: `AllocsPerRun` finds 18 of the same 72 (so the loop and the
+paths resolve), and `os` itself — deliberately off the roster — hits all three. Guarded by
+`TestUnsupportedRuntimeCapabilityGate` (the lookup answers with the capability, stays package-scope,
+and every entry must name one) and `TestUnsupportedRuntimeCapabilityGatesTheDeclarationItself` (the
+self-gating arm, with an unlisted sibling as the negative control).
+
+#### The ONE residual — `TestWriteStringAlloc`, and it is honestly a residual
+
+`AllocsPerRun` bounded at ZERO, measured **9184 bytes** per `f.WriteString(…)`. Not a disclosure
+candidate — ruling #1 of 2026-08-02 stands, a want-zero assert is satisfiable and disclosing it would
+soften the doctrine the badges depend on — and not a capability exclusion either, since nothing here is
+unownable. It is a real divergence with a known shape and no cheap fix: Go's `WriteString` avoids the
+copy with `unsafe.Slice(unsafe.StringData(s), len(s))`, while the converted path allocates a
+`PinnedBuffer` + box for `StringData`, then pays the `func<T>((defer, recover) => …)` closure and defer
+context of `os.File.Write` and `internal/poll.FD.Write`, then the syscall's own boxes. The defer
+machinery dominates, so this is the `sstring`/`GoFunc` performance arc, not an `os` row. It moved from
+9088 to 8856-9184 bytes across the arc — noise, not regression.
+
+**`os` is therefore an honest NEAR-BANK: every row accounted — 681 agreeing, 1 disclosed, 34 matching
+skips, 4 capability-excluded — with exactly one real divergence, stable across two identical pipeline
+runs and five direct host runs.**
+
+⚠ **Owed to the rebank: every proof page's *Excluded declarations* preamble is one sentence out of
+date.** The generator now says a declaration may need "a capability the managed runtime does not
+provide — a `testing` member the host has not implemented, or a platform behavior it provably cannot
+reproduce", because a runtime capability is no longer hypothetical. The 72 committed pages still carry
+the old "a testing capability the host does not yet provide". Regenerating them here would mean
+banking 72 pages that also carry a fresh date/converter stamp — a partial rebank by another name — so
+they are RESTORED with the rest of the sweep's drift and will level at the scheduled whole-corpus
+regen (ruling #6). The per-entry text, which is the substance, is already correct in the pages that
+have such an entry.
+
 ## `encoding/gob` — build blocker CLOSED; first real census: 86 of 106 match (2026-08-02, r37-gob)
 
 `gob` had never been measured. `package_info_internal_test.cs` emitted
@@ -1447,7 +1620,22 @@ the wedged host is **not reaped**: it outlived `-test-timeout 6m` by minutes and
 PID — the leaked-`os.tests.exe` symptom already on this board is this, and Go's binary-level timeout
 panic is the behavior the host still lacks.
 
-## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
+> **CLOSED 2026-08-03 (r38-os-fin) — and it was neither surviving suspect.** Not a handle
+> double-close and not a spurious zero-byte read: the `ж<T>` → `uintptr` conversion returned an
+> address whose `fixed` pin had already expired, so a gen0 collection during the 10 ms blocking
+> `ReadFile` moved the `*uint32` byte-count box out from under the kernel and `done` stayed 0. The
+> gradient this table measured is exactly the probability of a collection landing in that window.
+> Full account in the `os` block's *r38-os-fin* sub-section. The wedged-host / no-timeout-panic half
+> of this Owed is untouched and still open — it simply stopped firing once nothing hangs.
+
+## Open — the syscall STRUCT-PASSING seam: 6 wrappers still hand a non-blittable struct to the kernel
+
+> **Down from 8 on 2026-08-03 (r38-os-fin):** `Process32First` / `Process32Next` joined the fixed
+> set, and correct a claim this section made — the row below reads "reached-and-working", which it
+> was not. It failed SILENTLY: `syscall.Getppid` answered **0**, because the kernel wrote a 568-byte
+> `PROCESSENTRY32W` over a ~56-byte managed record and the caller read whatever landed. A quiet wrong
+> ANSWER is the worst shape this class takes — a fault at least announces itself, and "it did not
+> crash" is not evidence a wrapper works.
 
 Named as a class 2026-08-01, after `syscall.GetTimeZoneInformation` became the second member of it
 to be hand-owned (the first was `StartProcess`/`_STARTUPINFOEXW`, 2026-07-19). `findFirstFile1` /
@@ -1471,7 +1659,7 @@ latent — nothing in the behavioral suite or the 69-package sweep exercises the
 | Wrapper | Struct | Reached by |
 |:--|:--|:--|
 | ~~`findFirstFile1` / `findNextFile1`~~ | `win32finddata1` (`FileName`, `AlternateFileName`) | **FIXED 2026-08-01** — `path/filepath.EvalSymlinks` → `toNorm` → `normBase`; guarded by the `FindFirstFileData` behavioral output test |
-| `Process32First` / `Process32Next` | `ProcessEntry32` (`ExeFile`) | process enumeration |
+| ~~`Process32First` / `Process32Next`~~ | `ProcessEntry32` (`ExeFile`) | **FIXED 2026-08-03** — `os`'s `TestGetppid` → `syscall.Getppid` → `getProcessEntry`; the mirror owns `dwSize` too, since Go computes it from `unsafe.Sizeof` |
 | `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
 | `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | ⚠ NOT `os` startup — corrected 2026-08-02 by the r35-os arc, which ran the whole suite without reaching it. Nothing in `os` calls it; in Go 1.23 the only caller is the public `syscall.GetStartupInfo`, exercised by syscall's own test. `Process32First`/`Next` above ARE reached from `os` (`TestGetppid` → `syscall.Getppid` → `getProcessEntry`) and did not fault, so that row is reached-and-working rather than latent. |
 | `FreeAddrInfoW` | `AddrinfoW` (`Canonname`, `Next`) | `net` DNS |
@@ -1632,6 +1820,13 @@ another, force `go build -o bin/go2cs.exe` and re-measure before recording a cou
    non-native types in test code). Implement via the established `unsupportedRuntimeCapabilities`
    mechanism, WITH the mandatory §9 roster scan (positive control) before widening. This plus the
    fixable rows is `os`'s path to a bank.
+   **IMPLEMENTED 2026-08-03 (r38-os-fin)** — all three, with the roster scan clean (zero hits across
+   72 packages) and both controls firing. The mechanism gained one generalization it needed: an entry
+   now maps a SYMBOL to the NAME of the capability, so the proof page reads *"relocatable single-file
+   test executable"* instead of a bare symbol, and a key may name the test DECLARATION itself for a
+   capability that belongs to the host rather than to anything the test calls. Detail in the `os`
+   block's *r38-os-fin* sub-section. The fixable rows all closed too; the path led to one residual,
+   not to a bank — see ruling #1, which `TestWriteStringAlloc` is now the second instance of.
 3. **Timer mode-0 divergence ruling DEFERRED** until the recorded one-fire-per-pass timer-model
    fix lands and reshapes the residual — no ruling on a measurement about to change.
 4. **`GoUntyped` → `GoBigConst`** (see the charter §6.1 math/big row); rides the rebank.

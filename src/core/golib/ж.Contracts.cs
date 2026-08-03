@@ -149,11 +149,26 @@ public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
         ILGenerator il = method.GetILGenerator();
 
-        // Emit IL code to load the field address: ((ж<T>)obj).m_val.fieldName
+        // Emit IL code to load the field address: ((ж<T>)obj).<value storage>.fieldName
         il.Emit(OpCodes.Ldarg_0);               // Load the object argument
         il.Emit(OpCodes.Castclass, s_ptrType);  // Cast to ж<T>
-        il.Emit(OpCodes.Ldflda, s_ptrValField); // Load address of ж<T>.m_val struct, type &T
-        il.Emit(OpCodes.Ldflda, structField);   // Load address of m_val struct field, type &TElem
+
+        // Which field IS the value storage depends on T: a box over a pinnable T keeps its value in a
+        // one-element array so the collector can be told to hold it still, and m_val goes unused there
+        // (see ж<T>.m_slot). The probe is the same one the constructors branch on, so the two never
+        // disagree.
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            il.Emit(OpCodes.Ldflda, s_ptrValField); // Load address of ж<T>.m_val struct, type &T
+        }
+        else
+        {
+            il.Emit(OpCodes.Ldfld, s_ptrSlotField); // Load ж<T>.m_slot, type T[]
+            il.Emit(OpCodes.Ldc_I4_0);              // Element 0 — the slot holds exactly one value
+            il.Emit(OpCodes.Ldelema, typeof(T));    // Load address of the slot element, type &T
+        }
+
+        il.Emit(OpCodes.Ldflda, structField);   // Load address of the struct field, type &TElem
         il.Emit(OpCodes.Ret);                   // Return
 
         // Create the delegate
@@ -166,6 +181,10 @@ public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     // FieldInfo for m_val in ж<T>
     private static readonly FieldInfo s_ptrValField = s_ptrType.GetField("m_val", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    // FieldInfo for m_slot in ж<T> — the pinnable value storage used in place of m_val for a T that
+    // contains no references.
+    private static readonly FieldInfo s_ptrSlotField = s_ptrType.GetField("m_slot", BindingFlags.Instance | BindingFlags.NonPublic)!;
 }
 
 /// <summary>
@@ -215,6 +234,22 @@ public interface INilPointer
     /// "when does this object die?" — are asked about.
     /// </remarks>
     object ReferentObject => this;
+
+    /// <summary>
+    /// Gets the managed object that must be held still for this pointer's ADDRESS to stay valid — the
+    /// root storage behind it — or <c>null</c> when there is none that can be pinned. Distinct from
+    /// <see cref="ReferentObject"/>, which answers a LIFETIME question: a standard heap box IS its own
+    /// allocation but is not itself pinnable (a class carrying references never is), so its answer here
+    /// is the value slot inside it rather than the box.
+    /// </summary>
+    /// <remarks>
+    /// Consumed by <see cref="ж{T}"/>'s address operators, which pin before handing an address to
+    /// native code (see <c>EnsureStableAddress</c>), and implemented there per box kind. The default of
+    /// <c>null</c> leaves a generated named-pointer wrapper at the pre-existing transient-address
+    /// behavior — the same recorded residual noted for <see cref="PointerOrderToken"/> and
+    /// <see cref="ReferentObject"/>.
+    /// </remarks>
+    object? PinnableStorage => null;
 }
 
 /// <summary>

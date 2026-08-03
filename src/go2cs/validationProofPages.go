@@ -259,7 +259,9 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		page.WriteString("\n## Excluded declarations\n\n")
 		page.WriteString("Declarations filtered from **both** sides of the comparison, and therefore not claimed above:\n")
 		page.WriteString("`Benchmark`, `Fuzz` and `Example` declarations the converted host does not execute, plus any\n")
-		page.WriteString("test requiring a testing capability the host does not yet provide.\n\n")
+		page.WriteString("test requiring a capability the managed runtime does not provide — a `testing` member the host\n")
+		page.WriteString("has not implemented, or a platform behavior it provably cannot reproduce. Each is named with\n")
+		page.WriteString("the capability it needs.\n\n")
 
 		for _, entry := range excluded {
 			fmt.Fprintf(&page, "- %s\n", strings.TrimSpace(entry))

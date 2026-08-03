@@ -244,8 +244,64 @@ public sealed class TestExecution
     {
         string path = Path.Combine(m_runner.WorkingDirectory, ".tmp", TempDirName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(path);
-        Cleanup(() => RemoveAll(path));
+        Cleanup(() => RemoveAllWithWindowsRetry(path));
         return path;
+    }
+
+    /// <summary>
+    /// <see cref="RemoveAll"/>, retrying the two Windows errors that mean "something still has this
+    /// open, briefly" — mirroring Go's own <c>testing.removeAll</c>, which its <c>TempDir</c> cleanup
+    /// uses for exactly this reason.
+    /// </summary>
+    /// <remarks>
+    /// On Windows a handle outlives the process that closed it by a short, unpredictable interval —
+    /// an antivirus scan, an indexer, or a child process the test spawned and waited for. Go
+    /// accommodates that with a bounded retry (go.dev/issue/50051 and 51442) rather than failing the
+    /// cleanup, and a host that does not is REPRODUCIBLY less tolerant than the runtime it is
+    /// standing in for: os's TestStatLxSymLink drives a WSL child inside its TempDir and its cleanup
+    /// failed 3 runs of 3 with <c>ERROR_SHARING_VIOLATION</c> on the directory, while `go test`
+    /// passed the same test every time. The timeout and the jittered backoff are Go's.
+    /// </remarks>
+    private static void RemoveAllWithWindowsRetry(string path)
+    {
+        TimeSpan timeout = TimeSpan.FromSeconds(2);
+        TimeSpan nextSleep = TimeSpan.FromMilliseconds(1);
+        DateTime start = default;
+
+        while (true)
+        {
+            try
+            {
+                RemoveAll(path);
+                return;
+            }
+            catch (Exception ex) when (IsWindowsRetryable(ex))
+            {
+                if (start == default)
+                {
+                    start = DateTime.UtcNow;
+                }
+                else if (DateTime.UtcNow - start + nextSleep >= timeout)
+                {
+                    throw;
+                }
+
+                Thread.Sleep(nextSleep);
+                nextSleep += TimeSpan.FromTicks(Random.Shared.NextInt64(nextSleep.Ticks + 1));
+            }
+        }
+    }
+
+    // ERROR_SHARING_VIOLATION (32) and ERROR_ACCESS_DENIED (5) — the two Go's isWindowsRetryable
+    // names. .NET surfaces the first as IOException and the second as UnauthorizedAccessException,
+    // both carrying the Win32 code in HResult.
+    private static bool IsWindowsRetryable(Exception ex)
+    {
+        const int ErrorAccessDenied = unchecked((int)0x80070005);
+        const int ErrorSharingViolation = unchecked((int)0x80070020);
+
+        return ex is IOException or UnauthorizedAccessException &&
+               ex.HResult is ErrorAccessDenied or ErrorSharingViolation;
     }
 
     // Go's os.RemoveAll semantics for the TempDir cleanup: a reparse point (junction or symlink)
@@ -526,11 +582,106 @@ public sealed class TestExecution
         return false;
     }
 
+    /// <summary>
+    /// Rewrites a subtest name the way Go's <c>testing.rewrite</c> does: whitespace folds to
+    /// <c>_</c>, and any rune Go does not consider printable becomes its Go ESCAPE \u2014 the body of
+    /// <c>strconv.QuoteRune</c>, so U+001A reads <c>\x1a</c>.
+    /// </summary>
+    /// <remarks>
+    /// The escape is not cosmetic; it is the NAME, and the differential oracle pairs results by name.
+    /// Folding a non-printable to U+FFFD instead \u2014 which this did \u2014 made every such subtest a matched
+    /// pair of one-sided rows (<c>Go="pass" C#=""</c> beside <c>Go="" C#="pass"</c>), and os's
+    /// TestReadStdin has two inputs containing U+001A across 462 subtests: 924 lines that read exactly
+    /// like a mass failure and were none, on a top-level test that AGREED. Go's own rule is in
+    /// testing/match.go (rewrite/isSpace) and strconv/quote.go (IsPrint/appendEscapedRune).
+    /// </remarks>
     private static string SanitizeName(string value)
     {
         if (string.IsNullOrEmpty(value))
             return "#00";
-        return string.Concat(value.Select(ch => char.IsWhiteSpace(ch) ? '_' : char.IsControl(ch) ? '\uFFFD' : ch));
+
+        StringBuilder rewritten = new(value.Length);
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            int rune = char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1])
+                ? char.ConvertToUtf32(value[i], value[++i])
+                : value[i];
+
+            if (IsGoSpace(rune))
+                rewritten.Append('_');
+            else if (IsGoPrintable(rune))
+                rewritten.Append(char.ConvertFromUtf32(rune));
+            else
+                AppendGoEscape(rewritten, rune);
+        }
+
+        return rewritten.ToString();
+    }
+
+    // testing/match.go's isSpace \u2014 deliberately its own list rather than unicode.IsSpace, so the
+    // rewrite folds exactly the runes Go folds.
+    private static bool IsGoSpace(int rune)
+    {
+        if (rune < 0x2000)
+        {
+            return rune is '\t' or '\n' or '\v' or '\f' or '\r' or ' ' or 0x85 or 0xA0 or 0x1680;
+        }
+
+        if (rune <= 0x200A)
+            return true;
+
+        return rune is 0x2028 or 0x2029 or 0x202F or 0x205F or 0x3000;
+    }
+
+    // unicode.IsPrint: letters, marks, numbers, punctuation, symbols, and the ASCII space. Space
+    // never reaches here (isSpace claims it first), so the ASCII-space clause is omitted.
+    private static bool IsGoPrintable(int rune)
+    {
+        if (rune > 0x10FFFF)
+            return false;
+
+        return CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(rune), 0) switch
+        {
+            UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or
+            UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter or
+            UnicodeCategory.OtherLetter or
+            UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or
+            UnicodeCategory.EnclosingMark or
+            UnicodeCategory.DecimalDigitNumber or UnicodeCategory.LetterNumber or
+            UnicodeCategory.OtherNumber or
+            UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation or
+            UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation or
+            UnicodeCategory.InitialQuotePunctuation or UnicodeCategory.FinalQuotePunctuation or
+            UnicodeCategory.OtherPunctuation or
+            UnicodeCategory.MathSymbol or UnicodeCategory.CurrencySymbol or
+            UnicodeCategory.ModifierSymbol or UnicodeCategory.OtherSymbol => true,
+            _ => false
+        };
+    }
+
+    // strconv's appendEscapedRune, minus the quote/backslash cases a non-printable rune cannot be.
+    private static void AppendGoEscape(StringBuilder builder, int rune)
+    {
+        switch (rune)
+        {
+            case '\a': builder.Append("\\a"); return;
+            case '\b': builder.Append("\\b"); return;
+            case '\f': builder.Append("\\f"); return;
+            case '\n': builder.Append("\\n"); return;
+            case '\r': builder.Append("\\r"); return;
+            case '\t': builder.Append("\\t"); return;
+            case '\v': builder.Append("\\v"); return;
+        }
+
+        if (rune < ' ' || rune == 0x7F)
+            builder.Append("\\x").Append(rune.ToString("x2", CultureInfo.InvariantCulture));
+        else if (rune > 0x10FFFF)
+            builder.Append("\\ufffd");
+        else if (rune < 0x10000)
+            builder.Append("\\u").Append(rune.ToString("x4", CultureInfo.InvariantCulture));
+        else
+            builder.Append("\\U").Append(rune.ToString("x8", CultureInfo.InvariantCulture));
     }
 
     /// <summary>
@@ -563,7 +714,11 @@ public sealed class TestExecution
     /// </remarks>
     private static string TempDirName(string value)
     {
-        return $"{SanitizeName(value)}-{Fnv1a32(value):x8}";
+        // A rewritten name can contain BACKSLASHES (`\x1a` is what Go calls U+001A), and a backslash
+        // is a directory separator here — left in, the component would silently split and a
+        // Cleanup() would delete a tree it does not own. `/` stays a separator by design (a subtest
+        // name nests); every other backslash folds.
+        return $"{SanitizeName(value).Replace('\\', '_')}-{Fnv1a32(value):x8}";
     }
 
     /// <summary>

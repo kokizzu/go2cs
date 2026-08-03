@@ -145,6 +145,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckBuiltinShadowLocal() => CheckTarget("BuiltinShadowLocal");
 
     [TestMethod]
+    public void CheckByteSliceStringVerbs() => CheckTarget("ByteSliceStringVerbs");
+
+    [TestMethod]
     public void CheckByteTableStringConst() => CheckTarget("ByteTableStringConst");
 
     [TestMethod]
