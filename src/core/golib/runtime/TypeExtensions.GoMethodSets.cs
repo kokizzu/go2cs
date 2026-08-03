@@ -9,11 +9,13 @@
 // ReSharper disable InconsistentNaming
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using static go2cs.Symbols;
 
 #pragma warning disable IL2075
@@ -42,8 +44,9 @@ namespace go.golib;
 //   does not import the type's package — has to be decided here, at the moment of the assert.
 //
 //   Live consumers: `AdapterBinder` (the duck-typing shell binder), `GoReflect.GoImplements` (so
-//   reflection and direct asserts can never disagree about a method set), and `builtin`'s per-
-//   interface assert cache.
+//   reflection and direct asserts can never disagree about a method set), `GoReflect.GoMethodCount`
+//   (reflect.Type.NumMethod — the same non-disagreement rule, applied to the method set's SIZE),
+//   and `builtin`'s per-interface assert cache.
 //
 // THE RULE THIS FILE EXISTS TO GET RIGHT
 //   In Go, the method set of `*T` contains T's value-receiver AND pointer-receiver methods; the
@@ -101,9 +104,10 @@ namespace go.golib;
 //   against a `*tempErr` that plainly has both methods answered MISS.
 //
 // CACHES ARE CLEARED FROM THE SIBLING FILE
-//   s_interfaceMethodNames and s_goMethodSetCandidates are emptied by `ClearTypeCaches` in
-//   TypeExtensions.ExtensionMethodRegistry.cs on every assembly load, because their contents are
-//   derived from the extension-method scan and a late-loading package assembly changes the answer.
+//   s_interfaceMethodNames, s_goMethodSetCandidates and s_goMethodSetCounts are emptied by
+//   `ClearTypeCaches` in TypeExtensions.ExtensionMethodRegistry.cs on every assembly load, because
+//   their contents are derived from the extension-method scan and a late-loading package assembly
+//   changes the answer.
 //   s_structFieldNames is NOT cleared, and correctly so — a type's own fields are fixed when the
 //   type is loaded. A new cache here belongs on that clear list only if the scan feeds it.
 // ---------------------------------------------------------------------------------------------
@@ -111,6 +115,7 @@ public static partial class TypeExtensions
 {
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_interfaceMethodNames = [];
     private static readonly ConcurrentDictionary<(Type element, bool isPointer), List<MethodInfo>> s_goMethodSetCandidates = [];
+    private static readonly ConcurrentDictionary<(Type element, bool isPointer), int> s_goMethodSetCounts = [];
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_structFieldNames = [];
 
     /// <summary>
@@ -267,6 +272,47 @@ public static partial class TypeExtensions
             }
 
             return candidates;
+        });
+    }
+
+    /// <summary>
+    /// Counts the EXPORTED methods in the Go method set of element type <paramref name="valueElement"/>,
+    /// viewed as a pointer (<c>*X</c>, value- and pointer-receiver methods) or as a value (<c>X</c>,
+    /// value-receiver only) — the answer <c>reflect.Type.NumMethod</c> gives for a concrete type.
+    /// </summary>
+    /// <param name="valueElement">Go element type, i.e. the pointee of a receiver box or the value's own type.</param>
+    /// <param name="valueIsPointer"><c>true</c> to count the <c>*X</c> method set; <c>false</c> for <c>X</c>'s.</param>
+    /// <returns>Number of exported methods in the method set.</returns>
+    /// <remarks>
+    /// Counted over <see cref="GetGoMethodSetCandidates"/> — the SAME candidate source the structural
+    /// probe and the shell binder resolve through — so a NumMethod gate and the assert behind it can
+    /// never disagree about a method set (encoding/json's <c>indirect()</c> only ATTEMPTS its
+    /// Unmarshaler assert when <c>NumMethod() &gt; 0</c>; a count from any other source could answer 0
+    /// for a set the assert would bind, silently skipping every custom UnmarshalJSON). Candidates are
+    /// DEDUPLICATED by projected Go name, because one Go pointer-receiver method reaches the registry
+    /// in two emitted shapes (the RecvGenerator's <c>ж&lt;X&gt;</c> overload and the original
+    /// <c>[GoRecv]</c> <c>this ref X</c> extension), and exported-ness is judged on the projected Go
+    /// name — first rune uppercase, after the same leading collision-marker strip
+    /// <see cref="GoMethodNameMatches"/> applies when matching.
+    /// </remarks>
+    internal static int GoMethodSetCount(Type valueElement, bool valueIsPointer)
+    {
+        return s_goMethodSetCounts.GetOrAdd((valueElement, valueIsPointer), static key =>
+        {
+            HashSet<string> exportedNames = [];
+
+            foreach (MethodInfo candidate in GetGoMethodSetCandidates(key.element, key.isPointer))
+            {
+                string name = candidate.Name;
+
+                if (name.Length > ShadowVarMarker.Length && name.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
+                    name = name[ShadowVarMarker.Length..];
+
+                if (Rune.DecodeFromUtf16(name, out Rune first, out _) == OperationStatus.Done && Rune.IsUpper(first))
+                    exportedNames.Add(name);
+            }
+
+            return exportedNames.Count;
         });
     }
 
