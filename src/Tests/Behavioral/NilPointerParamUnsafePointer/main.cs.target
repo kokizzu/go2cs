@@ -36,7 +36,7 @@ internal static ж<node> newNode(nint id, ж<node> Ꮡparent) {
 }
 
 internal static nint depth(ж<node> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     nint d = 0;
     for (var p = n.parent; p != nil; p = p.Value.parent) {
