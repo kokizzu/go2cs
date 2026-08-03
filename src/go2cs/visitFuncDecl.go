@@ -1577,6 +1577,11 @@ func (v *Visitor) isDerefdPointerParamIdent(ident *ast.Ident) bool {
 // and its alias is a dead local. A real value use always emits name as an identifier, so it always
 // matches — the boundary test only ever ADDS spurious matches (a field selector `x.name`, a string,
 // a comment), which keep the alias, so a genuinely live alias is never dropped.
+//
+// ⚠ Keeping a DEAD alias is not free, which is why the one spurious match that is both systematic
+// and namable is excluded: a C# NAMED-ARGUMENT LABEL (see isNamedArgumentLabel). The alias
+// dereferences the box, so a dead one turns a legitimately nil argument into an entry-time
+// NilPointerDereference the Go never performs.
 func bodyReferencesIdentAsValue(bodyText, name string) bool {
 	if name == "" {
 		return false
@@ -1606,12 +1611,55 @@ func bodyReferencesIdentAsValue(bodyText, name string) bool {
 			afterOK = !isIdentifierRune(r)
 		}
 
-		if beforeOK && afterOK {
+		if beforeOK && afterOK && !isNamedArgumentLabel(bodyText, start, end) {
 			return true
 		}
 
 		offset = start + 1
 	}
+}
+
+// isNamedArgumentLabel reports whether the whole-word match at [start, end) is the LABEL half of a
+// C# named argument (`new T(field: value)`) rather than a reference to the value.
+//
+// The converter renders a Go composite literal's field keys as named arguments to the fieldwise
+// constructor go2cs-gen generates, so a pointer PARAMETER whose name matches one of the literal's
+// FIELDS matches the whole-word scan on the label alone — and Go's own idiom is to name the field
+// after the value it is initialized from. internal/concurrent's
+// `newIndirectNode(parent *indirect) { return &indirect{node: …, parent: parent} }` never
+// dereferences parent (the C# passes the box, `parent: Ꮡparent`), yet the label kept its value
+// alias alive; `ref var parent = ref Ꮡparent.Value` then dereferenced the box at ENTRY, and the
+// root node — created as `newIndirectNode(nil)`, a legitimately nil parent — threw
+// NilPointerDereference inside `NewHashTrieMap`, taking down `unique`'s package initializer,
+// `net/netip`'s, and every dependent (encoding/gob's TestNetIP is where it surfaced).
+//
+// A label is the identifier immediately followed by ONE `:` — never `::`, the namespace qualifier —
+// whose preceding non-space character opens or continues an argument list. Every other colon form
+// the converter emits is excluded by that: a `case X:` arm and a goto label are preceded by a
+// keyword or a statement boundary, an interpolated format specifier (`{x:F2}`) by a brace, and a
+// conditional's `cond ? a : b` spaces its colon. A parameter genuinely used elsewhere still matches
+// there — this only discards the label occurrence, never the scan.
+func isNamedArgumentLabel(bodyText string, start, end int) bool {
+	if end >= len(bodyText) || bodyText[end] != ':' {
+		return false
+	}
+
+	if end+1 < len(bodyText) && bodyText[end+1] == ':' {
+		return false
+	}
+
+	for i := start - 1; i >= 0; i-- {
+		switch bodyText[i] {
+		case ' ', '\t', '\r', '\n':
+			continue
+		case '(', ',':
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
 }
 
 // isIdentifierRune reports whether r can appear within a C# identifier — a Unicode letter (which

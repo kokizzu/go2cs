@@ -799,13 +799,18 @@ func (v *Visitor) testOwnedAdapterRef(adapterName string, participants ...string
 	return anchor + "." + adapterName
 }
 
-// whiteboxBridgeDeclaredType mirrors splitWhiteboxVariantRecords' isBridgeName: a BARE name in the
-// bridge's declared-type set. The go/types half of that set is known before either variant
-// converts; the LIFTED half (a function-local type promoted to package level) is claimed as the
-// bridge itself converts, so it is read from the live claim set while the bridge is the variant
-// under conversion — encoding/binary's `TestByteOrder_byteOrder` is exactly that shape.
+// whiteboxBridgeDeclaredType mirrors splitWhiteboxVariantRecords' isBridgeName — including its
+// variant gate, since this decides the anchor a record's adapter is NAMED through and the two must
+// agree. A BARE name in the bridge's declared-type set, read only while the BRIDGE is the variant
+// under conversion: a bare name emitted by the external suite is external-declared whatever the
+// bridge spells the same way (gob's two `Point` declarations), because the external variant reaches
+// a bridge type only through the object-identity route, which qualifies it. The go/types half of
+// the set is known before either variant converts; the LIFTED half (a function-local type promoted
+// to package level) is claimed as the bridge itself converts, so it is read from the live claim set
+// while the bridge is the variant under conversion — encoding/binary's `TestByteOrder_byteOrder` is
+// exactly that shape.
 func (v *Visitor) whiteboxBridgeDeclaredType(name string) bool {
-	if name == "" || strings.Contains(name, ".") {
+	if name == "" || strings.Contains(name, ".") || v.options.testExternalVariant {
 		return false
 	}
 

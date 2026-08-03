@@ -26,6 +26,25 @@ internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
     return ((uintptr)new @unsafe.Pointer(Ꮡh), h);
 }
 
+[GoType] partial struct node {
+    internal nint id;
+    internal ж<node> parent;
+}
+
+internal static ж<node> newNode(nint id, ж<node> Ꮡparent) {
+    return Ꮡ(new node(id: id, parent: Ꮡparent));
+}
+
+internal static nint depth(ж<node> Ꮡn) {
+    ref var n = ref Ꮡn.Value;
+
+    nint d = 0;
+    for (var p = n.parent; p != nil; p = p.Value.parent) {
+        d++;
+    }
+    return d;
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object namedNilˢ = (@string)"named nil  :"u8;
 private static readonly object ptrptrNilˢ = (@string)"ptrptr nil :"u8;
@@ -36,6 +55,9 @@ private static readonly object basicNonnilNonzeroˢ = (@string)"basic nonnil non
 private static readonly object liveAliasNonzeroˢ = (@string)"live alias nonzero:"u8;
 private static readonly object valueˢ = (@string)"value:"u8;
 private static readonly object readbackˢ = (@string)"readback:"u8;
+private static readonly object namedArgLabelˢ = (@string)"named-arg label:"u8;
+private static readonly object depthsˢ = (@string)"depths         :"u8;
+private static readonly object linksˢ = (@string)"links          :"u8;
 
 internal static void Main() {
     fmt.Println(namedNilˢ, addrOfNamed(nil));
@@ -52,6 +74,12 @@ internal static void Main() {
     fmt.Println(basicNonnilNonzeroˢ, addrOfBasic(Ꮡu) != 0);
     var (addr, val) = liveAlias(Ꮡh);
     fmt.Println(liveAliasNonzeroˢ, addr != 0, valueˢ, val, readbackˢ, h);
+    var root = newNode(1, nil);
+    var child = newNode(2, root);
+    var grand = newNode(3, child);
+    fmt.Println(namedArgLabelˢ, (~root).id, (~child).id, (~grand).id);
+    fmt.Println(depthsˢ, depth(root), depth(child), depth(grand));
+    fmt.Println(linksˢ, (~root).parent == nil, (~child).parent == root, (~grand).parent == child);
 }
 
 } // end main_package

@@ -80,26 +80,40 @@
 >   explicit `typeof(object)` arm `KindOf` and `TryConvertTo` already had. Cleared gob's
 >   TestInterfaceBasic / TestInterfacePointer / TestNestedInterfaces.
 >
-> **⚠ gob is BUILD-BLOCKED as of 2026-08-02 (measured by increment 5), so the residue list below is
-> not currently observable.** `package_info_internal_test.cs` emits
+> **✅ gob's build blocker is CLOSED (2026-08-02, r37-gob) and gob is MEASURED — the "79 of 98" above
+> is superseded by 86 of 106.** It was build-blocked when increment 5 looked:
+> `package_info_internal_test.cs` emitted
 > `[assembly: GoImplement<gob_internal_test_package.Point, Pythagoras>]`, but `Pythagoras` is declared
 > in the EXTERNAL test package (`example_interface_test.go`, `package gob_test`) and gob declares a
 > SECOND, unrelated `Point` there — so the record anchored the internal variant's same-named type and
 > left the interface unqualified in a file where it is not in scope: `CS0246`, no test host, all 106
-> verdicts empty. That is test-project-model record anchoring (the `splitExternalVariantRecords` /
-> whitebox adapter-pair family), **not** reflection surface; it is recorded against that arc in
-> BOARD-next-validation-candidates.md. Re-measure gob's reflection residues only after it builds again.
+> verdicts empty. That was test-project-model record anchoring (the `splitWhiteboxVariantRecords`
+> family), **not** reflection surface: a BARE record name resolves in the variant that RECORDED it, and
+> the bridge's declared-name set was being consulted across variants. Fixed and guarded — see
+> `ConversionStrategies-Reference.md`, *A BARE record name resolves in the variant that RECORDED it*.
 >
-> **Rooted gob residues (open, NOT disclosure candidates).** The managed `array<T>` type does not
-> carry its LENGTH, so `reflect.Type.Elem()` of a `*[N]T` loses N and gob sees a length-0 array
-> where the wire says N — `TestSingletons`, part of `TestIndirectSliceMapArray` (`Value.Elem`/
-> `abi.TypeOf` recover dims from the LIVE value, but a type-only walk cannot). The five remaining
-> GobEncoder tests share ONE root that is not reflection at all: their `GobDecode` bodies write
-> through a reinterpreted named-type pointer via `fmt.Sscanf(s, "VALUE=%s", (*string)(v))` — the
-> direct-field-write case (`ByteStruct`, `TestGobEncoderStructSingleton`) passes, so `Addr`'s
-> write-back path is sound. `TestNetIP` is blocked on `net`'s package init (`sync.OnceFunc` panics
-> nil in `fd_windows`), `TestIgnoreDepthLimit` on `reflect.ArrayOf` (the same `typelinks` stub),
-> and the rest are gob wire/nil-pointer behaviours listed in the r18 report.
+> **Measured, one run, zero empty verdicts: 86 of 106 match** (C# 81 pass + 5 skip vs Go 101 pass + 5
+> skip; 19 capability-excluded, 0 disclosed). Full per-root census — seven roots, only one of them this
+> arc's descriptor surface — is the `encoding/gob` section of
+> [`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md).
+>
+> **Rooted gob residues owned by THIS arc (open, NOT disclosure candidates) — 3 of the 20.** The
+> managed `array<T>` type does not carry its LENGTH, so `reflect.Type.Elem()` of a `*[N]T` loses N and
+> gob sees the wrong type where the wire says `[7]int` — `TestSingletons` and `TestIndirectSliceMapArray`
+> (`Value.Elem`/`abi.TypeOf` recover dims from the LIVE value, but a type-only walk cannot).
+> `TestIgnoreDepthLimit` is `reflect.ArrayOf` → the `typelinks` stub. A fourth is adjacent and worth this
+> arc's attention even though it is not the descriptor surface: the five remaining GobEncoder tests share
+> ONE root that is not reflection at all — their `GobDecode` bodies write through a reinterpreted
+> named-type pointer, `fmt.Sscanf(s, "VALUE=%s", (*string)(v))`, and the reinterpret is emitted as a
+> value conversion into a fresh box (`Ꮡ((@string)(v))`) because `reinterpretManagedEmission` is gated on
+> a deref context or a raw-address source, neither of which a pointer conversion used as an ARGUMENT
+> satisfies. The direct-field-write case (`ByteStruct`, `TestGobEncoderStructSingleton`) passes, so
+> `Addr`'s write-back path is sound. `TestNetIP` was never blocked on `net`'s package init (that claim is
+> retracted — `fd_windows` is not on its stack): it dies in `unique`'s initializer, where r37-gob fixed a
+> dead deref alias in `internal/concurrent` and thereby exposed the root behind it —
+> `abi.TypeOf(m).MapType()` over a zero map yields a descriptor with no `Hasher`, so `NewHashTrieMap`
+> throws `Delegate to an instance method cannot have null 'this'`. That one IS this arc's surface. The
+> rest are gob wire/typed-nil behaviours, all bucketed on the board.
 >
 > **Phase-3 increment 4 (SHIPPED 2026-07-31) — the `getcallersp` chain: `runtime.Callers` +
 > `Frames.Next` managed.** The chip's io increment. The failing surface was never the flatten

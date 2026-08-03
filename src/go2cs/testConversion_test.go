@@ -793,9 +793,9 @@ func TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch(t *testing.T
 	}
 }
 
-// The white-box record split: a BARE record name declared by an internal _test.go file anchors to
-// the bridge (its generated partial must merge with the bridge-declared type); production-qualified
-// and external-declared bare names anchor to the test class.
+// The white-box record split of the BRIDGE variant's own records: a BARE record name declared by an
+// internal _test.go file anchors to the bridge (its generated partial must merge with the
+// bridge-declared type); production-qualified and undeclared bare names anchor to the test class.
 func TestSplitWhiteboxVariantRecordsPartitionsByBridgeDeclaredNames(t *testing.T) {
 	resetPackageState(&packages.Package{})
 	packageNamespace = "go"
@@ -804,7 +804,7 @@ func TestSplitWhiteboxVariantRecordsPartitionsByBridgeDeclaredNames(t *testing.T
 
 	interfaceImplementations["io_package.Reader"] = NewHashSet([]string{"errReader", "externalHelper", PointerPrefix + "<scanner_package.Scanner>"})
 
-	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeNames)
+	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeNames, true)
 
 	if !bridgeAnchored.interfaceImplements["io_package.Reader"].Contains("errReader") {
 		t.Fatal("a bridge-declared implementer must anchor to the bridge unit")
@@ -815,6 +815,81 @@ func TestSplitWhiteboxVariantRecordsPartitionsByBridgeDeclaredNames(t *testing.T
 	if !testAnchored.interfaceImplements["io_package.Reader"].Contains("externalHelper") ||
 		!testAnchored.interfaceImplements["io_package.Reader"].Contains(PointerPrefix+"<scanner_package.Scanner>") {
 		t.Fatal("non-bridge records must anchor to the test class")
+	}
+
+	resetPackageState(&packages.Package{})
+}
+
+// A BARE record name resolves in the scope of the variant that RECORDED it, so the bridge's
+// declared-name set may only be consulted while splitting the BRIDGE's own records. The two
+// `-tests` variants are separate Go packages and may declare the same simple type name:
+// encoding/gob declares `Point` in codec_test.go (`package gob`) AND in example_interface_test.go
+// (`package gob_test`, the one implementing `Pythagoras`). Matching the EXTERNAL suite's record
+// against the bridge's set anchored `Point → Pythagoras` in package_info_internal_test.cs, where
+// `Pythagoras` — external-only — is not in scope: CS0246, no test host, and all 106 gob verdicts
+// read empty. The fixture reproduces the collision through the real go/types scan, so the guard
+// fails if either the split's variant gate or the collision itself regresses.
+func TestSplitWhiteboxVariantRecordsResolvesBareNamesInTheRecordingVariant(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod":   "module example/variantcollision\n\ngo 1.23\n",
+		"value.go": "package variantcollision\n\nfunc Sum(x, y int) int { return x + y }\n",
+		"value_test.go": "package variantcollision\n\n" +
+			"type Squarer interface{ Square() int }\n\n" +
+			"type Point struct{ X, Y int }\n\n" +
+			"func (p Point) Square() int { return p.X * p.Y }\n\n" +
+			"var _ Squarer = Point{}\n",
+		"value_x_test.go": "package variantcollision_test\n\n" +
+			"type Pythagoras interface{ Hypotenuse() int }\n\n" +
+			"type Point struct{ X, Y int }\n\n" +
+			"func (p Point) Hypotenuse() int { return p.X + p.Y }\n\n" +
+			"var _ Pythagoras = Point{}\n",
+	})
+
+	internal, external := loadTestVariantsForDir(t, dir)
+
+	if internal == nil || external == nil {
+		t.Fatal("fixture must load BOTH test variants")
+	}
+
+	bridgeNames := collectWhiteboxBridgeTypeNames(internal)
+
+	if !bridgeNames.Contains("Point") {
+		t.Fatalf("fixture is inert: the bridge must declare Point, got %v", bridgeNames.Keys())
+	}
+	if !ambiguousVariantTypeNames(internal, external).Contains("Point") {
+		t.Fatal("fixture is inert: both variants must declare Point for the collision to exist")
+	}
+
+	// The EXTERNAL suite's pair. Both spellings are bare — `Pythagoras` is declared only there, so
+	// the bridge anchor cannot bind it.
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+	interfaceImplementations["Pythagoras"] = NewHashSet([]string{"Point"})
+
+	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeNames, false)
+
+	if bridgeAnchored.interfaceImplements["Pythagoras"].Contains("Point") {
+		t.Fatal("the external suite's Point must not anchor at the bridge: its interface is out of scope there (CS0246)")
+	}
+	if !testAnchored.interfaceImplements["Pythagoras"].Contains("Point") {
+		t.Fatal("a bare name recorded by the external suite is external-declared and anchors at the test class")
+	}
+
+	// The BRIDGE variant's same-spelled pair still anchors at the bridge, where its partial must
+	// merge with the internal declaration.
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+	interfaceImplementations["Squarer"] = NewHashSet([]string{"Point"})
+
+	bridgeAnchored, testAnchored = splitWhiteboxVariantRecords(bridgeNames, true)
+
+	if !bridgeAnchored.interfaceImplements["Squarer"].Contains("Point") {
+		t.Fatal("the bridge's own Point must anchor at the bridge")
+	}
+	if testAnchored.interfaceImplements["Squarer"].Contains("Point") {
+		t.Fatal("a bridge-declared implementer must not also reach the test anchor")
 	}
 
 	resetPackageState(&packages.Package{})

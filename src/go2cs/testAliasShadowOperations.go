@@ -320,6 +320,35 @@ func collectWhiteboxInternalTestObjects(pkg *packages.Package) map[types.Object]
 	return objects
 }
 
+// collectWhiteboxBridgeTypeNames captures the EMITTED simple type names an internal `_test.go`
+// contributes to the bridge class — the declared-name set the white-box record split resolves the
+// bridge variant's bare record spellings against (see whiteboxBridgeTypeNames). Function-local
+// types are absent by construction: they reach the bridge under a LIFTED package-level name the
+// go/types defs cannot know, and are unioned in from the live claim set as the bridge converts.
+func collectWhiteboxBridgeTypeNames(pkg *packages.Package) HashSet[string] {
+	names := HashSet[string]{}
+
+	if pkg == nil || pkg.TypesInfo == nil || pkg.Fset == nil {
+		return names
+	}
+
+	for _, obj := range pkg.TypesInfo.Defs {
+		typeName, ok := obj.(*types.TypeName)
+
+		if !ok || typeName == nil {
+			continue
+		}
+
+		fileName := pkg.Fset.Position(typeName.Pos()).Filename
+
+		if strings.HasSuffix(strings.ToLower(fileName), "_test.go") {
+			names.Add(getSanitizedIdentifier(typeName.Name()))
+		}
+	}
+
+	return names
+}
+
 // collectWhiteboxBridgeDeclaredNames captures the GO names the bridge class declares: every
 // package-level object an internal `_test.go` contributes, plus its METHODS — those emit as static
 // extension members of the same class and hide a same-named production member just as a function

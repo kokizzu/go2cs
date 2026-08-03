@@ -34,6 +34,13 @@
 > single item (12 unreached) is heap corruption whose crash SITE moves between runs, not a defect at
 > any of the three sites it has been credited to. `os` does not bank and the roster is unchanged at 71.
 >
+> **Revised again 2026-08-02 (r37-gob)**: `encoding/gob` gets its own section below — the build blocker
+> that made all 106 of its verdicts read empty is closed at the test-project-model record-anchoring root,
+> and gob is measured for the first time: **86 of 106 match**, every mismatch bucketed to one of seven
+> roots. A second converter defect found through it — a dead deref alias that took down `unique`'s and
+> `net/netip`'s package initializers corpus-wide — is fixed in the same arc, though it moves `TestNetIP`'s
+> site rather than greening it. The roster is **unchanged at 71**: gob does not bank.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -1115,6 +1122,75 @@ fix is to disambiguate the sanitized name (a case-marker suffix, or a per-execut
 rather than trust the test name to be a unique path component. `TestFileReadDir` vs
 `TestFileReaddir` is the only collision in `os`; the same generator will collide anywhere Go names
 two tests with case-only differences.
+
+## `encoding/gob` — build blocker CLOSED; first real census: 86 of 106 match (2026-08-02, r37-gob)
+
+`gob` had never been measured. `package_info_internal_test.cs` emitted
+`[assembly: GoImplement<gob_internal_test_package.Point, Pythagoras>]` — the EXTERNAL suite's pair
+anchored at the BRIDGE, where `Pythagoras` (declared only in `example_interface_test.go`) is not in
+scope. One `CS0246`, therefore no test host, therefore all 106 verdicts read empty: a missing host
+masquerading as mass runtime failure, and the reason `DESIGN-reflection-bridge.md`'s "gob 79/98"
+residue list could not be re-measured.
+
+**Root — test-project-model record anchoring (the `splitWhiteboxVariantRecords` family), not
+reflection.** The bridge's declared-name set is a set of SIMPLE names, and the two `-tests` variants
+are separate Go packages free to declare the same one: gob declares `Point` in `codec_test.go`
+(`package gob`, implementing the internal `Squarer`) and again in `example_interface_test.go`
+(`package gob_test`, implementing `Pythagoras`). Each variant's records are split as that variant
+converts, and every cross-variant reference is routed by `go/types.Object` identity to a
+CLASS-QUALIFIED spelling — so a BARE name recorded by the external suite is external-declared *by
+construction*. The set is now consulted only while splitting the BRIDGE variant's own records, and
+the emission mirror that names an adapter through its record's anchor carries the identical gate, so
+the two cannot disagree. Write-time qualification could not have repaired it: it roots an ambiguous
+bare name at the file it is ALREADY being written into, so a mis-anchored record merely comes out
+qualified to the wrong variant. Rule:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A BARE record name
+resolves in the variant that RECORDED it*; guard
+`TestSplitWhiteboxVariantRecordsResolvesBareNamesInTheRecordingVariant` (a fixture module declaring
+`Point` in both variants, asserting the collision through the real `go/types` scan before exercising
+either split). The fix is test-model-only — verified, not asserted: CNR is byte-identical across all
+558 behavioral packages, and the whole-stdlib A/B reconvert shows it changing no production file.
+
+**First measurement** (`go2cs -tests -test-action all -test-timeout 20m`, one run, **zero empty
+verdicts**): **86 of 106 match** — C# 81 `pass` + 5 `skip` against Go's 101 `pass` + 5 `skip`; 19
+declarations capability-excluded, 0 disclosed. The 20 mismatches reach seven roots, none of them
+new-and-unrooted:
+
+| Root | Tests | Note |
+|:--|:--|:--|
+| **A pointer REINTERPRET used as a VALUE boxes a copy** | `TestGobEncoderField`, `TestGobEncoderNonStructSingleton`, `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder` (5) | The largest single root, and precisely located. `Gobber.GobDecode` writes back through a reinterpreted named-type pointer — `fmt.Sscanf(string(data), "VALUE=%d", (*int)(g))` — which emits `fmt.Sscanf(…, Ꮡ((nint)(g)))`: the POINTEE is converted to a value and *that temporary* is boxed, so `Sscanf`'s write lands in a throwaway box and `g` never changes ("expected '23 got 0"; `TestGobEncoderValueEncoder` NREs on the unwritten value instead of mismatching). The managed-reinterpret route (`Reinterpret<U>()`, which aliases the source box) exists and is correct — but `reinterpretManagedEmission` is reached only when `context.isPointerCast` (the conversion is the operand of a deref) or the source is a RAW address. A `(*U)(p)` whose result is used as a VALUE — passed as an argument — satisfies neither and falls through to the ordinary value-conversion path. **Reinterpret area ⇒ chip-owned; recorded, not fixed here.** Fifth sighting of the address-of-copy-boxing shape, one base shape per fix. |
+| **`GobDecode` write-back for a named-ARRAY pointer receiver** | `TestGobEncodeIsZero` (1) | `isZeroBugArray [2]uint8`'s `GobDecode` writes `a[0]`/`a[1]` through the pointer receiver, and the embedded `time.Time` decodes the same way; the round-trip returns `[0 0]` and a zero `Time` where Go returns `[1 2]` and `time.Unix(1e9,0)`. The direct-field-write case (`ByteStruct`) passes, so `Value.Addr`'s write-back path is sound — this is the element/receiver storage shape, adjacent to the root above. |
+| **Reflection bridge** | `TestSingletons`, `TestIndirectSliceMapArray`, `TestIgnoreDepthLimit` (3) | Already recorded in `DESIGN-reflection-bridge.md` and now confirmed by measurement rather than inference. `array<T>` does not carry its LENGTH, so a type-only walk sees a slice where the wire says `[7]int` (`gob: decoding into local type *[]int, received remote type [7]int`) and a `[3]int` mismatch for a field declared `[3]int`; `TestIgnoreDepthLimit` is `reflect.ArrayOf` → the `typelinks` stub (a `NotImplementedException`, so it reports `infrastructure-error`, not `fail`). **Chip-owned.** |
+| **Typed-nil pointer identity through `any`** | `TestTopLevelNilPointer`, `TestNilPointerPanics`, `TestNilPointerInsideInterface` (3) | `var ip *int` emits `ж<nint> ip = default!`, so `encodeAndRecover(ip)` hands gob a plain null and gob answers `gob: cannot encode nil value` where Go sees a typed `*int` nil and panics "nil pointer". Same shape for the four `mustPanic` cases and for a nil pointer inside an interface ("expected error, got none"). The canonical typed-nil boxing (`ж<T>.NilBox`) exists; a nil pointer VARIABLE's zero value does not reach it. One root, three tests. |
+| **A nil deref inside the engine, re-panicked through `catchError`** | `TestEndToEnd`, `TestLargeSlice` + `/byte` + `/struct` (4) | The stack ends at `error.cs:45` — `catchError`'s `throw panic(e)` re-raising a value that is NOT a `gobError`, i.e. a genuine `NullReferenceException` from inside `Encode`/`DecodeValue`, with the original site consumed by `recover()`. Differential worth keeping: `TestLargeSlice`'s `int8` and `string` subtests PASS while `byte` and `struct` fault, so it is shape-dependent, not size-dependent. Unrooted below the recover boundary; the next visit should print before recovering rather than reason about the stack. |
+| **Wire-level error-path divergences** | `TestBadData`, `TestIgnoreRecursiveType`, `TestOverflow` (3) | `TestBadData` case #8 gets `gob: bad data: field numbers out of bounds` where Go reports `exceeds input size`; `TestIgnoreRecursiveType` gets that same message on a stream Go accepts; `TestOverflow` produces no range error for **complex64** only (every int/uint/float width matches). Small, separable, and each names its own expected string. |
+| **`unique`'s package initializer** | `TestNetIP` (1) | Two roots stacked in `internal/concurrent.NewHashTrieMap`. The FIRST — a dead deref alias, described below — is **fixed this arc**, and it was neither `net` nor reflection (the r18-era claim that this is `net`'s `sync.OnceFunc` in `fd_windows` is retracted; that is not on the stack). Fixing it MOVED the error site rather than greening the test: `NewHashTrieMap` now fails one line later with `ArgumentException: Delegate to an instance method cannot have null 'this'` at `keyHash: new Func<…>((~mapType).Hasher)`, i.e. `abi.TypeOf(m).MapType()` over a zero map yields a descriptor with no hasher. That second root is the descriptor surface — **chip-owned**. |
+
+**The first `TestNetIP` root, fixed: a dead deref alias kept alive by a NAMED-ARGUMENT LABEL.**
+`TestNetIP` reported `TypeInitializationException` for `go.net.netip_package` → `go.unique_package`
+→ a nil deref in `internal/concurrent.newIndirectNode`. Go's
+`newIndirectNode(parent *indirect) { return &indirect{node: …, parent: parent} }` never dereferences
+`parent`, but the converter's alias-liveness scan is a whole-word TEXT match over the converted body
+and the composite literal's field key emits as the C# named argument `parent: Ꮡparent` — so the
+LABEL matched, the alias survived as a dead local, and `ref var parent = ref Ꮡparent.Value`
+dereferenced the box at entry. `NewHashTrieMap` builds its ROOT node with `newIndirectNode(nil)`, so
+`unique`'s package initializer threw and took `net/netip` and every dependent with it. The scan now
+excludes a named-argument label (`isNamedArgumentLabel`); rule and A/B in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A pointer parameter
+used only through its box gets no deref VALUE alias*, guarded by the extended
+`NilPointerParamUnsafePointer` behavioral test (the composite-literal shape plus a dereferencing
+positive control). Whole-stdlib A/B: **39 files**, every hunk one removed dead `ref var` line and
+nothing else; the reconverted corpus builds **304/304, 0 errors**.
+
+⚠ **It moved the site, it did not green the test** — the charter's root-cause-layering warning, in the
+wild again. Proving even that much needed the dependency regenerated: a `-tests` run regenerates only
+the package under test, so gob's first re-measurement still linked the COMMITTED
+`internal/concurrent/hashtriemap.cs` and reproduced the original stack verbatim. Overlaying that one
+file from the reconvert is what showed the `newIndirectNode` frame gone and the next root exposed. gob's
+verdict split is **identical before and after** (86/106) for exactly that reason; the value banked here
+is the general converter defect and its 39-file corpus footprint, not a verdict.
+
+gob does **not** bank (86 of 106), so the roster is unchanged and no gob artifact is committed.
 
 ## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
 

@@ -597,17 +597,8 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// The bridge's declared-name set drives the white-box record split: a BARE record name in
 	// this set is a bridge-declared type whose generated partial must merge inside the bridge.
 	whiteboxBridgeTypeNames = HashSet[string]{}
-	if model == testProjectWhiteboxReference && internal != nil && internal.TypesInfo != nil {
-		for _, obj := range internal.TypesInfo.Defs {
-			typeName, ok := obj.(*types.TypeName)
-			if !ok || typeName == nil {
-				continue
-			}
-			fileName := internal.Fset.Position(typeName.Pos()).Filename
-			if strings.HasSuffix(strings.ToLower(fileName), "_test.go") {
-				whiteboxBridgeTypeNames.Add(getSanitizedIdentifier(typeName.Name()))
-			}
-		}
+	if model == testProjectWhiteboxReference {
+		whiteboxBridgeTypeNames = collectWhiteboxBridgeTypeNames(internal)
 	}
 
 	if model.referencesProduction() {
@@ -809,7 +800,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			// records split between the bridge anchor and the test anchor by declared-name set.
 			unitName, err := writeWhiteboxVariantMetadata(testInfoPath, outputPath,
 				getSanitizedImport(production.Name+PackageSuffix), internalBridgeName,
-				production.Name, internalAnchor, testAnchor, whiteboxBridgeTypeNames)
+				production.Name, internalAnchor, testAnchor, whiteboxBridgeTypeNames, variant == internal)
 			if err != nil {
 				return result, err
 			}
@@ -1857,14 +1848,31 @@ func internalTestPackageInfoSeed(projectNamespace, productionClassName, bridgeCl
 // the test anchor. The discriminator is the record participant's spelling plus the bridge's
 // declared-name set: a BARE name declared by an internal _test.go file is a bridge type, whose
 // generated partial must merge inside the bridge class; every other record — production-qualified,
-// foreign, or bare-but-external-declared — anchors to the test class as before. (An ambiguous
-// name declared by BOTH variants never arrives bare: testAmbiguousLocalTypeNames class-qualifies
-// its every rendering.)
-func splitWhiteboxVariantRecords(bridgeTypeNames HashSet[string]) (bridgeAnchored, testAnchored conversionRecordSet) {
+// foreign, or bare-but-external-declared — anchors to the test class as before.
+//
+// ⚠ A BARE name resolves in the scope of the variant that RECORDED it, so the declared-name set
+// may only be consulted while splitting the BRIDGE variant's own records (bridgeVariant). Each
+// variant's records are split as they are collected, and every cross-variant reference is routed
+// by go/types.Object identity to a CLASS-QUALIFIED spelling (whiteboxBridgeNamedType renders an
+// internal-test type the external suite names as `global::<ns>.<pkg>_internal_test_package.T`;
+// whiteboxProductionObject does the mirror while the bridge converts) — so a bare name recorded by
+// the external suite is external-declared by construction, whatever the bridge happens to declare
+// under the same simple name. Matching it against the bridge's set anchors the record at the
+// bridge, where the OTHER participant is out of scope: encoding/gob declares `Point` in both
+// variants (codec_test.go and example_interface_test.go), and the external pair
+// `Point → Pythagoras` landed in package_info_internal_test.cs with `Pythagoras` — external-only —
+// unqualified, CS0246 with no test host and all 106 verdicts empty. (Write-time qualification
+// cannot repair it: qualifyAmbiguousTestTypeRefs roots an ambiguous bare name at the file it is
+// ALREADY being written into, so a mis-anchored record is merely qualified to the wrong variant.)
+func splitWhiteboxVariantRecords(bridgeTypeNames HashSet[string], bridgeVariant bool) (bridgeAnchored, testAnchored conversionRecordSet) {
 	bridgeAnchored = newConversionRecordSet()
 	testAnchored = newConversionRecordSet()
 
 	isBridgeName := func(name string) bool {
+		if !bridgeVariant {
+			return false
+		}
+
 		if trimmed, ok := strings.CutPrefix(name, PointerPrefix+"<"); ok {
 			name = strings.TrimSuffix(trimmed, ">")
 		}
@@ -1958,9 +1966,10 @@ func splitWhiteboxVariantRecords(bridgeTypeNames HashSet[string]) (bridgeAnchore
 // writeExternalVariantMetadata stashes them, and the accessibility section never reaches the
 // bridge unit — bridge-declared types carry their accessibility inline (testInlineTypeAccess).
 // Returns the unit's file name when it was written, or "" when this variant contributed no
-// bridge-anchored records.
-func writeWhiteboxVariantMetadata(testInfoPath, outputPath, productionClassName, bridgeClassName, goPackageName, internalAnchor, testAnchor string, bridgeTypeNames HashSet[string]) (string, error) {
-	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeTypeNames)
+// bridge-anchored records. bridgeVariant states which variant collected the live records — the
+// bridge's declared-name set only resolves ITS own bare spellings (splitWhiteboxVariantRecords).
+func writeWhiteboxVariantMetadata(testInfoPath, outputPath, productionClassName, bridgeClassName, goPackageName, internalAnchor, testAnchor string, bridgeTypeNames HashSet[string], bridgeVariant bool) (string, error) {
+	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeTypeNames, bridgeVariant)
 
 	// Both anchored writes below are reference-model files: their anchor class IS the local
 	// type scope, and the production class is a referenced assembly.
