@@ -688,6 +688,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
+    public void CheckJsonUnmarshalerDispatch() => CheckTarget("JsonUnmarshalerDispatch");
+
+    [TestMethod]
     public void CheckKeyedLiteralIfaceAssign() => CheckTarget("KeyedLiteralIfaceAssign");
 
     [TestMethod]

@@ -138,8 +138,32 @@
 > too*. **Recorded next gap of the same shape: `rtype.Name`** — deliberately not fixed without a
 > consumer that demonstrates it.
 >
+> **Phase-3 increment 6 (2026-08-02) — `rtype.NumMethod`, the method-set SIZE.** The chip's
+> `time` increment, and the same silent-degradation class as increment 5: `NumMethod` counts
+> `uncommon()` method tables a synthesized descriptor never populates, so it answered **0 for
+> every concrete type** — silently, because 0 is most types' correct count. The consequence hid
+> one hop away: `encoding/json`'s `indirect()` gates its `Unmarshaler`/`TextUnmarshaler`
+> discovery on `v.Type().NumMethod() > 0`, so no custom `UnmarshalJSON`/`UnmarshalText` was EVER
+> dispatched — every `json.Unmarshal` into `time.Time` fell through to the raw-struct path
+> (`TestTimeJSON`), and `{}` decoded silently where `Time.UnmarshalJSON` rejects it
+> (`TestUnmarshalInvalidTimes`). ONE root, no further layers: with the gate answering, the
+> increment-1/3a machinery (field-alias `Addr`, `Interface`, the golib assert, write-back through
+> the aliased box) carries the whole dispatch, struct fields included. Hand-owned in
+> `reflect/value_impl.cs` over golib `GoReflect.GoMethodCount` →
+> `TypeExtensions.GoMethodSetCount`, counted over `GetGoMethodSetCandidates` — the SAME candidate
+> source `StructurallyImplements` and the shell binder resolve through, so the gate and the
+> assert behind it cannot disagree about a method set; deduplicated by projected Go name (one
+> pointer-receiver method has two emitted shapes), exported-only for concrete types, ALL methods
+> for interfaces, 0 for the empty interface, adapter shells unwrapped per R10. Guard:
+> `JsonUnmarshalerDispatch` (four dispatch shapes vs `go run`). Full design:
+> ConversionStrategies-Reference *The method COUNT is a descriptor read too*. **Recorded next gap
+> of the same shape: `rtype.Method(i)`** — still auto over the same absent tables, and a
+> `NumMethod() > 0` gate now lets method-enumeration loops get further than before; the first
+> consumer that walks one demonstrates it.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
-> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
+> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); `rtype.Method(i)`
+> method enumeration (increment 6's recorded gap); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
 > if they surface); `FieldByName`'s embedded-field depth search (a promoted name currently answers
 > the not-found path); open question 3 (field-name/tag fidelity — `[GoTag]` is carried but not yet

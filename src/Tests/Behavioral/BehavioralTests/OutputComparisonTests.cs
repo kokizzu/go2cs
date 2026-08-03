@@ -635,6 +635,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
+    public void CheckJsonUnmarshalerDispatch() => CheckTarget("JsonUnmarshalerDispatch");
+
+    [TestMethod]
     public void CheckKeyedLiteralIfaceAssign() => CheckTarget("KeyedLiteralIfaceAssign");
 
     [TestMethod]
