@@ -1876,3 +1876,18 @@ method (golib's `TryCastAsInteger`) was entering **every** type's method table t
 candidate source's assignability safety net, and doing so nondeterministically — the same binary
 reported `NumMethod` 4 or 6 for the same type depending on which assemblies had loaded when the
 cache was first filled.
+
+## Rulings — 2026-08-03 (user; both recommendations adopted)
+
+1. **The mode-0 timer residual (time's 4 rows): COMMISSION THE SYNCHRONOUS-TIMER-CHANNEL ARC** rather
+   than ruling a divergence — Go 1.23's sync timer channel (#37196: Stop/Reset that blocks stale
+   values; no drain needed) implemented in golib's channel layer. Wave3's successor arc, §7
+   adversarial discipline, r39-timer's zero-margin drain constraint (at Stop/Reset at most 2 ticks
+   exist: 1 buffered + 1 committed-unsent) is required reading. time banks when it lands (152 + 4
+   mode-0 rows + the alloc row below).
+2. **time's alloc row (216 B, both halves fixable): NO disclosure — commission the CLOSURE-EMISSION
+   arc.** The 88 B half = the local-function emission mode (a func literal bound to a local that is
+   only ever CALLED emits a C# local function — captures without allocating; corpus-wide fidelity +
+   perf win). The 128 B half = escape-analysis refinement (an address-taken local Go stack-allocates
+   need not heap-box). Sequenced AFTER r39-osalloc's dock so its defer-closure findings unify with
+   the local-function mode into ONE reviewed closure-emission design.
