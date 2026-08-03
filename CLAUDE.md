@@ -233,6 +233,11 @@ ONE stdlib in a build; there is now only one on disk.
   launches the embedded `BehavioralRunner.dll` and `AppContext.BaseDirectory` is unchanged, so discovery is
   identical). Scope your own kills by path (`Where-Object { $_.Path.StartsWith($myWorktree) }`) so you are
   not the one doing this to somebody else.
+  **⚠ `dotnet build-server shutdown` is ALSO machine-global** (found 2026-08-03: one lane's startup
+  cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
+  truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT
+  run it; isolate your own builds instead (`MSBUILDDISABLENODEREUSE=1`, `-p:UseSharedCompilation=false`)
+  and reserve `build-server shutdown` for solo contexts or coordinator-owned quiet points.
 - **Faster alternative to MSTest — the standalone runner `src/Tests/Behavioral/BehavioralRunner`
   (2026-06-30).** A dependency-free console app that runs the same four phases over every behavioral
   project but is **not** hosted in testhost, so the
