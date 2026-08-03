@@ -11311,48 +11311,6 @@ consumer: `context`'s `TestValues`, 36/38 → **37/38** (the remaining failure i
 measured alloc-count disclosure). `rtype.Name` is the recorded next gap of this shape, deliberately
 NOT fixed without a consumer that demonstrates it.
 
-**The method COUNT is a descriptor read too — `rtype.NumMethod`, the gate on json's Unmarshaler
-discovery (2026-08-02).** The same silent-degradation class as the NAME read above. Go's
-`rtype.NumMethod` counts `uncommon()` method tables — trailing descriptor allocations the linker
-lays out after the `abi.Type`, which a synthesized descriptor never populates — so it answered
-**0 for every concrete type**, and answered it silently, because 0 is the correct count for most
-types and nothing downstream faults on it. The consequence hid one hop away: `encoding/json`'s
-`indirect()` only ATTEMPTS its `Unmarshaler`/`TextUnmarshaler` interface assert behind
-`v.Type().NumMethod() > 0`, so no custom `UnmarshalJSON`/`UnmarshalText` was **ever** dispatched —
-every `json.Unmarshal` into `time.Time` fell through to the raw-struct path and died with
-`json: cannot unmarshal string into Go value of type time.Time` (time's `TestTimeJSON`; in
-`TestUnmarshalInvalidTimes` the miss inverted the failure — `{}` decoded *silently* where
-`Time.UnmarshalJSON` rejects it). The marshal side never had the problem: `newTypeEncoder` gates on
-`Implements`, hand-owned since the type-relation increment.
-
-Severed at the same semantic boundary as every read of this class: the hand-owned `rtype.NumMethod`
-(`reflect/value_impl.cs`) answers over golib `GoReflect.GoMethodCount` →
-`TypeExtensions.GoMethodSetCount`, which counts over `GetGoMethodSetCandidates` — the **same
-candidate source** the structural probe (`StructurallyImplements`) and the duck-typing shell binder
-resolve through, so the NumMethod gate and the interface assert behind it can never disagree about
-a method set (a count from any other source could answer 0 for a set the assert would bind, and the
-gate would silently re-skip the dispatch this fixes). Candidates are deduplicated by **projected Go
-name** — one Go pointer-receiver method reaches the registry in two emitted shapes (the
-RecvGenerator's `ж<X>` overload and the original `[GoRecv]` `this ref X` extension) — and
-exported-ness is judged Go's way (first rune uppercase) on the projection, after the same leading
-collision-marker strip `GoMethodNameMatches` applies. Go's kind split is preserved: an interface
-type counts ALL its methods (`GetInterfaceMethodNames`, instance members only — the golib static
-`As<T>` helpers stay invisible), the empty interface (`object`) counts 0, a concrete type counts
-exported only, with `ж<X>` seeing X's value- AND pointer-receiver methods and a plain X only the
-value-receiver ones; an adapter shell answers as the Go dynamic type it stands for, mirroring the
-`KindOf`/`ElementType` unwrap (R10). The count is memoized per (element, pointer-ness) and cleared
-on assembly load with the candidate cache that feeds it.
-
-One root, four symptom shapes — the guard (`Tests/Behavioral/JsonUnmarshalerDispatch`) locks all
-four against `go run`: unmarshal into `&t` directly (the Pointer-kind gate), whole-value dispatch
-of a non-string JSON value (the error path), a user-declared named type with a pointer-receiver
-`UnmarshalJSON` (dispatch is not stdlib-specific), and unmarshal into struct FIELDS (the
-`Name() != "" && CanAddr()` → `Addr()` route through the field-alias box). Demonstrated consumer:
-time's `TestTimeJSON` and `TestUnmarshalInvalidTimes`. `rtype.Method(i)` stays auto and still reads
-the same absent tables — the recorded next gap of this shape: a `NumMethod() > 0` gate now lets a
-method-ENUMERATION loop (`for i := range t.NumMethod() { t.Method(i) }`) get further than before,
-and the first consumer that walks one demonstrates it.
-
 **Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
 programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
 internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token

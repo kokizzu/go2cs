@@ -916,20 +916,6 @@ internal static nint NumField(this ж<rtype> Ꮡt) {
     return st is null ? 0 : GoReflect.GoFields(st).Length;
 }
 
-// NumMethod returns the size of the type's method set: every method for an interface type
-// (exported and unexported — Go's interface contract), the EXPORTED methods only for a concrete
-// type — a pointer type *X counts X's value- AND pointer-receiver methods, a value type only the
-// value-receiver ones. The auto form reads uncommon() method tables that a synthesized descriptor
-// never populates, so it answered 0 for EVERY concrete type: encoding/json's indirect() gates its
-// Unmarshaler/TextUnmarshaler discovery on NumMethod() > 0, so no custom UnmarshalJSON was ever
-// dispatched ("json: cannot unmarshal string into Go value of type time.Time" — time's
-// TestTimeJSON / TestUnmarshalInvalidTimes). Answered over the same golib method-set machinery the
-// emitted asserts resolve through (GoReflect.GoMethodCount), so this gate and the interface assert
-// that follows it cannot disagree about a method set.
-internal static nint NumMethod(this ж<rtype> Ꮡt) {
-    return GoReflect.GoMethodCount(Ꮡt.Value.t.sysType);
-}
-
 // Field returns the i'th struct field's descriptor: the projected Go name (blank fields are
 // "_"; a promoted embed carries the embedded type's name), the field's STATIC Go type
 // (dims-stamped when the declaring zero instance reveals an array field's length), and the

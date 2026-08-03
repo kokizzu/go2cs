@@ -150,13 +150,6 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"rtype.Elem":     true,
 		"rtype.Field":    true,
 		"rtype.NumField": true,
-		// rtype.NumMethod reads uncommon() method tables a synthesized descriptor never
-		// populates, so it answered 0 for every concrete type — and encoding/json's indirect()
-		// gates its Unmarshaler/TextUnmarshaler discovery on NumMethod() > 0, so no custom
-		// UnmarshalJSON was ever dispatched (time's TestTimeJSON / TestUnmarshalInvalidTimes).
-		// Hand-owned over the same golib method-set machinery the emitted asserts resolve
-		// through (GoReflect.GoMethodCount), so the gate and the assert cannot disagree.
-		"rtype.NumMethod": true,
 		// reflect.Type must be CANONICAL (Go interns type descriptors so `aType == bType` holds for
 		// equal types — internal/fmtsort.compare relies on `aType != bType`). The auto Value.Type()
 		// and toType() mint a fresh wrapper per call over a fresh abi.Type box, so identity-equality

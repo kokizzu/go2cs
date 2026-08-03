@@ -131,7 +131,6 @@ public static partial class TypeExtensions
         s_typeExtensionMethodNames.Clear();
         s_interfaceMethodNames.Clear();
         s_goMethodSetCandidates.Clear();
-        s_goMethodSetCounts.Clear();
     }
 
     private static void LoadAssemblyExtensionMethods(Assembly assembly, List<(MethodInfo, Type)> extensionMethods)

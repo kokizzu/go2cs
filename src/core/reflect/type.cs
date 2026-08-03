@@ -553,7 +553,15 @@ internal static slice<abi.Method> exportedMethods(this ж<rtype> Ꮡt) {
     return ut.ExportedMethods();
 }
 
-// go2cs generated this placeholder — func NumMethod is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+internal static nint NumMethod(this ж<rtype> Ꮡt) {
+    ref var t = ref Ꮡt.Value;
+
+    if (t.Kind() == ΔInterface) {
+        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
+        return tt.NumMethod();
+    }
+    return len(Ꮡt.exportedMethods());
+}
 
 internal static ΔMethod /*m*/ Method(this ж<rtype> Ꮡt, nint i) {
     ΔMethod m = default!;
