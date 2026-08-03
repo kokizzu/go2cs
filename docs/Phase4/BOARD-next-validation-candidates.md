@@ -41,6 +41,10 @@
 > `net/netip`'s package initializers corpus-wide — is fixed in the same arc, though it moves `TestNetIP`'s
 > site rather than greening it. The roster is **unchanged at 71**: gob does not bank.
 >
+> **Revised again 2026-08-03 (r38-gob-fin)**: gob moves **86 → 88 of 106** on a converter fix, `unique`
+> BUILDS for the first time and gets its first census, and four of r37's seven gob roots turn out to be
+> mis-attributed — see the rewritten gob section. The roster is **still 71**: neither package banks.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -1191,6 +1195,169 @@ verdict split is **identical before and after** (86/106) for exactly that reason
 is the general converter defect and its 39-file corpus footprint, not a verdict.
 
 gob does **not** bank (86 of 106), so the roster is unchanged and no gob artifact is committed.
+
+## `encoding/gob` re-measured: **88 of 106**, and four of the seven roots above were mis-attributed (2026-08-03, r38-gob-fin)
+
+Re-run on the same command (`-tests -test-action all -test-timeout 20m`, zero empty verdicts): **88 of
+106** — C# 83 `pass` + 5 `skip` against Go's 101 `pass` + 5 `skip`; 19 capability-excluded, 0 disclosed.
+The **+2** is `TestGobEncoderField` and `TestGobEncoderNonStructSingleton`, greened by the
+aliasing-reinterpret converter fix below. The other 18 rows re-bucket to **seven** roots, and the
+re-bucketing matters more than the +2: three separate rows above were one root, and it is not the row any
+of them named.
+
+| Root | Tests | Owner |
+|:--|:--|:--|
+| **`reflect.Value.IsZero` is wrong for a named STRING and for an ARRAY** | `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero` (4) | reflect bridge — **chip** |
+| **`reflect.Value.Grow` nil-derefs** | `TestLargeSlice` + `/byte` + `/struct` (3 rows) | reflect bridge — **chip** |
+| **Typed-nil identity through `any`** | `TestTopLevelNilPointer`, `TestNilPointerPanics`, `TestNilPointerInsideInterface` (3) | converter — **rooted, deliberately deferred** |
+| **`array<T>` carries no LENGTH** | `TestSingletons`, `TestIndirectSliceMapArray`, `TestEndToEnd` (3) | reflect bridge — **chip** |
+| **`reflect.ArrayOf` → the `typelinks` stub** | `TestIgnoreDepthLimit` (1) | reflect bridge — **chip** (reports `infrastructure-error`) |
+| **The decoder's IGNORE path rejects a valid field number** | `TestBadData` #8, `TestIgnoreRecursiveType` (2) | gob decode path — **unrooted** |
+| **`MapType().Hasher` over a zero map** | `TestNetIP` (1) | reflect bridge — **chip** |
+| **An untyped complex constant narrows to complex64** | `TestOverflow` (1) | golib/converter — **rooted, remedy identified, NOT landed** |
+
+**Root 1 — four tests, one root, and it is an ENCODE-side skip, not a decode write-back.** r37 read the
+three `TestGobEncoder*Value*` failures as residue of the reinterpret row and `TestGobEncodeIsZero` as a
+separate "`GobDecode` write-back for a named-ARRAY pointer receiver", reasoning from `ByteStruct` passing
+that "`Value.Addr`'s write-back path is sound". `ByteStruct` is reached through a POINTER field
+(`GobTest0{17, &ByteStruct{'A'}}`), so it never exercised `Value.Addr` at all — and a direct probe shows
+`reflect.Value.Field(i).Addr()`, including a reinterpret through it, writes back correctly in C#. The
+actual root is one line up, on the ENCODE side: `gobEncodeOpFor`'s `if !state.sendZero && v.IsZero() {
+return }`. Probed directly against `go run`:
+
+| value | Go | C# |
+|:--|:--|:--|
+| `NS("val")` (`type NS string`) | `IsZero=false Len=3` | **`IsZero=true Len=0`** |
+| `"val"` (plain string) | `IsZero=false Len=3` | `IsZero=false Len=3` |
+| `[2]uint8{1,2}` | `IsZero=false` | **`IsZero=true`** |
+| `NA{1,2}` (`type NA [2]uint8`) | `IsZero=false` | **`IsZero=true`** |
+| `NI(3)`, `NB("ab")` (named int / named slice) | correct | correct |
+
+So gob omits the field from the wire entirely and the decoder leaves the zero value — visible as
+`v = "", want "forty-two"` for the VALUE fields while the POINTER fields of the same type pass, and as
+`TestGobEncodeIsZero`'s `[0 0]` where Go has `[1 2]`. A minimal `gob.Encode` probe confirms it at the
+byte level: Go's wire carries `\x01\tVALUE=val\x01\tVALUE=ptr`, C#'s only `\x02\tVALUE=ptr`. In the
+converted `reflect/value.cs` the String arm delegates to `v.Len()` (broken for the `[GoType("str")]`
+wrapper — it sees the wrapper struct, not the underlying `@string`) and the Array/Struct arms take
+raw-memory shortcuts (`typ.Equal(…)` against `zeroVal`, `isZero(unsafe.Slice(v.ptr, size))`) that cannot
+mean anything in the managed model. **Chip-owned; recorded, not touched.**
+
+**Root 2 — `reflect.Value.Grow`, and it is SIZE-dependent, not shape-dependent.** r37 kept the
+`int8`-passes/`byte`-faults differential as evidence of shape-dependence. It is a threshold: `[]byte`
+round-trips fine at 1 MiB and faults at ≥ 10 MiB, which is `internal/saferio`'s `chunk = 10 << 20`. Above
+it gob only partially allocates and grows incrementally — `decUint8Slice` (decode.go:387) and
+`decodeArrayHelper` (decode.go:553) both call `value.Grow(1)` — and `reflect.Value.Grow` nil-derefs. The
+four-line probe is decisive on its own: `reflect.ValueOf(&s).Elem().Grow(1)` on a `[]byte` prints
+`len/cap 4 8` in Go and panics in C#. `int8` and `string` pass only because their `decHelper` fast paths
+(`decInt8Slice`, `decStringSlice`) return before the Grow loop. The stack that "ends at `catchError`'s
+`throw panic(e)`" is genuine but says nothing; the probe is what roots it. **Chip-owned.**
+
+**Root 3 — typed nil, rooted precisely, and deliberately NOT landed here.** `var ip *int` emits
+`ж<nint> ip = default!` — a plain C# `null` — so boxing it into `any` yields interface-nil, and
+`encodeAndRecover(ip)` gets `gob: cannot encode nil value` where Go sees a typed `*int` nil. The control
+that names the root exactly: `ip2 := (*int)(nil)` emits `((ж<nint>)nil)`, goes through golib's canonical
+`ж<T>.NilBox`, and probes IDENTICAL to Go (`kind=ptr isnil=true type=*int`). A nil pointer FIELD has the
+same defect (`st.P` → interface-nil); a nil MAP is already correct. So the canonical typed-nil
+representation exists and works, and the gap is only that a pointer VARIABLE's (and field's) zero value
+never reaches it. Two candidate remedies — emit `ж<T>.NilBox` for a pointer variable's zero value, or
+box at the interface-conversion boundary (`box ?? ж<T>.NilBox`) — and **both change emission at every
+pointer declaration or every pointer→interface conversion in the corpus**, i.e. a change whose gate is
+the full 71-package validated sweep plus a corpus rebuild, not something to land at the tail of an arc
+for three tests. Handed on rooted rather than half-gated (charter §2/§5).
+
+**Root 6 — the two IGNORE-path rows share a symptom and a reproducer.** `TestBadData` #8 (expected
+`exceeds input size`) and `TestIgnoreRecursiveType` (a stream Go accepts) both die with
+`gob: bad data: field numbers out of bounds`, and both decode into `nil` — the ignore path. The
+converted `ignoreStruct` is faithful line-for-line, so the divergence is upstream, in how the ignore
+ENGINE is compiled for a self-referential type: `fieldnum >= len(engine.instr)` rejects a field number Go
+accepts. `TestIgnoreRecursiveType`'s 36-byte `data` literal is a complete standalone reproducer. Not
+reflect; unrooted below the engine compile.
+
+**`TestEndToEnd` moved rather than greened** — the charter's root-cause-layering warning again. It was an
+NRE below `catchError`; it now reports `gob: length mismatch in decodeArray`, i.e. the array-length row,
+which the crash had been masking. Counted under root 4, not as a fix.
+
+**Root 7 — `TestOverflow`'s complex64, rooted precisely, and an attempted fix REJECTED by the gate.**
+Not a decode-path divergence at all: `complex(math.MaxFloat32*2, math.MaxFloat32*2)` produces a
+`complex64` of **+Inf** in C# and 6.8e38 in Go. `UntypedFloat` converts implicitly to BOTH `float32`
+and `float64`, so both golib `complex` overloads are applicable and C# prefers the *better conversion
+target* — the NARROWER one. gob's `float32FromBits` treats +Inf as legal in both widths, so the decode
+produced no range error at all while every int/uint/float width matched. **The general class is worth
+more than the row: any golib builtin overloaded on float width silently narrows an `UntypedFloat`
+operand.**
+
+The obvious remedy — name the untyped pair explicitly (`complex(UntypedFloat, UntypedFloat) =>
+complex128`, Go's default type) — **does not work, and the full behavioral suite is what proved it.**
+It made every MIXED call ambiguous: `complex(0D, gHalfPi)` has the float64 overload better on the first
+operand and the untyped one better on the second, so neither wins (CS0121 in the
+`ComplexConstContext` guard). Completing the set with all four width pairings does not rescue it
+either: `UntypedFloat` converts implicitly **in both directions** with `float32` and `float64`, so for
+an operand that is neither — `complex(7/2, 0D)`, an `int` — no candidate is strictly better and the
+ambiguity simply moves. Overload resolution cannot express this rule; the change was reverted rather
+than banked.
+
+The remedy that can work is CONVERTER-side and deterministic: emit each `complex()` argument at the
+element width Go's typing gives the call — `complex((float64)(x), (float64)(y))` for a complex128
+result, `float32` for complex64 — which is the rule `assignUntypedConstContext` already computes for
+literal rendering but cannot apply to a named untyped const (`Δmath.MaxFloat32`) or a constant
+expression over one. Its footprint is every `complex()` site in the corpus (math/cmplx above all), so
+it wants its own A/B, corpus build and re-validation of the math packages — deliberately not squeezed
+in at the tail of this arc.
+
+### `encoding/gob` fixes landed this arc
+
+1. **A pointer REINTERPRET used as a VALUE boxed a copy — CONVERTER, fixed.** r37 located this precisely
+   and routed it to the chip as "Reinterpret area". It is not: the shape never reaches
+   `reinterpretManagedEmission`'s gate at all, because the `namedToNamed || namedToBasic || basicToNamed`
+   re-box arm returns first — which is also why `context.isPointerCast` was a red herring (a *deref* of
+   the same conversion took the copy route too). The arm now tries the aliasing emission first. Rule and
+   the 14-file / 41-hunk A/B in [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md),
+   *These three arms now ALIAS instead of boxing a copy*; guard = the extended
+   `NamedNumericPointerReinterpret` behavioral output test (neuter-proven). **The blast radius is far
+   larger than gob**: the copy silently broke write-through in `flag` (a parsed flag never reached the
+   caller's variable), `crypto/tls` key-share/signature-scheme parsing, `crypto/cipher`'s CBC IV,
+   `image/png`'s pooled encoder buffer and `go/types`. Reconverted corpus builds 304/304, 0 errors.
+2. **The reference closure's MEMBER-ACCESS edge — CONVERTER (test model), fixed.** Landed for `unique`
+   (below); it changes nothing for gob, whose host already linked.
+
+gob still does **not** bank (88 of 106) and no gob artifact is committed.
+
+## `unique` builds and RUNS for the first time — 0 of 19, one chip-owned wall (2026-08-03, r38-gob-fin)
+
+`unique` had never linked a test host. `handle_test.cs` calls `cleanupMu.Lock()` on the production
+package's `var cleanupMu sync.Mutex`, and the `-tests` csproj emitter did not reference `sync` —
+`CS0012 … 'sync_package.Mutex'` ×2. **Root: the reference closure was missing its MEMBER-ACCESS edge**
+(`declarationClosureImports` covered a named type's interface bases and struct fields, but not the type
+of a RECEIVER — resolving `x.M` requires binding x's type, and when x is declared elsewhere that type is
+spelled nowhere in the compilation); rule, minimality probe and the recompile-model no-op argument in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *The third closure edge — a
+MEMBER ACCESS*. Test-model only, and **zero-drift**: regenerating all 73 banked `.tests.csproj` changes
+exactly one line, unique's own `sync` reference.
+
+⚠ The minimality probe is not ceremony — it rejected two successive forms of this rule that a reading
+of C#'s binding rules would have justified. "The type of every var/const/func the compilation NAMES"
+drifts **23 of 73**; narrowing to receivers but still seeding from the production sources drifts **13**.
+Both were caught only by running it. (And the per-file scoping is load-bearing: go/packages loads the
+INTERNAL test variant with the production files alongside its own, so a per-package gate lets every
+production receiver straight back in — the 13-drift form, wearing the fix's clothes.)
+
+First census, with `internal/concurrent/hashtriemap.cs` overlaid from a fresh reconvert (the committed
+corpus predates r37's dead-alias fix, and a `-tests` run regenerates only the package under test —
+without the overlay all 15 rows report r37's already-fixed `newIndirectNode` stack, which reads exactly
+like a live defect): **0 of 19** — Go 19 pass; C# 4 `fail` + 15 `infrastructure-error`. Every one of the
+15 is the **same** `TypeInitializationException`, and it is the second root r37 already named as
+chip-owned: `NewHashTrieMap` → `keyHash: new Func<…>((~mapType).Hasher)` →
+`ArgumentException: Delegate to an instance method cannot have null 'this'`, because
+`abi.TypeOf(m).MapType()` over a zero map yields a descriptor with no hasher. `unique` is therefore a
+**one-root wall**, and that root is the chip's; nothing else about the package is measurable until it
+clears. (The 4 `fail` rows are `TestMakeCloneSeq` subtests whose names Go takes from
+`reflect.TypeFor[T]().String()`; C# reports that as `""`, so Go's `testString` becomes C#'s `#00` — the
+`rtype.String`/`TypeFor` surface, also chip.) `unique` does not bank; the overlaid dependency was
+restored, not banked.
+
+⚠ **Overlaying a dependency `.cs` is not enough to re-measure it** — `Copy-Item` preserves the source's
+LastWriteTime, so the older-than-the-`.dll` copy was skipped by MSBuild and the run reproduced the
+ORIGINAL stack verbatim, which reads as "the fix did not work". Touch the file after overlaying.
 ### RETRACTED — `TestPipeEOF` is NOT a channel row: the channel was never CLOSED (r37-chanrace, 2026-08-02)
 
 The r37-poll handoff recorded `TestPipeEOF`'s post-pipe-fix hang as *"a `for range` over an already

@@ -2611,6 +2611,41 @@ A **root's own package is never an addition**, and the external variant makes th
 
 Each interface step runs the same `types.Implements` candidate match the converter uses at the declaration site (identical exported / non-alias / non-generic / method-set / strictly-fewer-methods gates) — deliberately taken *before* that function's covered-by-embed skip and minimal-covering-set prune, so the result is a superset of the emitted base list and no emitted base's assembly can be missing. Only the declaring package's own imports are scanned, so a same-package base needs no separate visit (an interface implements its base's bases too, so those candidates are found directly), and the output is a sorted set, so the map-ordered walk stays deterministic. It is a pure project-reference concern (the manifest dependency list stays import-derived), empty for a package whose named types carry no foreign declaration edge (unicode/utf8/path/cmp/itoa → unchanged), and `{io}` for io/fs, hash/maphash and crypto/hmac. **Measured minimality:** regenerating every banked package's `.tests.csproj` and diffing is the instrument, and it is what rejected each looser rule in turn — an un-file-scoped seed drifted `compress/gzip` (context, crypto/tls, mime/multipart, net/http, net/url) and `go/token` (go/ast); a "named by value" struct edge drifted eleven more (encoding/binary, errors, hash/crc64, internal/fmtsort, math/rand, math/rand/v2, mime, os/signal, strconv, strings, testing/quick); an "any composite literal" edge — the empty form *unscoped* — still drifted three (encoding/binary, mime, testing/quick). Every one of those gates remains a **zero-drift** rule. The **root-scoped** empty-literal edge is measured the same way, and it is the one edge that is deliberately not zero: at the 63-package roster (2026-07-31), converting every package twice on one binary with that edge neutered and restored, it changes exactly **one** project — `math/rand/v2`, by exactly **one** line, `<ProjectReference Include="$(go2csPath)core\internal\chacha8rand\internal.chacha8rand.csproj" />`. That is the root set itself and nothing else: the three foreign-struct negatives (`mime`, `testing/quick`, `encoding/binary`) that rejected the unscoped form stay byte-identical, as does every other banked package. (Run that probe with the converter's exit status checked — 63/63 conversions must succeed on **both** sides: a conversion that *fails* writes no csproj, so an ignored failure reads exactly like "no drift", and that false-clean is how the `<pkg>_test` self-reference below first hid.) Guarded by the `TestSelectTestProjectModel`, `TestRecordsRequireProductionAnchorGatesReferenceModel`, `TestWriteTestProjectReferenceModelBindsProductionProject`, `TestReferenceModelSeedAnchorsTestClassOnly`, and `TestDeclarationClosureImportsSurfacesForeignDeclarationEdges` (foreign-package interface base, own-package structural base, transitive `b → a → io`, the `fmt.State` narrowing with its positive control, the empty-closure case, the `*rand.Rand` struct field at a composite literal **with its by-value-only negative**, a func-typed field's signature, the one-level field boundary, the compile-excluded-file negative with its own positive control, the external-variant self-reference negative, and the `testing`-is-never-walked negative) converter unit tests; unicode (28 tests, incl. `TestSpecialCaseNoMapping` and the `testing.Benchmark`-driven `TestCalibrate`) is the first package it validated under the reference model, and crypto/hmac (172 tests) the first the generalized foreign-package rule unblocked. (io/fs compiles clean under this closure but does not yet *validate*: its `TestCVE202230630` globs a 10 001-separator pattern whose faithful `globWithLimit` recursion overflows .NET's fixed thread stack before Go's `depth > 10000` guard fires — a Go-growable-stack vs .NET-fixed-stack divergence in the test host, orthogonal to the reference closure.)
 
+**The third closure edge — a MEMBER ACCESS (2026-08-03, r38-gob).** The two edges above are edges of a named
+TYPE's declaration; the third is the edge of an **access**: resolving `x.M` requires BINDING `x`'s type, and
+when `x` is declared in another package that type is spelled nowhere in this compilation — not in an import,
+not in an alias `using`. `unique` is the witness: `handle.go` declares `var cleanupMu sync.Mutex`, the
+white-box suite calls `cleanupMu.Lock()`, and the test project referenced no `sync` — `handle_test.cs` failed
+`CS0012 … 'sync_package.Mutex'` twice, no host linked, and the package's suite had never been measured. Adding
+the production package's whole import list instead is the looser rule the reference model exists to avoid (it
+would have added `internal/stringslite` and `unsafe` here, and far more elsewhere). The seed is every
+`*ast.SelectorExpr`'s BASE type, `namedTypesIn`-expanded, then `reach()`ed and `enqueue()`d like a field edge;
+a package-QUALIFIED selector (`sync.Mutex`, `lib.F`) is not this shape at all — its base is a `PkgName`, which
+has no type — and the import that spells it already carries the reference.
+
+**Measured minimality — two restrictions, each of which the roster REJECTED a looser form of.** The probe is
+the one this section prescribes (regenerate every banked package's `.tests.csproj` and diff, with the
+converter's exit status checked on both sides: 73/73 conversions must succeed, since a failed conversion
+writes no csproj and reads exactly like "no drift"). (1) *The receiver, not every named declaration.* "The
+type of every var/const/func the compilation NAMES" is equally true of C#'s binding rules in the abstract, and
+drifts **23 of 73** — `bufio` into compress/bzip2 and image/gif, `internal/abi` + `internal/reflectlite` into
+errors, three references into hash/crc32 — all of which compile clean today with none of it. Naming a
+declaration does not force its signature to be materialized; accessing a member of it forces the receiver's.
+(2) *`_test.go` files only, scoped per FILE.* Under the reference model the production sources are not in this
+compilation — they are in the referenced assembly, which carries its own references — and seeding from them
+too still drifts **13** (crc32's `castagnoliOnce.Do`, math's `cpu.X86`, …). Per-file rather than per-package
+because go/packages loads the INTERNAL test variant with the production files alongside its own, so a
+package-level gate lets every production receiver back in. With both restrictions the roster is **zero-drift**:
+unique's single `<ProjectReference Include="$(go2csPath)core\sync\sync.csproj" />` is the only line that
+changes across all 73. Under the **recompile** model the edge is a no-op by construction — that model adds
+`production.Imports` wholesale, so a production receiver can never be an addition. Guarded by
+`TestDeclarationClosureImportsSurfacesMemberAccessEdges` (the unique shape through real test variants, plus
+the named-but-not-accessed, production-source-only and package-qualified negatives). One more rule fell out
+of the family's own `testing`-never-walked negative: `testing` must never be an ADDITION either, for the same
+reason it is never a walk SOURCE — its reference is fixed in the project template, which is why the caller
+strips `"testing"` from the import-derived set rather than passing it through as already-referenced, so
+`reach()` now honours `closureWalkable` too.
+
 ### An Example/Benchmark-ONLY test file is dropped from the compile set (Phase-4D file exclusion)
 
 `Example` and `Benchmark` declarations are uniformly **Phase-4D-deferred** — `discoverTestDeclarations` records them in the manifest with status `unsupported` ("… execution is deferred to Phase 4D") and the differential oracle filters them from both sides (`eligibleTerminalTestResults` admits only `included` `test`-kind declarations). The **option-a ruling** (2026-07-24) extends that deferral from the *declaration* to the *file*: a `_test.go` file is dropped from the `-tests` conversion/compile set (`selectCompileExcludedTestFiles`) iff **both**
@@ -9608,7 +9643,60 @@ in the synthesized execution-context lambda, so a `ref T` receiver referenced in
 `bodyWrappedInDeferContext` flips the method to the direct-ж receiver, whose deref alias emits
 inside the wrapper (fmt `ss.Token`; guarded by `DeferCallOrder` `acc.add`).
 
-The same block also covers a **named-numeric pointer reinterpreted to its underlying *basic* type** — `(*uint64)(head)` where `head` is a `*lfstack` (`type lfstack uint64`). This is the runtime's atomic-on-a-named-integer pattern: `atomic.Load64((*uint64)(head))` / `atomic.Cas64((*uint64)(head), …)` on the named atomic types **`lfstack`** (uint64, `lfstack.go`), **`sweepClass`** (uint32, `mgcsweep.go`), **`profAtomic`** (uint64, `profbuf.go`), and **`sysMemStat`** (uint64, `mstats.go`). `ж<lfstack>` and `ж<uint64>` are distinct generic instantiations with no conversion (`CS0030`), so the same value-convert-and-re-box applies — `atomic.Load64(Ꮡ((uint64)(head)))` — using the `[GoType("num:uint64")]` wrapper's `lfstack → uint64` value conversion. The reinterpret condition is generalized from *Named↔Named* to also fire when the **result** elem is a **basic** type whose underlying equals a **named** argument elem's (`namedToBasic`); the result C# type name comes from the result elem directly (`uint64`/`uint32`). Because it boxes a copy, a **read** through the reinterpret is faithful (golib `Load64` reads `Ꮡptr.Value` = the copy = the value), which is verified against Go; a **write** through it (`atomic.Store64`/`Cas64`/`Xadd64`) targets the copy, but those intrinsics are asm stubs in the converted runtime, so there is no faithful write-through to lose. Cleared all 13 `lfstack`/`sweepClass`/`profAtomic`/`sysMemStat` `→ ж<primitive>` CS0030 (runtime 114 → 101). (Guarded by `NamedNumericPointerReinterpret` — the read path across uint64/uint32 named types, values verified vs Go.)
+The same block also covers a **named-numeric pointer reinterpreted to its underlying *basic* type** — `(*uint64)(head)` where `head` is a `*lfstack` (`type lfstack uint64`). This is the runtime's atomic-on-a-named-integer pattern: `atomic.Load64((*uint64)(head))` / `atomic.Cas64((*uint64)(head), …)` on the named atomic types **`lfstack`** (uint64, `lfstack.go`), **`sweepClass`** (uint32, `mgcsweep.go`), **`profAtomic`** (uint64, `profbuf.go`), and **`sysMemStat`** (uint64, `mstats.go`). `ж<lfstack>` and `ж<uint64>` are distinct generic instantiations with no conversion (`CS0030`); the reinterpret condition is generalized from *Named↔Named* to also fire when the **result** elem is a **basic** type whose underlying equals a **named** argument elem's (`namedToBasic`), and again for the reverse (`basicToNamed`).
+
+#### These three arms now ALIAS instead of boxing a copy (2026-08-03, r38-gob)
+
+Everything above described the emission as *value-convert-and-re-box*, and justified the copy each time
+the shape came up — "no write-through to lose", "the intrinsics are asm stubs", "the source string is
+never re-read". **That justification was a property of the call sites the arm happened to have, not of
+the conversion**, and Go's `(*U)(p)` says the opposite: the derived pointer names **p's own storage**, so
+a write through it is visible through `p`. `encoding/gob` is where the difference stopped being
+theoretical. `Gobber.GobDecode` decodes straight back through a reinterpret used as a **call argument** —
+
+```go
+type Gobber int
+func (g *Gobber) GobDecode(data []byte) error {
+	_, err := fmt.Sscanf(string(data), "VALUE=%d", (*int)(g))   // writes THROUGH the reinterpret
+	return err
+}
+```
+
+— which is neither a deref context nor a raw-address source, so it took this arm and emitted
+`fmt.Sscanf(…, Ꮡ((nint)(g)))`: `Sscanf`'s write landed in a throwaway box, `g` never changed, and the
+decoder returned 0 for 23. All three arms now route through golib's **aliasing** reinterpret —
+`reinterpretManagedEmission`, the same emission this file already produced for the identical conversion
+in a deref or raw-address context — so the arm's own gate is the only thing that changed:
+
+```csharp
+public static error GobDecode(this ж<Gobber> Ꮡg, slice<byte> data) {
+    var (_, err) = fmt.Sscanf(((@string)data), "VALUE=%d"u8, Ꮡg.Reinterpret<Gobber, nint>());
+    return err;
+}
+```
+
+`PointerExtensions.Reinterpret` is where the "can the managed model express this alias?" decision already
+lives (`ReinterpretAliasesStorage`), so the converter delegates rather than re-deciding; it reports false
+for the two shapes that must keep the re-box — an IDENTITY conversion (intercepted upstream by
+`pointerReinterpretIdentitySource`) and an **array** pointee, whose lazily-materialized backing store a
+storage reinterpret bypasses — so the chain-defined `type pallocBits pageBits` pair the written-RHS gate
+deliberately leaves on this arm falls through unchanged. A useful second-order effect: the entry deref
+alias these functions carried (`ref var head = ref Ꮡhead.DerefOrNull();`) becomes dead, because the body
+now names only the box, so the alias-liveness scan drops it.
+
+**Whole-stdlib A/B (converter-vs-converter, both sides seeded per ritual 1a): 14 files, 41 hunks, every
+one this substitution and nothing else** — and the census is what shows the copy was never harmless.
+Beyond the runtime's asm-stub atomics (`lfstack`, `sweepClass`, `profAtomic`, `sysMemStat`,
+`pinnerBits`), it silently broke real write-through in **`flag`** (every `newBoolValue`/`newIntValue`/…
+returns `(*boolValue)(p)`, so a parsed flag never reached the user's variable), **`crypto/tls`**
+(`clientShares.ReadUint16((*uint16)(&ks.group))` parsed key-share groups and signature schemes into a
+copy), **`crypto/cipher`** (`(*cbcEncrypter)(newCBC(b, iv))`, whose IV mutates per block),
+**`image/png`** (`(*encoder)(buffer)` over a pooled `EncoderBuffer`), **`go/types`**
+(`(*term)(t)`), and **`crypto/internal/boring/bbig`**. The reconverted corpus builds **304/304, 0
+errors**. (Guarded by the extended `NamedNumericPointerReinterpret` behavioral **output** test: the read
+path it always covered, plus write-back through an argument-position reinterpret — the gob shape — a
+named→named struct reinterpret held in a local and written through a field selector, and a basic→named
+`(*namedString)(&s)`; verified to FAIL on stdout with the fix neutered.)
 
 ### The club-41 mop-up batch (flag/flate/binary/syntax roots)
 Nine coupled rules from the shallow-stack campaign:

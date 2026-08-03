@@ -1343,6 +1343,12 @@ than the throwaway `ж<byte>` the argument expression allocated; and `sync.Cond`
 Go implementation stores its own *address* (unsound on a moving collector), compares root-allocation
 identity instead.
 
+A pointer **reinterpret** — `(*U)(p)` between two types that share an underlying — names `p`'s own storage
+in Go, so a write through the derived pointer is visible through `p`. The converter emits golib's aliasing
+`p.Reinterpret<T, U>()` rather than boxing a converted copy. `flag`'s `newBoolValue` returning
+`(*boolValue)(p)` is the shape that makes the difference visible: under the copy form a parsed flag never
+reached the caller's variable.
+
 **Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
 range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
 identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`
