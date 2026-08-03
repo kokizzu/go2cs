@@ -292,7 +292,26 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // box (its address is m_nativeAddr), a struct-field reference and an array-element reference are
     // all real addresses (`&s.next` is an address even while the field holds nil). Pointer IDENTITY
     // never asks this question at all; it asks IsNilPointer.
-    public bool IsNull => m_isNull || (m_nativeAddr == 0 && m_structFieldRef is null && m_arrayIndexRef is null && m_val is null);
+    public bool IsNull => m_isNull || (m_nativeAddr == 0 && m_structFieldRef is null && m_arrayIndexRef is null && s_valueCanBeNull && HeldValueIsNull);
+
+    // The held value, asked whether it is null — read from whichever slot actually holds it. A box
+    // whose T contains no references keeps its value in the pinnable m_slot and leaves m_val the
+    // unused default (see the constructor), so peeking at m_val alone answered for the wrong storage:
+    // every ж<Nullable<T>> reported IsNull whatever it held. Unreachable from converted code (Go has
+    // no Nullable) but wrong, and the guard below is what makes reading the right slot free.
+    private bool HeldValueIsNull => (m_slot is null ? m_val : m_slot[0]) is null;
+
+    // Whether `m_val is null` is a question T can even answer — true for a reference type and for a
+    // Nullable<>, false for every other value type. It guards the value-peeking term above, and
+    // the guard is about ALLOCATION rather than about the answer: `is null` on an UNCONSTRAINED type
+    // parameter compiles to `box !T; ldnull; ceq`, so evaluating a term that is constant-false for a
+    // struct T still allocated — and memcpy'd — a full copy of the pointee, on EVERY dereference,
+    // since Value routes its standard-box branch through IsNull. A pointer to a large struct paid its
+    // own size per read: os.File.WriteString spent 4,760 of its 9,208 bytes here, eight boxed copies
+    // of the 592-byte `os.file` record, one per link of the of() chains the write path walks.
+    // Computed from the type instead of by boxing default(T), so type initialization allocates
+    // nothing either.
+    private static readonly bool s_valueCanBeNull = !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) is not null;
 
     /// <summary>
     /// Gets a flag indicating whether this box IS the nil pointer — the STRUCTURAL predicate
@@ -453,20 +472,43 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// <inheritdoc/>
     public ж<TElem> of<TElem>(FieldRefFunc<T, TElem> fieldRefFunc)
     {
-        // fieldRefFunc doubles as the equality-identity token: getFieldRef is a NEW closure per
-        // call, but the accessor delegate compares equal across call sites (same method group).
-        return new ж<TElem>(this, getFieldRef, fieldRefFunc);
+        // fieldRefFunc doubles as the equality-identity token: the untyped wrapper is derived from
+        // it, and the accessor delegate compares equal across call sites (same method group).
+        return new ж<TElem>(this, FieldRefWrappers<TElem>.For(fieldRefFunc), fieldRefFunc);
+    }
 
-        ref TElem getFieldRef(object structPtr)
+    // Untyped `object source` wrappers around the typed field accessors, one per accessor rather
+    // than one per call. The wrapper closes over nothing but the accessor, so it is a pure function
+    // OF the accessor — and the accessor is a static method group, which the compiler caches, so a
+    // whole program mints one wrapper per (T, TElem, field). Minting it per call instead cost a
+    // display class plus a delegate on every `&x.field` in the corpus (88 bytes, ~11 times per
+    // os.File.WriteString) for a value that was identical each time. The table's keys are WEAK, so
+    // an accessor that is genuinely per-call — a lambda rather than a method group — leaves no
+    // permanent entry behind.
+    private static class FieldRefWrappers<TElem>
+    {
+        private static readonly ConditionalWeakTable<FieldRefFunc<T, TElem>, FieldRefFunc<TElem>> s_wrappers = new();
+
+        public static FieldRefFunc<TElem> For(FieldRefFunc<T, TElem> fieldRefFunc)
         {
-            ж<T> typedPtr = (ж<T>)structPtr;
+            return s_wrappers.GetValue(fieldRefFunc, Wrap);
+        }
 
-            // Resolve the parent value through `Value`, not `m_val` — when this pointer is itself a
-            // field reference (or array element) its real storage lives behind `Value` and `m_val` is
-            // an empty default. This is the case for a nested `of()` chain, e.g.
-            // `Ꮡb.of(Bool.Ꮡu).of(Uint8.Ꮡvalue)` where the intermediate `ж<Uint8>` is a field ref —
-            // reading `m_val` would alias a throwaway copy and lose writes.
-            return ref fieldRefFunc(ref typedPtr.Value);
+        private static FieldRefFunc<TElem> Wrap(FieldRefFunc<T, TElem> fieldRefFunc)
+        {
+            return getFieldRef;
+
+            ref TElem getFieldRef(object structPtr)
+            {
+                ж<T> typedPtr = (ж<T>)structPtr;
+
+                // Resolve the parent value through `Value`, not `m_val` — when this pointer is itself
+                // a field reference (or array element) its real storage lives behind `Value` and
+                // `m_val` is an empty default. This is the case for a nested `of()` chain, e.g.
+                // `Ꮡb.of(Bool.Ꮡu).of(Uint8.Ꮡvalue)` where the intermediate `ж<Uint8>` is a field ref —
+                // reading `m_val` would alias a throwaway copy and lose writes.
+                return ref fieldRefFunc(ref typedPtr.Value);
+            }
         }
     }
 
