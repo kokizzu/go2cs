@@ -310,6 +310,19 @@ case that greens today's package but not the next ten like it is the wrong altit
 
 Hard-won during this campaign. Read these before touching the relevant area.
 
+**Coordinator ops — the LOST-WAKE failure mode (three occurrences by 2026-08-03)**
+- A lane that PARKS awaiting its own long background task (a sweep, a suite) sometimes never
+  receives the completion wake: the work finishes on disk and the agent idles indefinitely. The
+  TELL: the live task count drops without a corresponding final report, or a lane is quiet well
+  past its operation's measured window. The PROBE (never re-run blind): process liveness
+  (`Get-Process go2cs,dotnet` — PID-scoped, per the kill rules) plus the lane worktree's newest
+  file mtimes — a sweep that ended shows its LAST package's artifacts (the roster is alphabetical,
+  so `unicode/utf8`-family writes mean it ran to the end). The CURE: `SendMessage`-resume the agent
+  with explicit instructions to READ ITS OWN LOG'S terminal verdict rather than re-running, apply
+  the filtered re-verify discipline to any failed row, then finish gates and commit. **Standing
+  coordinator duty: whenever a lane goes quiet past its expected window, run the probe — do not
+  wait for a human to notice the task count.**
+
 **Converter / gating**
 - **Bank only artifacts the FINAL binary emitted — regenerate the whole roster before any bank.**
   A development session's working tree accumulates artifacts from every intermediate converter build
