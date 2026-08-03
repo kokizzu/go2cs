@@ -11,14 +11,14 @@ internal delegate stateFn stateFn(ж<machine> _);
 }
 
 internal static stateFn stateA(ж<machine> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m.steps++;
     return stateB;
 }
 
 internal static stateFn stateB(ж<machine> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m.steps++;
     if (m.steps >= 4) {

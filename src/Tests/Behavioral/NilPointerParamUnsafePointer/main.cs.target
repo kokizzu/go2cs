@@ -20,7 +20,7 @@ internal static uintptr addrOfBasic(ж<uint16> Ꮡb) {
 }
 
 internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     h = h + 7;
     return ((uintptr)new @unsafe.Pointer(Ꮡh), h);

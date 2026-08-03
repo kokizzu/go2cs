@@ -28,7 +28,7 @@ internal static channel<nint> after() {
 internal static array<nint> sink = new(2);
 
 internal static nint swap(ж<channel<nint>> Ꮡch, channel<nint> repl) {
-    ref var ch = ref Ꮡch.ValueSlot;
+    ref var ch = ref Ꮡch.DerefOrNull();
 
     ch = repl;
     return 0;

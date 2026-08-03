@@ -5,7 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 internal static nint digits(nint @base, ж<nint> Ꮡinvalid) {
-    ref var invalid = ref Ꮡinvalid.DerefOrNil();
+    ref var invalid = ref Ꮡinvalid.DerefOrNull();
 
     nint n = 0;
     for (nint i = 0; i < 5; i++) {

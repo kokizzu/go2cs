@@ -9,7 +9,7 @@ partial class main_package {
 [GoType("[3]row")] partial struct grid;
 
 internal static void populate(ж<row> Ꮡt, uint32 @base) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (nint i = 0; i < len(t.Value); i++) {
         t[i] = @base + (uint32)i;

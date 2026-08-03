@@ -5,7 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 internal static void handle(@string label, ж<error> Ꮡerr) => func((defer, recover) => {
-    ref var err = ref Ꮡerr.ValueSlot;
+    ref var err = ref Ꮡerr.DerefOrNull();
 
     {
         var e = recover(); if (e != default!) {

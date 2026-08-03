@@ -9,13 +9,13 @@ partial class main_package {
 }
 
 internal static void clearViaPtr(ж<mc> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.n = 0;
 }
 
 internal static void bump(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p++;
 }

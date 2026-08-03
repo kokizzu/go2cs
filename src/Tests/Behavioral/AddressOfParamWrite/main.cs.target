@@ -18,7 +18,7 @@ partial class main_package {
 [GoType("[3]nint")] partial struct Trio;
 
 internal static void clip(ж<Rect> Ꮡr, nint lo, nint hi) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.Min < lo) {
         r.Min = lo;
@@ -29,7 +29,7 @@ internal static void clip(ж<Rect> Ꮡr, nint lo, nint hi) {
 }
 
 internal static void bump(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p += 10;
 }
@@ -74,7 +74,7 @@ internal static nint plainParam(Rect r) {
 }
 
 internal static void bumpBox(ж<Box> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.Tag += 10;
 }

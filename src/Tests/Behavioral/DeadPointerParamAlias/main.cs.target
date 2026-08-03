@@ -28,7 +28,7 @@ internal static bool passThrough(ж<node> Ꮡp) {
 }
 
 internal static nint usesValue(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p.val;
 }

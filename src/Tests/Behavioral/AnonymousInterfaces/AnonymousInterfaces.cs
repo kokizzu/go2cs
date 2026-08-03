@@ -188,7 +188,7 @@ internal static (int64, error) fill(this ж<tally> Ꮡt, Δio.Reader r) {
 }
 
 internal static nint checksum(ж<frame> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     nint s = 0;
     foreach (var (_, v) in f.data[..]) {

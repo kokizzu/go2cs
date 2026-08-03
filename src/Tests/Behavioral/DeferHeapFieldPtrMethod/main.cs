@@ -24,7 +24,7 @@ private static readonly object lineˢ = (@string)"line:"u8;
 }
 
 internal static void seed(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.trk.lines = append(p.trk.lines, "seed"u8);
 }

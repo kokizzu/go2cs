@@ -67,7 +67,7 @@ internal static @string pkgShadow(@string s) {
 }
 
 internal static (nint, @string) pkgParamShadow(ж<strings.Reader> Ꮡstrings) {
-    ref var stringsΔ1 = ref Ꮡstrings.Value;
+    ref var stringsΔ1 = ref Ꮡstrings.DerefOrNull();
 
     var buf = new slice<byte>(2);
     var (n, _) = stringsΔ1.Read(buf);

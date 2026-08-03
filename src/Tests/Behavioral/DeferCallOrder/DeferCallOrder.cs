@@ -87,7 +87,7 @@ private static readonly object sentFirstˢ = (@string)"sent-first:"u8;
 private static readonly object watchingHeldˢ = (@string)"watching, held:"u8;
 
 internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.@out = new channel<nint>(2);
     s.held = true;
@@ -102,7 +102,7 @@ internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
 private static readonly object workingHeldˢ = (@string)"working, held:"u8;
 
 internal static void acquireAndWork(ж<sema> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.held = true;
     defer(Ꮡs.release);

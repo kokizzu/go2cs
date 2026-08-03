@@ -13,7 +13,7 @@ internal static (gList, nint) makeList() {
 }
 
 internal static void use(ж<gList> Ꮡg) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     g.n++;
 }

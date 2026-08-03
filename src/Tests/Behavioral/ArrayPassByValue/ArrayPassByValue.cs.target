@@ -78,7 +78,7 @@ internal static void assignCopies() {
 private static readonly @string helloˢ2 = "hello"u8;
 
 internal static void stest(ж<@string> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = helloˢ2;
 }
@@ -95,7 +95,7 @@ internal static void test(array<@string> a) {
 }
 
 internal static void test2(ж<array<@string>> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     fmt.Println(a[0], a[1]);
     a[0] = goodbyeˢ;

@@ -1289,11 +1289,13 @@ package-level global whose address is taken is backed by a real box so `&global`
 `ж<T>` rather than C# `ref` sidesteps escape-analysis complications, at the cost of an occasional heap
 allocation.
 
-A pointer **RECEIVER** is the one alias that must not use `Value`. Go permits calling a method through a
-nil `*T` — the method RUNS, and the panic happens only where the body dereferences the pointee, which is
-why `os`'s fifteen nil-tolerant `*File` methods return `ErrInvalid` instead of panicking. So the receiver
-alias uses `DerefOrNull()`, which binds a *null ref* for a nil box: legal to hold, and it faults on first
-use, so the panic is deferred to Go's own point rather than raised at entry (or, as a shared `default(T)`
+An **ENTRY alias** — the `ref` a pointer RECEIVER or pointer PARAMETER binds on the way in — must not use
+`Value`. Go permits calling a method through a nil `*T`, and equally permits *passing* one: the body RUNS,
+and the panic happens only where it dereferences the pointee. That is why `os`'s fifteen nil-tolerant
+`*File` methods return `ErrInvalid` instead of panicking, and why `internal/concurrent`'s
+`newIndirectNode(nil)` — which merely stores its argument — is not an error at all. So every entry alias
+uses `DerefOrNull()`, which binds a *null ref* for a nil box: legal to hold, and it faults on first use,
+so the panic is deferred to Go's own point rather than raised at entry (or, as a shared `default(T)`
 slot would, lost entirely):
 
 ```go
@@ -1310,10 +1312,13 @@ public static error Chdir(this ж<File> Ꮡf) {    // file.cs
 }
 ```
 
-The fault surfaces as Go's own `runtime error: invalid memory address or nil pointer dereference`, and is
-recoverable. Detail (both emission sites — the converter preamble and go2cs-gen's `ref`-receiver bridge —
-and why the nil-SAFE accessor is a different tool):
-[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish).
+A pointer PARAMETER binds identically — `ref var parent = ref Ꮡparent.DerefOrNull();` — and so does the
+re-alias after a pointer is re-pointed, since a repoint is not a dereference either. The fault surfaces as
+Go's own `runtime error: invalid memory address or nil pointer dereference`, and is recoverable. Detail
+(both emission sites — the converter preamble and go2cs-gen's `ref`-receiver bridge — and the three
+retired body analyses that used to admit nil parameters one shape at a time):
+[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish)
+and [A pointer PARAMETER is nil-deferring for exactly the reason a receiver is](ConversionStrategies-Reference.md#a-pointer-parameter-is-nil-deferring-for-exactly-the-reason-a-receiver-is).
 
 Pointer **equality is by address**, so `ж<T>.Equals` compares each referent shape by its real storage, not
 by the box: a struct-field ref by (source object, field identity), and an element ref by (backing array,

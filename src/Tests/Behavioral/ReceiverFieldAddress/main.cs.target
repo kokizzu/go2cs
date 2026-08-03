@@ -9,7 +9,7 @@ partial class main_package {
 }
 
 internal static int32 bump(ж<int32> Ꮡp, int32 delta) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p += delta;
     return p;

@@ -18,7 +18,7 @@ internal static void run(Action f) {
 }
 
 internal static void set(ж<box> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.x = 42;
 }

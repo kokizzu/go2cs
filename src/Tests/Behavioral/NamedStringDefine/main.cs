@@ -19,7 +19,7 @@ internal static version asVersion(@string s) {
 }
 
 internal static void mutate(ж<@string> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = s + "-mutated"u8;
 }

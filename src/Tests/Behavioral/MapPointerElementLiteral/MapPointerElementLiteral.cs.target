@@ -9,8 +9,8 @@ partial class main_package {
 }
 
 internal static map<@string, ж<node>> buildValueMap(ж<node> Ꮡa, ж<node> Ꮡb) {
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return new map<@string, ж<node>>{["a"u8] = Ꮡa, ["b"u8] = Ꮡb};
 }

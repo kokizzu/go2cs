@@ -1397,23 +1397,17 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					boxBaseName := leftExpr[len(AddressPrefix):]
 					derefExpr := getSanitizedIdentifier(boxBaseName)
 
-					// A pointer PARAMETER walked to a nil terminator (`for p != nil { …; p = p.next }`)
-					// repoints its box to the nil terminator on the final step; re-aliasing through the
-					// plain `.Value` getter would then throw a nil-pointer dereference (the loop guard has
-					// not yet re-checked). Use the nil-safe accessor so the re-alias yields a ref to
-					// default(T) that is never read while the box is nil. Other reassigned pointer boxes
-					// (non-nil-compared params, locals — never nil here) keep `.Value`.
-					derefAccessor := "Value"
-
-					// A repointed RECEIVER box re-aliases the way its ENTRY alias did — nil-deferring,
-					// so the re-alias never throws and a deref of the repointed pointer still panics at
-					// its own point (see NilDeferringDerefAccessor). Without this the two halves of one
-					// alias would disagree: entry says a nil receiver is legal, the re-alias throws on it.
-					if isPtrRecv, recvName := v.isPointerReceiver(); isPtrRecv && recvName == boxBaseName && isDirectBoxReceiverMethod(v.currentFuncDecl, v.info) {
-						derefAccessor = NilDeferringDerefAccessor
-					} else if v.nilSafePtrParamNames.Contains(boxBaseName) {
-						derefAccessor = NilSafeDerefAccessor
-					}
+					// A repointed box re-aliases the way its ENTRY alias binds — nil-DEFERRING, for
+					// every box alike (see NilDeferringDerefAccessor). Repointing a pointer is not a
+					// dereference in Go, so the re-alias must not fault: a walk that repoints its box
+					// to the nil terminator (`for p != nil { …; p = p.next }`) re-aliases on the final
+					// step BEFORE the loop guard re-checks, and the plain `.Value` getter threw a
+					// nil-pointer dereference there. DerefOrNull binds a null ref instead, so a deref
+					// of the repointed pointer still panics — at its own point, with Go's message —
+					// while a repoint that is merely walked past costs nothing. Anything else would
+					// leave the two halves of one alias disagreeing: entry says a nil pointer is legal
+					// to hold, the re-alias would throw on it.
+					derefAccessor := NilDeferringDerefAccessor
 
 					// In a for-loop POST, the re-alias cannot follow the box-repoint in the
 					// single post slot (`for(…; Ꮡscope = scope.Outer scope = ref …)` is a syntax

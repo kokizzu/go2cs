@@ -1409,7 +1409,6 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	collectTypeSpecRHS(pkg)
 	performEscapeAnalysis(allEntries, pkg.Fset, pkg.Types, pkg.TypesInfo)
 	collectAddressedGlobals(allEntries, pkg.Types, pkg.TypesInfo)
-	collectNilArgPtrParams(allEntries, pkg.TypesInfo)
 	computeImportAliasRenames(allEntries, pkg.Types, packageNamespace)
 	collectPublicizedTypes(pkg.Types)
 	preloadImportedTypeAliases(allEntries, options)

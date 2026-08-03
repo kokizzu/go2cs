@@ -13,7 +13,7 @@ internal static void push(this ж<profBuf> Ꮡb, nint v) {
 }
 
 internal static void appendInt(ж<slice<nint>> Ꮡs, nint v) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = append(s, v);
 }
@@ -35,7 +35,7 @@ internal static ж<cpuProfile> Ꮡcpuprof = new(default(cpuProfile));
 internal static ref cpuProfile cpuprof => ref Ꮡcpuprof.Value;
 
 internal static void incr(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p++;
 }
@@ -51,7 +51,7 @@ internal static void run() {
 }
 
 internal static nint viaLocal(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var s = h.span;
     (~s).log.push(10);

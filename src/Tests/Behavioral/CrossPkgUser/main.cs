@@ -20,7 +20,7 @@ internal static (CrossPkgLibꓸStatus, nint) gauge(CrossPkgLibꓸStatus st) {
 }
 
 internal static ж<CrossPkgLibꓸStatus> statusPtr(ж<CrossPkgLibꓸStatus> Ꮡst) {
-    ref var st = ref Ꮡst.Value;
+    ref var st = ref Ꮡst.DerefOrNull();
 
     st.Code++;
     return Ꮡst;

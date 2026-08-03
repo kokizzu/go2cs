@@ -5,7 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 internal static nint accumulate(ж<nint> Ꮡcounter, slice<nint> vals) {
-    ref var counter = ref Ꮡcounter.DerefOrNil();
+    ref var counter = ref Ꮡcounter.DerefOrNull();
 
     var add = (nint v) => {
         if (Ꮡcounter == nil) {

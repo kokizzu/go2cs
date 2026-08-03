@@ -9,20 +9,21 @@
 
 ## Converter / golib — semantics-adjacent (gate: full suite + corpus, some need the sweep)
 
-1. **Unify pointer-PARAMETER derefs on `DerefOrNull` — USER-RULED "should" (2026-08-02), footprint
-   pending.** Go's nil rule is identical for a parameter and a receiver, so the ~3,167 parameter
-   entry aliases that keep eager `.Value` (and the analysis-gated `.DerefOrNil` arms) should take
-   the same nil-deferring accessor receivers now use. Retires `collectNilSafePtrParams` +
-   `nilSafeEntryOnlyParamName` and their analyses outright. Needs its own measured corpus/behavioral
-   footprint and the full gate chain — the emission churn is large even though the edit is one
-   shape. See *The FOUR deref accessors of `ж<T>`* in ConversionStrategies-Reference.md.
-2. **Prune the vestigial receiver arms of the nil-safe analysis** (`visitFuncDecl.go`): after r36,
-   a direct-ж receiver takes `DerefOrNull` before the nil-safe sets are consulted, so
-   `isDirectBoxReceiverIdent`'s consultation arms are dead paths (kept at the merge, commented as
-   cleanup-pass material). Subsumed by item 1 if that lands first.
-3. **`DerefOrNil` → null-ref semantics in the body** (zero emission churn): closes the residual
-   silent-`default(T)` hole for the walk/nil-arg arms. Dissolves entirely if item 1 retires the
-   accessor; measure only if taken standalone.
+1. ~~**Unify pointer-PARAMETER derefs on `DerefOrNull`**~~ — **DONE 2026-08-02 (r37b-paramderef).**
+   Every direct-ж pointer entry alias, RECEIVER and PARAMETER alike, plus the pointer-reassignment
+   re-alias, now takes `DerefOrNull()` unconditionally. Measured footprint: 457 corpus files, 2,551
+   lines, 2,555 accessor sites, 100% one shape (`.Value`→ 2,079, `.DerefOrNil()`→ 413,
+   `.ValueSlot`→ 59). Guarded by `NilPointerParamMethods` (neuter-proven: 42 diverging output
+   lines with the eager arm restored). See *A pointer PARAMETER is nil-deferring for exactly the
+   reason a receiver is* in ConversionStrategies-Reference.md.
+2. ~~**Prune the vestigial receiver arms of the nil-safe analysis**~~ — **DONE 2026-08-02**, with
+   item 1: `isDirectBoxReceiverIdent`, `collectNilSafePtrParams`, `reassignedBeforeDerefParamName`,
+   `statementMentionsDerefdPointerParam`, `exprUsesParamWithoutDeref`, the package-wide
+   `collectNilArgPtrParams` pre-pass and both visitor-state fields are deleted (−382 net lines).
+3. ~~**`DerefOrNil` → null-ref semantics in the body**~~ — **DISSOLVED 2026-08-02**, exactly as
+   predicted: no emission site selects the accessor any more, so the silent-`default(T)` hole is
+   closed by construction. The golib method itself is retained (public surface, covered by
+   `GolibTests.PointerNilPredicateTests`) but is no longer reachable from converted code.
 4. **Remove GoFunc's 17 now-idempotent `panic.CaptureThrowSite(ex)` calls** — subsumed by
    `TryAsPanic`'s adoption-point snapshot (r36-time-tail). ⚠ PAIRED with the
    `GenGoFuncRefInstances` template repair: the template has drifted from the live 16-rung ladder
@@ -93,3 +94,17 @@
 14. **ConversionStrategies-Reference.md ~line 10734** — two unrelated topics mashed onto one line
     (reflectlite mini-bridge paragraph runs into the AllocsPerRun discussion); chip-reported,
     cosmetic.
+
+## Recorded residuals (no work owed unless the surrounding facts change)
+
+14. **The `.ValueSlot` entry-alias residual is now empty — but the arm still exists elsewhere.**
+    Retiring the type-selected `.ValueSlot` arm at the pointer ENTRY alias (r37b) was required to
+    avoid regressing 9 nil-reachable aliases; `.ValueSlot` stays selected for box-of-pointer LOCALS,
+    named-result boxes, `heap(out …)` and the reflection bridge's field paths, where the box is
+    non-nil by construction. Nothing is owed unless one of those sites ever becomes nil-reachable —
+    recorded so the asymmetry is deliberate rather than forgotten.
+15. **Seven banked `DerefOrNil()` sites survive in committed `*_test.cs`** (`container/ring`,
+    `go/token`, `index/suffixarray`, `testing/quick`). A `-stdlib` reconvert does not re-emit
+    banked test sources, so they still carry the retired accessor; they re-emit as `DerefOrNull()`
+    the next time each package's `-tests` pipeline runs. Levels naturally with the whole-corpus
+    rebank (item 11) or with each package's next validation pass — no separate work.

@@ -28,13 +28,13 @@ partial class main_package {
 }
 
 internal static void bump(ж<uintptr> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = p + 7;
 }
 
 internal static void bumpInt(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = p + 3;
 }

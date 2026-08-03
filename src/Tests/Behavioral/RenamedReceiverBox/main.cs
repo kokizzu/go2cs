@@ -23,7 +23,7 @@ internal static void add(this ж<counter> Ꮡc, nint d) {
 }
 
 internal static void addInt(ж<nint> Ꮡx, nint d) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     x += d;
 }
@@ -34,7 +34,7 @@ internal static void bumpTwice(this ж<counter> Ꮡp) {
 }
 
 internal static nint addInClosure(ж<counter> Ꮡp, nint d) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     var apply = () => {
         Ꮡp.Value.n += d;

@@ -38,22 +38,19 @@ const ChannelLeftOp = "\u1438\uA7F7"             // Example: `ch.ᐸꟷ(val)` fo
 const ChannelRightOp = "\uA7F7\u1433"            // Example: `ch.ꟷᐳ(out var val)` for `val := <-ch`
 const PointerDerefOp = "~"                       // Example: `~ptr` for dereferencing a pointer
 
-// NilSafeDerefAccessor is the golib ж<T> extension method used in place of `.Value` to re-alias a
-// deref'd pointer parameter that is walked to a nil terminator (see nilSafePtrParamNames). Unlike
-// `.Value` (which throws on a nil box), it returns a ref to a shared default(T) slot when the box is
-// nil — the ref is never read while the box is nil, so the standard `*p` panic semantics are
-// preserved (a genuine nil deref still uses `~`/`.Value`). Includes `()` as it is a method call.
-const NilSafeDerefAccessor = "DerefOrNil()"
-
 // NilDeferringDerefAccessor is the golib ж<T> extension method used in place of `.Value`
-// for a pointer RECEIVER's entry deref alias - both the converter's own preamble and the
-// RecvGenerator bridge that reaches a `ref T` receiver through a box. Go permits calling a
-// method through a nil `*T`: the method RUNS, and the panic happens only where the body
-// actually dereferences the pointee, so the alias must not deref at ENTRY. Unlike
-// NilSafeDerefAccessor (which hands back a shared default(T) slot, making a deref Go says
-// must panic read a silent zero instead), this binds a NULL ref: legal to hold, and the
-// first read/write through it raises the nil-pointer panic with Go's own message, at Go's
-// own point - after any side effect the body performed first. Includes `()` as it is a
+// for EVERY direct-ж pointer entry deref alias - a RECEIVER and a PARAMETER alike, in the
+// converter's own preamble, in the pointer-reassignment re-alias, and in the RecvGenerator
+// bridge that reaches a `ref T` receiver through a box. Go's nil rule does not distinguish
+// the two: a nil `*T` may be passed to a function exactly as it may be the receiver of a
+// method, the body RUNS, and the panic happens only where the body actually dereferences
+// the pointee, so the alias must not deref at ENTRY. This binds a NULL ref: legal to hold,
+// and the first read/write through it raises the nil-pointer panic with Go's own message,
+// at Go's own point - after any side effect the body performed first. That is what makes
+// it unconditional and analysis-FREE, where each accessor it replaced needed a proof the
+// converter could not have: `.Value` needed "this pointer is never nil", and the retired
+// nil-SAFE accessor (a shared default(T) slot, which made a deref Go says must panic read
+// a silent zero instead) needed "this body provably guards". Includes `()` as it is a
 // method call.
 const NilDeferringDerefAccessor = "DerefOrNull()"
 

@@ -16,7 +16,7 @@ partial class main_package {
 }
 
 internal static void fill(ж<box> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var c = Ꮡb.of(box.Ꮡw);
     c.Value.a = 10;
@@ -24,14 +24,14 @@ internal static void fill(ж<box> Ꮡb) {
 }
 
 internal static int64 readBack(ж<box> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var c = Ꮡb.of(box.Ꮡw);
     return (~c).a + (~c).b;
 }
 
 internal static void bump(ж<int64> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = p + 7;
 }

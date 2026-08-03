@@ -247,25 +247,6 @@ type Visitor struct {
 	// captureShareFactsCache memoizes varShareFacts per captured variable (reset per
 	// performVariableAnalysis; variable objects are function-unique so entries never collide).
 	captureShareFactsCache map[types.Object]captureShareFacts
-	// nilSafePtrParamNames holds the raw names of pointer PARAMETERS that are compared with `==`/
-	// `!=` (against nil or another pointer) anywhere in the current function body — i.e. params
-	// walked to a nil terminator (`for p != nil { …; p = p.next }`). For these, the deref-alias and
-	// any pointer-reassignment re-alias use the nil-safe `Ꮡp.DerefOrNil()` accessor instead of
-	// `Ꮡp.Value`, so re-aliasing to a nil box yields a ref to default(T) (never read while p is nil)
-	// rather than throwing a nil-pointer dereference. Populated per function in visitFuncDecl;
-	// other (non-nil-compared) pointer params keep the plain `.Value` form (zero golden churn).
-	nilSafePtrParamNames HashSet[string]
-	// nilSafeEntryOnlyParamName is the raw name of a pointer parameter / direct-ж receiver that the
-	// first body statement RE-POINTS before anything reads through it (Go's nil-receiver
-	// NORMALIZATION idiom, `l = l.get()`). Only the ENTRY alias goes nil-safe for it — the alias the
-	// assignment immediately replaces, so nothing can read the throwaway slot. The re-alias AFTER
-	// the assignment deliberately keeps `.Value`, because by then the pointer is whatever the
-	// normalizer returned and a genuine deref of a still-nil one must panic exactly as Go's does.
-	// That is what separates this from nilSafePtrParamNames, which covers both aliases and accepts
-	// the "reads default(T) instead of panicking" trade in exchange. A parameter can be in both sets
-	// (a body that re-points AND nil-compares), and the two compose: entry nil-safe either way, the
-	// re-alias nil-safe only when the comparison arm asked for it.
-	nilSafeEntryOnlyParamName string
 	// funcLitHeapBoxParamNames holds the RENDERED names of the function literal parameters that
 	// need an entry-time heap box (see funcLitHeapBoxParamIdents) — set transiently by
 	// convFuncLit around exactly the signature-generation calls (convFuncType for a plain

@@ -9,7 +9,7 @@ partial class main_package {
 }
 
 internal static void addInt(ж<nint> Ꮡx, nint d) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     x += d;
 }

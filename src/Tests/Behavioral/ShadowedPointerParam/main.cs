@@ -9,7 +9,7 @@ partial class main_package {
 }
 
 internal static nint use(ж<T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return t.n;
 }

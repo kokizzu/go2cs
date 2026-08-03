@@ -11,22 +11,22 @@ partial class main_package {
 }
 
 internal static nint sumList(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint total = 0;
     while (Ꮡp != nil) {
         total += p.val;
-        Ꮡp = p.next; p = ref Ꮡp.DerefOrNil();
+        Ꮡp = p.next; p = ref Ꮡp.DerefOrNull();
     }
     return total;
 }
 
 internal static void doubleList(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     while (Ꮡp != nil) {
         p.val *= 2;
-        Ꮡp = p.next; p = ref Ꮡp.DerefOrNil();
+        Ꮡp = p.next; p = ref Ꮡp.DerefOrNull();
     }
 }
 
@@ -41,22 +41,22 @@ internal static ж<node> build(params ꓸꓸꓸnint valsʗp) {
 }
 
 internal static (ж<node>, nint) advance(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return (p.next, p.val);
 }
 
 internal static nint sumEveryOther(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint total = 0;
     nint skipped = 0;
     while (Ꮡp != nil) {
         total += p.val;
-        (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNil();
+        (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
         _ = skipped;
         if (Ꮡp != nil) {
-            (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNil();
+            (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
             total += skipped * 0;
         }
     }
@@ -64,10 +64,10 @@ internal static nint sumEveryOther(ж<node> Ꮡp) {
 }
 
 internal static void bumpFirstViaTuple(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint skipped = default!;
-    (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNil();
+    (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
     _ = skipped;
     if (Ꮡp != nil) {
         p.val += 100;
@@ -75,10 +75,10 @@ internal static void bumpFirstViaTuple(ж<node> Ꮡp) {
 }
 
 internal static ж<node> dropIfShort(ж<node> Ꮡp, nint min) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (sumList(Ꮡp) < min) {
-        Ꮡp = default!; p = ref Ꮡp.DerefOrNil();
+        Ꮡp = default!; p = ref Ꮡp.DerefOrNull();
     }
     if (Ꮡp != nil) {
         p.val += 1000;

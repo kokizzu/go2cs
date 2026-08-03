@@ -9,7 +9,7 @@ internal static @unsafe.Pointer indirectKey(@unsafe.Pointer k) {
 }
 
 internal static void store(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointer val) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst = val;
 }

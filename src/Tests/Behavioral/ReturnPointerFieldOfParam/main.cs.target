@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 internal static ж<node> advance(ж<node> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     return n.next;
 }

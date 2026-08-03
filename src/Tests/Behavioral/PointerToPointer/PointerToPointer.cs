@@ -62,32 +62,32 @@ public static ж<Buffer> /*b1*/ NewBuffer(slice<byte> buf) {
 }
 
 public static void PrintValPtr(ж<nint> Ꮡptr) {
-    ref var ptr = ref Ꮡptr.Value;
+    ref var ptr = ref Ꮡptr.DerefOrNull();
 
     fmt.Printf("Value available at *ptr = %d\n"u8, ptr);
     ptr++;
 }
 
 public static ж<nint> EscapePrintValPtr(ж<nint> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     fmt.Printf("Value available at *ptr = %d\n"u8, @out);
     ref var i = ref heap<nint>(out var Ꮡi);
     i = 99;
-    Ꮡout = Ꮡi; @out = ref Ꮡout.Value;
+    Ꮡout = Ꮡi; @out = ref Ꮡout.DerefOrNull();
     fmt.Printf("Intra-function updated value available at *ptr = %d\n"u8, @out);
     PrintValPtr(Ꮡout);
     return Ꮡout;
 }
 
 public static void PrintValPtr2Ptr(ж<ж<nint>> Ꮡpptr) {
-    ref var pptr = ref Ꮡpptr.ValueSlot;
+    ref var pptr = ref Ꮡpptr.DerefOrNull();
 
     fmt.Printf("Value available at **pptr = %d\n"u8, pptr.Value);
 }
 
 public static void PrintValPtr2Ptr2Ptr(ж<ж<ж<nint>>> Ꮡppptr) {
-    ref var ppptr = ref Ꮡppptr.ValueSlot;
+    ref var ppptr = ref Ꮡppptr.DerefOrNull();
 
     fmt.Printf("Value available at ***pptr = %d\n"u8, ppptr.ValueSlot.Value);
 }

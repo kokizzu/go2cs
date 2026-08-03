@@ -1520,27 +1520,38 @@ In Go, `nil` is the equivalent of C# `null`. Where possible, converted code uses
 
 The same null-safe-zero-value principle applies to value types whose backing store is a reference. A zero-value `string` converts to `@string s = default!`, which runs no constructor, so the backing `byte[]` is null. Rather than [NRE](Glossary.md#nre) on the first read, `@string` treats a null backing as Go's empty string `""` for every read — length 0, no bytes to index/range, `== ""` is true, prints empty, and concatenation yields the other operand (`var s string; s += "x"` → `"x"`). Constructors still allocate, so only the `default(@string)` zero value relies on this. (Guarded by the `StringZeroValueConcat` behavioral test.)
 
-### The FOUR deref accessors of `ж<T>` — when each is needed, and how the converter picks
+### The THREE deref accessors of `ж<T>` — when each is needed, and how the converter picks
 
 Establishing a local `ref` over a heap box (`ref var p = ref Ꮡp.<accessor>`) looks like one
-operation but encodes four different answers to one question: **is this access the Go
-DEREFERENCE, and what does Go say happens on nil at exactly this point?** Consolidated here
-because the four members landed across separate arcs (their individual sections, linked below,
-carry the full derivations); this is the map.
+operation but encodes different answers to one question: **is this access the Go DEREFERENCE, and
+what does Go say happens on nil at exactly this point?** Consolidated here because the members
+landed across separate arcs (their individual sections, linked below, carry the full derivations);
+this is the map.
 
 | Accessor | On nil | The Go semantics it encodes | How the converter KNOWS |
 |:--|:--|:--|:--|
-| `.Value` | **panics immediately** (Go's message, even on bind) | this access IS the deref, and Go panics here — the ordinary pointer use site | the DEFAULT; no special case applies |
-| `.ValueSlot` | **no check** — the slot as-is | a read of the HELD value, never a deref: when the pointee is itself reference-like, `*p` legally yields nil (`*(&err)` of a nil `error` panics in neither language), so `.Value`'s null check would fire SPURIOUSLY on a legally-held null. Identical to `.Value`'s slot in every non-throwing case. Also where nil is structurally impossible (a freshly `make`-allocated box) and in the reflection bridge's field paths. | by the POINTEE'S TYPE (reference-like pointee → slot read); see *A reference-type-pointee pointer parameter uses the nil-check-free `.ValueSlot` deref alias* |
-| `.DerefOrNil()` | **silent** — a shared `default(T)` slot | Go never derefs here, because the body PROVABLY guards: a pointer param the body nil-compares, or one whose first mentioning statement re-points it without deref (`l = l.get()` normalization, entry-only). The silent zero is unobservable ONLY while the admission analysis stays conservative — this is deliberately the narrowest accessor, and shrinking it further is a recorded residual. | by BODY ANALYSIS (`collectNilSafePtrParams`: `==`/`!=` operand scan; `reassignedBeforeDerefParamName`: first-statement re-point without deref) |
-| `.DerefOrNull()` | **defers** — binds `Unsafe.NullRef<T>`, faults with Go's panic on first USE | Go defers the panic to the body's own deref point: calling a method through a nil `*T` is legal, side effects before the deref must run, and the panic lands where Go's would — after them, or never (delegated `checkValid`-style guards). | STRUCTURALLY — every direct-ж pointer RECEIVER, unconditionally (no analysis, because the accessor is faithful whether or not the body guards), in both the converter's entry/re-alias emission and go2cs-gen's `ReceiverMethodTemplate` bridge; see *A nil RECEIVER is nil-deferring, not nil-safe* |
+| `.Value` | **panics immediately** (Go's message, even on bind) | this access IS the deref, and Go panics here — the ordinary pointer USE site (`*p`, `~Ꮡp`, a read through the box) | the DEFAULT everywhere except a pointer's ENTRY alias; no special case applies |
+| `.ValueSlot` | **no check** — the slot as-is | a read of the HELD value, never a deref: when the pointee is itself reference-like, `*p` legally yields nil (`*(&err)` of a nil `error` panics in neither language), so `.Value`'s null check would fire SPURIOUSLY on a legally-held null. Identical to `.Value`'s slot in every non-throwing case. Also where nil is structurally impossible (a freshly `make`-allocated box, `heap(out …)`) and in the reflection bridge's field paths. | by the POINTEE'S TYPE or by CONSTRUCTION — a box-of-pointer LOCAL, a named-result box, the bridge's field walk. NOT at a pointer's entry alias (see below) |
+| `.DerefOrNull()` | **defers** — binds `Unsafe.NullRef<T>`, faults with Go's panic on first USE | Go defers the panic to the body's own deref point: passing a nil `*T` to a function, or calling a method through one, is legal; the body RUNS, a side effect before the deref must happen, and the panic lands where Go's would — after it, or never (delegated `checkValid`-style guards). | STRUCTURALLY — EVERY direct-ж pointer ENTRY alias, RECEIVER and PARAMETER alike, unconditionally (no analysis, because the accessor is faithful whether or not the body guards), plus the pointer-reassignment re-alias and go2cs-gen's `ReceiverMethodTemplate` bridge; see *A nil RECEIVER is nil-deferring, not nil-safe* and *A pointer PARAMETER is nil-deferring for exactly the reason a receiver is* |
 
-Why four and not one: `.DerefOrNull` SHOULD subsume `.Value` and `.DerefOrNil` for POINTER
-PARAMETERS too — Go's rule is identical for a parameter and a receiver — and that unification is
-**user-ruled (2026-08-02) and queued in [`CleanupBacklog.md`](CleanupBacklog.md)**, pending its own
-measured footprint (~3,167 parameter aliases keep `.Value` today).
-`.ValueSlot` is different in KIND, not in timing: it marks accesses that were never dereferences
-in Go's semantics at all, so no nil-policy accessor can replace it.
+Why three and not one: the ENTRY alias and the USE site are different questions, and `.Value`
+answers the second. `.ValueSlot` is different in KIND rather than in timing — it marks accesses
+that were never dereferences in Go's semantics at all, which no nil-policy accessor can express —
+but it is not selected at an entry alias, where nothing can know whether the body will dereference
+and the nil-policy question is the only one being asked.
+
+**There used to be a fourth, `.DerefOrNil()` — a nil-SAFE accessor handing back a shared
+`default(T)` slot — and its retirement (2026-08-02) is what collapsed the set.** It was admitted
+by a body ANALYSIS: a pointer param the body nil-compares, one passed the untyped `nil` at a
+same-package call site, or one whose first mentioning statement re-points it without dereferencing
+(`l = l.get()` normalization). Wherever that analysis was RIGHT the silent zero was unobservable;
+wherever it was wrong — and it could never be complete, because a body's guard may be DELEGATED to
+a callee it merely hands the pointer to — a deref Go says must panic instead read a silent zero.
+Unifying every pointer entry alias on `.DerefOrNull()` made the analysis unnecessary in the first
+place, so the accessor, the three analyses that fed it (`collectNilSafePtrParams`,
+`reassignedBeforeDerefParamName`, and the package-wide nil-argument pre-pass) and their vestigial
+receiver arms were deleted together — 382 net lines of converter. The golib method survives with
+its own unit coverage, but converted code no longer emits it.
 
 ### Canonical typed-nil pointer boxing
 Go's typed nil is a real value: `any((*T)(nil))` is a **non-nil** interface carrying dynamic type
@@ -4219,9 +4230,9 @@ when the pointee `isInherentlyHeapAllocatedType`, emit the nil-check-free `.Valu
 (`ref var err = ref Ꮡerr.ValueSlot`), mirroring `namedResultBoxAccessor` — a named result of the same
 type already reads this way. `.ValueSlot` returns the same real `m_val` slot as `.Value` in every
 non-throwing case, so write-through and non-null reads are byte-behaviorally identical; only the
-spurious-panic case changes. The nil-safe `DerefOrNil()` (nil-terminator-walked params) still takes
-precedence. Corpus-wide the swap touches 49 stdlib files + 10 behavioral goldens, all value-preserving
-(full behavioral suite Output 0-fail). (Guarded by the `PointerToInterfaceParamDeref` behavioral test
+spurious-panic case changes. Corpus-wide the swap touches 49 stdlib files + 10 behavioral goldens, all
+value-preserving (full behavioral suite Output 0-fail). (Guarded by the `PointerToInterfaceParamDeref`
+behavioral test
 — a `*error` parameter read through inside a deferred recover/re-panic where the pointee is nil at
 address-of time; before the fix the entry alias NREs, after it prints the re-panic message,
 output-compared vs `go run`.) ⚠ This fixes only the spurious CRASH. A SEPARATE latent defect remains:
@@ -4230,24 +4241,22 @@ deferred handler writes the copy while `return err` reads the original; text/tab
 that heap-promotion of address-taken named returns before they fully validate.
 
 The value-type nilable case — a genuinely nil `*rune`/`*bool`/`*int` optional-out-param, deref'd only
-under a body VALUE guard — is handled by the companion **call-site nil-argument** detection.
-`collectNilSafePtrParams` scanned only the body for `param == nil`/`!= nil`, so text/scanner's
-`digits(ch0 rune, base int, invalid *rune)` — whose sole deref `*invalid == 0` sits behind
-`ch >= max` (never `invalid != nil`) and which is called `digits(ch, 10, nil)` — kept the strict
-`.Value` entry hoist and NRE'd at entry, where Go never dereferences (`ch >= max` is false on the
-nil-call path). A package-wide pre-pass (`collectNilArgPtrParams`, mirroring `collectAddressedGlobals`
-— wired into all three conversion drivers: normal, test, and hand-owned-sibling) records, per
-`*types.Func`, the pointer-parameter positions ever passed the untyped `nil` at a call site;
-`collectNilSafePtrParams` folds those positions into `nilSafePtrParamNames`, so the entry alias takes
-the nil-safe `DerefOrNil()` (real slot when the box is non-nil — writes still persist — a throwaway
-slot when nil, never read because the body guards). Same-package call sites only (the converter
-processes one package at a time); a parameter passed nil solely from another package keeps `.Value`.
-Corpus-surgical: CNR byte-identical across the behavioral suite (no project has the pattern), and of
-the validated stdlib packages NONE are touched — it changes exactly the nilable-out-param sites (9
-non-validated stdlib packages + text/scanner, which it unblocks to 18/18). (Guarded by the
-`GuardedNilPointerParamDeref` behavioral test — a `*int` out-param deref'd under an `i >= base` guard,
-called once with a real pointer and once with nil; NREs at the entry hoist pre-fix, matches `go run`
-post-fix.)
+under a body VALUE guard — was handled for a fortnight by a companion **call-site nil-argument**
+detection, and is now subsumed by the unconditional nil-deferring entry alias (see *A pointer
+PARAMETER is nil-deferring for exactly the reason a receiver is*). The problem it solved is worth
+keeping on the record, because it is the cleanest demonstration of why an entry-alias policy cannot be
+an analysis: `collectNilSafePtrParams` scanned only the body for `param == nil`/`!= nil`, so
+text/scanner's `digits(ch0 rune, base int, invalid *rune)` — whose sole deref `*invalid == 0` sits
+behind `ch >= max` (never `invalid != nil`) and which is called `digits(ch, 10, nil)` — kept the
+strict `.Value` entry hoist and NRE'd at entry, where Go never dereferences (`ch >= max` is false on
+the nil-call path). The remedy was a package-wide pre-pass (`collectNilArgPtrParams`) recording, per
+`*types.Func`, the pointer-parameter positions ever passed the untyped `nil` at a call site — which
+worked, but only for SAME-package call sites, because the converter processes one package at a time.
+A parameter passed nil solely from another package stayed strict and stayed broken; that residual is
+what `.DerefOrNull()` closes structurally, and the pre-pass was deleted with the rest of the analysis.
+(Still guarded by the `GuardedNilPointerParamDeref` behavioral test — a `*int` out-param deref'd under
+an `i >= base` guard, called once with a real pointer and once with nil; NREs at the entry hoist under
+either predecessor, matches `go run` now without one.)
 
 ### A pointer-element composite literal takes the box for a deref-aliased ident
 
@@ -5360,8 +5369,8 @@ parameter WHOLE yields its box (`return a` → `return Ꮡa;`), passing it onwar
 callee — including self-recursion — supplies the box (`cloneChain<T>(clone<T>(Ꮡp), …)`; the
 interface-shaped argument arm carves out erased params exactly like instantiated pointers), copying
 it into a local is a Go pointer copy (`q := p` → `var q = Ꮡp;`, writes through `q` land in the
-caller's referent), and a nil comparison takes the box form with the nil-safe entry alias
-(`if p == nil` → `ref var p = ref Ꮡp.DerefOrNil(); … if (Ꮡp == nil)` — a nil argument reaches the
+caller's referent), and a nil comparison takes the box form over the nil-deferring entry alias
+(`if p == nil` → `ref var p = ref Ꮡp.DerefOrNull(); … if (Ꮡp == nil)` — a nil argument reaches the
 guard instead of throwing at entry, e.g. `orZero[*int, int](nil)`). The NAMED constraint-interface
 spellings — `[P PtrOf[T]]` and the embedded `[P interface{ PtrOf[T] }]`, where
 `type PtrOf[T any] interface{ *T }` — resolve to the identical singleton type set and erase
@@ -8919,7 +8928,7 @@ behavioral projects). Guarded by `TestAmbiguousVariantTypeNamesAreClassQualified
 ## Pointers
 Pointer conversions use the golib heap box [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) (read "zhe"). Taking the address of a value uses the address-of operator `Ꮡ` (e.g. `Ꮡx`); an escaping local is allocated via `heap(...)`, and addresses of a struct field or array element are taken through `.of(Type.ᏑField)` / `.at<T>(index)`.
 
-The box's value accessors follow one naming scheme (unified 2026-07-02; the checked accessor was previously `val`): **`Value`** is the strict dereference (`ref`-returning; panics on a nil pointer, as Go does), **`ValueSlot`** is its no-check twin (the identical real slot — for reads/writes of a held value that may legally be nil), and **`DerefOrNil()`** is the null-box-tolerant extension used by nil-terminated walks (an *extension method* is the only ref-returning form C# permits on a possibly-null receiver; it returns a throwaway slot when nil). The same `Value` name is used by the generated named-type wrappers for their underlying-value accessor and by the golib `uintptr` struct for its raw word — converted code has exactly one spelling for "the value behind this thing". A Go struct **field** named `val` still emits as `.val` (it is the user's identifier, not the accessor):
+The box's value accessors follow one naming scheme (unified 2026-07-02; the checked accessor was previously `val`): **`Value`** is the strict dereference (`ref`-returning; panics on a nil pointer, as Go does), **`ValueSlot`** is its no-check twin (the identical real slot — for reads/writes of a held value that may legally be nil), and **`DerefOrNull()`** is the null-box-tolerant extension every pointer ENTRY alias binds through (an *extension method* is the only ref-returning form C# permits on a possibly-null receiver; it returns a NULL ref when nil, so the alias binds and the panic lands at the body's own deref). The same `Value` name is used by the generated named-type wrappers for their underlying-value accessor and by the golib `uintptr` struct for its raw word — converted code has exactly one spelling for "the value behind this thing". A Go struct **field** named `val` still emits as `.val` (it is the user's identifier, not the accessor):
 
 ```csharp
 ref var a = ref heap(new array<@string>(2), out var Ꮡa);  // escaping local
@@ -9181,15 +9190,15 @@ var run = (…) => {
 
 A **pointer (or other inherently-heap) local** captured by a closure that takes its address needs the box too, but reaches it by a different route. A local of an *inherently heap-allocated* type — a pointer, slice, map, channel, interface, or func — is already a reference, so it normally gets **no** heap box (the `convertToHeapTypeDecl` path returns nothing for such types). But when one is captured by a closure that takes its address (`mToFlush := &node{…}; run(func(){ prev := &mToFlush; … *prev = mToFlush.next })`), the closure needs a *shared* box so writes through `&mToFlush` inside it reach the outer function's storage. The converter detects this as the same *box-ref* mark used above (an inherently-heap local whose address is taken inside a lambda), and for a box-ref local it now emits the heap box even though the type is inherently heap — `ref var mToFlush = ref heap<ж<node>>(out var ᏑmToFlush)` — so the box `ᏑmToFlush` (a `ж<ж<node>>`, i.e. a `**node`) exists for the closure to reference. Without it the closure emitted `ᏑmToFlush` for `&mToFlush` against a never-declared box (CS0103); a same-function `&ptr` with **no** closure still takes the `Ꮡ(ptr)` copy form (a copy is fine there — no shared storage is needed), so that case is unchanged.
 
-Reading such a box needs care, because for a box-of-pointer the held value can legitimately be nil while the box itself is a real allocation. `Ꮡm` here is a `ж<ж<node>>` (a `**node`), so `Ꮡm.Value` reads the *held pointer value* — not a dereference of `Ꮡm` — and in Go reading `*(&p)` when `p` is a nil `*T`/slice/map yields the nil value, with no dereference and no panic. The strict `ж<T>.Value` getter (which panics on a null stored value by design, so a genuine `*p` on a nil pointer still throws) would wrongly panic on that read. So the converter emits the golib `ж<T>.ValueSlot` accessor for these box-of-pointer reads — identical to `.Value` but without the nil-pointer-dereference check, returning the *real* slot so reads and writes both persist (unlike `DerefOrNil`, which yields a throwaway slot for a genuinely-nil box). `ValueSlot` is gated to a box-ref **local** of inherently-heap type (a deref'd pointer *parameter* keeps the strict `.Value`, since its box wraps the pointed-to value and `Ꮡp.Value` is a genuine dereference). The `heap(out …)` / `heap(target, out …)` helpers likewise return `ref pointer.ValueSlot`: a freshly allocated box is structurally non-nil, so the getter's nil check there is always spurious (identical to `.Value` for a value-type box; it just avoids a spurious panic when establishing the `ref var mToFlush = ref heap<ж<node>>(out var ᏑmToFlush)` alias). A genuine dereference of the held pointer (the second `.Value` in `ᏑmToFlush.ValueSlot.Value.v`) stays strict and still panics on nil — preserving Go's "panic ⇒ panic" semantics, and complementing the deliberate strict-`.Value` design behind `DerefOrNil`. (Guarded by the `ClosureCapturedPointerAddress` behavioral test — a closure that takes the address of a captured pointer local, walks a linked list by reassigning *through* that address and mutating each node, with the outer function observing both the reassignment-to-nil and the persisted mutations, proving the box is shared rather than copied. Mirrors runtime's `trace.go` `mToFlush := allm; systemstack(func(){ prev := &mToFlush; … mToFlush = mToFlush.next })`, ~4 CS0103.)
+Reading such a box needs care, because for a box-of-pointer the held value can legitimately be nil while the box itself is a real allocation. `Ꮡm` here is a `ж<ж<node>>` (a `**node`), so `Ꮡm.Value` reads the *held pointer value* — not a dereference of `Ꮡm` — and in Go reading `*(&p)` when `p` is a nil `*T`/slice/map yields the nil value, with no dereference and no panic. The strict `ж<T>.Value` getter (which panics on a null stored value by design, so a genuine `*p` on a nil pointer still throws) would wrongly panic on that read. So the converter emits the golib `ж<T>.ValueSlot` accessor for these box-of-pointer reads — identical to `.Value` but without the nil-pointer-dereference check, returning the *real* slot so reads and writes both persist (and unlike the retired `DerefOrNil`, which yielded a throwaway slot for a genuinely-nil box). `ValueSlot` is selected here for a box-ref **local** of inherently-heap type; a deref'd pointer *parameter* reaches the same slot through `DerefOrNull()`, whose non-nil path IS `ValueSlot` — see *The THREE deref accessors of `ж<T>`*. The `heap(out …)` / `heap(target, out …)` helpers likewise return `ref pointer.ValueSlot`: a freshly allocated box is structurally non-nil, so the getter's nil check there is always spurious (identical to `.Value` for a value-type box; it just avoids a spurious panic when establishing the `ref var mToFlush = ref heap<ж<node>>(out var ᏑmToFlush)` alias). A genuine dereference of the held pointer (the second `.Value` in `ᏑmToFlush.ValueSlot.Value.v`) stays strict and still panics on nil — preserving Go's "panic ⇒ panic" semantics, and complementing the deliberate strict-`.Value` design at every genuine USE site. (Guarded by the `ClosureCapturedPointerAddress` behavioral test — a closure that takes the address of a captured pointer local, walks a linked list by reassigning *through* that address and mutating each node, with the outer function observing both the reassignment-to-nil and the persisted mutations, proving the box is shared rather than copied. Mirrors runtime's `trace.go` `mToFlush := allm; systemstack(func(){ prev := &mToFlush; … mToFlush = mToFlush.next })`, ~4 CS0103.)
 
 A pointer-receiver method called **through a FIELD of such a boxed pointer local**, inside the closure, field-refs through the **held pointer**, not the box. The receiver of `c.flushGen.Store(…)` (runtime `mcache.go`'s `allocmcache`, inside `systemstack`) is taken via the &-machinery, and inside a lambda the box-ref address form substitutes the capturable box for the uncapturable ref-local alias. For a *value*-struct local (box `ж<T>`) and a deref'd pointer *parameter* (box `ж<T>` — the Go pointer itself) the bare box is the correct `.of()` receiver — but a boxed pointer LOCAL's box is `ж<ж<T>>`, one level above the `ж<T>` the field accessor projects from, and feeding it to `.of` fails inference (CS0411 — the one error that skip-cascaded ~237 packages behind `runtime`). Such a base declines the bare-box form and falls through to the pointer-variable field arm, whose ident render reads the box the same way every other in-lambda value use does: `Ꮡc.ValueSlot.of(mcache.ᏑflushGen).Store(…)` — `.ValueSlot` because reading the held pointer out of the box must not nil-check (the dereference happens in `.of`, preserving panic semantics), and because that slot IS what the enclosing `ref var c = ref heap<ж<mcache>>(out var Ꮡc)` alias reads. When such a local is **named after its own type** (`gauge := newGauge()`), the accessor's owning-type name additionally qualifies with the package class (`Ꮡgauge.ValueSlot.of(main_package.gauge.Ꮡv)`): the enclosing `ж<gauge>`-declared local stays visible inside the lambda, so the bare type name binds the uncapturable ref-local (CS8175) with no identical-simple-name fallback — the declared type differs from the type name. (Guarded by the `ClosurePtrLocalFieldMethod` behavioral test — the `allocmcache` shape: a pointer local written inside a closure and immediately method-called through a value field, read back after the closure, plus the named-after-type variant; output-compared vs Go, proving the write-through and the field-method call both bind the one shared box.)
 
-A **deref'd pointer parameter or pointer receiver** captured by a closure is box-ref'd the same way, even when only its *value* is used inside the closure (not its address). Such a parameter is emitted as the box `ж<T> Ꮡp` with `ref var p = ref Ꮡp.Value`, and the `ref`-local alias cannot be captured (CS8175). Inside the closure a value use becomes `Ꮡp.Value.field` and an address use `Ꮡp`, so the closure captures the box by reference — matching Go capturing the pointer. (Guarded by the behavioral test `PointerParamCapturedInClosure`; the runtime captures `*maptype` / `*m` parameters this way pervasively.)
+A **deref'd pointer parameter or pointer receiver** captured by a closure is box-ref'd the same way, even when only its *value* is used inside the closure (not its address). Such a parameter is emitted as the box `ж<T> Ꮡp` with `ref var p = ref Ꮡp.DerefOrNull()`, and the `ref`-local alias cannot be captured (CS8175). Inside the closure a value use becomes `Ꮡp.Value.field` and an address use `Ꮡp`, so the closure captures the box by reference — matching Go capturing the pointer. (Guarded by the behavioral test `PointerParamCapturedInClosure`; the runtime captures `*maptype` / `*m` parameters this way pervasively.)
 
 A pointer **receiver** captured by a closure needs an extra step the parameter case does not: the box `Ꮡp` only exists if the method is emitted **direct-ж** (the box passed *as* the receiver, `this ж<T> Ꮡp`). A normal pointer-receiver method is `[GoRecv] this ref T p` (a value-ref receiver, with the `ж<T>` companion generated separately), which has no box for the closure to reference. So "the receiver is referenced inside a function literal" is a **direct-ж trigger** — a fourth one alongside taking a field's address (`&p.field`), returning the receiver (`return p`), and using the receiver as a bare pointer value (`p.next = p`, `p != q`). Mirrors runtime's `func (p *_panic) nextFrame() { systemstack(func(){ … p.lr … }) }`. A closure parameter that shadows the receiver name resolves to a distinct object, so it does not falsely trigger the promotion. (Guarded by the `ReceiverCapturedInClosure` behavioral test — receiver captured by an immediately-invoked closure that reads/writes through it, by one that takes a field's address, and by one that is *returned* so the box must outlive the call.)
 
-Once a method is direct-ж, its receiver is the box `Ꮡc`, but the deref'd value alias `ref var c = ref Ꮡc.Value` is what most uses see. When such a receiver is passed **whole** as a pointer argument — `stackcache_clear(c)` in `func (c *mcache) prepareForSweep()` — the argument must be the box `Ꮡc`, not the value alias `c` (a value cannot bind a `ж<mcache>` parameter → CS1503). A deref-aliased pointer *parameter* is already handled (it is an `identIsParameter`), but a direct-ж *receiver* is not a parameter, so the call-argument conversion recognizes it explicitly and emits the box. (Guarded by the `DirectBoxReceiverPassedWhole` behavioral test.)
+Once a method is direct-ж, its receiver is the box `Ꮡc`, but the deref'd value alias `ref var c = ref Ꮡc.DerefOrNull()` is what most uses see. When such a receiver is passed **whole** as a pointer argument — `stackcache_clear(c)` in `func (c *mcache) prepareForSweep()` — the argument must be the box `Ꮡc`, not the value alias `c` (a value cannot bind a `ж<mcache>` parameter → CS1503). A deref-aliased pointer *parameter* is already handled (it is an `identIsParameter`), but a direct-ж *receiver* is not a parameter, so the call-argument conversion recognizes it explicitly and emits the box. (Guarded by the `DirectBoxReceiverPassedWhole` behavioral test.)
 
 The receiver placed whole into a **composite-literal element** whose field is a pointer — `func (f *_func) funcInfo() funcInfo { …; return funcInfo{f, mod} }` (runtime `symtab.go`; `funcInfo`'s first field is the embedded `*_func`) — needs the same box, and is itself a **direct-ж promotion trigger** (`bodyUsesReceiverAsPointerValue`'s composite arm): a boxless `[GoRecv] ref` receiver has no `Ꮡf` to place in the field (CS1503). Once promoted, the composite renders the box through the existing pointer-field element machinery: `new ΔfuncInfo(Ꮡf, mod)`. Both positional and keyed elements trigger, gated on the **field's declared type being a Go pointer** (resolved positionally or by key from the composite's struct type — the element expression's own type is always `*T` for a pointer receiver): a receiver placed into an *interface*-typed field also typechecks in Go, but that emission compiles today, and promoting for it would re-route every such method stdlib-wide (the field gate trims the first-cut 73-file audit to 68 — the shape is genuinely pervasive: go/types' Checker methods, net/textproto's dotReader{r: r}, zstd readers — every audited site the same signature+box re-routing) — its pointer-identity semantics are logged as a separate question. (Guarded by the `DirectBoxReceiverPassedWhole` extension — positional + keyed composites, identity verified by writing through the wrapped pointer and reading the original.)
 
@@ -9204,15 +9213,15 @@ A **MAP** composite literal whose value or key type is a pointer boxes its eleme
 **Reassigning a captured pointer parameter inside a closure.** The repoint-and-re-alias above (`Ꮡp = …; p = ref Ꮡp.Value;`) rebinds a `ref`-local. Inside a CLOSURE that captured the parameter that is illegal: the re-aliased value var is an ENCLOSING `ref`-local, and C# forbids referencing an outer `ref` local inside a lambda (CS8175 — crypto/x509 `buildChains`'s `considerCandidate` closure does `if sigChecks == nil { sigChecks = new(int) }` on the captured `*int` parameter). The box reassignment `Ꮡp = …` is legal (it writes the captured box field, hoisted to a closure field), so only the ref-local refresh is dropped inside a lambda:
 ```csharp
 if (ᏑsigChecks == nil) {
-    ᏑsigChecks = @new<nint>();          // was: … ; sigChecks = ref ᏑsigChecks.DerefOrNil();  (CS8175)
+    ᏑsigChecks = @new<nint>();          // was: … ; sigChecks = ref ᏑsigChecks.DerefOrNull();  (CS8175)
 }
 ᏑsigChecks.Value++;
 ```
 Every in-lambda and post-lambda dereference of a repointed captured pointer routes through the box `Ꮡp.Value`, so the now-stale value alias is never read — an accepted modeling gap (like the nil-terminated walk's), not a miscompile. The suppression is sound because no LEGITIMATE re-alias ever occurs inside a lambda: a lambda's OWN pointer parameter is passed as the box `ж<T>` (never deref-aliased), and a heap-boxed value local is written THROUGH its box (`Ꮡb.Value = …`, never box-repointed). Guarded by `ClosureReassignsPtrParam` (a closure that reassigns a captured `*int` parameter; a non-nil runtime argument keeps the reassignment branch unreached so output stays deterministic).
 
-The same repoint-and-re-alias applies when the parameter is reassigned **from a tuple** — `(left, x, idx) = binarySearchTree(x, idx, n/2)` (runtime `mgcstack.go`) or `pp, _ = pidleget(0)` (`proc.go`). The box-reassignment triggers matched the RHS **element-wise**, so a tuple *deconstruction* (one call RHS, several LHS) never fired them — the ж<T> tuple component was assigned into the deref'd value alias (CS0029) — and element 0's raw expression type is the whole `*types.Tuple` (never a pointer), so even a first-position pointer element missed. The per-element RHS type now comes from the call's result tuple, and the emitted form is the single-assign form verbatim: `(left, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n / 2); x = ref Ꮡx.Value;` — with the nil-safe accessor when the parameter is nil-compared (`(Ꮡpp, _) = pidleget(0); pp = ref Ꮡpp.DerefOrNil();`). The triggers are gated to a **reassigned** element: a `:=`-declared pointer element binds the tuple's ж<T> component into a fresh pointer local — which *is* the box — directly, and an inner `:=` local shadowing a parameter's name must not repoint the parameter's box (crypto/x509's `c, _, err := …cert(i)`). (Guarded by the `PointerParamNilWalk` extension — a nil-compared tuple-reassign walk plus a reassign-then-mutate-through probe, values vs Go.)
+The same repoint-and-re-alias applies when the parameter is reassigned **from a tuple** — `(left, x, idx) = binarySearchTree(x, idx, n/2)` (runtime `mgcstack.go`) or `pp, _ = pidleget(0)` (`proc.go`). The box-reassignment triggers matched the RHS **element-wise**, so a tuple *deconstruction* (one call RHS, several LHS) never fired them — the ж<T> tuple component was assigned into the deref'd value alias (CS0029) — and element 0's raw expression type is the whole `*types.Tuple` (never a pointer), so even a first-position pointer element missed. The per-element RHS type now comes from the call's result tuple, and the emitted form is the single-assign form verbatim: `(left, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n / 2); x = ref Ꮡx.DerefOrNull();` — the same nil-deferring re-alias every repoint takes (`(Ꮡpp, _) = pidleget(0); pp = ref Ꮡpp.DerefOrNull();`). The triggers are gated to a **reassigned** element: a `:=`-declared pointer element binds the tuple's ж<T> component into a fresh pointer local — which *is* the box — directly, and an inner `:=` local shadowing a parameter's name must not repoint the parameter's box (crypto/x509's `c, _, err := …cert(i)`). (Guarded by the `PointerParamNilWalk` extension — a nil-compared tuple-reassign walk plus a reassign-then-mutate-through probe, values vs Go.)
 
-**Assigning `nil` to the parameter itself is a box repoint, not a write to the pointee.** Both triggers above gate on the RHS being *pointer-typed*, and the untyped `nil` literal has no type of its own — so `p = nil` missed them, rendered against the deref'd **value** alias, and emitted `p = default!`, which **zeroes the pointed-to struct** while leaving the box `Ꮡp` non-nil. The caller's `!= nil` then still passed and it walked a wiped-out object. This is regexp's `makeOnePass`, whose `p = nil` (the "not one-pass after all" bail-out) handed `compileOnePass` an `onePassProg` with an **emptied `Inst` slice** instead of a nil pointer — an index-out-of-range in `cleanupOnePass` on every pattern the one-pass analysis rejected, which is most of them. A nil RHS is now treated as pointer-valued whenever the corresponding target is pointer-typed, so it takes the ordinary repoint-and-re-alias form (nil-safe here, because the parameter is nil-compared):
+**Assigning `nil` to the parameter itself is a box repoint, not a write to the pointee.** Both triggers above gate on the RHS being *pointer-typed*, and the untyped `nil` literal has no type of its own — so `p = nil` missed them, rendered against the deref'd **value** alias, and emitted `p = default!`, which **zeroes the pointed-to struct** while leaving the box `Ꮡp` non-nil. The caller's `!= nil` then still passed and it walked a wiped-out object. This is regexp's `makeOnePass`, whose `p = nil` (the "not one-pass after all" bail-out) handed `compileOnePass` an `onePassProg` with an **emptied `Inst` slice** instead of a nil pointer — an index-out-of-range in `cleanupOnePass` on every pattern the one-pass analysis rejected, which is most of them. A nil RHS is now treated as pointer-valued whenever the corresponding target is pointer-typed, so it takes the ordinary repoint-and-re-alias form (nil-DEFERRING, as every repoint is):
 
 ```go
 // regexp/onepass.go — makeOnePass
@@ -9222,7 +9231,7 @@ if p != nil { for i := range p.Inst { p.Inst[i].Rune = onePassRunes[i] } }
 ```
 ```csharp
 if (!check(pc, m)) {
-    Ꮡp = default!; p = ref Ꮡp.DerefOrNil();   // the POINTER goes nil; the pointee is untouched
+    Ꮡp = default!; p = ref Ꮡp.DerefOrNull();  // the POINTER goes nil; the pointee is untouched
     break;
 }
 …
@@ -9234,21 +9243,21 @@ A pointer **local** assigned nil is unaffected — a local already *is* the box,
 **Nil-terminated walk.** A pointer-parameter walk that stops at a nil terminator — `func sumList(p *node) int { for p != nil { total += p.val; p = p.next } }` — needs two extra pieces, *modeled together*:
 
 1. **Compare the box, not the value alias.** The loop guard `p != nil` must emit `Ꮡp != nil` (the box). Each binary operand's pointer context is otherwise taken from the *other* operand's pointer-ness, and `nil` is not a pointer type — so the param would convert in value form (`p != nil`, comparing a `node` struct value, the wrong thing). The converter forces the box form for a deref'd pointer *parameter* in a `==`/`!=` comparison. This is safe only for a parameter: a pointer *local* is already the box, and forcing it would emit a non-existent `Ꮡlocal`.
-2. **Nil-safe re-alias.** On the final step `p.next` is nil, so `Ꮡp = p.next` repoints the box to nil; re-aliasing through the plain `Ꮡp.Value` getter would then throw a nil-pointer dereference before the guard is re-checked. The deref/re-alias instead routes through the golib `ж<T>` extension `Ꮡp.DerefOrNil()`, which returns a `ref` to a shared `default(T)` slot when the box is nil (never read while nil — the `Ꮡp != nil` guard excludes it) rather than throwing. The entry alias uses it too, so an empty-list call (`sumList(nil)`) is nil-safe at entry.
+2. **Nil-deferring re-alias.** On the final step `p.next` is nil, so `Ꮡp = p.next` repoints the box to nil; re-aliasing through the plain `Ꮡp.Value` getter would then throw a nil-pointer dereference before the guard is re-checked. The deref/re-alias instead routes through the golib `ж<T>` extension `Ꮡp.DerefOrNull()`, which binds `Unsafe.NullRef<T>` when the box is nil — legal to HOLD, faulting only on USE — rather than throwing at the bind. The entry alias uses it too, so an empty-list call (`sumList(nil)`) binds without faulting at entry.
 
 ```csharp
 internal static nint sumList(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
     nint total = 0;
     while (Ꮡp != nil) {
         total += p.val;
-        Ꮡp = p.next; p = ref Ꮡp.DerefOrNil();
+        Ꮡp = p.next; p = ref Ꮡp.DerefOrNull();
     }
     return total;
 }
 ```
 
-`DerefOrNil()` is **not** a substitute for a genuine dereference: reading or writing `*p` on a nil pointer (`~Ꮡp` / `Ꮡp.Value`) still panics, preserving Go semantics — only the re-alias, which captures a reference without reading it, uses the nil-safe form. Both pieces are gated on a pointer parameter that is compared with `==`/`!=` anywhere in the body: a comparison signals that nil is a *legal argument* (Go panics only at an actual deref, never at entry), so the eager entry alias must not throw for it. This covers both the reassigned walk above and a nil-testing body invoked with a literal-nil argument (`defer closeIt(nil, 3)` → `p == nil` — the eager `Ꮡp.Value` alias otherwise panics before the body runs). The accepted trade-off, shared with the walk case: an *unguarded* value deref of an actually-nil argument reads the throwaway slot instead of raising Go's nil-deref panic — observable only by a program already panicking in Go. A parameter that is never nil-compared keeps the plain `.Value` form, so other code is unchanged. (Guarded by the `PointerParamNilWalk` behavioral test — a nil-terminated sum, a mutate-through-the-parameter pass, and an empty-list call — plus `DeferTypelessReturns`' deferred nil-argument call. The never-nil circular walk stays on the plain `.Value` path via `PointerParamWalk`.)
+`DerefOrNull()` is **not** a substitute for a genuine dereference: reading or writing `*p` on a nil pointer (`~Ꮡp` / `Ꮡp.Value`) still panics, preserving Go semantics — and so does a read THROUGH the bound null ref, which is the whole point. Neither piece needs a predicate any more: piece 1 (the box-form comparison) is a property of the expression, and piece 2 is what EVERY pointer entry alias and repoint now emits, because a repoint is not a dereference in Go and a nil argument is not an error in Go (see *A pointer PARAMETER is nil-deferring for exactly the reason a receiver is*). Historically both were gated on the body nil-COMPARING the parameter, which covered the reassigned walk above and a nil-testing body invoked with a literal-nil argument (`defer closeIt(nil, 3)` → `p == nil`) — at the cost of a shared `default(T)` slot that let an *unguarded* deref of an actually-nil argument read a silent zero where Go panics. The unconditional accessor keeps the walk working and drops the trade. (Guarded by the `PointerParamNilWalk` behavioral test — a nil-terminated sum, a mutate-through-the-parameter pass, and an empty-list call — plus `DeferTypelessReturns`' deferred nil-argument call. `PointerParamWalk` covers the never-nil circular walk.)
 
 A **package-level global** referenced inside a closure is *not* captured at all — it is a C# static, accessed live. A value snapshot (`var gʗ1 = g`) would copy the struct (so `&gʗ1` has no box → CS0103, and writes through the global from inside the closure would be lost) and is semantically wrong, since Go reads/writes the live global. For an address-taken (heap-boxed) global the closure references the static box `Ꮡg` directly — a method call routes as `Ꮡg.method()` and a field address as `Ꮡg.of(T.Ꮡfield)`. (Guarded by `GlobalCapturedInClosure`; the runtime does this in every `systemstack(func(){ … mheap_ … })`.)
 
@@ -10110,10 +10119,11 @@ fix is half-done:
 
 Because the accessor is unconditional there is no predicate to get wrong, and
 `isComparedDirectBoxReceiverIdent` — the 2026-07 receiver-specific arm of `collectNilSafePtrParams` —
-is subsumed and deleted; that scan is once again about pointer PARAMETERS only. A non-nil receiver is
-unaffected: `DerefOrNull()` routes it to `ValueSlot`, the identical real slot, which additionally
-subsumes the `isInherentlyHeapAllocatedType` → `.ValueSlot` receiver arm above (same slot, and now the
-genuinely-nil case is handled too rather than silently read).
+is subsumed and deleted. A non-nil receiver is unaffected: `DerefOrNull()` routes it to `ValueSlot`,
+the identical real slot, which additionally subsumes the `isInherentlyHeapAllocatedType` →
+`.ValueSlot` receiver arm above (same slot, and now the genuinely-nil case is handled too rather than
+silently read). The scan that remained after this fix covered pointer PARAMETERS only — and the
+section below is why it does not exist at all any more.
 
 (Guarded by the `NilReceiverMethods` behavioral test, output-compared vs `go run`: a delegated
 `checkValid`-style guard that must return the error, an unconditional deref that must panic with Go's
@@ -10122,11 +10132,106 @@ both emission shapes — each panic case run through both the direct-ж preamble
 `ref`-receiver bridge. `PointerReceiverNilCompare` and bytes' `TestNil` continue to cover the inline
 guard.)
 
-### A receiver RE-POINTED before first use gets a nil-safe entry alias too — the normalization idiom
-The section above covers a receiver the body **tests**. Go's other nil-receiver idiom does not test it
-at all: it *normalizes* it, by re-pointing through a helper that does the testing. `time`'s
-`Location.lookup` is the canonical case — `Time{}` carries a nil `*Location` meaning UTC, and `get`
-maps nil to `&utcLoc`:
+### A pointer PARAMETER is nil-deferring for exactly the reason a receiver is
+Go's nil rule does not distinguish the two. Passing a nil `*T` to a function is as legal as calling a
+method through one: the body RUNS, and the nil-pointer panic happens only where the body actually
+dereferences the pointee. So the entry alias for a pointer PARAMETER takes the same
+`DerefOrNull()` the receiver does, unconditionally, with no admitting analysis — because the accessor
+is faithful whether or not the body guards.
+
+Getting here took three arms of a body ANALYSIS, each one a real fix for a real crash and each one
+provably incomplete, which is the argument for retiring all of them at once:
+
+| Arm | The shape it admitted | Why it could not be the answer |
+|:--|:--|:--|
+| nil-COMPARED param (`collectNilSafePtrParams`) | `for p != nil { …; p = p.next }`; `if p == nil { … }` | a body that never spells the comparison is not a body that cannot take nil |
+| nil-ARGUMENT call site (`collectNilArgPtrParams`) | `digits(ch, 10, nil)` — text/scanner's optional out-param | SAME-package call sites only; the converter sees one package at a time, so a cross-package nil argument stayed broken |
+| RE-POINTED before first read (`reassignedBeforeDerefParamName`) | `l = l.get()` — Go's nil-receiver NORMALIZATION idiom (`time.Location.lookup`, whose entry fault cost seven of `time`'s verdicts) | narrow by construction: first top-level statement only, and every use inside it non-dereferencing |
+
+The shape none of them could reach is the one that broke `net`. `internal/concurrent`'s
+`newIndirectNode(parent *indirect[K, V])` STORES its parameter and never dereferences it, and
+`net`'s package initializer reaches it through `netip` → `unique` as `newIndirectNode(nil)` — a
+perfectly ordinary nil argument, from another package, with no comparison anywhere in the callee. The
+eager `ref var parent = ref Ꮡparent.Value;` faulted at entry, inside a static constructor, so every
+`net` test failed before the first one ran (`net` compiled with 0 errors and scored **0/138**).
+
+Nothing analyzable distinguishes that callee from one that derefs immediately. What distinguishes them
+is what the BODY does, at the point it does it — which is precisely what the nil-deferring accessor
+defers to:
+
+```go
+// internal/concurrent/hashtriemap.go
+root: newIndirectNode[K, V](nil),        // NewHashTrieMap's initializer, reached from net's .cctor
+...
+func newIndirectNode[K, V comparable](parent *indirect[K, V]) *indirect[K, V] {
+	return &indirect[K, V]{node: node[K, V]{isEntry: false}, parent: parent}
+}
+```
+```csharp
+internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> Ꮡparent)
+    where K : /* comparable */ new()
+    where V : /* comparable */ new()
+{
+    ref var parent = ref Ꮡparent.DerefOrNull();   // was: ref Ꮡparent.Value — NRE in net's .cctor
+
+    return Ꮡ(new Δindirect<K, V>(node: new node<K, V>(isEntry: false), parent: Ꮡparent));
+}
+```
+
+**What the accessor costs.** For a NON-nil pointer, nothing observable: `DerefOrNull()` routes to
+`ValueSlot`, the identical real slot, so every read, every write-through and every re-alias behaves
+exactly as `.Value` did. For a nil pointer it binds `Unsafe.NullRef<T>`, which is legal to hold and
+faults on USE — so an unguarded deref still raises Go's
+`runtime error: invalid memory address or nil pointer dereference` (via
+`RuntimeErrorPanic.TryAsPanic`), recoverable, at the body's own deref point, AFTER any side effect the
+body performed first. The retired nil-SAFE accessor could not say that: its shared `default(T)` slot
+read a silent zero where Go panics, which is why it was only ever admissible under a proof.
+
+**One shape, everywhere a pointer is aliased.** The unification also takes the pointer-reassignment
+re-alias in `visitAssignStmt` (single-assign, tuple-deconstruction, and the `p = nil` repoint alike):
+a repoint is not a dereference in Go, so re-aliasing must not fault, and the two halves of one alias
+must not disagree about whether nil is legal to hold. And it takes the `isInherentlyHeapAllocatedType`
+→ `.ValueSlot` arm at THIS site, which is the one place the unification goes beyond swapping an
+accessor. `.ValueSlot` remains type-selected everywhere it belongs — a box-of-pointer LOCAL, a
+named-result box, `heap(out …)`, the reflection bridge's field paths — but at an entry alias it was
+selected AFTER the nil-safe analysis, i.e. the old code already ranked nil-ability above pointee-kind.
+Keeping it ranked first under an unconditional nil policy would have inverted that order and handed 9
+corpus aliases across 8 files (`internal/weak`'s `ptr`, runtime `mbitmap`'s `header`, dwarf's
+`fixups`, …) a NEW entry-time fault on exactly the nil arguments the previous converter tolerated —
+measured, and the reason the arm is not selected here.
+
+**Measured footprint** (seeded whole-stdlib A/B reconvert, base vs fixed, 2026-08-02): **457 files,
+2,551 lines, 2,555 accessor sites — 100% a single shape**, the accessor token at a
+`= ref <box>.<accessor>;` position, with zero unclassified lines and no file changing its line count:
+
+| Transition | Sites |
+|:--|--:|
+| `.Value` → `.DerefOrNull()` | 2,079 |
+| `.DerefOrNil()` → `.DerefOrNull()` | 413 |
+| `.ValueSlot` → `.DerefOrNull()` | 59 |
+
+Corpus-wide the entry/re-alias census moves from `Value` 2,849 / `ValueSlot` 81 / `DerefOrNil` 420 /
+`DerefOrNull` 2,030 to `Value` 766 / `ValueSlot` 22 / `DerefOrNil` 0 / `DerefOrNull` 4,585 — the
+remaining `.Value` are genuine USE sites, where Go does panic. (Seven `DerefOrNil()` sites survive in
+committed `*_test.cs` under `container/ring`, `go/token`, `index/suffixarray` and `testing/quick`: a
+`-stdlib` reconvert does not re-emit banked test sources, so they level at each package's next
+`-tests` run.) The behavioral corpus re-baselines in the same one shape — 71 `.cs`, 138 lines, 69
+goldens, every added line an accessor swap. The converter loses 382 net lines: the accessor constant,
+three analyses, their helpers, the package-wide pre-pass and the visitor state behind them.
+
+(Guarded by the `NilPointerParamMethods` behavioral test, output-compared vs `go run`: a nil argument
+through a DELEGATED guard that must return the error, a nil argument STORED and never dereferenced —
+the `newIndirectNode` shape — an unconditional deref that must panic with Go's message, a side effect
+that must be observed BEFORE that panic, a nil-terminated walk, a `*error` parameter that legally
+HOLDS nil, the normalization idiom, and every non-nil argument unchanged. Neuter-proven: restoring the
+eager param arm diverges from Go on 42 output lines. `GuardedNilPointerParamDeref`,
+`PointerParamNilWalk`, `NilReceiverNormalization` and `PointerToInterfaceParamDeref` continue to cover
+the shapes the retired arms were built for.)
+
+### A receiver or parameter RE-POINTED before first use — the normalization idiom
+Go's other nil idiom does not test the pointer at all: it *normalizes* it, by re-pointing through a
+helper that does the testing. `time`'s `Location.lookup` is the canonical case — `Time{}` carries a nil
+`*Location` meaning UTC, and `get` maps nil to `&utcLoc`:
 
 ```go
 func (l *Location) lookup(sec int64) (name string, offset int, start, end int64, isDST bool) {
@@ -10134,53 +10239,33 @@ func (l *Location) lookup(sec int64) (name string, offset int, start, end int64,
 	if len(l.zone) == 0 { … }
 ```
 
-The comparison predicate cannot see this — `lookup` never writes `l == nil` — so the receiver kept the
-plain `.Value` entry alias and **faulted before its first statement**, where Go returns UTC. That one
-site cost seven of `time`'s test verdicts (`TestDefaultLoc`, `TestSecondsToUTC`, `TestNanosecondsToUTC`,
-`TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestZoneBounds`), every one of them dying at entry.
+No comparison predicate can see this — `lookup` never writes `l == nil` — so under the eager alias the
+receiver **faulted before its first statement**, where Go returns UTC. That one site cost seven of
+`time`'s test verdicts (`TestDefaultLoc`, `TestSecondsToUTC`, `TestNanosecondsToUTC`, `TestParse`,
+`TestTimeGob`, `TestTimeIsDST`, `TestZoneBounds`), every one of them dying at entry.
 
-This is the **delegating** shape the `collectNilSafePtrParams` header warns is *not* addressed by
-widening to every direct-ж pointer receiver — that widening was measured (26 behavioral projects change
-their preamble) and deliberately declined, because it extends the arms' accepted trade-off (an unguarded
-deref of an actually-nil receiver reads the throwaway slot instead of panicking) across the whole
-corpus. The re-pointing sub-case needs no such trade, which is precisely why it is admitted separately.
-
-**The predicate, precisely** (`reassignedBeforeDerefParamName`): the **first** top-level body statement
-that mentions a deref-aliased pointer parameter or direct-ж receiver must be an `=` assignment that
-re-points it, and every use of it *inside that statement* must leave the pointee untouched — a method
-call whose **receiver is itself a pointer** (`l.get()`), a nil comparison, or the bare pointer passed as
-an argument. A field selection, a value-receiver method (which auto-derefs, and so panics in Go too), or
-a `*p` disqualifies it. Note this is **not** `types.Selection.Indirect()`: that reports whether a pointer
-was traversed to *reach* the selection, which is true of every selection on a pointer operand,
-pointer-receiver method calls included — using it rejects the very shape the predicate exists for.
-
-Under those conditions the entry alias is a placeholder that the assignment's re-alias replaces before
-anything can read it, so `DerefOrNil()` cannot hand a wrong value to anyone: unlike the compared arms,
-there is no read to be wrong. Emission for every other function is byte-identical.
-
-**This arm is ENTRY-ONLY, which is what keeps the trade-off at zero.** The nil-compared arms put the
-parameter in `nilSafePtrParamNames`, which `visitAssignStmt` also reads, so *both* aliases go nil-safe
-and an unguarded deref of an actually-nil pointer reads the throwaway slot instead of panicking. The
-re-pointing arm carries its name in `nilSafeEntryOnlyParamName` instead, so only `visitFuncDecl`'s entry
-emission consults it and the re-alias keeps the strict `.Value`: after `l = l.get()` the pointer is
-whatever the normalizer returned, and a genuine deref of a still-nil one must panic exactly as Go's
-does. (`GenericFuncCall`'s `renew` — `p = escape(p); *p += 10`, where `escape` is identity and CAN
-return nil — is the case that distinguishes them; its golden moves by one line, not two.) A parameter
-in both sets composes correctly: entry nil-safe either way, re-alias nil-safe only when the comparison
-arm asked for it.
+It was closed first by a dedicated predicate (`reassignedBeforeDerefParamName`: the FIRST top-level
+body statement that mentions the pointer must be an `=` that re-points it, with every use of it inside
+that statement leaving the pointee untouched — a pointer-receiver method call like `l.get()`, a nil
+comparison, or the bare pointer as an argument; a field selection, a value-receiver method, or a `*p`
+disqualified it). That predicate is gone: the unconditional nil-deferring alias covers the idiom
+without needing to recognize it, and covers the variants it could not admit (a normalization on the
+SECOND statement, or one nested in an `if`). Both halves now read the same way:
 
 ```csharp
 internal static (@string name, nint offset, int64 start, int64 end, bool isDST) lookup(this ж<ΔLocation> Ꮡl, int64 sec) {
     …
-    ref var l = ref Ꮡl.DerefOrNil();      // was: ref Ꮡl.Value  — NRE at entry for Time{}
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;      // strict: get() cannot return nil
+    ref var l = ref Ꮡl.DerefOrNull();          // binds for Time{}'s nil loc; no fault at entry
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();   // the repoint is not a deref either
 ```
 
-(Guarded by the `NilReceiverNormalization` behavioral test — normalize-then-read, normalize-then-*write*
-through the re-aliased receiver with a read-back proving the real slot was addressed, the same shape on a
-nil-legal pointer *parameter* rather than a receiver, and a control that reads BEFORE normalizing, which
-keeps the plain `.Value` form and still panics through a nil receiver exactly as Go does.)
-
+One subtlety the predicate era got right and this must keep: a normalizer that CAN return nil
+(`GenericFuncCall`'s `renew` — `p = escape(p); *p += 10`, where `escape` is identity) must still panic
+at the `*p`, and it does — the re-alias binds a null ref and the dereference through it faults with
+Go's message, exactly where Go's does. (Guarded by the `NilReceiverNormalization` behavioral test —
+normalize-then-read, normalize-then-*write* through the re-aliased receiver with a read-back proving
+the real slot was addressed, the same shape on a nil-legal pointer *parameter*, and a control that
+reads BEFORE normalizing and still panics through a nil receiver exactly as Go does.)
 ### A reinterpreted raw address ALIASES native memory instead of boxing a copy
 `(ж<T>)(uintptr)` is the reinterpret seam: it turns a raw address back into a pointer. It used to
 box a **copy** of the pointed-at value —

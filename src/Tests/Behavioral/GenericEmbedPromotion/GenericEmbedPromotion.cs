@@ -22,7 +22,7 @@ private static readonly @string p224ˢ = "p224"u8;
 }
 
 [GoRecv] internal static ж<p224> combine(this ref p224 p, ж<p224> Ꮡo) {
-    ref var o = ref Ꮡo.Value;
+    ref var o = ref Ꮡo.DerefOrNull();
 
     return Ꮡ(new p224(v: p.v + o.v));
 }

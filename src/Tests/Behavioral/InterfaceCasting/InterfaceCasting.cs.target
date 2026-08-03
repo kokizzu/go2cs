@@ -62,7 +62,7 @@ public static @string Speak(this JavaProgrammer j) {
 }
 
 internal static void addTo(ж<nint> Ꮡp, nint delta) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p += delta;
 }
@@ -238,7 +238,7 @@ internal static any describe(bool b) {
 }
 
 internal static void replaceAnimal(ж<Animal> Ꮡa) {
-    ref var a = ref Ꮡa.ValueSlot;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     a = new CatжAnimal(Ꮡ(new Cat(nil)));
 }

@@ -16,7 +16,7 @@ partial class main_package {
 private static readonly @string unknownˢ = "unknown"u8;
 
 internal static @string status(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var (s, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
@@ -27,13 +27,13 @@ internal static @string status(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
 }
 
 internal static void rename(this ж<conn> Ꮡc, ж<tracker> Ꮡt, @string s) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.m[Ꮡc] = s;
 }
 
 internal static @string label(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return t.m[Ꮡc];
 }
@@ -43,7 +43,7 @@ private static readonly object closedˢ = (@string)"closed"u8;
 
 internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer, recover) => {
     ref var c = ref Ꮡc.DerefOrNull();
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, defer);
     {

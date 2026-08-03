@@ -17,7 +17,7 @@ partial class main_package {
 }
 
 internal static void bump(ж<cycle> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.n++;
 }
@@ -28,7 +28,7 @@ internal static void viaParam(ж<rec> Ꮡp, nint i) {
 }
 
 internal static void viaLocal(ж<holder> Ꮡh, nint i) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var p = h.r;
     var c = p.at(rec.Ꮡfuture, i);

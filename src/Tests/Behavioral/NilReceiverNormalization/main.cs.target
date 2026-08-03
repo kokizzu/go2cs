@@ -39,9 +39,9 @@ internal static @string rename(this ж<loc> Ꮡl, @string suffix) {
 }
 
 internal static @string span(ж<loc> Ꮡl, nint width) {
-    ref var l = ref Ꮡl.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
 
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     return fmt.Sprintf("%s/%d"u8, l.name, l.offset + width);
 }
 

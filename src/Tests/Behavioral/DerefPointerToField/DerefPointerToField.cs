@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 internal static nint sumRange(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     nint s = 0;
     foreach (var (_, x) in h.xs.ValueSlot) {
@@ -20,7 +20,7 @@ internal static nint sumRange(ж<holder> Ꮡh) {
 }
 
 internal static nint readVal(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     return h.cnt.Value;
 }

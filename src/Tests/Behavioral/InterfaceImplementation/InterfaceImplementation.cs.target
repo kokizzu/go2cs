@@ -115,7 +115,7 @@ internal static void useAndRelease() => func((defer, recover) => {
 });
 
 public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
-    ref var zoo = ref Ꮡzoo.Value;
+    ref var zoo = ref Ꮡzoo.DerefOrNull();
 
     Animal a = default!;
     foreach (var (_, vᴛ1) in zoo) {

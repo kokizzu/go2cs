@@ -10,20 +10,20 @@ partial class main_package {
 }
 
 internal static nint helper(ж<box> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return b.n;
 }
 
 internal static nint consume(ж<box> Ꮡio, Δio.Writer w) {
-    ref var ioΔ1 = ref Ꮡio.Value;
+    ref var ioΔ1 = ref Ꮡio.DerefOrNull();
 
     _ = w;
     return ioΔ1.n + helper(Ꮡio);
 }
 
 internal static nint combine(Δio.Writer ioΔ1, ж<box> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     _ = ioΔ1;
     return p.n * 2;

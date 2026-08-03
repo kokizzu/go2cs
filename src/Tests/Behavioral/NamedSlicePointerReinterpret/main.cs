@@ -7,7 +7,7 @@ partial class main_package {
 [GoType("[]byte")] partial struct Buf;
 
 internal static @string fillVia(ж<slice<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     var p = Ꮡ(new Buf(@out));
     p.ValueSlot = append(p.ValueSlot, (byte)((rune)'A'), (byte)((rune)'B'), (byte)((rune)'C'));

@@ -959,6 +959,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNilPointerPanic() => CheckTarget("NilPointerPanic");
 
     [TestMethod]
+    public void CheckNilPointerParamMethods() => CheckTarget("NilPointerParamMethods");
+
+    [TestMethod]
     public void CheckNilPointerParamUnsafePointer() => CheckTarget("NilPointerParamUnsafePointer");
 
     [TestMethod]

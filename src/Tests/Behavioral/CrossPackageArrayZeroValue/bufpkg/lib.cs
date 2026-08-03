@@ -21,7 +21,7 @@ partial class bufpkg_package {
 }
 
 public static void FillArray(ж<array<uint64>> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     foreach (var (i, _) in buf) {
         buf[i] = (uint64)i * 3;
@@ -29,7 +29,7 @@ public static void FillArray(ж<array<uint64>> Ꮡbuf) {
 }
 
 public static uint64 Sum(ж<State> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var total = (uint64)0;
     foreach (var (_, v) in s.Buf) {

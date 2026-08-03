@@ -39,7 +39,7 @@ internal static Pt derefLocal() {
 }
 
 internal static ж<Pt> advance(ж<Pt> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.X += 100;
     return Ꮡp;

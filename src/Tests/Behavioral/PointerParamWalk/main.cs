@@ -10,27 +10,27 @@ partial class main_package {
 }
 
 internal static nint sumWalk(ж<node> Ꮡp, nint steps) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint total = 0;
     for (nint i = 0; i < steps; i++) {
         total += p.val;
-        Ꮡp = p.next; p = ref Ꮡp.Value;
+        Ꮡp = p.next; p = ref Ꮡp.DerefOrNull();
     }
     return total;
 }
 
 internal static ж<node> firstAfter(ж<node> Ꮡp, nint steps) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     for (nint i = 0; i < steps; i++) {
-        Ꮡp = p.next; p = ref Ꮡp.Value;
+        Ꮡp = p.next; p = ref Ꮡp.DerefOrNull();
     }
     return Ꮡp;
 }
 
 internal static nint markSeen(ж<node> Ꮡp, map<ж<node>, bool> seen) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (seen[Ꮡp]) {
         return p.val;
@@ -40,11 +40,11 @@ internal static nint markSeen(ж<node> Ꮡp, map<ж<node>, bool> seen) {
 }
 
 internal static nint walkChain(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint count = 0;
     for (; Ꮡp != nil; Ꮡp = p.next) {
-        p = ref Ꮡp.DerefOrNil();
+        p = ref Ꮡp.DerefOrNull();
         count += p.val;
     }
     return count;

@@ -15,7 +15,7 @@ partial class main_package {
 }
 
 internal static nint sumParam(ж<grid> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint total = 0;
     foreach (var (_, v) in p.Value[..]) {

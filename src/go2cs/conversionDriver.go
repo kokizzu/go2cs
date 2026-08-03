@@ -198,10 +198,6 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// declarations can be emitted as heap boxes that &global references directly.
 		collectAddressedGlobals(files, packageTypes, info)
 
-		// Record pointer parameters passed the untyped nil at a call site (cross-file) so their
-		// entry deref alias takes the nil-safe accessor (see packageNilArgPtrParams).
-		collectNilArgPtrParams(files, info)
-
 		// Decide which string literals are hoisted to package-scoped `static readonly` fields
 		// (Tier C — see hoistedLiteralOperations.go). A whole-package PRE-pass: pre-boxing needs
 		// every use of a literal before any file emits, and collectMovedInitVars below consults

@@ -24,7 +24,7 @@ internal static ж<array<gridᴛ1>> Ꮡgrid = new(new array<gridᴛ1>(3, () => n
 internal static ref array<gridᴛ1> grid => ref Ꮡgrid.Value;
 
 internal static void setInt(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = 7;
 }

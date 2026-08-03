@@ -12,7 +12,7 @@ partial class main_package {
 internal static ж<T> clone<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;
@@ -22,7 +22,7 @@ internal static ж<T> clone<T>(ж<T> Ꮡp)
 internal static T getThrough<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p;
 }
@@ -30,7 +30,7 @@ internal static T getThrough<T>(ж<T> Ꮡp)
 internal static void setThrough<T>(ж<T> Ꮡp, T v)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = v;
 }
@@ -38,7 +38,7 @@ internal static void setThrough<T>(ж<T> Ꮡp, T v)
 internal static ж<T> cloneRev<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;
@@ -57,7 +57,7 @@ internal static ж<T> pick<T>(ж<T> Ꮡa, ж<T> Ꮡb, bool useA)
 internal static ж<T> cloneChain<T>(ж<T> Ꮡp, nint depth)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (depth > 0) {
         return cloneChain<T>(clone<T>(Ꮡp), depth - 1);
@@ -77,7 +77,7 @@ internal static void aliasWrite<T>(ж<T> Ꮡp, T v)
 internal static T orZero<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil) {
         T z = default!;
@@ -94,7 +94,7 @@ internal static T orZero<T>(ж<T> Ꮡp)
 internal static ж<T> cloneNamed<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;
@@ -104,7 +104,7 @@ internal static ж<T> cloneNamed<T>(ж<T> Ꮡp)
 internal static ж<T> cloneEmbedded<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;

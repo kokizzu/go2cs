@@ -9,7 +9,6 @@ package main
 import (
 	"fmt"
 	"go/ast"
-	"go/token"
 	"go/types"
 	"strings"
 	"unicode"
@@ -366,13 +365,6 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 	}
 
-	// Identify pointer parameters that are compared with `==`/`!=` in the body (a nil-terminated
-	// walk: `for p != nil { …; p = p.next }`). Such a param's deref alias and pointer-reassignment
-	// re-alias must use the nil-safe accessor so re-aliasing to a nil box yields a ref to default(T)
-	// (never read while p is nil) instead of throwing a nil-pointer dereference (see comment on
-	// nilSafePtrParamNames). Run AFTER paramObjects is populated (identIsParameter relies on it).
-	v.collectNilSafePtrParams(funcDecl)
-
 	// Loop through function results to check if any are structs
 	if funcDecl.Type.Results != nil {
 		for index, field := range funcDecl.Type.Results.List {
@@ -709,45 +701,48 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 					continue
 				}
 
-				// A pointer param walked to a nil terminator (`for p != nil { …; p = p.next }`) derefs
-				// through the nil-safe accessor so a nil argument (or, after the in-loop re-alias, a
-				// nil box) yields a ref to default(T) instead of throwing — the ref is never read while
-				// the box is nil (the `Ꮡp != nil` guard excludes it). Other pointer params keep `.Value`.
-				derefAccessor := "Value"
-
-				if i == 0 && funcDecl.Recv != nil && directBoxReceiver {
-					// A pointer RECEIVER is nil-DEFERRING, always. Go permits calling a method through
-					// a nil `*T`; the method runs, and the nil-pointer panic happens only where the
-					// body dereferences the pointee. The eager `ref var f = ref Ꮡf.Value;` instead
-					// deref'd at ENTRY, so every nil-tolerant method panicked before its guard could
-					// run — whether the guard is spelled INLINE (`if b == nil` — bytes' TestNil) or
-					// DELEGATED through the box (`f.checkValid("chdir")`, which is what asks
-					// `f == nil` — os's TestNilFileMethods, all fifteen *File methods).
-					//
-					// DerefOrNull binds a NULL ref for a nil box, which is legal to hold and faults on
-					// USE, so the panic is deferred to Go's own point rather than discarded: the first
-					// field read/write or whole-struct copy raises Go's message, AFTER any side effect
-					// the body performed first. That is what makes this unconditional and safe, where
-					// the nil-SAFE accessor (a shared default(T) slot — a silent zero where Go panics)
-					// could only ever be applied to the receivers a body provably guards. Non-nil
-					// receivers are unaffected: DerefOrNull routes them to the same real slot.
-					derefAccessor = NilDeferringDerefAccessor
-				} else if v.nilSafePtrParamNames.Contains(param.Name()) || v.nilSafeEntryOnlyParamName == param.Name() {
-					derefAccessor = NilSafeDerefAccessor
-				} else if isInherentlyHeapAllocatedType(pointerType.Elem()) {
-					// The POINTEE is itself a reference type (`*error`, `*[]T`, `*map`, `**T`,
-					// `*func`, `*chan`): the box is a real, structurally non-nil pointer (`Ꮡ<name>`),
-					// but its held value is legitimately null when the pointee is the zero value —
-					// a nil interface/slice/map/etc. Establishing the entry deref ALIAS is a read of
-					// the held value, NOT a dereference of the box (in Go, `*(&err)` of a nil `error`
-					// yields nil, no panic), yet `.Value`'s IsNull check fires on `m_val is null` and
-					// throws a spurious NilPointerDereference at function entry (e.g. tabwriter's
-					// `handlePanic(err *error)`). Use the nil-check-free `.ValueSlot`, mirroring
-					// namedResultBoxAccessor (a named result of the same type already reads this way);
-					// it returns the same real slot as `.Value` in every non-throwing case, so
-					// write-through and non-null reads are byte-behaviorally identical.
-					derefAccessor = "ValueSlot"
-				}
+				// Every direct-ж pointer entry alias — RECEIVER and PARAMETER alike — is
+				// nil-DEFERRING, unconditionally. Go's nil rule does not distinguish the two: a nil
+				// `*T` may be passed to a function exactly as it may be the receiver of a method, the
+				// body RUNS, and the nil-pointer panic happens only where the body dereferences the
+				// pointee. The eager `ref var p = ref Ꮡp.Value;` instead deref'd at ENTRY, so every
+				// nil-tolerant body panicked before its guard could run — whether the guard is spelled
+				// INLINE (`if b == nil`), DELEGATED through the box (`f.checkValid("chdir")`, which is
+				// what asks `f == nil`), or delegated to a CALLEE that takes the pointer and never
+				// derefs it (`concurrent.newIndirectNode(nil)`, the whole of `net`'s package-init
+				// chain).
+				//
+				// DerefOrNull binds a NULL ref for a nil box, which is legal to hold and faults on
+				// USE, so the panic is deferred to Go's own point rather than discarded: the first
+				// field read/write or whole-struct copy raises Go's message, AFTER any side effect the
+				// body performed first. That is what makes this unconditional and analysis-FREE — the
+				// accessor is faithful whether or not the body guards. The two accessors it replaces
+				// were each faithful only under a proof: `.Value` needed "this pointer is never nil"
+				// (unprovable — it was simply the default), and the nil-SAFE accessor needed "the body
+				// provably guards" (a body analysis whose silent `default(T)` slot was a wrong answer
+				// wherever the analysis was wrong). Non-nil pointers are unaffected: DerefOrNull routes
+				// them to the same real slot.
+				//
+				// It subsumes the third accessor this site used to select, too: a REFERENCE-TYPE
+				// POINTEE (`*error`, `*[]T`, `*map`, `**T`, `*func`, `*chan`) took `.ValueSlot`,
+				// because establishing its entry alias reads the HELD value rather than dereferencing
+				// the box (in Go `*(&err)` of a nil `error` yields nil, no panic) and `.Value`'s
+				// value-peeking IsNull check fired spuriously on it — tabwriter's `handlePanic(err
+				// *error)`. DerefOrNull's own non-nil path IS `.ValueSlot` (its nil test,
+				// IsNilStandardPointer, is STRUCTURAL and never peeks at the held value), so it
+				// answers that case identically while also surviving a nil BOX, which `.ValueSlot`
+				// cannot: reached through a null reference it throws at the alias line. The two
+				// selections were mutually exclusive under the retired analysis, which ran FIRST and
+				// so kept nil-ability ahead of pointee-kind; type-selecting `.ValueSlot` ahead of an
+				// unconditional nil policy would invert that order and hand 9 corpus aliases across 8
+				// files (`internal/weak`'s `ptr`, runtime mbitmap's `header`, dwarf's `fixups`, …) a
+				// NEW entry-time fault on exactly the nil arguments the base tolerated — the very
+				// defect this unification exists to close. `.ValueSlot` remains type-selected
+				// everywhere else it belongs (named-result boxes, box-of-pointer LOCALS, `heap()`, the
+				// reflection bridge's field paths); it is only at this site — a pointer's ENTRY alias,
+				// where nothing can know whether the body dereferences — that the nil-policy accessor
+				// is the honest one. See *The THREE deref accessors of ж<T>*.
+				derefAccessor := NilDeferringDerefAccessor
 
 				if v.options.preferVarDecl {
 					v.writeString(implicitPointers, "%s%sref var %s = ref %s%s.%s;", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), AddressPrefix, param.Name(), derefAccessor)
@@ -1308,234 +1303,6 @@ func (v *Visitor) identIsParameter(ident *ast.Ident) bool {
 	}
 
 	return true
-}
-
-// collectNilSafePtrParams populates v.nilSafePtrParamNames with the raw names of the pointer
-// parameters that are compared with `==`/`!=` anywhere in body. A compared param signals nil is a
-// LEGAL argument (Go panics only on an actual deref, not at entry), so the eager entry alias
-// `ref var p = ref Ꮡp.Value` must not throw for it — it uses the nil-safe accessor instead. This
-// covers both the nil-terminated walk (`for p != nil { …; p = p.next }`, where the reassignment
-// repoints the box to the terminator) and a nil-testing body invoked with a nil argument
-// (`defer closeIt(nil, …)` → `p == nil`). Valid value reads of such a param sit behind non-nil
-// guards, never touching the shared default slot; the accepted trade-off (same as the walk case)
-// is that an UNGUARDED deref of an actually-nil argument reads default(T) instead of raising Go's
-// nil-deref panic — a path that only a program already panicking in Go would observe. A param that
-// is never nil-compared keeps the plain `.Value` form. The set is reset each function.
-//
-// PARAMETERS only. A pointer RECEIVER needs no membership test: it takes the nil-DEFERRING
-// accessor unconditionally (see NilDeferringDerefAccessor), which is faithful whether or not the
-// body guards, so the "does this body compare its receiver" arm this scan used to carry is gone.
-func (v *Visitor) collectNilSafePtrParams(funcDecl *ast.FuncDecl) {
-	if v.nilSafePtrParamNames == nil {
-		v.nilSafePtrParamNames = HashSet[string]{}
-	} else {
-		v.nilSafePtrParamNames.Clear()
-	}
-
-	if funcDecl == nil {
-		return
-	}
-
-	// A pointer parameter passed the untyped `nil` at some call site is legally nil at run time even
-	// when this body never nil-COMPARES it — the deref sits behind an ordinary value guard (see
-	// packageNilArgPtrParams / text/scanner's `digits(…, invalid *rune)` called `digits(ch, 10, nil)`).
-	// The nil-arg positions were recorded package-wide in the pre-pass; map them to parameter names so
-	// their entry deref alias takes the nil-safe accessor. Resolved by OBJECT identity via the func's
-	// signature, so a name-only match cannot leak in.
-	if funcObj, ok := v.info.Defs[funcDecl.Name].(*types.Func); ok {
-		if indices := packageNilArgPtrParams[funcObj]; indices != nil {
-			if sig, ok := funcObj.Type().(*types.Signature); ok {
-				for i := 0; i < sig.Params().Len(); i++ {
-					if indices.Contains(i) {
-						if name := sig.Params().At(i).Name(); name != "" && name != "_" {
-							v.nilSafePtrParamNames.Add(name)
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if funcDecl.Body == nil {
-		return
-	}
-
-	// A pointer parameter/receiver RE-POINTED before anything reads through it gets an ENTRY-ONLY
-	// nil-safe alias, and unlike the arms above it costs nothing at all: the alias it protects is
-	// overwritten by the re-alias that follows the assignment, so no read can ever reach the shared
-	// default slot and there is no wrong-answer surface to widen. (Kept out of nilSafePtrParamNames
-	// precisely so the RE-alias is not swept along — see nilSafeEntryOnlyParamName.) This is Go's
-	// nil-receiver NORMALIZATION idiom — `func (l *Location) lookup(…) { l = l.get(); … }`, where
-	// `get` maps a nil receiver to `&utcLoc` — the delegating shape called out above, but in the one
-	// form that can be proven safe rather than traded off. Without it `Time{}` (whose `loc` is nil,
-	// meaning UTC) faulted at lookup's ENTRY, before a single field was read, taking seven of time's
-	// tests with it.
-	v.nilSafeEntryOnlyParamName = v.reassignedBeforeDerefParamName(funcDecl.Body)
-
-	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
-		if n, ok := node.(*ast.BinaryExpr); ok && (n.Op == token.EQL || n.Op == token.NEQ) {
-			for _, operand := range []ast.Expr{n.X, n.Y} {
-				// The receiver arm of this analysis is now vestigial — a direct-ж RECEIVER takes the
-				// unconditional nil-DEFERRING accessor before this set is ever consulted — but the
-				// detection stays: it still records genuine POINTER-PARAM comparisons, and pruning
-				// the receiver half belongs to a cleanup pass, not a merge.
-				if ident, ok := operand.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident)) {
-					v.nilSafePtrParamNames.Add(ident.Name)
-				}
-			}
-		}
-
-		return true
-	})
-}
-
-// reassignedBeforeDerefParamName reports the name of a deref-aliased pointer parameter (or direct-ж
-// receiver) that the FIRST body statement mentioning it RE-POINTS — `p = <expr>` — without any of
-// that statement's own uses of it going through the pointee. Such a parameter's entry alias `ref var
-// p = ref Ꮡp.Value` is a placeholder that the assignment's re-alias immediately replaces, so
-// deref'ing the box to establish it is pure loss: it cannot supply a value anyone reads, and it
-// faults at entry for the nil argument the body was written to normalize.
-//
-// DELIBERATELY conservative in both directions. Only the first mentioning statement is considered
-// (a later or conditional reassignment does not prove the entry value is unread), it must be a
-// top-level statement of the body (not nested in a block, loop or `if`), and every use of the
-// parameter inside it must be non-dereferencing — a method call that binds the pointer itself
-// (`l.get()`, receiver `*Location`), a nil comparison, or the bare pointer as an argument. A field
-// selection, a value-receiver method (which auto-derefs, and so panics in Go too), or a `*p` all
-// disqualify it, leaving emission exactly as it was.
-func (v *Visitor) reassignedBeforeDerefParamName(body *ast.BlockStmt) string {
-	if body == nil {
-		return ""
-	}
-
-	for _, stmt := range body.List {
-		assign, isAssign := stmt.(*ast.AssignStmt)
-
-		// The first statement that mentions ANY qualifying parameter decides: either it re-points
-		// that parameter, or the parameter is live at entry and nothing here applies.
-		if !isAssign || assign.Tok != token.ASSIGN {
-			if v.statementMentionsDerefdPointerParam(stmt) != "" {
-				return ""
-			}
-
-			continue
-		}
-
-		target := ""
-
-		for _, lhs := range assign.Lhs {
-			ident, isIdent := lhs.(*ast.Ident)
-
-			if !isIdent {
-				continue
-			}
-
-			if v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident) {
-				target = ident.Name
-				break
-			}
-		}
-
-		if target == "" {
-			if v.statementMentionsDerefdPointerParam(stmt) != "" {
-				return ""
-			}
-
-			continue
-		}
-
-		// The assignment re-points `target`; its right-hand side may still name it, but only in a
-		// form that reads the POINTER rather than the pointee.
-		for _, rhs := range assign.Rhs {
-			if !v.exprUsesParamWithoutDeref(rhs, target) {
-				return ""
-			}
-		}
-
-		return target
-	}
-
-	return ""
-}
-
-// statementMentionsDerefdPointerParam reports the name of the first deref-aliased pointer parameter
-// (or direct-ж receiver) named anywhere in stmt, or "" when none is. Used only to establish which
-// statement is the FIRST to mention one — see reassignedBeforeDerefParamName.
-func (v *Visitor) statementMentionsDerefdPointerParam(stmt ast.Stmt) string {
-	found := ""
-
-	ast.Inspect(stmt, func(node ast.Node) bool {
-		if found != "" {
-			return false
-		}
-
-		if ident, ok := node.(*ast.Ident); ok && (v.isDerefdPointerParamIdent(ident) || v.isDirectBoxReceiverIdent(ident)) {
-			found = ident.Name
-		}
-
-		return true
-	})
-
-	return found
-}
-
-// exprUsesParamWithoutDeref reports whether every occurrence of the parameter named name inside expr
-// leaves the pointee untouched. See reassignedBeforeDerefParamName for what qualifies and why.
-func (v *Visitor) exprUsesParamWithoutDeref(expr ast.Expr, name string) bool {
-	safe := true
-
-	ast.Inspect(expr, func(node ast.Node) bool {
-		if !safe {
-			return false
-		}
-
-		switch n := node.(type) {
-		case *ast.SelectorExpr:
-			ident, isIdent := n.X.(*ast.Ident)
-
-			if !isIdent || ident.Name != name {
-				return true
-			}
-
-			// A method whose RECEIVER is a pointer is handed the pointer itself. A field, or a
-			// method with a VALUE receiver, reads through it — a real dereference, which panics in
-			// Go too. (Not `Selection.Indirect()`: that reports whether a pointer was traversed to
-			// REACH the selection, which is true for every selection on a pointer operand,
-			// pointer-receiver method calls included.)
-			if !v.isPointerReceiverMethodCall(n) {
-				safe = false
-			}
-
-			return false
-		case *ast.StarExpr:
-			if ident, isIdent := n.X.(*ast.Ident); isIdent && ident.Name == name {
-				safe = false
-			}
-		}
-
-		return true
-	})
-
-	return safe
-}
-
-// isDirectBoxReceiverIdent reports whether ident is the current method's pointer receiver (object
-// identity — a shadowing local does not match) and the method is direct-ж, i.e. its receiver box
-// `Ꮡrecv` is a parameter whose entry deref alias exists to be made nil-safe. It says nothing about
-// HOW the receiver is used; the callers in collectNilSafePtrParams supply that (an `==`/`!=`
-// operand, or the target of a re-pointing assignment).
-func (v *Visitor) isDirectBoxReceiverIdent(ident *ast.Ident) bool {
-	if ident == nil || ident.Name == "" || ident.Name == "_" {
-		return false
-	}
-
-	isPtrRecv, recvName := v.isPointerReceiver()
-
-	if !isPtrRecv || !v.identResolvesToReceiver(ident, recvName) {
-		return false
-	}
-
-	return isDirectBoxReceiverMethod(v.currentFuncDecl, v.info)
 }
 
 // isDerefdPointerParamIdent reports whether ident resolves to a non-blank pointer (`*T`) PARAMETER

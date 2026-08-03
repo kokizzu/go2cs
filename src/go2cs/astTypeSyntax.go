@@ -230,3 +230,23 @@ func (v *Visitor) getVarIdent(varType *types.Var) *ast.Ident {
 func (v *Visitor) getExprType(expr ast.Expr) types.Type {
 	return v.info.TypeOf(expr)
 }
+
+// argIsUntypedNil reports whether expr is the predeclared `nil` identifier (not a shadowing local,
+// and not an `&x` / typed-nil expression).
+func argIsUntypedNil(expr ast.Expr, info *types.Info) bool {
+	ident, ok := expr.(*ast.Ident)
+
+	if !ok || ident.Name != "nil" {
+		return false
+	}
+
+	if obj := info.Uses[ident]; obj != nil {
+		return obj == types.Universe.Lookup("nil")
+	}
+
+	if tv, ok := info.Types[expr]; ok {
+		return tv.Type == types.Typ[types.UntypedNil]
+	}
+
+	return false
+}

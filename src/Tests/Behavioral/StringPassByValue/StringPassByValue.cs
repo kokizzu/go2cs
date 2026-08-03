@@ -28,7 +28,7 @@ internal static void test(@string a) {
 }
 
 internal static void test2(ж<@string> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     fmt.Println(a);
     a = goodbyeWorldˢ;

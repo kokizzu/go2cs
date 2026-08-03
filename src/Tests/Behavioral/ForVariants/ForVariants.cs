@@ -90,7 +90,7 @@ break_scan:;
 }
 
 internal static void f(ж<nint> Ꮡy) {
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
 
     fmt.Print(y);
 }

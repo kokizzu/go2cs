@@ -33,8 +33,8 @@ public static void Sort(this By by, slice<item> items) {
 }
 
 internal static bool byName(ж<item> Ꮡa, ж<item> Ꮡb) {
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return a.name < b.name;
 }

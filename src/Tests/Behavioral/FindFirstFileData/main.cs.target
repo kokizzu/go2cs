@@ -188,7 +188,7 @@ internal static (entry, error) find(@string path) {
 }
 
 internal static (entry, bool) toEntry(ж<syscall.Win32finddata> Ꮡdata) {
-    ref var data = ref Ꮡdata.Value;
+    ref var data = ref Ꮡdata.DerefOrNull();
 
     @string name = syscall.UTF16ToString(data.FileName[..]);
     if (name == "."u8 || name == ".."u8) {
@@ -204,7 +204,7 @@ internal static (entry, bool) toEntry(ж<syscall.Win32finddata> Ꮡdata) {
 }
 
 internal static @string altName(ж<syscall.Win32finddata> Ꮡdata) {
-    ref var data = ref Ꮡdata.Value;
+    ref var data = ref Ꮡdata.DerefOrNull();
 
     if (data.AlternateFileName[0] == 0) {
         return ""u8;

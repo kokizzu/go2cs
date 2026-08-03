@@ -15,7 +15,7 @@ partial class main_package {
 [GoType("[4]byte")] partial struct tb;
 
 internal static void zeroTB(ж<tb> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     buf = new tb(new byte[4].array());
 }
@@ -117,7 +117,7 @@ public static nint Total(this Grid g) {
 }
 
 internal static void fromBytes(ж<array<uint64>> Ꮡout, uint64 seed) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     foreach (var (i, _) in @out) {
         @out[i] = seed + (uint64)i;
@@ -125,8 +125,8 @@ internal static void fromBytes(ж<array<uint64>> Ꮡout, uint64 seed) {
 }
 
 internal static void @double(ж<mont> Ꮡout, ж<nonMont> Ꮡarg) {
-    ref var @out = ref Ꮡout.Value;
-    ref var arg = ref Ꮡarg.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var arg = ref Ꮡarg.DerefOrNull();
 
     foreach (var (i, _) in @out) {
         @out[i] = arg[i] * 2;

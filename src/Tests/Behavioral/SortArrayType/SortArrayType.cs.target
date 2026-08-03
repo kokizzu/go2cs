@@ -73,7 +73,7 @@ internal static nint dynamicFn1() {
 }
 
 internal static void consumeOne(ж<slice<Person>> Ꮡv) {
-    ref var v = ref Ꮡv.ValueSlot;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     v = (v)[1..];
 }

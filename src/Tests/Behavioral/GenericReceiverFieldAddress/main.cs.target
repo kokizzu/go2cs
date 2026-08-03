@@ -9,13 +9,13 @@ partial class main_package {
 }
 
 internal static void setT<T>(ж<T> Ꮡp, T val) {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
 }
 
 internal static T getT<T>(ж<T> Ꮡp) {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p;
 }

@@ -7,13 +7,13 @@ partial class main_package {
 [GoType("[]nint")] partial struct stack;
 
 internal static void growTo(ж<stack> Ꮡs, nint v) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = append(s, v);
 }
 
 internal static void shrink(ж<stack> Ꮡs) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = (s)[..(int)(len(s) - 1)];
 }

@@ -19,7 +19,7 @@ internal static void bumpInClosure(ж<nint> Ꮡp) {
 }
 
 internal static void mixed(ж<nint> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = 5;
     defer(() => {

@@ -15,7 +15,7 @@ partial class main_package {
 }
 
 internal static void show(ж<ints> Ꮡp) {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     foreach (var (i, x) in p) {
         if (i > 0) {

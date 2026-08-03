@@ -22,7 +22,7 @@ private static readonly @string p224ˢ = "p224"u8;
 }
 
 [GoRecv] internal static ж<p224> combine(this ref p224 p, ж<p224> Ꮡo) {
-    ref var o = ref Ꮡo.Value;
+    ref var o = ref Ꮡo.DerefOrNull();
 
     return Ꮡ(new p224(v: p.v + o.v));
 }
@@ -47,7 +47,7 @@ private static readonly @string p384ˢ = "p384"u8;
 }
 
 [GoRecv] internal static ж<p384> combine(this ref p384 p, ж<p384> Ꮡo) {
-    ref var o = ref Ꮡo.Value;
+    ref var o = ref Ꮡo.DerefOrNull();
 
     return Ꮡ(new p384(v: p.v * o.v));
 }

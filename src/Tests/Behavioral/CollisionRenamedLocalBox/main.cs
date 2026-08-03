@@ -19,13 +19,13 @@ internal static void p(this tagger _) {
 }
 
 internal static void setN(ж<box> Ꮡb, nint v) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.n = v;
 }
 
 internal static void bump(ж<nint> Ꮡnp) {
-    ref var np = ref Ꮡnp.Value;
+    ref var np = ref Ꮡnp.DerefOrNull();
 
     np += 100;
 }

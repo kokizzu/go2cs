@@ -49,7 +49,7 @@ internal static (cursor, error) makeCursor(nint pos, @string tag) {
 }
 
 internal static void bump(ж<cursor> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.pos++;
 }
