@@ -1191,6 +1191,94 @@ verdict split is **identical before and after** (86/106) for exactly that reason
 is the general converter defect and its 39-file corpus footprint, not a verdict.
 
 gob does **not** bank (86 of 106), so the roster is unchanged and no gob artifact is committed.
+### RETRACTED — `TestPipeEOF` is NOT a channel row: the channel was never CLOSED (r37-chanrace, 2026-08-02)
+
+The r37-poll handoff recorded `TestPipeEOF`'s post-pipe-fix hang as *"a `for range` over an already
+CLOSED, drained channel that never wakes — a lost wakeup, in `golib/channel.cs`"*, and routed it to
+the channels lane as the first real channel-semantics defect since wave3. **It is not one.** The
+"already closed" half was inferred from reading `testPipeEOF`'s source flow — `close(write)` sits
+above the deferred `<-writerDone`, so a main goroutine parked in that defer looks like it must have
+closed. Measured instead of inferred, it had not: this is §9's don't-trust-a-plausible-reading trap,
+one hop further in.
+
+**The instrument.** `ChanCore<T>.Recv`/`Send`'s park was env-gated onto a timed wait that reports the
+core's state and the parked thread's stack once a threshold elapses, plus a line per `closechan`.
+That is the cheap general answer to *any* future "a channel never woke" sighting: it distinguishes a
+lost wakeup from a close that never ran, in one run, without a debugger.
+
+**What it captured** — identically in both instrumented pipeline runs, and a third time driving the
+host directly:
+
+```
+STUCK recv core#281  closed=False qcount=0 cap=1  recvqEmpty=False  elem=IntPtr
+     channel<T>.GetEnumerator+MoveNext  ←  testPipeEOF's `for i := range write`   (the writer goroutine)
+STUCK recv core#280  closed=False qcount=0 cap=0  recvqEmpty=False  elem=EmptyStruct
+     GoFunc.HandleFinally → builtin.ᐸꟷ  ←  the deferred `<-writerDone`            (the test goroutine)
+```
+
+Both channels **open**. And the cross-check is absolute: across the whole suite run the close log
+contains **125 closes, not one of them a `chan int`** — `close(write)` never executed on any core.
+
+**The real control flow.** `rbuf.ReadBytes('\n')` returned **`io.EOF`**, so `t.Fatal(err)` fired at
+`pipe_test.go:395`. `Fatal` → `FailNow` → `TestAbortException` unwinds → `GoFunc.HandleFinally` runs
+the deferred func → `<-writerDone`. `close(write)` on the line below never runs, so the writer
+goroutine ranges over a channel that will never close, and `writerDone` therefore never closes
+either. **Real Go deadlocks identically here** — Go's own test code is not hang-safe on that branch;
+Go simply never takes it, and its binary-level timeout panic would dump it if it did. The channel
+runtime did exactly what Go specifies at every step.
+
+**So the actual `os` row is: `bufio.Reader.ReadBytes` over a converted `os.Pipe` returns a premature
+`io.EOF`, and only under parallel load.** Characterized on the r37-poll tree, driving
+`os.tests.exe` directly:
+
+| configuration | runs where `TestPipeEOF` aborts |
+|---|---|
+| `-run TestPipeEOF` alone | 0 of 5 |
+| `-run` the whole pipe/fd family | 0 of 3 |
+| full suite, `-parallel 1` | 0 of 4 |
+| full suite, `-parallel 2` | 0 of 4 |
+| full suite, `-parallel 4` | **1 of 5** |
+| full suite, `-parallel 8` | **5 of 5** |
+| full suite, `-parallel 16` | **2 of 2** |
+| full suite, default (`TestOptions.Parallel` = `Environment.ProcessorCount`, 24 here) | **6 of 6**, plus 2 of 2 through the pipeline |
+
+Monotone in the concurrency level and not attributable to one interfering test — every test still
+runs at `-parallel 1`, and the abort signature is unmistakable in the host's own output (the whole
+suite reports ~650 results and `TestPipeEOF` contributes *no* line at all, because its goroutine
+never returns).
+
+⚠ **The knee is a gradient, and an earlier revision of this row got that wrong.** It claimed a
+*clean* threshold at 8 — 100% either side — on the strength of only **two** samples at `-parallel 4`.
+A host reboot forced the whole measurement to be re-established from scratch, and on the quiet
+machine `-parallel 4` aborted **1 of 3**. So 4 is not a safe configuration, it is a low-probability
+one, and any future bisection of this row must budget more than two runs per point near the knee.
+What the reboot did *not* move is the headline: default parallelism aborts 100% both before and
+after (3/3 loaded, 3/3 cold), which is what makes the zero rows at `-parallel 1`/`2` worth trusting
+rather than dismissing as luck. One default-parallelism run also died with `Fatal error. Internal
+CLR error. (0x80131506)`, the same crash r37-poll saw once; whether that shares the root is open.
+
+**Premature finalization is RULED OUT, by control rather than by argument.** `os.newFile` registers
+`runtime.SetFinalizer((~f).file, close)` and `runtime/mfinal.cs`'s native bridge honors it for real —
+instrumented, it runs **21 finalizer-driven `close` calls per three suite runs**, which is exactly
+the mechanism Go's own `KeepAlive` doc warns about and made a compelling root. It is not this one:
+with the bridge disabled outright (`SetFinalizer` registering nothing), `TestPipeEOF` still EOFs
+**3/3**. Handle double-close / handle-value reuse across parallel tests, and a spurious zero-byte
+read reaching `FD.eofError`, are the candidates left standing.
+
+**The negative control for the channel verdict.** 93,000 racing instances across five shapes —
+ranging receiver woken by close, direct hand-off racing close, the `testPipeEOF` choreography
+itself, a blocked select woken by close, and select single-fire under contention — under ThreadPool
+and GC pressure, **zero hangs and zero invariant violations**. Separately, `testPipeEOF`'s exact
+choreography over the REAL pipe/`bufio`/`fmt`/`time` stack (transpiled, not synthetic) completed
+200/200 rounds in C# and under `go run`. The select park path was checked as the twin of the
+suspected window and is clean on the same evidence. Three of those shapes are now standing guards in
+`src/Tests/GolibTests/ChannelWakeupStrainTests.cs`; they are neutered-fix controls (with `closechan`
+not draining `Recvq`, all three fail as `a parked channel operation was never woken`).
+
+**Owed.** The premature-EOF root goes back to the `os`/`internal/poll` arc with the table above. And
+the wedged host is **not reaped**: it outlived `-test-timeout 6m` by minutes and had to be killed by
+PID — the leaked-`os.tests.exe` symptom already on this board is this, and Go's binary-level timeout
+panic is the behavior the host still lacks.
 
 ## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
 

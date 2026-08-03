@@ -199,6 +199,20 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
   `3:recv-chan 1:send-chan 2:send-val` where Go prints `1:send-chan 2:send-val 3:recv-chan`.
 - **NuGet lockstep:** golib signatures and the gen template change together — `go.lib` and `go.gen`
   must version-bump in the same release or `-recurse=nuget` apps can restore mismatched pairs.
+- **A parked receiver is NOT evidence of a lost wakeup — read the core's state, never the source
+  flow (2026-08-02).** The first post-wave3 "channel defect" sighting (`os`'s `TestPipeEOF`: a
+  goroutine parked in `ChanCore.Recv` inside a `for range`, reported as ranging over an
+  already-closed channel) dissolved on measurement — the channel was **open**, because the test
+  body had aborted via `t.Fatal` before its `close`, and Go deadlocks on that same branch. The
+  close/receive protocol is airtight by construction here: `Recv` checks `Closed`, decides to park,
+  and enqueues on `Recvq` inside ONE `SyncRoot` hold, and `closechan` takes that same lock before
+  draining, so no window exists between the check and the park for a plain waiter. Adjudicate the
+  next such sighting the same cheap way: gate `Recv`/`Send`'s park onto a timed wait that dumps
+  `Closed`/`Qcount`/queue-emptiness plus the parked stack, and log every `closechan` — one run
+  separates "never woken" from "never closed" with no debugger. Standing racing evidence lives in
+  `src/Tests/GolibTests/ChannelWakeupStrainTests.cs` (ranging receiver, direct hand-off, and blocked
+  select, each raced against a close under pool/GC pressure); the deterministic behavioral guards
+  above prove the protocol on one interleaving, these prove it on thousands.
 
 ## 5. Decision requested (user)
 
