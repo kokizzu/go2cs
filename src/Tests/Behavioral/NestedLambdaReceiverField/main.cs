@@ -41,9 +41,9 @@ internal static void exec(this ж<stmt> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
     s.runWith(() => {
-        Ꮡs.Value.d.note(Ꮡs);
+        Ꮡs.Value.d.note(Ꮡs.OrTypedNil());
         Ꮡs.Value.runWith(() => {
-            Ꮡs.Value.d.note(Ꮡs);
+            Ꮡs.Value.d.note(Ꮡs.OrTypedNil());
         });
         if (Ꮡs.Value.cg != default!) {
             fmt.Println((@string)"cg:"u8, Ꮡs.Value.cg.tag(), Ꮡs.Value.id);

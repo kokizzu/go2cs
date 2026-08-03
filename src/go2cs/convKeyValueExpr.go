@@ -135,22 +135,11 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		valueContexts = append(valueContexts, hoistLambdaContext)
 	}
 
-	valueExpr := v.convExpr(keyValueExpr.Value, valueContexts)
-
-	// A keyed VALUE that reads an ARRAY out of existing storage clones into its slot — Go
-	// copies the array into a struct field, map value, or sparse-array element alike, and the
-	// emitted struct copy would alias its backing (see exprReadsValueNeedingClone). Applied
-	// before the interface wraps below so an interface-typed slot boxes the clone.
-	if v.exprReadsValueNeedingClone(keyValueExpr.Value) {
-		valueExpr = appendValueClone(valueExpr, v.getExprType(keyValueExpr.Value))
-	}
-
-	// Box an untyped CONSTANT VALUE in an EMPTY-interface slot at Go's default type for its kind — a
-	// struct `any` field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — so a later `x.(int)`
-	// matches Go's boxed `int`. A string LITERAL already took the tighter `(@string)"…"` rendering
-	// from anyBoxedStringLitContext above, which applyUntypedConstBoxCast leaves alone; a string
-	// CONCATENATION (which that literal-only flag cannot reach) is boxed here. A no-op for any other
-	// slot or a non-untyped-constant value.
+	// The value's declared SLOT — a struct field, or the map/array/slice element the keyed
+	// composite stores into. Resolved before the value is rendered because an EMPTY-interface
+	// slot changes the rendering of a POINTER value (it crosses as its BOX, not as a deref
+	// alias whose boxing would capture a copy of the pointee — typedNilInterfaceBoxing.go); the
+	// untyped-constant and typed-nil boxing below consume the same answer.
 	var valueSlotType types.Type
 
 	if context.source == StructSource {
@@ -166,7 +155,27 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		}
 	}
 
+	valueContexts = v.emptyInterfacePointerContexts(valueSlotType, keyValueExpr.Value, valueContexts)
+
+	valueExpr := v.convExpr(keyValueExpr.Value, valueContexts)
+
+	// A keyed VALUE that reads an ARRAY out of existing storage clones into its slot — Go
+	// copies the array into a struct field, map value, or sparse-array element alike, and the
+	// emitted struct copy would alias its backing (see exprReadsValueNeedingClone). Applied
+	// before the interface wraps below so an interface-typed slot boxes the clone.
+	if v.exprReadsValueNeedingClone(keyValueExpr.Value) {
+		valueExpr = appendValueClone(valueExpr, v.getExprType(keyValueExpr.Value))
+	}
+
+	// Box an untyped CONSTANT VALUE in an EMPTY-interface slot at Go's default type for its kind — a
+	// struct `any` field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — so a later `x.(int)`
+	// matches Go's boxed `int`. A string LITERAL already took the tighter `(@string)"…"` rendering
+	// from anyBoxedStringLitContext above, which applyUntypedConstBoxCast leaves alone; a string
+	// CONCATENATION (which that literal-only flag cannot reach) is boxed here. A no-op for any other
+	// slot or a non-untyped-constant value. The POINTER twin (a nil one carries its Go type across)
+	// follows it — see typedNilInterfaceBoxing.go.
 	valueExpr = v.boxUntypedConstAsDefaultType(valueSlotType, keyValueExpr.Value, valueExpr)
+	valueExpr = v.boxPointerIntoEmptyInterface(valueSlotType, keyValueExpr.Value, valueExpr)
 
 	// A NARROW-integer arithmetic value in a struct-FIELD initializer needs the same
 	// cast-back as the assignment forms — Go wraps the arithmetic at the operand width,
@@ -273,6 +282,13 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 					keyExpr = v.convExpr(keyValueExpr.Key, []ExprContext{anyBoxedStringLitContext()})
 				}
 
+				// A POINTER key in an `any` key slot crosses as its BOX — the pointer-KEYED arm
+				// above sets isPointer only when the map's own key type is a pointer. Re-rendered
+				// here for the same reason the string literal is (typedNilInterfaceBoxing.go).
+				if v.pointerBoxesIntoEmptyInterface(mapType.Key(), keyValueExpr.Key) {
+					keyExpr = v.convExpr(keyValueExpr.Key, v.emptyInterfacePointerContexts(mapType.Key(), keyValueExpr.Key, nil))
+				}
+
 				// An untyped CONSTANT KEY in an `any` key slot boxes at Go's default type too —
 				// `[(nint)(6)] = …`. golib's map uses the default Dictionary comparer (no numeric
 				// normalization: nint(6) != Int32(6)), so the store and every LOOKUP must agree on the
@@ -281,6 +297,7 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 				// a real `int` VALUE (`m[n]`, boxed nint — the only form Go can distinguish) HIT, which
 				// the former leave-both-as-Int32 behavior missed.
 				keyExpr = v.boxUntypedConstAsDefaultType(mapType.Key(), keyValueExpr.Key, keyExpr)
+				keyExpr = v.boxPointerIntoEmptyInterface(mapType.Key(), keyValueExpr.Key, keyExpr)
 			}
 		}
 

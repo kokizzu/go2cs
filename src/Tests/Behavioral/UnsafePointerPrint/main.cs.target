@@ -10,9 +10,9 @@ internal static void Main() {
     @string empty = default!;
     var e2 = @unsafe.StringData(empty);
     fmt.Println(e1 == nil, e1 == e2);
-    fmt.Println(e1);
+    fmt.Println(e1.OrTypedNil());
     var q = @unsafe.StringData("abc"u8);
-    @string t = fmt.Sprintf("%v"u8, q);
+    @string t = fmt.Sprintf("%v"u8, q.OrTypedNil());
     fmt.Println(q != nil, len(t) > 2, t[0] == (rune)'0', t[1] == (rune)'x');
     @unsafe.Pointer z = (@unsafe.Pointer)(uintptr)0;
     @unsafe.Pointer back = (@unsafe.Pointer)(uintptr)z;

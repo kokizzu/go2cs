@@ -193,3 +193,40 @@ func (v *Visitor) isIntegerKindConstExpr(expr ast.Expr) bool {
 
 	return ok && basic.Info()&types.IsInteger != 0
 }
+
+// complexCallElementType reports the FLOAT element type a `complex(re, im)` call's arguments must
+// be built at — float32 for a complex64 result, float64 for a complex128 one — or nil when the call
+// does not type as a complex at all. It is the same answer assignUntypedConstContext records as the
+// arguments' context (above); this reads it back from the CALL so the emission can pin an argument
+// whose rendering could not carry it (a named untyped const — see convCallExpr's complex arm).
+//
+// A call whose arguments are all untyped constants is itself an untyped complex CONSTANT, so its
+// own width comes from the enclosing context when the analysis recorded one (`var b complex64 =
+// complex(…)`) and from Go's default type (complex128) otherwise — exactly the resolution order
+// that decides a bare literal's F/D suffix.
+func (v *Visitor) complexCallElementType(callExpr *ast.CallExpr) *types.Basic {
+	basic, ok := v.info.TypeOf(callExpr).(*types.Basic)
+
+	if !ok {
+		return nil
+	}
+
+	if basic.Info()&types.IsUntyped != 0 {
+		if context, ok := v.untypedConstContexts[callExpr]; ok {
+			if contextBasic, ok := context.(*types.Basic); ok {
+				basic = contextBasic
+			}
+		} else if defaulted, ok := types.Default(basic).(*types.Basic); ok {
+			basic = defaulted
+		}
+	}
+
+	switch basic.Kind() {
+	case types.Complex64:
+		return types.Typ[types.Float32]
+	case types.Complex128:
+		return types.Typ[types.Float64]
+	}
+
+	return nil
+}

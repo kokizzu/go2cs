@@ -81,7 +81,7 @@ internal static void Main() {
     report(mixedValueˢ, s, ok);
     var pm = Ꮡ(new Mixed(n: 41));
     pm.Bump();
-    (s, ok) = pmslib.TrySpeak(pm);
+    (s, ok) = pmslib.TrySpeak(pm.OrTypedNil());
     report(mixedPointerˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(new WrongSig(nil));
     report(wrongSigˢ, s, ok);

@@ -45,6 +45,12 @@
 > BUILDS for the first time and gets its first census, and four of r37's seven gob roots turn out to be
 > mis-attributed — see the rewritten gob section. The roster is **still 71**: neither package banks.
 >
+> **Revised again 2026-08-03 (r39-nilcomplex)**: both converter items r38 handed on ROOTED — the
+> typed-nil BOUNDARY and the `complex()` element-width pin — land, and gob moves **88 → 91 of 106**.
+> Two of r38's seven roots close outright; the third typed-nil row does NOT, and its residual is now
+> rooted one layer down in the reflection bridge (see *r39-nilcomplex* at the end of the gob section).
+> The roster is **still 71/72**: gob does not bank.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -1382,12 +1388,12 @@ of them named.
 |:--|:--|:--|
 | **`reflect.Value.IsZero` is wrong for a named STRING and for an ARRAY** | `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero` (4) | reflect bridge — **chip** |
 | **`reflect.Value.Grow` nil-derefs** | `TestLargeSlice` + `/byte` + `/struct` (3 rows) | reflect bridge — **chip** |
-| **Typed-nil identity through `any`** | `TestTopLevelNilPointer`, `TestNilPointerPanics`, `TestNilPointerInsideInterface` (3) | converter — **rooted, deliberately deferred** |
+| **Typed-nil identity through `any`** | `TestTopLevelNilPointer`, `TestNilPointerPanics`, `TestNilPointerInsideInterface` (3) | converter — **LANDED r39; 2 of 3 closed, the third re-rooted to the bridge** |
 | **`array<T>` carries no LENGTH** | `TestSingletons`, `TestIndirectSliceMapArray`, `TestEndToEnd` (3) | reflect bridge — **chip** |
 | **`reflect.ArrayOf` → the `typelinks` stub** | `TestIgnoreDepthLimit` (1) | reflect bridge — **chip** (reports `infrastructure-error`) |
 | **The decoder's IGNORE path rejects a valid field number** | `TestBadData` #8, `TestIgnoreRecursiveType` (2) | gob decode path — **unrooted** |
 | **`MapType().Hasher` over a zero map** | `TestNetIP` (1) | reflect bridge — **chip** |
-| **An untyped complex constant narrows to complex64** | `TestOverflow` (1) | golib/converter — **rooted, remedy identified, NOT landed** |
+| **An untyped complex constant narrows to complex64** | `TestOverflow` (1) | converter — **CLOSED r39** |
 
 **Root 1 — four tests, one root, and it is an ENCODE-side skip, not a decode write-back.** r37 read the
 three `TestGobEncoder*Value*` failures as residue of the reinterpret row and `TestGobEncodeIsZero` as a
@@ -1494,6 +1500,57 @@ in at the tail of this arc.
    (below); it changes nothing for gob, whose host already linked.
 
 gob still does **not** bank (88 of 106) and no gob artifact is committed.
+
+### `encoding/gob` re-measured: **91 of 106** — both deferred converter items land (2026-08-03, r39-nilcomplex)
+
+Same command, zero empty verdicts: **91 of 106**, 15 mismatches. The **+3** is `TestTopLevelNilPointer`
+and `TestNilPointerPanics` (the typed-nil boundary) and `TestOverflow` (the complex width pin). The
+remaining 15 re-bucket to **seven** roots, and not one of them is the converter's any more — six are
+the reflection bridge (the chip) and the seventh is gob's own decode path:
+
+| Root | Tests | Owner |
+|:--|:--|:--|
+| **`reflect.Value.IsZero` is wrong for a named STRING and for an ARRAY** | `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero` (4) | reflect bridge — **chip** |
+| **`reflect.Value.Grow` nil-derefs** | `TestLargeSlice` + `/byte` + `/struct` (3) | reflect bridge — **chip** |
+| **`array<T>` carries no LENGTH** | `TestSingletons`, `TestIndirectSliceMapArray`, `TestEndToEnd` (3) | reflect bridge — **chip** |
+| **`reflect.Value.IsNil` on an INTERFACE asks the POINTEE** | `TestNilPointerInsideInterface` (1) | reflect bridge — **chip, NEW, rooted below** |
+| **`reflect.ArrayOf` → the `typelinks` stub** | `TestIgnoreDepthLimit` (1) | reflect bridge — **chip** (`infrastructure-error`) |
+| **`MapType().Hasher` over a zero map** | `TestNetIP` (1) | reflect bridge — **chip** (`infrastructure-error`) |
+| **The decoder's IGNORE path rejects a valid field number** | `TestBadData` #8, `TestIgnoreRecursiveType` (2) | gob decode path — **unrooted** |
+
+**The two that closed.** `TestTopLevelNilPointer` needed only the boundary: `encodeAndRecover(ip)`
+now hands gob a typed nil, `reflect.ValueOf` sees kind `ptr` with `IsNil` true, and gob panics
+"nil pointer" exactly as Go does. `TestNilPointerPanics` needed one slot more — its table is
+`[]struct{ value any; mustPanic bool }{{nilStringPtr, true}, …}`, a POSITIONAL element of a struct
+literal whose field is `any`, which the first cut of the boundary did not cover; the rule and its
+(zero-site) corpus footprint are in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A pointer crossing
+into an interface carries its static type*. `TestOverflow` closed on the `complex()` element-width
+pin (same reference, *`complex()` over a NAMED untyped constant pins the element width*).
+
+**The one that did NOT, and why — a NEW chip root, rooted with a five-line probe.**
+`TestNilPointerInsideInterface` builds `struct{ I any }{I: ip}` and expects
+`Encode` to fail with "nil pointer … interface". The converter's half is done and visible in the
+emission (`I: ip.OrTypedNil()`), but the C# still reports *expected error, got none*. The reason is
+one layer down: **`reflect.Value.IsNil` on an INTERFACE-kind value answers about the POINTEE, not
+about the interface.** Probed directly against `go run`:
+
+| | Go | C# |
+|:--|:--|:--|
+| `reflect.ValueOf(si).Field(0).Kind()` | `interface` | `interface` |
+| `…Field(0).IsNil()` | `false` | **`true`** |
+| `…Field(0).IsZero()` | `false` | **`true`** |
+| `…Field(0).Elem().Kind()` | `ptr` | `ptr` |
+| `…Field(0).Elem().IsNil()` | `true` | `true` |
+
+`IsZero` for an interface IS `IsNil` (`reflect/value.cs`'s Chan/Func/Interface/Map/Pointer/Slice/
+UnsafePointer arm), so the wrong answer makes gob's `if !state.sendZero && v.IsZero() { return }`
+skip the field outright — `encodeInterface`, which is where the expected error lives, is never
+reached. It is the same encode-side skip as root 1, from a different wrong predicate, and it is the
+bridge's to fix: an interface value's nilness is a property of the interface, not of whatever
+pointer it happens to carry. **Chip-owned; recorded, not touched** (the boundary fence).
+
+gob still does **not** bank (91 of 106) and no gob artifact is committed.
 
 ## `unique` builds and RUNS for the first time — 0 of 19, one chip-owned wall (2026-08-03, r38-gob-fin)
 

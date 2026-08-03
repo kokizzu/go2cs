@@ -58,6 +58,9 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct main_holder {}
+    internal partial struct main_rows {}
+    internal partial struct main_st {}
     internal partial struct main_type {}
     public partial struct AErr {}
     public partial struct BErr {}

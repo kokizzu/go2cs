@@ -237,6 +237,15 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			resultExpr = clonedElement(v.convExpr(expr, contexts))
 		}
 
+		// A POINTER crossing into an EMPTY-interface slot — an `any` parameter, the variadic
+		// `...any` of the fmt family, an `[]any{…}` element — carries its Go type across, so a
+		// null box renders as the canonical typed nil (typedNilInterfaceBoxing.go). The
+		// box-vs-value-alias half of the same boundary is already applied above, through
+		// argTypeIsPtr's identContext.isPointer.
+		if callContext != nil && callContext.anyBoxedPtrArgs[i] && !spreadArg && !v.pointerExprNeverRendersNull(expr) {
+			resultExpr += "." + TypedNilBoxAccessor
+		}
+
 		if replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 {
 			resultExpr = strings.ReplaceAll(replacementArgs[i], DynamicCastArgMarker, resultExpr)
 		}

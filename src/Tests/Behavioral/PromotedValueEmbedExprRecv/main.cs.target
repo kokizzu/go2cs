@@ -9,7 +9,7 @@ partial class main_package {
 private static readonly @string boxedˢ = "boxed"u8;
 
 internal static map<@string, any> registry() {
-    return new map<@string, any>{["w"u8] = PromotedValueEmbedLib.New(boxedˢ)};
+    return new map<@string, any>{["w"u8] = PromotedValueEmbedLib.New(boxedˢ).OrTypedNil()};
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -73,7 +73,7 @@ internal static (@string, @string) classifyVia(any v) {
     @string label = shadowˢ;
     var other = Ꮡ(new node(nil));
     other.Value.inner = label;
-    return (pick(v), pick(other));
+    return (pick(v), pick(other.OrTypedNil()));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -84,7 +84,7 @@ internal static void Main() {
     var sn = Ꮡ(new node(nil));
     sn.Value.inner = hi;
     fmt.Println(inspect(Ꮡ(new node(inner: (nint)(5)))));
-    fmt.Println(inspect(sn));
+    fmt.Println(inspect(sn.OrTypedNil()));
     fmt.Println(inspect(Ꮡ(new node(inner: 1.5D))));
     fmt.Println(inspect((nint)(42)));
     var (a, b) = classifyVia(Ꮡ(new node(inner: (nint)(7))));

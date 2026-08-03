@@ -97,6 +97,11 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 					keyContexts = append(keyContexts, identContext)
 				}
 
+				// A POINTER key looked up in an `any`-keyed map crosses the interface boundary
+				// like any other pointer: as its BOX, carrying its Go type (the arm above sets
+				// isPointer only for a pointer-KEYED map). See typedNilInterfaceBoxing.go.
+				keyContexts = v.emptyInterfacePointerContexts(mapType.Key(), indexExpr.Index, keyContexts)
+
 				keyExpr := v.convExpr(indexExpr.Index, keyContexts)
 
 				if mapKeyInterfaceType != nil {
@@ -104,6 +109,7 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				}
 
 				keyExpr = v.boxUntypedConstAsDefaultType(mapType.Key(), indexExpr.Index, keyExpr)
+				keyExpr = v.boxPointerIntoEmptyInterface(mapType.Key(), indexExpr.Index, keyExpr)
 
 				return fmt.Sprintf("%s[%s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, OverloadDiscriminator)
 			}
@@ -119,6 +125,10 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				identContext.isPointer = true
 				contexts = []ExprContext{identContext}
 			}
+
+			// A POINTER key looked up in an `any`-keyed map crosses as its BOX (see the tuple
+			// arm above and typedNilInterfaceBoxing.go).
+			contexts = v.emptyInterfacePointerContexts(mapType.Key(), indexExpr.Index, contexts)
 		} else if _, isPtr := typeAndVal.Type.(*types.Pointer); isPtr {
 			// The deref-aliased-parameter exception applies only when the base ITSELF is the
 			// parameter ident (`p[i]` renders through the value alias). A pointer FIELD reached
@@ -172,6 +182,7 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 			// real `int` value — golib's map compares boxed keys with the default Dictionary comparer,
 			// which does not normalize nint(6) against Int32(6).
 			index = v.boxUntypedConstAsDefaultType(mapType.Key(), indexExpr.Index, index)
+			index = v.boxPointerIntoEmptyInterface(mapType.Key(), indexExpr.Index, index)
 		}
 	}
 

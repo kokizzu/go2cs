@@ -33,9 +33,36 @@ private static readonly object spMpˢ = (@string)"sp==mp"u8;
 private static readonly object stpNilˢ = (@string)"stp==nil"u8;
 private static readonly object switchAErrˢ = (@string)"switch-AErr"u8;
 private static readonly object switchOtherˢ = (@string)"switch-other"u8;
+private static readonly @string missingˢ = "missing"u8;
+private static readonly object printfVˢ = (@string)"printf-v"u8;
+private static readonly object dpiNilˢ = (@string)"dpi==nil"u8;
+private static readonly object dpiXˢ = (@string)"dpi==x"u8;
+private static readonly object assignedNilˢ = (@string)"assigned==nil"u8;
+private static readonly object returnedNilˢ = (@string)"returned==nil"u8;
+private static readonly object elemNilˢ = (@string)"elem==nil"u8;
+private static readonly object fieldNilˢ = (@string)"field==nil"u8;
+private static readonly object mapvalNilˢ = (@string)"mapval==nil"u8;
+private static readonly object mapkeyˢ = (@string)"mapkey"u8;
+private static readonly object chanNilˢ = (@string)"chan==nil"u8;
+private static readonly object assertOkˢ = (@string)"assert-ok"u8;
+private static readonly object assertFailedˢ = (@string)"assert-failed"u8;
+private static readonly object deleteˢ = (@string)"delete"u8;
 
 [GoType("dyn")] partial struct main_type {
     internal nint r;
+}
+
+[GoType("dyn")] partial struct main_st {
+    public ж<AErr> P;
+}
+
+[GoType("dyn")] partial struct main_holder {
+    public any V;
+}
+
+[GoType("dyn")] partial struct main_rows {
+    internal any value;
+    internal bool want;
 }
 
 internal static void Main() {
@@ -71,6 +98,70 @@ internal static void Main() {
         fmt.Println(switchOtherˢ);
         break;
     }}
+    ж<nint> dp = default!;
+    main_st st = default!;
+    var sl = new slice<ж<BErr>>(1);
+    var mm = new map<@string, ж<AErr>>{};
+    fmt.Printf("%T %T %T %T\n"u8, dp.OrTypedNil(), st.P.OrTypedNil(), sl[0].OrTypedNil(), mm[missingˢ].OrTypedNil());
+    fmt.Println(printfVˢ, fmt.Sprintf("%v|%v"u8, dp.OrTypedNil(), st.P.OrTypedNil()));
+    any dpi = dp.OrTypedNil();
+    fmt.Println(dpiNilˢ, dpi == default!, dpiXˢ, AreEqual(dpi, x));
+    dpi = st.P.OrTypedNil();
+    fmt.Println(assignedNilˢ, dpi == default!);
+    fmt.Println(returnedNilˢ, boxed(sl[0]) == default!);
+    var anys = new any[]{dp.OrTypedNil(), st.P.OrTypedNil()}.slice();
+    var holder = new main_holder(V: dp.OrTypedNil());
+    var byName = new map<@string, any>{["p"u8] = dp.OrTypedNil()};
+    var byKey = new map<any, nint>{[dp.OrTypedNil()] = 7};
+    fmt.Println(elemNilˢ, anys[0] == default!, fieldNilˢ, holder.V == default!);
+    fmt.Println(mapvalNilˢ, byName["p"u8] == default!, mapkeyˢ, byKey[dp.OrTypedNil()], byKey[((ж<nint>)nil)]);
+    var ch = new channel<any>(1);
+    ch.ᐸꟷ(dp.OrTypedNil());
+    fmt.Println(chanNilˢ, (ᐸꟷ(ch)) == default!);
+    {
+        var (q, ok) = dpi._<ж<AErr>>(ᐧ); if (ok){
+            fmt.Println(assertOkˢ, q == nil);
+        } else {
+            fmt.Println(assertFailedˢ);
+        }
+    }
+    fmt.Println(panicked());
+    var acc = append(new any[]{}.slice(), (any)(dp.OrTypedNil()), (any)(st.P.OrTypedNil()));
+    fmt.Printf("append %T %T %v %v\n"u8, acc[0], acc[1], acc[0] == default!, acc[1] == default!);
+    var rows = new main_rows[]{
+        new(dp.OrTypedNil(), true),
+        new(st.P.OrTypedNil(), true),
+        new((nint)(7), false)
+    }.slice();
+    foreach (var (_, r) in rows) {
+        fmt.Printf("row %T %v %v\n"u8, r.value, r.value == default!, r.want);
+    }
+    var dm = new map<any, nint>{[dp.OrTypedNil()] = 1, [st.P.OrTypedNil()] = 2};
+    delete(dm, dp.OrTypedNil());
+    fmt.Println(deleteˢ, len(dm), dm[st.P.OrTypedNil()], dm[dp.OrTypedNil()]);
+}
+
+internal static any boxed(ж<BErr> Ꮡp) {
+    return Ꮡp.OrTypedNil();
+}
+
+internal static @string /*msg*/ panicked() {
+    @string msg = default!;
+    func((defer, recover) => {
+        defer(() => {
+            var r = recover();
+            {
+                var (q, ok) = r._<ж<AErr>>(ᐧ); if (ok){
+                    msg = fmt.Sprintf("panic-recovered *AErr nil=%v"u8, q == nil);
+                } else {
+                    msg = fmt.Sprintf("panic-recovered other %T %v"u8, r, r == default!);
+                }
+            }
+        });
+        ж<AErr> p = default!;
+        throw panic(p.OrTypedNil());
+    });
+    return msg;
 }
 
 } // end main_package

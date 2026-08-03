@@ -25,7 +25,7 @@ internal static @string qualifiedDurations() {
 }
 
 internal static @string qualifiedLocations() {
-    return fmt.Sprint(Δtime.ΔUTC, (@string)" "u8, Δtime.ΔLocal != nil);
+    return fmt.Sprint(Δtime.ΔUTC.OrTypedNil(), (@string)" "u8, Δtime.ΔLocal != nil);
 }
 
 internal static (Δtime.Duration, float64, nint) foldedConstant() {

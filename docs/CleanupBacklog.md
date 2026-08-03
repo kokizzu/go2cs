@@ -97,10 +97,17 @@
 
 ## Repo hygiene
 
-12. **The whole-corpus rebank** — the umbrella item: ~119+ files of accumulated intended drift
+12. **The whole-corpus rebank** — the umbrella item: accumulated intended drift
     (satisfies-not-witnesses records, ptrset redirections, os/time/nilrecv footprints, the Δio
     `-tests`-closure family, stale banked test sources incl. `binary_test.cs` 78/78 and csv's).
     ONE deliberate regen + bank + full sweep, its own session.
+    **Measured 2026-08-03 (r39-nilcomplex): 695 files carry a real content diff** — a seeded
+    whole-stdlib reconvert overlaid onto the committed tree, `git diff --numstat` non-zero, and
+    zero CRLF phantoms among them. 145 of those were that arc's own change, so ~550 are the
+    pre-existing backlog, and the single dominant shape is the entry-alias widening `.Value` →
+    `.DerefOrNull()` (r36). The reconverted tree builds 304/304 with 0 errors, so this is a bank,
+    not a repair. Treat that as the item's current size and re-measure at bank time — the earlier
+    "~119+" predates several arcs.
 13. **`C:\go2cs-build` debris** — ~30 stale scratch/probe/recon directories from r26–r34 (`ab*`,
     `fmtcheck*`, `r3x-*` leftovers, `scratch*`, `splitmain`, …) plus the landed chip worktrees.
     Delete after confirming each is branch-landed.

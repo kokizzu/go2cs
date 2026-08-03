@@ -38,6 +38,13 @@ const ChannelLeftOp = "\u1438\uA7F7"             // Example: `ch.ᐸꟷ(val)` fo
 const ChannelRightOp = "\uA7F7\u1433"            // Example: `ch.ꟷᐳ(out var val)` for `val := <-ch`
 const PointerDerefOp = "~"                       // Example: `~ptr` for dereferencing a pointer
 
+// NilSafeDerefAccessor is the golib ж<T> extension method used in place of `.Value` to re-alias a
+// deref'd pointer parameter that is walked to a nil terminator (see nilSafePtrParamNames). Unlike
+// `.Value` (which throws on a nil box), it returns a ref to a shared default(T) slot when the box is
+// nil — the ref is never read while the box is nil, so the standard `*p` panic semantics are
+// preserved (a genuine nil deref still uses `~`/`.Value`). Includes `()` as it is a method call.
+const NilSafeDerefAccessor = "DerefOrNil()"
+
 // NilDeferringDerefAccessor is the golib ж<T> extension method used in place of `.Value`
 // for EVERY direct-ж pointer entry deref alias - a RECEIVER and a PARAMETER alike, in the
 // converter's own preamble, in the pointer-reassignment re-alias, and in the RecvGenerator
@@ -53,6 +60,19 @@ const PointerDerefOp = "~"                       // Example: `~ptr` for derefere
 // a silent zero instead) needed "this body provably guards". Includes `()` as it is a
 // method call.
 const NilDeferringDerefAccessor = "DerefOrNull()"
+
+// TypedNilBoxAccessor is the golib ж<T> extension method a POINTER takes on its way into an
+// EMPTY interface (`any`). A Go pointer in interface space is a value WITH a dynamic type -
+// `any((*T)(nil))` is a NON-nil interface whose %T prints `*T` - and the managed model has
+// two representations of a nil pointer: a bare `null` reference, which erases that type, and
+// the canonical typed nil box (ж<T>.NilBox), which carries it. A `(*T)(nil)` conversion
+// already yields the canonical instance; a pointer's ZERO value never does - `var p *T`, a
+// struct field, a slice element, a map miss - and Go draws no distinction between them. So
+// the type is carried at the BOUNDARY rather than at each site that mints nil: this accessor
+// substitutes the canonical instance for a null reference and is the identity for every real
+// box. A NON-empty interface target needs none of it - its generated adapter null-coalesces
+// the receiver box itself (AdapterImplTemplate). Includes `()` as it is a method call.
+const TypedNilBoxAccessor = "OrTypedNil()"
 
 // The -tests package-init hook: the erasable classic-partial method a production
 // package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the

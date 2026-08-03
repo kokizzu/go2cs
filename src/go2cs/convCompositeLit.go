@@ -642,6 +642,14 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 
 					callContext.castArgToType[i] = castType
 				}
+
+				// A POINTER element crosses into interface space as its BOX, carrying its Go
+				// type — the same boundary the call-argument arm applies (see
+				// typedNilInterfaceBoxing.go); both halves are consumed in convExprList.
+				if _, eltIsPtr := v.getType(elt, false).(*types.Pointer); eltIsPtr {
+					callContext.argTypeIsPtr[i] = true
+					callContext.anyBoxedPtrArgs[i] = true
+				}
 			}
 		}
 	}
@@ -1112,6 +1120,16 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 			}
 
 			context.castArgToType[i] = castType
+		}
+
+		// A POINTER in that same `any` field slot crosses as its BOX, carrying its Go type —
+		// the positional twin of the keyed-field arm in convKeyValueExpr (see
+		// typedNilInterfaceBoxing.go). `encoding/gob`'s TestNilPointerPanics table is the shape:
+		// `[]struct{ value any; mustPanic bool }{{nilStringPtr, true}, …}`, where every nil
+		// pointer row must reach gob as a TYPED nil for gob to panic on it as Go does.
+		if _, eltIsPtr := v.getType(elt, false).(*types.Pointer); eltIsPtr {
+			context.argTypeIsPtr[i] = true
+			context.anyBoxedPtrArgs[i] = true
 		}
 	}
 }

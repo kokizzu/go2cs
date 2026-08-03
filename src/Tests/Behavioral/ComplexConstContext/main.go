@@ -25,6 +25,11 @@ const (
 // `const` — complex64 is a struct).
 const c64 complex64 = 1.5 + 2.5i
 
+// (6) math.MaxFloat32's own definition, kept local so this guard needs no `math` reference. As a
+// package-level untyped float const it emits as an UntypedFloat symbol — exactly the shape whose
+// width a complex() call site has to pin (see the block at the end of main).
+const maxFloat32 = 3.40282346638528859811704183484516925440e+38
+
 func showComplex(name string, c complex128) {
 	fmt.Println(name, real(c), imag(c))
 }
@@ -76,4 +81,31 @@ func main() {
 	// a C# `const`).
 	const local = 0.5 - 0.25i
 	showComplex("local", local)
+
+	// (6) An UNTYPED-FLOAT pair must build the complex at the width Go's typing gives the CALL.
+	// golib's complex(float32,float32)=>complex64 and complex(float64,float64)=>complex128 are BOTH
+	// applicable to an UntypedFloat operand, and C# prefers the better conversion target — the
+	// NARROWER one — so a complex128 was silently constructed at float32 width. A literal operand
+	// carries its width from the untyped-const context already; a NAMED untyped const cannot, so
+	// the converter pins those arguments explicitly. Before the fix `over` was (+Inf+Infi) and the
+	// float32-range question below answered "fits", which is how encoding/gob's TestOverflow found
+	// nothing out of complex64's range to reject.
+	over := complex(maxFloat32*2, maxFloat32*2)
+	fmt.Printf("over %T %v %v\n", over, real(over), imag(over))
+	fmt.Println("over-fits-float32", float64(float32(real(over))) == real(over))
+
+	// The same operands in a named untyped const pair, and then the SAME pair in a complex64
+	// context — the width follows the call's Go type, not the operands.
+	pair := complex(gHalfPi, gHalfPi)
+	fmt.Printf("pair %T %v %v\n", pair, real(pair), imag(pair))
+
+	var narrow complex64 = complex(gHalfPi, gHalfPi)
+	fmt.Printf("narrow %T %v %v\n", narrow, real(narrow), imag(narrow))
+
+	// A MIXED call — one typed operand, one named untyped const — was always unambiguous (float64
+	// has no implicit conversion to float32, so only the complex128 overload applied); it must stay
+	// exactly as correct.
+	var rf64 float64 = 2
+	mixed := complex(rf64, gHalfPi)
+	fmt.Printf("mixed %T %v %v\n", mixed, real(mixed), imag(mixed))
 }

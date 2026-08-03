@@ -65,6 +65,37 @@ namespace go;
 public static class PointerExtensions
 {
     /// <summary>
+    /// Yields this pointer in the form that carries its Go TYPE into interface space — itself when
+    /// it is a real box, and the canonical typed nil instance (<see cref="ж{T}.NilBox"/>) when it is
+    /// a bare <c>null</c> reference.
+    /// </summary>
+    /// <typeparam name="T">Pointee type of the pointer.</typeparam>
+    /// <param name="box">The pointer, which may be <c>null</c>.</param>
+    /// <remarks>
+    /// <para>
+    /// Go's nil pointer inside an interface is a VALUE with a dynamic type: <c>any((*T)(nil))</c> is
+    /// a non-nil interface, <c>%T</c> prints <c>*T</c>, and <c>x.(*T)</c> asserts successfully with
+    /// a nil result. The managed model has two representations of a nil <c>*T</c> — a <c>null</c>
+    /// reference, which carries nothing once boxed into <c>object</c>, and the canonical typed nil
+    /// box, which carries everything — and Go treats them as the same pointer, so both must be
+    /// accepted everywhere a pointer is accepted. The choice therefore cannot be made where nil is
+    /// PRODUCED (a declared variable, a struct field, a slice element, a map miss); it is made here,
+    /// at the one boundary where the difference becomes observable.
+    /// </para>
+    /// <para>
+    /// The converter emits this at every pointer-into-<c>any</c> site (the <c>TypedNilBoxAccessor</c>
+    /// symbol). A NON-empty interface target needs it not — the generated adapter null-coalesces its
+    /// receiver box to the same canonical instance.
+    /// </para>
+    /// </remarks>
+    public static ж<T> OrTypedNil<T>(this ж<T>? box)
+    {
+        // The canonical instance, never a fresh box — two typed nils of one type must compare
+        // reference-equal wherever the comparison is an untyped object reference compare.
+        return box ?? ж<T>.NilBox;
+    }
+
+    /// <summary>
     /// Reinterprets a pointer as a pointer to <typeparamref name="TDst"/> — Go's
     /// <c>(*TDst)(unsafe.Pointer(p))</c>.
     /// </summary>

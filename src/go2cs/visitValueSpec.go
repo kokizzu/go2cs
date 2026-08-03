@@ -131,6 +131,10 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			var isAnyType bool
 			var isInterfaceType bool
 			var ifaceDeclType types.Type
+			// The declared type when it is the EMPTY interface — the slot convInterfaceDeclValue
+			// needs to apply the pointer boundary treatment (typedNilInterfaceBoxing.go); the
+			// non-empty case is carried by ifaceDeclType and routes through the adapter instead.
+			var emptyIfaceDeclType types.Type
 
 			// Check if this is an interface type being assigned a value
 			if len(valueSpec.Values) > i {
@@ -150,6 +154,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 						if isEmpty {
 							isAnyType = true
+							emptyIfaceDeclType = declType
 						} else {
 							// Get the concrete type from the RHS
 							rhsType := v.info.TypeOf(valueSpec.Values[i])
@@ -440,7 +445,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						hoistBuf := &strings.Builder{}
 						savedHoist := v.hoistedDecls
 						v.hoistedDecls = hoistBuf
-						valExpr := v.convInterfaceDeclValue(valueSpec.Values[i], ifaceDeclType, context)
+						valExpr := v.convInterfaceDeclValue(valueSpec.Values[i], ifaceDeclType, emptyIfaceDeclType, context)
 						v.hoistedDecls = savedHoist
 
 						// Render the declared type only AFTER converting the initializer: a
@@ -487,7 +492,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						globalHoist := &strings.Builder{}
 						savedGlobalHoist := v.globalDeclHoist
 						v.globalDeclHoist = globalHoist
-						valExpr := v.convInterfaceDeclValue(valueSpec.Values[i], ifaceDeclType, context)
+						valExpr := v.convInterfaceDeclValue(valueSpec.Values[i], ifaceDeclType, emptyIfaceDeclType, context)
 						v.globalDeclHoist = savedGlobalHoist
 
 						// A package var whose initializer's Go init-order dependencies C#'s
@@ -1066,12 +1071,18 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 // interface (ifaceDeclType non-nil), the value routes through the interface conversion: a POINTER
 // value renders as the box and wraps in the pointer-interface adapter (`var inc Incrementer = c`
 // emits `Incrementer inc = new CounterᴵIncrementer(c)`) — Go's interface value holds the *T.
-// A nil ifaceDeclType renders the plain expression.
-func (v *Visitor) convInterfaceDeclValue(value ast.Expr, ifaceDeclType types.Type, context ExprContext) string {
+// An EMPTY-interface declared type (emptyIfaceDeclType non-nil) has no adapter, so a POINTER value
+// takes the boundary treatment directly: the box, carrying its Go type even when it is nil (see
+// typedNilInterfaceBoxing.go). Neither set renders the plain expression.
+func (v *Visitor) convInterfaceDeclValue(value ast.Expr, ifaceDeclType types.Type, emptyIfaceDeclType types.Type, context ExprContext) string {
 	if ifaceDeclType == nil {
+		contexts := v.emptyInterfacePointerContexts(emptyIfaceDeclType, value, []ExprContext{context})
+
 		// A `var` declaration initialized from an existing array value takes golib's
 		// `.Clone()` for independent backing storage (see cloneValueCopy).
-		return v.cloneValueCopy(nil, value, v.convExpr(value, []ExprContext{context}))
+		rendered := v.cloneValueCopy(nil, value, v.convExpr(value, contexts))
+
+		return v.boxPointerIntoEmptyInterface(emptyIfaceDeclType, value, rendered)
 	}
 
 	rhsType := v.info.TypeOf(value)

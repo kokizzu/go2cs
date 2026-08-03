@@ -116,7 +116,7 @@ internal static void Main() {
     grow(new circleжshape(c));
     grow(new squareжshape(q));
     fmt.Println((~c).r, (~q).s);
-    any x = c;
+    any x = c.OrTypedNil();
     switch (x.type()) {
     case ж<circle>: {
         fmt.Println(anyHoldsCircleˢ);

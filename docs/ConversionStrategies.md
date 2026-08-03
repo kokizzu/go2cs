@@ -337,7 +337,22 @@ var errorType = reflectlite.TypeOf((*error)(nil)).Elem()   // errors/wrap.go
 internal static reflectliteꓸType errorType = reflectlite.TypeOf(((ж<error>)nil)).Elem();
 ```
 
-Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction):
+Go draws no distinction between a nil it was handed that way and a pointer's zero value, so neither
+does the conversion — a pointer entering interface space carries its static type **however it was
+produced**. A non-empty interface gets that from its generated adapter; an `any` slot has no adapter,
+so the box passes through `OrTypedNil()`, which substitutes the canonical instance for a plain null:
+
+```go
+var ip *int
+fmt.Printf("%T %v\n", ip, any(ip) == nil)   // *int false
+```
+```csharp
+ж<nint> ip = default!;
+fmt.Printf("%T %v\n"u8, ip.OrTypedNil(), ((any)ip.OrTypedNil()) == default!);
+```
+
+Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction, and
+which slots the boundary covers):
 [Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing).
 
 Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than

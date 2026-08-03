@@ -992,6 +992,10 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// reports unequal. A NON-empty interface target routes through the adapter machinery above.
 		if isEmptyInterfaceTarget(v.info.TypeOf(callExpr)) {
 			expr = v.applyUntypedConstBoxCast(arg, expr)
+
+			// The POINTER twin of the same hop — `any(p)` boxes the pointer, so it carries its Go
+			// type across even when nil (see typedNilInterfaceBoxing.go).
+			expr = v.boxPointerIntoEmptyInterface(v.info.TypeOf(callExpr), arg, expr)
 		}
 
 		// A conversion between two DIFFERENT NAMED types that share a COMPOSITE underlying (net/mail
@@ -1508,6 +1512,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								if !v.isPointer(ident) || v.identIsParameter(ident) || v.exprIsCurrentDirectBoxReceiver(callExpr.Args[j]) {
 									callExprContext.argTypeIsPtr[j] = true
 								}
+
+								// The OTHER half of the same boundary: the box that crosses must
+								// carry its Go type even when it is nil — see
+								// typedNilInterfaceBoxing.go (consumed in convExprList).
+								callExprContext.anyBoxedPtrArgs[j] = true
 							}
 						}
 					}
@@ -1616,6 +1625,52 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 					return fmt.Sprintf("%s%s(%s)", funcName, typeArgs, v.convExpr(callExpr.Args[0], nil))
 				}
+			}
+		}
+
+		// `complex(re, im)` picks its golib overload BY ARGUMENT WIDTH — `complex(float32,
+		// float32) => complex64`, `complex(float64, float64) => complex128` — and an
+		// `UntypedFloat` argument converts implicitly to BOTH. C# then prefers the BETTER
+		// CONVERSION TARGET, which is the NARROWER one, so a complex128 the Go checker typed as
+		// such was silently constructed at float32 width: `complex(math.MaxFloat32*2,
+		// math.MaxFloat32*2)` came out +Inf where Go has 6.8e38, and encoding/gob's TestOverflow
+		// then found nothing out of complex64's range to reject. LITERAL arguments already carry
+		// the width — the untyped-const analysis records the element type as their context and
+		// convBasicLit renders the F/D suffix from it (`complex(1.5D, 2.5D)`) — but a NAMED
+		// untyped const (`Δmath.MaxFloat32`), or a constant expression over one, renders as the
+		// UntypedFloat symbol and cannot. Pin the untyped arguments of exactly those calls to the
+		// element width Go's own typing gives the call.
+		//
+		// The rule cannot be expressed from golib's side: naming the untyped pair explicitly makes
+		// every MIXED call ambiguous, and completing all four pairings does not rescue it either,
+		// because UntypedFloat converts implicitly in BOTH directions with float32 and float64 —
+		// for an operand that is neither, no candidate is strictly better and the ambiguity simply
+		// moves (docs/Phase4/BOARD-next-validation-candidates.md, gob root 7).
+		if ident.Name == "complex" && len(callExpr.Args) == 2 {
+			if elementType := v.complexCallElementType(callExpr); elementType != nil &&
+				(v.containsUntypedNamedConstRef(callExpr.Args[0]) || v.containsUntypedNamedConstRef(callExpr.Args[1])) {
+				elementCS := v.getCSharpTypeName(elementType)
+				args := make([]string, len(callExpr.Args))
+
+				for i, arg := range callExpr.Args {
+					args[i] = v.convExpr(arg, nil)
+
+					// Only an UNTYPED argument is unpinned; one that already has a Go type
+					// renders at that width and needs nothing (and pinning either operand is
+					// enough to decide the overload — float64 has no implicit conversion to
+					// float32, and a float32-width call cannot have a float64 operand).
+					if argBasic, ok := v.info.TypeOf(arg).(*types.Basic); ok && argBasic.Info()&types.IsUntyped != 0 {
+						args[i] = fmt.Sprintf("(%s)(%s)", elementCS, args[i])
+					}
+				}
+
+				funcName := ident.Name
+
+				if packageBuiltinShadows[ident.Name] {
+					funcName = "builtin." + funcName
+				}
+
+				return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 			}
 		}
 
@@ -1836,6 +1891,20 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						}
 					}
 
+					// `append` is a BUILT-IN, so its arguments never reach the declared-parameter
+					// loop that applies the pointer-into-`any` boundary — but an `[]any` element
+					// slot IS that boundary (typedNilInterfaceBoxing.go). Mark the pointer elements
+					// here: they cross as the box, carrying their Go type. The `(any)` cast above
+					// still applies, around the result.
+					if isEmptyInterfaceTarget(sliceUnder.Elem()) {
+						for i := 1; i < len(callExpr.Args); i++ {
+							if _, argIsPtr := v.getType(callExpr.Args[i], false).(*types.Pointer); argIsPtr {
+								callExprContext.argTypeIsPtr[i] = true
+								callExprContext.anyBoxedPtrArgs[i] = true
+							}
+						}
+					}
+
 					// A NAMED-COMPOSITE element type (slice/struct/map — NOT interface or basic, those are
 					// handled by the branches above) appended from a value of a DIFFERENT type: crypto/x509/pkix
 					// append(rdns, s) where rdns is RDNSequence ([]RelativeDistinguishedNameSET) and s is
@@ -1864,12 +1933,36 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// `delete(m, k)` on an `any`-KEYED map is the third built-in whose argument crosses into
+		// interface space without passing a declared parameter (see append above and panic below):
+		// the key is boxed to look the entry up, so a pointer key must cross as its box carrying
+		// its Go type, or it cannot match the entry the composite-literal / index-store path wrote.
+		if ident.Name == "delete" && len(callExpr.Args) == 2 {
+			if mapArgType := v.getType(callExpr.Args[0], false); mapArgType != nil {
+				if mapType, ok := mapArgType.Underlying().(*types.Map); ok {
+					if _, keyIsPtr := v.getType(callExpr.Args[1], false).(*types.Pointer); keyIsPtr && isEmptyInterfaceTarget(mapType.Key()) {
+						callExprContext.argTypeIsPtr[1] = true
+						callExprContext.anyBoxedPtrArgs[1] = true
+					}
+				}
+			}
+		}
+
 		// Handle panic call as a special case
 		if ident.Name == "panic" {
 			context := DefaultBasicLitContext()
 			context.u8StringOK = false
 			context.spanTargetUnsupported = true
-			return fmt.Sprintf("throw panic(%s)", v.convExpr(callExpr.Args[0], []ExprContext{context}))
+
+			// `panic`'s Go parameter IS `any`, and this arm renders its argument outside the
+			// declared-parameter loop — so the pointer-into-`any` boundary is applied here
+			// directly (typedNilInterfaceBoxing.go). A recovered typed nil must still answer
+			// `r.(*T)`, which a bare null cannot.
+			panicValueType := types.NewInterfaceType(nil, nil)
+			contexts := v.emptyInterfacePointerContexts(panicValueType, callExpr.Args[0], []ExprContext{context})
+			panicValue := v.boxPointerIntoEmptyInterface(panicValueType, callExpr.Args[0], v.convExpr(callExpr.Args[0], contexts))
+
+			return fmt.Sprintf("throw panic(%s)", panicValue)
 		}
 	}
 

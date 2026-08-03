@@ -103,7 +103,7 @@ private static readonly @string stringˢ = "String"u8;
 
 internal static void Main() {
     var c = Ꮡ(new counter(nil));
-    var pv = reflect.ValueOf(c);
+    var pv = reflect.ValueOf(c.OrTypedNil());
     var pt = pv.Type();
     fmt.Println(ptrNumMethodˢ, pt.NumMethod(), valueNumMethodˢ, pv.NumMethod());
     fmt.Println(ptrMethodsˢ, strings.Join(names(pt), ","u8));
@@ -136,7 +136,7 @@ internal static void Main() {
     var c2 = Ꮡ(new counter(n: 3));
     var (addM, _) = pt.MethodByName(addˢ);
     fmt.Println(unboundFuncNumInˢ, addM.Type.NumIn(),
-        callˢ, addM.Func.Call(new reflectꓸValue[]{reflect.ValueOf(c2), reflect.ValueOf((nint)(4))}.slice())[0].Interface());
+        callˢ, addM.Func.Call(new reflectꓸValue[]{reflect.ValueOf(c2.OrTypedNil()), reflect.ValueOf((nint)(4))}.slice())[0].Interface());
     fmt.Println(outerMethodsˢ, strings.Join(names(reflect.TypeOf(new outer(nil))), ","u8));
     fmt.Println(outerZetaˢ, reflect.ValueOf(new outer(nil)).MethodByName(zetaˢ2).Call(default!)[0].Interface());
     ref var s = ref heap<fmt.Stringer>(out var Ꮡs);
