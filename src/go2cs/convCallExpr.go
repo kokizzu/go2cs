@@ -328,6 +328,27 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 
 				if namedToNamed || namedToBasic || basicToNamed {
+					// Go's `(*U)(p)` is a pointer REINTERPRET: the derived pointer names p's OWN
+					// storage, so a write through it is visible through p. The value-convert-and-
+					// re-box emission below cannot be that — it converts the POINTEE and boxes the
+					// RESULT, so the derived pointer addresses a copy and every write through it is
+					// silently discarded. Correct only where nothing writes, which is not a property
+					// of the conversion and so cannot be its default: gob's
+					// `fmt.Sscanf(…, (*int)(g))` (`g *Gobber`, `type Gobber int`) is the shape that
+					// proved it — the scan landed in the throwaway box, `g` never changed, and the
+					// decoder returned 0 for 23. Route through golib's ALIASING reinterpret, which
+					// is where the "can the managed model express this alias?" decision already
+					// lives (PointerExtensions.Reinterpret / ReinterpretAliasesStorage) and which is
+					// already this file's answer for the same conversion in a deref or raw-address
+					// context. It reports false for the shapes that must keep the re-box — an
+					// IDENTITY conversion, and an ARRAY pointee, whose lazily-materialized backing
+					// store a storage reinterpret bypasses (the chain-defined `type pallocBits
+					// pageBits` pair the written-RHS gate above deliberately leaves here) — so those
+					// fall through unchanged.
+					if emission, ok := v.reinterpretManagedEmission(callExpr, arg); ok {
+						return emission
+					}
+
 					baseName := convertToCSTypeName(v.getAliasQualifiedTypeName(resultElem, false))
 					var argExpr string
 

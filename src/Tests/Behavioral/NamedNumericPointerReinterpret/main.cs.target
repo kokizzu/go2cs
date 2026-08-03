@@ -21,21 +21,15 @@ internal static uint32 load32(ж<uint32> Ꮡp) {
 [GoType("num:uint32")] partial struct sweepClass;
 
 internal static uint64 peek(this ж<lfstack> Ꮡhead) {
-    ref var head = ref Ꮡhead.DerefOrNull();
-
-    return load64(Ꮡ((uint64)(head)));
+    return load64(Ꮡhead.Reinterpret<lfstack, uint64>());
 }
 
 internal static uint32 peek(this ж<sweepClass> Ꮡsc) {
-    ref var sc = ref Ꮡsc.DerefOrNull();
-
-    return load32(Ꮡ((uint32)(sc)));
+    return load32(Ꮡsc.Reinterpret<sweepClass, uint32>());
 }
 
 internal static uint64 peekVia(ж<lfstack> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
-    return load64(Ꮡ((uint64)(p)));
+    return load64(Ꮡp.Reinterpret<lfstack, uint64>());
 }
 
 [GoType("num:uint64")] partial struct hexval;
@@ -43,6 +37,41 @@ internal static uint64 peekVia(ж<lfstack> Ꮡp) {
 internal static uint64 describe(hexval v) {
     return (uint64)v;
 }
+
+internal static void storeInt(ж<nint> Ꮡp, nint v) {
+    ref var p = ref Ꮡp.DerefOrNull();
+
+    p = v;
+}
+
+[GoType("num:nint")] partial struct gobber;
+
+internal static void set(this ж<gobber> Ꮡg, nint v) {
+    storeInt(Ꮡg.Reinterpret<gobber, nint>(), v);
+}
+
+[GoType] partial struct coord {
+    public nint X, Y;
+}
+
+[GoType("coord")] partial struct point;
+
+internal static void bump(ж<coord> Ꮡc) {
+    var p = Ꮡc.Reinterpret<coord, point>();
+    (p.Value.X, p.Value.Y) = (3, 4);
+}
+
+[GoType("@string")] partial struct namedString;
+
+internal static void setStr(ж<namedString> Ꮡs, @string v) {
+    ref var s = ref Ꮡs.DerefOrNull();
+
+    s = ((namedString)v);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string beforeˢ = "before"u8;
+private static readonly @string afterˢ = "after"u8;
 
 internal static void Main() {
     ref var a = ref heap(new lfstack(), out var Ꮡa);
@@ -56,6 +85,27 @@ internal static void Main() {
     fmt.Println(Ꮡc.peek());
     var h = ((hexval)(uint64)a);
     fmt.Println(describe(h), (uint64)((hexval)(uint64)c));
+    ref var g = ref heap(new gobber(), out var Ꮡg);
+    Ꮡg.set(23);
+    fmt.Println(g);
+    ref var xy = ref heap<coord>(out var Ꮡxy);
+    xy = new coord(1, 2);
+    bump(Ꮡxy);
+    fmt.Println(xy.X, xy.Y);
+    ref var s = ref heap<@string>(out var Ꮡs);
+    s = beforeˢ;
+    setStr(Ꮡs.Reinterpret<@string, namedString>(), afterˢ);
+    fmt.Println(s);
+    ref var d = ref heap(new lfstack(), out var Ꮡd);
+    d = 7;
+    storeInt64(Ꮡd.Reinterpret<lfstack, uint64>(), 99);
+    fmt.Println(Ꮡd.peek(), d);
+}
+
+internal static void storeInt64(ж<uint64> Ꮡp, uint64 v) {
+    ref var p = ref Ꮡp.DerefOrNull();
+
+    p = v;
 }
 
 } // end main_package

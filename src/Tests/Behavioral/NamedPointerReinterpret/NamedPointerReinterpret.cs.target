@@ -30,7 +30,7 @@ internal static ж<@base> makeBase() {
 internal static @string consume(@string sʗp) {
     ref var s = ref heap(sʗp, out var Ꮡs);
 
-    var t = Ꮡ((tail)(s));
+    var t = Ꮡs.Reinterpret<@string, tail>();
     var b1 = t.chop();
     var b2 = t.chop();
     return ((@string)new byte[]{b1, b2}.slice()) + ((@string)(t.Value));
@@ -58,7 +58,7 @@ private static readonly @string abcdˢ = "abcd"u8;
 
 internal static void Main() {
     var pb = makeBase();
-    var pv = Ꮡ((view)(~pb));
+    var pv = pb.Reinterpret<@base, view>();
     var bb = ((@base)(pv.Value));
     fmt.Println(bb.a, bb.b);
     any boxed = ((intRef)nil);

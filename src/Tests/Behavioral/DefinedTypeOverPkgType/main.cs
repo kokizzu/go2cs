@@ -16,21 +16,15 @@ internal static stdFunction other;
 [GoType("sync.atomic_package.Uint32")] partial struct counter;
 
 internal static uint32 Load(this ж<counter> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    return (Ꮡ((atomic.Uint32)(c))).Load();
+    return (Ꮡc.Reinterpret<counter, atomic.Uint32>()).Load();
 }
 
 internal static void Store(this ж<counter> Ꮡc, uint32 v) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    (Ꮡ((atomic.Uint32)(c))).Store(v);
+    (Ꮡc.Reinterpret<counter, atomic.Uint32>()).Store(v);
 }
 
 internal static uint32 Add(this ж<counter> Ꮡc, uint32 d) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    return (Ꮡ((atomic.Uint32)(c))).Add(d);
+    return (Ꮡc.Reinterpret<counter, atomic.Uint32>()).Add(d);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

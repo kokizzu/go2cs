@@ -57,8 +57,12 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct coord {}
+    internal partial struct gobber {}
     internal partial struct hexval {}
     internal partial struct lfstack {}
+    internal partial struct namedString {}
+    internal partial struct point {}
     internal partial struct sweepClass {}
     // </TypeAccessibility>
 }
