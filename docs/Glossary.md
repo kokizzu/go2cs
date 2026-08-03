@@ -85,6 +85,14 @@ master; never push). Chips end with a **final summary** (per-root status, commit
 results, footprints, anything escalated). A **sub-chip** is a chip spawned from within another
 chip's session for an out-of-scope discovery.
 
+**Chit.**
+The clickable task card the coordinator posts to the user's panel that, when started, SPAWNS a
+chip — a chit in the classic sense: a small ticket redeemable for the thing it names. The
+distinction matters operationally: the chit is ephemeral (task ids do not survive app restarts, so
+a reboot can eat a chit and the coordinator reposts it), while the chip ARC it describes — the
+brief, the ownership lock, the branch — persists in the docs and memory regardless. One chit, one
+chip; a stale chit is dismissed and superseded, never left to mislead.
+
 **Coordinator.**
 The session that runs the campaign: diagnoses (or fleets out diagnosis), spawns chips, answers
 their escalations against project goals, reviews landings (adversarially where flagged),
