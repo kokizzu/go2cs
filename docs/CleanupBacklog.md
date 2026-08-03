@@ -56,10 +56,11 @@
    (what remains is the `byte[]` Go's `[]byte(string)` copies too). Guarded by GolibTests
    `ByteSeqAllocationTests` with a `NoInlining`-pinned boxed control that must still read 720.
    A/B footprint was 4 corpus files (10 constraint lines + 6 conversion sites) and one behavioral
-   golden. **Owed:** the real `time.TestUnmarshalTextAllocations` confirmation — the seam is proven
-   zero-allocation in isolation, but the 2,728 B/run figure was measured through the whole
-   `Time.UnmarshalText` chain, so the residue beyond `parseRFC3339` is unmeasured. The `time`
-   pipeline was fenced to another lane; run it on the coordinator's train.
+   golden.
+   **Whole-chain answer (coordinator, r38 train, 2026-08-03): 3,544 -> 216 B/run.** The seam is
+   zero; the FINAL 216 B live above `parseRFC3339` in the `Time.UnmarshalText` wrapper chain --
+   small, contained, and still on `time`'s critical path (the assert wants zero). Successor:
+   root and eliminate the 216.
    **Successor item:** the converter still wraps every union sub-slice in `((bytes)(…))`, which is now
    an identity conversion emitting no IL. It is pure noise in the rendering and `s = s[19..]` would
    match the Go exactly; removing it means restructuring the `typeParamIsStringByteUnion` branch in
