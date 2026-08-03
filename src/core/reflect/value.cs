@@ -1761,25 +1761,7 @@ internal static ΔValue copyVal(ж<abi.Type> Ꮡtyp, flag fl, @unsafe.Pointer pt
     return new ΔValue(Ꮡtyp, ~(ж<@unsafe.Pointer>)(uintptr)(ptr), fl);
 }
 
-// Method returns a function value corresponding to v's i'th method.
-// The arguments to a Call on the returned function should not include
-// a receiver; the returned function will always use v as the receiver.
-// Method panics if i is out of range or if v is a nil interface value.
-public static ΔValue Method(this ΔValue v, nint i) {
-    if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.Method"u8, Invalid)));
-    }
-    if ((flag)(v.flag & flagMethod) != 0 || (nuint)i >= (nuint)toRType(v.typ()).NumMethod()) {
-        throw panic("reflect: Method index out of range");
-    }
-    if (v.typ().Kind() == abi.Interface && v.IsNil()) {
-        throw panic("reflect: Method on nil interface value");
-    }
-    var fl = (flag)(v.flag.ro() | ((flag)(v.flag & flagIndir)));
-    fl |= (flag)(((flag)(uintptr)(nuint)Func));
-    fl |= (flag)((flag)((((flag)(uintptr)i) << (int)(flagMethodShift)) | flagMethod));
-    return new ΔValue(v.typ(), v.ptr, fl);
-}
+// go2cs generated this placeholder — func Method is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // NumMethod returns the number of methods in the value's method set.
 //

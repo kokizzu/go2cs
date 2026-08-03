@@ -1231,6 +1231,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]
+    public void CheckReflectMethodTableWalk() => CheckTarget("ReflectMethodTableWalk");
+
+    [TestMethod]
     public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
 
     [TestMethod]

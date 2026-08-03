@@ -1489,3 +1489,28 @@ ATOMIC increment** — a count without an enumerator converts silent vacuous pas
 panics. Increment 6's work survives on `claude/elated-hodgkin-12581e` (`d75e0afcd`); the chip's
 increment-7 chit carries the pair, with `TestRegress`'s loop as the primary gate and math/rand ×2
 as mandatory canaries.
+
+### RESOLVED — increment 7 lands the pair (2026-08-03)
+
+The count and the walk shipped together: `rtype.{NumMethod, Method, MethodByName}` + `Value.Method`
+over ONE ordered table whose `.Count` IS `NumMethod`, with a method value represented as an
+ordinary receiver-bound delegate so `Type()`/`NumIn`/`In`/`Out`/`Call` are existing surface
+unchanged. Measured on this tree:
+
+| Package | Before (master) | After | Note |
+|:--|:--|:--|:--|
+| `math/rand` | 43 (`TestRegress` passing **vacuously** — `NumMethod` 0 ⟹ zero loop iterations) | **43** | `TestRegress` now genuinely runs its 320 golden comparisons; the bridge reports `*rand.Rand NumMethod: 16` in Go's order |
+| `math/rand/v2` | 36 (same vacuous pass) | **36** | 18-method table, same shape |
+| `time` | 146 pass / 11 fail / 2 skip of 159 (the r37 re-measure above) | **148 pass / 9 fail / 2 skip** | `TestTimeJSON` + `TestUnmarshalInvalidTimes` re-land. Remaining 9 = `TestChan` ×8 (timer-model item) + `TestUnmarshalTextAllocations` (disclosure ruling) — neither this arc's |
+
+Note the board's "`time` returns to 145" above was written against the older 145 figure; the
+correct successor of the r37 re-measure (146) is **148**. The vacuous-pass detail is the part worth
+carrying forward: the banked 43/36 were never evidence that `TestRegress` worked, because with
+`NumMethod` at 0 its loop body never executed — a count of zero is indistinguishable from a type
+with no methods, which is the same silent-degradation class as the `""` type name (increment 5).
+
+Also fixed here, and it retroactively invalidates increment 6's numbers: a `this object` extension
+method (golib's `TryCastAsInteger`) was entering **every** type's method table through the
+candidate source's assignability safety net, and doing so nondeterministically — the same binary
+reported `NumMethod` 4 or 6 for the same type depending on which assemblies had loaded when the
+cache was first filled.

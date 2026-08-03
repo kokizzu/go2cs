@@ -719,6 +719,34 @@ public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
     return ret;
 }
 
+// ==== Value.Method — a method value is the receiver BOUND into an ordinary func value ====
+
+// Method returns a func value for v's i'th method, with v already bound as the receiver, so a
+// Call on it takes only the method's own arguments — Go's method-value contract. Go carries that
+// as v's own Value plus a flagMethod bit and the index packed into the flag, then rebuilds the
+// signature (typeSlow) and re-resolves the receiver (methodReceiver) on every use, all reads of
+// the uncommon() table a synthesized descriptor never populates. Binding the receiver into a
+// managed delegate HERE makes the result an ordinary Kind-Func Value, so Type(), NumIn/In/NumOut/
+// Out and Call are the existing bridge surface rather than new machinery — and the receiver is
+// already gone from the signature, which is exactly what Go's method value reports. Read-only
+// bits are inherited (Go's flagRO stickiness), so Call still refuses a method value obtained
+// through an unexported field.
+public static ΔValue Method(this ΔValue v, nint i) {
+    if (v.typ_ == nil) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Method"u8, Invalid)));
+    }
+    System.Type? st = v.typ_.Value.sysType;
+    if (i < 0 || i >= GoReflect.GoMethodCount(st)) {
+        throw panic("reflect: Method index out of range");
+    }
+    object? recv = v.live;
+    if (v.kind() == ΔInterface && recv is null) {
+        throw panic("reflect: Method on nil interface value");
+    }
+    var bound = GoReflect.GoMethodValue(st, (int)i, recv);
+    return makeTypedValue(bound, bound.GetType(), null, (flag)(v.flag & flagRO));
+}
+
 // CallSlice is unimplemented on the bridge (no demonstrated consumer).
 public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
     throw new NotImplementedException("reflect.Value.CallSlice is not implemented (next consumer: text/template)");
@@ -928,6 +956,47 @@ internal static nint NumField(this ж<rtype> Ꮡt) {
 // that follows it cannot disagree about a method set.
 internal static nint NumMethod(this ж<rtype> Ꮡt) {
     return GoReflect.GoMethodCount(Ꮡt.Value.t.sysType);
+}
+
+// Method returns the i'th method in the type's method set, indexing the SAME table NumMethod
+// sizes — Go's order, sorted by name. The auto form reads exportedMethods() off the uncommon()
+// sub-record a synthesized descriptor never populates, so it found an EMPTY table and panicked
+// "reflect: Method index out of range" for every i — which is what a truthful NumMethod turns
+// from unreachable into reachable, and why the count and this walk are one increment (math/rand
+// and math/rand/v2's TestRegress enumerate every generator method and call it).
+// Method.Type carries the receiver as its first argument and Func is the UNBOUND func value, Go's
+// contract for the type side; an interface method has neither a receiver nor a Func (zero Value),
+// and its PkgPath qualifies an unexported name.
+internal static ΔMethod Method(this ж<rtype> Ꮡt, nint i) {
+    System.Type? st = Ꮡt.Value.t.sysType;
+    if (i < 0 || i >= GoReflect.GoMethodCount(st)) {
+        throw panic("reflect: Method index out of range");
+    }
+    string name = GoReflect.GoMethodName(st, (int)i);
+    var fn = GoReflect.GoMethodFunc(st, (int)i);
+    return new ΔMethod(
+        Name: (@string)name,
+        PkgPath: (@string)(isExportedGoName(name) ? "" : GoReflect.GoPackagePath(st)),
+        Type: toType(abi.synthType(GoReflect.GoMethodFuncType(st, (int)i))),
+        Func: fn is null ? new ΔValue(nil) : makeReflectValue(fn),
+        Index: i
+    );
+}
+
+// MethodByName returns the method with that name from the same table, over the same name
+// projection Method(i) reports — so `t.Method(t.MethodByName(n).Index).Name == n` holds. The auto
+// form reads the same absent uncommon() table, but MISSES SILENTLY (not-found is a legal answer),
+// which is the quieter half of the same descriptor gap.
+internal static (ΔMethod m, bool ok) MethodByName(this ж<rtype> Ꮡt, @string name) {
+    nint i = GoReflect.GoMethodIndex(Ꮡt.Value.t.sysType, name.ToString());
+    return i < 0 ? (default!, false) : (Method(Ꮡt, i), true);
+}
+
+// isExportedGoName reports Go's exported rule — the first RUNE is upper case. Only an interface's
+// method table can carry an unexported name (a concrete type's table is exported-only).
+private static bool isExportedGoName(string name) {
+    return System.Text.Rune.DecodeFromUtf16(name, out System.Text.Rune first, out _) == System.Buffers.OperationStatus.Done &&
+           System.Text.Rune.IsUpper(first);
 }
 
 // Field returns the i'th struct field's descriptor: the projected Go name (blank fields are

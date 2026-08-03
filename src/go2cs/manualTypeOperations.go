@@ -156,7 +156,17 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// UnmarshalJSON was ever dispatched (time's TestTimeJSON / TestUnmarshalInvalidTimes).
 		// Hand-owned over the same golib method-set machinery the emitted asserts resolve
 		// through (GoReflect.GoMethodCount), so the gate and the assert cannot disagree.
-		"rtype.NumMethod": true,
+		//
+		// The COUNT and the WALK are one increment, not two: a truthful NumMethod is what lets a
+		// consumer's `for i := 0; i < n; i++` reach Method(i) at all, and the auto Method(i) reads
+		// the same absent uncommon() table — loudly (panic: reflect: Method index out of range,
+		// math/rand and math/rand/v2's TestRegress) where the count failed silently. Value.Method
+		// binds the receiver into a managed delegate, so the method VALUE is an ordinary Kind-Func
+		// Value and Type()/NumIn/In/Out/Call are the existing bridge surface unchanged.
+		"rtype.NumMethod":    true,
+		"rtype.Method":       true,
+		"rtype.MethodByName": true,
+		"Value.Method":       true,
 		// reflect.Type must be CANONICAL (Go interns type descriptors so `aType == bType` holds for
 		// equal types — internal/fmtsort.compare relies on `aType != bType`). The auto Value.Type()
 		// and toType() mint a fresh wrapper per call over a fresh abi.Type box, so identity-equality

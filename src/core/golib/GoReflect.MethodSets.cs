@@ -1,0 +1,332 @@
+// GoReflect.MethodSets.cs - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+// ReSharper disable InconsistentNaming
+
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using go.golib;
+
+#pragma warning disable IL2026
+#pragma warning disable IL2060
+#pragma warning disable IL2070
+#pragma warning disable IL3050
+
+namespace go;
+
+// ---------------------------------------------------------------------------------------------
+// THE METHOD TABLE — what reflect.Type.NumMethod / Method(i) / MethodByName and Value.Method(i)
+// read, and what a method VALUE is once bound.
+//
+// WHY IT EXISTS
+//   Go's reflect answers all of these out of the type descriptor's `uncommon()` method tables:
+//   a name offset into the linker-built name blob, a type offset for the signature, and a text
+//   offset for the code pointer. A SYNTHESIZED descriptor (the bridge stamps a System.Type onto an
+//   abi.Type and nothing else) never populates any of them — so `NumMethod` answered 0 for every
+//   concrete type, `Method(i)` panicked "reflect: Method index out of range", and `MethodByName`
+//   answered not-found. The first was SILENT (0 is most types' correct count), the second is loud.
+//
+// THE ATOMIC-PAIR LESSON — WHY COUNT AND ENUMERATION SHIP TOGETHER
+//   The count landed one increment ahead of the enumeration and had to be reverted. Answering
+//   `NumMethod() > 0` truthfully is what lets a consumer's `for i := 0; i < n; i++` loop get as far
+//   as `Type.Method(i)` at all: encoding/json's indirect() only reads the count, but math/rand and
+//   math/rand/v2's TestRegress WALK the set — `typ.Method(i).Name`, `rv.Method(i)`, `mv.Type()`,
+//   `mv.Call(args)` — and both packages regressed from validated to panicking on the very next
+//   sweep. A truthful count is a promise that the table behind it can be indexed.
+//
+// THE ONE SOURCE RULE (inherited from golib TypeExtensions.GoMethodSets)
+//   Every answer here comes from `GetGoMethodSetEntries` / `GetGoInterfaceMethodEntries` — the same
+//   candidate machinery `StructurallyImplements` (the duck-typing assert) and `AdapterBinder` (the
+//   shell binder) resolve through. Reflection therefore cannot believe in a method the assert would
+//   not bind, nor miss one it would; and the count is that table's `.Count`, not a parallel
+//   derivation.
+//
+// A METHOD VALUE IS AN ORDINARY BOUND DELEGATE — THAT IS THE WHOLE DESIGN
+//   Go represents `v.Method(i)` as the receiver's Value with a `flagMethod` bit and the method
+//   index packed into the flag's high bits; `Type()` then rebuilds the signature through
+//   `typeSlow()` and `Call` re-resolves the receiver through `methodReceiver` — all descriptor
+//   reads. The bridge instead BINDS the receiver into a managed delegate at Method(i) time, so the
+//   result is an ordinary Kind-Func Value carrying a Delegate. Everything downstream is then reuse,
+//   not new surface: `mv.Type()` is the ordinary canonical Type of a delegate, `mv.Type().NumIn/In/
+//   NumOut/Out` are the existing TryFuncShape readers, and `mv.Call(args)` is the existing
+//   Value.Call unchanged (with the receiver already gone from the signature, which is exactly Go's
+//   contract for a method value). `Type.Method(i).Func` is the same delegate UNBOUND — receiver
+//   first — which is Go's contract for the type-side Func.
+//
+// BINDING IS EXPRESSION-COMPILED, AND THAT IS NOT A PREFERENCE
+//   `Delegate.CreateDelegate(type, firstArgument, method)` cannot close over a VALUE-type first
+//   argument (measured: ArgumentException) and Go value receivers are by-value structs, so the
+//   closed-delegate form would fail for every value-receiver method — time.Time's whole method set
+//   among them. A compiled expression lambda binds both cases. Each MethodInfo is compiled ONCE
+//   into a `Func<object?, Delegate>` factory (a nested lambda: the outer takes the receiver, the
+//   inner IS the bound Go-signature delegate), so per-bind cost is a closure allocation rather than
+//   a compile — the same memoization rule the bridge's ValueSlot accessors already follow.
+//
+// CACHES
+//   s_boundFactories / s_methodFuncs / s_methodFuncTypes are keyed by MethodInfo and are NOT on
+//   ClearTypeCaches' list, correctly so: a MethodInfo's signature is fixed when its type loads, and
+//   a late-loading assembly cannot change it. Only the TABLES (which methods belong to a set) are
+//   derived from the extension-method scan, and those are cleared in golib beside the scan itself.
+// ---------------------------------------------------------------------------------------------
+public static partial class GoReflect
+{
+    private static readonly ConcurrentDictionary<MethodInfo, Func<object?, Delegate>> s_boundFactories = [];
+    private static readonly ConcurrentDictionary<MethodInfo, Type> s_methodFuncTypes = [];
+    private static readonly ConcurrentDictionary<MethodInfo, Delegate> s_methodFuncs = [];
+
+    /// <summary>
+    /// The number of methods <c>reflect.Type.NumMethod</c> reports for the Go type
+    /// <paramref name="t"/> represents: for an interface type ALL of its methods (exported and
+    /// unexported — Go's interface contract), for a concrete type the EXPORTED methods in its
+    /// method set — where a pointer box <c>ж&lt;X&gt;</c> sees X's value- AND pointer-receiver
+    /// methods and a plain X only the value-receiver ones.
+    /// </summary>
+    /// <param name="t">Managed type standing for the Go type, or <c>null</c>.</param>
+    /// <returns>Size of the method set.</returns>
+    /// <remarks>
+    /// The auto <c>rtype.NumMethod</c> reads <c>uncommon()</c> method tables a synthesized
+    /// descriptor never populates, so it answered 0 for every concrete type — and
+    /// <c>encoding/json</c>'s <c>indirect()</c> gates its Unmarshaler/TextUnmarshaler discovery on
+    /// <c>NumMethod() &gt; 0</c>, so no custom <c>UnmarshalJSON</c> was ever dispatched
+    /// ("json: cannot unmarshal string into Go value of type time.Time"). This is the SIZE of the
+    /// table <see cref="GoMethodName"/>/<see cref="GoMethodValue"/> index, so a truthful count is
+    /// always backed by an indexable table. An adapter shell answers as the Go dynamic type it
+    /// stands for — a pointer-sourced adapter as <c>*T</c>, a value-sourced one as the wrapped
+    /// struct — mirroring the <see cref="KindOf"/>/<see cref="ElementType"/> unwrap (R10).
+    /// </remarks>
+    public static int GoMethodCount(Type? t)
+    {
+        return GoMethodTable(t).Length;
+    }
+
+    /// <summary>
+    /// The Go NAME of the <paramref name="index"/>'th method of <paramref name="t"/>'s method set,
+    /// in Go's method order (sorted by name).
+    /// </summary>
+    /// <param name="t">Managed type standing for the Go type.</param>
+    /// <param name="index">Method index, <c>0 &lt;= index &lt; GoMethodCount(t)</c>.</param>
+    /// <returns>The Go method name.</returns>
+    public static string GoMethodName(Type? t, int index)
+    {
+        return MethodAt(t, index).GoName;
+    }
+
+    /// <summary>
+    /// The index of the method named <paramref name="name"/> in <paramref name="t"/>'s method set,
+    /// or <c>-1</c> when the method set does not contain it.
+    /// </summary>
+    /// <param name="t">Managed type standing for the Go type.</param>
+    /// <param name="name">Go method name.</param>
+    /// <returns>Method index, or <c>-1</c>.</returns>
+    public static int GoMethodIndex(Type? t, string name)
+    {
+        GoMethodSetEntry[] table = GoMethodTable(t);
+
+        for (int i = 0; i < table.Length; i++)
+        {
+            if (string.Equals(table[i].GoName, name, StringComparison.Ordinal))
+                return i;
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// The managed delegate type of the <paramref name="index"/>'th method viewed as
+    /// <c>reflect.Type.Method(i).Type</c> — the Go func type WITH the receiver as its first
+    /// parameter for a concrete type, and WITHOUT one for an interface method (Go's contract).
+    /// </summary>
+    /// <param name="t">Managed type standing for the Go type.</param>
+    /// <param name="index">Method index.</param>
+    /// <returns>Delegate type describing the method's Go signature.</returns>
+    public static Type GoMethodFuncType(Type? t, int index)
+    {
+        MethodInfo method = MethodAt(t, index).Method;
+
+        return s_methodFuncTypes.GetOrAdd(method, static m => MakeDelegateType(
+            [.. m.GetParameters().Select(static p => p.ParameterType)], m.ReturnType));
+    }
+
+    /// <summary>
+    /// The <paramref name="index"/>'th method as an UNBOUND func value — receiver first — which is
+    /// <c>reflect.Type.Method(i).Func</c>. An interface method has no such value (Go leaves
+    /// <c>Method.Func</c> the zero Value there), reported as <c>null</c>.
+    /// </summary>
+    /// <param name="t">Managed type standing for the Go type.</param>
+    /// <param name="index">Method index.</param>
+    /// <returns>The unbound delegate, or <c>null</c> for an interface method.</returns>
+    public static Delegate? GoMethodFunc(Type? t, int index)
+    {
+        GoMethodSetEntry entry = MethodAt(t, index);
+
+        if (entry.Method.DeclaringType is { IsInterface: true })
+            return null;
+
+        Type funcType = GoMethodFuncType(t, index);
+
+        return s_methodFuncs.GetOrAdd(entry.Method, m => Delegate.CreateDelegate(funcType, m));
+    }
+
+    /// <summary>
+    /// Binds <paramref name="receiver"/> to the <paramref name="index"/>'th method of
+    /// <paramref name="staticType"/>'s method set and returns the resulting METHOD VALUE — a
+    /// delegate carrying the Go signature with the receiver removed, which is what
+    /// <c>reflect.Value.Method(i)</c> hands back.
+    /// </summary>
+    /// <param name="staticType">The Value's type — the type whose method table <paramref name="index"/> indexes.</param>
+    /// <param name="index">Method index.</param>
+    /// <param name="receiver">The receiver value to bind.</param>
+    /// <returns>The bound method value.</returns>
+    /// <remarks>
+    /// An INTERFACE-typed slot indexes the interface's table but dispatches to the DYNAMIC value,
+    /// exactly as Go does: the name is taken from the interface table and re-resolved against the
+    /// receiver's own method set, so a method value obtained through an interface calls the same
+    /// implementation a direct call would. A value-receiver method reached through a pointer takes a
+    /// COPY of the pointee (Go's rule), which is why the box is dereferenced when the receiver
+    /// parameter is the element type rather than the box.
+    /// </remarks>
+    public static Delegate GoMethodValue(Type? staticType, int index, object? receiver)
+    {
+        object? bindTarget = GoDynamicValueOf(receiver);
+        GoMethodSetEntry entry;
+
+        if (IsGoInterfaceType(staticType))
+        {
+            string name = MethodAt(staticType, index).GoName;
+            Type dynamicType = bindTarget is null ? typeof(object) : GoDynamicTypeOf(bindTarget);
+            int dynamicIndex = GoMethodIndex(dynamicType, name);
+
+            if (dynamicIndex < 0)
+                throw new MissingMethodException(GoTypeName(dynamicType), name);
+
+            entry = MethodAt(dynamicType, dynamicIndex);
+        }
+        else
+        {
+            entry = MethodAt(staticType, index);
+        }
+
+        Type receiverType = entry.Method.GetParameters()[0].ParameterType;
+
+        // A value-receiver method reached through *X receives a COPY of the pointee (Go's rule).
+        if (bindTarget is not null && !receiverType.IsInstanceOfType(bindTarget) &&
+            bindTarget.GetType() is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+            bindTarget = ReadPointerSlot(bindTarget);
+
+        return s_boundFactories.GetOrAdd(entry.Method, static m => CompileBoundFactory(m))(bindTarget);
+    }
+
+    // The ordered method table of the Go type `t` stands for — the ONE source every answer above
+    // reads (see this file's header). An adapter shell answers as the Go dynamic type it stands for
+    // (R10); the EMPTY interface (`any` is object) has no methods.
+    private static GoMethodSetEntry[] GoMethodTable(Type? t)
+    {
+        if (t is null || t == typeof(object))
+            return [];
+
+        if (TryAdapterWrappedType(t, out Type? adapterWrapped, out bool adapterPointerSourced))
+        {
+            return adapterPointerSourced
+                ? golib.TypeExtensions.GetGoMethodSetEntries(adapterWrapped, valueIsPointer: true)
+                : GoMethodTable(adapterWrapped);
+        }
+
+        if (t.IsInterface)
+            return golib.TypeExtensions.GetGoInterfaceMethodEntries(t);
+
+        golib.TypeExtensions.ResolveReceiverElement(t, out Type element, out bool isPointer);
+
+        return golib.TypeExtensions.GetGoMethodSetEntries(element, isPointer);
+    }
+
+    private static GoMethodSetEntry MethodAt(Type? t, int index)
+    {
+        GoMethodSetEntry[] table = GoMethodTable(t);
+
+        if (index < 0 || index >= table.Length)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        return table[index];
+    }
+
+    // Whether the Go type `t` stands for is an interface — including the EMPTY interface, which is
+    // System.Object and reports IsInterface false (the same arm KindOf carries).
+    private static bool IsGoInterfaceType(Type? t)
+    {
+        if (t is null)
+            return false;
+
+        if (TryAdapterWrappedType(t, out Type? wrapped, out bool pointerSourced))
+            return !pointerSourced && IsGoInterfaceType(wrapped);
+
+        return t.IsInterface || t == typeof(object);
+    }
+
+    // Unwraps a value to the one its GO DYNAMIC TYPE describes — the value-level mirror of
+    // GoDynamicTypeOf: an interface-carrier chain unwraps to the original value, a pointer-sourced
+    // adapter to its receiver box, a value-sourced adapter to the struct copy it wraps.
+    private static object? GoDynamicValueOf(object? value)
+    {
+        while (value is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            value = interfaceAdapter.Value;
+
+        if (value is IжAdapter { Box: not null } pointerAdapter)
+            return pointerAdapter.Box;
+
+        if (value is IValueAdapter { Value: not null } valueAdapter)
+            return valueAdapter.Value;
+
+        return value;
+    }
+
+    // Compiles the ONE-per-method receiver binder: an outer lambda taking the receiver as `object`,
+    // whose body IS the bound Go-signature delegate. Compiling once and closing per bind keeps a
+    // method value cheap; see this file's header for why CreateDelegate cannot serve here.
+    private static Func<object?, Delegate> CompileBoundFactory(MethodInfo method)
+    {
+        ParameterInfo[] parameters = method.GetParameters();
+        Type receiverType = parameters[0].ParameterType;
+
+        if (receiverType.IsByRef)
+        {
+            throw new NotImplementedException(
+                $"reflect: method value for '{method.DeclaringType?.Name}.{method.Name}' — the only emitted shape " +
+                "takes its receiver by reference, which a delegate cannot carry (the generated ж<T> overload is absent)");
+        }
+
+        ParameterExpression receiver = Expression.Parameter(typeof(object), "receiver");
+        ParameterExpression[] arguments = [.. parameters.Skip(1).Select(static (p, i) => Expression.Parameter(p.ParameterType, p.Name ?? $"arg{i}"))];
+        Type delegateType = MakeDelegateType([.. arguments.Select(static a => a.Type)], method.ReturnType);
+
+        Expression body = Expression.Call(method, [Expression.Convert(receiver, receiverType), .. arguments]);
+        LambdaExpression bound = Expression.Lambda(delegateType, body, arguments);
+
+        return Expression.Lambda<Func<object?, Delegate>>(Expression.Convert(bound, typeof(Delegate)), receiver).Compile();
+    }
+
+    // The Func<>/Action<> delegate type for a Go signature. A shape outside what those families can
+    // express (a by-ref or pointer parameter, or more parameters than they have arities) fails LOUD
+    // rather than yielding a delegate that would misinterpret the signature.
+    private static Type MakeDelegateType(Type[] parameterTypes, Type returnType)
+    {
+        try
+        {
+            return returnType == typeof(void)
+                ? Expression.GetActionType(parameterTypes)
+                : Expression.GetFuncType([.. parameterTypes, returnType]);
+        }
+        catch (Exception ex) when (ex is ArgumentException or TypeLoadException)
+        {
+            throw new NotImplementedException(
+                $"reflect: Go method signature ({string.Join(", ", parameterTypes.Select(static p => p.Name))}) -> " +
+                $"{returnType.Name} has no Func<>/Action<> delegate form", ex);
+        }
+    }
+}

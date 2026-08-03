@@ -374,46 +374,6 @@ public static partial class GoReflect
         return ContainerInterfaceArguments(t, typeof(IMap<,>)) is { } mapArgs ? mapArgs[0] : null;
     }
 
-    /// <summary>
-    /// The number of methods <c>reflect.Type.NumMethod</c> reports for the Go type
-    /// <paramref name="t"/> represents: for an interface type ALL of its methods (exported and
-    /// unexported — Go's interface contract), for a concrete type the EXPORTED methods in its
-    /// method set — where a pointer box <c>ж&lt;X&gt;</c> sees X's value- AND pointer-receiver
-    /// methods and a plain X only the value-receiver ones.
-    /// </summary>
-    /// <remarks>
-    /// The auto <c>rtype.NumMethod</c> reads <c>uncommon()</c> method tables a synthesized
-    /// descriptor never populates, so it answered 0 for every concrete type — and
-    /// <c>encoding/json</c>'s <c>indirect()</c> gates its Unmarshaler/TextUnmarshaler discovery on
-    /// <c>NumMethod() &gt; 0</c>, so no custom <c>UnmarshalJSON</c> was ever dispatched
-    /// ("json: cannot unmarshal string into Go value of type time.Time"). Answered over the same
-    /// method-set machinery the emitted asserts resolve through
-    /// (<see cref="TypeExtensions.GoMethodSetCount"/>), so the gate and the assert behind it cannot
-    /// disagree. An adapter shell answers as the Go dynamic type it stands for — a pointer-sourced
-    /// adapter as <c>*T</c>, a value-sourced one as the wrapped struct — mirroring the
-    /// <see cref="KindOf"/>/<see cref="ElementType"/> unwrap (R10).
-    /// </remarks>
-    public static int GoMethodCount(Type? t)
-    {
-        // No type — or the EMPTY interface (`any` is object, the interface with no methods).
-        if (t is null || t == typeof(object))
-            return 0;
-
-        if (TryAdapterWrappedType(t, out Type? adapterWrapped, out bool adapterPointerSourced))
-        {
-            return adapterPointerSourced
-                ? golib.TypeExtensions.GoMethodSetCount(adapterWrapped, valueIsPointer: true)
-                : GoMethodCount(adapterWrapped);
-        }
-
-        if (t.IsInterface)
-            return t.GetInterfaceMethodNames().Count;
-
-        golib.TypeExtensions.ResolveReceiverElement(t, out Type element, out bool isPointer);
-
-        return golib.TypeExtensions.GoMethodSetCount(element, isPointer);
-    }
-
     // Resolves the closed generic container interface a named wrapper implements
     // (ISlice<T>/IMap<K,V>/IArray<T>/IChannel<T>/IPointer<T>) and returns its type arguments,
     // or null. The raw golib containers are matched by open generic definition BEFORE this is

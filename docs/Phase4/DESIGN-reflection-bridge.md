@@ -175,9 +175,51 @@
 > `NumMethod() > 0` gate now lets method-enumeration loops get further than before; the first
 > consumer that walks one demonstrates it.
 >
+> **Phase-3 increment 6 + 7 (SHIPPED 2026-08-03 as ONE increment) — the METHOD TABLE:
+> `NumMethod`, `Method(i)`, `MethodByName`, and the method VALUE.** Increment 6 shipped the COUNT
+> alone (`rtype.NumMethod`, gate-clean, `time`'s `TestTimeJSON`/`TestUnmarshalInvalidTimes` as its
+> demonstrated consumers) and was **reverted from master**: the all-package sweep caught `math/rand`
+> and `math/rand/v2`'s `TestRegress` failing with `panic: reflect: Method index out of range` —
+> the successor gap increment 6's own report had recorded, arriving one session later. **The durable
+> lesson, worth generalizing beyond this bridge: a truthful count is a PROMISE that the table behind
+> it can be indexed.** `NumMethod` reads `uncommon()` method tables a synthesized descriptor never
+> populates, so it answered 0 for every concrete type; while it did, every method-ENUMERATION loop
+> was unreachable and the auto `Method(i)` reading the *same* absent tables could not be observed.
+> Making the count truthful is exactly what made them reachable. A descriptor read and the gate in
+> front of it are one atomic increment.
+>
+> Landed together: `rtype.{NumMethod, Method, MethodByName}` and `Value.Method`, all over ONE ordered
+> list (`TypeExtensions.GetGoMethodSetEntries`) whose `.Count` IS `NumMethod` — a size and an order
+> can no longer be derived separately and disagree — built on the same `GetGoMethodSetCandidates`
+> the duck-typing assert and shell binder resolve through, deduplicated by projected Go name
+> (keeping the delegate-bindable shape), exported-only for concrete types, and sorted ordinally by
+> Go method name (Go's own table order; a promoted embed sorts in place). **A method value is an
+> ordinary BOUND DELEGATE**, which is the design's economy: binding the receiver at `Method(i)` time
+> makes the result a Kind-Func Value, so `mv.Type()`, `NumIn`/`In`/`NumOut`/`Out` and
+> `mv.Call(args)` are all existing bridge surface **unchanged** — the receiver is already gone from
+> the signature, exactly Go's method-value contract — and `Value.MethodByName` needs no hand-own
+> because it composes the other two. Binding is expression-compiled because
+> `Delegate.CreateDelegate` cannot close over a value-type first argument (measured), which every Go
+> value receiver is; one compile per `MethodInfo`, a closure per bind.
+>
+> Found on the way and fixed in the table builder: **a `this object` extension method is golib
+> plumbing, never a Go method.** The candidate source's assignability safety net admits them for
+> EVERY type, so `TryCastAsInteger(this object, out ulong)` was in every method table —
+> nondeterministically, since a late assembly load re-runs the scan: the same binary reported
+> `NumMethod` **4 or 6 for the same type** depending only on load order. The shipped-then-reverted
+> count was therefore also wrong in a way nothing could observe.
+>
+> Consumers: `math/rand` **43/43** and `math/rand/v2` **36/36** at their exact banked counts, with
+> `TestRegress` now genuinely walking (`*rand.Rand NumMethod: 16` in Go's order,
+> `Intn(1000000000) = 526058514` matching `go run`; before the pair it read 0 and the test passed
+> VACUOUSLY — zero of its 320 golden comparisons ran). `time`: 146 → **148 pass of 159**, the two
+> increment-6 JSON rows re-landed; its 9 remaining failures are the timer-model item (`TestChan` ×8)
+> and the `TestUnmarshalTextAllocations` disclosure ruling, neither this arc's. Guard:
+> `Tests/Behavioral/ReflectMethodTableWalk`. Full design: ConversionStrategies-Reference
+> *…and the count and the WALK are ONE increment*.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
-> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); `rtype.Method(i)`
-> method enumeration (increment 6's recorded gap); the Go
+> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
 > if they surface); `FieldByName`'s embedded-field depth search (a promoted name currently answers
 > the not-found path); open question 3 (field-name/tag fidelity — `[GoTag]` is carried but not yet

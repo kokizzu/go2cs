@@ -11353,6 +11353,73 @@ the same absent tables — the recorded next gap of this shape: a `NumMethod() >
 method-ENUMERATION loop (`for i := range t.NumMethod() { t.Method(i) }`) get further than before,
 and the first consumer that walks one demonstrates it.
 
+**…and the count and the WALK are ONE increment — `Type.Method(i)`, `Value.Method(i)`,
+`MethodByName` (2026-08-03).** The paragraph above shipped alone and was **reverted**: the
+recorded successor gap arrived one session later, on the very next all-package sweep. `math/rand`
+and `math/rand/v2`'s `TestRegress` enumerate every generator method — `typ.Method(i).Name`,
+`rv.Method(i)`, `mv.Type()`'s `NumIn`/`In`, `mv.Call(args)` — against a golden output table, and
+both went from validated to `panic: reflect: Method index out of range`. The lesson is general and
+worth stating as a rule: **a truthful count is a PROMISE that the table behind it can be indexed.**
+While `NumMethod` answered 0 the enumeration loops were unreachable and their auto `Method(i)`
+(which reads the same absent `uncommon()` tables) could not be observed; making the count truthful
+is exactly what made them reachable. A descriptor read and the gate in front of it belong in one
+increment.
+
+The whole table is now ONE list — `TypeExtensions.GetGoMethodSetEntries` — and `NumMethod` is its
+`.Count`, so a size and an order can no longer be derived separately and disagree. It is built over
+`GetGoMethodSetCandidates`, the same candidate source `StructurallyImplements` and `AdapterBinder`
+resolve through, then: deduplicated by projected Go name (keeping the shape a delegate can bind —
+a `[GoRecv] this ref X` receiver cannot be a `Func<>` parameter, and the RecvGenerator's `ж<X>`
+overload always sits beside it), exported-only for a concrete type, and **sorted ORDINALLY by Go
+method name**, which is Go's own method-table order (verified against `go run`: a promoted embedded
+method sorts *in place*, it is not appended).
+
+A **method value is an ordinary bound delegate**, and that is the design's whole economy. Go
+carries `v.Method(i)` as the receiver's own Value plus a `flagMethod` bit with the index packed
+into the flag, then rebuilds the signature (`typeSlow`) and re-resolves the receiver
+(`methodReceiver`) on every use — all descriptor reads. The bridge instead BINDS the receiver into
+a managed delegate at `Method(i)` time, so the result is a Kind-Func Value and everything
+downstream is reuse rather than new surface: `mv.Type()` is the ordinary canonical Type of a
+delegate, `NumIn`/`In`/`NumOut`/`Out` are the existing `TryFuncShape` readers, and `mv.Call(args)`
+is the existing `Value.Call` **unchanged** — with the receiver already absent from the signature,
+which is precisely Go's method-value contract. `Type.Method(i).Func` is the same delegate UNBOUND
+(receiver first), Go's contract for the type side, and `Value.MethodByName` needs no hand-own at
+all: it composes the hand-owned `rtype.MethodByName` and `Value.Method`.
+
+Binding is **expression-compiled, and that is not a preference**: `Delegate.CreateDelegate(type,
+firstArgument, method)` cannot close over a VALUE-type first argument (measured — `ArgumentException`)
+and Go value receivers are by-value structs, so the closed-delegate form fails for every
+value-receiver method, `time.Time`'s entire method set included. Each `MethodInfo` is compiled once
+into a `Func<object?, Delegate>` factory (a nested lambda — the outer takes the receiver, the inner
+IS the bound Go-signature delegate), so a bind costs a closure allocation, not a compile. A
+value-receiver method reached through `*X` is handed a COPY of the pointee, Go's rule.
+
+**A `this object` extension method is golib plumbing, never a Go method** — and filtering it is a
+correctness fix, not tidiness. `GetGoMethodSetCandidates`' assignability safety net (there for
+promotion and base relationships) is satisfied by EVERY type when the receiver is `object`, so
+`TypeExtensions.TryCastAsInteger(this object, out ulong)` was entering every type's method table —
+and entering it **nondeterministically**, because the candidate scan is redone whenever a late
+assembly load clears the caches: the same binary reported `NumMethod` **4 or 6 for the same type**
+depending only on which assemblies had loaded by the first read (it reproduced under the behavioral
+runner's redirected stdout and not under a console). That also means the shipped-then-reverted
+count was wrong in a way nothing could observe. It is filtered in the method-TABLE builder rather
+than in the shared candidate source, whose admission rule the duck-typing assert and the shell
+binder also read: a Go METHOD SET is a stricter question than "could this extension method dispatch
+on this value?".
+
+Guard: `Tests/Behavioral/ReflectMethodTableWalk` locks the surface against `go run` — count/walk
+agreement and sorted order, a value type's set excluding pointer-receiver methods, a bound
+pointer-receiver call MUTATING the receiver across calls, a value-receiver method bound through a
+pointer, a no-result method, `MethodByName` round-tripping to the same index (and both absent-name
+forms), the unbound `Method.Func` called receiver-first, promoted-embed ordering, and an interface
+table whose method value dispatches to the dynamic value. Demonstrated consumers: `math/rand`
+**43/43** and `math/rand/v2` **36/36** re-validate at their exact banked counts with `TestRegress`
+now genuinely walking (the converted bridge reports `*rand.Rand NumMethod: 16` in Go's order and
+`Intn(1000000000) = 526058514`, matching `go run` — where before the pair it reported 0 and the
+test passed VACUOUSLY, executing none of its 320 golden comparisons); `time` goes 146 → **148**
+pass of 159 as the two increment-6 JSON rows re-land. Recorded next gaps of this shape: `MakeFunc`,
+variadic `Call`/`CallSlice`, and `reflectlite`'s `rtype.Name`.
+
 **Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
 programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
 internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token

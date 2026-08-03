@@ -555,82 +555,19 @@ internal static slice<abi.Method> exportedMethods(this ж<rtype> Ꮡt) {
 
 // go2cs generated this placeholder — func NumMethod is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static ΔMethod /*m*/ Method(this ж<rtype> Ꮡt, nint i) {
-    ΔMethod m = default!;
+// go2cs generated this placeholder — func Method is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    ref var t = ref Ꮡt.Value;
-    if (t.Kind() == ΔInterface) {
-        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
-        return tt.Method(i);
-    }
-    var methods = Ꮡt.exportedMethods();
-    if (i < 0 || i >= len(methods)) {
-        throw panic("reflect: Method index out of range");
-    }
-    var p = methods[i];
-    var pname = Ꮡt.nameOff(p.Name);
-    m.Name = pname.Name();
-    var fl = ((flag)(uintptr)(nuint)Func);
-    var mtyp = Ꮡt.typeOff(p.Mtyp);
-    var ft = mtyp.Reinterpret<abi.Type, funcType>();
-    var @in = new slice<ΔType>(0, 1 + ft.NumIn());
-    @in = builtin.append(@in, (ΔType)(new rtypeжΔType(Ꮡt)));
-    foreach (var (_, arg) in ft.InSlice()) {
-        @in = builtin.append(@in, (ΔType)(new rtypeжΔType(toRType(arg))));
-    }
-    var @out = new slice<ΔType>(0, ft.NumOut());
-    foreach (var (_, ret) in ft.OutSlice()) {
-        @out = builtin.append(@out, (ΔType)(new rtypeжΔType(toRType(ret))));
-    }
-    var mt = FuncOf(@in, @out, ft.IsVariadic());
-    m.Type = mt;
-    ref var tfn = ref heap<@unsafe.Pointer>(out var Ꮡtfn);
-    tfn = (uintptr)Ꮡt.textOff(p.Tfn);
-    @unsafe.Pointer fn = @unsafe.Pointer.FromRef(ref (Ꮡtfn).Value);
-    m.Func = new ΔValue(mt._<ж<rtype>>().of(rtype.Ꮡt), fn.Value, fl);
-    m.Index = i;
-    return m;
-}
-
-internal static (ΔMethod m, bool ok) MethodByName(this ж<rtype> Ꮡt, @string name) {
-    ΔMethod m = default!;
-    bool ok = default!;
-
-    ref var t = ref Ꮡt.Value;
-    if (t.Kind() == ΔInterface) {
-        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
-        return tt.MethodByName(name);
-    }
-    var ut = Ꮡt.uncommon();
-    if (ut == nil) {
-        return (new ΔMethod(nil), false);
-    }
-    var methods = ut.ExportedMethods();
-    // We are looking for the first index i where the string becomes >= s.
-    // This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
-    nint i = 0;
-    nint j = len(methods);
-    while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
-        // i ≤ h < j
-        if (!(Ꮡt.nameOff(methods[h].Name).Name() >= name)){
-            i = h + 1;
-        } else {
-            // preserves f(i-1) == false
-            j = h;
-        }
-    }
-    // preserves f(j) == true
-    // i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
-    if (i < len(methods) && name == Ꮡt.nameOff(methods[i].Name).Name()) {
-        return (Ꮡt.Method(i), true);
-    }
-    return (new ΔMethod(nil), false);
-}
+// go2cs generated this placeholder — func MethodByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func PkgPath is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// We are looking for the first index i where the string becomes >= s.
+// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
+// avoid overflow when computing h
+// i ≤ h < j
+// preserves f(i-1) == false
+// preserves f(j) == true
+// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
 internal static @string pkgPathFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).PkgPath();
 }
