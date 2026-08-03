@@ -110,29 +110,74 @@ partial class time_package
     // races a Stop/Reset can observe one already-delivered value. Everything else here — the
     // Stop/Reset return values, the tick-drop behavior, the period phase — matches the runtime.
     //
-    // ⚠ OPEN — a periodic timer can fire an UNBOUNDED BURST in one service pass (r36, 2026-08-02).
-    // The divergence above is scoped to the SYNC mode, and time's own TestChan shows exactly that
-    // scope: its Timer half fails only under asynctimerchan=0 (that divergence, accepted) and passes
-    // under 1 and 2. Reading the ticker rows as the same thing would be wrong — the Ticker half
-    // fails in ALL THREE modes with "extra tick" / "early done", which nothing written above
-    // explains. The mechanism is in serviceTimers below: after a periodic timer fires, `when` is
-    // advanced to `when + period*(1 + delay/period)` and the timer is re-enqueued, and the drain
-    // loop then re-peeks it against a FRESHLY read `now`. For an ordinary period the advanced `when`
-    // is comfortably in the future and the loop breaks; for a period shorter than the loop's own
-    // iteration time — testTimerChan Resets to 1ns — `when` lands one nanosecond ahead, `now` has
-    // already passed it, and the same timer fires again, and again, for as long as the pass runs.
-    // The burst is invisible while nobody is receiving (sendTime's non-blocking send onto the cap-1
-    // channel drops all but one), but testTimerChan's drainAsync is receiving: each drain1 frees the
-    // buffer slot and the still-draining burst refills it, so the two stale values an async ticker is
-    // allowed become three and `noTick` reports "extra tick". Go bounds this because its timer loop
-    // returns to the scheduler rather than re-firing one timer within a pass. The faithful fix is to
-    // fire each timer AT MOST ONCE per pass — which is also what "drop ticks to make up for slow
-    // receivers" means — but it changes the heart of the model, so it is recorded rather than taken
-    // in the tail of r36. This is the only time-LOCAL row left: not a channel-rendezvous defect
-    // (wave3's semantics hold under it) and not a GODEBUG one (t.Setenv reaches the converted
-    // godebug since r36, proven by that package's own TestGet, and reaching it changes nothing here
-    // because tick.cs never calls syncTimer). See the r36 entry in
-    // docs/Phase4/BOARD-next-validation-candidates.md.
+    // ONE FIRING PER TIMER PER PASS — why the pass reads the clock exactly once (r39, 2026-08-03).
+    // The service pass samples `now` ONCE and threads that one value through the whole drain. That
+    // is not an optimization: it is the invariant. Go does the same and for the same reason — the
+    // scheduler samples the clock in timers.check and hands that value down through timers.run(now)
+    // to timer.unlockAndRun(now), never re-reading it inside a pass — and the consequence is a
+    // theorem rather than a heuristic:
+    //
+    //     Within one service pass, every timer fires AT MOST ONCE.
+    //
+    // Two facts carry it. First, AT MOST ONE HEAP ENTRY PER TIMER IS EVER LIVE: every Enqueue in
+    // this file is immediately preceded by a `gen++` on the same timer and queues the POST-increment
+    // value, and `gen` only ever increases — so each generation is consumed by at most one entry and
+    // every other entry for that timer fails the `entry.timer.gen != entry.gen` test and is dropped.
+    // (Keep that pairing intact: moving the `gen++` in the drain below into the periodic branch
+    // would silently break this.) A one-shot therefore cannot be re-peeked because it is dequeued
+    // and NOT re-enqueued, not because `when` is cleared — the drain reads the heap's priority, not
+    // `timer.when`.
+    //
+    // Second, the arithmetic. A periodic timer is re-armed to next = when + period*(1 + delay/period)
+    // with delay = now - when >= 0; writing delay = q*period + r for 0 <= r < period gives
+    // next = when + period*(1 + q) = (when + delay) + (period - r) = now + (period - r), and
+    // r < period makes that STRICTLY greater than `now`. The re-peek therefore always takes the
+    // `when > now` branch and the drain ends. It holds for every period, including the 1 ns one
+    // testTimerChan resets to. Overflow cannot defeat it: the arithmetic is unchecked, the true
+    // value is always in [1, 2^64-2), so a wrapped result is always NEGATIVE — never a small
+    // positive that could land at or below `now` — and the `next < 0` clamp catches exactly that.
+    //
+    // Re-reading the clock per iteration broke that theorem and was the defect this replaced (r36
+    // recorded it): the advanced `when` lands one nanosecond ahead, a freshly read `now` has already
+    // passed it, and the same ticker fires again — for as long as consecutive reads of the ~100 ns
+    // monotonic source keep advancing. The burst is invisible while nobody is receiving (sendTime's
+    // non-blocking send onto the cap-1 channel drops all but one) but testTimerChan's drainAsync IS
+    // receiving, so the two stale values an async ticker is allowed became three or more and `noTick`
+    // reported "extra tick" — in ALL THREE asynctimerchan modes, which the divergence above (scoped
+    // to the sync mode) never explained.
+    //
+    // What the invariant does NOT do is rate-limit, and it cannot delay anything. `next` depends on
+    // `now` only through the floor delay/period, which is non-decreasing in `now`, so hoisting the
+    // read can only make `next` — and therefore the pass's `deadline` — SMALLER or equal. waitUntil
+    // recomputes `remaining` from a FRESH clock, and the OS wake is monotone in the deadline, so no
+    // timer can wake later than the per-iteration version would have woken it; usually the deadline
+    // is already past and waitUntil returns at once. (When delay < period, the common case, the floor
+    // is 0 and the deadline is bit-for-bit identical either way.) A high-rate ticker is thus served
+    // every pass, as in Go, where the scheduler simply calls check again with a fresh `now`. The
+    // bound is on re-firing WITHIN a pass, which is Go's "drop ticks to make up for slow receivers".
+    //
+    // A timer coming due DURING a pass waits for the next one, and that is not a delay either: the
+    // head of the heap is the minimum `when` among live entries, so `deadline` is <= that timer's
+    // `when` <= the clock at the end of the drain, hence `remaining <= 0` and the next pass starts
+    // immediately. Go behaves the same way.
+    //
+    // Where this model is NOT Go, so the fidelity claim above is not over-read: Go's `check` releases
+    // the timer-set lock around EACH callback and re-validates the head between them, so a Stop
+    // landing mid-pass cancels the callbacks after it; this drain commits the whole batch under one
+    // lock hold and then runs it, so a Stop landing between the two does not. Go also keeps one heap
+    // entry per TIMER (repositioned in place, zombies swept), where this keeps one per ARM and
+    // reclaims a dead entry only when it reaches the head. Both predate the single clock sample and
+    // are narrowed, not widened, by it — a frozen `now` commits a SMALLER batch. One consequence to
+    // know: `delay` is now measured from the pass's clock, so sendTime's `Now().Add(-delay)` lands
+    // slightly later than a per-iteration reading would place it — the same form Go uses, with a
+    // larger magnitude because callbacks here are deferred to the end of the batch.
+    //
+    // Finally, a CONSTRAINT this establishes rather than merely satisfies. At the instant a ticker is
+    // stopped or reset, at most TWO of its ticks can exist: one in the cap-1 buffer and one committed
+    // to `due` but not yet sent. That is exactly the allowance testTimerChan's drainAsync drains for
+    // a ticker, so the margin is zero. Any later change that lets two ticks for ONE timer be committed
+    // before their callbacks run — batching two passes, a second service thread, moving the `due`
+    // flush inside the lock-held drain — re-breaks `noTick` without touching a line of this file.
 
     // Hidden runtime state for one Timer or Ticker. Go declares these fields on runtime.timeTimer,
     // AFTER the two fields package time can see (`C` and `initTimer`/`initTicker`); the comment in
@@ -355,6 +400,13 @@ partial class time_package
 
             lock (s_timerLock)
             {
+                // Sampled ONCE for the whole drain and never re-read inside it — the pass's clock,
+                // exactly as Go's timers.check samples `now` and passes it down through run and
+                // unlockAndRun. This is what bounds a periodic timer to one firing per pass; see
+                // ONE FIRING PER TIMER PER PASS above for the proof and for why re-reading it here
+                // let a 1 ns ticker burst.
+                int64 now = runtimeNano();
+
                 while (s_timerHeap.TryPeek(out (runtimeTimer timer, int64 gen) entry, out int64 when))
                 {
                     if (entry.timer.gen != entry.gen)
@@ -364,8 +416,6 @@ partial class time_package
                         s_timerHeap.Dequeue();
                         continue;
                     }
-
-                    int64 now = runtimeNano();
 
                     if (when > now)
                     {

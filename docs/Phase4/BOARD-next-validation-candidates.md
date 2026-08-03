@@ -555,6 +555,100 @@ seven `Location.lookup` rows. `time`'s distance to a bank is now: **the timer-mo
 reflect-bridge chip, and one ruling** — three owners, none of them the converter, and nothing
 `time`-local outside the timer model.
 
+### Re-measured 2026-08-03 (r39-timer): **152 pass / 5 fail / 2 skip of 159** — the timer model is CLOSED and every residual row is a RULING
+
+The reflect-bridge chip's two rows (`TestTimeJSON`, `TestUnmarshalInvalidTimes`) closed on their own
+between r37 and this lane — increment 5 landed, and the base commit `832f0960d` already measured
+**148 pass / 9 fail / 2 skip**: the eight `TestChan` rows plus the one alloc row and nothing else.
+This lane took the timer-model item and rooted the alloc row.
+
+**The timer-model item is fixed, and the faithful fix was one statement.** The burst was never a
+"fire at most once per pass" heuristic waiting to be invented — it is what Go gets for free by
+sampling the clock ONCE per service pass. `timers.check` reads `nanotime()` once and threads that
+value through `timers.run(now)` into `timer.unlockAndRun(now)`; the clock is never re-read inside a
+pass. `serviceTimers` was re-reading it on every drain iteration, so the theorem that bounds Go did
+not hold here. Moving `int64 now = runtimeNano();` above the drain loop restores it, and the bound is
+then provable rather than enforced: for a periodic timer `next = when + period*(1 + delay/period)`
+with `delay = now - when = q*period + r`, `0 <= r < period`, so `next = now + (period - r) > now`
+strictly — the re-peek always breaks. One-shots clear `when`. Hence **every timer fires at most once
+per pass**, for every period including the 1 ns `testTimerChan` resets to. It does not rate-limit: the
+pass then waits until the new head deadline, which for a fast ticker is already past, so the next pass
+begins at once — exactly Go's scheduler calling `check` again. Recorded in
+ConversionStrategies-Reference.md, *ONE firing per timer per pass*.
+
+Measured on this tree, same command both arms (`go2cs -tests -test-action all -test-timeout 10m`):
+
+| Row | Base `832f0960d` | After the fix |
+|:--|:--|:--|
+| `TestChan/asynctimerchan=0/Timer` | fail — `tim.Stop() = false, want true` + `extra tick` | fail — **identical message** |
+| `TestChan/asynctimerchan=0/Ticker` | fail — `extra tick` + **`early done`** | fail — `extra tick` ×4, **`early done` gone** |
+| `TestChan/asynctimerchan=1/Ticker` | fail — `extra tick` ×2 + `early done` | **pass** |
+| `TestChan/asynctimerchan=2/Ticker` | fail — `extra tick` | **pass** |
+| `TestChan/asynctimerchan={1,2}` parents | fail | **pass** |
+| `TestChan/asynctimerchan=0` parent, `TestChan` root | fail | fail (mode 0 only) |
+| `TestUnmarshalTextAllocations` | fail — `got 216 allocs` | fail — `got 216 allocs` (untouched) |
+
+**+4 rows, and `early done` — the burst's signature — is gone from every mode.**
+
+**What the mode-0 ruling now decides over: exactly 4 rows, and they are the documented divergence,
+row for row.** With the burst gone, `asynctimerchan=1` and `=2` pass **completely** — Timer *and*
+Ticker. Those are the modes where `testTimerChan` sets `synctimerchan=false` and therefore drains
+stale values explicitly. Only mode 0 fails, and each of its failures sits either inside a block the
+test guards with `if synctimerchan` (the `tim.Stop() = false, want true` pair, which is #37196's
+Stop-blocks-old-values semantics) or on a `noTick()` whose preceding `drainAsync()` is a deliberate
+no-op in sync mode (the four `extra tick`s). The same implementation passes the identical test body
+wherever the test expects asynchronous semantics and fails only where it switches to expecting
+synchronous ones. That is the accepted `GODEBUG=asynctimerchan=1` divergence and nothing else — no
+residual burst, no channel-rendezvous defect. Closing it for real means implementing Go 1.23's
+synchronous timer channel (the ignored `syncTimer(c)` argument), which lives **inside golib's channel
+implementation** — a Tier-0 golib capability, not a `time` fix.
+
+**`TestUnmarshalTextAllocations` — rooted, and the board's previous attribution was WRONG.** The r38
+train recorded "the FINAL 216 B live above `parseRFC3339` in the `Time.UnmarshalText` wrapper chain".
+Measured directly (a probe project borrowing `InternalsVisibleTo("time.tests")`,
+`GC.GetAllocatedBytesForCurrentThread()` over 2,000 runs), **zero bytes are above `parseRFC3339`**:
+
+| Frame | B/run |
+|:--|--:|
+| `Time.UnmarshalText(data)` | 88 |
+| `parseStrictRFC3339(b)` | 88 |
+| `parseRFC3339<slice<byte>>(b, Local)` | 88 |
+| `Date(...)`, `daysIn(...)`, `isDigit(...)` | 0 |
+| the same `parseRFC3339` body with the closure replaced by a static local function | **0** |
+| a bare capturing lambda, isolated control | **88** |
+| the converted TEST body: `heap(new Time(), out var Ꮡt)` alone | **128** |
+| the converted TEST body: `heap(...)` + `UnmarshalText` | **216** |
+
+**216 = 88 + 128, and both halves are converter emission, not `time`:**
+
+1. **88 B — `parseRFC3339`'s `parseUint` func literal.** It captures `ok`, so C# hoists `ok` into a
+   display class and allocates that class **plus a `Func<>` delegate on every call** (24 + 64 = 88,
+   matched exactly by the isolated control). Go stack-allocates both, because escape analysis proves
+   the closure does not escape. The general converter fix is real and valuable — *a func literal bound
+   to a local that is only ever CALLED should be emitted as a C# **local function**, which captures
+   without allocating* — but it is a new emission mode in `convFuncLit.go` /
+   `captureModeOperations.go` (847 + 1,136 lines) reaching every closure in the corpus.
+2. **128 B — the converter heaps the test's own `var t Time`.** The emission is
+   `ref var tΔ1 = ref heap(new Δtime.Time(), out var ᏑtΔ1);` because `t`'s address is taken by the
+   pointer-receiver call `t.UnmarshalText(in)`. Go keeps it on the stack (that is *why* the assert
+   says zero). Note `ᏑtΔ1` is **never referenced** in the emitted body — the box is minted dead — so a
+   narrow rule ("don't heap when the emitted `Ꮡx` is unused, because a C# `ref` parameter provably
+   cannot escape its callee") looks sound and would be a headline win. It is still an
+   **escape-analysis** change, which charter §7 puts behind an adversarially-reviewed design.
+
+**Consequence for the ruling: this row is NOT a clean disclosure candidate.** The established
+`alloc-profile` class covers asserts the managed CLR *provably cannot* satisfy; both halves here are
+fixable converter gaps, and §5 says a real bug is never a disclosure candidate. Equally, neither half
+alone flips the row (216 → 128 still fails `want 0`), so it cannot be cleared incrementally either.
+The honest options are: (a) land both converter fixes as their own gated arcs and green the row
+outright, (b) hold the row open until they land, or (c) disclose it knowingly as a *converter-gap*
+rather than a CLR-semantics divergence — which would be a new disclosure class and should be decided
+as one. Not self-ruled here.
+
+**`time`'s distance to a bank is now two RULINGS and zero open engineering:** the mode-0
+sync-timer-channel divergence (4 rows, needs a golib channel capability to close for real) and
+`TestUnmarshalTextAllocations` (1 row, needs two converter arcs to close for real).
+
 ## `math/big` — arithmetic RUNS as of 2026-08-02; one nil-argument root stands in front of a probe
 
 Until r37-time-os-fin `math/big` was in the 302-package clean compile and could not perform a single
