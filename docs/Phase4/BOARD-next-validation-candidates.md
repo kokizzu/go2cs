@@ -1474,3 +1474,18 @@ another, force `go build -o bin/go2cs.exe` and re-measure before recording a cou
    accumulated intended drift + the param-unification footprint + the `GoBigConst` rename).
 7. **NuGet release: after the rebank**, so the first badged release ships a corpus byte-current
    with the converter.
+
+## The r37 train's sweep catch — reflection increment 6 REVERTED pending its atomic twin (2026-08-03)
+
+The all-ships sweep failed `math/rand` AND `math/rand/v2` on the assembled train:
+`panic: reflect: Method index out of range` in `TestRegress` — the EXACT successor gap increment
+6's own report recorded ("a NumMethod() > 0 gate lets method-enumeration loops get further; the
+first consumer that walks one demonstrates it"). The demonstration arrived one session later, in
+two BANKED packages no lane had canaried — which is precisely the coverage the sweep exists to
+provide. Reverted from the train (`39de5dd77` reverts `d75e0afcd`); both packages re-validate at
+their exact banked counts (43, 36); `time` returns to 145 (its two JSON rows re-land with the
+pair). **The durable scoping lesson: `NumMethod` and `Method(i)`/`Value.Method`/`Call` are one
+ATOMIC increment** — a count without an enumerator converts silent vacuous passes into hard
+panics. Increment 6's work survives on `claude/elated-hodgkin-12581e` (`d75e0afcd`); the chip's
+increment-7 chit carries the pair, with `TestRegress`'s loop as the primary gate and math/rand ×2
+as mandatory canaries.
