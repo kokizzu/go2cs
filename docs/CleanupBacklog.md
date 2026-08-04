@@ -95,10 +95,12 @@
 9. **`TestReporter` subtest-name escaping** — Go escapes control bytes in subtest names
    (`\x1a`), the C# host emits them raw: 924 cosmetically-paired lines in os's `TestReadStdin`
    report. Touches every package's report format → wants the full sweep as its gate.
-10. **`-tests` csproj emission strips the `GoValidationProofFile` block** — the `-tests` and
-    `-stdlib` csproj writers disagree on the 8-line validation-proof block, making every pipeline
-    run dirty a validated package's production csproj (the standing `0 8` restore family). Fix =
-    the `-tests` writer preserves/emits the block; removes a whole documented drift family.
+10. ~~**`-tests` csproj emission strips the `GoValidationProofFile` block**~~ — **DONE (r39 train,
+    2026-08-03).** `validationPackBlock` gates on `convertStdLib` OR a `-tests` rewrite whose output
+    csproj lives under the runtime root's `core\` tree (`testsRewriteOfCorePackage` — structural, so
+    fixtures and end-user modules keep their historical bytes). Guarded by
+    `TestValidationPackBlockSurvivesTestsRewriteOfCorePackage`; the end-to-end proof is the next
+    sweep's aftermath, which should no longer contain the `0 8` csproj family at all.
 11. **`Tests/PackageTests/ConvertedTestHarness` does not build — the end-to-end `-tests` fixture is
     dead** (found r37-time-os-fin, 2026-08-02; PRE-EXISTING, A/B'd on `fa87dd349` with a
     master-converter binary and reproduced from a clean slate). Its production `value.cs` emits

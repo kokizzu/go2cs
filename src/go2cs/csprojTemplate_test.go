@@ -90,6 +90,30 @@ func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
 	}
 }
 
+// A -tests run re-emits the production .csproj of the package under test, and for a converted
+// stdlib package that rewrite must PRESERVE the validation pack block: gating on convertStdLib
+// alone stripped it on every pipeline run (the "0 8" restore family), which would have silently
+// un-shipped every validated package's proof sheet at the next NuGet pack. The -tests arm is
+// structural — output under the runtime root's core\ tree — so a fixture or end-user module
+// still collapses to the historical blank line.
+func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
+	testsOverCore := Options{convertTests: true, go2csPath: `H:\Projects\go2cs\src`}
+
+	block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, testsOverCore)
+
+	if !strings.Contains(block, `time.md`) || !strings.Contains(block, `PackagePath="VALIDATION.md"`) {
+		t.Fatalf("a -tests rewrite of a core package's production .csproj lost the validation pack block: %q", block)
+	}
+
+	if block := validationPackBlock(`H:\Projects\go2cs\src\Tests\PackageTests\ConvertedTestHarness\value.csproj`, testsOverCore); block != "" {
+		t.Fatalf("a -tests conversion outside the core tree emitted a validation pack block: %q", block)
+	}
+
+	if block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, Options{convertTests: true}); block != "" {
+		t.Fatalf("a -tests conversion with no resolved runtime root emitted a validation pack block: %q", block)
+	}
+}
+
 // The friend-assembly grant is inserted AFTER template rendering — never as a template verb, so a
 // user-supplied `-csproj` template (which cannot know about the slot) keeps rendering correctly —
 // and this guard validates the INSERTED document, the shape that actually reaches disk for every
