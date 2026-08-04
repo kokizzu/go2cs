@@ -1459,6 +1459,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
 
     [TestMethod]
+    public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
+
+    [TestMethod]
     public void CheckSynthesizedDelegateChildPkg() => CheckTarget("SynthesizedDelegateChildPkg");
 
     [TestMethod]

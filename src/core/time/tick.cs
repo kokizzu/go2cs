@@ -33,11 +33,10 @@
 // newTimer / stopTimer / resetTimer call, and Go's own runtime.newTimer serves Timer and Ticker
 // through one implementation for the same reason.
 //
-// NOT modeled (deliberately): the `syncTimer(c)` argument. It exists only so the runtime can mark
-// the channel a SYNCHRONOUS timer channel (Go 1.23, #37196); the managed timer model reproduces
-// Go's asynchronous timer-channel behavior — Go's own documented GODEBUG=asynctimerchan=1 mode — and
-// ignores that pointer in newTimer as well, so calling it here would have no effect beyond the
-// non-default GODEBUG counter it bumps. See the divergence note in time_impl.cs.
+// MODELED since 2026-08-03: the `syncTimer(c)` argument. It marks the channel a SYNCHRONOUS timer
+// channel (Go 1.23, #37196), which the managed timer model now implements; the call below is made
+// for its nil/non-nil ANSWER, which is the mode selector, not for its pointer value. See
+// SYNCHRONOUS TIMER CHANNELS in time_impl.cs for the property and the two mechanisms.
 //
 // REVERTIBLE: if the general managed-reinterpret capability lands (option 2 of the FINDING — a
 // converter-emitted `Ꮡt.Reinterpret<U>()` aliasing the same managed slot), delete this file and let
@@ -85,7 +84,13 @@ public static ж<Ticker> NewTicker(Duration d) {
     var c = new channel<Time>(1);
     // Go: t := (*Ticker)(unsafe.Pointer(newTimer(when(d), int64(d), sendTime, c, syncTimer(c))))
     var t = new ж<Ticker>(new Ticker{ initTicker = true });
-    armNewTimer(t, when(d), (int64)d, sendTime, c);
+    // Go's `syncTimer(c)` argument, modeled by its ANSWER rather than by its pointer: the pointer
+    // is unusable here for the same reason the reinterprets above are, and its nil-ness is only a
+    // re-encoding of the setting syncTimerChanEnabled reads directly. newTimer resolves it the same
+    // way, so the two constructors cannot disagree about the model. (Not calling syncTimer also
+    // avoids its own reinterpret; the IncNonDefault counter it would bump is inert here — the
+    // hand-owned godebug has no metrics consumer.)
+    armNewTimer(t, when(d), (int64)d, sendTime, c, syncTimerChanEnabled() ? c : default);
     t.Value.C = c;
     return t;
 }

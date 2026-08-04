@@ -123,6 +123,31 @@
 14. **ConversionStrategies-Reference.md ~line 10734** — two unrelated topics mashed onto one line
     (reflectlite mini-bridge paragraph runs into the AllocsPerRun discussion); chip-reported,
     cosmetic.
+15. **`reflect.Value.Len()` reports 0 for EVERY channel.** `src/core/reflect/value_impl.cs`'s `Len`
+    switch has no `IChannel` arm, so a channel falls through to `_ => 0`; `internal/reflectlite`'s
+    `chanlen` likewise returns `default`, and `reflect`'s own `chanlen`/`chancap` partials are dead
+    `NotImplementedException` stubs. `Cap()` DOES have the arm and is correct. Found while reviewing
+    the synchronous-timer-channel arc (r39b), which made the gap *accidentally* right for timer
+    channels — `len` of one is legitimately 0 — while it stays wrong for every ordinary buffered
+    channel. Pre-existing, no known consumer; the fix is one `IChannel c => c.Length` arm.
+16. **A `-tests` run STRIPS the validation-pack block from a banked package's `.csproj`, so a full
+    sweep drifts all 72 of them.** `validationPackBlock` (`src/go2cs/projectFileWriter.go`) returns
+    `""` unless `options.convertStdLib`, and the `-tests` pipeline is not a `-stdlib` conversion —
+    so every pipeline run regenerates `<pkg>.csproj` without the
+    `GoValidationProofFile` / `VALIDATION.md` pack, a uniform `0/8` diff. Harmless while the drift
+    is restored (a sweep is a gate, not a rebank), but it is a **loaded gun for the whole-corpus
+    rebank**: banking a post-sweep tree would silently un-ship every package's VALIDATION.md. The
+    block is `Exists`-guarded on both ends and therefore correct for any conversion, so the fix is
+    to emit it whenever the output is a stdlib package rather than only under `-stdlib`. Found by
+    the r39b sweep (72 pass / 0 fail, 321 drifting files: 132 banked test sources, 92 production
+    `.cs`, 72 csproj, 15 test hosts, 8 `package_info.cs`, 2 `package_init.cs`).
+17. **`Timer.C`/`Ticker.C` are emitted BIDIRECTIONAL, so Go-illegal sends compile.** `sleep.cs` and
+    `tick.cs` emit `public /*<-*/channel<Time> C;` — the receive-only direction is a comment, not a
+    type. Go rejects `t.C <- v`; converted C# accepts it. Newly consequential since r39b: a value a
+    user pushed there is silently discarded by the next `Stop`/`Reset` drain, and because
+    `DrainBuffer` deliberately does not service parked senders (matching Go's `timerchandrain`), a
+    second such send parks forever. Reachable only from source Go itself rejects, so this is the
+    general directional-channel-type fidelity gap, recorded at the place it now bites.
 
 ## Recorded residuals (no work owed unless the surrounding facts change)
 

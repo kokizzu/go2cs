@@ -1459,6 +1459,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
 
     [TestMethod]
+    public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
+
+    [TestMethod]
     public void CheckSynthesizedDelegateChildPkg() => CheckTarget("SynthesizedDelegateChildPkg");
 
     [TestMethod]

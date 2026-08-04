@@ -519,7 +519,7 @@ output-compared vs `go run`) plus `FuncLitArgCapture` case 15 for the hoist.
 
 | Count | Tests | Root | Owner |
 |--:|:--|:--|:--|
-| 6 | `TestChan` and its five subtests | **Documented model divergence, not a defect.** Go 1.23 made a chan-based Timer/Ticker channel SYNCHRONOUS (#37196) by coupling the channel's receive path to the timer inside the runtime; `time_impl.cs` reproduces Go's own `GODEBUG=asynctimerchan=1` mode instead, so `tim.Stop() = false, want true` and "extra tick" are exactly what that mode produces. ⚠ The `asynctimerchan=1` SUBTEST also fails, which the divergence does NOT explain — either `t.Setenv("GODEBUG", …)` does not reach the converted `godebug`, or the async model has its own bug. That subtest is the honest next probe here. | time / godebug |
+| 6 | `TestChan` and its five subtests | **Documented model divergence, not a defect.** Go 1.23 made a chan-based Timer/Ticker channel SYNCHRONOUS (#37196) by coupling the channel's receive path to the timer inside the runtime; `time_impl.cs` reproduces Go's own `GODEBUG=asynctimerchan=1` mode instead, so `tim.Stop() = false, want true` and "extra tick" are exactly what that mode produces. ⚠ The `asynctimerchan=1` SUBTEST also fails, which the divergence does NOT explain — either `t.Setenv("GODEBUG", …)` does not reach the converted `godebug`, or the async model has its own bug. That subtest is the honest next probe here. **⚠ HISTORICAL — superseded twice: the mode-1 failure was the one-firing-per-pass burst (r39-timer), and the mode-0 "divergence" is IMPLEMENTED (r39b); `TestChan` passes in all three modes. See *RESOLVED — r39b lands the synchronous timer channel* below.** | time / godebug |
 | 9 | `TestDefaultLoc`, `TestNanosecondsToUTC`, `TestSecondsToUTC`, `TestParse`, `TestTimeGob`, `TestTimeIsDST`, `TestTimeJSON`, `TestUnmarshalInvalidTimes`, `TestZoneBounds` | All die with the same `nil pointer dereference` inside `GoFunc.HandleFinally`. Every one of them formats a `Time` through `fmt` on its FAILURE path (`%#v`, `%+v`, `%v` of a struct with a `*Location`), so the NRE is plausibly SECONDARY to a comparison that already failed — the reflect/fmt bridge, not the clock. Not rooted; the next increment should print the pre-format comparison rather than reason about the stack. | reflect/fmt bridge |
 | 1 | `TestParseErrors` | A REAL parse divergence: Go reports `extra text: "07:00"` where C# reports `cannot parse "Z07:00" as "Z07:00"` — the `Z07:00` layout element consumes differently. `format.go` conversion defect, `time`-local. | time |
 | 1 | ~~`TestTruncateRound`~~ | ~~`math/big.mulAddVWW` is an unimplemented asm stub (`NotImplementedException`), reached through `big.Int.Mul`.~~ **CLOSED 2026-08-02 (r37-time-os-fin), and it was never a `math/big` ARC — it was a build-tag selection.** math/big predates the `purego` convention and gates its portable fallbacks on its own `math_big_pure_go`, which the default tag set did not carry, so all EIGHT of `arith_decl.go`'s bodyless declarations became throwing stubs. The scope was not one test: the whole package compiled clean and could not do arithmetic — a direct probe dies inside `big.Int.SetString`, i.e. parsing a decimal string, because that is already a `mulAddVWW`. See *`purego` is not the only spelling of this decision* in ConversionStrategies-Reference.md. | ~~math/big arc~~ done |
@@ -546,7 +546,7 @@ The 11 failing rows, exhaustively, in three buckets:
 
 | Rows | Tests | Bucket |
 |--:|:--|:--|
-| 8 | `TestChan` + `asynctimerchan={0,1,2}` + their `Timer`/`Ticker` children | The **timer-model** item, recorded and deliberately not taken: `time_impl.cs` §"⚠ OPEN — a periodic timer can fire an UNBOUNDED BURST in one service pass". The Timer half under `asynctimerchan=0` is the accepted sync-mode divergence; the Ticker half fails in all three modes and is the burst. The faithful fix ("fire each timer at most once per pass") changes the heart of the model and wants its own lane. The `t.Setenv("GODEBUG", …)` half of the old ⚠ is closed — r36 proved the converted `godebug` sees it. |
+| 8 | `TestChan` + `asynctimerchan={0,1,2}` + their `Timer`/`Ticker` children | The **timer-model** item, recorded and deliberately not taken: `time_impl.cs` §"⚠ OPEN — a periodic timer can fire an UNBOUNDED BURST in one service pass". The Timer half under `asynctimerchan=0` is the accepted sync-mode divergence; the Ticker half fails in all three modes and is the burst. The faithful fix ("fire each timer at most once per pass") changes the heart of the model and wants its own lane. The `t.Setenv("GODEBUG", …)` half of the old ⚠ is closed — r36 proved the converted `godebug` sees it. **⚠ HISTORICAL — both halves are now closed: the burst by r39-timer, the sync-mode divergence by r39b (see *RESOLVED — r39b lands the synchronous timer channel* below).** |
 | 2 | `TestTimeJSON`, `TestUnmarshalInvalidTimes` | The reflect-bridge **chip's** rows — the last two survivors of the old 9-verdict NRE family (r36's honest traceback rooted the other seven at `Location.lookup`, and they pass). Untouched here by fence. |
 | 1 | `TestUnmarshalTextAllocations` | Alloc-count-semantics, **awaiting the coordinator's disclosure ruling** — unchanged in status, but the number moved: `got 3544` → **`got 2728`**, an exactly-predicted −816 B/run (6 × 136, the six `parseUint` range loops in `parseRFC3339`'s UTC path) from the allocation-free `slice<T>` enumerator. Also measured as an A/B on this tree; the board's older `3784` predates other r36 fixes. Nonzero remains, so a ruling is still what settles this row — see `docs/CleanupBacklog.md` item 7 (`IByteSeq<T>` interface boxing) for the next lever. |
 
@@ -648,6 +648,67 @@ as one. Not self-ruled here.
 **`time`'s distance to a bank is now two RULINGS and zero open engineering:** the mode-0
 sync-timer-channel divergence (4 rows, needs a golib channel capability to close for real) and
 `TestUnmarshalTextAllocations` (1 row, needs two converter arcs to close for real).
+
+### RESOLVED — r39b lands the synchronous timer channel; the 4 mode-0 rows close (2026-08-03)
+
+Ruling #1 below commissioned the arc; it is implemented. The change is small because the guarantee
+is small, once stated as a guarantee rather than as plumbing:
+
+> **A `Stop` or `Reset` prevents any tick generated before the call from being received after it.**
+
+Two mechanisms carry it, at Go's own two layers. **golib** gains the `hchan.timer` hook the wave3
+design deliberately left out — `IChannelTimer` installed by `channel<T>.AttachTimer`,
+`Capacity`/`Length` masked to 0 while the owner answers `HidesBuffer` (asked LIVE, because
+`GODEBUG=asynctimerchan` selects the model at every observation), and `DrainBuffer()` =
+`runtime.timerchandrain`, the only sanctioned way to **un-send**. **`time_impl.cs`** gains Go's
+`timer.sendLock` + `timer.seq`: a service pass now only *offers* a tick — it captures `seq` with the
+firing decision and re-checks it under `sendLock` before sending, so an offer a `Stop`/`Reset`
+overtook is ABANDONED. `seq` is deliberately not `gen` (a firing bumps `gen`, so a delivery check
+must not key off it). `Stop`/`Reset` bump `seq` and drain inside ONE `sendLock` hold — stronger than
+Go's ordering, and necessarily so: Go can drain outside the lock because a sync-mode chan timer is
+heaped only while a receiver blocks on it, and this model's service thread is always eager.
+
+A **third** mechanism has no Go counterpart and is the arc's real lesson. The adversarial round
+measured that mechanisms 1 and 2 revoke correctly but cannot between them ANSWER correctly: in the
+window mechanism 1 exists to cover, a tick is in neither place a `Stop` looks — `when` cleared at
+commit, buffer not yet filled — so `Stop` revoked the tick and reported that there had been none.
+Hundreds of one-shots per run where Go answers `true` for every one. Go never reaches that state
+because a sync-mode chan timer nobody is receiving from is not heaped at all and therefore never
+fires; **eager firing opens the window, so eager firing has to close it** — `runtimeTimer.offered`
+records the in-flight firing and `Stop`/`Reset` count it as pending. The general form of the lesson:
+*a divergence in WHEN work happens is not free just because the observable end states match — check
+the states in between.* Two more review findings landed with it: the mode selector no longer routes
+through the punned `unsafe.Pointer` `cp` (its non-nil-ness was an accident of two type layouts, and
+this very change added a field to `ChanCore`), and `asyncTimerChan` now reproduces
+`runtime.atoi32`'s parse, so `asynctimerchan=00` is synchronous as in Go rather than asynchronous.
+
+Measured on this tree, both arms with the same command, the fixed arm run twice with identical
+verdicts:
+
+| Row | After r39-timer (`df3da05d1`) | After r39b |
+|:--|:--|:--|
+| `TestChan/asynctimerchan=0/Timer` | fail — `tim.Stop() = false, want true` + `extra tick` | **pass** |
+| `TestChan/asynctimerchan=0/Ticker` | fail — `extra tick` ×2 + `early done` | **pass** |
+| `TestChan/asynctimerchan=0` parent, `TestChan` root | fail | **pass** |
+| `TestChan/asynctimerchan={1,2}` × Timer/Ticker | pass | **pass** (async model untouched) |
+| `TestUnmarshalTextAllocations` | fail — `got 216 allocs` | fail — unchanged (ruling #2's arc) |
+| **package** | 152 pass / 5 fail / 2 skip | **156 pass / 1 fail / 2 skip of 159** |
+
+`time` is therefore down to ONE row, and it is the alloc row ruling #2 already commissioned an arc
+for. Nothing here is `time`-specific: the hook is on `ChanCore`, so any future owner-fed channel gets
+the same revocation primitive. ⚠ `DrainBuffer` revokes values the channel already accepted and is
+sound only for a channel whose producer owns it exclusively — it is not a general "clear the
+channel" utility. Guard: the `SyncTimerChannel` behavioral project (stdout byte-compared against
+`go run`), which asserts the `pending` answers, the absence of stale ticks, `len`/`cap` 0, that
+`AfterFunc` is untouched, **200 `Reset`-to-imminent timers that must still DELIVER** (the
+counter-property that keeps the drain honest), 600 ticker `Stop`/`Reset`-vs-firing races that must
+revoke exactly nothing, and two 600-timer batches armed against ONE absolute deadline and
+stopped/reset at that instant. ⚠ That last shape is load-bearing and fragile in a way worth
+recording: it only samples the window because the batch and the caller's sleep share an absolute
+deadline. The first draft gave each timer its own relative duration, so the caller woke milliseconds
+after the flush and the neutered control PASSED — a guard that proved nothing. Neutered controls now
+fire for all three mechanisms (drop `offered`: 315–483 of 600; drop the drain: 477 stale of 600;
+drop the `seq` check: stale ticks in all four race sections).
 
 ## `math/big` — arithmetic RUNS as of 2026-08-02; one nil-argument root stands in front of a probe
 
@@ -1979,6 +2040,9 @@ cache was first filled.
    adversarial discipline, r39-timer's zero-margin drain constraint (at Stop/Reset at most 2 ticks
    exist: 1 buffered + 1 committed-unsent) is required reading. time banks when it lands (152 + 4
    mode-0 rows + the alloc row below).
+   **IMPLEMENTED 2026-08-03 (r39b-synctimer)** — all 4 rows closed, `time` at 156/1/2 of 159; detail
+   in the `time` block's *RESOLVED — r39b lands the synchronous timer channel* sub-section. The bank
+   is now gated solely on ruling #2's arc.
 2. **time's alloc row (216 B, both halves fixable): NO disclosure — commission the CLOSURE-EMISSION
    arc.** The 88 B half = the local-function emission mode (a func literal bound to a local that is
    only ever CALLED emits a C# local function — captures without allocating; corpus-wide fidelity +

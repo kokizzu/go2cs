@@ -13,6 +13,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using @unsafe = unsafe_package;
+// For godebug_package's extension methods on ж<Setting> — asyncTimerChan() reads the same
+// asynctimerchan setting sleep.cs's syncTimer does.
+using @internal;
 
 partial class time_package
 {
@@ -99,16 +102,91 @@ partial class time_package
     // firing decision and the cancellation are `when`/`gen` transitions made under this one lock,
     // and the loser of the race is detected by the generation check (see runtimeTimer.gen).
     //
-    // ⚠ DIVERGENCE — asynchronous timer channels. Go 1.23 made a chan-based Timer/Ticker channel
-    // SYNCHRONOUS (#37196): package time still creates it with `make(chan Time, 1)` but hands the
-    // channel to the runtime via `syncTimer`, and the runtime then couples the channel's receive
-    // path to the timer so no stale value can be observed after Stop/Reset. That coupling lives
-    // inside the channel implementation, which this model does not have, so the `cp` argument is
-    // ignored and the emitted cap-1 buffered channel keeps its buffered behavior. The result is
-    // exactly Go's own documented pre-1.23 mode, still selectable upstream as
-    // GODEBUG=asynctimerchan=1: unstopped timers are not GC-recovered early, and a receive that
-    // races a Stop/Reset can observe one already-delivered value. Everything else here — the
-    // Stop/Reset return values, the tick-drop behavior, the period phase — matches the runtime.
+    // ⚠ There IS a second lock now — a per-timer `sendLock`, for chan timers only (below) — and with
+    // it one ordering rule, which holds today by construction and must keep holding:
+    //
+    //     sendLock is OUTERMOST. sendLock -> s_timerLock, and sendLock -> the channel's own lock.
+    //
+    // stop/modify take sendLock first and then s_timerLock; the service thread takes sendLock only
+    // AFTER releasing s_timerLock; the send itself and the drain take the channel lock under
+    // sendLock; and nothing in golib's channel calls out while holding the channel lock. So no cycle
+    // exists. The way to introduce one is to call Timer.Stop/Reset from inside something that
+    // already holds a channel lock — a callback invoked under it — which nothing does and nothing
+    // should.
+    //
+    // SYNCHRONOUS TIMER CHANNELS (Go 1.23, proposal #37196) — the property, and the two mechanisms
+    // that keep it. The name describes a guarantee, not a plumbing change: the channel is STILL
+    // created buffered (`make(chan Time, 1)`, so a tick can be produced with nobody receiving), and
+    // what Go 1.23 added is that its owner may take a tick BACK. The whole of it is one sentence:
+    //
+    //     A Stop or Reset prevents any tick generated before the call from being received after it.
+    //
+    // Equivalently: every value a receive on t.C observes was committed AFTER the most recent
+    // Stop/Reset — there are no stale values, and the pre-1.23 "drain t.C when Stop returns false"
+    // idiom is unnecessary. Two consequences the tests read directly: Stop/Reset report `pending`
+    // true when they REVOKE an unreceived tick, not only when the timer was still armed; and
+    // len(t.C)/cap(t.C) are 0, because a buffered value the next Stop may confiscate must not be
+    // visible (golib's IChannelTimer.HidesBuffer masks both — the buffer itself is untouched).
+    //
+    // The guarantee needs three mechanisms. Two are Go's, at the same two layers; the third exists
+    // because this model fires eagerly where Go fires lazily, and so reaches a state Go never does.
+    //
+    //  1. SEND LOCK + SEQUENCE (this file — Go's timer.sendLock / timer.seq). A firing is decided
+    //     under s_timerLock but must be delivered with it released, so the decision and the send are
+    //     separated in time and a Stop/Reset can land between them. A service pass therefore only
+    //     OFFERS a tick: it captures `seq` when it commits the firing, then takes that timer's
+    //     sendLock and re-checks it — a mismatch means a Stop/Reset intervened and the offer is
+    //     ABANDONED. Stop/Reset bump `seq` while holding sendLock, so every offer is either wholly
+    //     before them (its send completed — see the direct-hand-off note below) or wholly after
+    //     (abandoned); it cannot straddle. `seq` is deliberately NOT `gen`: `gen` is bumped by a
+    //     firing as well, which is what makes it the heap's liveness token, and a delivery check
+    //     has to survive its own firing.
+    //  2. BUFFER DRAIN (golib channel<T>.DrainBuffer — Go's runtime.timerchandrain). The seq check
+    //     stops offers not yet sent; a tick ALREADY in the buffer is revoked by emptying it. Both
+    //     Stop and Reset drain, and either reports `pending` true when it discarded something.
+    //  3. THE OFFERED FLAG (runtimeTimer.offered — no Go counterpart, and the reason is below).
+    //     Mechanisms 1 and 2 revoke correctly but cannot, between them, ANSWER correctly: in the
+    //     window mechanism 1 exists to cover, the tick is in neither place a Stop looks — `when` is
+    //     already 0 and the buffer is still empty — so Stop would revoke the tick and then report
+    //     that there had been none. `offered` is that third state, made explicit.
+    //
+    // Together those cover every place a tick can be: scheduled, committed-but-unsent, or buffered.
+    // A tick handed DIRECTLY to a parked receiver is none of them — but that receive already
+    // committed, and it committed while the sender held sendLock, hence strictly before the Stop
+    // waiting on that lock could return. The guarantee is about ticks received AFTER the call, so a
+    // direct hand-off falls inside it rather than being an exception to it.
+    //
+    // WHERE THIS DELIBERATELY DIFFERS FROM GO, and why each difference is sound here:
+    //  • Go drains in Stop AFTER releasing sendLock and in Reset BEFORE releasing it; this holds
+    //    sendLock across the drain in BOTH. Go can afford the looser order because a sync-mode chan
+    //    timer sits in a heap only while a receiver is blocked on it (timer.needsAdd requires
+    //    t.blocked > 0), so between Stop's unlock and its drain there is no machinery that could
+    //    produce a tick. This model's service thread is always live and always eager, so that
+    //    protection does not exist, and a Reset racing another goroutine's Stop could have its fresh
+    //    tick drained by the Stop. Under one lock the seq bump and the drain are a single step, which
+    //    makes the guarantee a property of one critical section rather than an argument about a
+    //    window.
+    //  • Go fires a sync-mode chan timer LAZILY (runtime.maybeRunChan, at receive time); this fires
+    //    eagerly from the service heap, as in async mode. Eager firing is NOT invisible through the
+    //    guarantee, and an earlier draft of this comment claimed it was — an adversarial review
+    //    measured the claim false. Go's `pending` can rest on `when > 0` alone because a sync-mode
+    //    chan timer nobody is receiving from is never in a heap (timer.needsAdd requires
+    //    t.blocked > 0) and therefore never fires at all; ours fires, clears `when` at commit, and
+    //    fills the buffer only later, so between those two points BOTH of Go's indicators read
+    //    "nothing pending" while a tick is very much in flight. Measured on the batch shape the
+    //    SyncTimerChannel guard now runs: hundreds of one-shots per run answered `false` where Go
+    //    answers `true` for every one — and each of those also destroyed its tick, the seq bump
+    //    doing its job. Mechanism 3 is what closes it; WITH it, Stop's answer is the same either
+    //    way. What eager firing still costs is Go 1.23's early GC of unreferenced timers: an armed
+    //    timer stays reachable from the service heap. That is pre-1.23 behavior, unchanged by this
+    //    work and unrelated to #37196.
+    //
+    // GODEBUG=asynctimerchan selects the model, exactly as upstream: 0 (the default) synchronous;
+    // 1 pre-1.23 asynchronous, where package time's own syncTimer withholds the channel so no timer
+    // channel is ever registered; 2 asynchronous semantics over a registered channel. Modes 1 and 2
+    // run the model that predates this work, unchanged — every branch above is gated on
+    // asyncTimerChan(), which reads the setting LIVE at each decision point exactly as the runtime
+    // reads debug.asynctimerchan.
     //
     // ONE FIRING PER TIMER PER PASS — why the pass reads the clock exactly once (r39, 2026-08-03).
     // The service pass samples `now` ONCE and threads that one value through the whole drain. That
@@ -164,8 +242,10 @@ partial class time_package
     // Where this model is NOT Go, so the fidelity claim above is not over-read: Go's `check` releases
     // the timer-set lock around EACH callback and re-validates the head between them, so a Stop
     // landing mid-pass cancels the callbacks after it; this drain commits the whole batch under one
-    // lock hold and then runs it, so a Stop landing between the two does not. Go also keeps one heap
-    // entry per TIMER (repositioned in place, zombies swept), where this keeps one per ARM and
+    // lock hold and then runs it. (In SYNC mode the seq check restores that cancellation for chan
+    // timers: a Stop or Reset landing after the batch was committed abandons every offer in it. In
+    // async mode it does not, which is the pre-1.23 behavior the mode selects.) Go also keeps one
+    // heap entry per TIMER (repositioned in place, zombies swept), where this keeps one per ARM and
     // reclaims a dead entry only when it reaches the head. Both predate the single clock sample and
     // are narrowed, not widened, by it — a frozen `now` commits a SMALLER batch. One consequence to
     // know: `delay` is now measured from the pass's clock, so sendTime's `Now().Add(-delay)` lands
@@ -174,16 +254,19 @@ partial class time_package
     //
     // Finally, a CONSTRAINT this establishes rather than merely satisfies. At the instant a ticker is
     // stopped or reset, at most TWO of its ticks can exist: one in the cap-1 buffer and one committed
-    // to `due` but not yet sent. That is exactly the allowance testTimerChan's drainAsync drains for
-    // a ticker, so the margin is zero. Any later change that lets two ticks for ONE timer be committed
+    // to `due` but not yet sent. In SYNC mode both are now revoked outright (the drain takes the
+    // first, the seq check the second), so the guarantee no longer rests on the count. In ASYNC mode
+    // it still does, and there the two is exactly the allowance testTimerChan's drainAsync drains for
+    // a ticker — the margin is zero. Any later change that lets two ticks for ONE timer be committed
     // before their callbacks run — batching two passes, a second service thread, moving the `due`
-    // flush inside the lock-held drain — re-breaks `noTick` without touching a line of this file.
+    // flush inside the lock-held drain — re-breaks `noTick` under asynctimerchan=1 and =2 without
+    // touching a line of this file.
 
     // Hidden runtime state for one Timer or Ticker. Go declares these fields on runtime.timeTimer,
     // AFTER the two fields package time can see (`C` and `initTimer`/`initTicker`); the comment in
     // sleep.go — "there are extra fields after the channel, reserved for the runtime and
     // inaccessible to users" — is describing exactly this record.
-    private sealed class runtimeTimer
+    private sealed class runtimeTimer : IChannelTimer
     {
         // Absolute deadline on the runtimeNano() clock, or 0 for NOT ARMED — stopped, or a one-shot
         // that already fired. Go marks that state the same way (`t.when = 0` in timer.stop and in
@@ -207,6 +290,137 @@ partial class time_package
         // entry whose generation no longer matches. This is the managed stand-in for Go's
         // timerModified/timerZombie bits, which likewise leave the stale heap entry in place.
         internal int64 gen;
+
+        // The timer's channel when this is a CHANNEL timer whose channel was handed to the runtime
+        // — Go's t.isChan plus t.hchan(). The NIL channel otherwise: for AfterFunc's func timer,
+        // which has no channel at all, and for a Timer/Ticker created under
+        // GODEBUG=asynctimerchan=1, where package time's syncTimer deliberately withholds it.
+        internal channel<Time> c;
+
+        // Go's timer.sendLock, held across the actual send AND across the seq bump in stop/modify,
+        // so a firing decided before a Stop/Reset cannot complete after it. Non-null exactly when
+        // `c` is non-nil, which is also what makes it the isChan flag (see IsChan).
+        internal object? sendLock;
+
+        // Go's timer.seq — the stale-send sequence. Bumped by stop and modify only, NEVER by a
+        // firing (that is `gen`'s job), and captured when a firing is committed to the due batch; a
+        // mismatch when the send is about to happen means a Stop or Reset landed in between, and
+        // the offer is abandoned. See SYNCHRONOUS TIMER CHANNELS above.
+        internal int64 seq;
+
+        // COMMITTED-BUT-UNSENT — the third place a tick can be, and the one Go never has.
+        //
+        // A synchronous Stop/Reset has to answer "was a tick pending?" by looking where ticks live:
+        // `when > 0` says one is still scheduled, and a non-empty buffer says one was delivered but
+        // not received. Between the service pass committing a firing and the send completing there
+        // is a moment when NEITHER is true — the pass has already cleared `when` (a one-shot) and
+        // the send has not happened — and a Stop landing there would revoke the tick (its seq bump
+        // makes the send abandon) while reporting `pending == false`. Measured before this flag
+        // existed: 26 to 132 of 500 one-shots per run, where Go reports 500 of 500.
+        //
+        // Go has no such state because a sync-mode chan timer is only in a heap while a receiver is
+        // blocked on it (timer.needsAdd requires t.blocked > 0), so an unreceived timer never fires
+        // at all and `when > 0` still answers. Eager firing is what opens the window, so eager
+        // firing is what has to close it: `offered` records that a firing is in flight, and
+        // stop/modify count it as pending exactly as they count a drained buffer.
+        //
+        // Set under s_timerLock where the firing is committed, cleared under sendLock where it
+        // resolves, and read-and-cleared by stop/modify, which hold BOTH — so every access is
+        // ordered against both writers. At most one offer per timer can be outstanding: the service
+        // thread is single and drains the whole batch before the next pass, and at most one heap
+        // entry per timer is ever live.
+        internal bool offered;
+
+        // Go's t.isChan. A channel timer is one whose channel package time handed to the runtime;
+        // sendLock is created with it and nowhere else, so the two are the same question.
+        internal bool IsChan => sendLock is not null;
+
+        // golib asks this on every cap()/len() of the channel: a SYNCHRONOUS timer channel presents
+        // as unbuffered, an asynchronous one (asynctimerchan=2 — mode 1 never registers a channel
+        // at all) reports its real buffer. Read live, exactly as runtime.chanlen/chancap do.
+        bool IChannelTimer.HidesBuffer => !asyncTimerChan();
+    }
+
+    // Go's `async := debug.asynctimerchan.Load() != 0` — the live GODEBUG selector between Go
+    // 1.23's SYNCHRONOUS timer channel (0, the default) and the pre-1.23 asynchronous one (1, and 2
+    // which keeps the channel registered but takes the async paths). Package time's own syncTimer
+    // has already resolved mode 1 at construction by withholding the channel; this is what
+    // distinguishes 0 from 2 at every decision point thereafter. The value is PARSED, not compared
+    // as a string, because that is what the runtime does — see godebugInt.
+    //
+    // COST, stated honestly: Go's counterpart is one atomic int load, and this is a $GODEBUG
+    // environment read plus two lookups (godebug.Value re-reads the variable every call BY DESIGN —
+    // the raw text is its cache-invalidation token, since there is no Setenv notification hook),
+    // measured at ~670 ns. Three orders of magnitude more expensive, so it is kept OFF the per-timer
+    // path: the service pass reads it once and threads the answer through the whole batch, and the
+    // remaining callers are Stop/Reset and len()/cap() of a timer channel — all per user operation.
+    // A func timer pays NOTHING, since syncSendLock tests IsChan first. Do not "optimize" this by
+    // caching the result across calls: the live-mode contract is the thing it exists to honor.
+    private static bool asyncTimerChan()
+    {
+        return godebugInt(asynctimerchan.Value()) != 0;
+    }
+
+    // Package time's own syncTimer test, hoisted so BOTH constructors ask it the same way: it
+    // withholds the channel from the runtime — selecting the pre-1.23 asynchronous model outright —
+    // only for the exact value "1", which is how Go spells it (`asynctimerchan.Value() == "1"`).
+    // Modes 0 and 2 both register the channel; asyncTimerChan then separates them.
+    private static bool syncTimerChanEnabled()
+    {
+        return asynctimerchan.Value() != "1"u8;
+    }
+
+    // Go's runtime.atoi32, which is how a GODEBUG value becomes the int the runtime compares
+    // against 0: an optional leading '-' followed by at least one decimal digit, and NOTHING else.
+    // parsegodebug stores the result only when that parse SUCCEEDS, so every unparseable value
+    // leaves the setting at its default 0 — "00" is 0, and so are "x", "0 " and "+0". A string
+    // compare against "0" would call all four of those asynchronous where Go calls them
+    // synchronous (measured against `go run`; garbage input only, but free to get right).
+    private static int32 godebugInt(@string value)
+    {
+        int start = value.Length > 0 && value[0] == (byte)'-' ? 1 : 0;
+
+        if (value.Length == start)
+        {
+            return 0;
+        }
+
+        // atoi32 keeps only what round-trips through int32, so the negative side reaches one
+        // further than the positive one. Spelling the bound rather than reusing int32.MaxValue is
+        // what makes "-2147483648" async here as it is in Go.
+        int64 limit = start == 1 ? -(int64)int32.MinValue : int32.MaxValue;
+        int64 magnitude = 0;
+
+        for (int i = start; i < value.Length; i++)
+        {
+            byte digit = value[i];
+
+            if (digit < (byte)'0' || digit > (byte)'9')
+            {
+                return 0;
+            }
+
+            magnitude = magnitude * 10 + (digit - (byte)'0');
+
+            if (magnitude > limit)
+            {
+                // atoi rejects an overflowing magnitude and atoi32 rejects anything outside int32 —
+                // either way parsegodebug never stores it and the setting keeps its default.
+                return 0;
+            }
+        }
+
+        return (int32)(start == 1 ? -magnitude : magnitude);
+    }
+
+    // The timer's sendLock when the SYNCHRONOUS timer-channel protocol applies right now — a
+    // channel timer, in a mode that wants the Go 1.23 semantics — and null when it does not, which
+    // is every func timer and every timer under asynctimerchan=1 or =2. One helper so stop and
+    // modify cannot drift apart. (The service pass asks the same question, but resolves the mode
+    // ONCE per pass rather than per timer — see `sync` in serviceTimers.)
+    private static object? syncSendLock(runtimeTimer timer)
+    {
+        return timer.IsChan && !asyncTimerChan() ? timer.sendLock : null;
     }
 
     // Timer/Ticker box → hidden runtime state. Go's runtime allocates the timeTimer and thus owns
@@ -253,13 +467,32 @@ partial class time_package
     // then mark it initialized.
     internal static partial ж<Timer> newTimer(int64 when, int64 period, Action<any, uintptr, int64> f, any arg, @unsafe.Pointer cp)
     {
-        // cp is the same channel as `arg`, re-typed as an unsafe.Pointer so the runtime can mark it
-        // a SYNCHRONOUS timer channel. This model reproduces the asynchronous channel behavior
-        // instead (see the divergence note above), so the pointer is unused.
+        // cp is Go's marker for a SYNCHRONOUS timer channel: package time's syncTimer hands the
+        // runtime the channel for asynctimerchan=0 and =2 and nil for =1, so its NIL-NESS — one
+        // bit — is the entire signal, and its value is never dereferenced even in Go.
+        //
+        // ⚠ That bit is NOT read from `cp` here, and the reason is worth stating rather than
+        // discovering. `cp` arrives from converted sleep.cs as
+        // `(uintptr)(~Ꮡc.Reinterpret<channel<Time>, unsafe.Pointer>())`, and `unsafe.Pointer` is a
+        // CLASS, so the reinterpret cannot alias storage: it produces a box holding a punned read
+        // OF the channel struct's contents (measured: the same value for three distinct channels,
+        // a module-range address unrelated to any of them), and the uintptr bridge then reads
+        // ж<uintptr>'s fields at offsets that belong to ChanCore<Time>. It happens to be non-zero
+        // today. That is a property of two type layouts, not a contract, and THIS change added a
+        // field to ChanCore — so a future field add or reorder could flip the bit silently, with no
+        // compile error and no crash, dropping NewTimer to the asynchronous model while NewTicker,
+        // which never goes through a pointer, stayed synchronous.
+        //
+        // So the bit is recomputed from where syncTimer itself computes it — the setting — and the
+        // CHANNEL comes from `arg`, which is the same channel Go's t.hchan() recovers from t.arg.
+        // Both constructors then agree by construction. A func timer (AfterFunc) passes an Action
+        // for arg and is never a channel timer.
         _ = cp;
 
+        channel<Time> syncChan = syncTimerChanEnabled() && arg is channel<Time> c ? c : default;
+
         ж<Timer> box = new(new Timer{ initTimer = true });
-        armNewTimer(box, when, period, f, arg);
+        armNewTimer(box, when, period, f, arg, syncChan);
         return box;
     }
 
@@ -280,13 +513,28 @@ partial class time_package
     // Installs the hidden state for a freshly allocated Timer/Ticker box and arms it. Shared with
     // the hand-owned Ticker constructor in tick.cs (Go's runtime.newTimer serves both, since
     // "Ticker and Timer have the same layout").
-    internal static void armNewTimer(object box, int64 when, int64 period, Action<any, uintptr, int64> f, any? arg)
+    /// <param name="syncChan">
+    /// The timer's channel when package time handed it to the runtime (Go's <c>syncTimer(c)</c>
+    /// result being non-nil); the NIL channel for a func timer and under
+    /// <c>GODEBUG=asynctimerchan=1</c>.
+    /// </param>
+    internal static void armNewTimer(object box, int64 when, int64 period, Action<any, uintptr, int64> f, any? arg, channel<Time> syncChan = default)
     {
         runtimeTimer timer = new()
         {
             f = f,
             arg = arg
         };
+
+        if (syncChan != nil)
+        {
+            // runtime.newTimer's order, and it matters: the channel learns its owner BEFORE the
+            // timer is armed, so no firing can reach a channel that cannot yet mask its buffer or
+            // be drained. (Go likewise sets c.timer and t.isChan before calling t.modify.)
+            timer.c = syncChan;
+            timer.sendLock = new object();
+            syncChan.AttachTimer(timer);
+        }
 
         s_timerState.Add(box, timer);
         modifyRuntimeTimer(timer, when, period);
@@ -297,17 +545,55 @@ partial class time_package
     internal static bool stopRuntimeTimer(object box)
     {
         runtimeTimer timer = runtimeTimerOf(box);
+        object? sendLock = syncSendLock(timer);
 
+        if (sendLock is null)
+        {
+            return stopLocked(timer, bumpSeq: false);
+        }
+
+        // Synchronous timer channel (runtime.timer.stop's !async && isChan path). Everything that
+        // revokes a tick happens inside ONE hold of sendLock: the seq bump abandons any offer the
+        // service pass has committed but not yet sent, and the drain discards one already in the
+        // buffer. Stop reports `pending` if EITHER the timer was still armed or a tick was revoked
+        // — which is what makes "if the program has not received from t.C already and the timer is
+        // running, Stop is guaranteed to return true" hold once the timer has fired.
+        lock (sendLock)
+        {
+            bool pending = stopLocked(timer, bumpSeq: true);
+
+            // Evaluated into its own local: `pending || Drain()` would SKIP the drain whenever the
+            // timer was still armed, leaving exactly the stale tick this exists to remove.
+            bool revoked = timer.c.DrainBuffer();
+            return pending || revoked;
+        }
+    }
+
+    // The heap-side half of a stop: clear `when` and cancel any queued firing. Caller holds
+    // sendLock when `bumpSeq` is set (Go bumps t.seq under both t.mu and t.sendLock).
+    private static bool stopLocked(runtimeTimer timer, bool bumpSeq)
+    {
         lock (s_timerLock)
         {
-            bool pending = timer.when > 0;
+            // `offered` is the committed-but-unsent tick this Stop is about to revoke by bumping
+            // seq; counting it is what keeps `pending` truthful in that window (see
+            // runtimeTimer.offered). Only the synchronous protocol sets it, so the async path
+            // reads a field that is always false.
+            bool pending = timer.when > 0 || timer.offered;
+            timer.offered = false;
             timer.when = 0;
             // Cancels any firing already queued for this timer (see runtimeTimer.gen). Doing it
             // under the same lock the service thread validates entries under is what makes the
             // stop-vs-fire race safe in both directions: either the service thread has already
-            // taken the callback (and `when` is 0, so `pending` correctly reports false), or this
+            // taken the callback (and `when` is 0, so `offered` reports it instead), or this
             // generation bump invalidates its queued entry and the callback never runs.
             timer.gen++;
+
+            if (bumpSeq)
+            {
+                timer.seq++;
+            }
+
             return pending;
         }
     }
@@ -334,11 +620,43 @@ partial class time_package
             throw panic("timer period must be non-negative");
         }
 
+        object? sendLock = syncSendLock(timer);
+
+        if (sendLock is null)
+        {
+            return modifyLocked(timer, when, period, bumpSeq: false);
+        }
+
+        // Synchronous timer channel (runtime.timer.modify's !async && isChan path) — the same one
+        // critical section as stop above, and here the lock is load-bearing in a second way: the
+        // re-arm can make the timer due IMMEDIATELY, so without holding sendLock across the drain a
+        // fresh, legitimate tick could be produced and then discarded by this very drain.
+        lock (sendLock)
+        {
+            bool pending = modifyLocked(timer, when, period, bumpSeq: true);
+            bool revoked = timer.c.DrainBuffer();
+            return pending || revoked;
+        }
+    }
+
+    // The heap-side half of a modify: set the period and re-arm. Caller holds sendLock when
+    // `bumpSeq` is set (Go bumps t.seq under both t.mu and t.sendLock).
+    private static bool modifyLocked(runtimeTimer timer, int64 when, int64 period, bool bumpSeq)
+    {
         lock (s_timerLock)
         {
-            bool pending = timer.when > 0;
+            // Same third state as stop's — a firing committed but not yet sent, which this Reset
+            // revokes via the seq bump below and must therefore report as pending.
+            bool pending = timer.when > 0 || timer.offered;
+            timer.offered = false;
             timer.period = period;
             armLocked(timer, when);
+
+            if (bumpSeq)
+            {
+                timer.seq++;
+            }
+
             return pending;
         }
     }
@@ -390,13 +708,22 @@ partial class time_package
     // (or for an arm to interrupt the wait). Mirrors the runtime's timers.run/timer.unlockAndRun.
     private static void serviceTimers()
     {
-        List<(Action<any, uintptr, int64> f, any? arg, int64 delay)> due = new();
+        List<(runtimeTimer timer, Action<any, uintptr, int64> f, any? arg, int64 delay, int64 seq)> due = new();
 
         while (true)
         {
             // 0 == nothing armed; wait for an arm instead of a deadline.
             int64 deadline = 0;
             due.Clear();
+
+            // Sampled ONCE for the whole pass, for the same reason `now` is: the commit below and
+            // the sends after it are two halves of ONE batched unlockAndRun, and they must agree
+            // about which model is in force or a firing could be marked as an offer and then
+            // delivered without the protocol that makes an offer revocable (or the reverse). Go
+            // reads the setting per unlockAndRun, i.e. per firing, which is the same granularity
+            // when a pass carries one timer and a strictly safer one when it carries several. It
+            // also keeps the read off the per-timer path — see the cost note on asyncTimerChan.
+            bool sync = !asyncTimerChan();
 
             lock (s_timerLock)
             {
@@ -429,9 +756,19 @@ partial class time_package
                     // run the callback only after the lock is released. `delay` is how LATE the
                     // firing is (Go's `delay := now - t.when`, always >= 0); sendTime subtracts it
                     // to send the time the tick was scheduled for rather than the time it ran.
+                    // `seq` is captured HERE, with the firing decision, exactly as Go's
+                    // unlockAndRun copies t.seq while still holding t.mu — it is what the send
+                    // below re-checks to discover a Stop/Reset that landed in between.
                     int64 delay = now - when;
-                    due.Add((entry.timer.f, entry.timer.arg, delay));
+                    due.Add((entry.timer, entry.timer.f, entry.timer.arg, delay, entry.timer.seq));
                     entry.timer.gen++;
+
+                    // From here until the send resolves, this timer has a tick that exists but is
+                    // in NEITHER place a Stop can look — `when` is about to be cleared and the
+                    // buffer is still empty. `offered` is that third state, and recording it is
+                    // what lets Stop/Reset answer `pending` correctly for a firing they are about
+                    // to revoke. See COMMITTED-BUT-UNSENT on runtimeTimer.offered.
+                    entry.timer.offered = sync && entry.timer.IsChan;
 
                     if (entry.timer.period > 0)
                     {
@@ -459,12 +796,37 @@ partial class time_package
                 }
             }
 
-            foreach ((Action<any, uintptr, int64> f, any? arg, int64 delay) in due)
+            foreach ((runtimeTimer timer, Action<any, uintptr, int64> f, any? arg, int64 delay, int64 seq) in due)
             {
-                // `seq` is the runtime's stale-send sequence for SYNCHRONOUS timer channels; the
-                // asynchronous model reproduced here never consults it, and neither sendTime nor
-                // goFunc reads the parameter.
-                f(arg!, default, delay);
+                if (!sync || !timer.IsChan)
+                {
+                    // A func timer, or an asynchronous timer channel: the firing decision IS the
+                    // delivery, with nothing able to take it back. (Neither sendTime nor goFunc
+                    // reads the seq parameter; it is passed for signature fidelity.)
+                    f(arg!, (uintptr)seq, delay);
+                    continue;
+                }
+
+                // runtime.timer.unlockAndRun's send-lock protocol: this firing was decided under
+                // s_timerLock, which is long since released, so it is only an OFFER. Take the send
+                // lock — which also blocks a Stop/Reset from starting mid-send — and re-check the
+                // sequence. A mismatch means one landed since the decision, and the offer is
+                // abandoned; Go expresses the same thing by replacing f with a no-op.
+                lock (timer.sendLock!)
+                {
+                    // Resolved either way, and cleared BEFORE the send so no window exists in which
+                    // the value is both in the buffer and still claimed as an outstanding offer —
+                    // that would make a Stop report `pending` for one tick twice over. Both writers
+                    // of this field hold a lock stop/modify hold: the set above is under
+                    // s_timerLock, this clear is under sendLock, and stop/modify hold both.
+                    bool live = timer.seq == seq;
+                    timer.offered = false;
+
+                    if (live)
+                    {
+                        f(arg!, (uintptr)seq, delay);
+                    }
+                }
             }
 
             if (deadline == 0)
