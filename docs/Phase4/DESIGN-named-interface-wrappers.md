@@ -236,6 +236,19 @@ set; stage 5 deleted the machinery and the flag. What is worth carrying forward:
    `-stdlib` form, so the whole-corpus rebank did not level them. Restored, not swallowed. Orthogonal to
    this arc; owed to whoever owns the rebank.
 
+   **Revisited by the r40 rebank (2026-08-04) — read this before re-deriving it.** The six files no
+   longer rest on the `-tests` side: a seeded `-stdlib` reconvert now reproduces the committed tree
+   exactly (four byte-identical; `bytes/buffer.cs` and `strings/replace.cs` differed only by that
+   rebank's own deref-accessor drift). So the rebank had nothing to level here, and the corpus rests
+   on the `-stdlib` form — the correct side for a corpus.
+   **The ASYMMETRY ITSELF IS UNCHANGED**, and it is easy to misread the above as its disappearance:
+   a `-tests` run still emits `using Δio = io_package;` where `-stdlib` emits `using io = io_package;`,
+   so every validated-sweep run re-flips these files and they must still be RESTORED, never banked.
+   What a rebank owner owes here is therefore not a one-off cleanup but the standing restore — until
+   the two emissions agree on one alias for the same import in the same file. (Searching the committed
+   tree for `Δio` will NOT find these six and is not evidence either way: the marker only exists
+   between a `-tests` run and its restore.)
+
 Gates as run, **twice** (once per stage): converter `go test ./...` ok; CNR **byte-identical** at stage 5
 (stage 4: 12 changed + 1 golden, each classified); FULL behavioral suite **PASS — 491/491 transpile +
 compile + target, 461 output-compared, 0 failed**; seeded 305-package reconvert with the path-precise

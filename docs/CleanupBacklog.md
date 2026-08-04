@@ -115,17 +115,30 @@
 
 ## Repo hygiene
 
-12. **The whole-corpus rebank** — the umbrella item: accumulated intended drift
-    (satisfies-not-witnesses records, ptrset redirections, os/time/nilrecv footprints, the Δio
-    `-tests`-closure family, stale banked test sources incl. `binary_test.cs` 78/78 and csv's).
-    ONE deliberate regen + bank + full sweep, its own session.
-    **Measured 2026-08-03 (r39-nilcomplex): 695 files carry a real content diff** — a seeded
-    whole-stdlib reconvert overlaid onto the committed tree, `git diff --numstat` non-zero, and
-    zero CRLF phantoms among them. 145 of those were that arc's own change, so ~550 are the
-    pre-existing backlog, and the single dominant shape is the entry-alias widening `.Value` →
-    `.DerefOrNull()` (r36). The reconverted tree builds 304/304 with 0 errors, so this is a bank,
-    not a repair. Treat that as the item's current size and re-measure at bank time — the earlier
-    "~119+" predates several arcs.
+12. ~~**The whole-corpus rebank**~~ — **DONE 2026-08-04 (r40-rebank).** The umbrella item:
+    accumulated intended drift (satisfies-not-witnesses records, ptrset redirections,
+    os/time/nilrecv footprints, the Δio `-tests`-closure family, stale banked test sources incl.
+    `binary_test.cs` 78/78 and csv's), landed as ONE deliberate regen + bank + full sweep in its
+    own session. The forecast held: **699 `.cs` carried a genuine drift family**, against the 695
+    measured 2026-08-03 by r39-nilcomplex — the difference is the arcs that landed in between.
+    **1,316 files banked in all**, across sixteen named families with **zero unclassified**:
+    deref-accessor 592, dead-param-alias 541, GoBigConst 304, README-badge 298, typed-nil 145,
+    local-func 90, GoImplement 44, value-adapter 40, implicit-conv 23, closure-box 22,
+    import-alias 20, wrapper-qualification 17, pointer-reinterpret 15, named-const-cast 12,
+    fallthrough 12, alias-pointer 10. Two of those are the rebank's own corpus-wide relabels (the
+    `GoUntyped` → `GoBigConst` rename and the `Go_tests` → `Tests` badge), which is why the total
+    exceeds the drift-only forecast. The r39c pointer peephole showed no new drift, as predicted.
+    Gates: hand-owned marker gate 40 marked / 0 clobbered; `go2cs-stdlib.slnx` 304 projects,
+    0 errors; CNR byte-identical across 569 behavioral packages; full suite 544/544 with 514
+    output-compared, 0 failed.
+    Two findings worth carrying forward. (a) The `-tests`-closure family of
+    DESIGN-named-interface-wrappers §7 contributed nothing to the bank, but is **NOT** discharged:
+    the committed baseline has simply moved to the `-stdlib` side of the asymmetry, so a `-stdlib`
+    reconvert reproduces it (four of the six byte-identical). A `-tests` run still emits
+    `using Δio = io_package;` where `-stdlib` emits `using io = io_package;`, and the sweep still
+    re-flips it on every roster package, where it is restored. The §7 debt is unchanged in
+    substance — only which side the tree rests on between runs. (b) The 16 committed `.cs.auto`
+    review siblings turned out to be **tracked, with 11 stale**, which is now item 18.
 13. **`C:\go2cs-build` debris** — ~30 stale scratch/probe/recon directories from r26–r34 (`ab*`,
     `fmtcheck*`, `r3x-*` leftovers, `scratch*`, `splitmain`, …) plus the landed chip worktrees.
     Delete after confirming each is branch-landed.
@@ -157,6 +170,17 @@
     `DrainBuffer` deliberately does not service parked senders (matching Go's `timerchandrain`), a
     second such send parks forever. Reachable only from source Go itself rejects, so this is the
     general directional-channel-type fidelity gap, recorded at the place it now bites.
+18. **The 16 committed `.cs.auto` review siblings are TRACKED, and 11 are stale.** Found by the
+    r40 rebank. A `.cs.auto` is the converter's "here is what I would emit today" sibling dropped
+    beside a `[module: GoManualConversion]` file, and its whole value is being CURRENT — a stale
+    one misinforms exactly the reviewer deciding whether the hand-own is still needed. They drift
+    because the overlay rule excludes `*.cs.auto`, and that exclusion is not incidental: it is what
+    keeps a regen from clobbering the hand-owned `.cs` beside it. So the rebank deliberately did
+    **not** smuggle them into its bank. Levelling them is a self-contained commit: reconvert into a
+    seeded temp root (the rebank's own ritual), copy only the `*.cs.auto`, confirm no `.cs` moves.
+    Stale as of r40: `crypto/subtle/xor_generic`, `hash/crc32/crc32_amd64`, `runtime/mfinal`,
+    `sync/{mutex,pool,poolqueue,rwmutex,waitgroup}`, `syscall/{dll_windows,exec_windows}`,
+    `time/tick`.
 
 ## Recorded residuals (no work owed unless the surrounding facts change)
 
@@ -166,8 +190,12 @@
     named-result boxes, `heap(out …)` and the reflection bridge's field paths, where the box is
     non-nil by construction. Nothing is owed unless one of those sites ever becomes nil-reachable —
     recorded so the asymmetry is deliberate rather than forgotten.
-15. **Seven banked `DerefOrNil()` sites survive in committed `*_test.cs`** (`container/ring`,
-    `go/token`, `index/suffixarray`, `testing/quick`). A `-stdlib` reconvert does not re-emit
-    banked test sources, so they still carry the retired accessor; they re-emit as `DerefOrNull()`
-    the next time each package's `-tests` pipeline runs. Levels naturally with the whole-corpus
-    rebank (item 11) or with each package's next validation pass — no separate work.
+15. ~~**Seven banked `DerefOrNil()` sites survive in committed `*_test.cs`**~~ — **LEVELLED
+    2026-08-04 (r40-rebank, commit C), exactly as this item predicted and with no separate work.**
+    (`container/ring`, `go/token`, `index/suffixarray`, `testing/quick`.) The rebank's 73-package
+    sweep ran every one of those packages' `-tests` pipelines, and each site re-emitted as
+    `DerefOrNull()`. Verified: zero `DerefOrNil` sites remain in any committed `*_test.cs`.
+    Original text, for the record: *"A `-stdlib` reconvert does not re-emit banked test sources, so
+    they still carry the retired accessor; they re-emit as `DerefOrNull()` the next time each
+    package's `-tests` pipeline runs. Levels naturally with the whole-corpus rebank or with each
+    package's next validation pass — no separate work."*
