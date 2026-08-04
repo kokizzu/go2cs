@@ -10,18 +10,15 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using abiꓸArrayType = go.@internal.abi_package.ΔArrayType;
-global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
-global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
-global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
-global using abiꓸKind = go.@internal.abi_package.ΔKind;
-global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
-global using abiꓸName = go.@internal.abi_package.ΔName;
-global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
-using static go.@internal.concurrent_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -51,10 +48,11 @@ using static go.@internal.concurrent_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-namespace go.@internal;
+namespace go;
 
-[GoPackage("concurrent")]
-public static partial class concurrent_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -62,14 +60,12 @@ public static partial class concurrent_package
     // the types - public for a Go-exported name, internal otherwise - are defined
     // via declarations below.
 
-    // hashtriemap.cs is a whole-file hand-own ([module: GoManualConversion]) and it is this
-    // package's ONLY Go file, so the converter's driver skips the package outright — this file,
-    // the .csproj and README.md are hand-owned by consequence and never re-emitted (the position
-    // internal/godebug is already in). The trie's internal node types (node, entry, indirect) have
-    // no declaration to carry here any more: the native implementation keeps its entries in a
-    // ConcurrentDictionary and has no nodes.
-
     // <TypeAccessibility>
-    public partial struct HashTrieMap<K, V> {}
+    internal partial struct outer {}
+    public partial struct NA {}
+    public partial struct NB {}
+    public partial struct NI {}
+    public partial struct NS {}
+    public partial struct inner {}
     // </TypeAccessibility>
 }

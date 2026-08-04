@@ -11584,6 +11584,74 @@ test passed VACUOUSLY, executing none of its 320 golden comparisons); `time` goe
 pass of 159 as the two increment-6 JSON rows re-land. Recorded next gaps of this shape: `MakeFunc`,
 variadic `Call`/`CallSlice`, and `reflectlite`'s `rtype.Name`.
 
+**A ZERO test is a descriptor read too, and this one had degraded to a CONSTANT — `Value.IsZero`,
+`Value.Grow`, and the named-string `Len` (2026-08-03).** Go's `IsZero` is three reads over flat
+memory: an `Equal` function pointer compared against the shared `zeroVal` buffer, a
+`TFlagRegularMemory` all-bits-zero scan, and — when the value is not `flagIndir` — plain
+`v.ptr == nil`. A synthesized descriptor populates none of them, and the bridge never populates
+`v.ptr` or `flagIndir` at all, so the Array and Struct arms both fell straight to that last test and
+answered **true for every array and every struct, whatever it held**. Measured against `go run`
+before the fix: `[2]uint8{1,2}`, `NA{1,2}`, `inner{N:1}`, `outer{P:&n}` — every one of them
+`IsZero=true` in C# and `false` in Go. This is the `""`-type-name and `NumMethod`-0 family again,
+and the worst-behaved member of it so far: `true` is the correct answer for the zero value of the
+same type, so nothing faults and nothing looks wrong.
+
+A **fourth** read failed independently and had to land with it. `IsZero`'s String arm is
+`v.Len() == 0`, and `Len` answered through the golib container interfaces — a named slice is an
+`IArray`, a named map an `IMap` — but a `type NS string` wrapper implements none of them, so it fell
+to the `0` default. Every non-empty named string therefore reported itself both length-0 and zero.
+`String()` had always unwrapped such a wrapper; `Len` now does the same, gated on Kind String.
+That pairing is the increment-6 rule in its second form: **`IsZero`'s String arm is a GATE on `Len`,
+so the gate and the read behind it are one increment** — fixing the arms without `Len` would have
+left named strings silently zero, and fixing `Len` without the arms would have changed nothing.
+
+The managed `IsZero` is Go's own recursive definition with the memory shortcuts *removed*: a
+composite is zero exactly when every element (Array) or field (Struct) is, scalars test against
+their zero, and the nilable kinds are `IsNil`. That is precisely the walk the shortcuts stand in for
+— Go falls back to it itself when a type is not comparable and not regular-memory — so it needs no
+descriptor state beyond `Index`/`Field`/`NumField`, which the bridge already answers. Go's blank-field
+skip (`Name != "_"`) is preserved.
+
+`Value.Grow` shares the root and the remedy shape: it reads a `*unsafeheader.Slice` off the same
+never-populated `v.ptr`, so it **nil-deref'd for every caller** — `reflect.ValueOf(&s).Elem().Grow(1)`
+on a `[]byte` prints `4 8` in Go and panicked here. It is now an ordinary managed reallocation
+(golib `GoReflect.GrowSlice`) written back through the aliased box exactly as `SetLen` does, coerced
+into a named slice wrapper's slot through the single convertibility relation. Two details are
+load-bearing: growth **within** the existing capacity writes nothing at all, because Go reaches
+`growslice` only past the capacity and a spurious write would detach any other view still sharing the
+backing store; and the capacity landed on is unspecified in Go (its `growslice` rounds to a size
+class), so only `len+n` is guaranteed and the guard test asserts `cap >= n`, never an exact figure.
+
+Guard: `Tests/Behavioral/ReflectZeroAndGrow` pins all four against `go run` — raw and named strings,
+raw and named arrays (zero and non-zero, including an array OF named strings), the nil-vs-empty
+distinction for slices and maps, structs made non-zero through a nested named-string field alone,
+zeroness reached through an interface, and Grow from a nil slice / within capacity / past it /
+with `Grow(0)`. Demonstrated consumer: `encoding/gob`, whose `gobEncodeOpFor` skips a field on
+`!state.sendZero && v.IsZero()` — so the encoder was omitting non-zero named-string and array fields
+from the wire entirely, visible as `v = "", want "forty-two"` on the value fields while the pointer
+fields of the same type passed.
+
+**Rooted and deliberately NOT landed: `MapType().Hasher` and `Key.Equal` cannot be honored at all.**
+The remaining `unique`/`net` wall is a map descriptor whose `Hasher`/`Key`/`Elem` are unpopulated, so
+`concurrent.NewHashTrieMap`'s delegate construction fails on the first field it touches. Populating
+them looks like the same shape as the reads above and **is not**, because the contract differs in
+kind: `Hasher(unsafe.Pointer, uintptr) uintptr` must hash *the value at an address*, and the address
+the call site produces cannot name a managed value. Measured, three ways: two boxes holding equal
+`@string` values necessarily have **different** addresses (so an address-derived hash can never make
+`unique.Make("hello")` agree with itself — the package's entire purpose); a box whose pointee
+contains a reference has no pinnable slot and its address **moved across a forced GC**; and the
+`unsafe.Pointer` handed to the delegate carries no link back to its source box by construction, its
+constructor taking a `uintptr`. The key and elem *types* ARE recoverable from the descriptor's
+carried `System.Type` — but populating those alone would be actively worse than the present failure:
+`Key.Equal` is the comparability SIGNAL (a pointer-identity compare, not a value compare), so a
+half-populated descriptor turns a loud construction failure into a map that silently mislays every
+key. That is the increment-6 lesson inverted — **a descriptor field whose read cannot be honored must
+not be populated to look truthful** — and it is why this row is handed on rooted rather than half
+landed. The remedy is one layer down and outside this arc's files: `internal/concurrent.HashTrieMap`
+is a managed-referent raw-metal case whose *contract* (a concurrent map over comparable `K`) the CLR
+answers natively while its *mechanism* (hash the bytes at an address) it cannot, so it wants a
+hand-owned `_impl.cs` on the `sync.Mutex` precedent.
+
 **Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
 programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
 internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token
@@ -11784,6 +11852,111 @@ internal static any clone(any m) {
 ```
 
 `builtin.mapclone(any m)` is Go's `runtime.mapclone` at golib level: it recovers the boxed map's concrete key/value types through `IMap.CloneMap()` (a default interface method on `IMap<TKey, TValue>`, so both the concrete `map<K, V>` and the generated named-map wrappers get it with no source-generator change — no reflection) and returns a fresh `map<K, V>` populated from the source's entries. The clone's backing `Dictionary` is **independent** — Go's shallow clone (keys/values copied by ordinary assignment), so mutating the clone never touches the original — and a nil map clones to nil. This is what carries the `maps` package to full Phase-4 validation (14/14 tests vs `go test`; the 6 Clone/Copy/DeleteFunc tests previously threw). Extend `linknameForwardBuiltins` when another linkname intrinsic gains a golib builtin. Guarded by the `MapCloneLinkname` behavioral test — the exact `//go:linkname clone maps.clone` shape in a `main` package, cloning a `map[string]int`, mutating the clone (overwrite/add/delete) and asserting the original is unchanged, output-compared vs `go run`; proven to emit the throwing stub against the un-fixed converter.
+
+### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
+
+`internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —
+so this one type sits in front of `unique`'s entire suite, `net`'s last package-initializer root and
+`encoding/gob`'s `TestNetIP`. Go 1.23's implementation is a lock-free hash-trie, and **every bit of its
+behavior comes from one runtime descriptor read**:
+
+```go
+func NewHashTrieMap[K, V comparable]() *HashTrieMap[K, V] {
+	var m map[K]V
+	mapType := abi.TypeOf(m).MapType()
+	ht := &HashTrieMap[K, V]{
+		root: newIndirectNode[K, V](nil), keyHash: mapType.Hasher,
+		keyEqual: mapType.Key.Equal, valEqual: mapType.Elem.Equal,
+		seed: uintptr(rand.Uint64()),
+	}
+	return ht
+}
+```
+
+`Hasher` is a raw function pointer into the hashing machinery the compiler emits for `map[K]V`;
+`Key.Equal`/`Elem.Equal` are its matching bit-compare thunks. All three take `unsafe.Pointer`s and mean
+*"hash / compare the bytes AT this address"* — and **the managed reflection bridge cannot honor that
+contract**. An address in the CLR names no value: two boxes holding equal strings sit at different
+addresses, and a pointee containing references moves across a GC. An address-derived hash would therefore
+stop `unique.Make("hello")` agreeing with itself, which is the exact inverse of the package's purpose.
+
+Populating `Hasher` anyway — with anything plausible — is barred by the **inverse of the atomic rule**: a
+descriptor field whose read cannot be honored must stay EMPTY, because a half-populated descriptor converts
+a loud construction failure into a map that is silently wrong. (Reflection increment 8 rooted the row there
+and reported it *not landable in the bridge*.) So the literal conversion compiles and can never run:
+`NewHashTrieMap` threw inside the package initializer of every `unique` consumer, taking `net/netip` and
+every dependent with it.
+
+**The ruling (2026-08-03) is the `sync` precedent applied one level up: hand-own the whole file, and keep
+the SEMANTICS rather than the mechanism.** `sync`'s Mutex/RWMutex/WaitGroup are reimplemented on
+`SemaphoreSlim`/monitors because Go's sleeping semaphore is co-designed with the state machine and cannot be
+emulated; here the coupling is to the descriptor surface instead of to the scheduler, but the fork is the
+same one — the raw-metal arm of the S1 fork (see
+[`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md)). `src/core/internal/concurrent/hashtriemap.cs`
+carries `[module: go.GoManualConversion]` and contains **no trie at all**. The exported API and its
+concurrency contract are preserved exactly; the store is a `ConcurrentDictionary`, whose guarantees line up
+member for member:
+
+| Go member | Managed mechanism | Semantic note |
+|:--|:--|:--|
+| `NewHashTrieMap[K, V]()` | `Ꮡ(new HashTrieMap<K, V>(store: new mapStore<K, V>()))` | the store is a CLASS, so a by-value copy of the struct shares one map — exactly what Go's `root *indirect[K,V]` pointer gives |
+| `(*HashTrieMap).Load(key)` | `TryGetValue`; miss returns `(*new(V), false)` as `@new<V>().ValueSlot` | `[GoRecv]`, so the RecvGenerator still mints the `ж<…>` overload `unique` binds |
+| `(*HashTrieMap).LoadOrStore(key, value)` | `TryGetValue` → `TryAdd` retry loop | exactly one caller of a racing set observes `loaded == false`; `GetOrAdd` is a single call but cannot report WHICH outcome occurred, and `unique.Make` depends on that answer |
+| `(*HashTrieMap).CompareAndDelete(key, old)` | `ContainsKey` gate → `TryRemove(KeyValuePair)` | the pair overload is an atomic compare-and-remove under `EqualityComparer<V>.Default`; the gate reproduces Go's order (a missing key returns false *without* comparing values) |
+| `(*HashTrieMap).All()` | closure over the store's enumerator | ConcurrentDictionary's enumeration is **weakly consistent** — never throws on concurrent mutation, visits each live key once, promises no order — which is Go's documented contract verbatim, and is what lets `unique`'s cleanup pass `CompareAndDelete` while it walks |
+| zero `HashTrieMap` | `storeOf` lazily installs the store (`Interlocked.CompareExchange`) | Go 1.23's zero value is unusable (nil `root`/`keyHash`); nothing depends on that panic, and the same `gateOf` idiom `sync.Mutex` uses removes a whole class of null dereference |
+| `keyHash` + `keyEqual` | `EqualityComparer<K>.Default` | see below — verified to BE Go's `==` for every key shape the corpus interns |
+| `valEqual` | `EqualityComparer<V>.Default`, guarded by `mustBeComparable` | Go's value comparison panics for an INTERFACE `V` holding an uncomparable dynamic type (`V comparable` admits `any` since Go 1.20, moving the check to run time); the guard mirrors that panic instead of letting the comparer answer a question Go refuses to. Inert for a non-interface `V`, resolved once per instantiation |
+
+**The equality/hash bridge is the correctness question, and it was measured, not reasoned.** Go hashes and
+compares keys by K's own `==`; the managed implementation uses `EqualityComparer<K>.Default`. For every key
+shape the converted corpus actually interns these agree:
+
+* **`ж<T>`** (`unique`'s own `map[*abi.Type]any`) implements `IEquatable<ж<T>>` as pointer IDENTITY with a
+  matching identity hash, and `abi.TypeFor<T>()` interns one descriptor box per `System.Type` — so one Go
+  type always presents one key, and a second `TypeFor` call finds the first call's entry.
+* **A `[GoType]` struct** — `net/netip`'s `addrDetail{isV6 bool; zoneV6 string}`, the shape `unique`
+  actually interns — carries a generated field-wise `Equals` over `==` plus a `HashCode.Combine` of the
+  same fields, which is Go's struct `==` exactly. It does **not** implement `IEquatable<T>`, so
+  `EqualityComparer<T>.Default` routes through the `object` override; that lands on the same comparison, at
+  the cost of one box per lookup.
+* **`@string`** compares and hashes by CONTENT, as Go's string `==` does — verified with two keys built
+  from distinct backing storage.
+
+**Two further walls sit BEHIND this one**, both uncovered by making `unique` reachable for the first time
+and both outside this file:
+
+1. **A cross-assembly `//go:linkname` PUSH never links.** The forwarder machinery above handles the PULL
+   direction (a bodyless declaration naming another package's symbol). `runtime` pushes the other way —
+   `//go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup`
+   (`mgc.go`), `//go:linkname internal_weak_runtime_registerWeakPointer internal/weak.runtime_registerWeakPointer`
+   (`mheap.go`) — and the *consuming* package's bodyless declaration is left for the
+   [`PartialStubGenerator`](#source-generators) to fill with `NotImplementedException`. `unique.Make` hits
+   the first on its `setupMake.Do(registerCleanup)` line and the second inside `weak.Make`, so
+   `net/netip`'s initializer still throws — one frame past `NewHashTrieMap` instead of inside it.
+2. **`abi.TypeFor<T>()` is silently WRONG for an interface `T`.** Its non-interface branch returns an
+   interned descriptor; the interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for
+   `Kind == Pointer` reinterprets the descriptor as a `PtrType` (`Ꮡt.Reinterpret<Type, PtrType>()`) and
+   reads `.Elem` — which under the managed layout lands on the descriptor's `Equal` field. `TypeFor<any>()`
+   and `TypeFor<error>()` therefore return a `System.Func<unsafe.Pointer, unsafe.Pointer, bool>`, not a
+   `ж<abi.Type>` at all. Shared generics let that object be *stored* into
+   `ConcurrentDictionary<ж<abi.Type>, any>` without a cast check, and the first real key comparison then
+   dispatches `IEquatable<ж<abi.Type>>.Equals` on a delegate → `EntryPointNotFoundException`. The old trie
+   never dispatched anything on a key's runtime type (it compared raw addresses through `keyEqual`), which
+   is why a corpus-wide bridge defect could hide behind it. **Not hardened against here on purpose** —
+   tolerating a type-unsafe key would be the same "plausible but fake" move the inverse-atomic rule
+   forbids; the loud failure is the correct behavior and the fix belongs in `abi`.
+
+**Guarding measurement.** `encoding/gob` holds at **95 of 106** and `TestNetIP`'s root moves from
+`NewHashTrieMap` → `ArgumentException: Delegate to an instance method cannot have null 'this'` to the
+linkname stub above (no row regresses; `TestNetIP` is the only gob row whose closure reaches `unique` at
+all). `unique` itself goes **0 → 1 of 19** and, more usefully, stops being a one-root wall: its 15 identical
+`TypeInitializationException` rows resolve into five distinct downstream roots (the two linkname pushes, a
+`GCHandle: Object contains references` on `abi.Escape`, an `IndexOutOfRangeException` in `makeCloneSeq`'s
+`slice<T>` enumeration, and the `TypeFor` hole above). The hand-owned file is also its package's only Go
+file, which makes `internal/concurrent` fully hand-owned — see
+[`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md) for what that does to the package's
+`.csproj`/`package_info.cs`/`README.md`, and for the seeded-reconvert proof in both directions.
 
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)
 

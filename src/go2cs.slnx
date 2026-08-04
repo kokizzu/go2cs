@@ -528,6 +528,7 @@
     <Project Path="Tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
     <Project Path="Tests/Behavioral/ReflectMapRangeNilKey/ReflectMapRangeNilKey.csproj" />
     <Project Path="Tests/Behavioral/ReflectMethodTableWalk/ReflectMethodTableWalk.csproj" />
+    <Project Path="Tests/Behavioral/ReflectZeroAndGrow/ReflectZeroAndGrow.csproj" />
     <Project Path="Tests/Behavioral/ReflectliteTypeName/ReflectliteTypeName.csproj" />
     <Project Path="Tests/Behavioral/ReinterpretPinLifetime/ReinterpretPinLifetime.csproj" />
     <Project Path="Tests/Behavioral/ReinterpretPointerLifetime/ReinterpretPointerLifetime.csproj" />

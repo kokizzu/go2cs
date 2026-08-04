@@ -209,8 +209,18 @@ public static bool IsNil(this ΔValue v) {
 }
 
 // Len returns v's length (v must be an Array, Chan, Map, Slice, String, or pointer-to-Array).
+// A NAMED string unwraps to the string it wraps, exactly as String() does: every other named
+// container answers through the golib interface its wrapper implements (a named slice is an
+// IArray, a named map an IMap), but a `type NS string` wrapper implements none of them, so
+// without this arm it fell to the 0 default — SILENTLY, because 0 is a real length. IsZero's
+// String arm is `Len() == 0`, so that made every non-empty named string report itself ZERO,
+// and encoding/gob then omitted such a field from the wire entirely.
 public static nint Len(this ΔValue v) {
-    return v.live switch {
+    object? cur = v.live;
+    if (cur is not null && cur is not @string && v.kind() == ΔString && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
+        cur = unwrapped;
+    }
+    return cur switch {
         @string s => s.Length,
         IArray a => a.Length,
         IMap m => m.Length,
@@ -316,6 +326,99 @@ public static void SetLen(this ΔValue v, nint n) {
         throw panic("reflect: SetLen window is not assignable to the slice slot");
     }
     GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
+// Grow increases v's capacity, if necessary, to guarantee space for another n elements (v must
+// be an addressable Slice). The LENGTH is unchanged and the contents are preserved — Go's
+// growslice contract, which encoding/gob's decUint8Slice and decodeArrayHelper lean on to
+// allocate incrementally once a decoded slice passes internal/saferio's 10 MiB chunk.
+//
+// The auto form reads a *unsafeheader.Slice off the never-populated v.ptr, so it nil-deref'd for
+// every caller. Here the reallocation is an ordinary managed one, written back through the
+// aliased box like SetLen — and, like SetLen, coerced into a NAMED slice wrapper's slot through
+// the single convertibility relation. Growing WITHIN the existing capacity writes nothing at
+// all: Go reallocates only past the capacity, and a spurious write would detach any other view
+// still sharing the backing store.
+public static void Grow(this ΔValue v, nint n) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    if (n < 0) {
+        throw panic("reflect.Value.Grow: negative len");
+    }
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(slotType);
+    if (slotType is null || elemType is null || v.addrBox is null) {
+        throw panic("reflect: Grow using unaddressable value");
+    }
+    object? live = v.live;
+    object? grown = GoReflect.GrowSlice(live, elemType, n);
+    if (ReferenceEquals(grown, live)) {
+        return;
+    }
+    if (grown is null || !GoReflect.TryConvertTo(grown, slotType, out object? converted)) {
+        throw panic("reflect: Grow result is not assignable to the slice slot");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
+// IsZero reports whether v is the zero value for its type.
+//
+// Go's own form is three DESCRIPTOR reads over flat memory — an `Equal` function pointer against
+// the shared zeroVal buffer, a TFlagRegularMemory all-bits-zero scan, and `v.ptr == nil` when
+// the value is not indirect — and a synthesized descriptor populates none of them. The
+// consequence was total rather than partial: the Array and Struct arms both fell to
+// `v.ptr == nil`, which the bridge never populates, so EVERY array and EVERY struct reported
+// itself zero whatever it held. That is silent, not a fault, because `true` is the right answer
+// for the zero value of the same type.
+//
+// The managed answer is Go's own recursive definition with the memory shortcuts removed: a
+// composite is zero exactly when every element or field is. That is strictly the WALK the
+// shortcuts stand in for, so it needs no descriptor state — only Index/Field/NumField, which
+// the bridge already answers, and which is why the walk and the leaves land together.
+public static bool IsZero(this ΔValue v) {
+    ΔKind k = v.kind();
+    if (k == ΔBool) {
+        return !v.Bool();
+    }
+    if (k == ΔInt || k == Int8 || k == Int16 || k == Int32 || k == Int64) {
+        return v.Int() == 0;
+    }
+    if (k == ΔUint || k == Uint8 || k == Uint16 || k == Uint32 || k == Uint64 || k == Uintptr) {
+        return v.Uint() == 0;
+    }
+    if (k == Float32 || k == Float64) {
+        return v.Float() == 0D;
+    }
+    if (k == Complex64 || k == Complex128) {
+        return v.Complex() == 0D;
+    }
+    if (k == Chan || k == Func || k == ΔInterface || k == Map || k == ΔPointer || k == ΔSlice || k == ΔUnsafePointer) {
+        return v.IsNil();
+    }
+    if (k == ΔString) {
+        return v.Len() == 0;
+    }
+    if (k == Array) {
+        nint n = v.Len();
+        for (nint i = 0; i < n; i++) {
+            if (!v.Index(i).IsZero()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    if (k == Struct) {
+        nint n = v.NumField();
+        for (nint i = 0; i < n; i++) {
+            // Go skips the BLANK field: `_` is padding that carries no value identity.
+            if (!v.Field(i).IsZero() && v.Type().Field(i).Name != "_"u8) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // Go panics for an invalid Value and for any kind it has no rule for.
+    throw panic(Ꮡ(new ValueError("reflect.Value.IsZero", v.kind())));
 }
 
 // Elem returns the value that the interface v contains or that the pointer v points to.

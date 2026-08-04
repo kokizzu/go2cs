@@ -1246,6 +1246,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckReflectMethodTableWalk() => CheckTarget("ReflectMethodTableWalk");
 
     [TestMethod]
+    public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
+
+    [TestMethod]
     public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
 
     [TestMethod]

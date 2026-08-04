@@ -1172,6 +1172,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectMethodTableWalk() => CheckTarget("ReflectMethodTableWalk");
 
     [TestMethod]
+    public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
+
+    [TestMethod]
     public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
 
     [TestMethod]

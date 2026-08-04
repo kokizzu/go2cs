@@ -1375,86 +1375,20 @@ public static bool IsValid(this ΔValue v) {
     return v.flag != 0;
 }
 
-// IsZero reports whether v is the zero value for its type.
-// It panics if the argument is invalid.
-public static bool IsZero(this ΔValue v) {
-    var exprᴛ1 = v.kind();
-    if (exprᴛ1 == ΔBool) {
-        return !v.Bool();
-    }
-    if (exprᴛ1 == ΔInt || exprᴛ1 == Int8 || exprᴛ1 == Int16 || exprᴛ1 == Int32 || exprᴛ1 == Int64) {
-        return v.Int() == 0;
-    }
-    if (exprᴛ1 == ΔUint || exprᴛ1 == Uint8 || exprᴛ1 == Uint16 || exprᴛ1 == Uint32 || exprᴛ1 == Uint64 || exprᴛ1 == Uintptr) {
-        return v.Uint() == 0;
-    }
-    if (exprᴛ1 == Float32 || exprᴛ1 == Float64) {
-        return v.Float() == 0D;
-    }
-    if (exprᴛ1 == Complex64 || exprᴛ1 == Complex128) {
-        return v.Complex() == 0D;
-    }
-    if (exprᴛ1 == Array) {
-        if ((flag)(v.flag & flagIndir) == 0) {
-            return v.ptr == nil;
-        }
-        var typ = v.typ().Reinterpret<abi.Type, abiꓸArrayType>();
-        if ((~typ).Equal != default! && typ.of(abiꓸArrayType.ᏑType).Size() <= abi.ZeroValSize) {
-            // If the type is comparable, then compare directly with zero.
-            // v.ptr doesn't escape, as Equal functions are compiler generated
-            // and never escape. The escape analysis doesn't know, as it is a
-            // function pointer call.
-            return (~typ).Equal((uintptr)abi.NoEscape(v.ptr), new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)));
-        }
-        if ((abi.TFlag)((~typ).TFlag & abi.TFlagRegularMemory) != 0) {
-            // For some types where the zero value is a value where all bits of this type are 0
-            // optimize it.
-            return isZero(@unsafe.Slice(((ж<byte>)(uintptr)(v.ptr)), typ.of(abiꓸArrayType.ᏑType).Size()));
-        }
-        nint n = (nint)(~typ).Len;
-        for (nint i = 0; i < n; i++) {
-            if (!v.Index(i).IsZero()) {
-                return false;
-            }
-        }
-        return true;
-    }
-    if (exprᴛ1 == Chan || exprᴛ1 == Func || exprᴛ1 == ΔInterface || exprᴛ1 == Map || exprᴛ1 == ΔPointer || exprᴛ1 == ΔSlice || exprᴛ1 == ΔUnsafePointer) {
-        return v.IsNil();
-    }
-    if (exprᴛ1 == ΔString) {
-        return v.Len() == 0;
-    }
-    if (exprᴛ1 == Struct) {
-        if ((flag)(v.flag & flagIndir) == 0) {
-            return v.ptr == nil;
-        }
-        var typ = v.typ().Reinterpret<abi.Type, abiꓸStructType>();
-        if ((~typ).Equal != default! && typ.of(abiꓸStructType.ᏑType).Size() <= abi.ZeroValSize) {
-            // If the type is comparable, then compare directly with zero.
-            // See noescape justification above.
-            return (~typ).Equal((uintptr)abi.NoEscape(v.ptr), new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)));
-        }
-        if ((abi.TFlag)((~typ).TFlag & abi.TFlagRegularMemory) != 0) {
-            // For some types where the zero value is a value where all bits of this type are 0
-            // optimize it.
-            return isZero(@unsafe.Slice(((ж<byte>)(uintptr)(v.ptr)), typ.of(abiꓸStructType.ᏑType).Size()));
-        }
-        nint n = v.NumField();
-        for (nint i = 0; i < n; i++) {
-            if (!v.Field(i).IsZero() && v.Type().Field(i).Name != "_"u8) {
-                return false;
-            }
-        }
-        return true;
-    }
-    { /* default: */
-        throw panic(Ꮡ(new ValueError( // This should never happen, but will act as a safeguard for later,
- // as a default value doesn't makes sense here.
-"reflect.Value.IsZero"u8, v.Kind())));
-    }
+// go2cs generated this placeholder — func IsZero is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-}
+// If the type is comparable, then compare directly with zero.
+// v.ptr doesn't escape, as Equal functions are compiler generated
+// and never escape. The escape analysis doesn't know, as it is a
+// function pointer call.
+// For some types where the zero value is a value where all bits of this type are 0
+// optimize it.
+// If the type is comparable, then compare directly with zero.
+// See noescape justification above.
+// For some types where the zero value is a value where all bits of this type are 0
+// optimize it.
+// This should never happen, but will act as a safeguard for later,
+// as a default value doesn't makes sense here.
 
 // isZero For all zeros, performance is not as good as
 // return bytealg.Count(b, byte(0)) == len(b)
@@ -2245,17 +2179,7 @@ internal static @unsafe.Pointer arrayAt(@unsafe.Pointer p, nint i, uintptr eltSi
     return (uintptr)add(p, (uintptr)i * eltSize, iLenˢ);
 }
 
-// Grow increases the slice's capacity, if necessary, to guarantee space for
-// another n elements. After Grow(n), at least n elements can be appended
-// to the slice without another allocation.
-//
-// It panics if v's Kind is not a [Slice] or if n is negative or too large to
-// allocate the memory.
-public static void Grow(this ΔValue v, nint n) {
-    v.mustBeAssignable();
-    v.mustBe(ΔSlice);
-    v.grow(n);
-}
+// go2cs generated this placeholder — func Grow is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // grow is identical to Grow but does not check for assignability.
 internal static void grow(this ΔValue v, nint n) {

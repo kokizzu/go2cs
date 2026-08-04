@@ -218,6 +218,52 @@
 > `Tests/Behavioral/ReflectMethodTableWalk`. Full design: ConversionStrategies-Reference
 > *…and the count and the WALK are ONE increment*.
 >
+> **Phase-3 increment 8 (SHIPPED 2026-08-03) — the ZERO test, and a read that had degraded to a
+> CONSTANT.** The chip's `encoding/gob` increment. `Value.IsZero` is three descriptor reads over
+> flat memory (an `Equal` pointer against the shared `zeroVal` buffer, a `TFlagRegularMemory`
+> all-bits-zero scan, and `v.ptr == nil` for a non-`flagIndir` value); a synthesized descriptor
+> populates none, and the bridge populates neither `v.ptr` nor `flagIndir`, so the Array and Struct
+> arms **both** fell to `v.ptr == nil` and answered **true for every array and every struct whatever
+> it held**. Silent, like every member of this family — `true` is correct for the zero value of the
+> same type. Measured against `go run` before the fix: `[2]uint8{1,2}`, `NA{1,2}`, `inner{N:1}`,
+> `outer{P:&n}` all `IsZero=true` in C#, `false` in Go.
+>
+> Three things landed together because each gates the next. (1) **`Len` unwraps a named string** —
+> every other named container answers through the golib interface its wrapper implements, but a
+> `type NS string` wrapper implements none, so `Len` fell to its `0` default and `IsZero`'s String
+> arm (`Len() == 0`) called every non-empty named string zero. The increment-6 rule in a second
+> form: *the arm is a GATE on `Len`*, so the gate and the read behind it are one increment.
+> (2) **`IsZero`** becomes Go's own recursive definition with the memory shortcuts removed — a
+> composite is zero exactly when every element or field is, which is precisely the walk the
+> shortcuts stand in for (Go itself falls back to it for a non-comparable, non-regular-memory type),
+> so it needs only `Index`/`Field`/`NumField`, already answered. (3) **`Value.Grow`** reads a
+> `*unsafeheader.Slice` off the same never-populated `v.ptr` and therefore **nil-deref'd for every
+> caller** — `reflect.ValueOf(&s).Elem().Grow(1)` on `[]byte` prints `4 8` in Go and panicked here;
+> it is now a managed reallocation (golib `GoReflect.GrowSlice`) written back through the aliased
+> box exactly as `SetLen` does. Growth *within* capacity writes nothing (Go reaches `growslice` only
+> past the capacity, and a spurious write would detach another view sharing the backing store), and
+> the landed capacity is deliberately unpinned — Go's `growslice` rounds to a size class, so only
+> `len+n` is guaranteed. Guard: `Tests/Behavioral/ReflectZeroAndGrow`, byte-identical to `go run`.
+>
+> **The `MapType().Hasher` row is rooted and deliberately NOT landed — populating it would be worse
+> than the failure.** `unique`'s one-root wall (15 of 19) and `net`'s last cctor root is a map
+> descriptor with `Hasher`/`Key`/`Elem` unpopulated. It looks like the same shape as every read above
+> and is not: `Hasher(unsafe.Pointer, uintptr) uintptr` must hash *the value at an address*, and the
+> address that call site produces cannot name a managed value. Measured three ways: two boxes holding
+> equal `@string` values necessarily have **different** addresses, so an address-derived hash can
+> never make `unique.Make("hello")` agree with itself; a box whose pointee contains a reference has
+> no pinnable slot and its address **moved across a forced GC**; and the `unsafe.Pointer` handed to
+> the delegate retains no link to its source box, its constructor taking a `uintptr`. Key/elem
+> *types* are recoverable from the carried `System.Type`, but landing those alone is a regression:
+> `Key.Equal` is the comparability SIGNAL (pointer identity, not value equality), so a half-populated
+> descriptor converts a loud construction failure into a map that silently mislays every key —
+> **the increment-6 lesson inverted: a descriptor field whose read cannot be honored must not be
+> populated to look truthful.** The remedy is one layer down and outside this arc's declared files:
+> `internal/concurrent.HashTrieMap` is a managed-referent raw-metal case whose CONTRACT (a concurrent
+> map over comparable `K`) the CLR answers natively while its MECHANISM (hash bytes at an address) it
+> cannot — a hand-owned `_impl.cs` on the `sync.Mutex` precedent. Needs a coordinator ownership
+> ruling before it is written.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
 > (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases

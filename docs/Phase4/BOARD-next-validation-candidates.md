@@ -1535,13 +1535,13 @@ of them named.
 
 | Root | Tests | Owner |
 |:--|:--|:--|
-| **`reflect.Value.IsZero` is wrong for a named STRING and for an ARRAY** | `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero` (4) | reflect bridge — **chip** |
-| **`reflect.Value.Grow` nil-derefs** | `TestLargeSlice` + `/byte` + `/struct` (3 rows) | reflect bridge — **chip** |
+| ~~**`reflect.Value.IsZero` is wrong for a named STRING and for an ARRAY**~~ — **CLOSED (increment 8); it was wrong for EVERY array and EVERY struct** | `TestGobEncoderPointerThenValue`, `TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero` (4) | reflect bridge — **chip, LANDED** |
+| ~~**`reflect.Value.Grow` nil-derefs**~~ — **CLOSED (increment 8)** | `TestLargeSlice` + `/byte` + `/struct` (3 rows) | reflect bridge — **chip, LANDED** |
 | **Typed-nil identity through `any`** | `TestTopLevelNilPointer`, `TestNilPointerPanics`, `TestNilPointerInsideInterface` (3) | converter — **rooted, deliberately deferred** |
 | **`array<T>` carries no LENGTH** | `TestSingletons`, `TestIndirectSliceMapArray`, `TestEndToEnd` (3) | reflect bridge — **chip** |
 | **`reflect.ArrayOf` → the `typelinks` stub** | `TestIgnoreDepthLimit` (1) | reflect bridge — **chip** (reports `infrastructure-error`) |
 | **The decoder's IGNORE path rejects a valid field number** | `TestBadData` #8, `TestIgnoreRecursiveType` (2) | gob decode path — **unrooted** |
-| **`MapType().Hasher` over a zero map** | `TestNetIP` (1) | reflect bridge — **chip** |
+| **`MapType().Hasher` over a zero map** | `TestNetIP` (1) | reflect bridge — **CLOSED 2026-08-03 by the ruled `internal/concurrent` hand-own (see the r39d section at the end of this file); `TestNetIP` still fails, on the linkname-PUSH root now behind it** |
 | **An untyped complex constant narrows to complex64** | `TestOverflow` (1) | golib/converter — **rooted, remedy identified, NOT landed** |
 
 **Root 1 — four tests, one root, and it is an ENCODE-side skip, not a decode write-back.** r37 read the
@@ -1678,10 +1678,19 @@ chip-owned: `NewHashTrieMap` → `keyHash: new Func<…>((~mapType).Hasher)` →
 `ArgumentException: Delegate to an instance method cannot have null 'this'`, because
 `abi.TypeOf(m).MapType()` over a zero map yields a descriptor with no hasher. `unique` is therefore a
 **one-root wall**, and that root is the chip's; nothing else about the package is measurable until it
-clears. (The 4 `fail` rows are `TestMakeCloneSeq` subtests whose names Go takes from
+clears. ⚠ **Increment 8 rooted that wall and reported it NOT landable in the bridge** — the hasher's
+contract is "hash the value at this address" and a managed address names no value (two boxes holding
+equal strings have different addresses; a reference-containing pointee's address moves across a GC).
+The recommended remedy is a hand-owned `internal/concurrent/hashtriemap.cs`, which needs an ownership
+ruling; see *Increment 8* below. (The 4 `fail` rows are `TestMakeCloneSeq` subtests whose names Go takes from
 `reflect.TypeFor[T]().String()`; C# reports that as `""`, so Go's `testString` becomes C#'s `#00` — the
 `rtype.String`/`TypeFor` surface, also chip.) `unique` does not bank; the overlaid dependency was
 restored, not banked.
+
+**SUPERSEDED 2026-08-03** — the hand-own landed and this census is re-measured at **1 of 19** with the
+single wall replaced by five distinct downstream roots; see *`internal/concurrent.HashTrieMap` HAND-OWNED*
+at the end of this file. (The `rtype.String`/`TypeFor` chip row above is now known to be the SAME defect as
+the third root there: `abi.TypeFor<T>()` returns the descriptor's `Equal` delegate for an interface `T`.)
 
 ⚠ **Overlaying a dependency `.cs` is not enough to re-measure it** — `Copy-Item` preserves the source's
 LastWriteTime, so the older-than-the-`.dll` copy was skipped by MSBuild and the run reproduced the
@@ -2032,6 +2041,57 @@ candidate source's assignability safety net, and doing so nondeterministically �
 reported `NumMethod` 4 or 6 for the same type depending on which assemblies had loaded when the
 cache was first filled.
 
+### Increment 8 — the ZERO test, and the one row that must NOT be landed (2026-08-03)
+
+Two of gob's chip-owned roots close; the third is rooted and handed back with a recommendation
+rather than a fix.
+
+**Measured on the post-fix tree: `encoding/gob` 88 → 95 of 106.** One `-tests -test-action all
+-test-timeout 20m` run, zero empty verdicts: the mismatch list goes from **18 rows to 11**, and the
+seven that vanished are *exactly* the two roots below — `TestGobEncoderPointerThenValue`,
+`TestGobEncoderValueThenPointer`, `TestGobEncoderValueEncoder`, `TestGobEncodeIsZero`,
+`TestLargeSlice` + `/byte` + `/struct`. **No new mismatch appeared**, so this is not the
+root-cause-layering case where one row's fix merely unmasks another. gob still does not bank and no
+gob artifact was committed (the measurement tree was restored). The remaining 11 keep their existing
+owners: array-length model (3), `ArrayOf`/typelinks (1), `MapType().Hasher` (1, below), typed-nil
+converter (3), the gob ignore path (2), untyped complex narrowing (1).
+
+**Closed — root 1 (`Value.IsZero`, 4 rows) and root 2 (`Value.Grow`, 3 rows).** The census
+understated root 1 considerably. It is not "wrong for a named STRING and for an ARRAY": both the
+Array and the Struct arm fall to `v.ptr == nil`, which the bridge never populates, so `IsZero`
+answered **true for every array and every struct in the corpus whatever it held**. Measured against
+`go run` on a purpose-built probe before the fix — `[2]uint8{1,2}`, `NA{1,2}`, `inner{N:1}`,
+`outer{P:&n}`, `outer{I.S:x}` — every one `true` in C#, `false` in Go. A fourth read had to land with
+it: `IsZero`'s String arm is `Len() == 0`, and `Len` was blind to a `[GoType("str")]` wrapper (every
+other named container answers through its golib interface; a named string implements none), so the
+arm could not be right until `Len` was. Both now hand-owned, plus `Grow`, which read a
+`*unsafeheader.Slice` off the same absent `v.ptr` and nil-deref'd for **every** caller. Guard:
+`Tests/Behavioral/ReflectZeroAndGrow`, byte-identical to `go run` across 33 rows. Design:
+ConversionStrategies-Reference *A ZERO test is a descriptor read too*.
+
+**NOT landed, deliberately — `MapType().Hasher` / `Key.Equal` (unique's 15 of 19, net's last cctor
+root, gob's `TestNetIP`).** This row is not the same shape as the others and populating it would be a
+regression, not a partial fix. `Hasher(unsafe.Pointer, uintptr) uintptr` must hash *the value at an
+address*; the address that call site produces cannot name a managed value. Three measurements settle
+it: two boxes holding equal `@string` values necessarily have **different** addresses (so no
+address-derived hash can make `unique.Make("hello")` agree with itself — the package's whole point);
+a box whose pointee contains a reference has no pinnable slot and its address **moved across a forced
+GC**; and the `unsafe.Pointer` the call site builds retains no link to its source box, its
+constructor taking a `uintptr`. Key/elem *types* are recoverable from the carried `System.Type`, but
+landing only those is strictly worse than today: `Key.Equal` is the comparability SIGNAL — a
+pointer-identity compare — so a half-populated descriptor turns a loud `NewHashTrieMap` construction
+failure into a map that silently mislays every key. **The increment-6 lesson inverted: a descriptor
+field whose read cannot be honored must not be populated to look truthful.**
+
+**Recommendation (needs a coordinator ownership ruling).** The remedy is one layer down and outside
+this arc's declared files: hand-own `internal/concurrent/hashtriemap.cs` on the `sync.Mutex`
+precedent. Its CONTRACT — a concurrent map from comparable `K` to `V` — is answered natively and
+correctly by the CLR; only its MECHANISM (hash the bytes at an address) is raw-metal that the managed
+model cannot express. That is exactly the documented S1 fork. It would clear `unique`'s single wall
+(making 19 rows measurable for the first time), `net`'s last initializer root, and gob's `TestNetIP`.
+The chip did not take it unilaterally because `internal/concurrent` belongs to no lane's declared
+ownership and the file is a whole-package hand-own, not a bridge `_impl.cs`.
+
 ## Rulings — 2026-08-03 (user; both recommendations adopted)
 
 1. **The mode-0 timer residual (time's 4 rows): COMMISSION THE SYNCHRONOUS-TIMER-CHANNEL ARC** rather
@@ -2158,3 +2218,57 @@ lane plus provenance — restored, they belong to a rebank), the documented 7-fi
 emission class, and corpus-wide production `.cs` churn that is the same 685-file staleness recorded
 above. Only `bytes`'s test sources, its disclosure manifest and its proof page were banked, because
 only they are the evidence for a row that changed.
+
+## `internal/concurrent.HashTrieMap` HAND-OWNED — the wall falls, and three walls stand behind it (2026-08-03, r39d-hashtriemap)
+
+The user-ruled hand-own landed: `src/core/internal/concurrent/hashtriemap.cs` is now a whole-file managed
+reimplementation carrying `[module: go.GoManualConversion]` (corpus marker census **39 → 40**). Rationale,
+the API map, and the equality-bridge verification live in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *`internal/concurrent.HashTrieMap`*;
+the hand-own mechanics in [`Baseline-vs-FullConversion.md`](../Baseline-vs-FullConversion.md). Summary of
+what was measured, because the shape of the result matters more than the row count:
+
+**Gates.** `internal/concurrent` and `unique` build clean; `go2cs-stdlib.slnx` builds **304/304, 0 errors**.
+A seeded full `-stdlib -comments` reconvert leaves `hashtriemap.cs` and `package_info.cs` **MD5-identical**;
+strip the marker and the same run overwrites `hashtriemap.cs` with its own 21 KB emission and rewrites
+`package_info.cs` — the protection proven in both directions. The behavioral suite and the 72-package
+validated sweep are green/unchanged (`internal/concurrent` is in no banked package's closure — the gates
+were insurance, not measurement).
+
+**The equality bridge is NOT a problem — verified by probe, not by reading.** `EqualityComparer<K>.Default`
+is Go's `==` for every key shape the corpus interns: `ж<T>` (pointer identity + matching identity hash, and
+`abi.TypeFor<T>()` interns one descriptor box per `System.Type`, so a second call finds the first call's
+entry), a `[GoType]` struct of `{bool; @string}` — netip's `addrDetail` shape — (generated field-wise
+`Equals` + `HashCode.Combine`, matching for two keys built from *distinct* string storage), and `@string`
+(content). `LoadOrStore` was contention-probed: exactly 1 winner in 64 racing callers.
+
+**`encoding/gob`: 95 of 106, unchanged — `TestNetIP` does NOT flip.** Its root MOVED one frame, from
+`NewHashTrieMap` → `ArgumentException: Delegate to an instance method cannot have null 'this'` to
+`NotImplementedException: runtime_registerUniqueMapCleanup`. No row regressed (TestNetIP is the only gob row
+whose closure reaches `unique`; the other ten failures are gob-internal and untouched).
+
+**`unique`: 0 → 1 of 19 — and it is no longer a ONE-root wall.** That is the real deliverable. Its 15
+identical `TypeInitializationException` rows resolve into **five distinct downstream roots**, each now
+separately actionable:
+
+| Root | unique rows | Shape |
+|:--|--:|:--|
+| **`//go:linkname` PUSH never links: `unique.runtime_registerUniqueMapCleanup`** | 1 (+ gob's `TestNetIP`, + `net`'s cctor) | `runtime/mgc.go` PUSHES its body into `unique`'s bodyless declaration. The converter's forwarder handles the **PULL** direction only, so the consuming side is a throwing `PartialStubGenerator` stub. Hit by `unique.Make`'s `setupMake.Do(registerCleanup)`. `sync.Once` marks done through the panic, so later `Make` calls proceed — which is why only one row shows this root |
+| **Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`** | 4 | `runtime/mheap.go` pushes both. Hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. ⚠ Even once linked, `runtime`'s converted bodies walk `mheap_` span metadata that the managed model does not populate (`getWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`), so this row wants a `internal/weak` hand-own on managed weak references, not a linkname fix alone |
+| **`abi.TypeFor<T>()` is silently WRONG for an INTERFACE `T`** | 1 | `TypeFor`'s interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for `Kind == Pointer` reinterprets the descriptor as a `PtrType` and reads `.Elem` — which under the managed layout lands on the descriptor's **`Equal` field**. `TypeFor<any>()` and `TypeFor<error>()` return a `System.Func<unsafe.Pointer, unsafe.Pointer, bool>`, not a `ж<abi.Type>`. Shared generics store it into `ConcurrentDictionary<ж<abi.Type>, any>` uncast-checked, and the first key comparison dispatches `IEquatable<ж<abi.Type>>.Equals` on a delegate → `EntryPointNotFoundException`. **Corpus-wide, and it was invisible until now**: the old trie compared raw addresses through `keyEqual` and never dispatched on a key's runtime type. Reflection-bridge row |
+| **`GCHandle: Object contains references`** | 1 | `abi.Escape` pinning a managed pointee on the `weak.Make` path |
+| **`IndexOutOfRangeException` in `go.slice<T>.Enumerator.get_Current`** | 6 | inside `unique.makeCloneSeq` (`clone.cs`), reached from both `TestHandle` and `TestMakeCloneSeq` — the only root here that is neither linkname nor reflection, and the cheapest next step |
+
+Plus the 3 `fail` rows the r38 census already recorded (`TestMakeCloneSeq/#00`, `#01`, `interface_{}` — Go
+names those subtests from `reflect.TypeFor[T]().String()`, which C# renders `""`; note this is the *same*
+`TypeFor` surface as the third root above). `unique` does **not** bank; its test artifacts were restored,
+not committed.
+
+⚠ **Two traps this arc paid for.** (1) In the PowerShell tool, `[System.IO.File]` resolves a RELATIVE path
+against the *process* working directory, which is the MAIN checkout — not `Set-Location`'s. A
+read-modify-write with a relative path silently read `H:\Projects\go2cs`'s copy of the file and wrote it
+over the worktree's, reverting the hand-own. **Always use absolute paths with the `[System.IO.File]` APIs.**
+(2) `emitAutoConversionSiblings` — the fully-hand-owned-package branch — runs only six of the whole-package
+pre-passes, and panics on a generic file (`WARNING: visit file error: … nil pointer dereference in
+"hashtriemap.go" (auto-conversion sibling skipped)`), so no `.cs.auto` review sibling is produced for
+`internal/concurrent`. Pre-existing converter defect, harmless to the marker's protection, not chased.

@@ -184,6 +184,43 @@ stated in the file and in
 with interlocked private slots and a per-shard producer gate), and the cleanup is triggered by
 *requested* collections rather than every GC cycle. `sync` goes 21 → 35 of 50 on this arc.
 
+**`internal/concurrent.HashTrieMap` — the wall is a DESCRIPTOR READ, and the remedy is semantics over
+mechanism (2026-08-03, user-ruled).** Go's hash-trie is seeded entirely from one runtime descriptor:
+`NewHashTrieMap` takes `abi.TypeOf(m).MapType().Hasher` — a raw function pointer into the hashing machinery
+the compiler emits for `map[K]V` — plus `Key.Equal`/`Elem.Equal`, its bit-compare thunks. All three take
+`unsafe.Pointer`s and mean "hash / compare the bytes AT this address", which the managed reflection bridge
+cannot honor: an address in the CLR names no value (two boxes holding equal strings sit at different
+addresses; a pointee containing references moves across a GC), so an address-derived hash would stop
+`unique.Make(x)` agreeing with itself — the inverse of the package's purpose. Populating `Hasher` with
+something plausible is barred by the standing **inverse-atomic rule** (a descriptor field whose read cannot
+be honored must stay EMPTY), so the literal conversion compiles and can never run: `NewHashTrieMap` threw
+inside the package initializer of every `unique` consumer, and took `net/netip` — and `encoding/gob`'s
+`TestNetIP` — with it. The whole file is hand-owned on the `sync` precedent, and the rewrite keeps only the
+**semantics**: the exported API and its concurrency contract are preserved exactly, while the trie itself is
+replaced by a `ConcurrentDictionary` whose guarantees line up member for member (LoadOrStore's single-winner
+`TryAdd` retry, CompareAndDelete's atomic compare-and-remove pair overload, All's weakly-consistent
+enumeration). Go's `keyHash`/`keyEqual`/`valEqual` triple becomes `EqualityComparer<K>/<V>.Default`, which is
+verified to BE Go's `==` for every key shape the corpus interns — a `ж<T>` compares by pointer identity with
+a matching identity hash and `abi.TypeFor<T>()` interns one descriptor box per `System.Type`; a `[GoType]`
+struct carries a generated field-wise `Equals` plus a `HashCode.Combine` of the same fields; `@string`
+compares and hashes by content. Detail, and the two walls it uncovered behind it (a cross-assembly
+`//go:linkname` **PUSH** that never links, and `abi.TypeFor<T>()` returning the wrong object for an
+INTERFACE `T`):
+[`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md#internalconcurrenthashtriemap--a-managed-map-where-go-seeds-itself-from-maptypehasher).
+
+⚠ **A single-Go-file package that hand-owns that file becomes FULLY hand-owned.** `unmarkedFileCount == 0`
+makes the driver `continue` before `writeProjectFile`, so the package's `.csproj`, `package_info.cs` and
+`README.md` are never re-emitted either — the position `internal/godebug` was already in, and now
+`internal/concurrent` too. That is *stronger* protection than the marker alone (a seeded reconvert leaves
+every file in the package byte-identical, proven both directions: strip the marker and the converter
+overwrites `hashtriemap.cs` with its own 21 KB emission and rewrites `package_info.cs`), but it also means
+those three files are yours from then on — `internal/concurrent`'s `package_info.cs` had to drop the
+`<TypeAccessibility>` entries for the trie's `node`/`entry`/`indirect`, which no longer exist. One caveat:
+the `.cs.auto` review sibling is NOT produced for such a package when the file is generic —
+`emitAutoConversionSiblings` runs only six of the whole-package pre-passes and panics on `hashtriemap.go`
+(*"visit file error: … nil pointer dereference … auto-conversion sibling skipped"*). Pre-existing, harmless
+to the protection, board-rowed.
+
 There are **two** ways a package carries hand-owned C#, and they are NOT interchangeable:
 
 1. **`*_impl.cs` supplement — for SOME declarations in a file.** The converter emits the file normally but,
@@ -207,7 +244,11 @@ There are **two** ways a package carries hand-owned C#, and they are NOT interch
    `mutex.cs` / `waitgroup.cs` /
    `rwmutex.cs` / `pool.cs` / `poolqueue.cs`; runtime `runtime2.cs` / `mfinal.cs`; syscall `dll_windows.cs` /
    `exec_windows.cs` (2026-07-19 — `StartProcess` only; see *Child-process creation* below);
-   internal/godebug
+   internal/concurrent
+   `hashtriemap.cs` (2026-08-03 — a ConcurrentDictionary-backed reimplementation replacing the hash-trie,
+   because Go seeds the trie from `MapType().Hasher`, a descriptor field the managed bridge must leave
+   empty; the marker makes this the package's *only* Go file to be hand-owned, so its `.csproj`,
+   `package_info.cs` and `README.md` stop being re-emitted too — see above); internal/godebug
    `godebug.cs` (2026-07-17, blocker R2 — parses $GODEBUG once on first use instead of the Go runtime's
    update-hook cache; the literal conversion's embedded `*setting` promotion faults at runtime because the
    generated promoted-field box treats its held nil pointer as a nil dereference even for the assignment
