@@ -3,7 +3,11 @@ param(
     [string]$ListenAddress = "127.0.0.1:4000",
     [ValidateSet("core", "deployed", "nuget")]
     [string]$Runtime,
-    [switch]$NoOpen
+    [switch]$NoOpen,
+    # Anything else is handed to the server, so every option it takes is
+    # reachable from here -- as start.sh already passes "$@" through.
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ServerArguments
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,6 +37,9 @@ try {
     }
     if ($NoOpen) {
         $arguments += "-no-open"
+    }
+    if ($ServerArguments) {
+        $arguments += $ServerArguments
     }
     & go @arguments
 }

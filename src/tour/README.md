@@ -13,8 +13,13 @@ The interface is deliberately parallel:
 - The **Runtime** selector chooses NuGet packages, a deployed stdlib, or live
   checkout source without changing the Go lesson.
 - **Transpile**, **Build**, and **.NET Run** keep their output separate.
+- Program output carries the Tour's own colors: what the program wrote to
+  standard error is red, the host's notices are muted, and long lines scroll
+  instead of wrapping — so both panes break in the same places.
 - A picture written by `golang.org/x/tour/pic` appears in **.NET Run** as an
   image, as it does in the Tour.
+- The header links to worked exercise solutions; `-solutions-url` retargets or
+  removes it.
 - Navigating to a Tour page converts it automatically.
 - Editing Go marks the C# stale until **Convert** is selected.
 - **Run with Go** optionally converts, builds, and runs .NET whenever the Go
@@ -81,8 +86,15 @@ Useful options:
 - `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1`
 - `-nuget-source=/path/or/feed`: folder or feed containing go2cs packages
 - `-nuget-version=1.23.1.2`: package version to restore
+- `-solutions-url=https://…`: target of the header's exercise-solutions link;
+  empty removes the link, and only `http`/`https` targets are shown
+- `-solutions-text=Exercise solutions`: text for that link
 - `-no-tour`: do not launch the upstream Tour process
 - `-no-open`: do not open a browser
+
+`start.ps1` and `start.sh` pass any option they do not recognize straight
+through, so `.\src\tour\scripts\start.ps1 -Runtime nuget -solutions-url=` starts
+the app with the header link removed.
 
 `GO_TOUR_BIN` can point to the upstream `tour` executable. `GO2CS_BIN` can point
 to an explicitly managed prebuilt go2cs executable; otherwise each server process builds the

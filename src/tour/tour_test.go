@@ -37,6 +37,20 @@ func TestModifyResponseDefaultsTourToDarkWithSyntax(t *testing.T) {
 	}
 }
 
+func TestNewSolutionsLink(t *testing.T) {
+	if got := newSolutionsLink(defaultSolutionsURL, defaultSolutionsText); got.URL != defaultSolutionsURL || got.Text != defaultSolutionsText {
+		t.Fatalf("default link = %+v", got)
+	}
+	if got := newSolutionsLink("https://example.com/answers", "  "); got.Text != defaultSolutionsText {
+		t.Fatalf("blank text = %+v, want the default text", got)
+	}
+	for _, url := range []string{"", "   ", "javascript:alert(1)", "example.com/answers"} {
+		if got := newSolutionsLink(url, defaultSolutionsText); got != (solutionsLink{}) {
+			t.Errorf("newSolutionsLink(%q) = %+v, want no link", url, got)
+		}
+	}
+}
+
 func TestModifyResponseAddsGoVersionToTourScript(t *testing.T) {
 	body := "code += '-- go.mod --\\n' +\n                    'module example\\n' +\n                    'require golang.org/x/tour v0.1.0\\n' +"
 	response := &http.Response{

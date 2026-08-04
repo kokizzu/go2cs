@@ -20,6 +20,7 @@
   const conversionStatus = document.querySelector("#conversion-status");
   const connectionDot = document.querySelector("#connection-dot");
   const connectionLabel = document.querySelector("#connection-label");
+  const solutionsLink = document.querySelector("#solutions-link");
 
   let goSource = "";
   let runtimeMode = runtimeSelect.value;
@@ -43,6 +44,11 @@
     // The option still works for this page when storage is unavailable.
   }
 
+  // Stream tags shared with the stage transcripts the server sends.
+  const outputStdout = "stdout";
+  const outputStderr = "stderr";
+  const outputSystem = "system";
+
   const outputs = {
     transpile: idleStage("transpile", "Open a Tour page to convert its Go code."),
     build: idleStage("build", "Run the converted project to see build output."),
@@ -53,9 +59,27 @@
     return { id, status: "idle", output: message, durationMs: 0 };
   }
 
+  // A stage this page produces itself is tagged like one the server sends, so a
+  // kill reads as a notice and a failed request reads as an error.
+  function taggedStage(id, status, kind, message) {
+    return { id, status, output: message, segments: [{ kind, text: message }], durationMs: 0 };
+  }
+
   function setConnection(online, text) {
     connectionDot.className = online ? "online" : "offline";
     connectionLabel.textContent = text;
+  }
+
+  // The server owns the header link, so clearing -solutions-url removes it here.
+  function setSolutionsLink(solutions) {
+    const url = solutions?.url || "";
+    solutionsLink.hidden = !url;
+    if (!url) {
+      solutionsLink.removeAttribute("href");
+      return;
+    }
+    solutionsLink.href = url;
+    solutionsLink.textContent = solutions.text || url;
   }
 
   async function checkHealth() {
@@ -63,6 +87,7 @@
       const response = await fetch("/api/health");
       const health = await response.json();
       setConnection(health.tour, health.tour ? "Tour of Go connected" : "Tour of Go offline");
+      setSolutionsLink(health.solutions);
       for (const option of runtimeSelect.options) {
         const runtime = health.runtimes?.find(candidate => candidate.value === option.value);
         if (!runtime) continue;
@@ -223,7 +248,7 @@
       }
     } catch (error) {
       if (error.name !== "AbortError" && pagePath === pathAtStart && goSource === sourceAtStart) {
-        outputs.transpile = { id: "transpile", status: "failed", output: error.message, durationMs: 0 };
+        outputs.transpile = taggedStage("transpile", "failed", outputStderr, error.message);
         conversionStatus.textContent = "Transpile failed";
       }
     } finally {
@@ -296,11 +321,12 @@
       if (stale) return;
       const active = outputs.run.status === "running" ? "run" : "build";
       if (error.name === "AbortError") {
-        outputs[active] = { id: active, status: "killed", output: active === "run" ? killedProgramOutput() : "Killed.", durationMs: 0 };
+        const killed = active === "run" ? killedProgramOutput() : "Killed.";
+        outputs[active] = taggedStage(active, "killed", outputSystem, killed);
         if (active === "build") outputs.run = idleStage("run", "Run was not started.");
         conversionStatus.textContent = ".NET process killed";
       } else {
-        outputs[active] = { id: active, status: "failed", output: error.message, durationMs: 0 };
+        outputs[active] = taggedStage(active, "failed", outputStderr, error.message);
         conversionStatus.textContent = active === "build" ? "Build failed" : ".NET run failed";
       }
       selectOutput(active);
@@ -319,7 +345,7 @@
 
   function killedProgramOutput() {
     const platform = navigator.userAgentData?.platform || navigator.platform || "";
-    return `\nProgram exited: ${/^Win/i.test(platform) ? "exit status 1" : "signal: killed"}`;
+    return `Program exited: ${/^Win/i.test(platform) ? "exit status 1" : "signal: killed"}`;
   }
 
   function updateButtons() {
@@ -371,37 +397,41 @@
     renderOutputText(stage);
     outputTiming.textContent = stage.durationMs ? `${(stage.durationMs / 1000).toFixed(2)}s` : "";
     outputScroll.scrollTop = 0;
+    outputScroll.scrollLeft = 0;
   }
 
+  // Each stream keeps its own span, so the Tour's colors carry over: what the
+  // program wrote to standard error is red, and the notices this host adds are
+  // muted. A stage without tagged streams is plain text, as it was before.
   function renderOutputText(stage) {
-    const text = stage.output ?? "(no output)";
     outputView.replaceChildren();
-    if (stage.id !== "run") {
-      outputView.textContent = text;
-      return;
+    const segments = stage.segments?.length
+      ? stage.segments
+      : [{ kind: outputStdout, text: stage.output ?? "(no output)" }];
+    for (const segment of segments) {
+      const span = document.createElement("span");
+      span.className = `output-${segment.kind}`;
+      const text = segment.text ?? "";
+      if (stage.id === "run" && segment.kind === outputStdout) appendProgramOutput(span, text);
+      else span.textContent = text;
+      outputView.append(span);
     }
-    const systemStart = text.lastIndexOf("Program exited");
-    appendProgramOutput(systemStart < 0 ? text : text.slice(0, systemStart));
-    if (systemStart < 0) return;
-    const system = document.createElement("span");
-    system.className = "output-system";
-    system.textContent = text.slice(systemStart);
-    outputView.append(system);
   }
 
   // golang.org/x/tour/pic writes a picture as a single base64 PNG line prefixed
   // with IMAGE:, which the Tour renders as a picture rather than as text.
   // Everything the program prints around such a line stays ordinary output.
-  function appendProgramOutput(text) {
-    const imageLine = /^IMAGE:([A-Za-z0-9+/]+={0,2})[^\S\n]*$/gm;
+  // The line's own newline goes with it, as the Tour drops that whole write.
+  function appendProgramOutput(target, text) {
+    const imageLine = /^IMAGE:([A-Za-z0-9+/]+={0,2})[^\S\n]*\n?/gm;
     let index = 0;
     for (const match of text.matchAll(imageLine)) {
       const image = programImage(match[1]);
       if (!image) continue;
-      outputView.append(document.createTextNode(text.slice(index, match.index)), image);
+      target.append(document.createTextNode(text.slice(index, match.index)), image);
       index = match.index + match[0].length;
     }
-    outputView.append(document.createTextNode(text.slice(index)));
+    target.append(document.createTextNode(text.slice(index)));
   }
 
   function programImage(payload) {

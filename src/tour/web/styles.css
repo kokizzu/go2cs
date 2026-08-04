@@ -25,6 +25,8 @@
   --green: #54d98c;
   --red: #ff7188;
   --amber: #f5bd58;
+  /* The Tour paints program errors this red in both of its themes. */
+  --output-error: #d00a0a;
   --left-width: calc(66.667% - 4px);
   font-family: "Segoe UI", Inter, system-ui, sans-serif;
 }
@@ -146,6 +148,34 @@ button {
 
 .header-status i.offline {
   background: var(--red);
+}
+
+.header-link {
+  padding-left: 8px;
+  border-left: 1px solid #28414d;
+  color: #8da5af;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.header-link[hidden] {
+  display: none;
+}
+
+.header-link::after {
+  content: "\2197";
+  padding-left: 3px;
+}
+
+.header-link:hover,
+.header-link:focus-visible {
+  color: var(--go);
+  text-decoration: underline;
+}
+
+.header-link:focus-visible {
+  outline: 2px solid var(--go);
+  outline-offset: 2px;
 }
 
 .workspace {
@@ -491,23 +521,32 @@ button {
   scrollbar-color: var(--scrollbar) transparent;
 }
 
+/* The Tour scrolls its output rather than wrapping it, so a line that is too
+   long breaks in the same place -- or not at all -- in both panes. The pre grows
+   to its widest line so its background still covers a scrolled view. */
 #output-view {
-  width: 100%;
+  min-width: 100%;
+  width: max-content;
   min-height: 0;
   margin: 0;
   padding: 10px;
   color: var(--output-text);
   background: var(--output-pre);
   font: 400 16px/24px "Inconsolata", monospace;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;
 }
 
-/* A picture keeps its natural size and stays inline, so the surrounding
+/* A picture keeps its natural size and stays inline -- as it does in the Tour,
+   which scrolls a wide one rather than shrinking it -- so the surrounding
    program output flows around it exactly as the text it replaces did. */
 #output-view img {
-  max-width: 100%;
   vertical-align: top;
+}
+
+/* Program streams carry the Tour's own colors: standard error red, the Tour's
+   notices muted, and everything the program printed left alone. */
+.output-stderr {
+  color: var(--output-error);
 }
 
 .output-system {
@@ -520,7 +559,8 @@ button {
   }
 
   .brand > span,
-  .header-status span {
+  .header-status span,
+  .header-link {
     display: none;
   }
 

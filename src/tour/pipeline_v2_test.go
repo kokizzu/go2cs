@@ -101,12 +101,53 @@ func TestProgramExitMessageMatchesTour(t *testing.T) {
 	}
 }
 
-func TestAppendProgramExitMatchesTourSpacing(t *testing.T) {
-	if got := appendProgramExit("hello\n", "Program exited."); got != "hello\n\nProgram exited." {
-		t.Fatalf("appendProgramExit = %q", got)
+// The Tour writes its exit notice after a single newline and never trims what
+// the program produced, so the blank line ahead of the notice is the program's
+// own trailing newline -- present for a Println, absent for an io.Copy that
+// stops mid-line.
+func TestAppendSystemSegmentMatchesTourSpacing(t *testing.T) {
+	endedLine := appendSystemSegment([]outputSegment{{Kind: outputStdout, Text: "hello\n"}}, "Program exited.")
+	if joined := joinSegments(endedLine); joined != "hello\n\nProgram exited." {
+		t.Fatalf("transcript after a completed line = %q", joined)
 	}
-	if got := appendProgramExit("", "Program exited: killed"); got != "Program exited: killed" {
-		t.Fatalf("empty appendProgramExit = %q", got)
+	if len(endedLine) != 2 || endedLine[0].Kind != outputStdout || endedLine[1].Kind != outputSystem {
+		t.Fatalf("appended segments = %+v, want the notice tagged as a system message", endedLine)
+	}
+
+	midLine := appendSystemSegment([]outputSegment{{Kind: outputStdout, Text: "You cracked the code!"}}, "Program exited.")
+	if joined := joinSegments(midLine); joined != "You cracked the code!\nProgram exited." {
+		t.Fatalf("transcript after an unterminated line = %q, want no blank line", joined)
+	}
+
+	empty := appendSystemSegment(nil, "Program exited: killed")
+	if len(empty) != 1 || empty[0].Kind != outputSystem || empty[0].Text != "Program exited: killed" {
+		t.Fatalf("empty appendSystemSegment = %+v", empty)
+	}
+}
+
+// The Tour colors a program's standard error, so a stage has to keep the two
+// streams apart all the way to the interface.
+func TestRunStageTagsProgramStreams(t *testing.T) {
+	runner := newPipelineRunner(t.TempDir())
+	defer runner.close()
+
+	written := runner.runStage(context.Background(), "run", ".NET Run", t.TempDir(), 30*time.Second, "go", "version")
+	if written.Status != "passed" {
+		t.Fatalf("status = %q, want passed; output: %s", written.Status, written.Output)
+	}
+	if len(written.Segments) != 2 || written.Segments[0].Kind != outputStdout || written.Segments[1].Kind != outputSystem {
+		t.Fatalf("segments = %+v, want tagged standard output then the exit notice", written.Segments)
+	}
+
+	failed := runner.runStage(context.Background(), "run", ".NET Run", t.TempDir(), 30*time.Second, "go", "nosuchcommand")
+	if failed.Status != "failed" {
+		t.Fatalf("status = %q, want failed; output: %s", failed.Status, failed.Output)
+	}
+	if len(failed.Segments) == 0 || failed.Segments[0].Kind != outputStderr {
+		t.Fatalf("segments = %+v, want the diagnostic tagged as standard error", failed.Segments)
+	}
+	if failed.Output != joinSegments(failed.Segments) {
+		t.Fatalf("output %q does not match its segments %q", failed.Output, joinSegments(failed.Segments))
 	}
 }
 

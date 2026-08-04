@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -60,11 +59,12 @@ type runResult struct {
 }
 
 type stageResult struct {
-	ID         string `json:"id"`
-	Label      string `json:"label"`
-	Status     string `json:"status"`
-	Output     string `json:"output,omitempty"`
-	DurationMS int64  `json:"durationMs"`
+	ID         string          `json:"id"`
+	Label      string          `json:"label"`
+	Status     string          `json:"status"`
+	Output     string          `json:"output,omitempty"`
+	Segments   []outputSegment `json:"segments,omitempty"`
+	DurationMS int64           `json:"durationMs"`
 }
 
 type conversionArtifact struct {
@@ -156,7 +156,9 @@ func (p *pipelineRunner) convert(ctx context.Context, request convertRequest) (c
 	if resolve.Status != "passed" {
 		resolve.ID = "transpile"
 		resolve.Label = "Transpile"
-		resolve.Output = formatTranspileTranscript(resolve.Output, "", outputDir, resolve.Status, runtime.label)
+		// A transcript is assembled prose, not the command's streams, so the
+		// tagged segments it was built from no longer describe it.
+		resolve.Output, resolve.Segments = formatTranspileTranscript(resolve.Output, "", outputDir, resolve.Status, runtime.label), nil
 		return convertResult{Runtime: runtime.mode, Stage: resolve}, nil
 	}
 
@@ -164,7 +166,7 @@ func (p *pipelineRunner) convert(ctx context.Context, request convertRequest) (c
 	if toolStage != nil && toolStage.Status != "passed" {
 		toolStage.ID = "transpile"
 		toolStage.Label = "Transpile"
-		toolStage.Output = formatTranspileTranscript(resolve.Output, toolStage.Output, outputDir, toolStage.Status, runtime.label)
+		toolStage.Output, toolStage.Segments = formatTranspileTranscript(resolve.Output, toolStage.Output, outputDir, toolStage.Status, runtime.label), nil
 		return convertResult{Runtime: runtime.mode, Stage: *toolStage}, nil
 	}
 
@@ -202,7 +204,7 @@ func (p *pipelineRunner) convert(ctx context.Context, request convertRequest) (c
 		result.Stage.Status = "failed"
 		result.Stage.Output = appendOutputLine(result.Stage.Output, "go2cs did not emit the submitted app project.")
 	}
-	result.Stage.Output = formatTranspileTranscript(resolve.Output, result.Stage.Output, outputDir, result.Stage.Status, runtime.label)
+	result.Stage.Output, result.Stage.Segments = formatTranspileTranscript(resolve.Output, result.Stage.Output, outputDir, result.Stage.Status, runtime.label), nil
 	if result.Stage.Status != "passed" {
 		return result, nil
 	}
@@ -392,14 +394,6 @@ func appendOutputLine(output, line string) string {
 	return output + "\n" + line
 }
 
-func appendProgramExit(output, line string) string {
-	output = strings.TrimSpace(output)
-	if output == "" {
-		return line
-	}
-	return output + "\n\n" + line
-}
-
 func programExitMessage(parent, command context.Context, err error) string {
 	switch {
 	case err == nil:
@@ -424,12 +418,23 @@ func (p *pipelineRunner) runStage(parent context.Context, id, label, dir string,
 	command := newCommand(ctx, name, args...)
 	command.Dir = dir
 	hideCommandWindow(command)
-	var output bytes.Buffer
-	command.Stdout = &output
-	command.Stderr = &output
+	// Keep the two streams apart rather than merging them into one buffer: the
+	// interface colors standard error the way the Tour does.
+	var stream outputStream
+	command.Stdout = stream.writer(outputStdout)
+	command.Stderr = stream.writer(outputStderr)
 	err := command.Run()
 
-	text := cleanDisplayPath(output.String(), p.repoRoot)
+	segments := stream.collect()
+	for index := range segments {
+		segments[index].Text = cleanDisplayPath(segments[index].Text, p.repoRoot)
+	}
+	// A tool transcript is tidied, but a program's output is handed on exactly as
+	// it was written: its own trailing newline is what decides whether a blank
+	// line precedes the exit notice, as it does in the Tour.
+	if id != "run" {
+		segments = trimSegments(segments)
+	}
 	status := "passed"
 	if err != nil {
 		status = "failed"
@@ -437,25 +442,26 @@ func (p *pipelineRunner) runStage(parent context.Context, id, label, dir string,
 		case errors.Is(parent.Err(), context.Canceled):
 			status = "killed"
 			if id != "run" {
-				text = appendOutputLine(text, "Killed.")
+				segments = appendSystemSegment(segments, "Killed.")
 			}
 		case errors.Is(ctx.Err(), context.DeadlineExceeded):
 			if id != "run" {
-				text = appendOutputLine(text, fmt.Sprintf("Timed out after %s.", timeout))
+				segments = appendSystemSegment(segments, fmt.Sprintf("Timed out after %s.", timeout))
 			}
-		case text == "" && id != "run":
-			text = err.Error()
+		case id != "run" && len(segments) == 0:
+			segments = appendSystemSegment(segments, err.Error())
 		}
 	}
 	if id == "run" {
-		text = appendProgramExit(text, programExitMessage(parent, ctx, err))
+		segments = appendSystemSegment(segments, programExitMessage(parent, ctx, err))
 	}
 
 	return stageResult{
 		ID:         id,
 		Label:      label,
 		Status:     status,
-		Output:     strings.TrimSpace(text),
+		Output:     joinSegments(segments),
+		Segments:   segments,
 		DurationMS: time.Since(started).Milliseconds(),
 	}
 }

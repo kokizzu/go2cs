@@ -24,11 +24,43 @@ import (
 //go:embed web/*
 var webFiles embed.FS
 
+// The header carries one optional outbound link, aimed by default at a community
+// repository of worked Tour exercises. -solutions-url retargets it; an empty value
+// removes it from the header entirely.
+const (
+	defaultSolutionsURL  = "https://github.com/martishin/a-tour-of-go"
+	defaultSolutionsText = "Exercise solutions"
+)
+
 type server struct {
-	repoRoot *string
-	pipeline *pipelineRunner
-	tour     *tourProxy
-	static   http.Handler
+	repoRoot  *string
+	pipeline  *pipelineRunner
+	tour      *tourProxy
+	static    http.Handler
+	solutions solutionsLink
+}
+
+type solutionsLink struct {
+	URL  string `json:"url,omitempty"`
+	Text string `json:"text,omitempty"`
+}
+
+// newSolutionsLink reports the header link to show, or an empty link when the
+// operator cleared it. Only http and https are honored: the value reaches the page
+// as an href, and a link the header cannot open is worse than no link at all.
+func newSolutionsLink(url, text string) solutionsLink {
+	url = strings.TrimSpace(url)
+	if url == "" {
+		return solutionsLink{}
+	}
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		log.Printf("ignoring -solutions-url %q: only http and https links are shown", url)
+		return solutionsLink{}
+	}
+	if text = strings.TrimSpace(text); text == "" {
+		text = defaultSolutionsText
+	}
+	return solutionsLink{URL: url, Text: text}
 }
 
 func main() {
@@ -39,6 +71,8 @@ func main() {
 	deployedRoot := flag.String("deployed-root", "", "deploy-core root for the deployed stdlib runtime")
 	nugetSource := flag.String("nuget-source", "", "NuGet feed or folder containing go2cs packages")
 	nugetVersion := flag.String("nuget-version", "", "version of go2cs NuGet packages")
+	solutionsURL := flag.String("solutions-url", defaultSolutionsURL, "header link to exercise solutions (empty hides the link)")
+	solutionsText := flag.String("solutions-text", defaultSolutionsText, "text for the exercise-solutions link")
 	noTour := flag.Bool("no-tour", false, "do not start the official Tour process")
 	noOpen := flag.Bool("no-open", false, "do not open a browser")
 	flag.Parse()
@@ -76,10 +110,11 @@ func main() {
 	}
 
 	s := &server{
-		repoRoot: &root,
-		pipeline: pipeline,
-		tour:     tour,
-		static:   http.FileServer(http.FS(staticFS)),
+		repoRoot:  &root,
+		pipeline:  pipeline,
+		tour:      tour,
+		static:    http.FileServer(http.FS(staticFS)),
+		solutions: newSolutionsLink(*solutionsURL, *solutionsText),
 	}
 
 	httpServer := &http.Server{
@@ -135,11 +170,12 @@ func (s *server) routes() http.Handler {
 
 func (s *server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":       true,
-		"tour":     s.tour.available(),
-		"repoRoot": *s.repoRoot,
-		"runtime":  s.pipeline.defaultRuntime,
-		"runtimes": s.pipeline.runtimeOptions(),
+		"ok":        true,
+		"tour":      s.tour.available(),
+		"repoRoot":  *s.repoRoot,
+		"runtime":   s.pipeline.defaultRuntime,
+		"runtimes":  s.pipeline.runtimeOptions(),
+		"solutions": s.solutions,
 	})
 }
 
