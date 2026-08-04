@@ -58,7 +58,7 @@ internal static UntypedInt semTabSize => 251;
 partial struct semTable;
 
 [GoRecv] internal static ж<semaRoot> rootFor(this ref semTable t, ж<uint32> Ꮡaddr) {
-    return Ꮡ(t.Value[(((uintptr)new @unsafe.Pointer(Ꮡaddr) >> (int)(3))) % (uintptr)semTabSize]).of(semTableᴛ1.Ꮡroot);
+    return Ꮡ(t.Value[(((uintptr)Ꮡaddr >> (int)(3))) % (uintptr)semTabSize]).of(semTableᴛ1.Ꮡroot);
 }
 
 // sync_runtime_Semacquire should be an internal detail,
@@ -349,7 +349,7 @@ internal static void queue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr, ж<sud
             return;
         }
         last = t;
-        if ((uintptr)new @unsafe.Pointer(Ꮡaddr) < (uintptr)(~t).elem){
+        if ((uintptr)Ꮡaddr < (uintptr)(~t).elem){
             pt = t.of(sudog.Ꮡprev);
         } else {
             pt = t.of(sudog.Ꮡnext);
@@ -402,7 +402,7 @@ internal static (ж<sudog> found, int64 now, int64 tailtime) dequeue(this ж<sem
         if ((~s).elem == new @unsafe.Pointer(Ꮡaddr)) {
             goto Found;
         }
-        if ((uintptr)new @unsafe.Pointer(Ꮡaddr) < (uintptr)(~s).elem){
+        if ((uintptr)Ꮡaddr < (uintptr)(~s).elem){
             ps = s.of(sudog.Ꮡprev);
         } else {
             ps = s.of(sudog.Ꮡnext);

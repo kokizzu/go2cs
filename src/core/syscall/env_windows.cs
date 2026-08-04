@@ -89,7 +89,7 @@ public static slice<@string> Environ() => func<slice<@string>>((defer, recover) 
         while (~(ж<uint16>)(uintptr)(end) != 0) {
             end = (uintptr)@unsafe.Add(end, size);
         }
-        var entry = @unsafe.Slice(envp, ((uintptr)end - (uintptr)new @unsafe.Pointer(envp)) / size);
+        var entry = @unsafe.Slice(envp, ((uintptr)end - (uintptr)envp) / size);
         r = append(r, UTF16ToString(entry));
         envp = (ж<uint16>)(uintptr)(@unsafe.Add(end, size));
     }

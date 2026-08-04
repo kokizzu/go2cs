@@ -2621,7 +2621,7 @@ internal static void cgoBindM() {
 //
 //go:linkname getm
 internal static uintptr getm() {
-    return (uintptr)new @unsafe.Pointer((~getg()).m);
+    return (uintptr)(~getg()).m;
 }
 
 internal static ж<atomic.Uintptr> ᏑextraM = new(default(atomic.Uintptr));
@@ -2671,7 +2671,7 @@ internal static ж<m> lockextra(bool nilokay) {
 //go:nosplit
 internal static void unlockextra(ж<m> Ꮡmp, int32 delta) {
     ᏑextraMLength.Add(delta);
-    ᏑextraM.Store((uintptr)new @unsafe.Pointer(Ꮡmp));
+    ᏑextraM.Store((uintptr)Ꮡmp);
 }
 
 // Return an M from the extra M list. Returns last == true if the list becomes

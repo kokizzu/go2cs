@@ -14,7 +14,7 @@ partial class fuzz_package {
 // coverage of a test execution.
 internal static slice<byte> coverage() {
     @unsafe.Pointer addr = new @unsafe.Pointer(Ꮡ_counters);
-    var size = (uintptr)new @unsafe.Pointer(Ꮡ_ecounters) - (uintptr)addr;
+    var size = (uintptr)Ꮡ_ecounters - (uintptr)addr;
     return @unsafe.Slice((ж<byte>)(uintptr)(addr), (nint)size);
 }
 

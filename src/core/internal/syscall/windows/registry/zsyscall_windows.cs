@@ -47,7 +47,7 @@ internal static ж<syscall.LazyProc> procExpandEnvironmentStringsW = modkernel32
 internal static error /*regerrno*/ regCreateKeyEx(syscallꓸHandle key, ж<uint16> Ꮡsubkey, uint32 reserved, ж<uint16> Ꮡclass, uint32 options, uint32 desired, ж<syscall.SecurityAttributes> Ꮡsa, ж<syscallꓸHandle> Ꮡresult, ж<uint32> Ꮡdisposition) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall9(procRegCreateKeyExW.Addr(), 9, (uintptr)key, (uintptr)new @unsafe.Pointer(Ꮡsubkey), (uintptr)reserved, (uintptr)new @unsafe.Pointer(Ꮡclass), (uintptr)options, (uintptr)desired, (uintptr)new @unsafe.Pointer(Ꮡsa), (uintptr)new @unsafe.Pointer(Ꮡresult), (uintptr)new @unsafe.Pointer(Ꮡdisposition));
+    var (r0, _, _) = syscall.Syscall9(procRegCreateKeyExW.Addr(), 9, (uintptr)key, (uintptr)Ꮡsubkey, (uintptr)reserved, (uintptr)Ꮡclass, (uintptr)options, (uintptr)desired, (uintptr)Ꮡsa, (uintptr)Ꮡresult, (uintptr)Ꮡdisposition);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -57,7 +57,7 @@ internal static error /*regerrno*/ regCreateKeyEx(syscallꓸHandle key, ж<uint1
 internal static error /*regerrno*/ regDeleteKey(syscallꓸHandle key, ж<uint16> Ꮡsubkey) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall(procRegDeleteKeyW.Addr(), 2, (uintptr)key, (uintptr)new @unsafe.Pointer(Ꮡsubkey), 0);
+    var (r0, _, _) = syscall.Syscall(procRegDeleteKeyW.Addr(), 2, (uintptr)key, (uintptr)Ꮡsubkey, 0);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -67,7 +67,7 @@ internal static error /*regerrno*/ regDeleteKey(syscallꓸHandle key, ж<uint16>
 internal static error /*regerrno*/ regDeleteValue(syscallꓸHandle key, ж<uint16> Ꮡname) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall(procRegDeleteValueW.Addr(), 2, (uintptr)key, (uintptr)new @unsafe.Pointer(Ꮡname), 0);
+    var (r0, _, _) = syscall.Syscall(procRegDeleteValueW.Addr(), 2, (uintptr)key, (uintptr)Ꮡname, 0);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -77,7 +77,7 @@ internal static error /*regerrno*/ regDeleteValue(syscallꓸHandle key, ж<uint1
 internal static error /*regerrno*/ regEnumValue(syscallꓸHandle key, uint32 index, ж<uint16> Ꮡname, ж<uint32> ᏑnameLen, ж<uint32> Ꮡreserved, ж<uint32> Ꮡvaltype, ж<byte> Ꮡbuf, ж<uint32> Ꮡbuflen) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall9(procRegEnumValueW.Addr(), 8, (uintptr)key, (uintptr)index, (uintptr)new @unsafe.Pointer(Ꮡname), (uintptr)new @unsafe.Pointer(ᏑnameLen), (uintptr)new @unsafe.Pointer(Ꮡreserved), (uintptr)new @unsafe.Pointer(Ꮡvaltype), (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)new @unsafe.Pointer(Ꮡbuflen), 0);
+    var (r0, _, _) = syscall.Syscall9(procRegEnumValueW.Addr(), 8, (uintptr)key, (uintptr)index, (uintptr)Ꮡname, (uintptr)ᏑnameLen, (uintptr)Ꮡreserved, (uintptr)Ꮡvaltype, (uintptr)Ꮡbuf, (uintptr)Ꮡbuflen, 0);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -87,7 +87,7 @@ internal static error /*regerrno*/ regEnumValue(syscallꓸHandle key, uint32 ind
 internal static error /*regerrno*/ regLoadMUIString(syscallꓸHandle key, ж<uint16> Ꮡname, ж<uint16> Ꮡbuf, uint32 buflen, ж<uint32> ᏑbuflenCopied, uint32 flags, ж<uint16> Ꮡdir) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall9(procRegLoadMUIStringW.Addr(), 7, (uintptr)key, (uintptr)new @unsafe.Pointer(Ꮡname), (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)buflen, (uintptr)new @unsafe.Pointer(ᏑbuflenCopied), (uintptr)flags, (uintptr)new @unsafe.Pointer(Ꮡdir), 0, 0);
+    var (r0, _, _) = syscall.Syscall9(procRegLoadMUIStringW.Addr(), 7, (uintptr)key, (uintptr)Ꮡname, (uintptr)Ꮡbuf, (uintptr)buflen, (uintptr)ᏑbuflenCopied, (uintptr)flags, (uintptr)Ꮡdir, 0, 0);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -97,7 +97,7 @@ internal static error /*regerrno*/ regLoadMUIString(syscallꓸHandle key, ж<uin
 internal static error /*regerrno*/ regSetValueEx(syscallꓸHandle key, ж<uint16> ᏑvalueName, uint32 reserved, uint32 vtype, ж<byte> Ꮡbuf, uint32 bufsize) {
     error regerrno = default!;
 
-    var (r0, _, _) = syscall.Syscall6(procRegSetValueExW.Addr(), 6, (uintptr)key, (uintptr)new @unsafe.Pointer(ᏑvalueName), (uintptr)reserved, (uintptr)vtype, (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)bufsize);
+    var (r0, _, _) = syscall.Syscall6(procRegSetValueExW.Addr(), 6, (uintptr)key, (uintptr)ᏑvalueName, (uintptr)reserved, (uintptr)vtype, (uintptr)Ꮡbuf, (uintptr)bufsize);
     if (r0 != 0) {
         regerrno = ((syscall.Errno)r0);
     }
@@ -108,7 +108,7 @@ internal static (uint32 n, error err) expandEnvironmentStrings(ж<uint16> Ꮡsrc
     uint32 n = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall(procExpandEnvironmentStringsW.Addr(), 3, (uintptr)new @unsafe.Pointer(Ꮡsrc), (uintptr)new @unsafe.Pointer(Ꮡdst), (uintptr)size);
+    var (r0, _, e1) = syscall.Syscall(procExpandEnvironmentStringsW.Addr(), 3, (uintptr)Ꮡsrc, (uintptr)Ꮡdst, (uintptr)size);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);

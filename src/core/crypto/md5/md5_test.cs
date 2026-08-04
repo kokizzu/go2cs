@@ -257,7 +257,7 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size, bool unaligned
     b.SetBytes((int64)size);
     var bufΔ1 = md5_internal_test_package.buf;
     if (unaligned) {
-        if ((uintptr)((uintptr)new @unsafe.Pointer(Ꮡ(bufΔ1, 0)) & (uintptr)(/* unsafe.Alignof(uint32(0)) */ (uintptr)4 - 1)) == 0) {
+        if ((uintptr)((uintptr)Ꮡ(bufΔ1, 0) & (uintptr)(/* unsafe.Alignof(uint32(0)) */ (uintptr)4 - 1)) == 0) {
             bufΔ1 = bufΔ1[1..];
         }
     }

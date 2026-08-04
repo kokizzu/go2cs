@@ -319,7 +319,7 @@ internal static int32 sehhandler(ж<exceptionrecord> _Δp0, uint64 _Δp1, ж<con
         if (entry == 0) {
             break;
         }
-        stdcall8(_RtlVirtualUnwind, 0, @base, ctxt.ip(), entry, (uintptr)new @unsafe.Pointer(ctxt), 0, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡsp).Value), 0);
+        stdcall8(_RtlVirtualUnwind, 0, @base, ctxt.ip(), entry, (uintptr)ctxt, 0, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡsp).Value), 0);
         if (sp < (~gp).stack.lo || (~gp).stack.hi <= sp) {
             break;
         }
@@ -506,7 +506,7 @@ internal static void dieFromException(ж<exceptionrecord> Ꮡinfo, ж<context> �
         }
     }
     uintptr FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
-    stdcall3(_RaiseFailFastException, (uintptr)new @unsafe.Pointer(Ꮡinfo), (uintptr)new @unsafe.Pointer(Ꮡr), FAIL_FAST_GENERATE_EXCEPTION_ADDRESS);
+    stdcall3(_RaiseFailFastException, (uintptr)Ꮡinfo, (uintptr)Ꮡr, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS);
 }
 
 // gsignalStack is unused on Windows.

@@ -2395,7 +2395,7 @@ internal static ж<gcBitsArena> newArenaMayUnlock() {
     if ((uintptr)((uintptr)/* unsafe.Offsetof(gcBitsArena{}.bits) */ (uintptr)16 & 7) == 0){
         result.Value.free = 0;
     } else {
-        result.Value.free = 8 - ((uintptr)((uintptr)new @unsafe.Pointer(result.at(gcBitsArena.Ꮡbits, 0)) & 7));
+        result.Value.free = 8 - ((uintptr)((uintptr)result.at(gcBitsArena.Ꮡbits, 0) & 7));
     }
     return result;
 }

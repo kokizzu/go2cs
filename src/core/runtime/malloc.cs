@@ -1469,9 +1469,9 @@ internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<s
         }
         // Add the new chunk to the persistentChunks list.
         while (ᐧ) {
-            var chunks = (uintptr)new @unsafe.Pointer(persistentChunks);
+            var chunks = (uintptr)persistentChunks;
             ((~persistent).@base.Reinterpret<notInHeap, uintptr>()).Value = chunks;
-            if (atomic.Casuintptr(ᏑpersistentChunks.Reinterpret<ж<notInHeap>, uintptr>(), chunks, (uintptr)new @unsafe.Pointer((~persistent).@base))) {
+            if (atomic.Casuintptr(ᏑpersistentChunks.Reinterpret<ж<notInHeap>, uintptr>(), chunks, (uintptr)(~persistent).@base)) {
                 break;
             }
         }

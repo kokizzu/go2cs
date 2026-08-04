@@ -42,7 +42,7 @@ public static (slice<@string> env, error err) Default(ж<syscall.SysProcAttr> �
             while (~(ж<uint16>)(uintptr)(end) != 0) {
                 end = (uintptr)@unsafe.Add(end, size);
             }
-            var entry = @unsafe.Slice(blockp, ((uintptr)end - (uintptr)new @unsafe.Pointer(blockp)) / 2);
+            var entry = @unsafe.Slice(blockp, ((uintptr)end - (uintptr)blockp) / 2);
             env = append(env, syscall.UTF16ToString(entry));
             blockp = (ж<uint16>)(uintptr)(@unsafe.Add(end, size));
         }

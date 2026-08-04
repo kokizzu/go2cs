@@ -56,11 +56,11 @@ internal static void cgoCheckPtrWrite(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointe
     // It's OK if writing to memory allocated by persistentalloc.
     // Do this check last because it is more expensive and rarely true.
     // If it is false the expense doesn't matter since we are crashing.
-    if (inPersistentAlloc((uintptr)new @unsafe.Pointer(Ꮡdst))) {
+    if (inPersistentAlloc((uintptr)Ꮡdst)) {
         return;
     }
     systemstack(() => {
-        println((@string)"write of unpinned Go pointer"u8, ((Δhex)(uint64)(uintptr)src), (@string)"to non-Go memory"u8, ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡdst)));
+        println((@string)"write of unpinned Go pointer"u8, ((Δhex)(uint64)(uintptr)src), (@string)"to non-Go memory"u8, ((Δhex)(uint64)(uintptr)Ꮡdst));
         @throw(cgoWriteBarrierFail);
     });
 }

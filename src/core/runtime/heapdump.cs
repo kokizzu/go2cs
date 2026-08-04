@@ -188,7 +188,7 @@ internal static void dumptype(ж<_type> Ꮡt) {
     b.Value.t[0] = Ꮡt;
     // dump the type
     dumpint(tagType);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡt));
+    dumpint((uint64)(uintptr)Ꮡt);
     dumpint((uint64)t.Size_);
     var rt = toRType(Ꮡt);
     {
@@ -225,10 +225,10 @@ internal static void dumpfinalizer(@unsafe.Pointer obj, ж<funcval> Ꮡfn, ж<_t
 
     dumpint(tagFinalizer);
     dumpint((uint64)(uintptr)obj);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡfn));
+    dumpint((uint64)(uintptr)Ꮡfn);
     dumpint((uint64)(uintptr)(@unsafe.Pointer)fn.fn);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡfint));
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡot));
+    dumpint((uint64)(uintptr)Ꮡfint);
+    dumpint((uint64)(uintptr)Ꮡot);
 }
 
 [GoType] partial struct childInfo {
@@ -288,7 +288,7 @@ internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     // lowest address in frame
     dumpint((uint64)child.depth);
     // # of frames deep on the stack
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(child.sp));
+    dumpint((uint64)(uintptr)child.sp);
     // sp of child, or 0 if bottom of stack
     dumpmemrange((@unsafe.Pointer)s.sp, s.fp - s.sp);
     // frame contents
@@ -362,7 +362,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
         lr = gp.sched.lr;
     }
     dumpint(tagGoroutine);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡgp));
+    dumpint((uint64)(uintptr)Ꮡgp);
     dumpint((uint64)sp);
     dumpint(gp.goid);
     dumpint((uint64)gp.gopc);
@@ -373,9 +373,9 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
     dumpint((uint64)gp.waitsince);
     dumpstr(gp.waitreason.String());
     dumpint((uint64)(uintptr)gp.sched.ctxt);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(gp.m));
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(gp._defer));
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(gp._panic));
+    dumpint((uint64)(uintptr)gp.m);
+    dumpint((uint64)(uintptr)gp._defer);
+    dumpint((uint64)(uintptr)gp._panic);
     // dump stack
     ref var child = ref heap(new childInfo(), out var Ꮡchild);
     child.args.n = -1;
@@ -389,30 +389,30 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
     // dump defer & panic records
     for (var d = gp._defer; d != nil; d = d.Value.link) {
         dumpint(tagDefer);
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(d));
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡgp));
+        dumpint((uint64)(uintptr)d);
+        dumpint((uint64)(uintptr)Ꮡgp);
         dumpint((uint64)(~d).sp);
         dumpint((uint64)(~d).pc);
         var fn = ~d.of(_defer.Ꮡfn).Reinterpret<Action, ж<funcval>>();
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(fn));
+        dumpint((uint64)(uintptr)fn);
         if ((~d).fn == default!){
             // d.fn can be nil for open-coded defers
             dumpint((uint64)0);
         } else {
             dumpint((uint64)(uintptr)(@unsafe.Pointer)(~fn).fn);
         }
-        dumpint((uint64)(uintptr)new @unsafe.Pointer((~d).link));
+        dumpint((uint64)(uintptr)(~d).link);
     }
     for (var Δp = gp._panic; Δp != nil; Δp = Δp.Value.link) {
         dumpint(tagPanic);
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(Δp));
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡgp));
+        dumpint((uint64)(uintptr)Δp);
+        dumpint((uint64)(uintptr)Ꮡgp);
         var eface = efaceOf(Δp.of(_panic.Ꮡarg));
-        dumpint((uint64)(uintptr)new @unsafe.Pointer((~eface)._type));
+        dumpint((uint64)(uintptr)(~eface)._type);
         dumpint((uint64)(uintptr)(~eface).data);
         dumpint(0);
         // was p->defer, no longer recorded
-        dumpint((uint64)(uintptr)new @unsafe.Pointer((~Δp).link));
+        dumpint((uint64)(uintptr)(~Δp).link);
     }
 }
 
@@ -445,10 +445,10 @@ internal static void finq_callback(ж<funcval> Ꮡfn, @unsafe.Pointer obj, uintp
 
     dumpint(tagQueuedFinalizer);
     dumpint((uint64)(uintptr)obj);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡfn));
+    dumpint((uint64)(uintptr)Ꮡfn);
     dumpint((uint64)(uintptr)(@unsafe.Pointer)fn.fn);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡfint));
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡot));
+    dumpint((uint64)(uintptr)Ꮡfint);
+    dumpint((uint64)(uintptr)Ꮡot);
 }
 
 internal static void dumproots() {
@@ -562,8 +562,8 @@ internal static void itab_callback(ж<itab> Ꮡtab) {
     var t = tab.Type;
     dumptype(t);
     dumpint(tagItab);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡtab));
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(t));
+    dumpint((uint64)(uintptr)Ꮡtab);
+    dumpint((uint64)(uintptr)t);
 }
 
 internal static void dumpitabs() {
@@ -573,7 +573,7 @@ internal static void dumpitabs() {
 internal static void dumpms() {
     for (var mp = allm; mp != nil; mp = mp.Value.alllink) {
         dumpint(tagOSThread);
-        dumpint((uint64)(uintptr)new @unsafe.Pointer(mp));
+        dumpint((uint64)(uintptr)mp);
         dumpint((uint64)(~mp).id);
         dumpint((~mp).procid);
     }
@@ -621,7 +621,7 @@ internal static void dumpmemstats(ж<MemStats> Ꮡm) {
 internal static void dumpmemprof_callback(ж<bucket> Ꮡb, uintptr nstk, ж<uintptr> Ꮡpstk, uintptr size, uintptr allocs, uintptr frees) {
     var stk = (ж<array<uintptr>>)(uintptr)(new @unsafe.Pointer(Ꮡpstk));
     dumpint(tagMemProf);
-    dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡb));
+    dumpint((uint64)(uintptr)Ꮡb);
     dumpint((uint64)size);
     dumpint((uint64)nstk);
     for (var i = (uintptr)0; i < nstk; i++) {
@@ -681,7 +681,7 @@ internal static void dumpmemprof() {
             var Δp = s.@base() + (uintptr)(~spp).special.offset;
             dumpint(tagAllocSample);
             dumpint((uint64)Δp);
-            dumpint((uint64)(uintptr)new @unsafe.Pointer((~spp).b));
+            dumpint((uint64)(uintptr)(~spp).b);
         }
     }
 }

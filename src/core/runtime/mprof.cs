@@ -733,7 +733,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
         prof.cyclesLost += cycles;
         return;
     }
-    if ((uintptr)new @unsafe.Pointer(Ꮡl) == prof.pending) {
+    if ((uintptr)Ꮡl == prof.pending) {
         // Optimization: we'd already planned to profile this same lock (though
         // possibly from a different unlock site).
         prof.cycles += cycles;
@@ -758,7 +758,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
     //  - lockrank_on.go does this too, which gives it regular exercise
     //  - the lock would only move if it's stack allocated, which means it
     //      cannot experience multi-M contention
-    prof.pending = (uintptr)new @unsafe.Pointer(Ꮡl);
+    prof.pending = (uintptr)Ꮡl;
     prof.cycles = cycles;
 }
 
@@ -768,7 +768,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
 internal static void recordUnlock(this ж<mLockProfile> Ꮡprof, ж<mutex> Ꮡl) {
     ref var prof = ref Ꮡprof.Value;
 
-    if ((uintptr)new @unsafe.Pointer(Ꮡl) == prof.pending) {
+    if ((uintptr)Ꮡl == prof.pending) {
         Ꮡprof.captureStack();
     }
     {

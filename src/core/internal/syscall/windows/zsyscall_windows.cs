@@ -95,7 +95,7 @@ internal static (uint32 ret, error err) adjustTokenPrivileges(syscall.Token toke
     if (disableAllPrivileges) {
         _p0 = 1;
     }
-    var (r0, _, e1) = syscall.Syscall6(procAdjustTokenPrivileges.Addr(), 6, (uintptr)token, (uintptr)_p0, (uintptr)new @unsafe.Pointer(Ꮡnewstate), (uintptr)buflen, (uintptr)new @unsafe.Pointer(Ꮡprevstate), (uintptr)new @unsafe.Pointer(Ꮡreturnlen));
+    var (r0, _, e1) = syscall.Syscall6(procAdjustTokenPrivileges.Addr(), 6, (uintptr)token, (uintptr)_p0, (uintptr)Ꮡnewstate, (uintptr)buflen, (uintptr)Ꮡprevstate, (uintptr)Ꮡreturnlen);
     ret = (uint32)r0;
     if (true) {
         err = errnoErr(e1);
@@ -106,7 +106,7 @@ internal static (uint32 ret, error err) adjustTokenPrivileges(syscall.Token toke
 public static error /*err*/ DuplicateTokenEx(syscall.Token hExistingToken, uint32 dwDesiredAccess, ж<syscall.SecurityAttributes> ᏑlpTokenAttributes, uint32 impersonationLevel, TokenType tokenType, ж<syscall.Token> ᏑphNewToken) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall6(procDuplicateTokenEx.Addr(), 6, (uintptr)hExistingToken, (uintptr)dwDesiredAccess, (uintptr)new @unsafe.Pointer(ᏑlpTokenAttributes), (uintptr)impersonationLevel, (uintptr)(uint32)tokenType, (uintptr)new @unsafe.Pointer(ᏑphNewToken));
+    var (r1, _, e1) = syscall.Syscall6(procDuplicateTokenEx.Addr(), 6, (uintptr)hExistingToken, (uintptr)dwDesiredAccess, (uintptr)ᏑlpTokenAttributes, (uintptr)impersonationLevel, (uintptr)(uint32)tokenType, (uintptr)ᏑphNewToken);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -126,7 +126,7 @@ public static error /*err*/ ImpersonateSelf(uint32 impersonationlevel) {
 public static error /*err*/ LookupPrivilegeValue(ж<uint16> Ꮡsystemname, ж<uint16> Ꮡname, ж<LUID> Ꮡluid) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procLookupPrivilegeValueW.Addr(), 3, (uintptr)new @unsafe.Pointer(Ꮡsystemname), (uintptr)new @unsafe.Pointer(Ꮡname), (uintptr)new @unsafe.Pointer(Ꮡluid));
+    var (r1, _, e1) = syscall.Syscall(procLookupPrivilegeValueW.Addr(), 3, (uintptr)Ꮡsystemname, (uintptr)Ꮡname, (uintptr)Ꮡluid);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -137,7 +137,7 @@ public static (syscallꓸHandle handle, error err) OpenSCManager(ж<uint16> Ꮡm
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall(procOpenSCManagerW.Addr(), 3, (uintptr)new @unsafe.Pointer(ᏑmachineName), (uintptr)new @unsafe.Pointer(ᏑdatabaseName), (uintptr)access);
+    var (r0, _, e1) = syscall.Syscall(procOpenSCManagerW.Addr(), 3, (uintptr)ᏑmachineName, (uintptr)ᏑdatabaseName, (uintptr)access);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -149,7 +149,7 @@ public static (syscallꓸHandle handle, error err) OpenService(syscallꓸHandle 
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall(procOpenServiceW.Addr(), 3, (uintptr)mgr, (uintptr)new @unsafe.Pointer(ᏑserviceName), (uintptr)access);
+    var (r0, _, e1) = syscall.Syscall(procOpenServiceW.Addr(), 3, (uintptr)mgr, (uintptr)ᏑserviceName, (uintptr)access);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -164,7 +164,7 @@ public static error /*err*/ OpenThreadToken(syscallꓸHandle h, uint32 access, b
     if (openasself) {
         _p0 = 1;
     }
-    var (r1, _, e1) = syscall.Syscall6(procOpenThreadToken.Addr(), 4, (uintptr)h, (uintptr)access, (uintptr)_p0, (uintptr)new @unsafe.Pointer(Ꮡtoken), 0, 0);
+    var (r1, _, e1) = syscall.Syscall6(procOpenThreadToken.Addr(), 4, (uintptr)h, (uintptr)access, (uintptr)_p0, (uintptr)Ꮡtoken, 0, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -174,7 +174,7 @@ public static error /*err*/ OpenThreadToken(syscallꓸHandle h, uint32 access, b
 public static error /*err*/ QueryServiceStatus(syscallꓸHandle hService, ж<SERVICE_STATUS> ᏑlpServiceStatus) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procQueryServiceStatus.Addr(), 2, (uintptr)hService, (uintptr)new @unsafe.Pointer(ᏑlpServiceStatus), 0);
+    var (r1, _, e1) = syscall.Syscall(procQueryServiceStatus.Addr(), 2, (uintptr)hService, (uintptr)ᏑlpServiceStatus, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -208,7 +208,7 @@ public static error /*err*/ ProcessPrng(slice<byte> buf) {
     if (len(buf) > 0) {
         _p0 = Ꮡ(buf, 0);
     }
-    var (r1, _, e1) = syscall.Syscall(procProcessPrng.Addr(), 2, (uintptr)new @unsafe.Pointer(_p0), (uintptr)len(buf), 0);
+    var (r1, _, e1) = syscall.Syscall(procProcessPrng.Addr(), 2, (uintptr)_p0, (uintptr)len(buf), 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -218,7 +218,7 @@ public static error /*err*/ ProcessPrng(slice<byte> buf) {
 public static error /*errcode*/ GetAdaptersAddresses(uint32 family, uint32 flags, uintptr reserved, ж<IpAdapterAddresses> ᏑadapterAddresses, ж<uint32> ᏑsizePointer) {
     error errcode = default!;
 
-    var (r0, _, _) = syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, (uintptr)family, (uintptr)flags, (uintptr)reserved, (uintptr)new @unsafe.Pointer(ᏑadapterAddresses), (uintptr)new @unsafe.Pointer(ᏑsizePointer), 0);
+    var (r0, _, _) = syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, (uintptr)family, (uintptr)flags, (uintptr)reserved, (uintptr)ᏑadapterAddresses, (uintptr)ᏑsizePointer, 0);
     if (r0 != 0) {
         errcode = ((syscall.Errno)r0);
     }
@@ -229,7 +229,7 @@ public static (syscallꓸHandle handle, error err) CreateEvent(ж<SecurityAttrib
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall6(procCreateEventW.Addr(), 4, (uintptr)new @unsafe.Pointer(ᏑeventAttrs), (uintptr)manualReset, (uintptr)initialState, (uintptr)new @unsafe.Pointer(Ꮡname), 0, 0);
+    var (r0, _, e1) = syscall.Syscall6(procCreateEventW.Addr(), 4, (uintptr)ᏑeventAttrs, (uintptr)manualReset, (uintptr)initialState, (uintptr)Ꮡname, 0, 0);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -248,7 +248,7 @@ public static uint32 /*acp*/ GetACP() {
 public static error /*err*/ GetComputerNameEx(uint32 nameformat, ж<uint16> Ꮡbuf, ж<uint32> Ꮡn) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procGetComputerNameExW.Addr(), 3, (uintptr)nameformat, (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)new @unsafe.Pointer(Ꮡn));
+    var (r1, _, e1) = syscall.Syscall(procGetComputerNameExW.Addr(), 3, (uintptr)nameformat, (uintptr)Ꮡbuf, (uintptr)Ꮡn);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -278,7 +278,7 @@ public static (syscallꓸHandle pseudoHandle, error err) GetCurrentThread() {
 public static error /*err*/ GetFileInformationByHandleEx(syscallꓸHandle handle, uint32 @class, ж<byte> Ꮡinfo, uint32 bufsize) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall6(procGetFileInformationByHandleEx.Addr(), 4, (uintptr)handle, (uintptr)@class, (uintptr)new @unsafe.Pointer(Ꮡinfo), (uintptr)bufsize, 0, 0);
+    var (r1, _, e1) = syscall.Syscall6(procGetFileInformationByHandleEx.Addr(), 4, (uintptr)handle, (uintptr)@class, (uintptr)Ꮡinfo, (uintptr)bufsize, 0, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -289,7 +289,7 @@ public static (uint32 n, error err) GetFinalPathNameByHandle(syscallꓸHandle @f
     uint32 n = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, (uintptr)@file, (uintptr)new @unsafe.Pointer(ᏑfilePath), (uintptr)filePathSize, (uintptr)flags, 0, 0);
+    var (r0, _, e1) = syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, (uintptr)@file, (uintptr)ᏑfilePath, (uintptr)filePathSize, (uintptr)flags, 0, 0);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -301,7 +301,7 @@ public static (uint32 n, error err) GetModuleFileName(syscallꓸHandle module, �
     uint32 n = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall(procGetModuleFileNameW.Addr(), 3, (uintptr)module, (uintptr)new @unsafe.Pointer(Ꮡfn), (uintptr)len);
+    var (r0, _, e1) = syscall.Syscall(procGetModuleFileNameW.Addr(), 3, (uintptr)module, (uintptr)Ꮡfn, (uintptr)len);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -313,7 +313,7 @@ public static (uint32 n, error err) GetTempPath2(uint32 buflen, ж<uint16> Ꮡbu
     uint32 n = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall(procGetTempPath2W.Addr(), 2, (uintptr)buflen, (uintptr)new @unsafe.Pointer(Ꮡbuf), 0);
+    var (r0, _, e1) = syscall.Syscall(procGetTempPath2W.Addr(), 2, (uintptr)buflen, (uintptr)Ꮡbuf, 0);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -324,7 +324,7 @@ public static (uint32 n, error err) GetTempPath2(uint32 buflen, ж<uint16> Ꮡbu
 public static error /*err*/ GetVolumeInformationByHandle(syscallꓸHandle @file, ж<uint16> ᏑvolumeNameBuffer, uint32 volumeNameSize, ж<uint32> ᏑvolumeNameSerialNumber, ж<uint32> ᏑmaximumComponentLength, ж<uint32> ᏑfileSystemFlags, ж<uint16> ᏑfileSystemNameBuffer, uint32 fileSystemNameSize) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall9(procGetVolumeInformationByHandleW.Addr(), 8, (uintptr)@file, (uintptr)new @unsafe.Pointer(ᏑvolumeNameBuffer), (uintptr)volumeNameSize, (uintptr)new @unsafe.Pointer(ᏑvolumeNameSerialNumber), (uintptr)new @unsafe.Pointer(ᏑmaximumComponentLength), (uintptr)new @unsafe.Pointer(ᏑfileSystemFlags), (uintptr)new @unsafe.Pointer(ᏑfileSystemNameBuffer), (uintptr)fileSystemNameSize, 0);
+    var (r1, _, e1) = syscall.Syscall9(procGetVolumeInformationByHandleW.Addr(), 8, (uintptr)@file, (uintptr)ᏑvolumeNameBuffer, (uintptr)volumeNameSize, (uintptr)ᏑvolumeNameSerialNumber, (uintptr)ᏑmaximumComponentLength, (uintptr)ᏑfileSystemFlags, (uintptr)ᏑfileSystemNameBuffer, (uintptr)fileSystemNameSize, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -334,7 +334,7 @@ public static error /*err*/ GetVolumeInformationByHandle(syscallꓸHandle @file,
 public static error /*err*/ GetVolumeNameForVolumeMountPoint(ж<uint16> ᏑvolumeMountPoint, ж<uint16> ᏑvolumeName, uint32 bufferlength) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procGetVolumeNameForVolumeMountPointW.Addr(), 3, (uintptr)new @unsafe.Pointer(ᏑvolumeMountPoint), (uintptr)new @unsafe.Pointer(ᏑvolumeName), (uintptr)bufferlength);
+    var (r1, _, e1) = syscall.Syscall(procGetVolumeNameForVolumeMountPointW.Addr(), 3, (uintptr)ᏑvolumeMountPoint, (uintptr)ᏑvolumeName, (uintptr)bufferlength);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -344,7 +344,7 @@ public static error /*err*/ GetVolumeNameForVolumeMountPoint(ж<uint16> Ꮡvolum
 public static error /*err*/ LockFileEx(syscallꓸHandle @file, uint32 flags, uint32 reserved, uint32 bytesLow, uint32 bytesHigh, ж<syscall.Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall6(procLockFileEx.Addr(), 6, (uintptr)@file, (uintptr)flags, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)new @unsafe.Pointer(Ꮡoverlapped));
+    var (r1, _, e1) = syscall.Syscall6(procLockFileEx.Addr(), 6, (uintptr)@file, (uintptr)flags, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)Ꮡoverlapped);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -354,7 +354,7 @@ public static error /*err*/ LockFileEx(syscallꓸHandle @file, uint32 flags, uin
 public static error /*err*/ Module32First(syscallꓸHandle snapshot, ж<ModuleEntry32> ᏑmoduleEntry) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procModule32FirstW.Addr(), 2, (uintptr)snapshot, (uintptr)new @unsafe.Pointer(ᏑmoduleEntry), 0);
+    var (r1, _, e1) = syscall.Syscall(procModule32FirstW.Addr(), 2, (uintptr)snapshot, (uintptr)ᏑmoduleEntry, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -364,7 +364,7 @@ public static error /*err*/ Module32First(syscallꓸHandle snapshot, ж<ModuleEn
 public static error /*err*/ Module32Next(syscallꓸHandle snapshot, ж<ModuleEntry32> ᏑmoduleEntry) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procModule32NextW.Addr(), 2, (uintptr)snapshot, (uintptr)new @unsafe.Pointer(ᏑmoduleEntry), 0);
+    var (r1, _, e1) = syscall.Syscall(procModule32NextW.Addr(), 2, (uintptr)snapshot, (uintptr)ᏑmoduleEntry, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -374,7 +374,7 @@ public static error /*err*/ Module32Next(syscallꓸHandle snapshot, ж<ModuleEnt
 public static error /*err*/ MoveFileEx(ж<uint16> Ꮡfrom, ж<uint16> Ꮡto, uint32 flags) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procMoveFileExW.Addr(), 3, (uintptr)new @unsafe.Pointer(Ꮡfrom), (uintptr)new @unsafe.Pointer(Ꮡto), (uintptr)flags);
+    var (r1, _, e1) = syscall.Syscall(procMoveFileExW.Addr(), 3, (uintptr)Ꮡfrom, (uintptr)Ꮡto, (uintptr)flags);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -385,7 +385,7 @@ public static (int32 nwrite, error err) MultiByteToWideChar(uint32 codePage, uin
     int32 nwrite = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall6(procMultiByteToWideChar.Addr(), 6, (uintptr)codePage, (uintptr)dwFlags, (uintptr)new @unsafe.Pointer(Ꮡstr), (uintptr)nstr, (uintptr)new @unsafe.Pointer(Ꮡwchar), (uintptr)nwchar);
+    var (r0, _, e1) = syscall.Syscall6(procMultiByteToWideChar.Addr(), 6, (uintptr)codePage, (uintptr)dwFlags, (uintptr)Ꮡstr, (uintptr)nstr, (uintptr)Ꮡwchar, (uintptr)nwchar);
     nwrite = (int32)r0;
     if (nwrite == 0) {
         err = errnoErr(e1);
@@ -396,7 +396,7 @@ public static (int32 nwrite, error err) MultiByteToWideChar(uint32 codePage, uin
 public static uintptr /*ret*/ RtlLookupFunctionEntry(uintptr pc, ж<uintptr> ᏑbaseAddress, ж<byte> Ꮡtable) {
     uintptr ret = default!;
 
-    var (r0, _, _) = syscall.Syscall(procRtlLookupFunctionEntry.Addr(), 3, (uintptr)pc, (uintptr)new @unsafe.Pointer(ᏑbaseAddress), (uintptr)new @unsafe.Pointer(Ꮡtable));
+    var (r0, _, _) = syscall.Syscall(procRtlLookupFunctionEntry.Addr(), 3, (uintptr)pc, (uintptr)ᏑbaseAddress, (uintptr)Ꮡtable);
     ret = (uintptr)r0;
     return ret;
 }
@@ -404,7 +404,7 @@ public static uintptr /*ret*/ RtlLookupFunctionEntry(uintptr pc, ж<uintptr> Ꮡ
 public static uintptr /*ret*/ RtlVirtualUnwind(uint32 handlerType, uintptr baseAddress, uintptr pc, uintptr entry, uintptr ctxt, ж<uintptr> Ꮡdata, ж<uintptr> Ꮡframe, ж<byte> Ꮡctxptrs) {
     uintptr ret = default!;
 
-    var (r0, _, _) = syscall.Syscall9(procRtlVirtualUnwind.Addr(), 8, (uintptr)handlerType, (uintptr)baseAddress, (uintptr)pc, (uintptr)entry, (uintptr)ctxt, (uintptr)new @unsafe.Pointer(Ꮡdata), (uintptr)new @unsafe.Pointer(Ꮡframe), (uintptr)new @unsafe.Pointer(Ꮡctxptrs), 0);
+    var (r0, _, _) = syscall.Syscall9(procRtlVirtualUnwind.Addr(), 8, (uintptr)handlerType, (uintptr)baseAddress, (uintptr)pc, (uintptr)entry, (uintptr)ctxt, (uintptr)Ꮡdata, (uintptr)Ꮡframe, (uintptr)Ꮡctxptrs, 0);
     ret = (uintptr)r0;
     return ret;
 }
@@ -422,7 +422,7 @@ public static error /*err*/ SetFileInformationByHandle(syscallꓸHandle handle, 
 public static error /*err*/ UnlockFileEx(syscallꓸHandle @file, uint32 reserved, uint32 bytesLow, uint32 bytesHigh, ж<syscall.Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall6(procUnlockFileEx.Addr(), 5, (uintptr)@file, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)new @unsafe.Pointer(Ꮡoverlapped), 0);
+    var (r1, _, e1) = syscall.Syscall6(procUnlockFileEx.Addr(), 5, (uintptr)@file, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)Ꮡoverlapped, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -432,7 +432,7 @@ public static error /*err*/ UnlockFileEx(syscallꓸHandle @file, uint32 reserved
 public static error /*err*/ VirtualQuery(uintptr address, ж<MemoryBasicInformation> Ꮡbuffer, uintptr length) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procVirtualQuery.Addr(), 3, (uintptr)address, (uintptr)new @unsafe.Pointer(Ꮡbuffer), (uintptr)length);
+    var (r1, _, e1) = syscall.Syscall(procVirtualQuery.Addr(), 3, (uintptr)address, (uintptr)Ꮡbuffer, (uintptr)length);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -442,7 +442,7 @@ public static error /*err*/ VirtualQuery(uintptr address, ж<MemoryBasicInformat
 public static error /*neterr*/ NetShareAdd(ж<uint16> ᏑserverName, uint32 level, ж<byte> Ꮡbuf, ж<uint16> ᏑparmErr) {
     error neterr = default!;
 
-    var (r0, _, _) = syscall.Syscall6(procNetShareAdd.Addr(), 4, (uintptr)new @unsafe.Pointer(ᏑserverName), (uintptr)level, (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)new @unsafe.Pointer(ᏑparmErr), 0, 0);
+    var (r0, _, _) = syscall.Syscall6(procNetShareAdd.Addr(), 4, (uintptr)ᏑserverName, (uintptr)level, (uintptr)Ꮡbuf, (uintptr)ᏑparmErr, 0, 0);
     if (r0 != 0) {
         neterr = ((syscall.Errno)r0);
     }
@@ -452,7 +452,7 @@ public static error /*neterr*/ NetShareAdd(ж<uint16> ᏑserverName, uint32 leve
 public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> ᏑnetName, uint32 reserved) {
     error neterr = default!;
 
-    var (r0, _, _) = syscall.Syscall(procNetShareDel.Addr(), 3, (uintptr)new @unsafe.Pointer(ᏑserverName), (uintptr)new @unsafe.Pointer(ᏑnetName), (uintptr)reserved);
+    var (r0, _, _) = syscall.Syscall(procNetShareDel.Addr(), 3, (uintptr)ᏑserverName, (uintptr)ᏑnetName, (uintptr)reserved);
     if (r0 != 0) {
         neterr = ((syscall.Errno)r0);
     }
@@ -462,7 +462,7 @@ public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> 
 public static error /*neterr*/ NetUserGetLocalGroups(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName, uint32 level, uint32 flags, ж<ж<byte>> Ꮡbuf, uint32 prefMaxLen, ж<uint32> ᏑentriesRead, ж<uint32> ᏑtotalEntries) {
     error neterr = default!;
 
-    var (r0, _, _) = syscall.Syscall9(procNetUserGetLocalGroups.Addr(), 8, (uintptr)new @unsafe.Pointer(ᏑserverName), (uintptr)new @unsafe.Pointer(ᏑuserName), (uintptr)level, (uintptr)flags, (uintptr)new @unsafe.Pointer(Ꮡbuf), (uintptr)prefMaxLen, (uintptr)new @unsafe.Pointer(ᏑentriesRead), (uintptr)new @unsafe.Pointer(ᏑtotalEntries), 0);
+    var (r0, _, _) = syscall.Syscall9(procNetUserGetLocalGroups.Addr(), 8, (uintptr)ᏑserverName, (uintptr)ᏑuserName, (uintptr)level, (uintptr)flags, (uintptr)Ꮡbuf, (uintptr)prefMaxLen, (uintptr)ᏑentriesRead, (uintptr)ᏑtotalEntries, 0);
     if (r0 != 0) {
         neterr = ((syscall.Errno)r0);
     }
@@ -470,14 +470,14 @@ public static error /*neterr*/ NetUserGetLocalGroups(ж<uint16> ᏑserverName, �
 }
 
 internal static void rtlGetVersion(ж<_OSVERSIONINFOW> Ꮡinfo) {
-    syscall.Syscall(procRtlGetVersion.Addr(), 1, (uintptr)new @unsafe.Pointer(Ꮡinfo), 0, 0);
+    syscall.Syscall(procRtlGetVersion.Addr(), 1, (uintptr)Ꮡinfo, 0, 0);
     return;
 }
 
 public static error /*err*/ GetProcessMemoryInfo(syscallꓸHandle handle, ж<PROCESS_MEMORY_COUNTERS> ᏑmemCounters, uint32 cb) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)new @unsafe.Pointer(ᏑmemCounters), (uintptr)cb);
+    var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᏑmemCounters, (uintptr)cb);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -491,7 +491,7 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
     if (inheritExisting) {
         _p0 = 1;
     }
-    var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)new @unsafe.Pointer(Ꮡblock), (uintptr)token, (uintptr)_p0);
+    var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)Ꮡblock, (uintptr)token, (uintptr)_p0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -501,7 +501,7 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
 public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)new @unsafe.Pointer(Ꮡblock), 0, 0);
+    var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)Ꮡblock, 0, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -511,7 +511,7 @@ public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
 public static error /*err*/ GetProfilesDirectory(ж<uint16> Ꮡdir, ж<uint32> ᏑdirLen) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)new @unsafe.Pointer(Ꮡdir), (uintptr)new @unsafe.Pointer(ᏑdirLen), 0);
+    var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)Ꮡdir, (uintptr)ᏑdirLen, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -525,7 +525,7 @@ public static error /*err*/ WSAGetOverlappedResult(syscallꓸHandle h, ж<syscal
     if (wait) {
         _p0 = 1;
     }
-    var (r1, _, e1) = syscall.Syscall6(procWSAGetOverlappedResult.Addr(), 5, (uintptr)h, (uintptr)new @unsafe.Pointer(Ꮡo), (uintptr)new @unsafe.Pointer(Ꮡbytes), (uintptr)_p0, (uintptr)new @unsafe.Pointer(Ꮡflags), 0);
+    var (r1, _, e1) = syscall.Syscall6(procWSAGetOverlappedResult.Addr(), 5, (uintptr)h, (uintptr)Ꮡo, (uintptr)Ꮡbytes, (uintptr)_p0, (uintptr)Ꮡflags, 0);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -536,7 +536,7 @@ public static (syscallꓸHandle handle, error err) WSASocket(int32 af, int32 typ
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)new @unsafe.Pointer(Ꮡprotinfo), (uintptr)group, (uintptr)flags);
+    var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)Ꮡprotinfo, (uintptr)group, (uintptr)flags);
     handle = ((syscallꓸHandle)r0);
     if (handle == syscall.InvalidHandle) {
         err = errnoErr(e1);

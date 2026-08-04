@@ -237,7 +237,7 @@ internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
         // See cmd/link/internal/ld/data.go:relocsym.
         return (@unsafe.Pointer)abi.FuncPCABIInternal(unreachableMethod);
     }
-    var @base = (uintptr)new @unsafe.Pointer(t.Type);
+    var @base = (uintptr)t.Type;
     ж<moduledata> md = default!;
     for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
         if (@base >= (~next).types && @base < (~next).etypes) {

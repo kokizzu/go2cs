@@ -201,7 +201,7 @@ internal static @unsafe.Pointer noescape(@unsafe.Pointer Δp) {
 //
 //go:nosplit
 internal static ж<T> noEscapePtr<T>(ж<T> Ꮡp) {
-    var x = (uintptr)new @unsafe.Pointer(Ꮡp);
+    var x = (uintptr)Ꮡp;
     return (ж<T>)(uintptr)((@unsafe.Pointer)((uintptr)(x ^ 0)));
 }
 

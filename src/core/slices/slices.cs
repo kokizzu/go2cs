@@ -487,7 +487,7 @@ internal static bool overlaps<E>(slice<E> a, slice<E> b) {
     }
     // TODO: use a runtime/unsafe facility once one becomes available. See issue 12445.
     // Also see crypto/internal/alias/alias.go:AnyOverlap
-    return (uintptr)new @unsafe.Pointer(Ꮡ(a, 0)) <= (uintptr)new @unsafe.Pointer(Ꮡ(b, len(b) - 1)) + (elemSize - 1) && (uintptr)new @unsafe.Pointer(Ꮡ(b, 0)) <= (uintptr)new @unsafe.Pointer(Ꮡ(a, len(a) - 1)) + (elemSize - 1);
+    return (uintptr)Ꮡ(a, 0) <= (uintptr)Ꮡ(b, len(b) - 1) + (elemSize - 1) && (uintptr)Ꮡ(b, 0) <= (uintptr)Ꮡ(a, len(a) - 1) + (elemSize - 1);
 }
 
 // startIdx returns the index in haystack where the needle starts.

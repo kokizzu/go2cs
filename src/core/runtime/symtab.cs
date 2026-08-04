@@ -272,7 +272,7 @@ internal static ΔfuncInfo funcInfo(this ж<_func> Ꮡf) {
         if (len((~datap).pclntable) == 0) {
             continue;
         }
-        var @base = (uintptr)new @unsafe.Pointer(Ꮡ((~datap).pclntable, 0));
+        var @base = (uintptr)Ꮡ((~datap).pclntable, 0);
         if (@base <= ptr && ptr < @base + (uintptr)len((~datap).pclntable)) {
             mod = datap;
             break;
@@ -1155,7 +1155,7 @@ internal static @unsafe.Pointer funcdata(ΔfuncInfo f, uint8 i) {
     }
     var @base = f.datap.Value.gofunc;
     // load gofunc address early so that we calculate during cache misses
-    var Δp = (uintptr)new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)) + /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)f.npcdata * 4 + (uintptr)i * 4;
+    var Δp = (uintptr)Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata) + /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)f.npcdata * 4 + (uintptr)i * 4;
     var off = ~(ж<uint32>)(uintptr)((@unsafe.Pointer)Δp);
     // Return off == ^uint32(0) ? 0 : f.datap.gofunc + uintptr(off), but without branches.
     // The compiler calculates mask on most architectures using conditional assignment.

@@ -87,7 +87,7 @@ internal static ж<dlogger> dlog() {
         while (ᐧ) {
             var head = atomic.Loaduintptr(headp);
             l.Value.allLink = (ж<dlogger>)(uintptr)((@unsafe.Pointer)head);
-            if (atomic.Casuintptr(headp, head, (uintptr)new @unsafe.Pointer(l))) {
+            if (atomic.Casuintptr(headp, head, (uintptr)l)) {
                 break;
             }
         }
@@ -305,13 +305,13 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
     }
     var strData = @unsafe.StringData(x);
     var datap = Ꮡfirstmoduledata;
-    if (len(x) > 4 && (~datap).etext <= (uintptr)new @unsafe.Pointer(strData) && (uintptr)new @unsafe.Pointer(strData) < (~datap).end){
+    if (len(x) > 4 && (~datap).etext <= (uintptr)strData && (uintptr)strData < (~datap).end){
         // String constants are in the rodata section, which
         // isn't recorded in moduledata. But it has to be
         // somewhere between etext and end.
         l.w.@byte(debugLogConstString);
         l.w.uvarint((uint64)len(x));
-        l.w.uvarint((uint64)((uintptr)new @unsafe.Pointer(strData) - (~datap).etext));
+        l.w.uvarint((uint64)((uintptr)strData - (~datap).etext));
     } else {
         l.w.@byte(debugLogString);
         // We can't use unsafe.Slice as it may panic, which isn't safe

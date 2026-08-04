@@ -424,6 +424,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if aliased, ok := v.foreignAliasedTypeName(v.info.TypeOf(callExpr)); ok {
 			targetTypeName = aliased
 		}
+
+		// PEEPHOLE — `uintptr(unsafe.Pointer(x))`, Go's syscall idiom, materialized a DEAD object.
+		// Mark the inner conversion so its `new @unsafe.Pointer(…)` wrapper is never built; the
+		// operand then converts to uintptr directly, which is the same value by the same operator.
+		v.markDeadUnsafePointerBox(callExpr, arg)
+
 		expr := v.checkForImplicitConversion(funcType, arg, targetTypeName)
 
 		// A conversion whose TARGET is a non-empty INTERFACE and whose SOURCE is a POINTER —
@@ -586,7 +592,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					identContext := DefaultIdentContext()
 					identContext.isPointer = true
 
-					return fmt.Sprintf("new @unsafe.Pointer(%s)", v.convExpr(arg, []ExprContext{identContext}))
+					return v.unsafePointerBoxEmission(callExpr, arg, v.convExpr(arg, []ExprContext{identContext}))
 				}
 
 				// A deref-aliased pointer RECEIVER renders as the pointed-to VALUE alias
@@ -2436,7 +2442,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			expr = expr[9:]
 		}
 
-		result = fmt.Sprintf("%s%s(%s)", constructType, funcName, expr)
+		// The `unsafe.Pointer(x)` constructor form of the dead-wrapper peephole (see
+		// markDeadUnsafePointerBox): the enclosing `uintptr(…)` reads the address straight back
+		// out, so the wrapper object is never built and the operand stands alone.
+		if constructType == "new " && funcName == "@unsafe.Pointer" && len(callExpr.Args) == 1 {
+			result = v.unsafePointerBoxEmission(callExpr, callExpr.Args[0], expr)
+		} else {
+			result = fmt.Sprintf("%s%s(%s)", constructType, funcName, expr)
+		}
 	}
 
 	// Check each argument for implicit conversions. This re-converts each arg purely for its
@@ -4505,6 +4518,83 @@ func (v *Visitor) unwrapManagedPtrFieldAddress(arg ast.Expr) ast.Expr {
 	}
 
 	return unary
+}
+
+// markDeadUnsafePointerBox records that the `unsafe.Pointer(x)` conversion feeding convExpr's
+// enclosing `uintptr(…)` conversion may be emitted WITHOUT its wrapper object.
+//
+// Go's most common syscall idiom, `uintptr(unsafe.Pointer(x))`, converted to
+// `(uintptr)new @unsafe.Pointer(x)` — and that object is provably dead. golib's Pointer is a
+// `ж<uintptr>` whose only value-taking constructor takes a `uintptr`, so the operand is ALREADY
+// converted by `implicit operator uintptr(…)` before the wrapper exists; the wrapper stores that
+// number in its own one-element slot, and the enclosing cast reads it straight back out
+// (`uintptr(Pointer) => value.IsNull ? 0 : value.Value`, and the constructor marks the box nil
+// exactly when the address is 0 — so the round-trip is the identity). Dropping it emits `(uintptr)x`:
+// the same operator on the same operand, one fewer allocation per site. In the zsyscall wrappers,
+// where every pointer argument is spelled this way, that is three allocations off a single call.
+//
+// THE PIN IS NOT AFFECTED — the one semantic that a wrapper elision could plausibly have broken.
+// `implicit operator uintptr(ж<T>)` pins the ROOT storage behind the OPERAND box, for that box's
+// lifetime (`EnsureStableAddress` / `pinnedArrayData` set `m_pin` on the operand, released when the
+// operand is collected). The wrapper owns no pin, holds no reference to the operand and tracks no
+// lifetime — its `ж<uintptr>` slot holds the finished address as a number. So the address handed to
+// native code, and how long the storage behind it is held still, are identical either way.
+//
+// Only the conversion's own emission changes, and only where the wrapper was going to be built with
+// `new`: the arms that render a raw address by other means — `@unsafe.Pointer.FromRef(ref x)` for a
+// deref-aliased pointer receiver, and the `((@unsafe.Pointer)(uintptr)v)` cast hop for a named
+// uintptr/pointer operand — never consult the mark and are unchanged. The mark is keyed on the inner
+// CallExpr node, so it can only ever apply to the conversion this uintptr cast actually wraps.
+func (v *Visitor) markDeadUnsafePointerBox(callExpr *ast.CallExpr, arg ast.Expr) {
+	// The enclosing conversion must RENDER a `(uintptr)` cast around the operand — the basic
+	// `uintptr(…)` target, and the named-over-uintptr target (`Handle(…)`, security_windows'
+	// LocalFree defers), which hops through the underlying for the same reason.
+	targetType := v.info.TypeOf(callExpr)
+
+	if targetType == nil {
+		return
+	}
+
+	basic, isBasic := targetType.Underlying().(*types.Basic)
+
+	if !isBasic || basic.Kind() != types.Uintptr {
+		return
+	}
+
+	innerCall, isCall := ast.Unparen(arg).(*ast.CallExpr)
+
+	if !isCall || len(innerCall.Args) != 1 || !v.callExprIsTypeConversion(innerCall) || !v.isUnsafePointerType(innerCall.Fun) {
+		return
+	}
+
+	if v.deadUnsafePointerBoxes == nil {
+		v.deadUnsafePointerBoxes = map[*ast.CallExpr]bool{}
+	}
+
+	v.deadUnsafePointerBoxes[innerCall] = true
+}
+
+// unsafePointerBoxEmission renders an `unsafe.Pointer(x)` conversion whose operand has already been
+// converted to operandExpr — as the wrapper construction, or as the bare operand when the wrapper is
+// dead (see markDeadUnsafePointerBox). The operand keeps the file's usual parenthesization rule: a
+// primary expression stands alone under the enclosing `(uintptr)` cast, while one that binds looser
+// than a cast (`unsafe.Pointer(uintptr(p) + off)`) is wrapped so the cast still applies to all of it.
+func (v *Visitor) unsafePointerBoxEmission(callExpr *ast.CallExpr, arg ast.Expr, operandExpr string) string {
+	if !v.deadUnsafePointerBoxes[callExpr] {
+		return fmt.Sprintf("new @unsafe.Pointer(%s)", operandExpr)
+	}
+
+	// An ADDRESS-OF operand is the exception among the shapes needsParentheses rejects: `&x` renders
+	// as the primary box form (`Ꮡx`, `Ꮡ(…)`, `Ꮡs.at<T>(i)`), which the cast already binds to whole.
+	if unary, isUnary := arg.(*ast.UnaryExpr); isUnary && unary.Op == token.AND {
+		return operandExpr
+	}
+
+	if v.needsParentheses(arg) {
+		return fmt.Sprintf("(%s)", operandExpr)
+	}
+
+	return operandExpr
 }
 
 // unwrapUnsafePointerConversion returns the argument of an `unsafe.Pointer(x)` conversion, or nil

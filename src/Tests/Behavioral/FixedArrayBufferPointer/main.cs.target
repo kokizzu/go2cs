@@ -12,8 +12,8 @@ internal static void Main() {
     var l = ~Ꮡbuf.Reinterpret<array<uint16>, uint32>();
     fmt.Println(l);
     fmt.Println(buf[0], buf[2]);
-    var a = (uintptr)new @unsafe.Pointer(Ꮡbuf);
-    var b = (uintptr)new @unsafe.Pointer(Ꮡbuf);
+    var a = (uintptr)Ꮡbuf;
+    var b = (uintptr)Ꮡbuf;
     fmt.Println(a == b);
 }
 

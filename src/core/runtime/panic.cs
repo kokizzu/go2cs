@@ -542,9 +542,9 @@ internal static void deferprocStack(ж<_defer> Ꮡd) {
     // The fourth write does not require a write barrier because we
     // explicitly mark all the defer structures, so we don't need to
     // keep track of pointers to them with a write barrier.
-    (Ꮡd.of(_defer.Ꮡlink).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)new @unsafe.Pointer((~gp)._defer);
+    (Ꮡd.of(_defer.Ꮡlink).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)(~gp)._defer;
     (Ꮡd.of(_defer.Ꮡhead).Reinterpret<ж<atomic.Pointer<_defer>>, uintptr>()).Value = 0;
-    (gp.of(g.Ꮡ_defer).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)new @unsafe.Pointer(Ꮡd);
+    (gp.of(g.Ꮡ_defer).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)Ꮡd;
     return0();
 }
 
@@ -1198,7 +1198,7 @@ internal static void recovery(ж<g> Ꮡgp) {
  // stack pointers. To avoid issues around heap objects pointing
  // to the stack, save them as offsets from SP.
 
-            deferBitsOffset: (uintptr)new @unsafe.Pointer((~p0).deferBitsPtr) - (uintptr)(~p0).sp,
+            deferBitsOffset: (uintptr)(~p0).deferBitsPtr - (uintptr)(~p0).sp,
             slotsOffset: (uintptr)(~p0).slotsPtr - (uintptr)(~p0).sp
         )));
     }
