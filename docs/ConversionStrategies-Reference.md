@@ -11536,6 +11536,74 @@ test passed VACUOUSLY, executing none of its 320 golden comparisons); `time` goe
 pass of 159 as the two increment-6 JSON rows re-land. Recorded next gaps of this shape: `MakeFunc`,
 variadic `Call`/`CallSlice`, and `reflectlite`'s `rtype.Name`.
 
+**A ZERO test is a descriptor read too, and this one had degraded to a CONSTANT — `Value.IsZero`,
+`Value.Grow`, and the named-string `Len` (2026-08-03).** Go's `IsZero` is three reads over flat
+memory: an `Equal` function pointer compared against the shared `zeroVal` buffer, a
+`TFlagRegularMemory` all-bits-zero scan, and — when the value is not `flagIndir` — plain
+`v.ptr == nil`. A synthesized descriptor populates none of them, and the bridge never populates
+`v.ptr` or `flagIndir` at all, so the Array and Struct arms both fell straight to that last test and
+answered **true for every array and every struct, whatever it held**. Measured against `go run`
+before the fix: `[2]uint8{1,2}`, `NA{1,2}`, `inner{N:1}`, `outer{P:&n}` — every one of them
+`IsZero=true` in C# and `false` in Go. This is the `""`-type-name and `NumMethod`-0 family again,
+and the worst-behaved member of it so far: `true` is the correct answer for the zero value of the
+same type, so nothing faults and nothing looks wrong.
+
+A **fourth** read failed independently and had to land with it. `IsZero`'s String arm is
+`v.Len() == 0`, and `Len` answered through the golib container interfaces — a named slice is an
+`IArray`, a named map an `IMap` — but a `type NS string` wrapper implements none of them, so it fell
+to the `0` default. Every non-empty named string therefore reported itself both length-0 and zero.
+`String()` had always unwrapped such a wrapper; `Len` now does the same, gated on Kind String.
+That pairing is the increment-6 rule in its second form: **`IsZero`'s String arm is a GATE on `Len`,
+so the gate and the read behind it are one increment** — fixing the arms without `Len` would have
+left named strings silently zero, and fixing `Len` without the arms would have changed nothing.
+
+The managed `IsZero` is Go's own recursive definition with the memory shortcuts *removed*: a
+composite is zero exactly when every element (Array) or field (Struct) is, scalars test against
+their zero, and the nilable kinds are `IsNil`. That is precisely the walk the shortcuts stand in for
+— Go falls back to it itself when a type is not comparable and not regular-memory — so it needs no
+descriptor state beyond `Index`/`Field`/`NumField`, which the bridge already answers. Go's blank-field
+skip (`Name != "_"`) is preserved.
+
+`Value.Grow` shares the root and the remedy shape: it reads a `*unsafeheader.Slice` off the same
+never-populated `v.ptr`, so it **nil-deref'd for every caller** — `reflect.ValueOf(&s).Elem().Grow(1)`
+on a `[]byte` prints `4 8` in Go and panicked here. It is now an ordinary managed reallocation
+(golib `GoReflect.GrowSlice`) written back through the aliased box exactly as `SetLen` does, coerced
+into a named slice wrapper's slot through the single convertibility relation. Two details are
+load-bearing: growth **within** the existing capacity writes nothing at all, because Go reaches
+`growslice` only past the capacity and a spurious write would detach any other view still sharing the
+backing store; and the capacity landed on is unspecified in Go (its `growslice` rounds to a size
+class), so only `len+n` is guaranteed and the guard test asserts `cap >= n`, never an exact figure.
+
+Guard: `Tests/Behavioral/ReflectZeroAndGrow` pins all four against `go run` — raw and named strings,
+raw and named arrays (zero and non-zero, including an array OF named strings), the nil-vs-empty
+distinction for slices and maps, structs made non-zero through a nested named-string field alone,
+zeroness reached through an interface, and Grow from a nil slice / within capacity / past it /
+with `Grow(0)`. Demonstrated consumer: `encoding/gob`, whose `gobEncodeOpFor` skips a field on
+`!state.sendZero && v.IsZero()` — so the encoder was omitting non-zero named-string and array fields
+from the wire entirely, visible as `v = "", want "forty-two"` on the value fields while the pointer
+fields of the same type passed.
+
+**Rooted and deliberately NOT landed: `MapType().Hasher` and `Key.Equal` cannot be honored at all.**
+The remaining `unique`/`net` wall is a map descriptor whose `Hasher`/`Key`/`Elem` are unpopulated, so
+`concurrent.NewHashTrieMap`'s delegate construction fails on the first field it touches. Populating
+them looks like the same shape as the reads above and **is not**, because the contract differs in
+kind: `Hasher(unsafe.Pointer, uintptr) uintptr` must hash *the value at an address*, and the address
+the call site produces cannot name a managed value. Measured, three ways: two boxes holding equal
+`@string` values necessarily have **different** addresses (so an address-derived hash can never make
+`unique.Make("hello")` agree with itself — the package's entire purpose); a box whose pointee
+contains a reference has no pinnable slot and its address **moved across a forced GC**; and the
+`unsafe.Pointer` handed to the delegate carries no link back to its source box by construction, its
+constructor taking a `uintptr`. The key and elem *types* ARE recoverable from the descriptor's
+carried `System.Type` — but populating those alone would be actively worse than the present failure:
+`Key.Equal` is the comparability SIGNAL (a pointer-identity compare, not a value compare), so a
+half-populated descriptor turns a loud construction failure into a map that silently mislays every
+key. That is the increment-6 lesson inverted — **a descriptor field whose read cannot be honored must
+not be populated to look truthful** — and it is why this row is handed on rooted rather than half
+landed. The remedy is one layer down and outside this arc's files: `internal/concurrent.HashTrieMap`
+is a managed-referent raw-metal case whose *contract* (a concurrent map over comparable `K`) the CLR
+answers natively while its *mechanism* (hash the bytes at an address) it cannot, so it wants a
+hand-owned `_impl.cs` on the `sync.Mutex` precedent.
+
 **Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
 programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
 internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token

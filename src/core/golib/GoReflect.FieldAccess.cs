@@ -437,6 +437,59 @@ public static partial class GoReflect
         };
     }
 
+    private static readonly ConcurrentDictionary<Type, Func<object?, nint, object?>> s_sliceGrowers = new();
+
+    /// <summary>
+    /// A slice with room for <paramref name="extra"/> more elements past its LENGTH, preserving
+    /// that length and its contents (<c>reflect.Value.Grow</c>). Returns the source unchanged when
+    /// the spare capacity already suffices — Go's <c>growslice</c> is only reached past the
+    /// capacity, and reallocating early would silently detach a caller that still holds the old
+    /// backing store.
+    /// </summary>
+    /// <remarks>
+    /// Go does not specify the capacity a grow lands on (its <c>growslice</c> rounds to a size
+    /// class), only that it is at least <c>len+extra</c>; this doubles, which is Go's own growth
+    /// shape for the small sizes reflection callers reach. The result is a plain
+    /// <c>slice&lt;E&gt;</c> even when the source was a named wrapper — the caller converts it
+    /// back into the slot's own type, the same single convertibility relation <c>SetLen</c> uses.
+    /// </remarks>
+    public static object? GrowSlice(object? container, Type elemType, nint extra)
+    {
+        return s_sliceGrowers.GetOrAdd(elemType, static et =>
+            typeof(GoReflect).GetMethod(nameof(growSlice), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(et).CreateDelegate<Func<object?, nint, object?>>())(container, extra);
+    }
+
+    private static object? growSlice<E>(object? container, nint extra)
+    {
+        slice<E> s = container switch
+        {
+            null => default,
+            slice<E> raw => raw,
+            ISlice<E> view => new slice<E>(view),
+            _ => throw new InvalidOperationException($"GrowSlice: unsupported container {container.GetType()}")
+        };
+
+        nint length = s.Length;
+
+        if (length + extra <= s.Capacity)
+            return container;
+
+        nint capacity = s.Capacity == 0 ? length + extra : s.Capacity;
+
+        while (capacity < length + extra)
+            capacity *= 2;
+
+        E[] backing = new E[capacity];
+
+        // Block copy, not an element loop: the demonstrated consumer (encoding/gob's decUint8Slice)
+        // grows buffers past internal/saferio's 10 MiB chunk, where a per-element ref indexer walk
+        // is orders of magnitude slower than the memmove a Span copy compiles to.
+        s.ToSpan().CopyTo(backing);
+
+        return new slice<E>(backing, 0, length);
+    }
+
     private static readonly ConcurrentDictionary<(Type keyType, Type elemType), Action<object, object?, object?>> s_mapSetters = new();
 
     /// <summary>

@@ -244,6 +244,18 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// Go's s[:n]) and writes it back through the aliased box.
 		"Value.Cap":    true,
 		"Value.SetLen": true,
+		// Value.Grow reads a *unsafeheader.Slice off the same never-populated v.ptr, so it
+		// nil-deref'd for every caller (gob's decUint8Slice / decodeArrayHelper Grow(1) in a
+		// loop past internal/saferio's 10 MiB chunk). Bridged as an ordinary managed
+		// reallocation written back through the aliased box, exactly like SetLen.
+		"Value.Grow": true,
+		// Value.IsZero is three descriptor reads a synthesized descriptor never populates —
+		// an Equal function pointer against the shared zeroVal buffer, a TFlagRegularMemory
+		// all-bits-zero scan, and `v.ptr == nil` for a non-indirect value. The Array and
+		// Struct arms both fell to that last one, so EVERY array and EVERY struct reported
+		// itself zero whatever it held — silently, `true` being right for the zero value.
+		// Bridged as Go's own recursive definition with the memory shortcuts removed.
+		"Value.IsZero": true,
 		// Value.Addr derives the pointer type through ptrTo → typesByString → the typelinks()
 		// runtime stub (the linker-built type table has no managed form), so every Addr threw.
 		// The bridge already holds the address: an addressable Value ALIASES the ж<T> box its
