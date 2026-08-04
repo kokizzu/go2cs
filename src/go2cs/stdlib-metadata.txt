@@ -128,6 +128,7 @@
 [assembly: GoImplement<cancelCtx, Context>(Promoted = true)]
 [assembly: GoImplement<cancelCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<deadlineExceededError, error>]
+[assembly: GoImplement<emptyCtx, Context>]
 [assembly: GoImplement<stopCtx, Context>(Promoted = true)]
 [assembly: GoImplement<stopCtx, Context>]
 [assembly: GoImplement<timerCtx, Context>(Pointer = true)]
@@ -143,6 +144,7 @@
 [assembly: GoTypeAlias("PrivateKey", "object")]
 [assembly: GoTypeAlias("PublicKey", "object")]
 // </ExportedTypeAliases>
+[assembly: GoImplement<Hash, SignerOpts>]
 
 ##crypto.aes
 // <ExportedTypeAliases>
@@ -346,7 +348,6 @@
 [assembly: GoImplement<certificateVerifyMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<clientHelloMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<clientKeyExchangeMsg, handshakeMessage>(Pointer = true)]
-[assembly: GoImplement<crypto_package.Hash, crypto_package.SignerOpts>]
 [assembly: GoImplement<cthWrapper, hash_package.Hash>(Pointer = true)]
 [assembly: GoImplement<ecdheKeyAgreement, keyAgreement>(Pointer = true)]
 [assembly: GoImplement<encryptedExtensionsMsg, handshakeMessage>(Pointer = true)]
@@ -383,7 +384,6 @@
 [assembly: GoImplement<SystemRootsError, error>]
 [assembly: GoImplement<UnhandledCriticalExtension, error>]
 [assembly: GoImplement<UnknownAuthorityError, error>]
-[assembly: GoImplement<crypto_package.Hash, crypto_package.SignerOpts>]
 [assembly: GoImplement<go.crypto.rsa_package.PSSOptions, crypto_package.SignerOpts>(Pointer = true)]
 
 ##crypto.x509.pkix
@@ -412,10 +412,13 @@
 [assembly: GoTypeAlias("String", "const:ΔString")]
 [assembly: GoTypeAlias("Value", "object")]
 // </ExportedTypeAliases>
+[assembly: GoImplement<NotNull, ValueConverter>]
+[assembly: GoImplement<Null, ValueConverter>]
 [assembly: GoImplement<boolType, ValueConverter>]
 [assembly: GoImplement<defaultConverter, ValueConverter>]
 [assembly: GoImplement<int32Type, ValueConverter>]
 [assembly: GoImplement<noRows, Result>]
+[assembly: GoImplement<stringType, ValueConverter>]
 [assembly: GoImplement<ΔRowsAffected, Result>]
 
 ##debug.buildinfo
@@ -428,8 +431,6 @@
 [assembly: GoImplement<go.debug.macho_package.ΔSegment, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<go.debug.pe_package.ΔSection, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<go.debug.plan9obj_package.ΔSection, io_package.ReaderAt>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<machoExe, exe>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<peExe, exe>(Pointer = true)]
@@ -462,8 +463,6 @@
 [assembly: GoImplement<UnspecifiedType, ΔType>(Pointer = true)]
 [assembly: GoImplement<UnsupportedType, ΔType>(Pointer = true)]
 [assembly: GoImplement<VoidType, ΔType>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<typeUnit, dataFormat>(Pointer = true)]
 [assembly: GoImplement<typeUnitReader, typeReader>(Pointer = true)]
 [assembly: GoImplement<unit, dataFormat>(Pointer = true)]
@@ -481,8 +480,6 @@
 [assembly: GoImplement<errorReader, error>(Promoted = true)]
 [assembly: GoImplement<errorReader, io_package.ReadSeeker>]
 [assembly: GoImplement<go.@internal.zstd_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.ReadSeeker, io_package.Reader>]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
@@ -499,8 +496,6 @@
 [assembly: GoImplement<DecodingError, error>(Pointer = true)]
 [assembly: GoImplement<UnknownFileError, error>]
 [assembly: GoImplement<UnknownLineError, error>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 
 ##debug.macho
 // <ExportedTypeAliases>
@@ -508,15 +503,17 @@
 [assembly: GoTypeAlias("Segment", "ΔSegment")]
 // </ExportedTypeAliases>
 [assembly: GoImplement<Dylib, Load>(Pointer = true)]
+[assembly: GoImplement<Dylib, Load>]
 [assembly: GoImplement<Dysymtab, Load>(Pointer = true)]
+[assembly: GoImplement<Dysymtab, Load>]
 [assembly: GoImplement<FormatError, error>(Pointer = true)]
 [assembly: GoImplement<LoadBytes, Load>]
 [assembly: GoImplement<Rpath, Load>(Pointer = true)]
+[assembly: GoImplement<Rpath, Load>]
 [assembly: GoImplement<Symtab, Load>(Pointer = true)]
+[assembly: GoImplement<Symtab, Load>]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
@@ -524,6 +521,7 @@
 [assembly: GoImplement<os_package.File, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<ΔSection, io_package.ReaderAt>(Promoted = true)]
 [assembly: GoImplement<ΔSegment, Load>(Pointer = true)]
+[assembly: GoImplement<ΔSegment, Load>]
 [assembly: GoImplement<ΔSegment, io_package.ReaderAt>(Promoted = true)]
 
 ##debug.pe
@@ -531,7 +529,6 @@
 [assembly: GoTypeAlias("Section", "ΔSection")]
 // </ExportedTypeAliases>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
@@ -545,7 +542,6 @@
 [assembly: GoTypeAlias("Section", "ΔSection")]
 // </ExportedTypeAliases>
 [assembly: GoImplement<formatError, error>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
@@ -611,6 +607,12 @@
 ##encoding.binary
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<bigEndian, AppendByteOrder>]
+[assembly: GoImplement<bigEndian, ByteOrder>]
+[assembly: GoImplement<littleEndian, AppendByteOrder>]
+[assembly: GoImplement<littleEndian, ByteOrder>]
+[assembly: GoImplement<nativeEndian, AppendByteOrder>]
+[assembly: GoImplement<nativeEndian, ByteOrder>]
 
 ##encoding.csv
 // <ExportedTypeAliases>
@@ -647,6 +649,7 @@
 [assembly: GoImplement<InvalidUnmarshalError, error>(Pointer = true)]
 [assembly: GoImplement<MarshalerError, error>(Pointer = true)]
 [assembly: GoImplement<RawMessage, Marshaler>(Pointer = true)]
+[assembly: GoImplement<RawMessage, Marshaler>]
 [assembly: GoImplement<RawMessage, Unmarshaler>(Pointer = true)]
 [assembly: GoImplement<SyntaxError, error>(Pointer = true)]
 [assembly: GoImplement<UnmarshalTypeError, error>(Pointer = true)]
@@ -705,7 +708,7 @@
 [assembly: GoImplement<intValue, Value>(Pointer = true)]
 [assembly: GoImplement<stringValue, Value>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<textValue, Value>]
+[assembly: GoImplement<textValue, Getter>]
 [assembly: GoImplement<uint64Value, Value>(Pointer = true)]
 [assembly: GoImplement<uintValue, Value>(Pointer = true)]
 
@@ -805,17 +808,11 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<gccgoimports, go.go.types_package.Importer>(Pointer = true)]
 [assembly: GoImplement<gcimports, go.go.types_package.Importer>(Pointer = true)]
-[assembly: GoImplement<go.go.@internal.srcimporter_package.Importer, go.go.types_package.Importer>(Pointer = true)]
 
 ##go.internal.gccgoimporter
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bytes_package.Reader, io_package.ReadSeeker>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Const, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Func, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.TypeName, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Var, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.ΔSignature, go.go.types_package.ΔType>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Closer>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadSeeker>(Pointer = true)]
@@ -833,11 +830,6 @@
 [assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.ByteReader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Const, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Func, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.TypeName, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Var, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.ΔSignature, go.go.types_package.ΔType>(Pointer = true)]
 [assembly: GoImplement<intReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadCloser>(Pointer = true)]
 
@@ -915,7 +907,6 @@
 [assembly: GoImplement<go.go.ast_package.CallExpr, go.go.ast_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.Ident, go.go.ast_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.UnaryExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.build.constraint_package.AndExpr, go.go.build.constraint_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.text.tabwriter_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<sizeCounter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<trimmer, io_package.Writer>(Pointer = true)]
@@ -1108,13 +1099,7 @@
 [assembly: GoTypeAlias("Error", "ΔError")]
 [assembly: GoTypeAlias("FuncMap", "go.text.template_package.FuncMap")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<go.text.template.parse_package.ActionNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<go.text.template.parse_package.BranchNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.BreakNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ContinueNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.IdentifierNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ListNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.TemplateNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔError, error>(Pointer = true)]
 
@@ -1133,10 +1118,10 @@
 [assembly: GoImplement<NYCbCrA, Image>(Pointer = true)]
 [assembly: GoImplement<Paletted, Image>(Pointer = true)]
 [assembly: GoImplement<RGBA64, Image>(Pointer = true)]
+[assembly: GoImplement<Rectangle, RGBA64Image>]
 [assembly: GoImplement<Uniform, go.image.color_package.Model>(Pointer = true)]
 [assembly: GoImplement<YCbCr, Image>(Pointer = true)]
 [assembly: GoImplement<bufio_package.Reader, reader>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
 [assembly: GoImplement<ΔRGBA, Image>(Pointer = true)]
 
 ##image.color
@@ -1151,6 +1136,7 @@
 [assembly: GoImplement<NRGBA, Color>]
 [assembly: GoImplement<NRGBA64, Color>]
 [assembly: GoImplement<NYCbCrA, Color>]
+[assembly: GoImplement<Palette, Model>]
 [assembly: GoImplement<RGBA64, Color>]
 [assembly: GoImplement<YCbCr, Color>]
 [assembly: GoImplement<modelFunc, Model>(Pointer = true)]
@@ -1163,10 +1149,10 @@
 ##image.draw
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<Op, Drawer>]
 [assembly: GoImplement<floydSteinberg, Drawer>]
 [assembly: GoImplement<go.image.color_package.RGBA64, go.image.color_package.Color>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, Image>(Pointer = true)]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 
 ##image.gif
 // <ExportedTypeAliases>
@@ -1175,7 +1161,6 @@
 [assembly: GoImplement<blockWriter, io_package.Writer>]
 [assembly: GoImplement<bufio_package.Reader, reader>(Pointer = true)]
 [assembly: GoImplement<bufio_package.Writer, writer>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
 [assembly: GoImplement<image_package.Paletted, go.image.draw_package.Image>(Pointer = true)]
 
 ##image.internal.imageutil
@@ -1188,7 +1173,6 @@
 [assembly: GoImplement<FormatError, error>]
 [assembly: GoImplement<UnsupportedError, error>]
 [assembly: GoImplement<bufio_package.Writer, writer>(Pointer = true)]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 
 ##image.png
 // <ExportedTypeAliases>
@@ -1198,8 +1182,6 @@
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<decoder, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<encoder, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 
 ##index.suffixarray
 // <ExportedTypeAliases>
@@ -1278,14 +1260,12 @@
 ##internal.coverage.decodecounter
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 
 ##internal.coverage.decodemeta
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<go.@internal.coverage.slicereader_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 
 ##internal.coverage.encodecounter
@@ -1293,13 +1273,11 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<go.@internal.coverage.slicewriter_package.WriteSeeker, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 
 ##internal.coverage.encodemeta
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 
 ##internal.coverage.pods
 // <ExportedTypeAliases>
@@ -1355,8 +1333,6 @@
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<contextReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<crashError, error>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<pcgRand, mutatorRand>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]
@@ -1427,10 +1403,11 @@
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Code", "ΔCode")]
 // </ExportedTypeAliases>
+[assembly: GoImplement<CodeObj, ΔCode>]
+[assembly: GoImplement<CodeType, ΔCode>]
 [assembly: GoImplement<CodeVal, ΔCode>]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 
@@ -1632,7 +1609,6 @@
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Section", "ΔSection")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<nobitsSectionReader, io_package.ReaderAt>(Pointer = true)]
@@ -1650,6 +1626,7 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<LimitedReader, Reader>(Pointer = true)]
 [assembly: GoImplement<discard, ReaderFrom>]
+[assembly: GoImplement<discard, StringWriter>]
 [assembly: GoImplement<discard, Writer>]
 [assembly: GoImplement<eofReader, Reader>]
 [assembly: GoImplement<multiReader, Reader>(Pointer = true)]
@@ -1660,6 +1637,7 @@
 [assembly: GoImplement<nopCloser, Reader>(Promoted = true)]
 [assembly: GoImplement<nopCloserWriterTo, ReadCloser>]
 [assembly: GoImplement<nopCloserWriterTo, Reader>(Promoted = true)]
+[assembly: GoImplement<nopCloserWriterTo, WriterTo>]
 [assembly: GoImplement<teeReader, Reader>(Pointer = true)]
 
 ##io.fs
@@ -1812,6 +1790,7 @@
 [assembly: GoImplement<IPConn, Conn>(Pointer = true)]
 [assembly: GoImplement<IPConn, PacketConn>(Pointer = true)]
 [assembly: GoImplement<IPNet, ΔAddr>(Pointer = true)]
+[assembly: GoImplement<InvalidAddrError, ΔError>]
 [assembly: GoImplement<OpError, error>(Pointer = true)]
 [assembly: GoImplement<ParseError, error>(Pointer = true)]
 [assembly: GoImplement<TCPAddr, ΔAddr>(Pointer = true)]
@@ -1827,7 +1806,7 @@
 [assembly: GoImplement<UnixConn, Conn>(Pointer = true)]
 [assembly: GoImplement<UnixConn, PacketConn>(Pointer = true)]
 [assembly: GoImplement<UnixListener, Listener>(Pointer = true)]
-[assembly: GoImplement<UnknownNetworkError, error>]
+[assembly: GoImplement<UnknownNetworkError, ΔError>]
 [assembly: GoImplement<addrPortUDPAddr, ΔAddr>]
 [assembly: GoImplement<byRFC6724, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<canceledError, error>]
@@ -1892,7 +1871,6 @@
 [assembly: GoImplement<finishAsyncByteRead, io_package.Reader>]
 [assembly: GoImplement<globalOptionsHandler, ΔHandler>]
 [assembly: GoImplement<go.net.http.internal_package.FlushAfterChunkWriter, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.net.url_package.ΔError, error>(Pointer = true)]
 [assembly: GoImplement<gzipReader, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<htmlSig, sniffSig>]
 [assembly: GoImplement<http2ConnectionError, error>]
@@ -2000,6 +1978,7 @@
 [assembly: GoImplement<rᴛ1, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<rᴛ1, io_package.Reader>]
 [assembly: GoImplement<rᴛ1, io_package.WriterTo>(Promoted = true)]
+[assembly: GoImplement<serverHandler, ΔHandler>]
 [assembly: GoImplement<socksAddr, net_package.ΔAddr>(Pointer = true)]
 [assembly: GoImplement<socksConn, net_package.Conn>(Pointer = true)]
 [assembly: GoImplement<socksConn, net_package.Conn>(Promoted = true)]
@@ -2025,7 +2004,6 @@
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<go.net.http_package.HandlerFunc, go.net.http_package.ΔHandler>]
 [assembly: GoImplement<go.net.http_package.ResponseWriter, io_package.Writer>]
-[assembly: GoImplement<go.net.http_package.ServeMux, go.net.http_package.ΔHandler>(Pointer = true)]
 [assembly: GoImplement<neverEnding, io_package.Reader>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<response, go.net.http_package.ResponseWriter>(Pointer = true)]
@@ -2039,8 +2017,6 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<bufWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.net.http_package.ServeMux, go.net.http_package.ΔHandler>(Pointer = true)]
 [assembly: GoImplement<io_package.PipeReader, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<net_package.Conn, io_package.ReadWriteCloser>]
 [assembly: GoImplement<response, go.net.http_package.ResponseWriter>(Pointer = true)]
@@ -2052,7 +2028,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.net.http_package.Transport, go.net.http_package.RoundTripper>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 
@@ -2162,7 +2137,6 @@
 [assembly: GoImplement<cramMD5Auth, ΔAuth>(Pointer = true)]
 [assembly: GoImplement<dataCloser, io_package.WriteCloser>(Pointer = true)]
 [assembly: GoImplement<dataCloser, io_package.WriteCloser>(Promoted = true)]
-[assembly: GoImplement<go.net.textproto_package.ΔError, error>(Pointer = true)]
 [assembly: GoImplement<net_package.Conn, io_package.ReadWriteCloser>]
 [assembly: GoImplement<plainAuth, ΔAuth>(Pointer = true)]
 
@@ -2295,7 +2269,10 @@
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Error", "ΔError")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<errorString, error>]
+[assembly: GoImplement<boundsError, ΔError>]
+[assembly: GoImplement<errorAddressString, ΔError>]
+[assembly: GoImplement<errorString, ΔError>]
+[assembly: GoImplement<plainError, ΔError>]
 
 ##runtime.coverage
 // <ExportedTypeAliases>
@@ -2327,8 +2304,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<go.text.tabwriter_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<keysByCount, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<runtimeProfile, countProfile>(Pointer = true)]
@@ -2359,6 +2334,7 @@
 [assembly: GoImplement<StringSlice, Interface>]
 [assembly: GoImplement<reverse, Interface>(Pointer = true)]
 [assembly: GoImplement<reverse, Interface>(Promoted = true)]
+[assembly: GoImplement<reverse, Interface>]
 
 ##strconv
 // <ExportedTypeAliases>
@@ -2458,17 +2434,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<ExecError, error>]
-[assembly: GoImplement<go.text.template.parse_package.ActionNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ChainNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.CommandNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.FieldNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.IdentifierNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ListNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.NumberNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.PipeNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.RangeNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.TemplateNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.VariableNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 
 ##text.template.parse
