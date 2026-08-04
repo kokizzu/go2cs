@@ -2,12 +2,6 @@
   "schemaVersion": 1,
   "disclosures": [
     {
-      "name": "TestEqual",
-      "class": "alloc-profile",
-      "signature": "Equal allocated ",
-      "reason": "want-zero AllocsPerRun assert: the managed runtime allocates during the converted Equal comparison loop where Go's compiler-optimized code does not; a malloc-counting shim would fail identically"
-    },
-    {
       "name": "TestGrow",
       "class": "alloc-profile",
       "signature": "allocation occurred during write",

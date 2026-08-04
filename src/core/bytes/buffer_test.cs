@@ -42,7 +42,7 @@ internal static slice<byte> testBytes; // test data; same as testString but as a
 
 // Verify that contents of buf match the string s.
 internal static void check(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer> Ꮡbuf, @string s) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var bytes = buf.Bytes();
     @string str = Ꮡbuf.String();
@@ -64,7 +64,7 @@ internal static void check(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer
 // The initial contents of buf corresponds to the string s;
 // the result is the final contents of buf returned as a string.
 internal static @string fillString(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer> Ꮡbuf, @string s, nint n, @string fus) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     check(Ꮡt, testname + " (fill 1)"u8, Ꮡbuf, s);
     for (; n > 0; n--) {
@@ -85,7 +85,7 @@ internal static @string fillString(ж<testing.T> Ꮡt, @string testname, ж<byte
 // The initial contents of buf corresponds to the string s;
 // the result is the final contents of buf returned as a string.
 internal static @string fillBytes(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer> Ꮡbuf, @string s, nint n, slice<byte> fub) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     check(Ꮡt, testname + " (fill 1)"u8, Ꮡbuf, s);
     for (; n > 0; n--) {
@@ -138,7 +138,7 @@ public static void TestNewBufferString(ж<testing.T> Ꮡt) {
 // Empty buf through repeated reads into fub.
 // The initial contents of buf corresponds to the string s.
 internal static void empty(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer> Ꮡbuf, @string s, slice<byte> fub) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     check(Ꮡt, testname + " (empty 1)"u8, Ꮡbuf, s);
     while (ᐧ) {
@@ -610,7 +610,7 @@ public static void TestReadString(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkReadString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     UntypedInt n = /* 32 << 10 */ 32768;
     var data = new slice<byte>(n);
@@ -763,7 +763,7 @@ public static void TestBufferGrowth(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkWriteByte(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     UntypedInt n = /* 4 << 10 */ 4096;
     b.SetBytes(n);
@@ -777,7 +777,7 @@ public static void BenchmarkWriteByte(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkWriteRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     UntypedInt n = /* 4 << 10 */ 4096;
     const rune r = /* '☺' */ 9786;
@@ -793,7 +793,7 @@ public static void BenchmarkWriteRune(ж<testing.B> Ꮡb) {
 
 // From Issue 5154.
 public static void BenchmarkBufferNotEmptyWriteRead(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(1024);
     for (nint i = 0; i < b.N; i++) {
@@ -808,7 +808,7 @@ public static void BenchmarkBufferNotEmptyWriteRead(ж<testing.B> Ꮡb) {
 
 // Check that we don't compact too often. From Issue 5154.
 public static void BenchmarkBufferFullSmallReads(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(1024);
     for (nint i = 0; i < b.N; i++) {
@@ -831,7 +831,7 @@ public static void BenchmarkBufferWriteBlock(ж<testing.B> Ꮡb) {
         Ꮡb.Run(fmt.Sprintf("N%d"u8, n), (ж<testing.B> bΔ1) => {
             bΔ1.ReportAllocs();
             for (nint i = 0; i < (~bΔ1).N; i++) {
-                ref var bb = ref heap(new bytes.Buffer(), out var Ꮡbb);
+                bytes.Buffer bb = default!;
                 while (bb.Len() < n) {
                     bb.Write(blockʗ1);
                 }
@@ -841,7 +841,7 @@ public static void BenchmarkBufferWriteBlock(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkBufferAppendNoCopy(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     bytes.Buffer bb = default!;
     bb.Grow((16 << (int)(20)));

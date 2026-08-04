@@ -297,7 +297,7 @@ and it has no ordering problem at all.
 | `CapturedPanic` / `HandledPanic` ThreadLocals, `InFlightPanic` | **unchanged.** This is what makes the `ref struct` viable (§4.1) |
 | §3.1's local-function rule | **its defer/recover exclusion is lifted.** A literal that defers becomes a local function containing its own `GoFrame` local — the shape §3.1 had to refuse |
 | §3.2's escape narrowing | orthogonal; unaffected in either direction |
-| r39-osalloc item 4 (`heap(new uint32(), out Ꮡdone)` in the syscall seam) | **unaffected — say so plainly.** That is `var done uint32; &done` where the address really is handed to a callee; it is the `ж<T>` box's cost, which is osalloc arc item 1 (splitting `ж<T>`'s four box kinds), not this design's |
+| r39-osalloc item 4 (`heap(new uint32(), out Ꮡdone)` in the syscall seam) | **unaffected, and the doc says so rather than letting the reader assume otherwise.** That is `var done uint32; &done` where the address really *is* handed to a callee, so the box is required; its cost is the box's, which is osalloc arc item 1 (splitting `ж<T>`'s four kinds), not this design's |
 
 ### 4.7 Blast radius
 

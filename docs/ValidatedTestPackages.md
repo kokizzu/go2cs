@@ -25,7 +25,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **73 / 215 testable packages validated — 34.0%**
 >
-> **2,712 matching test verdicts · 51 disclosed** *(updated 2026-08-03 — maintained as part of the
+> **2,713 matching test verdicts · 50 disclosed** *(updated 2026-08-03 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -36,7 +36,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
 | [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. · [proof](validation/current/bufio.md) |
-| [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 81 | 7 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |
+| [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 82 | 6 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/cmp) | 4 | | Generics with an ordered-type constraint. · [proof](validation/current/cmp.md) |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. · [proof](validation/current/compress.bzip2.md) |
 | [`compress/flate`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/compress/flate) | 64 | | DEFLATE itself — all ten compression levels, the Huffman bit-writer's stored/fixed/dynamic block selection against golden bit streams, the LZ77 match chains and dictionaries, and a whole-`Writer` `reflect.DeepEqual` after `Reset`. · [proof](validation/current/compress.flate.md) |

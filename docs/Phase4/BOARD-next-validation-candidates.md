@@ -2123,3 +2123,38 @@ usable A/B instrument on this branch. The two-temp-root form is, and it is what 
 come from. The same staleness is what makes a `time` `-tests` run show `DerefOrNull` and
 `fallthrough`-placement diffs in its production `.cs`; those are pre-existing, not `-tests`-closure
 drift, and they are restored rather than banked.
+
+**The sweep found a 74th thing: a disclosure that was never a CLR limit.** The full 73-package
+validated sweep (2,783 s) reported **72 pass / 1 "fail"**, and the one flagged row was `bytes` at
+**count 82, banked 81** — MORE matching verdicts than the roster claimed. `TestEqual` had an
+`alloc-profile` disclosure since 2026-07-18 reading *"the managed runtime allocates during the
+converted Equal comparison loop where Go's compiler-optimized code does not"*. It does not. The
+converted test body was
+
+```csharp
+foreach (var (_, vᴛ1) in compareTests) {
+    ref var tt = ref heap(new compareTestsᴛ1(), out var Ꮡtt);   // ← per ITERATION
+    tt = vᴛ1;
+    …
+}
+```
+
+— the range variable of a loop inside the `AllocsPerRun` closure, heap-boxed by exactly the arm this
+train narrowed, once per iteration of an assert that wants zero. It now emits
+`foreach (var (_, tt) in compareTests)` and the test passes on its own merits. The disclosure is
+**retired**, not re-signed: §5 of the disclosure policy says a real bug is never a disclosure
+candidate, and this one had been standing in for a converter defect for two weeks. `bytes` moves to
+**82 matched · 6 disclosed** (re-run twice, identical), the roster to **2,713 matching · 50
+disclosed**, and its `TestEqual` verdict is now earned rather than excused.
+
+That is also the general lesson worth keeping: **a want-zero alloc assert is a converter test, and a
+disclosure filed against one should be re-examined every time the emission changes.** Five
+alloc-profile disclosures remain in `bytes` and one in `bufio`; nothing here says they are wrong, but
+nothing has re-derived them either. The cheap instrument is the one this lane used by accident — run
+the sweep and read a count that is HIGHER than banked as a finding, not as noise.
+
+Sweep aftermath, classified: 60 proof pages regenerated (a renderer wording change from an earlier
+lane plus provenance — restored, they belong to a rebank), the documented 7-file `-tests`-closure
+emission class, and corpus-wide production `.cs` churn that is the same 685-file staleness recorded
+above. Only `bytes`'s test sources, its disclosure manifest and its proof page were banked, because
+only they are the evidence for a row that changed.
