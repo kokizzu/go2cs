@@ -667,7 +667,7 @@ public static void TestMultipletRNSChunks(ж<testing.T> Ꮡt) {
 }
 
 public static void TestUnknownChunkLengthUnderflow(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var data = new byte[]{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x06, 0xf4, 0x7c, 0x55, 0x04, 0x1a,
@@ -757,7 +757,7 @@ internal static readonly object skippingTestsWhichˢ = (@string)"skipping tests 
 }
 
 public static void TestDimensionOverflow(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint maxInt32AsInt = (nint)((2147483648L) - 1);
     var have32BitInts = 0 > (1 + maxInt32AsInt);
@@ -937,7 +937,7 @@ public static void TestDecodePalettedWithTransparency(ж<testing.T> Ꮡt) {
 }
 
 internal static void benchmarkDecode(ж<testing.B> Ꮡb, @string filename, nint bytesPerPixel) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (data, err) = os.ReadFile(filename);
     if (err != default!) {

@@ -920,10 +920,10 @@ public static void TestStd0xParseError(ж<Δtesting.T> Ꮡt) {
         } else 
         {
             var (perr, ok) = err._<ж<Δtime.ParseError>>(ᐧ); if (!ok){
-                Ꮡt.Errorf("Parse(%q, %q) returned error type %T, expected ParseError"u8, tt.format, tt.value, perr);
+                Ꮡt.Errorf("Parse(%q, %q) returned error type %T, expected ParseError"u8, tt.format, tt.value, perr.OrTypedNil());
             } else 
             if (!strings.Contains(perr.Error(), cannotParseˢ) || !strings.HasPrefix((~perr).ValueElem, tt.valueElemPrefix)) {
-                Ꮡt.Errorf("Parse(%q, %q) returned wrong parsing error message: %v"u8, tt.format, tt.value, perr);
+                Ꮡt.Errorf("Parse(%q, %q) returned wrong parsing error message: %v"u8, tt.format, tt.value, perr.OrTypedNil());
             }
         }
     }

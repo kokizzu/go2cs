@@ -8,14 +8,14 @@ using static go.strings_package;
 partial class strings_internal_test_package {
 
 internal static any ΔReplacer(this ж<global::go.strings_package.Replacer> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(global::go.strings_package.Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     return r.r;
 }
 
 internal static @string PrintTrie(this ж<global::go.strings_package.Replacer> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(global::go.strings_package.Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     var gen = r.r._<ж<global::go.strings_package.genericReplacer>>();
@@ -25,7 +25,7 @@ internal static @string PrintTrie(this ж<global::go.strings_package.Replacer> �
 [GoRecv] internal static @string /*s*/ printNode(this ref global::go.strings_package.genericReplacer r, ж<global::go.strings_package.trieNode> Ꮡt, nint depth) {
     @string s = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     if (t.priority > 0){
         s += "+"u8;
     } else {

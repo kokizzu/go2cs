@@ -126,10 +126,7 @@ internal static readonly @string castagnoliˢ = "Castagnoli"u8;
 
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     Ꮡt.Run(ieeeˢ, (ж<testing.T> tΔ1) => {
-        foreach (var (_, vᴛ1) in golden) {
-            ref var g = ref heap(new test(), out var Ꮡg);
-            g = vᴛ1;
-
+        foreach (var (_, g) in golden) {
             var h = New(IEEETable);
             var h2 = New(IEEETable);
             io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
@@ -157,10 +154,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     });
     Ꮡt.Run(castagnoliˢ, (ж<testing.T> tΔ2) => {
         var table = MakeTable(Castagnoli);
-        foreach (var (_, vᴛ3) in golden) {
-            ref var g = ref heap(new test(), out var Ꮡg);
-            g = vᴛ3;
-
+        foreach (var (_, g) in golden) {
             var h = New(table);
             var h2 = New(table);
             io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
@@ -323,7 +317,7 @@ internal static Action<ж<testing.B>> benchmarkAll(hash.Hash32 h) {
 }
 
 internal static void benchmark(ж<testing.B> Ꮡb, hash.Hash32 h, int64 n, int64 alignment) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes(n);
     var data = new slice<byte>((nint)(n + alignment));

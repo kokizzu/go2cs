@@ -683,7 +683,7 @@ public static void TestParseFloatIncorrectBitSize(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkAtof64Decimal(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("33909"u8, 64);
@@ -691,7 +691,7 @@ public static void BenchmarkAtof64Decimal(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64Float(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("339.7784"u8, 64);
@@ -699,7 +699,7 @@ public static void BenchmarkAtof64Float(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64FloatExp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("-5.09e75"u8, 64);
@@ -707,7 +707,7 @@ public static void BenchmarkAtof64FloatExp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64Big(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("123456789123456789123456789"u8, 64);
@@ -715,7 +715,7 @@ public static void BenchmarkAtof64Big(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64RandomBits(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     initAtof();
     b.ResetTimer();
@@ -725,7 +725,7 @@ public static void BenchmarkAtof64RandomBits(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64RandomFloats(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     initAtof();
     b.ResetTimer();
@@ -735,7 +735,7 @@ public static void BenchmarkAtof64RandomFloats(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof64RandomLongFloats(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     initAtof();
     var samples = new slice<@string>(len(atofRandomTests));
@@ -754,7 +754,7 @@ public static void BenchmarkAtof64RandomLongFloats(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof32Decimal(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("33909"u8, 32);
@@ -762,7 +762,7 @@ public static void BenchmarkAtof32Decimal(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof32Float(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("339.778"u8, 32);
@@ -770,7 +770,7 @@ public static void BenchmarkAtof32Float(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof32FloatExp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ParseFloat("12.3456e32"u8, 32);
@@ -778,7 +778,7 @@ public static void BenchmarkAtof32FloatExp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof32Random(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var n = (uint32)997;
     array<@string> float32strings = new(4096);
@@ -793,7 +793,7 @@ public static void BenchmarkAtof32Random(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtof32RandomLong(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var n = (uint32)997;
     array<@string> float32strings = new(4096);

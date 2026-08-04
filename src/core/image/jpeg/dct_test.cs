@@ -15,7 +15,7 @@ using static go.image.jpeg_package;
 partial class jpeg_internal_test_package {
 
 internal static void benchmarkDCT(ж<testing.B> Ꮡb, Action<ж<global::go.image.jpeg_package.block>> f) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var blocks = new slice<global::go.image.jpeg_package.block>(0, b.N * len(testBlocks));
@@ -113,8 +113,8 @@ public static void TestDCT(ж<testing.T> Ꮡt) {
 // a given JPEG image, even before the YCbCr to RGB conversion; implementations
 // can have different IDCT rounding errors.
 internal static bool differ(ж<global::go.image.jpeg_package.block> Ꮡb0, ж<global::go.image.jpeg_package.block> Ꮡb1) {
-    ref var b0 = ref Ꮡb0.Value;
-    ref var b1 = ref Ꮡb1.Value;
+    ref var b0 = ref Ꮡb0.DerefOrNull();
+    ref var b1 = ref Ꮡb1.DerefOrNull();
 
     foreach (var (i, _) in b0) {
         var delta = b0[i] - b1[i];
@@ -151,7 +151,7 @@ internal static array<float64> cosines = new(32);   // cosines[k] = cos(π/2 * 
 //
 // b acts as both dst and src.
 internal static void slowFDCT(ж<global::go.image.jpeg_package.block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     array<float64> dst = new(64); /* blockSize */
     for (nint v = 0; v < 8; v++) {
@@ -181,7 +181,7 @@ internal static void slowFDCT(ж<global::go.image.jpeg_package.block> Ꮡb) {
 //
 // b acts as both dst and src.
 internal static void slowIDCT(ж<global::go.image.jpeg_package.block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     array<float64> dst = new(64); /* blockSize */
     for (nint y = 0; y < 8; y++) {

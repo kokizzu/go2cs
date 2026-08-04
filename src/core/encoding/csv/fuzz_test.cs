@@ -17,7 +17,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> @in) => {
         var buf = @new<bytes.Buffer>();
         t.Logf("input = %q"u8, @in);
-        foreach (var (_, vᴛ1) in new global::go.encoding.csv_package.Reader[]{
+        foreach (var (_, tt) in new global::go.encoding.csv_package.Reader[]{
             new(Comma: (rune)','),
             new(Comma: (rune)';'),
             new(Comma: (rune)'\t'),
@@ -26,9 +26,6 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             new(Comma: (rune)',', Comment: (rune)'#'),
             new(Comma: (rune)',', Comment: (rune)';')
         }.slice()) {
-            ref var tt = ref heap(new global::go.encoding.csv_package.Reader(), out var Ꮡtt);
-            tt = vᴛ1;
-
             t.Logf("With options:"u8);
             t.Logf("  Comma            = %q"u8, tt.Comma);
             t.Logf("  LazyQuotes       = %t"u8, tt.LazyQuotes);
@@ -49,7 +46,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             w.Value.Comma = tt.Comma;
             err = w.WriteAll(records);
             if (err != default!) {
-                t.Logf("writer  = %#v\n"u8, w);
+                t.Logf("writer  = %#v\n"u8, w.OrTypedNil());
                 t.Logf("records = %v\n"u8, records);
                 t.Fatal(err);
             }
@@ -66,7 +63,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             r.Value.TrimLeadingSpace = tt.TrimLeadingSpace;
             (var result, err) = r.ReadAll();
             if (err != default!) {
-                t.Logf("reader  = %#v\n"u8, r);
+                t.Logf("reader  = %#v\n"u8, r.OrTypedNil());
                 t.Logf("records = %v\n"u8, records);
                 t.Fatal(err);
             }

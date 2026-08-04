@@ -542,7 +542,7 @@ internal static slice<ValidRuneTest> validrunetests = new ValidRuneTest[]{
 }.slice();
 
 public static void TestValidRune(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in validrunetests) {
         {
@@ -554,7 +554,7 @@ public static void TestValidRune(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkRuneCountTenASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = slice<byte>("0123456789"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -563,7 +563,7 @@ public static void BenchmarkRuneCountTenASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRuneCountTenJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = slice<byte>("日本語日本語日本語日"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -572,7 +572,7 @@ public static void BenchmarkRuneCountTenJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRuneCountInStringTenASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         RuneCountInString("0123456789"u8);
@@ -580,7 +580,7 @@ public static void BenchmarkRuneCountInStringTenASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRuneCountInStringTenJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         RuneCountInString("日本語日本語日本語日"u8);
@@ -590,7 +590,7 @@ public static void BenchmarkRuneCountInStringTenJapaneseChars(ж<testing.B> Ꮡb
 internal static @string ascii100000 = strings.Repeat("0123456789"u8, 10000);
 
 public static void BenchmarkValidTenASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = slice<byte>("0123456789"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -599,7 +599,7 @@ public static void BenchmarkValidTenASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValid100KASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = slice<byte>(ascii100000);
     for (nint i = 0; i < b.N; i++) {
@@ -608,7 +608,7 @@ public static void BenchmarkValid100KASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidTenJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = slice<byte>("日本語日本語日本語日"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -617,7 +617,7 @@ public static void BenchmarkValidTenJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidLongMostlyASCII(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var longMostlyASCII = slice<byte>(longStringMostlyASCII);
     for (nint i = 0; i < b.N; i++) {
@@ -626,7 +626,7 @@ public static void BenchmarkValidLongMostlyASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidLongJapanese(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var longJapanese = slice<byte>(longStringJapanese);
     for (nint i = 0; i < b.N; i++) {
@@ -635,7 +635,7 @@ public static void BenchmarkValidLongJapanese(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidStringTenASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ValidString("0123456789"u8);
@@ -643,7 +643,7 @@ public static void BenchmarkValidStringTenASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidString100KASCIIChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ValidString(ascii100000);
@@ -651,7 +651,7 @@ public static void BenchmarkValidString100KASCIIChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidStringTenJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ValidString("日本語日本語日本語日"u8);
@@ -659,7 +659,7 @@ public static void BenchmarkValidStringTenJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidStringLongMostlyASCII(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ValidString(longStringMostlyASCII);
@@ -667,7 +667,7 @@ public static void BenchmarkValidStringLongMostlyASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkValidStringLongJapanese(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         ValidString(longStringJapanese);
@@ -693,7 +693,7 @@ internal static @string longStringJapanese; // ~100KB, non-ASCII
 }
 
 public static void BenchmarkEncodeASCIIRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
@@ -702,7 +702,7 @@ public static void BenchmarkEncodeASCIIRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeJapaneseRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
@@ -711,7 +711,7 @@ public static void BenchmarkEncodeJapaneseRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendASCIIRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
@@ -720,7 +720,7 @@ public static void BenchmarkAppendASCIIRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendJapaneseRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
@@ -729,7 +729,7 @@ public static void BenchmarkAppendJapaneseRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecodeASCIIRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var a = new byte[]{(rune)'a'}.slice();
     for (nint i = 0; i < b.N; i++) {
@@ -738,7 +738,7 @@ public static void BenchmarkDecodeASCIIRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecodeJapaneseRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var nihon = slice<byte>("本"u8);
     for (nint i = 0; i < b.N; i++) {

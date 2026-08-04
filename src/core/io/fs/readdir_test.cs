@@ -27,7 +27,7 @@ internal static (fs.File, error) Open(this readDirOnly _, @string name) {
 private static readonly @string subˢ = "sub(.)"u8;
 
 public static void TestReadDir(ж<testing.T> Ꮡt) {
-    var check = (@string desc, slice<fs.DirEntry> dirsΔ1, error errΔ1) => {
+    void check(@string desc, slice<fs.DirEntry> dirsΔ1, error errΔ1) {
         Ꮡt.Helper();
         if (errΔ1 != default! || len(dirsΔ1) != 2 || dirsΔ1[0].Name() != "hello.txt"u8 || dirsΔ1[1].Name() != "sub"u8) {
             slice<@string> names = default!;
@@ -36,7 +36,7 @@ public static void TestReadDir(ж<testing.T> Ꮡt) {
             }
             Ꮡt.Errorf("ReadDir(%s) = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"hello.txt"u8, "sub"u8}.slice());
         }
-    };
+    }
     // Test that ReadDir uses the method when present.
     var (dirs, err) = ReadDir(new readDirOnly(new fstest_MapFSᴠReadDirFS(testFsys)), "."u8);
     check(readDirOnlyˢ, dirs, err);

@@ -86,7 +86,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
         }
     }
     var rgba = image.NewRGBA(m.Bounds());
-    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
+    Draw(new draw_test_package.image_ΔRGBAжImage(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
     return Ꮡ(new slowestRGBA(
         Pix: (~rgba).Pix,
         Stride: (~rgba).Stride,
@@ -186,7 +186,7 @@ internal static ж<slowerRGBA> convertToSlowerRGBA(image.Image m) {
         }
     }
     var rgba = image.NewRGBA(m.Bounds());
-    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
+    Draw(new draw_test_package.image_ΔRGBAжImage(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
     return Ꮡ(new slowerRGBA(
         Pix: (~rgba).Pix,
         Stride: (~rgba).Stride,
@@ -224,7 +224,7 @@ internal static image.Image vgradGreen(nint alpha) {
             m.Set(x, y, new colorꓸRGBA(0, (uint8)(y * alpha / 15), 0, (uint8)alpha));
         }
     }
-    return new draw_test_package.image_ΔRGBAжimage_Image(m);
+    return new image.ΔRGBAжImage(m);
 }
 
 internal static image.Image vgradAlpha(nint alpha) {
@@ -292,7 +292,7 @@ internal static global::go.image.draw_package.Image hgradRed(nint alpha) {
             m.Set(x, y, new colorꓸRGBA((uint8)(x * alpha / 15), 0, 0, (uint8)alpha));
         }
     }
-    return new draw_test_package.image_ΔRGBAжdraw_Image(m);
+    return new draw_test_package.image_ΔRGBAжImage(m);
 }
 
 internal static global::go.image.draw_package.Image gradYellow(nint alpha) {
@@ -302,7 +302,7 @@ internal static global::go.image.draw_package.Image gradYellow(nint alpha) {
             m.Set(x, y, new colorꓸRGBA((uint8)(x * alpha / 15), (uint8)(y * alpha / 15), 0, (uint8)alpha));
         }
     }
-    return new draw_test_package.image_ΔRGBAжdraw_Image(m);
+    return new draw_test_package.image_ΔRGBAжImage(m);
 }
 
 [GoType] internal partial struct drawTest {
@@ -558,13 +558,13 @@ loop:
                 var src = m.SubImage(image.Rect(5 + xoff, 5 + yoff, 10 + xoff, 10 + yoff))._<ж<imageꓸRGBA>>();
                 var b = dst.Bounds();
                 // Draw the (src, mask, op) onto a copy of dst using a slow but obviously correct implementation.
-                var golden = makeGolden(new draw_test_package.image_ΔRGBAжimage_Image(dst), b, new draw_test_package.image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
+                var golden = makeGolden(new image.ΔRGBAжImage(dst), b, new image.ΔRGBAжImage(src), src.Bounds().Min, default!, new image.Point(nil), op);
                 if (!b.Eq(golden.Bounds())) {
                     Ꮡt.Errorf("drawOverlap xoff=%d,yoff=%d: bounds %v versus %v"u8, xoff, yoff, dst.Bounds(), golden.Bounds());
                     continue;
                 }
                 // Draw the same combination onto the actual dst using the optimized DrawMask implementation.
-                DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(dst), b, new draw_test_package.image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
+                DrawMask(new draw_test_package.image_ΔRGBAжImage(dst), b, new image.ΔRGBAжImage(src), src.Bounds().Min, default!, new image.Point(nil), op);
                 // Check that the resultant dst image matches the golden output.
                 for (nint y = b.Min.Y; y < b.Max.Y; y++) {
                     for (nint x = b.Min.X; x < b.Max.X; x++) {
@@ -589,7 +589,7 @@ public static void TestNonZeroSrcPt(ж<testing.T> Ꮡt) {
     b.Set(1, 0, new colorꓸRGBA(0, 0, 5, 5));
     b.Set(0, 1, new colorꓸRGBA(0, 5, 0, 5));
     b.Set(1, 1, new colorꓸRGBA(5, 0, 0, 5));
-    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(a), image.Rect(0, 0, 1, 1), new draw_test_package.image_ΔRGBAжimage_Image(b), image.Pt(1, 1), Over);
+    Draw(new draw_test_package.image_ΔRGBAжImage(a), image.Rect(0, 0, 1, 1), new image.ΔRGBAжImage(b), image.Pt(1, 1), Over);
     if (!eq(new colorꓸRGBA(5, 0, 0, 5), a.At(0, 0))) {
         Ꮡt.Errorf("non-zero src pt: want %v got %v"u8, new colorꓸRGBA(5, 0, 0, 5), a.At(0, 0));
     }
@@ -630,7 +630,7 @@ public static void TestFill(ж<testing.T> Ꮡt) {
         var bʗ1 = b;
         var mʗ1 = m;
         var rʗ1 = r;
-        var check = (@string desc) => {
+        void check(@string desc) {
             for (nint y = bʗ1.Min.Y; y < bʗ1.Max.Y; y++) {
                 for (nint x = bʗ1.Min.X; x < bʗ1.Max.X; x++) {
                     if (!eq(Ꮡc.Value, mʗ1.At(x, y))) {
@@ -639,11 +639,11 @@ public static void TestFill(ж<testing.T> Ꮡt) {
                     }
                 }
             }
-        };
+        }
         // Draw 1 pixel at a time.
         for (nint y = b.Min.Y; y < b.Max.Y; y++) {
             for (nint x = b.Min.X; x < b.Max.X; x++) {
-                DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(x, y, x + 1, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+                DrawMask(new draw_test_package.image_ΔRGBAжImage(m), image.Rect(x, y, x + 1, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
             }
         }
         check(pixelˢ);
@@ -651,20 +651,20 @@ public static void TestFill(ж<testing.T> Ꮡt) {
         c = new colorꓸRGBA(0, 22, 0, 255);
         src = Ꮡ(new image.Uniform(C: c));
         for (nint y = b.Min.Y; y < b.Max.Y; y++) {
-            DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(b.Min.X, y, b.Max.X, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+            DrawMask(new draw_test_package.image_ΔRGBAжImage(m), image.Rect(b.Min.X, y, b.Max.X, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         }
         check(rowˢ);
         // Draw 1 column at a time.
         c = new colorꓸRGBA(0, 0, 33, 255);
         src = Ꮡ(new image.Uniform(C: c));
         for (nint x = b.Min.X; x < b.Max.X; x++) {
-            DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(x, b.Min.Y, x + 1, b.Max.Y), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+            DrawMask(new draw_test_package.image_ΔRGBAжImage(m), image.Rect(x, b.Min.Y, x + 1, b.Max.Y), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         }
         check(columnˢ);
         // Draw the whole image at once.
         c = new colorꓸRGBA(44, 55, 66, 77);
         src = Ꮡ(new image.Uniform(C: c));
-        DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), b, new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+        DrawMask(new draw_test_package.image_ΔRGBAжImage(m), b, new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         check(wholeˢ);
     }
 }
@@ -741,7 +741,7 @@ internal static readonly object thereMayBeMoreErrorsˢ = (@string)"there may be 
 // error diffusion of a uniform 50% gray source image with a black-and-white
 // palette is a checkerboard pattern.
 public static void TestFloydSteinbergCheckerboard(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var b = image.Rect(0, 0, 640, 480);
     // We can't represent 50% exactly, but 0x7fff / 0xffff is close enough.
@@ -790,7 +790,7 @@ public static void TestPaletted(ж<testing.T> Ꮡt) => func((defer, recover) => 
     var b = video001.Bounds();
     var cgaPalette = new color.Palette(new color.Color[]{new colorꓸRGBA(0x00, 0x00, 0x00, 0xff), new colorꓸRGBA(0x55, 0xff, 0xff, 0xff), new colorꓸRGBA(0xff, 0x55, 0xff, 0xff), new colorꓸRGBA(0xff, 0xff, 0xff, 0xff)
     }.slice());
-    var drawers = new map<@string, global::go.image.draw_package.Drawer>{["src"u8] = new draw_test_package.draw_OpᴠDrawer(Src), ["floyd-steinberg"u8] = FloydSteinberg
+    var drawers = new map<@string, global::go.image.draw_package.Drawer>{["src"u8] = Src, ["floyd-steinberg"u8] = FloydSteinberg
     };
     var sources = new map<@string, image.Image>{["uniform"u8] = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(new colorꓸRGBA(0xff, 0x7f, 0xff, 0xff)))), ["video001"u8] = video001
     };

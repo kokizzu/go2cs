@@ -110,7 +110,7 @@ internal static slice<slice<@string>> benchmarkWriteData = new slice<@string>[]{
 }.slice();
 
 public static void BenchmarkWrite(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         var w = NewWriter(new csv_test_package.bytes_BufferжWriter(Ꮡ(new bytes.Buffer(nil))));

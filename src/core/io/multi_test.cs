@@ -27,15 +27,15 @@ public static void TestMultiReader(ж<testing.T> Ꮡt) {
     ref var mr = ref heap<Δio.Reader>(out var Ꮡmr);
     ref var buf = ref heap<slice<byte>>(out var Ꮡbuf);
     nint nread = 0;
-    var withFooBar = (Action tests) => {
+    void withFooBar(Action tests) {
         var r1 = strings.NewReader(fooˢ2);
         var r2 = strings.NewReader(""u8);
         var r3 = strings.NewReader(barˢ);
         Ꮡmr.ValueSlot = MultiReader(new io_test_package.strings_ReaderжReader(r1), new io_test_package.strings_ReaderжReader(r2), new io_test_package.strings_ReaderжReader(r3));
         Ꮡbuf.ValueSlot = new slice<byte>(20);
         tests();
-    };
-    var expectRead = (nint size, @string expected, error eerr) => {
+    }
+    void expectRead(nint size, @string expected, error eerr) {
         nread++;
         var (n, gerr) = Ꮡmr.ValueSlot.Read(Ꮡbuf.ValueSlot[0..(int)(size)]);
         if (n != len(expected)) {
@@ -52,7 +52,7 @@ public static void TestMultiReader(ж<testing.T> Ꮡt) {
                 nread, eerr, gerr);
         }
         Ꮡbuf.ValueSlot = Ꮡbuf.ValueSlot[(int)(n)..];
-    };
+    }
     var expectReadʗ1 = expectRead;
     withFooBar(() => {
         expectReadʗ1(2, "fo"u8, default!);
@@ -204,7 +204,7 @@ internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
 
 // Test that MultiWriter properly flattens chained multiWriters.
 public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var pc = new slice<uintptr>(1000);
     // 1000 should fit the full stack
@@ -299,7 +299,7 @@ internal static readonly @string irrelevantˢ = "irrelevant"u8;
 
 // Test that MultiReader properly flattens chained multiReaders when Read is called
 public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var pc = new slice<uintptr>(1000);
     // 1000 should fit the full stack
@@ -369,7 +369,7 @@ public static void TestMultiReaderFinalEOF(ж<testing.T> Ꮡt) {
 internal static readonly object timeoutWaitingForˢ = (@string)"timeout waiting for collection of buf1"u8;
 
 public static void TestMultiReaderFreesExhaustedReaders(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var mr = ref heap<Δio.Reader>(out var Ꮡmr);
     var closed = new channel<EmptyStruct>(0);
@@ -382,7 +382,7 @@ public static void TestMultiReaderFreesExhaustedReaders(ж<testing.T> Ꮡt) {
         var buf2 = bytes.NewReader(slice<byte>("bar"u8));
         Ꮡmr.ValueSlot = MultiReader(new io_test_package.bytes_ReaderжReader(buf1), new io_test_package.bytes_ReaderжReader(buf2));
         var closedʗ2 = closedʗ1;
-        Δruntime.SetFinalizer(buf1, (ж<bytes.Reader> _) => {
+        Δruntime.SetFinalizer(buf1.OrTypedNil(), (ж<bytes.Reader> _) => {
             close(closedʗ2);
         });
     }))();
@@ -394,7 +394,7 @@ public static void TestMultiReaderFreesExhaustedReaders(ж<testing.T> Ꮡt) {
     }
     Δruntime.GC();
     var selᴛ1 = closed;
-    var selᴛ2 = time.After(5000000000L);
+    var selᴛ2 = time.After((time.Duration)(5000000000L));
     switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out _): {
         break;

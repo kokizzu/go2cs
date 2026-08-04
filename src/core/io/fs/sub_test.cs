@@ -28,7 +28,7 @@ private static readonly @string nonexistˢ = "nonexist"u8;
 private static readonly object openNonexistSucceededˢ = (@string)"Open(nonexist): succeeded"u8;
 
 public static void TestSub(ж<testing.T> Ꮡt) {
-    var check = (@string desc, fs.FS subΔ1, error errΔ1) => {
+    void check(@string desc, fs.FS subΔ1, error errΔ1) {
         Ꮡt.Helper();
         if (errΔ1 != default!) {
             Ꮡt.Errorf("Sub(sub): %v"u8, errΔ1);
@@ -46,7 +46,7 @@ public static void TestSub(ж<testing.T> Ꮡt) {
             }
             Ꮡt.Errorf(@"ReadDir(%s, ""."") = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"goodbye.txt"u8}.slice());
         }
-    };
+    }
     // Test that Sub uses the method when present.
     var (sub, err) = Sub(new subOnly(new fstest_MapFSᴠSubFS(testFsys)), subˢ2);
     check(subOnlyˢ, sub, err);

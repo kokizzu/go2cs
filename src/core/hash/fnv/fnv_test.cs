@@ -125,10 +125,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
         var ttʗ1 = tt;
         Ꮡt.Run(tt.name, (ж<testing.T> tΔ1) => {
-            foreach (var (_, vᴛ2) in ttʗ1.gold) {
-                ref var g = ref heap(new golden(), out var Ꮡg);
-                g = vᴛ2;
-
+            foreach (var (_, g) in ttʗ1.gold) {
                 var h = ttʗ1.newHash();
                 var h2 = ttʗ1.newHash();
                 io.WriteString(h, g.@in[..(int)(len(g.@in) / 2)]);
@@ -259,7 +256,7 @@ public static void BenchmarkFnv128aKB(ж<testing.B> Ꮡb) {
 }
 
 internal static void benchmarkKB(ж<testing.B> Ꮡb, hash.Hash h) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes(1024);
     var data = new slice<byte>(1024);

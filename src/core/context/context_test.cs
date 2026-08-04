@@ -106,22 +106,22 @@ public static void XTestParentFinishesChild(testingT t) => func((defer, recover)
     }
     if (len((~pc).children) != 3 || !contains((~pc).children, new global::go.context_package.cancelCtxжcanceler(cc)) || !contains((~pc).children, new global::go.context_package.timerCtxжcanceler(tc)) || ac == nil) {
         t.Errorf("bad linkage: pc.children = %v, want %v, %v, and an afterFunc"u8,
-            (~pc).children, cc, tc);
+            (~pc).children, cc.OrTypedNil(), tc.OrTypedNil());
     }
     pc.of(global::go.context_package.cancelCtx.Ꮡmu).Unlock();
     {
         var (p, ok) = parentCancelCtx((~cc).Context); if (!ok || p != pc) {
-            t.Errorf("bad linkage: parentCancelCtx(cancelChild.Context) = %v, %v want %v, true"u8, p, ok, pc);
+            t.Errorf("bad linkage: parentCancelCtx(cancelChild.Context) = %v, %v want %v, true"u8, p.OrTypedNil(), ok, pc.OrTypedNil());
         }
     }
     {
         var (p, ok) = parentCancelCtx((~tc).Context); if (!ok || p != pc) {
-            t.Errorf("bad linkage: parentCancelCtx(timerChild.Context) = %v, %v want %v, true"u8, p, ok, pc);
+            t.Errorf("bad linkage: parentCancelCtx(timerChild.Context) = %v, %v want %v, true"u8, p.OrTypedNil(), ok, pc.OrTypedNil());
         }
     }
     {
         var (p, ok) = parentCancelCtx((~ac).Context); if (!ok || p != pc) {
-            t.Errorf("bad linkage: parentCancelCtx(afterChild.Context) = %v, %v want %v, true"u8, p, ok, pc);
+            t.Errorf("bad linkage: parentCancelCtx(afterChild.Context) = %v, %v want %v, true"u8, p.OrTypedNil(), ok, pc.OrTypedNil());
         }
     }
     cancel();
@@ -131,7 +131,7 @@ public static void XTestParentFinishesChild(testingT t) => func((defer, recover)
     }
     pc.of(global::go.context_package.cancelCtx.Ꮡmu).Unlock();
     // parent and children should all be finished.
-    var check = (global::go.context_package.Context ctx, @string name) => {
+    void check(global::go.context_package.Context ctx, @string name) {
         var selᴛ5 = ctx.Done();
         switch (trySelect(ᐸꟷ(selᴛ5, ꓸꓸꓸ))) {
         case 0 when selᴛ5.ꟷᐳ(out _): {
@@ -146,7 +146,7 @@ public static void XTestParentFinishesChild(testingT t) => func((defer, recover)
                 t.Errorf("%s.Err() == %v want %v"u8, name, e, Canceled);
             }
         }
-    };
+    }
     check(parent, parentˢ);
     check(cancelChild, cancelChildˢ);
     check(valueChild, valueChildˢ);
@@ -194,13 +194,13 @@ public static void XTestChildFinishesFirst(testingT t) => func((defer, recover) 
         // pcok == false when parent == Background()
         {
             var (p, ok) = parentCancelCtx((~cc).Context); if (ok != pcok || (ok && pc != p)) {
-                t.Errorf("bad linkage: parentCancelCtx(cc.Context) = %v, %v want %v, %v"u8, p, ok, pc, pcok);
+                t.Errorf("bad linkage: parentCancelCtx(cc.Context) = %v, %v want %v, %v"u8, p.OrTypedNil(), ok, pc.OrTypedNil(), pcok);
             }
         }
         if (pcok) {
             pc.of(global::go.context_package.cancelCtx.Ꮡmu).Lock();
             if (len((~pc).children) != 1 || !contains((~pc).children, new global::go.context_package.cancelCtxжcanceler(cc))) {
-                t.Errorf("bad linkage: pc.children = %v, cc = %v"u8, (~pc).children, cc);
+                t.Errorf("bad linkage: pc.children = %v, cc = %v"u8, (~pc).children, cc.OrTypedNil());
             }
             pc.of(global::go.context_package.cancelCtx.Ꮡmu).Unlock();
         }
@@ -255,13 +255,13 @@ internal static readonly @string withAfterFuncChildˢ = "with AfterFunc child "u
 internal static readonly @string afterStoppingAfterFuncˢ = "after stopping AfterFunc child "u8;
 
 public static void XTestCancelRemoves(testingT t) {
-    var checkChildren = (@string when, global::go.context_package.Context ctxΔ1, nint want) => {
+    void checkChildren(@string when, global::go.context_package.Context ctxΔ1, nint want) {
         {
             nint got = len((~ctxΔ1._<ж<global::go.context_package.cancelCtx>>()).children); if (got != want) {
                 t.Errorf("%s: context has %d children, want %d"u8, when, got, want);
             }
         }
-    };
+    }
     var (ctx, _) = WithCancel(Background());
     checkChildren(afterCreationˢ, ctx, 0);
     var (_, cancel) = WithCancel(ctx);
@@ -298,21 +298,21 @@ public static void XTestCancelRemoves(testingT t) {
 
 public static void XTestCustomContextGoroutines(testingT t) => func((defer, recover) => {
     var g = Ꮡgoroutines.Load();
-    var checkNoGoroutine = () => {
+    void checkNoGoroutine() {
         t.Helper();
         var now = Ꮡgoroutines.Load();
         if (now != g) {
             t.Fatalf("%d goroutines created"u8, now - g);
         }
-    };
-    var checkCreatedGoroutine = () => {
+    }
+    void checkCreatedGoroutine() {
         t.Helper();
         var now = Ꮡgoroutines.Load();
         if (now != g + 1) {
             t.Fatalf("%d goroutines created, want 1"u8, now - g);
         }
         g = now;
-    };
+    }
     var (_, cancel0) = WithCancel(new context_internal_test_package.myDoneCtxжContext(Ꮡ(new myDoneCtx(Background()))));
     cancel0();
     checkCreatedGoroutine();

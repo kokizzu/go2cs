@@ -35,10 +35,10 @@ public static void TestSliceReader(ж<testing.T> Ꮡt) {
     @string s2 = bazbasherˢ;
     var s2b = slice<byte>(s2);
     b = append(b, s2b.ꓸꓸꓸ);
-    var readStr = @string (ж<global::go.@internal.coverage.slicereader_package.Reader> slr) => {
+    @string readStr(ж<global::go.@internal.coverage.slicereader_package.Reader> slr) {
         var len = slr.ReadULEB128();
         return slr.ReadString((int64)len);
-    };
+    }
     for (nint i = 0; i < 2; i++) {
         var slr = NewReader(b, i == 0);
         var g32 = slr.ReadUint32();

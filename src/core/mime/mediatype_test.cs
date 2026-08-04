@@ -154,17 +154,17 @@ internal static readonly @string fixedˢ = "fixed"u8;
 internal static readonly @string flowedˢ = "flowed"u8;
 
 public static void TestParseMediaType(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Convenience map initializer
-    var m = (params ꓸꓸꓸstring sʗp) => {
+    map<@string, @string> m(params ꓸꓸꓸstring sʗp) {
         var s = sʗp.sslice();
         var sm = new map<@string, @string>();
         for (nint i = 0; i < len(s); i += 2) {
             sm[s[i]] = s[i + 1];
         }
         return sm;
-    };
+    }
     var nameFoo = new map<@string, @string>{["name"u8] = "foo"u8};
     var tests = new mediaTypeTest[]{
         new(@"form-data; name=""foo"""u8, "form-data"u8, nameFoo),

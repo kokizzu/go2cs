@@ -27,6 +27,9 @@ internal static class Go2CsTestHost
             "xxhash_test.go",
             "zstd.go",
             "zstd_test.go",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestFileSamples", zstd_internal_test_package.TestFileSamples, "zstd_test.go", 274);
         registry.Add("TestLargeXXHash", zstd_internal_test_package.TestLargeXXHash, "xxhash_test.go", 40);

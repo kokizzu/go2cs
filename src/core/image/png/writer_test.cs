@@ -236,12 +236,12 @@ public static void TestSubImage(ж<testing.T> Ꮡt) {
         }
     }
     m0 = m0.SubImage(image.Rect(50, 30, 250, 130))._<ж<imageꓸRGBA>>();
-    var (m1, err) = encodeDecode(new png_test_package.image_ΔRGBAжImage(m0));
+    var (m1, err) = encodeDecode(new image.ΔRGBAжImage(m0));
     if (err != default!) {
         Ꮡt.Error(err);
         return;
     }
-    err = diff(new png_test_package.image_ΔRGBAжImage(m0), m1);
+    err = diff(new image.ΔRGBAжImage(m0), m1);
     if (err != default!) {
         Ꮡt.Error(err);
         return;
@@ -272,10 +272,10 @@ public static void TestWriteRGBA(ж<testing.T> Ꮡt) {
         }
     }
     var testCases = new TestWriteRGBA_testCases[]{
-        new("Transparent RGBA"u8, new png_test_package.image_ΔRGBAжImage(transparentImg)),
-        new("Opaque RGBA"u8, new png_test_package.image_ΔRGBAжImage(opaqueImg)),
-        new("50/50 Transparent/Opaque RGBA"u8, new png_test_package.image_ΔRGBAжImage(mixedImg)),
-        new("RGBA with variable alpha"u8, new png_test_package.image_ΔRGBAжImage(translucentImg))
+        new("Transparent RGBA"u8, new image.ΔRGBAжImage(transparentImg)),
+        new("Opaque RGBA"u8, new image.ΔRGBAжImage(opaqueImg)),
+        new("50/50 Transparent/Opaque RGBA"u8, new image.ΔRGBAжImage(mixedImg)),
+        new("RGBA with variable alpha"u8, new image.ΔRGBAжImage(translucentImg))
     }.slice();
     foreach (var (_, vᴛ1) in testCases) {
         ref var tc = ref heap(new TestWriteRGBA_testCases(), out var Ꮡtc);
@@ -297,7 +297,7 @@ public static void TestWriteRGBA(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEncodeGray(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewGray(image.Rect(0, 0, 640, 480));
     b.SetBytes(640 * 480 * 1);
@@ -317,13 +317,13 @@ public static void BenchmarkEncodeGray(ж<testing.B> Ꮡb) {
 }
 
 [GoRecv] internal static void Put(this ref pool p, ж<global::go.image.png_package.EncoderBuffer> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     p.b = Ꮡb;
 }
 
 public static void BenchmarkEncodeGrayWithBufferPool(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewGray(image.Rect(0, 0, 640, 480));
     ref var e = ref heap<global::go.image.png_package.Encoder>(out var Ꮡe);
@@ -342,7 +342,7 @@ public static void BenchmarkEncodeGrayWithBufferPool(ж<testing.B> Ꮡb) {
 internal static readonly object expectedImageToBeOpaqueˢ = (@string)"expected image to be opaque"u8;
 
 public static void BenchmarkEncodeNRGBOpaque(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewNRGBA(image.Rect(0, 0, 640, 480));
     // Set all pixels to 0xFF alpha to force opaque mode.
@@ -367,7 +367,7 @@ public static void BenchmarkEncodeNRGBOpaque(ж<testing.B> Ꮡb) {
 internal static readonly object expectedImageNotToBeˢ = (@string)"expected image not to be opaque"u8;
 
 public static void BenchmarkEncodeNRGBA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewNRGBA(image.Rect(0, 0, 640, 480));
     if (img.Opaque()) {
@@ -382,7 +382,7 @@ public static void BenchmarkEncodeNRGBA(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodePaletted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewPaletted(image.Rect(0, 0, 640, 480), new color.Palette(new color.Color[]{new colorꓸRGBA(0, 0, 0, 255), new colorꓸRGBA(255, 255, 255, 255)
     }.slice()));
@@ -395,7 +395,7 @@ public static void BenchmarkEncodePaletted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeRGBOpaque(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var img = image.NewRGBA(image.Rect(0, 0, 640, 480));
     // Set all pixels to 0xFF alpha to force opaque mode.
@@ -412,12 +412,12 @@ public static void BenchmarkEncodeRGBOpaque(ж<testing.B> Ꮡb) {
     b.ReportAllocs();
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
-        Encode(io.Discard, new png_test_package.image_ΔRGBAжImage(img));
+        Encode(io.Discard, new image.ΔRGBAжImage(img));
     }
 }
 
 public static void BenchmarkEncodeRGBA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     UntypedInt width = 640;
     UntypedInt height = 480;
@@ -451,7 +451,7 @@ public static void BenchmarkEncodeRGBA(ж<testing.B> Ꮡb) {
     b.ReportAllocs();
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
-        Encode(io.Discard, new png_test_package.image_ΔRGBAжImage(img));
+        Encode(io.Discard, new image.ΔRGBAжImage(img));
     }
 }
 

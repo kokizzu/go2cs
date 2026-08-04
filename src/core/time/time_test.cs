@@ -594,7 +594,7 @@ public static void TestYearDay(ж<Δtesting.T> Ꮡt) {
             nint yday = dt.YearDay();
             if (yday != ydt.yday) {
                 Ꮡt.Errorf("Date(%d-%02d-%02d in %v).YearDay() = %d, want %d"u8,
-                    ydt.year, ydt.month, ydt.day, loc, yday, ydt.yday);
+                    ydt.year, ydt.month, ydt.day, loc.OrTypedNil(), yday, ydt.yday);
                 continue;
             }
             if (ydt.year < 0 || ydt.year > 9999) {
@@ -704,7 +704,7 @@ public static void TestDate(ж<Δtesting.T> Ꮡt) {
         var want = Unix(tt.unix, 0);
         if (!time.Equal(want)) {
             Ꮡt.Errorf("Date(%d, %d, %d, %d, %d, %d, %d, %s) = %v, want %v"u8,
-                tt.year, tt.month, tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z,
+                tt.year, tt.month, tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z.OrTypedNil(),
                 time, want);
         }
     }

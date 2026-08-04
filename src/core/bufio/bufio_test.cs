@@ -51,7 +51,7 @@ internal static ж<rot13Reader> newRot13Reader(Δio.Reader r) {
 
 // Call ReadByte to accumulate the text of a file
 internal static @string readBytes(ж<bufio.Reader> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     array<byte> b = new(1000);
     nint nb = 0;
@@ -106,7 +106,7 @@ internal static slice<readMaker> readMakers = new readMaker[]{
 // Call ReadString (which ends up calling everything else)
 // to accumulate the text of a file.
 internal static @string readLines(ж<bufio.Reader> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string s = ""u8;
     while (ᐧ) {
@@ -124,7 +124,7 @@ internal static @string readLines(ж<bufio.Reader> Ꮡb) {
 
 // Call Read to accumulate the text of a file
 internal static @string reads(ж<bufio.Reader> Ꮡbuf, nint m) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     array<byte> b = new(1000);
     nint nb = 0;
@@ -485,7 +485,7 @@ internal static readonly @string abcdˢ = "abcd"u8;
 internal static readonly @string efgˢ = "efg"u8;
 
 public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
 // ReadLine doesn't fit the data/pattern easily
 // so we leave it out. It should be covered via
@@ -512,7 +512,7 @@ public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
         var r = NewReaderSize(new bufio_test_package.bytes_BufferжReader(Ꮡbuf), minReadBufferSize);
         var rʗ1 = r;
         var readʗ1 = read;
-        var readTo = (byte delim, @string want) => {
+        void readTo(byte delim, @string want) {
             var (data, errΔ1) = readʗ1(rʗ1, delim);
             if (errΔ1 != default!) {
                 Ꮡt.Fatalf("#%d: unexpected error reading to %c: %v"u8, rno, delim, errΔ1);
@@ -522,7 +522,7 @@ public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
                     Ꮡt.Fatalf("#%d: got %q, want %q"u8, rno, got, want);
                 }
             }
-        };
+        }
         // Read the data with occasional UnreadByte calls.
         for (nint i = 0; i < n; i++) {
             readTo((rune)'d', abcdˢ);
@@ -1127,7 +1127,7 @@ internal static slice<byte> testInputrn = slice<byte>("012\r\n345\r\n678\r\n9ab\
 }
 
 internal static void testReadLine(ж<Δtesting.T> Ꮡt, slice<byte> input) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     //for stride := 1; stride < len(input); stride++ {
     for (nint stride = 1; stride < 2; stride++) {
@@ -1219,7 +1219,7 @@ public static void TestReadAfterLines(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestReadEmptyBuffer(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var l = NewReaderSize(new bufio_test_package.bytes_BufferжReader(@new<bytes.Buffer>()), minReadBufferSize);
     var (line, isPrefix, err) = l.ReadLine();
@@ -1229,7 +1229,7 @@ public static void TestReadEmptyBuffer(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestLinesAfterRead(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var l = NewReaderSize(new bufio_test_package.bytes_ReaderжReader(bytes.NewReader(slice<byte>("foo"u8))), minReadBufferSize);
     var (_, err) = Δio.ReadAll(new bufio_test_package.bufio_ReaderжReader(l));
@@ -1712,14 +1712,14 @@ public static void TestReadZero(ж<Δtesting.T> Ꮡt) {
             var r = Δio.MultiReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcˢ)), new bufio_test_package.emptyThenNonEmptyReaderжReader(Ꮡ(new emptyThenNonEmptyReader(r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(defˢ)), n: 1))));
             var br = NewReaderSize(r, size);
             var brʗ1 = br;
-            var want = (@string s, error wantErr) => {
+            void want(@string s, error wantErr) {
                 var p = new slice<byte>(50);
                 var (n, err) = brʗ1.Read(p);
                 if (!AreEqual(err, wantErr) || n != len(s) || ((sstring)(p[..(int)(n)])) != s) {
                     tΔ1.Fatalf("read(%d) = %q, %v, want %q, %v"u8, len(p), ((@string)(p[..(int)(n)])), err, s, wantErr);
                 }
                 tΔ1.Logf("read(%d) = %q, %v"u8, len(p), ((@string)(p[..(int)(n)])), err);
-            };
+            }
             want(abcˢ, default!);
             want(""u8, default!);
             want(defˢ, default!);
@@ -1735,7 +1735,7 @@ internal static readonly @string recurˢ = "recur"u8;
 internal static readonly @string recur2ˢ = "recur2"u8;
 
 public static void TestReaderReset(ж<Δtesting.T> Ꮡt) {
-    var checkAll = (ж<bufio.Reader> rΔ1, @string want) => {
+    void checkAll(ж<bufio.Reader> rΔ1, @string want) {
         Ꮡt.Helper();
         var (all, err) = Δio.ReadAll(new bufio_test_package.bufio_ReaderжReader(rΔ1));
         if (err != default!) {
@@ -1744,7 +1744,7 @@ public static void TestReaderReset(ж<Δtesting.T> Ꮡt) {
         if (((sstring)all) != want) {
             Ꮡt.Errorf("ReadAll returned %q, want %q"u8, all, want);
         }
-    };
+    }
     var r = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(fooFooˢ)));
     var buf = new slice<byte>(3);
     r.Read(buf);
@@ -1833,7 +1833,7 @@ internal static readonly @string thenErrorˢ = "5-then-error"u8;
 }
 
 public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tests = new TestReaderDiscard_tests[]{
         new(
@@ -2164,7 +2164,7 @@ public static void TestWriterReadFromMustReturnUnderlyingError(ж<Δtesting.T> �
 }
 
 public static void BenchmarkReaderCopyOptimal(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Optimal case is where the underlying reader implements io.WriterTo
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
@@ -2180,7 +2180,7 @@ public static void BenchmarkReaderCopyOptimal(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkReaderCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Unoptimal case is where the underlying reader doesn't implement io.WriterTo
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
@@ -2196,7 +2196,7 @@ public static void BenchmarkReaderCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkReaderCopyNoWriteTo(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
     var srcReader = NewReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
@@ -2215,7 +2215,7 @@ public static void BenchmarkReaderCopyNoWriteTo(ж<Δtesting.B> Ꮡb) {
 internal static readonly object ioDiscardDoesnTSupportˢ = (@string)"io.Discard doesn't support ReaderFrom"u8;
 
 public static void BenchmarkReaderWriteToOptimal(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     UntypedInt bufSize = /* 16 << 10 */ 16384;
     var buf = new slice<byte>(bufSize);
@@ -2240,7 +2240,7 @@ public static void BenchmarkReaderWriteToOptimal(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkReaderReadString(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = strings.NewReader(fooFoo424242424242424242ˢ);
     var buf = NewReader(new bufio_test_package.strings_ReaderжReader(r));
@@ -2256,7 +2256,7 @@ public static void BenchmarkReaderReadString(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWriterCopyOptimal(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Optimal case is where the underlying writer implements io.ReaderFrom
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
@@ -2272,7 +2272,7 @@ public static void BenchmarkWriterCopyOptimal(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWriterCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
     var src = new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
@@ -2287,7 +2287,7 @@ public static void BenchmarkWriterCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWriterCopyNoReadFrom(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
     var src = new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
@@ -2306,7 +2306,7 @@ public static void BenchmarkWriterCopyNoReadFrom(ж<Δtesting.B> Ꮡb) {
 internal static readonly object wrongLengthˢ = (@string)"wrong length"u8;
 
 public static void BenchmarkReaderEmpty(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     @string str = strings.Repeat("x"u8, (16 << (int)(10)));
@@ -2323,7 +2323,7 @@ public static void BenchmarkReaderEmpty(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWriterEmpty(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     @string str = strings.Repeat("x"u8, (1 << (int)(10)));
@@ -2343,7 +2343,7 @@ public static void BenchmarkWriterEmpty(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWriterFlush(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     var bw = NewWriter(Δio.Discard);

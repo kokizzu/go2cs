@@ -166,12 +166,12 @@ public static void TestAs(ж<testing.T> Ꮡt) {
         new poserжerror(Ꮡ(new poser("path"u8, default!))),
         ᏑerrP,
         true,
-        poserPathErr
+        poserPathErr.OrTypedNil()
     ), new(
         new poserжerror(poserErr),
         Ꮡp,
         true,
-        poserErr
+        poserErr.OrTypedNil()
     ), new(
         errors.New(errˢ),
         Ꮡtimeout,
@@ -284,7 +284,7 @@ public static void TestAsValidation(ж<testing.T> Ꮡt) {
 private static readonly object isFailedˢ = (@string)"Is failed"u8;
 
 public static void BenchmarkIs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var err1 = errors.New("1"u8);
     var err2 = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{err1, new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice())}.slice());
@@ -299,7 +299,7 @@ public static void BenchmarkIs(ж<testing.B> Ꮡb) {
 private static readonly object asFailedˢ = (@string)"As failed"u8;
 
 public static void BenchmarkAs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var err = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{errors.New("a"u8), new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice())}.slice());
     for (nint i = 0; i < b.N; i++) {

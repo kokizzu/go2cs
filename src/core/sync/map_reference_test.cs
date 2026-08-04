@@ -39,7 +39,7 @@ public static (any value, bool ok) Load(this ж<RWMutexMap> Ꮡm, any key) {
     any value = default!;
     bool ok = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     Ꮡm.of(RWMutexMap.Ꮡmu).RLock();
     (value, ok) = m.dirty[key, ꟷ];
     Ꮡm.of(RWMutexMap.Ꮡmu).RUnlock();
@@ -47,7 +47,7 @@ public static (any value, bool ok) Load(this ж<RWMutexMap> Ꮡm, any key) {
 }
 
 public static void Store(this ж<RWMutexMap> Ꮡm, any key, any value) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     if (m.dirty == default!) {
@@ -61,7 +61,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<RWMutexMap> Ꮡm, an
     any actual = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     (actual, loaded) = m.dirty[key, ꟷ];
     if (!loaded) {
@@ -79,7 +79,7 @@ public static (any previous, bool loaded) Swap(this ж<RWMutexMap> Ꮡm, any key
     any previous = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     if (m.dirty == default!) {
         m.dirty = new map<any, any>();
@@ -94,7 +94,7 @@ public static (any value, bool loaded) LoadAndDelete(this ж<RWMutexMap> Ꮡm, a
     any value = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     (value, loaded) = m.dirty[key, ꟷ];
     if (!loaded) {
@@ -107,7 +107,7 @@ public static (any value, bool loaded) LoadAndDelete(this ж<RWMutexMap> Ꮡm, a
 }
 
 public static void Delete(this ж<RWMutexMap> Ꮡm, any key) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     delete(m.dirty, key);
@@ -117,7 +117,7 @@ public static void Delete(this ж<RWMutexMap> Ꮡm, any key) {
 public static bool /*swapped*/ CompareAndSwap(this ж<RWMutexMap> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
     func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
         defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
@@ -137,7 +137,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<RWMutexMap> Ꮡm, any key,
 public static bool /*deleted*/ CompareAndDelete(this ж<RWMutexMap> Ꮡm, any key, any old) {
     bool deleted = default!;
     func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
         defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
@@ -155,7 +155,7 @@ public static bool /*deleted*/ CompareAndDelete(this ж<RWMutexMap> Ꮡm, any ke
 }
 
 public static void Range(this ж<RWMutexMap> Ꮡm, Func<any, any, bool> f) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(RWMutexMap.Ꮡmu).RLock();
     var keys = new slice<any>(0, len(m.dirty));
@@ -175,7 +175,7 @@ public static void Range(this ж<RWMutexMap> Ꮡm, Func<any, any, bool> f) {
 }
 
 public static void Clear(this ж<RWMutexMap> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
     defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
@@ -211,7 +211,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<DeepCopyMap> Ꮡm, a
     any actual = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     var (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
     (actual, loaded) = clean[key, ꟷ];
     if (loaded) {

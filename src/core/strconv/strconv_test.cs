@@ -120,7 +120,7 @@ public static void TestAllocationsFromBytes(ж<testing.T> Ꮡt) {
         String: slice<byte>("hello, world!"u8),
         Buffer: new slice<byte>(1024)
     );
-    var checkNoAllocs = (Action f) => (ж<testing.T> tΔ1) => {
+    Action<ж<testing.T>> checkNoAllocs(Action f) => (ж<testing.T> tΔ1) => {
             tΔ1.Helper();
             {
                 var allocs = testing.AllocsPerRun(runsPerTest, f); if (allocs != 0D) {

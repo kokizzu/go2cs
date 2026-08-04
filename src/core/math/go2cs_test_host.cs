@@ -78,6 +78,12 @@ internal static class Go2CsTestHost
             "tanh.go",
             "trig_reduce.go",
             "unsafe.go",
+        }, new string[]
+        {
+            "big",
+            "bits",
+            "cmplx",
+            "rand",
         });
         registry.Add("TestAbs", math_test_package.TestAbs, "all_test.go", 2454);
         registry.Add("TestAcos", math_test_package.TestAcos, "all_test.go", 2150);

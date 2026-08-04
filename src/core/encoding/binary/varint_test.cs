@@ -231,7 +231,7 @@ public static void TestNonCanonicalZero(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkPutUvarint32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(MaxVarintLen32);
     b.SetBytes(4);
@@ -243,7 +243,7 @@ public static void BenchmarkPutUvarint32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPutUvarint64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(MaxVarintLen64);
     b.SetBytes(8);

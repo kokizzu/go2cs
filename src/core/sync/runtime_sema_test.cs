@@ -26,7 +26,7 @@ public static void BenchmarkSemaUncontended(ж<Δtesting.B> Ꮡb) {
 }
 
 internal static void benchmarkSema(ж<Δtesting.B> Ꮡb, bool block, bool work) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.N == 0) {
         return;

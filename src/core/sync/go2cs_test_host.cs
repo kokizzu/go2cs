@@ -35,6 +35,9 @@ internal static class Go2CsTestHost
             "rwmutex_test.go",
             "waitgroup.go",
             "waitgroup_test.go",
+        }, new string[]
+        {
+            "atomic",
         });
         registry.Add("TestCompareAndSwap_NonExistingKey", sync_test_package.TestCompareAndSwap_NonExistingKey, "map_test.go", 282);
         registry.Add("TestConcurrentClear", sync_test_package.TestConcurrentClear, "map_test.go", 305);

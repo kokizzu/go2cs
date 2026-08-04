@@ -92,7 +92,7 @@ public static void TestWriteError(ж<testing.T> Ꮡt) {
             }
             (var nΔ1, err) = io.CopyBuffer(new flate_test_package.flate_WriterжWriter(w), new TestWriteError_src(new flate_test_package.bytes_BufferжReader(bytes.NewBuffer(@in))), copyBuffer);
             if (err == default!) {
-                Ꮡt.Fatalf("Level %d: Expected an error, writer was %#v"u8, l, ew);
+                Ꮡt.Fatalf("Level %d: Expected an error, writer was %#v"u8, l, ew.OrTypedNil());
             }
             (var n2, err) = w.Write(new byte[]{1, 2, 2, 3, 4, 5}.slice());
             if (n2 != 0) {

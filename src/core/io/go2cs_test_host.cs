@@ -17,6 +17,10 @@ internal static class Go2CsTestHost
             "multi_test.go",
             "pipe.go",
             "pipe_test.go",
+        }, new string[]
+        {
+            "fs",
+            "ioutil",
         });
         registry.Add("TestCopy", io_test_package.TestCopy, "io_test.go", 28);
         registry.Add("TestCopyBuffer", io_test_package.TestCopyBuffer, "io_test.go", 53);

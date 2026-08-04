@@ -136,7 +136,7 @@ public static void TestConstantTimeLessOrEq(ж<testing.T> Ꮡt) {
 internal static uint8 benchmarkGlobal;
 
 public static void BenchmarkConstantTimeByteEq(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint8 x = default!;
     uint8 y = default!;
@@ -147,7 +147,7 @@ public static void BenchmarkConstantTimeByteEq(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkConstantTimeEq(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint x = default!;
     nint y = default!;
@@ -158,7 +158,7 @@ public static void BenchmarkConstantTimeEq(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkConstantTimeLessOrEq(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint x = default!;
     nint y = default!;

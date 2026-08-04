@@ -126,7 +126,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkAdler32KB(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes(1024);
     var data = new slice<byte>(1024);

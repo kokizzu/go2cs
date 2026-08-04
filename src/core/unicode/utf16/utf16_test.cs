@@ -82,7 +82,7 @@ public static void TestAppendRune(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEncodeRune(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (i, tt) in encodeTests) {
         nint j = 0;
@@ -223,7 +223,7 @@ public static void TestIsSurrogate(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkDecodeValidASCII(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // "hello world"
     var data = new uint16[]{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100}.slice();
@@ -233,7 +233,7 @@ public static void BenchmarkDecodeValidASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecodeValidJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // "日本語日本語日本語"
     var data = new uint16[]{26085, 26412, 35486, 26085, 26412, 35486, 26085, 26412, 35486}.slice();
@@ -243,7 +243,7 @@ public static void BenchmarkDecodeValidJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecodeRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var rs = new slice<rune>(10);
     // U+1D4D0 to U+1D4D4: MATHEMATICAL BOLD SCRIPT CAPITAL LETTERS
@@ -259,7 +259,7 @@ public static void BenchmarkDecodeRune(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeValidASCII(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new rune[]{(rune)'h', (rune)'e', (rune)'l', (rune)'l', (rune)'o'}.slice();
     for (nint i = 0; i < b.N; i++) {
@@ -268,7 +268,7 @@ public static void BenchmarkEncodeValidASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeValidJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new rune[]{(rune)'日', (rune)'本', (rune)'語'}.slice();
     for (nint i = 0; i < b.N; i++) {
@@ -277,7 +277,7 @@ public static void BenchmarkEncodeValidJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendRuneValidASCII(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new rune[]{(rune)'h', (rune)'e', (rune)'l', (rune)'l', (rune)'o'}.slice();
     var a = new slice<uint16>(0, len(data) * 2);
@@ -290,7 +290,7 @@ public static void BenchmarkAppendRuneValidASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendRuneValidJapaneseChars(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new rune[]{(rune)'日', (rune)'本', (rune)'語'}.slice();
     var a = new slice<uint16>(0, len(data) * 2);
@@ -303,7 +303,7 @@ public static void BenchmarkAppendRuneValidJapaneseChars(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         foreach (var (_, u) in new rune[]{(rune)0x1D4D0, (rune)0x1D4D1, (rune)0x1D4D2, (rune)0x1D4D3, (rune)0x1D4D4}.slice()) {

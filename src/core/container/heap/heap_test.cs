@@ -146,7 +146,7 @@ public static void TestRemove1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestRemove2(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint N = 10;
     var h = @new<myHeap>();
@@ -170,7 +170,7 @@ public static void TestRemove2(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkDup(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     const nint n = 10000;
     ref var h = ref heap<myHeap>(out var Ꮡh);

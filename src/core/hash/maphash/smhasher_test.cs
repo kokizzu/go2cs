@@ -192,7 +192,7 @@ public static void TestSmhasherTwoNonzero(ж<testing.T> Ꮡt) {
 }
 
 internal static void twoNonZero(ж<hashSet> Ꮡh, nint n) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = new slice<byte>(n);
     // all zero
@@ -269,7 +269,7 @@ public static void TestSmhasherSparse(ж<testing.T> Ꮡt) {
 }
 
 internal static void sparse(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, nint n, nint k) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = new slice<byte>(n / 8);
     setbits(Ꮡh, b, 0, k);
@@ -278,7 +278,7 @@ internal static void sparse(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, nint n, nint k
 
 // set up to k bits at index i and greater
 internal static void setbits(ж<hashSet> Ꮡh, slice<byte> b, nint i, nint k) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     h.addB(b);
     if (k == 0) {
@@ -310,7 +310,7 @@ public static void TestSmhasherPermutation(ж<testing.T> Ꮡt) {
 }
 
 internal static void permutation(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, slice<uint32> s, nint n) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = new slice<byte>(n * 4);
     genPerm(Ꮡh, b, s, 0);
@@ -318,7 +318,7 @@ internal static void permutation(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, slice<uin
 }
 
 internal static void genPerm(ж<hashSet> Ꮡh, slice<byte> b, slice<uint32> s, nint n) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     h.addB(b[..(int)(n)]);
     if (n == len(b)) {
@@ -388,7 +388,7 @@ public static void TestSmhasherAvalanche(ж<testing.T> Ꮡt) {
 }
 
 internal static void avalancheTest1(ж<testing.T> Ꮡt, key k) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     UntypedInt REP = 100000;
     var r = rand.New(rand.NewSource(1234));
@@ -486,7 +486,7 @@ public static void TestSmhasherText(ж<testing.T> Ꮡt) {
 }
 
 internal static void text(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, @string prefix, @string suffix) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     const nint N = 4;
     @string S = "ABCDEFGHIJKLMNOPQRSTabcdefghijklmnopqrst0123456789"u8;

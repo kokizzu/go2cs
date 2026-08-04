@@ -504,7 +504,7 @@ public static void TestDecoderIssue3577(ж<testing.T> Ꮡt) {
         errcʗ1.ᐸꟷ(err);
     });
     var selᴛ1 = errc;
-    var selᴛ2 = time.After(5000000000L);
+    var selᴛ2 = time.After((time.Duration)(5000000000L));
     switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out var err): {
         if (!AreEqual(err, wantErr)) {
@@ -593,7 +593,7 @@ public static void TestDecoderIssue15656(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEncodeToString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new slice<byte>(8192);
     b.SetBytes((int64)len(data));
@@ -604,14 +604,14 @@ public static void BenchmarkEncodeToString(ж<testing.B> Ꮡb) {
 
 public static void BenchmarkDecodeString(ж<testing.B> Ꮡb) {
     var sizes = new nint[]{2, 4, 8, 64, 8192}.slice();
-    var benchFunc = (ж<testing.B> bΔ1, nint benchSize) => {
+    void benchFunc(ж<testing.B> bΔ1, nint benchSize) {
         @string data = StdEncoding.EncodeToString(new slice<byte>(benchSize));
         bΔ1.SetBytes((int64)len(data));
         bΔ1.ResetTimer();
         for (nint i = 0; i < (~bΔ1).N; i++) {
             StdEncoding.DecodeString(data);
         }
-    };
+    }
     foreach (var (_, size) in sizes) {
         var benchFuncʗ1 = benchFunc;
         Ꮡb.Run(fmt.Sprintf("%d"u8, size), (ж<testing.B> bΔ2) => {
@@ -621,7 +621,7 @@ public static void BenchmarkDecodeString(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNewEncoding(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes((int64)len(new Encoding(nil).decodeMap));
     for (nint i = 0; i < b.N; i++) {

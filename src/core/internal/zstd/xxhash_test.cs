@@ -89,7 +89,7 @@ internal static @string findXxhsum(testing.TB t) {
 internal static readonly @string h64ˢ = "-H64"u8;
 
 public static void FuzzXXHash(ж<testing.F> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     @string xxhsum = findXxhsum(new zstd_internal_test_package.testing_FжTB(Ꮡf));
     foreach (var (_, test) in xxHashTests) {
@@ -117,7 +117,7 @@ public static void FuzzXXHash(ж<testing.F> Ꮡf) {
         if (err != default!) {
             t.Fatalf("could not parse hash %q: %v"u8, hhHashBytes, err);
         }
-        ref var xh = ref heap(new global::go.@internal.zstd_package.xxhash64(), out var Ꮡxh);
+        global::go.@internal.zstd_package.xxhash64 xh = new();
         xh.reset();
         xh.update(b);
         var goHash = xh.digest();

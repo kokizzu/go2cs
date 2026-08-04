@@ -185,7 +185,7 @@ public static void TestSmallLitWidth(ж<testing.T> Ꮡt) {
 }
 
 public static void TestStartsWithClearCode(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // A literal width of 7 bits means that the code width starts at 8 bits,
     // which makes it easier to visually inspect the output (provided that the

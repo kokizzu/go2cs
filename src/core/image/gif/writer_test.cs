@@ -212,9 +212,9 @@ internal static void testEncodeAll(ж<testing.T> Ꮡt, bool go1Dot5Fields, bool 
     //
     // On the following line, color.Model is an interface type, and
     // color.Palette is a concrete (slice) type.
-    var (globalColorModel, backgroundIndex) = (((Δcolor.Model)new gif_internal_test_package.color_PaletteᴠModel(((Δcolor.Palette)default!))), (uint8)0);
+    var (globalColorModel, backgroundIndex) = (((Δcolor.Model)((Δcolor.Palette)default!)), (uint8)0);
     if (useGlobalColorModel) {
-        (globalColorModel, backgroundIndex) = (new gif_internal_test_package.color_PaletteᴠModel(((Δcolor.Palette)palette.WebSafe)), (uint8)1);
+        (globalColorModel, backgroundIndex) = (((Δcolor.Palette)palette.WebSafe), (uint8)1);
     }
     if (go1Dot5Fields) {
         g0.Value.Disposal = new slice<byte>(len((~g0).Image));
@@ -376,7 +376,7 @@ public static void TestEncodeAllFramesOutOfBounds(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEncodeNonZeroMinPoint(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var points = new image.Point[]{
         new(-8, -9),
@@ -424,7 +424,7 @@ public static void TestEncodeNonZeroMinPoint(ж<testing.T> Ꮡt) {
         src.SetRGBA(7, 7, new colorꓸRGBA(0x77, 0x77, 0x77, 0xFF));
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
         {
-            var errΔ1 = Encode(new gif_internal_test_package.bytes_BufferжWriter(Ꮡbuf), new gif_internal_test_package.image_ΔRGBAжimage_Image(src), nil); if (errΔ1 != default!) {
+            var errΔ1 = Encode(new gif_internal_test_package.bytes_BufferжWriter(Ꮡbuf), new image.ΔRGBAжImage(src), nil); if (errΔ1 != default!) {
                 Ꮡt.Errorf("gray-diagonal: Encode: %v"u8, errΔ1);
                 return;
             }
@@ -441,11 +441,11 @@ public static void TestEncodeNonZeroMinPoint(ж<testing.T> Ꮡt) {
             }
         }
         var mʗ1 = m;
-        var rednessAt = (nint x, nint y) => {
+        uint32 rednessAt(nint x, nint y) {
             var (r, _, _, _) = mʗ1.At(x, y).RGBA();
             // Shift by 8 to convert from 16 bit color to 8 bit color.
             return (r >> (int)(8));
-        };
+        }
         // Round-tripping a still (non-animated) image.Image through
         // Encode+Decode should shift the origin to (0, 0).
         {
@@ -521,7 +521,7 @@ public static void TestEncodePalettes(ж<testing.T> Ꮡt) {
         Delay: new slice<nint>(len(pals)),
         Disposal: new slice<byte>(len(pals)),
         Config: new image.Config(
-            ColorModel: new gif_internal_test_package.color_PaletteᴠModel(pals[2]),
+            ColorModel: pals[2],
             Width: w,
             Height: h
         )
@@ -549,7 +549,7 @@ public static void TestEncodePalettes(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEncodeBadPalettes(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     const nint w = 5;
     const nint h = 5;
@@ -568,7 +568,7 @@ public static void TestEncodeBadPalettes(ж<testing.T> Ꮡt) {
                 Delay: new slice<nint>(1),
                 Disposal: new slice<byte>(1),
                 Config: new image.Config(
-                    ColorModel: new gif_internal_test_package.color_PaletteᴠModel(pal),
+                    ColorModel: pal,
                     Width: w,
                     Height: h
                 )
@@ -718,7 +718,7 @@ public static void TestEncodeWrappedImage(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEncodeRandomPaletted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var paletted = image.NewPaletted(image.Rect(0, 0, 640, 480), palette.Plan9);
     var rnd = rand.New(rand.NewSource(123));
@@ -734,7 +734,7 @@ public static void BenchmarkEncodeRandomPaletted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeRandomRGBA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var rgba = image.NewRGBA(image.Rect(0, 0, 640, 480));
     var bo = rgba.Bounds();
@@ -753,7 +753,7 @@ public static void BenchmarkEncodeRandomRGBA(ж<testing.B> Ꮡb) {
     b.ReportAllocs();
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
-        Encode(io.Discard, new gif_internal_test_package.image_ΔRGBAжimage_Image(rgba), nil);
+        Encode(io.Discard, new image.ΔRGBAжImage(rgba), nil);
     }
 }
 
@@ -761,7 +761,7 @@ public static void BenchmarkEncodeRandomRGBA(ж<testing.B> Ꮡb) {
 internal static readonly @string testdataVideo001Pngˢ = "../testdata/video-001.png"u8;
 
 public static void BenchmarkEncodeRealisticPaletted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (img, err) = readImg(testdataVideo001Pngˢ);
     if (err != default!) {
@@ -779,7 +779,7 @@ public static void BenchmarkEncodeRealisticPaletted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeRealisticRGBA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (img, err) = readImg(testdataVideo001Pngˢ);
     if (err != default!) {
@@ -791,12 +791,12 @@ public static void BenchmarkEncodeRealisticRGBA(ж<testing.B> Ꮡb) {
     // changing the source image), the conversion ensures that we're still
     // benchmarking encoding an RGBA image.
     var rgba = image.NewRGBA(bo);
-    draw.Draw(new gif_internal_test_package.image_ΔRGBAжdraw_Image(rgba), bo, img, bo.Min, draw.Src);
+    draw.Draw(new gif_internal_test_package.image_ΔRGBAжImage(rgba), bo, img, bo.Min, draw.Src);
     b.SetBytes((int64)(bo.Dx() * bo.Dy() * 4));
     b.ReportAllocs();
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
-        Encode(io.Discard, new gif_internal_test_package.image_ΔRGBAжimage_Image(rgba), nil);
+        Encode(io.Discard, new image.ΔRGBAжImage(rgba), nil);
     }
 }
 

@@ -17,8 +17,8 @@ partial class sync_test_package {
 }
 
 internal static void run(ж<Δtesting.T> Ꮡt, ж<Δsync.Once> Ꮡonce, ж<one> Ꮡo, channel<bool> c) {
-    ref var once = ref Ꮡonce.Value;
-    ref var o = ref Ꮡo.Value;
+    ref var once = ref Ꮡonce.DerefOrNull();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     Ꮡonce.Do(() => {
         Ꮡo.Value.Increment();

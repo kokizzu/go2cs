@@ -288,7 +288,7 @@ public static void TestReaderBad(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkLarge(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     b.ReportAllocs();

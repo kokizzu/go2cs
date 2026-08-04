@@ -371,7 +371,7 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
 internal static readonly @string benchmarkString = "some_text=some☺value"u8;
 
 public static void BenchmarkIndexRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = IndexRune(benchmarkString, (rune)'☺'); if (got != 14) {
@@ -386,7 +386,7 @@ public static void BenchmarkIndexRune(ж<testing.B> Ꮡb) {
 internal static @string benchmarkLongString = Repeat(" "u8, 100) + benchmarkString;
 
 public static void BenchmarkIndexRuneLongString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = IndexRune(benchmarkLongString, (rune)'☺'); if (got != 114) {
@@ -399,7 +399,7 @@ public static void BenchmarkIndexRuneLongString(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexRuneFastPath(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = IndexRune(benchmarkString, (rune)'v'); if (got != 17) {
@@ -412,7 +412,7 @@ public static void BenchmarkIndexRuneFastPath(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndex(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = Index(benchmarkString, "v"u8); if (got != 17) {
@@ -425,7 +425,7 @@ public static void BenchmarkIndex(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndex(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = Index(benchmarkString, "v"u8); if (got != 17) {
@@ -438,7 +438,7 @@ public static void BenchmarkLastIndex(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexByte(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     {
         nint got = IndexByte(benchmarkString, (rune)'v'); if (got != 17) {
@@ -873,7 +873,7 @@ public static void BenchmarkToLower(ж<testing.B> Ꮡb) {
 internal static readonly @string someStringThatWonTBeˢ = "Some string that won't be modified."u8;
 
 public static void BenchmarkMapNoChanges(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var identity = (rune r) => r;
     for (nint i = 0; i < b.N; i++) {
@@ -983,7 +983,7 @@ public static void TestTrim(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkTrim(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {
@@ -1024,7 +1024,7 @@ public static void BenchmarkTrim(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkToValidUTF8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var tests = new BenchmarkToValidUTF8_tests[]{
         new("Valid"u8, "typical"u8),
@@ -1336,11 +1336,8 @@ internal static readonly @string bitˢ = "64-bit"u8;
 
 // See Issue golang.org/issue/16237
 public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
-    var runTestCases = (@string prefix, slice<TestRepeatCatchesOverflow_testCase> tests) => {
-        foreach (var (i, vᴛ1) in tests) {
-            ref var tt = ref heap(new TestRepeatCatchesOverflow_testCase(), out var Ꮡtt);
-            tt = vᴛ1;
-
+    void runTestCases(@string prefix, slice<TestRepeatCatchesOverflow_testCase> tests) {
+        foreach (var (i, tt) in tests) {
             var err = repeat(tt.s, tt.count);
             if (tt.errStr == ""u8) {
                 if (err != default!) {
@@ -1352,7 +1349,7 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("%s#%d got %q want %q"u8, prefix, i, err, tt.errStr);
             }
         }
-    };
+    }
     nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
     runTestCases(""u8, new slice<TestRepeatCatchesOverflow_testCase>(7){
         [0] = new("--"u8, -2147483647, "negative"u8),
@@ -1401,7 +1398,7 @@ public static slice<RunesTestsᴛ1> RunesTests = new RunesTestsᴛ1[]{
 }.slice();
 
 public static void TestRunes(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in RunesTests) {
         var a = slice<rune>(tt.@in);
@@ -1794,7 +1791,7 @@ public static slice<EqualFoldTestsᴛ1> EqualFoldTests = new EqualFoldTestsᴛ1[
 }.slice();
 
 public static void TestEqualFold(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in EqualFoldTests) {
         {
@@ -1820,10 +1817,7 @@ internal static readonly @string unicodeSuffixˢ = "UnicodeSuffix"u8;
 public static void BenchmarkEqualFold(ж<testing.B> Ꮡb) {
     Ꮡb.Run(testsˢ, (ж<testing.B> bΔ1) => {
         for (nint i = 0; i < (~bΔ1).N; i++) {
-            foreach (var (_, vᴛ1) in EqualFoldTests) {
-                ref var tt = ref heap(new EqualFoldTestsᴛ1(), out var Ꮡtt);
-                tt = vᴛ1;
-
+            foreach (var (_, tt) in EqualFoldTests) {
                 {
                     var @out = EqualFold(tt.s, tt.t); if (@out != tt.@out) {
                         bΔ1.Fatal(wrongResultˢ);
@@ -1976,7 +1970,7 @@ internal static @string makeBenchInputHard() {
 internal static @string benchInputHard = makeBenchInputHard();
 
 internal static void benchmarkIndexHard(ж<testing.B> Ꮡb, @string sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Index(benchInputHard, sep);
@@ -1984,7 +1978,7 @@ internal static void benchmarkIndexHard(ж<testing.B> Ꮡb, @string sep) {
 }
 
 internal static void benchmarkLastIndexHard(ж<testing.B> Ꮡb, @string sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         LastIndex(benchInputHard, sep);
@@ -1992,7 +1986,7 @@ internal static void benchmarkLastIndexHard(ж<testing.B> Ꮡb, @string sep) {
 }
 
 internal static void benchmarkCountHard(ж<testing.B> Ꮡb, @string sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Count(benchInputHard, sep);
@@ -2053,7 +2047,7 @@ internal static @string benchInputTorture = Repeat("ABC"u8, (1 << (int)(10))) + 
 internal static @string benchNeedleTorture = Repeat("ABC"u8, (1 << (int)(10)) + 1);
 
 public static void BenchmarkIndexTorture(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Index(benchInputTorture, benchNeedleTorture);
@@ -2061,7 +2055,7 @@ public static void BenchmarkIndexTorture(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCountTorture(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Count(benchInputTorture, benchNeedleTorture);
@@ -2072,7 +2066,7 @@ public static void BenchmarkCountTorture(ж<testing.B> Ꮡb) {
 internal static readonly @string abcˢ2 = "ABC"u8;
 
 public static void BenchmarkCountTortureOverlapping(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string A = Repeat(abcˢ2, (1 << (int)(20)));
     @string B = Repeat(abcˢ2, (1 << (int)(10)));
@@ -2085,12 +2079,12 @@ public static void BenchmarkCountByte(ж<testing.B> Ꮡb) {
     var indexSizes = new nint[]{10, 32, (4 << (int)(10)), (4 << (int)(20)), (64 << (int)(20))}.slice();
     @string benchStr = Repeat(benchmarkString,
         (indexSizes[len(indexSizes) - 1] + len(benchmarkString) - 1) / len(benchmarkString));
-    var benchFunc = (ж<testing.B> bΔ1, @string benchStrΔ1) => {
+    void benchFunc(ж<testing.B> bΔ1, @string benchStrΔ1) {
         bΔ1.SetBytes((int64)len(benchStrΔ1));
         for (nint i = 0; i < (~bΔ1).N; i++) {
             Count(benchStrΔ1, "="u8);
         }
-    };
+    }
     foreach (var (_, size) in indexSizes) {
         var benchFuncʗ1 = benchFunc;
         Ꮡb.Run(fmt.Sprintf("%d"u8, size), (ж<testing.B> bΔ2) => {
@@ -2114,8 +2108,8 @@ internal static Func<@string> makeFieldsInput = () => {
                     copy(x[(int)(i - 1)..], "χ"u8);
                     break;
                 }
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1) { /* default: */
             x[i] = (rune)'x';
@@ -2194,7 +2188,7 @@ public static void BenchmarkFieldsFunc(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitEmptySeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Split(benchInputHard, ""u8);
@@ -2202,7 +2196,7 @@ public static void BenchmarkSplitEmptySeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitSingleByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Split(benchInputHard, "/"u8);
@@ -2210,7 +2204,7 @@ public static void BenchmarkSplitSingleByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitMultiByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Split(benchInputHard, helloˢ);
@@ -2218,7 +2212,7 @@ public static void BenchmarkSplitMultiByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitNSingleByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         SplitN(benchInputHard, "/"u8, 10);
@@ -2226,7 +2220,7 @@ public static void BenchmarkSplitNSingleByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitNMultiByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         SplitN(benchInputHard, helloˢ, 10);
@@ -2266,7 +2260,7 @@ public static void BenchmarkRepeatLarge(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRepeatSpaces(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {
@@ -2366,7 +2360,7 @@ public static void BenchmarkTrimASCII(ж<testing.B> Ꮡb) {
 internal static readonly @string theQuickBrownFoxˢ = "  the quick brown fox   "u8;
 
 public static void BenchmarkTrimByte(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string x = theQuickBrownFoxˢ;
     for (nint i = 0; i < b.N; i++) {
@@ -2434,7 +2428,7 @@ internal static @string stringSink;
 internal static readonly @string bananaˢ = "banana"u8;
 
 public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {

@@ -129,10 +129,10 @@ public static void TestFirstZone(ж<Δtesting.T> Ꮡt) => func((defer, recover) 
 
 public static void TestLocationNames(ж<Δtesting.T> Ꮡt) {
     if (Δtime.ΔLocal.String() != "Local"u8) {
-        Ꮡt.Errorf(@"invalid Local location name: got %q want ""Local"""u8, Δtime.ΔLocal);
+        Ꮡt.Errorf(@"invalid Local location name: got %q want ""Local"""u8, Δtime.ΔLocal.OrTypedNil());
     }
     if (Δtime.ΔUTC.String() != "UTC"u8) {
-        Ꮡt.Errorf(@"invalid UTC location name: got %q want ""UTC"""u8, Δtime.ΔUTC);
+        Ꮡt.Errorf(@"invalid UTC location name: got %q want ""UTC"""u8, Δtime.ΔUTC.OrTypedNil());
     }
 }
 
@@ -162,7 +162,7 @@ public static void TestLoadLocationFromTZData(ж<Δtesting.T> Ꮡt) => func((def
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    if (!reflect.DeepEqual(reference, sample)) {
+    if (!reflect.DeepEqual(reference.OrTypedNil(), sample.OrTypedNil())) {
         Ꮡt.Errorf("return values of LoadLocationFromTZData and LoadLocation don't match"u8);
     }
 });

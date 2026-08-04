@@ -17,11 +17,7 @@ global using runtimeꓸError = go.runtime_package.ΔError;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
-using bytes = go.bytes_package;
-using os = go.os_package;
 using testing = go.testing_package;
-using Δio = go.io_package;
-using Δsync = go.sync_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -79,11 +75,7 @@ using static global::go.io_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<bytes.Buffer, ж<bytes.Buffer>>(Indirect = true)]
 [assembly: GoImplicitConv<dataAndErrorBuffer, ж<dataAndErrorBuffer>>(Indirect = true)]
-[assembly: GoImplicitConv<os.File, ж<os.File>>(Indirect = true)]
-[assembly: GoImplicitConv<Δio.PipeReader, ж<Δio.PipeReader>>(Indirect = true)]
-[assembly: GoImplicitConv<Δio.PipeWriter, ж<Δio.PipeWriter>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go;

@@ -81,10 +81,7 @@ internal static readonly @string ecmaˢ = "ECMA"u8;
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     Ꮡt.Run(isoˢ, (ж<testing.T> tΔ1) => {
         var table = MakeTable(ISO);
-        foreach (var (_, vᴛ1) in golden) {
-            ref var g = ref heap(new test(), out var Ꮡg);
-            g = vᴛ1;
-
+        foreach (var (_, g) in golden) {
             var h = New(table);
             var h2 = New(table);
             io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
@@ -112,10 +109,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     });
     Ꮡt.Run(ecmaˢ, (ж<testing.T> tΔ2) => {
         var table = MakeTable(ECMA);
-        foreach (var (_, vᴛ3) in golden) {
-            ref var g = ref heap(new test(), out var Ꮡg);
-            g = vᴛ3;
-
+        foreach (var (_, g) in golden) {
             var h = New(table);
             var h2 = New(table);
             io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
@@ -158,7 +152,7 @@ public static void TestMarshalTableMismatch(ж<testing.T> Ꮡt) {
 }
 
 internal static void bench(ж<testing.B> Ꮡb, uint64 poly, int64 size) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes(size);
     var data = new slice<byte>((nint)(size));

@@ -12,7 +12,7 @@ partial class unicode_test_package {
 // Independently check that the special "Is" functions work
 // in the Latin-1 range through the property table.
 public static void TestIsControlLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsControl(i);
@@ -34,7 +34,7 @@ public static void TestIsControlLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsLetterLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsLetter(i);
@@ -46,7 +46,7 @@ public static void TestIsLetterLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsUpperLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsUpper(i);
@@ -58,7 +58,7 @@ public static void TestIsUpperLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsLowerLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsLower(i);
@@ -70,7 +70,7 @@ public static void TestIsLowerLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestNumberLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsNumber(i);
@@ -82,7 +82,7 @@ public static void TestNumberLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsPrintLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsPrint(i);
@@ -97,7 +97,7 @@ public static void TestIsPrintLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsGraphicLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsGraphic(i);
@@ -109,7 +109,7 @@ public static void TestIsGraphicLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsPunctLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsPunct(i);
@@ -121,7 +121,7 @@ public static void TestIsPunctLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsSpaceLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsSpace(i);
@@ -133,7 +133,7 @@ public static void TestIsSpaceLatin1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIsSymbolLatin1(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var i = (rune)0; i <= MaxLatin1; i++) {
         var got = IsSymbol(i);

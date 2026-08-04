@@ -14,7 +14,7 @@ using strings = strings_package;
 partial class strings_test_package {
 
 internal static void check(ж<testing.T> Ꮡt, ж<strings.Builder> Ꮡb, @string want) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡt.Helper();
     @string got = b.String();
@@ -69,7 +69,7 @@ internal static readonly @string gammaˢ = "gamma"u8;
 internal static readonly @string alphabetagammaˢ = "alphabetagamma"u8;
 
 public static void TestBuilderString(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     Ꮡb.WriteString(alphaˢ);
@@ -104,7 +104,7 @@ internal static readonly @string aaaˢ = "aaa"u8;
 internal static readonly @string bbbˢ = "bbb"u8;
 
 public static void TestBuilderReset(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     check(Ꮡt, Ꮡb, ""u8);
@@ -244,7 +244,7 @@ public static void TestBuilderWriteByte(ж<testing.T> Ꮡt) {
 internal static readonly @string abcdeˢ = "abcde"u8;
 
 public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Issue 23382; verify that copyCheck doesn't force the
     // Builder to escape and be heap allocated.
@@ -273,8 +273,7 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
             fn: () => {
                 ref var a = ref heap(new strings.Builder(), out var Ꮡa);
                 Ꮡa.WriteByte((rune)'x');
-                ref var b = ref heap<strings.Builder>(out var Ꮡb);
-                b = a;
+                var b = a;
                 _ = b.String();
             } // appease vet
 
@@ -285,8 +284,7 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
             fn: () => {
                 ref var a = ref heap(new strings.Builder(), out var Ꮡa);
                 Ꮡa.WriteByte((rune)'x');
-                ref var b = ref heap<strings.Builder>(out var Ꮡb);
-                b = a;
+                var b = a;
                 b.Len();
             }
         ),
@@ -296,8 +294,7 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
             fn: () => {
                 ref var a = ref heap(new strings.Builder(), out var Ꮡa);
                 Ꮡa.WriteByte((rune)'x');
-                ref var b = ref heap<strings.Builder>(out var Ꮡb);
-                b = a;
+                var b = a;
                 b.Cap();
             }
         ),

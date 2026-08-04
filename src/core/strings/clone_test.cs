@@ -29,13 +29,13 @@ public static void TestClone(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Clone(%q) return value should not reference inputs backing memory."u8, input);
         }
         if (len(input) == 0 && @unsafe.StringData(clone) != @unsafe.StringData(emptyString)) {
-            Ꮡt.Errorf("Clone(%#v) return value should be equal to empty string."u8, @unsafe.StringData(input));
+            Ꮡt.Errorf("Clone(%#v) return value should be equal to empty string."u8, @unsafe.StringData(input).OrTypedNil());
         }
     }
 }
 
 public static void BenchmarkClone(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = strings.Repeat("a"u8, 42);
     b.ReportAllocs();

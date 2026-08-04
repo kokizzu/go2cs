@@ -24,7 +24,7 @@ private static readonly @string nilˢ = "<nil>"u8;
 private static readonly @string statOnlyˢ = "statOnly"u8;
 
 public static void TestStat(ж<testing.T> Ꮡt) {
-    var check = (@string desc, fs.FileInfo infoΔ1, error errΔ1) => {
+    void check(@string desc, fs.FileInfo infoΔ1, error errΔ1) {
         Ꮡt.Helper();
         if (errΔ1 != default! || infoΔ1 == default! || infoΔ1.Mode() != 302) {
             @string infoStr = nilˢ;
@@ -33,7 +33,7 @@ public static void TestStat(ж<testing.T> Ꮡt) {
             }
             Ꮡt.Fatalf("Stat(%s) = %v, %v, want Mode:0456, nil"u8, desc, infoStr, errΔ1);
         }
-    };
+    }
     // Test that Stat uses the method when present.
     var (info, err) = Stat(new statOnly(new fstest_MapFSᴠStatFS(testFsys)), helloTxtˢ);
     check(statOnlyˢ, info, err);

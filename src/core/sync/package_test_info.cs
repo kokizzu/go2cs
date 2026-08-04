@@ -23,8 +23,6 @@ global using runtimeꓸError = go.runtime_package.ΔError;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
-using Δsync = go.sync_package;
-using Δtesting = go.testing_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -42,9 +40,6 @@ using static global::go.sync_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<Δsync.Once, ж<Δsync.Once>>(Indirect = true)]
-[assembly: GoImplicitConv<Δsync.WaitGroup, ж<Δsync.WaitGroup>>(Indirect = true)]
-[assembly: GoImplicitConv<Δtesting.PB, ж<Δtesting.PB>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go;

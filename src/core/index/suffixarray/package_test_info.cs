@@ -13,7 +13,6 @@ global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
-using regexp = go.regexp_package;
 using testing = go.testing_package;
 // </ImportedTypeAliases>
 
@@ -31,7 +30,6 @@ using static global::go.index.suffixarray_test_package;
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<global::go.index.suffixarray_package.Index, ж<global::go.index.suffixarray_package.Index>>(Indirect = true)]
-[assembly: GoImplicitConv<regexp.Regexp, ж<regexp.Regexp>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.index;

@@ -157,10 +157,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
         var ttʗ1 = tt;
         Ꮡt.Run(tt.name, (ж<testing.T> tΔ1) => {
-            foreach (var (_, vᴛ2) in ttʗ1.gold) {
-                ref var g = ref heap(new sha256Test(), out var Ꮡg);
-                g = vᴛ2;
-
+            foreach (var (_, g) in ttʗ1.gold) {
                 var h = ttʗ1.newHash();
                 var h2 = ttʗ1.newHash();
                 io.WriteString(h, g.@in[..(int)(len(g.@in) / 2)]);
@@ -339,7 +336,7 @@ public static void TestAllocations(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] [GoValueClone("Data")] internal partial struct cgoData {
+[GoType] [GoValueClone("Data")] public partial struct cgoData {
     public array<byte> Data = new(16);
     public ж<cgoData> Ptr;
 }

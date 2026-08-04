@@ -21,14 +21,14 @@ internal static void dump(ж<global::go.container.ring_package.Ring> Ꮡr) {
     nint i = 0;
     nint n = Ꮡr.Len();
     for (var p = Ꮡr; i < n; p = p.Value.next) {
-        fmt.Printf("%4d: %p = {<- %p | %p ->}\n"u8, i, p, (~p).prev, (~p).next);
+        fmt.Printf("%4d: %p = {<- %p | %p ->}\n"u8, i, p.OrTypedNil(), (~p).prev.OrTypedNil(), (~p).next.OrTypedNil());
         i++;
     }
     fmt.Println();
 }
 
 internal static void verify(ж<testing.T> Ꮡt, ж<global::go.container.ring_package.Ring> Ꮡr, nint N, nint sum) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Len
     nint n = Ꮡr.Len();
@@ -58,12 +58,12 @@ internal static void verify(ж<testing.T> Ꮡt, ж<global::go.container.ring_pac
         ж<global::go.container.ring_package.Ring> p = default!;                                             // previous element
         for (var q = Ꮡr; p == nil || q != Ꮡr; q = q.Value.next) {
             if (p != nil && p != (~q).prev) {
-                Ꮡt.Errorf("prev = %p, expected q.prev = %p\n"u8, p, (~q).prev);
+                Ꮡt.Errorf("prev = %p, expected q.prev = %p\n"u8, p.OrTypedNil(), (~q).prev.OrTypedNil());
             }
             p = q;
         }
         if (p != r.prev) {
-            Ꮡt.Errorf("prev = %p, expected r.prev = %p\n"u8, p, r.prev);
+            Ꮡt.Errorf("prev = %p, expected r.prev = %p\n"u8, p.OrTypedNil(), r.prev.OrTypedNil());
         }
     }
     // Next, Prev

@@ -63,7 +63,7 @@ internal static readonly @string barˢ3 = ".Bar"u8;
 internal static readonly @string xBarCapital1ˢ = "x/bar; capital=1"u8;
 
 public static void TestTypeByExtension_LocalData(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var cleanup = setMimeInit(() => {
         clearMimeTypes();
@@ -188,7 +188,7 @@ public static void TestLookupMallocs(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkTypeByExtension(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     initMime();
     b.ResetTimer();
@@ -208,7 +208,7 @@ public static void BenchmarkTypeByExtension(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExtensionsByType(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     initMime();
     b.ResetTimer();

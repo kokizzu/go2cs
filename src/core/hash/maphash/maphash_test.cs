@@ -46,24 +46,24 @@ public static void TestHashGrouping(ж<testing.T> Ꮡt) {
     }
     hh[0].Write(b);
     hh[1].WriteString(((@string)b));
-    var writeByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ1) => {
+    void writeByte(ж<global::go.hash.maphash_package.Hash> h, byte bΔ1) {
         var err = h.WriteByte(bΔ1);
         if (err != default!) {
             Ꮡt.Fatalf("WriteByte: %v"u8, err);
         }
-    };
-    var writeSingleByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ2) => {
+    }
+    void writeSingleByte(ж<global::go.hash.maphash_package.Hash> h, byte bΔ2) {
         var (_, err) = h.Write(new byte[]{bΔ2}.slice());
         if (err != default!) {
             Ꮡt.Fatalf("Write single byte: %v"u8, err);
         }
-    };
-    var writeStringSingleByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ3) => {
+    }
+    void writeStringSingleByte(ж<global::go.hash.maphash_package.Hash> h, byte bΔ3) {
         var (_, err) = h.WriteString(((@string)new byte[]{bΔ3}.slice()));
         if (err != default!) {
             Ꮡt.Fatalf("WriteString single byte: %v"u8, err);
         }
-    };
+    }
     foreach (var (i, x) in b) {
         writeByte(hh[2], x);
         writeSingleByte(hh[3], x);
@@ -156,7 +156,7 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSeedFromSum64(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
@@ -172,7 +172,7 @@ public static void TestSeedFromSum64(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSeedFromSeed(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
@@ -189,7 +189,7 @@ public static void TestSeedFromSeed(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSeedFromFlush(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var b = new slice<byte>(65);
     var h1 = @new<global::go.hash.maphash_package.Hash>();
@@ -206,7 +206,7 @@ public static void TestSeedFromFlush(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSeedFromReset(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
@@ -251,8 +251,7 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var hʗ3 = h;
     Ꮡb.Run(bytesˢ, (ж<testing.B> bΔ2) => {
         bΔ2.SetBytes((int64)size);
-        ref var seed = ref heap<global::go.hash.maphash_package.ΔSeed>(out var Ꮡseed);
-        seed = hʗ3.Seed();
+        var seed = hʗ3.Seed();
         for (nint i = 0; i < (~bΔ2).N; i++) {
             Bytes(seed, bufʗ3);
         }
@@ -260,8 +259,7 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var hʗ5 = h;
     Ꮡb.Run(stringˢ, (ж<testing.B> bΔ3) => {
         bΔ3.SetBytes((int64)size);
-        ref var seed = ref heap<global::go.hash.maphash_package.ΔSeed>(out var Ꮡseed);
-        seed = hʗ5.Seed();
+        var seed = hʗ5.Seed();
         for (nint i = 0; i < (~bΔ3).N; i++) {
             String(seed, s);
         }

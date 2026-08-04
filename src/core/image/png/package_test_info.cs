@@ -20,8 +20,6 @@ global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;
 global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
-using base64 = go.encoding.base64_package;
-using strings = go.strings_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -35,7 +33,6 @@ using static global::go.image.png_test_package;
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<image_package.NRGBA, go.image.draw_package.Image>(Pointer = true)]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 [assembly: GoImplement<io_package.PipeReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<io_package.PipeWriter, io_package.WriteCloser>(Pointer = true)]
 [assembly: GoImplement<io_package.WriteCloser, io_package.Writer>]
@@ -44,7 +41,6 @@ using static global::go.image.png_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<strings.Reader, ж<strings.Reader>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.image;

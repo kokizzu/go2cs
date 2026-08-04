@@ -479,10 +479,8 @@ public static void TestCalibrate(ж<testing.T> Ꮡt) {
                 }
             }
         };
-        ref var bmlinear = ref heap<testing.BenchmarkResult>(out var Ꮡbmlinear);
-        bmlinear = testing.Benchmark(blinear);
-        ref var bmbinary = ref heap<testing.BenchmarkResult>(out var Ꮡbmbinary);
-        bmbinary = testing.Benchmark(bbinary);
+        var bmlinear = testing.Benchmark(blinear);
+        var bmbinary = testing.Benchmark(bbinary);
         fmt.Printf("n=%d: linear=%d binary=%d\n"u8, nΔ1, bmlinear.NsPerOp(), bmbinary.NsPerOp());
         return bmlinear.NsPerOp() * 100 > bmbinary.NsPerOp() * 110;
     });

@@ -94,7 +94,7 @@ public static uint64 Input = bits_internal_test_package.DeBruijn64;
 public static nint Output;
 
 public static void BenchmarkLeadingZeros(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -104,7 +104,7 @@ public static void BenchmarkLeadingZeros(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLeadingZeros8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -114,7 +114,7 @@ public static void BenchmarkLeadingZeros8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLeadingZeros16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -124,7 +124,7 @@ public static void BenchmarkLeadingZeros16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLeadingZeros32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -134,7 +134,7 @@ public static void BenchmarkLeadingZeros32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLeadingZeros64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -202,7 +202,7 @@ public static void TestTrailingZeros(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkTrailingZeros(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -212,7 +212,7 @@ public static void BenchmarkTrailingZeros(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrailingZeros8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -222,7 +222,7 @@ public static void BenchmarkTrailingZeros8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrailingZeros16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -232,7 +232,7 @@ public static void BenchmarkTrailingZeros16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrailingZeros32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -242,7 +242,7 @@ public static void BenchmarkTrailingZeros32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrailingZeros64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -308,7 +308,7 @@ internal static void testOnesCount(ж<testing.T> Ꮡt, uint64 x, nint want) {
 }
 
 public static void BenchmarkOnesCount(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -318,7 +318,7 @@ public static void BenchmarkOnesCount(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkOnesCount8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -328,7 +328,7 @@ public static void BenchmarkOnesCount8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkOnesCount16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -338,7 +338,7 @@ public static void BenchmarkOnesCount16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkOnesCount32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -348,7 +348,7 @@ public static void BenchmarkOnesCount32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkOnesCount64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -428,7 +428,7 @@ public static void TestRotateLeft(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkRotateLeft(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -438,7 +438,7 @@ public static void BenchmarkRotateLeft(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRotateLeft8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint8 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -448,7 +448,7 @@ public static void BenchmarkRotateLeft8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRotateLeft16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint16 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -458,7 +458,7 @@ public static void BenchmarkRotateLeft16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRotateLeft32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -468,7 +468,7 @@ public static void BenchmarkRotateLeft32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRotateLeft64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -554,7 +554,7 @@ internal static void testReverse(ж<testing.T> Ꮡt, uint64 x64, uint64 want64) 
 }
 
 public static void BenchmarkReverse(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -564,7 +564,7 @@ public static void BenchmarkReverse(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverse8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint8 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -574,7 +574,7 @@ public static void BenchmarkReverse8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverse16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint16 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -584,7 +584,7 @@ public static void BenchmarkReverse16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverse32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -594,7 +594,7 @@ public static void BenchmarkReverse32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverse64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -660,7 +660,7 @@ internal static void testReverseBytes(ж<testing.T> Ꮡt, uint64 x64, uint64 wan
 }
 
 public static void BenchmarkReverseBytes(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -670,7 +670,7 @@ public static void BenchmarkReverseBytes(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverseBytes16(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint16 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -680,7 +680,7 @@ public static void BenchmarkReverseBytes16(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverseBytes32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -690,7 +690,7 @@ public static void BenchmarkReverseBytes32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReverseBytes64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 s = default!;
     for (nint i = 0; i < b.N; i++) {
@@ -767,14 +767,14 @@ internal static readonly @string subIntrinsicSymmetricˢ = "Sub intrinsic symmet
 }
 
 public static void TestAddSubUint(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var test = (@string msg, Func<nuint, nuint, nuint, (nuint, nuint)> f, nuint x, nuint y, nuint c, nuint z, nuint cout) => {
+    void test(@string msg, Func<nuint, nuint, nuint, (nuint, nuint)> f, nuint x, nuint y, nuint c, nuint z, nuint cout) {
         var (z1, cout1) = f(x, y, c);
         if (z1 != z || cout1 != cout) {
             Ꮡt.Errorf("%s: got z:cout = %#x:%#x; want %#x:%#x"u8, msg, z1, cout1, z, cout);
         }
-    };
+    }
     foreach (var (_, a) in new TestAddSubUint_type[]{
         new(0, 0, 0, 0, 0),
         new(0, 1, 0, 1, 0),
@@ -812,12 +812,12 @@ internal static readonly @string sub32Symmetricˢ = "Sub32 symmetric"u8;
 }
 
 public static void TestAddSubUint32(ж<testing.T> Ꮡt) {
-    var test = (@string msg, Func<uint32, uint32, uint32, (uint32, uint32)> f, uint32 x, uint32 y, uint32 c, uint32 z, uint32 cout) => {
+    void test(@string msg, Func<uint32, uint32, uint32, (uint32, uint32)> f, uint32 x, uint32 y, uint32 c, uint32 z, uint32 cout) {
         var (z1, cout1) = f(x, y, c);
         if (z1 != z || cout1 != cout) {
             Ꮡt.Errorf("%s: got z:cout = %#x:%#x; want %#x:%#x"u8, msg, z1, cout1, z, cout);
         }
-    };
+    }
     foreach (var (_, a) in new TestAddSubUint32_type[]{
         new(0, 0, 0, 0, 0),
         new(0, 1, 0, 1, 0),
@@ -853,14 +853,14 @@ internal static readonly @string sub64IntrinsicSymmetricˢ = "Sub64 intrinsic sy
 }
 
 public static void TestAddSubUint64(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var test = (@string msg, Func<uint64, uint64, uint64, (uint64, uint64)> f, uint64 x, uint64 y, uint64 c, uint64 z, uint64 cout) => {
+    void test(@string msg, Func<uint64, uint64, uint64, (uint64, uint64)> f, uint64 x, uint64 y, uint64 c, uint64 z, uint64 cout) {
         var (z1, cout1) = f(x, y, c);
         if (z1 != z || cout1 != cout) {
             Ꮡt.Errorf("%s: got z:cout = %#x:%#x; want %#x:%#x"u8, msg, z1, cout1, z, cout);
         }
-    };
+    }
     foreach (var (_, a) in new TestAddSubUint64_type[]{
         new(0, 0, 0, 0, 0),
         new(0, 1, 0, 1, 0),
@@ -1045,20 +1045,20 @@ internal static readonly @string divIntrinsicSymmetricˢ = "Div intrinsic symmet
 }
 
 public static void TestMulDiv(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var testMul = (@string msg, Func<nuint, nuint, (nuint, nuint)> f, nuint x, nuint y, nuint hi, nuint lo) => {
+    void testMul(@string msg, Func<nuint, nuint, (nuint, nuint)> f, nuint x, nuint y, nuint hi, nuint lo) {
         var (hi1, lo1) = f(x, y);
         if (hi1 != hi || lo1 != lo) {
             Ꮡt.Errorf("%s: got hi:lo = %#x:%#x; want %#x:%#x"u8, msg, hi1, lo1, hi, lo);
         }
-    };
-    var testDiv = (@string msg, Func<nuint, nuint, nuint, (nuint, nuint)> f, nuint hi, nuint lo, nuint y, nuint q, nuint r) => {
+    }
+    void testDiv(@string msg, Func<nuint, nuint, nuint, (nuint, nuint)> f, nuint hi, nuint lo, nuint y, nuint q, nuint r) {
         var (q1, r1) = f(hi, lo, y);
         if (q1 != q || r1 != r) {
             Ꮡt.Errorf("%s: got q:r = %#x:%#x; want %#x:%#x"u8, msg, q1, r1, q, r);
         }
-    };
+    }
     foreach (var (_, a) in new TestMulDiv_type[]{
         new(((nuint)1 << (int)((UintSize - 1))), 2, 1, 0, 1),
         new(_M, _M, _M - 1, 1, 42)
@@ -1088,18 +1088,18 @@ internal static readonly @string div32Symmetricˢ = "Div32 symmetric"u8;
 }
 
 public static void TestMulDiv32(ж<testing.T> Ꮡt) {
-    var testMul = (@string msg, Func<uint32, uint32, (uint32, uint32)> f, uint32 x, uint32 y, uint32 hi, uint32 lo) => {
+    void testMul(@string msg, Func<uint32, uint32, (uint32, uint32)> f, uint32 x, uint32 y, uint32 hi, uint32 lo) {
         var (hi1, lo1) = f(x, y);
         if (hi1 != hi || lo1 != lo) {
             Ꮡt.Errorf("%s: got hi:lo = %#x:%#x; want %#x:%#x"u8, msg, hi1, lo1, hi, lo);
         }
-    };
-    var testDiv = (@string msg, Func<uint32, uint32, uint32, (uint32, uint32)> f, uint32 hi, uint32 lo, uint32 y, uint32 q, uint32 r) => {
+    }
+    void testDiv(@string msg, Func<uint32, uint32, uint32, (uint32, uint32)> f, uint32 hi, uint32 lo, uint32 y, uint32 q, uint32 r) {
         var (q1, r1) = f(hi, lo, y);
         if (q1 != q || r1 != r) {
             Ꮡt.Errorf("%s: got q:r = %#x:%#x; want %#x:%#x"u8, msg, q1, r1, q, r);
         }
-    };
+    }
     foreach (var (_, a) in new TestMulDiv32_type[]{
         new(((uint32)1 << (int)(31)), 2, 1, 0, 1),
         new(0xc47dfa8cU, 50911, 0x98a4, 0x998587f4U, 13),
@@ -1128,20 +1128,20 @@ internal static readonly @string div64IntrinsicSymmetricˢ = "Div64 intrinsic sy
 }
 
 public static void TestMulDiv64(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var testMul = (@string msg, Func<uint64, uint64, (uint64, uint64)> f, uint64 x, uint64 y, uint64 hi, uint64 lo) => {
+    void testMul(@string msg, Func<uint64, uint64, (uint64, uint64)> f, uint64 x, uint64 y, uint64 hi, uint64 lo) {
         var (hi1, lo1) = f(x, y);
         if (hi1 != hi || lo1 != lo) {
             Ꮡt.Errorf("%s: got hi:lo = %#x:%#x; want %#x:%#x"u8, msg, hi1, lo1, hi, lo);
         }
-    };
-    var testDiv = (@string msg, Func<uint64, uint64, uint64, (uint64, uint64)> f, uint64 hi, uint64 lo, uint64 y, uint64 q, uint64 r) => {
+    }
+    void testDiv(@string msg, Func<uint64, uint64, uint64, (uint64, uint64)> f, uint64 hi, uint64 lo, uint64 y, uint64 q, uint64 r) {
         var (q1, r1) = f(hi, lo, y);
         if (q1 != q || r1 != r) {
             Ꮡt.Errorf("%s: got q:r = %#x:%#x; want %#x:%#x"u8, msg, q1, r1, q, r);
         }
-    };
+    }
     foreach (var (_, a) in new TestMulDiv64_type[]{
         new(((uint64)1 << (int)(63)), 2, 1, 0, 1),
         new(0x3626229738a3b9UL, 0xd8988a9f1cc4a61UL, 0x2dd0712657fe8UL, 0x9dd6a3364c358319UL, 13),
@@ -1363,7 +1363,7 @@ public static void TestRem64Overflow(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkAdd(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint z = default!;
     nuint c = default!;
@@ -1374,7 +1374,7 @@ public static void BenchmarkAdd(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAdd32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 z = default!;
     uint32 c = default!;
@@ -1385,7 +1385,7 @@ public static void BenchmarkAdd32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAdd64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 z = default!;
     uint64 c = default!;
@@ -1396,7 +1396,7 @@ public static void BenchmarkAdd64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAdd64multiple(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 z0 = (uint64)Input;
     uint64 z1 = (uint64)Input;
@@ -1413,7 +1413,7 @@ public static void BenchmarkAdd64multiple(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSub(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint z = default!;
     nuint c = default!;
@@ -1424,7 +1424,7 @@ public static void BenchmarkSub(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSub32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 z = default!;
     uint32 c = default!;
@@ -1435,7 +1435,7 @@ public static void BenchmarkSub32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSub64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 z = default!;
     uint64 c = default!;
@@ -1446,7 +1446,7 @@ public static void BenchmarkSub64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSub64multiple(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 z0 = (uint64)Input;
     uint64 z1 = (uint64)Input;
@@ -1463,7 +1463,7 @@ public static void BenchmarkSub64multiple(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMul(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint hi = default!;
     nuint lo = default!;
@@ -1474,7 +1474,7 @@ public static void BenchmarkMul(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMul32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 hi = default!;
     uint32 lo = default!;
@@ -1485,7 +1485,7 @@ public static void BenchmarkMul32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMul64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 hi = default!;
     uint64 lo = default!;
@@ -1496,7 +1496,7 @@ public static void BenchmarkMul64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDiv(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint q = default!;
     nuint r = default!;
@@ -1507,7 +1507,7 @@ public static void BenchmarkDiv(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDiv32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint32 q = default!;
     uint32 r = default!;
@@ -1518,7 +1518,7 @@ public static void BenchmarkDiv32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDiv64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 q = default!;
     uint64 r = default!;

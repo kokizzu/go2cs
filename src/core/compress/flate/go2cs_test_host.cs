@@ -78,6 +78,9 @@ internal static class Go2CsTestHost
             "testdata/null-long-match.wb.expect-noinput",
             "token.go",
             "writer_test.go",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestBestSpeed", flate_internal_test_package.TestBestSpeed, "deflate_test.go", 627);
         registry.Add("TestBestSpeedMatch", flate_internal_test_package.TestBestSpeedMatch, "deflate_test.go", 809);

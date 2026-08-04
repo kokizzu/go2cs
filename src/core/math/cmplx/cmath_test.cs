@@ -530,7 +530,7 @@ internal static void initᴛatanhSC() { atanhSC = new atanhSCᴛ1[]{
     new(complex(1.0D, zero),
         complex(inf, zero)),
     new(complex(1.0D, inf),
-        complex(0D, math.Pi / 2D)),
+        complex((float64)(0D), (float64)(math.Pi / 2D))),
     new(complex(1.0D, nan),
         NaN()),
     new(complex(inf, 1.0D),
@@ -1792,7 +1792,7 @@ public static void TestInfiniteLoopIntanSeries(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkAbs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Abs(complex(2.5D, 3.5D));
@@ -1800,7 +1800,7 @@ public static void BenchmarkAbs(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAcos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Acos(complex(2.5D, 3.5D));
@@ -1808,7 +1808,7 @@ public static void BenchmarkAcos(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAcosh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Acosh(complex(2.5D, 3.5D));
@@ -1816,7 +1816,7 @@ public static void BenchmarkAcosh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAsin(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Asin(complex(2.5D, 3.5D));
@@ -1824,7 +1824,7 @@ public static void BenchmarkAsin(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAsinh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Asinh(complex(2.5D, 3.5D));
@@ -1832,7 +1832,7 @@ public static void BenchmarkAsinh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtan(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Atan(complex(2.5D, 3.5D));
@@ -1840,7 +1840,7 @@ public static void BenchmarkAtan(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtanh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Atanh(complex(2.5D, 3.5D));
@@ -1848,7 +1848,7 @@ public static void BenchmarkAtanh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkConj(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Conj(complex(2.5D, 3.5D));
@@ -1856,7 +1856,7 @@ public static void BenchmarkConj(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Cos(complex(2.5D, 3.5D));
@@ -1864,7 +1864,7 @@ public static void BenchmarkCos(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCosh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Cosh(complex(2.5D, 3.5D));
@@ -1872,7 +1872,7 @@ public static void BenchmarkCosh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Exp(complex(2.5D, 3.5D));
@@ -1880,7 +1880,7 @@ public static void BenchmarkExp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Log(complex(2.5D, 3.5D));
@@ -1888,7 +1888,7 @@ public static void BenchmarkLog(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog10(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Log10(complex(2.5D, 3.5D));
@@ -1896,7 +1896,7 @@ public static void BenchmarkLog10(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPhase(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Phase(complex(2.5D, 3.5D));
@@ -1904,7 +1904,7 @@ public static void BenchmarkPhase(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPolar(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Polar(complex(2.5D, 3.5D));
@@ -1912,7 +1912,7 @@ public static void BenchmarkPolar(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPow(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Pow(complex(2.5D, 3.5D), complex(2.5D, 3.5D));
@@ -1920,7 +1920,7 @@ public static void BenchmarkPow(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRect(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Rect(2.5D, 1.5D);
@@ -1928,7 +1928,7 @@ public static void BenchmarkRect(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSin(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Sin(complex(2.5D, 3.5D));
@@ -1936,7 +1936,7 @@ public static void BenchmarkSin(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSinh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Sinh(complex(2.5D, 3.5D));
@@ -1944,7 +1944,7 @@ public static void BenchmarkSinh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSqrt(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Sqrt(complex(2.5D, 3.5D));
@@ -1952,7 +1952,7 @@ public static void BenchmarkSqrt(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTan(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Tan(complex(2.5D, 3.5D));
@@ -1960,7 +1960,7 @@ public static void BenchmarkTan(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTanh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Tanh(complex(2.5D, 3.5D));

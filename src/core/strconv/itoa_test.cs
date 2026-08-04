@@ -169,7 +169,7 @@ public static void TestFormatUintVarlen(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkFormatInt(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         foreach (var (_, test) in itob64tests) {
@@ -180,7 +180,7 @@ public static void BenchmarkFormatInt(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendInt(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var dst = new slice<byte>(0, 30);
     for (nint i = 0; i < b.N; i++) {
@@ -192,7 +192,7 @@ public static void BenchmarkAppendInt(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFormatUint(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         foreach (var (_, test) in uitob64tests) {
@@ -203,7 +203,7 @@ public static void BenchmarkFormatUint(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendUint(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var dst = new slice<byte>(0, 30);
     for (nint i = 0; i < b.N; i++) {
@@ -227,7 +227,7 @@ public static void BenchmarkFormatIntSmall(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAppendIntSmall(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var dst = new slice<byte>(0, 30);
     const int64 smallInt = 42;

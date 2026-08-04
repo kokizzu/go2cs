@@ -13,7 +13,7 @@ partial class strconv_test_package {
 
 // Verify that our IsPrint agrees with unicode.IsPrint.
 public static void TestIsPrint(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint n = 0;
     for (var r = (rune)0; r <= Δunicode.MaxRune; r++) {
@@ -29,7 +29,7 @@ public static void TestIsPrint(ж<testing.T> Ꮡt) {
 
 // Verify that our IsGraphic agrees with unicode.IsGraphic.
 public static void TestIsGraphic(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint n = 0;
     for (var r = (rune)0; r <= Δunicode.MaxRune; r++) {
@@ -108,7 +108,7 @@ public static void TestQuoteToGraphic(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkQuote(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Quote("\a\b\f\r\n\t\v\a\b\f\r\n\t\v\a\b\f\r\n\t\v"u8);
@@ -116,7 +116,7 @@ public static void BenchmarkQuote(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkQuoteRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         QuoteRune((rune)'\a');
@@ -126,7 +126,7 @@ public static void BenchmarkQuoteRune(ж<testing.B> Ꮡb) {
 internal static slice<byte> benchQuoteBuf;
 
 public static void BenchmarkAppendQuote(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         benchQuoteBuf = AppendQuote(benchQuoteBuf[..0], "\a\b\f\r\n\t\v\a\b\f\r\n\t\v\a\b\f\r\n\t\v"u8);
@@ -136,7 +136,7 @@ public static void BenchmarkAppendQuote(ж<testing.B> Ꮡb) {
 internal static slice<byte> benchQuoteRuneBuf;
 
 public static void BenchmarkAppendQuoteRune(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         benchQuoteRuneBuf = AppendQuoteRune(benchQuoteRuneBuf[..0], (rune)'\a');
@@ -369,7 +369,7 @@ public static void TestUnquote(ж<testing.T> Ꮡt) {
 
 // Issue 23685: invalid UTF-8 should not go through the fast path.
 public static void TestUnquoteInvalidUTF8(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tests = new TestUnquoteInvalidUTF8_tests[]{
         new(@in: @"""foo"""u8, want: "foo"u8),
@@ -384,7 +384,7 @@ public static void TestUnquoteInvalidUTF8(ж<testing.T> Ꮡt) {
 }
 
 internal static void testUnquote(ж<testing.T> Ꮡt, @string @in, @string want, error wantErr) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test Unquote.
     var (got, gotErr) = Unquote(@in);
@@ -418,7 +418,7 @@ internal static void testUnquote(ж<testing.T> Ꮡt, @string @in, @string want, 
 internal static readonly @string giveMeARockPaperAndˢ = @"""Give me a rock, paper and scissors and I will move the world."""u8;
 
 public static void BenchmarkUnquoteEasy(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Unquote(giveMeARockPaperAndˢ);
@@ -429,7 +429,7 @@ public static void BenchmarkUnquoteEasy(ж<testing.B> Ꮡb) {
 internal static readonly @string x47iveMeAX72ockX70aperˢ = @"""\x47ive me a \x72ock, \x70aper and \x73cissors and \x49 will move the world."""u8;
 
 public static void BenchmarkUnquoteHard(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Unquote(x47iveMeAX72ockX70aperˢ);

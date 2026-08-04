@@ -228,7 +228,7 @@ internal static ж<bytes.Buffer> makeSource(@string pattern) {
 }
 
 internal static void checkTok(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint line, rune got, rune want, @string text) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (got != want) {
         Ꮡt.Fatalf("tok = %s, want %s for %q"u8, TokenString(got), TokenString(want), text);
@@ -249,7 +249,7 @@ internal static void checkTok(ж<testing.T> Ꮡt, ж<global::go.text.scanner_pac
 }
 
 internal static void checkTokErr(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint line, rune want, @string text) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     nint prevCount = s.ErrorCount;
     checkTok(Ꮡt, Ꮡs, line, Ꮡs.Scan(), want, text);
@@ -269,7 +269,7 @@ internal static nint countNewlines(@string s) {
 }
 
 internal static void testScan(ж<testing.T> Ꮡt, nuint mode) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(makeSource(" \t%s\n"u8)));
     s.Value.Mode = mode;
@@ -313,7 +313,7 @@ public static void TestInvalidExponent(ж<testing.T> Ꮡt) {
 }
 
 public static void TestPosition(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var src = makeSource("\t\t\t\t%s\n"u8);
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(src));
@@ -343,7 +343,7 @@ public static void TestPosition(ж<testing.T> Ꮡt) {
 }
 
 public static void TestScanZeroMode(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var src = makeSource("%s\n"u8);
     @string str = src.String();
@@ -384,7 +384,7 @@ internal static void testScanSelectedMode(ж<testing.T> Ꮡt, nuint mode, rune @
 }
 
 public static void TestScanSelectedMask(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     testScanSelectedMode(Ꮡt, 0, 0);
     testScanSelectedMode(Ꮡt, ScanIdents, Ident);
@@ -579,7 +579,7 @@ internal static void checkPos(ж<testing.T> Ꮡt, global::go.text.scanner_packag
 }
 
 internal static void checkNextPos(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     {
         var ch = Ꮡs.Next(); if (ch != @char) {
@@ -591,7 +591,7 @@ internal static void checkNextPos(ж<testing.T> Ꮡt, ж<global::go.text.scanner
 }
 
 internal static void checkScanPos(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var want = new Position(Offset: offset, Line: line, Column: column);
     checkPos(Ꮡt, s.Pos(), want);
@@ -611,7 +611,7 @@ internal static readonly @string fooˢ = "  foo६४  \n\n本語\n"u8;
 internal static readonly @string abcXˢ = "abc\n本語\n\nx"u8;
 
 public static void TestPos(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // corner case: empty source
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(""u8)));
@@ -736,7 +736,7 @@ public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIssue29723(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(@"x """u8)));
     s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string _) => {

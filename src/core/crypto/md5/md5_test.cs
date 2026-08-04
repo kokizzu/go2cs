@@ -252,7 +252,7 @@ internal static slice<byte> buf = new slice<byte>(1024 * 1024 * 8 + 1);
 internal static slice<byte> sum = new slice<byte>(bench.Size());
 
 internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size, bool unaligned) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.SetBytes((int64)size);
     var bufΔ1 = md5_internal_test_package.buf;

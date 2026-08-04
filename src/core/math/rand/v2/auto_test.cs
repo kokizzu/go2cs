@@ -15,7 +15,7 @@ partial class rand_test_package {
 // to try to make sure that it runs early. It has the best chance of
 // detecting deterministic seeding if it's the first test that runs.
 public static void TestAuto(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Pull out 10 int64s from the global source
     // and then check that they don't appear in that

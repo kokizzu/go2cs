@@ -221,7 +221,7 @@ public static void TestSearchWrappersDontAlloc(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkSearchWrappers(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         runSearchWrappers();

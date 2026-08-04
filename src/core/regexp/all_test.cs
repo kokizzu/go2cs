@@ -89,8 +89,8 @@ public static void TestBadCompile(ж<testing.T> Ꮡt) {
 }
 
 internal static void matchTest(ж<testing.T> Ꮡt, ж<FindTest> Ꮡtest) {
-    ref var t = ref Ꮡt.Value;
-    ref var test = ref Ꮡtest.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var test = ref Ꮡtest.DerefOrNull();
 
     var re = compileTest(Ꮡt, test.pat, ""u8);
     if (re == nil) {
@@ -98,12 +98,12 @@ internal static void matchTest(ж<testing.T> Ꮡt, ж<FindTest> Ꮡtest) {
     }
     var m = re.MatchString(test.text);
     if (m != (len(test.matches) > 0)) {
-        Ꮡt.Errorf("MatchString failure on %s: %t should be %t"u8, Ꮡtest, m, len(test.matches) > 0);
+        Ꮡt.Errorf("MatchString failure on %s: %t should be %t"u8, Ꮡtest.OrTypedNil(), m, len(test.matches) > 0);
     }
     // now try bytes
     m = re.Match(slice<byte>(test.text));
     if (m != (len(test.matches) > 0)) {
-        Ꮡt.Errorf("Match failure on %s: %t should be %t"u8, Ꮡtest, m, len(test.matches) > 0);
+        Ꮡt.Errorf("Match failure on %s: %t should be %t"u8, Ꮡtest.OrTypedNil(), m, len(test.matches) > 0);
     }
 }
 
@@ -117,15 +117,15 @@ public static void TestMatch(ж<testing.T> Ꮡt) {
 }
 
 internal static void matchFunctionTest(ж<testing.T> Ꮡt, ж<FindTest> Ꮡtest) {
-    ref var t = ref Ꮡt.Value;
-    ref var test = ref Ꮡtest.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var test = ref Ꮡtest.DerefOrNull();
 
     var (m, err) = MatchString(test.pat, test.text);
     if (err == default!) {
         return;
     }
     if (m != (len(test.matches) > 0)) {
-        Ꮡt.Errorf("Match failure on %s: %t should be %t"u8, Ꮡtest, m, len(test.matches) > 0);
+        Ꮡt.Errorf("Match failure on %s: %t should be %t"u8, Ꮡtest.OrTypedNil(), m, len(test.matches) > 0);
     }
 }
 
@@ -139,8 +139,8 @@ public static void TestMatchFunction(ж<testing.T> Ꮡt) {
 }
 
 internal static void copyMatchTest(ж<testing.T> Ꮡt, ж<FindTest> Ꮡtest) {
-    ref var t = ref Ꮡt.Value;
-    ref var test = ref Ꮡtest.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var test = ref Ꮡtest.DerefOrNull();
 
     var re = compileTest(Ꮡt, test.pat, ""u8);
     if (re == nil) {
@@ -150,7 +150,7 @@ internal static void copyMatchTest(ж<testing.T> Ꮡt, ж<FindTest> Ꮡtest) {
     var m2 = re.Copy().MatchString(test.text);
     if (m1 != m2) {
         Ꮡt.Errorf("Copied Regexp match failure on %s: original gave %t; copy gave %t; should be %t"u8,
-            Ꮡtest, m1, m2, len(test.matches) > 0);
+            Ꮡtest.OrTypedNil(), m1, m2, len(test.matches) > 0);
     }
 }
 
@@ -438,7 +438,7 @@ public static void TestQuoteMeta(ж<testing.T> Ꮡt) {
 }
 
 public static void TestLiteralPrefix(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tc) in append(metaTests, literalPrefixTests.ꓸꓸꓸ)) {
         // Literal method needs to scan the pattern.
@@ -570,7 +570,7 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
 
 // The following sequence of Match calls used to panic. See issue #12980.
 public static void TestParseAndCompile(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string expr = "a$"u8;
     @string s = "a\nb"u8;
@@ -588,7 +588,7 @@ public static void TestParseAndCompile(ж<testing.T> Ꮡt) {
         }
         {
             var Δmatch = re.MatchString(s); if (Δmatch != tc.expMatch) {
-                Ꮡt.Errorf("%d: %q.MatchString(%q)=%t; expected=%t"u8, i, re, s, Δmatch, tc.expMatch);
+                Ꮡt.Errorf("%d: %q.MatchString(%q)=%t; expected=%t"u8, i, re.OrTypedNil(), s, Δmatch, tc.expMatch);
             }
         }
     }
@@ -628,7 +628,7 @@ internal static readonly @string aaabbˢ = "aaabb"u8;
 
 // triggers backtracker
 public static void BenchmarkFind(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var re = MustCompile("a+b+"u8);
@@ -645,7 +645,7 @@ public static void BenchmarkFind(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFindAllNoMatches(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var re = MustCompile("a+b+"u8);
     var s = slice<byte>("acddee"u8);
@@ -660,7 +660,7 @@ public static void BenchmarkFindAllNoMatches(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFindString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var re = MustCompile("a+b+"u8);
@@ -681,7 +681,7 @@ internal static readonly @string aABBˢ = "a(a+b+)b"u8;
 internal static readonly object aabˢ = (@string)"aab"u8;
 
 public static void BenchmarkFindSubmatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var re = MustCompile(aABBˢ);
@@ -701,7 +701,7 @@ public static void BenchmarkFindSubmatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFindStringSubmatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var re = MustCompile(aABBˢ);
@@ -721,7 +721,7 @@ public static void BenchmarkFindStringSubmatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLiteral(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string x = strings.Repeat("x"u8, 50) + "y"u8;
     b.StopTimer();
@@ -735,7 +735,7 @@ public static void BenchmarkLiteral(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNotLiteral(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string x = strings.Repeat("x"u8, 50) + "y"u8;
     b.StopTimer();
@@ -753,7 +753,7 @@ internal static readonly @string xxxxˢ = "xxxx"u8;
 internal static readonly @string abcdwˢ = "[abcdw]"u8;
 
 public static void BenchmarkMatchClass(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     @string x = strings.Repeat(xxxxˢ, 20) + "w"u8;
@@ -770,7 +770,7 @@ public static void BenchmarkMatchClass(ж<testing.B> Ꮡb) {
 internal static readonly @string bbbbˢ = "bbbb"u8;
 
 public static void BenchmarkMatchClass_InRange(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     // 'b' is between 'a' and 'c', so the charclass
@@ -790,7 +790,7 @@ internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmno
 internal static readonly @string cjrwˢ = "[cjrw]"u8;
 
 public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string x = abcdefghijklmnopqrstuvwxyzˢ;
     b.StopTimer();
@@ -805,7 +805,7 @@ public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
 internal static readonly @string zbcDEˢ = "^zbc(d|e)"u8;
 
 public static void BenchmarkAnchoredLiteralShortNonMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -817,7 +817,7 @@ public static void BenchmarkAnchoredLiteralShortNonMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAnchoredLiteralLongNonMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -835,7 +835,7 @@ public static void BenchmarkAnchoredLiteralLongNonMatch(ж<testing.B> Ꮡb) {
 internal static readonly @string bcDEˢ = "^.bc(d|e)"u8;
 
 public static void BenchmarkAnchoredShortMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -847,7 +847,7 @@ public static void BenchmarkAnchoredShortMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAnchoredLongMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -865,7 +865,7 @@ public static void BenchmarkAnchoredLongMatch(ж<testing.B> Ꮡb) {
 internal static readonly @string bcDEˢ2 = "^.bc(d|e)*$"u8;
 
 public static void BenchmarkOnePassShortA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcddddddeeeededd"u8);
@@ -880,7 +880,7 @@ public static void BenchmarkOnePassShortA(ж<testing.B> Ꮡb) {
 internal static readonly @string bcDEˢ3 = ".bc(d|e)*$"u8;
 
 public static void BenchmarkNotOnePassShortA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcddddddeeeededd"u8);
@@ -895,7 +895,7 @@ public static void BenchmarkNotOnePassShortA(ж<testing.B> Ꮡb) {
 internal static readonly @string bcDEˢ4 = "^.bc(?:d|e)*$"u8;
 
 public static void BenchmarkOnePassShortB(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcddddddeeeededd"u8);
@@ -910,7 +910,7 @@ public static void BenchmarkOnePassShortB(ж<testing.B> Ꮡb) {
 internal static readonly @string bcDEˢ5 = ".bc(?:d|e)*$"u8;
 
 public static void BenchmarkNotOnePassShortB(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcddddddeeeededd"u8);
@@ -925,7 +925,7 @@ public static void BenchmarkNotOnePassShortB(ж<testing.B> Ꮡb) {
 internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ2 = "^abcdefghijklmnopqrstuvwxyz.*$"u8;
 
 public static void BenchmarkOnePassLongPrefix(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -940,7 +940,7 @@ public static void BenchmarkOnePassLongPrefix(ж<testing.B> Ꮡb) {
 internal static readonly @string bcdefghijklmnopqrstuvwxyzˢ = "^.bcdefghijklmnopqrstuvwxyz.*$"u8;
 
 public static void BenchmarkOnePassLongNotPrefix(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
@@ -955,7 +955,7 @@ public static void BenchmarkOnePassLongNotPrefix(ж<testing.B> Ꮡb) {
 internal static readonly @string fooBaRBazˢ = "foo (ba+r)? baz"u8;
 
 public static void BenchmarkMatchParallelShared(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = slice<byte>("this is a long line that contains foo bar baz"u8);
     var re = MustCompile(fooBaRBazˢ);
@@ -970,7 +970,7 @@ public static void BenchmarkMatchParallelShared(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMatchParallelCopied(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = slice<byte>("this is a long line that contains foo bar baz"u8);
     var re = MustCompile(fooBaRBazˢ);
@@ -988,7 +988,7 @@ public static void BenchmarkMatchParallelCopied(ж<testing.B> Ꮡb) {
 internal static @string sink;
 
 public static void BenchmarkQuoteMetaAll(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var specials = new slice<byte>(0);
     for (var i = (byte)0; i < utf8.RuneSelf; i++) {
@@ -1005,7 +1005,7 @@ public static void BenchmarkQuoteMetaAll(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkQuoteMetaNone(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string s = abcdefghijklmnopqrstuvwxyzˢ;
     b.SetBytes((int64)len(s));
@@ -1051,20 +1051,20 @@ internal static readonly @string abcdefghijklmnˢ = "abcdefghijklmn"u8;
 public static void TestDeepEqual(ж<testing.T> Ꮡt) {
     var re1 = MustCompile(aBCDˢ);
     var re2 = MustCompile(aBCDˢ);
-    if (!reflect.DeepEqual(re1, re2)) {
+    if (!reflect.DeepEqual(re1.OrTypedNil(), re2.OrTypedNil())) {
         // has always been true, since Go 1.
         Ꮡt.Errorf("DeepEqual(re1, re2) = false, want true"u8);
     }
     re1.MatchString(abcdefghijklmnˢ);
-    if (!reflect.DeepEqual(re1, re2)) {
+    if (!reflect.DeepEqual(re1.OrTypedNil(), re2.OrTypedNil())) {
         Ꮡt.Errorf("DeepEqual(re1, re2) = false, want true"u8);
     }
     re2.MatchString(abcdefghijklmnˢ);
-    if (!reflect.DeepEqual(re1, re2)) {
+    if (!reflect.DeepEqual(re1.OrTypedNil(), re2.OrTypedNil())) {
         Ꮡt.Errorf("DeepEqual(re1, re2) = false, want true"u8);
     }
     re2.MatchString(strings.Repeat(abcdefghijklmnˢ, 100));
-    if (!reflect.DeepEqual(re1, re2)) {
+    if (!reflect.DeepEqual(re1.OrTypedNil(), re2.OrTypedNil())) {
         Ꮡt.Errorf("DeepEqual(re1, re2) = false, want true"u8);
     }
 }
@@ -1109,12 +1109,12 @@ public static void TestUnmarshalText(ж<testing.T> Ꮡt) {
         var re = compileTest(Ꮡt, goodRe[i], ""u8);
         var (marshaled, err) = re.MarshalText();
         if (err != default!) {
-            Ꮡt.Errorf("regexp %#q failed to marshal: %s"u8, re, err);
+            Ꮡt.Errorf("regexp %#q failed to marshal: %s"u8, re.OrTypedNil(), err);
             continue;
         }
         {
             var errΔ1 = unmarshaled.UnmarshalText(marshaled); if (errΔ1 != default!) {
-                Ꮡt.Errorf("regexp %#q failed to unmarshal: %s"u8, re, errΔ1);
+                Ꮡt.Errorf("regexp %#q failed to unmarshal: %s"u8, re.OrTypedNil(), errΔ1);
                 continue;
             }
         }

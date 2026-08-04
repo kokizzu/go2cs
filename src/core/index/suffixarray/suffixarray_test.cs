@@ -129,7 +129,7 @@ internal static slice<nint> find(@string src, @string s, nint n) {
 }
 
 internal static void testLookup(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx, @string s, nint n) {
-    ref var tc = ref Ꮡtc.Value;
+    ref var tc = ref Ꮡtc.DerefOrNull();
 
     var res = Ꮡx.Lookup(slice<byte>(s), n);
     var exp = find(tc.source, s, n);
@@ -166,13 +166,13 @@ internal static void testLookup(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<globa
 }
 
 internal static void testFindAllIndex(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx, ж<regexp.Regexp> Ꮡrx, nint n) {
-    ref var tc = ref Ꮡtc.Value;
+    ref var tc = ref Ꮡtc.DerefOrNull();
 
     var res = Ꮡx.FindAllIndex(Ꮡrx, n);
     var exp = Ꮡrx.FindAllStringIndex(tc.source, n);
     // check that the lengths match
     if (builtin.len(res) != builtin.len(exp)) {
-        Ꮡt.Errorf("test %q, FindAllIndex %q (n = %d): expected %d results; got %d"u8, tc.name, Ꮡrx, n, builtin.len(exp), builtin.len(res));
+        Ꮡt.Errorf("test %q, FindAllIndex %q (n = %d): expected %d results; got %d"u8, tc.name, Ꮡrx.OrTypedNil(), n, builtin.len(exp), builtin.len(res));
     }
     // if n >= 0 the number of results is limited --- unless n >= all results,
     // we may obtain different positions from the Index and from regexp (because
@@ -181,10 +181,10 @@ internal static void testFindAllIndex(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж
     // check that each result is in fact a correct match and the result is sorted
     foreach (var (i, r) in res) {
         if (r[0] < 0 || r[0] > r[1] || builtin.len(tc.source) < r[1]){
-            Ꮡt.Errorf("test %q, FindAllIndex %q, result %d (n == %d): illegal match [%d, %d]"u8, tc.name, Ꮡrx, i, n, r[0], r[1]);
+            Ꮡt.Errorf("test %q, FindAllIndex %q, result %d (n == %d): illegal match [%d, %d]"u8, tc.name, Ꮡrx.OrTypedNil(), i, n, r[0], r[1]);
         } else 
         if (!Ꮡrx.MatchString(tc.source[(int)(r[0])..(int)(r[1])])) {
-            Ꮡt.Errorf("test %q, FindAllIndex %q, result %d (n = %d): [%d, %d] not a match"u8, tc.name, Ꮡrx, i, n, r[0], r[1]);
+            Ꮡt.Errorf("test %q, FindAllIndex %q, result %d (n = %d): [%d, %d] not a match"u8, tc.name, Ꮡrx.OrTypedNil(), i, n, r[0], r[1]);
         }
     }
     if (n < 0) {
@@ -193,14 +193,14 @@ internal static void testFindAllIndex(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж
             var e = exp[i];
             if (r[0] != e[0] || r[1] != e[1]) {
                 Ꮡt.Errorf("test %q, FindAllIndex %q, result %d: expected match [%d, %d]; got [%d, %d]"u8,
-                    tc.name, Ꮡrx, i, e[0], e[1], r[0], r[1]);
+                    tc.name, Ꮡrx.OrTypedNil(), i, e[0], e[1], r[0], r[1]);
             }
         }
     }
 }
 
 internal static void testLookups(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx, nint n) {
-    ref var tc = ref Ꮡtc.Value;
+    ref var tc = ref Ꮡtc.DerefOrNull();
 
     foreach (var (_, pat) in tc.patterns) {
         testLookup(Ꮡt, Ꮡtc, Ꮡx, pat, n);
@@ -235,17 +235,16 @@ internal static void testLookups(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<glob
 }
 
 internal static void testConstruction(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx) {
-    ref var tc = ref Ꮡtc.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var tc = ref Ꮡtc.DerefOrNull();
 
-    if (!sort.IsSorted(new suffixarray_internal_test_package.indexжInterface(Ꮡ((index)(x))))) {
+    if (!sort.IsSorted(new suffixarray_internal_test_package.indexжInterface(Ꮡx.Reinterpret<global::go.index.suffixarray_package.Index, index>()))) {
         Ꮡt.Errorf("failed testConstruction %s"u8, tc.name);
     }
 }
 
 internal static bool equal(ж<global::go.index.suffixarray_package.Index> Ꮡx, ж<global::go.index.suffixarray_package.Index> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (!bytes.Equal(x.data, y.data)) {
         return false;
@@ -264,9 +263,9 @@ internal static bool equal(ж<global::go.index.suffixarray_package.Index> Ꮡx, 
 
 // returns the serialized index size
 internal static nint testSaveRestore(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNil();
-    ref var tc = ref Ꮡtc.DerefOrNil();
-    ref var x = ref Ꮡx.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var tc = ref Ꮡtc.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     {
@@ -457,7 +456,7 @@ internal static void test(ж<testing.T> Ꮡt, Func<slice<byte>, slice<nint>> bui
 // testRec fills x[i:] with all possible combinations of values in [1,max]
 // and then calls testSA(t, x, build) for each one.
 internal static void testRec(ж<testing.T> Ꮡt, slice<byte> x, nint i, nint max, ж<nint> ᏑnumFail, Func<slice<byte>, slice<nint>> build) {
-    ref var numFail = ref ᏑnumFail.Value;
+    ref var numFail = ref ᏑnumFail.DerefOrNull();
 
     if (i < builtin.len(x)) {
         for (x[i] = 1; x[i] <= (byte)max; x[i]++) {
@@ -511,7 +510,7 @@ internal static slice<byte> benchrand = new slice<byte>(1000000);
 // repetition, and the repeated bytes have the most. For most algorithms,
 // the running time of every input will be between these two.
 internal static void benchmarkNew(ж<testing.B> Ꮡb, bool random) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     b.StopTimer();
@@ -662,7 +661,7 @@ public static void BenchmarkSaveRestore(ж<testing.B> Ꮡb) {
                         bΔ1.Fatal(err);
                     }
                 }
-                ref var y = ref heap(new global::go.index.suffixarray_package.Index(), out var Ꮡy);
+                global::go.index.suffixarray_package.Index y = default!;
                 {
                     var err = y.Read(new suffixarray_test_package.bytes_BufferжReader(buf)); if (err != default!) {
                         bΔ1.Fatal(err);

@@ -82,12 +82,12 @@ private static readonly @string readDirOnlyˢ = "readDirOnly"u8;
 private static readonly @string openOnlyˢ = "openOnly"u8;
 
 public static void TestGlobMethod(ж<testing.T> Ꮡt) {
-    var check = (@string desc, slice<@string> namesΔ1, error errΔ1) => {
+    void check(@string desc, slice<@string> namesΔ1, error errΔ1) {
         Ꮡt.Helper();
         if (errΔ1 != default! || len(namesΔ1) != 1 || namesΔ1[0] != "hello.txt") {
             Ꮡt.Errorf("Glob(%s) = %v, %v, want %v, nil"u8, desc, namesΔ1, errΔ1, new @string[]{"hello.txt"u8}.slice());
         }
-    };
+    }
     // Test that ReadDir uses the method when present.
     var (names, err) = Glob(new globOnly(new fstest_MapFSᴠGlobFS(testFsys)), txtˢ);
     check(readDirOnlyˢ, names, err);

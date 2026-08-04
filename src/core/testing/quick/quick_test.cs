@@ -136,7 +136,7 @@ internal static TestMapAlias fMapAlias(TestMapAlias a) {
 }
 
 internal static ж<nint> fPtr(ж<nint> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return default!;
@@ -370,7 +370,7 @@ public static void TestCheckProperty(ж<testing.T> Ꮡt) {
 }
 
 public static void TestFailure(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var f = (nint x) => false;
     var err = Check(f, nil);

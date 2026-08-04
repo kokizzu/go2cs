@@ -31,7 +31,7 @@ internal static slice<@string> badStrings = new @string[]{
 
 // This is a simple fuzzer to see if the decompressor panics.
 public static void FuzzReader(ж<testing.F> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     foreach (var (_, test) in tests) {
         f.Add(slice<byte>(test.compressed));
@@ -50,7 +50,7 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
 // explore the space of decompressor behavior, since it can't see
 // what the compressor is doing. But it's better than nothing.
 public static void FuzzDecompressor(ж<testing.F> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
     foreach (var (_, test) in tests) {
@@ -92,7 +92,7 @@ internal static readonly object byteMismatchAfterErrorˢ = (@string)"byte mismat
 // Fuzz test to check that if we can decompress some data,
 // so can zstd, and that we get the same result.
 public static void FuzzReverse(ж<testing.F> Ꮡf) => func((defer, recover) => {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
     foreach (var (_, test) in tests) {

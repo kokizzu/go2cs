@@ -22,6 +22,9 @@ internal static class Go2CsTestHost
             "regress_test.go",
             "rng.go",
             "zipf.go",
+        }, new string[]
+        {
+            "v2",
         });
         registry.Add("TestAuto", rand_test_package.TestAuto, "auto_test.go", 16);
         registry.Add("TestConcurrent", rand_test_package.TestConcurrent, "race_test.go", 15);

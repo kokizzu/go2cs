@@ -27,6 +27,11 @@ internal static class Go2CsTestHost
             "type_unix.go",
             "type_unix_test.go",
             "type_windows.go",
+        }, new string[]
+        {
+            "multipart",
+            "quotedprintable",
+            "testdata",
         });
         registry.Add("TestCharsetDecoder", mime_internal_test_package.TestCharsetDecoder, "encodedword_test.go", 157);
         registry.Add("TestCharsetDecoderError", mime_internal_test_package.TestCharsetDecoderError, "encodedword_test.go", 207);

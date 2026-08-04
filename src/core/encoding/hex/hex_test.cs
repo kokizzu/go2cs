@@ -277,7 +277,7 @@ public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     foreach (var (_, size) in new nint[]{256, 1024, 4096, 16384}.slice()) {
         var src = bytes.Repeat(new byte[]{(rune)'2', (rune)'b', (rune)'7', (rune)'4', (rune)'4', (rune)'f', (rune)'a', (rune)'a'}.slice(), size / 8);

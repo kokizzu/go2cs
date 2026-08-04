@@ -23,10 +23,10 @@ internal static float64 fdiv(float64 a, float64 b) {
     return a / b;
 }
 
-internal static readonly GoUntyped below1e23 = /* 99999999999999974834176 */
-    GoUntyped.Parse("99999999999999974834176");
-internal static readonly GoUntyped above1e23 = /* 100000000000000008388608 */
-    GoUntyped.Parse("100000000000000008388608");
+internal static readonly GoBigConst below1e23 = /* 99999999999999974834176 */
+    GoBigConst.Parse("99999999999999974834176");
+internal static readonly GoBigConst above1e23 = /* 100000000000000008388608 */
+    GoBigConst.Parse("100000000000000008388608");
 
 // g conversion and zero suppression
 // Round to even

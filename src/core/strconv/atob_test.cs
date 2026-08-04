@@ -35,7 +35,7 @@ internal static slice<atobTest> atobtests = new atobTest[]{
 }.slice();
 
 public static void TestParseBool(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, test) in atobtests) {
         var (b, e) = ParseBool(test.@in);

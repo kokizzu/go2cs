@@ -26,7 +26,7 @@ partial class sort_test_package {
 
 // Sort sorts the argument slice according to the less functions passed to OrderedBy.
 public static void ΔSort(this ж<multiSorter> Ꮡms, slice<Change> changes) {
-    ref var ms = ref Ꮡms.Value;
+    ref var ms = ref Ꮡms.DerefOrNull();
 
     ms.changes = changes;
     sort.Sort(new sort_test_package.multiSorterжInterface(Ꮡms));

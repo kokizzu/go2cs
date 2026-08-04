@@ -143,7 +143,7 @@ field"
 ), new(
     Name: "BadDoubleQuotes"u8,
     Input: @"§a∑""""b,c"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "TrimQuote"u8,
     Input: @" §""a"",§"" b"",§c"u8,
@@ -152,33 +152,33 @@ field"
 ), new(
     Name: "BadBareQuote"u8,
     Input: @"§a ∑""word"",""b"""u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "BadTrailingQuote"u8,
     Input: @"§""a word"",b∑"""u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "ExtraneousQuote"u8,
     Input: @"§""a ∑""word"",""b"""u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "BadFieldCount"u8,
     Input: "§a,§b,§c\n¶∑§d,§e"u8,
-    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{default!, new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice(), new @string[]{"d"u8, "e"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 0
 ), new(
     Name: "BadFieldCountMultiple"u8,
     Input: "§a,§b,§c\n¶∑§d,§e\n¶∑§f"u8,
-    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount))), new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{default!, new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount))), new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice(), new @string[]{"d"u8, "e"u8}.slice(), new @string[]{"f"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 0
 ), new(
     Name: "BadFieldCount1"u8,
     Input: @"§∑a,§b,§c"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 2
@@ -259,11 +259,11 @@ field"
 ), new(
     Name: "StartLine1"u8,
     Input: "§a,\"b\nc∑\"d,e"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "StartLine2"u8,
     Input: "§a,§b\n¶§\"d\n\n,e∑"u8,
-    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice(),
+    Errors: new error[]{default!, new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8}.slice()}.slice()
 ), new(
     Name: "CRLFInQuotedField"u8,
@@ -286,7 +286,7 @@ field"
 ), new(
     Name: "QuotedTrailingCRCR"u8,
     Input: "§\"field∑\"\r\r"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "FieldCR"u8,
     Input: "§field\rfield\r"u8,
@@ -354,7 +354,7 @@ field"
 ), new(
     Name: "QuoteWithTrailingCRLF"u8,
     Input: "§\"foo∑\"bar\"\r\n"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "LazyQuoteWithTrailingCRLF"u8,
     Input: "§\"foo\"bar\"\r\n"u8,
@@ -371,7 +371,7 @@ field"
 ), new(
     Name: "OddQuotes"u8,
     Input: @"§""""""""""""""∑"u8,
-    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new global::go.encoding.csv_package.ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "LazyOddQuotes"u8,
     Input: @"§"""""""""""""""u8,
@@ -414,7 +414,7 @@ field"
 }.slice(); }
 
 public static void TestRead(ж<testing.T> Ꮡt) {
-    var newReader = (readTest tt) => {
+    (ж<global::go.encoding.csv_package.Reader>, slice<slice<array<nint>>>, map<nint, array<nint>>, @string) newReader(readTest tt) {
         var (positions, errPositions, input) = makePositions(tt.Input);
         var r = NewReader(new csv_test_package.strings_ReaderжReader(strings.NewReader(input)));
         if (tt.Comma != 0) {
@@ -430,7 +430,7 @@ public static void TestRead(ж<testing.T> Ꮡt) {
         r.Value.TrimLeadingSpace = tt.TrimLeadingSpace;
         r.Value.ReuseRecord = tt.ReuseRecord;
         return (r, positions, errPositions, input);
-    };
+    }
     foreach (var (_, vᴛ1) in readTests) {
         ref var tt = ref heap(new readTest(), out var Ꮡtt);
         tt = vᴛ1;
@@ -496,10 +496,7 @@ public static void TestRead(ж<testing.T> Ꮡt) {
                 foreach (var (i, _) in rec) {
                     var (line, col) = r.FieldPos(i);
                     {
-                        ref var got = ref heap<array<nint>>(out var Ꮡgot);
-                        got = new nint[]{line, col}.array();
-                        ref var want = ref heap<array<nint>>(out var Ꮡwant);
-                        want = pos[i].Clone(); if (got != want) {
+                        var (got, want) = (new nint[]{line, col}.array(), pos[i].Clone()); if (got != want) {
                             tΔ1.Errorf("position mismatch at record %d, field %d;\ngot %v\nwant %v"u8, recNum, i, got, want);
                         }
                     }
@@ -538,7 +535,7 @@ internal static error errorWithPosition(error err, nint recNum, slice<slice<arra
     parseErr1.StartLine = positions[recNum][0][0];
     parseErr1.Line = errPos[0];
     parseErr1.Column = errPos[1];
-    return new csv_test_package.csv_ParseErrorжerror(ᏑparseErr1);
+    return new global::go.encoding.csv_package.ParseErrorжerror(ᏑparseErr1);
 }
 
 // makePositions returns the expected field positions of all
@@ -623,7 +620,7 @@ internal static (slice<slice<array<nint>>>, map<nint, array<nint>>, @string) mak
 // benchmarkRead measures reading the provided CSV rows data.
 // initReader, if non-nil, modifies the Reader before it's used.
 internal static void benchmarkRead(ж<testing.B> Ꮡb, Action<ж<global::go.encoding.csv_package.Reader>> initReader, @string rows) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     var r = NewReader(new csv_internal_test_package.nTimesжReader(Ꮡ(new nTimes(s: rows, n: b.N))));

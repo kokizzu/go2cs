@@ -56,7 +56,7 @@ internal static slice<uint64> testSeeds = new uint64[]{1, 1754801282, 1698661970
 // checkSimilarDistribution returns success if the mean and stddev of the
 // two statsResults are similar.
 [GoRecv] internal static error checkSimilarDistribution(this ref statsResults sr, ж<statsResults> Ꮡexpected) {
-    ref var expected = ref Ꮡexpected.Value;
+    ref var expected = ref Ꮡexpected.DerefOrNull();
 
     if (!nearEqual(sr.mean, expected.mean, expected.closeEnough, expected.maxError)) {
         @string s = fmt.Sprintf("mean %v != %v (allowed error %v, %v)"u8, sr.mean, expected.mean, expected.closeEnough, expected.maxError);
@@ -447,8 +447,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
 
                 var pʗ1 = p;
                 var rʗ4 = rʗ1;
-            ref var tests = ref heap<array<TestUniformFactorial_tests>>(out var Ꮡtests);
-            tests = new TestUniformFactorial_tests[]{
+            var tests = new TestUniformFactorial_tests[]{
                 new(name: "Int32N"u8, fn: () => (nint)rʗ2.Int32N((int32)nfact)),
                 new(name: "Perm"u8, fn: () => encodePerm(rʗ3.Perm(n))),
                 new(name: "Shuffle"u8, fn: () => {
@@ -519,7 +518,7 @@ internal static ж<rand.Rand> testRand() {
 }
 
 public static void BenchmarkSourceUint64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = NewPCG(1, 2);
     uint64 t = default!;
@@ -530,7 +529,7 @@ public static void BenchmarkSourceUint64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkGlobalInt64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     int64 t = default!;
     for (nint n = b.N; n > 0; n--) {
@@ -550,7 +549,7 @@ public static void BenchmarkGlobalInt64Parallel(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkGlobalUint64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     uint64 t = default!;
     for (nint n = b.N; n > 0; n--) {
@@ -570,7 +569,7 @@ public static void BenchmarkGlobalUint64Parallel(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -592,7 +591,7 @@ internal static T keep<T>(T x)
 }
 
 public static void BenchmarkUint64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     uint64 t = default!;
@@ -603,7 +602,7 @@ public static void BenchmarkUint64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkGlobalIntN1000(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint t = default!;
     nint arg = keep(1000);
@@ -614,7 +613,7 @@ public static void BenchmarkGlobalIntN1000(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIntN1000(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     nint t = default!;
@@ -626,7 +625,7 @@ public static void BenchmarkIntN1000(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N1000(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -638,7 +637,7 @@ public static void BenchmarkInt64N1000(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N1e8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -650,7 +649,7 @@ public static void BenchmarkInt64N1e8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N1e9(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -662,7 +661,7 @@ public static void BenchmarkInt64N1e9(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N2e9(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -674,7 +673,7 @@ public static void BenchmarkInt64N2e9(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N1e18(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -686,7 +685,7 @@ public static void BenchmarkInt64N1e18(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N2e18(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -698,7 +697,7 @@ public static void BenchmarkInt64N2e18(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt64N4e18(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int64 t = default!;
@@ -710,7 +709,7 @@ public static void BenchmarkInt64N4e18(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt32N1000(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int32 t = default!;
@@ -722,7 +721,7 @@ public static void BenchmarkInt32N1000(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt32N1e8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int32 t = default!;
@@ -734,7 +733,7 @@ public static void BenchmarkInt32N1e8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt32N1e9(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int32 t = default!;
@@ -746,7 +745,7 @@ public static void BenchmarkInt32N1e9(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkInt32N2e9(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     int32 t = default!;
@@ -758,7 +757,7 @@ public static void BenchmarkInt32N2e9(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFloat32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     float32 t = default!;
@@ -769,7 +768,7 @@ public static void BenchmarkFloat32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFloat64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     float64 t = default!;
@@ -780,7 +779,7 @@ public static void BenchmarkFloat64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExpFloat64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     float64 t = default!;
@@ -791,7 +790,7 @@ public static void BenchmarkExpFloat64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNormFloat64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     float64 t = default!;
@@ -802,7 +801,7 @@ public static void BenchmarkNormFloat64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPerm3(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     nint t = default!;
@@ -813,7 +812,7 @@ public static void BenchmarkPerm3(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPerm30(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     nint t = default!;
@@ -824,7 +823,7 @@ public static void BenchmarkPerm30(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPerm30ViaShuffle(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     nint t = default!;
@@ -845,7 +844,7 @@ public static void BenchmarkPerm30ViaShuffle(ж<testing.B> Ꮡb) {
 // BenchmarkShuffleOverhead uses a minimal swap function
 // to measure just the shuffling overhead.
 public static void BenchmarkShuffleOverhead(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = testRand();
     for (nint n = b.N; n > 0; n--) {

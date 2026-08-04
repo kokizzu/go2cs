@@ -6,7 +6,6 @@
 // the test package class. Production-anchored records stay in package_test_info.cs.
 
 // <ImportedTypeAliases>
-using tabwriter = go.text.tabwriter_package;
 using testing = go.testing_package;
 // </ImportedTypeAliases>
 

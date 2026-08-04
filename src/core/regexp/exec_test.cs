@@ -79,7 +79,7 @@ public static void TestRE2Search(ж<testing.T> Ꮡt) {
 internal static readonly @string bz2ˢ = ".bz2"u8;
 
 internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (f, err) = Δos.Open(@file);
     if (err != default!) {
@@ -196,7 +196,7 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, 
                 var (have, suffix) = run[i](re, refull, text);
                 var want = parseResult(Ꮡt, @file, linenoΔ1, res[i]);
                 if (!slices.Equal<slice<nint>, nint>(have, want)) {
-                    Ꮡt.Errorf("%s:%d: %#q%s.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, linenoΔ1, re, suffix, text, have, want);
+                    Ꮡt.Errorf("%s:%d: %#q%s.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, have, want);
                     {
                         nfail++; if (nfail >= 100) {
                             Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
@@ -206,7 +206,7 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, 
                 }
                 (var b, suffix) = Δmatch[i](re, refull, text);
                 if (b != (want != default!)) {
-                    Ꮡt.Errorf("%s:%d: %#q%s.MatchString(%#q) = %v, want %v"u8, @file, linenoΔ1, re, suffix, text, b, !b);
+                    Ꮡt.Errorf("%s:%d: %#q%s.MatchString(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, b, !b);
                     {
                         nfail++; if (nfail >= 100) {
                             Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
@@ -243,28 +243,28 @@ internal static void initᴛrun() { run = new Func<ж<global::go.regexp_package.
 }.slice(); }
 
 internal static (slice<nint>, @string) runFull(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var refull = ref Ꮡrefull.Value;
+    ref var refull = ref Ꮡrefull.DerefOrNull();
 
     refull.longest = false;
     return (Ꮡrefull.FindStringSubmatchIndex(text), "[full]");
 }
 
 internal static (slice<nint>, @string) runPartial(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     re.longest = false;
     return (Ꮡre.FindStringSubmatchIndex(text), "");
 }
 
 internal static (slice<nint>, @string) runFullLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var refull = ref Ꮡrefull.Value;
+    ref var refull = ref Ꮡrefull.DerefOrNull();
 
     refull.longest = true;
     return (Ꮡrefull.FindStringSubmatchIndex(text), "[full,longest]");
 }
 
 internal static (slice<nint>, @string) runPartialLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     re.longest = true;
     return (Ꮡre.FindStringSubmatchIndex(text), "[longest]");
@@ -279,28 +279,28 @@ internal static void initᴛΔmatch() { Δmatch = new Func<ж<global::go.regexp_
 }.slice(); }
 
 internal static (bool, @string) matchFull(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var refull = ref Ꮡrefull.Value;
+    ref var refull = ref Ꮡrefull.DerefOrNull();
 
     refull.longest = false;
     return (Ꮡrefull.MatchString(text), "[full]");
 }
 
 internal static (bool, @string) matchPartial(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     re.longest = false;
     return (Ꮡre.MatchString(text), "");
 }
 
 internal static (bool, @string) matchFullLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var refull = ref Ꮡrefull.Value;
+    ref var refull = ref Ꮡrefull.DerefOrNull();
 
     refull.longest = true;
     return (Ꮡrefull.MatchString(text), "[full,longest]");
 }
 
 internal static (bool, @string) matchPartialLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     re.longest = true;
     return (Ꮡre.MatchString(text), "[longest]");
@@ -392,7 +392,7 @@ internal static ж<global::go.regexp_package.Regexp> notab;
 internal static void initᴛnotab() { notab = MustCompilePOSIX(@"[^\t]+"u8); }
 
 internal static void testFowler(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (f, err) = Δos.Open(@file);
     if (err != default!) {
@@ -770,7 +770,7 @@ public static void BenchmarkMatch_onepass_regex(ж<testing.B> Ꮡb) {
     var isRaceBuilder = strings.HasSuffix(testenv.Builder(), raceˢ);
     var r = MustCompile(sAZˢ);
     if ((~r).onepass == nil) {
-        Ꮡb.Fatalf("want onepass regex, but %q is not onepass"u8, r);
+        Ꮡb.Fatalf("want onepass regex, but %q is not onepass"u8, r.OrTypedNil());
     }
     foreach (var (_, vᴛ1) in benchSizes) {
         ref var size = ref heap(new benchSizesᴛ1(), out var Ꮡsize);

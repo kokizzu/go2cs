@@ -29,7 +29,7 @@ internal static context.Context newAfterFuncContext() {
 }
 
 internal static /*<-*/channel<EmptyStruct> Done(this ж<afterFuncContext> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
     defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock);
@@ -40,7 +40,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<afterFuncContext> Ꮡc) 
 });
 
 internal static error Err(this ж<afterFuncContext> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
     defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock);
@@ -52,7 +52,7 @@ internal static error Err(this ж<afterFuncContext> Ꮡc) => func((defer, recove
 }
 
 internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f) => func<Func<bool>>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
     defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock);
@@ -72,7 +72,7 @@ internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f)
 });
 
 internal static void cancel(this ж<afterFuncContext> Ꮡc, error err) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
     defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock);

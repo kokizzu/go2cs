@@ -45,8 +45,8 @@ public static void TestEmbeddedTZData(ж<Δtesting.T> Ꮡt) => func((defer, reco
         // Compare the name and zone fields of ref and sample.
         // The tx field changes faster as tzdata is updated.
         // The cache fields are expected to differ.
-        var v1 = reflect.ValueOf(@ref).Elem();
-        var v2 = reflect.ValueOf(sample).Elem();
+        var v1 = reflect.ValueOf(@ref.OrTypedNil()).Elem();
+        var v2 = reflect.ValueOf(sample.OrTypedNil()).Elem();
         var typ = v1.Type();
         nint nf = typ.NumField();
         nint found = 0;

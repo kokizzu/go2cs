@@ -72,7 +72,7 @@ internal static (nint, nint) linecol(slice<nint> lines, nint offs) {
 }
 
 internal static void verifyPositions(ж<testing.T> Ꮡt, ж<global::go.go.token_package.FileSet> Ꮡfset, ж<global::go.go.token_package.ΔFile> Ꮡf, slice<nint> lines) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     for (nint offs = 0; offs < f.Size(); offs++) {
         global::go.go.token_package.ΔPos p = f.Pos(offs);
@@ -211,7 +211,7 @@ public static void TestFileSetPastEnd(ж<testing.T> Ꮡt) {
     }
     {
         var f = fset.File(((global::go.go.token_package.ΔPos)fset.Base())); if (f != nil) {
-            Ꮡt.Errorf("got %v, want nil"u8, f);
+            Ꮡt.Errorf("got %v, want nil"u8, f.OrTypedNil());
         }
     }
 }
@@ -382,15 +382,15 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
     var b = fset.AddFile(fileBˢ, -1, len(contentB));
     b.SetLinesForContent(contentB);
     var fsetʗ1 = fset;
-    var checkPos = (global::go.go.token_package.ΔPos pos, @string want) => {
+    void checkPos(global::go.go.token_package.ΔPos pos, @string want) {
         {
             @string got = fsetʗ1.Position(pos).String(); if (got != want) {
                 Ꮡt.Errorf("Position(%d) = %s, want %s"u8, pos, got, want);
             }
         }
-    };
+    }
     var fsetʗ2 = fset;
-    var checkNumFiles = (nint want) => {
+    void checkNumFiles(nint want) {
         nint got = 0;
         fsetʗ2.Iterate((ж<global::go.go.token_package.ΔFile> _) => {
             got++;
@@ -399,7 +399,7 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
         if (got != want) {
             Ꮡt.Errorf("Iterate called %d times, want %d"u8, got, want);
         }
-    };
+    }
     global::go.go.token_package.ΔPos apos3 = a.Pos(3);
     global::go.go.token_package.ΔPos bpos3 = b.Pos(3);
     checkPos(apos3, fileA14ˢ);
@@ -503,10 +503,7 @@ public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
         Ꮡt.Run(test.name, (ж<testing.T> tΔ1) => {
             var fs = NewFileSet();
             var f = fs.AddFile(filename, -1, filesize);
-            foreach (var (_, vᴛ2) in testʗ1.infos) {
-                ref var info = ref heap(new global::go.go.token_package.lineInfo(), out var Ꮡinfo);
-                info = vᴛ2;
-
+            foreach (var (_, info) in testʗ1.infos) {
                 f.AddLineColumnInfo(info.Offset, info.Filename, info.Line, info.Column);
             }
             if (!reflect.DeepEqual((~f).infos, testʗ1.want)) {

@@ -85,7 +85,7 @@ internal static void testOncePanicX(ж<Δtesting.T> Ꮡt, ж<nint> Ꮡcalls, Act
 }
 
 internal static void testOncePanicWith(ж<Δtesting.T> Ꮡt, ж<nint> Ꮡcalls, Action f, Action<@string, any> check) {
-    ref var calls = ref Ꮡcalls.Value;
+    ref var calls = ref Ꮡcalls.DerefOrNull();
 
     // Check that the each call to f panics with the same value, but the
     // underlying function is only called once.
@@ -164,7 +164,7 @@ public static void TestOnceFuncPanicNil(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestOnceFuncGoexit(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // If f calls Goexit, the results are unspecified. But check that f doesn't
     // get called twice.

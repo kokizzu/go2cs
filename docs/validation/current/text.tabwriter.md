@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `text/tabwriter` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-02 · converter `8dc18ad33`*
+*Validated 2026-08-04 · converter `f6e9c0cf0`*
 
 **3 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter).
@@ -23,7 +23,9 @@ comparison — it is the evidence behind the `text/tabwriter` row in
 
 Declarations filtered from **both** sides of the comparison, and therefore not claimed above:
 `Benchmark`, `Fuzz` and `Example` declarations the converted host does not execute, plus any
-test requiring a testing capability the host does not yet provide.
+test requiring a capability the managed runtime does not provide — a `testing` member the host
+has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
+the capability it needs.
 
 - BenchmarkCode (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkPyramid (benchmark): benchmark execution is deferred to Phase 4D

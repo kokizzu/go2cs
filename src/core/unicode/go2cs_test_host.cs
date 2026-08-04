@@ -19,6 +19,10 @@ internal static class Go2CsTestHost
             "letter_test.go",
             "script_test.go",
             "tables.go",
+        }, new string[]
+        {
+            "utf16",
+            "utf8",
         });
         registry.Add("TestCalibrate", unicode_test_package.TestCalibrate, "letter_test.go", 454);
         registry.Add("TestCategories", unicode_test_package.TestCategories, "script_test.go", 95);

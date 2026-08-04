@@ -108,7 +108,7 @@ public static void TestSlice(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSortLarge_Random(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint n = 1000000;
     if (testing.Short()) {
@@ -128,7 +128,7 @@ public static void TestSortLarge_Random(ж<testing.T> Ꮡt) {
 }
 
 public static void TestReverseSortIntSlice(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var data = ints.Clone();
     var data1 = ints.Clone();
@@ -159,7 +159,7 @@ public static void TestBreakPatterns(ж<testing.T> Ꮡt) {
 }
 
 public static void TestReverseRange(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var data = new nint[]{1, 2, 3, 4, 5, 6, 7}.slice();
     sort_internal_test_package.ReverseRange(((sort.IntSlice)data), 0, len(data));
@@ -218,7 +218,7 @@ public static void TestNonDeterministicComparison(ж<testing.T> Ꮡt) => func((d
 });
 
 public static void BenchmarkSortString1K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var unsorted = new slice<@string>((1 << (int)(10)));
@@ -235,7 +235,7 @@ public static void BenchmarkSortString1K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortString1K_Slice(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var unsorted = new slice<@string>((1 << (int)(10)));
@@ -253,7 +253,7 @@ public static void BenchmarkSortString1K_Slice(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkStableString1K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var unsorted = new slice<@string>((1 << (int)(10)));
@@ -270,7 +270,7 @@ public static void BenchmarkStableString1K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt1K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -285,7 +285,7 @@ public static void BenchmarkSortInt1K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt1K_Sorted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -300,7 +300,7 @@ public static void BenchmarkSortInt1K_Sorted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt1K_Reversed(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -315,7 +315,7 @@ public static void BenchmarkSortInt1K_Reversed(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt1K_Mod8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -330,7 +330,7 @@ public static void BenchmarkSortInt1K_Mod8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkStableInt1K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var unsorted = new slice<nint>((1 << (int)(10)));
@@ -347,7 +347,7 @@ public static void BenchmarkStableInt1K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkStableInt1K_Slice(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var unsorted = new slice<nint>((1 << (int)(10)));
@@ -365,7 +365,7 @@ public static void BenchmarkStableInt1K_Slice(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt64K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -380,7 +380,7 @@ public static void BenchmarkSortInt64K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortInt64K_Slice(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -396,7 +396,7 @@ public static void BenchmarkSortInt64K_Slice(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkStableInt64K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -459,7 +459,7 @@ internal static nint lg(nint n) {
 }
 
 internal static void testBentleyMcIlroy(ж<testing.T> Ꮡt, Action<sort.Interface> sort, Func<nint, nint> maxswap) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var sizes = new nint[]{100, 1023, 1024, 1025}.slice();
     if (testing.Short()) {
@@ -624,8 +624,6 @@ public static void TestStableBM(ж<testing.T> Ꮡt) {
 }
 
 internal static ж<adversaryTestingData> newAdversaryTestingData(ж<testing.T> Ꮡt, nint size, nint maxcmp) {
-    ref var t = ref Ꮡt.Value;
-
     ref var gas = ref heap<nint>(out var Ꮡgas);
     gas = size - 1;
     var data = new slice<nint>(size);
@@ -703,7 +701,7 @@ internal static bool inOrder(this intPairs d) {
 }
 
 public static void TestStability(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     nint n = 100000;
     nint m = 1000;
@@ -755,8 +753,6 @@ internal static slice<nint> countOpsSizes = new nint[]{100, 300, 1000, 3000, 100
 internal static readonly object countingSkippedAsNonˢ = (@string)"Counting skipped as non-verbose mode."u8;
 
 internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @string name) {
-    ref var t = ref Ꮡt.Value;
-
     var sizes = countOpsSizes;
     if (testing.Short()) {
         sizes = sizes[..5];
@@ -799,7 +795,7 @@ internal static readonly @string raceˢ = "-race"u8;
 internal static readonly object skippingSlowBenchmarkOnˢ = (@string)"skipping slow benchmark on race builder"u8;
 
 internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface> algo, @string name) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (strings.HasSuffix(testenv.Builder(), raceˢ) && size > 10000) {
         Ꮡb.Skip(skippingSlowBenchmarkOnˢ);

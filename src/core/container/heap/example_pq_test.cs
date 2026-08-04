@@ -53,12 +53,12 @@ public static void Swap(this PriorityQueue pq, nint i, nint j) {
     item.Value.index = -1;
     // for safety
     pq = old[0..(int)(n - 1)];
-    return item;
+    return item.OrTypedNil();
 }
 
 // update modifies the priority and value of an Item in the queue.
 internal static void update(this ж<PriorityQueue> Ꮡpq, ж<Item> Ꮡitem, @string value, nint priority) {
-    ref var item = ref Ꮡitem.Value;
+    ref var item = ref Ꮡitem.DerefOrNull();
 
     item.value = value;
     item.priority = priority;
@@ -97,7 +97,7 @@ public static void Example_priorityQueue() {
         value: "orange"u8,
         priority: 1
     ));
-    heap.Push(new heap_test_package.PriorityQueueжInterface(Ꮡpq), item);
+    heap.Push(new heap_test_package.PriorityQueueжInterface(Ꮡpq), item.OrTypedNil());
     Ꮡpq.update(item, (~item).value, 5);
     // Take the items out; they arrive in decreasing priority order.
     while (pq.Len() > 0) {

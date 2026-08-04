@@ -24,7 +24,7 @@ partial class sync_test_package {
 internal static readonly object expectedEmptyˢ = (@string)"expected empty"u8;
 
 public static void TestPool(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // disable GC so we can control when it happens.
     deferǃ(debug.SetGCPercent, debug.SetGCPercent(-1), defer);
@@ -75,7 +75,7 @@ public static void TestPool(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
 });
 
 public static void TestPoolNew(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // disable GC so we can control when it happens.
     deferǃ(debug.SetGCPercent, debug.SetGCPercent(-1), defer);
@@ -136,10 +136,10 @@ loop:
         uint32 fin1 = default!;
         for (nint i = 0; i < N; i++) {
             var v = @new<@string>();
-            Δruntime.SetFinalizer(v, (ж<@string> vv) => {
+            Δruntime.SetFinalizer(v.OrTypedNil(), (ж<@string> vv) => {
                 atomic.AddUint32(Ꮡfin, 1);
             });
-            Ꮡp.Put(v);
+            Ꮡp.Put(v.OrTypedNil());
         }
         if (drain) {
             for (nint i = 0; i < N; i++) {
@@ -211,12 +211,12 @@ internal static void testPoolDequeue(ж<Δtesting.T> Ꮡt, global::go.sync_inter
     ref var stop = ref heap(new int32(), out var Ꮡstop);
     ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
     var haveʗ1 = have;
-    var record = (nint val) => {
+    void record(nint val) {
         atomic.AddInt32(Ꮡ(haveʗ1, val), 1);
         if (val == N - 1) {
             atomic.StoreInt32(Ꮡstop, 1);
         }
-    };
+    }
     // Start P-1 consumers.
     for (nint i = 1; i < P; i++) {
         Ꮡwg.Add(1);
@@ -363,7 +363,7 @@ internal static readonly @string p95NsStwˢ = "p95-ns/STW"u8;
 internal static readonly @string p50NsStwˢ = "p50-ns/STW"u8;
 
 public static void BenchmarkPoolSTW(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Take control of GC.
     deferǃ(debug.SetGCPercent, debug.SetGCPercent(-1), defer);
@@ -400,7 +400,7 @@ internal static readonly @string gCsOpˢ = "GCs/op"u8;
 internal static readonly @string newOpˢ = "New/op"u8;
 
 public static void BenchmarkPoolExpensiveNew(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Populate a pool with items that are expensive to construct
     // to stress pool cleanup and subsequent reconstruction.

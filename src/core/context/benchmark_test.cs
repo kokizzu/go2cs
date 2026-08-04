@@ -20,7 +20,7 @@ internal static readonly @string valueˢ = "value"u8;
 internal static readonly object shouldNotBeReachedˢ = (@string)"should not be reached"u8;
 
 public static void BenchmarkCommonParentCancel(ж<testing.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var root = WithValue(Background(), keyˢ, valueˢ);
     var (shared, sharedcancel) = WithCancel(root);
@@ -57,7 +57,7 @@ public static void BenchmarkWithTimeout(ж<testing.B> Ꮡb) {
 }
 
 internal static void benchmarkWithTimeout(ж<testing.B> Ꮡb, nint concurrentContexts) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint gomaxprocs = Δruntime.GOMAXPROCS(0);
     nint perPContexts = concurrentContexts / gomaxprocs;

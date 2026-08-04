@@ -10,7 +10,7 @@ using static go.@internal.coverage.slicewriter_package;
 partial class slicewriter_internal_test_package {
 
 public static void TestSliceWriter(ж<testing.T> Ꮡt) {
-    var sleq = (ж<testing.T> tΔ1, slice<byte> got, slice<byte> want) => {
+    void sleq(ж<testing.T> tΔ1, slice<byte> got, slice<byte> want) {
         tΔ1.Helper();
         if (len(got) != len(want)) {
             tΔ1.Fatalf("bad length got %d want %d"u8, len(got), len(want));
@@ -20,8 +20,8 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
                 tΔ1.Fatalf("bad read at %d got %d want %d"u8, i, got[i], want[i]);
             }
         }
-    };
-    var wf = (ж<testing.T> tΔ2, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ1, slice<byte> p) => {
+    }
+    void wf(ж<testing.T> tΔ2, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ1, slice<byte> p) {
         tΔ2.Helper();
         var (nw, werr) = wsΔ1.Write(p);
         if (werr != default!) {
@@ -30,9 +30,9 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
         if (nw != len(p)) {
             tΔ2.Fatalf("wrong amount written want %d got %d"u8, len(p), nw);
         }
-    };
+    }
     var sleqʗ1 = sleq;
-    var rf = (ж<testing.T> tΔ3, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ2, slice<byte> p) => {
+    void rf(ж<testing.T> tΔ3, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ2, slice<byte> p) {
         tΔ3.Helper();
         var b = new slice<byte>(len(p));
         var (nr, rerr) = wsΔ2.Read(b);
@@ -43,15 +43,15 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
             tΔ3.Fatalf("wrong amount read want %d got %d"u8, len(p), nr);
         }
         sleqʗ1(tΔ3, b, p);
-    };
-    var sk = (ж<testing.T> tΔ4, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ3, int64 offset, nint whence) => {
+    }
+    int64 sk(ж<testing.T> tΔ4, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ3, int64 offset, nint whence) {
         tΔ4.Helper();
         var (offΔ1, errΔ1) = wsΔ3.Seek(offset, whence);
         if (errΔ1 != default!) {
             tΔ4.Fatalf("unexpected seek error: %v"u8, errΔ1);
         }
         return offΔ1;
-    };
+    }
     var wp1 = new byte[]{1, 2}.slice();
     var ws = Ꮡ(new WriteSeeker(nil));
     // write some stuff

@@ -21,8 +21,6 @@ global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;
 global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
-using strings = go.strings_package;
-using testing = go.testing_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -38,7 +36,6 @@ using static global::go.strings_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<strings.Builder, ж<strings.Builder>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go;

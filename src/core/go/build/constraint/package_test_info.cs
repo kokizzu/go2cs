@@ -21,7 +21,6 @@ using static global::go.go.build.constraint_internal_test_package;
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
-[assembly: GoImplement<global::go.go.build.constraint_package.SyntaxError, error>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

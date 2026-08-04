@@ -642,7 +642,7 @@ public static void TestHMACHash(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkHMACSHA256_1K(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var key = new slice<byte>(32);
     var buf = new slice<byte>(1024);
@@ -657,7 +657,7 @@ public static void BenchmarkHMACSHA256_1K(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkHMACSHA256_32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var key = new slice<byte>(32);
     var buf = new slice<byte>(32);
@@ -672,7 +672,7 @@ public static void BenchmarkHMACSHA256_32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNewWriteSum(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var buf = new slice<byte>(32);
     b.SetBytes((int64)len(buf));

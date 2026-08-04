@@ -16,8 +16,8 @@ partial class token_internal_test_package {
 // equal returns nil if p and q describe the same file set;
 // otherwise it returns an error describing the discrepancy.
 internal static error equal(ж<global::go.go.token_package.FileSet> Ꮡp, ж<global::go.go.token_package.FileSet> Ꮡq) => func<error>((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNil();
-    ref var q = ref Ꮡq.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     if (Ꮡp == Ꮡq) {
         // avoid deadlock if p == q

@@ -41,6 +41,9 @@ internal static class Go2CsTestHost
             "quote_test.go",
             "strconv_test.go",
             "testdata/testfp.txt",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestAllocationsFromBytes", strconv_test_package.TestAllocationsFromBytes, "strconv_test.go", 81);
         registry.Add("TestAppendBool", strconv_test_package.TestAppendBool, "atob_test.go", 84);

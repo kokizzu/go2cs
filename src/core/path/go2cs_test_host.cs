@@ -14,6 +14,9 @@ internal static class Go2CsTestHost
             "match_test.go",
             "path.go",
             "path_test.go",
+        }, new string[]
+        {
+            "filepath",
         });
         registry.Add("TestBase", path_test_package.TestBase, "path_test.go", 182);
         registry.Add("TestClean", path_test_package.TestClean, "path_test.go", 67);

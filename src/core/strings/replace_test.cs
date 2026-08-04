@@ -88,11 +88,11 @@ internal static readonly @string helloˢ3 = "Hello"u8;
 
 // TestReplacer tests the replacer implementations.
 public static void TestReplacer(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     slice<TestReplacer_testCase> testCases = default!;
     // str converts 0xff to "\xff". This isn't just string(b) since that converts to UTF-8.
-    var str = @string (byte b) => ((@string)new byte[]{b}.slice());
+    @string str(byte b) => ((@string)new byte[]{b}.slice());
     slice<@string> s = default!;
     // inc maps "\x00"->"\x01", ..., "a"->"b", "b"->"c", ..., "\xff"->"\x00".
     s = default!;
@@ -347,7 +347,7 @@ public static void TestWriteStringError(ж<testing.T> Ꮡt) {
 // is one node per line, and the key ending with the current line is in the
 // trie if it ends with a "+".
 public static void TestGenericTrieBuilding(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var testCases = new TestGenericTrieBuilding_testCases[]{
         new("abc;abdef;abdefgh;xx;xy;z"u8, """
@@ -423,7 +423,7 @@ public static void TestGenericTrieBuilding(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkGenericNoMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("A"u8, 100) + Repeat("B"u8, 100);
     var generic = NewReplacer("a"u8, "A", "b", "B", "12", "123");
@@ -434,7 +434,7 @@ public static void BenchmarkGenericNoMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkGenericMatch1(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("a"u8, 100) + Repeat("b"u8, 100);
     var generic = NewReplacer("a"u8, "A", "b", "B", "12", "123");
@@ -447,7 +447,7 @@ public static void BenchmarkGenericMatch1(ж<testing.B> Ꮡb) {
 internal static readonly @string itAposSLtBGtHtmlLtBGtˢ = "It&apos;s &lt;b&gt;HTML&lt;/b&gt;!"u8;
 
 public static void BenchmarkGenericMatch2(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat(itAposSLtBGtHtmlLtBGtˢ, 100);
     for (nint i = 0; i < b.N; i++) {
@@ -456,7 +456,7 @@ public static void BenchmarkGenericMatch2(ж<testing.B> Ꮡb) {
 }
 
 internal static void benchmarkSingleString(ж<testing.B> Ꮡb, @string pattern, @string text) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var r = NewReplacer(pattern, matchˢ);
     b.SetBytes((int64)len(text));
@@ -467,13 +467,13 @@ internal static void benchmarkSingleString(ж<testing.B> Ꮡb, @string pattern, 
 }
 
 public static void BenchmarkSingleMaxSkipping(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkSingleString(Ꮡb, Repeat("b"u8, 25), Repeat("a"u8, 10000));
 }
 
 public static void BenchmarkSingleLongSuffixFail(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkSingleString(Ꮡb, "b"u8 + Repeat("a"u8, 500), Repeat("a"u8, 1002));
 }
@@ -487,7 +487,7 @@ public static void BenchmarkSingleMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkByteByteNoMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("A"u8, 100) + Repeat("B"u8, 100);
     for (nint i = 0; i < b.N; i++) {
@@ -496,7 +496,7 @@ public static void BenchmarkByteByteNoMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkByteByteMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("a"u8, 100) + Repeat("b"u8, 100);
     for (nint i = 0; i < b.N; i++) {
@@ -505,7 +505,7 @@ public static void BenchmarkByteByteMatch(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkByteStringMatch(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = "<"u8 + Repeat("a"u8, 99) + Repeat("b"u8, 99) + ">"u8;
     for (nint i = 0; i < b.N; i++) {
@@ -517,7 +517,7 @@ public static void BenchmarkByteStringMatch(ж<testing.B> Ꮡb) {
 internal static readonly @string i3ToEscapeHtmlOtherTextˢ = "I <3 to escape HTML & other text too."u8;
 
 public static void BenchmarkHTMLEscapeNew(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = i3ToEscapeHtmlOtherTextˢ;
     for (nint i = 0; i < b.N; i++) {
@@ -526,7 +526,7 @@ public static void BenchmarkHTMLEscapeNew(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkHTMLEscapeOld(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = i3ToEscapeHtmlOtherTextˢ;
     for (nint i = 0; i < b.N; i++) {
@@ -535,7 +535,7 @@ public static void BenchmarkHTMLEscapeOld(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat(i3ToEscapeHtmlOtherTextˢ, 100);
     var buf = @new<bytes.Buffer>();
@@ -549,7 +549,7 @@ public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
 internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
 
 public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat(abcdefghijklmnopqrstuvwxyzˢ, 100);
     var buf = @new<bytes.Buffer>();
@@ -561,7 +561,7 @@ public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
 
 // BenchmarkByteByteReplaces compares byteByteImpl against multiple Replaces.
 public static void BenchmarkByteByteReplaces(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("a"u8, 100) + Repeat("b"u8, 100);
     for (nint i = 0; i < b.N; i++) {
@@ -571,7 +571,7 @@ public static void BenchmarkByteByteReplaces(ж<testing.B> Ꮡb) {
 
 // BenchmarkByteByteMap compares byteByteImpl against Map.
 public static void BenchmarkByteByteMap(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("a"u8, 100) + Repeat("b"u8, 100);
     var fn = (rune r) => {

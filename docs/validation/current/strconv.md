@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `strconv` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-02 · converter `8dc18ad33`*
+*Validated 2026-08-04 · converter `f6e9c0cf0`*
 
 **55 matched · 11 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv).
@@ -109,7 +109,9 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 Declarations filtered from **both** sides of the comparison, and therefore not claimed above:
 `Benchmark`, `Fuzz` and `Example` declarations the converted host does not execute, plus any
-test requiring a testing capability the host does not yet provide.
+test requiring a capability the managed runtime does not provide — a `testing` member the host
+has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
+the capability it needs.
 
 - BenchmarkAppendFloat (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAppendInt (benchmark): benchmark execution is deferred to Phase 4D

@@ -59,7 +59,7 @@ internal static slice<testsᴛ1> tests = new testsᴛ1[]{
 }.slice();
 
 public static void TestLess(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, test) in tests) {
         bool b = default!;

@@ -44,36 +44,36 @@ public static void TestGetLine(ж<testing.T> Ꮡt) {
 
 public static void TestDecode(ж<testing.T> Ꮡt) {
     var (result, remainder) = Decode(slice<byte>(pemData));
-    if (!reflect.DeepEqual(result, certificate)) {
-        Ꮡt.Errorf("#0 got:%#v want:%#v"u8, result, certificate);
+    if (!reflect.DeepEqual(result.OrTypedNil(), certificate.OrTypedNil())) {
+        Ꮡt.Errorf("#0 got:%#v want:%#v"u8, result.OrTypedNil(), certificate.OrTypedNil());
     }
     (result, remainder) = Decode(remainder);
-    if (!reflect.DeepEqual(result, privateKey)) {
-        Ꮡt.Errorf("#1 got:%#v want:%#v"u8, result, privateKey);
+    if (!reflect.DeepEqual(result.OrTypedNil(), privateKey.OrTypedNil())) {
+        Ꮡt.Errorf("#1 got:%#v want:%#v"u8, result.OrTypedNil(), privateKey.OrTypedNil());
     }
-    var isEmpty = (ж<global::go.encoding.pem_package.Block> block) => block != nil && (~block).Type == "EMPTY"u8 && len((~block).Headers) == 0 && len((~block).Bytes) == 0;
-    (result, remainder) = Decode(remainder);
-    if (!isEmpty(result)) {
-        Ꮡt.Errorf("#2 should be empty but got:%#v"u8, result);
-    }
+    bool isEmpty(ж<global::go.encoding.pem_package.Block> block) => block != nil && (~block).Type == "EMPTY"u8 && len((~block).Headers) == 0 && len((~block).Bytes) == 0;
     (result, remainder) = Decode(remainder);
     if (!isEmpty(result)) {
-        Ꮡt.Errorf("#3 should be empty but got:%#v"u8, result);
+        Ꮡt.Errorf("#2 should be empty but got:%#v"u8, result.OrTypedNil());
     }
     (result, remainder) = Decode(remainder);
     if (!isEmpty(result)) {
-        Ꮡt.Errorf("#4 should be empty but got:%#v"u8, result);
+        Ꮡt.Errorf("#3 should be empty but got:%#v"u8, result.OrTypedNil());
+    }
+    (result, remainder) = Decode(remainder);
+    if (!isEmpty(result)) {
+        Ꮡt.Errorf("#4 should be empty but got:%#v"u8, result.OrTypedNil());
     }
     (result, remainder) = Decode(remainder);
     if (result == nil || (~result).Type != "HEADERS"u8 || len((~result).Headers) != 1) {
-        Ꮡt.Errorf("#5 expected single header block but got :%v"u8, result);
+        Ꮡt.Errorf("#5 expected single header block but got :%v"u8, result.OrTypedNil());
     }
     if (len(remainder) != 0) {
         Ꮡt.Errorf("expected nothing remaining of pemData, but found %s"u8, ((@string)remainder));
     }
     (result, _) = Decode(slice<byte>(pemPrivateKey2));
-    if (!reflect.DeepEqual(result, privateKey2)) {
-        Ꮡt.Errorf("#2 got:%#v want:%#v"u8, result, privateKey2);
+    if (!reflect.DeepEqual(result.OrTypedNil(), privateKey2.OrTypedNil())) {
+        Ꮡt.Errorf("#2 got:%#v want:%#v"u8, result.OrTypedNil(), privateKey2.OrTypedNil());
     }
 }
 
@@ -248,11 +248,11 @@ public static void TestLineBreaker(ж<testing.T> Ꮡt) {
 }
 
 public static void TestFuzz(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // PEM is a text-based format. Assume header fields with leading/trailing spaces
     // or embedded newlines will not round trip correctly and don't need to be tested.
-    var isBad = (@string s) => strings.ContainsAny(s, "\r\n"u8) || strings.TrimSpace(s) != s;
+    bool isBad(@string s) => strings.ContainsAny(s, "\r\n"u8) || strings.TrimSpace(s) != s;
     var isBadʗ1 = isBad;
     var testRoundtrip = (global::go.encoding.pem_package.Block blockʗp) => {
         ref var block = ref heap(blockʗp, out var Ꮡblock);
@@ -284,8 +284,8 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
             // Encoder supports nil Bytes but decoder returns initialized.
             block.Bytes = new slice<byte>(0);
         }
-        if (!reflect.DeepEqual(decoded, Ꮡblock)) {
-            Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, Ꮡblock, decoded);
+        if (!reflect.DeepEqual(decoded.OrTypedNil(), Ꮡblock)) {
+            Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, Ꮡblock, decoded.OrTypedNil());
             return false;
         }
         if (len(rest) != 0) {
@@ -306,7 +306,7 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = Ꮡ(new Block(Bytes: new slice<byte>(65536)));
     b.SetBytes((int64)len((~data).Bytes));
@@ -316,7 +316,7 @@ public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var block = Ꮡ(new Block(Bytes: new slice<byte>(65536)));
     var data = EncodeToMemory(block);

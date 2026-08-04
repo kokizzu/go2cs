@@ -560,7 +560,7 @@ public static void TestDecoderIssue4779(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new slice<byte>(8192);
     var buf = new slice<byte>(StdEncoding.EncodedLen(len(data)));
@@ -571,7 +571,7 @@ public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkEncodeToString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new slice<byte>(8192);
     b.SetBytes((int64)len(data));
@@ -581,7 +581,7 @@ public static void BenchmarkEncodeToString(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var data = new slice<byte>(StdEncoding.EncodedLen(8192));
     StdEncoding.Encode(data, new slice<byte>(8192));
@@ -593,7 +593,7 @@ public static void BenchmarkDecode(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDecodeString(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string data = StdEncoding.EncodeToString(new slice<byte>(8192));
     b.SetBytes((int64)len(data));

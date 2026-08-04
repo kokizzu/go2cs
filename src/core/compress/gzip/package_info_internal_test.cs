@@ -5,8 +5,6 @@
 // production and external-test types stay in package_test_info.cs.
 
 // <ImportedTypeAliases>
-using base64 = go.encoding.base64_package;
-using os = go.os_package;
 // </ImportedTypeAliases>
 
 using go;

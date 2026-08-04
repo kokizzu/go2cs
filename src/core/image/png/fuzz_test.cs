@@ -23,7 +23,7 @@ internal static readonly @string testdataˢ = "../testdata"u8;
 internal static readonly @string pngˢ = ".png"u8;
 
 public static void FuzzDecode(ж<testing.F> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (testing.Short()) {
         Ꮡf.Skip(skippingInShortModeˢ);
@@ -43,8 +43,7 @@ public static void FuzzDecode(ж<testing.F> Ꮡf) {
         f.Add(b);
     }
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
-        ref var cfg = ref heap<image.Config>(out var Ꮡcfg);
-        (cfg, _, var errΔ2) = image.DecodeConfig(new png_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
+        var (cfg, _, errΔ2) = image.DecodeConfig(new png_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
         if (errΔ2 != default!) {
             return;
         }
@@ -77,10 +76,8 @@ public static void FuzzDecode(ж<testing.F> Ꮡf) {
                 t.Errorf("failed to decode roundtripped image: %s"u8, errΔ3);
                 continue;
             }
-            ref var got = ref heap<image.Rectangle>(out var Ꮡgot);
-            got = img1.Bounds();
-            ref var want = ref heap<image.Rectangle>(out var Ꮡwant);
-            want = img.Bounds();
+            var got = img1.Bounds();
+            var want = img.Bounds();
             if (!got.Eq(want)) {
                 t.Errorf("roundtripped image bounds have changed, got: %s, want: %s"u8, got, want);
             }

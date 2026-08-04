@@ -695,8 +695,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
         new(
             "SHA512/224"u8,
             (slice<byte> @in) => {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = Sum512_224(@in);
+                var a = Sum512_224(@in);
                 return a[..];
             },
             New512_224(),
@@ -705,8 +704,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
         new(
             "SHA512/256"u8,
             (slice<byte> @in) => {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = Sum512_256(@in);
+                var a = Sum512_256(@in);
                 return a[..];
             },
             New512_256(),
@@ -715,8 +713,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
         new(
             "SHA384"u8,
             (slice<byte> @in) => {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = Sum384(@in);
+                var a = Sum384(@in);
                 return a[..];
             },
             New384(),
@@ -725,8 +722,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
         new(
             "SHA512"u8,
             (slice<byte> @in) => {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = Sum512(@in);
+                var a = Sum512(@in);
                 return a[..];
             },
             New(),
@@ -760,10 +756,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
         var ttʗ1 = tt;
         Ꮡt.Run(tt.name, (ж<testing.T> tΔ1) => {
-            foreach (var (_, vᴛ2) in ttʗ1.golden) {
-                ref var test = ref heap(new sha512Test(), out var Ꮡtest);
-                test = vᴛ2;
-
+            foreach (var (_, test) in ttʗ1.golden) {
                 var h = ttʗ1.newHash();
                 var h2 = ttʗ1.newHash();
                 io.WriteString(h, test.@in[..(int)(len(test.@in) / 2)]);

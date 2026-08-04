@@ -8,7 +8,7 @@ using static go.math.rand_package;
 partial class rand_internal_test_package {
 
 public static int32 Int31nForTest(ж<global::go.math.rand_package.Rand> Ꮡr, int32 n) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.int31n(n);
 }

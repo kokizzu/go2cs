@@ -26,6 +26,10 @@ internal static class Go2CsTestHost
             "testdata/re2-search.txt",
             "testdata/repetition.dat",
             "testdata/testregex.c",
+        }, new string[]
+        {
+            "syntax",
+            "testdata",
         });
         registry.Add("TestBadCompile", regexp_internal_test_package.TestBadCompile, "all_test.go", 75);
         registry.Add("TestCompileOnePass", regexp_internal_test_package.TestCompileOnePass, "onepass_test.go", 178);

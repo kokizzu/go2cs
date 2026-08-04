@@ -48,7 +48,7 @@ internal static ж<Node> tree = Ꮡ(new Node(
 ));
 
 internal static void walkTree(ж<Node> Ꮡn, @string path, Action<@string, ж<Node>> f) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     f(path, Ꮡn);
     foreach (var (_, e) in n.entries) {
@@ -73,7 +73,7 @@ internal static fs.FS makeTree() {
 // If clear is true, any incoming error is cleared before return. The errors
 // are always accumulated, though.
 internal static error mark(fs.DirEntry entry, error err, ж<slice<error>> Ꮡerrors, bool clear) {
-    ref var errors = ref Ꮡerrors.ValueSlot;
+    ref var errors = ref Ꮡerrors.DerefOrNull();
 
     @string name = entry.Name();
     walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {

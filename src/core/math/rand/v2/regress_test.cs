@@ -34,14 +34,14 @@ internal static readonly @string truncatedˢ = "truncated"u8;
 internal static readonly @string regressTestGoˢ = "regress_test.go"u8;
 
 public static void TestRegress(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     slice<int32> int32s = new int32[]{1, 10, 32, (int32)(1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, (int32)(1 << (int)(30)), (int32)(2147483648L - 2), (int32)(2147483648L - 1)}.slice();
     slice<uint32> uint32s = new uint32[]{1, 10, 32, ((uint32)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((uint32)1 << (int)(30)), (uint32)(2147483648L - 2), (uint32)(2147483648L - 1), (uint32)(4294967296L - 2), (uint32)(4294967296L - 1)}.slice();
     slice<int64> int64s = new int64[]{1, 10, 32, ((int64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((int64)1 << (int)(30)), 2147483648L - 2, 2147483648L - 1, (nint)1000000000000000000L, 1152921504606846976L, 9223372036854775806L, 9223372036854775807L}.slice();
     slice<uint64> uint64s = new uint64[]{1, 10, 32, ((uint64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((uint64)1 << (int)(30)), (uint64)(2147483648L - 2), (uint64)(2147483648L - 1), 1000000000000000000UL, ((uint64)1 << (int)(60)), 9223372036854775806UL, 9223372036854775807UL, 18446744073709551614UL, 18446744073709551615UL}.slice();
     slice<nint> permSizes = new nint[]{0, 1, 5, 8, 9, 10, 16}.slice();
-    nint n = reflect.TypeOf(New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)))).NumMethod();
+    nint n = reflect.TypeOf(New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2))).OrTypedNil()).NumMethod();
     nint p = 0;
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     if (update.Value) {
@@ -52,7 +52,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
             fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\n"u8);
         }
         var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
-        var rv = reflect.ValueOf(r);
+        var rv = reflect.ValueOf(r.OrTypedNil());
         var m = rv.Type().Method(i);
         var mv = rv.Method(i);
         var mt = mv.Type();
@@ -170,7 +170,7 @@ internal static readonly object updateNotGivenˢ = (@string)"-update not given"u
 internal static readonly @string exampleTestGoˢ = "example_test.go"u8;
 
 public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!update.Value) {
         Ꮡt.Skip(updateNotGivenˢ);

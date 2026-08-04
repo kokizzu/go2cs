@@ -53,7 +53,7 @@ internal static bool equal<T>(T v1, T v2)
 internal static bool equalNaN<T>(T v1, T v2)
     where T : /* comparable */ new()
 {
-    var isNaN = (T f) => !AreEqual(f, f);
+    bool isNaN(T f) => !AreEqual(f, f);
     return AreEqual(v1, v2) || (isNaN(v1) && isNaN(v2));
 }
 
@@ -150,7 +150,7 @@ public static void TestDeleteFunc(ж<testing.T> Ꮡt) {
 internal static map<nint, nint> n;
 
 public static void BenchmarkMapClone(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     map<nint, nint> m = new map<nint, nint>();
     for (nint i = 0; i < 1000000; i++) {

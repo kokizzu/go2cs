@@ -104,7 +104,7 @@ internal static (any, bool) apply(this mapCall c, mapInterface m) {
 }
 
 internal static any randValue(ж<rand.Rand> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var b = new slice<byte>(r.Intn(4));
     foreach (var (i, _) in b) {
@@ -243,11 +243,11 @@ public static void TestIssue40999(ж<Δtesting.T> Ꮡt) {
     // indicates that keys have not been leaked.
     while (atomic.LoadUint32(Ꮡfinalized) == 0) {
         var p = @new<nint>();
-        Δruntime.SetFinalizer(p, (ж<nint> _) => {
+        Δruntime.SetFinalizer(p.OrTypedNil(), (ж<nint> _) => {
             atomic.AddUint32(Ꮡfinalized, 1);
         });
-        Ꮡm.Store(p, new EmptyStruct());
-        Ꮡm.Delete(p);
+        Ꮡm.Store(p.OrTypedNil(), new EmptyStruct());
+        Ꮡm.Delete(p.OrTypedNil());
         Δruntime.GC();
     }
 }
@@ -257,7 +257,7 @@ internal static readonly object dummyˢ = (@string)"dummy"u8;
 internal static readonly @string syncMapˢ = "sync.Map"u8;
 
 public static void TestMapRangeNestedCall(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Issue 46399
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
@@ -312,7 +312,7 @@ public static void TestMapRangeNestedCall(ж<Δtesting.T> Ꮡt) {
 
 public static void TestCompareAndSwap_NonExistingKey(ж<Δtesting.T> Ꮡt) {
     var m = Ꮡ(new Δsync.Map(nil));
-    if (m.CompareAndSwap(m, default!, (nint)(42))) {
+    if (m.CompareAndSwap(m.OrTypedNil(), default!, (nint)(42))) {
         // See https://go.dev/issue/51972#issuecomment-1126408637.
         Ꮡt.Fatalf("CompareAndSwap on a non-existing key succeeded"u8);
     }

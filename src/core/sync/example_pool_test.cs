@@ -35,7 +35,7 @@ public static void Log(Δio.Writer w, @string key, @string val) {
     b.WriteByte((rune)'=');
     b.WriteString(val);
     w.Write(b.Bytes());
-    ᏑbufPool.Put(b);
+    ᏑbufPool.Put(b.OrTypedNil());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

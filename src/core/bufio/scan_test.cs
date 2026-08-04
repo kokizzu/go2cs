@@ -21,7 +21,7 @@ internal static UntypedInt smallMaxTokenSize => 256; // Much smaller for more ef
 
 // Test white space table matches the Unicode definition.
 public static void TestSpace(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (var r = (rune)0; r <= utf8.MaxRune; r++) {
         if (bufio_internal_test_package.IsSpace(r) != Δunicode.IsSpace(r)) {
@@ -166,7 +166,7 @@ public static void TestScanWords(ж<Δtesting.T> Ꮡt) {
 // n, including the terminal newline and an occasional carriage return.
 // If addNewline is false, the \r and \n are not emitted.
 internal static void genLine(ж<bytes.Buffer> Ꮡbuf, nint lineNum, nint n, bool addNewline) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     buf.Reset();
     var doCR = lineNum % 5 == 0;
@@ -329,7 +329,7 @@ internal static error testError = errors.New("testError"u8);
 
 // Test the correct error is returned when the split function errors out.
 public static void TestSplitError(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Create a split function that delivers a little data, then a predictable error.
     nint numSplits = 0;

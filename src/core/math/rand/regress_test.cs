@@ -26,14 +26,14 @@ internal static ж<bool> printgolden = flag.Bool("printgolden"u8, false, "print 
 internal static readonly @string truncatedˢ = "truncated"u8;
 
 public static void TestRegress(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     slice<int32> int32s = new int32[]{1, 10, 32, (int32)(1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, (int32)(1 << (int)(30)), (int32)(2147483648L - 2), (int32)(2147483648L - 1)}.slice();
     slice<int64> int64s = new int64[]{1, 10, 32, ((int64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((int64)1 << (int)(30)), 2147483648L - 2, 2147483648L - 1, (nint)1000000000000000000L, 1152921504606846976L, 9223372036854775806L, 9223372036854775807L}.slice();
     slice<nint> permSizes = new nint[]{0, 1, 5, 8, 9, 10, 16}.slice();
     slice<nint> readBufferSizes = new nint[]{1, 7, 8, 9, 10}.slice();
     var r = New(NewSource(0));
-    var rv = reflect.ValueOf(r);
+    var rv = reflect.ValueOf(r.OrTypedNil());
     nint n = rv.NumMethod();
     nint p = 0;
     if (printgolden.Value) {

@@ -473,7 +473,7 @@ public static void TestToNorm(ж<testing.T> Ꮡt) => func((defer, recover) => {
 });
 
 public static void TestUNC(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test that this doesn't go into an infinite recursion.
     // See golang.org/issue/15879.
@@ -517,7 +517,7 @@ internal static readonly @string fileˢ2 = "-File"u8;
 internal static readonly object skippingTestBecauseˢ = (@string)"skipping test because failed to create VHD: "u8;
 
 internal static slice<byte> createMountPartition(ж<testing.T> Ꮡt, @string vhd, @string args) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     testenv.MustHaveExecPath(new filepath_test_package.testing_TжTB(Ꮡt), powershellˢ);
     Ꮡt.Cleanup(() => {
@@ -527,11 +527,11 @@ internal static slice<byte> createMountPartition(ж<testing.T> Ꮡt, @string vhd
             if (Ꮡt.Skipped()){
                 // Probably failed to dismount because we never mounted it in
                 // the first place. Log the error, but ignore it.
-                Ꮡt.Logf("%v: %v (skipped)\n%s"u8, cmdΔ1, errΔ1, @out);
+                Ꮡt.Logf("%v: %v (skipped)\n%s"u8, cmdΔ1.OrTypedNil(), errΔ1, @out);
             } else {
                 // Something went wrong, and we don't want to leave dangling VHDs.
                 // Better to fail the test than to just log the error and continue.
-                Ꮡt.Errorf("%v: %v\n%s"u8, cmdΔ1, errΔ1, @out);
+                Ꮡt.Errorf("%v: %v\n%s"u8, cmdΔ1.OrTypedNil(), errΔ1, @out);
             }
         }
     });
@@ -599,7 +599,7 @@ public static void TestEvalSymlinksJunctionToVolumeID(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEvalSymlinksMountPointRecursion(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test that EvalSymlinks doesn't follow recursive mount points.
     // See go.dev/issue/40176.

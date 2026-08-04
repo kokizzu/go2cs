@@ -15,7 +15,7 @@ partial class token_internal_test_package {
 }
 
 public static void TestIsIdentifier(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tests = new TestIsIdentifier_tests[]{
         new("Empty"u8, ""u8, false),

@@ -165,7 +165,7 @@ public static void TestChaCha8MarshalRead(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkChaCha8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var p = NewChaCha8(new byte[]{1, 2, 3, 4, 5}.array(32));
     uint64 t = default!;
@@ -176,7 +176,7 @@ public static void BenchmarkChaCha8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkChaCha8Read(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var p = NewChaCha8(new byte[]{1, 2, 3, 4, 5}.array(32));
     var buf = new slice<byte>(32);

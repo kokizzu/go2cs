@@ -41,7 +41,7 @@ public static void TestSemaphore(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void BenchmarkUncontendedSemaphore(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var s = @new<uint32>();
     s.Value = 1;
@@ -49,7 +49,7 @@ public static void BenchmarkUncontendedSemaphore(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkContendedSemaphore(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var s = @new<uint32>();
@@ -213,7 +213,7 @@ public static void TestMutexMisuse(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var mu = ref heap(new Δsync.Mutex(), out var Ꮡmu);
     var stop = new channel<bool>(0);
@@ -245,7 +245,7 @@ public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) => func((defer, recov
         doneʗ1.ᐸꟷ(true);
     });
     var selᴛ8 = done;
-    var selᴛ9 = time.After(10000000000L);
+    var selᴛ9 = time.After((time.Duration)(10000000000L));
     switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
     case 0 when selᴛ8.ꟷᐳ(out _): {
         break;
@@ -272,7 +272,7 @@ public static void BenchmarkMutexUncontended(ж<Δtesting.B> Ꮡb) {
 }
 
 internal static void benchmarkMutex(ж<Δtesting.B> Ꮡb, bool slack, bool work) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     ref var mu = ref heap(new Δsync.Mutex(), out var Ꮡmu);
     if (slack) {
@@ -311,7 +311,7 @@ public static void BenchmarkMutexWorkSlack(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkMutexNoSpin(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // This benchmark models a situation where spinning in the mutex should be
     // non-profitable and allows to confirm that spinning does not do harm.
@@ -325,7 +325,7 @@ public static void BenchmarkMutexNoSpin(ж<Δtesting.B> Ꮡb) {
     b.SetParallelism(4);
     Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
         var c = new channel<bool>(0);
-        ref var data = ref heap(new array<uint64>(4096), out var Ꮡdata);
+        array<uint64> data = new(4096); /* (4 << (int)(10)) */
         for (nint i = 0; pb.Next(); i++) {
             if (i % 4 == 0){
                 Ꮡm.Lock();
@@ -357,7 +357,7 @@ public static void BenchmarkMutexSpin(ж<Δtesting.B> Ꮡb) {
     uint64 acc0 = default!;
     uint64 acc1 = default!;
     Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
-        ref var data = ref heap(new array<uint64>(16384), out var Ꮡdata);
+        array<uint64> data = new(16384); /* (16 << (int)(10)) */
         for (nint i = 0; pb.Next(); i++) {
             Ꮡm.Lock();
             acc0 -= 100;

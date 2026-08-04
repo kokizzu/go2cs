@@ -3417,13 +3417,13 @@ public static void TestRemainder(ж<testing.T> Ꮡt) {
         }
     }
     // verify that sign is correct when r == 0.
-    var test = (float64 x, float64 y) => {
+    void test(float64 x, float64 y) {
         {
             var r = Remainder(x, y); if (r == 0D && Signbit(r) != Signbit(x)) {
                 Ꮡt.Errorf("Remainder(x=%f, y=%f) = %f, sign of (zero) result should agree with sign of x"u8, x, y, r);
             }
         }
-    };
+    }
     for (var x = 0.0D; x <= 3.0D; x += 1D) {
         for (var y = 1.0D; y <= 3.0D; y += 1D) {
             test(x, y);
@@ -3469,7 +3469,7 @@ public static void TestRoundToEven(ж<testing.T> Ꮡt) {
 }
 
 public static void TestSignbit(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (nint i = 0; i < len(vf); i++) {
         {
@@ -3893,7 +3893,7 @@ public static bool GlobalB;
 public static float64 GlobalF;
 
 public static void BenchmarkAcos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3903,7 +3903,7 @@ public static void BenchmarkAcos(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAcosh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3913,7 +3913,7 @@ public static void BenchmarkAcosh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAsin(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3923,7 +3923,7 @@ public static void BenchmarkAsin(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAsinh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3933,7 +3933,7 @@ public static void BenchmarkAsinh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtan(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3943,7 +3943,7 @@ public static void BenchmarkAtan(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtanh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3953,7 +3953,7 @@ public static void BenchmarkAtanh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkAtan2(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3963,7 +3963,7 @@ public static void BenchmarkAtan2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCbrt(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3973,7 +3973,7 @@ public static void BenchmarkCbrt(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCeil(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3985,7 +3985,7 @@ public static void BenchmarkCeil(ж<testing.B> Ꮡb) {
 internal static float64 copysignNeg = -1.0D;
 
 public static void BenchmarkCopysign(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -3995,7 +3995,7 @@ public static void BenchmarkCopysign(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4005,7 +4005,7 @@ public static void BenchmarkCos(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCosh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4015,7 +4015,7 @@ public static void BenchmarkCosh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkErf(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4025,7 +4025,7 @@ public static void BenchmarkErf(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkErfc(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4035,7 +4035,7 @@ public static void BenchmarkErfc(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkErfinv(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4045,7 +4045,7 @@ public static void BenchmarkErfinv(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkErfcinv(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4055,7 +4055,7 @@ public static void BenchmarkErfcinv(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4065,7 +4065,7 @@ public static void BenchmarkExp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExpGo(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4075,7 +4075,7 @@ public static void BenchmarkExpGo(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExpm1(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4085,7 +4085,7 @@ public static void BenchmarkExpm1(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExp2(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4095,7 +4095,7 @@ public static void BenchmarkExp2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkExp2Go(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4107,7 +4107,7 @@ public static void BenchmarkExp2Go(ж<testing.B> Ꮡb) {
 internal static float64 absPos = .5D;
 
 public static void BenchmarkAbs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4117,7 +4117,7 @@ public static void BenchmarkAbs(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkDim(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4127,7 +4127,7 @@ public static void BenchmarkDim(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFloor(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4137,7 +4137,7 @@ public static void BenchmarkFloor(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMax(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4147,7 +4147,7 @@ public static void BenchmarkMax(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMin(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4157,7 +4157,7 @@ public static void BenchmarkMin(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkMod(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4167,7 +4167,7 @@ public static void BenchmarkMod(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFrexp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     nint y = 0;
@@ -4179,7 +4179,7 @@ public static void BenchmarkFrexp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkGamma(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4189,7 +4189,7 @@ public static void BenchmarkGamma(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkHypot(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4199,7 +4199,7 @@ public static void BenchmarkHypot(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkHypotGo(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4209,7 +4209,7 @@ public static void BenchmarkHypotGo(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIlogb(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nint x = 0;
     for (nint i = 0; i < b.N; i++) {
@@ -4219,7 +4219,7 @@ public static void BenchmarkIlogb(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkJ0(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4229,7 +4229,7 @@ public static void BenchmarkJ0(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkJ1(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4239,7 +4239,7 @@ public static void BenchmarkJ1(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkJn(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4249,7 +4249,7 @@ public static void BenchmarkJn(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLdexp(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4259,7 +4259,7 @@ public static void BenchmarkLdexp(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLgamma(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     nint y = 0;
@@ -4271,7 +4271,7 @@ public static void BenchmarkLgamma(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4281,7 +4281,7 @@ public static void BenchmarkLog(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLogb(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4291,7 +4291,7 @@ public static void BenchmarkLogb(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog1p(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4301,7 +4301,7 @@ public static void BenchmarkLog1p(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog10(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4311,7 +4311,7 @@ public static void BenchmarkLog10(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLog2(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4321,7 +4321,7 @@ public static void BenchmarkLog2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkModf(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     var y = 0.0D;
@@ -4333,7 +4333,7 @@ public static void BenchmarkModf(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNextafter32(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = (float32)0.0F;
     for (nint i = 0; i < b.N; i++) {
@@ -4343,7 +4343,7 @@ public static void BenchmarkNextafter32(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkNextafter64(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4353,7 +4353,7 @@ public static void BenchmarkNextafter64(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPowInt(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4363,7 +4363,7 @@ public static void BenchmarkPowInt(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPowFrac(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4375,7 +4375,7 @@ public static void BenchmarkPowFrac(ж<testing.B> Ꮡb) {
 internal static nint pow10pos = (nint)300;
 
 public static void BenchmarkPow10Pos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4387,7 +4387,7 @@ public static void BenchmarkPow10Pos(ж<testing.B> Ꮡb) {
 internal static nint pow10neg = (nint)(-300);
 
 public static void BenchmarkPow10Neg(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4399,7 +4399,7 @@ public static void BenchmarkPow10Neg(ж<testing.B> Ꮡb) {
 internal static float64 roundNeg = (float64)(-2.5D);
 
 public static void BenchmarkRound(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4409,7 +4409,7 @@ public static void BenchmarkRound(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRoundToEven(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4419,7 +4419,7 @@ public static void BenchmarkRoundToEven(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRemainder(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4431,7 +4431,7 @@ public static void BenchmarkRemainder(ж<testing.B> Ꮡb) {
 internal static float64 signbitPos = 2.5D;
 
 public static void BenchmarkSignbit(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = false;
     for (nint i = 0; i < b.N; i++) {
@@ -4441,7 +4441,7 @@ public static void BenchmarkSignbit(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSin(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4451,7 +4451,7 @@ public static void BenchmarkSin(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSincos(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     var y = 0.0D;
@@ -4463,7 +4463,7 @@ public static void BenchmarkSincos(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSinh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4473,7 +4473,7 @@ public static void BenchmarkSinh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSqrtIndirect(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (x, y) = (0.0D, 10.0D);
     var f = Sqrt;
@@ -4484,7 +4484,7 @@ public static void BenchmarkSqrtIndirect(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSqrtLatency(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 10.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4494,7 +4494,7 @@ public static void BenchmarkSqrtLatency(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSqrtIndirectLatency(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 10.0D;
     var f = Sqrt;
@@ -4505,7 +4505,7 @@ public static void BenchmarkSqrtIndirectLatency(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSqrtGoLatency(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 10.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4529,7 +4529,7 @@ internal static bool isPrime(nint i) {
 }
 
 public static void BenchmarkSqrtPrime(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = false;
     for (nint i = 0; i < b.N; i++) {
@@ -4539,7 +4539,7 @@ public static void BenchmarkSqrtPrime(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTan(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4549,7 +4549,7 @@ public static void BenchmarkTan(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTanh(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4559,7 +4559,7 @@ public static void BenchmarkTanh(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrunc(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4569,7 +4569,7 @@ public static void BenchmarkTrunc(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkY0(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4579,7 +4579,7 @@ public static void BenchmarkY0(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkY1(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4589,7 +4589,7 @@ public static void BenchmarkY1(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkYn(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4599,7 +4599,7 @@ public static void BenchmarkYn(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFloat64bits(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var y = (uint64)0;
     for (nint i = 0; i < b.N; i++) {
@@ -4611,7 +4611,7 @@ public static void BenchmarkFloat64bits(ж<testing.B> Ꮡb) {
 internal static uint64 roundUint64 = (uint64)5;
 
 public static void BenchmarkFloat64frombits(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
@@ -4623,7 +4623,7 @@ public static void BenchmarkFloat64frombits(ж<testing.B> Ꮡb) {
 internal static float32 roundFloat32 = (float32)(-2.5F);
 
 public static void BenchmarkFloat32bits(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var y = (uint32)0;
     for (nint i = 0; i < b.N; i++) {
@@ -4635,7 +4635,7 @@ public static void BenchmarkFloat32bits(ж<testing.B> Ꮡb) {
 internal static uint32 roundUint32 = (uint32)5;
 
 public static void BenchmarkFloat32frombits(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = (float32)0.0F;
     for (nint i = 0; i < b.N; i++) {
@@ -4645,7 +4645,7 @@ public static void BenchmarkFloat32frombits(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkFMA(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {

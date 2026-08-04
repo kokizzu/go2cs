@@ -12,7 +12,7 @@ using static global::go.math.rand.rand_internal_test_package;
 partial class rand_test_package {
 
 public static void BenchmarkPCG_DXSM(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     rand.PCG p = default!;
     uint64 t = default!;

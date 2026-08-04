@@ -192,7 +192,7 @@ public static void TestCopyNWriteTo(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkCopyNSmall(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var bs = bytes.Repeat(new byte[]{0}.slice(), 512 + 1);
     var rd = bytes.NewReader(bs);
@@ -205,7 +205,7 @@ public static void BenchmarkCopyNSmall(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCopyNLarge(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var bs = bytes.Repeat(new byte[]{0}.slice(), (32 * 1024) + 1);
     var rd = bytes.NewReader(bs);
@@ -428,7 +428,7 @@ public static void TestSectionReader_ReadAt(ж<testing.T> Ꮡt) {
         }
         {
             var (_r, off, n) = s.Outer(); if (!AreEqual(_r, r) || off != (int64)tt.off || n != (int64)tt.n) {
-                Ꮡt.Fatalf("%d: Outer() = %v, %d, %d; expected %v, %d, %d"u8, i, _r, off, n, r, tt.off, tt.n);
+                Ꮡt.Fatalf("%d: Outer() = %v, %d, %d; expected %v, %d, %d"u8, i, _r, off, n, r.OrTypedNil(), tt.off, tt.n);
             }
         }
     }
@@ -497,7 +497,7 @@ public static void TestSectionReader_Max(ж<testing.T> Ꮡt) {
     }
     {
         var (_r, off, nΔ1) = sr.Outer(); if (!AreEqual(_r, r) || off != 3 || nΔ1 != maxint64) {
-            Ꮡt.Fatalf("Outer = %v, %d, %d; expected %v, %d, %d"u8, _r, off, nΔ1, r, (nint)(3), (int64)maxint64);
+            Ꮡt.Fatalf("Outer = %v, %d, %d; expected %v, %d, %d"u8, _r, off, nΔ1, r.OrTypedNil(), (nint)(3), (int64)maxint64);
         }
     }
 }
@@ -547,7 +547,7 @@ public static void TestCopyLargeWriter(ж<testing.T> Ꮡt) {
 }
 
 public static void TestNopCloserWriterToForwarding(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tc) in new TestNopCloserWriterToForwarding_type[]{
         new("not a WriterTo"u8, ((Δio.Reader)default!)),
@@ -620,10 +620,7 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) => func((defer, rec
             new(whence: SeekCurrent, offset: 2, returnOff: 6),
             new(whence: SeekCurrent, offset: 3, returnOff: 9)
         }.slice();
-        foreach (var (idx, vᴛ1) in tests) {
-            ref var tt = ref heap(new TestOffsetWriter_Seek_tests(), out var Ꮡtt);
-            tt = vᴛ1;
-
+        foreach (var (idx, tt) in tests) {
             var (gotOff, gotErr) = wʗ5.Seek(tt.offset, tt.whence);
             if (gotOff != tt.returnOff || gotErr != default!) {
                 tΔ3.Errorf("%d:: For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, <nil>)"u8,
@@ -643,11 +640,6 @@ public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-
-
-
-
-
     var work = (int64 off, int64 at) => func((defer, recover) => {
         @string position = fmt.Sprintf("off_%d_at_%d"u8, off, at);
         var (tmpfile, errΔ1) = os.CreateTemp(tmpdir, position);
@@ -720,15 +712,15 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
     @string content = "0123456789ABCDEF"u8;
     nint contentSize = len(content);
     @string tmpdir = Ꮡt.TempDir();
-    var makeOffsetWriter = (@string nameΔ1) => {
+    (ж<Δio.OffsetWriter>, ж<os.File>) makeOffsetWriter(@string nameΔ1) {
         @string tmpfilename = "TestOffsetWriter_Write_"u8 + nameΔ1;
         var (tmpfile, err) = os.CreateTemp(tmpdir, tmpfilename);
         if (err != default! || tmpfile == nil) {
             Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
         }
         return (NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), 0), tmpfile);
-    };
-    var checkContent = (@string nameΔ2, ж<os.File> f) => {
+    }
+    void checkContent(@string nameΔ2, ж<os.File> f) {
         // Read one more byte to reach EOF
         var buf = new slice<byte>(contentSize + 1);
         var (readN, err) = f.ReadAt(buf, 0);
@@ -740,7 +732,7 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("%s error. \ngot n: %v, content: %s \nexpected n: %v, content: %v"u8,
                 nameΔ2, readN, readContent, contentSize, content);
         }
-    };
+    }
     @string name = default!;
     name = writeˢ;
     var checkContentʗ1 = checkContent;

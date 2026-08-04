@@ -566,7 +566,7 @@ internal static ж<Node> tree = Ꮡ(new Node(
 ));
 
 internal static void walkTree(ж<Node> Ꮡn, @string path, Action<@string, ж<Node>> f) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     f(path, Ꮡn);
     foreach (var (_, e) in n.entries) {
@@ -608,7 +608,7 @@ internal static void checkMarks(ж<testing.T> Ꮡt, bool report) {
 // If clear is true, any incoming error is cleared before return. The errors
 // are always accumulated, though.
 internal static error mark(fs.DirEntry d, error err, ж<slice<error>> Ꮡerrors, bool clear) {
-    ref var errors = ref Ꮡerrors.ValueSlot;
+    ref var errors = ref Ꮡerrors.DerefOrNull();
 
     @string name = d.Name();
     walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {
@@ -827,7 +827,7 @@ public static void TestWalkSkipDirOnFile(ж<testing.T> Ꮡt) {
     touch(Ꮡt, filepath.Join(td, dirFoo1ˢ));
     touch(Ꮡt, filepath.Join(td, dirFoo2ˢ));
     var sawFoo2 = false;
-    var walker = error (@string path) => {
+    error walker(@string path) {
         if (strings.HasSuffix(path, foo2ˢ)) {
             sawFoo2 = true;
         }
@@ -835,12 +835,12 @@ public static void TestWalkSkipDirOnFile(ж<testing.T> Ꮡt) {
             return filepath.SkipDir;
         }
         return default!;
-    };
+    }
     var walkerʗ1 = walker;
     var walkFn = (@string path, fs.FileInfo _Δp1, error _Δp2) => walkerʗ1(path);
     var walkerʗ2 = walker;
     var walkDirFn = (@string path, fs.DirEntry _Δp1, error _Δp2) => walkerʗ2(path);
-    var check = (ж<testing.T> tΔ1, Func<@string, error> walk, @string root) => {
+    void check(ж<testing.T> tΔ1, Func<@string, error> walk, @string root) {
         tΔ1.Helper();
         sawFoo2 = false;
         var err = walk(root);
@@ -850,7 +850,7 @@ public static void TestWalkSkipDirOnFile(ж<testing.T> Ꮡt) {
         if (sawFoo2) {
             tΔ1.Errorf("SkipDir on file foo1 did not block processing of foo2"u8);
         }
-    };
+    }
     var checkʗ1 = check;
     var walkFnʗ1 = walkFn;
     Ꮡt.Run(walkˢ, (ж<testing.T> tΔ2) => {
@@ -896,7 +896,7 @@ public static void TestWalkSkipAllOnFile(ж<testing.T> Ꮡt) {
     touch(Ꮡt, filepath.Join(td, dir2ˢ, barˢ));
     touch(Ꮡt, filepath.Join(td, lastˢ));
     var remainingWereSkipped = true;
-    var walker = error (@string path) => {
+    error walker(@string path) {
         if (strings.HasSuffix(path, foo2ˢ)) {
             return filepath.SkipAll;
         }
@@ -904,12 +904,12 @@ public static void TestWalkSkipAllOnFile(ж<testing.T> Ꮡt) {
             remainingWereSkipped = false;
         }
         return default!;
-    };
+    }
     var walkerʗ1 = walker;
     var walkFn = (@string path, fs.FileInfo _Δp1, error _Δp2) => walkerʗ1(path);
     var walkerʗ2 = walker;
     var walkDirFn = (@string path, fs.DirEntry _Δp1, error _Δp2) => walkerʗ2(path);
-    var check = (ж<testing.T> tΔ1, Func<@string, error> walk, @string root) => {
+    void check(ж<testing.T> tΔ1, Func<@string, error> walk, @string root) {
         tΔ1.Helper();
         remainingWereSkipped = true;
         {
@@ -920,7 +920,7 @@ public static void TestWalkSkipAllOnFile(ж<testing.T> Ꮡt) {
         if (!remainingWereSkipped) {
             tΔ1.Errorf("SkipAll on file foo2 did not block processing of remaining files and directories"u8);
         }
-    };
+    }
     var checkʗ1 = check;
     var walkFnʗ1 = walkFn;
     Ꮡt.Run(walkˢ, (ж<testing.T> tΔ2) => {
@@ -1537,7 +1537,7 @@ internal static readonly object chdirFailedˢ = (@string)"chdir failed: "u8;
 internal static readonly object mkdirFailedˢ = (@string)"Mkdir failed: "u8;
 
 public static void TestAbs(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string root = Ꮡt.TempDir();
     var (wd, err) = os.Getwd();
@@ -1607,7 +1607,7 @@ public static void TestAbs(ж<testing.T> Ꮡt) => func((defer, recover) => {
 // We test it separately from all other absTests because the empty string is not
 // a valid path, so it can't be used with os.Stat.
 public static void TestAbsEmptyString(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string root = Ꮡt.TempDir();
     var (wd, err) = os.Getwd();

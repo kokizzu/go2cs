@@ -154,7 +154,7 @@ public static void TestCompile(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkEmptyOpContext(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         rune r1 = -1;
@@ -172,7 +172,7 @@ internal static any sink;
 internal static readonly object benchmarkDidNotRunˢ = (@string)"Benchmark did not run"u8;
 
 public static void BenchmarkIsWordChar(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @string chars = "Don't communicate by sharing memory, share memory by communicating."u8;
     for (nint i = 0; i < b.N; i++) {

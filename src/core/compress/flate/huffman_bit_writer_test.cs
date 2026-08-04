@@ -48,7 +48,7 @@ internal static readonly object resetOkˢ = (@string)"Reset ok"u8;
 internal static readonly @string huffˢ = "huff"u8;
 
 internal static void testBlockHuff(ж<testing.T> Ꮡt, @string @in, @string @out) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (all, err) = os.ReadFile(@in);
     if (err != default!) {
@@ -319,7 +319,7 @@ internal static void testBlock(ж<testing.T> Ꮡt, huffTest test, @string ttype)
 });
 
 internal static void writeToType(ж<testing.T> Ꮡt, @string ttype, ж<global::go.compress.flate_package.huffmanBitWriter> Ꮡbw, slice<global::go.compress.flate_package.token> tok, slice<byte> input) {
-    ref var bw = ref Ꮡbw.Value;
+    ref var bw = ref Ꮡbw.DerefOrNull();
 
     var exprᴛ1 = ttype;
     if (exprᴛ1 == "wb"u8) {

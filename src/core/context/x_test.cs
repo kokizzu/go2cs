@@ -55,7 +55,7 @@ internal static time.Duration veryLongDuration => /* 1000 * time.Hour */ 3600000
 // quiescent returns an arbitrary duration by which the program should have
 // completed any remaining work and reached a steady (idle) state.
 internal static time.Duration quiescent(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (deadline, ok) = t.Deadline();
     if (!ok) {
@@ -119,7 +119,7 @@ public static void TestTODO(ж<testing.T> Ꮡt) {
 internal static readonly @string contextBackgroundˢ2 = "context.Background.WithCancel"u8;
 
 public static void TestWithCancel(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (c1, cancel) = WithCancel(Background());
     {
@@ -251,7 +251,7 @@ public static void TestTimeout(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCanceledTimeout(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (c, _) = WithTimeout(Background(), time.ΔSecond);
     var o = new otherContext(c);
@@ -298,9 +298,9 @@ internal static readonly @string contextBackgroundˢ6 = @"context.Background.Wit
 internal static readonly @string o2k2ˢ = "o2k2"u8;
 
 public static void TestValues(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var check = (context.Context c, @string nm, @string v1, @string v2, @string v3) => {
+    void check(context.Context c, @string nm, @string v1, @string v2, @string v3) {
         {
             var (v, ok) = c.Value(k1)._<@string>(ᐧ); if (ok == (len(v1) == 0) || v != v1) {
                 Ꮡt.Errorf(@"%s.Value(k1).(string) = %q, %t want %q, %t"u8, nm, v, ok, v1, len(v1) != 0);
@@ -316,7 +316,7 @@ public static void TestValues(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf(@"%s.Value(k3).(string) = %q, %t want %q, %t"u8, nm, v, ok, v3, len(v3) != 0);
             }
         }
-    };
+    }
     var c0 = Background();
     check(c0, "c0"u8, ""u8, ""u8, ""u8);
     var c1 = WithValue(Background(), k1, c1k1ˢ);
@@ -554,10 +554,10 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
     Ꮡt.Parallel();
     var r = rand.New(rand.NewSource(seed));
     @string prefix = fmt.Sprintf("seed=%d"u8, seed);
-    var errorf = (@string format, params ꓸꓸꓸany aʗp) => {
+    void errorf(@string format, params ꓸꓸꓸany aʗp) {
         var a = aʗp.slice();
         Ꮡt.Errorf(prefix + format, a.ꓸꓸꓸ);
-    };
+    }
     const nint minLayers = 30;
     slice<ж<testLayers_value>> vals = default!;
     slice<Action> cancels = default!;
@@ -567,7 +567,7 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
         switch (r.Intn(3)) {
         case 0: {
             var v = @new<testLayers_value>();
-            ctx = WithValue(ctx, v, v);
+            ctx = WithValue(ctx, v.OrTypedNil(), v.OrTypedNil());
             vals = append(vals, v);
             break;
         }
@@ -593,15 +593,15 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
     var ctxʗ1 = ctx;
     var errorfʗ1 = errorf;
     var valsʗ1 = vals;
-    var checkValues = (@string when) => {
+    void checkValues(@string when) {
         foreach (var (_, key) in valsʗ1) {
             {
-                var val = ctxʗ1.Value(key)._<ж<testLayers_value>>(); if (key != val) {
-                    errorfʗ1("%s: ctx.Value(%p) = %p want %p"u8, when, key, val, key);
+                var val = ctxʗ1.Value(key.OrTypedNil())._<ж<testLayers_value>>(); if (key != val) {
+                    errorfʗ1("%s: ctx.Value(%p) = %p want %p"u8, when, key.OrTypedNil(), val.OrTypedNil(), key.OrTypedNil());
                 }
             }
         }
-    };
+    }
     if (!testTimeout) {
         var selᴛ24 = ctx.Done();
         switch (trySelect(ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
@@ -1156,7 +1156,7 @@ public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) => func((def
 }
 
 internal static /*<-*/channel<EmptyStruct> Done(this ж<customCauseContext> Ꮡccc) => func((defer, recover) => {
-    ref var ccc = ref Ꮡccc.Value;
+    ref var ccc = ref Ꮡccc.DerefOrNull();
 
     Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
     defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock);
@@ -1164,7 +1164,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<customCauseContext> Ꮡc
 });
 
 internal static error Err(this ж<customCauseContext> Ꮡccc) => func((defer, recover) => {
-    ref var ccc = ref Ꮡccc.Value;
+    ref var ccc = ref Ꮡccc.DerefOrNull();
 
     Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
     defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock);
@@ -1176,7 +1176,7 @@ internal static error Err(this ж<customCauseContext> Ꮡccc) => func((defer, re
 }
 
 internal static void cancel(this ж<customCauseContext> Ꮡccc) {
-    ref var ccc = ref Ꮡccc.Value;
+    ref var ccc = ref Ꮡccc.DerefOrNull();
 
     Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
     ccc.err = Canceled;

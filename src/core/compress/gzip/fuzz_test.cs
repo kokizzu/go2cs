@@ -23,7 +23,7 @@ internal static readonly @string testdataˢ = "testdata"u8;
 internal static readonly @string base64ˢ = ".base64"u8;
 
 public static void FuzzReader(ж<testing.F> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var inp = slice<byte>("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."u8);
     foreach (var (_, level) in new nint[]{BestSpeed, BestCompression, DefaultCompression, HuffmanOnly}.slice()) {

@@ -57,7 +57,7 @@ internal static void write(ж<testing.T> Ꮡt, @string testname, ж<tabwriter.Wr
 }
 
 internal static void verify(ж<testing.T> Ꮡt, @string testname, ж<tabwriter.Writer> Ꮡw, ж<buffer> Ꮡb, @string src, @string expected) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var err = Ꮡw.Flush();
     if (err != default!) {
@@ -597,7 +597,7 @@ lines
 """u8;
 
 public static void BenchmarkCode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {

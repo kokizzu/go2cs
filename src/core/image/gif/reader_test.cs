@@ -135,9 +135,9 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
             Palette: new Δcolor.Palette(new Δcolor.Color[]{new colorꓸRGBA(0x10, 0x20, 0x30, 0xff), new colorꓸRGBA(0x40, 0x50, 0x60, 0xff)
             }.slice())
         ));
-        if (!reflect.DeepEqual(got, want)) {
+        if (!reflect.DeepEqual(got, want.OrTypedNil())) {
             Ꮡt.Errorf("nPix=%d, extraExisting=%d, extraSeparate=%d\ngot  %v\nwant %v"u8,
-                tc.nPix, tc.extraExisting, tc.extraSeparate, got, want);
+                tc.nPix, tc.extraExisting, tc.extraSeparate, got, want.OrTypedNil());
         }
     }
 }
@@ -449,7 +449,7 @@ public static void TestDecodeMemoryConsumption(ж<testing.T> Ꮡt) => func((defe
 internal static readonly @string testdataVideo001Gifˢ = "../testdata/video-001.gif"u8;
 
 public static void BenchmarkDecode(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (data, err) = os.ReadFile(testdataVideo001Gifˢ);
     if (err != default!) {

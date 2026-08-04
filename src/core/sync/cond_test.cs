@@ -232,7 +232,7 @@ public static void TestRace(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestCondSignalStealing(ж<Δtesting.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (nint iters = 0; iters < 1000; iters++) {
         ref var m = ref heap(new Δsync.Mutex(), out var Ꮡm);

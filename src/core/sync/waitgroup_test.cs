@@ -183,7 +183,7 @@ public static void BenchmarkWaitGroupWaitWork(ж<Δtesting.B> Ꮡb) {
 }
 
 public static void BenchmarkWaitGroupActuallyWait(ж<Δtesting.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.ReportAllocs();
     Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {

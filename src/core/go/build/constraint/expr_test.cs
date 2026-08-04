@@ -110,14 +110,14 @@ internal static (@string tok, error err) lexHelp(ж<global::go.go.build.constrai
     @string tok = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             {
                 var e = recover(); if (e != default!) {
                     {
                         var (eΔ1, ok) = e._<ж<global::go.go.build.constraint_package.SyntaxError>>(ᐧ); if (ok) {
-                            err = new constraint_internal_test_package.constraint_SyntaxErrorжerror(eΔ1);
+                            err = new global::go.go.build.constraint_package.SyntaxErrorжerror(eΔ1);
                             return;
                         }
                     }
@@ -172,13 +172,13 @@ public static void TestParseExpr(ж<testing.T> Ꮡt) {
     internal error err;
 }
 internal static slice<parseExprErrorTestsᴛ1> parseExprErrorTests = new parseExprErrorTestsᴛ1[]{
-    new("x && "u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected end of expression"u8)))),
-    new("x && ("u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "missing close paren"u8)))),
-    new("x && ||"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected token ||"u8)))),
-    new("x && !"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "unexpected end of expression"u8)))),
-    new("x && !!"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "double negation not allowed"u8)))),
-    new("x !"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 2, Err: "unexpected token !"u8)))),
-    new("x && (y"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "missing close paren"u8))))
+    new("x && "u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected end of expression"u8)))),
+    new("x && ("u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "missing close paren"u8)))),
+    new("x && ||"u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected token ||"u8)))),
+    new("x && !"u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "unexpected end of expression"u8)))),
+    new("x && !!"u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "double negation not allowed"u8)))),
+    new("x !"u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 2, Err: "unexpected token !"u8)))),
+    new("x && (y"u8, new global::go.go.build.constraint_package.SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "missing close paren"u8))))
 }.slice();
 
 public static void TestParseError(ж<testing.T> Ꮡt) {

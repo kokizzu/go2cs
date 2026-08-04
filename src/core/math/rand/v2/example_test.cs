@@ -72,9 +72,9 @@ public static void Example_rand() => func((defer, recover) => {
     var wʗ1 = w;
     defer(() => wʗ1.Flush());
     var wʗ2 = w;
-    var show = (@string name, any v1, any v2, any v3) => {
+    void show(@string name, any v1, any v2, any v3) {
         fmt.Fprintf(new rand_test_package.tabwriter_WriterжWriter(wʗ2), "%s\t%v\t%v\t%v\n"u8, name, v1, v2, v3);
-    };
+    }
     // Float32 and Float64 values are in [0, 1).
     show(float32ˢ, r.Float32(), r.Float32(), r.Float32());
     show(float64ˢ, r.Float64(), r.Float64(), r.Float64());

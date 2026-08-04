@@ -22,7 +22,7 @@ internal static readonly @string gICAˢ = "gICA"u8;
 }
 
 public static void TestEncodeWord(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string utf8 = utf8ˢ2;
     @string iso88591 = iso88591ˢ;
@@ -125,7 +125,7 @@ public static void TestDecodeWord(ж<testing.T> Ꮡt) {
 }
 
 public static void TestDecodeHeader(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tests = new TestDecodeHeader_tests[]{
         new("=?UTF-8?Q?=C2=A1Hola,_se=C3=B1or!?="u8, "¡Hola, señor!"u8),
@@ -242,7 +242,7 @@ public static void TestCharsetDecoderError(ж<testing.T> Ꮡt) {
 internal static readonly @string holaSeOrˢ = "¡Hola, señor!"u8;
 
 public static void BenchmarkQEncodeWord(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         QEncoding.Encode(utf8ˢ, holaSeOrˢ);
@@ -253,7 +253,7 @@ public static void BenchmarkQEncodeWord(ж<testing.B> Ꮡb) {
 internal static readonly @string utf8QC2A1HolaSeC3B1orˢ = "=?utf-8?q?=C2=A1Hola,_se=C3=B1or!?="u8;
 
 public static void BenchmarkQDecodeWord(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var dec = @new<global::go.mime_package.WordDecoder>();
     for (nint i = 0; i < b.N; i++) {
@@ -262,7 +262,7 @@ public static void BenchmarkQDecodeWord(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkQDecodeHeader(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var dec = @new<global::go.mime_package.WordDecoder>();
     for (nint i = 0; i < b.N; i++) {

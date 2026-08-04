@@ -69,7 +69,7 @@ public static void TestDefaultRace(ж<testing.T> Ꮡt) {
 // calls to top-level functions and to Seed without any duplicate values.
 // This will also give the race detector a change to report any problems.
 internal static void doDefaultTest(ж<testing.T> Ꮡt, @string v) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var (code, err) = strconv.Atoi(v);
     if (err != default!) {

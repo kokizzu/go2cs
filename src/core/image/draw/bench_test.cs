@@ -29,7 +29,7 @@ internal static readonly object unknownMaskColorModelˢ = (@string)"unknown mask
 // given op and the color models to create those images from.
 // The created images' pixels are initialized to non-zero values.
 internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm, color.Model mcm, global::go.image.draw_package.Op op) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     global::go.image.draw_package.Image dst = default!;
@@ -46,7 +46,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                 ));
             }
         }
-        dst = new draw_test_package.image_ΔRGBAжdraw_Image(dst1);
+        dst = new draw_test_package.image_ΔRGBAжImage(dst1);
     }
     else if (AreEqual(exprᴛ1, color.RGBA64Model)) {
         var dst1 = image.NewRGBA64(image.Rect(0, 0, dstw, dsth));
@@ -120,7 +120,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                 ));
             }
         }
-        src = new draw_test_package.image_ΔRGBAжimage_Image(src1);
+        src = new image.ΔRGBAжImage(src1);
     }
     else if (AreEqual(exprᴛ2, color.RGBA64Model)) {
         var src1 = image.NewRGBA64(image.Rect(0, 0, srcw, srch));
@@ -263,11 +263,11 @@ public static void BenchmarkRGBA(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPalettedFill(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, new draw_test_package.color_PaletteᴠModel(palette), default!, default!, Src);
+    bench(Ꮡb, palette, default!, default!, Src);
 }
 
 public static void BenchmarkPalettedRGBA(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, new draw_test_package.color_PaletteᴠModel(palette), color.RGBAModel, default!, Src);
+    bench(Ꮡb, palette, color.RGBAModel, default!, Src);
 }
 
 // The BenchmarkGenericFoo functions exercise the generic, slow-path code.

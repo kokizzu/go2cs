@@ -56,7 +56,7 @@ internal static slice<@string> makeSortedStrings(nint n) {
 public static UntypedInt N => 100_000;
 
 public static void BenchmarkSortInts(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -67,7 +67,7 @@ public static void BenchmarkSortInts(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSlicesSortInts(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -78,7 +78,7 @@ public static void BenchmarkSlicesSortInts(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortIsSorted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -89,7 +89,7 @@ public static void BenchmarkSortIsSorted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSlicesIsSorted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -117,7 +117,7 @@ internal static slice<@string> makeRandomStrings(nint n) {
 }
 
 public static void BenchmarkSortStrings(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -128,7 +128,7 @@ public static void BenchmarkSortStrings(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSlicesSortStrings(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -139,7 +139,7 @@ public static void BenchmarkSlicesSortStrings(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortStrings_Sorted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var ss = makeSortedStrings(N);
     b.ResetTimer();
@@ -149,7 +149,7 @@ public static void BenchmarkSortStrings_Sorted(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSlicesSortStrings_Sorted(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var ss = makeSortedStrings(N);
     b.ResetTimer();
@@ -204,7 +204,7 @@ public static void TestStructSorts(ж<testing.T> Ꮡt) {
 }
 
 public static void BenchmarkSortStructs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         b.StopTimer();
@@ -215,7 +215,7 @@ public static void BenchmarkSortStructs(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSortFuncStructs(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var cmpFunc = (ж<myStruct> a, ж<myStruct> bΔ1) => (~a).n - (~bΔ1).n;
     for (nint i = 0; i < b.N; i++) {

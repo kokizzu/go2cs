@@ -9,7 +9,7 @@ using static go.container.list_package;
 partial class list_internal_test_package {
 
 internal static bool checkListLen(ж<testing.T> Ꮡt, ж<global::go.container.list_package.List> Ꮡl, nint len) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     {
         nint n = l.Len(); if (n != len) {
@@ -21,7 +21,7 @@ internal static bool checkListLen(ж<testing.T> Ꮡt, ж<global::go.container.li
 }
 
 internal static void checkListPointers(ж<testing.T> Ꮡt, ж<global::go.container.list_package.List> Ꮡl, slice<ж<global::go.container.list_package.Element>> es) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     var root = Ꮡl.of(global::go.container.list_package.List.Ꮡroot);
     if (!checkListLen(Ꮡt, Ꮡl, len(es))) {
@@ -30,7 +30,7 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<global::go.contain
     // zero length lists must be the zero value or properly initialized (sentinel circle)
     if (len(es) == 0) {
         if (l.root.next != nil && l.root.next != root || l.root.prev != nil && l.root.prev != root) {
-            Ꮡt.Errorf("l.root.next = %p, l.root.prev = %p; both should both be nil or %p"u8, l.root.next, l.root.prev, root);
+            Ꮡt.Errorf("l.root.next = %p, l.root.prev = %p; both should both be nil or %p"u8, l.root.next.OrTypedNil(), l.root.prev.OrTypedNil(), root.OrTypedNil());
         }
         return;
     }
@@ -45,12 +45,12 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<global::go.contain
         }
         {
             var p = e.Value.prev; if (p != prev) {
-                Ꮡt.Errorf("elt[%d](%p).prev = %p, want %p"u8, i, e, p, prev);
+                Ꮡt.Errorf("elt[%d](%p).prev = %p, want %p"u8, i, e.OrTypedNil(), p.OrTypedNil(), prev.OrTypedNil());
             }
         }
         {
             var p = e.Prev(); if (p != Prev) {
-                Ꮡt.Errorf("elt[%d](%p).Prev() = %p, want %p"u8, i, e, p, Prev);
+                Ꮡt.Errorf("elt[%d](%p).Prev() = %p, want %p"u8, i, e.OrTypedNil(), p.OrTypedNil(), Prev.OrTypedNil());
             }
         }
         var next = root;
@@ -61,12 +61,12 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<global::go.contain
         }
         {
             var n = e.Value.next; if (n != next) {
-                Ꮡt.Errorf("elt[%d](%p).next = %p, want %p"u8, i, e, n, next);
+                Ꮡt.Errorf("elt[%d](%p).next = %p, want %p"u8, i, e.OrTypedNil(), n.OrTypedNil(), next.OrTypedNil());
             }
         }
         {
             var n = e.Next(); if (n != Next) {
-                Ꮡt.Errorf("elt[%d](%p).Next() = %p, want %p"u8, i, e, n, Next);
+                Ꮡt.Errorf("elt[%d](%p).Next() = %p, want %p"u8, i, e.OrTypedNil(), n.OrTypedNil(), Next.OrTypedNil());
             }
         }
     }
@@ -160,7 +160,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
 }
 
 internal static void checkList(ж<testing.T> Ꮡt, ж<global::go.container.list_package.List> Ꮡl, slice<any> es) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!checkListLen(Ꮡt, Ꮡl, len(es))) {
         return;

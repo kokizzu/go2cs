@@ -24,7 +24,7 @@ public static void ExampleWithCancel() => func((defer, recover) => {
     // The callers of gen need to cancel the context once
     // they are done consuming generated integers not to leak
     // the internal goroutine started by gen.
-    var gen = (context.Context ctxΔ1) => {
+    /*<-*/channel<nint> gen(context.Context ctxΔ1) {
         var dst = new channel<nint>(0);
         nint n = 1;
         var dstʗ1 = dst;
@@ -44,7 +44,7 @@ public static void ExampleWithCancel() => func((defer, recover) => {
         });
         // returning not to leak the goroutine
         return dst;
-    };
+    }
     var (ctx, cancel) = context.WithCancel(context.Background());
     var cancelʗ1 = cancel;
     defer(() => cancelʗ1());
@@ -129,7 +129,7 @@ internal static readonly @string colorˢ = "color"u8;
 // This example demonstrates how a value can be passed to the context
 // and also how to retrieve it if it exists.
 public static void ExampleWithValue() {
-    var f = (context.Context ctxΔ1, ExampleWithValue_favContextKey kΔ1) => {
+    void f(context.Context ctxΔ1, ExampleWithValue_favContextKey kΔ1) {
         {
             var v = ctxΔ1.Value(kΔ1); if (v != default!) {
                 fmt.Println(foundValueˢ, v);
@@ -137,7 +137,7 @@ public static void ExampleWithValue() {
             }
         }
         fmt.Println(keyNotFoundˢ, kΔ1);
-    };
+    }
     ExampleWithValue_favContextKey k = ((ExampleWithValue_favContextKey)(@string)languageˢ);
     var ctx = context.WithValue(context.Background(), k, (@string)"Go"u8);
     f(ctx, k);
@@ -214,7 +214,7 @@ internal static readonly @string tcpˢ = "tcp"u8;
 // This example uses AfterFunc to define a function which reads from a net.Conn,
 // stopping the read when a context is canceled.
 public static void ExampleAfterFunc_connection() => func((defer, recover) => {
-    var readFromConn = (context.Context ctxΔ1, Δnet.Conn connΔ1, slice<byte> bΔ1) => {
+    (nint n, error err) readFromConn(context.Context ctxΔ1, Δnet.Conn connΔ1, slice<byte> bΔ1) {
         nint n = default!;
         error errΔ1 = default!;
         var stopc = new channel<EmptyStruct>(0);
@@ -232,7 +232,7 @@ public static void ExampleAfterFunc_connection() => func((defer, recover) => {
             return (n, ctxΔ1.Err());
         }
         return (n, errΔ1);
-    };
+    }
     var (listener, err) = Δnet.Listen(tcpˢ, ":0"u8);
     if (err != default!) {
         fmt.Println(err);
@@ -267,7 +267,7 @@ internal static readonly @string ctx2Canceledˢ = "ctx2 canceled"u8;
 public static void ExampleAfterFunc_merge() => func((defer, recover) => {
     // mergeCancel returns a context that contains the values of ctx,
     // and which is canceled when either ctx or cancelCtx is canceled.
-    var mergeCancel = (context.Context ctx, context.Context cancelCtx) => {
+    (context.Context, Action) mergeCancel(context.Context ctx, context.Context cancelCtx) {
         (ctx, var cancel) = context.WithCancelCause(ctx);
         var cancelʗ1 = cancel;
         var stop = context.AfterFunc(cancelCtx, () => {
@@ -279,7 +279,7 @@ public static void ExampleAfterFunc_merge() => func((defer, recover) => {
             stopʗ1();
             cancelʗ3(context.Canceled);
         }));
-    };
+    }
     var (ctx1, cancel1) = context.WithCancelCause(context.Background());
     var cancel1ʗ1 = cancel1;
     deferǃ(cancel1ʗ1, errors.New(ctx1Canceledˢ), defer);

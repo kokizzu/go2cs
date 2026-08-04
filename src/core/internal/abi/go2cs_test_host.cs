@@ -32,6 +32,9 @@ internal static class Go2CsTestHost
             "testdata/x.go",
             "testdata/x.s",
             "type.go",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestFuncPC", abi_test_package.TestFuncPC, "abi_test.go", 15);
         registry.Add("TestFuncPCCompileError", abi_test_package.TestFuncPCCompileError, "abi_test.go", 32);

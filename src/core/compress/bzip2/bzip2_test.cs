@@ -208,7 +208,7 @@ internal static slice<byte> newton = mustLoadFile("testdata/Isaac.Newton-Opticks
 internal static slice<byte> random = mustLoadFile("testdata/random.data.bz2"u8);
 
 internal static void benchmarkDecode(ж<testing.B> Ꮡb, slice<byte> compressed) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Determine the uncompressed size of testfile.
     var (uncompressedSize, err) = io.Copy(io.Discard, NewReader(new bzip2_internal_test_package.bytes_ReaderжReader(bytes.NewReader(compressed))));

@@ -285,7 +285,7 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
     if (len(buf) == 0) {
         Ꮡb.Fatalf("test file has no data"u8);
     }
-    var getInputBuf = (slice<byte> bufΔ1, nint n) => {
+    slice<byte> getInputBuf(slice<byte> bufΔ1, nint n) {
         var compressed = @new<bytes.Buffer>();
         var w = NewWriter(new lzw_internal_test_package.bytes_BufferжWriter(compressed), LSB, 8);
         for (nint i = 0; i < n; i += len(bufΔ1)) {
@@ -296,7 +296,7 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
         }
         w.Close();
         return compressed.Bytes();
-    };
+    }
     for (nint e = 4; e <= 6; e++) {
         nint n = (nint)math.Pow10(e);
         var bufʗ1 = buf;

@@ -139,6 +139,9 @@ internal static class Go2CsTestHost
             "testdata/pngsuite/ftp1n3p08.sng",
             "writer.go",
             "writer_test.go",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestDecodePalettedWithTransparency", png_internal_test_package.TestDecodePalettedWithTransparency, "reader_test.go", 786);
         registry.Add("TestDimensionOverflow", png_internal_test_package.TestDimensionOverflow, "reader_test.go", 662);

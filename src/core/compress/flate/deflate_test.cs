@@ -230,7 +230,7 @@ internal static (nint n, error err) Read(this ж<syncBuffer> Ꮡb, slice<byte> p
     nint n = default!;
     error err = default!;
 
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
     while (ᐧ) {
         Ꮡb.of(syncBuffer.Ꮡmu).RLock();
         (n, err) = b.buf.Read(p);
@@ -267,7 +267,7 @@ internal static void WriteMode(this ж<syncBuffer> Ꮡb) {
 }
 
 internal static void ReadMode(this ж<syncBuffer> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.of(syncBuffer.Ꮡmu).Unlock();
     b.signal();
@@ -543,7 +543,7 @@ public static void TestRegression2508(ж<testing.T> Ꮡt) {
 internal static readonly @string dictˢ = "dict"u8;
 
 public static void TestWriterReset(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Parallel();
     for (nint level = 0; level <= 9; level++) {
@@ -581,7 +581,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
         w.Value.d.tokens = wref.Value.d.tokens;
         // We don't care if there are values in the window, as long as it is at d.index is 0
         w.Value.d.window = wref.Value.d.window;
-        if (!reflect.DeepEqual(w, wref)) {
+        if (!reflect.DeepEqual(w.OrTypedNil(), wref.OrTypedNil())) {
             Ꮡt.Errorf("level %d Writer not reset after Reset"u8, level);
         }
     }
@@ -605,7 +605,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
 internal static readonly object stoppingˢ = (@string)"Stopping"u8;
 
 internal static void testResetOutput(ж<testing.T> Ꮡt, nint level, slice<byte> dict) {
-    var writeData = (ж<global::go.compress.flate_package.Writer> wΔ1) => {
+    void writeData(ж<global::go.compress.flate_package.Writer> wΔ1) {
         var msg = slice<byte>("now is the time for all good gophers"u8);
         wΔ1.Write(msg);
         wΔ1.Flush();
@@ -615,7 +615,7 @@ internal static void testResetOutput(ж<testing.T> Ꮡt, nint level, slice<byte>
         }
         var fill = bytes.Repeat(slice<byte>("x"u8), 65000);
         wΔ1.Write(fill);
-    };
+    }
     var buf = @new<bytes.Buffer>();
     ж<global::go.compress.flate_package.Writer> w = default!;
     error err = default!;
@@ -659,7 +659,7 @@ internal static void testResetOutput(ж<testing.T> Ꮡt, nint level, slice<byte>
 // compressor.encSpeed method (0, 16, 128), as well as near maxStoreBlockSize
 // (65535).
 public static void TestBestSpeed(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Parallel();
     var abc = new slice<byte>(128);
@@ -842,7 +842,7 @@ public static void TestWriterPersistentCloseError(ж<testing.T> Ꮡt) {
 }
 
 internal static void checkErrors(slice<error> got, error want, ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Helper();
     foreach (var (_, err) in got) {
@@ -858,7 +858,7 @@ internal static void checkErrors(slice<error> got, error want, ж<testing.T> Ꮡ
 }
 
 public static void TestBestSpeedMatch(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Parallel();
     var cases = new TestBestSpeedMatch_cases[]{new(
@@ -981,7 +981,7 @@ internal static readonly @string writerCloseˢ = "Writer.Close: "u8;
 internal static readonly @string readAllˢ = "ReadAll: "u8;
 
 public static void TestBestSpeedMaxMatchOffset(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Parallel();
     @string abc = "abcdefgh"u8;
@@ -990,10 +990,10 @@ public static void TestBestSpeedMaxMatchOffset(ж<testing.T> Ꮡt) {
         foreach (var (_, extra) in new nint[]{0, inputMargin - 1, inputMargin, inputMargin + 1, 2 * inputMargin}.slice()) {
             for (nint offsetAdjᴛ1 = -5; offsetAdjᴛ1 <= +5; offsetAdjᴛ1++) {
                 var offsetAdj = offsetAdjᴛ1;
-                var report = (@string desc, error errΔ1) => {
+                void report(@string desc, error errΔ1) {
                     Ꮡt.Errorf("matchBefore=%t, extra=%d, offsetAdj=%d: %s%v"u8,
                         matchBefore, extra, offsetAdj, desc, errΔ1);
-                };
+                }
                 nint offset = (nint)maxMatchOffset + offsetAdj;
                 // Make src to be a []byte of the form
                 //	"%s%s%s%s%s" % (abc, zeros0, xyzMaybe, abc, zeros1)

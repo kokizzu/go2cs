@@ -30,14 +30,12 @@ using static global::go.image.draw_test_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<global::go.image.draw_package.Op, global::go.image.draw_package.Drawer>]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
 [assembly: GoImplement<image_package.NRGBA, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.NRGBA64, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.RGBA64, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.Uniform, image_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.ΔRGBA, global::go.image.draw_package.Image>(Pointer = true)]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 

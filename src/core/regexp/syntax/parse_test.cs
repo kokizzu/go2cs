@@ -308,7 +308,7 @@ internal static slice<@string> opNames = new golib.SparseArray<@string>{
 // It is used during testing to distinguish between parses that might print
 // the same using re's String method.
 internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<global::go.regexp.syntax_package.Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if ((nint)(uint8)re.Op >= len(opNames) || opNames[re.Op] == ""){
         fmt.Fprintf(new syntax_internal_test_package.strings_BuilderжWriter(Ꮡb), "op%d"u8, re.Op);
@@ -571,7 +571,7 @@ public static void TestParseInvalidRegexps(ж<testing.T> Ꮡt) {
 }
 
 public static void TestToStringEquivalentParse(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in parseTests) {
         var (re, err) = Parse(tt.Regexp, testFlags);

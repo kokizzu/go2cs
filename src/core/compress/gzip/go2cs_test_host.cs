@@ -17,6 +17,9 @@ internal static class Go2CsTestHost
             "gzip_test.go",
             "issue14937_test.go",
             "testdata/issue6550.gz.base64",
+        }, new string[]
+        {
+            "testdata",
         });
         registry.Add("TestCVE202230631", gzip_internal_test_package.TestCVE202230631, "gunzip_test.go", 573);
         registry.Add("TestConcat", gzip_internal_test_package.TestConcat, "gzip_test.go", 211);
