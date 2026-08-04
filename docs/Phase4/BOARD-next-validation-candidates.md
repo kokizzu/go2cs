@@ -1,3 +1,4 @@
+<!-- {% raw %} — Jekyll/Liquid guard: this doc quotes Go composite-literal syntax ({{ … }}) that Liquid would otherwise parse; the HTML comment hides the tag on GitHub. -->
 # BOARD — next validation candidates, each rooted
 
 > Measured 2026-07-27 by running the `-tests` pipeline over every unbanked candidate the
@@ -2541,3 +2542,5 @@ the moment each package's `-tests` pipeline ran, with no separate work. Zero rem
    naming a commit that no longer existed. Recoverable only because the amend preserved the tree
    exactly (both SHAs point at tree `15e4eca18`), which made the stamp correctable textually rather
    than by re-running 17 packages.
+
+<!-- {% endraw %} -->
