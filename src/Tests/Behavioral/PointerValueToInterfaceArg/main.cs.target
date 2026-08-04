@@ -36,11 +36,11 @@ internal static void free(this ж<pp> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     p.buf = p.buf[..0];
-    poolPut(Ꮡp);
+    poolPut(Ꮡp.OrTypedNil());
 }
 
 internal static void keep(ж<pp> Ꮡq) {
-    poolPut(Ꮡq);
+    poolPut(Ꮡq.OrTypedNil());
 }
 
 internal static void Main() {

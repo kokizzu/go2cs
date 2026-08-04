@@ -149,9 +149,9 @@ internal static void Main() {
     any anyErr = e;
     fmt.Println(describe(anyErr));
     fmt.Println(describe(Ꮡ(new errMark(code: 6))));
-    fmt.Println(firstConcrete(c));
-    fmt.Println(firstInterface(c));
-    fmt.Println(multi(c));
+    fmt.Println(firstConcrete(c.OrTypedNil()));
+    fmt.Println(firstInterface(c.OrTypedNil()));
+    fmt.Println(multi(c.OrTypedNil()));
     fmt.Println(multi(Ꮡ(new errMark(code: 8))));
     fmt.Println(multi(default!));
     fmt.Println(multi(1.5D));

@@ -1293,6 +1293,11 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			// LHS is `any`; the downstream narrow/named casts are gated off for an interface LHS.
 			if emptyIfaceTarget {
 				rhsExpr = v.applyUntypedConstBoxCast(rhs, rhsExpr)
+
+				// The POINTER twin: a pointer assigned into an `any` LHS carries its Go type
+				// across even when nil (see typedNilInterfaceBoxing.go). appendRhsPtrContext has
+				// already rendered it as the BOX rather than a deref alias.
+				rhsExpr = v.applyTypedNilPointerBox(rhs, rhsExpr)
 			}
 
 			// A `:=` DECLARATION whose RHS is a constant-folded NAMED-NUMERIC conversion
@@ -1629,8 +1634,10 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 				// Box an untyped CONSTANT assigned to an EMPTY-interface LHS at Go's default type (the
 				// numeric twin of appendEmptyIfaceLitContext's @string boxing); a no-op for a non-empty
-				// or non-interface LHS and for any non-constant RHS.
+				// or non-interface LHS and for any non-constant RHS. The POINTER twin follows it — a
+				// nil pointer carries its Go type across (typedNilInterfaceBoxing.go).
 				rhsExpr = v.boxUntypedConstAsDefaultType(v.getType(lhs, false), rhs, rhsExpr)
+				rhsExpr = v.boxPointerIntoEmptyInterface(v.getType(lhs, false), rhs, rhsExpr)
 
 				// A Go array copied by value into existing storage (`s.arr = a` / `*p = a`) takes
 				// golib's `.Clone()` for independent backing storage (see cloneValueCopy).
@@ -1689,8 +1696,10 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					rhsExpr := v.convExpr(rhs, v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs))
 
 					// Box an untyped CONSTANT reassigned to an EMPTY-interface LHS at Go's default type
-					// (twin of appendEmptyIfaceLitContext's @string boxing); a no-op otherwise.
+					// (twin of appendEmptyIfaceLitContext's @string boxing); a no-op otherwise. The
+					// POINTER twin follows it (typedNilInterfaceBoxing.go).
 					rhsExpr = v.boxUntypedConstAsDefaultType(v.getType(lhs, false), rhs, rhsExpr)
+					rhsExpr = v.boxPointerIntoEmptyInterface(v.getType(lhs, false), rhs, rhsExpr)
 
 					// A Go array copied by value over an existing variable takes golib's `.Clone()`
 					// for independent backing storage (see cloneValueCopy).

@@ -42,7 +42,7 @@ internal static void Main() {
     var q = Ꮡ(new queue(last: a));
     q.tail().of(node.Ꮡs).set(100);
     fmt.Println((~a).s.v);
-    any iface = b;
+    any iface = b.OrTypedNil();
     iface._<ж<node>>().of(node.Ꮡs).set(55);
     fmt.Println((~b).s.v);
 }

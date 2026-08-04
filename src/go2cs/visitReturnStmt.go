@@ -417,6 +417,15 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 					}
 				}
 
+				// An EMPTY-interface RESULT takes a POINTER as its BOX for the same reason the
+				// pointer-RESULT arm above does — Go's interface value holds the *T. Without it a
+				// deref-aliased pointer parameter returned as `any` boxes a COPY of the POINTEE
+				// (dynamic type T where Go says *T, and pointer identity gone), and a NIL one
+				// panics at the deref instead of crossing intact. See typedNilInterfaceBoxing.go.
+				if resultParams != nil && i < resultParams.Len() {
+					exprContexts = v.emptyInterfacePointerContexts(resultParams.At(i).Type(), expr, exprContexts)
+				}
+
 				resultExpr := v.convExpr(expr, exprContexts)
 
 				// A Go array RETURNED by value out of existing storage takes the strongly-typed
@@ -436,8 +445,11 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 				// through convertToInterfaceType below (which the empty interface deliberately bypasses),
 				// and no numeric result type reaches the empty interface, so this is the only return-path
 				// site that needs the cast.
+				// The POINTER twin follows it: a nil pointer returned as `any` carries its Go type
+				// across (typedNilInterfaceBoxing.go).
 				if resultParams != nil && i < resultParams.Len() {
 					resultExpr = v.boxUntypedConstAsDefaultType(resultParams.At(i).Type(), expr, resultExpr)
+					resultExpr = v.boxPointerIntoEmptyInterface(resultParams.At(i).Type(), expr, resultExpr)
 				}
 
 				// Record any dynamic-struct implicit conversion AFTER converting the result expr.

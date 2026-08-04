@@ -14,6 +14,8 @@ internal static UntypedComplex cFolded => /* (1 + 2i) * (3 + 4i) */ -5D + 10D.i(
 
 internal static complex64 c64 => /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
 
+internal static UntypedFloat maxFloat32 => 3.40282346638528859811704183484516925440e+38;
+
 internal static void showComplex(@string name, complex128 c) {
     fmt.Println(name, real(c), imag(c));
 }
@@ -26,13 +28,14 @@ private static readonly @string cWideEnoughˢ = "cWideEnough"u8;
 private static readonly @string cFoldedˢ = "cFolded"u8;
 private static readonly object c64ˢ = (@string)"c64"u8;
 private static readonly @string localˢ = "local"u8;
+private static readonly object overFitsFloat32ˢ = (@string)"over-fits-float32"u8;
 
 internal static void Main() {
     var huge = new complex128[]{34359738368D, 1766847064778384329583297500742918515827483896875618958121606201292619776D, -1329227995784915872903807060280344576D, 1357421751691302484408532992D}.slice();
     foreach (var (_, h) in huge) {
         fmt.Println(real(h));
     }
-    var c = complex(0D, gHalfPi);
+    var c = complex((float64)(0D), (float64)(gHalfPi));
     fmt.Println(real(c), imag(c));
     float64 q = 7 / 2;
     var e = complex(7 / 2, 0D);
@@ -49,6 +52,16 @@ internal static void Main() {
     fmt.Println(c64ˢ, real(c64), imag(c64));
     complex128 local = /* 0.5 - 0.25i */ 0.5D + -0.25D.i();
     showComplex(localˢ, local);
+    var over = complex((float64)(maxFloat32 * 2D), (float64)(maxFloat32 * 2D));
+    fmt.Printf("over %T %v %v\n"u8, over, real(over), imag(over));
+    fmt.Println(overFitsFloat32ˢ, (float64)(float32)real(over) == real(over));
+    var pair = complex((float64)(gHalfPi), (float64)(gHalfPi));
+    fmt.Printf("pair %T %v %v\n"u8, pair, real(pair), imag(pair));
+    complex64 narrow = complex((float32)(gHalfPi), (float32)(gHalfPi));
+    fmt.Printf("narrow %T %v %v\n"u8, narrow, real(narrow), imag(narrow));
+    float64 rf64 = 2D;
+    var mixed = complex(rf64, gHalfPi);
+    fmt.Printf("mixed %T %v %v\n"u8, mixed, real(mixed), imag(mixed));
 }
 
 } // end main_package

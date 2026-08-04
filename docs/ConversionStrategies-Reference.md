@@ -1599,8 +1599,10 @@ and any `**T` slot (`atomic.Pointer[*T]`), all present in the corpus. (Guarded b
 distinct `new(any)` sentinels, a pointer to a nil `*int`, and the genuinely-nil slot, output-compared
 vs `go run`. Before the fix the guard panics with a nil-pointer dereference on its second line.)
 
-`(*T)(nil)` conversion **expressions** are the scope — pointer-typed locals, parameters, and
-fields keep plain `null` (their statically-typed world never needed the type carried).
+`(*T)(nil)` conversion **expressions** are where the canonical instance is *minted*, and pointer
+locals, parameters and fields keep plain `null` — their statically-typed world never needs the
+type carried. The type is carried where it becomes observable instead: at the **boundary into
+interface space** (below).
 
 A target written as a pointer to a composite **type literal** — `(*[]byte)(nil)`,
 `(*map[string]int)(nil)`, `(*struct{ r int })(nil)` — reaches the same rendering by a different
@@ -1630,6 +1632,76 @@ Guarded by `TypedNilInterface` (extended with the slice/map/anonymous-struct typ
 `PointerToNilPointerIdentity`, and `NamedPointerReinterpret` (the canonical singleton keeps its
 `object`-reference nil compare working); part of the reflection-bridge Phase-3 chip (see
 `docs/Phase4/DESIGN-reflection-bridge.md`).
+
+### A pointer crossing into an interface carries its static type, however the pointer was produced
+The rule the boxing above is a special case of:
+
+> A Go POINTER entering INTERFACE space is represented by its pointer BOX, carrying its static
+> pointee type — however the pointer was produced.
+
+Go's interface value is a (dynamic type, value) pair, so a pointer in one is never merely an
+address: `any((*T)(nil))` is a **non-nil** interface whose `%T` prints `*T` and whose `x.(*T)`
+assert succeeds with a nil result. Two managed renderings break that, and both silently:
+
+- a bare **`null`** boxes as nothing at all — the type is gone, `x == nil` answers Go's `false`
+  with `true`, the assert fails, and the reflection bridge finds no descriptor; and
+- a **deref-aliased** pointer (`ref var p = ref Ꮡp.DerefOrNull()`) rendered by its value alias
+  boxes a **copy of the pointee** — dynamic type `T` where Go says `*T`, pointer identity gone,
+  and a nil one panics at the box instead of crossing intact.
+
+A **non-empty** interface target already satisfies the rule and takes nothing from this: its
+conversion goes through a generated adapter that holds the box and null-coalesces it to the same
+canonical instance (`AdapterImplTemplate`). The **empty** interface (`any`) has no adapter — C#
+boxes the value directly — so the treatment is emitted, as the golib `ж<T>` extension
+`OrTypedNil()` (`box ?? ж<T>.NilBox`; `TypedNilBoxAccessor`):
+
+```go
+var ip *int
+var st struct{ P *AErr }
+sl := make([]*BErr, 1)
+fmt.Printf("%T %T %T\n", ip, st.P, sl[0])   // *int *main.AErr *main.BErr
+```
+```csharp
+ж<nint> ip = default!;
+main_st st = default!;
+var sl = new slice<ж<BErr>>(1);
+fmt.Printf("%T %T %T\n"u8, ip.OrTypedNil(), st.P.OrTypedNil(), sl[0].OrTypedNil());
+```
+
+**Why the BOUNDARY and not the producers.** Emitting the canonical instance for a pointer's zero
+value instead would be incomplete by construction: `var p *T` is an emission the converter owns,
+but a struct's zero value, a `make([]*T, n)` element and a map miss are not — they are C# `default`,
+which no emission intercepts. The boundary is finite and enumerable; the producers are not. It is
+the same set of slots [an untyped constant boxed as `any`](#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
+already routes through, for the same reason (a value's Go dynamic type must survive being boxed):
+call arguments including the variadic `...any` of the fmt family, composite-literal elements, keyed
+**and positional** struct fields, map keys and values, `var` initializers, assignments, returns,
+channel sends, and an explicit `any(p)` conversion. (The positional form is the one `encoding/gob`'s
+`TestNilPointerPanics` table is written in — `[]struct{ value any; mustPanic bool }{{nilStringPtr,
+true}, …}` — where every nil row has to arrive as a typed nil for gob to panic on it as Go does.)
+
+Three BUILT-INs take an `any` slot without ever passing a declared parameter, so each applies the
+boundary at its own emission arm rather than through the parameter loop: `panic`'s value (a
+recovered typed nil must still answer `r.(*T)`), an `[]any` `append` element (the existing
+element-to-`any` cast then wraps the result), and an `any`-keyed map's `delete` key — which has to
+box to the same value the store did, or it matches no entry. None of the three has a corpus site
+today (every `panic` argument in the standard library is an address-of composite, so the census is
+zero), but they are the same boundary and the guard exercises all three.
+
+The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
+struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
+reference, so neither has anything to carry. An address-of (`&x`), a `new(T)`, a `(*T)(nil)` and a
+pointer CONVERSION of any of those (`(*Buffer)(&b)`, log/slog's buffer pool) render non-null by
+construction and are left bare.
+
+Corpus footprint: **465 sites across 145 files** (A/B of two seeded whole-stdlib reconverts), plus
+one site where the deref-alias preamble became dead because the pointer now renders as its box —
+`net/http`'s `http2h1ServerKeepAlivesDisabled(hs *Server)`, whose `var x any = hs` had been boxing a
+`Server` VALUE and then interface-asserting it, so its `doKeepAlives` probe could never match the
+pointer method set. Guarded by the extended `TypedNilInterface` (declared/field/element/map-miss
+nils through every one of those slots, `%T`, `==`, and a type assert, output-compared vs `go run`;
+before the fix it reports `dpi==nil true` where Go says `false` and panics dereferencing a nil box
+on the return path).
 
 ### Pointer-to-interface assignment through selector fields
 A selector assignment whose LHS field is an interface (`h.d = s`) uses the type of the **whole selector expression**, not just the selected identifier name, when deciding whether to wrap the RHS in an interface adapter. If the RHS is a pointer-typed identifier, the adapter receives the pointer box so a dereferenced value alias is not copied into a pointer-only implementation. The generated form matches other pointer-to-interface conversion sites:
@@ -4326,12 +4398,15 @@ func keep(q *pp)     { poolPut(q) }   // a plain *T parameter, same shape
 internal static void free(this ж<pp> Ꮡp) {
     ref var p = ref Ꮡp.Value;
     …
-    poolPut(Ꮡp);                       // NOT poolPut(p) — a pp VALUE loses pointer identity
+    poolPut(Ꮡp.OrTypedNil());          // NOT poolPut(p) — a pp VALUE loses pointer identity
 }
 internal static void keep(ж<pp> Ꮡq) {
-    poolPut(Ꮡq);
+    poolPut(Ꮡq.OrTypedNil());
 }
 ```
+(The `OrTypedNil()` suffix is the other half of the same boundary — see
+[A pointer crossing into an interface carries its static type](#a-pointer-crossing-into-an-interface-carries-its-static-type-however-the-pointer-was-produced),
+which generalized this arm from the call-argument slot to every empty-interface slot.)
 This mirrors the composite-literal element arm above: the argument index is marked `argTypeIsPtr`,
 which convExprList turns into the pointer ident context, so `convIdent` emits the parameter box
 (`Ꮡp`) or the current method's direct-ж receiver box. It fires ONLY for the empty interface — a
@@ -4618,6 +4693,48 @@ the RHS untyped and records the default type on the declared identifier, so the 
 that width. Both paths reuse the same named-constant fold and leave bare references, non-float constants,
 and expressions without a wrapper-emitted named constant unchanged. Guarded by `UntypedConstDefine`;
 `hash/maphash`'s 100,000-sample SMHasher avalanche bounds are the corpus witness.
+
+### `complex()` over a NAMED untyped constant pins the element width
+golib's `complex` builtin is overloaded on element width — `complex(float32, float32) => complex64`,
+`complex(float64, float64) => complex128` — and `UntypedFloat` converts implicitly to **both**. C#
+then applies its better-conversion-target rule, which prefers the **narrower** target (`float32`
+converts to `float64`, not the reverse), so a `complex128` the Go checker typed as such was silently
+constructed at float32 width:
+
+```go
+const maxFloat32 = 3.40282346638528859811704183484516925440e+38
+over := complex(maxFloat32*2, maxFloat32*2)     // complex128, 6.805646932770577e+38
+```
+```csharp
+var over = complex((float64)(maxFloat32 * 2D), (float64)(maxFloat32 * 2D));
+```
+
+Without the casts `over` is `(+Inf+Infi)` — and `encoding/gob`'s `TestOverflow` then found nothing
+out of complex64's range to reject, because `float32FromBits` accepts +Inf at either width. A
+LITERAL argument never had the problem: the untyped-const analysis records the call's element type
+as the argument's context and `convBasicLit` renders the `F`/`D` suffix from it (`complex(1.5D,
+2.5D)`). A **named** untyped const (`Δmath.MaxFloat32`), or a constant expression over one, renders
+as the `UntypedFloat` symbol and cannot carry a width — so exactly those calls pin their untyped
+arguments explicitly, at the element width Go's own typing gives the call
+(`complexCallElementType`, resolving an untyped-complex-constant call through its recorded context
+and Go's `complex128` default). A MIXED call needs nothing and gets nothing: `complex(g, half)` with
+`g` a `float64` was always unambiguous, since `float64` has no implicit conversion to `float32`.
+
+**The rule cannot be expressed from golib's side, and the attempt is instructive.** Naming the
+untyped pair explicitly (`complex(UntypedFloat, UntypedFloat) => complex128`) makes every MIXED call
+ambiguous — `complex(0D, gHalfPi)` has the float64 overload better on the first operand and the
+untyped one better on the second, so neither wins (CS0121). Completing all four width pairings does
+not rescue it either: `UntypedFloat` converts implicitly in **both directions** with `float32` and
+`float64`, so for an operand that is neither — `complex(7/2, 0D)`, an `int` — no candidate is
+strictly better and the ambiguity simply moves. Overload resolution has no way to say "prefer the
+width the *call* was typed at"; only the emitter knows that.
+
+Corpus footprint: **zero**. The trigger is a named-untyped-const operand, and no `complex()` call in
+the standard library (math/cmplx included) has one — every corpus site is either width-pinned
+literals or has a typed operand. Guarded by the extended `ComplexConstContext` (the overflow pair,
+its float32-range question, a named-untyped-const pair in both a complex128 and an explicit
+complex64 context, and the mixed call that must stay unchanged; neuter-proven — with the arm removed
+the guard's `over` prints `(+Inf+Infi)` and `over-fits-float32 true` where Go says `false`).
 
 ### A non-escaping `string([]byte)` local emits the stack-string `sstring`
 Go elides the copy in `s := string(buf)` when `s` does not escape and `buf` is not observed to change,

@@ -96,6 +96,11 @@ func (v *Visitor) convSendValueExpr(sendStmt *ast.SendStmt) string {
 		}
 	}
 
+	// An EMPTY-interface element (`chan any`) needs the same box for the same reason — the
+	// arm above covers the NON-empty interface and the pointer element only. See
+	// typedNilInterfaceBoxing.go.
+	contexts = v.emptyInterfacePointerContexts(elemType, sendStmt.Value, contexts)
+
 	sendExpr := v.convExpr(sendStmt.Value, contexts)
 
 	// A Go array SENT into a channel is copied at the send (`ch <- arr` then `arr[0] = 9` must
@@ -113,6 +118,9 @@ func (v *Visitor) convSendValueExpr(sendStmt *ast.SendStmt) string {
 
 	// An untyped CONSTANT sent into an EMPTY-interface element boxes at Go's default type for its
 	// kind (the numeric twin of the @string boxing above), so a later `x.(int)` / `case int:` on the
-	// received value matches Go's boxed dynamic type rather than a stray System.Int32.
-	return v.boxUntypedConstAsDefaultType(elemType, sendStmt.Value, sendExpr)
+	// received value matches Go's boxed dynamic type rather than a stray System.Int32. The POINTER
+	// twin follows it — a nil pointer carries its Go type across (typedNilInterfaceBoxing.go).
+	sendExpr = v.boxUntypedConstAsDefaultType(elemType, sendStmt.Value, sendExpr)
+
+	return v.boxPointerIntoEmptyInterface(elemType, sendStmt.Value, sendExpr)
 }

@@ -45,6 +45,12 @@ type CallExprContext struct {
 	// (`func(x int) int { return 0 }` inferred Func<nint, int> — Go int32! — collapsing
 	// distinct Go func types under reflection; testing/quick's TestFailure #3). See convFuncLit.
 	emptyInterfaceArgs map[int]bool
+	// anyBoxedPtrArgs marks arguments (and composite-literal elements) whose slot is a real
+	// EMPTY interface and whose value is a Go POINTER: the pointer crosses into interface space
+	// carrying its type, so a null box renders as the canonical typed nil instead (see
+	// typedNilInterfaceBoxing.go). Distinct from argTypeIsPtr, which decides the BOX-vs-value-
+	// alias rendering and fires for pointer slots of every kind.
+	anyBoxedPtrArgs map[int]bool
 	// genericResultInferredFuncArgs marks func-LITERAL arguments whose DECLARED parameter type
 	// is a signature with a type parameter in its RESULT list (`OnceValue[T any](f func() T)`).
 	// C# must infer that type argument FROM THE LAMBDA'S RETURN TYPE, so the arms' natural C#
@@ -99,6 +105,7 @@ func DefaultCallExprContext() *CallExprContext {
 		u8StringArgOK:       make(map[int]bool),
 		useGoStringArg:      make(map[int]bool),
 		argTypeIsPtr:        make(map[int]bool),
+		anyBoxedPtrArgs:     make(map[int]bool),
 		interfaceTypes:      make(map[int]types.Type),
 		hasSpreadOperator:   false,
 		keyValueSource:      StructSource,
