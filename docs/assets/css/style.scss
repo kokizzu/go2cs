@@ -19,6 +19,24 @@ table th code {
   -webkit-box-decoration-break: clone;
 }
 
+/* The theme sizes inline code with an ABSOLUTE `font-size: 0.9rem`, which is only
+   right next to body text (`.main-content` is 1.1rem, so code lands at ~0.82x --
+   barely distinguishable, as intended). Inside a heading it is the same 14.4px
+   against an h1 of 2em/35.2px -- 41% of the surrounding words, so `bufio` in
+   "`bufio` -- validation proof" reads as a footnote rather than as the subject.
+   Re-express the theme's own ratio in `em` so it tracks whatever heading level it
+   lands in, and scale the pill's padding with it (fixed 2px/4px looks pinched
+   around 32px glyphs). Specificity 0,1,2 beats the theme's `.main-content code`. */
+.main-content h1 code,
+.main-content h2 code,
+.main-content h3 code,
+.main-content h4 code,
+.main-content h5 code,
+.main-content h6 code {
+  font-size: 0.9em;
+  padding: 0.1em 0.25em;
+}
+
 /* The CAYMAN THEME block-wraps tables (.main-content table { display:block;
    overflow:auto }) -- that is the source of the bottom-of-table scrollbar: a
    block-wrapped table's inner layout escapes the container's width constraint, so
