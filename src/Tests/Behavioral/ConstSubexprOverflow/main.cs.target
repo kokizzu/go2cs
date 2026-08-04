@@ -91,8 +91,8 @@ internal static void Main() {
 [GoType("num:uintptr")] partial struct Word;
 
 internal static UntypedInt _W => 64;
-internal static readonly GoUntyped _B = /* 1 << _W */
-    GoUntyped.Parse("18446744073709551616");
+internal static readonly GoBigConst _B = /* 1 << _W */
+    GoBigConst.Parse("18446744073709551616");
 internal static UntypedInt _M => /* _B - 1 */ 18446744073709551615;
 
 internal static void showInt32(int32 v) {

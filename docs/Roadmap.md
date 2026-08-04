@@ -103,7 +103,7 @@ Each verified by rebuild + reconvert + compile:
 - `~[]E` slice constraint wrongly given `IEqualityOperators` — `*Slice`/`*Array` cases were backwards and an
   empty constraint-type set counted as a subset of every operator set (`constraintOperations.go`).
 - Switch fallthrough case with a single pattern value emitted an unbalanced `)` (`visitSwitchStmt.go`).
-- Negative typed const (`int8 = -1`) promoted to `GoUntyped` because the range check used `ParseUint`
+- Negative typed const (`int8 = -1`) promoted to `GoBigConst` because the range check used `ParseUint`
   (rejects negatives) → also try `ParseInt` (`visitValueSpec.go`).
 
 ## Phase 3 — Drive the full conversion to compile ✅ done (2026-07-10)

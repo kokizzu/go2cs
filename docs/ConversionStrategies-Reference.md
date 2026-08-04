@@ -650,7 +650,7 @@ Two hard-won rules ride along: the hook name doubles the TempVarMarker (`init` +
 
 Go constants are compile-time values with no initialization order at all, so `types.Info.InitOrder` never mentions them — and for almost every constant that stays true in C#, because a constant C# cannot declare `const` is emitted as a **get-only property** rather than a field (see [Constant Values](#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field)). A property re-evaluates at each read, so it can never be observed at its zero value, whatever the declaration order.
 
-**Two forms cannot be properties**, because re-evaluating them would rebuild an allocation on every read: a **string** constant (`@string`, or a `[GoType("@string")]` wrapper such as `const labelPipe label = "pipe"`, whose `u8` literal the string-literal arc deliberately hoists to a single allocation) and a **GoUntyped** constant (a `BigInteger.Parse`). Those two stay `static readonly` **fields with initializers**, and therefore carry exactly the cross-part field-initializer ordering hazard a package *var* has. The relocation analysis has to supply that dependency edge itself, because Go's own analysis has no reason to model it:
+**Two forms cannot be properties**, because re-evaluating them would rebuild an allocation on every read: a **string** constant (`@string`, or a `[GoType("@string")]` wrapper such as `const labelPipe label = "pipe"`, whose `u8` literal the string-literal arc deliberately hoists to a single allocation) and a **GoBigConst** constant (a `BigInteger.Parse`). Those two stay `static readonly` **fields with initializers**, and therefore carry exactly the cross-part field-initializer ordering hazard a package *var* has. The relocation analysis has to supply that dependency edge itself, because Go's own analysis has no reason to model it:
 
 ```go
 // server.go — a plain string const, so a `static readonly @string` FIELD
@@ -661,7 +661,7 @@ const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 var timeFormats = []string{TimeFormat, time.RFC850, time.ANSIC}
 ```
 
-Read before its initializer runs, `TimeFormat` is the empty `@string`, and `net/http`'s date parsing silently loses its primary format. `collectRefs` records package-scope `*types.Const` references whose emission is an initialized field (`constEmittedAsInitializedField`, keyed off the constant's **value kind** — string always; int, float and complex only where the magnitude escapes to `GoUntyped`), resolved transitively through function bodies on the same memoized graph the var closure uses. A const dependency forces the move under the same two rules a var dependency does: declared in a different file, or later in the same file. A const is of course never itself *relocatable*, so only its declaration site matters.
+Read before its initializer runs, `TimeFormat` is the empty `@string`, and `net/http`'s date parsing silently loses its primary format. `collectRefs` records package-scope `*types.Const` references whose emission is an initialized field (`constEmittedAsInitializedField`, keyed off the constant's **value kind** — string always; int, float and complex only where the magnitude escapes to `GoBigConst`), resolved transitively through function bodies on the same memoized graph the var closure uses. A const dependency forces the move under the same two rules a var dependency does: declared in a different file, or later in the same file. A const is of course never itself *relocatable*, so only its declaration site matters.
 
 The emission side needed the matching half. Relocation lived only in the **non-constant** initializer arm (`tv.Value == nil`), yet a Go-**constant**-valued initializer is just as order-sensitive in C#: Go folds the value at compile time, but the conversion deliberately keeps the *source expression* for readability, and that expression still reads the field:
 
@@ -739,7 +739,7 @@ internal static uintptr MaxUintptr => unchecked((uintptr)18446744073709551615);
 ```
 
 **RESIDUE — the two ALLOCATING const forms stay `static readonly` fields**: `@string` (whose `u8`
-literal the string-literal arc deliberately hoists to a single allocation) and `GoUntyped` (a
+literal the string-literal arc deliberately hoists to a single allocation) and `GoBigConst` (a
 `BigInteger.Parse`). A property would rebuild their value on every read. Neither can serve as an
 array length, so neither reproduces the failure class above — but a package-level variable
 initializer that reads one *before* its declaration point still would, so the residue is handed to
@@ -748,7 +748,7 @@ which draws a relocation edge for exactly these two forms and nothing else.
 
 The two rules divide the problem cleanly and neither is redundant: the property form takes every
 numeric, named-numeric, `uintptr`, complex and untyped constant *out* of the ordering problem, and
-the relocation edge orders the string/`GoUntyped` residue that has to stay in it. Guarded together
+the relocation edge orders the string/`GoBigConst` residue that has to stay in it. Guarded together
 by the `PackageVarInitOrder` behavioral test (cross-file constants consumed by earlier-declared
 vars — directly, through a struct's fixed-array field initializer, and through a constant-folded
 initializer over a named-string const).
@@ -797,7 +797,7 @@ internal static readonly UntypedFloat D = -7.05306122448979611050e-01;
 internal static readonly UntypedFloat folded = /* 19.0 / 35.0 */ 0.5428571428571428;
 ```
 
-A beyond-float64 value still routes to the `GoUntyped` (BigInteger) overflow path unchanged. (Guarded by the `UntypedConstDefine` behavioral test — package-level and function-local high-precision consts printed and compared against Go, which fails with the truncated `0.542857` emission; `SortArrayType` additionally locks the verbatim forms `1.0f`/`3.14e100`.)
+A beyond-float64 value still routes to the `GoBigConst` (BigInteger) overflow path unchanged. (Guarded by the `UntypedConstDefine` behavioral test — package-level and function-local high-precision consts printed and compared against Go, which fails with the truncated `0.542857` emission; `SortArrayType` additionally locks the verbatim forms `1.0f`/`3.14e100`.)
 
 **A FUNCTION-BODY float const referencing a named untyped-float const folds the same way (2026-07-18).** The exact-emission above is a *declaration* rule; the identical double-rounding hazard exists for a compile-time float constant computed in a FUNCTION body that references a named untyped-float const (`math.Pi`, `math.Ln10` — each emitted as a golib `UntypedFloat` wrapper already rounded to float64). Left as runtime C# arithmetic, `float64(100000 * Pi)` becomes `(float64)(100000D * Pi)` and rounds a SECOND time — 314159.2653589793, a ULP below Go's single arbitrary-precision fold 314159.26535897935 (`math`'s `TestLargeCos` was fed a −1-ULP argument; the trig algorithm itself is bit-exact), and `1 / Ln10` in `Log(x) * (1/Ln10)` the same. `foldedNamedFloatConstLiteral` emits the Go-folded value as a `/* <expr> */ <literal>` at the RESOLVED float width, at two sites: a `float64(…)`/`float32(…)` type CONVERSION (`convCallExpr`, restricted to a *basic* float target so a named float type keeps its `[GoType]` wrapper path) and a computed-const OPERAND being cast to a concrete float in a binary expression (`convBinaryExprCore`, reusing the sibling's resolved type). The width is honored exactly — a float32 target rounds the exact constant STRAIGHT to float32 (`exactFloatText`'s `constant.Float32Val`), never through a float64 intermediate, which would double-round *differently* than Go's single round-to-float32. Gated to a COMPUTED float const that references a named untyped const: a bare named-const reference already renders as a single-rounded wrapper, and a pure-literal float const (`1.5 * 2.0`, no named ref) computes exactly in C# double and keeps its readable operator form. Cleared `math`'s `TestLargeCos/Sin/Tan/Sincos` + `TestLog10` (68 → 73 / 77) by folding 34 sites across the sin/tan/atan/erf/jN/lgamma/pow families; the emission is a no-op on the behavioral corpus (nothing there exercises the pattern). (Guarded by the `NamedConstFloatFold` behavioral test — a `float64(100000*myPi)` conversion, its float32 counterpart, and a `1/myLn10` typed-float64 operand, output-compared vs Go.)
 
@@ -821,7 +821,7 @@ t *= G + F / (s + E + D / s);
 The guards are deliberately conservative — any doubt keeps today's `Untyped*` wrapper form:
 
 - **Function-local only** (package-level constants keep the wrapper: they are visible across functions whose contexts may differ, including from other files of the package).
-- **Untyped integer/rune/float/COMPLEX**, excluding any value on the `GoUntyped` (BigInteger) path. (Untyped complex was excluded while `complex128` had no non-`const` emission; a representable complex const now emits `static readonly` like `uintptr`, and the wrapper it replaces is actively *wrong* for it — see *A complex constant emits a complex VALUE* below. A complex use type tightens only an untyped-COMPLEX const: the converter never *widens* an untyped integer const to `complex128` because one use happens to be complex-typed.)
+- **Untyped integer/rune/float/COMPLEX**, excluding any value on the `GoBigConst` (BigInteger) path. (Untyped complex was excluded while `complex128` had no non-`const` emission; a representable complex const now emits `static readonly` like `uintptr`, and the wrapper it replaces is actively *wrong* for it — see *A complex constant emits a complex VALUE* below. A complex use type tightens only an untyped-COMPLEX const: the converter never *widens* an untyped integer const to `complex128` because one use happens to be complex-typed.)
 - **Every use must record a concrete numeric basic type** in go/types' `Info.Types`, and all uses must agree on ONE basic kind. go/types records the implicit-conversion target for an untyped operand (`float64` for `C + x` with `x float64`), so a use that stays untyped (another constant's initializer), resolves to a NAMED type or type parameter, or records a non-numeric type (`string(c)`) disqualifies — as do mixed concrete types (`float64` and `float32` uses of one constant).
 - **No use may participate in constant folding**: an ancestor expression carrying a folded constant value (`uint64(B1) << 32` — cbrt's B1/B2 stay `UntypedInt`) disqualifies. Go folds untyped constant expressions at arbitrary precision; re-expressing an operand at a concrete C# type could change the folded result (or re-fold it in C#'s checked int32 arithmetic).
 - The exact value is re-checked representable in the resolved type (belt-and-braces — go/types already validated each use's conversion).
@@ -854,7 +854,7 @@ internal static readonly complex64 c64 = /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
 
 The receiver's `F`/`D` suffix selects the golib `i()` overload (`i(this float)` → `complex64`, `i(this double)` → `complex128`) exactly as a written literal's does, and each half's implicit float→complex conversion closes the `+`. A ZERO real part renders as the bare imaginary literal (`3D.i()` — the Go source form of `3i`); a NEGATIVE imaginary part composes as written, because member invocation binds tighter than unary minus, so `2.25D + -0.75D.i()` is 2.25 + −(0.75·i).
 
-**Why the halves are tested individually.** Representability was previously decided by handing `go/constant`'s `Value.ExactString()` to `strconv.ParseComplex`. That text is the parenthesized RATIONAL form — `5.5+1.5i` is `(11/2 + 3/2i)` — which is neither C# syntax nor a form `ParseComplex` accepts (its grammar is Go *literal* syntax: no parentheses, no spaces around the sign, no `p/q`). The test could therefore never succeed: **every** complex constant, however ordinary, was classified as beyond-`complex128` and emitted through the `GoUntyped` arm — whose `BigInteger.Parse` cannot represent a complex at all. `strconv`'s `atoc_test.go` (`const want = 1.5e308 + 1.0e307i`, a value that fits `complex128` with room to spare) failed to compile on `c != want` (CS0019, `Complex` vs `GoUntyped`). Each half is now rendered and range-tested on its own at the declaration's element width; only a genuinely unrepresentable value keeps the `GoUntyped` arm, and that emission now **warns**, because it is knowingly lossy.
+**Why the halves are tested individually.** Representability was previously decided by handing `go/constant`'s `Value.ExactString()` to `strconv.ParseComplex`. That text is the parenthesized RATIONAL form — `5.5+1.5i` is `(11/2 + 3/2i)` — which is neither C# syntax nor a form `ParseComplex` accepts (its grammar is Go *literal* syntax: no parentheses, no spaces around the sign, no `p/q`). The test could therefore never succeed: **every** complex constant, however ordinary, was classified as beyond-`complex128` and emitted through the `GoBigConst` arm — whose `BigInteger.Parse` cannot represent a complex at all. `strconv`'s `atoc_test.go` (`const want = 1.5e308 + 1.0e307i`, a value that fits `complex128` with room to spare) failed to compile on `c != want` (CS0019, `Complex` vs `GoBigConst`). Each half is now rendered and range-tested on its own at the declaration's element width; only a genuinely unrepresentable value keeps the `GoBigConst` arm, and that emission now **warns**, because it is knowingly lossy.
 
 A FUNCTION-LOCAL untyped complex const additionally tightens to its single concrete use type (the tightening pass above), which the wrapper form cannot substitute for: `UntypedComplex` converts implicitly to *and* from `complex128`, so comparing a wrapper-typed const against a `complex128` is AMBIGUOUS (CS0034) — `atoc_test`'s `TestParseComplexIncorrectBitSize` is exactly that shape, and it emits `complex128 want = …`. (Guarded by the `ComplexConstContext` behavioral test — rational halves, a negative imaginary part, a pure imaginary, the beyond-1e308-real strconv shape, a folded complex expression, a `complex64`-typed const, and a function-local const, all output-compared vs Go.)
 
@@ -1254,7 +1254,7 @@ uint64 a = 100;
 _ = a * (uint64)two32 + 3;
 ```
 
-A constant too large for `int64`/`uint64` (or `float64`) is emitted as `GoUntyped` (=
+A constant too large for `int64`/`uint64` (or `float64`) is emitted as `GoBigConst` (=
 `System.Numerics.BigInteger`), which has **no** implicit operator with the built-in numeric types.
 Unlike an `UntypedInt`/`UntypedFloat` wrapper, that makes a bare reference a hard error in *every*
 concrete numeric context, not merely a resolution hazard in arithmetic — so the cast belongs to the
@@ -1267,8 +1267,8 @@ var ftoatests = []ftoaTest{{below1e23, 'e', 17, "9.99999999999999748e+22"}}
 _ = x > Two129                     // Two129 = 1<<129
 ```
 ```csharp
-internal static readonly GoUntyped below1e23 = /* 99999999999999974834176 */
-    GoUntyped.Parse("99999999999999974834176");
+internal static readonly GoBigConst below1e23 = /* 99999999999999974834176 */
+    GoBigConst.Parse("99999999999999974834176");
 internal static slice<ftoaTest> ftoatests = new ftoaTest[]{
     new((float64)below1e23, (rune)'e', 17, "9.99999999999999748e+22"u8)}.slice();
 _ = x > (float64)Two129;
@@ -1287,7 +1287,7 @@ The reference is kept readable rather than folded to a literal, the same call
 extended from comparison-only to every position, with an in-range `UntypedInt` const as the
 must-stay-uncast counter-control.)
 
-#### An INTEGER expression over a `GoUntyped` constant folds — it has no 64-bit form
+#### An INTEGER expression over a `GoBigConst` constant folds — it has no 64-bit form
 The `(float64)Two129` cast above works because BigInteger converts to `double`. An **integer** target has
 no such luck: `(uint64)mask` on a 128-bit BigInteger throws `System.OverflowException` at run time. That is
 not a corner case — it is the shape of the Go standard library's whole-width byte-classification bitmap
@@ -1308,10 +1308,10 @@ Both halves are `uint64`-valued constants, so both must emit as the go/types-rec
 only unrepresentable operand is the *reference*, which the shift path retyped to the shift's resolved width
 (`((uint64)mask).Rsh(64)`) and threw. `overflowingConstLiteral` therefore also folds on
 `constExprHasBeyondUint64UntypedConstRef` — any PROPER subexpression that is a named untyped-const
-reference fitting neither int64 nor uint64 (the `GoUntyped` emission, `isBigIntegerBackedConstRef`):
+reference fitting neither int64 nor uint64 (the `GoBigConst` emission, `isBigIntegerBackedConstRef`):
 
 ```csharp
-GoUntyped mask = /* 0 | (1<<26-1)<<'A' | … */ GoUntyped.Parse("10633823862292363665388054147449749504");
+GoBigConst mask = /* 0 | (1<<26-1)<<'A' | … */ GoBigConst.Parse("10633823862292363665388054147449749504");
 return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) |
         (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460746666278911UL)))) != 0;
 ```
@@ -1901,7 +1901,7 @@ plumbing; the other positions wrap through `boxUntypedConstAsDefaultType`.
   parameter), where a bare int literal already converts implicitly. Every gate uses
   `isEmptyInterfaceTarget` (which excludes type parameters), unlike the u8-span→`@string` case, where
   a `K=string` parameter genuinely needs the cast to bind.
-- An untyped **COMPLEX** constant is out of scope: a named one renders as golib `GoUntyped` (a
+- An untyped **COMPLEX** constant is out of scope: a named one renders as golib `GoBigConst` (a
   `BigInteger.Parse` of the literal text — `visitValueSpec`'s `writeUntypedConst` path, with its own
   standing TODO), a separate pre-existing gap that a `(complex128)` cast would not close. A complex
   *literal* renders `1D + 2D.i()` and already boxes as `complex128`.

@@ -135,7 +135,7 @@ internal static void initᴛprocSetFilePointerEx() { procSetFilePointerEx = modk
 ```
 
 A **constant** can be a dependency too, but only the two forms that stay initialized fields rather
-than [get-only properties](#constant-values) — a string const and a `GoUntyped` const. Go lists no
+than [get-only properties](#constant-values) — a string const and a `GoBigConst` const. Go lists no
 initialization order for constants at all, so that edge is one the conversion has to add itself.
 
 **Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference.md#package-level-variable-initialization-order) —
@@ -182,7 +182,7 @@ get-only **property**, not a `static readonly` field. A Go constant has no initi
 while C# runs static field *initializers* in class-textual order, so as a field a constant could be
 read as its type's DEFAULT by any package-level variable declared ahead of it — silently. That is how
 `compress/flate`'s Huffman decode table was allocated at length 0 instead of 512. (Two allocating
-forms — `@string` and `GoUntyped` — stay fields on purpose; see the
+forms — `@string` and `GoBigConst` — stay fields on purpose; see the
 [reference](ConversionStrategies-Reference.md#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field).)
 
 Float constant values emit **exactly**: the Go source literal verbatim when it is valid C#, else the

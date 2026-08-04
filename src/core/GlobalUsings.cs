@@ -2,7 +2,7 @@
 global using float32 = global::System.Single;
 global using float64 = global::System.Double;
 global using GoTag = global::System.ComponentModel.DescriptionAttribute;
-global using GoUntyped = global::System.Numerics.BigInteger;
+global using GoBigConst = global::System.Numerics.BigInteger;
 global using int16 = global::System.Int16;
 global using int32 = global::System.Int32;
 global using int64 = global::System.Int64;

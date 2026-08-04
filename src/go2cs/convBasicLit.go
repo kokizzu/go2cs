@@ -263,7 +263,7 @@ func isValidCSharpRealLiteral(lit string) bool {
 //     single rounding Go applies converting the exact constant), 64 otherwise. This covers
 //     folded const expressions and Go-only literal forms (hex floats, trailing-dot).
 //
-// A beyond-float64 value keeps the shortened String() form so the GoUntyped overflow path
+// A beyond-float64 value keeps the shortened String() form so the GoBigConst overflow path
 // (strconv.ParseFloat fails → writeUntypedConst) still triggers exactly as before.
 func exactFloatConstString(val constant.Value, source ast.Expr, isFloat32 bool) string {
 	lit := ""
@@ -317,8 +317,8 @@ func exactFloatText(val constant.Value, lit string, isFloat32 bool) string {
 // (its grammar is Go *literal* syntax: no parentheses, no spaces around the sign, no `p/q`). So
 // testing that whole text with ParseComplex was a representability check that could NEVER pass, and
 // every complex constant — however ordinary — was misclassified as beyond-complex128 and emitted
-// through the GoUntyped arm, whose BigInteger.Parse cannot hold a complex at all (strconv
-// atoc_test's `const want = 1.5e308 + 1.0e307i` → CS0019 comparing GoUntyped to a complex128).
+// through the GoBigConst arm, whose BigInteger.Parse cannot hold a complex at all (strconv
+// atoc_test's `const want = 1.5e308 + 1.0e307i` → CS0019 comparing GoBigConst to a complex128).
 //
 // Each HALF is rendered and range-tested exactly like a float const (exactFloatText, which handles
 // the rational and hex-float forms), then recombined in the postfix `.i()` form convBasicLit's IMAG

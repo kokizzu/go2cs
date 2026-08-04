@@ -2939,7 +2939,7 @@ func typeParamIsSliceElementOfSibling(sig *types.Signature, tp *types.TypeParam)
 // Keying the kind off info.Types[arg] (rather than the AST shape) reads the type go/types has already
 // DEFAULTED for the interface slot, so a literal (`42`), a unary (`-5`), a binary (`1 + 2`), and a
 // named untyped const are all classified by the same rule. An untyped COMPLEX constant is deliberately
-// excluded: a named one renders as golib `GoUntyped` (a BigInteger parse — visitValueSpec's
+// excluded: a named one renders as golib `GoBigConst` (a BigInteger parse — visitValueSpec's
 // writeUntypedConst path, with its own standing TODO), which is a separate pre-existing gap that a
 // `(complex128)` cast would not close.
 func (v *Visitor) untypedConstBoxCast(arg ast.Expr) string {

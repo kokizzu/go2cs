@@ -121,7 +121,7 @@ func (v *Visitor) isCSharpConstObject(obj types.Object) bool {
 
 	basic, ok := constObj.Type().(*types.Basic)
 
-	// A named-type const, or an untyped const (emitted as an Untyped* wrapper / GoUntyped), is
+	// A named-type const, or an untyped const (emitted as an Untyped* wrapper / GoBigConst), is
 	// `static readonly`, not a C# `const`.
 	return ok && basic.Info()&types.IsUntyped == 0
 }

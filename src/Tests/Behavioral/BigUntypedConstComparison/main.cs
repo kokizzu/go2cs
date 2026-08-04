@@ -4,12 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-public static readonly GoUntyped Two129 = /* 1 << 129 */
-    GoUntyped.Parse("680564733841876926926749214863536422912");
-internal static readonly GoUntyped below1e23 = /* 99999999999999974834176 */
-    GoUntyped.Parse("99999999999999974834176");
-internal static readonly GoUntyped above1e23 = /* 100000000000000008388608 */
-    GoUntyped.Parse("100000000000000008388608");
+public static readonly GoBigConst Two129 = /* 1 << 129 */
+    GoBigConst.Parse("680564733841876926926749214863536422912");
+internal static readonly GoBigConst below1e23 = /* 99999999999999974834176 */
+    GoBigConst.Parse("99999999999999974834176");
+internal static readonly GoBigConst above1e23 = /* 100000000000000008388608 */
+    GoBigConst.Parse("100000000000000008388608");
 internal static UntypedInt small => 1000;
 
 [GoType] partial struct ftoaTest {

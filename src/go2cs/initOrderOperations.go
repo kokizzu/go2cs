@@ -43,7 +43,7 @@ const PackageInitFileName = "package_init.cs"
 // directly or through function calls"). Keyed by the var's types.Object (interned per variable).
 //
 // A dependency is not only a package VAR. A Go CONSTANT whose C# form is an INITIALIZED FIELD —
-// the string and GoUntyped residue that cannot be a get-only property
+// the string and GoBigConst residue that cannot be a get-only property
 // (constEmittedAsInitializedField) — is an ordinary static field initializer too, so it carries
 // the identical hazard even though Go treats it as compile-time and lists no initialization order
 // for it at all. Every other const C# cannot declare `const` is emitted as a property and is
@@ -178,7 +178,7 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 
 	// Same transitive closure over the INITIALIZED-FIELD CONSTS a function reaches. A Go constant
 	// whose value is a string (`const labelPipe label = "pipe"`), or whose magnitude escapes to
-	// GoUntyped, has neither a C# `const` form nor a property form — it is emitted as a
+	// GoBigConst, has neither a C# `const` form nor a property form — it is emitted as a
 	// `static readonly` FIELD (see constEmittedAsInitializedField), so it is subject to exactly
 	// the cross-part field-initializer ordering C# leaves undefined, just like a package var.
 	constClosureCache := map[*types.Func]map[*types.Const]bool{}
@@ -372,7 +372,7 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 //   - a STRING-valued const (`static readonly @string s = "x"u8`, or a named-string wrapper such as
 //     `const labelPipe label = "pipe"`) — the hoisted u8 literal;
 //   - a const whose magnitude escapes every C# numeric type and falls to
-//     `static readonly GoUntyped x = GoUntyped.Parse(…)` — a BigInteger parse.
+//     `static readonly GoBigConst x = GoBigConst.Parse(…)` — a BigInteger parse.
 //
 // Mirrors those two emission decisions in visitValueSpec.go's CONST arm (the `constant.String` arm
 // and `writeUntypedConst`). Where mirroring is not cheap it ERRS TOWARD `true`, because a false
@@ -389,13 +389,13 @@ func constEmittedAsInitializedField(c *types.Const) bool {
 		// string const is a `static readonly` field at package scope regardless of its Go type.
 		return true
 	case constant.Complex:
-		// A complex const beyond its declared width falls to GoUntyped; a representable one is a
+		// A complex const beyond its declared width falls to GoBigConst; a representable one is a
 		// property. Distinguishing the two here would mean re-deriving exactComplexConstString's
 		// per-width test, so take the safe side — package-level complex consts are vanishingly rare
 		// and the only cost is a redundant relocation.
 		return true
 	case constant.Int:
-		// GoUntyped.Parse is reached only when the value fits NEITHER int64 nor uint64; everything
+		// GoBigConst.Parse is reached only when the value fits NEITHER int64 nor uint64; everything
 		// narrower has a numeric C# form and therefore a property form.
 		if _, exact := constant.Int64Val(c.Val()); exact {
 			return false
@@ -406,7 +406,7 @@ func constEmittedAsInitializedField(c *types.Const) bool {
 		return !exact
 	case constant.Float:
 		// Likewise: only a magnitude outside float64 (the `strconv.ParseFloat` failure the emission
-		// tests) escapes to GoUntyped. Float64Val saturates to ±Inf there.
+		// tests) escapes to GoBigConst. Float64Val saturates to ±Inf there.
 		value, _ := constant.Float64Val(c.Val())
 
 		return math.IsInf(value, 0)

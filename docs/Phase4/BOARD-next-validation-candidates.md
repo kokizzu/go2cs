@@ -2164,6 +2164,11 @@ another, force `go build -o bin/go2cs.exe` and re-measure before recording a cou
 3. **Timer mode-0 divergence ruling DEFERRED** until the recorded one-fire-per-pass timer-model
    fix lands and reshapes the residual — no ruling on a measurement about to change.
 4. **`GoUntyped` → `GoBigConst`** (see the charter §6.1 math/big row); rides the rebank.
+   **LANDED 2026-08-04 (r40-rebank, commit A)** — a pure rename of the `System.Numerics.BigInteger`
+   csproj `<Using Alias>`: converter emission + templates, `golib.csproj`, the behavioral goldens
+   that carry it, and the strategy docs. The corpus said `GoUntyped` until the rebank's own regen
+   levelled it in commit B. The behavioral project `GoUntypedConstArg` keeps its name — it is named
+   for the Go-language *untyped const* concept, not for the C# alias.
 5. **The native-address+managed-snapshot pointer flavor is DEFERRED** until `net`'s DNS work
    demands it; then a design-with-user session — not designed against one test.
 6. **Whole-corpus rebank: scheduled immediately after the r37 train lands** (carries the

@@ -350,13 +350,13 @@ var golibAliasSafeNames = map[string]string{
 	"complex128": "System.Numerics.Complex",
 	"rune":       "int",
 	"any":        "object",
-	"GoUntyped":  "System.Numerics.BigInteger",
+	"GoBigConst": "System.Numerics.BigInteger",
 }
 
 // Matches a golib csproj-alias name standing alone as an identifier: at string start or after a
 // type-syntax delimiter (`<`, `(`, `,`, space) - deliberately NOT after `.`, so a package-
 // qualified user type that happens to share a builtin name is left untouched.
-var golibAliasNameExpr = regexp.MustCompile(`(^|[<(, ])(uint8|uint16|uint32|uint64|int8|int16|int32|int64|float32|float64|complex128|rune|any|GoUntyped)\b`)
+var golibAliasNameExpr = regexp.MustCompile(`(^|[<(, ])(uint8|uint16|uint32|uint64|int8|int16|int32|int64|float32|float64|complex128|rune|any|GoBigConst)\b`)
 
 // getUsingAliasSafeTypeName rewrites golib csproj-alias type names inside a rendered C# type
 // name into forms that resolve in a `using` alias RHS. Applied ONLY when emitting

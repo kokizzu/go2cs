@@ -190,7 +190,7 @@ func (v *Visitor) isUntypedNamedIntegerConstRef(expr ast.Expr) bool {
 }
 
 // isBigIntegerBackedConstRef reports whether the expression references an untyped numeric constant
-// whose value does not fit int64/uint64 (or float64) and is therefore emitted as `GoUntyped`
+// whose value does not fit int64/uint64 (or float64) and is therefore emitted as `GoBigConst`
 // (= System.Numerics.BigInteger). Such a constant has no implicit operator with the built-in
 // numeric types, so it must be cast even in comparisons.
 func (v *Visitor) isBigIntegerBackedConstRef(expr ast.Expr) bool {
@@ -689,7 +689,7 @@ func (v *Visitor) constExprHasBeyondInt64UntypedOperatorSubexpr(expr ast.Expr) b
 
 // constExprHasBeyondUint64UntypedConstRef reports whether any PROPER subexpression of the constant
 // expression REFERENCES a named untyped constant whose value fits neither int64 nor uint64 — the
-// shape emitted as golib's `GoUntyped` wrapper over a System.Numerics.BigInteger (see
+// shape emitted as golib's `GoBigConst` wrapper over a System.Numerics.BigInteger (see
 // isBigIntegerBackedConstRef). Such a reference has NO 64-bit materialization: every emission that
 // gives it a width casts the wrapper (`(uint64)mask`, from the shift guard's receiver retype), and
 // BigInteger's explicit numeric conversion THROWS System.OverflowException at run time.
@@ -735,7 +735,7 @@ func (v *Visitor) constExprHasBeyondUint64UntypedConstRef(expr ast.Expr) bool {
 // context's explicit cast — or "" when expr is not such a reference, or the context has no concrete
 // numeric type, or the rendering already carries the cast.
 //
-// A constant too large for int64/uint64 emits as golib `GoUntyped` (= System.Numerics.BigInteger),
+// A constant too large for int64/uint64 emits as golib `GoBigConst` (= System.Numerics.BigInteger),
 // which has NO implicit conversion to any built-in numeric type — a bare reference is a hard CS1503
 // wherever a concrete numeric value is required. Only the COMPARISON arm of convBinaryExpr cast it
 // (`x > (float64)Two129`), so every other position emitted bare: strconv's `[]ftoaTest{{below1e23,
@@ -1522,7 +1522,7 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		// `x + 2*3` has no wrapper and is left alone).
 		//
 		// COMPARISON needs nothing here: the only operand shape that could not resolve is a
-		// BigInteger-backed reference (`x > Two129` — GoUntyped has no implicit operator with
+		// BigInteger-backed reference (`x > Two129` — GoBigConst has no implicit operator with
 		// `double`, CS0019), and bigIntegerConstMaterialization now casts such a reference at the
 		// reference itself, in EVERY concrete numeric context. Re-casting here would only double it
 		// (`(float64)(float64)Two129` — the bare-ident form carries no parens, so the

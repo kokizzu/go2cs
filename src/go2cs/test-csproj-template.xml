@@ -94,7 +94,7 @@
     <Using Include="System.Double" Alias="float64" />
     <Using Include="System.Numerics.Complex" Alias="complex128" />
     <Using Include="System.Int32" Alias="rune" />
-    <Using Include="System.Numerics.BigInteger" Alias="GoUntyped" />
+    <Using Include="System.Numerics.BigInteger" Alias="GoBigConst" />
     <Using Include="System.ComponentModel.DescriptionAttribute" Alias="GoTagAttribute" />
     <Using Include="System.Runtime.CompilerServices.ModuleInitializerAttribute" Alias="GoInitAttribute" />
   </ItemGroup>

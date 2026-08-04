@@ -704,7 +704,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			var constVal string
 
 			// Whether a COMPLEX-kind constant's value fits the declaration's complex width (and so
-			// rendered as a real complex value rather than falling to the GoUntyped arm below).
+			// rendered as a real complex value rather than falling to the GoBigConst arm below).
 			complexRepresentable := false
 
 			if c.Val().Kind() == constant.String && len(valueSpec.Values) >= i+1 {
@@ -796,9 +796,9 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				}
 
 				if v.inFunction {
-					v.writeOutput("GoUntyped %s = /* ", csIDName)
+					v.writeOutput("GoBigConst %s = /* ", csIDName)
 				} else {
-					v.writeOutput("%s static readonly GoUntyped %s = /* ", access, csIDName)
+					v.writeOutput("%s static readonly GoBigConst %s = /* ", access, csIDName)
 				}
 
 				if len(valueSpec.Values) >= i+1 {
@@ -809,14 +809,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				v.writeComment(valueSpec.Comment, tokEnd+token.Pos(len(access)-5))
 				v.outputBuilder.WriteString(v.newline)
 
-				v.writeOutput("%sGoUntyped.Parse(\"%s\");", v.indent(v.indentLevel+1), constVal)
+				v.writeOutput("%sGoBigConst.Parse(\"%s\");", v.indent(v.indentLevel+1), constVal)
 				constHandled = true
 			}
 
 			if c.Val().Kind() == constant.Int {
 				// Use an untyped (BigInteger) const only when the value fits in
 				// neither uint64 nor int64. ParseUint alone rejects negatives, which
-				// would wrongly promote ordinary negative consts (e.g. -1) to GoUntyped.
+				// would wrongly promote ordinary negative consts (e.g. -1) to GoBigConst.
 				_, errUint := strconv.ParseUint(constVal, 0, 64)
 				_, errInt := strconv.ParseInt(constVal, 0, 64)
 				if errUint != nil && errInt != nil {
@@ -833,7 +833,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			}
 
 			if c.Val().Kind() == constant.Complex && !complexRepresentable {
-				// A complex constant beyond the declaration's width has NO C# form: GoUntyped is a
+				// A complex constant beyond the declaration's width has NO C# form: GoBigConst is a
 				// BigInteger and cannot hold a complex at all, so this emission is knowingly lossy.
 				// Warn rather than silently emit something that is not the constant. (Before the
 				// representability test was fixed, EVERY complex const took this arm — see
@@ -949,7 +949,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				// also a valid C# literal (hex/binary/`_` separators — preserveGoIntLiteral):
 				// `const m5 = 0x1d8e4e27c47d124f` emits the hex directly, which also elides the
 				// now-redundant `/* original */` comment below. Folded expressions/iota keep the
-				// comment form; the GoUntyped path above keeps the decimal (BigInteger.Parse).
+				// comment form; the GoBigConst path above keeps the decimal (BigInteger.Parse).
 				if c.Val().Kind() == constant.Int && len(valueSpec.Values) >= i+1 {
 					if lit, ok := valueSpec.Values[i].(*ast.BasicLit); ok && lit.Kind == token.INT {
 						constVal = preserveGoIntLiteral(lit.Value, constVal)
@@ -1054,7 +1054,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// observed and the JIT folds the literal at every use — the Go semantics
 					// exactly. RESIDUE: the two ALLOCATING const forms stay fields, because a
 					// property would rebuild their value on every read — `@string` (the u8-literal
-					// hoisting the string-literal arc introduced) and `GoUntyped` (a BigInteger
+					// hoisting the string-literal arc introduced) and `GoBigConst` (a BigInteger
 					// parse). Both remain order-sensitive; neither can serve as an array length.
 					v.writeOutput("%s static %s %s =>%s %s;", access, csTypeName, csIDName, orgExpr, constValExpr)
 				}

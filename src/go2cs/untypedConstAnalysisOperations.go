@@ -35,7 +35,7 @@ import (
 //     replaces is actively WRONG here: UntypedComplex converts implicitly in BOTH directions, so
 //     comparing a wrapper-typed const against a complex128 is AMBIGUOUS, CS0034 — strconv
 //     atoc_test's TestParseComplexIncorrectBitSize `c != want`.)
-//   - Its value fits the native numeric range — a value needing the GoUntyped (BigInteger)
+//   - Its value fits the native numeric range — a value needing the GoBigConst (BigInteger)
 //     emission is never tightened (mirrors visitValueSpec's writeUntypedConst triggers).
 //   - EVERY use records a concrete (non-untyped) NUMERIC *types.Basic in
 //     go/types' Info.Types, and all uses record the SAME basic kind. go/types records the
@@ -88,7 +88,7 @@ func (v *Visitor) performUntypedConstAnalysis(funcDecl *ast.FuncDecl) {
 					continue
 				}
 
-				if constNeedsGoUntyped(c.Val()) {
+				if constNeedsGoBigConst(c.Val()) {
 					continue
 				}
 
@@ -234,11 +234,11 @@ func (v *Visitor) tightenedNarrowConstRef(expr ast.Expr) bool {
 	return false
 }
 
-// constNeedsGoUntyped reports whether a constant value routes to visitValueSpec's GoUntyped
+// constNeedsGoBigConst reports whether a constant value routes to visitValueSpec's GoBigConst
 // (BigInteger) emission — an integer that fits neither int64 nor uint64, or a float beyond
 // float64. EXACTLY mirrors the writeUntypedConst triggers (which parse the emitted value
 // text), so a tightened const can never reach that path.
-func constNeedsGoUntyped(val constant.Value) bool {
+func constNeedsGoBigConst(val constant.Value) bool {
 	switch val.Kind() {
 	case constant.Int:
 		s := val.ExactString()
