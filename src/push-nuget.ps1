@@ -210,7 +210,7 @@ if (-not (Test-Path $currentProofs)) {
 
     foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
         $text = [System.IO.File]::ReadAllText($readme.FullName)
-        if ($text -notmatch 'badge/Go_tests-(\d+)%2F(\d+)_validated-brightgreen') { continue }
+        if ($text -notmatch 'badge/Tests-(\d+)%2F(\d+)_validated-brightgreen') { continue }
 
         $badgeMatched = [int]$Matches[1]
         $badgeTotal = [int]$Matches[2]

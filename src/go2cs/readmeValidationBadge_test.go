@@ -115,7 +115,7 @@ func TestValidationBadgeGreenPinsCountsAndVersionedProofLink(t *testing.T) {
 	addProofPage(t, root, "io", 59, 2)
 	mustWriteFile(t, filepath.Join(projectPath, "io"+testProjectFileSuffix), "<Project />")
 
-	const expected = "[![Go tests](https://img.shields.io/badge/Go_tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)"
+	const expected = "[![Tests](https://img.shields.io/badge/Tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)"
 
 	if badge := readmeValidationBadgeLine(projectPath, "io", ""); badge != expected {
 		t.Fatalf("green badge mismatch\n got: %s\nwant: %s", badge, expected)
@@ -129,7 +129,7 @@ func TestValidationBadgeGreenUsesDotIDForNestedPackages(t *testing.T) {
 	addProofPage(t, root, "path.filepath", 40, 0)
 	mustWriteFile(t, filepath.Join(projectPath, "path.filepath"+testProjectFileSuffix), "<Project />")
 
-	const expected = "[![Go tests](https://img.shields.io/badge/Go_tests-40%2F40_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/path.filepath.html)"
+	const expected = "[![Tests](https://img.shields.io/badge/Tests-40%2F40_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/path.filepath.html)"
 
 	if badge := readmeValidationBadgeLine(projectPath, "path.filepath", ""); badge != expected {
 		t.Fatalf("green badge mismatch\n got: %s\nwant: %s", badge, expected)
@@ -149,7 +149,7 @@ func TestValidationBadgeOrangeForUnvalidatedTestSuite(t *testing.T) {
 		"benchmark_test.go": "package fmt\n\nimport \"testing\"\n\nfunc BenchmarkX(b *testing.B) {}\n",
 	})
 
-	const expected = "[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)"
+	const expected = "[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)"
 
 	if badge := readmeValidationBadgeLine(projectPath, "fmt", sourceDir); badge != expected {
 		t.Fatalf("orange badge mismatch\n got: %s\nwant: %s", badge, expected)
@@ -167,7 +167,7 @@ func TestValidationBadgeGreyForPackageWithoutTests(t *testing.T) {
 		"doc.go": "package like\n",
 	})
 
-	const expected = "[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)"
+	const expected = "[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)"
 
 	if badge := readmeValidationBadgeLine(projectPath, "unsafe.like", sourceDir); badge != expected {
 		t.Fatalf("grey badge mismatch\n got: %s\nwant: %s", badge, expected)

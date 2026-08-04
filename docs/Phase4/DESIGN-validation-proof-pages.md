@@ -96,13 +96,15 @@ sheets, each one `go test` agreeing with the C#, test by test.
 ## The badge (implemented 2026-08-02)
 
 One badge-only line per package README, its own paragraph between the attribution blockquote and the
-godoc body. No emoji, no trailing text link — **the badge IS the proof link**:
+godoc body. No emoji, no trailing text link — **the badge IS the proof link**. Label reduced from
+`Go_tests` to `Tests` by user ruling 2026-08-03: the `?logo=go` gopher already says Go, so the word
+in the label was redundant.
 
 | State | Badge | Links |
 |:--|:--|:--|
-| validated | `Go_tests-<m>%2F<t>_validated-brightgreen` | `go2cs.net/validation/<version>/<dot-id>.html` |
-| has tests, not yet validated | `Go_tests-not_yet_validated-orange` | `go2cs.net/ValidatedTestPackages.html` |
-| no tests | `Go_tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
+| validated | `Tests-<m>%2F<t>_validated-brightgreen` | `go2cs.net/validation/<version>/<dot-id>.html` |
+| has tests, not yet validated | `Tests-not_yet_validated-orange` | `go2cs.net/ValidatedTestPackages.html` |
+| no tests | `Tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
 
 `<m>` is matched and `<t>` is matched + disclosed, both read off the package's living proof page, so
 the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is

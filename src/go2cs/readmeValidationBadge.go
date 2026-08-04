@@ -125,7 +125,7 @@ func readmeValidationBadgeLine(projectPath string, projectName string, sourceDir
 // validationBadge renders one shields.io badge as a Markdown image link. The message is already
 // shields-encoded by the caller (spaces as underscores, "/" as %2F).
 func validationBadge(message string, color string, target string) string {
-	return fmt.Sprintf("[![Go tests](https://img.shields.io/badge/Go_tests-%s-%s?logo=go)](%s)", message, color, target)
+	return fmt.Sprintf("[![Tests](https://img.shields.io/badge/Tests-%s-%s?logo=go)](%s)", message, color, target)
 }
 
 // publishedPackageVersion reads the four-part published version (`1.23.1.2`) from the go2cs root's
