@@ -62,10 +62,14 @@ public static partial class concurrent_package
     // the types - public for a Go-exported name, internal otherwise - are defined
     // via declarations below.
 
+    // hashtriemap.cs is a whole-file hand-own ([module: GoManualConversion]) and it is this
+    // package's ONLY Go file, so the converter's driver skips the package outright — this file,
+    // the .csproj and README.md are hand-owned by consequence and never re-emitted (the position
+    // internal/godebug is already in). The trie's internal node types (node, entry, indirect) have
+    // no declaration to carry here any more: the native implementation keeps its entries in a
+    // ConcurrentDictionary and has no nodes.
+
     // <TypeAccessibility>
-    internal partial struct node<K, V> {}
     public partial struct HashTrieMap<K, V> {}
-    public partial struct Δentry<K, V> {}
-    public partial struct Δindirect<K, V> {}
     // </TypeAccessibility>
 }
