@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-159%2F159_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/time.html)
+[![Tests](https://img.shields.io/badge/Tests-159%2F159_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/time.html)
 
 Package time provides functionality for measuring and displaying time.
 

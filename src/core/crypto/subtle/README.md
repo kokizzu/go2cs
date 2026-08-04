@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/crypto.subtle.html)
+[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.subtle.html)
 
 Package subtle implements functions that are often useful in cryptographic code but require careful thought to use correctly.
 

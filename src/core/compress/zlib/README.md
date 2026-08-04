@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-6%2F6_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/compress.zlib.html)
+[![Tests](https://img.shields.io/badge/Tests-6%2F6_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/compress.zlib.html)
 
 Package zlib implements reading and writing of zlib format compressed data, as specified in RFC 1950.
 

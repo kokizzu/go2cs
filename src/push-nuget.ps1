@@ -184,7 +184,12 @@ if (-not (Test-Path $currentProofs)) {
     # BOM-less UTF-8 as ANSI and Out-File re-encodes the damage, which is what mojibake'd the corpus's
     # (c) signs once already. ReadAllText/WriteAllText round-trips the CRLF the converter emitted.
     $utf8NoBomText = New-Object System.Text.UTF8Encoding($false)
-    $badgeLinkPattern = '(https://go2cs\.net/validation/)[^/]+(/)'
+    # The segment class excludes whitespace and ')' as well as '/': a hand-owned README's PROSE link
+    # (testing's `validation/index.html) was produced...`) has no second '/', and a bare [^/]+ ate
+    # everything up to the next stray slash -- collapsing four lines of prose into a broken URL on
+    # the 1.23.1.3 release run. A green badge's versioned link always terminates its segment with
+    # '/', so the tightened class changes nothing for the links this retarget exists to move.
+    $badgeLinkPattern = '(https://go2cs\.net/validation/)[^/\s)]+(/)'
     $retargeted = 0
 
     foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {

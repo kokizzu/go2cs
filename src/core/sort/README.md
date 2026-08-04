@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-63%2F63_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/sort.html)
+[![Tests](https://img.shields.io/badge/Tests-63%2F63_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/sort.html)
 
 Package sort provides primitives for sorting slices and user-defined collections.
 

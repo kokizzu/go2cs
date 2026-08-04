@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.fs.html)
+[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/io.fs.html)
 
 Package fs defines basic interfaces to a file system. A file system can be provided by the host operating system but also by other packages.
 

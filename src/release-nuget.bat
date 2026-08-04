@@ -65,7 +65,13 @@ rem --- Phase 3: record the release in git -------------------------------------
 rem  The published version, its frozen proof snapshot and the badge links that point
 rem  at it are ONE fact -- commit them together or a published badge links a
 rem  directory that is not in the repository.
-for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$x=[xml](Get-Content -Raw '%SRC%version.props'); $p=$x.Project.PropertyGroup; \"$($p.GoStdLibVersion).$($p.GoBuildNumber)\""`) do set "VER=%%v"
+rem  Read the version via a temp file, NOT a for /f backquote: cmd's for-parser
+rem  treats the ')' inside PowerShell subexpressions as the end of the for body
+rem  ("...was unexpected at this time"), which aborted Phase 3 on its first-ever
+rem  run (1.23.1.3). Plain command lines tolerate parentheses; for bodies do not.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$x=[xml](Get-Content -Raw '%SRC%version.props'); $p=$x.Project.PropertyGroup; Set-Content -NoNewline -Path '%TEMP%\go2cs-release-ver.txt' -Value ($p.GoStdLibVersion + '.' + $p.GoBuildNumber)"
+set /p VER=<"%TEMP%\go2cs-release-ver.txt"
+del "%TEMP%\go2cs-release-ver.txt" >nul 2>&1
 
 echo.
 echo === Phase 3: record the release ===

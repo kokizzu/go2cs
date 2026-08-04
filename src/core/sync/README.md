@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-41%2F51_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/sync.html)
+[![Tests](https://img.shields.io/badge/Tests-41%2F51_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/sync.html)
 
 Package sync provides basic synchronization primitives such as mutual exclusion locks. Other than the \[Once] and \[WaitGroup] types, most are intended for use by low-level library routines. Higher-level synchronization is better done via channels and communication.
 

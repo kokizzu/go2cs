@@ -4,11 +4,36 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>go</RootNamespace>
     <AssemblyName>testing_package</AssemblyName>
+    <Product>go2cs</Product>
+    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
+    <Authors>$(Product) Authors</Authors>
+    <Company>The go2cs Authors</Company>
+    <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>CS8981;IDE1006</NoWarn>
   </PropertyGroup>
+
+  <!-- NuGet packaging metadata. The PackageId is EXPLICIT because the assembly keeps the
+       `testing_package` class-convention name: without this property, `dotnet pack` defaults the
+       package id to the assembly name and the host publishes as `testing_package`, the one
+       package outside the go.* family, with its five converted subpackages (fstest, iotest, quick,
+       slogtest, internal/testdeps) declaring their dependency on that off-convention id. -->
+  <PropertyGroup>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>go.testing</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageDescription>testing ($(TargetFramework) - $(Configuration)) -- hand-implemented C# counterpart of Go's testing package; the go2cs Phase-4 test host</PackageDescription>
+    <PackageProjectUrl>https://github.com/ritchiecarroll/go2cs</PackageProjectUrl>
+    <PackageIcon>go2cs.png</PackageIcon>
+    <PackageTags>testing;go2cs;Golang;go</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="go2cs.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="go2cs.ico" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- `testing` is a HAND-OWNED package (like `unsafe`): the converter never queues it, so this

@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-8%2F8_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/encoding.pem.html)
+[![Tests](https://img.shields.io/badge/Tests-8%2F8_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/encoding.pem.html)
 
 Package pem implements the PEM data encoding, which originated in Privacy Enhanced Mail. The most common use of PEM encoding today is in TLS keys and certificates. See RFC 1421.
 

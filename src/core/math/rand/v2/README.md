@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-36%2F36_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/math.rand.v2.html)
+[![Tests](https://img.shields.io/badge/Tests-36%2F36_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/math.rand.v2.html)
 
 Package rand implements pseudo-random number generators suitable for tasks such as simulation, but it should not be used for security-sensitive work.
 
