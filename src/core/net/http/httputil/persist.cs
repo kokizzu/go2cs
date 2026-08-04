@@ -45,10 +45,10 @@ internal static error errClosed = errors.New("i/o operation on closed connection
 //
 // Deprecated: Use the Server in package [net/http] instead.
 public static ж<ServerConn> NewServerConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (Ꮡr == nil) {
-        Ꮡr = bufio.NewReader(new net_ConnᴠReader(c)); r = ref Ꮡr.DerefOrNil();
+        Ꮡr = bufio.NewReader(new net_ConnᴠReader(c)); r = ref Ꮡr.DerefOrNull();
     }
     return Ꮡ(new ServerConn(c: c, r: Ꮡr, pipereq: new map<ж<http.Request>, nuint>()));
 }
@@ -58,7 +58,7 @@ public static ж<ServerConn> NewServerConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
 // called before Read has signaled the end of the keep-alive logic. The user
 // should not call Hijack while [ServerConn.Read] or [ServerConn.Write] is in progress.
 public static (net.Conn, ж<bufio.Reader>) Hijack(this ж<ServerConn> Ꮡsc) => func((defer, recover) => {
-    ref var sc = ref Ꮡsc.Value;
+    ref var sc = ref Ꮡsc.DerefOrNull();
 
     Ꮡsc.of(ServerConn.Ꮡmu).Lock();
     defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock);
@@ -83,7 +83,7 @@ public static error Close(this ж<ServerConn> Ꮡsc) {
 // first request on an HTTP/1.0 connection, or after a Connection:close on a
 // HTTP/1.1 connection).
 public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) => func<(ж<http.Request>, error)>((defer, recover) => {
-    ref var sc = ref Ꮡsc.Value;
+    ref var sc = ref Ꮡsc.DerefOrNull();
 
     ref var req = ref heap<ж<http.Request>>(out var Ꮡreq);
     error err = default!;
@@ -161,7 +161,7 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) => func<
 // Pending returns the number of unanswered requests
 // that have been received on the connection.
 public static nint Pending(this ж<ServerConn> Ꮡsc) => func((defer, recover) => {
-    ref var sc = ref Ꮡsc.Value;
+    ref var sc = ref Ꮡsc.DerefOrNull();
 
     Ꮡsc.of(ServerConn.Ꮡmu).Lock();
     defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock);
@@ -175,8 +175,8 @@ internal static readonly @string persistServerPipeCountˢ = "persist server pipe
 // Response.Close field to true. Write should be considered operational until
 // it returns an error, regardless of any errors returned on the [ServerConn.Read] side.
 public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡresp) => func<error>((defer, recover) => {
-    ref var sc = ref Ꮡsc.Value;
-    ref var resp = ref Ꮡresp.Value;
+    ref var sc = ref Ꮡsc.DerefOrNull();
+    ref var resp = ref Ꮡresp.DerefOrNull();
 
     // Retrieve the pipeline ID of this request/response pair
     Ꮡsc.of(ServerConn.Ꮡmu).Lock();
@@ -246,10 +246,10 @@ public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж
 //
 // Deprecated: Use the Client or Transport in package [net/http] instead.
 public static ж<ClientConn> NewClientConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (Ꮡr == nil) {
-        Ꮡr = bufio.NewReader(new net_ConnᴠReader(c)); r = ref Ꮡr.DerefOrNil();
+        Ꮡr = bufio.NewReader(new net_ConnᴠReader(c)); r = ref Ꮡr.DerefOrNull();
     }
     return Ꮡ(new ClientConn(
         c: c,
@@ -278,7 +278,7 @@ public static (net.Conn c, ж<bufio.Reader> r) Hijack(this ж<ClientConn> Ꮡcc)
     net.Conn c = default!;
     ж<bufio.Reader> r = default!;
     func((defer, recover) => {
-    ref var cc = ref Ꮡcc.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock);
@@ -305,8 +305,8 @@ public static error Close(this ж<ClientConn> Ꮡcc) {
 // server is informed. An ErrUnexpectedEOF indicates the remote closed the
 // underlying TCP connection, which is usually considered as graceful close.
 public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) => func<error>((defer, recover) => {
-    ref var cc = ref Ꮡcc.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     ref var err = ref heap<error>(out var Ꮡerr);
     // Ensure ordered execution of Writes
@@ -360,7 +360,7 @@ public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) =>
 // Pending returns the number of unanswered requests
 // that have been sent on the connection.
 public static nint Pending(this ж<ClientConn> Ꮡcc) => func((defer, recover) => {
-    ref var cc = ref Ꮡcc.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
 
     Ꮡcc.of(ClientConn.Ꮡmu).Lock();
     defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock);
@@ -375,7 +375,7 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
     ж<http.Response> resp = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var cc = ref Ꮡcc.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
 
         // Retrieve the pipeline ID of this request/response pair
         Ꮡcc.of(ClientConn.Ꮡmu).Lock();

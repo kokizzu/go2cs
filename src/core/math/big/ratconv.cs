@@ -63,7 +63,7 @@ public static error Scan(this ж<ΔRat> Ꮡz, fmt.ScanState s, rune ch) {
 // The entire string, not just a prefix, must be valid for success. If the
 // operation failed, the value of z is undefined but the returned value is nil.
 public static (ж<ΔRat>, bool) SetString(this ж<ΔRat> Ꮡz, @string s) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (len(s) == 0) {
         return (default!, false);
@@ -270,8 +270,8 @@ internal static (int64 exp, nint @base, error err) scanExponent(io.ByteScanner r
                 @base = 2;
                 break;
             }
+            fallthrough = true;
         } while (false);
-        fallthrough = true;
     }
     if (fallthrough || !matchᴛ1) { /* default: */
         r.UnreadByte();
@@ -338,7 +338,7 @@ public static @string String(this ж<ΔRat> Ꮡx) {
 
 // marshal implements String returning a slice of bytes
 internal static slice<byte> marshal(this ж<ΔRat> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     slice<byte> buf = default!;
     buf = Ꮡx.of(big_package.ΔRat.Ꮡa).Append(buf, 10);
@@ -354,7 +354,7 @@ internal static slice<byte> marshal(this ж<ΔRat> Ꮡx) {
 // RatString returns a string representation of x in the form "a/b" if b != 1,
 // and in the form "a" if b == 1.
 public static @string RatString(this ж<ΔRat> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.IsInt()) {
         return Ꮡx.of(big_package.ΔRat.Ꮡa).String();
@@ -366,7 +366,7 @@ public static @string RatString(this ж<ΔRat> Ꮡx) {
 // digits of precision after the radix point. The last digit is rounded to
 // nearest, with halves rounded away from zero.
 public static @string FloatString(this ж<ΔRat> Ꮡx, nint prec) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     slice<byte> buf = default!;
     if (x.IsInt()) {

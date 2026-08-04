@@ -229,7 +229,7 @@ internal delegate stateFn stateFn(ж<lexer> _);
 // nextItem returns the next item from the input.
 // Called by the parser, not in the lexing goroutine.
 internal static item nextItem(this ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     l.item = new item(itemEOF, l.pos, "EOF"u8, l.startLine);
     stateFn state = lexText;
@@ -272,7 +272,7 @@ internal static readonly @string rightComment = "*/"u8;
 
 // lexText scans until an opening action delimiter, "{{".
 internal static stateFn lexText(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     {
         nint x = strings.Index(l.input[(int)(nint)(l.pos)..], l.leftDelim); if (x >= 0) {
@@ -334,7 +334,7 @@ internal static Pos leftTrimLength(@string s) {
 // lexLeftDelim scans the left delimiter, which is known to be present, possibly with a trim marker.
 // (The text to be trimmed has already been emitted.)
 internal static stateFn lexLeftDelim(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     l.pos += ((Pos)len(l.leftDelim));
     var trimSpace = hasLeftTrimMarker(l.input[(int)(nint)(l.pos)..]);
@@ -357,7 +357,7 @@ internal static stateFn lexLeftDelim(ж<lexer> Ꮡl) {
 
 // lexComment scans a comment. The left comment marker is known to be present.
 internal static stateFn lexComment(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     l.pos += ((Pos)len(leftComment));
     nint x = strings.Index(l.input[(int)(nint)(l.pos)..], rightComment);
@@ -386,7 +386,7 @@ internal static stateFn lexComment(ж<lexer> Ꮡl) {
 
 // lexRightDelim scans the right delimiter, which is known to be present, possibly with a trim marker.
 internal static stateFn lexRightDelim(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     var (_, trimSpace) = l.atRightDelim();
     if (trimSpace) {
@@ -405,7 +405,7 @@ internal static stateFn lexRightDelim(ж<lexer> Ꮡl) {
 
 // lexInsideAction scans the elements inside action delimiters.
 internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     // Either number, quoted string, or identifier.
     // Spaces separate arguments; runs of spaces turn into itemSpace.
@@ -497,7 +497,7 @@ internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
 // We have not consumed the first space, which is known to be present.
 // Take care if there is a trim-marked right delimiter, which starts with a space.
 internal static stateFn lexSpace(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     rune r = default!;
     nint numSpaces = default!;
@@ -524,7 +524,7 @@ internal static stateFn lexSpace(ж<lexer> Ꮡl) {
 
 // lexIdentifier scans an alphanumeric.
 internal static stateFn lexIdentifier(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     while (ᐧ) {
         {
@@ -574,7 +574,7 @@ internal static stateFn lexField(ж<lexer> Ꮡl) {
 // lexVariable scans a Variable: $Alphanumeric.
 // The $ has been scanned.
 internal static stateFn lexVariable(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (l.atTerminator()) {
         // Nothing interesting follows -> "$".
@@ -586,7 +586,7 @@ internal static stateFn lexVariable(ж<lexer> Ꮡl) {
 // lexFieldOrVariable scans a field or variable: [.$]Alphanumeric.
 // The . or $ has been scanned.
 internal static stateFn lexFieldOrVariable(ж<lexer> Ꮡl, itemType typ) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (l.atTerminator()) {
         // Nothing interesting follows -> "." or "$".
@@ -629,7 +629,7 @@ internal static stateFn lexFieldOrVariable(ж<lexer> Ꮡl, itemType typ) {
 // lexChar scans a character constant. The initial quote is already
 // scanned. Syntax checking is done by the parser.
 internal static stateFn lexChar(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
 Loop:
     while (ᐧ) {
@@ -642,8 +642,8 @@ Loop:
                         break;
                     }
                 }
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (exprᴛ1 == eof || exprᴛ1 == (rune)'\n')) {
             return l.errorf("unterminated character constant"u8);
@@ -663,7 +663,7 @@ break_Loop:;
 // and "089" - but when it's wrong the input is invalid and the parser (via
 // strconv) will notice.
 internal static stateFn lexNumber(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!l.scanNumber()) {
         return l.errorf("bad number syntax: %q"u8, l.input[(int)(nint)(l.start)..(int)(nint)(l.pos)]);
@@ -721,7 +721,7 @@ internal static stateFn lexNumber(ж<lexer> Ꮡl) {
 
 // lexQuote scans a quoted string.
 internal static stateFn lexQuote(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
 Loop:
     while (ᐧ) {
@@ -734,8 +734,8 @@ Loop:
                         break;
                     }
                 }
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (exprᴛ1 == eof || exprᴛ1 == (rune)'\n')) {
             return l.errorf("unterminated quoted string"u8);
@@ -752,7 +752,7 @@ break_Loop:;
 
 // lexRawQuote scans a raw quoted string.
 internal static stateFn lexRawQuote(ж<lexer> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
 Loop:
     while (ᐧ) {

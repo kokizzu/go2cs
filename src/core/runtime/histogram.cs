@@ -48,7 +48,7 @@ internal static UntypedInt timeHistTotalBuckets => /* timeHistNumBuckets*timeHis
 //
 //go:nosplit
 internal static void record(this ж<timeHistogram> Ꮡh, int64 duration) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // If the duration is negative, capture that in underflow.
     if (duration < 0) {
@@ -87,8 +87,8 @@ internal static void record(this ж<timeHistogram> Ꮡh, int64 duration) {
 
 // write dumps the histogram to the passed metricValue as a float64 histogram.
 internal static void write(this ж<timeHistogram> Ꮡh, ж<metricValue> Ꮡout) {
-    ref var h = ref Ꮡh.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     var hist = @out.float64HistOrInit(timeHistBuckets);
     // The bottom-most bucket, containing negative values, is tracked

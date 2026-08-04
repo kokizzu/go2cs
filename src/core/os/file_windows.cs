@@ -42,7 +42,7 @@ internal static UntypedInt _UTIME_OMIT => -1;
 // a finalizer might be run. On Unix systems this will cause the [File.SetDeadline]
 // methods to stop working.
 public static uintptr Fd(this ж<File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.DerefOrNil();
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     if (Ꮡfile == nil) {
         return (uintptr)syscall.InvalidHandle;
@@ -77,7 +77,7 @@ internal static ж<File> newFile(syscallꓸHandle h, @string name, @string kind)
         name: name
     ))
     ));
-    Δruntime.SetFinalizer((~f).@file, (Func<ж<@file>, error>)(close));
+    Δruntime.SetFinalizer((~f).@file.OrTypedNil(), (Func<ж<@file>, error>)(close));
     // Ignore initialization errors.
     // Assume any problems will show up in later I/O.
     f.of(File.Ꮡpfd).Init(kind, false);
@@ -139,7 +139,7 @@ internal static (ж<File>, error) openDirNolog(@string name) {
 }
 
 internal static error close(this ж<@file> Ꮡfile) {
-    ref var @file = ref Ꮡfile.DerefOrNil();
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     if (Ꮡfile == nil) {
         return syscall.EINVAL;
@@ -159,7 +159,7 @@ internal static error close(this ж<@file> Ꮡfile) {
         }
     }
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡfile, default!);
+    Δruntime.SetFinalizer(Ꮡfile.OrTypedNil(), default!);
     return err;
 }
 
@@ -179,7 +179,7 @@ internal static (int64 ret, error err) seek(this ж<File> Ꮡf, int64 offset, ni
         }
     }
     (ret, err) = Ꮡf.of(File.Ꮡpfd).Seek(offset, whence);
-    Δruntime.KeepAlive(Ꮡf);
+    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
     return (ret, err);
 }
 

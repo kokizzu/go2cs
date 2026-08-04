@@ -170,7 +170,7 @@ internal static fs.FileMode Type(this headerFileInfo fi) {
 }
 
 internal static any Sys(this headerFileInfo fi) {
-    return fi.fh;
+    return fi.fh.OrTypedNil();
 }
 
 internal static (fs.FileInfo, error) Info(this headerFileInfo fi) {

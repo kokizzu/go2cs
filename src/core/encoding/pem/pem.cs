@@ -241,7 +241,7 @@ internal static readonly @string pemCannotEncodeAHeaderˢ = "pem: cannot encode 
 
 // Encode writes the PEM encoding of b to out.
 public static error Encode(io.Writer @out, ж<Block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Check for invalid block before writing any output.
     foreach (var (k, _) in b.Headers) {

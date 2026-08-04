@@ -85,7 +85,7 @@ internal static slice<byte> appendBase128Int(slice<byte> dst, uint64 n) {
 }
 
 internal static nint base128BigIntLength(ж<bigꓸInt> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn.Cmp(big.NewInt(0)) == 0) {
         return 1;

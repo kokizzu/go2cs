@@ -175,7 +175,7 @@ internal static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8
 
 // parse parses, post-processes and verifies the trace.
 internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error)>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     defer(() => {
         Ꮡp.Value.data = default!;
@@ -615,7 +615,7 @@ internal static readonly @string stringHasInvalidLength0ˢ = "string has invalid
 // readRawEvent reads a raw event into ev. The slices in ev are only valid until
 // the next call to readRawEvent, even when storing to a different location.
 [GoRecv] internal static error readRawEvent(this ref parser p, nuint flags, ж<rawEvent> Ꮡev) {
-    ref var ev = ref Ꮡev.Value;
+    ref var ev = ref Ꮡev.DerefOrNull();
 
     // The number of arguments is encoded using two bits and can thus only
     // represent the values 0–3. The value 3 (on the wire) indicates that
@@ -875,8 +875,8 @@ internal static readonly @string stringHasInvalidLength0ˢ = "string has invalid
 // parseEvent transforms raw events into events.
 // It does analyze and verify per-event-type arguments.
 [GoRecv] internal static error parseEvent(this ref parser p, ж<rawEvent> Ꮡraw, ж<Event> Ꮡev) {
-    ref var raw = ref Ꮡraw.Value;
-    ref var ev = ref Ꮡev.Value;
+    ref var raw = ref Ꮡraw.DerefOrNull();
+    ref var ev = ref Ꮡev.DerefOrNull();
 
     var desc = ᏑEventDescriptions.at<EventDescriptionsᴛ1>((nint)(raw.typ));
     if ((~desc).Name == ""u8) {
@@ -1021,7 +1021,7 @@ public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
 // (for example, a P does not run two Gs at the same time, or a G is indeed
 // blocked before an unblock event).
 internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     const nint gDead = iota;
     const nint gRunnable = 1;
@@ -1036,7 +1036,7 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
     gs[0] = new postProcessTrace_gdesc(state: gRunning);
     ж<Event> evGC = default!;
     ref var evSTW = ref heap<ж<Event>>(out var ᏑevSTW);
-    var checkRunning = error (postProcessTrace_pdesc pΔ1, postProcessTrace_gdesc g, ж<Event> ev, bool allowG0) => {
+    error checkRunning(postProcessTrace_pdesc pΔ1, postProcessTrace_gdesc g, ж<Event> ev, bool allowG0) {
         @string name = EventDescriptions[(~ev).Type].Name;
         if (g.state != gRunning) {
             return fmt.Errorf("g %d is not running while %s (time %d)"u8, (~ev).G, name, (~ev).Ts);
@@ -1048,7 +1048,7 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
             return fmt.Errorf("g 0 did %s (time %d)"u8, name, (~ev).Ts);
         }
         return default!;
-    };
+    }
     for (nint evIdx = 0; evIdx < events.Len(); evIdx++) {
         var ev = events.Ptr(evIdx);
         var exprᴛ1 = (~ev).Type;
@@ -1293,7 +1293,7 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
             var taskid = (~ev).Args[0];
             {
                 var (prevEv, ok) = tasks[taskid, ꟷ]; if (ok) {
-                    return fmt.Errorf("task id conflicts (id:%d), %q vs %q"u8, taskid, ev, prevEv);
+                    return fmt.Errorf("task id conflicts (id:%d), %q vs %q"u8, taskid, ev.OrTypedNil(), prevEv.OrTypedNil());
                 }
             }
             tasks[(~ev).Args[0]] = ev;
@@ -1318,7 +1318,7 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
                     var s = regions[n - 1];
                     if ((~s).Args[0] != (~ev).Args[0] || (~s).Args[2] != (~ev).Args[2]) {
                         // task id, region name mismatch
-                        return fmt.Errorf("misuse of region in goroutine %d: span end %q when the inner-most active span start event is %q"u8, (~ev).G, ev, s);
+                        return fmt.Errorf("misuse of region in goroutine %d: span end %q when the inner-most active span start event is %q"u8, (~ev).G, ev.OrTypedNil(), s.OrTypedNil());
                     }
                     if (n > 1){
                         activeRegions[(~ev).G] = regions[..(int)(n - 1)];
@@ -1327,7 +1327,7 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
                     }
                 }
             } else {
-                return fmt.Errorf("invalid user region mode: %q"u8, ev);
+                return fmt.Errorf("invalid user region mode: %q"u8, ev.OrTypedNil());
             }
         }
 

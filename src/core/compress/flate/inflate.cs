@@ -281,7 +281,7 @@ internal static UntypedInt huffmanValueShift => 4;
 }
 
 internal static void nextBlock(this ж<decompressor> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     while (f.nb < 1 + 2) {
         {
@@ -328,7 +328,7 @@ internal static void nextBlock(this ж<decompressor> Ꮡf) {
 
 // 3 is reserved.
 internal static (nint, error) Read(this ж<decompressor> Ꮡf, slice<byte> b) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     while (ᐧ) {
         if (len(f.toRead) > 0) {
@@ -365,7 +365,7 @@ internal static array<nint> codeOrder = new nint[]{16, 17, 18, 0, 8, 7, 9, 6, 10
 internal static readonly @string unexpectedLengthCodeˢ = "unexpected length code"u8;
 
 internal static error readHuffman(this ж<decompressor> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     // HLIT[5], HDIST[5], HCLEN[4].
     while (f.nb < 5 + 5 + 4) {
@@ -735,7 +735,7 @@ internal static error noEOF(error e) {
 
 // Read the next Huffman-encoded symbol from f according to h.
 [GoRecv] internal static (nint, error) huffSym(this ref decompressor f, ж<huffmanDecoder> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // Since a huffmanDecoder can be empty or be composed of a degenerate tree
     // with single element, huffSym must error on these two edge cases. In both
@@ -800,7 +800,7 @@ internal static error noEOF(error e) {
 internal static void fixedHuffmanDecoderInit() {
     ᏑfixedOnce.Do(() => {
         // These come from the RFC section 3.2.6.
-        ref var bits = ref heap(new array<nint>(288), out var Ꮡbits);
+        array<nint> bits = new(288);
         for (nint i = 0; i < 144; i++) {
             bits[i] = 8;
         }

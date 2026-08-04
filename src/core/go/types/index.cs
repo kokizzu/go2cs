@@ -24,9 +24,9 @@ internal static readonly @string mapIndexˢ = "map index"u8;
 internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<typeparams.IndexExpr> Ꮡe) {
     bool isFuncInst = default!;
 
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
     Ꮡcheck.exprOrType(Ꮡx, e.X, true);
     // x may be generic
     var exprᴛ1 = x.mode;
@@ -217,7 +217,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
     }}
     if (!valid) {
         // types2 uses the position of '[' for the error
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonIndexableOperand, invalidOp + "cannot index %s", Ꮡx);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonIndexableOperand, invalidOp + "cannot index %s", Ꮡx.OrTypedNil());
         Ꮡcheck.use(e.Indices.ꓸꓸꓸ);
         x.mode = invalid;
         return false;
@@ -241,9 +241,9 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
 internal static readonly @string and3rdIndexRequiredIn3ˢ = "2nd and 3rd index required in 3-index slice"u8;
 
 internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SliceExpr> Ꮡe) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     Ꮡcheck.expr(nil, Ꮡx, e.X);
     if (x.mode == invalid) {
@@ -255,7 +255,7 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
     // valid if >= 0
     switch (coreString(x.typ).type()) {
     case null: {
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s: %s has no core type", Ꮡx, x.typ);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s: %s has no core type", Ꮡx.OrTypedNil(), x.typ);
         x.mode = invalid;
         return;
     }
@@ -287,7 +287,7 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
         valid = true;
         length = u.Value.len;
         if (x.mode != variable) {
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s (value not addressable)", Ꮡx);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s (value not addressable)", Ꮡx.OrTypedNil());
             x.mode = invalid;
             return;
         }
@@ -310,7 +310,7 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
     }}
     // x.typ doesn't change
     if (!valid) {
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s", Ꮡx);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s", Ꮡx.OrTypedNil());
         x.mode = invalid;
         return;
     }
@@ -381,10 +381,10 @@ break_L:;
 // If the index is missing, or if there are multiple indices, an error
 // is reported and the result is nil.
 internal static ast.Expr singleIndex(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡexpr) {
-    ref var expr = ref Ꮡexpr.Value;
+    ref var expr = ref Ꮡexpr.DerefOrNull();
 
     if (len(expr.Indices) == 0) {
-        Ꮡcheck.errorf(new ast_Exprᴠpositioner(expr.Orig), InvalidSyntaxTree, "index expression %v with 0 indices"u8, Ꮡexpr);
+        Ꮡcheck.errorf(new ast_Exprᴠpositioner(expr.Orig), InvalidSyntaxTree, "index expression %v with 0 indices"u8, Ꮡexpr.OrTypedNil());
         return default!;
     }
     if (len(expr.Indices) > 1) {
@@ -429,7 +429,7 @@ internal static (ΔType typ, int64 val) index(this ж<Checker> Ꮡcheck, ast.Exp
 }
 
 internal static bool isValidIndex(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, errors.Code code, @string what, bool allowNegative) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.mode == invalid) {
         return false;
@@ -441,18 +441,18 @@ internal static bool isValidIndex(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, e
     }
     // spec: "the index x must be of integer type or an untyped constant"
     if (!allInteger(x.typ)) {
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s must be integer", what, Ꮡx);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s must be integer", what, Ꮡx.OrTypedNil());
         return false;
     }
     if (x.mode == constant_) {
         // spec: "a constant index must be non-negative ..."
         if (!allowNegative && constant.Sign(x.val) < 0) {
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s must not be negative", what, Ꮡx);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s must not be negative", what, Ꮡx.OrTypedNil());
             return false;
         }
         // spec: "... and representable by a value of type int"
         if (!representableConst(x.val, Ꮡcheck, Typ[Int], Ꮡx.of(operand.Ꮡval))) {
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s overflows int", what, Ꮡx);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, invalidArg + "%s %s overflows int", what, Ꮡx.OrTypedNil());
             return false;
         }
     }
@@ -467,7 +467,7 @@ internal static readonly @string arrayOrSliceLiteralˢ = "array or slice literal
 // the literal length if known (length >= 0). It returns the length of the
 // literal (maximum index value + 1).
 internal static int64 indexedElts(this ж<Checker> Ꮡcheck, slice<ast.Expr> elts, ΔType typ, int64 length) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var visited = new map<int64, bool>(len(elts));
     int64 index = default!;

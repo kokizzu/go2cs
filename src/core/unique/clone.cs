@@ -21,7 +21,7 @@ partial class unique_package {
 internal static T clone<T>(T valueʗp, ж<cloneSeq> Ꮡseq)
     where T : /* comparable */ new()
 {
-    ref var seq = ref Ꮡseq.Value;
+    ref var seq = ref Ꮡseq.DerefOrNull();
 
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
     foreach (var (_, offset) in seq.stringOffsets) {
@@ -41,7 +41,7 @@ internal static cloneSeq singleStringClone = new cloneSeq(stringOffsets: new uin
 
 // makeCloneSeq creates a cloneSeq for a type.
 internal static cloneSeq makeCloneSeq(ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (Ꮡtyp == nil) {
         return new cloneSeq(nil);
@@ -63,7 +63,7 @@ internal static cloneSeq makeCloneSeq(ж<abi.Type> Ꮡtyp) {
 
 // buildStructCloneSeq populates a cloneSeq for an abi.Type that has Kind abi.Struct.
 internal static void buildStructCloneSeq(ж<abi.Type> Ꮡtyp, ж<cloneSeq> Ꮡseq, uintptr baseOffset) {
-    ref var seq = ref Ꮡseq.Value;
+    ref var seq = ref Ꮡseq.DerefOrNull();
 
     var styp = Ꮡtyp.StructType();
     foreach (var (i, _) in (~styp).Fields) {
@@ -84,7 +84,7 @@ internal static void buildStructCloneSeq(ж<abi.Type> Ꮡtyp, ж<cloneSeq> Ꮡse
 
 // buildArrayCloneSeq populates a cloneSeq for an abi.Type that has Kind abi.Array.
 internal static void buildArrayCloneSeq(ж<abi.Type> Ꮡtyp, ж<cloneSeq> Ꮡseq, uintptr baseOffset) {
-    ref var seq = ref Ꮡseq.Value;
+    ref var seq = ref Ꮡseq.DerefOrNull();
 
     var atyp = Ꮡtyp.ArrayType();
     var etyp = atyp.Value.Elem;

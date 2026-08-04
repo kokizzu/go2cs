@@ -29,7 +29,7 @@ public static UntypedInt TagSize => 16;
 // 16-byte result into out. Authenticating two different messages with the same
 // key allows an attacker to forge messages at will.
 public static void Sum(ж<array<byte>> Ꮡout, slice<byte> m, ж<array<byte>> Ꮡkey) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     var h = New(Ꮡkey);
     h.Write(m);
@@ -38,7 +38,7 @@ public static void Sum(ж<array<byte>> Ꮡout, slice<byte> m, ж<array<byte>> �
 
 // Verify returns true if mac is a valid authenticator for m with the given key.
 public static bool Verify(ж<array<byte>> Ꮡmac, slice<byte> m, ж<array<byte>> Ꮡkey) {
-    ref var mac = ref Ꮡmac.Value;
+    ref var mac = ref Ꮡmac.DerefOrNull();
 
     ref var tmp = ref heap(new array<byte>(16), out var Ꮡtmp);
     Sum(Ꮡtmp, m, Ꮡkey);
@@ -85,7 +85,7 @@ public static (nint n, error err) Write(this ж<MAC> Ꮡh, slice<byte> p) {
     nint n = default!;
     error err = default!;
 
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
     if (h.finalized) {
         throw panic("poly1305: write to MAC after Sum or Verify");
     }

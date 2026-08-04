@@ -198,7 +198,7 @@ internal static readonly @string addressNotAStackAddressˢ = "address not a stac
 // Add p as a potential pointer to a stack object.
 // p must be a stack address.
 internal static void putPtr(this ж<stackScanState> Ꮡs, uintptr Δp, bool conservative) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (Δp < s.stack.lo || Δp >= s.stack.hi) {
         @throw(addressNotAStackAddressˢ);
@@ -239,7 +239,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
     uintptr Δp = default!;
     bool conservative = default!;
 
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
     foreach (var (_, head) in new ж<ж<stackWorkBuf>>[]{Ꮡs.of(stackScanState.Ꮡbuf), Ꮡs.of(stackScanState.Ꮡcbuf)}.slice()) {
         var buf = head.ValueSlot;
         if (buf == nil) {
@@ -276,7 +276,7 @@ internal static readonly @string objectsAddedOutOfOrderOrˢ = "objects added out
 
 // addObject adds a stack object at addr of type typ to the set of stack objects.
 [GoRecv] internal static void addObject(this ref stackScanState s, uintptr addr, ж<stackObjectRecord> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var x = s.tail;
     if (x == nil) {
@@ -323,20 +323,20 @@ internal static (ж<stackObject> root, ж<stackObjectBuf> restBuf, nint restIdx)
     ж<stackObjectBuf> restBuf = default!;
     nint restIdx = default!;
 
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
     if (n == 0) {
         return (default!, Ꮡx, idx);
     }
     ж<stackObject> left = default!;
     ж<stackObject> right = default!;
-    (left, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n / 2); x = ref Ꮡx.Value;
+    (left, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n / 2); x = ref Ꮡx.DerefOrNull();
     root = Ꮡx.at(stackObjectBuf.Ꮡobj, idx);
     idx++;
     if (idx == len(x.obj)) {
-        Ꮡx = x.next; x = ref Ꮡx.Value;
+        Ꮡx = x.next; x = ref Ꮡx.DerefOrNull();
         idx = 0;
     }
-    (right, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n - n / 2 - 1); x = ref Ꮡx.Value;
+    (right, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n - n / 2 - 1); x = ref Ꮡx.DerefOrNull();
     root.Value.left = left;
     root.Value.right = right;
     return (root, Ꮡx, idx);

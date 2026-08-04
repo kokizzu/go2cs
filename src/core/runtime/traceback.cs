@@ -91,8 +91,8 @@ internal static readonly @string cannotTraceUserGoroutineˢ = "cannot trace user
 internal static readonly @string unknownPcˢ = "unknown pc"u8;
 
 internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, uintptr lr0, ж<g> Ꮡgp, unwindFlags flags) {
-    ref var u = ref Ꮡu.Value;
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Don't call this "g"; it's too easy get "g" and "gp" confused.
     {
@@ -162,7 +162,7 @@ internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, ui
     var f = findfunc(frame.pc);
     if (!f.valid()) {
         if ((unwindFlags)(flags & unwindSilentErrors) == 0) {
-            print((@string)"runtime: g "u8, gp.goid, (@string)" gp="u8, Ꮡgp, (@string)": unknown pc "u8, ((Δhex)(uint64)frame.pc), (@string)"\n"u8);
+            print((@string)"runtime: g "u8, gp.goid, (@string)" gp="u8, Ꮡgp.OrTypedNil(), (@string)": unknown pc "u8, ((Δhex)(uint64)frame.pc), (@string)"\n"u8);
             tracebackHexdump(gp.stack, Ꮡframe, 0);
         }
         if ((unwindFlags)(flags & ((unwindFlags)(unwindPrintErrors | unwindSilentErrors))) == 0) {
@@ -213,7 +213,7 @@ internal static readonly @string tracebackˢ = "traceback"u8;
 //
 // This is internal to unwinder.
 internal static void resolveInternal(this ж<unwinder> Ꮡu, bool innermost, bool isSyscall) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     var frame = Ꮡu.of(unwinder.Ꮡframe);
     var gp = u.g.ptr();
@@ -404,7 +404,7 @@ internal static readonly @string unknownCallerPcˢ = "unknown caller pc"u8;
 internal static readonly @string tracebackStuckˢ = "traceback stuck"u8;
 
 internal static void next(this ж<unwinder> Ꮡu) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     var frame = Ꮡu.of(unwinder.Ꮡframe);
     var f = frame.Value.fn;
@@ -582,7 +582,7 @@ internal static readonly @string tracebackDidNotUnwindˢ = "traceback did not un
 //
 // Callers should set the unwindSilentErrors flag on u.
 internal static nint tracebackPCs(ж<unwinder> Ꮡu, nint skip, slice<uintptr> pcBuf) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     array<uintptr> cgoBuf = new(32);
     nint n = 0;
@@ -631,7 +631,7 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
     if (liveInfo != nil) {
         startOffset = ~(ж<uint8>)(uintptr)(liveInfo);
     }
-    var isLive = (uint8 off, uint8 slotIdxΔ1) => {
+    bool isLive(uint8 off, uint8 slotIdxΔ1) {
         if (liveInfo == nil || liveIdx <= 0) {
             return true;
         }
@@ -641,9 +641,9 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
         }
         var bits = ~(ж<uint8>)(uintptr)(add(liveInfo, (uintptr)liveIdx + (uintptr)(slotIdxΔ1 / 8)));
         return (uint8)(bits & ((uint8)(1 << (int)((slotIdxΔ1 % 8))))) != 0;
-    };
+    }
     var isLiveʗ1 = isLive;
-    var print1 = (uint8 off, uint8 sz, uint8 slotIdxΔ2) => {
+    void print1(uint8 off, uint8 sz, uint8 slotIdxΔ2) {
         var x = readUnaligned64((uintptr)add(argp, (uintptr)off));
         // mask out irrelevant bits
         if (sz < 8) {
@@ -658,13 +658,13 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
         if (!isLiveʗ1(off, slotIdxΔ2)) {
             print((@string)"?"u8);
         }
-    };
+    }
     var start = true;
-    var printcomma = () => {
+    void printcomma() {
         if (!start) {
             print((@string)", "u8);
         }
-    };
+    }
     nint pi = 0;
     var slotIdx = (uint8)0;
     // register arg spill slot index
@@ -746,7 +746,7 @@ internal static void printFuncName(@string name) {
 }
 
 internal static void printcreatedby(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Show what created goroutine, except main goroutine (goid 1).
     var pc = gp.gopc;
@@ -789,7 +789,7 @@ internal static void traceback(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp) 
 // If gp.m.libcall{g,pc,sp} information is available, it uses that information in preference to
 // the pc/sp/lr passed in.
 internal static void tracebacktrap(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if ((~gp.m).libcallsp != 0) {
         // We're in C code somewhere, traceback from the saved position.
@@ -800,7 +800,7 @@ internal static void tracebacktrap(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡ
 }
 
 internal static void traceback1(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp, unwindFlags flags) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // If the goroutine is in cgo, and we have a cgo traceback, print that.
     if (iscgo && gp.m != nil && (~gp.m).ncgo > 0 && gp.syscallsp != 0 && (~gp.m).cgoCallers != nil && (~gp.m).cgoCallers.Value[0] != 0) {
@@ -876,7 +876,7 @@ internal static void traceback1(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp,
     // cgo expansion boundaries. It's not clear that's much simpler.
     flags |= (unwindFlags)(unwindPrintErrors);
     ref var u = ref heap(new unwinder(), out var Ꮡu);
-    var tracebackWithRuntime = (bool showRuntime) => {
+    nint tracebackWithRuntime(bool showRuntime) {
         const nint maxInt = 0x7fffffff;
         Ꮡu.initAt(pc, sp, lr, Ꮡgp, flags);
         var (n, lastN) = traceback2(Ꮡu, showRuntime, 0, tracebackInnerFrames);
@@ -901,7 +901,7 @@ internal static void traceback1(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp,
             traceback2(Ꮡu2, showRuntime, lastN, tracebackOuterFrames);
         }
         return n;
-    };
+    }
     // By default, omits runtime frames. If that means we print nothing at all,
     // repeat forcing all frames printed.
     if (tracebackWithRuntime(false) == 0) {
@@ -925,7 +925,7 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
     nint n = default!;
     nint lastN = default!;
 
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
     // commitFrame commits to a logical frame and returns whether this frame
     // should be printed and whether iteration should stop.
     var commitFrame = () => {
@@ -1182,7 +1182,7 @@ internal static array<@string> gStatusStrings = new golib.SparseArray<@string>{
 }.array(10);
 
 internal static void goroutineheader(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var (level, _, _) = gotraceback();
     var gpstatus = readgstatus(Ꮡgp);
@@ -1207,9 +1207,9 @@ internal static void goroutineheader(ж<g> Ꮡgp) {
     }
     print((@string)"goroutine "u8, gp.goid);
     if (gp.m != nil && (~gp.m).throwing >= throwTypeRuntime && Ꮡgp == (~gp.m).curg || level >= 2) {
-        print((@string)" gp="u8, Ꮡgp);
+        print((@string)" gp="u8, Ꮡgp.OrTypedNil());
         if (gp.m != nil){
-            print((@string)" m="u8, (~gp.m).id, (@string)" mp="u8, gp.m);
+            print((@string)" m="u8, (~gp.m).id, (@string)" mp="u8, gp.m.OrTypedNil());
         } else {
             print((@string)" m=nil"u8);
         }
@@ -1267,7 +1267,7 @@ internal static void tracebackothers(ж<g> Ꮡme) {
 // for debugging purposes. If the address bad is included in the
 // hexdumped range, it will mark it as well.
 internal static void tracebackHexdump(Δstack stk, ж<stkframe> Ꮡframe, uintptr bad) {
-    ref var frame = ref Ꮡframe.Value;
+    ref var frame = ref Ꮡframe.DerefOrNull();
 
     uintptr expand = /* 32 * goarch.PtrSize */ 256;
     uintptr maxExpand = /* 256 * goarch.PtrSize */ 2048;
@@ -1323,7 +1323,7 @@ internal static void tracebackHexdump(Δstack stk, ж<stkframe> Ꮡframe, uintpt
 // system (that is, the finalizer goroutine) is considered a user
 // goroutine.
 internal static bool isSystemGoroutine(ж<g> Ꮡgp, bool @fixed) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Keep this in sync with internal/trace.IsSystemGoroutine.
     var f = findfunc(gp.startpc);
@@ -1556,7 +1556,7 @@ internal static @unsafe.Pointer cgoSymbolizer;
 
 // printCgoTraceback prints a traceback of callers.
 internal static void printCgoTraceback(ж<ΔcgoCallers> Ꮡcallers) {
-    ref var callers = ref Ꮡcallers.Value;
+    ref var callers = ref Ꮡcallers.DerefOrNull();
 
     if (cgoSymbolizer == nil) {
         foreach (var (_, c) in callers) {
@@ -1587,7 +1587,7 @@ internal static void printCgoTraceback(ж<ΔcgoCallers> Ꮡcallers) {
 // This can print more than one line because of inlining.
 // It returns the "stop" result of commitFrame.
 internal static bool printOneCgoTraceback(uintptr pc, Func<(bool, bool)> commitFrame, ж<cgoSymbolizerArg> Ꮡarg) {
-    ref var arg = ref Ꮡarg.Value;
+    ref var arg = ref Ꮡarg.DerefOrNull();
 
     arg.pc = pc;
     while (ᐧ) {

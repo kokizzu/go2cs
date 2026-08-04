@@ -63,7 +63,7 @@ public static (ж<bigꓸInt> n, error err) Int(io.Reader rand, ж<bigꓸInt> Ꮡ
     ж<bigꓸInt> n = default!;
     error err = default!;
 
-    ref var max = ref Ꮡmax.Value;
+    ref var max = ref Ꮡmax.DerefOrNull();
     if (max.Sign() <= 0) {
         throw panic("crypto/rand: argument to Int is <= 0");
     }

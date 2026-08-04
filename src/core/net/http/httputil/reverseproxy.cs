@@ -225,8 +225,8 @@ internal static (@string path, @string rawpath) joinURLPath(ж<url.URL> Ꮡa, ж
     @string path = default!;
     @string rawpath = default!;
 
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
     if (a.RawPath == ""u8 && b.RawPath == ""u8) {
         return (singleJoiningSlash(a.Path, b.Path), "");
     }
@@ -275,8 +275,8 @@ public static ж<ReverseProxy> NewSingleHostReverseProxy(ж<url.URL> Ꮡtarget) 
 }
 
 internal static void rewriteRequestURL(ж<http.Request> Ꮡreq, ж<url.URL> Ꮡtarget) {
-    ref var req = ref Ꮡreq.Value;
-    ref var target = ref Ꮡtarget.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
+    ref var target = ref Ꮡtarget.DerefOrNull();
 
     @string targetQuery = target.RawQuery;
     req.URL.Value.Scheme = target.Scheme;
@@ -323,7 +323,7 @@ internal static slice<@string> hopHeaders = new @string[]{
 }
 
 internal static Action<http.ResponseWriter, ж<http.Request>, error> getErrorHandler(this ж<ReverseProxy> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.ErrorHandler != default!) {
         return p.ErrorHandler;
@@ -334,8 +334,8 @@ internal static Action<http.ResponseWriter, ж<http.Request>, error> getErrorHan
 // modifyResponse conditionally runs the optional ModifyResponse hook
 // and reports whether the request should proceed.
 internal static bool modifyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Response> Ꮡres, ж<http.Request> Ꮡreq) {
-    ref var p = ref Ꮡp.Value;
-    ref var res = ref Ꮡres.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var res = ref Ꮡres.DerefOrNull();
 
     if (p.ModifyResponse == default!) {
         return true;
@@ -360,8 +360,8 @@ internal static readonly @string userAgentˢ = "User-Agent"u8;
 internal static readonly @string trailerˢ = "Trailer"u8;
 
 public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var transport = p.Transport;
     if (transport == default!) {
@@ -590,13 +590,13 @@ internal static bool inOurTests; // whether we're in our own tests
 // weren't expecting panics. Only panic in our own tests, or when
 // running under the HTTP server.
 internal static bool shouldPanicOnCopyError(ж<http.Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (inOurTests) {
         // Our tests know to handle this panic.
         return true;
     }
-    if (req.Context().Value(http.ServerContextKey) != default!) {
+    if (req.Context().Value(http.ServerContextKey.OrTypedNil()) != default!) {
         // We seem to be running under an HTTP server, so
         // it'll recover the panic.
         return true;
@@ -634,7 +634,7 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
 // flushInterval returns the p.FlushInterval value, conditionally
 // overriding its value for a specific request/response.
 [GoRecv] internal static time.Duration flushInterval(this ref ReverseProxy p, ж<http.Response> Ꮡres) {
-    ref var res = ref Ꮡres.Value;
+    ref var res = ref Ꮡres.DerefOrNull();
 
     @string resCT = res.Header.Get(contentTypeˢ);
     // For Server-Sent Events responses, flush immediately.
@@ -653,7 +653,7 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
 }
 
 internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter dst, io.Reader src, time.Duration flushInterval) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     io.Writer w = new http_ResponseWriterᴠWriter(dst);
     if (flushInterval != 0) {
@@ -734,7 +734,7 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
@@ -757,7 +757,7 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
 }
 
 internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
     defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
@@ -770,7 +770,7 @@ internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) => func((defer
 });
 
 internal static void stop(this ж<maxLatencyWriter> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
     defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
@@ -788,8 +788,8 @@ internal static @string upgradeType(httpꓸHeader h) {
 }
 
 internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡres) => func((defer, recover) => {
-    ref var req = ref Ꮡreq.Value;
-    ref var res = ref Ꮡres.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
+    ref var res = ref Ꮡres.DerefOrNull();
 
     @string reqUpType = upgradeType(req.Header);
     @string resUpType = upgradeType(res.Header);
@@ -879,10 +879,10 @@ internal static void copyToBackend(this switchProtocolCopier c, channel/*<-*/<er
 }
 
 internal static @string cleanQueryParams(@string s) {
-    var reencode = @string (@string sΔ1) => {
+    @string reencode(@string sΔ1) {
         var (v, _) = url.ParseQuery(sΔ1);
         return v.Encode();
-    };
+    }
     for (nint i = 0; i < len(s); ) {
         switch (s[i]) {
         case (rune)';': {

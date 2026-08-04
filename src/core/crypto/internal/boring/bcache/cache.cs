@@ -82,7 +82,7 @@ public static void Clear<K, V>(this ж<Cache<K, V>> Ꮡc) {
 // which is either the value v corresponding to the most recent call to Put(k, v)
 // or nil if that cache entry has been dropped.
 public static ж<V> Get<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk) {
-    ref var k = ref Ꮡk.DerefOrNil();
+    ref var k = ref Ꮡk.DerefOrNull();
 
     var head = Ꮡc.table().at<atomic.Pointer<cacheEntry<K, V>>>((nint)((uintptr)Ꮡk % (uintptr)cacheSize));
     var e = head.Load();
@@ -96,8 +96,8 @@ public static ж<V> Get<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk) {
 
 // Put sets the cached value associated with k to v.
 public static void Put<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk, ж<V> Ꮡv) {
-    ref var k = ref Ꮡk.DerefOrNil();
-    ref var v = ref Ꮡv.ValueSlot;
+    ref var k = ref Ꮡk.DerefOrNull();
+    ref var v = ref Ꮡv.DerefOrNull();
 
     var head = Ꮡc.table().at<atomic.Pointer<cacheEntry<K, V>>>((nint)((uintptr)Ꮡk % (uintptr)cacheSize));
     // Strategy is to walk the linked list at head,

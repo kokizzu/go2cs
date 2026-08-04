@@ -146,7 +146,7 @@ private static readonly @string readˢ = "read"u8;
 private static readonly @string subˢ = "sub"u8;
 
 internal static (FS, error) Sub(this ж<subFS> Ꮡf, @string dir) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (dir == "."u8) {
         return (new subFSжFS(Ꮡf), default!);

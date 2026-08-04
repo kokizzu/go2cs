@@ -218,9 +218,9 @@ internal static void traceCPUFlush(uintptr gen) {
 // profiling buffer. It is called from a signal handler, so is limited in what
 // it can do. mp must be the thread that is currently stopped in a signal.
 internal static void traceCPUSample(ж<g> Ꮡgp, ж<m> Ꮡmp, ж<Δp> Ꮡpp, slice<uintptr> stk) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
-    ref var mp = ref Ꮡmp.DerefOrNil();
-    ref var pp = ref Ꮡpp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
+    ref var mp = ref Ꮡmp.DerefOrNull();
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     if (!traceEnabled()) {
         // Tracing is usually turned off; don't spend time acquiring the signal

@@ -423,7 +423,7 @@ internal static void GCMarkAssistDone(this traceLocker tl) {
 
 // GoCreate emits a GoCreate event.
 internal static void GoCreate(this traceLocker tl, ж<g> Ꮡnewg, uintptr pc, bool blocked) {
-    ref var newg = ref Ꮡnewg.Value;
+    ref var newg = ref Ꮡnewg.DerefOrNull();
 
     Ꮡnewg.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).setStatusTraced(tl.gen);
     var ev = traceEvGoCreate;
@@ -479,7 +479,7 @@ internal static void GoPark(this traceLocker tl, traceBlockReason reason, nint s
 
 // GoUnpark emits a GoUnblock event.
 internal static void GoUnpark(this traceLocker tl, ж<g> Ꮡgp, nint skip) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Emit a GoWaiting status if necessary for the unblocked goroutine.
     var w = tl.eventWriter(traceGoRunning, traceProcRunning);
@@ -492,7 +492,7 @@ internal static void GoUnpark(this traceLocker tl, ж<g> Ꮡgp, nint skip) {
 // GoCoroswitch emits a GoSwitch event. If destroy is true, the calling goroutine
 // is simultaneously being destroyed.
 internal static void GoSwitch(this traceLocker tl, ж<g> Ꮡnextg, bool destroy) {
-    ref var nextg = ref Ꮡnextg.Value;
+    ref var nextg = ref Ꮡnextg.DerefOrNull();
 
     // Emit a GoWaiting status if necessary for the unblocked goroutine.
     var w = tl.eventWriter(traceGoRunning, traceProcRunning);
@@ -509,7 +509,7 @@ internal static void GoSwitch(this traceLocker tl, ж<g> Ꮡnextg, bool destroy)
 // emitUnblockStatus emits a GoStatus GoWaiting event for a goroutine about to be
 // unblocked to the trace writer.
 internal static traceWriter emitUnblockStatus(traceWriter w, ж<g> Ꮡgp, uintptr gen) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (!Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).statusWasTraced(gen) && Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).acquireStatus(gen)) {
         // TODO(go.dev/issue/65634): Although it would be nice to add a stack trace here of gp,
@@ -559,7 +559,7 @@ internal static void GoSysExit(this traceLocker tl, bool lostP) {
 //
 // The caller must have ownership of pp.
 internal static void ProcSteal(this traceLocker tl, ж<Δp> Ꮡpp, bool inSyscall) {
-    ref var pp = ref Ꮡpp.Value;
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     // Grab the M ID we stole from.
     var mStolenFrom = pp.trace.mSyscallID;
@@ -612,7 +612,7 @@ internal static void HeapGoal(this traceLocker tl) {
 // This occurs when C code calls into Go. On pthread platforms it occurs only when
 // a C thread calls into Go code for the first time.
 internal static void GoCreateSyscall(this traceLocker tl, ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // N.B. We should never trace a status for this goroutine (which we're currently running on),
     // since we want this to appear like goroutine creation.
@@ -711,7 +711,7 @@ internal static void trace_userLog(uint64 id, @string category, @string message)
 //
 // sched.lock must be held to synchronize with traceAdvance.
 internal static void traceThreadDestroy(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     assertLockHeld(Ꮡsched.of(schedt.Ꮡlock));
     // Flush all outstanding buffers to maintain the invariant

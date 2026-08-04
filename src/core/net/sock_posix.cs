@@ -104,7 +104,7 @@ internal static (ж<netFD> fd, error err) socket(context.Context ctx, @string ne
 }
 
 internal static error dial(this ж<netFD> Ꮡfd, context.Context ctx, Δsockaddr laddr, Δsockaddr raddr, Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     ж<rawConn> c = default!;
     if (ctrlCtxFn != default!) {
@@ -180,7 +180,7 @@ internal static error dial(this ж<netFD> Ꮡfd, context.Context ctx, Δsockaddr
 }
 
 internal static error listenStream(this ж<netFD> Ꮡfd, context.Context ctx, Δsockaddr laddr, nint backlog, Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     error err = default!;
     {
@@ -223,7 +223,7 @@ internal static error listenStream(this ж<netFD> Ꮡfd, context.Context ctx, Δ
 }
 
 internal static error listenDatagram(this ж<netFD> Ꮡfd, context.Context ctx, Δsockaddr laddr, Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     switch (laddr.type()) {
     case ж<UDPAddr> addr: {

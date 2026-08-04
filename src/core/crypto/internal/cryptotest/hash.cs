@@ -25,7 +25,7 @@ private static readonly @string statefulWriteˢ = "StatefulWrite"u8;
 // TestHash performs a set of tests on hash.Hash implementations, checking the
 // documented requirements of Write, Sum, Reset, Size, and BlockSize.
 public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test that Sum returns an appended digest matching output of Size
     Ꮡt.Run(sumAppendˢ, (ж<testing.T> tΔ1) => {
@@ -152,7 +152,7 @@ internal static void writeToHash(ж<testing.T> Ꮡt, hash.Hash h, slice<byte> p)
 
 // Helper function for getting Sum. Checks that Sum doesn't change hash state.
 internal static slice<byte> getSum(ж<testing.T> Ꮡt, hash.Hash h, slice<byte> buff) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.Helper();
     var testBuff = new slice<byte>(len(buff));

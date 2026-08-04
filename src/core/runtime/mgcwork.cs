@@ -399,7 +399,7 @@ internal static ж<workbuf> getempty() {
 //
 //go:nowritebarrier
 internal static void putempty(ж<workbuf> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.checkempty();
     Ꮡwork.of(workType.Ꮡempty).push(Ꮡb.of(workbuf.Ꮡnode));
@@ -411,7 +411,7 @@ internal static void putempty(ж<workbuf> Ꮡb) {
 //
 //go:nowritebarrier
 internal static void putfull(ж<workbuf> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.checknonempty();
     Ꮡwork.of(workType.Ꮡfull).push(Ꮡb.of(workbuf.Ꮡnode));
@@ -432,7 +432,7 @@ internal static ж<workbuf> trygetfull() {
 
 //go:nowritebarrier
 internal static ж<workbuf> handoff(ж<workbuf> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Make new buffer with half of b's pointers.
     var b1 = getempty();

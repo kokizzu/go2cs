@@ -20,7 +20,7 @@ internal static readonly @string ratGobEncodeNumeratorTooˢ = "Rat.GobEncode: nu
 
 // GobEncode implements the [encoding/gob.GobEncoder] interface.
 public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (Ꮡx == nil) {
         return (default!, default!);
@@ -83,7 +83,7 @@ public static (slice<byte> text, error err) MarshalText(this ж<ΔRat> Ꮡx) {
     slice<byte> text = default!;
     error err = default!;
 
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
     if (x.IsInt()) {
         return Ꮡx.of(big_package.ΔRat.Ꮡa).MarshalText();
     }

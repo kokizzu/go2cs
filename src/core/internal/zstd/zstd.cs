@@ -107,7 +107,7 @@ public static ж<Reader> NewReader(io.Reader input) {
 
 // Read implements [io.Reader].
 public static (nint, error) Read(this ж<Reader> Ꮡr, slice<byte> p) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var err = Ꮡr.refillIfNeeded(); if (err != default!) {
@@ -121,7 +121,7 @@ public static (nint, error) Read(this ж<Reader> Ꮡr, slice<byte> p) {
 
 // ReadByte implements [io.ByteReader].
 public static (byte, error) ReadByte(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var err = Ꮡr.refillIfNeeded(); if (err != default!) {
@@ -135,7 +135,7 @@ public static (byte, error) ReadByte(this ж<Reader> Ꮡr) {
 
 // refillIfNeeded reads the next block if necessary.
 internal static error refillIfNeeded(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     while (r.off >= builtin.len(r.buffer)) {
         {
@@ -150,7 +150,7 @@ internal static error refillIfNeeded(this ж<Reader> Ꮡr) {
 
 // refill reads and decompresses the next block.
 internal static error refill(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (!r.sawFrameHeader) {
         {
@@ -399,7 +399,7 @@ internal static readonly @string notEnoughUncompressedˢ = "not enough uncompres
 
 // readBlock reads the next block from a frame.
 internal static error readBlock(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     nint relativeOffset = 0;
     // Read Block_Header. RFC 3.1.1.2.

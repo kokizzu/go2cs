@@ -45,8 +45,8 @@ public static nint IsZero(this ж<P521Element> Ꮡe) {
 
 // Set sets e = t, and returns e.
 public static ж<P521Element> Set(this ж<P521Element> Ꮡe, ж<P521Element> Ꮡt) {
-    ref var e = ref Ꮡe.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     e.x = t.x.Clone();
     return Ꮡe;
@@ -61,7 +61,7 @@ public static slice<byte> Bytes(this ж<P521Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P521Element> Ꮡe, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var tmp = ref heap(new p521NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
     p521FromMontgomery(Ꮡtmp, Ꮡe.of(P521Element.Ꮡx));

@@ -23,7 +23,7 @@ internal static readonly @string cgoWriteBarrierFail = "unpinned Go pointer stor
 //go:nosplit
 //go:nowritebarrier
 internal static void cgoCheckPtrWrite(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointer src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     if (!mainStarted) {
         // Something early in startup hates this function.
@@ -74,7 +74,7 @@ internal static void cgoCheckPtrWrite(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointe
 //go:nosplit
 //go:nowritebarrier
 internal static void cgoCheckMemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     cgoCheckMemmove2(Ꮡtyp, dst, src, 0, typ.Size_);
 }
@@ -88,7 +88,7 @@ internal static void cgoCheckMemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @uns
 //go:nosplit
 //go:nowritebarrier
 internal static void cgoCheckMemmove2(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src, uintptr off, uintptr size) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (!typ.Pointers()) {
         return;
@@ -111,7 +111,7 @@ internal static void cgoCheckMemmove2(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @un
 //go:nosplit
 //go:nowritebarrier
 internal static void cgoCheckSliceCopy(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src, nint n) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (!typ.Pointers()) {
         return;
@@ -136,7 +136,7 @@ internal static void cgoCheckSliceCopy(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @u
 //go:nosplit
 //go:nowritebarrier
 internal static void cgoCheckTypedBlock(ж<_type> Ꮡtyp, @unsafe.Pointer src, uintptr off, uintptr size) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     // Anything past typ.PtrBytes is not a pointer.
     if (typ.PtrBytes <= off) {
@@ -237,7 +237,7 @@ internal static void cgoCheckBits(@unsafe.Pointer src, ж<byte> Ꮡgcbits, uintp
 //go:nowritebarrier
 //go:systemstack
 internal static void cgoCheckUsingType(ж<_type> Ꮡtyp, @unsafe.Pointer src, uintptr off, uintptr size) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (!typ.Pointers()) {
         return;

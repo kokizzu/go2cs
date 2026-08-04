@@ -273,7 +273,7 @@ internal static @string pkgPath(abiꓸName n) {
         off += i2 + l2;
     }
     ref var nameOff = ref heap(new nameOff(), out var ᏑnameOff);
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.Data(off))))[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.Data(off), 4))[..]);
     var pkgPathName = resolveNameOff(new @unsafe.Pointer(n.Bytes), nameOff);
     return pkgPathName.Name();
 }
@@ -356,8 +356,8 @@ internal static readonly @string runtimeImpossibleTypeˢ = "runtime: impossible 
 //
 // Only typelinksinit needs this function.
 internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, EmptyStruct> seen) {
-    ref var t = ref Ꮡt.DerefOrNil();
-    ref var v = ref Ꮡv.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var v = ref Ꮡv.DerefOrNull();
 
     var tp = new _typePair(Ꮡt, Ꮡv);
     {

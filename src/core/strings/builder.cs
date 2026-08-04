@@ -24,7 +24,7 @@ partial class strings_package {
 }
 
 internal static void copyCheck(this ж<Builder> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.addr == nil){
         // This hack works around a failing of Go's escape analysis
@@ -74,7 +74,7 @@ internal static void copyCheck(this ж<Builder> Ꮡb) {
 // another n bytes. After Grow(n), at least n bytes can be written to b
 // without another allocation. If n is negative, Grow panics.
 public static void Grow(this ж<Builder> Ꮡb, nint n) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     if (n < 0) {
@@ -88,7 +88,7 @@ public static void Grow(this ж<Builder> Ꮡb, nint n) {
 // Write appends the contents of p to b's buffer.
 // Write always returns len(p), nil.
 public static (nint, error) Write(this ж<Builder> Ꮡb, slice<byte> p) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     b.buf = append(b.buf, p.ꓸꓸꓸ);
@@ -98,7 +98,7 @@ public static (nint, error) Write(this ж<Builder> Ꮡb, slice<byte> p) {
 // WriteByte appends the byte c to b's buffer.
 // The returned error is always nil.
 public static error WriteByte(this ж<Builder> Ꮡb, byte c) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     b.buf = append(b.buf, c);
@@ -108,7 +108,7 @@ public static error WriteByte(this ж<Builder> Ꮡb, byte c) {
 // WriteRune appends the UTF-8 encoding of Unicode code point r to b's buffer.
 // It returns the length of r and a nil error.
 public static (nint, error) WriteRune(this ж<Builder> Ꮡb, rune r) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     nint n = len(b.buf);
@@ -119,7 +119,7 @@ public static (nint, error) WriteRune(this ж<Builder> Ꮡb, rune r) {
 // WriteString appends the contents of s to b's buffer.
 // It returns the length of s and a nil error.
 public static (nint, error) WriteString(this ж<Builder> Ꮡb, @string s) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
     b.buf = append(b.buf, s.ꓸꓸꓸ);

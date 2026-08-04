@@ -82,7 +82,7 @@ internal static (ж<fileStat> fs, error err) newFileStatFromGetFileInformationBy
 // newFileStatFromWin32FileAttributeData copies all required information
 // from syscall.Win32FileAttributeData d into the newly created fileStat.
 internal static ж<fileStat> newFileStatFromWin32FileAttributeData(ж<syscall.Win32FileAttributeData> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     return Ꮡ(new fileStat(
         FileAttributes: d.FileAttributes,
@@ -97,7 +97,7 @@ internal static ж<fileStat> newFileStatFromWin32FileAttributeData(ж<syscall.Wi
 // newFileStatFromFileIDBothDirInfo copies all required information
 // from windows.FILE_ID_BOTH_DIR_INFO d into the newly created fileStat.
 internal static ж<fileStat> newFileStatFromFileIDBothDirInfo(ж<windows.FILE_ID_BOTH_DIR_INFO> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // The FILE_ID_BOTH_DIR_INFO MSDN documentations isn't completely correct.
     // FileAttributes can contain any file attributes that is currently set on the file,
@@ -119,7 +119,7 @@ internal static ж<fileStat> newFileStatFromFileIDBothDirInfo(ж<windows.FILE_ID
 // newFileStatFromFileFullDirInfo copies all required information
 // from windows.FILE_FULL_DIR_INFO d into the newly created fileStat.
 internal static ж<fileStat> newFileStatFromFileFullDirInfo(ж<windows.FILE_FULL_DIR_INFO> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     return Ꮡ(new fileStat(
         FileAttributes: d.FileAttributes,
@@ -135,7 +135,7 @@ internal static ж<fileStat> newFileStatFromFileFullDirInfo(ж<windows.FILE_FULL
 // newFileStatFromWin32finddata copies all required information
 // from syscall.Win32finddata d into the newly created fileStat.
 internal static ж<fileStat> newFileStatFromWin32finddata(ж<syscall.Win32finddata> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var fs = Ꮡ(new fileStat(
         FileAttributes: d.FileAttributes,
@@ -302,7 +302,7 @@ internal static ж<godebug.Setting> winsymlink = godebug.New("winsymlink"u8);
 }
 
 internal static error loadFileId(this ж<fileStat> Ꮡfs) => func<error>((defer, recover) => {
-    ref var fs = ref Ꮡfs.Value;
+    ref var fs = ref Ꮡfs.DerefOrNull();
 
     Ꮡfs.of(fileStat.ᏑMutex).Lock();
     defer(Ꮡfs.of(fileStat.ᏑMutex).Unlock);
@@ -368,8 +368,8 @@ internal static error loadFileId(this ж<fileStat> Ꮡfs) => func<error>((defer,
 }
 
 internal static bool sameFile(ж<fileStat> Ꮡfs1, ж<fileStat> Ꮡfs2) {
-    ref var fs1 = ref Ꮡfs1.Value;
-    ref var fs2 = ref Ꮡfs2.Value;
+    ref var fs1 = ref Ꮡfs1.DerefOrNull();
+    ref var fs2 = ref Ꮡfs2.DerefOrNull();
 
     var e = Ꮡfs1.loadFileId();
     if (e != default!) {

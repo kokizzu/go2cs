@@ -99,7 +99,7 @@ public static ΔType Unalias(ΔType t) {
 }
 
 internal static ΔType unalias(ж<Alias> Ꮡa0) {
-    ref var a0 = ref Ꮡa0.Value;
+    ref var a0 = ref Ꮡa0.DerefOrNull();
 
     if (a0.actual != default!) {
         return a0.actual;
@@ -132,8 +132,8 @@ internal static ж<Named> asNamed(ΔType t) {
 // newAlias creates a new Alias type with the given type name and rhs.
 // rhs must not be nil.
 internal static ж<Alias> newAlias(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ΔType rhs) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var obj = ref Ꮡobj.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     assert(rhs != default!);
     var a = @new<Alias>();
@@ -154,7 +154,7 @@ internal static ж<Alias> newAlias(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡob
 // arguments, recording pos as the position of its synthetic object (for error
 // reporting).
 internal static ж<Alias> newAliasInstance(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Alias> Ꮡorig, slice<ΔType> targs, ж<Named> Ꮡexpanding, ж<Context> Ꮡctxt) {
-    ref var orig = ref Ꮡorig.Value;
+    ref var orig = ref Ꮡorig.DerefOrNull();
 
     assert(len(targs) > 0);
     var obj = NewTypeName(pos, (~orig.obj).pkg, (~orig.obj).name, default!);
@@ -167,7 +167,7 @@ internal static ж<Alias> newAliasInstance(this ж<Checker> Ꮡcheck, tokenꓸPo
 }
 
 internal static void cleanup(this ж<Alias> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     // Ensure a.actual is set before types are published,
     // so Unalias is a pure "getter", not a "setter".

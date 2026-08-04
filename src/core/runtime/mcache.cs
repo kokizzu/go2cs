@@ -98,7 +98,7 @@ internal static ж<mcache> allocmcache() {
 // resources, such as statistics, so donate them to
 // a different mcache (the recipient).
 internal static void freemcache(ж<mcache> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     systemstack(() => {
         Ꮡc.Value.releaseAll();
@@ -118,7 +118,7 @@ internal static void freemcache(ж<mcache> Ꮡc) {
 // Returns nil if we're not bootstrapping or we don't have a P. The caller's
 // P must not change, so we must be in a non-preemptible state.
 internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     // Grab the mcache, since that's where stats live.
     var pp = mp.p.ptr();
@@ -290,7 +290,7 @@ internal static readonly @string badFlushGenˢ = "bad flushGen"u8;
 // since c was populated. This must happen between the sweep phase
 // starting and the first allocation from c.
 internal static void prepareForSweep(this ж<mcache> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Alternatively, instead of making sure we do this on every P
     // between starting the world and allocating on that P, we

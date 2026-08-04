@@ -356,7 +356,7 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     bool preferPAX = default!; // Prefer PAX over USTAR
     var hʗ1 = h;
     var paxHdrsʗ1 = paxHdrs;
-    var verifyString = (@string s, nint size, @string name, @string paxKey) => {
+    void verifyString(@string s, nint size, @string name, @string paxKey) {
         // NUL-terminator is optional for path and linkpath.
         // Technically, it is required for uname and gname,
         // but neither GNU nor BSD tar checks for it.
@@ -386,10 +386,10 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
                 paxHdrsʗ1[paxKey] = v;
             }
         }
-    };
+    }
     var hʗ2 = h;
     var paxHdrsʗ2 = paxHdrs;
-    var verifyNumeric = (int64 n, nint size, @string name, @string paxKey) => {
+    void verifyNumeric(int64 n, nint size, @string name, @string paxKey) {
         if (!fitsInBase256(size, n)) {
             whyNoGNU = fmt.Sprintf("GNU cannot encode %s=%d"u8, name, n);
             format.mustNotBe(FormatGNU);
@@ -409,10 +409,10 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
                 paxHdrsʗ2[paxKey] = v;
             }
         }
-    };
+    }
     var hʗ3 = h;
     var paxHdrsʗ3 = paxHdrs;
-    var verifyTime = (time.Time ts, nint size, @string name, @string paxKey) => {
+    void verifyTime(time.Time ts, nint size, @string name, @string paxKey) {
         if (ts.IsZero()) {
             return;
         }
@@ -443,7 +443,7 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
                 paxHdrsʗ3[paxKey] = v;
             }
         }
-    };
+    }
     // Check basic fields.
     ref var blk = ref heap(new block(), out var Ꮡblk);
     var v7 = Ꮡblk.toV7();
@@ -601,7 +601,7 @@ internal static time.Time ModTime(this headerFileInfo fi) {
 }
 
 internal static any Sys(this headerFileInfo fi) {
-    return fi.h;
+    return fi.h.OrTypedNil();
 }
 
 // Name returns the base name of the file.

@@ -969,7 +969,7 @@ internal static @string trimLeftByte(@string s, byte c) {
 }
 
 internal static @string trimLeftASCII(@string s, ж<asciiSet> Ꮡas) {
-    ref var @as = ref Ꮡas.Value;
+    ref var @as = ref Ꮡas.DerefOrNull();
 
     while (len(s) > 0) {
         if (!@as.contains(s[0])) {
@@ -1023,7 +1023,7 @@ internal static @string trimRightByte(@string s, byte c) {
 }
 
 internal static @string trimRightASCII(@string s, ж<asciiSet> Ꮡas) {
-    ref var @as = ref Ꮡas.Value;
+    ref var @as = ref Ꮡas.DerefOrNull();
 
     while (len(s) > 0) {
         if (!@as.contains(s[len(s) - 1])) {

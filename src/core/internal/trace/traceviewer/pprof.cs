@@ -44,12 +44,12 @@ public static http.HandlerFunc SVGProfileHandlerFunc(Func<ж<http.Request>, (sli
     return (http.ResponseWriter w, ж<http.Request> r) => func((defer, recover) => {
         if (r.FormValue(rawˢ) != ""u8) {
             w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
-            var failf = (@string s, params ꓸꓸꓸany argsʗp) => {
+            void failf(@string s, params ꓸꓸꓸany argsʗp) {
                 var args = argsʗp.slice();
                 w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
                 w.Header().Set(xGoPprofˢ, "1"u8);
                 http.Error(w, fmt.Sprintf(s, args.ꓸꓸꓸ), http.StatusInternalServerError);
-            };
+            }
             var (recordsΔ1, errΔ1) = f(r);
             if (errΔ1 != default!) {
                 failf("failed to get records: %v"u8, errΔ1);

@@ -10,7 +10,7 @@ partial class socktest_package {
 [GoType("map[syscallꓸHandle, Status]")] partial struct ΔSockets;
 
 internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) => func<ж<Status>>((defer, recover) => {
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
 
     Ꮡsw.of(Switch.Ꮡsmu).RLock();
     defer(Ꮡsw.of(Switch.Ꮡsmu).RUnlock);
@@ -25,7 +25,7 @@ internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) => 
 // addLocked returns a new Status without locking.
 // sw.smu must be held before call.
 internal static ж<Status> addLocked(this ж<Switch> Ꮡsw, syscallꓸHandle s, nint family, nint sotype, nint proto) {
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
 
     Ꮡsw.of(Switch.Ꮡonce).Do(Ꮡsw.init);
     ref var so = ref heap<Status>(out var Ꮡso);

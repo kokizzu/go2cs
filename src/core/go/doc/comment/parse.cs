@@ -290,7 +290,7 @@ public static (@string importPath, bool ok) DefaultLookupPackage(@string name) {
 // Parse parses the doc comment text and returns the *[Doc] form.
 // Comment markers (/* // and */) in the text must have already been removed.
 public static ж<Doc> Parse(this ж<Parser> Ꮡp, @string text) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var lines = unindent(strings.Split(text, "\n"u8));
     var d = Ꮡ(new parseDoc(
@@ -704,7 +704,7 @@ internal static ж<List> list(this ж<parseDoc> Ꮡd, slice<@string> lines, bool
     ж<List> list = Ꮡ(new List(ForceBlankBefore: forceBlankBefore));
     ref var item = ref heap<ж<ListItem>>(out var Ꮡitem);
     ref var text = ref heap<slice<@string>>(out var Ꮡtext);
-    var flush = () => {
+    void flush() {
         if (Ꮡitem.ValueSlot != nil) {
             {
                 var para = Ꮡd.Value.paragraph(Ꮡtext.ValueSlot); if (para != default!) {
@@ -713,7 +713,7 @@ internal static ж<List> list(this ж<parseDoc> Ꮡd, slice<@string> lines, bool
             }
         }
         Ꮡtext.ValueSlot = default!;
-    };
+    }
     foreach (var (_, vᴛ1) in lines) {
         var line = vᴛ1;
 
@@ -795,16 +795,16 @@ internal static bool isList(@string line) {
 // or the start or end of a line. An example problem would be treating
 // map[ast.Expr]TypeAndValue as containing a link.
 internal static slice<ΔText> parseLinkedText(this ж<parseDoc> Ꮡd, @string text) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     ref var @out = ref heap<slice<ΔText>>(out var Ꮡout);
     nint wrote = 0;
-    var flush = (nint i) => {
+    void flush(nint i) {
         if (wrote < i) {
             Ꮡout.ValueSlot = Ꮡd.Value.parseText(Ꮡout.ValueSlot, text[(int)(wrote)..(int)(i)], true);
             wrote = i;
         }
-    };
+    }
     nint start = -1;
     slice<byte> buf = default!;
     for (nint i = 0; i < len(text); i++) {
@@ -931,18 +931,18 @@ internal static (@string before, @string name, bool foundDot) splitDocName(@stri
 [GoRecv] internal static slice<ΔText> parseText(this ref parseDoc d, slice<ΔText> @out, @string s, bool autoLink) {
     ref var w = ref heap(new strings.Builder(), out var Ꮡw);
     nint wrote = 0;
-    var writeUntil = (nint i) => {
+    void writeUntil(nint i) {
         Ꮡw.WriteString(s[(int)(wrote)..(int)(i)]);
         wrote = i;
-    };
+    }
     var writeUntilʗ1 = writeUntil;
-    var flush = (nint i) => {
+    void flush(nint i) {
         writeUntilʗ1(i);
         if (Ꮡw.Value.Len() > 0) {
             @out = append(@out, (ΔText)(((Plain)Ꮡw.Value.String())));
             Ꮡw.Value.Reset();
         }
-    };
+    }
     for (nint i = 0; i < len(s); ) {
         @string t = s[(int)(i)..];
         if (autoLink) {
@@ -1139,7 +1139,7 @@ internal static bool isHost(byte c) {
     // so that the byte c can be tested with a shift and an and.
     // If c > 128, then 1<<c and 1<<(c-64) will both be zero,
     // and this function will return false.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<26-1)<<'A' |
 	(1<<26-1)<<'a' |
 	(1<<10-1)<<'0' |
@@ -1150,7 +1150,7 @@ internal static bool isHost(byte c) {
 	1<<'[' |
 	1<<']' |
 	1<<':' */
-            GoUntyped.Parse("10633823862292363665388054147449749504");
+            GoBigConst.Parse("10633823862292363665388054147449749504");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460746666278911UL)))) != 0;
 }
 
@@ -1177,7 +1177,7 @@ internal static bool isPath(byte c) {
     // so that the byte c can be tested with a shift and an and.
     // If c > 128, then 1<<c and 1<<(c-64) will both be zero,
     // and this function will return false.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<26-1)<<'A' |
 	(1<<26-1)<<'a' |
 	(1<<10-1)<<'0' |
@@ -1200,7 +1200,7 @@ internal static bool isPath(byte c) {
 	1<<'{' |
 	1<<'}' |
 	1<<'%' */
-            GoUntyped.Parse("148873535423923614449401688976238051328");
+            GoBigConst.Parse("148873535423923614449401688976238051328");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (2593985390075445248UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (8070450526610784255UL)))) != 0;
 }
 
@@ -1251,12 +1251,12 @@ internal static bool isIdentASCII(byte c) {
     // so that the byte c can be tested with a shift and an and.
     // If c > 128, then 1<<c and 1<<(c-64) will both be zero,
     // and this function will return false.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<26-1)<<'A' |
 	(1<<26-1)<<'a' |
 	(1<<10-1)<<'0' |
 	1<<'_' */
-            GoUntyped.Parse("10633823849912963253799171395480977408");
+            GoBigConst.Parse("10633823849912963253799171395480977408");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (287948901175001088UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460745995190270UL)))) != 0;
 }
 
@@ -1307,7 +1307,7 @@ internal static bool importPathOK(byte c) {
     // so that the byte c can be tested with a shift and an and.
     // If c > 128, then 1<<c and 1<<(c-64) will both be zero,
     // and this function will return false.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<26-1)<<'A' |
 	(1<<26-1)<<'a' |
 	(1<<10-1)<<'0' |
@@ -1316,7 +1316,7 @@ internal static bool importPathOK(byte c) {
 	1<<'~' |
 	1<<'_' |
 	1<<'+' */
-            GoUntyped.Parse("95704415580147579119642937602632318976");
+            GoBigConst.Parse("95704415580147579119642937602632318976");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288063250384289792UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (5188146764422578174UL)))) != 0;
 }
 

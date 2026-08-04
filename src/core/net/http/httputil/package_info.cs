@@ -20,9 +20,6 @@ global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
 global using urlꓸError = go.net.url_package.ΔError;
-using bufio = go.bufio_package;
-using http = go.net.http_package;
-using url = go.net.url_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -74,8 +71,6 @@ using static go.net.http.httputil_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<http.Request, ж<http.Request>>(Indirect = true)]
-[assembly: GoImplicitConv<url.URL, ж<url.URL>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.net.http;

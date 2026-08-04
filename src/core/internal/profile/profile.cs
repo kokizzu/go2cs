@@ -165,7 +165,7 @@ internal static (ж<Profile>, error) parseUncompressed(slice<byte> data) {
 
 // Write writes the profile as a gzip-compressed marshaled protobuf.
 public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.preEncode();
     var b = marshal(new Profileжmessage(Ꮡp));
@@ -225,7 +225,7 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, re
         {
             var m = l.Value.Mapping; if (m != nil) {
                 if ((~m).ID == 0 || mappings[(~m).ID] != m) {
-                    return fmt.Errorf("inconsistent mapping %p: %d"u8, m, (~m).ID);
+                    return fmt.Errorf("inconsistent mapping %p: %d"u8, m.OrTypedNil(), (~m).ID);
                 }
             }
         }
@@ -233,7 +233,7 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, re
             {
                 var f = ln.Function; if (f != nil) {
                     if ((~f).ID == 0 || functions[(~f).ID] != f) {
-                        return fmt.Errorf("inconsistent function %p: %d"u8, f, (~f).ID);
+                        return fmt.Errorf("inconsistent function %p: %d"u8, f.OrTypedNil(), (~f).ID);
                     }
                 }
             }
@@ -391,14 +391,14 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, re
 // TODO(rsilvera): consider normalizing the profiles based on the
 // total samples collected.
 [GoRecv] public static error Merge(this ref Profile p, ж<Profile> Ꮡpb, float64 r) {
-    ref var pb = ref Ꮡpb.Value;
+    ref var pb = ref Ꮡpb.DerefOrNull();
 
     {
         var err = p.Compatible(Ꮡpb); if (err != default!) {
             return err;
         }
     }
-    Ꮡpb = Ꮡpb.Copy(); pb = ref Ꮡpb.Value;
+    Ꮡpb = Ꮡpb.Copy(); pb = ref Ꮡpb.DerefOrNull();
     // Keep the largest of the two periods.
     if (pb.Period > p.Period) {
         p.Period = pb.Period;
@@ -431,10 +431,10 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, re
 // returns nil if the profiles are compatible; otherwise an error with
 // details on the incompatibility.
 [GoRecv] public static error Compatible(this ref Profile p, ж<Profile> Ꮡpb) {
-    ref var pb = ref Ꮡpb.Value;
+    ref var pb = ref Ꮡpb.DerefOrNull();
 
     if (!compatibleValueTypes(p.PeriodType, pb.PeriodType)) {
-        return fmt.Errorf("incompatible period types %v and %v"u8, p.PeriodType, pb.PeriodType);
+        return fmt.Errorf("incompatible period types %v and %v"u8, p.PeriodType.OrTypedNil(), pb.PeriodType.OrTypedNil());
     }
     if (len(p.SampleType) != len(pb.SampleType)) {
         return fmt.Errorf("incompatible sample types %v and %v"u8, p.SampleType, pb.SampleType);
@@ -470,8 +470,8 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, re
 }
 
 internal static bool compatibleValueTypes(ж<ValueType> Ꮡv1, ж<ValueType> Ꮡv2) {
-    ref var v1 = ref Ꮡv1.DerefOrNil();
-    ref var v2 = ref Ꮡv2.DerefOrNil();
+    ref var v1 = ref Ꮡv1.DerefOrNull();
+    ref var v2 = ref Ꮡv2.DerefOrNull();
 
     if (Ꮡv1 == nil || Ꮡv2 == nil) {
         return true;
@@ -482,7 +482,7 @@ internal static bool compatibleValueTypes(ж<ValueType> Ꮡv1, ж<ValueType> Ꮡ
 
 // Copy makes a fully independent copy of a profile.
 public static ж<Profile> Copy(this ж<Profile> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.preEncode();
     var b = marshal(new Profileжmessage(Ꮡp));

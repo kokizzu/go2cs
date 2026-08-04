@@ -288,7 +288,7 @@ internal static ref gcControllerState gcController => ref ᏑgcController.Value;
 }
 
 internal static void init(this ж<gcControllerState> Ꮡc, int32 gcPercent, int64 memoryLimit) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.heapMinimum = defaultHeapMinimum;
     c.triggered = ~(uint64)0;
@@ -307,7 +307,7 @@ internal static void init(this ж<gcControllerState> Ꮡc, int32 gcPercent, int6
 // for a new GC cycle. The caller must hold worldsema and the world
 // must be stopped.
 internal static void startCycle(this ж<gcControllerState> Ꮡc, int64 markStartTime, nint procs, gcTrigger trigger) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(gcControllerState.ᏑheapScanWork).Store(0);
     Ꮡc.of(gcControllerState.ᏑstackScanWork).Store(0);
@@ -409,7 +409,7 @@ internal static void startCycle(this ж<gcControllerState> Ꮡc, int64 markStart
 // is when assists are enabled and the necessary statistics are
 // available).
 internal static void revise(this ж<gcControllerState> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var gcPercent = Ꮡc.of(gcControllerState.ᏑgcPercent).Load();
     if (gcPercent < 0) {
@@ -511,7 +511,7 @@ internal static void revise(this ж<gcControllerState> Ꮡc) {
 // userForced indicates whether the current GC cycle was forced
 // by the application.
 internal static void endCycle(this ж<gcControllerState> Ꮡc, int64 now, nint procs, bool userForced) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Record last heap goal for the scavenger.
     // We'll be updating the heap goal soon.
@@ -642,8 +642,8 @@ internal static readonly @string gcControllerStateˢ = "gcControllerState.findRu
 // findRunnableGCWorker returns a background mark worker for pp if it
 // should be run. This must only be called when gcBlackenEnabled != 0.
 internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> Ꮡc, ж<Δp> Ꮡpp, int64 now) {
-    ref var c = ref Ꮡc.Value;
-    ref var pp = ref Ꮡpp.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     if (gcBlackenEnabled == 0) {
         @throw(gcControllerStateˢ);
@@ -681,7 +681,7 @@ internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> �
         // just using, ensuring work can complete.
         return (default!, now);
     }
-    var decIfPositive = (ж<atomic.Int64> val) => {
+    bool decIfPositive(ж<atomic.Int64> val) {
         while (ᐧ) {
             var v = val.Load();
             if (v <= 0) {
@@ -691,7 +691,7 @@ internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> �
                 return true;
             }
         }
-    };
+    }
     if (decIfPositive(Ꮡc.of(gcControllerState.ᏑdedicatedMarkWorkersNeeded))){
         // This P is now dedicated to marking until the end of
         // the concurrent mark phase.
@@ -732,7 +732,7 @@ internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> �
 //
 // The world must be stopped.
 internal static void resetLive(this ж<gcControllerState> Ꮡc, uint64 bytesMarked) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.heapMarked = bytesMarked;
     Ꮡc.of(gcControllerState.ᏑheapLive).Store(bytesMarked);
@@ -800,7 +800,7 @@ internal static void update(this ж<gcControllerState> Ꮡc, int64 dHeapLive, in
 }
 
 internal static void addScannableStack(this ж<gcControllerState> Ꮡc, ж<Δp> Ꮡpp, int64 amount) {
-    ref var pp = ref Ꮡpp.DerefOrNil();
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     if (Ꮡpp == nil) {
         Ꮡc.of(gcControllerState.ᏑmaxStackScan).Add(amount);
@@ -831,7 +831,7 @@ internal static (uint64 goal, uint64 minTrigger) heapGoalInternal(this ж<gcCont
     uint64 goal = default!;
     uint64 minTrigger = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     // Start with the goal calculated for gcPercent.
     goal = Ꮡc.of(gcControllerState.ᏑgcPercentHeapGoal).Load();
     // Check if the memory-limit-based goal is smaller, and if so, pick that.
@@ -877,7 +877,7 @@ internal static (uint64 goal, uint64 minTrigger) heapGoalInternal(this ж<gcCont
 
 // memoryLimitHeapGoal returns a heap goal derived from memoryLimit.
 internal static uint64 memoryLimitHeapGoal(this ж<gcControllerState> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Start by pulling out some values we'll need. Be careful about overflow.
     uint64 heapFree = default!;
@@ -1005,7 +1005,7 @@ internal static readonly @string producedATriggerGreaterˢ = "produced a trigger
 // not be, in the case of small movements for efficiency) checked whenever
 // the heap goal may change.
 internal static (uint64, uint64) trigger(this ж<gcControllerState> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var (goal, minTrigger) = Ꮡc.heapGoalInternal();
     // Invariant: the trigger must always be less than the heap goal.
@@ -1086,7 +1086,7 @@ internal static (uint64, uint64) trigger(this ж<gcControllerState> Ꮡc) {
 //
 // mheap_.lock must be held or the world must be stopped.
 internal static void commit(this ж<gcControllerState> Ꮡc, bool isSweepDone) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
         assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
@@ -1147,7 +1147,7 @@ internal static void commit(this ж<gcControllerState> Ꮡc, bool isSweepDone) {
 //
 // The world must be stopped, or mheap_.lock must be held.
 internal static int32 setGCPercent(this ж<gcControllerState> Ꮡc, int32 @in) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
         assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
@@ -1201,7 +1201,7 @@ internal static int32 readGOGC() {
 //
 // The world must be stopped, or mheap_.lock must be held.
 internal static int64 setMemoryLimit(this ж<gcControllerState> Ꮡc, int64 @in) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
         assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));

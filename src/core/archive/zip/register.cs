@@ -40,7 +40,7 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock);
@@ -53,14 +53,14 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
 }
 
 internal static error Close(this ж<pooledFlateWriter> Ꮡw) => func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
     defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock);
     error err = default!;
     if (w.fw != nil) {
         err = w.fw.Close();
-        ᏑflateWriterPool.Put(w.fw);
+        ᏑflateWriterPool.Put(w.fw.OrTypedNil());
         w.fw = default!;
     }
     return err;
@@ -91,7 +91,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
         Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock);
@@ -104,7 +104,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
 }
 
 internal static error Close(this ж<pooledFlateReader> Ꮡr) => func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
     defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock);

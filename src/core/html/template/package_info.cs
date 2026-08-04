@@ -54,13 +54,7 @@ using static go.html.template_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.text.template.parse_package.ActionNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<go.text.template.parse_package.BranchNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.BreakNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ContinueNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.IdentifierNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.ListNode, go.text.template.parse_package.Node>(Pointer = true)]
-[assembly: GoImplement<go.text.template.parse_package.TemplateNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔError, error>(Pointer = true)]
 // </InterfaceImplementations>

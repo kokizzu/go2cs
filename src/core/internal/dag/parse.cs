@@ -84,7 +84,7 @@ internal static ж<Graph> newGraph() {
 }
 
 public static slice<@string> Edges(this ж<Graph> Ꮡg, @string from) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     var edges = new slice<@string>(0, 16);
     foreach (var (k, _) in g.edges[from]) {
@@ -106,10 +106,10 @@ public static (ж<Graph>, error) Parse(@string dag) {
     }
     // TODO: Add line numbers to errors.
     ref var errors = ref heap<slice<@string>>(out var Ꮡerrors);
-    var errorf = (@string format, params ꓸꓸꓸany aʗp) => {
+    void errorf(@string format, params ꓸꓸꓸany aʗp) {
         var a = aʗp.slice();
         Ꮡerrors.ValueSlot = append(Ꮡerrors.ValueSlot, fmt.Sprintf(format, a.ꓸꓸꓸ));
-    };
+    }
     foreach (var (_, r) in rules) {
         if (r.op == "!<"u8) {
             disallowed = append(disallowed, r);

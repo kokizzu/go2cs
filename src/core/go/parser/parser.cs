@@ -64,7 +64,7 @@ partial class parser_package {
 }
 
 internal static void init(this ж<parser> Ꮡp, ж<token.FileSet> Ꮡfset, @string filename, slice<byte> src, Mode mode) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.@file = Ꮡfset.AddFile(filename, -1, len(src));
     var eh = (tokenꓸPosition pos, @string msg) => {
@@ -98,7 +98,7 @@ internal static void init(this ж<parser> Ꮡp, ж<token.FileSet> Ꮡfset, @stri
 }
 
 internal static ж<parser> trace(ж<parser> Ꮡp, @string msg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.printTrace(msg, (@string)"("u8);
     p.indent++;
@@ -107,7 +107,7 @@ internal static ж<parser> trace(ж<parser> Ꮡp, @string msg) {
 
 // Usage pattern: defer un(trace(p, "..."))
 internal static void un(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.indent--;
     p.printTrace((@string)")"u8);
@@ -120,7 +120,7 @@ internal const nint maxNestLev = 100000;
 internal static readonly @string exceededMaxNestingDepthˢ = "exceeded max nesting depth"u8;
 
 internal static ж<parser> incNestLev(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.nestLev++;
     if (p.nestLev > maxNestLev) {
@@ -133,7 +133,7 @@ internal static ж<parser> incNestLev(ж<parser> Ꮡp) {
 // decNestLev is used to track nesting depth during parsing to prevent stack exhaustion.
 // It is used along with incNestLev in a similar fashion to how un and trace are used.
 internal static void decNestLev(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.nestLev--;
 }
@@ -280,7 +280,7 @@ internal static readonly @string goBuildˢ = "//go:build"u8;
 }
 
 internal static void error(this ж<parser> Ꮡp, tokenꓸPos pos, @string msg) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, "error: "u8 + msg), defer);
@@ -303,7 +303,7 @@ internal static void error(this ж<parser> Ꮡp, tokenꓸPos pos, @string msg) =
 });
 
 internal static void errorExpected(this ж<parser> Ꮡp, tokenꓸPos pos, @string msg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     msg = "expected "u8 + msg;
     if (pos == p.pos) {
@@ -329,7 +329,7 @@ internal static void errorExpected(this ж<parser> Ꮡp, tokenꓸPos pos, @strin
 }
 
 internal static tokenꓸPos expect(this ж<parser> Ꮡp, token.Token tok) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     tokenꓸPos pos = p.pos;
     if (p.tok != tok) {
@@ -345,7 +345,7 @@ internal static tokenꓸPos expect(this ж<parser> Ꮡp, token.Token tok) {
 internal static tokenꓸPos /*pos*/ expect2(this ж<parser> Ꮡp, token.Token tok) {
     tokenꓸPos pos = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     if (p.tok == tok){
         pos = p.pos;
     } else {
@@ -359,7 +359,7 @@ internal static tokenꓸPos /*pos*/ expect2(this ж<parser> Ꮡp, token.Token to
 // expectClosing is like expect but provides a better error message
 // for the common case of a missing comma before a newline.
 internal static tokenꓸPos expectClosing(this ж<parser> Ꮡp, token.Token tok, @string context) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.tok != tok && p.tok == token.SEMICOLON && p.lit == "\n"u8) {
         Ꮡp.error(p.pos, "missing ',' before newline in "u8 + context);
@@ -372,7 +372,7 @@ internal static tokenꓸPos expectClosing(this ж<parser> Ꮡp, token.Token tok,
 internal static ж<ast.CommentGroup> /*comment*/ expectSemi(this ж<parser> Ꮡp) {
     ж<ast.CommentGroup> comment = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     // semicolon is optional before a closing ')' or '}'
     if (p.tok != token.RPAREN && p.tok != token.RBRACE) {
         var exprᴛ1 = p.tok;
@@ -409,7 +409,7 @@ internal static ж<ast.CommentGroup> /*comment*/ expectSemi(this ж<parser> Ꮡp
 internal static readonly @string missingˢ = "missing ','"u8;
 
 internal static bool atComma(this ж<parser> Ꮡp, @string context, token.Token follow) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.tok == token.COMMA) {
         return true;
@@ -507,7 +507,7 @@ internal static map<token.Token, bool> exprEnd = new map<token.Token, bool>{
 internal static tokenꓸPos /*res*/ safePos(this ж<parser> Ꮡp, tokenꓸPos pos) {
     tokenꓸPos res = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             if (recover() != default!) {
@@ -525,7 +525,7 @@ internal static tokenꓸPos /*res*/ safePos(this ж<parser> Ꮡp, tokenꓸPos po
 // ----------------------------------------------------------------------------
 // Identifiers
 internal static ж<ast.Ident> parseIdent(this ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var pos = ref heap<tokenꓸPos>(out var Ꮡpos);
     pos = p.pos;
@@ -547,7 +547,7 @@ internal static readonly @string identListˢ = "IdentList"u8;
 internal static slice<ж<ast.Ident>> /*list*/ parseIdentList(this ж<parser> Ꮡp) {
     slice<ж<ast.Ident>> list = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, identListˢ), defer);
@@ -571,7 +571,7 @@ internal static readonly @string expressionListˢ = "ExpressionList"u8;
 internal static slice<ast.Expr> /*list*/ parseExprList(this ж<parser> Ꮡp) {
     slice<ast.Expr> list = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, expressionListˢ), defer);
@@ -586,7 +586,7 @@ internal static slice<ast.Expr> /*list*/ parseExprList(this ж<parser> Ꮡp) {
 }
 
 internal static slice<ast.Expr> parseList(this ж<parser> Ꮡp, bool inRhs) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var old = p.inRhs;
     p.inRhs = inRhs;
@@ -602,7 +602,7 @@ internal static readonly @string typeˢ2 = "type"u8;
 // ----------------------------------------------------------------------------
 // Types
 internal static ast.Expr parseType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, typeˢ), defer);
@@ -622,7 +622,7 @@ internal static ast.Expr parseType(this ж<parser> Ꮡp) => func((defer, recover
 internal static readonly @string qualifiedIdentˢ = "QualifiedIdent"u8;
 
 internal static ast.Expr parseQualifiedIdent(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, qualifiedIdentˢ), defer);
@@ -639,14 +639,14 @@ internal static readonly @string typeNameˢ = "TypeName"u8;
 
 // If the result is an identifier, it is not resolved.
 internal static ast.Expr parseTypeName(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) => func<ast.Expr>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var ident = ref Ꮡident.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var ident = ref Ꮡident.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, typeNameˢ), defer);
     }
     if (Ꮡident == nil) {
-        Ꮡident = Ꮡp.parseIdent(); ident = ref Ꮡident.DerefOrNil();
+        Ꮡident = Ꮡp.parseIdent(); ident = ref Ꮡident.DerefOrNull();
     }
     if (p.tok == token.PERIOD) {
         // ident is a package name
@@ -664,7 +664,7 @@ internal static readonly @string unexpectedCommaExpectingˢ = "unexpected comma;
 // "[" has already been consumed, and lbrack is its position.
 // If len != nil it is the already consumed array length.
 internal static ж<ast.ArrayType> parseArrayType(this ж<parser> Ꮡp, tokenꓸPos lbrack, ast.Expr len) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, arrayTypeˢ), defer);
@@ -697,8 +697,8 @@ internal static ж<ast.ArrayType> parseArrayType(this ж<parser> Ꮡp, tokenꓸP
 internal static readonly @string arrayFieldOrTypeInstanceˢ = "ArrayFieldOrTypeInstance"u8;
 
 internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡx) => func<(ж<ast.Ident>, ast.Expr)>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, arrayFieldOrTypeInstanceˢ), defer);
@@ -750,7 +750,7 @@ internal static readonly @string cannotParenthesizeˢ = "cannot parenthesize emb
 internal static readonly @string fieldNameOrEmbeddedTypeˢ = "field name or embedded type"u8;
 
 internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, fieldDeclˢ), defer);
@@ -846,7 +846,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
 internal static readonly @string structTypeˢ = "StructType"u8;
 
 internal static ж<ast.StructType> parseStructType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, structTypeˢ), defer);
@@ -878,7 +878,7 @@ internal static ж<ast.StructType> parseStructType(this ж<parser> Ꮡp) => func
 internal static readonly @string pointerTypeˢ = "PointerType"u8;
 
 internal static ж<ast.StarExpr> parsePointerType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, pointerTypeˢ), defer);
@@ -893,7 +893,7 @@ internal static ж<ast.StarExpr> parsePointerType(this ж<parser> Ꮡp) => func(
 internal static readonly @string dotsTypeˢ = "DotsType"u8;
 
 internal static ж<ast.Ellipsis> parseDotsType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, dotsTypeˢ), defer);
@@ -915,8 +915,8 @@ internal static readonly @string paramDeclOrNilˢ = "ParamDeclOrNil"u8;
 internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡname, bool typeSetsOK) {
     field f = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var name = ref Ꮡname.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var name = ref Ꮡname.DerefOrNull();
 
         // TODO(rFindley) refactor to be more similar to paramDeclOrNil in the syntax
         // package
@@ -1015,8 +1015,8 @@ internal static readonly @string nilTypeInNamedParameterˢ = "nil type in named 
 internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡname0, ast.Expr typ0, token.Token closing) {
     slice<ж<ast.Field>> @params = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var name0 = ref Ꮡname0.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var name0 = ref Ꮡname0.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, parameterListˢ), defer);
@@ -1048,7 +1048,7 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
             } else {
                 par = Ꮡp.parseParamDecl(Ꮡname0, tparams);
             }
-            Ꮡname0 = default!; name0 = ref Ꮡname0.DerefOrNil();
+            Ꮡname0 = default!; name0 = ref Ꮡname0.DerefOrNull();
             // 1st name was consumed if present
             typ0 = default!;
             // 1st typ was consumed if present
@@ -1168,12 +1168,12 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
         // collect all names with the same types into a single ast.Field.
         ref var names = ref heap<slice<ж<ast.Ident>>>(out var Ꮡnames);
         ref var typ = ref heap<ast.Expr>(out var Ꮡtyp);
-        var addParams = () => {
+        void addParams() {
             assert(Ꮡtyp.ValueSlot != default!, nilTypeInNamedParameterˢ);
             var field = Ꮡ(new ast.Field(Names: Ꮡnames.ValueSlot, Type: Ꮡtyp.ValueSlot));
             @params = append(@params, field);
             Ꮡnames.ValueSlot = default!;
-        };
+        }
         foreach (var (_, par) in list) {
             if (!AreEqual(par.typ, typ)) {
                 if (len(names) > 0) {
@@ -1198,7 +1198,7 @@ internal static (ж<ast.FieldList> tparams, ж<ast.FieldList> @params) parsePara
     ж<ast.FieldList> tparams = default!;
     ж<ast.FieldList> @params = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, parametersˢ), defer);
@@ -1236,7 +1236,7 @@ internal static (ж<ast.FieldList> tparams, ж<ast.FieldList> @params) parsePara
 internal static readonly @string resultˢ = "Result"u8;
 
 internal static ж<ast.FieldList> parseResult(this ж<parser> Ꮡp) => func<ж<ast.FieldList>>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, resultˢ), defer);
@@ -1259,7 +1259,7 @@ internal static readonly @string funcTypeˢ = "FuncType"u8;
 internal static readonly @string functionTypeMustHaveNoˢ = "function type must have no type parameters"u8;
 
 internal static ж<ast.FuncType> parseFuncType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, funcTypeˢ), defer);
@@ -1280,7 +1280,7 @@ internal static readonly @string interfaceMethodMustHaveˢ = "interface method m
 internal static readonly @string typeArgumentListˢ = "type argument list"u8;
 
 internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, methodSpecˢ), defer);
@@ -1374,7 +1374,7 @@ ident}.slice();
 internal static readonly @string embeddedElemˢ = "EmbeddedElem"u8;
 
 internal static ast.Expr embeddedElem(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, embeddedElemˢ), defer);
@@ -1399,7 +1399,7 @@ internal static readonly @string embeddedTermˢ = "EmbeddedTerm"u8;
 internal static readonly @string termOrTypeˢ = "~ term or type"u8;
 
 internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, embeddedTermˢ), defer);
@@ -1427,7 +1427,7 @@ internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, reco
 internal static readonly @string interfaceTypeˢ = "InterfaceType"u8;
 
 internal static ж<ast.InterfaceType> parseInterfaceType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, interfaceTypeˢ), defer);
@@ -1489,7 +1489,7 @@ break_parseElements:;
 internal static readonly @string mapTypeˢ = "MapType"u8;
 
 internal static ж<ast.MapType> parseMapType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, mapTypeˢ), defer);
@@ -1507,7 +1507,7 @@ internal static ж<ast.MapType> parseMapType(this ж<parser> Ꮡp) => func((defe
 internal static readonly @string chanTypeˢ = "ChanType"u8;
 
 internal static ж<ast.ChanType> parseChanType(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, chanTypeˢ), defer);
@@ -1537,7 +1537,7 @@ internal static ж<ast.ChanType> parseChanType(this ж<parser> Ꮡp) => func((de
 internal static readonly @string typeInstanceˢ = "TypeInstance"u8;
 
 internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, typeInstanceˢ), defer);
@@ -1569,7 +1569,7 @@ internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) =
 });
 
 internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) => func<ast.Expr>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     deferǃ(decNestLev, incNestLev(Ꮡp), defer);
     var exprᴛ1 = p.tok;
@@ -1624,7 +1624,7 @@ internal static readonly @string statementListˢ = "StatementList"u8;
 internal static slice<ast.Stmt> /*list*/ parseStmtList(this ж<parser> Ꮡp) {
     slice<ast.Stmt> list = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, statementListˢ), defer);
@@ -1640,7 +1640,7 @@ internal static slice<ast.Stmt> /*list*/ parseStmtList(this ж<parser> Ꮡp) {
 internal static readonly @string bodyˢ = "Body"u8;
 
 internal static ж<ast.BlockStmt> parseBody(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, bodyˢ), defer);
@@ -1657,7 +1657,7 @@ internal static ж<ast.BlockStmt> parseBody(this ж<parser> Ꮡp) => func((defer
 internal static readonly @string blockStmtˢ = "BlockStmt"u8;
 
 internal static ж<ast.BlockStmt> parseBlockStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, blockStmtˢ), defer);
@@ -1676,7 +1676,7 @@ internal static readonly @string funcTypeOrLitˢ = "FuncTypeOrLit"u8;
 // ----------------------------------------------------------------------------
 // Expressions
 internal static ast.Expr parseFuncTypeOrLit(this ж<parser> Ꮡp) => func<ast.Expr>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, funcTypeOrLitˢ), defer);
@@ -1700,7 +1700,7 @@ internal static readonly @string operandˢ2 = "operand"u8;
 // parseOperand may return an expression or a raw type (incl. array
 // types of the form [...]T). Callers must verify the result.
 internal static ast.Expr parseOperand(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, operandˢ), defer);
@@ -1752,7 +1752,7 @@ Lparen: lparen, X: x, Rparen: rparen)));
 internal static readonly @string selectorˢ = "Selector"u8;
 
 internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, selectorˢ), defer);
@@ -1765,7 +1765,7 @@ internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func
 internal static readonly @string typeAssertionˢ = "TypeAssertion"u8;
 
 internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, typeAssertionˢ), defer);
@@ -1790,7 +1790,7 @@ internal static readonly @string middleIndexRequiredIn3ˢ = "middle index requir
 internal static readonly @string finalIndexRequiredIn3ˢ = "final index required in 3-index slice"u8;
 
 internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, parseIndexOrSliceOrInstanceˢ), defer);
@@ -1880,7 +1880,7 @@ internal static readonly @string callOrConversionˢ = "CallOrConversion"u8;
 internal static readonly @string argumentListˢ = "argument list"u8;
 
 internal static ж<ast.CallExpr> parseCallOrConversion(this ж<parser> Ꮡp, ast.Expr fun) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, callOrConversionˢ), defer);
@@ -1912,7 +1912,7 @@ internal static ж<ast.CallExpr> parseCallOrConversion(this ж<parser> Ꮡp, ast
 internal static readonly @string elementˢ = "Element"u8;
 
 internal static ast.Expr parseValue(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, elementˢ), defer);
@@ -1925,7 +1925,7 @@ internal static ast.Expr parseValue(this ж<parser> Ꮡp) => func((defer, recove
 });
 
 internal static ast.Expr parseElement(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, elementˢ), defer);
@@ -1947,7 +1947,7 @@ internal static readonly @string compositeLiteralˢ = "composite literal"u8;
 internal static slice<ast.Expr> /*list*/ parseElementList(this ж<parser> Ꮡp) {
     slice<ast.Expr> list = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             deferǃ(un, trace(Ꮡp, elementListˢ), defer);
@@ -1967,7 +1967,7 @@ internal static slice<ast.Expr> /*list*/ parseElementList(this ж<parser> Ꮡp) 
 internal static readonly @string literalValueˢ = "LiteralValue"u8;
 
 internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     deferǃ(decNestLev, incNestLev(Ꮡp), defer);
     if (p.trace) {
@@ -1992,7 +1992,7 @@ internal static readonly @string selectorOrTypeAssertionˢ = "selector or type a
 internal static readonly @string cannotParenthesizeTypeInˢ = "cannot parenthesize type in composite literal"u8;
 
 internal static ast.Expr parsePrimaryExpr(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, primaryExprˢ), defer);
@@ -2095,7 +2095,7 @@ internal static readonly @string channelTypeˢ = "channel type"u8;
 
 // already progressed, no need to advance
 internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     deferǃ(decNestLev, incNestLev(Ꮡp), defer);
     if (p.trace) {
@@ -2182,7 +2182,7 @@ internal static readonly @string binaryExprˢ = "BinaryExpr"u8;
 //
 // TODO(rfindley): parseBinaryExpr has become overloaded. Consider refactoring.
 internal static ast.Expr parseBinaryExpr(this ж<parser> Ꮡp, ast.Expr x, nint prec1) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, binaryExprˢ), defer);
@@ -2216,7 +2216,7 @@ internal static readonly @string expressionˢ = "Expression"u8;
 
 // The result may be a type or even a raw type ([...]int).
 internal static ast.Expr parseExpr(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, expressionˢ), defer);
@@ -2225,7 +2225,7 @@ internal static ast.Expr parseExpr(this ж<parser> Ꮡp) => func((defer, recover
 });
 
 internal static ast.Expr parseRhs(this ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var old = p.inRhs;
     p.inRhs = true;
@@ -2254,7 +2254,7 @@ internal static readonly @string illegalLabelDeclarationˢ = "illegal label decl
 // assignment with a right-hand side that is a single unary expression of
 // the form "range x". No guarantees are given for the left-hand side.
 internal static (ast.Stmt, bool) parseSimpleStmt(this ж<parser> Ꮡp, nint mode) => func<(ast.Stmt, bool)>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, simpleStmtˢ), defer);
@@ -2356,7 +2356,7 @@ internal static ж<ast.CallExpr> parseCallExpr(this ж<parser> Ꮡp, @string cal
 internal static readonly @string goStmtˢ = "GoStmt"u8;
 
 internal static ast.Stmt parseGoStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, goStmtˢ), defer);
@@ -2377,7 +2377,7 @@ internal static readonly @string deferStmtˢ = "DeferStmt"u8;
 internal static readonly @string deferˢ = "defer"u8;
 
 internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, deferStmtˢ), defer);
@@ -2397,7 +2397,7 @@ internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>(
 internal static readonly @string returnStmtˢ = "ReturnStmt"u8;
 
 internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, returnStmtˢ), defer);
@@ -2417,7 +2417,7 @@ internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) => func
 internal static readonly @string branchStmtˢ = "BranchStmt"u8;
 
 internal static ж<ast.BranchStmt> parseBranchStmt(this ж<parser> Ꮡp, token.Token tok) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, branchStmtˢ), defer);
@@ -2473,7 +2473,7 @@ internal static (ast.Stmt init, ast.Expr cond) parseIfHeader(this ж<parser> Ꮡ
     ast.Stmt init = default!;
     ast.Expr cond = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     if (p.tok == token.LBRACE) {
         Ꮡp.error(p.pos, missingConditionInIfˢ);
         cond = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: p.pos, To: p.pos)));
@@ -2530,7 +2530,7 @@ internal static readonly @string ifStmtˢ = "IfStmt"u8;
 internal static readonly @string ifStatementOrBlockˢ = "if statement or block"u8;
 
 internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     deferǃ(decNestLev, incNestLev(Ꮡp), defer);
     if (p.trace) {
@@ -2566,7 +2566,7 @@ internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) => func((defer,
 internal static readonly @string caseClauseˢ = "CaseClause"u8;
 
 internal static ж<ast.CaseClause> parseCaseClause(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, caseClauseˢ), defer);
@@ -2625,7 +2625,7 @@ internal static readonly @string switchStmtˢ = "SwitchStmt"u8;
 internal static readonly @string switchExpressionˢ = "switch expression"u8;
 
 internal static ast.Stmt parseSwitchStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, switchStmtˢ), defer);
@@ -2684,7 +2684,7 @@ internal static readonly @string commClauseˢ = "CommClause"u8;
 internal static readonly @string or2Expressionsˢ = "1 or 2 expressions"u8;
 
 internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, commClauseˢ), defer);
@@ -2745,7 +2745,7 @@ internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func
 internal static readonly @string selectStmtˢ = "SelectStmt"u8;
 
 internal static ж<ast.SelectStmt> parseSelectStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, selectStmtˢ), defer);
@@ -2771,7 +2771,7 @@ internal static readonly @string atMost2Expressionsˢ = "at most 2 expressions"u
 internal static readonly @string booleanOrRangeExpressionˢ = "boolean or range expression"u8;
 
 internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, forStmtˢ), defer);
@@ -2868,7 +2868,7 @@ internal static readonly @string statementˢ2 = "statement"u8;
 internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
     ast.Stmt s = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         deferǃ(decNestLev, incNestLev(Ꮡp), defer);
         if (p.trace) {
@@ -2955,7 +2955,7 @@ internal static readonly @string missingImportPathˢ = "missing import path"u8;
 // ----------------------------------------------------------------------------
 // Declarations
 internal static ast.Spec parseImportSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token _Δp2, nint _Δp3) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, importSpecˢ), defer);
@@ -2997,7 +2997,7 @@ internal static ast.Spec parseImportSpec(this ж<parser> Ꮡp, ж<ast.CommentGro
 });
 
 internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token keyword, nint iota) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, keyword.String() + "Spec"u8), defer);
@@ -3044,8 +3044,8 @@ internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGrou
 internal static readonly @string parseGenericTypeˢ = "parseGenericType"u8;
 
 internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡspec, tokenꓸPos openPos, ж<ast.Ident> Ꮡname0, ast.Expr typ0) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var spec = ref Ꮡspec.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var spec = ref Ꮡspec.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, parseGenericTypeˢ), defer);
@@ -3068,7 +3068,7 @@ internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡ
 internal static readonly @string typeSpecˢ = "TypeSpec"u8;
 
 internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token _Δp2, nint _Δp3) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, typeSpecˢ), defer);
@@ -3230,7 +3230,7 @@ internal static bool isTypeElem(ast.Expr x) {
 }
 
 internal static ж<ast.GenDecl> parseGenDecl(this ж<parser> Ꮡp, token.Token keyword, Func<ж<ast.CommentGroup>, token.Token, nint, ast.Spec> f) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, "GenDecl("u8 + keyword.String() + ")"u8), defer);
@@ -3268,7 +3268,7 @@ internal static readonly @string methodMustHaveNoTypeˢ = "method must have no t
 internal static readonly @string unexpectedSemicolonOrˢ = "unexpected semicolon or newline before {"u8;
 
 internal static ж<ast.FuncDecl> parseFuncDecl(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, functionDeclˢ), defer);
@@ -3328,7 +3328,7 @@ internal static readonly @string declarationˢ = "Declaration"u8;
 internal static readonly @string declarationˢ2 = "declaration"u8;
 
 internal static ast.Decl parseDecl(this ж<parser> Ꮡp, map<token.Token, bool> sync) => func<ast.Decl>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, declarationˢ), defer);
@@ -3366,7 +3366,7 @@ internal static readonly @string importsMustAppearBeforeˢ = "imports must appea
 // ----------------------------------------------------------------------------
 // Source files
 internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) => func<ж<ast.File>>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.trace) {
         deferǃ(un, trace(Ꮡp, fileˢ), defer);

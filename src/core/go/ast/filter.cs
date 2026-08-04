@@ -78,7 +78,7 @@ internal static ж<Ident> fieldName(Expr x) {
 internal static bool /*removedFields*/ filterFieldList(ж<FieldList> Ꮡfields, Func<@string, bool> filter, bool export) {
     bool removedFields = default!;
 
-    ref var fields = ref Ꮡfields.DerefOrNil();
+    ref var fields = ref Ꮡfields.DerefOrNull();
     if (Ꮡfields == nil) {
         return false;
     }
@@ -114,7 +114,7 @@ internal static bool /*removedFields*/ filterFieldList(ж<FieldList> Ꮡfields, 
 }
 
 internal static void filterCompositeLit(ж<CompositeLit> Ꮡlit, Func<@string, bool> filter, bool export) {
-    ref var lit = ref Ꮡlit.Value;
+    ref var lit = ref Ꮡlit.DerefOrNull();
 
     nint n = len(lit.Elts);
     lit.Elts = filterExprList(lit.Elts, filter, export);
@@ -151,7 +151,7 @@ internal static slice<Expr> filterExprList(slice<Expr> list, Func<@string, bool>
 }
 
 internal static bool filterParamList(ж<FieldList> Ꮡfields, Func<@string, bool> filter, bool export) {
-    ref var fields = ref Ꮡfields.DerefOrNil();
+    ref var fields = ref Ꮡfields.DerefOrNull();
 
     if (Ꮡfields == nil) {
         return false;
@@ -284,7 +284,7 @@ public static bool FilterFile(ж<File> Ꮡsrc, Func<@string, bool> f) {
 }
 
 internal static bool filterFile(ж<File> Ꮡsrc, Func<@string, bool> f, bool export) {
-    ref var src = ref Ꮡsrc.Value;
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint j = 0;
     foreach (var (_, d) in src.Decls) {
@@ -312,7 +312,7 @@ public static bool FilterPackage(ж<Package> Ꮡpkg, Func<@string, bool> f) {
 }
 
 internal static bool filterPackage(ж<Package> Ꮡpkg, Func<@string, bool> f, bool export) {
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     var hasDecls = false;
     foreach (var (_, src) in pkg.Files) {
@@ -335,7 +335,7 @@ public static MergeMode FilterImportDuplicates => 4;
 // the given function declaration. If the AST is incorrect for the
 // receiver, it assumes a function instead.
 internal static @string nameOf(ж<FuncDecl> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var r = f.Recv; if (r != nil && len((~r).List) == 1) {
@@ -366,7 +366,7 @@ internal static ж<Comment> separator = Ꮡ(new Comment(token.NoPos, "//"u8));
 // MergePackageFiles creates a file AST by merging the ASTs of the
 // files belonging to a package. The mode flags control merging behavior.
 public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     // Count the number of package docs, comments and declarations across
     // all package files. Also, compute sorted list of filenames, so that

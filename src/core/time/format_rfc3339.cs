@@ -64,7 +64,7 @@ internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte
     // Not all valid Go timestamps can be serialized as valid RFC 3339.
     // Explicitly check for these edge cases.
     // See https://go.dev/issue/4556 and https://go.dev/issue/54580.
-    var num2 = (slice<byte> bΔ1) => (byte)(10 * (bΔ1[0] - (rune)'0') + (bΔ1[1] - (rune)'0'));
+    byte num2(slice<byte> bΔ1) => (byte)(10 * (bΔ1[0] - (rune)'0') + (bΔ1[1] - (rune)'0'));
     switch (ᐧ) {
     case {} when b[n0 + len("9999")] != (rune)'-': {
         return (b, errors.New(yearOutsideOfRange09999ˢ));
@@ -84,14 +84,14 @@ internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte
 internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡlocal)
     where bytes : /* []byte | string */ IByteSeq<bytes, byte>, new()
 {
-    ref var local = ref Ꮡlocal.Value;
+    ref var local = ref Ꮡlocal.DerefOrNull();
 
     // parseUint parses s as an unsigned decimal integer and
     // verifies that it is within some range.
     // If it is invalid or out-of-range,
     // it sets ok to false and returns the min value.
     var ok = true;
-    var parseUint = (bytes sΔ1, nint minΔ1, nint max) => {
+    nint /*x*/ parseUint(bytes sΔ1, nint minΔ1, nint max) {
         nint x = default!;
         foreach (var (_, c) in sΔ1.ToSlice()) {
             if (c < (rune)'0' || (rune)'9' < c) {
@@ -105,7 +105,7 @@ internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡloca
             return minΔ1;
         }
         return x;
-    };
+    }
     // Parse the date and time.
     if (len(s) < len("2006-01-02T15:04:05")) {
         return (new Time(nil), false);
@@ -175,7 +175,7 @@ internal static (Time, error) parseStrictRFC3339(slice<byte> b) {
         // The parse template syntax cannot correctly validate RFC 3339.
         // Explicitly check for cases that Parse is unable to validate for.
         // See https://go.dev/issue/54580.
-        var num2 = (slice<byte> bΔ1) => (byte)(10 * (bΔ1[0] - (rune)'0') + (bΔ1[1] - (rune)'0'));
+        byte num2(slice<byte> bΔ1) => (byte)(10 * (bΔ1[0] - (rune)'0') + (bΔ1[1] - (rune)'0'));
         switch (ᐧ) {
         case {} when ᐧᐧ: {
             return (tΔ1, default!);

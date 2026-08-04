@@ -32,7 +32,7 @@ partial class net_package {
 //
 // If a is nil, a zero value is returned.
 public static netip.AddrPort AddrPort(this ж<UDPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return new netip.AddrPort(nil);
@@ -48,7 +48,7 @@ public static netip.AddrPort AddrPort(this ж<UDPAddr> Ꮡa) {
 }
 
 public static @string String(this ж<UDPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return nilˢ;
@@ -61,7 +61,7 @@ public static @string String(this ж<UDPAddr> Ꮡa) {
 }
 
 internal static bool isWildcard(this ж<UDPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil || a.IP == default!) {
         return true;
@@ -139,7 +139,7 @@ internal static @string Network(this addrPortUDPAddr _) {
 // SyscallConn returns a raw network connection.
 // This implements the syscall.Conn interface.
 public static (syscall.RawConn, error) SyscallConn(this ж<UDPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (default!, syscall.EINVAL);
@@ -162,13 +162,13 @@ public static (nint n, ж<UDPAddr> addr, error err) ReadFromUDP(this ж<UDPConn>
 
 // readFromUDP implements ReadFromUDP.
 internal static (nint, ж<UDPAddr>, error) readFromUDP(this ж<UDPConn> Ꮡc, slice<byte> b, ж<UDPAddr> Ꮡaddr) {
-    ref var c = ref Ꮡc.Value;
-    ref var addr = ref Ꮡaddr.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var addr = ref Ꮡaddr.DerefOrNull();
 
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, default!, syscall.EINVAL);
     }
-    (var n, Ꮡaddr, var err) = c.readFrom(b, Ꮡaddr); addr = ref Ꮡaddr.Value;
+    (var n, Ꮡaddr, var err) = c.readFrom(b, Ꮡaddr); addr = ref Ꮡaddr.DerefOrNull();
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "read"u8, Net: (~c.fd).net, Source: (~c.fd).laddr, Addr: (~c.fd).raddr, Err: err)));
     }
@@ -195,7 +195,7 @@ public static (nint n, netip.AddrPort addr, error err) ReadFromUDPAddrPort(this 
     netip.AddrPort addr = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, new netip.AddrPort(nil), syscall.EINVAL);
     }
@@ -236,7 +236,7 @@ public static (nint n, nint oobn, nint flags, netip.AddrPort addr, error err) Re
     netip.AddrPort addr = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, 0, 0, new netip.AddrPort(nil), syscall.EINVAL);
     }
@@ -249,7 +249,7 @@ public static (nint n, nint oobn, nint flags, netip.AddrPort addr, error err) Re
 
 // WriteToUDP acts like WriteTo but takes a UDPAddr.
 public static (nint, error) WriteToUDP(this ж<UDPConn> Ꮡc, slice<byte> b, ж<UDPAddr> Ꮡaddr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -263,7 +263,7 @@ public static (nint, error) WriteToUDP(this ж<UDPConn> Ꮡc, slice<byte> b, ж<
 
 // WriteToUDPAddrPort acts like WriteTo but takes a netip.AddrPort.
 public static (nint, error) WriteToUDPAddrPort(this ж<UDPConn> Ꮡc, slice<byte> b, netip.AddrPort addr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -277,7 +277,7 @@ public static (nint, error) WriteToUDPAddrPort(this ж<UDPConn> Ꮡc, slice<byte
 
 // WriteTo implements the PacketConn WriteTo method.
 public static (nint, error) WriteTo(this ж<UDPConn> Ꮡc, slice<byte> b, ΔAddr addr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -306,7 +306,7 @@ public static (nint n, nint oobn, error err) WriteMsgUDP(this ж<UDPConn> Ꮡc, 
     nint oobn = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, 0, syscall.EINVAL);
     }
@@ -323,7 +323,7 @@ public static (nint n, nint oobn, error err) WriteMsgUDPAddrPort(this ж<UDPConn
     nint oobn = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UDPConn.Ꮡconn).ok()) {
         return (0, 0, syscall.EINVAL);
     }
@@ -374,7 +374,7 @@ public static (ж<UDPConn>, error) DialUDP(@string network, ж<UDPAddr> Ꮡladdr
 // If the Port field of laddr is 0, a port number is automatically
 // chosen.
 public static (ж<UDPConn>, error) ListenUDP(@string network, ж<UDPAddr> Ꮡladdr) {
-    ref var laddr = ref Ꮡladdr.DerefOrNil();
+    ref var laddr = ref Ꮡladdr.DerefOrNull();
 
     var exprᴛ1 = network;
     if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {
@@ -384,7 +384,7 @@ public static (ж<UDPConn>, error) ListenUDP(@string network, ж<UDPAddr> Ꮡlad
     }
 
     if (Ꮡladdr == nil) {
-        Ꮡladdr = Ꮡ(new UDPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNil();
+        Ꮡladdr = Ꮡ(new UDPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNull();
     }
     var sl = Ꮡ(new sysListener(network: network, address: Ꮡladdr.String()));
     var (c, err) = sl.listenUDP(context.Background(), Ꮡladdr);
@@ -415,7 +415,7 @@ public static (ж<UDPConn>, error) ListenUDP(@string network, ж<UDPAddr> Ꮡlad
 // Note that ListenMulticastUDP will set the IP_MULTICAST_LOOP socket option
 // to 0 under IPPROTO_IP, to disable loopback of multicast packets.
 public static (ж<UDPConn>, error) ListenMulticastUDP(@string network, ж<Interface> Ꮡifi, ж<UDPAddr> Ꮡgaddr) {
-    ref var gaddr = ref Ꮡgaddr.DerefOrNil();
+    ref var gaddr = ref Ꮡgaddr.DerefOrNull();
 
     var exprᴛ1 = network;
     if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {

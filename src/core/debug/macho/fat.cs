@@ -49,7 +49,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     var sr = io.NewSectionReader(r, 0, 9223372036854775807L);
     // Read the fat_header struct, which is always in big endian.
     // Start with the magic number.
-    var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡff.of(FatFile.ᏑMagic));
+    var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡff.of(FatFile.ᏑMagic));
     if (err != default!){
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "error reading magic number"u8, default!))));
     } else 
@@ -69,7 +69,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     offset = (int64)4;
     // Read the number of FatArchHeaders that come after the fat_header.
     ref var narch = ref heap(new uint32(), out var Ꮡnarch);
-    err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡnarch);
+    err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡnarch);
     if (err != default!) {
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_header"u8, default!))));
     }
@@ -91,7 +91,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     ff.Arches = new slice<FatArch>(0, () => new(nil), c);
     for (var i = (uint32)0; i < narch; i++) {
         ref var fa = ref heap(new FatArch(), out var Ꮡfa);
-        err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfa.of(FatArch.ᏑFatArchHeader));
+        err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡfa.of(FatArch.ᏑFatArchHeader));
         if (err != default!) {
             return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_arch header"u8, default!))));
         }

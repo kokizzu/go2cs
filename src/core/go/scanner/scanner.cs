@@ -124,7 +124,7 @@ internal static Mode dontInsertSemis => 2;     // do not automatically insert se
 // Note that Init may call err if there is an error in the first character
 // of the file.
 [GoRecv] public static void Init(this ref Scanner s, ж<tokenꓸFile> Ꮡfile, slice<byte> src, Action<tokenꓸPosition, @string> err, Mode mode) {
-    ref var @file = ref Ꮡfile.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     // Explicitly initialize all fields since a scanner may be reused.
     if (@file.Size() != len(src)) {
@@ -406,7 +406,7 @@ internal static bool isHex(rune ch) {
 [GoRecv] internal static nint /*digsep*/ digits(this ref Scanner s, nint @base, ж<nint> Ꮡinvalid) {
     nint digsep = default!;
 
-    ref var invalid = ref Ꮡinvalid.DerefOrNil();
+    ref var invalid = ref Ꮡinvalid.DerefOrNull();
     if (@base <= 10){
         var max = (rune)((rune)'0' + @base);
         while (isDecimal(s.ch) || s.ch == (rune)'_') {

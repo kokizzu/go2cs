@@ -96,7 +96,7 @@ internal static readonly @string transitioningGcToTheSameˢ = "transitioning GC 
 //
 // It is safe to call concurrently with other operations.
 internal static void startGCTransition(this ж<gcCPULimiterState> Ꮡl, bool enableGC, int64 now) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.tryLock()) {
         // This must happen during a STW, so we can't fail to acquire the lock.
@@ -124,7 +124,7 @@ internal static readonly @string finishGCTransitionCalledˢ = "finishGCTransitio
 // and releases ownership of it. It also accumulates STW time in the bucket.
 // now must be the timestamp from the end of the STW pause.
 internal static void finishGCTransition(this ж<gcCPULimiterState> Ꮡl, int64 now) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!l.transitioning) {
         @throw(finishGCTransitionCalledˢ);
@@ -173,7 +173,7 @@ internal static readonly @string updateDuringTransitionˢ = "update during trans
 //
 // This is safe to call concurrently with other operations, except *GCTransition.
 internal static void update(this ж<gcCPULimiterState> Ꮡl, int64 now) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.tryLock()) {
         // We failed to acquire the lock, which means something else is currently
@@ -193,7 +193,7 @@ internal static readonly @string invalidLimiterEventTypeˢ = "invalid limiter ev
 
 // updateLocked is the implementation of update. l.lock must be held.
 internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     var lastUpdate = Ꮡl.of(gcCPULimiterState.ᏑlastUpdate).Load();
     if (now < lastUpdate) {
@@ -285,7 +285,7 @@ internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
 // This is an internal function that deals just with the bucket. Prefer update.
 // l.lock must be held.
 internal static void accumulate(this ж<gcCPULimiterState> Ꮡl, int64 mutatorTime, int64 gcTime) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     var headroom = l.bucket.capacity - l.bucket.fill;
     var enabled = headroom == 0;
@@ -345,7 +345,7 @@ internal static readonly @string failedToAcquireLockToˢ2 = "failed to acquire l
 //
 // It is safe to call concurrently with other operations.
 internal static void resetCapacity(this ж<gcCPULimiterState> Ꮡl, int64 now, int32 nprocs) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.tryLock()) {
         // This must happen during a STW, so we can't fail to acquire the lock.

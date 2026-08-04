@@ -251,8 +251,8 @@ internal static (uintptr, bool) Load(this ж<atomicOffAddr> Ꮡb) {
 }
 
 internal static void init(this ж<addrRanges> Ꮡa, ж<sysMemStat> ᏑsysStat) {
-    ref var a = ref Ꮡa.Value;
-    ref var sysStat = ref ᏑsysStat.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var sysStat = ref ᏑsysStat.DerefOrNull();
 
     var ranges = Ꮡa.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
     ranges.Value.len = 0;
@@ -339,7 +339,7 @@ internal static readonly @string attemptedToAddZeroSizedˢ = "attempted to add z
 //
 // r must not overlap with any address range in a and r.size() must be > 0.
 internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     // The copies in this function are potentially expensive, but this data
     // structure is meant to represent the Go heap. At worst, copying this
@@ -455,7 +455,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
 // cloneInto makes a deep clone of a's state into b, re-using
 // b's ranges if able.
 [GoRecv] internal static void cloneInto(this ref addrRanges a, ж<addrRanges> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (len(a.ranges) > cap(b.ranges)) {
         // Grow the array.

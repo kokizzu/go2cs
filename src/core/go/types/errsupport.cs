@@ -17,7 +17,7 @@ internal static readonly @string methodˢ = "method"u8;
 // given type fails but an object with alternative spelling (case folding) is found.
 // If structLit is set, the error message is specifically for struct literal fields.
 internal static @string lookupError(this ж<Checker> Ꮡcheck, ΔType typ, @string sel, Object obj, bool structLit) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // Provide more detail if there is an unexported object, or one with different capitalization.
     // If selector and object are in the same package (==), export doesn't matter, otherwise (!=) it does.

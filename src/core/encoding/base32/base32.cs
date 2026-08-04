@@ -268,8 +268,6 @@ public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
 // writing, the caller must Close the returned encoder to flush any
 // partially written blocks.
 public static io.WriteCloser NewEncoder(ж<Encoding> Ꮡenc, io.Writer w) {
-    ref var enc = ref Ꮡenc.Value;
-
     return new encoderжWriteCloser(Ꮡ(new encoder(enc: Ꮡenc, w: w)));
 }
 
@@ -563,8 +561,6 @@ internal static nint stripNewlines(slice<byte> dst, slice<byte> src) {
 
 // NewDecoder constructs a new base32 stream decoder.
 public static io.Reader NewDecoder(ж<Encoding> Ꮡenc, io.Reader r) {
-    ref var enc = ref Ꮡenc.Value;
-
     return new decoderжReader(Ꮡ(new decoder(enc: Ꮡenc, r: new newlineFilteringReaderжReader(Ꮡ(new newlineFilteringReader(r))))));
 }
 

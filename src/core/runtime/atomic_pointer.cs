@@ -31,7 +31,7 @@ partial class runtime_package {
 //go:linkname atomicwb
 //go:nosplit
 internal static void atomicwb(ж<@unsafe.Pointer> Ꮡptr, @unsafe.Pointer @new) {
-    ref var ptr = ref Ꮡptr.Value;
+    ref var ptr = ref Ꮡptr.DerefOrNull();
 
     var slot = Ꮡptr.Reinterpret<@unsafe.Pointer, uintptr>();
     var buf = (~(~getg()).m).p.ptr().of(runtime_package.Δp.ᏑwbBuf).get2();

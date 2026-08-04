@@ -80,7 +80,7 @@ internal static @string recvParam(ast.Expr p) {
 // one with documentation; conflicts are ignored. The boolean
 // specifies whether to leave the AST untouched.
 internal static void set(this methodSet mset, ж<ast.FuncDecl> Ꮡf, bool preserveAST) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     ref var name = ref heap<@string>(out var Ꮡname);
     name = f.Name.Value.Name;
@@ -125,7 +125,7 @@ internal static void set(this methodSet mset, ж<ast.FuncDecl> Ꮡf, bool preser
 // already contains a method with the same name at the same or a higher
 // level than m.
 internal static void add(this methodSet mset, ж<Func> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var old = mset[m.Name];
     if (old == nil || m.Level < (~old).Level) {
@@ -262,7 +262,7 @@ internal static (@string name, bool imported) baseTypeName(ast.Expr x) {
 [GoRecv] internal static @string /*fname*/ recordAnonymousField(this ref reader r, ж<namedType> Ꮡparent, ast.Expr fieldType) {
     @string fname = default!;
 
-    ref var parent = ref Ꮡparent.DerefOrNil();
+    ref var parent = ref Ꮡparent.DerefOrNull();
     (fname, var imp) = baseTypeName(fieldType);
     if (Ꮡparent == nil || imp) {
         return fname;
@@ -278,7 +278,7 @@ internal static (@string name, bool imported) baseTypeName(ast.Expr x) {
 }
 
 [GoRecv] internal static void readDoc(this ref reader r, ж<ast.CommentGroup> Ꮡcomment) {
-    ref var comment = ref Ꮡcomment.Value;
+    ref var comment = ref Ꮡcomment.DerefOrNull();
 
     // By convention there should be only one package comment
     // but collect all of them if there are more than one.
@@ -311,8 +311,8 @@ internal static slice<@string> specNames(slice<ast.Spec> specs) {
 
 // readValue processes a const or var declaration.
 internal static void readValue(this ж<reader> Ꮡr, ж<ast.GenDecl> Ꮡdecl) {
-    ref var r = ref Ꮡr.Value;
-    ref var decl = ref Ꮡdecl.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var decl = ref Ꮡdecl.DerefOrNull();
 
     // determine if decl should be associated with a type
     // Heuristic: For each typed entry, determine the type name, if any.
@@ -417,8 +417,8 @@ internal static (slice<ж<ast.Field>> list, bool isStruct) fields(ast.Expr typ) 
 
 // readType processes a type declaration.
 [GoRecv] internal static void readType(this ref reader r, ж<ast.GenDecl> Ꮡdecl, ж<ast.TypeSpec> Ꮡspec) {
-    ref var decl = ref Ꮡdecl.Value;
-    ref var spec = ref Ꮡspec.Value;
+    ref var decl = ref Ꮡdecl.DerefOrNull();
+    ref var spec = ref Ꮡspec.DerefOrNull();
 
     var typ = r.lookupType((~spec.Name).Name);
     if (typ == nil) {
@@ -460,7 +460,7 @@ internal static (slice<ж<ast.Field>> list, bool isStruct) fields(ast.Expr typ) 
 
 // readFunc processes a func or method declaration.
 [GoRecv] internal static void readFunc(this ref reader r, ж<ast.FuncDecl> Ꮡfun) {
-    ref var fun = ref Ꮡfun.Value;
+    ref var fun = ref Ꮡfun.DerefOrNull();
 
     // strip function body if requested.
     if ((Mode)(r.mode & PreserveAST) == 0) {
@@ -539,7 +539,7 @@ internal static (slice<ж<ast.Field>> list, bool isStruct) fields(ast.Expr typ) 
 // lookupTypeParam searches for type parameters named name within the tparams
 // field list, returning the relevant identifier if found, or nil if not.
 internal static ж<ast.Ident> lookupTypeParam(@string name, ж<ast.FieldList> Ꮡtparams) {
-    ref var tparams = ref Ꮡtparams.DerefOrNil();
+    ref var tparams = ref Ꮡtparams.DerefOrNull();
 
     if (Ꮡtparams == nil) {
         return default!;
@@ -632,8 +632,8 @@ internal static @string clean(@string s) {
 
 // readFile adds the AST for a source file to the reader.
 internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
-    ref var r = ref Ꮡr.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     // add package documentation
     if (src.Doc != nil) {
@@ -739,8 +739,8 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
 
 // consumed unassociated comments - remove from AST
 internal static void readPackage(this ж<reader> Ꮡr, ж<ast.Package> Ꮡpkg, Mode mode) {
-    ref var r = ref Ꮡr.Value;
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     // initialize reader
     r.filenames = new slice<@string>(len(pkg.Files));
@@ -786,7 +786,7 @@ internal static void readPackage(this ж<reader> Ꮡr, ж<ast.Package> Ꮡpkg, M
 // ----------------------------------------------------------------------------
 // Types
 internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool embeddedIsPtr, nint level) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf == nil || f.Decl == nil || (~f.Decl).Recv == nil || len((~(~f.Decl).Recv).List) != 1) {
         return Ꮡf;
@@ -826,7 +826,7 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
 
 // collectEmbeddedMethods collects the embedded methods of typ in mset.
 [GoRecv] internal static void collectEmbeddedMethods(this ref reader r, methodSet mset, ж<namedType> Ꮡtyp, @string recvTypeName, bool embeddedIsPtr, nint level, embeddedSet visited) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     visited[Ꮡtyp] = true;
     foreach (var (embedded, isPtr) in typ.embedded) {
@@ -926,7 +926,7 @@ internal static slice<@string> sortedKeys(map<@string, nint> m) {
 
 // sortingName returns the name to use when sorting d into place.
 internal static @string sortingName(ж<ast.GenDecl> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (len(d.Specs) == 1) {
         {

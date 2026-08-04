@@ -30,14 +30,14 @@ internal static readonly @string attemptedToTraceStackOfAˢ = "attempted to trac
 // that this stack trace is being written out for, which needs to be synchronized with
 // generations moving forward. Prefer traceEventWriter.stack.
 internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     array<uintptr> pcBuf = new(128); /* traceStackSize */
     // Figure out gp and mp for the backtrace.
     ж<m> mp = default!;
     if (Ꮡgp == nil) {
         mp = getg().Value.m;
-        Ꮡgp = mp.Value.curg; gp = ref Ꮡgp.DerefOrNil();
+        Ꮡgp = mp.Value.curg; gp = ref Ꮡgp.DerefOrNull();
     }
     // Double-check that we own the stack we're about to trace.
     if (debug.traceCheckStackOwnership != 0 && Ꮡgp != nil) {
@@ -55,8 +55,8 @@ internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
                     if (getg() == Ꮡgp || (~mp).curg == Ꮡgp) {
                         break;
                     }
+                    fallthrough = true;
                 } while (false);
-                fallthrough = true;
             }
             if (fallthrough || !matchᴛ1) { /* default: */
                 print((@string)"runtime: gp="u8, new @unsafe.Pointer(Ꮡgp), (@string)" gp.goid="u8, gp.goid, (@string)" status="u8, gStatusStrings[(nint)(status)], (@string)"\n"u8);
@@ -161,7 +161,7 @@ internal static void dump(this ж<traceStackTable> Ꮡt, uintptr gen) {
 }
 
 internal static traceWriter dumpStacksRec(ж<traceMapNode> Ꮡnode, traceWriter w, slice<uintptr> stackBuf) {
-    ref var node = ref Ꮡnode.Value;
+    ref var node = ref Ꮡnode.DerefOrNull();
 
     var Δstack = @unsafe.Slice(Ꮡ(node.data, 0).Reinterpret<byte, uintptr>(), (uintptr)len(node.data) / /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
     // N.B. This might allocate, but that's OK because we're not writing to the M's buffer,

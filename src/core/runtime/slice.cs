@@ -43,7 +43,7 @@ internal static void panicmakeslicecap() {
 // makeslicecopy allocates a slice of "tolen" elements of type "et",
 // then copies "fromlen" elements of type "et" into that new allocation from "from".
 internal static @unsafe.Pointer makeslicecopy(ж<_type> Ꮡet, nint tolen, nint fromlen, @unsafe.Pointer from) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     uintptr tomem = default!;
     uintptr copymem = default!;
@@ -105,7 +105,7 @@ internal static @unsafe.Pointer makeslicecopy(ж<_type> Ꮡet, nint tolen, nint 
 //
 //go:linkname makeslice
 internal static @unsafe.Pointer makeslice(ж<_type> Ꮡet, nint len, nint cap) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     var (mem, overflow) = math.MulUintptr(et.Size_, (uintptr)cap);
     if (overflow || mem > maxAlloc || len < 0 || len > cap) {
@@ -183,7 +183,7 @@ internal static readonly @string growsliceLenOutOfRangeˢ = "growslice: len out 
 //
 //go:linkname growslice
 internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint oldCap, nint num, ж<_type> Ꮡet) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     nint oldLen = newLen - num;
     if (raceenabled) {
@@ -340,7 +340,7 @@ internal static nint nextslicecap(nint newLen, nint oldCap) {
 //
 //go:linkname reflect_growslice reflect.growslice
 internal static Δsliceᴛ reflect_growslice(ж<_type> Ꮡet, Δsliceᴛ old, nint num) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     // Semantically equivalent to slices.Grow, except that the caller
     // is responsible for ensuring that old.len+num > old.cap.

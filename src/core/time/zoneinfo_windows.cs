@@ -107,7 +107,7 @@ internal static (@string std, @string dst) abbrev(ж<syscall.Timezoneinformation
     @string std = default!;
     @string dst = default!;
 
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
     @string stdName = syscall.UTF16ToString(z.StandardName[..]);
     var (a, ok) = abbrs[stdName, ꟷ];
     if (!ok) {
@@ -130,7 +130,7 @@ internal static (@string std, @string dst) abbrev(ж<syscall.Timezoneinformation
 // denoted by the system date+time d in the given year.
 // It is up to the caller to convert this local time into a UTC-based time.
 internal static int64 pseudoUnix(nint year, ж<syscall.Systemtime> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Windows specifies daylight savings information in "day in month" format:
     // d.Month is month number (1-12)
@@ -162,7 +162,7 @@ internal static int64 pseudoUnix(nint year, ж<syscall.Systemtime> Ꮡd) {
 internal static readonly @string localˢ = "Local"u8;
 
 internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     var l = ᏑlocalLoc;
     l.Value.name = localˢ;

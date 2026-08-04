@@ -77,12 +77,12 @@ public static bool HasGoBuild() {
         cmd.Value.Env = origEnv;
         var (@out, err) = cmd.Output();
         if (err != default!) {
-            goBuildErr = fmt.Errorf("%v: %w"u8, cmd, err);
+            goBuildErr = fmt.Errorf("%v: %w"u8, cmd.OrTypedNil(), err);
             return;
         }
         @out = bytes.TrimSpace(@out);
         if (len(@out) == 0) {
-            goBuildErr = fmt.Errorf("%v: no tool reported"u8, cmd);
+            goBuildErr = fmt.Errorf("%v: no tool reported"u8, cmd.OrTypedNil());
             return;
         }
         {
@@ -105,12 +105,12 @@ public static bool HasGoBuild() {
                 cmdΔ1.Value.Env = origEnv;
                 var (outΔ1, errΔ2) = cmdΔ1.Output();
                 if (errΔ2 != default!) {
-                    goBuildErr = fmt.Errorf("%v: %w"u8, cmdΔ1, errΔ2);
+                    goBuildErr = fmt.Errorf("%v: %w"u8, cmdΔ1.OrTypedNil(), errΔ2);
                     return;
                 }
                 outΔ1 = bytes.TrimSpace(outΔ1);
                 if (len(outΔ1) == 0) {
-                    goBuildErr = fmt.Errorf("%v: no CC reported"u8, cmdΔ1);
+                    goBuildErr = fmt.Errorf("%v: no CC reported"u8, cmdΔ1.OrTypedNil());
                     return;
                 }
                 (_, goBuildErr) = exec.LookPath(((@string)outΔ1));
@@ -348,11 +348,11 @@ public static bool HasCGO() {
         cmd.Value.Env = origEnv;
         (var @out, err) = cmd.Output();
         if (err != default!) {
-            throw panic(fmt.Sprintf("%v: %v"u8, cmd, @out));
+            throw panic(fmt.Sprintf("%v: %v"u8, cmd.OrTypedNil(), @out));
         }
         (hasCgo, err) = strconv.ParseBool(((@string)bytes.TrimSpace(@out)));
         if (err != default!) {
-            throw panic(fmt.Sprintf("%v: non-boolean output %q"u8, cmd, @out));
+            throw panic(fmt.Sprintf("%v: non-boolean output %q"u8, cmd.OrTypedNil(), @out));
         }
     });
     return hasCgo;
@@ -519,7 +519,7 @@ public static void WriteImportcfg(testing.TB t, @string dstPath, map<@string, @s
         cmd.Value.Stderr = new strings_BuilderжWriter(@new<strings.Builder>());
         var (@out, err) = cmd.Output();
         if (err != default!) {
-            t.Fatalf("%v: %v\n%s"u8, cmd, err, (~cmd).Stderr);
+            t.Fatalf("%v: %v\n%s"u8, cmd.OrTypedNil(), err, (~cmd).Stderr);
         }
         foreach (var (_, line) in strings.Split(((@string)@out), "\n"u8)) {
             if (line == ""u8) {
@@ -527,7 +527,7 @@ public static void WriteImportcfg(testing.TB t, @string dstPath, map<@string, @s
             }
             var (importPath, export, ok) = strings.Cut(line, "="u8);
             if (!ok) {
-                t.Fatalf("invalid line in output from %v:\n%s"u8, cmd, line);
+                t.Fatalf("invalid line in output from %v:\n%s"u8, cmd.OrTypedNil(), line);
             }
             if (packageFiles[importPath] == "") {
                 fmt.Fprintf(new bytes_BufferжWriter(icfg), "packagefile %s=%s\n"u8, importPath, export);

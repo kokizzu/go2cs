@@ -18,7 +18,7 @@ public static bool CanUseLongPaths;
 // UTF16PtrToString is like UTF16ToString, but takes *uint16
 // as a parameter instead of []uint16.
 public static @string UTF16PtrToString(ж<uint16> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil) {
         return ""u8;

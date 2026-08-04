@@ -9,7 +9,7 @@ partial class poll_package {
 
 // Fsync wraps syscall.Fsync.
 public static error Fsync(this ж<FD> Ꮡfd) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {

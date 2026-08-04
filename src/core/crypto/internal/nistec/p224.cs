@@ -35,7 +35,7 @@ public static ж<P224Point> NewP224Point() {
 
 // SetGenerator sets p to the canonical generator and returns p.
 public static ж<P224Point> SetGenerator(this ж<P224Point> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.x.SetBytes(new byte[]{0xb7, 0xe, 0xc, 0xbd, 0x6b, 0xb4, 0xbf, 0x7f, 0x32, 0x13, 0x90, 0xb9, 0x4a, 0x3, 0xc1, 0xd3, 0x56, 0xc2, 0x11, 0x22, 0x34, 0x32, 0x80, 0xd6, 0x11, 0x5c, 0x1d, 0x21}.slice());
     p.y.SetBytes(new byte[]{0xbd, 0x37, 0x63, 0x88, 0xb5, 0xf7, 0x23, 0xfb, 0x4c, 0x22, 0xdf, 0xe6, 0xcd, 0x43, 0x75, 0xa0, 0x5a, 0x7, 0x47, 0x64, 0x44, 0xd5, 0x81, 0x99, 0x85, 0x0, 0x7e, 0x34}.slice());
@@ -45,8 +45,8 @@ public static ж<P224Point> SetGenerator(this ж<P224Point> Ꮡp) {
 
 // Set sets p = q and returns p.
 public static ж<P224Point> Set(this ж<P224Point> Ꮡp, ж<P224Point> Ꮡq) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     p.x.Set(q.x);
     p.y.Set(q.y);
@@ -63,7 +63,7 @@ private static readonly @string invalidP224PointEncodingˢ = "invalid P224 point
 // the curve, it returns nil and an error, and the receiver is unchanged.
 // Otherwise, it returns p.
 public static (ж<P224Point>, error) SetBytes(this ж<P224Point> Ꮡp, slice<byte> b) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (ᐧ) {
     case {} when len(b) == 1 && b[0] == 0: {
@@ -144,8 +144,8 @@ internal static ж<fiat.P224Element> p224Polynomial(ж<fiat.P224Element> Ꮡy2, 
 private static readonly @string p224PointNotOnCurveˢ = "P224 point not on curve"u8;
 
 internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224Element> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // y² = x³ - 3x + b
     var rhs = p224Polynomial(@new<fiat.P224Element>(), Ꮡx);
@@ -167,7 +167,7 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
 }
 
 [GoRecv] internal static slice<byte> bytes(this ref P224Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -194,7 +194,7 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
 private static readonly @string p224PointIsThePointAtˢ = "P224 point is the point at infinity"u8;
 
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P224Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return (default!, errors.New(p224PointIsThePointAtˢ));
@@ -215,7 +215,7 @@ private static readonly @string p224PointIsThePointAtˢ = "P224 point is the poi
 }
 
 [GoRecv] internal static slice<byte> bytesCompressed(this ref P224Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -233,9 +233,9 @@ private static readonly @string p224PointIsThePointAtˢ = "P224 point is the poi
 
 // Add sets q = p1 + p2, and returns q. The points may overlap.
 public static ж<P224Point> Add(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp1, ж<P224Point> Ꮡp2) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -333,8 +333,8 @@ public static ж<P224Point> Add(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp1, ж
 
 // Double sets q = p + p, and returns q. The points may overlap.
 public static ж<P224Point> Double(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp) {
-    ref var q = ref Ꮡq.Value;
-    ref var p = ref Ꮡp.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -414,9 +414,9 @@ public static ж<P224Point> Double(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp) 
 
 // Select sets q to p1 if cond == 1, and to p2 if cond == 0.
 public static ж<P224Point> Select(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp1, ж<P224Point> Ꮡp2, nint cond) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     q.x.Select(p1.x, p2.x, cond);
     q.y.Select(p1.y, p2.y, cond);
@@ -441,8 +441,8 @@ public static ж<P224Point> Select(this ж<P224Point> Ꮡq, ж<P224Point> Ꮡp1,
 
 // ScalarMult sets p = scalar * q, and returns p.
 public static (ж<P224Point>, error) ScalarMult(this ж<P224Point> Ꮡp, ж<P224Point> Ꮡq, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     // Compute a p224Table for the base point q. The explicit NewP224Point
     // calls get inlined, letting the allocations live on the stack.
@@ -514,7 +514,7 @@ private static readonly @string invalidScalarLengthˢ = "invalid scalar length"u
 // ScalarBaseMult sets p = scalar * B, where B is the canonical generator, and
 // returns p.
 public static (ж<P224Point>, error) ScalarBaseMult(this ж<P224Point> Ꮡp, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(scalar) != p224ElementLength) {
         return (default!, errors.New(invalidScalarLengthˢ));

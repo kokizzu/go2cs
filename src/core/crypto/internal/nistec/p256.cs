@@ -36,7 +36,7 @@ public static ж<P256Point> NewP256Point() {
 
 // SetGenerator sets p to the canonical generator and returns p.
 public static ж<P256Point> SetGenerator(this ж<P256Point> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.x.SetBytes(new byte[]{0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4, 0x40, 0xf2, 0x77, 0x3, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45, 0xd8, 0x98, 0xc2, 0x96}.slice());
     p.y.SetBytes(new byte[]{0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0xf, 0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68, 0x37, 0xbf, 0x51, 0xf5}.slice());
@@ -46,8 +46,8 @@ public static ж<P256Point> SetGenerator(this ж<P256Point> Ꮡp) {
 
 // Set sets p = q and returns p.
 public static ж<P256Point> Set(this ж<P256Point> Ꮡp, ж<P256Point> Ꮡq) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     p.x.Set(q.x);
     p.y.Set(q.y);
@@ -64,7 +64,7 @@ private static readonly @string invalidP256PointEncodingˢ = "invalid P256 point
 // the curve, it returns nil and an error, and the receiver is unchanged.
 // Otherwise, it returns p.
 public static (ж<P256Point>, error) SetBytes(this ж<P256Point> Ꮡp, slice<byte> b) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (ᐧ) {
     case {} when len(b) == 1 && b[0] == 0: {
@@ -145,8 +145,8 @@ internal static ж<fiat.P256Element> p256Polynomial(ж<fiat.P256Element> Ꮡy2, 
 private static readonly @string p256PointNotOnCurveˢ = "P256 point not on curve"u8;
 
 internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256Element> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // y² = x³ - 3x + b
     var rhs = p256Polynomial(@new<fiat.P256Element>(), Ꮡx);
@@ -168,7 +168,7 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
 }
 
 [GoRecv] internal static slice<byte> bytes(this ref P256Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -195,7 +195,7 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
 private static readonly @string p256PointIsThePointAtˢ = "P256 point is the point at infinity"u8;
 
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P256Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return (default!, errors.New(p256PointIsThePointAtˢ));
@@ -216,7 +216,7 @@ private static readonly @string p256PointIsThePointAtˢ = "P256 point is the poi
 }
 
 [GoRecv] internal static slice<byte> bytesCompressed(this ref P256Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -234,9 +234,9 @@ private static readonly @string p256PointIsThePointAtˢ = "P256 point is the poi
 
 // Add sets q = p1 + p2, and returns q. The points may overlap.
 public static ж<P256Point> Add(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp1, ж<P256Point> Ꮡp2) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -334,8 +334,8 @@ public static ж<P256Point> Add(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp1, ж
 
 // Double sets q = p + p, and returns q. The points may overlap.
 public static ж<P256Point> Double(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp) {
-    ref var q = ref Ꮡq.Value;
-    ref var p = ref Ꮡp.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -415,9 +415,9 @@ public static ж<P256Point> Double(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp) 
 
 // Select sets q to p1 if cond == 1, and to p2 if cond == 0.
 public static ж<P256Point> Select(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp1, ж<P256Point> Ꮡp2, nint cond) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     q.x.Select(p1.x, p2.x, cond);
     q.y.Select(p1.y, p2.y, cond);
@@ -442,8 +442,8 @@ public static ж<P256Point> Select(this ж<P256Point> Ꮡq, ж<P256Point> Ꮡp1,
 
 // ScalarMult sets p = scalar * q, and returns p.
 public static (ж<P256Point>, error) ScalarMult(this ж<P256Point> Ꮡp, ж<P256Point> Ꮡq, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     // Compute a p256Table for the base point q. The explicit NewP256Point
     // calls get inlined, letting the allocations live on the stack.
@@ -512,7 +512,7 @@ internal static ref sync.Once p256GeneratorTableOnce => ref Ꮡp256GeneratorTabl
 // ScalarBaseMult sets p = scalar * B, where B is the canonical generator, and
 // returns p.
 public static (ж<P256Point>, error) ScalarBaseMult(this ж<P256Point> Ꮡp, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(scalar) != p256ElementLength) {
         return (default!, errors.New(invalidScalarLengthˢ));

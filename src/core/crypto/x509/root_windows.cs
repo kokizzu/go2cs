@@ -24,8 +24,8 @@ internal static (ж<CertPool>, error) loadSystemRoots() {
 // The store is automatically freed when the CertContext is freed using
 // syscall.CertFreeCertificateContext.
 internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ж<VerifyOptions> Ꮡopts) => func<(ж<syscall.CertContext>, error)>((defer, recover) => {
-    ref var leaf = ref Ꮡleaf.Value;
-    ref var opts = ref Ꮡopts.Value;
+    ref var leaf = ref Ꮡleaf.DerefOrNull();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     ref var storeCtx = ref heap<ж<syscall.CertContext>>(out var ᏑstoreCtx);
     var (leafCtx, err) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ(leaf.Raw, 0), (uint32)builtin.len(leaf.Raw));
@@ -93,7 +93,7 @@ internal static (slice<ж<Certificate>> chain, error err) extractSimpleChain(ж<
 // checkChainTrustStatus checks the trust status of the certificate chain, translating
 // any errors it finds into Go errors in the process.
 internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx) {
-    ref var chainCtx = ref ᏑchainCtx.Value;
+    ref var chainCtx = ref ᏑchainCtx.DerefOrNull();
 
     if (chainCtx.TrustStatus.ErrorStatus != syscall.CERT_TRUST_NO_ERROR) {
         var status = chainCtx.TrustStatus.ErrorStatus;
@@ -116,8 +116,8 @@ internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ж<syscall.Cer
 // checkChainSSLServerPolicy checks that the certificate chain in chainCtx is valid for
 // use as a certificate chain for a SSL/TLS server.
 internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx, ж<VerifyOptions> Ꮡopts) {
-    ref var c = ref Ꮡc.Value;
-    ref var opts = ref Ꮡopts.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     var (servernamep, err) = syscall.UTF16PtrFromString(strings.TrimSuffix(opts.DNSName, "."u8));
     if (err != default!) {
@@ -178,8 +178,8 @@ internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certifi
     slice<ж<Certificate>> chain = default!;
     error err = default!;
 
-    ref var chainCtx = ref ᏑchainCtx.Value;
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var chainCtx = ref ᏑchainCtx.DerefOrNull();
+    ref var opts = ref Ꮡopts.DerefOrNull();
     err = checkChainTrustStatus(Ꮡc, ᏑchainCtx);
     if (err != default!) {
         return (default!, err);
@@ -222,7 +222,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
         (var storeCtx, err) = createStoreContext(Ꮡc, Ꮡopts);
         if (err != default!) {

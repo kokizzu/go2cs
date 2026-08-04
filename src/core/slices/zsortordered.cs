@@ -302,7 +302,7 @@ internal static (nint pivot, sortedHint hint) choosePivotOrdered<E>(slice<E> dat
 internal static (nint, nint) order2Ordered<E>(slice<E> data, nint a, nint b, ж<nint> Ꮡswaps)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    ref var swaps = ref Ꮡswaps.Value;
+    ref var swaps = ref Ꮡswaps.DerefOrNull();
 
     if (cmp.Less(data[b], data[a])) {
         swaps++;

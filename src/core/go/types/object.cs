@@ -64,7 +64,7 @@ internal static bool isExported(@string name) {
 // Id returns name if it is exported, otherwise it
 // returns the name qualified with the package path.
 public static @string Id(ж<Package> Ꮡpkg, @string name) {
-    ref var pkg = ref Ꮡpkg.DerefOrNil();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     if (isExported(name)) {
         return name;
@@ -189,7 +189,7 @@ internal static Δcolor colorFor(ΔType t) {
 }
 
 [GoRecv] internal static void setParent(this ref @object obj, ж<ΔScope> Ꮡparent) {
-    ref var parent = ref Ꮡparent.Value;
+    ref var parent = ref Ꮡparent.DerefOrNull();
 
     obj.parent = Ꮡparent;
 }
@@ -213,7 +213,7 @@ internal static Δcolor colorFor(ΔType t) {
 }
 
 [GoRecv] internal static bool sameId(this ref @object obj, ж<Package> Ꮡpkg, @string name, bool foldCase) {
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     // If we don't care about capitalization, we also ignore packages.
     if (foldCase && strings.EqualFold(obj.name, name)) {
@@ -240,8 +240,8 @@ internal static Δcolor colorFor(ΔType t) {
 // non-exported, then by name, and finally (for non-exported
 // functions) by package path.
 internal static bool less(this ж<@object> Ꮡa, ж<@object> Ꮡb) {
-    ref var a = ref Ꮡa.DerefOrNil();
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡa == Ꮡb) {
         return false;
@@ -337,7 +337,7 @@ internal static ж<TypeName> _NewTypeNameLazy(tokenꓸPos pos, ж<Package> Ꮡpk
 
 // IsAlias reports whether obj is an alias name for a type.
 public static bool IsAlias(this ж<TypeName> Ꮡobj) {
-    ref var obj = ref Ꮡobj.DerefOrNil();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     switch (obj.typ.type()) {
     case null: {
@@ -424,7 +424,7 @@ public static ж<Var> NewField(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name
 // corresponding Var on the generic (uninstantiated) type. For all other Vars
 // Origin returns the receiver.
 public static ж<Var> Origin(this ж<Var> Ꮡobj) {
-    ref var obj = ref Ꮡobj.Value;
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     if (obj.origin != nil) {
         return obj.origin;
@@ -501,7 +501,7 @@ public static @string FullName(this ж<Func> Ꮡobj) {
 // this will be the corresponding Func on the generic (uninstantiated) type.
 // For all other Funcs Origin returns the receiver.
 public static ж<Func> Origin(this ж<Func> Ꮡobj) {
-    ref var obj = ref Ꮡobj.Value;
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     if (obj.origin != nil) {
         return obj.origin;
@@ -551,8 +551,6 @@ public static ж<Func> Origin(this ж<Func> Ꮡobj) {
 
 // NewLabel returns a new label.
 public static ж<Label> NewLabel(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name) {
-    ref var pkg = ref Ꮡpkg.Value;
-
     return Ꮡ(new Label(new @object(pos: pos, pkg: Ꮡpkg, name: name, typ: new BasicжΔType(Typ[Invalid]), color_: black), false));
 }
 
@@ -581,7 +579,7 @@ internal static readonly @string builtinˢ = "builtin"u8;
 internal static readonly @string nilˢ2 = "nil"u8;
 
 internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Package>, @string> qf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     ж<TypeName> tname = default!;
     var typ = obj.Type();
@@ -695,7 +693,7 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
 }
 
 internal static @string packagePrefix(ж<Package> Ꮡpkg, Func<ж<Package>, @string> qf) {
-    ref var pkg = ref Ꮡpkg.DerefOrNil();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     if (Ꮡpkg == nil) {
         return ""u8;
@@ -754,8 +752,8 @@ public static @string String(this ж<Nil> Ꮡobj) {
 }
 
 internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ж<Func> Ꮡf, Func<ж<Package>, @string> qf) {
-    ref var buf = ref Ꮡbuf.Value;
-    ref var f = ref Ꮡf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (f.typ != default!) {
         var sig = f.typ._<ж<ΔSignature>>();

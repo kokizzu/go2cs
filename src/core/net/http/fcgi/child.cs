@@ -82,8 +82,8 @@ internal static ж<request> newRequest(uint16 reqId, uint8 flags) {
 }
 
 internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
-    ref var c = ref Ꮡc.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     return Ꮡ(new response(
         req: Ꮡreq,
@@ -179,7 +179,7 @@ internal static ж<child> newChild(io.ReadWriteCloser rwc, httpꓸHandler handle
 }
 
 internal static void serve(this ж<child> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     defer(() => Ꮡc.Value.conn.Close());
     defer(Ꮡc.cleanUp);
@@ -214,8 +214,8 @@ public static error ErrConnClosed = errors.New("fcgi: connection to web server c
 internal static readonly @string fcgiReceivedIdThatIsˢ = "fcgi: received ID that is already in-flight"u8;
 
 internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
-    ref var c = ref Ꮡc.Value;
-    ref var rec = ref Ꮡrec.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var rec = ref Ꮡrec.DerefOrNull();
 
     var (req, ok) = c.requests[rec.h.Id, ꟷ];
     if (!ok && rec.h.Type != typeBeginRequest && rec.h.Type != typeGetValues) {
@@ -322,8 +322,8 @@ internal static map<@string, @string> filterOutUsedEnvVars(map<@string, @string>
 }
 
 internal static void serveRequest(this ж<child> Ꮡc, ж<request> Ꮡreq, io.ReadCloser body) {
-    ref var c = ref Ꮡc.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var r = newResponse(Ꮡc, Ꮡreq);
     var (httpReq, err) = cgi.RequestFromMap(req.@params);
@@ -381,7 +381,7 @@ public static error Serve(net.Listener l, httpꓸHandler handler) => func((defer
         defer(() => l.Close());
     }
     if (handler == default!) {
-        handler = new http_ServeMuxжΔHandler(http.DefaultServeMux);
+        handler = new http.ServeMuxжΔHandler(http.DefaultServeMux);
     }
     while (ᐧ) {
         var (rw, err) = l.Accept();
@@ -400,7 +400,7 @@ public static error Serve(net.Listener l, httpꓸHandler handler) => func((defer
 // request, it will not be found anywhere in r, but it will be included in
 // ProcessEnv's response (via r's context).
 public static map<@string, @string> ProcessEnv(ж<http.Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var (env, _) = r.Context().Value(new envVarsContextKey(nil))._<map<@string, @string>>(ᐧ);
     return env;

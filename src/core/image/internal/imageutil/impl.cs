@@ -15,8 +15,8 @@ partial class imageutil_package {
 public static bool /*ok*/ DrawYCbCr(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.YCbCr> Ꮡsrc, image.Point sp) {
     bool ok = default!;
 
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
     // This function exists in the image/internal/imageutil package because it
     // is needed by both the image/draw and image/jpeg packages, but it doesn't
     // seem right for one of those two to depend on the other.

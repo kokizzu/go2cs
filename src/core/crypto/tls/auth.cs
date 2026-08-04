@@ -212,7 +212,7 @@ internal static slice<rsaSignatureSchemesᴛ1> rsaSignatureSchemes = new rsaSign
 // This function must be kept in sync with supportedSignatureAlgorithms.
 // FIPS filtering is applied in the caller, selectSignatureScheme.
 internal static slice<SignatureScheme> signatureSchemesForCertificate(uint16 version, ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.Value;
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     var (priv, ok) = cert.PrivateKey._<crypto.Signer>(ᐧ);
     if (!ok) {
@@ -311,7 +311,7 @@ internal static (SignatureScheme, error) selectSignatureScheme(uint16 vers, ж<C
 // unsupportedCertificateError returns a helpful error for certificates with
 // an unsupported private key.
 internal static error unsupportedCertificateError(ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.Value;
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     switch (cert.PrivateKey.type()) {
     case rsa.PrivateKey _:

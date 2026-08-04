@@ -34,10 +34,10 @@ public static ж<Expectation> ExpectSuccess() {
         return fmt.Errorf("unexpected error while reading the trace: %v"u8, err);
     }
     if (e.failure && err == default!) {
-        return fmt.Errorf("expected error while reading the trace: want something matching %q, got none"u8, e.errorMatcher);
+        return fmt.Errorf("expected error while reading the trace: want something matching %q, got none"u8, e.errorMatcher.OrTypedNil());
     }
     if (e.failure && err != default! && !e.errorMatcher.MatchString(err.Error())) {
-        return fmt.Errorf("unexpected error while reading the trace: want something matching %q, got %s"u8, e.errorMatcher, err.Error());
+        return fmt.Errorf("unexpected error while reading the trace: want something matching %q, got %s"u8, e.errorMatcher.OrTypedNil(), err.Error());
     }
     return default!;
 }

@@ -23,7 +23,7 @@ public static (slice<@string> env, error err) Default(ж<syscall.SysProcAttr> �
     slice<@string> env = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var sys = ref Ꮡsys.DerefOrNil();
+    ref var sys = ref Ꮡsys.DerefOrNull();
 
         if (Ꮡsys == nil || sys.Token == 0) {
             (env, err) = (syscall.Environ(), default!); return;

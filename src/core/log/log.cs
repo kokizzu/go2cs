@@ -85,7 +85,7 @@ public static ж<Logger> New(Δio.Writer @out, @string prefix, nint flag) {
 
 // SetOutput sets the output destination for the logger.
 public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) => func((defer, recover) => {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     Ꮡl.of(Logger.ᏑoutMu).Lock();
     defer(Ꮡl.of(Logger.ᏑoutMu).Unlock);
@@ -102,7 +102,7 @@ public static ж<Logger> Default() {
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
 internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // Assemble decimal in reverse order.
     array<byte> b = new(20);
@@ -125,7 +125,7 @@ internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
 //   - file and line number (if corresponding flags are provided),
 //   - l.prefix (if it's not blank and Lmsgprefix is set).
 internal static void formatHeader(ж<slice<byte>> Ꮡbuf, time.Time t, @string prefix, nint flag, @string @file, nint line) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     if ((nint)(flag & (nint)Lmsgprefix) == 0) {
         buf = append(buf, prefix.ꓸꓸꓸ);
@@ -188,7 +188,7 @@ internal static ж<slice<byte>> getBuffer() {
 }
 
 internal static void putBuffer(ж<slice<byte>> Ꮡp) {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Proper usage of a sync.Pool requires each entry to have approximately
     // the same memory cost. To obtain this property when the stored type
@@ -199,7 +199,7 @@ internal static void putBuffer(ж<slice<byte>> Ꮡp) {
     if (cap(p) > (64 << (int)(10))) {
         p = default!;
     }
-    ᏑbufferPool.Put(Ꮡp);
+    ᏑbufferPool.Put(Ꮡp.OrTypedNil());
 }
 
 // Output writes the output for a logging event. The string s contains
@@ -217,7 +217,7 @@ public static error Output(this ж<Logger> Ꮡl, nint calldepth, @string s) {
 // output can take either a calldepth or a pc to get source line information.
 // It uses the pc if it is non-zero.
 internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, Func<slice<byte>, slice<byte>> appendOutput) => func<error>((defer, recover) => {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (Ꮡl.of(Logger.ᏑisDiscard).Load()) {
         return default!;
@@ -377,7 +377,7 @@ public static void SetPrefix(this ж<Logger> Ꮡl, @string prefixʗp) {
 
 // Writer returns the output destination for the logger.
 public static Δio.Writer Writer(this ж<Logger> Ꮡl) => func((defer, recover) => {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     Ꮡl.of(Logger.ᏑoutMu).Lock();
     defer(Ꮡl.of(Logger.ᏑoutMu).Unlock);

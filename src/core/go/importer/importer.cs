@@ -41,8 +41,6 @@ internal static readonly @string gccgoˢ = "gccgo"u8;
 // Deprecated: If lookup is nil, for backwards-compatibility, the importer
 // will attempt to resolve imports in the $GOPATH workspace.
 public static types.Importer ForCompiler(ж<token.FileSet> Ꮡfset, @string compiler, Func<@string, (io.ReadCloser, error)> lookup) {
-    ref var fset = ref Ꮡfset.Value;
-
     var exprᴛ1 = compiler;
     if (exprᴛ1 == "gc"u8) {
         return new gcimportsжImporter(Ꮡ(new gcimports(
@@ -68,7 +66,7 @@ public static types.Importer ForCompiler(ж<token.FileSet> Ꮡfset, @string comp
         if (lookup != default!) {
             throw panic("source importer for custom import path lookup not supported (issue #13847).");
         }
-        return new srcimporter_ImporterжImporter(srcimporter.New(Ꮡ(Δbuild.Default), Ꮡfset, new map<@string, ж<types.Package>>()));
+        return new srcimporter.ImporterжImporter(srcimporter.New(Ꮡ(Δbuild.Default), Ꮡfset, new map<@string, ж<types.Package>>()));
     }
 
     // compiler not supported

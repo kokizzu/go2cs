@@ -97,7 +97,7 @@ public static (ж<Archive>, error) OpenArchive(@string name) {
 
 // NewArchive creates a new Archive for accessing an AIX big archive in an underlying reader.
 public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
-    var parseDecimalBytes = (slice<byte> b) => strconv.ParseInt(strings.TrimSpace(((@string)b)), 10, 64);
+    (int64, error) parseDecimalBytes(slice<byte> b) => strconv.ParseInt(strings.TrimSpace(((@string)b)), 10, 64);
     var sr = io.NewSectionReader(r, 0, 9223372036854775807L);
     // Read File Header
     array<byte> magic = new(8); /* SAIAMAG */
@@ -125,7 +125,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
     }
     {
-        var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfhdr); if (errΔ3 != default!) {
+        var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡfhdr); if (errΔ3 != default!) {
             return (default!, errΔ3);
         }
     }
@@ -154,7 +154,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
         ref var mhdr = ref heap(new bigarMemberHeader(), out var Ꮡmhdr);
         {
-            var errΔ5 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡmhdr); if (errΔ5 != default!) {
+            var errΔ5 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡmhdr); if (errΔ5 != default!) {
                 return (default!, errΔ5);
             }
         }
@@ -172,7 +172,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
         var name = new slice<byte>((nint)(namlen));
         {
-            var errΔ7 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), name); if (errΔ7 != default!) {
+            var errΔ7 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, name); if (errΔ7 != default!) {
                 return (default!, errΔ7);
             }
         }
@@ -189,7 +189,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         // Read AIAFMAG string
         ref var fmag = ref heap(new array<byte>(2), out var Ꮡfmag);
         {
-            var errΔ9 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfmag); if (errΔ9 != default!) {
+            var errΔ9 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡfmag); if (errΔ9 != default!) {
                 return (default!, errΔ9);
             }
         }

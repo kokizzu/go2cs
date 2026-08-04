@@ -41,7 +41,7 @@ internal static ж<Element> feZero = Ꮡ(new Element(0, 0, 0, 0, 0));
 
 // Zero sets v = 0, and returns v.
 public static ж<Element> Zero(this ж<Element> Ꮡv) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     v = feZero.Value;
     return Ꮡv;
@@ -51,7 +51,7 @@ internal static ж<Element> feOne = Ꮡ(new Element(1, 0, 0, 0, 0));
 
 // One sets v = 1, and returns v.
 public static ж<Element> One(this ж<Element> Ꮡv) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     v = feOne.Value;
     return Ꮡv;
@@ -59,7 +59,7 @@ public static ж<Element> One(this ж<Element> Ꮡv) {
 
 // reduce reduces v modulo 2^255 - 19 and returns it.
 internal static ж<Element> reduce(this ж<Element> Ꮡv) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     Ꮡv.carryPropagate();
     // After the light reduction we now have a field element representation
@@ -89,9 +89,9 @@ internal static ж<Element> reduce(this ж<Element> Ꮡv) {
 
 // Add sets v = a + b, and returns v.
 public static ж<Element> Add(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element> Ꮡb) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     v.l0 = a.l0 + b.l0;
     v.l1 = a.l1 + b.l1;
@@ -107,9 +107,9 @@ public static ж<Element> Add(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Elemen
 
 // Subtract sets v = a - b, and returns v.
 public static ж<Element> Subtract(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element> Ꮡb) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // We first add 2 * p, to guarantee the subtraction won't underflow, and
     // then subtract b (which can be up to 2^255 + 2^13 * 19).
@@ -228,8 +228,8 @@ public static ж<Element> Invert(this ж<Element> Ꮡv, ж<Element> Ꮡz) {
 
 // Set sets v = a, and returns v.
 public static ж<Element> Set(this ж<Element> Ꮡv, ж<Element> Ꮡa) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     v = a;
     return Ꮡv;
@@ -247,7 +247,7 @@ internal static readonly @string edwards25519InvalidFieldˢ = "edwards25519: inv
 // are accepted. Note that this is laxer than specified by RFC 8032, but
 // consistent with most Ed25519 implementations.
 public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     if (len(x) != 32) {
         return (default!, errors.New(edwards25519InvalidFieldˢ));
@@ -280,7 +280,7 @@ public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x
 }
 
 [GoRecv] internal static slice<byte> bytes(this ref Element v, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var t = ref heap<Element>(out var Ꮡt);
     t = v;
@@ -302,7 +302,7 @@ public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x
 
 // Equal returns 1 if v and u are equal, and 0 otherwise.
 [GoRecv] public static nint Equal(this ref Element v, ж<Element> Ꮡu) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     var (sa, sv) = (u.Bytes(), v.Bytes());
     return subtle.ConstantTimeCompare(sa, sv);
@@ -315,9 +315,9 @@ internal static uint64 mask64Bits(nint cond) {
 
 // Select sets v to a if cond == 1, and to b if cond == 0.
 public static ж<Element> Select(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element> Ꮡb, nint cond) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var m = mask64Bits(cond);
     v.l0 = (uint64)(((uint64)(m & a.l0)) | ((uint64)(~m & b.l0)));
@@ -330,7 +330,7 @@ public static ж<Element> Select(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Ele
 
 // Swap swaps v and u if cond == 1 or leaves them unchanged if cond == 0, and returns v.
 [GoRecv] public static void Swap(this ref Element v, ж<Element> Ꮡu, nint cond) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     var m = mask64Bits(cond);
     var t = (uint64)(m & ((uint64)(v.l0 ^ u.l0)));
@@ -357,7 +357,7 @@ public static ж<Element> Select(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Ele
 
 // Absolute sets v to |u|, and returns v.
 public static ж<Element> Absolute(this ж<Element> Ꮡv, ж<Element> Ꮡu) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     return Ꮡv.Select(@new<Element>().Negate(Ꮡu), Ꮡu, u.IsNegative());
 }
@@ -376,8 +376,8 @@ public static ж<Element> Square(this ж<Element> Ꮡv, ж<Element> Ꮡx) {
 
 // Mult32 sets v = x * y, and returns v.
 public static ж<Element> Mult32(this ж<Element> Ꮡv, ж<Element> Ꮡx, uint32 y) {
-    ref var v = ref Ꮡv.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var (x0lo, x0hi) = mul51(x.l0, y);
     var (x1lo, x1hi) = mul51(x.l1, y);
@@ -408,7 +408,7 @@ internal static (uint64 lo, uint64 hi) mul51(uint64 a, uint32 b) {
 
 // Pow22523 set v = x^((p-5)/8), and returns v. (p-5)/8 is 2^252-3.
 public static ж<Element> Pow22523(this ж<Element> Ꮡv, ж<Element> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     ref var t0 = ref heap(new Element(), out var Ꮡt0);
     ref var t1 = ref heap(new Element(), out var Ꮡt1);
@@ -505,9 +505,9 @@ public static (ж<Element> R, nint wasSquare) SqrtRatio(this ж<Element> Ꮡr, �
     ж<Element> R = default!;
     nint wasSquare = default!;
 
-    ref var r = ref Ꮡr.Value;
-    ref var u = ref Ꮡu.Value;
-    ref var v = ref Ꮡv.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
+    ref var v = ref Ꮡv.DerefOrNull();
     var t0 = @new<Element>();
     // r = (u * v3) * (u * v7)^((p-5)/8)
     var v2 = @new<Element>().Square(Ꮡv);

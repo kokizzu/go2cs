@@ -30,7 +30,6 @@ global using typesꓸSignature = go.go.types_package.ΔSignature;
 global using typesꓸTerm = go.go.types_package.ΔTerm;
 global using typesꓸType = go.go.types_package.ΔType;
 global using xcoffꓸSection = go.@internal.xcoff_package.ΔSection;
-using types = go.go.types_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -60,11 +59,6 @@ using static go.go.@internal.gccgoimporter_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Reader, io_package.ReadSeeker>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Const, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Func, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.TypeName, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.Var, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<go.go.types_package.ΔSignature, go.go.types_package.ΔType>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Closer>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadSeeker>(Pointer = true)]
@@ -76,8 +70,6 @@ using static go.go.@internal.gccgoimporter_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<types.Pointer, ж<types.Pointer>>(Indirect = true)]
-[assembly: GoImplicitConv<types.Tuple, ж<types.Tuple>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.go.@internal;

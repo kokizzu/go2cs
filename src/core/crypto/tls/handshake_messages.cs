@@ -33,7 +33,7 @@ internal static void addBytesWithLength(ж<cryptobyte.Builder> Ꮡb, slice<byte>
 
 // addUint64 appends a big-endian, 64-bit value to the cryptobyte.Builder.
 internal static void addUint64(ж<cryptobyte.Builder> Ꮡb, uint64 v) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.AddUint32((uint32)((v >> (int)(32))));
     b.AddUint32((uint32)v);
@@ -42,8 +42,8 @@ internal static void addUint64(ж<cryptobyte.Builder> Ꮡb, uint64 v) {
 // readUint64 decodes a big-endian, 64-bit value into out and advances over it.
 // It reports whether the read was successful.
 internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
-    ref var s = ref Ꮡs.ValueSlot;
-    ref var @out = ref Ꮡout.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var hi = ref heap(new uint32(), out var Ꮡhi);
     ref var lo = ref heap(new uint32(), out var Ꮡlo);
@@ -57,8 +57,8 @@ internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
 // readUint8LengthPrefixed acts like s.ReadUint8LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.ValueSlot;
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     return s.ReadUint8LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -66,8 +66,8 @@ internal static bool readUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slic
 // readUint16LengthPrefixed acts like s.ReadUint16LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint16LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.ValueSlot;
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     return s.ReadUint16LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -75,8 +75,8 @@ internal static bool readUint16LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<sli
 // readUint24LengthPrefixed acts like s.ReadUint24LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint24LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.ValueSlot;
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     return s.ReadUint24LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -113,7 +113,7 @@ internal static bool readUint24LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<sli
 }
 
 internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bool echInner) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     ref var exts = ref heap(new cryptobyte.Builder(), out var Ꮡexts);
     if (len(m.serverName) > 0) {
@@ -412,7 +412,7 @@ internal static (slice<byte>, error) marshal(this ж<clientHelloMsg> Ꮡm) {
 // PreSharedKeyExtension.identities field, according to RFC 8446, Section
 // 4.2.11.2. Note that m.pskBinders must be set to slices of the correct length.
 internal static (slice<byte>, error) marshalWithoutBinders(this ж<clientHelloMsg> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     nint bindersLen = 2;
     // uint16 length prefix
@@ -453,7 +453,7 @@ internal static readonly @string tlsInternalErrorˢ5 = "tls: internal error: psk
 }
 
 internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m = new clientHelloMsg(original: data);
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
@@ -663,7 +663,7 @@ internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
             }
             while (!clientShares.Empty()) {
                 ref var ks = ref heap(new keyShare(), out var Ꮡks);
-                if (!clientShares.ReadUint16(Ꮡ((uint16)(~Ꮡks.of(keyShare.Ꮡgroup)))) || !readUint16LengthPrefixed(ᏑclientShares, Ꮡks.of(keyShare.Ꮡdata)) || len(ks.data) == 0) {
+                if (!clientShares.ReadUint16(Ꮡks.of(keyShare.Ꮡgroup).Reinterpret<CurveID, uint16>()) || !readUint16LengthPrefixed(ᏑclientShares, Ꮡks.of(keyShare.Ꮡdata)) || len(ks.data) == 0) {
                     return false;
                 }
                 m.keyShares = append(m.keyShares, ks);
@@ -796,7 +796,7 @@ internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
 }
 
 internal static (slice<byte>, error) marshal(this ж<serverHelloMsg> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     ref var exts = ref heap(new cryptobyte.Builder(), out var Ꮡexts);
     if (m.ocspStapling) {
@@ -924,7 +924,7 @@ internal static (slice<byte>, error) marshal(this ж<serverHelloMsg> Ꮡm) {
 }
 
 internal static bool unmarshal(this ж<serverHelloMsg> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m = new serverHelloMsg(original: data);
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
@@ -1014,11 +1014,11 @@ internal static bool unmarshal(this ж<serverHelloMsg> Ꮡm, slice<byte> data) {
             if (len(extData) == 2){
                 // This extension has different formats in SH and HRR, accept either
                 // and let the handshake logic decide. See RFC 8446, Section 4.2.8.
-                if (!extData.ReadUint16(Ꮡ((uint16)(~Ꮡm.of(serverHelloMsg.ᏑselectedGroup))))) {
+                if (!extData.ReadUint16(Ꮡm.of(serverHelloMsg.ᏑselectedGroup).Reinterpret<CurveID, uint16>())) {
                     return false;
                 }
             } else {
-                if (!extData.ReadUint16(Ꮡ((uint16)(~Ꮡm.of(serverHelloMsg.ᏑserverShare).of(keyShare.Ꮡgroup)))) || !readUint16LengthPrefixed(ᏑextData, Ꮡm.of(serverHelloMsg.ᏑserverShare).of(keyShare.Ꮡdata))) {
+                if (!extData.ReadUint16(Ꮡm.of(serverHelloMsg.ᏑserverShare).of(keyShare.Ꮡgroup).Reinterpret<CurveID, uint16>()) || !readUint16LengthPrefixed(ᏑextData, Ꮡm.of(serverHelloMsg.ᏑserverShare).of(keyShare.Ꮡdata))) {
                     return false;
                 }
             }
@@ -1262,7 +1262,7 @@ internal static (slice<byte>, error) marshal(this ж<newSessionTicketMsgTLS13> �
 }
 
 internal static bool unmarshal(this ж<newSessionTicketMsgTLS13> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m = new newSessionTicketMsgTLS13(nil);
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
@@ -1522,8 +1522,7 @@ internal static (slice<byte>, error) marshal(this ж<certificateMsgTLS13> Ꮡm) 
     Ꮡb.AddUint24LengthPrefixed((ж<cryptobyte.Builder> bΔ1) => {
         bΔ1.AddUint8(0);
         // certificate_request_context
-        ref var certificate = ref heap<Certificate>(out var Ꮡcertificate);
-        certificate = Ꮡm.Value.certificate;
+        var certificate = Ꮡm.Value.certificate;
         if (!Ꮡm.Value.ocspStapling) {
             certificate.OCSPStaple = default!;
         }
@@ -1581,7 +1580,7 @@ internal static void marshalCertificate(ж<cryptobyte.Builder> Ꮡb, Certificate
 }
 
 internal static bool unmarshal(this ж<certificateMsgTLS13> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m = new certificateMsgTLS13(nil);
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
@@ -1597,8 +1596,8 @@ internal static bool unmarshal(this ж<certificateMsgTLS13> Ꮡm, slice<byte> da
 }
 
 internal static bool unmarshalCertificate(ж<cryptobyte.String> Ꮡs, ж<Certificate> Ꮡcertificate) {
-    ref var s = ref Ꮡs.ValueSlot;
-    ref var certificate = ref Ꮡcertificate.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var certificate = ref Ꮡcertificate.DerefOrNull();
 
     ref var certList = ref heap<cryptobyte.String>(out var ᏑcertList);
     if (!s.ReadUint24LengthPrefixed(ᏑcertList)) {
@@ -1698,7 +1697,7 @@ internal static (slice<byte>, error) marshal(this ж<certificateStatusMsg> Ꮡm)
 }
 
 internal static bool unmarshal(this ж<certificateStatusMsg> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
     s = ((cryptobyte.String)data);
@@ -1906,7 +1905,7 @@ internal static (slice<byte>, error) marshal(this ж<certificateVerifyMsg> Ꮡm)
 }
 
 internal static bool unmarshal(this ж<certificateVerifyMsg> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
     s = ((cryptobyte.String)data);
@@ -1915,7 +1914,7 @@ internal static bool unmarshal(this ж<certificateVerifyMsg> Ꮡm, slice<byte> d
         return false;
     }
     if (m.hasSignatureAlgorithm) {
-        if (!s.ReadUint16(Ꮡ((uint16)(~Ꮡm.of(certificateVerifyMsg.ᏑsignatureAlgorithm))))) {
+        if (!s.ReadUint16(Ꮡm.of(certificateVerifyMsg.ᏑsignatureAlgorithm).Reinterpret<SignatureScheme, uint16>())) {
             return false;
         }
     }

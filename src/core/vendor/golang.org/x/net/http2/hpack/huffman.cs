@@ -21,7 +21,7 @@ internal static ref sync.Pool bufPool => ref ᏑbufPool.Value;
 public static (nint, error) HuffmanDecode(io.Writer w, slice<byte> v) => func<(nint, error)>((defer, recover) => {
     var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
     buf.Reset();
-    deferǃ(ᏑbufPool.Put, buf, defer);
+    deferǃ(ᏑbufPool.Put, buf.OrTypedNil(), defer);
     {
         var err = huffmanDecode(buf, 0, v); if (err != default!) {
             return (0, err);
@@ -34,7 +34,7 @@ public static (nint, error) HuffmanDecode(io.Writer w, slice<byte> v) => func<(n
 public static (@string, error) HuffmanDecodeToString(slice<byte> v) => func<(@string, error)>((defer, recover) => {
     var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
     buf.Reset();
-    deferǃ(ᏑbufPool.Put, buf, defer);
+    deferǃ(ᏑbufPool.Put, buf.OrTypedNil(), defer);
     {
         var err = huffmanDecode(buf, 0, v); if (err != default!) {
             return ("", err);
@@ -51,7 +51,7 @@ public static error ErrInvalidHuffman = errors.New("hpack: invalid Huffman-encod
 // If maxLen is greater than 0, attempts to write more to buf than
 // maxLen bytes will return ErrStringLength.
 internal static error huffmanDecode(ж<bytes.Buffer> Ꮡbuf, nint maxLen, slice<byte> v) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var rootHuffmanNode = getRootHuffmanNode();
     var n = rootHuffmanNode;

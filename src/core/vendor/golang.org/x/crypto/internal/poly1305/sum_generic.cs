@@ -62,7 +62,7 @@ internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
 // Write splits the incoming message into TagSize chunks, and passes them to
 // update. It buffers incomplete chunks.
 internal static (nint, error) Write(this ж<macGeneric> Ꮡh, slice<byte> p) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     nint nn = len(p);
     if (h.offset > 0) {
@@ -108,8 +108,8 @@ internal static UntypedInt rMask1 => 0x0FFFFFFC0FFFFFFC;
 
 // initialize loads the 256-bit key into the two 128-bit secret values r and s.
 internal static void initialize(ж<array<byte>> Ꮡkey, ж<macState> Ꮡm) {
-    ref var key = ref Ꮡkey.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m.r[0] = (uint64)(binary.LittleEndian.Uint64(key[0..8]) & (uint64)rMask0);
     m.r[1] = (uint64)(binary.LittleEndian.Uint64(key[8..16]) & (uint64)rMask1);
@@ -151,7 +151,7 @@ internal static uint128 shiftRightBy2(uint128 a) {
 // If the msg length is not a multiple of TagSize, it assumes the last
 // incomplete chunk is the final one.
 internal static void updateGeneric(ж<macState> Ꮡstate, slice<byte> msg) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (h0, h1, h2) = (state.h[0], state.h[1], state.h[2]);
     var (r0, r1) = (state.r[0], state.r[1]);
@@ -276,9 +276,9 @@ internal static UntypedInt p2 => 0x0000000000000003;
 //
 //	out = h + s  mod  2¹²⁸
 internal static void finalize(ж<array<byte>> Ꮡout, ж<array<uint64>> Ꮡh, ж<array<uint64>> Ꮡs) {
-    ref var @out = ref Ꮡout.Value;
-    ref var h = ref Ꮡh.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var (h0, h1, h2) = (h[0], h[1], h[2]);
     // After the partial reduction in updateGeneric, h might be more than

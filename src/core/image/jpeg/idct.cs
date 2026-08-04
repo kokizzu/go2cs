@@ -65,7 +65,7 @@ internal static UntypedInt r2 => 181; // 256/sqrt(2)
 // discrete W transform and for the discrete Fourier transform", IEEE Trans. on
 // ASSP, Vol. ASSP- 32, pp. 803-816, Aug. 1984.
 internal static void idct(ж<block> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.Value;
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     // Horizontal 1-D IDCT.
     for (nint y = 0; y < 8; y++) {

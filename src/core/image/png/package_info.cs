@@ -45,8 +45,6 @@ using static go.image.png_package;
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<decoder, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<encoder, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

@@ -336,7 +336,7 @@ internal static (nint code, bool continued, @string message, error err) parseCod
 // removes leading dot escapes if present, and stops with error [io.EOF]
 // after consuming (and discarding) the end-of-sequence line.
 public static io.Reader DotReader(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.closeDot();
     r.dot = Ꮡ(new dotReader(r: Ꮡr));
@@ -353,7 +353,7 @@ internal static (nint n, error err) Read(this ж<dotReader> Ꮡd, slice<byte> b)
     nint n = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.DerefOrNil();
+    ref var d = ref Ꮡd.DerefOrNull();
     // Run data through a simple state machine to
     // elide leading dots, rewrite trailing \r\n into \n,
     // and detect ending .\r\n line.
@@ -529,7 +529,7 @@ public static (MIMEHeader, error) ReadMIMEHeader(this ж<Reader> Ꮡr) {
 // readMIMEHeader is a version of ReadMIMEHeader which takes a limit on the header size.
 // It is called by the mime/multipart package.
 internal static (MIMEHeader, error) readMIMEHeader(ж<Reader> Ꮡr, int64 maxMemory, int64 maxHeaders) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Avoid lots of small slice allocations later by allocating one
     // large one ahead of time which we'll cut up into smaller
@@ -702,7 +702,7 @@ internal static bool validHeaderFieldByte(byte c) {
     // so that the byte c can be tested with a shift and an and.
     // If c >= 128, then 1<<c and 1<<(c-64) will both be zero,
     // and this function will return false.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<(10)-1)<<'0' |
 	(1<<(26)-1)<<'a' |
 	(1<<(26)-1)<<'A' |
@@ -721,7 +721,7 @@ internal static bool validHeaderFieldByte(byte c) {
 	1<<'`' |
 	1<<'|' |
 	1<<'~' */
-            GoUntyped.Parse("116972063611741436228934278030836105216");
+            GoBigConst.Parse("116972063611741436228934278030836105216");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (6341068274398134270UL)))) != 0;
 }
 
@@ -745,11 +745,11 @@ internal static bool validHeaderValueByte(byte c) {
     // If c >= 128, then 1<<c and 1<<(c-64) will both be zero.
     // Since this is the obs-text range, we invert the mask to
     // create a bitmap with 1s for disallowed bytes.
-    GoUntyped mask = /* 0 |
+    GoBigConst mask = /* 0 |
 	(1<<(0x7f-0x21)-1)<<0x21 |
 	1<<0x20 |
 	1<<0x09 */ // HTAB: %x09
-            GoUntyped.Parse("170141183460469231731687303711589138944");
+            GoBigConst.Parse("170141183460469231731687303711589138944");
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(9223372036854775807UL)))) == 0;
 }
 

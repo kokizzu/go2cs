@@ -260,11 +260,11 @@ internal static void printslice(slice<byte> sʗp) {
 }
 
 internal static void printeface(eface e) {
-    print((@string)"("u8, e._type, (@string)","u8, e.data, (@string)")"u8);
+    print((@string)"("u8, e._type.OrTypedNil(), (@string)","u8, e.data, (@string)")"u8);
 }
 
 internal static void printiface(iface i) {
-    print((@string)"("u8, i.tab, (@string)","u8, i.data, (@string)")"u8);
+    print((@string)"("u8, i.tab.OrTypedNil(), (@string)","u8, i.data, (@string)")"u8);
 }
 
 // hexdumpWords prints a word-oriented hex dump of [p, end).

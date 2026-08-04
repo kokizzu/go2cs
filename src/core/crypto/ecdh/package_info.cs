@@ -13,7 +13,6 @@
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
-using boring = go.crypto.@internal.boring_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -54,7 +53,6 @@ using static go.crypto.ecdh_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<boring.PublicKeyECDH, ж<boring.PublicKeyECDH>>(Indirect = true)]
 [assembly: GoImplicitConv<ΔPublicKey, ж<ΔPublicKey>>(Indirect = true)]
 // </ImplicitConversions>
 

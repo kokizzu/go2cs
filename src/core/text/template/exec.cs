@@ -168,7 +168,7 @@ public static error Unwrap(this ExecError e) {
 // errRecover is the handler that turns panics into returns from the top
 // level of Parse.
 internal static void errRecover(ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var errp = ref Ꮡerrp.ValueSlot;
+    ref var errp = ref Ꮡerrp.DerefOrNull();
 
     var e = recover();
     if (e != default!) {
@@ -204,7 +204,7 @@ internal static void errRecover(ж<error> Ꮡerrp) => func((defer, recover) => {
 // A template may be executed safely in parallel, although if parallel
 // executions share a Writer the output may be interleaved.
 public static error ExecuteTemplate(this ж<Template> Ꮡt, io.Writer wr, @string name, any data) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tmpl = Ꮡt.Lookup(name);
     if (tmpl == nil) {
@@ -230,7 +230,7 @@ public static error Execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
 internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(errRecover, Ꮡerr, defer);
@@ -246,7 +246,7 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
         if (t.Tree == nil || t.Root == nil) {
             state.errorf("%q is an incomplete or empty template"u8, t.Name());
         }
-        state.walk(value, new parse_ListNodeжNode(t.Root));
+        state.walk(value, new parse.ListNodeжNode(t.Root));
     });
     return Ꮡerr.ValueSlot;
 }
@@ -259,7 +259,7 @@ internal static readonly @string definedTemplatesAreˢ = "; defined templates ar
 // it returns the empty string. For generating an error message here
 // and in [html/template].
 public static @string DefinedTemplates(this ж<Template> Ꮡt) => func<@string>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.common == nil) {
         return ""u8;
@@ -289,7 +289,7 @@ internal static error walkContinue = errors.New("continue"u8);
 // Walk functions step through the major pieces of the template structure,
 // generating output as they go.
 internal static void walk(this ж<state> Ꮡs, reflectꓸValue dot, parse.Node node) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.at(node);
     switch (node.type()) {
@@ -298,7 +298,7 @@ internal static void walk(this ж<state> Ꮡs, reflectꓸValue dot, parse.Node n
  // Also, if the action declares variables, don't print the result.
  (~nodeΔ1).Pipe);
         if (len((~(~nodeΔ1).Pipe).Decl) == 0) {
-            s.printValue(new parse_ActionNodeжNode(nodeΔ1), val);
+            s.printValue(new parse.ActionNodeжNode(nodeΔ1), val);
         }
         break;
     }
@@ -353,7 +353,7 @@ internal static void walk(this ж<state> Ꮡs, reflectꓸValue dot, parse.Node n
 // walkIfOrWith walks an 'if' or 'with' node. The two control structures
 // are identical in behavior except that 'with' sets dot.
 internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, reflectꓸValue dot, ж<parse.PipeNode> Ꮡpipe, ж<parse.ListNode> Ꮡlist, ж<parse.ListNode> ᏑelseList) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     deferǃ(Ꮡs.pop, Ꮡs.Value.mark(), defer);
     var val = s.evalPipeline(dot, Ꮡpipe);
@@ -363,13 +363,13 @@ internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, refle
     }
     if (truth){
         if (typ == parse.NodeWith){
-            Ꮡs.walk(val, new parse_ListNodeжNode(Ꮡlist));
+            Ꮡs.walk(val, new parse.ListNodeжNode(Ꮡlist));
         } else {
-            Ꮡs.walk(dot, new parse_ListNodeжNode(Ꮡlist));
+            Ꮡs.walk(dot, new parse.ListNodeжNode(Ꮡlist));
         }
     } else 
     if (ᏑelseList != nil) {
-        Ꮡs.walk(dot, new parse_ListNodeжNode(ᏑelseList));
+        Ꮡs.walk(dot, new parse.ListNodeжNode(ᏑelseList));
     }
 });
 
@@ -425,10 +425,10 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
 }
 
 internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<parse.RangeNode> Ꮡr) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
-    s.at(new parse_RangeNodeжNode(Ꮡr));
+    s.at(new parse.RangeNodeжNode(Ꮡr));
     defer(() => {
         {
             var rΔ1 = recover(); if (rΔ1 != default! && !AreEqual(rΔ1, walkBreak)) {
@@ -474,7 +474,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
                 }
             }
         });
-        Ꮡs.walk(elem, new parse_ListNodeжNode(Ꮡr.Value.List));
+        Ꮡs.walk(elem, new parse.ListNodeжNode(Ꮡr.Value.List));
     });
     var exprᴛ1 = val.Kind();
     if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) {
@@ -534,14 +534,14 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
     }
 
     if (r.ElseList != nil) {
-        Ꮡs.walk(dot, new parse_ListNodeжNode(r.ElseList));
+        Ꮡs.walk(dot, new parse.ListNodeжNode(r.ElseList));
     }
 });
 
 [GoRecv] internal static void walkTemplate(this ref state s, reflectꓸValue dot, ж<parse.TemplateNode> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    s.at(new parse_TemplateNodeжNode(Ꮡt));
+    s.at(new parse.TemplateNodeжNode(Ꮡt));
     var tmpl = s.tmpl.Lookup(t.Name);
     if (tmpl == nil) {
         s.errorf("template %q not defined"u8, t.Name);
@@ -557,7 +557,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
     newState.tmpl = tmpl;
     // No dynamic scoping: template invocations inherit no variables.
     newState.vars = new variable[]{new("$"u8, dot)}.slice();
-    ᏑnewState.walk(dot, new parse_ListNodeжNode((~tmpl).Root));
+    ᏑnewState.walk(dot, new parse.ListNodeжNode((~tmpl).Root));
 }
 
 // Eval functions evaluate pipelines, commands, and their elements and extract
@@ -571,11 +571,11 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
 [GoRecv] internal static reflectꓸValue /*value*/ evalPipeline(this ref state s, reflectꓸValue dot, ж<parse.PipeNode> Ꮡpipe) {
     reflectꓸValue value = new(nil);
 
-    ref var pipe = ref Ꮡpipe.DerefOrNil();
+    ref var pipe = ref Ꮡpipe.DerefOrNull();
     if (Ꮡpipe == nil) {
         return value;
     }
-    s.at(new parse_PipeNodeжNode(Ꮡpipe));
+    s.at(new parse.PipeNodeжNode(Ꮡpipe));
     value = missingVal;
     foreach (var (_, cmd) in pipe.Cmds) {
         value = s.evalCommand(dot, cmd, value);
@@ -602,7 +602,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
 }
 
 [GoRecv] internal static reflectꓸValue evalCommand(this ref state s, reflectꓸValue dot, ж<parse.CommandNode> Ꮡcmd, reflectꓸValue final) {
-    ref var cmd = ref Ꮡcmd.Value;
+    ref var cmd = ref Ꮡcmd.DerefOrNull();
 
     var firstWord = cmd.Args[0];
     switch (firstWord.type()) {
@@ -614,7 +614,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
     }
     case ж<parse.IdentifierNode> n: {
         return s.evalFunction(dot, // Must be a function.
- n, new parse_CommandNodeжNode(Ꮡcmd), cmd.Args, final);
+ n, new parse.CommandNodeжNode(Ꮡcmd), cmd.Args, final);
     }
     case ж<parse.PipeNode> n: {
         s.notAFunction(cmd.Args, // Parenthesized pipeline. The arguments are all inside the pipeline; final must be absent.
@@ -655,12 +655,12 @@ internal static readonly @string eEpPˢ = ".eEpP"u8;
 // its type, and we use Go rules to resolve. Note there is no such thing as
 // a uint ideal constant in this situation - the value must be of int type.
 [GoRecv] internal static reflectꓸValue idealConstant(this ref state s, ж<parse.NumberNode> Ꮡconstant) {
-    ref var constant = ref Ꮡconstant.Value;
+    ref var constant = ref Ꮡconstant.DerefOrNull();
 
     // These are ideal constants but we don't know the type
     // and we have no context.  (If it was a method argument,
     // we'd know what we need.) The syntax guides us to some extent.
-    s.at(new parse_NumberNodeжNode(Ꮡconstant));
+    s.at(new parse.NumberNodeжNode(Ꮡconstant));
     switch (ᐧ) {
     case {} when constant.IsComplex: {
         return reflect.ValueOf(constant.Complex128);
@@ -693,38 +693,38 @@ internal static bool isHexInt(@string s) {
 }
 
 [GoRecv] internal static reflectꓸValue evalFieldNode(this ref state s, reflectꓸValue dot, ж<parse.FieldNode> Ꮡfield, slice<parse.Node> args, reflectꓸValue final) {
-    ref var field = ref Ꮡfield.Value;
+    ref var field = ref Ꮡfield.DerefOrNull();
 
-    s.at(new parse_FieldNodeжNode(Ꮡfield));
-    return s.evalFieldChain(dot, dot, new parse_FieldNodeжNode(Ꮡfield), field.Ident, args, final);
+    s.at(new parse.FieldNodeжNode(Ꮡfield));
+    return s.evalFieldChain(dot, dot, new parse.FieldNodeжNode(Ꮡfield), field.Ident, args, final);
 }
 
 [GoRecv] internal static reflectꓸValue evalChainNode(this ref state s, reflectꓸValue dot, ж<parse.ChainNode> Ꮡchain, slice<parse.Node> args, reflectꓸValue final) {
-    ref var chain = ref Ꮡchain.Value;
+    ref var chain = ref Ꮡchain.DerefOrNull();
 
-    s.at(new parse_ChainNodeжNode(Ꮡchain));
+    s.at(new parse.ChainNodeжNode(Ꮡchain));
     if (len(chain.Field) == 0) {
         s.errorf("internal error: no fields in evalChainNode"u8);
     }
     if (chain.Node.Type() == parse.NodeNil) {
-        s.errorf("indirection through explicit nil in %s"u8, Ꮡchain);
+        s.errorf("indirection through explicit nil in %s"u8, Ꮡchain.OrTypedNil());
     }
     // (pipe).Field1.Field2 has pipe as .Node, fields as .Field. Eval the pipeline, then the fields.
     var pipe = s.evalArg(dot, default!, chain.Node);
-    return s.evalFieldChain(dot, pipe, new parse_ChainNodeжNode(Ꮡchain), chain.Field, args, final);
+    return s.evalFieldChain(dot, pipe, new parse.ChainNodeжNode(Ꮡchain), chain.Field, args, final);
 }
 
 [GoRecv] internal static reflectꓸValue evalVariableNode(this ref state s, reflectꓸValue dot, ж<parse.VariableNode> Ꮡvariable, slice<parse.Node> args, reflectꓸValue final) {
-    ref var variable = ref Ꮡvariable.Value;
+    ref var variable = ref Ꮡvariable.DerefOrNull();
 
     // $x.Field has $x as the first ident, Field as the second. Eval the var, then the fields.
-    s.at(new parse_VariableNodeжNode(Ꮡvariable));
+    s.at(new parse.VariableNodeжNode(Ꮡvariable));
     var value = s.varValue(variable.Ident[0]);
     if (len(variable.Ident) == 1) {
         s.notAFunction(args, final);
         return value;
     }
-    return s.evalFieldChain(dot, value, new parse_VariableNodeжNode(Ꮡvariable), variable.Ident[1..], args, final);
+    return s.evalFieldChain(dot, value, new parse.VariableNodeжNode(Ꮡvariable), variable.Ident[1..], args, final);
 }
 
 // evalFieldChain evaluates .X.Y.Z possibly followed by arguments.
@@ -740,9 +740,9 @@ internal static bool isHexInt(@string s) {
 }
 
 [GoRecv] internal static reflectꓸValue evalFunction(this ref state s, reflectꓸValue dot, ж<parse.IdentifierNode> Ꮡnode, parse.Node cmd, slice<parse.Node> args, reflectꓸValue final) {
-    ref var node = ref Ꮡnode.Value;
+    ref var node = ref Ꮡnode.DerefOrNull();
 
-    s.at(new parse_IdentifierNodeжNode(Ꮡnode));
+    s.at(new parse.IdentifierNodeжNode(Ꮡnode));
     @string name = node.Ident;
     var (function, isBuiltin, ok) = findFunction(name, s.tmpl);
     if (!ok) {
@@ -880,12 +880,12 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
             s.errorf("%v"u8, errΔ1);
         }
     }
-    var unwrap = (reflectꓸValue vΔ1) => {
+    reflectꓸValue unwrap(reflectꓸValue vΔ1) {
         if (AreEqual(vΔ1.Type(), reflectValueType)) {
             vΔ1 = vΔ1.Interface()._<reflectꓸValue>();
         }
         return vΔ1;
-    };
+    }
     // Special case for builtin and/or, which short-circuit.
     if (isBuiltin && (name == "and"u8 || name == "or"u8)) {
         var argType = typ.In(0);
@@ -1042,7 +1042,7 @@ internal static bool canBeNil(reflectꓸType typ) {
         return s.validateType(s.evalPipeline(dot, arg), typ);
     }
     case ж<parse.IdentifierNode> arg: {
-        return s.validateType(s.evalFunction(dot, arg, new parse_IdentifierNodeжNode(arg), default!, missingVal), typ);
+        return s.validateType(s.evalFunction(dot, arg, new parse.IdentifierNodeжNode(arg), default!, missingVal), typ);
     }
     case ж<parse.ChainNode> arg: {
         return s.validateType(s.evalChainNode(dot, arg, default!, missingVal), typ);
@@ -1171,7 +1171,7 @@ internal static bool canBeNil(reflectꓸType typ) {
         return s.evalFieldNode(dot, nΔ1, default!, missingVal);
     }
     case ж<parse.IdentifierNode> nΔ1: {
-        return s.evalFunction(dot, nΔ1, new parse_IdentifierNodeжNode(nΔ1), default!, missingVal);
+        return s.evalFunction(dot, nΔ1, new parse.IdentifierNodeжNode(nΔ1), default!, missingVal);
     }
     case ж<parse.NilNode> nΔ1: {
         s.errorf("evalEmptyInterface: nil (can't happen)"u8);

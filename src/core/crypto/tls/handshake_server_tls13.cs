@@ -561,7 +561,7 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
     var (clientHello, ok) = msg._<ж<clientHelloMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return (default!, unexpectedMessageError(clientHello, msg));
+        return (default!, unexpectedMessageError(clientHello.OrTypedNil(), msg));
     }
     if (len((~clientHello).keyShares) != 1) {
         c.sendAlert(alertIllegalParameter);
@@ -589,8 +589,8 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
 // different, with the exception of the changes allowed before and after a
 // HelloRetryRequest. See RFC 8446, Section 4.1.2.
 internal static bool illegalClientHelloChange(ж<clientHelloMsg> Ꮡch, ж<clientHelloMsg> Ꮡch1) {
-    ref var ch = ref Ꮡch.Value;
-    ref var ch1 = ref Ꮡch1.Value;
+    ref var ch = ref Ꮡch.DerefOrNull();
+    ref var ch1 = ref Ꮡch1.DerefOrNull();
 
     if (len(ch.supportedVersions) != len(ch1.supportedVersions) || len(ch.cipherSuites) != len(ch1.cipherSuites) || len(ch.supportedCurves) != len(ch1.supportedCurves) || len(ch.supportedSignatureAlgorithms) != len(ch1.supportedSignatureAlgorithms) || len(ch.supportedSignatureAlgorithmsCert) != len(ch1.supportedSignatureAlgorithmsCert) || len(ch.alpnProtocols) != len(ch1.alpnProtocols)) {
         return true;
@@ -735,7 +735,7 @@ internal static bool illegalClientHelloChange(ж<clientHelloMsg> Ꮡch, ж<clien
         return c.sendAlert(alertInternalError);
     }
     var signed = signedMessage(sigHash, serverSignatureContext, hs.transcript);
-    var signOpts = ((crypto.SignerOpts)new crypto_HashᴠSignerOpts(sigHash));
+    var signOpts = ((crypto.SignerOpts)sigHash);
     if (sigType == signatureRSAPSS) {
         signOpts = new rsa_PSSOptionsжSignerOpts(Ꮡ(new rsa.PSSOptions(SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: sigHash)));
     }
@@ -850,7 +850,7 @@ internal static bool illegalClientHelloChange(ж<clientHelloMsg> Ꮡch, ж<clien
 internal static readonly @string tlsInternalErrorUnknownˢ = "tls: internal error: unknown cipher suite"u8;
 
 internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slice<slice<byte>> extra) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var suite = cipherSuiteTLS13ByID(c.cipherSuite);
     if (suite == nil) {
@@ -929,7 +929,7 @@ internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slic
     var (certMsg, ok) = msg._<ж<certificateMsgTLS13>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(certMsg, msg);
+        return unexpectedMessageError(certMsg.OrTypedNil(), msg);
     }
     {
         var errΔ2 = c.processCertsFromClient((~certMsg).certificate); if (errΔ2 != default!) {
@@ -955,7 +955,7 @@ internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slic
         var (certVerify, okΔ1) = msg._<ж<certificateVerifyMsg>>(ᐧ);
         if (!okΔ1) {
             c.sendAlert(alertUnexpectedMessage);
-            return unexpectedMessageError(certVerify, msg);
+            return unexpectedMessageError(certVerify.OrTypedNil(), msg);
         }
         // See RFC 8446, Section 4.4.3.
         if (!isSupportedSignatureAlgorithm((~certVerify).signatureAlgorithm, supportedSignatureAlgorithms())) {
@@ -1007,7 +1007,7 @@ internal static readonly @string tlsInvalidClientFinishedˢ = "tls: invalid clie
     var (finished, ok) = msg._<ж<finishedMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(finished, msg);
+        return unexpectedMessageError(finished.OrTypedNil(), msg);
     }
     if (!hmac.Equal(hs.clientFinished, (~finished).verifyData)) {
         c.sendAlert(alertDecryptError);

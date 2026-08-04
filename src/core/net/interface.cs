@@ -207,12 +207,12 @@ internal static ref ipv6ZoneCache zoneCache => ref ᏑzoneCache.Value;
 internal static bool /*updated*/ update(this ж<ipv6ZoneCache> Ꮡzc, slice<Interface> ift, bool force) {
     bool updated = default!;
     func((defer, recover) => {
-    ref var zc = ref Ꮡzc.Value;
+    ref var zc = ref Ꮡzc.DerefOrNull();
 
         Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Lock();
         defer(Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Unlock);
         var now = time.Now();
-        if (!force && zc.lastFetched.After(now.Add(-60000000000L))) {
+        if (!force && zc.lastFetched.After(now.Add((time.Duration)(-60000000000L)))) {
             updated = false; return;
         }
         zc.lastFetched = now;

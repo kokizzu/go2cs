@@ -35,7 +35,7 @@ public static ж<P521Point> NewP521Point() {
 
 // SetGenerator sets p to the canonical generator and returns p.
 public static ж<P521Point> SetGenerator(this ж<P521Point> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.x.SetBytes(new byte[]{0x0, 0xc6, 0x85, 0x8e, 0x6, 0xb7, 0x4, 0x4, 0xe9, 0xcd, 0x9e, 0x3e, 0xcb, 0x66, 0x23, 0x95, 0xb4, 0x42, 0x9c, 0x64, 0x81, 0x39, 0x5, 0x3f, 0xb5, 0x21, 0xf8, 0x28, 0xaf, 0x60, 0x6b, 0x4d, 0x3d, 0xba, 0xa1, 0x4b, 0x5e, 0x77, 0xef, 0xe7, 0x59, 0x28, 0xfe, 0x1d, 0xc1, 0x27, 0xa2, 0xff, 0xa8, 0xde, 0x33, 0x48, 0xb3, 0xc1, 0x85, 0x6a, 0x42, 0x9b, 0xf9, 0x7e, 0x7e, 0x31, 0xc2, 0xe5, 0xbd, 0x66}.slice());
     p.y.SetBytes(new byte[]{0x1, 0x18, 0x39, 0x29, 0x6a, 0x78, 0x9a, 0x3b, 0xc0, 0x4, 0x5c, 0x8a, 0x5f, 0xb4, 0x2c, 0x7d, 0x1b, 0xd9, 0x98, 0xf5, 0x44, 0x49, 0x57, 0x9b, 0x44, 0x68, 0x17, 0xaf, 0xbd, 0x17, 0x27, 0x3e, 0x66, 0x2c, 0x97, 0xee, 0x72, 0x99, 0x5e, 0xf4, 0x26, 0x40, 0xc5, 0x50, 0xb9, 0x1, 0x3f, 0xad, 0x7, 0x61, 0x35, 0x3c, 0x70, 0x86, 0xa2, 0x72, 0xc2, 0x40, 0x88, 0xbe, 0x94, 0x76, 0x9f, 0xd1, 0x66, 0x50}.slice());
@@ -45,8 +45,8 @@ public static ж<P521Point> SetGenerator(this ж<P521Point> Ꮡp) {
 
 // Set sets p = q and returns p.
 public static ж<P521Point> Set(this ж<P521Point> Ꮡp, ж<P521Point> Ꮡq) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     p.x.Set(q.x);
     p.y.Set(q.y);
@@ -63,7 +63,7 @@ private static readonly @string invalidP521PointEncodingˢ = "invalid P521 point
 // the curve, it returns nil and an error, and the receiver is unchanged.
 // Otherwise, it returns p.
 public static (ж<P521Point>, error) SetBytes(this ж<P521Point> Ꮡp, slice<byte> b) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (ᐧ) {
     case {} when len(b) == 1 && b[0] == 0: {
@@ -144,8 +144,8 @@ internal static ж<fiat.P521Element> p521Polynomial(ж<fiat.P521Element> Ꮡy2, 
 private static readonly @string p521PointNotOnCurveˢ = "P521 point not on curve"u8;
 
 internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521Element> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // y² = x³ - 3x + b
     var rhs = p521Polynomial(@new<fiat.P521Element>(), Ꮡx);
@@ -167,7 +167,7 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
 }
 
 [GoRecv] internal static slice<byte> bytes(this ref P521Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -194,7 +194,7 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
 private static readonly @string p521PointIsThePointAtˢ = "P521 point is the point at infinity"u8;
 
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P521Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return (default!, errors.New(p521PointIsThePointAtˢ));
@@ -215,7 +215,7 @@ private static readonly @string p521PointIsThePointAtˢ = "P521 point is the poi
 }
 
 [GoRecv] internal static slice<byte> bytesCompressed(this ref P521Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -233,9 +233,9 @@ private static readonly @string p521PointIsThePointAtˢ = "P521 point is the poi
 
 // Add sets q = p1 + p2, and returns q. The points may overlap.
 public static ж<P521Point> Add(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp1, ж<P521Point> Ꮡp2) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -333,8 +333,8 @@ public static ж<P521Point> Add(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp1, ж
 
 // Double sets q = p + p, and returns q. The points may overlap.
 public static ж<P521Point> Double(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp) {
-    ref var q = ref Ꮡq.Value;
-    ref var p = ref Ꮡp.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -414,9 +414,9 @@ public static ж<P521Point> Double(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp) 
 
 // Select sets q to p1 if cond == 1, and to p2 if cond == 0.
 public static ж<P521Point> Select(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp1, ж<P521Point> Ꮡp2, nint cond) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     q.x.Select(p1.x, p2.x, cond);
     q.y.Select(p1.y, p2.y, cond);
@@ -441,8 +441,8 @@ public static ж<P521Point> Select(this ж<P521Point> Ꮡq, ж<P521Point> Ꮡp1,
 
 // ScalarMult sets p = scalar * q, and returns p.
 public static (ж<P521Point>, error) ScalarMult(this ж<P521Point> Ꮡp, ж<P521Point> Ꮡq, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     // Compute a p521Table for the base point q. The explicit NewP521Point
     // calls get inlined, letting the allocations live on the stack.
@@ -511,7 +511,7 @@ internal static ref sync.Once p521GeneratorTableOnce => ref Ꮡp521GeneratorTabl
 // ScalarBaseMult sets p = scalar * B, where B is the canonical generator, and
 // returns p.
 public static (ж<P521Point>, error) ScalarBaseMult(this ж<P521Point> Ꮡp, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(scalar) != p521ElementLength) {
         return (default!, errors.New(invalidScalarLengthˢ));

@@ -121,7 +121,7 @@ public static QUICEventKind QUICStoreSession => 9;
 //
 // The config's MinVersion must be at least TLS 1.3.
 public static ж<QUICConn> QUICClient(ж<QUICConfig> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     return newQUICConn(Client(default!, config.TLSConfig), Ꮡconfig);
 }
@@ -131,14 +131,14 @@ public static ж<QUICConn> QUICClient(ж<QUICConfig> Ꮡconfig) {
 //
 // The config's MinVersion must be at least TLS 1.3.
 public static ж<QUICConn> QUICServer(ж<QUICConfig> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     return newQUICConn(Server(default!, config.TLSConfig), Ꮡconfig);
 }
 
 internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ж<QUICConfig> Ꮡconfig) {
-    ref var conn = ref Ꮡconn.Value;
-    ref var config = ref Ꮡconfig.Value;
+    ref var conn = ref Ꮡconn.DerefOrNull();
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     conn.quic = Ꮡ(new quicState(
         signalc: new channel<EmptyStruct>(0),
@@ -160,7 +160,7 @@ internal static readonly @string tlsConfigMinVersionMustˢ = "tls: Config MinVer
 //
 // Start must be called at most once.
 public static error Start(this ж<QUICConn> Ꮡq, context.Context ctx) {
-    ref var q = ref Ꮡq.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
 
     if ((~(~q.conn).quic).started) {
         return quicError(errors.New(tlsStartCalledMoreThanˢ));
@@ -225,7 +225,7 @@ internal static readonly @string tlsHandshakeDataReceivedˢ = "tls: handshake da
 // HandleData handles handshake bytes received from the peer.
 // It may produce connection events, which may be read with [QUICConn.NextEvent].
 public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level, slice<byte> data) => func<error>((defer, recover) => {
-    ref var q = ref Ꮡq.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
 
     var c = q.conn;
     if ((~c).@in.level != level) {
@@ -303,8 +303,6 @@ internal static readonly @string tlsStoreSessionTicketˢ = "tls: StoreSessionTic
 // The application may process additional events or modify the SessionState
 // before storing the session.
 [GoRecv] public static error StoreSession(this ref QUICConn q, ж<SessionState> Ꮡsession) {
-    ref var session = ref Ꮡsession.Value;
-
     var c = q.conn;
     if (!(~c).isClient) {
         return quicError(errors.New(tlsStoreSessionTicketˢ));
@@ -358,7 +356,7 @@ internal static error quicError(error err) {
 }
 
 internal static error quicReadHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     while (c.hand.Len() < n) {
         {
@@ -404,7 +402,7 @@ internal static error quicReadHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
 }
 
 internal static error quicResumeSession(this ж<Conn> Ꮡc, ж<SessionState> Ꮡsession) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.quic.Value.events = append((~c.quic).events, new QUICEvent(
         Kind: QUICResumeSession,
@@ -436,7 +434,7 @@ internal static error quicResumeSession(this ж<Conn> Ꮡc, ж<SessionState> Ꮡ
 }
 
 internal static (slice<byte>, error) quicGetTransportParameters(this ж<Conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if ((~c.quic).transportParams == default!) {
         c.quic.Value.events = append((~c.quic).events, new QUICEvent(
@@ -471,7 +469,7 @@ internal static (slice<byte>, error) quicGetTransportParameters(this ж<Conn> �
 // The handshake may become blocked waiting for handshake bytes
 // or for the user to provide transport parameters.
 internal static error quicWaitForSignal(this ж<Conn> Ꮡc) => func<error>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Drop the handshake mutex while blocked to allow the user
     // to call ConnectionState before the handshake completes.

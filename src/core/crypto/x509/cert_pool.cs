@@ -68,7 +68,7 @@ public static ж<CertPool> NewCertPool() {
 // len returns the number of certs in the set.
 // A nil set is a valid empty set.
 internal static nint len(this ж<CertPool> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (Ꮡs == nil) {
         return 0;
@@ -132,8 +132,8 @@ public static (ж<CertPool>, error) SystemCertPool() {
 // findPotentialParents returns the certificates in s which might have signed
 // cert.
 internal static slice<potentialParent> findPotentialParents(this ж<CertPool> Ꮡs, ж<Certificate> Ꮡcert) {
-    ref var s = ref Ꮡs.DerefOrNil();
-    ref var cert = ref Ꮡcert.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     if (Ꮡs == nil) {
         return default!;
@@ -180,8 +180,8 @@ internal static slice<potentialParent> findPotentialParents(this ж<CertPool> �
 }
 
 internal static bool contains(this ж<CertPool> Ꮡs, ж<Certificate> Ꮡcert) {
-    ref var s = ref Ꮡs.DerefOrNil();
-    ref var cert = ref Ꮡcert.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     if (Ꮡs == nil) {
         return false;
@@ -191,7 +191,7 @@ internal static bool contains(this ж<CertPool> Ꮡs, ж<Certificate> Ꮡcert) {
 
 // AddCert adds a certificate to a pool.
 [GoRecv] public static void AddCert(this ref CertPool s, ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.DerefOrNil();
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     if (Ꮡcert == nil) {
         throw panic("adding nil Certificate to CertPool");
@@ -272,7 +272,7 @@ internal static bool contains(this ж<CertPool> Ꮡs, ж<Certificate> Ꮡcert) {
 // Deprecated: if s was returned by [SystemCertPool], Subjects
 // will not include the system roots.
 public static slice<slice<byte>> Subjects(this ж<CertPool> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var res = new slice<slice<byte>>(Ꮡs.len());
     foreach (var (i, lc) in s.lazyCerts) {
@@ -283,8 +283,8 @@ public static slice<slice<byte>> Subjects(this ж<CertPool> Ꮡs) {
 
 // Equal reports whether s and other are equal.
 public static bool Equal(this ж<CertPool> Ꮡs, ж<CertPool> Ꮡother) {
-    ref var s = ref Ꮡs.DerefOrNil();
-    ref var other = ref Ꮡother.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var other = ref Ꮡother.DerefOrNull();
 
     if (Ꮡs == nil || Ꮡother == nil) {
         return Ꮡs == Ꮡother;
@@ -308,7 +308,7 @@ public static bool Equal(this ж<CertPool> Ꮡs, ж<CertPool> Ꮡother) {
 // validity. If constraint returns a non-nil error, the chain will be discarded.
 // constraint may be called concurrently from multiple goroutines.
 [GoRecv] public static void AddCertWithConstraint(this ref CertPool s, ж<Certificate> Ꮡcert, Func<slice<ж<Certificate>>, error> constraint) {
-    ref var cert = ref Ꮡcert.DerefOrNil();
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     if (Ꮡcert == nil) {
         throw panic("adding nil Certificate to CertPool");

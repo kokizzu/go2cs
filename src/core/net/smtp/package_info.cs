@@ -46,7 +46,6 @@ using static go.net.smtp_package;
 [assembly: GoImplement<cramMD5Auth, ΔAuth>(Pointer = true)]
 [assembly: GoImplement<dataCloser, io_package.WriteCloser>(Pointer = true)]
 [assembly: GoImplement<dataCloser, io_package.WriteCloser>(Promoted = true)]
-[assembly: GoImplement<go.net.textproto_package.ΔError, error>(Pointer = true)]
 [assembly: GoImplement<net_package.Conn, io_package.ReadWriteCloser>]
 [assembly: GoImplement<plainAuth, ΔAuth>(Pointer = true)]
 // </InterfaceImplementations>

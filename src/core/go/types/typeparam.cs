@@ -44,8 +44,8 @@ public static ж<TypeParam> NewTypeParam(ж<TypeName> Ꮡobj, ΔType constraint)
 
 // check may be nil
 internal static ж<TypeParam> newTypeParam(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ΔType constraint) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var obj = ref Ꮡobj.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     // Always increment lastID, even if it is not used.
     ref var id = ref heap<uint64>(out var Ꮡid);

@@ -157,8 +157,8 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
     int64 end = default!;
     bool isDST = default!;
 
-    ref var l = ref Ꮡl.Value;
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     if (len(l.zone) == 0) {
         name = utcˢ;
         offset = 0;
@@ -624,8 +624,8 @@ internal static (nint offset, bool ok) lookupName(this ж<ΔLocation> Ꮡl, @str
     nint offset = default!;
     bool ok = default!;
 
-    ref var l = ref Ꮡl.Value;
-    Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    Ꮡl = Ꮡl.get(); l = ref Ꮡl.DerefOrNull();
     // First try for a zone with the right name that was actually
     // in effect at the given time. (In Sydney, Australia, both standard
     // and daylight-savings time are abbreviated "EST". Using the

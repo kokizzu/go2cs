@@ -48,7 +48,7 @@ partial class sync_package {
 // If f panics, Do considers it to have returned; future calls of Do return
 // without calling f.
 public static void Do(this ж<Once> Ꮡo, Action f) {
-    ref var o = ref Ꮡo.Value;
+    ref var o = ref Ꮡo.DerefOrNull();
 
     // Note: Here is an incorrect implementation of Do:
     //

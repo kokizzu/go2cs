@@ -55,8 +55,8 @@ internal static Op opPseudo => 128; // where pseudo-ops start
 
 // Equal reports whether x and y have identical structure.
 public static bool Equal(this ж<Regexp> Ꮡx, ж<Regexp> Ꮡy) {
-    ref var x = ref Ꮡx.DerefOrNil();
-    ref var y = ref Ꮡy.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (Ꮡx == nil || Ꮡy == nil) {
         return Ꮡx == Ꮡy;
@@ -108,7 +108,7 @@ internal static UntypedInt negShift => 5;     // flagI<<negShift is (?-i:
 // addSpan enables the flags f around start..last,
 // by setting flags[start] = f and flags[last] = flagOff.
 internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags f, ж<map<ж<Regexp>, printFlags>> Ꮡflags) {
-    ref var flags = ref Ꮡflags.ValueSlot;
+    ref var flags = ref Ꮡflags.DerefOrNull();
 
     if (flags == default!) {
         flags = new map<ж<Regexp>, printFlags>();
@@ -128,8 +128,8 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
     printFlags must = default!;
     printFlags cant = default!;
 
-    ref var re = ref Ꮡre.Value;
-    ref var flags = ref Ꮡflags.ValueSlot;
+    ref var re = ref Ꮡre.DerefOrNull();
+    ref var flags = ref Ꮡflags.DerefOrNull();
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
         foreach (var (_, r) in re.Rune) {
@@ -238,8 +238,8 @@ internal static readonly @string x00X10ffffˢ2 = @"^\x00-\x{10FFFF}"u8;
 
 // writeRegexp writes the Perl syntax for the regular expression re to b.
 internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, printFlags f, map<ж<Regexp>, printFlags> flags) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
-    ref var re = ref Ꮡre.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var re = ref Ꮡre.DerefOrNull();
 
     f |= (printFlags)(flags[Ꮡre]);
     if ((printFlags)(f & flagPrec) != 0 && (printFlags)(f & ~((printFlags)(flagOff | flagPrec))) != 0 && (printFlags)(f & flagOff) != 0) {

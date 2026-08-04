@@ -46,7 +46,7 @@ public static (nint nDst, nint nSrc, error err) Transform(this Form f, slice<byt
 }
 
 internal static bool flushTransform(ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     // Write out (must fully fit in dst, or else it is an ErrShortDst).
     if (len(rb.@out) < rb.nrune * (nint)utf8.UTFMax) {

@@ -94,7 +94,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
     sr.Seek(@base, io.SeekStart);
     {
-        var errΔ2 = binary.Read(new io_SectionReaderжReader(sr), new binary_littleEndianᴠByteOrder(binary.LittleEndian), f.of(File.ᏑFileHeader)); if (errΔ2 != default!) {
+        var errΔ2 = binary.Read(new io_SectionReaderжReader(sr), binary.LittleEndian, f.of(File.ᏑFileHeader)); if (errΔ2 != default!) {
             return (default!, errΔ2);
         }
     }
@@ -136,7 +136,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     for (nint i = 0; i < (nint)(~f).FileHeader.NumberOfSections; i++) {
         var sh = @new<SectionHeader32>();
         {
-            var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), new binary_littleEndianᴠByteOrder(binary.LittleEndian), sh); if (errΔ3 != default!) {
+            var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), binary.LittleEndian, sh.OrTypedNil()); if (errΔ3 != default!) {
                 return (default!, errΔ3);
             }
         }
@@ -223,7 +223,7 @@ internal static readonly @string rangesˢ = "ranges"u8;
 internal static readonly @string strˢ = "str"u8;
 
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
-    var dwarfSuffix = @string (ж<ΔSection> s) => {
+    @string dwarfSuffix(ж<ΔSection> s) {
         switch (ᐧ) {
         case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[7..];
@@ -235,9 +235,9 @@ internal static readonly @string strˢ = "str"u8;
             return ""u8;
         }}
 
-    };
+    }
     // sectionData gets the data for s and checks its size.
-    var sectionData = (slice<byte>, error) (ж<ΔSection> s) => {
+    (slice<byte>, error) sectionData(ж<ΔSection> s) {
         var (b, errΔ1) = s.Data();
         if (errΔ1 != default! && (uint32)len(b) < (~s).Size) {
             return (default!, errΔ1);
@@ -265,7 +265,7 @@ internal static readonly @string strˢ = "str"u8;
             b = dbuf;
         }
         return (b, default!);
-    };
+    }
     // There are many other DWARF sections, but these
     // are the ones the debug/dwarf package uses.
     // Don't bother loading others.
@@ -485,10 +485,10 @@ internal static (any, error) readOptionalHeader(io.ReadSeeker r, uint16 sz) {
     }
     // read reads from io.ReadSeeke, r, into data.
     ref var err = ref heap<error>(out var Ꮡerr);
-    var read = (any data) => {
-        Ꮡerr.ValueSlot = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), data);
+    bool read(any data) {
+        Ꮡerr.ValueSlot = binary.Read(r, binary.LittleEndian, data);
         return Ꮡerr.ValueSlot == default!;
-    };
+    }
     if (!read(ᏑohMagic)) {
         return (default!, fmt.Errorf("failure to read optional header magic: %v"u8, err));
     }
@@ -547,7 +547,7 @@ internal static (slice<DataDirectory>, error) readDataDirectories(io.ReadSeeker 
     }
     var dd = new slice<DataDirectory>((nint)(n));
     {
-        var err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), dd); if (err != default!) {
+        var err = binary.Read(r, binary.LittleEndian, dd); if (err != default!) {
             return (default!, fmt.Errorf("failure to read data directories: %v"u8, err));
         }
     }

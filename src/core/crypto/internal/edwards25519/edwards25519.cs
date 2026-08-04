@@ -106,8 +106,8 @@ internal static ж<affineCached> Zero(this ж<affineCached> Ꮡv) {
 
 // Set sets v = u, and returns v.
 public static ж<Point> Set(this ж<Point> Ꮡv, ж<Point> Ꮡu) {
-    ref var v = ref Ꮡv.Value;
-    ref var u = ref Ꮡu.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     v = u;
     return Ꮡv;
@@ -154,7 +154,7 @@ internal static readonly @string edwards25519InvalidPointˢ2 = "edwards25519: in
 // That is, it follows decoding rules that match most implementations in
 // the ecosystem rather than RFC 8032.
 public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     // Specifically, the non-canonical encodings that are accepted are
     //   1) the ones where the field element is not reduced (see the
@@ -193,8 +193,8 @@ public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
 }
 
 internal static slice<byte> copyFieldElement(ж<array<byte>> Ꮡbuf, ж<field.Element> Ꮡv) {
-    ref var buf = ref Ꮡbuf.Value;
-    ref var v = ref Ꮡv.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
+    ref var v = ref Ꮡv.DerefOrNull();
 
     copy(buf[..], v.Bytes());
     return buf[..];
@@ -435,7 +435,7 @@ internal static ж<affineCached> Select(this ж<affineCached> Ꮡv, ж<affineCac
 
 // CondNeg negates v if cond == 1 and leaves it unchanged if cond == 0.
 internal static ж<projCached> CondNeg(this ж<projCached> Ꮡv, nint cond) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     v.YplusX.Swap(Ꮡv.of(projCached.ᏑYminusX), cond);
     Ꮡv.of(projCached.ᏑT2d).Select(@new<field.Element>().Negate(Ꮡv.of(projCached.ᏑT2d)), Ꮡv.of(projCached.ᏑT2d), cond);
@@ -444,7 +444,7 @@ internal static ж<projCached> CondNeg(this ж<projCached> Ꮡv, nint cond) {
 
 // CondNeg negates v if cond == 1 and leaves it unchanged if cond == 0.
 internal static ж<affineCached> CondNeg(this ж<affineCached> Ꮡv, nint cond) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     v.YplusX.Swap(Ꮡv.of(affineCached.ᏑYminusX), cond);
     Ꮡv.of(affineCached.ᏑT2d).Select(@new<field.Element>().Negate(Ꮡv.of(affineCached.ᏑT2d)), Ꮡv.of(affineCached.ᏑT2d), cond);

@@ -51,10 +51,10 @@ using static go.image_package;
 [assembly: GoImplement<NYCbCrA, Image>(Pointer = true)]
 [assembly: GoImplement<Paletted, Image>(Pointer = true)]
 [assembly: GoImplement<RGBA64, Image>(Pointer = true)]
+[assembly: GoImplement<Rectangle, RGBA64Image>]
 [assembly: GoImplement<Uniform, go.image.color_package.Model>(Pointer = true)]
 [assembly: GoImplement<YCbCr, Image>(Pointer = true)]
 [assembly: GoImplement<bufio_package.Reader, reader>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
 [assembly: GoImplement<ΔRGBA, Image>(Pointer = true)]
 // </InterfaceImplementations>
 

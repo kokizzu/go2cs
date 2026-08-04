@@ -105,7 +105,7 @@ internal static @string randomBoundary() {
 // [Writer]. After calling CreatePart, any previous part may no longer
 // be written to.
 public static (io.Writer, error) CreatePart(this ж<Writer> Ꮡw, textproto.MIMEHeader header) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (w.lastpart != nil) {
         {

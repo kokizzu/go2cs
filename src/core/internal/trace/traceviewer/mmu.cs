@@ -100,7 +100,7 @@ internal static trace.UtilFlags requestUtilFlags(ж<http.Request> Ꮡr) {
 }
 
 internal static (slice<slice<trace.MutatorUtil>>, ж<trace.MMUCurve>, error) get(this ж<mmu> Ꮡm, trace.UtilFlags flags) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡm.of(mmu.Ꮡmu).Lock();
     var entry = m.cache[flags];
@@ -388,7 +388,7 @@ private static readonly @string windowˢ = "window"u8;
 
 // HandleDetails serves details of an MMU graph at a particular window.
 internal static void HandleDetails(this ж<mmu> Ꮡm, http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var (_, mmuCurve, err) = Ꮡm.get(requestUtilFlags(Ꮡr));
     if (err != default!) {

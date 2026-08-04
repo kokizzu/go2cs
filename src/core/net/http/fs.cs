@@ -286,7 +286,7 @@ internal static readonly @string contentLengthˢ = "Content-Length"u8;
 // content must be seeked to the beginning of the file.
 // The sizeFunc is called at most once. Its error, if any, is sent in the HTTP response.
 internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) => func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     setLastModified(w, modtime);
     var (done, rangeReq) = checkPreconditions(w, Ꮡr, modtime);
@@ -346,8 +346,8 @@ internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string na
                 break;
             }
             w.Header().Set(contentRangeˢ, fmt.Sprintf("bytes */%d"u8, size));
+            fallthrough = true;
         } while (false);
-        fallthrough = true;
     }
     if (fallthrough || !matchᴛ1) { /* default: */
         serveError(w, err.Error(), StatusRequestedRangeNotSatisfiable);
@@ -521,7 +521,7 @@ internal static readonly @string ifMatchˢ = "If-Match"u8;
 internal static readonly @string etagˢ = "Etag"u8;
 
 internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string im = r.Header.Get(ifMatchˢ);
     if (im == ""u8) {
@@ -555,7 +555,7 @@ internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
 internal static readonly @string ifUnmodifiedSinceˢ = "If-Unmodified-Since"u8;
 
 internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string ius = r.Header.Get(ifUnmodifiedSinceˢ);
     if (ius == ""u8 || isZeroTime(modtime)) {
@@ -580,7 +580,7 @@ internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time mo
 internal static readonly @string ifNoneMatchˢ = "If-None-Match"u8;
 
 internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string inm = r.Header.get(ifNoneMatchˢ);
     if (inm == ""u8) {
@@ -615,7 +615,7 @@ internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) 
 internal static readonly @string ifModifiedSinceˢ = "If-Modified-Since"u8;
 
 internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.Method != "GET"u8 && r.Method != "HEAD"u8) {
         return condNone;
@@ -643,7 +643,7 @@ internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modt
 internal static readonly @string ifRangeˢ = "If-Range"u8;
 
 internal static condResult checkIfRange(ResponseWriter w, ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.Method != "GET"u8 && r.Method != "HEAD"u8) {
         return condNone;
@@ -716,7 +716,7 @@ internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWrit
     bool done = default!;
     @string rangeHeader = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     // This function carefully follows RFC 7232 section 6.
     condResult ch = checkIfMatch(w, Ꮡr);
     if (ch == condNone) {
@@ -755,7 +755,7 @@ internal static readonly @string httpAttemptingToTraverseˢ = "http: attempting 
 
 // name is '/'-separated, not filepath.Separator.
 internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) => func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string indexPage = "/index.html"u8;
     // redirect .../index.html to .../
@@ -864,7 +864,7 @@ internal static (@string msg, nint httpStatus) toHTTPError(error err) {
 // localRedirect gives a Moved Permanently response.
 // It does not convert relative paths to absolute paths like Redirect does.
 internal static void localRedirect(ResponseWriter w, ж<Request> Ꮡr, @string newPath) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         @string q = r.URL.Value.RawQuery; if (q != ""u8) {
@@ -900,7 +900,7 @@ internal static readonly @string invalidUrlPathˢ = "invalid URL path"u8;
 // r.URL.Path for selecting the file or directory to serve; only the
 // file or directory provided in the name argument is used.
 public static void ServeFile(ResponseWriter w, ж<Request> Ꮡr, @string name) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (containsDotDot((~r.URL).Path)) {
         // Too many programs use r.URL.Path to construct the argument to
@@ -936,7 +936,7 @@ public static void ServeFile(ResponseWriter w, ж<Request> Ꮡr, @string name) {
 // r.URL.Path for selecting the file or directory to serve; only the
 // file or directory provided in the name argument is used.
 public static void ServeFileFS(ResponseWriter w, ж<Request> Ꮡr, fs.FS fsys, @string name) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (containsDotDot((~r.URL).Path)) {
         // Too many programs use r.URL.Path to construct the argument to
@@ -1088,7 +1088,7 @@ public static ΔHandler FileServerFS(fs.FS root) {
 }
 
 [GoRecv] internal static void ServeHTTP(this ref fileHandler f, ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string upath = r.URL.Value.Path;
     if (!strings.HasPrefix(upath, "/"u8)) {

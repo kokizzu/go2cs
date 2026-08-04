@@ -66,7 +66,7 @@ partial class fiat_package {
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
 internal static void p256CmovznzU64(ж<uint64> Ꮡout1, p256Uint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
 
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
@@ -85,9 +85,9 @@ internal static void p256CmovznzU64(ж<uint64> Ꮡout1, p256Uint1 arg1, uint64 a
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p256Mul(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p256MontgomeryDomainFieldElement> Ꮡarg1, ж<p256MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -376,8 +376,8 @@ internal static void p256Mul(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg1)) mod m
 //	0 ≤ eval out1 < m
 internal static void p256Square(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p256MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -667,9 +667,9 @@ internal static void p256Square(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p256Add(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p256MontgomeryDomainFieldElement> Ꮡarg1, ж<p256MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -723,9 +723,9 @@ internal static void p256Add(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p256Sub(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p256MontgomeryDomainFieldElement> Ꮡarg1, ж<p256MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -765,7 +765,7 @@ internal static void p256Sub(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //	eval (from_montgomery out1) mod m = 1 mod m
 //	0 ≤ eval out1 < m
 internal static void p256SetOne(ж<p256MontgomeryDomainFieldElement> Ꮡout1) {
-    ref var out1 = ref Ꮡout1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
 
     out1[0] = (uint64)0x1;
     out1[1] = 0xffffffff00000000UL;
@@ -784,8 +784,8 @@ internal static void p256SetOne(ж<p256MontgomeryDomainFieldElement> Ꮡout1) {
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^4) mod m
 //	0 ≤ eval out1 < m
 internal static void p256FromMontgomery(ж<p256NonMontgomeryDomainFieldElement> Ꮡout1, ж<p256MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[0];
     uint64 x2 = default!;
@@ -935,8 +935,8 @@ internal static void p256FromMontgomery(ж<p256NonMontgomeryDomainFieldElement> 
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
 internal static void p256ToMontgomery(ж<p256MontgomeryDomainFieldElement> Ꮡout1, ж<p256NonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -1210,9 +1210,9 @@ internal static void p256ToMontgomery(ж<p256MontgomeryDomainFieldElement> Ꮡou
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 internal static void p256Selectznz(ж<array<uint64>> Ꮡout1, p256Uint1 arg1, ж<array<uint64>> Ꮡarg2, ж<array<uint64>> Ꮡarg3) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
-    ref var arg3 = ref Ꮡarg3.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
+    ref var arg3 = ref Ꮡarg3.DerefOrNull();
 
     ref var x1 = ref heap(new uint64(), out var Ꮡx1);
     p256CmovznzU64(Ꮡx1, arg1, arg2[0], arg3[0]);
@@ -1246,8 +1246,8 @@ internal static void p256Selectznz(ж<array<uint64>> Ꮡout1, p256Uint1 arg1, ж
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff]]
 internal static void p256ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[3];
     var x2 = arg1[2];
@@ -1362,8 +1362,8 @@ internal static void p256ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡ
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 internal static void p256FromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = (((uint64)arg1[31] << (int)(56)));
     var x2 = (((uint64)arg1[30] << (int)(48)));

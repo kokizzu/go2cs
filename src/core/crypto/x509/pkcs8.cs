@@ -73,7 +73,7 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
         var bytes = privKey.Algo.Parameters.FullBytes;
         var namedCurveOID = @new<asn1.ObjectIdentifier>();
         {
-            var (_, errΔ7) = asn1.Unmarshal(bytes, namedCurveOID); if (errΔ7 != default!) {
+            var (_, errΔ7) = asn1.Unmarshal(bytes, namedCurveOID.OrTypedNil()); if (errΔ7 != default!) {
                 namedCurveOID = default!;
             }
         }

@@ -21,8 +21,6 @@ partial class zstd_package {
 
 // makeBitReader makes a bit reader starting at off.
 internal static bitReader makeBitReader(this ж<Reader> Ꮡr, block data, nint off) {
-    ref var r = ref Ꮡr.Value;
-
     return new bitReader(
         r: Ꮡr,
         data: data,
@@ -83,7 +81,7 @@ internal static readonly @string zeroByteAtReverseBitˢ = "zero byte at reverse 
 // from off to start. The bitstream starts with a 1 bit in the last
 // byte, at off.
 internal static (reverseBitReader, error) makeReverseBitReader(this ж<Reader> Ꮡr, block data, nint off, nint start) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var streamStart = data[off];
     if (streamStart == 0) {

@@ -44,7 +44,7 @@ internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<synt
     bool complete = default!;
     uint32 pc = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     var i = Ꮡ(p.Inst, p.Start);
     if ((~i).Op != syntax.InstEmptyWidth || (syntax.EmptyOp)((((syntax.EmptyOp)(uint8)(~i).Arg)) & syntax.EmptyBeginText) == 0) {
         return ("", (~i).Op == syntax.InstMatch, (uint32)p.Start);
@@ -76,7 +76,7 @@ internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<synt
 // One of the alternates may ultimately lead without input to end of line. If the instruction
 // is InstAltMatch the path to the InstMatch is in i.Out, the normal node in i.Next.
 internal static uint32 onePassNext(ж<onePassInst> Ꮡi, rune r) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint next = Ꮡi.of(onePassInst.ᏑInst).MatchRunePos(r);
     if (next >= 0) {
@@ -89,7 +89,7 @@ internal static uint32 onePassNext(ж<onePassInst> Ꮡi, rune r) {
 }
 
 internal static syntax.InstOp iop(ж<syntax.Inst> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     var op = i.Op;
     var exprᴛ1 = op;
@@ -166,8 +166,8 @@ internal static slice<rune> noRune = new rune[]{}.slice();
 internal static slice<uint32> noNext = new uint32[]{mergeFailed}.slice();
 
 internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> ᏑleftRunes, ж<slice<rune>> ᏑrightRunes, uint32 leftPC, uint32 rightPC) => func((defer, recover) => {
-    ref var leftRunes = ref ᏑleftRunes.ValueSlot;
-    ref var rightRunes = ref ᏑrightRunes.ValueSlot;
+    ref var leftRunes = ref ᏑleftRunes.DerefOrNull();
+    ref var rightRunes = ref ᏑrightRunes.DerefOrNull();
 
     nint leftLen = len(leftRunes);
     nint rightLen = len(rightRunes);
@@ -188,7 +188,7 @@ internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> Ꮡle
         }
     });
     nint ix = -1;
-    var extend = (ж<nint> newLow, ж<slice<rune>> newArray, uint32 pc) => {
+    bool extend(ж<nint> newLow, ж<slice<rune>> newArray, uint32 pc) {
         if (ix > 0 && (newArray.ValueSlot)[newLow.Value] <= Ꮡmerged.ValueSlot[ix]) {
             return false;
         }
@@ -197,7 +197,7 @@ internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> Ꮡle
         ix += 2;
         Ꮡnext.ValueSlot = append(Ꮡnext.ValueSlot, pc);
         return true;
-    };
+    }
     while (lx < leftLen || rx < rightLen) {
         switch (ᐧ) {
         case {} when rx >= rightLen: {
@@ -226,8 +226,8 @@ internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> Ꮡle
 
 // cleanupOnePass drops working memory, and restores certain shortcut instructions.
 internal static void cleanupOnePass(ж<onePassProg> Ꮡprog, ж<syntax.Prog> Ꮡoriginal) {
-    ref var prog = ref Ꮡprog.Value;
-    ref var original = ref Ꮡoriginal.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
+    ref var original = ref Ꮡoriginal.DerefOrNull();
 
     foreach (var (ix, instOriginal) in original.Inst) {
         var exprᴛ1 = instOriginal.Op;
@@ -246,7 +246,7 @@ internal static void cleanupOnePass(ж<onePassProg> Ꮡprog, ж<syntax.Prog> Ꮡ
 
 // onePassCopy creates a copy of the original Prog, as we'll be modifying it.
 internal static ж<onePassProg> onePassCopy(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
 
     var p = Ꮡ(new onePassProg(
         Start: prog.Start,
@@ -321,7 +321,7 @@ internal static slice<rune> anyRune = new rune[]{0, Δunicode.MaxRune}.slice();
 // onepass Prog, the Prog nil is returned. makeOnePass is recursive
 // to the size of the Prog.
 internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // If the machine is very long, it's not worth the time to check if we can use one pass.
     if (len(p.Inst) >= 1000) {
@@ -488,7 +488,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
         visitQueue.clear();
         var pc = instQueue.next();
         if (!check(pc, m)) {
-            Ꮡp = default!; p = ref Ꮡp.DerefOrNil();
+            Ꮡp = default!; p = ref Ꮡp.DerefOrNull();
             break;
         }
     }
@@ -507,7 +507,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
 internal static ж<onePassProg> /*p*/ compileOnePass(ж<syntax.Prog> Ꮡprog) {
     ж<onePassProg> p = default!;
 
-    ref var prog = ref Ꮡprog.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
     if (prog.Start == 0) {
         return default!;
     }

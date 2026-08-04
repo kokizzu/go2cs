@@ -203,7 +203,7 @@ internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buff
 // suffix X) and populates the corresponding exported fields.
 // The unexported fields are cleared up to facilitate testing.
 internal static error postDecode(this ж<Profile> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     error err = default!;
     var mappings = new map<uint64, ж<Mapping>>();
@@ -500,7 +500,7 @@ internal static int64 addString(map<@string, nint> strings, @string s) {
 }
 
 internal static (@string, error) getString(slice<@string> strings, ж<int64> Ꮡstrng, error err) {
-    ref var strng = ref Ꮡstrng.Value;
+    ref var strng = ref Ꮡstrng.DerefOrNull();
 
     if (err != default!) {
         return ("", err);

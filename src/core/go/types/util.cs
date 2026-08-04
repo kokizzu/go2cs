@@ -30,21 +30,21 @@ internal static nint cmpPos(tokenꓸPos p, tokenꓸPos q) {
 
 // hasDots reports whether the last argument in the call is followed by ...
 internal static bool hasDots(ж<ast.CallExpr> Ꮡcall) {
-    ref var call = ref Ꮡcall.Value;
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     return call.Ellipsis.IsValid();
 }
 
 // dddErrPos returns the positioner for reporting an invalid ... use in a call.
 internal static positioner dddErrPos(ж<ast.CallExpr> Ꮡcall) {
-    ref var call = ref Ꮡcall.Value;
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     return ((atPos)call.Ellipsis);
 }
 
 // argErrPos returns positioner for reporting an invalid argument count.
 internal static positioner argErrPos(ж<ast.CallExpr> Ꮡcall) {
-    ref var call = ref Ꮡcall.Value;
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     return inNode(new ast.CallExprжNode(Ꮡcall), call.Rparen);
 }

@@ -16,7 +16,6 @@ global using bigꓸRat = go.math.big_package.ΔRat;
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
-using bigmod = go.crypto.@internal.bigmod_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -48,7 +47,6 @@ using static go.crypto.rsa_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<bigmod.Modulus, ж<bigmod.Modulus>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.crypto;

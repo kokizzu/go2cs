@@ -79,7 +79,7 @@ partial class types_package {
 }
 
 internal static void monomorph(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // We detect unbounded instantiation cycles using a variant of
     // Bellman-Ford's algorithm. Namely, instead of always running |V|
@@ -111,7 +111,7 @@ internal static void monomorph(this ж<Checker> Ꮡcheck) {
 }
 
 internal static void reportInstanceLoop(this ж<Checker> Ꮡcheck, nint v) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     slice<nint> stack = default!;
     var seen = new slice<bool>(len(check.mono.vertices));
@@ -181,7 +181,7 @@ internal static void recordInstance(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg,
 
 // assign records that tpar was instantiated as targ at pos.
 internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, tokenꓸPos pos, ж<TypeParam> Ꮡtpar, ΔType targ) {
-    ref var tpar = ref Ꮡtpar.Value;
+    ref var tpar = ref Ꮡtpar.DerefOrNull();
 
     // Go generics do not have an analog to C++`s template-templates,
     // where a template parameter can itself be an instantiable
@@ -195,13 +195,13 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
         return;
     }
     // flow adds an edge from vertex src representing that typ flows to tpar.
-    var flow = (nint src, ΔType typ) => {
+    void flow(nint src, ΔType typ) {
         nint weight = 1;
         if (AreEqual(typ, targ)) {
             weight = 0;
         }
         Ꮡw.Value.addEdge(Ꮡw.Value.typeParamVertex(Ꮡtpar), src, weight, pos, targ);
-    };
+    }
     // Recursively walk the type argument to find any defined types or
     // type parameters.
     ref var @do = ref heap<Action<ΔType>>(out var Ꮡdo);
@@ -263,11 +263,11 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
             break;
         }
         case ж<ΔSignature> typΔ1: {
-            var tuple = (ж<Tuple> tup) => {
+            void tuple(ж<Tuple> tup) {
                 for (nint i = 0; i < tup.Len(); i++) {
                     Ꮡdo.ValueSlot(tup.At(i).of(Var.Ꮡobject).Type());
                 }
-            };
+            }
             tuple(typΔ1.Params());
             tuple(typΔ1.Results());
             break;
@@ -285,7 +285,7 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
 // localNamedVertex returns the index of the vertex representing
 // named, or -1 if named doesn't need representation.
 [GoRecv] internal static nint localNamedVertex(this ref monoGraph w, ж<Package> Ꮡpkg, ж<Named> Ꮡnamed) {
-    ref var named = ref Ꮡnamed.Value;
+    ref var named = ref Ꮡnamed.DerefOrNull();
 
     var obj = named.Obj();
     if (obj.of(TypeName.Ꮡobject).Pkg() != Ꮡpkg) {
@@ -331,11 +331,11 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
 
 // typeParamVertex returns the index of the vertex representing tpar.
 [GoRecv] internal static nint typeParamVertex(this ref monoGraph w, ж<TypeParam> Ꮡtpar) {
-    ref var tpar = ref Ꮡtpar.Value;
+    ref var tpar = ref Ꮡtpar.DerefOrNull();
 
     {
         var (x, ok) = w.canon[Ꮡtpar, ꟷ]; if (ok) {
-            Ꮡtpar = x; tpar = ref Ꮡtpar.Value;
+            Ꮡtpar = x; tpar = ref Ꮡtpar.DerefOrNull();
         }
     }
     var obj = tpar.Obj();

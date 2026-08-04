@@ -240,7 +240,7 @@ internal static void stackpoolfree(gclinkptr x, uint8 order) {
 //
 //go:systemstack
 internal static void stackcacherefill(ж<mcache> Ꮡc, uint8 order) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (stackDebug >= 1) {
         print((@string)"stackcacherefill order="u8, order, (@string)"\n"u8);
@@ -263,7 +263,7 @@ internal static void stackcacherefill(ж<mcache> Ꮡc, uint8 order) {
 
 //go:systemstack
 internal static void stackcacherelease(ж<mcache> Ꮡc, uint8 order) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (stackDebug >= 1) {
         print((@string)"stackcacherelease order="u8, order, (@string)"\n"u8);
@@ -284,7 +284,7 @@ internal static void stackcacherelease(ж<mcache> Ꮡc, uint8 order) {
 
 //go:systemstack
 internal static void stackcache_clear(ж<mcache> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (stackDebug >= 1) {
         print((@string)"stackcache clear\n"u8);
@@ -556,17 +556,17 @@ internal static slice<@string> ptrnames = new slice<@string>(2){
 // adjustpointer checks whether *vpp is in the old stack described by adjinfo.
 // If so, it rewrites *vpp to point into the new stack.
 internal static void adjustpointer(ж<adjustinfo> Ꮡadjinfo, @unsafe.Pointer vpp) {
-    ref var adjinfo = ref Ꮡadjinfo.Value;
+    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     var pp = (ж<uintptr>)(uintptr)(vpp);
     var Δp = pp.Value;
     if (stackDebug >= 4) {
-        print((@string)"        "u8, pp, (@string)":"u8, ((Δhex)(uint64)Δp), (@string)"\n"u8);
+        print((@string)"        "u8, pp.OrTypedNil(), (@string)":"u8, ((Δhex)(uint64)Δp), (@string)"\n"u8);
     }
     if (adjinfo.old.lo <= Δp && Δp < adjinfo.old.hi) {
         pp.Value = Δp + adjinfo.delta;
         if (stackDebug >= 3) {
-            print((@string)"        adjust ptr "u8, pp, (@string)":"u8, ((Δhex)(uint64)Δp), (@string)" -> "u8, ((Δhex)(uint64)(pp.Value)), (@string)"\n"u8);
+            print((@string)"        adjust ptr "u8, pp.OrTypedNil(), (@string)":"u8, ((Δhex)(uint64)Δp), (@string)" -> "u8, ((Δhex)(uint64)(pp.Value)), (@string)"\n"u8);
         }
     }
 }
@@ -593,8 +593,8 @@ internal static readonly @string invalidPointerFoundOnˢ = "invalid pointer foun
 // bv describes the memory starting at address scanp.
 // Adjust any pointers contained therein.
 internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, ж<adjustinfo> Ꮡadjinfo, ΔfuncInfo f) {
-    ref var bv = ref Ꮡbv.Value;
-    ref var adjinfo = ref Ꮡadjinfo.Value;
+    ref var bv = ref Ꮡbv.DerefOrNull();
+    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     var minp = adjinfo.old.lo;
     var maxp = adjinfo.old.hi;
@@ -623,7 +623,7 @@ retry:
                 // Looks like a junk value in a pointer slot.
                 // Live analysis wrong?
                 getg().Value.m.Value.traceback = 2;
-                print((@string)"runtime: bad pointer in frame "u8, funcname(f), (@string)" at "u8, pp, (@string)": "u8, ((Δhex)(uint64)Δp), (@string)"\n"u8);
+                print((@string)"runtime: bad pointer in frame "u8, funcname(f), (@string)" at "u8, pp.OrTypedNil(), (@string)": "u8, ((Δhex)(uint64)Δp), (@string)"\n"u8);
                 @throw(invalidPointerFoundOnˢ);
             }
             if (minp <= Δp && Δp < maxp) {
@@ -648,8 +648,8 @@ internal static readonly @string badFramePointerˢ = "bad frame pointer"u8;
 
 // Note: the argument/return area is adjusted by the callee.
 internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinfo) {
-    ref var frame = ref Ꮡframe.Value;
-    ref var adjinfo = ref Ꮡadjinfo.Value;
+    ref var frame = ref Ꮡframe.DerefOrNull();
+    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     if (frame.continpc == 0) {
         // Frame is dead.
@@ -738,8 +738,8 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
 internal static readonly @string badTopFramePointerˢ = "bad top frame pointer"u8;
 
 internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.Value;
-    ref var adjinfo = ref Ꮡadjinfo.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
+    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)).Value));
     if (!framepointer_enabled) {
@@ -767,7 +767,7 @@ internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
 }
 
 internal static void adjustdefers(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Adjust pointers in the Defer structs.
     // We need to do this first because we need to adjust the
@@ -787,7 +787,7 @@ internal static void adjustpanics(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
 }
 
 internal static void adjustsudogs(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // the data elements pointed to by a SudoG structure
     // might be in the stack.
@@ -803,7 +803,7 @@ internal static void fillstack(Δstack stk, byte b) {
 }
 
 internal static uintptr findsghi(ж<g> Ꮡgp, Δstack stk) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     uintptr sghi = default!;
     for (var sg = gp.waiting; sg != nil; sg = sg.Value.waitlink) {
@@ -819,8 +819,8 @@ internal static uintptr findsghi(ж<g> Ꮡgp, Δstack stk) {
 // stack they refer to while synchronizing with concurrent channel
 // operations. It returns the number of bytes of stack copied.
 internal static uintptr syncadjustsudogs(ж<g> Ꮡgp, uintptr used, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.Value;
-    ref var adjinfo = ref Ꮡadjinfo.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
+    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     if (gp.waiting == nil) {
         return 0;
@@ -873,7 +873,7 @@ internal static readonly @string racySudogAdjustmentDueToˢ = "racy sudog adjust
 // Copies gp's stack to a new stack of a different size.
 // Caller must have changed gp status to Gcopystack.
 internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (gp.syscallsp != 0) {
         @throw(stackGrowthNotAllowedInˢ);
@@ -894,7 +894,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
         fillstack(@new, 0xfd);
     }
     if (stackDebug >= 1) {
-        print((@string)"copystack gp="u8, Ꮡgp, (@string)" ["u8, ((Δhex)(uint64)old.lo), (@string)" "u8, ((Δhex)(uint64)(old.hi - used)), (@string)" "u8, ((Δhex)(uint64)old.hi), (@string)"]"u8, (@string)" -> ["u8, ((Δhex)(uint64)@new.lo), (@string)" "u8, ((Δhex)(uint64)(@new.hi - used)), (@string)" "u8, ((Δhex)(uint64)@new.hi), (@string)"]/"u8, newsize, (@string)"\n"u8);
+        print((@string)"copystack gp="u8, Ꮡgp.OrTypedNil(), (@string)" ["u8, ((Δhex)(uint64)old.lo), (@string)" "u8, ((Δhex)(uint64)(old.hi - used)), (@string)" "u8, ((Δhex)(uint64)old.hi), (@string)"]"u8, (@string)" -> ["u8, ((Δhex)(uint64)@new.lo), (@string)" "u8, ((Δhex)(uint64)(@new.hi - used)), (@string)" "u8, ((Δhex)(uint64)@new.hi), (@string)"]/"u8, newsize, (@string)"\n"u8);
     }
     // Compute adjustment.
     ref var adjinfo = ref heap(new adjustinfo(), out var Ꮡadjinfo);
@@ -992,7 +992,7 @@ internal static void newstack() {
         @throw(stackGrowthAfterForkˢ);
     }
     if ((~(~thisg).m).morebuf.g.ptr() != (~(~thisg).m).curg) {
-        print((@string)"runtime: newstack called from g="u8, ((Δhex)(uint64)(uintptr)(~(~thisg).m).morebuf.g), (@string)("\n" + "\tm="), (~thisg).m, (@string)" m->curg="u8, (~(~thisg).m).curg, (@string)" m->g0="u8, (~(~thisg).m).g0, (@string)" m->gsignal="u8, (~(~thisg).m).gsignal, (@string)"\n"u8);
+        print((@string)"runtime: newstack called from g="u8, ((Δhex)(uint64)(uintptr)(~(~thisg).m).morebuf.g), (@string)("\n" + "\tm="), (~thisg).m.OrTypedNil(), (@string)" m->curg="u8, (~(~thisg).m).curg.OrTypedNil(), (@string)" m->g0="u8, (~(~thisg).m).g0.OrTypedNil(), (@string)" m->gsignal="u8, (~(~thisg).m).gsignal.OrTypedNil(), (@string)"\n"u8);
         var morebufΔ1 = thisg.Value.m.Value.morebuf;
         traceback(morebufΔ1.pc, morebufΔ1.sp, morebufΔ1.lr, morebufΔ1.g.ptr());
         @throw(runtimeWrongGoroutineInˢ);
@@ -1064,7 +1064,7 @@ internal static void newstack() {
             (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, (~gp).sched.ctxt, (@string)"}\n"u8);
     }
     if (sp < (~gp).stack.lo) {
-        print((@string)"runtime: gp="u8, gp, (@string)", goid="u8, (~gp).goid, (@string)", gp->status="u8, ((Δhex)(uint64)readgstatus(gp)), (@string)"\n "u8);
+        print((@string)"runtime: gp="u8, gp.OrTypedNil(), (@string)", goid="u8, (~gp).goid, (@string)", gp->status="u8, ((Δhex)(uint64)readgstatus(gp)), (@string)"\n "u8);
         print((@string)"runtime: split stack overflow: "u8, ((Δhex)(uint64)sp), (@string)" < "u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)"\n"u8);
         @throw(runtimeSplitStackˢ);
     }
@@ -1141,7 +1141,7 @@ internal static void nilfunc() {
 // adjust Gobuf as if it executed a call to fn
 // and then stopped before the first instruction in fn.
 internal static void gostartcallfn(ж<gobuf> Ꮡgobuf, ж<funcval> Ꮡfv) {
-    ref var fv = ref Ꮡfv.DerefOrNil();
+    ref var fv = ref Ꮡfv.DerefOrNull();
 
     @unsafe.Pointer fn = default!;
     if (Ꮡfv != nil){
@@ -1157,7 +1157,7 @@ internal static void gostartcallfn(ж<gobuf> Ꮡgobuf, ж<funcval> Ꮡfv) {
 // pointer maps for all frames on the stack. The caller must hold the
 // _Gscan bit for gp or must be running gp itself.
 internal static bool isShrinkStackSafe(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // We can't copy the stack if we're in a syscall.
     // The syscall might have pointers into the stack and
@@ -1203,7 +1203,7 @@ internal static readonly @string shrinkingStackInLibcallˢ = "shrinking stack in
 // gp must be stopped and we must own its stack. It may be in
 // _Grunning, but only if this is our own user G.
 internal static void shrinkstack(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (gp.stack.lo == 0) {
         @throw(missingStackInˢ);
@@ -1319,7 +1319,7 @@ internal static void freeStackSpans() {
 
 // gcdata returns pointer map or GC prog of the type.
 internal static ж<byte> gcdata(this ж<stackObjectRecord> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var ptr = (uintptr)(uintptr)@unsafe.Pointer.FromRef(ref r);
     ж<moduledata> mod = default!;

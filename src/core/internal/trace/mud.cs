@@ -51,7 +51,7 @@ internal static UntypedInt mudDegree => 1024;
 // add adds a uniform function over [l, r] scaled so the total weight
 // of the uniform is area. If l==r, this adds a Dirac delta function.
 internal static void add(this ж<mud> Ꮡd, float64 l, float64 r, float64 area) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (area == 0D) {
         return;

@@ -46,7 +46,7 @@ internal static (IP, error) interfaceToIPv4Addr(ж<Interface> Ꮡifi) {
 }
 
 internal static error setIPv4MreqToInterface(ж<syscall.IPMreq> Ꮡmreq, ж<Interface> Ꮡifi) {
-    ref var mreq = ref Ꮡmreq.Value;
+    ref var mreq = ref Ꮡmreq.DerefOrNull();
 
     if (Ꮡifi == nil) {
         return default!;
@@ -85,19 +85,19 @@ done:
 
 internal static error setReadBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_RCVBUF, bytes);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setWriteBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_SNDBUF, bytes);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setKeepAlive(ж<netFD> Ꮡfd, bool keepalive) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, boolint(keepalive));
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -111,7 +111,7 @@ internal static error setLinger(ж<netFD> Ꮡfd, nint sec) {
         l.ΔLinger = 0;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptLinger(syscall.SOL_SOCKET, syscall.SO_LINGER, Ꮡl);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

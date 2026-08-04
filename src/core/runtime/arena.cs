@@ -263,7 +263,7 @@ internal static uintptr userArenaChunkReserveBytes() {
 // newUserArena creates a new userArena ready to be used.
 internal static ж<userArena> newUserArena() {
     var a = @new<userArena>();
-    SetFinalizer(a, (ж<userArena> aΔ1) => {
+    SetFinalizer(a.OrTypedNil(), (ж<userArena> aΔ1) => {
         // If arena handle is dropped without being freed, then call
         // free on the arena, so the arena chunks are never reclaimed
         // by the garbage collector.
@@ -319,7 +319,7 @@ internal static readonly @string fullListDoesnTMatchRefsˢ = "full list doesn't 
 // This operation is not safe to call concurrently with other operations on the
 // same arena.
 internal static void free(this ж<userArena> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     // Check for a double-free.
     if (Ꮡa.of(userArena.Ꮡdefunct).Load()) {
@@ -327,7 +327,7 @@ internal static void free(this ж<userArena> Ꮡa) {
     }
     // Mark ourselves as defunct.
     Ꮡa.of(userArena.Ꮡdefunct).Store(true);
-    SetFinalizer(Ꮡa, default!);
+    SetFinalizer(Ꮡa.OrTypedNil(), default!);
     // Free all the full arenas.
     //
     // The refs on this list are in reverse order from the second-to-last.
@@ -461,8 +461,8 @@ internal static readonly @string mallocgcCalledWithoutAPˢ = "mallocgc called wi
 // userArenaNextFree reserves space in the user arena for an item of the specified
 // type. If cap is not -1, this is for an array of cap elements of type t.
 internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type> Ꮡtyp, nint cap) {
-    ref var s = ref Ꮡs.Value;
-    ref var typ = ref Ꮡtyp.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     var size = typ.Size_;
     if (cap > 0) {
@@ -552,7 +552,7 @@ internal static readonly @string runtimeAllocationSizeOutˢ = "runtime: allocati
 // Go slice backing store values allocated in a user arena chunk. It sets up the
 // heap bitmap for n consecutive values with type typ allocated at address ptr.
 internal static void userArenaHeapBitsSetSliceType(ж<_type> Ꮡtyp, nint n, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     var (mem, overflow) = math.MulUintptr(typ.Size_, (uintptr)n);
     if (overflow || n < 0 || mem > maxAlloc) {
@@ -568,8 +568,8 @@ internal static void userArenaHeapBitsSetSliceType(ж<_type> Ꮡtyp, nint n, @un
 // sets up the type metadata for the value with type typ allocated at address ptr.
 // base is the base address of the arena chunk.
 internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
-    ref var typ = ref Ꮡtyp.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var @base = s.@base();
     var h = s.writeUserArenaHeapBits((uintptr)ptr);
@@ -643,7 +643,7 @@ internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer 
 // write appends the pointerness of the next valid pointer slots
 // using the low valid bits of bits. 1=pointer, 0=scalar.
 internal static ΔwriteUserArenaHeapBits write(this ΔwriteUserArenaHeapBits h, ж<mspan> Ꮡs, uintptr bits, uintptr valid) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (h.valid + valid <= ptrBits) {
         // Fast path - just accumulate the bits.
@@ -690,7 +690,7 @@ internal static ΔwriteUserArenaHeapBits pad(this ΔwriteUserArenaHeapBits h, ж
 // Flush the bits that have been written, and add zeros as needed
 // to cover the full object [addr, addr+size).
 internal static void flush(this ΔwriteUserArenaHeapBits h, ж<mspan> Ꮡs, uintptr addr, uintptr size) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var offset = addr - s.@base();
     // zeros counts the number of bits needed to represent the object minus the
@@ -881,7 +881,7 @@ internal static readonly @string spanOnUserArenaFaultListˢ = "span on userArena
 // Must be in a non-preemptible state to ensure the consistency of statistics
 // exported to MemStats.
 internal static void setUserArenaChunkToFault(this ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (!s.isUserArenaChunk) {
         @throw(invalidSpanInHeapArenaˢ);
@@ -960,7 +960,7 @@ internal static readonly @string invalidUserArenaSpanSizeˢ = "invalid user aren
 // and then once the user arena is no longer referenced by the application, will allow it to
 // be reused.
 internal static void freeUserArenaChunk(ж<mspan> Ꮡs, @unsafe.Pointer x) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (!s.isUserArenaChunk) {
         @throw(spanIsNotForAUserArenaˢ);
@@ -1018,7 +1018,7 @@ internal static readonly @string sysAllocSizeIsNotˢ = "sysAlloc size is not div
 //
 //go:systemstack
 internal static ж<mspan> allocUserArenaChunk(this ж<mheap> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ж<mspan> s = default!;
     uintptr @base = default!;

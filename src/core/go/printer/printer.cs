@@ -147,7 +147,7 @@ internal static pmode noExtraLinebreak => 2;     // disables extra line break af
 // commentSizeBefore returns the estimated size of the
 // comments on the same line before the next position.
 internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition next) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // save/restore current p.commentInfo (p.nextComment() modifies it)
     deferǃ((commentInfo info) => {
@@ -168,7 +168,7 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
 // formatted construct, independent of pending (not yet emitted) whitespace
 // or comments.
 [GoRecv] internal static void recordLine(this ref printer p, ж<nint> ᏑlinePtr) {
-    ref var linePtr = ref ᏑlinePtr.Value;
+    ref var linePtr = ref ᏑlinePtr.DerefOrNull();
 
     p.linePtr = ᏑlinePtr;
 }
@@ -347,7 +347,7 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
 // after all pending comments, prev is the previous comment in
 // a group of comments (or nil), and tok is the next token.
 [GoRecv] internal static void writeCommentPrefix(this ref printer p, tokenꓸPosition pos, tokenꓸPosition next, ж<ast.Comment> Ꮡprev, token.Token tok) {
-    ref var prev = ref Ꮡprev.DerefOrNil();
+    ref var prev = ref Ꮡprev.DerefOrNull();
 
     if (len(p.output) == 0) {
         // the comment is the first item to be printed - don't write any whitespace
@@ -632,8 +632,8 @@ internal static void stripCommonPrefix(slice<@string> lines) {
 }
 
 internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomment) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var comment = ref Ꮡcomment.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var comment = ref Ꮡcomment.DerefOrNull();
 
     @string text = comment.Text;
     var pos = p.posFor(comment.Pos());
@@ -750,7 +750,7 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
     bool wroteNewline = default!;
     bool droppedFF = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     ж<ast.Comment> last = default!;
     while (p.commentBefore(next)) {
         var list = p.comment.Value.List;
@@ -938,7 +938,7 @@ internal static readonly object whitespaceBufferNotEmptyˢ = (@string)"whitespac
 internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.sslice();
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     foreach (var (_, arg) in args) {
         // information about the current arg
         @string data = default!;
@@ -1085,7 +1085,7 @@ internal static (bool wroteNewline, bool droppedFF) flush(this ж<printer> Ꮡp,
     bool wroteNewline = default!;
     bool droppedFF = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     if (p.commentBefore(next)){
         // if there are comments before the next item, intersperse them
         (wroteNewline, droppedFF) = Ꮡp.intersperseComments(next, tok);
@@ -1153,7 +1153,7 @@ internal static ж<ast.CommentGroup> getLastComment(ast.Node n) {
 }
 
 internal static error printNode(this ж<printer> Ꮡp, any node) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // unpack *CommentedNode, if any
     slice<ж<ast.CommentGroup>> comments = default!;
@@ -1428,8 +1428,7 @@ internal static ж<sync.Pool> ᏑprinterPool = new(new sync.Pool(
 internal static ref sync.Pool printerPool => ref ᏑprinterPool.Value;
 
 internal static ж<printer> newPrinter(ж<Config> Ꮡcfg, ж<token.FileSet> Ꮡfset, map<ast.Node, nint> nodeSizes) {
-    ref var cfg = ref Ꮡcfg.Value;
-    ref var fset = ref Ꮡfset.Value;
+    ref var cfg = ref Ꮡcfg.DerefOrNull();
 
     var p = ᏑprinterPool.Get()._<ж<printer>>();
     p.Value = new printer(
@@ -1446,20 +1445,20 @@ internal static ж<printer> newPrinter(ж<Config> Ꮡcfg, ж<token.FileSet> Ꮡf
 }
 
 internal static void free(this ж<printer> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Hard limit on buffer size; see https://golang.org/issue/23199.
     if (cap(p.output) > (64 << (int)(10))) {
         return;
     }
-    ᏑprinterPool.Put(Ꮡp);
+    ᏑprinterPool.Put(Ꮡp.OrTypedNil());
 }
 
 // fprint implements Fprint and takes a nodesSizes map for setting up the printer state.
 internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, ж<token.FileSet> Ꮡfset, any node, map<ast.Node, nint> nodeSizes) {
     error err = default!;
     func((defer, recover) => {
-    ref var cfg = ref Ꮡcfg.Value;
+    ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         // print node
         var p = newPrinter(Ꮡcfg, Ꮡfset, nodeSizes);

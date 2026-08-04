@@ -70,7 +70,7 @@ private static readonly @string chacha20WrongKeySizeˢ = "chacha20: wrong key si
 private static readonly @string chacha20WrongNonceSizeˢ = "chacha20: wrong nonce size"u8;
 
 internal static (ж<Cipher>, error) newUnauthenticatedCipher(ж<Cipher> Ꮡc, slice<byte> key, slice<byte> nonce) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (len(key) != KeySize) {
         return (default!, errors.New(chacha20WrongKeySizeˢ));

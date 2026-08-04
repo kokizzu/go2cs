@@ -251,8 +251,6 @@ internal static ΔTime mul(this frequency f, timestamp t) {
 // We don't just store it as an Event in generation to minimize
 // the amount of pointer data floating around.
 internal static ΔEvent asEvent(this cpuSample s, ж<evTable> Ꮡtable) {
-    ref var table = ref Ꮡtable.Value;
-
     // TODO(mknyszek): This is go122-specific, but shouldn't be.
     // Generalize this in the future.
     var e = new ΔEvent(

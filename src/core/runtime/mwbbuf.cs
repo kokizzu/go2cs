@@ -177,7 +177,7 @@ internal static void wbBufFlush() {
 //go:nowritebarrierrec
 //go:systemstack
 internal static void wbBufFlush1(ж<Δp> Ꮡpp) {
-    ref var pp = ref Ꮡpp.Value;
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     // Get the buffered pointers.
     var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡpp.of(runtime_package.Δp.ᏑwbBuf).at(wbBuf.Ꮡbuf, 0)).Value);

@@ -246,7 +246,7 @@ internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, 
     case ж<Array> t: {
         if (!comparable((~t).elem, dynamic, seen, default!)) {
             if (reportf != default!) {
-                reportf("%s cannot be compared"u8, t);
+                reportf("%s cannot be compared"u8, t.OrTypedNil());
             }
             return false;
         }
@@ -292,8 +292,8 @@ internal static bool hasNil(ΔType t) {
 
 // samePkg reports whether packages a and b are the same.
 internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
-    ref var a = ref Ꮡa.DerefOrNil();
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // package is nil for objects in universe scope
     if (Ꮡa == nil || Ꮡb == nil) {
@@ -310,7 +310,7 @@ internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
 }
 
 [GoRecv] internal static bool identical(this ref ifacePair p, ж<ifacePair> Ꮡq) {
-    ref var q = ref Ꮡq.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
 
     return p.x == q.x && p.y == q.y || p.x == q.y && p.y == q.x;
 }
@@ -323,7 +323,7 @@ internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
 
 // For changes to this code the corresponding changes should be made to unifier.nify.
 [GoRecv] internal static bool identical(this ref comparer c, ΔType x, ΔType y, ж<ifacePair> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     x = Unalias(x);
     y = Unalias(y);
@@ -519,7 +519,7 @@ internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
                             return true;
                         }
                         // same pair was compared before
-                        Ꮡp = p.prev; p = ref Ꮡp.DerefOrNil();
+                        Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                     }
                     if (debug) {
                         assertSortedMethods(a);
@@ -675,7 +675,7 @@ internal static ΔType maxType(ΔType x, ΔType y) {
 internal static ж<T> clone<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;

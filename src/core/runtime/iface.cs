@@ -32,8 +32,8 @@ internal static ref itabTableType itabTableInit => ref ᏑitabTableInit.Value; /
 }
 
 internal static uintptr itabHashFunc(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp) {
-    ref var inter = ref Ꮡinter.Value;
-    ref var typ = ref Ꮡtyp.Value;
+    ref var inter = ref Ꮡinter.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     // compiler has provided some good hash codes for us.
     return (uintptr)((uint32)(inter.Type.Hash ^ typ.Hash));
@@ -52,8 +52,8 @@ internal static readonly @string internalErrorMisuseOfˢ = "internal error - mis
 //
 //go:linkname getitab
 internal static ж<itab> getitab(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp, bool canfail) {
-    ref var inter = ref Ꮡinter.Value;
-    ref var typ = ref Ꮡtyp.Value;
+    ref var inter = ref Ꮡinter.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (len(inter.Methods) == 0) {
         @throw(internalErrorMisuseOfˢ);
@@ -117,7 +117,7 @@ finish:
 // find finds the given interface/type pair in t.
 // Returns nil if the given interface/type pair isn't present.
 internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Implemented using quadratic probing.
     // Probe sequence is h(i) = h0 + i*(i+1)/2 mod 2^k.
@@ -147,7 +147,7 @@ internal static readonly @string mismatchedCountDuringˢ = "mismatched count dur
 // itabAdd adds the given itab to the itab hash table.
 // itabLock must be held.
 internal static void itabAdd(ж<itab> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // Bugs can lead to calling this while mallocing is set,
     // typically because this is called while panicking.
@@ -185,8 +185,8 @@ internal static void itabAdd(ж<itab> Ꮡm) {
 // add adds the given itab to itab table t.
 // itabLock must be held.
 internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
-    ref var t = ref Ꮡt.Value;
-    ref var m = ref Ꮡm.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // See comment in find about the probe sequence.
     // Insert new itab in the first empty spot in the probe sequence.
@@ -223,7 +223,7 @@ internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
 // It is ok to call this multiple times on the same m, even concurrently
 // (although it will only be called once with firstTime==true).
 internal static unsafe @string itabInit(ж<itab> Ꮡm, bool firstTime) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var inter = m.Inter;
     var typ = m.Type;
@@ -304,7 +304,7 @@ internal static void panicdottypeE(ж<_type> Ꮡhave, ж<_type> Ꮡwant, ж<_typ
 // panicdottypeI is called when doing an i.(T) conversion and the conversion fails.
 // Same args as panicdottypeE, but "have" is the dynamic itab we have.
 internal static void panicdottypeI(ж<itab> Ꮡhave, ж<_type> Ꮡwant, ж<_type> Ꮡiface) {
-    ref var have = ref Ꮡhave.DerefOrNil();
+    ref var have = ref Ꮡhave.DerefOrNull();
 
     ж<_type> t = default!;
     if (Ꮡhave != nil) {
@@ -358,7 +358,7 @@ internal static ж<_type> sliceType = (~efaceOf(ᏑsliceEface))._type;
 // convT converts a value of type t, which is pointed to by v, to a pointer that can
 // be used as the second word of an interface value.
 internal static @unsafe.Pointer convT(ж<_type> Ꮡt, @unsafe.Pointer v) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (raceenabled) {
         raceReadObjectPC(Ꮡt, v, getcallerpc(), abi.FuncPCABIInternal(convT));
@@ -375,7 +375,7 @@ internal static @unsafe.Pointer convT(ж<_type> Ꮡt, @unsafe.Pointer v) {
 }
 
 internal static @unsafe.Pointer convTnoptr(ж<_type> Ꮡt, @unsafe.Pointer v) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // TODO: maybe take size instead of type?
     if (raceenabled) {
@@ -506,8 +506,8 @@ internal static ж<itab> assertE2I2(ж<interfacetype> Ꮡinter, ж<_type> Ꮡt) 
 // interface type s.Inter. If the conversion is not possible it
 // panics if s.CanFail is false and returns nil if s.CanFail is true.
 internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
-    ref var s = ref Ꮡs.Value;
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ж<itab> tab = default!;
     if (Ꮡt == nil){
@@ -543,7 +543,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
 }
 
 internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCache> ᏑoldC, ж<_type> Ꮡtyp, ж<itab> Ꮡtab) {
-    ref var oldC = ref ᏑoldC.Value;
+    ref var oldC = ref ᏑoldC.DerefOrNull();
 
     var oldEntries = @unsafe.Slice(ᏑoldC.at(abi.TypeAssertCache.ᏑEntries, 0), oldC.Mask + 1);
     // Count the number of entries we need.
@@ -567,7 +567,7 @@ internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCa
     var newEntries = @unsafe.Slice(newC.at(abi.TypeAssertCache.ᏑEntries, 0), newN);
     // Fill the new table.
     var newEntriesʗ1 = newEntries;
-    var addEntry = (ж<_type> typΔ1, ж<itab> tabΔ1) => {
+    void addEntry(ж<_type> typΔ1, ж<itab> tabΔ1) {
         nint h = (nint)((nint)(~typΔ1).Hash & (newN - 1));
         while (ᐧ) {
             if (newEntriesʗ1[h].Typ == 0) {
@@ -577,7 +577,7 @@ internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCa
             }
             h = (nint)((h + 1) & (newN - 1));
         }
-    };
+    }
     foreach (var (_, e) in oldEntries) {
         if (e.Typ != 0) {
             addEntry((ж<_type>)(uintptr)((@unsafe.Pointer)e.Typ), (ж<itab>)(uintptr)((@unsafe.Pointer)e.Itab));
@@ -597,8 +597,8 @@ internal static abi.TypeAssertCache emptyTypeAssertCache = new abi.TypeAssertCac
 // If there is no match, return N,nil, where N is the number
 // of cases.
 internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, ж<_type> Ꮡt) {
-    ref var s = ref Ꮡs.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var cases = @unsafe.Slice(Ꮡs.at(abi.InterfaceSwitch.ᏑCases, 0), s.NCases);
     // Results if we don't find a match.
@@ -644,7 +644,7 @@ internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, �
 // containing all the entries from oldC plus the new entry
 // (typ,case_,tab).
 internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.InterfaceSwitchCache> ᏑoldC, ж<_type> Ꮡtyp, nint case_, ж<itab> Ꮡtab) {
-    ref var oldC = ref ᏑoldC.Value;
+    ref var oldC = ref ᏑoldC.DerefOrNull();
 
     var oldEntries = @unsafe.Slice(ᏑoldC.at(abi.InterfaceSwitchCache.ᏑEntries, 0), oldC.Mask + 1);
     // Count the number of entries we need.
@@ -668,7 +668,7 @@ internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.In
     var newEntries = @unsafe.Slice(newC.at(abi.InterfaceSwitchCache.ᏑEntries, 0), newN);
     // Fill the new table.
     var newEntriesʗ1 = newEntries;
-    var addEntry = (ж<_type> typΔ1, nint case_Δ1, ж<itab> tabΔ1) => {
+    void addEntry(ж<_type> typΔ1, nint case_Δ1, ж<itab> tabΔ1) {
         nint h = (nint)((nint)(~typΔ1).Hash & (newN - 1));
         while (ᐧ) {
             if (newEntriesʗ1[h].Typ == 0) {
@@ -679,7 +679,7 @@ internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.In
             }
             h = (nint)((h + 1) & (newN - 1));
         }
-    };
+    }
     foreach (var (_, e) in oldEntries) {
         if (e.Typ != 0) {
             addEntry((ж<_type>)(uintptr)((@unsafe.Pointer)e.Typ), e.Case, (ж<itab>)(uintptr)((@unsafe.Pointer)e.Itab));
@@ -704,14 +704,14 @@ internal static abi.InterfaceSwitchCache emptyInterfaceSwitchCache = new abi.Int
 //
 //go:linkname reflect_ifaceE2I reflect.ifaceE2I
 internal static void reflect_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ж<iface> Ꮡdst) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst = new iface(assertE2I(Ꮡinter, e._type), e.data);
 }
 
 //go:linkname reflectlite_ifaceE2I internal/reflectlite.ifaceE2I
 internal static void reflectlite_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ж<iface> Ꮡdst) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst = new iface(assertE2I(Ꮡinter, e._type), e.data);
 }

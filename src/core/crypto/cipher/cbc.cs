@@ -53,7 +53,7 @@ public static BlockMode NewCBCEncrypter(Block b, slice<byte> iv) {
             return cbc.NewCBCEncrypter(iv);
         }
     }
-    return new cbcEncrypterжBlockMode(Ꮡ((cbcEncrypter)(~newCBC(b, iv))));
+    return new cbcEncrypterжBlockMode(newCBC(b, iv).Reinterpret<cbc, cbcEncrypter>());
 }
 
 // newCBCGenericEncrypter returns a BlockMode which encrypts in cipher block chaining
@@ -64,7 +64,7 @@ internal static BlockMode newCBCGenericEncrypter(Block b, slice<byte> iv) {
     if (len(iv) != b.BlockSize()) {
         throw panic("cipher.NewCBCEncrypter: IV length must equal block size");
     }
-    return new cbcEncrypterжBlockMode(Ꮡ((cbcEncrypter)(~newCBC(b, iv))));
+    return new cbcEncrypterжBlockMode(newCBC(b, iv).Reinterpret<cbc, cbcEncrypter>());
 }
 
 [GoRecv] internal static nint BlockSize(this ref cbcEncrypter x) {
@@ -124,7 +124,7 @@ public static BlockMode NewCBCDecrypter(Block b, slice<byte> iv) {
             return cbc.NewCBCDecrypter(iv);
         }
     }
-    return new cbcDecrypterжBlockMode(Ꮡ((cbcDecrypter)(~newCBC(b, iv))));
+    return new cbcDecrypterжBlockMode(newCBC(b, iv).Reinterpret<cbc, cbcDecrypter>());
 }
 
 // newCBCGenericDecrypter returns a BlockMode which encrypts in cipher block chaining
@@ -135,7 +135,7 @@ internal static BlockMode newCBCGenericDecrypter(Block b, slice<byte> iv) {
     if (len(iv) != b.BlockSize()) {
         throw panic("cipher.NewCBCDecrypter: IV length must equal block size");
     }
-    return new cbcDecrypterжBlockMode(Ꮡ((cbcDecrypter)(~newCBC(b, iv))));
+    return new cbcDecrypterжBlockMode(newCBC(b, iv).Reinterpret<cbc, cbcDecrypter>());
 }
 
 [GoRecv] internal static nint BlockSize(this ref cbcDecrypter x) {

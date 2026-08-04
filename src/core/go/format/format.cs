@@ -70,7 +70,7 @@ public static error Node(io.Writer dst, ж<token.FileSet> Ꮡfset, any node) {
         // Make a copy of the AST because ast.SortImports is destructive.
         // TODO(gri) Do this more efficiently.
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-        var err = Ꮡconfig.Fprint(new bytes_BufferжWriter(Ꮡbuf), Ꮡfset, @file);
+        var err = Ꮡconfig.Fprint(new bytes_BufferжWriter(Ꮡbuf), Ꮡfset, @file.OrTypedNil());
         if (err != default!) {
             return err;
         }
@@ -81,9 +81,9 @@ public static error Node(io.Writer dst, ж<token.FileSet> Ꮡfset, any node) {
         }
         ast.SortImports(Ꮡfset, @file);
         // Use new file with sorted imports.
-        node = @file;
+        node = @file.OrTypedNil();
         if (cnode != nil) {
-            node = Ꮡ(new printer.CommentedNode(Node: @file, Comments: (~cnode).Comments));
+            node = Ꮡ(new printer.CommentedNode(Node: @file.OrTypedNil(), Comments: (~cnode).Comments));
         }
     }
     return Ꮡconfig.Fprint(dst, Ꮡfset, node);
@@ -112,7 +112,7 @@ public static (slice<byte>, error) Source(slice<byte> src) {
 }
 
 internal static bool hasUnsortedImports(ж<ast.File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     foreach (var (_, d) in @file.Decls) {
         var (dΔ1, ok) = d._<ж<ast.GenDecl>>(ᐧ);

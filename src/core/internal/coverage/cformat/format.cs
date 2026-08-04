@@ -223,7 +223,7 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
             pkgs = append(pkgs, importpath);
         }
     }
-    var rep = error (uint64 cov, uint64 tot) => {
+    error rep(uint64 cov, uint64 tot) {
         if (tot != 0){
             {
                 var (_, err) = fmt.Fprintf(w, "coverage: %.1f%% of statements%s\n"u8,
@@ -240,7 +240,7 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
             }
         }
         return default!;
-    };
+    }
     slices.Sort<slice<@string>, @string>(pkgs);
     uint64 totalStmts = default!;
     uint64 coveredStmts = default!;
@@ -294,17 +294,17 @@ private static readonly object statementsˢ = (@string)"(statements)"u8;
 // implementation). We do want to include their counts in the overall
 // summary however.
 public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<error>((defer, recover) => {
-    ref var fm = ref Ꮡfm.Value;
+    ref var fm = ref Ꮡfm.DerefOrNull();
 
     if (fm.cm == coverage.CtrModeInvalid) {
         throw panic("internal error, counter mode unset");
     }
-    var perc = (uint64 covered, uint64 total) => {
+    float64 perc(uint64 covered, uint64 total) {
         if (total == 0) {
             total = 1;
         }
         return 100.0D * (float64)covered / (float64)total;
-    };
+    }
     var tabber = tabwriter.NewWriter(w, 1, 8, 1, (rune)'\t', 0);
     var tabberʗ1 = tabber;
     defer(() => tabberʗ1.Flush());
@@ -337,16 +337,16 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<err
         uint64 cstmts = default!;
         uint64 tstmts = default!;
         var pʗ1 = p;
-        var captureFuncStart = (extcu u) => {
+        void captureFuncStart(extcu u) {
             fname = (~pʗ1).funcs[(nint)(u.fnfid)].fname;
             ffile = (~pʗ1).funcs[(nint)(u.fnfid)].@file;
             flit = (~pʗ1).funcs[(nint)(u.fnfid)].lit;
             fline = u.StLine;
-        };
+        }
         var captureFuncStartʗ1 = captureFuncStart;
         var percʗ1 = perc;
         var tabberʗ2 = tabber;
-        var emitFunc = error (extcu u) => {
+        error emitFunc(extcu u) {
             // Don't emit entries for function literals (see discussion
             // in function header comment above).
             if (!flit) {
@@ -363,7 +363,7 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<err
             tstmts = 0;
             cstmts = 0;
             return default!;
-        };
+        }
         foreach (var (k, u) in units) {
             if (k == 0){
                 captureFuncStart(u);

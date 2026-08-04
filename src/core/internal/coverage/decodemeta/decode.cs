@@ -48,10 +48,10 @@ public static (ж<CoverageMetaDataDecoder>, error) NewCoverageMetaDataDecoder(sl
 }
 
 internal static error readHeader(this ж<CoverageMetaDataDecoder> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     {
-        var err = binary.Read(new slicereader_ReaderжReader(d.r), new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡd.of(CoverageMetaDataDecoder.Ꮡhdr)); if (err != default!) {
+        var err = binary.Read(new slicereader_ReaderжReader(d.r), binary.LittleEndian, Ꮡd.of(CoverageMetaDataDecoder.Ꮡhdr)); if (err != default!) {
             return err;
         }
     }
@@ -94,7 +94,7 @@ internal static error readHeader(this ж<CoverageMetaDataDecoder> Ꮡd) {
 // ReadFunc reads the coverage meta-data for the function with index
 // 'findex', filling it into the FuncDesc pointed to by 'f'.
 [GoRecv] public static error ReadFunc(this ref CoverageMetaDataDecoder d, uint32 fidx, ж<coverage.FuncDesc> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (fidx >= d.hdr.NumFuncs) {
         return fmt.Errorf("illegal function index"u8);

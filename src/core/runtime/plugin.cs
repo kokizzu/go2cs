@@ -104,7 +104,7 @@ internal static readonly @string noneˢ = "none"u8;
 internal static readonly @string runtimePluginHasBadˢ = "runtime: plugin has bad symbol table"u8;
 
 internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
-    ref var md = ref Ꮡmd.Value;
+    ref var md = ref Ꮡmd.DerefOrNull();
 
     var badtable = false;
     for (nint i = 0; i < len(md.ftab); i++) {

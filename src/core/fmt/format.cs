@@ -50,7 +50,7 @@ internal const bool unsigned = false;
 }
 
 [GoRecv] internal static void init(this ref fmt f, ж<buffer> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     f.buf = Ꮡbuf;
     f.clearflags();
@@ -574,8 +574,8 @@ internal static readonly @string falseˢ = "false"u8;
                         num = num[..(int)(i)];
                         break;
                     }
+                    fallthrough = true;
                 } while (false);
-                fallthrough = true;
             }
             if (fallthrough || !matchᴛ1) { /* default: */
                 if (num[i] != (rune)'0') {

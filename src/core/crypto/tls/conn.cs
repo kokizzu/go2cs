@@ -228,7 +228,7 @@ partial class tls_package {
 }
 
 [GoRecv] internal static void setTrafficSecret(this ref halfConn hc, ж<cipherSuiteTLS13> Ꮡsuite, QUICEncryptionLevel level, slice<byte> secret) {
-    ref var suite = ref Ꮡsuite.Value;
+    ref var suite = ref Ꮡsuite.DerefOrNull();
 
     hc.trafficSecret = secret;
     hc.level = level;
@@ -630,7 +630,7 @@ internal static readonly @string firstRecordDoesNotLookˢ = "first record does n
 //   - c.input is set
 //   - an error is returned
 internal static error readRecordOrCCS(this ж<Conn> Ꮡc, bool expectChangeCipherSpec) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.@in.err != default!) {
         return c.@in.err;
@@ -814,7 +814,7 @@ internal static readonly @string tlsTooManyIgnoredRecordsˢ = "tls: too many ign
 // retryReadRecord recurs into readRecordOrCCS to drop a non-advancing record, like
 // a warning alert, empty application_data, or a change_cipher_spec in TLS 1.3.
 internal static error retryReadRecord(this ж<Conn> Ꮡc, bool expectChangeCipherSpec) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.retryCount++;
     if (c.retryCount > maxUselessRecords) {
@@ -865,7 +865,7 @@ internal static error retryReadRecord(this ж<Conn> Ꮡc, bool expectChangeCiphe
 
 // sendAlertLocked sends a TLS alert message.
 internal static error sendAlertLocked(this ж<Conn> Ꮡc, alert err) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.quic != nil) {
         return c.@out.setErrorLocked(new net.OpErrorжerror(Ꮡ(new net.OpError(Op: "local error"u8, Err: err))));
@@ -999,7 +999,7 @@ internal static readonly @string tlsInternalErrorSendingˢ = "tls: internal erro
 // writeRecordLocked writes a TLS record with the given type and payload to the
 // connection and updates the record layer state.
 internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType typ, slice<byte> data) => func<(nint, error)>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.quic != nil) {
         if (typ != recordTypeHandshake) {
@@ -1026,7 +1026,7 @@ internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType t
         // pointer to the slice header returned by Get, which is already on the
         // heap, and overwrite and return that.
         outBufPtrʗ1.ValueSlot = ᏑoutBuf.ValueSlot;
-        ᏑoutBufPool.Put(outBufPtrʗ1);
+        ᏑoutBufPool.Put(outBufPtrʗ1.OrTypedNil());
     });
     nint n = default!;
     while (len(data) > 0) {
@@ -1103,7 +1103,7 @@ internal static error writeChangeCipherRecord(this ж<Conn> Ꮡc) => func((defer
 
 // readHandshakeBytes reads handshake data until c.hand contains at least n bytes.
 internal static error readHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.quic != nil) {
         return Ꮡc.quicReadHandshakeBytes(n);
@@ -1122,7 +1122,7 @@ internal static error readHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
 // the record layer. If transcript is non-nil, the message
 // is written to the passed transcriptHash.
 internal static (any, error) readHandshake(this ж<Conn> Ꮡc, transcriptHash transcript) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var err = Ꮡc.readHandshakeBytes(4); if (err != default!) {
@@ -1155,7 +1155,7 @@ internal static (any, error) readHandshake(this ж<Conn> Ꮡc, transcriptHash tr
 }
 
 internal static (handshakeMessage, error) unmarshalHandshakeMessage(this ж<Conn> Ꮡc, slice<byte> data, transcriptHash transcript) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     handshakeMessage m = default!;
     switch (data[0]) {
@@ -1261,7 +1261,7 @@ internal static error errShutdown = errors.New("tls: protocol is shutdown"u8);
 // has not yet completed. See [Conn.SetDeadline], [Conn.SetReadDeadline], and
 // [Conn.SetWriteDeadline].
 public static (nint, error) Write(this ж<Conn> Ꮡc, slice<byte> b) => func<(nint, error)>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // interlock with Close below
     while (ᐧ) {
@@ -1322,7 +1322,7 @@ internal static readonly @string tlsUnknownRenegotiationˢ = "tls: unknown Reneg
 
 // handleRenegotiation processes a HelloRequest handshake message.
 internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.vers == VersionTLS13) {
         return errors.New(tlsInternalErrorˢ3);
@@ -1334,7 +1334,7 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, re
     var (helloReq, ok) = msg._<ж<helloRequestMsg>>(ᐧ);
     if (!ok) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(helloReq, msg);
+        return unexpectedMessageError(helloReq.OrTypedNil(), msg);
     }
     if (!c.isClient) {
         return Ꮡc.sendAlert(alertNoRenegotiation);
@@ -1373,7 +1373,7 @@ internal static readonly @string tlsTooManyNonAdvancingˢ = "tls: too many non-a
 // handlePostHandshakeMessage processes a handshake message arrived after the
 // handshake is complete. Up to TLS 1.2, it indicates the start of a renegotiation.
 internal static error handlePostHandshakeMessage(this ж<Conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.vers != VersionTLS13) {
         return Ꮡc.handleRenegotiation();
@@ -1406,8 +1406,8 @@ internal static error handlePostHandshakeMessage(this ж<Conn> Ꮡc) {
 internal static readonly @string tlsReceivedUnexpectedKeyˢ = "tls: received unexpected key update message"u8;
 
 internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) => func<error>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
-    ref var keyUpdate = ref ᏑkeyUpdate.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var keyUpdate = ref ᏑkeyUpdate.DerefOrNull();
 
     if (c.quic != nil) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
@@ -1446,7 +1446,7 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
 // has not yet completed. See [Conn.SetDeadline], [Conn.SetReadDeadline], and
 // [Conn.SetWriteDeadline].
 public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) => func<(nint, error)>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var err = Ꮡc.Handshake(); if (err != default!) {
@@ -1495,7 +1495,7 @@ public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) => func<(nin
 
 // Close closes the connection.
 public static error Close(this ж<Conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Interlock with Conn.Write above.
     int32 x = default!;
@@ -1546,13 +1546,13 @@ public static error CloseWrite(this ж<Conn> Ꮡc) {
 }
 
 internal static error closeNotify(this ж<Conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
     defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
     if (!c.closeNotifySent) {
         // Set a Write Deadline to prevent possibly blocking forever.
-        c.SetWriteDeadline(time_package.Now().Add(5000000000L));
+        c.SetWriteDeadline(time_package.Now().Add((time.Duration)(5000000000L)));
         c.closeNotifyErr = Ꮡc.sendAlertLocked(alertCloseNotify);
         c.closeNotifySent = true;
         // Any subsequent writes will fail.
@@ -1600,7 +1600,7 @@ internal static readonly @string tlsInternalErrorˢ4 = "tls: internal error: han
 internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Context ctx) {
     error ret = default!;
     func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
         // Fast sync/atomic-based exit if there is no handshake in flight and the
         // last one succeeded without an error. Avoids the expensive context setup
@@ -1720,7 +1720,7 @@ public static ΔConnectionState ConnectionState(this ж<Conn> Ꮡc) => func((def
 internal static ж<godebug.Setting> tlsunsafeekm = godebug.New("tlsunsafeekm"u8);
 
 internal static ΔConnectionState connectionStateLocked(this ж<Conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     ΔConnectionState state = default!;
     state.HandshakeComplete = Ꮡc.of(Conn.ᏑisHandshakeComplete).Load();
@@ -1765,7 +1765,7 @@ internal static ΔConnectionState connectionStateLocked(this ж<Conn> Ꮡc) {
 // OCSPResponse returns the stapled OCSP response from the TLS server, if
 // any. (Only valid for client connections.)
 public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
     defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
@@ -1781,7 +1781,7 @@ internal static readonly @string tlsHandshakeDidNotVerifyˢ = "tls: handshake di
 // connecting to host. If so, it returns nil; if not, it returns an error
 // describing the problem.
 public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
     defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);

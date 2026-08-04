@@ -290,7 +290,7 @@ internal static readonly @string ed25519ExpectedOptsHashˢ = "ed25519: expected 
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static error VerifyWithOptions(PublicKey publicKey, slice<byte> message, slice<byte> sig, ж<Options> Ꮡopts) {
-    ref var opts = ref Ꮡopts.Value;
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     switch (ᐧ) {
     case {} when opts.Hash == crypto.SHA512: {

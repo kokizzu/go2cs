@@ -180,7 +180,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     nint nn = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     boring.Unreachable();
     nn = len(p);
     d.len += (uint64)nn;
@@ -217,7 +217,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 }
 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var len = d.len;
     // Padding. Add a 1 bit and 0 bits until 56 bytes mod 64.

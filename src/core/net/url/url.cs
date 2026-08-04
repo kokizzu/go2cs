@@ -447,7 +447,7 @@ public static ж<Userinfo> UserPassword(@string username, @string password) {
 
 // Username returns the username.
 public static @string Username(this ж<Userinfo> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (Ꮡu == nil) {
         return ""u8;
@@ -457,7 +457,7 @@ public static @string Username(this ж<Userinfo> Ꮡu) {
 
 // Password returns the password in case it is set, and whether it is set.
 public static (@string, bool) Password(this ж<Userinfo> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (Ꮡu == nil) {
         return ("", false);
@@ -468,7 +468,7 @@ public static (@string, bool) Password(this ж<Userinfo> Ꮡu) {
 // String returns the encoded userinfo information in the standard form
 // of "username[:password]".
 public static @string String(this ж<Userinfo> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (Ꮡu == nil) {
         return ""u8;
@@ -1001,7 +1001,7 @@ internal static readonly @string xxxxxˢ = "xxxxx"u8;
 // Redacted is like [URL.String] but replaces any password with "xxxxx".
 // Only the password in u.User is redacted.
 public static @string Redacted(this ж<URL> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (Ꮡu == nil) {
         return ""u8;
@@ -1212,7 +1212,7 @@ internal static @string resolvePath(@string @base, @string @ref) {
 // base or reference. If ref is an absolute URL, then ResolveReference
 // ignores base and returns a copy of ref.
 [GoRecv] public static ж<URL> ResolveReference(this ref URL u, ж<URL> Ꮡref) {
-    ref var @ref = ref Ꮡref.Value;
+    ref var @ref = ref Ꮡref.DerefOrNull();
 
     ref var url = ref heap<URL>(out var Ꮡurl);
     url = @ref;

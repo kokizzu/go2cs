@@ -840,7 +840,7 @@ internal static readonly @string unknownColorModel4ˢ = "unknown color model: 4-
             img.Value.Pix[po + 4 * i + 3] = 255;
         }
     }
-    return (new image_ΔRGBAжImage(img), default!);
+    return (new image.ΔRGBAжImage(img), default!);
 }
 
 // Decode reads a JPEG image from r and returns it as an [image.Image].

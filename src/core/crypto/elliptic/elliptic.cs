@@ -105,8 +105,8 @@ public static (slice<byte> priv, ж<bigꓸInt> x, ж<bigꓸInt> y, error err) Ge
 // Deprecated: for ECDH, use the crypto/ecdh package. This function returns an
 // encoding equivalent to that of PublicKey.Bytes in crypto/ecdh.
 public static slice<byte> Marshal(Curve curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     panicIfNotOnCurve(curve, Ꮡx, Ꮡy);
     nint byteLen = ((~curve.Params()).BitSize + 7) / 8;
@@ -122,8 +122,8 @@ public static slice<byte> Marshal(Curve curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt>
 // specified in SEC 1, Version 2.0, Section 2.3.3. If the point is not on the
 // curve (or is the conventional point at infinity), the behavior is undefined.
 public static slice<byte> MarshalCompressed(Curve curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     panicIfNotOnCurve(curve, Ꮡx, Ꮡy);
     nint byteLen = ((~curve.Params()).BitSize + 7) / 8;
@@ -221,8 +221,8 @@ public static (ж<bigꓸInt> x, ж<bigꓸInt> y) UnmarshalCompressed(Curve curve
 }
 
 internal static void panicIfNotOnCurve(Curve curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // (0, 0) is the point at infinity by convention. It's ok to operate on it,
     // although IsOnCurve is documented to return false for it. See Issue 37294.

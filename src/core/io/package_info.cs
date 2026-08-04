@@ -40,6 +40,7 @@ using static go.io_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<LimitedReader, Reader>(Pointer = true)]
 [assembly: GoImplement<discard, ReaderFrom>]
+[assembly: GoImplement<discard, StringWriter>]
 [assembly: GoImplement<discard, Writer>]
 [assembly: GoImplement<eofReader, Reader>]
 [assembly: GoImplement<multiReader, Reader>(Pointer = true)]
@@ -50,6 +51,7 @@ using static go.io_package;
 [assembly: GoImplement<nopCloser, Reader>(Promoted = true)]
 [assembly: GoImplement<nopCloserWriterTo, ReadCloser>]
 [assembly: GoImplement<nopCloserWriterTo, Reader>(Promoted = true)]
+[assembly: GoImplement<nopCloserWriterTo, WriterTo>]
 [assembly: GoImplement<teeReader, Reader>(Pointer = true)]
 // </InterfaceImplementations>
 

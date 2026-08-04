@@ -186,8 +186,8 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
 //	numOffsets       The number of offsets in offsetEncoding
 //	litenc, offenc   The literal and offset encoder to use
 [GoRecv] internal static void generateCodegen(this ref huffmanBitWriter w, nint numLiterals, nint numOffsets, ж<huffmanEncoder> ᏑlitEnc, ж<huffmanEncoder> ᏑoffEnc) {
-    ref var litEnc = ref ᏑlitEnc.Value;
-    ref var offEnc = ref ᏑoffEnc.Value;
+    ref var litEnc = ref ᏑlitEnc.DerefOrNull();
+    ref var offEnc = ref ᏑoffEnc.DerefOrNull();
 
     foreach (var (i, _) in w.codegenFreq) {
         w.codegenFreq[i] = 0;
@@ -279,8 +279,8 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     nint size = default!;
     nint numCodegens = default!;
 
-    ref var litEnc = ref ᏑlitEnc.Value;
-    ref var offEnc = ref ᏑoffEnc.Value;
+    ref var litEnc = ref ᏑlitEnc.DerefOrNull();
+    ref var offEnc = ref ᏑoffEnc.DerefOrNull();
     numCodegens = len(w.codegenFreq);
     while (numCodegens > 4 && w.codegenFreq[(nint)(codegenOrder[numCodegens - 1])] == 0) {
         numCodegens--;

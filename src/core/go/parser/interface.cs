@@ -88,7 +88,7 @@ public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @
     ж<ast.File> f = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var fset = ref Ꮡfset.DerefOrNil();
+    ref var fset = ref Ꮡfset.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         if (Ꮡfset == nil) {
@@ -205,7 +205,7 @@ public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset
     ast.Expr expr = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var fset = ref Ꮡfset.DerefOrNil();
+    ref var fset = ref Ꮡfset.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         if (Ꮡfset == nil) {

@@ -66,7 +66,7 @@ public static ж<ΔNat> NewNat() {
 
 // expand expands x to n limbs, leaving its value unchanged.
 internal static ж<ΔNat> expand(this ж<ΔNat> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (len(x.limbs) > n) {
         throw panic("bigmod: internal error: shrinking nat");
@@ -85,7 +85,7 @@ internal static ж<ΔNat> expand(this ж<ΔNat> Ꮡx, nint n) {
 
 // reset returns a zero nat of n limbs, reusing x's storage if n <= cap(x.limbs).
 internal static ж<ΔNat> reset(this ж<ΔNat> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (cap(x.limbs) < n) {
         x.limbs = new slice<nuint>(n);
@@ -98,8 +98,8 @@ internal static ж<ΔNat> reset(this ж<ΔNat> Ꮡx, nint n) {
 
 // set assigns x = y, optionally resizing x to the appropriate size.
 internal static ж<ΔNat> set(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     Ꮡx.reset(len(y.limbs));
     copy(x.limbs, y.limbs);
@@ -111,8 +111,8 @@ internal static ж<ΔNat> set(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy) {
 // The announced length of x is set based on the actual bit size of the input,
 // ignoring leading zeroes.
 internal static ж<ΔNat> setBig(this ж<ΔNat> Ꮡx, ж<bigꓸInt> Ꮡn) {
-    ref var x = ref Ꮡx.Value;
-    ref var n = ref Ꮡn.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     var limbs = n.Bits();
     Ꮡx.reset(len(limbs));
@@ -127,7 +127,7 @@ internal static ж<ΔNat> setBig(this ж<ΔNat> Ꮡx, ж<bigꓸInt> Ꮡn) {
 //
 // x must have the same size as m and it must be reduced modulo m.
 [GoRecv] public static slice<byte> Bytes(this ref ΔNat x, ж<Modulus> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     nint i = m.Size();
     var bytes = new slice<byte>(i);
@@ -157,8 +157,8 @@ internal static readonly @string inputOverflowsTheModulusˢ = "input overflows t
 //
 // The output will be resized to the size of m and overwritten.
 public static (ж<ΔNat>, error) SetBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     {
         var err = Ꮡx.setBytes(b, Ꮡm); if (err != default!) {
@@ -180,8 +180,8 @@ internal static readonly @string inputOverflowsTheModulusˢ2 = "input overflows 
 //
 // The output will be resized to the size of m and overwritten.
 public static (ж<ΔNat>, error) SetOverflowingBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     {
         var err = Ꮡx.setBytes(b, Ꮡm); if (err != default!) {
@@ -206,7 +206,7 @@ internal static nuint bigEndianUint(slice<byte> buf) {
 }
 
 internal static error setBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     Ꮡx.resetFor(Ꮡm);
     nint i = len(b);
@@ -230,7 +230,7 @@ internal static error setBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> �
 //
 // Both operands must have the same announced length.
 [GoRecv] public static choice Equal(this ref ΔNat x, ж<ΔNat> Ꮡy) {
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // Eliminate bounds checks in the loop.
     nint size = len(x.limbs);
@@ -259,7 +259,7 @@ internal static error setBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> �
 //
 // Both operands must have the same announced length.
 [GoRecv] internal static choice cmpGeq(this ref ΔNat x, ж<ΔNat> Ꮡy) {
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // Eliminate bounds checks in the loop.
     nint size = len(x.limbs);
@@ -278,8 +278,8 @@ internal static error setBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> �
 //
 // Both operands must have the same announced length.
 internal static ж<ΔNat> assign(this ж<ΔNat> Ꮡx, choice on, ж<ΔNat> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // Eliminate bounds checks in the loop.
     nint size = len(x.limbs);
@@ -298,7 +298,7 @@ internal static ж<ΔNat> assign(this ж<ΔNat> Ꮡx, choice on, ж<ΔNat> Ꮡy)
 [GoRecv] internal static nuint /*c*/ add(this ref ΔNat x, ж<ΔNat> Ꮡy) {
     nuint c = default!;
 
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
     // Eliminate bounds checks in the loop.
     nint size = len(x.limbs);
     var xLimbs = x.limbs[..(int)(size)];
@@ -315,7 +315,7 @@ internal static ж<ΔNat> assign(this ж<ΔNat> Ꮡx, choice on, ж<ΔNat> Ꮡy)
 [GoRecv] internal static nuint /*c*/ sub(this ref ΔNat x, ж<ΔNat> Ꮡy) {
     nuint c = default!;
 
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
     // Eliminate bounds checks in the loop.
     nint size = len(x.limbs);
     var xLimbs = x.limbs[..(int)(size)];
@@ -345,7 +345,7 @@ internal static ж<ΔNat> assign(this ж<ΔNat> Ꮡx, choice on, ж<ΔNat> Ꮡy)
 
 // rr returns R*R with R = 2^(_W * n) and n = len(m.nat.limbs).
 internal static ж<ΔNat> rr(ж<Modulus> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var rr = NewNat().ExpandFor(Ꮡm);
     nuint n = (nuint)len((~rr).limbs);
@@ -414,7 +414,7 @@ internal static readonly @string modulusMustBeOddˢ = "modulus must be odd"u8;
 // The Int must be odd. The number of significant bits (and nothing else) is
 // leaked through timing side-channels.
 public static (ж<Modulus>, error) NewModulusFromBig(ж<bigꓸInt> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     {
         var b = n.Bits(); if (len(b) == 0){
@@ -465,8 +465,8 @@ internal static nint bitLen(nuint n) {
 //
 // This assumes that x is already reduced mod m.
 internal static ж<ΔNat> shiftIn(this ж<ΔNat> Ꮡx, nuint y, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var d = NewNat().resetFor(Ꮡm);
     // Eliminate bounds checks in the loop.
@@ -505,9 +505,9 @@ internal static ж<ΔNat> shiftIn(this ж<ΔNat> Ꮡx, nuint y, ж<Modulus> Ꮡm
 //
 // The output will be resized to the size of m and overwritten.
 public static ж<ΔNat> Mod(this ж<ΔNat> Ꮡout, ж<ΔNat> Ꮡx, ж<Modulus> Ꮡm) {
-    ref var @out = ref Ꮡout.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     Ꮡout.resetFor(Ꮡm);
     // Working our way from the most significant to the least significant limb,
@@ -538,7 +538,7 @@ public static ж<ΔNat> Mod(this ж<ΔNat> Ꮡout, ж<ΔNat> Ꮡx, ж<Modulus> �
 //
 // The announced size of x must be smaller than or equal to that of m.
 public static ж<ΔNat> ExpandFor(this ж<ΔNat> Ꮡx, ж<Modulus> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     return Ꮡx.expand(len((~m.nat).limbs));
 }
@@ -547,7 +547,7 @@ public static ж<ΔNat> ExpandFor(this ж<ΔNat> Ꮡx, ж<Modulus> Ꮡm) {
 //
 // out is zeroed and may start at any size.
 internal static ж<ΔNat> resetFor(this ж<ΔNat> Ꮡout, ж<Modulus> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     return Ꮡout.reset(len((~m.nat).limbs));
 }
@@ -562,8 +562,8 @@ internal static ж<ΔNat> resetFor(this ж<ΔNat> Ꮡout, ж<Modulus> Ꮡm) {
 //
 // x and m operands must have the same announced length.
 internal static void maybeSubtractModulus(this ж<ΔNat> Ꮡx, choice always, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var t = NewNat().set(Ꮡx);
     nuint underflow = t.sub(m.nat);
@@ -578,8 +578,8 @@ internal static void maybeSubtractModulus(this ж<ΔNat> Ꮡx, choice always, ж
 // The length of both operands must be the same as the modulus. Both operands
 // must already be reduced modulo m.
 public static ж<ΔNat> Sub(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     nuint underflow = x.sub(Ꮡy);
     // If the subtraction underflowed, add m.
@@ -594,7 +594,7 @@ public static ж<ΔNat> Sub(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡ
 // The length of both operands must be the same as the modulus. Both operands
 // must already be reduced modulo m.
 public static ж<ΔNat> Add(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     nuint overflow = x.add(Ꮡy);
     Ꮡx.maybeSubtractModulus(((choice)overflow), Ꮡm);
@@ -609,7 +609,7 @@ public static ж<ΔNat> Add(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡ
 //
 // This assumes that x is already reduced mod m.
 internal static ж<ΔNat> montgomeryRepresentation(this ж<ΔNat> Ꮡx, ж<Modulus> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // A Montgomery multiplication (which computes a * b / R) by R * R works out
     // to a multiplication by R, which takes the value out of the Montgomery domain.
@@ -635,10 +635,10 @@ internal static ж<ΔNat> montgomeryReduction(this ж<ΔNat> Ꮡx, ж<Modulus> �
 // All inputs should be the same length and already reduced modulo m.
 // x will be resized to the size of m and overwritten.
 internal static ж<ΔNat> montgomeryMul(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡa, ж<ΔNat> Ꮡb, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     nint n = len((~m.nat).limbs);
     var mLimbs = (~m.nat).limbs[..(int)(n)];
@@ -779,8 +779,8 @@ internal static nuint /*carry*/ addMulVVW(slice<nuint> z, slice<nuint> x, nuint 
 // The length of both operands must be the same as the modulus. Both operands
 // must already be reduced modulo m.
 public static ж<ΔNat> Mul(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡm) {
-    ref var x = ref Ꮡx.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // A Montgomery multiplication by a value out of the Montgomery domain
     // takes the result out of Montgomery representation.
@@ -796,8 +796,8 @@ public static ж<ΔNat> Mul(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡ
 // The exponent e is represented in big-endian order. The output will be resized
 // to the size of m and overwritten. x must already be reduced modulo m.
 public static ж<ΔNat> Exp(this ж<ΔNat> Ꮡout, ж<ΔNat> Ꮡx, slice<byte> e, ж<Modulus> Ꮡm) {
-    ref var @out = ref Ꮡout.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // We use a 4 bit window. For our RSA workload, 4 bit windows are faster
     // than 2 bit windows, but use an extra 12 nats worth of scratch space.

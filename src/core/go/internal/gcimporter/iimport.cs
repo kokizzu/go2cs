@@ -90,7 +90,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
     ж<types.Package> pkg = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var fset = ref Ꮡfset.Value;
+    ref var fset = ref Ꮡfset.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         const int64 currentVersion = /* iexportVersionCurrent */ 2;
@@ -234,7 +234,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
 }
 
 internal static void doDecl(this ж<iimporter> Ꮡp, ж<types.Package> Ꮡpkg, @string name) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // See if we've already imported this declaration.
     {
@@ -244,7 +244,7 @@ internal static void doDecl(this ж<iimporter> Ꮡp, ж<types.Package> Ꮡpkg, @
     }
     var (off, ok) = p.pkgIndex[Ꮡpkg][name, ꟷ];
     if (!ok) {
-        errorf("%v.%v not in index"u8, Ꮡpkg, name);
+        errorf("%v.%v not in index"u8, Ꮡpkg.OrTypedNil(), name);
     }
     var r = Ꮡ(new importReader(p: Ꮡp, currPkg: Ꮡpkg));
     r.of(importReader.ᏑdeclReader).Reset(p.declData[(int)(off)..]);
@@ -279,7 +279,7 @@ internal static void doDecl(this ж<iimporter> Ꮡp, ж<types.Package> Ꮡpkg, @
 }
 
 internal static typesꓸType typAt(this ж<iimporter> Ꮡp, uint64 off, ж<types.Named> Ꮡbase) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     {
         var (tΔ1, ok) = p.typCache[off, ꟷ]; if (ok && canReuse(Ꮡbase, tΔ1)) {
@@ -326,19 +326,19 @@ internal static bool canReuse(ж<types.Named> Ꮡdef, typesꓸType rhs) {
 }
 
 internal static void obj(this ж<importReader> Ꮡr, @string name) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var tag = r.@byte();
     tokenꓸPos pos = Ꮡr.pos();
     switch (tag) {
     case (rune)'A': {
         var typ = Ꮡr.typ();
-        r.declare(new types_TypeNameжObject(types.NewTypeName(pos, r.currPkg, name, typ)));
+        r.declare(new types.TypeNameжObject(types.NewTypeName(pos, r.currPkg, name, typ)));
         break;
     }
     case (rune)'C': {
         var (typ, val) = Ꮡr.value();
-        r.declare(new types_ConstжObject(types.NewConst(pos, r.currPkg, name, typ, val)));
+        r.declare(new types.ConstжObject(types.NewConst(pos, r.currPkg, name, typ, val)));
         break;
     }
     case (rune)'F' or (rune)'G': {
@@ -347,7 +347,7 @@ internal static void obj(this ж<importReader> Ꮡr, @string name) {
             tparams = Ꮡr.tparamList();
         }
         var sig = Ꮡr.signature(nil, default!, tparams);
-        r.declare(new types_FuncжObject(types.NewFunc(pos, r.currPkg, name, sig)));
+        r.declare(new types.FuncжObject(types.NewFunc(pos, r.currPkg, name, sig)));
         break;
     }
     case (rune)'T' or (rune)'U': {
@@ -355,7 +355,7 @@ internal static void obj(this ж<importReader> Ꮡr, @string name) {
  // declaration before recurring.
  r.currPkg, name, default!);
         var named = types.NewNamed(obj, default!, default!);
-        r.declare(new types_TypeNameжObject(obj));
+        r.declare(new types.TypeNameжObject(obj));
         if (tag == (rune)'U') {
             // Declare obj before calling r.tparamList, so the new type name is recognized
             // if used in the constraint of one of its own typeparams (see #48280).
@@ -423,7 +423,7 @@ r.currPkg, name);
     }
     case (rune)'V': {
         var typ = Ꮡr.typ();
-        r.declare(new types_VarжObject(types.NewVar(pos, r.currPkg, name, typ)));
+        r.declare(new types.VarжObject(types.NewVar(pos, r.currPkg, name, typ)));
         break;
     }
     default: {
@@ -441,7 +441,7 @@ internal static (typesꓸType typ, constant.Value val) value(this ж<importReade
     typesꓸType typ = default!;
     constant.Value val = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     typ = Ꮡr.typ();
     if ((~r.p).exportVersion >= iexportVersionGo1_18) {
         // TODO: add support for using the kind
@@ -483,7 +483,7 @@ internal static (bool signed, nuint maxBytes) intSize(ж<types.Basic> Ꮡb) {
     bool signed = default!;
     nuint maxBytes = default!;
 
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
     if (((types.BasicInfo)(b.Info() & types.IsUntyped)) != 0) {
         return (true, 64);
     }
@@ -514,7 +514,7 @@ internal static (bool signed, nuint maxBytes) intSize(ж<types.Basic> Ꮡb) {
 }
 
 internal static void mpint(this ж<importReader> Ꮡr, ж<bigꓸInt> Ꮡx, ж<types.Basic> Ꮡtyp) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var (signed, maxBytes) = intSize(Ꮡtyp);
     nuint maxSmall = 256 - maxBytes;
@@ -573,7 +573,7 @@ internal static (ж<types.Package>, @string) qualifiedIdent(this ж<importReader
 }
 
 internal static tokenꓸPos pos(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if ((~r.p).version >= 1){
         Ꮡr.posv1();
@@ -587,7 +587,7 @@ internal static tokenꓸPos pos(this ж<importReader> Ꮡr) {
 }
 
 internal static void posv0(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var delta = Ꮡr.int64();
     if (delta != deltaNewFile){
@@ -604,7 +604,7 @@ internal static void posv0(this ж<importReader> Ꮡr) {
 }
 
 internal static void posv1(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var delta = Ꮡr.int64();
     r.prevColumn += (delta >> (int)(1));
@@ -618,7 +618,7 @@ internal static void posv1(this ж<importReader> Ꮡr) {
 }
 
 internal static typesꓸType typ(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.p.typAt(Ꮡr.uint64(), nil);
 }
@@ -629,19 +629,19 @@ internal static bool isInterface(typesꓸType t) {
 }
 
 internal static ж<types.Package> pkg(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.p.pkgAt(Ꮡr.uint64());
 }
 
 internal static @string @string(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.p.stringAt(Ꮡr.uint64());
 }
 
 internal static typesꓸType doType(this ж<importReader> Ꮡr, ж<types.Named> Ꮡbase) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var k = Ꮡr.kind();
@@ -670,7 +670,7 @@ internal static typesꓸType doType(this ж<importReader> Ꮡr, ж<types.Named> 
         }
         if (exprᴛ1 == signatureType) {
             r.currPkg = Ꮡr.pkg();
-            return new types_ΔSignatureжΔType(Ꮡr.signature(nil, default!, default!));
+            return new types.ΔSignatureжΔType(Ꮡr.signature(nil, default!, default!));
         }
         if (exprᴛ1 == ΔstructType) {
             r.currPkg = Ꮡr.pkg();
@@ -796,7 +796,7 @@ internal static ж<types.Tuple> paramList(this ж<importReader> Ꮡr) {
 }
 
 internal static ж<types.Var> param(this ж<importReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     tokenꓸPos pos = Ꮡr.pos();
     @string name = Ꮡr.ident();

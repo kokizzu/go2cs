@@ -126,7 +126,7 @@ public static readonly @string GraphemeJoiner = "\u034F"u8;
 }
 
 internal static bool doFlush(this ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     if (rb.f.composing) {
         rb.compose();
@@ -138,7 +138,7 @@ internal static bool doFlush(this ж<reorderBuffer> Ꮡrb) {
 
 // appendFlush appends the normalized segment to rb.out.
 internal static bool appendFlush(ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     for (nint i = 0; i < rb.nrune; i++) {
         var start = rb.rune[i].pos;
@@ -205,7 +205,7 @@ internal static insertErr iShortSrc => -2;
 // ones are flushed.
 // It returns a non-zero error code if the rune was not inserted.
 internal static insertErr insertFlush(this ж<reorderBuffer> Ꮡrb, input src, nint i, ΔProperties info) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     {
         var rune = src.hangul(i); if (rune != 0) {
@@ -225,7 +225,7 @@ internal static insertErr insertFlush(this ж<reorderBuffer> Ꮡrb, input src, n
 // responsibility of the caller to ensure this. This can be done by checking
 // the state returned by the streamSafe type.
 internal static void insertUnsafe(this ж<reorderBuffer> Ꮡrb, input src, nint i, ΔProperties info) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     {
         var rune = src.hangul(i); if (rune != 0) {
@@ -244,7 +244,7 @@ internal static void insertUnsafe(this ж<reorderBuffer> Ꮡrb, input src, nint 
 // in dcomp. dcomp must be a sequence of decomposed UTF-8-encoded runes.
 // It flushes the buffer on each new segment start.
 internal static insertErr insertDecomposed(this ж<reorderBuffer> Ꮡrb, slice<byte> dcomp) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     rb.tmpBytes.setBytes(dcomp);
     // As the streamSafe accounting already handles the counting for modifiers,

@@ -32,7 +32,7 @@ public static ж<ChaCha8> NewChaCha8(array<byte> seed) {
 public static void Seed(this ж<ChaCha8> Ꮡc, array<byte> seed) {
     seed = seed.Clone();
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     Ꮡc.of(ChaCha8.Ꮡstate).Init(seed);
     c.readLen = 0;
     c.readBuf = new byte[]{}.array(8);
@@ -40,7 +40,7 @@ public static void Seed(this ж<ChaCha8> Ꮡc, array<byte> seed) {
 
 // Uint64 returns a uniformly distributed random uint64 value.
 public static uint64 Uint64(this ж<ChaCha8> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     while (ᐧ) {
         var (x, ok) = c.state.Next();
@@ -61,7 +61,7 @@ public static (nint n, error err) Read(this ж<ChaCha8> Ꮡc, slice<byte> p) {
     nint n = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (c.readLen > 0) {
         n = copy(p, c.readBuf[(int)(len(c.readBuf) - c.readLen)..]);
         c.readLen -= n;
@@ -85,7 +85,7 @@ internal static readonly @string invalidChaCha8ReadBufferˢ = "invalid ChaCha8 R
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 public static error UnmarshalBinary(this ж<ChaCha8> Ꮡc, slice<byte> data) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     (data, var ok) = cutPrefix(data, slice<byte>("readbuf:"u8));
     if (ok) {
@@ -122,7 +122,7 @@ internal static (slice<byte> buf, slice<byte> rest, bool ok) readUint8LengthPref
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 public static (slice<byte>, error) MarshalBinary(this ж<ChaCha8> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.readLen > 0) {
         var @out = slice<byte>("readbuf:"u8);

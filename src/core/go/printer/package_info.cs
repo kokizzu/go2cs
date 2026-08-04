@@ -19,7 +19,6 @@ global using osꓸSignal = go.os_package.ΔSignal;
 global using tokenꓸFile = go.go.token_package.ΔFile;
 global using tokenꓸPos = go.go.token_package.ΔPos;
 global using tokenꓸPosition = go.go.token_package.ΔPosition;
-using ast = go.go.ast_package;
 using token = go.go.token_package;
 // </ImportedTypeAliases>
 
@@ -54,14 +53,12 @@ using static go.go.printer_package;
 [assembly: GoImplement<go.go.ast_package.CallExpr, go.go.ast_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.Ident, go.go.ast_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.UnaryExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.build.constraint_package.AndExpr, go.go.build.constraint_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.text.tabwriter_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<sizeCounter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<trimmer, io_package.Writer>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<ast.Comment, ж<ast.Comment>>]
 [assembly: GoImplicitConv<token.FileSet, ж<token.FileSet>>(Indirect = true)]
 // </ImplicitConversions>
 

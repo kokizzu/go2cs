@@ -43,7 +43,7 @@ partial class tls_package {
 
 // serverHandshake performs a TLS handshake as a server.
 internal static error serverHandshake(this ж<Conn> Ꮡc, context.Context ctx) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var (clientHello, err) = Ꮡc.readClientHello(ctx);
     if (err != default!) {
@@ -67,7 +67,7 @@ internal static error serverHandshake(this ж<Conn> Ꮡc, context.Context ctx) {
 }
 
 internal static error handshake(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     {
@@ -163,7 +163,7 @@ internal static error handshake(this ж<serverHandshakeState> Ꮡhs) {
 
 // readClientHello reads a ClientHello message and selects the protocol version.
 internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, context.Context ctx) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // clientHelloMsg is included in the transcript, but we haven't initialized
     // it yet. The respective handshake functions will record it themselves.
@@ -174,7 +174,7 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
     var (clientHello, ok) = msg._<ж<clientHelloMsg>>(ᐧ);
     if (!ok) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return (default!, unexpectedMessageError(clientHello, msg));
+        return (default!, unexpectedMessageError(clientHello.OrTypedNil(), msg));
     }
     ж<Config> configForClient = default!;
     var originalConfig = c.config;
@@ -388,7 +388,7 @@ internal static readonly @string tlsNoCipherSuiteˢ = "tls: no cipher suite supp
 internal static readonly @string tlsClientUsingˢ = "tls: client using inappropriate protocol fallback"u8;
 
 internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     var preferenceOrder = cipherSuitesPreferenceOrder;
@@ -435,7 +435,7 @@ internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 [GoRecv] internal static bool cipherSuiteOk(this ref serverHandshakeState hs, ж<cipherSuite> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if ((nint)(c.flags & (nint)suiteECDHE) != 0){
         if (!hs.ecdheOk) {
@@ -464,7 +464,7 @@ internal static readonly @string tlsSessionSupportedˢ = "tls: session supported
 
 // checkForResumption reports whether we should perform resumption on this connection.
 internal static error checkForResumption(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     if ((~(~c).config).SessionTicketsDisabled) {
@@ -554,7 +554,7 @@ internal static error checkForResumption(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 internal static error doResumeHandshake(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     hs.hello.Value.cipherSuite = hs.suite.Value.id;
@@ -594,7 +594,7 @@ internal static error doResumeHandshake(this ж<serverHandshakeState> Ꮡhs) {
 internal static readonly @string tlsClientCertificateUsedˢ = "tls: client certificate used with invalid signature algorithm"u8;
 
 internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     if ((~hs.clientHello).ocspStapling && len((~hs.cert).OCSPStaple) > 0) {
@@ -699,7 +699,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
         var (certMsgΔ1, okΔ1) = msg._<ж<certificateMsg>>(ᐧ);
         if (!okΔ1) {
             c.sendAlert(alertUnexpectedMessage);
-            return unexpectedMessageError(certMsgΔ1, msg);
+            return unexpectedMessageError(certMsgΔ1.OrTypedNil(), msg);
         }
         {
             var errΔ9 = c.processCertsFromClient(new Certificate(
@@ -728,7 +728,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     var (ckx, ok) = msg._<ж<clientKeyExchangeMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(ckx, msg);
+        return unexpectedMessageError(ckx.OrTypedNil(), msg);
     }
     (var preMasterSecret, err) = keyAgreement.processClientKeyExchange((~c).config, hs.cert, ckx, (~c).vers);
     if (err != default!) {
@@ -766,7 +766,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
         var (certVerify, okΔ2) = msg._<ж<certificateVerifyMsg>>(ᐧ);
         if (!okΔ2) {
             c.sendAlert(alertUnexpectedMessage);
-            return unexpectedMessageError(certVerify, msg);
+            return unexpectedMessageError(certVerify.OrTypedNil(), msg);
         }
         uint8 sigType = default!;
         crypto.Hash sigHash = default!;
@@ -830,7 +830,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
 internal static readonly @string tlsClientSFinishedˢ = "tls: client's Finished message is incorrect"u8;
 
 internal static error readFinished(this ж<serverHandshakeState> Ꮡhs, slice<byte> @out) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     {
@@ -848,7 +848,7 @@ internal static error readFinished(this ж<serverHandshakeState> Ꮡhs, slice<by
     var (clientFinished, ok) = msg._<ж<finishedMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(clientFinished, msg);
+        return unexpectedMessageError(clientFinished.OrTypedNil(), msg);
     }
     var verify = hs.finishedHash.clientSum(hs.masterSecret);
     if (len(verify) != len((~clientFinished).verifyData) || subtle.ConstantTimeCompare(verify, (~clientFinished).verifyData) != 1) {
@@ -865,7 +865,7 @@ internal static error readFinished(this ж<serverHandshakeState> Ꮡhs, slice<by
 }
 
 internal static error sendSessionTicket(this ж<serverHandshakeState> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     if (!(~hs.hello).ticketSupported) {
         return default!;
@@ -904,7 +904,7 @@ internal static error sendSessionTicket(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 internal static error sendFinished(this ж<serverHandshakeState> Ꮡhs, slice<byte> @out) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     {
@@ -929,7 +929,7 @@ internal static readonly @string tlsClientDidnTProvideAˢ = "tls: client didn't 
 // processCertsFromClient takes a chain of client certificates either from a
 // Certificates message and verifies them.
 internal static error processCertsFromClient(this ж<Conn> Ꮡc, Certificate certificate) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var certificates = certificate.ΔCertificate;
     var certs = new slice<ж<Δx509.Certificate>>(len(certificates));
@@ -1012,8 +1012,8 @@ internal static error processCertsFromClient(this ж<Conn> Ꮡc, Certificate cer
 }
 
 internal static ж<ClientHelloInfo> clientHelloInfo(context.Context ctx, ж<Conn> Ꮡc, ж<clientHelloMsg> ᏑclientHello) {
-    ref var c = ref Ꮡc.Value;
-    ref var clientHello = ref ᏑclientHello.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var clientHello = ref ᏑclientHello.DerefOrNull();
 
     var ΔsupportedVersions = clientHello.supportedVersions;
     if (len(clientHello.supportedVersions) == 0) {

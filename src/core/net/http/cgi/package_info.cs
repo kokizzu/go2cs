@@ -60,7 +60,6 @@ using static go.net.http.cgi_package;
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<go.net.http_package.HandlerFunc, go.net.http_package.ΔHandler>]
 [assembly: GoImplement<go.net.http_package.ResponseWriter, io_package.Writer>]
-[assembly: GoImplement<go.net.http_package.ServeMux, go.net.http_package.ΔHandler>(Pointer = true)]
 [assembly: GoImplement<neverEnding, io_package.Reader>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<response, go.net.http_package.ResponseWriter>(Pointer = true)]

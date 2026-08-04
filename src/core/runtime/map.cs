@@ -172,28 +172,28 @@ internal static uint8 tophash(uintptr hash) {
 }
 
 internal static bool evacuated(ж<bmap> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var h = b.tophash[0];
     return h > emptyOne && h < minTopHash;
 }
 
 internal static ж<bmap> overflow(this ж<bmap> Ꮡb, ж<maptype> Ꮡt) {
-    ref var b = ref Ꮡb.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return ~(ж<ж<bmap>>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref b), (uintptr)t.BucketSize - (uintptr)goarch.PtrSize));
 }
 
 internal static void setoverflow(this ж<bmap> Ꮡb, ж<maptype> Ꮡt, ж<bmap> Ꮡovf) {
-    ref var b = ref Ꮡb.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ((ж<ж<bmap>>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref b), (uintptr)t.BucketSize - (uintptr)goarch.PtrSize))).ValueSlot = Ꮡovf;
 }
 
 internal static @unsafe.Pointer keys(this ж<bmap> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return (uintptr)add((uintptr)@unsafe.Pointer.FromRef(ref b), dataOffset);
 }
@@ -225,7 +225,7 @@ internal static @unsafe.Pointer keys(this ж<bmap> Ꮡb) {
 }
 
 [GoRecv] internal static ж<bmap> newoverflow(this ref hmap h, ж<maptype> Ꮡt, ж<bmap> Ꮡb) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ж<bmap> ovf = default!;
     if (h.extra != nil && (~h.extra).nextOverflow != nil){
@@ -306,8 +306,8 @@ internal static ж<hmap> makemap_small() {
 //
 //go:linkname makemap
 internal static ж<hmap> makemap(ж<maptype> Ꮡt, nint hint, ж<hmap> Ꮡh) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var (mem, overflow) = math.MulUintptr((uintptr)hint, (~t.Bucket).Size_);
     if (overflow || mem > maxAlloc) {
@@ -315,7 +315,7 @@ internal static ж<hmap> makemap(ж<maptype> Ꮡt, nint hint, ж<hmap> Ꮡh) {
     }
     // initialize Hmap
     if (Ꮡh == nil) {
-        Ꮡh = @new<hmap>(); h = ref Ꮡh.DerefOrNil();
+        Ꮡh = @new<hmap>(); h = ref Ꮡh.DerefOrNull();
     }
     h.hash0 = (uint32)rand();
     // Find the size parameter B which will hold the requested # of elements.
@@ -349,7 +349,7 @@ internal static (@unsafe.Pointer buckets, ж<bmap> nextOverflow) makeBucketArray
     @unsafe.Pointer buckets = default!;
     ж<bmap> nextOverflow = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     var @base = bucketShift(b);
     var nbuckets = @base;
     // For small b, overflow buckets are unlikely.
@@ -401,8 +401,8 @@ internal static readonly @string concurrentMapReadAndMapˢ = "concurrent map rea
 // NOTE: The returned pointer may keep the whole map live, so don't
 // hold onto it for very long.
 internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
@@ -481,8 +481,8 @@ break_bucketloop:;
 //
 //go:linkname mapaccess2
 internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
@@ -553,8 +553,8 @@ break_bucketloop:;
 
 // returns both key and elem. Used by map iterator.
 internal static (@unsafe.Pointer, @unsafe.Pointer) mapaccessK(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil || h.count == 0) {
         return (default!, default!);
@@ -638,8 +638,8 @@ internal static readonly @string concurrentMapWritesˢ = "concurrent map writes"
 //
 //go:linkname mapassign
 internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil) {
         throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
@@ -762,8 +762,8 @@ done:
 //
 //go:linkname mapdelete
 internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
@@ -908,9 +908,9 @@ internal static readonly @string hashIterSizeIncorrectˢ = "hash_iter size incor
 //
 //go:linkname mapiterinit
 internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡit) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
-    ref var it = ref Ꮡit.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var it = ref Ꮡit.DerefOrNull();
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
@@ -971,7 +971,7 @@ internal static readonly @string concurrentMapIterationˢ = "concurrent map iter
 //
 //go:linkname mapiternext
 internal static void mapiternext(ж<hiter> Ꮡit) {
-    ref var it = ref Ꮡit.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
 
     var h = it.h;
     if (raceenabled) {
@@ -1111,7 +1111,7 @@ next:
 //
 //go:linkname mapclear
 internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
@@ -1126,7 +1126,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     }
     h.flags ^= (uint8)(hashWriting);
     // Mark buckets empty, so existing iterators can be terminated, see issue #59411.
-    var markBucketsEmpty = (@unsafe.Pointer bucket, uintptr mask) => {
+    void markBucketsEmpty(@unsafe.Pointer bucket, uintptr mask) {
         for (var i = (uintptr)0; i <= mask; i++) {
             var b = (ж<bmap>)(uintptr)(add(bucket, i * (uintptr)Ꮡt.Value.BucketSize));
             for (; b != nil; b = b.overflow(Ꮡt)) {
@@ -1135,7 +1135,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
                 }
             }
         }
-    };
+    }
     markBucketsEmpty(h.buckets, bucketMask(h.B));
     {
         @unsafe.Pointer oldBuckets = h.oldbuckets; if (oldBuckets != nil) {
@@ -1173,7 +1173,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
 internal static readonly @string oldoverflowIsNotNilˢ = "oldoverflow is not nil"u8;
 
 internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // If we've hit the load factor, get bigger.
     // Otherwise, there are too many overflow buckets,
@@ -1260,7 +1260,7 @@ internal static bool tooManyOverflowBuckets(uint16 noverflow, uint8 B) {
 }
 
 internal static void growWork(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // make sure we evacuate the oldbucket corresponding
     // to the bucket we're about to use
@@ -1272,8 +1272,8 @@ internal static void growWork(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
 }
 
 internal static bool bucketEvacuated(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, bucket * (uintptr)t.BucketSize));
     return evacuated(b);
@@ -1292,8 +1292,8 @@ internal static readonly @string badMapStateˢ = "bad map state"u8;
 internal static readonly @string badEvacuatedNˢ = "bad evacuatedN"u8;
 
 internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, oldbucket * (uintptr)t.BucketSize));
     var newbit = h.noldbuckets();
@@ -1407,7 +1407,7 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
 }
 
 internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uintptr newbit) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     h.nevacuate++;
     // Experiments suggest that 1024 is overkill by at least an order of magnitude.
@@ -1462,7 +1462,7 @@ internal static readonly @string needPaddingInBucketElemˢ = "need padding in bu
 //
 //go:linkname reflect_makemap reflect.makemap
 internal static ж<hmap> reflect_makemap(ж<maptype> Ꮡt, nint cap) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Check invariants and reflects math.
     if ((~t.Key).Equal == default!) {
@@ -1538,7 +1538,7 @@ internal static @unsafe.Pointer reflect_mapaccess_faststr(ж<maptype> Ꮡt, ж<h
 //
 //go:linkname reflect_mapassign reflect.mapassign0
 internal static void reflect_mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer elem) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @unsafe.Pointer Δp = (uintptr)mapassign(Ꮡt, Ꮡh, key);
     typedmemmove(t.Elem, Δp, elem);
@@ -1546,7 +1546,7 @@ internal static void reflect_mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.
 
 //go:linkname reflect_mapassign_faststr reflect.mapassign_faststr0
 internal static void reflect_mapassign_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string key, @unsafe.Pointer elem) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @unsafe.Pointer Δp = (uintptr)mapassign_faststr(Ꮡt, Ꮡh, key);
     typedmemmove(t.Elem, Δp, elem);
@@ -1606,7 +1606,7 @@ internal static void reflect_mapiternext(ж<hiter> Ꮡit) {
 //
 //go:linkname reflect_mapiterkey reflect.mapiterkey
 internal static @unsafe.Pointer reflect_mapiterkey(ж<hiter> Ꮡit) {
-    ref var it = ref Ꮡit.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
 
     return it.key;
 }
@@ -1622,7 +1622,7 @@ internal static @unsafe.Pointer reflect_mapiterkey(ж<hiter> Ꮡit) {
 //
 //go:linkname reflect_mapiterelem reflect.mapiterelem
 internal static @unsafe.Pointer reflect_mapiterelem(ж<hiter> Ꮡit) {
-    ref var it = ref Ꮡit.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
 
     return it.elem;
 }
@@ -1638,7 +1638,7 @@ internal static @unsafe.Pointer reflect_mapiterelem(ж<hiter> Ꮡit) {
 //
 //go:linkname reflect_maplen reflect.maplen
 internal static nint reflect_maplen(ж<hmap> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil) {
         return 0;
@@ -1657,7 +1657,7 @@ internal static void reflect_mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
 
 //go:linkname reflectlite_maplen internal/reflectlite.maplen
 internal static nint reflectlite_maplen(ж<hmap> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil) {
         return 0;
@@ -1690,10 +1690,10 @@ internal static any mapclone(any mʗp) {
 // moveToBmap moves a bucket from src to dst. It returns the destination bucket or new destination bucket if it overflows
 // and the pos that the next key/value will be written, if pos == bucketCnt means needs to written in overflow bucket.
 internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡdst, nint pos, ж<bmap> Ꮡsrc) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     for (nint i = 0; i < abi.MapBucketCount; i++) {
         if (isEmpty(src.tophash[i])) {
@@ -1705,7 +1705,7 @@ internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<
             }
         }
         if (pos == abi.MapBucketCount) {
-            Ꮡdst = h.newoverflow(Ꮡt, Ꮡdst); dst = ref Ꮡdst.Value;
+            Ꮡdst = h.newoverflow(Ꮡt, Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
             pos = 0;
         }
         @unsafe.Pointer srcK = (uintptr)add(new @unsafe.Pointer(Ꮡsrc), dataOffset + (uintptr)i * (uintptr)t.KeySize);
@@ -1745,8 +1745,8 @@ internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<
 internal static readonly @string concurrentMapCloneAndMapˢ = "concurrent map clone and map write"u8;
 
 internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
-    ref var t = ref Ꮡt.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     var dst = makemap(Ꮡt, src.count, nil);
     dst.Value.hash0 = src.hash0;
@@ -1877,10 +1877,10 @@ internal static void keys(any mʗp, @unsafe.Pointer Δp) {
 }
 
 internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж<Δsliceᴛ> Ꮡs, uint8 offset) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
-    ref var b = ref Ꮡb.DerefOrNil();
-    ref var s = ref Ꮡs.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     while (Ꮡb != nil) {
         for (var i = (uintptr)0; i < abi.MapBucketCount; i++) {
@@ -1901,7 +1901,7 @@ internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж
             typedmemmove(t.Key, (uintptr)add(s.Δarray, (uintptr)s.len * (uintptr)t.Key.Size()), k);
             s.len++;
         }
-        Ꮡb = Ꮡb.overflow(Ꮡt); b = ref Ꮡb.DerefOrNil();
+        Ꮡb = Ꮡb.overflow(Ꮡt); b = ref Ꮡb.DerefOrNull();
     }
 }
 
@@ -1946,10 +1946,10 @@ internal static void values(any mʗp, @unsafe.Pointer Δp) {
 }
 
 internal static void copyValues(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж<Δsliceᴛ> Ꮡs, uint8 offset) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
-    ref var b = ref Ꮡb.DerefOrNil();
-    ref var s = ref Ꮡs.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     while (Ꮡb != nil) {
         for (var i = (uintptr)0; i < abi.MapBucketCount; i++) {
@@ -1970,7 +1970,7 @@ internal static void copyValues(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, 
             typedmemmove(t.Elem, (uintptr)add(s.Δarray, (uintptr)s.len * (uintptr)t.Elem.Size()), ele);
             s.len++;
         }
-        Ꮡb = Ꮡb.overflow(Ꮡt); b = ref Ꮡb.DerefOrNil();
+        Ꮡb = Ꮡb.overflow(Ꮡt); b = ref Ꮡb.DerefOrNull();
     }
 }
 

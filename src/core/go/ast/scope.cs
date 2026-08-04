@@ -42,7 +42,7 @@ public static ж<Scope> NewScope(ж<Scope> Ꮡouter) {
 [GoRecv] public static ж<Object> /*alt*/ Insert(this ref Scope s, ж<Object> Ꮡobj) {
     ж<Object> alt = default!;
 
-    ref var obj = ref Ꮡobj.Value;
+    ref var obj = ref Ꮡobj.DerefOrNull();
     {
         alt = s.Objects[obj.Name]; if (alt == nil) {
             s.Objects[obj.Name] = Ꮡobj;
@@ -53,10 +53,10 @@ public static ж<Scope> NewScope(ж<Scope> Ꮡouter) {
 
 // Debugging support
 public static @string String(this ж<Scope> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "scope %p {"u8, Ꮡs);
+    fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "scope %p {"u8, Ꮡs.OrTypedNil());
     if (Ꮡs != nil && len(s.Objects) > 0) {
         fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf));
         foreach (var (_, obj) in s.Objects) {

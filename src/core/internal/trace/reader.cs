@@ -76,7 +76,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
     ΔEvent e = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
         if (r.go121Events != nil) {
             var (evΔ1, errΔ1) = r.go121Events.next();
@@ -167,7 +167,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
             // Reset emittedSync.
             r.emittedSync = false;
         }
-        var tryAdvance = (nint i) => {
+        (bool, error) tryAdvance(nint i) {
             var bc = Ꮡr.Value.frontier[i];
             {
                 var (okΔ3, errΔ4) = Ꮡr.of(Reader.Ꮡorder).Advance(bc.of(batchCursor.Ꮡev), (~Ꮡr.Value.gen).evTable, (~bc).m, (~Ꮡr.Value.gen).gen); if (!okΔ3 || errΔ4 != default!) {
@@ -187,7 +187,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 Ꮡr.Value.frontier = heapRemove(Ꮡr.Value.frontier, i);
             }
             return (true, default!);
-        };
+        }
         // Inject a CPU sample if it comes next.
         if (len(r.cpuSamples) != 0) {
             if (len(r.frontier) == 0 || r.cpuSamples[0].time < (~r.frontier[0]).ev.time) {

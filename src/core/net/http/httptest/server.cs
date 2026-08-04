@@ -128,13 +128,13 @@ internal static readonly object httptestServingOnˢ = (@string)"httptest: servin
 
 // Start starts a server from NewUnstartedServer.
 public static void Start(this ж<Server> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.URL != ""u8) {
         throw panic("Server already started");
     }
     if (s.client == nil) {
-        s.client = Ꮡ(new http.Client(Transport: new http_TransportжRoundTripper(Ꮡ(new http.Transport(nil)))));
+        s.client = Ꮡ(new http.Client(Transport: new http.TransportжRoundTripper(Ꮡ(new http.Transport(nil)))));
     }
     s.URL = "http://"u8 + s.Listener.Addr().String();
     Ꮡs.wrap();
@@ -148,7 +148,7 @@ public static void Start(this ж<Server> Ꮡs) {
 
 // StartTLS starts TLS on a server from NewUnstartedServer.
 public static void StartTLS(this ж<Server> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.URL != ""u8) {
         throw panic("Server already started");
@@ -182,7 +182,7 @@ public static void StartTLS(this ж<Server> Ꮡs) {
     }
     var certpool = x509.NewCertPool();
     certpool.AddCert(s.certificate);
-    s.client.Value.Transport = new http_TransportжRoundTripper(Ꮡ(new http.Transport(
+    s.client.Value.Transport = new http.TransportжRoundTripper(Ꮡ(new http.Transport(
         TLSClientConfig: Ꮡ(new tls.Config(
             RootCAs: certpool
         )),
@@ -209,7 +209,7 @@ public static ж<Server> NewTLSServer(httpꓸHandler handler) {
 // Close shuts down the server and blocks until all outstanding
 // requests on this server have completed.
 public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     if (!s.closed) {
@@ -240,7 +240,7 @@ public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
             }
         }
         // If this server doesn't shut down in 5 seconds, tell the user why.
-        var t = time.AfterFunc(5000000000L, Ꮡs.logCloseHangDebugInfo);
+        var t = time.AfterFunc((time.Duration)(5000000000L), Ꮡs.logCloseHangDebugInfo);
         var tʗ1 = t;
         defer(() => tʗ1.Stop());
     }
@@ -268,7 +268,7 @@ public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
 internal static readonly @string httptestServerBlockedInˢ = "httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8;
 
 internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     defer(Ꮡs.of(Server.Ꮡmu).Unlock);
@@ -282,7 +282,7 @@ internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) => func((defer,
 
 // CloseClientConnections closes any open HTTP connections to the test Server.
 public static void CloseClientConnections(this ж<Server> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     nint nconn = len(s.conns);
@@ -297,7 +297,7 @@ public static void CloseClientConnections(this ж<Server> Ꮡs) => func((defer, 
     // bound how long this can wait, since golang.org/issue/14291
     // isn't fully understood yet. At least this should only be used
     // in tests.
-    var timer = time.NewTimer(5000000000L);
+    var timer = time.NewTimer((time.Duration)(5000000000L));
     var timerʗ1 = timer;
     defer(() => timerʗ1.Stop());
     for (nint i = 0; i < nconn; i++) {
@@ -340,7 +340,7 @@ internal static void goServe(this ж<Server> Ꮡs) {
 // wrap installs the connection state-tracking hook to know which
 // connections are idle.
 internal static void wrap(this ж<Server> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var oldHook = s.Config.Value.ConnState;
     var oldHookʗ1 = oldHook;

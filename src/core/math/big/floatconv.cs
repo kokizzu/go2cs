@@ -36,7 +36,7 @@ internal static (ж<Float> f, nint b, error err) scan(this ж<Float> Ꮡz, io.By
     nint b = default!;
     error err = default!;
 
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
     var prec = z.prec;
     if (prec == 0) {
         prec = 64;
@@ -195,7 +195,7 @@ internal static array<uint64> pow5tab = new uint64[]{
 // pow5 sets z to 5**n and returns z.
 // n must not be negative.
 internal static ж<Float> pow5(this ж<Float> Ꮡz, uint64 n) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     const uint64 m = /* uint64(len(pow5tab) - 1) */ 27;
     if (n <= m) {

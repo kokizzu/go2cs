@@ -50,7 +50,7 @@ internal static float64 logDiv = math.Log(math.Pow(10D, 1.0D / 5D));
 
 // ToHTML renders the histogram as HTML.
 public static template.HTML ToHTML(this ж<TimeHistogram> Ꮡh, Func<time.Duration, time.Duration, @string> urlmaker) {
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil || h.Count == 0) {
         return ((template.HTML)(@string)""u8);

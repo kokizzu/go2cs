@@ -63,7 +63,7 @@ public static ж<Cond> NewCond(Locker l) {
 //	... make use of condition ...
 //	c.L.Unlock()
 public static void Wait(this ж<Cond> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(Cond.Ꮡchecker).check();
     var t = runtime_notifyListAdd(Ꮡc.of(Cond.Ꮡnotify));

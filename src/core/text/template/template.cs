@@ -84,7 +84,7 @@ public static ж<Template> New(@string name) {
 // common templates and use them with variant definitions for other templates
 // by adding the variants after the clone is made.
 public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var nt = t.copy(nil);
     nt.init();
@@ -129,7 +129,7 @@ public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Te
 // its definition. If it has been defined and already has that name, the existing
 // definition is replaced; otherwise a new template is created, defined, and returned.
 public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.init();
     Ꮡt.of(Template.ᏑmuTmpl).Lock();
@@ -147,7 +147,7 @@ public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string
 
 // Templates returns a slice of defined templates associated with t.
 public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func<slice<ж<Template>>>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.common == nil) {
         return default!;
@@ -168,7 +168,7 @@ public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func<slic
 // corresponding default: {{ or }}.
 // The return value is the template, so calls can be chained.
 public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string right) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.init();
     t.leftDelim = left;
@@ -183,7 +183,7 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 // It is legal to overwrite elements of the map. The return value is the template,
 // so calls can be chained.
 public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.init();
     Ꮡt.of(Template.ᏑmuFuncs).Lock();
@@ -196,7 +196,7 @@ public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) => fun
 // Lookup returns the template with the given name that is associated with t.
 // It returns nil if there is no such template or the template has no definition.
 public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) => func<ж<Template>>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.common == nil) {
         return default!;
@@ -217,7 +217,7 @@ public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) => func<
 // This allows using Parse to add new named template definitions without
 // overwriting the main template body.
 public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.init();
     Ꮡt.of(Template.ᏑmuFuncs).RLock();
@@ -241,14 +241,14 @@ public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) 
 // with t. The two are already known to share the common structure.
 // The boolean return value reports whether to store this tree as t.Tree.
 [GoRecv] internal static bool associate(this ref Template t, ж<Template> Ꮡnew, ж<parse.Tree> Ꮡtree) {
-    ref var @new = ref Ꮡnew.Value;
-    ref var tree = ref Ꮡtree.Value;
+    ref var @new = ref Ꮡnew.DerefOrNull();
+    ref var tree = ref Ꮡtree.DerefOrNull();
 
     if (@new.common != t.common) {
         throw panic("internal error: associate not common");
     }
     {
-        var old = t.tmpl[@new.name]; if (old != nil && parse.IsEmptyTree(new parse_ListNodeжNode(tree.Root)) && (~old).Tree != nil) {
+        var old = t.tmpl[@new.name]; if (old != nil && parse.IsEmptyTree(new parse.ListNodeжNode(tree.Root)) && (~old).Tree != nil) {
             // If a template by that name exists,
             // don't replace it with an empty template.
             return false;

@@ -98,8 +98,7 @@ internal static void ServeHTTP(this debugHTTP server, Δhttp.ResponseWriter w, �
     ref var services = ref heap<serviceArray>(out var Ꮡservices);
     Ꮡ(server).of(debugHTTP.ᏑserviceMap).Range((any snamei, any svci) => {
         var svc = svci._<ж<service>>();
-        ref var ds = ref heap<debugService>(out var Ꮡds);
-        ds = new debugService(svc, snamei._<@string>(), new slice<debugMethod>(0, len((~svc).method)));
+        var ds = new debugService(svc, snamei._<@string>(), new slice<debugMethod>(0, len((~svc).method)));
         foreach (var (mname, method) in (~svc).method) {
             ds.Method = append(ds.Method, new debugMethod(method, mname));
         }

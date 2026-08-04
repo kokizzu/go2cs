@@ -27,7 +27,7 @@ internal static readonly @string stringConcatenationTooˢ = "string concatenatio
 // escape the calling function, so the string data can be stored in buf
 // if small enough.
 internal static @string concatstrings(ж<tmpBuf> Ꮡbuf, slice<@string> a) {
-    ref var buf = ref Ꮡbuf.DerefOrNil();
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     nint idx = 0;
     nint l = 0;
@@ -94,8 +94,8 @@ internal static @string concatstring5(ж<tmpBuf> Ꮡbuf, @string a0, @string a1,
 //
 //go:linkname slicebytetostring
 internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, nint n) {
-    ref var buf = ref Ꮡbuf.DerefOrNil();
-    ref var ptr = ref Ꮡptr.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
+    ref var ptr = ref Ꮡptr.DerefOrNull();
 
     if (n == 0) {
         // Turns out to be a relatively common case.
@@ -144,7 +144,7 @@ internal static (@string s, slice<byte> b) rawstringtmp(ж<tmpBuf> Ꮡbuf, nint 
     @string s = default!;
     slice<byte> b = default!;
 
-    ref var buf = ref Ꮡbuf.DerefOrNil();
+    ref var buf = ref Ꮡbuf.DerefOrNull();
     if (Ꮡbuf != nil && l <= len(buf.Value)){
         b = buf.Value[..(int)(l)];
         s = slicebytetostringtmp(Ꮡ(b, 0), len(b));
@@ -185,7 +185,7 @@ internal static @string slicebytetostringtmp(ж<byte> Ꮡptr, nint n) {
 }
 
 internal static slice<byte> stringtoslicebyte(ж<tmpBuf> Ꮡbuf, @string s) {
-    ref var buf = ref Ꮡbuf.DerefOrNil();
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     slice<byte> b = default!;
     if (Ꮡbuf != nil && len(s) <= len(buf.Value)){
@@ -199,7 +199,7 @@ internal static slice<byte> stringtoslicebyte(ж<tmpBuf> Ꮡbuf, @string s) {
 }
 
 internal static slice<rune> stringtoslicerune(ж<array<rune>> Ꮡbuf, @string s) {
-    ref var buf = ref Ꮡbuf.DerefOrNil();
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // two passes.
     // unlike slicerunetostring, no race because strings are immutable.
@@ -270,7 +270,7 @@ internal static ж<stringStruct> stringStructOf(ж<@string> Ꮡsp) {
 internal static @string /*s*/ intstring(ж<array<byte>> Ꮡbuf, int64 v) {
     @string s = default!;
 
-    ref var buf = ref Ꮡbuf.DerefOrNil();
+    ref var buf = ref Ꮡbuf.DerefOrNull();
     slice<byte> b = default!;
     if (Ꮡbuf != nil){
         b = buf[..];
@@ -540,7 +540,7 @@ internal static (int64, bool) parseByteCount(@string s) {
 
 //go:nosplit
 internal static nint findnull(ж<byte> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (Ꮡs == nil) {
         return 0;
@@ -549,7 +549,7 @@ internal static nint findnull(ж<byte> Ꮡs) {
     // on x86 machines, and those are classified as floating point instructions,
     // which are illegal in a note handler.
     if (GOOS == "plan9"u8) {
-        var Δp = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+        var Δp = array<byte>.AliasPointer(Ꮡs, (nint)140737488355327);
         nint l = 0;
         while (Δp.Value[l] != 0) {
             l++;
@@ -588,7 +588,7 @@ internal static nint findnullw(ж<uint16> Ꮡs) {
     if (Ꮡs == nil) {
         return 0;
     }
-    var Δp = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+    var Δp = array<uint16>.AliasPointer(Ꮡs, (nint)70368744177663);
     nint l = 0;
     while (Δp.Value[l] != 0) {
         l++;
@@ -598,8 +598,6 @@ internal static nint findnullw(ж<uint16> Ꮡs) {
 
 //go:nosplit
 internal static @string gostringnocopy(ж<byte> Ꮡstr) {
-    ref var str = ref Ꮡstr.Value;
-
     ref var ss = ref heap<stringStruct>(out var Ꮡss);
     ss = new stringStruct(str: new @unsafe.Pointer(Ꮡstr), len: findnull(Ꮡstr));
     @string s = ~Ꮡss.Reinterpret<stringStruct, @string>();
@@ -608,7 +606,7 @@ internal static @string gostringnocopy(ж<byte> Ꮡstr) {
 
 internal static @string gostringw(ж<uint16> Ꮡstrw) {
     array<byte> buf = new(8);
-    var str = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(Ꮡstrw));
+    var str = array<uint16>.AliasPointer(Ꮡstrw, (nint)70368744177663);
     nint n1 = 0;
     for (nint i = 0; str.Value[i] != 0; i++) {
         n1 += encoderune(buf[..], (rune)str.Value[i]);

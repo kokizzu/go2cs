@@ -53,11 +53,11 @@ partial class types_package {
 // count is incorrect; for *Named types, a panic may occur later inside the
 // *Named API.
 public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slice<ΔType> targs, bool validate) {
-    ref var ctxt = ref Ꮡctxt.DerefOrNil();
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     assert(len(targs) > 0);
     if (Ꮡctxt == nil) {
-        Ꮡctxt = NewContext(); ctxt = ref Ꮡctxt.DerefOrNil();
+        Ꮡctxt = NewContext(); ctxt = ref Ꮡctxt.DerefOrNull();
     }
     var orig_ = orig._<ΔgenericType>();
     // signature of Instantiate must not change for backward-compatibility
@@ -92,8 +92,8 @@ public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slic
 internal static ΔType /*res*/ instance(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔgenericType orig, slice<ΔType> targs, ж<Named> Ꮡexpanding, ж<Context> Ꮡctxt) {
     ΔType res = default!;
 
-    ref var expanding = ref Ꮡexpanding.DerefOrNil();
-    ref var ctxt = ref Ꮡctxt.DerefOrNil();
+    ref var expanding = ref Ꮡexpanding.DerefOrNull();
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
     // The order of the contexts below matters: we always prefer instances in the
     // expanding instance context in order to preserve reference cycles.
     //
@@ -119,12 +119,12 @@ internal static ΔType /*res*/ instance(this ж<Checker> Ꮡcheck, tokenꓸPos p
     var ctxtsʗ1 = ctxts;
     var hashesʗ1 = hashes;
     var targsʗ1 = targs;
-    var updateContexts = (ΔType resΔ1) => {
+    ΔType updateContexts(ΔType resΔ1) {
         for (nint i = len(ctxtsʗ1) - 1; i >= 0; i--) {
             resΔ1 = ctxtsʗ1[i].update(hashesʗ1[i], orig, targsʗ1, resΔ1);
         }
         return resΔ1;
-    };
+    }
     // typ may already have been instantiated with identical type arguments. In
     // that case, re-use the existing instance.
     foreach (var (i, ctxtΔ2) in ctxts) {
@@ -248,8 +248,8 @@ internal static readonly @string satisfyˢ = "satisfy"u8;
 // If the provided cause is non-nil, it may be set to an error string
 // explaining why V does not implement (or satisfy, for constraints) T.
 internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType V, ΔType T, bool constraint, ж<@string> Ꮡcause) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var cause = ref Ꮡcause.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var cause = ref Ꮡcause.DerefOrNull();
 
     var Vu = under(V);
     var Tu = under(T);
@@ -311,7 +311,7 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
     }
     // Only check comparability if we don't have a more specific error.
     var Tiʗ1 = Ti;
-    var checkComparability = () => {
+    bool checkComparability() {
         if (!Tiʗ1.IsComparable()) {
             return true;
         }
@@ -339,7 +339,7 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
             Ꮡcause.Value = Ꮡcheck.sprintf("%s does not %s comparable"u8, V, verb);
         }
         return false;
-    };
+    }
     // V must also be in the set of types of T, if any.
     // Constraints with empty type sets were already excluded above.
     if (!Ti.typeSet().hasTerms()) {

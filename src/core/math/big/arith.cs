@@ -17,8 +17,8 @@ partial class big_package {
 
 internal static UntypedInt _S => /* _W / 8 */ 8; // word size in bytes
 internal static UntypedInt _W => /* bits.UintSize */ 64; // word size in bits
-internal static readonly GoUntyped _B = /* 1 << _W */    // digit base
-    GoUntyped.Parse("18446744073709551616");
+internal static readonly GoBigConst _B = /* 1 << _W */    // digit base
+    GoBigConst.Parse("18446744073709551616");
 internal static UntypedInt _M => /* _B - 1 */ 18446744073709551615; // digit mask
 
 // Many of the loops in this file are of the form

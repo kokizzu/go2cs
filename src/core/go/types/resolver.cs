@@ -56,9 +56,9 @@ internal static readonly @string missingTypeOrInitExprˢ = "missing type or init
 // decls, init is the value spec providing the init exprs; for
 // var decls, init is nil (the init exprs are in s in this case).
 internal static void arityMatch(this ж<Checker> Ꮡcheck, ж<ast.ValueSpec> Ꮡs, ж<ast.ValueSpec> Ꮡinit) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var s = ref Ꮡs.Value;
-    ref var init = ref Ꮡinit.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var init = ref Ꮡinit.DerefOrNull();
 
     nint l = len(s.Names);
     nint r = len(s.Values);
@@ -89,7 +89,7 @@ internal static void arityMatch(this ж<Checker> Ꮡcheck, ж<ast.ValueSpec> Ꮡ
     case {} when l > r && (Ꮡinit != nil || r != 1): {
         var n = s.Names[r];
         Ꮡcheck.errorf(new ast_Identжpositioner(n), // TODO(gri) avoid declared and not used error here
- code, "missing init expr for %s"u8, n);
+ code, "missing init expr for %s"u8, n.OrTypedNil());
         break;
     }}
 
@@ -119,8 +119,8 @@ internal static readonly @string cannotDeclareMainMustBeˢ = "cannot declare mai
 // declarePkgObj declares obj in the package scope, records its ident -> obj mapping,
 // and updates check.objMap. The object must not be a function or method.
 internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡident, Object obj, ж<declInfo> Ꮡd) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var ident = ref Ꮡident.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var ident = ref Ꮡident.DerefOrNull();
 
     assert(ident.Name == obj.Name());
     // spec: "A package-scope or file-scope identifier with name init
@@ -155,7 +155,7 @@ internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡi
 internal static readonly @string cannotUseFakeImportCAndˢ = "cannot use FakeImportC and go115UsesCgo together"u8;
 
 internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner at, @string path, @string dir) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // If we already have a package for the given (path, dir)
     // pair, use it instead of doing a full import.
@@ -257,7 +257,7 @@ internal static readonly @string methodHasNoReceiverˢ = "method has no receiver
 // into their respective scopes. It also performs imports and associates
 // methods with receiver base type names.
 internal static void collectObjects(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var pkg = check.pkg;
     // pkgImports is the set of packages already imported by any package file seen
@@ -510,10 +510,10 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
                     var err = Ꮡcheck.newError(DuplicateDecl);
                     {
                         var (pkgΔ1, ok) = obj._<ж<PkgName>>(ᐧ); if (ok){
-                            err.addf(new Objectᴠpositioner(alt), "%s already declared through import of %s"u8, alt.Name(), pkgΔ1.Imported());
+                            err.addf(new Objectᴠpositioner(alt), "%s already declared through import of %s"u8, alt.Name(), pkgΔ1.Imported().OrTypedNil());
                             err.addAltDecl(new PkgNameжObject(pkgΔ1));
                         } else {
-                            err.addf(new Objectᴠpositioner(alt), "%s already declared through dot-import of %s"u8, alt.Name(), obj.Pkg());
+                            err.addf(new Objectᴠpositioner(alt), "%s already declared through dot-import of %s"u8, alt.Name(), obj.Pkg().OrTypedNil());
                             // TODO(gri) dot-imported objects don't have a position; addAltDecl won't print anything
                             err.addAltDecl(obj);
                         }
@@ -732,7 +732,7 @@ break_L:;
 
 // packageObjects typechecks all package objects, but not function bodies.
 internal static void packageObjects(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // process package objects in source order for reproducible results
     var objList = new slice<Object>(len(check.objMap));
@@ -824,7 +824,7 @@ internal static void Swap(this inSourceOrder a, nint i, nint j) {
 
 // unusedImports checks for unused imports.
 internal static void unusedImports(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // If function bodies are not checked, packages' uses are likely missing - don't check.
     if ((~check.conf).IgnoreFuncBodies) {
@@ -841,7 +841,7 @@ internal static void unusedImports(this ж<Checker> Ꮡcheck) {
 }
 
 internal static void errorUnusedPkg(this ж<Checker> Ꮡcheck, ж<PkgName> Ꮡobj) {
-    ref var obj = ref Ꮡobj.Value;
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     // If the package was imported with a name other than the final
     // import path element, show it explicitly in the error message.

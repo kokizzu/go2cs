@@ -43,7 +43,7 @@ internal static ж<sync.Once> ᏑserverInit = new(default(sync.Once));
 internal static ref sync.Once serverInit => ref ᏑserverInit.Value;
 
 [GoRecv] internal static error init(this ref pollDesc pd, ж<FD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     ᏑserverInit.Do(runtime_pollServerInit);
     var (ctx, errno) = runtime_pollOpen((uintptr)fd.Sysfd);
@@ -161,7 +161,7 @@ public static error SetWriteDeadline(this ж<FD> Ꮡfd, time.Time t) {
 }
 
 internal static error setDeadlineImpl(ж<FD> Ꮡfd, time.Time t, nint mode) => func<error>((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     int64 d = default!;
     if (!t.IsZero()) {

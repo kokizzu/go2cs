@@ -53,21 +53,21 @@ partial class regexp_package {
 }
 
 internal static input newBytes(this ж<inputs> Ꮡi, slice<byte> b) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.bytes.str = b;
     return new inputBytesжinput(Ꮡi.of(inputs.Ꮡbytes));
 }
 
 internal static input newString(this ж<inputs> Ꮡi, @string s) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.@string.str = s;
     return new inputStringжinput(Ꮡi.of(inputs.Ꮡstring));
 }
 
 internal static input newReader(this ж<inputs> Ꮡi, io.RuneReader r) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.reader.r = r;
     i.reader.atEOT = false;
@@ -176,7 +176,7 @@ internal static bool match(this lazyFlag f, syntax.EmptyOp op) {
 // It reports whether a match was found.
 // If so, m.matchcap holds the submatch information.
 internal static bool match(this ж<machine> Ꮡm, input i, nint pos) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var startCond = m.re.Value.cond;
     if (startCond == ~((syntax.EmptyOp)((syntax.EmptyOp)0))) {
@@ -251,7 +251,7 @@ internal static bool match(this ж<machine> Ꮡm, input i, nint pos) {
 
 // clear frees all threads on the thread queue.
 [GoRecv] internal static void clear(this ref machine m, ж<queue> Ꮡq) {
-    ref var q = ref Ꮡq.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
 
     foreach (var (_, d) in q.dense) {
         if (d.t != nil) {
@@ -267,7 +267,7 @@ internal static bool match(this ж<machine> Ꮡm, input i, nint pos) {
 // which starts at position pos and ends at nextPos.
 // nextCond gives the setting for the empty-width flags after c.
 [GoRecv] internal static void step(this ref machine m, ж<queue> Ꮡrunq, ж<queue> Ꮡnextq, nint pos, nint nextPos, rune c, ж<lazyFlag> ᏑnextCond) {
-    ref var runq = ref Ꮡrunq.Value;
+    ref var runq = ref Ꮡrunq.DerefOrNull();
 
     var longest = m.re.Value.longest;
     for (nint j = 0; j < len(runq.dense); j++) {
@@ -330,9 +330,9 @@ internal static bool match(this ж<machine> Ꮡm, input i, nint pos) {
 // empty-width conditions satisfied by cond.  pos gives the current position
 // in the input.
 [GoRecv] internal static ж<thread> add(this ref machine m, ж<queue> Ꮡq, uint32 pc, nint pos, slice<nint> cap, ж<lazyFlag> Ꮡcond, ж<thread> Ꮡt) {
-    ref var q = ref Ꮡq.Value;
-    ref var cond = ref Ꮡcond.Value;
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var cond = ref Ꮡcond.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
 Again:
     if (pc == 0) {
@@ -355,7 +355,7 @@ Again:
     }
     else if (exprᴛ1 == syntax.InstAlt || exprᴛ1 == syntax.InstAltMatch) {
         Ꮡt = m.add(Ꮡq, // nothing
- (~i).Out, pos, cap, Ꮡcond, Ꮡt); t = ref Ꮡt.DerefOrNil();
+ (~i).Out, pos, cap, Ꮡcond, Ꮡt); t = ref Ꮡt.DerefOrNull();
         pc = i.Value.Arg;
         goto Again;
     }
@@ -382,7 +382,7 @@ Again:
     }
     else if (exprᴛ1 == syntax.InstMatch || exprᴛ1 == syntax.InstRune || exprᴛ1 == syntax.InstRune1 || exprᴛ1 == syntax.InstRuneAny || exprᴛ1 == syntax.InstRuneAnyNotNL) {
         if (Ꮡt == nil){
-            Ꮡt = m.alloc(i); t = ref Ꮡt.DerefOrNil();
+            Ꮡt = m.alloc(i); t = ref Ꮡt.DerefOrNull();
         } else {
             t.inst = i;
         }
@@ -390,7 +390,7 @@ Again:
             copy(t.cap, cap);
         }
         d.Value.t = Ꮡt;
-        Ꮡt = default!; t = ref Ꮡt.DerefOrNil();
+        Ꮡt = default!; t = ref Ꮡt.DerefOrNull();
     }
     else { /* default: */
         throw panic("unhandled");
@@ -416,15 +416,15 @@ internal static ж<onePassMachine> newOnePassMachine() {
 }
 
 internal static void freeOnePassMachine(ж<onePassMachine> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m.inputs.clear();
-    ᏑonePassPool.Put(Ꮡm);
+    ᏑonePassPool.Put(Ꮡm.OrTypedNil());
 }
 
 // doOnePass implements r.doExecute using the one-pass execution engine.
 internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, io.RuneReader ir, slice<byte> ib, @string @is, nint pos, nint ncap, slice<nint> dstCap) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     var startCond = re.cond;
     if (startCond == ~((syntax.EmptyOp)((syntax.EmptyOp)0))) {
@@ -556,7 +556,7 @@ internal static bool doMatch(this ж<Regexp> Ꮡre, io.RuneReader r, slice<byte>
 //
 // nil is returned if no matches are found and non-nil if matches are found.
 internal static slice<nint> doExecute(this ж<Regexp> Ꮡre, io.RuneReader r, slice<byte> b, @string s, nint pos, nint ncap, slice<nint> dstCap) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (dstCap == default!) {
         // Make sure 'return dstCap' is non-nil.

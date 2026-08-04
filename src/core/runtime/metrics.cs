@@ -469,7 +469,7 @@ internal static void initMetrics() {
 }
 
 internal static void compute0(ж<statAggregate> _, ж<metricValue> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     @out.kind = metricKindUint64;
     @out.scalar = 0;
@@ -478,7 +478,7 @@ internal static void compute0(ж<statAggregate> _, ж<metricValue> Ꮡout) {
 internal delegate uint64 metricReader();
 
 internal static void compute(this metricReader f, ж<statAggregate> _, ж<metricValue> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     @out.kind = metricKindUint64;
     @out.scalar = f();
@@ -586,7 +586,7 @@ internal static statDepSet union(this statDepSet s, statDepSet b) {
 
 // compute populates the heapStatsAggregate with values from the runtime.
 internal static void compute(this ж<heapStatsAggregate> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     Ꮡmemstats.of(mstats.ᏑheapStats).read(Ꮡa.of(heapStatsAggregate.ᏑheapStatsDelta));
     // Calculate derived stats.
@@ -629,7 +629,7 @@ internal static void compute(this ж<heapStatsAggregate> Ꮡa) {
 
 // compute populates the sysStatsAggregate with values from the runtime.
 internal static void compute(this ж<sysStatsAggregate> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     a.stacksSys = Ꮡmemstats.of(mstats.Ꮡstacks_sys).load();
     a.buckHashSys = Ꮡmemstats.of(mstats.Ꮡbuckhash_sys).load();
@@ -704,8 +704,8 @@ internal static float64 nsToSec(int64 ns) {
 // ensure populates statistics aggregates determined by deps if they
 // haven't yet been populated.
 internal static void ensure(this ж<statAggregate> Ꮡa, ж<statDepSet> Ꮡdeps) {
-    ref var a = ref Ꮡa.Value;
-    ref var deps = ref Ꮡdeps.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var deps = ref Ꮡdeps.DerefOrNull();
 
     var missing = deps.difference(a.ensured);
     if (missing.empty()) {

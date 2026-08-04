@@ -40,7 +40,7 @@ internal static url.Values cloneURLValues(url.Values v) {
 //
 //go:linkname cloneURL
 internal static ж<url.URL> cloneURL(ж<url.URL> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (Ꮡu == nil) {
         return default!;
@@ -64,7 +64,7 @@ internal static ж<url.URL> cloneURL(ж<url.URL> Ꮡu) {
 //
 //go:linkname cloneMultipartForm
 internal static ж<multipart.Form> cloneMultipartForm(ж<multipart.Form> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf == nil) {
         return default!;
@@ -96,7 +96,7 @@ internal static ж<multipart.Form> cloneMultipartForm(ж<multipart.Form> Ꮡf) {
 //
 //go:linkname cloneMultipartFileHeader
 internal static ж<multipart.FileHeader> cloneMultipartFileHeader(ж<multipart.FileHeader> Ꮡfh) {
-    ref var fh = ref Ꮡfh.DerefOrNil();
+    ref var fh = ref Ꮡfh.DerefOrNull();
 
     if (Ꮡfh == nil) {
         return default!;

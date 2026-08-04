@@ -31,7 +31,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
     nint roff = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     if (off >= builtin.len(data)) {
         return (0, 0, r.makeEOFError(off));
     }

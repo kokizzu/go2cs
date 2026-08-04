@@ -123,7 +123,7 @@ public static (ж<Reader>, error) NewReader(io.ReaderAt r, int64 size) {
 }
 
 internal static error init(this ж<Reader> Ꮡr, io.ReaderAt rdr, int64 size) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var (end, baseOffset, err) = readDirectoryEnd(rdr, size);
     if (err != default!) {
@@ -229,7 +229,7 @@ internal static error init(this ж<Reader> Ꮡr, io.ReaderAt rdr, int64 size) {
 // Open returns a [ReadCloser] that provides access to the [File]'s contents.
 // Multiple files may be read concurrently.
 public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var (bodyOffset, err) = f.findBodyOffset();
     if (err != default!) {
@@ -383,7 +383,7 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
 // It returns io.ErrUnexpectedEOF if it cannot read a complete header,
 // and ErrFormat if it doesn't find a valid header signature.
 internal static error readDirectoryHeader(ж<File> Ꮡf, io.Reader r) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     array<byte> buf = new(46); /* directoryHeaderLen */
     {
@@ -573,7 +573,7 @@ break_parseExtras:;
 }
 
 internal static error readDataDescriptor(io.Reader r, ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     array<byte> buf = new(16); /* dataDescriptorLen */
     // The spec says: "Although not originally assigned a
@@ -744,7 +744,7 @@ internal static (int64, error) findDirectory64End(io.ReaderAt r, int64 directory
 internal static error /*err*/ readDirectory64End(io.ReaderAt r, int64 offset, ж<directoryEnd> Ꮡd) {
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     var buf = new slice<byte>(directory64EndLen);
     {
         var (_, errΔ1) = r.ReadAt(buf, offset); if (errΔ1 != default!) {
@@ -840,7 +840,7 @@ internal static nint findSignatureInBlock(slice<byte> b) {
 }
 
 internal static (fileInfoDirEntry, error) stat(this ж<fileListEntry> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (f.isDup) {
         return (default!, errors.New(f.name + ": duplicate entries in zip file"u8));
@@ -904,7 +904,7 @@ internal static @string toValidName(@string name) {
 }
 
 internal static void initFileList(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(Reader.ᏑfileListOnce).Do(() => {
         // files and knownDirs map from a file/directory name
@@ -937,8 +937,7 @@ internal static void initFileList(this ж<Reader> Ꮡr) {
                 dirs[dir] = true;
             }
             nint idx = len(Ꮡr.Value.fileList);
-            ref var entry = ref heap<fileListEntry>(out var Ꮡentry);
-            entry = new fileListEntry(
+            var entry = new fileListEntry(
                 name: name,
                 @file: @file,
                 isDir: isDir
@@ -957,8 +956,7 @@ internal static void initFileList(this ж<Reader> Ꮡr) {
                         var (idx, okΔ1) = files[dir, ꟷ]; if (okΔ1){
                             Ꮡr.Value.fileList[idx].isDup = true;
                         } else {
-                            ref var entry = ref heap<fileListEntry>(out var Ꮡentry);
-                            entry = new fileListEntry(
+                            var entry = new fileListEntry(
                                 name: dir,
                                 @file: nil,
                                 isDir: true
@@ -987,7 +985,7 @@ internal static nint fileEntryCompare(@string x, @string y) {
 // paths are always slash separated, with no
 // leading / or ../ elements.
 public static (fs.File, error) Open(this ж<Reader> Ꮡr, @string name) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.initFileList();
     if (!fs.ValidPath(name)) {

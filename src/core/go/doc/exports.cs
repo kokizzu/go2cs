@@ -26,7 +26,7 @@ internal static slice<ж<ast.Ident>> filterIdentList(slice<ж<ast.Ident>> list) 
 internal static ж<ast.Ident> underscore = ast.NewIdent("_"u8);
 
 internal static void filterCompositeLit(ж<ast.CompositeLit> Ꮡlit, Func<@string, bool> filter, bool export) {
-    ref var lit = ref Ꮡlit.Value;
+    ref var lit = ref Ꮡlit.DerefOrNull();
 
     nint n = len(lit.Elts);
     lit.Elts = filterExprList(lit.Elts, filter, export);
@@ -89,7 +89,7 @@ internal static bool hasExportedName(slice<ж<ast.Ident>> list) {
 
 // removeAnonymousField removes anonymous fields named name from an interface.
 internal static void removeAnonymousField(@string name, ж<ast.InterfaceType> Ꮡityp) {
-    ref var ityp = ref Ꮡityp.Value;
+    ref var ityp = ref Ꮡityp.DerefOrNull();
 
     var list = ityp.Methods.Value.List;
     // we know that ityp.Methods != nil
@@ -124,7 +124,7 @@ internal static void removeAnonymousField(@string name, ж<ast.InterfaceType> �
 [GoRecv] internal static bool /*removedFields*/ filterFieldList(this ref reader r, ж<namedType> Ꮡparent, ж<ast.FieldList> Ꮡfields, ж<ast.InterfaceType> Ꮡityp) {
     bool removedFields = default!;
 
-    ref var fields = ref Ꮡfields.DerefOrNil();
+    ref var fields = ref Ꮡfields.DerefOrNull();
     if (Ꮡfields == nil) {
         return removedFields;
     }
@@ -180,7 +180,7 @@ internal static void removeAnonymousField(@string name, ж<ast.InterfaceType> �
 
 // filterParamList applies filterType to each parameter type in fields.
 [GoRecv] internal static void filterParamList(this ref reader r, ж<ast.FieldList> Ꮡfields) {
-    ref var fields = ref Ꮡfields.DerefOrNil();
+    ref var fields = ref Ꮡfields.DerefOrNull();
 
     if (Ꮡfields != nil) {
         foreach (var (_, f) in fields.List) {
@@ -374,7 +374,7 @@ internal static ast.Expr copyConstType(ast.Expr typ, tokenꓸPos pos) {
 
 // fileExports removes unexported declarations from src in place.
 [GoRecv] internal static void fileExports(this ref reader r, ж<ast.File> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.Value;
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint j = 0;
     foreach (var (_, d) in src.Decls) {

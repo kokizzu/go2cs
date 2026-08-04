@@ -94,12 +94,12 @@ public static (ж<Data>, error) New(slice<byte> abbrev, slice<byte> aranges, sli
     }
     case {} when x is 0: {
         d.Value.bigEndian = true;
-        d.Value.order = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+        d.Value.order = binary.BigEndian;
         break;
     }
     case {} when y is 0: {
         d.Value.bigEndian = false;
-        d.Value.order = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        d.Value.order = binary.LittleEndian;
         break;
     }
     default: {

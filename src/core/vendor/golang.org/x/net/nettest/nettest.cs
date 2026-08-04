@@ -292,7 +292,7 @@ public static (@string, error) LocalPath() {
 //
 // The provided network must be "ip", "ip4" or "ip6".
 public static (net.IP, error) MulticastSource(@string network, ж<net.Interface> Ꮡifi) {
-    ref var ifi = ref Ꮡifi.DerefOrNil();
+    ref var ifi = ref Ꮡifi.DerefOrNull();
 
     var exprᴛ1 = network;
     if (exprᴛ1 == "ip"u8 || exprᴛ1 == "ip4"u8 || exprᴛ1 == "ip6"u8) {

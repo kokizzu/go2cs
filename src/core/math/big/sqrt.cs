@@ -33,8 +33,8 @@ internal static ж<Float> three() {
 // The function panics if z < 0. The value of z is undefined in that
 // case.
 public static ж<Float> Sqrt(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -89,8 +89,8 @@ public static ж<Float> Sqrt(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
 //
 // for t (using Newton's method), and then inverting.
 internal static void sqrtInverse(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // let
     //   f(t) = 1/t² - x
@@ -104,7 +104,7 @@ internal static void sqrtInverse(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     var threeʗ1 = threeΔ1;
     var uʗ1 = u;
     var vʗ1 = v;
-    var ng = (ж<Float> t) => {
+    ж<Float> ng(ж<Float> t) {
         uʗ1.Value.prec = t.Value.prec;
         vʗ1.Value.prec = t.Value.prec;
         uʗ1.Mul(t, t);
@@ -118,7 +118,7 @@ internal static void sqrtInverse(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
         uʗ1.Value.exp--;
         //   = ½t(3 - xt²)
         return t.Set(uʗ1);
-    };
+    }
     var (xf, _) = Ꮡx.Float64();
     var sqi = newFloat(z.prec);
     sqi.SetFloat64(1D / math.Sqrt(xf));

@@ -115,7 +115,7 @@ internal static readonly @string sockaddrˢ = "sockaddr"u8;
 // network interfaces. Otherwise it returns addresses for a specific
 // interface.
 internal static (slice<ΔAddr>, error) interfaceAddrTable(ж<Interface> Ꮡifi) {
-    ref var ifi = ref Ꮡifi.DerefOrNil();
+    ref var ifi = ref Ꮡifi.DerefOrNull();
 
     var (aas, err) = adapterAddresses();
     if (err != default!) {
@@ -171,7 +171,7 @@ internal static (slice<ΔAddr>, error) interfaceAddrTable(ж<Interface> Ꮡifi) 
 // interfaceMulticastAddrTable returns addresses for a specific
 // interface.
 internal static (slice<ΔAddr>, error) interfaceMulticastAddrTable(ж<Interface> Ꮡifi) {
-    ref var ifi = ref Ꮡifi.DerefOrNil();
+    ref var ifi = ref Ꮡifi.DerefOrNull();
 
     var (aas, err) = adapterAddresses();
     if (err != default!) {

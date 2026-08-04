@@ -101,7 +101,7 @@ partial class types_package {
 
 // all statements are empty
 [GoRecv] internal static bool isTerminatingSwitch(this ref Checker check, ж<ast.BlockStmt> Ꮡbody, @string label) {
-    ref var body = ref Ꮡbody.Value;
+    ref var body = ref Ꮡbody.DerefOrNull();
 
     var hasDefault = false;
     foreach (var (_, s) in body.List) {

@@ -103,7 +103,7 @@ internal static (uint64 i, bool nameValueMatch) search(this ж<headerFieldTable>
     uint64 i = default!;
     bool nameValueMatch = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     if (!f.Sensitive) {
         {
             var id = t.byNameValue[new pairNameValue(f.Name, f.Value)]; if (id != 0) {
@@ -122,7 +122,7 @@ internal static (uint64 i, bool nameValueMatch) search(this ж<headerFieldTable>
 // idToIndex converts a unique id to an HPACK index.
 // See Section 2.3.3.
 internal static uint64 idToIndex(this ж<headerFieldTable> Ꮡt, uint64 id) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (id <= t.evictCount) {
         throw panic(fmt.Sprintf("id (%v) <= evictCount (%v)"u8, id, t.evictCount));

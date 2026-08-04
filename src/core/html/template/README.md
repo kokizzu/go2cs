@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package template (html/template) implements data-driven templates for generating HTML output safe against code injection. It provides the same interface as [text/template](/text/template) and should be used instead of [text/template](/text/template) whenever the output is HTML.
 

@@ -184,8 +184,8 @@ internal static readonly @string mainˢ = "main"u8;
 // playExample synthesizes a new *ast.File based on the provided
 // file with the provided function body as the body of main.
 internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> Ꮡf) {
-    ref var @file = ref Ꮡfile.Value;
-    ref var f = ref Ꮡf.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var body = f.Body;
     if (!strings.HasSuffix((~@file.Name).Name, testˢ2)) {
@@ -245,14 +245,14 @@ internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> 
     // imports from that group.
     var groupStarts = findImportGroupStarts(@file.Imports);
     var groupStartsʗ1 = groupStarts;
-    var groupStart = (ж<ast.ImportSpec> s) => {
+    tokenꓸPos groupStart(ж<ast.ImportSpec> s) {
         foreach (var (i, start) in groupStartsʗ1) {
             if ((~(~s).Path).ValuePos < start) {
                 return groupStartsʗ1[i - 1];
             }
         }
         return groupStartsʗ1[len(groupStartsʗ1) - 1];
-    };
+    }
     foreach (var (_, s) in @file.Imports) {
         var (p, err) = strconv.Unquote((~(~s).Path).Value);
         if (err != default!) {
@@ -413,13 +413,13 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
         }}
         return true;
     };
-    var inspectFieldList = (ж<ast.FieldList> fl) => {
+    void inspectFieldList(ж<ast.FieldList> fl) {
         if (fl != nil) {
             foreach (var (_, f) in (~fl).List) {
                 ast.Inspect((~f).Type, ᏑinspectFunc.ValueSlot);
             }
         }
-    };
+    }
     // Find the decls immediately referenced by body.
     ast.Inspect(body, inspectFunc);
     // Now loop over them, adding to the list when we find a new decl that the
@@ -599,7 +599,7 @@ internal static readonly @string copyrightˢ = "Copyright"u8;
 // playExampleFile takes a whole file example and synthesizes a new *ast.File
 // such that the example is function main in package main.
 internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     // Strip copyright comment if present.
     var comments = @file.Comments;
@@ -635,7 +635,7 @@ internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
 // stripOutputComment finds and removes the "Output:" or "Unordered output:"
 // comment from body and comments, and adjusts the body block's end position.
 internal static (ж<ast.BlockStmt>, slice<ж<ast.CommentGroup>>) stripOutputComment(ж<ast.BlockStmt> Ꮡbody, slice<ж<ast.CommentGroup>> comments) {
-    ref var body = ref Ꮡbody.Value;
+    ref var body = ref Ꮡbody.DerefOrNull();
 
     // Do nothing if there is no "Output:" or "Unordered output:" comment.
     var (i, last) = lastComment(Ꮡbody, comments);
@@ -659,7 +659,7 @@ internal static (nint i, ж<ast.CommentGroup> last) lastComment(ж<ast.BlockStmt
     nint i = default!;
     ж<ast.CommentGroup> last = default!;
 
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
     if (Ꮡb == nil) {
         return (i, last);
     }
@@ -689,7 +689,7 @@ internal static (nint i, ж<ast.CommentGroup> last) lastComment(ж<ast.BlockStmt
 //
 // Examples with malformed names are not associated with anything.
 internal static void classifyExamples(ж<Package> Ꮡp, slice<ж<Example>> examples) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(examples) == 0) {
         return;

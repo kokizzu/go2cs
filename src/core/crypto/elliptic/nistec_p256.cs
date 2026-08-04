@@ -12,15 +12,15 @@ using math;
 partial class elliptic_package {
 
 internal static ж<bigꓸInt> Inverse(this p256Curve c, ж<bigꓸInt> Ꮡk) {
-    ref var k = ref Ꮡk.Value;
+    ref var k = ref Ꮡk.DerefOrNull();
 
     if (k.Sign() < 0) {
         // This should never happen.
-        Ꮡk = @new<bigꓸInt>().Neg(Ꮡk); k = ref Ꮡk.Value;
+        Ꮡk = @new<bigꓸInt>().Neg(Ꮡk); k = ref Ꮡk.DerefOrNull();
     }
     if (Ꮡk.Cmp((~c.@params).N) >= 0) {
         // This should never happen.
-        Ꮡk = @new<bigꓸInt>().Mod(Ꮡk, (~c.@params).N); k = ref Ꮡk.Value;
+        Ꮡk = @new<bigꓸInt>().Mod(Ꮡk, (~c.@params).N); k = ref Ꮡk.DerefOrNull();
     }
     var scalar = k.FillBytes(new slice<byte>(32));
     var (inverse, err) = nistec.P256OrdInverse(scalar);

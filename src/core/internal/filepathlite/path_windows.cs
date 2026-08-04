@@ -326,7 +326,7 @@ internal static bool isUNC(@string path) {
 // postClean adjusts the results of Clean to avoid turning a relative path
 // into an absolute or rooted one.
 internal static void postClean(ж<lazybuf> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (@out.volLen != 0 || @out.buf == default!) {
         return;

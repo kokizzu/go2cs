@@ -58,7 +58,7 @@ partial class chacha8rand_package {
 // Note that b32 is [16][4]uint32 not [4][16]uint32: the blocks are interlaced
 // the same way they would be in a 4-way SIMD implementations.
 internal static void setup(ж<array<uint64>> Ꮡseed, ж<array<array<uint32>>> Ꮡb32, uint32 counter) {
-    ref var seed = ref Ꮡseed.Value;
+    ref var seed = ref Ꮡseed.DerefOrNull();
 
     // Convert to uint64 to do half as many stores to memory.
     var b = (ж<array<array<uint64>>>)(uintptr)(new @unsafe.Pointer(Ꮡb32));
@@ -135,7 +135,7 @@ internal static void _ᴛ1() {
 // Even on such systems, it is quite fast: on GOOS=386,
 // ChaCha8 using this code generates random values faster than PCG-DXSM.
 internal static void block_generic(ж<array<uint64>> Ꮡseed, ж<array<uint64>> Ꮡbuf, uint32 counter) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var b = (ж<array<array<uint32>>>)(uintptr)(new @unsafe.Pointer(Ꮡbuf));
     setup(Ꮡseed, b, counter);

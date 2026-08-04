@@ -30,7 +30,7 @@ partial class socktest_package {
 
 // Stats returns a list of per-cookie socket statistics.
 public static slice<Stat> Stats(this ж<Switch> Ꮡsw) {
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
 
     slice<Stat> st = default!;
     Ꮡsw.of(Switch.Ꮡsmu).RLock();
@@ -44,7 +44,7 @@ public static slice<Stat> Stats(this ж<Switch> Ꮡsw) {
 
 // Sockets returns mappings of socket descriptor to socket status.
 public static ΔSockets Sockets(this ж<Switch> Ꮡsw) {
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
 
     Ꮡsw.of(Switch.Ꮡsmu).RLock();
     var tab = new ΔSockets(len(sw.sotab));
@@ -148,7 +148,7 @@ internal static error apply(this AfterFilter f, ж<Status> Ꮡst) {
 
 // Set deploys the socket system call filter f for the filter type t.
 public static void Set(this ж<Switch> Ꮡsw, FilterType t, Filter f) {
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
 
     Ꮡsw.of(Switch.Ꮡonce).Do(Ꮡsw.init);
     Ꮡsw.of(Switch.Ꮡfmu).Lock();

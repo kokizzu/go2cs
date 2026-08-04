@@ -32,7 +32,7 @@ internal static (nint tableBits, nint roff, error err) readFSE(this ж<Reader> �
     nint roff = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     var br = Ꮡr.makeBitReader(data, off);
     {
         var errΔ1 = br.moreBits(); if (errΔ1 != default!) {

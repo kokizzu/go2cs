@@ -357,8 +357,8 @@ internal static (uint64 b, bool overflow) floatBits(this ж<@decimal> Ꮡd, ж<f
     uint64 b = default!;
     bool overflow = default!;
 
-    ref var d = ref Ꮡd.Value;
-    ref var flt = ref Ꮡflt.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var flt = ref Ꮡflt.DerefOrNull();
     nint exp = default!;
     uint64 mant = default!;
     // Zero is always a special case.
@@ -550,7 +550,7 @@ internal static (float32 f, bool ok) atof32exact(uint64 mantissa, nint exp, bool
 // The string s has already been parsed into a mantissa, exponent, and sign (neg==true for negative).
 // If trunc is true, trailing non-zero bits have been omitted from the mantissa.
 internal static (float64, error) atofHex(@string s, ж<floatInfo> Ꮡflt, uint64 mantissa, nint exp, bool neg, bool trunc) {
-    ref var flt = ref Ꮡflt.DerefOrNil();
+    ref var flt = ref Ꮡflt.DerefOrNull();
 
     nint maxExp = ((nint)1).Lsh(flt.expbits) + flt.bias - 2;
     nint minExp = flt.bias + 1;

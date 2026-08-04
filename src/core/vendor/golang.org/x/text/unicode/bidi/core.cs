@@ -133,7 +133,7 @@ internal static (ж<paragraph>, error) newParagraph(slice<ΔClass> types, slice<
 // The algorithm. Does not include line-based processing (Rules L1, L2).
 // These are applied later in the line-based phase of the algorithm.
 internal static void run(this ж<paragraph> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.determineMatchingIsolates();
     // 1) determining the paragraph level
@@ -456,7 +456,7 @@ internal static level maxLevel(level a, level b) {
 // Rule X10, second bullet: Determine the start-of-sequence (sos) and end-of-sequence (eos) types,
 // either L or R, for each isolating run sequence.
 internal static ж<ΔisolatingRunSequence> isolatingRunSequence(this ж<paragraph> Ꮡp, slice<nint> indexes) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint length = len(indexes);
     var types = new slice<ΔClass>(length);
@@ -799,7 +799,7 @@ break_loop:;
 
 // Definition BD13. Determine isolating run sequences.
 internal static slice<ж<ΔisolatingRunSequence>> determineIsolatingRunSequences(this ж<paragraph> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var levelRuns = p.determineLevelRuns();
     // Compute the run that each character belongs to

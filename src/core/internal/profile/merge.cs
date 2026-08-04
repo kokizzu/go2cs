@@ -64,7 +64,7 @@ public static (ж<Profile>, error) Merge(slice<ж<Profile>> srcs) {
 // ratio of the sum of the base profile's values of that sample type to the sum of the
 // source profile's value of that sample type.
 [GoRecv] public static error Normalize(this ref Profile p, ж<Profile> Ꮡpb) {
-    ref var pb = ref Ꮡpb.Value;
+    ref var pb = ref Ꮡpb.DerefOrNull();
 
     {
         var err = p.compatible(Ꮡpb); if (err != default!) {
@@ -96,7 +96,7 @@ public static (ж<Profile>, error) Merge(slice<ж<Profile>> srcs) {
 }
 
 internal static bool isZeroSample(ж<Sample> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     foreach (var (_, v) in s.Value) {
         if (v != 0) {
@@ -125,7 +125,7 @@ internal static bool isZeroSample(ж<Sample> Ꮡs) {
 }
 
 [GoRecv] internal static ж<Sample> mapSample(this ref profileMerger pm, ж<Sample> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.Value;
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     var s = Ꮡ(new Sample(
         Location: new slice<ж<Location>>(len(src.Location)),
@@ -199,7 +199,7 @@ internal static bool isZeroSample(ж<Sample> Ꮡs) {
 }
 
 [GoRecv] internal static ж<Location> mapLocation(this ref profileMerger pm, ж<Location> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.DerefOrNil();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     if (Ꮡsrc == nil) {
         return default!;
@@ -265,7 +265,7 @@ internal static bool isZeroSample(ж<Sample> Ꮡs) {
 }
 
 [GoRecv] internal static mapInfo mapMapping(this ref profileMerger pm, ж<Mapping> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.DerefOrNil();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     if (Ꮡsrc == nil) {
         return new mapInfo(nil);
@@ -350,7 +350,7 @@ internal static bool isZeroSample(ж<Sample> Ꮡs) {
 }
 
 [GoRecv] internal static ж<Function> mapFunction(this ref profileMerger pm, ж<Function> Ꮡsrc) {
-    ref var src = ref Ꮡsrc.DerefOrNil();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     if (Ꮡsrc == nil) {
         return default!;
@@ -450,10 +450,10 @@ internal static (ж<Profile>, error) combineHeaders(slice<ж<Profile>> srcs) {
 // returns nil if the profiles are compatible; otherwise an error with
 // details on the incompatibility.
 [GoRecv] internal static error compatible(this ref Profile p, ж<Profile> Ꮡpb) {
-    ref var pb = ref Ꮡpb.Value;
+    ref var pb = ref Ꮡpb.DerefOrNull();
 
     if (!equalValueType(p.PeriodType, pb.PeriodType)) {
-        return fmt.Errorf("incompatible period types %v and %v"u8, p.PeriodType, pb.PeriodType);
+        return fmt.Errorf("incompatible period types %v and %v"u8, p.PeriodType.OrTypedNil(), pb.PeriodType.OrTypedNil());
     }
     if (len(p.SampleType) != len(pb.SampleType)) {
         return fmt.Errorf("incompatible sample types %v and %v"u8, p.SampleType, pb.SampleType);
@@ -469,8 +469,8 @@ internal static (ж<Profile>, error) combineHeaders(slice<ж<Profile>> srcs) {
 // equalValueType returns true if the two value types are semantically
 // equal. It ignores the internal fields used during encode/decode.
 internal static bool equalValueType(ж<ValueType> Ꮡst1, ж<ValueType> Ꮡst2) {
-    ref var st1 = ref Ꮡst1.Value;
-    ref var st2 = ref Ꮡst2.Value;
+    ref var st1 = ref Ꮡst1.DerefOrNull();
+    ref var st2 = ref Ꮡst2.DerefOrNull();
 
     return st1.Type == st2.Type && st1.Unit == st2.Unit;
 }

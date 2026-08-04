@@ -15,7 +15,7 @@ partial class types_package {
 internal static int64 /*result*/ Alignof(this ж<gcSizes> Ꮡs, ΔType T) {
     int64 result = default!;
     func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             assert(result >= 1);
@@ -122,7 +122,7 @@ internal static slice<int64> Offsetsof(this ж<gcSizes> Ꮡs, slice<ж<Var>> fie
 }
 
 internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var switchᴛ10 = under(T);
     switch (switchᴛ10.type()) {

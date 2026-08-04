@@ -25,7 +25,7 @@ internal static (nint major, nint minor, nint patch, bool ok) parseRelease(@stri
             break;
         }
     }
-    var next = () => {
+    (nint, bool) next() {
         for (nint i = 0; i < len(rel); i++) {
             if (rel[i] == (rune)'.') {
                 var (verΔ1, errΔ1) = strconv.Atoi(rel[..(int)(i)]);
@@ -36,7 +36,7 @@ internal static (nint major, nint minor, nint patch, bool ok) parseRelease(@stri
         var (ver, err) = strconv.Atoi(rel);
         rel = ""u8;
         return (ver, err == default!);
-    };
+    }
     {
         (major, ok) = next(); if (!ok || rel == ""u8) {
             return (major, minor, patch, ok);

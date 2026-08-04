@@ -63,7 +63,7 @@ internal static ж<godebug.Setting> x509usefallbackroots = godebug.New("x509usef
 // APIs and cause the pure Go verifier to be used). Setting
 // x509usefallbackroots=1 without calling SetFallbackRoots has no effect.
 public static void SetFallbackRoots(ж<CertPool> Ꮡroots) => func((defer, recover) => {
-    ref var roots = ref Ꮡroots.DerefOrNil();
+    ref var roots = ref Ꮡroots.DerefOrNull();
 
     if (Ꮡroots == nil) {
         throw panic("roots must be non-nil");

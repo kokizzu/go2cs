@@ -111,7 +111,7 @@ public static (ж<rsa.PrivateKey>, error) ParsePKCS1PrivateKey(slice<byte> der) 
 // For a more flexible key format which is not [RSA] specific, use
 // [MarshalPKCS8PrivateKey].
 public static slice<byte> MarshalPKCS1PrivateKey(ж<rsa.PrivateKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     key.Precompute();
     nint version = 0;
@@ -177,7 +177,7 @@ public static (ж<rsa.PublicKey>, error) ParsePKCS1PublicKey(slice<byte> der) {
 //
 // This kind of key is commonly encoded in PEM blocks of type "RSA PUBLIC KEY".
 public static slice<byte> MarshalPKCS1PublicKey(ж<rsa.PublicKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     var (derBytes, _) = asn1.Marshal(new pkcs1PublicKey(
         N: key.N,

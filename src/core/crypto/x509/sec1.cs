@@ -51,7 +51,7 @@ internal static readonly @string x509UnknownEllipticCurveˢ = "x509: unknown ell
 // For a more flexible key format which is not EC specific, use
 // [MarshalPKCS8PrivateKey].
 public static (slice<byte>, error) MarshalECPrivateKey(ж<ecdsa.PrivateKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     var (oid, ok) = oidFromNamedCurve(key.Curve);
     if (!ok) {
@@ -66,7 +66,7 @@ internal static readonly @string invalidEllipticKeyPublicˢ = "invalid elliptic 
 // marshalECPrivateKeyWithOID marshals an EC private key into ASN.1, DER format and
 // sets the curve ID to the given OID, or omits it if OID is nil.
 internal static (slice<byte>, error) marshalECPrivateKeyWithOID(ж<ecdsa.PrivateKey> Ꮡkey, asn1.ObjectIdentifier oid) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     if (!key.Curve.IsOnCurve(key.X, key.Y)) {
         return (default!, errors.New(invalidEllipticKeyPublicˢ));
@@ -83,7 +83,7 @@ internal static (slice<byte>, error) marshalECPrivateKeyWithOID(ж<ecdsa.Private
 // marshalECDHPrivateKey marshals an EC private key into ASN.1, DER format
 // suitable for NIST curves.
 internal static (slice<byte>, error) marshalECDHPrivateKey(ж<ecdh.PrivateKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     return asn1.Marshal(new ecPrivateKey(
         Version: 1,
@@ -104,7 +104,7 @@ internal static (ж<ecdsa.PrivateKey> key, error err) parseECPrivateKey(ж<asn1.
     ж<ecdsa.PrivateKey> key = default!;
     error err = default!;
 
-    ref var namedCurveOID = ref ᏑnamedCurveOID.DerefOrNil();
+    ref var namedCurveOID = ref ᏑnamedCurveOID.DerefOrNull();
     ref var privKey = ref heap(new ecPrivateKey(), out var ᏑprivKey);
     {
         var (_, errΔ1) = asn1.Unmarshal(der, ᏑprivKey); if (errΔ1 != default!) {

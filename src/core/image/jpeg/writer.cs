@@ -354,7 +354,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 // returning the post-quantized DC value of the DCT-transformed block. b is in
 // natural (not zig-zag) order.
 [GoRecv] internal static int32 writeBlock(this ref encoder e, ж<block> Ꮡb, quantIndex q, int32 prevDC) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     fdct(Ꮡb);
     // Emit the DC delta.
@@ -385,9 +385,9 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 // toYCbCr converts the 8x8 region of m whose top-left corner is p to its
 // YCbCr values.
 internal static void toYCbCr(image.Image m, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
-    ref var yBlock = ref ᏑyBlock.Value;
-    ref var cbBlock = ref ᏑcbBlock.Value;
-    ref var crBlock = ref ᏑcrBlock.Value;
+    ref var yBlock = ref ᏑyBlock.DerefOrNull();
+    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
+    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -405,8 +405,8 @@ internal static void toYCbCr(image.Image m, image.Point p, ж<block> ᏑyBlock, 
 
 // grayToY stores the 8x8 region of m whose top-left corner is p in yBlock.
 internal static void grayToY(ж<image.Gray> Ꮡm, image.Point p, ж<block> ᏑyBlock) {
-    ref var m = ref Ꮡm.Value;
-    ref var yBlock = ref ᏑyBlock.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
+    ref var yBlock = ref ᏑyBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -422,10 +422,10 @@ internal static void grayToY(ж<image.Gray> Ꮡm, image.Point p, ж<block> ᏑyB
 
 // rgbaToYCbCr is a specialized version of toYCbCr for image.RGBA images.
 internal static void rgbaToYCbCr(ж<imageꓸRGBA> Ꮡm, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
-    ref var m = ref Ꮡm.Value;
-    ref var yBlock = ref ᏑyBlock.Value;
-    ref var cbBlock = ref ᏑcbBlock.Value;
-    ref var crBlock = ref ᏑcrBlock.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
+    ref var yBlock = ref ᏑyBlock.DerefOrNull();
+    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
+    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -452,10 +452,10 @@ internal static void rgbaToYCbCr(ж<imageꓸRGBA> Ꮡm, image.Point p, ж<block>
 
 // yCbCrToYCbCr is a specialized version of toYCbCr for image.YCbCr images.
 internal static void yCbCrToYCbCr(ж<image.YCbCr> Ꮡm, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
-    ref var m = ref Ꮡm.Value;
-    ref var yBlock = ref ᏑyBlock.Value;
-    ref var cbBlock = ref ᏑcbBlock.Value;
-    ref var crBlock = ref ᏑcrBlock.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
+    ref var yBlock = ref ᏑyBlock.DerefOrNull();
+    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
+    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -482,8 +482,8 @@ internal static void yCbCrToYCbCr(ж<image.YCbCr> Ꮡm, image.Point p, ж<block>
 // scale scales the 16x16 region represented by the 4 src blocks to the 8x8
 // dst block.
 internal static void scale(ж<block> Ꮡdst, ж<array<block>> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     for (nint i = 0; i < 4; i++) {
         nint dstOff = (nint)((((nint)(i & 2)) << (int)(4)) | (((nint)(i & 1)) << (int)(2)));
@@ -600,7 +600,7 @@ internal static readonly @string jpegImageIsTooLargeToˢ = "jpeg: image is too l
 // Encode writes the Image m to w in JPEG 4:2:0 baseline format with the given
 // options. Default parameters are used if a nil *[Options] is passed.
 public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
-    ref var o = ref Ꮡo.DerefOrNil();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     var b = m.Bounds();
     if (b.Dx() >= (1 << (int)(16)) || b.Dy() >= (1 << (int)(16))) {

@@ -56,7 +56,7 @@ partial class list_package {
 
 // Init initializes or clears list l.
 public static ж<List> Init(this ж<List> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     l.root.next = Ꮡl.of(List.Ꮡroot);
     l.root.prev = Ꮡl.of(List.Ꮡroot);
@@ -93,7 +93,7 @@ public static ж<List> New() {
 
 // lazyInit lazily initializes a zero List value.
 internal static void lazyInit(this ж<List> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (l.root.next == nil) {
         Ꮡl.Init();
@@ -102,9 +102,9 @@ internal static void lazyInit(this ж<List> Ꮡl) {
 
 // insert inserts e after at, increments l.len, and returns e.
 internal static ж<Element> insert(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> Ꮡat) {
-    ref var l = ref Ꮡl.Value;
-    ref var e = ref Ꮡe.Value;
-    ref var at = ref Ꮡat.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var at = ref Ꮡat.DerefOrNull();
 
     e.prev = Ꮡat;
     e.next = at.next;
@@ -122,7 +122,7 @@ internal static ж<Element> insertValue(this ж<List> Ꮡl, any v, ж<Element> �
 
 // remove removes e from its list, decrements l.len
 [GoRecv] internal static void remove(this ref List l, ж<Element> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     e.prev.Value.next = e.next;
     e.next.Value.prev = e.prev;
@@ -136,8 +136,8 @@ internal static ж<Element> insertValue(this ж<List> Ꮡl, any v, ж<Element> �
 
 // move moves e to next to at.
 [GoRecv] internal static void move(this ref List l, ж<Element> Ꮡe, ж<Element> Ꮡat) {
-    ref var e = ref Ꮡe.DerefOrNil();
-    ref var at = ref Ꮡat.DerefOrNil();
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var at = ref Ꮡat.DerefOrNull();
 
     if (Ꮡe == Ꮡat) {
         return;
@@ -154,8 +154,8 @@ internal static ж<Element> insertValue(this ж<List> Ꮡl, any v, ж<Element> �
 // It returns the element value e.Value.
 // The element must not be nil.
 public static any Remove(this ж<List> Ꮡl, ж<Element> Ꮡe) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var e = ref Ꮡe.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.list == Ꮡl) {
         // if e.list == l, l must have been initialized when e was inserted
@@ -173,7 +173,7 @@ public static ж<Element> PushFront(this ж<List> Ꮡl, any v) {
 
 // PushBack inserts a new element e with value v at the back of list l and returns e.
 public static ж<Element> PushBack(this ж<List> Ꮡl, any v) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     Ꮡl.lazyInit();
     return Ꮡl.insertValue(v, l.root.prev);
@@ -183,8 +183,8 @@ public static ж<Element> PushBack(this ж<List> Ꮡl, any v) {
 // If mark is not an element of l, the list is not modified.
 // The mark must not be nil.
 public static ж<Element> InsertBefore(this ж<List> Ꮡl, any v, ж<Element> Ꮡmark) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var mark = ref Ꮡmark.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var mark = ref Ꮡmark.DerefOrNull();
 
     if (mark.list != Ꮡl) {
         return default!;
@@ -197,8 +197,8 @@ public static ж<Element> InsertBefore(this ж<List> Ꮡl, any v, ж<Element> �
 // If mark is not an element of l, the list is not modified.
 // The mark must not be nil.
 public static ж<Element> InsertAfter(this ж<List> Ꮡl, any v, ж<Element> Ꮡmark) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var mark = ref Ꮡmark.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var mark = ref Ꮡmark.DerefOrNull();
 
     if (mark.list != Ꮡl) {
         return default!;
@@ -211,8 +211,8 @@ public static ж<Element> InsertAfter(this ж<List> Ꮡl, any v, ж<Element> Ꮡ
 // If e is not an element of l, the list is not modified.
 // The element must not be nil.
 public static void MoveToFront(this ж<List> Ꮡl, ж<Element> Ꮡe) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.list != Ꮡl || l.root.next == Ꮡe) {
         return;
@@ -225,8 +225,8 @@ public static void MoveToFront(this ж<List> Ꮡl, ж<Element> Ꮡe) {
 // If e is not an element of l, the list is not modified.
 // The element must not be nil.
 public static void MoveToBack(this ж<List> Ꮡl, ж<Element> Ꮡe) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.list != Ꮡl || l.root.prev == Ꮡe) {
         return;
@@ -239,9 +239,9 @@ public static void MoveToBack(this ж<List> Ꮡl, ж<Element> Ꮡe) {
 // If e or mark is not an element of l, or e == mark, the list is not modified.
 // The element and mark must not be nil.
 public static void MoveBefore(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> Ꮡmark) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var e = ref Ꮡe.DerefOrNil();
-    ref var mark = ref Ꮡmark.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var mark = ref Ꮡmark.DerefOrNull();
 
     if (e.list != Ꮡl || Ꮡe == Ꮡmark || mark.list != Ꮡl) {
         return;
@@ -253,9 +253,9 @@ public static void MoveBefore(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> 
 // If e or mark is not an element of l, or e == mark, the list is not modified.
 // The element and mark must not be nil.
 public static void MoveAfter(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> Ꮡmark) {
-    ref var l = ref Ꮡl.DerefOrNil();
-    ref var e = ref Ꮡe.DerefOrNil();
-    ref var mark = ref Ꮡmark.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var mark = ref Ꮡmark.DerefOrNull();
 
     if (e.list != Ꮡl || Ꮡe == Ꮡmark || mark.list != Ꮡl) {
         return;
@@ -266,8 +266,8 @@ public static void MoveAfter(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> �
 // PushBackList inserts a copy of another list at the back of list l.
 // The lists l and other may be the same. They must not be nil.
 public static void PushBackList(this ж<List> Ꮡl, ж<List> Ꮡother) {
-    ref var l = ref Ꮡl.Value;
-    ref var other = ref Ꮡother.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var other = ref Ꮡother.DerefOrNull();
 
     Ꮡl.lazyInit();
     for ((nint i, var e) = (other.Len(), other.Front()); i > 0; (i, e) = (i - 1, e.Next())) {
@@ -278,7 +278,7 @@ public static void PushBackList(this ж<List> Ꮡl, ж<List> Ꮡother) {
 // PushFrontList inserts a copy of another list at the front of list l.
 // The lists l and other may be the same. They must not be nil.
 public static void PushFrontList(this ж<List> Ꮡl, ж<List> Ꮡother) {
-    ref var other = ref Ꮡother.Value;
+    ref var other = ref Ꮡother.DerefOrNull();
 
     Ꮡl.lazyInit();
     for ((nint i, var e) = (other.Len(), other.Back()); i > 0; (i, e) = (i - 1, e.Prev())) {

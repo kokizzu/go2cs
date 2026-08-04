@@ -31,7 +31,7 @@ partial class net_package {
 // general. Unfortunately, we need to run on kernels built without
 // IPv6 support too. So probe the kernel to figure it out.
 internal static void probe(this ж<ipStackCapabilities> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {

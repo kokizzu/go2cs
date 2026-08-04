@@ -165,7 +165,7 @@ internal static readonly @string malformedChunkedEncodingˢ = "malformed chunked
 // The returned bytes are owned by the bufio.Reader
 // so they are only valid until the next bufio read.
 internal static (slice<byte>, error) readChunkLine(ж<bufio.Reader> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (p, err) = b.ReadSlice((rune)'\n');
     if (err != default!) {

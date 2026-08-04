@@ -151,7 +151,7 @@ internal static bool is32(slice<Range32> ranges, uint32 r) {
 
 // Is reports whether the rune is in the specified table of ranges.
 public static bool Is(ж<RangeTable> ᏑrangeTab, rune r) {
-    ref var rangeTab = ref ᏑrangeTab.Value;
+    ref var rangeTab = ref ᏑrangeTab.DerefOrNull();
 
     var r16 = rangeTab.R16;
     // Compare as uint32 to correctly handle negative runes.
@@ -166,7 +166,7 @@ public static bool Is(ж<RangeTable> ᏑrangeTab, rune r) {
 }
 
 internal static bool isExcludingLatin(ж<RangeTable> ᏑrangeTab, rune r) {
-    ref var rangeTab = ref ᏑrangeTab.Value;
+    ref var rangeTab = ref ᏑrangeTab.DerefOrNull();
 
     var r16 = rangeTab.R16;
     // Compare as uint32 to correctly handle negative runes.

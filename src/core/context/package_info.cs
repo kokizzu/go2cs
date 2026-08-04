@@ -49,6 +49,7 @@ using static go.context_package;
 [assembly: GoImplement<cancelCtx, Context>(Promoted = true)]
 [assembly: GoImplement<cancelCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<deadlineExceededError, error>]
+[assembly: GoImplement<emptyCtx, Context>]
 [assembly: GoImplement<stopCtx, Context>(Promoted = true)]
 [assembly: GoImplement<stopCtx, Context>]
 [assembly: GoImplement<timerCtx, Context>(Pointer = true)]

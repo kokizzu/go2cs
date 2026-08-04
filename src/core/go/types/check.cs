@@ -209,7 +209,7 @@ internal static bool aliasAny() {
 // It also sets alias.typ to Typ[Invalid].
 // Not used if check.conf._EnableAlias is set.
 [GoRecv] internal static void brokenAlias(this ref Checker check, ж<TypeName> Ꮡalias) {
-    ref var alias = ref Ꮡalias.Value;
+    ref var alias = ref Ꮡalias.DerefOrNull();
 
     assert(!(~check.conf)._EnableAlias);
     if (check.brokenAliases == default!) {
@@ -221,7 +221,7 @@ internal static bool aliasAny() {
 
 // validAlias records that alias has the valid type typ (possibly Typ[Invalid]).
 [GoRecv] internal static void validAlias(this ref Checker check, ж<TypeName> Ꮡalias, ΔType typ) {
-    ref var alias = ref Ꮡalias.Value;
+    ref var alias = ref Ꮡalias.DerefOrNull();
 
     assert(!(~check.conf)._EnableAlias);
     delete(check.brokenAliases, Ꮡalias);
@@ -283,18 +283,17 @@ internal static bool aliasAny() {
 // NewChecker returns a new [Checker] instance for a given package.
 // [Package] files may be added incrementally via checker.Files.
 public static ж<Checker> NewChecker(ж<Config> Ꮡconf, ж<token.FileSet> Ꮡfset, ж<Package> Ꮡpkg, ж<ΔInfo> Ꮡinfo) {
-    ref var conf = ref Ꮡconf.DerefOrNil();
-    ref var fset = ref Ꮡfset.Value;
-    ref var pkg = ref Ꮡpkg.Value;
-    ref var info = ref Ꮡinfo.DerefOrNil();
+    ref var conf = ref Ꮡconf.DerefOrNull();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
+    ref var info = ref Ꮡinfo.DerefOrNull();
 
     // make sure we have a configuration
     if (Ꮡconf == nil) {
-        Ꮡconf = @new<Config>(); conf = ref Ꮡconf.DerefOrNil();
+        Ꮡconf = @new<Config>(); conf = ref Ꮡconf.DerefOrNull();
     }
     // make sure we have an info struct
     if (Ꮡinfo == nil) {
-        Ꮡinfo = @new<ΔInfo>(); info = ref Ꮡinfo.DerefOrNil();
+        Ꮡinfo = @new<ΔInfo>(); info = ref Ꮡinfo.DerefOrNull();
     }
     // Note: clients may call NewChecker with the Unsafe package, which is
     // globally shared and must not be mutated. Therefore NewChecker must not
@@ -321,7 +320,7 @@ internal static readonly @string invalidPackageNameˢ = "invalid package name _"
 // initFiles initializes the files-specific portion of checker.
 // The provided files must all belong to the same package.
 internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // start with a clean slate (check.Files may be called multiple times)
     check.files = default!;
@@ -415,8 +414,8 @@ internal static goVersion versionMax(goVersion a, goVersion b) {
 }
 
 internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var err = ref Ꮡerr.ValueSlot;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var err = ref Ꮡerr.DerefOrNull();
 
     var switchᴛ6 = recover();
     switch (switchᴛ6.type()) {
@@ -440,7 +439,7 @@ internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) 
 public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         if (check.pkg == Unsafe) {
@@ -473,7 +472,7 @@ internal static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
 // syntax is properly type annotated even in a package containing
 // errors.
 internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // Ensure that _EnableAlias is consistent among concurrent type checking
     // operations. See the documentation of [_aliasAny] for details.
@@ -488,12 +487,12 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
         }
         deferǃ(atomic.AddInt32, Ꮡ_aliasAny, (int32)(1), defer);
     }
-    var print = (@string msg) => {
+    void print(@string msg) {
         if ((~Ꮡcheck.Value.conf)._Trace) {
             fmt.Println();
             fmt.Println(msg);
         }
-    };
+    }
     print(initFilesˢ);
     Ꮡcheck.initFiles(files);
     print(collectObjectsˢ);
@@ -537,7 +536,7 @@ internal static readonly @string delayedPˢ = "-- delayed %p"u8;
 
 // processDelayed processes all delayed actions pushed after top.
 internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // If each delayed action pushes a new action, the
     // stack will continue to grow during this loop.
@@ -575,7 +574,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
 }
 
 [GoRecv] internal static void record(this ref Checker check, ж<operand> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // convert x into a user-friendly set of values
     // TODO(gri) this code can be simplified
@@ -610,7 +609,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
 internal static readonly @string vSTypeSIsTypedˢ = "%v: %s (type %s) is typed"u8;
 
 internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     if (!debug && check.Types == default!) {
         return;
@@ -618,7 +617,7 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     // nothing to do
     foreach (var (x, info) in check.untyped) {
         if (debug && isTyped(new BasicжΔType(info.typ))) {
-            Ꮡcheck.dump(vSTypeSIsTypedˢ, x.Pos(), x, info.typ);
+            Ꮡcheck.dump(vSTypeSIsTypedˢ, x.Pos(), x, info.typ.OrTypedNil());
             throw panic("unreachable");
         }
         check.recordTypeAndValue(x, info.mode, new BasicжΔType(info.typ), info.val);
@@ -785,7 +784,7 @@ internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
 }
 
 [GoRecv] internal static void recordSelection(this ref Checker check, ж<ast.SelectorExpr> Ꮡx, SelectionKind kind, ΔType recv, Object obj, slice<nint> index, bool indirect) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     assert(obj != default! && (recv == default! || len(index) > 0));
     check.recordUse(x.Sel, obj);

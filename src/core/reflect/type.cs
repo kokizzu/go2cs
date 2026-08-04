@@ -364,7 +364,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, nameOffsetFieldˢ))))[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
     var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.Name();
 }
@@ -493,19 +493,19 @@ internal static aTextOff resolveReflectText(@unsafe.Pointer ptr) {
 }
 
 internal static abiꓸName nameOff(this ж<rtype> Ꮡt, aNameOff off) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveNameOff((uintptr)@unsafe.Pointer.FromRef(ref t), (int32)off)));
 }
 
 internal static ж<abi.Type> typeOff(this ж<rtype> Ꮡt, aTypeOff off) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return (ж<abi.Type>)(uintptr)(resolveTypeOff((uintptr)@unsafe.Pointer.FromRef(ref t), (int32)off));
 }
 
 internal static @unsafe.Pointer textOff(this ж<rtype> Ꮡt, aTextOff off) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return (uintptr)resolveTextOff((uintptr)@unsafe.Pointer.FromRef(ref t), (int32)off);
 }
@@ -521,7 +521,7 @@ internal static @unsafe.Pointer textOffFor(ж<abi.Type> Ꮡt, aTextOff off) {
 }
 
 internal static nint Bits(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         throw panic("reflect: Bits of nil Type");
@@ -579,7 +579,7 @@ internal static @string nameFor(ж<abi.Type> Ꮡt) {
 }
 
 internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Chan) {
         throw panic("reflect: ChanDir of non-chan type " + Ꮡt.String());
@@ -605,7 +605,7 @@ internal static ж<abi.Type> elem(ж<abi.Type> Ꮡt) {
 // go2cs generated this placeholder — func Field is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Struct) {
         throw panic("reflect: FieldByIndex of non-struct type " + Ꮡt.String());
@@ -617,7 +617,7 @@ internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index)
 // go2cs generated this placeholder — func FieldByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (StructField, bool) FieldByNameFunc(this ж<rtype> Ꮡt, Func<@string, bool> match) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Struct) {
         throw panic("reflect: FieldByNameFunc of non-struct type " + Ꮡt.String());
@@ -643,7 +643,7 @@ internal static (StructField, bool) FieldByNameFunc(this ж<rtype> Ꮡt, Func<@s
 // go2cs generated this placeholder — func IsVariadic is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool OverflowComplex(this ж<rtype> Ꮡt, complex128 x) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ΔKind k = t.Kind();
     var exprᴛ1 = k;
@@ -658,7 +658,7 @@ internal static bool OverflowComplex(this ж<rtype> Ꮡt, complex128 x) {
 }
 
 internal static bool OverflowFloat(this ж<rtype> Ꮡt, float64 x) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ΔKind k = t.Kind();
     var exprᴛ1 = k;
@@ -673,7 +673,7 @@ internal static bool OverflowFloat(this ж<rtype> Ꮡt, float64 x) {
 }
 
 internal static bool OverflowInt(this ж<rtype> Ꮡt, int64 x) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ΔKind k = t.Kind();
     var exprᴛ1 = k;
@@ -687,7 +687,7 @@ internal static bool OverflowInt(this ж<rtype> Ꮡt, int64 x) {
 }
 
 internal static bool OverflowUint(this ж<rtype> Ꮡt, uint64 x) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ΔKind k = t.Kind();
     var exprᴛ1 = k;
@@ -701,7 +701,7 @@ internal static bool OverflowUint(this ж<rtype> Ꮡt, uint64 x) {
 }
 
 internal static bool CanSeq(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Int8 || exprᴛ1 == Int16 || exprᴛ1 == Int32 || exprᴛ1 == Int64 || exprᴛ1 == ΔInt || exprᴛ1 == Uint8 || exprᴛ1 == Uint16 || exprᴛ1 == Uint32 || exprᴛ1 == Uint64 || exprᴛ1 == ΔUint || exprᴛ1 == Uintptr || exprᴛ1 == Array || exprᴛ1 == ΔSlice || exprᴛ1 == Chan || exprᴛ1 == ΔString || exprᴛ1 == Map) {
@@ -718,7 +718,7 @@ internal static bool CanSeq(this ж<rtype> Ꮡt) {
 }
 
 internal static bool canRangeFunc(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != abi.Func) {
         return false;
@@ -736,7 +736,7 @@ internal static bool canRangeFunc(ж<abi.Type> Ꮡt) {
 }
 
 internal static bool CanSeq2(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Array || exprᴛ1 == ΔSlice || exprᴛ1 == ΔString || exprᴛ1 == Map) {
@@ -753,7 +753,7 @@ internal static bool CanSeq2(this ж<rtype> Ꮡt) {
 }
 
 internal static bool canRangeFunc2(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != abi.Func) {
         return false;
@@ -816,7 +816,7 @@ public static @string String(this ΔChanDir d) {
 internal static ΔMethod /*m*/ Method(this ж<interfaceType> Ꮡt, nint i) {
     ΔMethod m = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     if (i < 0 || i >= len(t.Methods)) {
         return m;
     }
@@ -844,7 +844,7 @@ internal static (ΔMethod m, bool ok) MethodByName(this ж<interfaceType> Ꮡt, 
     ΔMethod m = default!;
     bool ok = default!;
 
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
     if (Ꮡt == nil) {
         return (m, ok);
     }
@@ -1013,7 +1013,7 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
     StructField result = default!;
     bool ok = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     // This uses the same condition that the Go language does: there must be a unique instance
     // of the match at a given depth level. If there are multiple instances of a match at the
     // same depth, they annihilate each other and inhibit any possible match at a lower level.
@@ -1118,7 +1118,7 @@ internal static (StructField f, bool present) FieldByName(this ж<structType> �
     StructField f = default!;
     bool present = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     // Quick check for top-level name, or struct without embedded fields.
     var hasEmbeds = false;
     if (name != ""u8) {
@@ -1167,7 +1167,7 @@ public static ΔType PtrTo(ΔType t) {
 // go2cs generated this placeholder — func PointerTo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var at = Ꮡt.of(rtype.Ꮡt);
     if ((~at).PtrToThis != 0) {
@@ -1175,7 +1175,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     }
     // Check the cache.
     {
-        var (piΔ1, ok) = ᏑptrMap.Load(Ꮡt); if (ok) {
+        var (piΔ1, ok) = ᏑptrMap.Load(Ꮡt.OrTypedNil()); if (ok) {
             return piΔ1._<ж<ptrType>>().of(ptrType.ᏑType);
         }
     }
@@ -1186,7 +1186,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
         if ((~p).Elem != Ꮡt.of(rtype.Ꮡt)) {
             continue;
         }
-        var (piΔ2, _) = ᏑptrMap.LoadOrStore(Ꮡt, p);
+        var (piΔ2, _) = ᏑptrMap.LoadOrStore(Ꮡt.OrTypedNil(), p.OrTypedNil());
         return piΔ2._<ж<ptrType>>().of(ptrType.ᏑType);
     }
     // Create a new ptrType starting with the description
@@ -1206,7 +1206,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     // old hash and the new "*".
     pp.Hash = fnv1(t.t.Hash, (rune)'*');
     pp.Elem = at;
-    var (pi, _) = ᏑptrMap.LoadOrStore(Ꮡt, Ꮡpp);
+    var (pi, _) = ᏑptrMap.LoadOrStore(Ꮡt.OrTypedNil(), Ꮡpp);
     return pi._<ж<ptrType>>().of(ptrType.ᏑType);
 }
 
@@ -1241,8 +1241,8 @@ internal static bool ConvertibleTo(this ж<rtype> Ꮡt, ΔType u) {
 
 // implements reports whether the type V implements the interface type T.
 internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.Value;
-    ref var V = ref ᏑV.Value;
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     if (T.Kind() != abi.Interface) {
         return false;
@@ -1334,8 +1334,8 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
 // https://golang.org/doc/go_spec.html#Assignability
 // T and V must be both of Chan kind.
 internal static bool specialChannelAssignability(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.Value;
-    ref var V = ref ᏑV.Value;
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     // Special case:
     // x is a bidirectional channel value, T is a channel type,
@@ -1350,8 +1350,8 @@ internal static bool specialChannelAssignability(ж<abi.Type> ᏑT, ж<abi.Type>
 // Ignoring the interface rules (implemented elsewhere)
 // and the ideal constant rules (no ideal constants at run time).
 internal static bool directlyAssignable(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     // x's type V is identical to T?
     if (ᏑT == ᏑV) {
@@ -1370,8 +1370,8 @@ internal static bool directlyAssignable(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
 }
 
 internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     if (cmpTags) {
         return ᏑT == ᏑV;
@@ -1383,8 +1383,8 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
 }
 
 internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     if (ᏑT == ᏑV) {
         return true;
@@ -1635,7 +1635,7 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
     foreach (var (_, tt) in typesByString(s)) {
         var chΔ2 = tt.Reinterpret<abi.Type, chanType>();
         if ((~chΔ2).Elem == typ && (~chΔ2).Dir == ((abiꓸChanDir)(nint)dir)) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
+            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
             return tiΔ1._<ΔType>();
         }
     }
@@ -1651,7 +1651,7 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
     ch.Str = resolveReflectName(newName(s, ""u8, false, false));
     ch.Hash = fnv1((~typ).Hash, (rune)'c', (byte)(nint)dir);
     ch.Elem = typ;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡch.of(chanType.ᏑType)));
+    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡch.of(chanType.ᏑType)).OrTypedNil());
     return ti._<ΔType>();
 }
 
@@ -1679,7 +1679,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
     foreach (var (_, tt) in typesByString(s)) {
         var mtΔ2 = tt.Reinterpret<abi.Type, mapType>();
         if ((~mtΔ2).Key == ktyp && (~mtΔ2).Elem == etyp) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
+            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
             return tiΔ1._<ΔType>();
         }
     }
@@ -1725,7 +1725,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
         mt.Flags |= (uint32)(16);
     }
     mt.PtrToThis = 0;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡmt.of(mapType.ᏑType)));
+    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡmt.of(mapType.ᏑType)).OrTypedNil());
     return ti._<ΔType>();
 }
 
@@ -1827,7 +1827,7 @@ public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic
             }
         }
     }
-    var addToCache = (ж<abi.Type> tt) => {
+    ΔType addToCache(ж<abi.Type> tt) {
         slice<ж<abi.Type>> rts = default!;
         {
             var (rti, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
@@ -1836,7 +1836,7 @@ public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic
         }
         ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(rts, tt));
         return toType(tt);
-    };
+    }
     // Look in known types for the same string representation.
     @string str = funcStr(ft);
     foreach (var (_, tt) in typesByString(str)) {
@@ -1856,7 +1856,7 @@ internal static @string stringFor(ж<abi.Type> Ꮡt) {
 
 // funcStr builds a string representation of a funcType.
 internal static @string funcStr(ж<funcType> Ꮡft) {
-    ref var ft = ref Ꮡft.Value;
+    ref var ft = ref Ꮡft.DerefOrNull();
 
     var repr = new slice<byte>(0, 64);
     repr = builtin.append(repr, ((@string)"func("u8).ꓸꓸꓸ);
@@ -1894,7 +1894,7 @@ internal static @string funcStr(ж<funcType> Ꮡft) {
 // isReflexive reports whether the == operation on the type is reflexive.
 // That is, x == x for all values x of type t.
 internal static bool isReflexive(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = ((ΔKind)(nuint)(uint8)t.Kind());
     if (exprᴛ1 == ΔBool || exprᴛ1 == ΔInt || exprᴛ1 == Int8 || exprᴛ1 == Int16 || exprᴛ1 == Int32 || exprᴛ1 == Int64 || exprᴛ1 == ΔUint || exprᴛ1 == Uint8 || exprᴛ1 == Uint16 || exprᴛ1 == Uint32 || exprᴛ1 == Uint64 || exprᴛ1 == Uintptr || exprᴛ1 == Chan || exprᴛ1 == ΔPointer || exprᴛ1 == ΔString || exprᴛ1 == ΔUnsafePointer) {
@@ -1926,7 +1926,7 @@ internal static bool isReflexive(ж<abi.Type> Ꮡt) {
 
 // needKeyUpdate reports whether map overwrites require the key to be copied.
 internal static bool needKeyUpdate(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = ((ΔKind)(nuint)(uint8)t.Kind());
     if (exprᴛ1 == ΔBool || exprᴛ1 == ΔInt || exprᴛ1 == Int8 || exprᴛ1 == Int16 || exprᴛ1 == Int32 || exprᴛ1 == Int64 || exprᴛ1 == ΔUint || exprᴛ1 == Uint8 || exprᴛ1 == Uint16 || exprᴛ1 == Uint32 || exprᴛ1 == Uint64 || exprᴛ1 == Uintptr || exprᴛ1 == Chan || exprᴛ1 == ΔPointer || exprᴛ1 == ΔUnsafePointer) {
@@ -1961,7 +1961,7 @@ internal static bool needKeyUpdate(ж<abi.Type> Ꮡt) {
 
 // hashMightPanic reports whether the hash of a map key of type t might panic.
 internal static bool hashMightPanic(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = ((ΔKind)(nuint)(uint8)t.Kind());
     if (exprᴛ1 == ΔInterface) {
@@ -1987,14 +1987,14 @@ internal static bool hashMightPanic(ж<abi.Type> Ꮡt) {
 }
 
 internal static ж<abi.Type> bucketOf(ж<abi.Type> Ꮡktyp, ж<abi.Type> Ꮡetyp) {
-    ref var ktyp = ref Ꮡktyp.Value;
-    ref var etyp = ref Ꮡetyp.Value;
+    ref var ktyp = ref Ꮡktyp.DerefOrNull();
+    ref var etyp = ref Ꮡetyp.DerefOrNull();
 
     if (ktyp.Size_ > abi.MapMaxKeyBytes) {
-        Ꮡktyp = ptrTo(Ꮡktyp); ktyp = ref Ꮡktyp.Value;
+        Ꮡktyp = ptrTo(Ꮡktyp); ktyp = ref Ꮡktyp.DerefOrNull();
     }
     if (etyp.Size_ > abi.MapMaxElemBytes) {
-        Ꮡetyp = ptrTo(Ꮡetyp); etyp = ref Ꮡetyp.Value;
+        Ꮡetyp = ptrTo(Ꮡetyp); etyp = ref Ꮡetyp.DerefOrNull();
     }
     // Prepare GC data if any.
     // A bucket is at most bucketSize*(1+maxKeySize+maxValSize)+ptrSize bytes,
@@ -2044,14 +2044,14 @@ internal static ж<abi.Type> bucketOf(ж<abi.Type> Ꮡktyp, ж<abi.Type> Ꮡetyp
     return b;
 }
 
-[GoRecv] internal static unsafe slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
-    return new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(t.t.GCData)) + (int)(begin), (int)(end) - (int)(begin)));
+[GoRecv] internal static slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
+    return (~array<byte>.AliasPointer(t.t.GCData, 1073741824)).slice((int)(begin), (int)(end), (int)(end));
 }
 
 // emitGCMask writes the GC mask for [n]typ into out, starting at bit
 // offset base.
 internal static void emitGCMask(slice<byte> @out, uintptr @base, ж<abi.Type> Ꮡtyp, uintptr n) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         throw panic("reflect: unexpected GC program");
@@ -2072,7 +2072,7 @@ internal static void emitGCMask(slice<byte> @out, uintptr @base, ж<abi.Type> �
 // appendGCProg appends the GC program for the first ptrdata bytes of
 // typ to dst and returns the extended slice.
 internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         // Element has GC program; emit one element.
@@ -2110,7 +2110,7 @@ public static ΔType SliceOf(ΔType t) {
     foreach (var (_, tt) in typesByString(s)) {
         var sliceΔ2 = tt.Reinterpret<abi.Type, sliceType>();
         if ((~sliceΔ2).Elem == typ) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
+            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
             return tiΔ1._<ΔType>();
         }
     }
@@ -2126,7 +2126,7 @@ public static ΔType SliceOf(ΔType t) {
     Δslice.Hash = fnv1((~typ).Hash, (rune)'[');
     Δslice.Elem = typ;
     Δslice.PtrToThis = 0;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡslice.of(sliceType.ᏑType)));
+    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡslice.of(sliceType.ᏑType)).OrTypedNil());
     return ti._<ΔType>();
 }
 
@@ -2493,7 +2493,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
             }
         }
     }
-    var addToCache = (ΔType t) => {
+    ΔType addToCache(ΔType t) {
         slice<ΔType> ts = default!;
         {
             var (ti, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
@@ -2502,7 +2502,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
         }
         ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(ts, t));
         return t;
-    };
+    }
     // Look in known types.
     foreach (var (_, t) in typesByString(str)) {
         if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
@@ -2579,10 +2579,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
     if (comparable) {
         var typʗ1 = typ;
         typ.Value.Equal = (@unsafe.Pointer p, @unsafe.Pointer q) => {
-            foreach (var (_, vᴛ1) in (~typʗ1).Fields) {
-                ref var ft = ref heap(new abi.StructField(), out var Ꮡft);
-                ft = vᴛ1;
-
+            foreach (var (_, ft) in (~typʗ1).Fields) {
                 @unsafe.Pointer pi = (uintptr)add(p, ft.Offset, xFieldSafeˢ);
                 @unsafe.Pointer qi = (uintptr)add(q, ft.Offset, xFieldSafeˢ);
                 if (!(~ft.Typ).Equal(pi, qi)) {
@@ -2639,7 +2636,7 @@ internal static (structField, @string) runtimeStructField(StructField field) {
 // containing pointer data. Anything after this offset is scalar data.
 // keep in sync with ../cmd/compile/internal/reflectdata/reflect.go
 internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == abi.Struct) {
@@ -2689,7 +2686,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     foreach (var (_, tt) in typesByString(s)) {
         var arrayΔ2 = tt.Reinterpret<abi.Type, arrayType>();
         if ((~arrayΔ2).Elem == typ) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
+            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
             return tiΔ1._<ΔType>();
         }
     }
@@ -2812,7 +2809,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     }}
 
     // array of 1 direct iface type can be direct
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡarray.of(arrayType.ᏑType)));
+    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡarray.of(arrayType.ᏑType)).OrTypedNil());
     return ti._<ΔType>();
 }
 
@@ -2852,8 +2849,8 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
     ж<Δsync.Pool> framePool = default!;
     abiDesc abid = default!;
 
-    ref var t = ref Ꮡt.Value;
-    ref var rcvr = ref Ꮡrcvr.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var rcvr = ref Ꮡrcvr.DerefOrNull();
     if (Ꮡt.of(funcType.ᏑType).Kind() != abi.Func) {
         throw panic("reflect: funcLayout of non-func type " + stringFor(Ꮡt.of(funcType.ᏑType)));
     }
@@ -2923,8 +2920,8 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
 }
 
 internal static void addTypeBits(ж<bitVector> Ꮡbv, uintptr offset, ж<abi.Type> Ꮡt) {
-    ref var bv = ref Ꮡbv.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var bv = ref Ꮡbv.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.Pointers()) {
         return;

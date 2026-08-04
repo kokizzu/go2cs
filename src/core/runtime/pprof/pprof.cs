@@ -302,7 +302,7 @@ public static slice<ж<Profile>> Profiles() => func((defer, recover) => {
 
 // Count returns the number of execution stacks currently in the profile.
 public static nint Count(this ж<Profile> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     Ꮡp.of(Profile.Ꮡmu).Lock();
     defer(Ꮡp.of(Profile.Ꮡmu).Unlock);
@@ -330,7 +330,7 @@ public static nint Count(this ж<Profile> Ꮡp) => func((defer, recover) => {
 // Passing skip=0 begins the stack trace at the call to Add inside rpc.NewClient.
 // Passing skip=1 begins the stack trace at the call to NewClient inside mypkg.Run.
 public static void Add(this ж<Profile> Ꮡp, any value, nint skip) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.name == ""u8) {
         throw panic("pprof: use of uninitialized Profile");
@@ -356,7 +356,7 @@ public static void Add(this ж<Profile> Ꮡp, any value, nint skip) => func((def
 // Remove removes the execution stack associated with value from the profile.
 // It is a no-op if the value is not in the profile.
 public static void Remove(this ж<Profile> Ꮡp, any value) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     Ꮡp.of(Profile.Ꮡmu).Lock();
     defer(Ꮡp.of(Profile.Ꮡmu).Unlock);
@@ -379,7 +379,7 @@ public static void Remove(this ж<Profile> Ꮡp, any value) => func((defer, reco
 // print the goroutine stacks in the same form that a Go program uses
 // when dying due to an unrecovered panic.
 public static error WriteTo(this ж<Profile> Ꮡp, io.Writer w, nint debug) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.name == ""u8) {
         throw panic("pprof: use of zero Profile");
@@ -482,7 +482,7 @@ internal static readonly @string labelsˢ = "\n# labels: "u8;
 internal static error printCountProfile(io.Writer w, nint debug, @string name, countProfile p) {
     // Build count of each stack.
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    var key = @string (slice<uintptr> stk, ж<labelMap> lbls) => {
+    @string key(slice<uintptr> stk, ж<labelMap> lbls) {
         Ꮡbuf.Value.Reset();
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "@"u8);
         foreach (var (_, pc) in stk) {
@@ -493,7 +493,7 @@ internal static error printCountProfile(io.Writer w, nint debug, @string name, c
             Ꮡbuf.WriteString(lbls.String());
         }
         return Ꮡbuf.Value.String();
-    };
+    }
     var count = new map<@string, nint>{};
     var index = new map<@string, nint>{};
     slice<@string> keys = default!;

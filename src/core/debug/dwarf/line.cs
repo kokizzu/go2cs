@@ -127,8 +127,8 @@ internal static readonly @string lineˢ = "line"u8;
 //
 // If this compilation unit has no line table, it returns nil, nil.
 public static (ж<ΔLineReader>, error) LineReader(this ж<Data> Ꮡd, ж<Entry> Ꮡcu) {
-    ref var d = ref Ꮡd.Value;
-    ref var cu = ref Ꮡcu.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var cu = ref Ꮡcu.DerefOrNull();
 
     if (d.line == default!) {
         // No line tables available.
@@ -171,7 +171,7 @@ public static (ж<ΔLineReader>, error) LineReader(this ж<Data> Ꮡd, ж<Entry>
 // readHeader reads the line number program header from r.buf and sets
 // all of the header fields in r.
 internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var buf = Ꮡr.of(dwarf_package.ΔLineReader.Ꮡbuf);
     // Read basic header fields [DWARF2 6.2.4].
@@ -491,7 +491,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
 // Rows are always in order of increasing entry.Address, but
 // entry.Line may go forward or backward.
 [GoRecv] public static error Next(this ref ΔLineReader r, ж<LineEntry> Ꮡentry) {
-    ref var entry = ref Ꮡentry.Value;
+    ref var entry = ref Ꮡentry.DerefOrNull();
 
     if (r.buf.err != default!) {
         return r.buf.err;
@@ -534,7 +534,7 @@ internal static map<nint, nint> knownOpcodeLengths = new map<nint, nint>{
 // emits a row in the line table, this updates *entry and returns
 // true.
 [GoRecv] internal static bool step(this ref ΔLineReader r, ж<LineEntry> Ꮡentry) {
-    ref var entry = ref Ꮡentry.Value;
+    ref var entry = ref Ꮡentry.DerefOrNull();
 
     nint opcode = (nint)r.buf.uint8();
     if (opcode >= r.opcodeBase) {
@@ -764,7 +764,7 @@ public static error ErrUnknownPC = errors.New("ErrUnknownPC"u8);
 // line table. If the caller wishes to do repeated fast PC lookups, it
 // should build an appropriate index of the line table.
 [GoRecv] public static error SeekPC(this ref ΔLineReader r, uint64 pc, ж<LineEntry> Ꮡentry) {
-    ref var entry = ref Ꮡentry.Value;
+    ref var entry = ref Ꮡentry.DerefOrNull();
 
     {
         var err = r.Next(Ꮡentry); if (err != default!) {

@@ -13,8 +13,6 @@
 global using tokenꓸFile = go.go.token_package.ΔFile;
 global using tokenꓸPos = go.go.token_package.ΔPos;
 global using tokenꓸPosition = go.go.token_package.ΔPosition;
-using ast = go.go.ast_package;
-using token = go.go.token_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -47,7 +45,6 @@ using static go.go.format_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<ast.File, ж<ast.File>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.go;

@@ -33,7 +33,7 @@ partial class textproto_package {
 
 // Next returns the next id for a request/response pair.
 public static nuint Next(this ж<Pipeline> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     Ꮡp.of(Pipeline.Ꮡmu).Lock();
     nuint id = p.id;
@@ -80,7 +80,7 @@ public static void EndResponse(this ж<Pipeline> Ꮡp, nuint id) {
 // That is, except for the first event, it waits until End(id-1) has
 // been called.
 internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(sequencer.Ꮡmu).Lock();
     if (s.id == id) {
@@ -100,7 +100,7 @@ internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
 // allowing it to schedule the event numbered id+1.  It is a run-time error
 // to call End with an id that is not the number of the active event.
 internal static void End(this ж<sequencer> Ꮡs, nuint id) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(sequencer.Ꮡmu).Lock();
     if (s.id != id) {

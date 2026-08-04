@@ -24,7 +24,7 @@ partial class template_package {
 // been modified. Otherwise the named templates have been rendered
 // unusable.
 internal static error escapeTemplate(ж<Template> Ꮡtmpl, parse.Node node, @string name) {
-    ref var tmpl = ref Ꮡtmpl.Value;
+    ref var tmpl = ref Ꮡtmpl.DerefOrNull();
 
     var (c, _) = tmpl.esc.escapeTree(new context(nil), node, name, 0);
     error err = default!;
@@ -158,7 +158,7 @@ internal static readonly @string withˢ = "with"u8;
         return e.escapeAction(c, nΔ1);
     }
     case ж<parse.BreakNode> nΔ1: {
-        c.n = new parse_BreakNodeжNode(nΔ1);
+        c.n = new parse.BreakNodeжNode(nΔ1);
         e.rangeContext.Value.breaks = append((~e.rangeContext).breaks, c);
         return new context(state: stateDead);
     }
@@ -166,7 +166,7 @@ internal static readonly @string withˢ = "with"u8;
         return c;
     }
     case ж<parse.ContinueNode> nΔ1: {
-        c.n = new parse_ContinueNodeжNode(nΔ1);
+        c.n = new parse.ContinueNodeжNode(nΔ1);
         e.rangeContext.Value.continues = append((~e.rangeContext).breaks, c);
         return new context(state: stateDead);
     }
@@ -195,7 +195,7 @@ internal static ж<godebug.Setting> debugAllowActionJSTmpl = godebug.New("jstmpl
 
 // escapeAction escapes an action template node.
 [GoRecv] internal static context escapeAction(this ref escaper e, context c, ж<parse.ActionNode> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (len((~n.Pipe).Decl) != 0) {
         // A local variable assignment, not an interpolation.
@@ -221,7 +221,7 @@ internal static ж<godebug.Setting> debugAllowActionJSTmpl = godebug.New("jstmpl
                 if (pos < len((~n.Pipe).Cmds) - 1 || c.state == stateAttr && c.delim == delimSpaceOrTagEnd && ident == "html"u8) {
                     return new context(
                         state: stateError,
-                        err: errorf(ErrPredefinedEscaper, new parse_ActionNodeжNode(Ꮡn), n.Line, "predefined escaper %q disallowed in template"u8, ident)
+                        err: errorf(ErrPredefinedEscaper, new parse.ActionNodeжNode(Ꮡn), n.Line, "predefined escaper %q disallowed in template"u8, ident)
                     );
                 }
             }
@@ -255,7 +255,7 @@ internal static ж<godebug.Setting> debugAllowActionJSTmpl = godebug.New("jstmpl
         else if (exprᴛ2 == urlPartUnknown) {
             return new context(
                 state: stateError,
-                err: errorf(ErrAmbigContext, new parse_ActionNodeжNode(Ꮡn), n.Line, "%s appears in an ambiguous context within a URL"u8, Ꮡn)
+                err: errorf(ErrAmbigContext, new parse.ActionNodeжNode(Ꮡn), n.Line, "%s appears in an ambiguous context within a URL"u8, Ꮡn.OrTypedNil())
             );
         }
         else if (!matchᴛ1) { /* default: */
@@ -326,7 +326,7 @@ internal static readonly @string evalArgsˢ = "_eval_args_"u8;
 // the identifiers in s in order. If the pipeline ends with a predefined escaper
 // (i.e. "html" or "urlquery"), merge it with the identifiers in s.
 internal static void ensurePipelineContains(ж<parse.PipeNode> Ꮡp, slice<@string> s) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(s) == 0) {
         // Do not rewrite pipeline if we have no escapers to insert.
@@ -349,7 +349,7 @@ internal static void ensurePipelineContains(ж<parse.PipeNode> Ꮡp, slice<@stri
                             // Convert this into the equivalent form
                             // {{ _eval_args_ arg1 arg2 ... argN | esc }}, so that esc can be easily
                             // merged with the escapers in s.
-                            lastCmd.Value.Args[0] = new parse_IdentifierNodeжNode(parse.NewIdentifier(evalArgsˢ).SetTree(nil).SetPos((~lastCmd).Args[0].Position()));
+                            lastCmd.Value.Args[0] = new parse.IdentifierNodeжNode(parse.NewIdentifier(evalArgsˢ).SetTree(nil).SetPos((~lastCmd).Args[0].Position()));
                             p.Cmds = appendCmd(p.Cmds, newIdentCmd(esc, p.Position()));
                             pipelineLen++;
                         }
@@ -461,7 +461,7 @@ internal static map<@string, map<@string, bool>> redundantFuncs = new map<@strin
 // appendCmd appends the given command to the end of the command pipeline
 // unless it is redundant with the last command.
 internal static slice<ж<parse.CommandNode>> appendCmd(slice<ж<parse.CommandNode>> cmds, ж<parse.CommandNode> Ꮡcmd) {
-    ref var cmd = ref Ꮡcmd.Value;
+    ref var cmd = ref Ꮡcmd.DerefOrNull();
 
     {
         nint n = len(cmds); if (n != 0) {
@@ -479,7 +479,7 @@ internal static slice<ж<parse.CommandNode>> appendCmd(slice<ж<parse.CommandNod
 internal static ж<parse.CommandNode> newIdentCmd(@string identifier, parse.Pos pos) {
     return Ꮡ(new parse.CommandNode(
         NodeType: parse.NodeCommand,
-        Args: new parse.Node[]{new parse_IdentifierNodeжNode(parse.NewIdentifier(identifier).SetTree(nil).SetPos(pos))}.slice()
+        Args: new parse.Node[]{new parse.IdentifierNodeжNode(parse.NewIdentifier(identifier).SetTree(nil).SetPos(pos))}.slice()
     ));
 }
 
@@ -576,7 +576,7 @@ internal static context join(context a, context b, parse.Node node, @string node
 
 // escapeBranch escapes a branch template node: "if", "range" and "with".
 [GoRecv] internal static context escapeBranch(this ref escaper e, context c, ж<parse.BranchNode> Ꮡn, @string nodeName) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (nodeName == "range"u8) {
         e.rangeContext = Ꮡ(new rangeContext(outer: e.rangeContext));
@@ -616,7 +616,7 @@ internal static context join(context a, context b, parse.Node node, @string node
 }
 
 internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
-    ref var rc = ref Ꮡrc.Value;
+    ref var rc = ref Ꮡrc.DerefOrNull();
 
     // Merge contexts at break and continue statements into overall body context.
     // In theory we could treat breaks differently from continues, but for now it is
@@ -642,7 +642,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
 
 // escapeList escapes a list template node.
 [GoRecv] internal static context escapeList(this ref escaper e, context c, ж<parse.ListNode> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn == nil) {
         return c;
@@ -696,9 +696,9 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
 
 // escapeTemplate escapes a {{template}} call node.
 [GoRecv] internal static context escapeTemplate(this ref escaper e, context c, ж<parse.TemplateNode> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
-    (c, var name) = e.escapeTree(c, new parse_TemplateNodeжNode(Ꮡn), n.Name, n.Line);
+    (c, var name) = e.escapeTree(c, new parse.TemplateNodeжNode(Ꮡn), n.Name, n.Line);
     if (name != n.Name) {
         e.editTemplateNode(Ꮡn, name);
     }
@@ -751,7 +751,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
 // computeOutCtx takes a template and its start context and computes the output
 // context while storing any inferences in e.
 [GoRecv] internal static context computeOutCtx(this ref escaper e, context c, ж<template.Template> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Propagate context over the body.
     var (c1, ok) = e.escapeTemplateBody(c, Ꮡt);
@@ -767,7 +767,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
     if (!ok && c1.state != stateError) {
         return new context(
             state: stateError,
-            err: errorf(ErrOutputContext, new parse_ListNodeжNode((~t.Tree).Root), 0, "cannot compute output context for template %s"u8, t.Name())
+            err: errorf(ErrOutputContext, new parse.ListNodeжNode((~t.Tree).Root), 0, "cannot compute output context for template %s"u8, t.Name())
         );
     }
     return c1;
@@ -777,7 +777,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
 // context, and returns the best guess at the output context and whether the
 // assumption was correct.
 [GoRecv] internal static (context, bool) escapeTemplateBody(this ref escaper e, context c, ж<template.Template> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var cʗ1 = c;
     var filter = (ж<escaper> e1, context c1) => {
@@ -830,7 +830,7 @@ internal static slice<byte> doctypeBytes = slice<byte>("<!DOCTYPE"u8);
 
 // escapeText escapes a text template node.
 [GoRecv] internal static context escapeText(this ref escaper e, context c, ж<parse.TextNode> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     var s = n.Text;
     nint written = 0;
@@ -976,7 +976,7 @@ internal static (context, nint) contextAfterText(context c, slice<byte> s) {
 [GoRecv] internal static void editActionNode(this ref escaper e, ж<parse.ActionNode> Ꮡn, slice<@string> cmds) {
     {
         var (_, ok) = e.actionNodeEdits[Ꮡn, ꟷ]; if (ok) {
-            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn));
+            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn.OrTypedNil()));
         }
     }
     e.actionNodeEdits[Ꮡn] = cmds;
@@ -986,7 +986,7 @@ internal static (context, nint) contextAfterText(context c, slice<byte> s) {
 [GoRecv] internal static void editTemplateNode(this ref escaper e, ж<parse.TemplateNode> Ꮡn, @string callee) {
     {
         var (_, ok) = e.templateNodeEdits[Ꮡn, ꟷ]; if (ok) {
-            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn));
+            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn.OrTypedNil()));
         }
     }
     e.templateNodeEdits[Ꮡn] = callee;
@@ -996,7 +996,7 @@ internal static (context, nint) contextAfterText(context c, slice<byte> s) {
 [GoRecv] internal static void editTextNode(this ref escaper e, ж<parse.TextNode> Ꮡn, slice<byte> text) {
     {
         var (_, ok) = e.textNodeEdits[Ꮡn, ꟷ]; if (ok) {
-            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn));
+            throw panic(fmt.Sprintf("node %s shared between templates"u8, Ꮡn.OrTypedNil()));
         }
     }
     e.textNodeEdits[Ꮡn] = text;

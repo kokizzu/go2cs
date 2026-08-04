@@ -193,7 +193,7 @@ public static ж<Type> TypeFor<T>() {
 internal static readonly @string tMcount0ˢ = "t.mcount > 0"u8;
 
 public static unsafe slice<Method> Methods(this ж<UncommonType> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Mcount == 0) {
         return default!;
@@ -205,7 +205,7 @@ public static unsafe slice<Method> Methods(this ж<UncommonType> Ꮡt) {
 internal static readonly @string tXcount0ˢ = "t.xcount > 0"u8;
 
 public static unsafe slice<Method> ExportedMethods(this ж<UncommonType> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Xcount == 0) {
         return default!;
@@ -240,7 +240,7 @@ internal static @unsafe.Pointer addChecked(@unsafe.Pointer p, uintptr x, @string
 
 // Len returns the length of t if t is an array type, otherwise 0
 public static nint Len(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() == Array) {
         return (nint)(Ꮡt.Reinterpret<Type, ΔArrayType>()).Value.Len;
@@ -273,7 +273,7 @@ public static ΔChanDir InvalidDir => 0;
 
 // ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir (0).
 public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() == Chan) {
         var ch = Ꮡt.Reinterpret<Type, ChanType>();
@@ -324,7 +324,7 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
 
 // Uncommon returns a pointer to T's "uncommon" data if there is any, otherwise nil
 public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if ((TFlag)(t.TFlag & TFlagUncommon) == 0) {
         return default!;
@@ -362,7 +362,7 @@ public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
 
 // Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.
 public static ж<Type> Elem(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Array) {
@@ -391,7 +391,7 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
 
 // StructType returns t cast to a *StructType, or nil if its tag does not match.
 public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Struct) {
         return default!;
@@ -401,7 +401,7 @@ public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
 
 // MapType returns t cast to a *MapType, or nil if its tag does not match.
 public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Map) {
         return default!;
@@ -411,7 +411,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
 
 // ArrayType returns t cast to a *ArrayType, or nil if its tag does not match.
 public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Array) {
         return default!;
@@ -421,7 +421,7 @@ public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
 
 // FuncType returns t cast to a *FuncType, or nil if its tag does not match.
 public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Func) {
         return default!;
@@ -431,7 +431,7 @@ public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
 
 // InterfaceType returns t cast to a *InterfaceType, or nil if its tag does not match.
 public static ж<ΔInterfaceType> InterfaceType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Interface) {
         return default!;
@@ -468,7 +468,7 @@ public static slice<Method> ExportedMethods(this ж<Type> Ꮡt) {
 }
 
 public static nint NumMethod(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() == Interface) {
         var tt = Ꮡt.Reinterpret<Type, ΔInterfaceType>();
@@ -523,7 +523,7 @@ public static nint NumMethod(this ж<Type> Ꮡt) {
 }
 
 public static ж<Type> Key(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() == Map) {
         return (Ꮡt.Reinterpret<Type, ΔMapType>()).Value.Key;
@@ -573,7 +573,7 @@ public static ж<Type> Out(this ж<ΔFuncType> Ꮡt, nint i) {
 internal static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
 
 public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var uadd = /* unsafe.Sizeof(*t) */ (uintptr)56;
     if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
@@ -589,7 +589,7 @@ public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
 internal static readonly @string outCount0ˢ = "outCount > 0"u8;
 
 public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var outCount = (uint16)t.NumOut();
     if (outCount == 0) {

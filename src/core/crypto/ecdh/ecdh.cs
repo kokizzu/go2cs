@@ -124,8 +124,8 @@ private static readonly @string cryptoEcdhPrivateKeyAndˢ = "crypto/ecdh: privat
 // For [X25519], this performs ECDH as specified in RFC 7748, Section 6.1. If
 // the result is the all-zero value, ECDH returns an error.
 public static (slice<byte>, error) ECDH(this ж<PrivateKey> Ꮡk, ж<ΔPublicKey> Ꮡremote) {
-    ref var k = ref Ꮡk.Value;
-    ref var remote = ref Ꮡremote.Value;
+    ref var k = ref Ꮡk.DerefOrNull();
+    ref var remote = ref Ꮡremote.DerefOrNull();
 
     if (!AreEqual(k.curve, remote.curve)) {
         return (default!, errors.New(cryptoEcdhPrivateKeyAndˢ));
@@ -161,7 +161,7 @@ public static (slice<byte>, error) ECDH(this ж<PrivateKey> Ꮡk, ж<ΔPublicKey
 }
 
 public static ж<ΔPublicKey> PublicKey(this ж<PrivateKey> Ꮡk) {
-    ref var k = ref Ꮡk.Value;
+    ref var k = ref Ꮡk.DerefOrNull();
 
     Ꮡk.of(PrivateKey.ᏑpublicKeyOnce).Do(() => {
         if (Ꮡk.Value.boring != nil){
@@ -188,7 +188,7 @@ public static ж<ΔPublicKey> PublicKey(this ж<PrivateKey> Ꮡk) {
 // Public implements the implicit interface of all standard library private
 // keys. See the docs of [crypto.PrivateKey].
 public static cryptoꓸPublicKey Public(this ж<PrivateKey> Ꮡk) {
-    return Ꮡk.PublicKey();
+    return Ꮡk.PublicKey().OrTypedNil();
 }
 
 } // end ecdh_package

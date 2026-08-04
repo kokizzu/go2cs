@@ -69,7 +69,7 @@ internal static slice<byte> expandLabel(this ж<cipherSuiteTLS13> Ꮡc, slice<by
 
 // deriveSecret implements Derive-Secret from RFC 8446, Section 7.1.
 internal static slice<byte> deriveSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> secret, @string label, hash.Hash transcript) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (transcript == default!) {
         transcript = c.hash.New();
@@ -79,7 +79,7 @@ internal static slice<byte> deriveSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<b
 
 // extract implements HKDF-Extract with the cipher suite hash.
 internal static slice<byte> extract(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> newSecret, slice<byte> currentSecret) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (newSecret == default!) {
         newSecret = new slice<byte>(c.hash.Size());
@@ -90,7 +90,7 @@ internal static slice<byte> extract(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> 
 // nextTrafficSecret generates the next traffic secret, given the current one,
 // according to RFC 8446, Section 7.2.
 internal static slice<byte> nextTrafficSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> trafficSecret) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     return Ꮡc.expandLabel(trafficSecret, trafficUpdateLabel, default!, c.hash.Size());
 }
@@ -103,7 +103,7 @@ internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuite
     slice<byte> key = default!;
     slice<byte> iv = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     key = Ꮡc.expandLabel(trafficSecret, keyˢ, default!, c.keyLen);
     iv = Ꮡc.expandLabel(trafficSecret, "iv"u8, default!, aeadNonceLength);
     return (key, iv);
@@ -116,7 +116,7 @@ internal static readonly @string finishedˢ = "finished"u8;
 // to RFC 8446, Section 4.4.4. See sections 4.4 and 4.2.11.2 for the baseKey
 // selection.
 internal static slice<byte> finishedHash(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> baseKey, hash.Hash transcript) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var finishedKey = Ꮡc.expandLabel(baseKey, finishedˢ, default!, c.hash.Size());
     var verifyData = hmac.New(() => Ꮡc.Value.hash.New(), finishedKey);

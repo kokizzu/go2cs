@@ -85,8 +85,8 @@ public static void AddToEdge(this ж<Node> Ꮡn, ж<Node> Ꮡto, int64 v, bool r
 // AddToEdgeDiv increases the weight of an edge between two nodes. If
 // there isn't such an edge one is created.
 public static void AddToEdgeDiv(this ж<Node> Ꮡn, ж<Node> Ꮡto, int64 dv, int64 v, bool residual, bool inline) {
-    ref var n = ref Ꮡn.Value;
-    ref var to = ref Ꮡto.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
+    ref var to = ref Ꮡto.DerefOrNull();
 
     {
         var e = n.Out.FindTo(Ꮡto); if (e != nil) {
@@ -235,8 +235,8 @@ public static ж<Edge> FindTo(this EdgeMap em, ж<Node> Ꮡn) {
 
 // NewGraph computes a graph from a profile.
 public static ж<Graph> NewGraph(ж<Profile> Ꮡprof, ж<Options> Ꮡo) {
-    ref var prof = ref Ꮡprof.Value;
-    ref var o = ref Ꮡo.Value;
+    ref var prof = ref Ꮡprof.DerefOrNull();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     var (nodes, locationMap) = CreateNodes(Ꮡprof, Ꮡo);
     var seenNode = new map<ж<Node>, bool>();
@@ -330,7 +330,7 @@ internal static ж<Graph> selectNodesForGraph(Nodes nodes, bool dropNegative) {
 // isNegative returns true if the node is considered as "negative" for the
 // purposes of drop_negative.
 internal static bool isNegative(ж<Node> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     switch (ᐧ) {
     case {} when n.Flat is < 0: {
@@ -370,7 +370,7 @@ internal static Nodes get(this locationMap l, uint64 id) {
 // returns set of all nodes, plus a mapping of each location to the
 // set of corresponding nodes (one per location.Line).
 public static (Nodes, locationMap) CreateNodes(ж<Profile> Ꮡprof, ж<Options> Ꮡo) {
-    ref var prof = ref Ꮡprof.Value;
+    ref var prof = ref Ꮡprof.DerefOrNull();
 
     var locations = new locationMap(new slice<Nodes>(len(prof.Location) + 1), new map<uint64, Nodes>());
     var nm = new NodeMap(len(prof.Location));
@@ -398,8 +398,8 @@ internal static Nodes nodes(this NodeMap nm) {
 }
 
 internal static ж<Node> findOrInsertLine(this NodeMap nm, ж<Location> Ꮡl, Line li, ж<Options> Ꮡo) {
-    ref var l = ref Ꮡl.Value;
-    ref var o = ref Ꮡo.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     @string objfile = default!;
     {
@@ -416,7 +416,7 @@ internal static ж<Node> findOrInsertLine(this NodeMap nm, ж<Location> Ꮡl, Li
 }
 
 internal static ж<NodeInfo> nodeInfo(ж<Location> Ꮡl, Line line, @string objfile, ж<Options> Ꮡo) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (line.Function == nil) {
         return Ꮡ(new NodeInfo(Address: l.Address));

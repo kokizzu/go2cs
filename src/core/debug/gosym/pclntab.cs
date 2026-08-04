@@ -128,7 +128,7 @@ internal static UntypedInt oldQuantum => 1;
 //
 // Deprecated: Use Table's PCToLine method instead.
 public static nint PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt.isGo12()) {
         return Ꮡt.go12PCToLine(pc);
@@ -142,7 +142,7 @@ public static nint PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
 //
 // Deprecated: Use Table's LineToPC method instead.
 public static uint64 LineToPC(this ж<LineTable> Ꮡt, nint line, uint64 maxpc) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt.isGo12()) {
         return 0;
@@ -180,7 +180,7 @@ public static ж<LineTable> NewLineTable(slice<byte> data, uint64 text) {
 
 // isGo12 reports whether this is a Go 1.2 (or later) symbol table.
 internal static bool isGo12(this ж<LineTable> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.parsePclnTab();
     return t.version >= ver12;
@@ -202,7 +202,7 @@ internal static UntypedInt go120magic => 0xfffffff1;
 
 // parsePclnTab parses the pclntab, setting the version.
 internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.of(LineTable.Ꮡmu).Lock();
     defer(Ꮡt.of(LineTable.Ꮡmu).Unlock);
@@ -232,35 +232,35 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recov
     var beMagic = binary.BigEndian.Uint32(t.Data);
     switch (ᐧ) {
     case {} when leMagic == go12magic: {
-        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver12);
+        (t.binary, possibleVersion) = (binary.LittleEndian, ver12);
         break;
     }
     case {} when beMagic == go12magic: {
-        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver12);
+        (t.binary, possibleVersion) = (binary.BigEndian, ver12);
         break;
     }
     case {} when leMagic == go116magic: {
-        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver116);
+        (t.binary, possibleVersion) = (binary.LittleEndian, ver116);
         break;
     }
     case {} when beMagic == go116magic: {
-        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver116);
+        (t.binary, possibleVersion) = (binary.BigEndian, ver116);
         break;
     }
     case {} when leMagic == go118magic: {
-        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver118);
+        (t.binary, possibleVersion) = (binary.LittleEndian, ver118);
         break;
     }
     case {} when beMagic == go118magic: {
-        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver118);
+        (t.binary, possibleVersion) = (binary.BigEndian, ver118);
         break;
     }
     case {} when leMagic == go120magic: {
-        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver120);
+        (t.binary, possibleVersion) = (binary.LittleEndian, ver120);
         break;
     }
     case {} when beMagic == go120magic: {
-        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver120);
+        (t.binary, possibleVersion) = (binary.BigEndian, ver120);
         break;
     }
     default: {
@@ -271,9 +271,9 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recov
     // quantum and ptrSize are the same between 1.2, 1.16, and 1.18
     t.quantum = (uint32)t.Data[6];
     t.ptrsize = (uint32)t.Data[7];
-    var offset = (uint32 word) => Ꮡt.Value.uintptr(Ꮡt.Value.Data[(int)(8 + word * Ꮡt.Value.ptrsize)..]);
+    uint64 offset(uint32 word) => Ꮡt.Value.uintptr(Ꮡt.Value.Data[(int)(8 + word * Ꮡt.Value.ptrsize)..]);
     var offsetʗ1 = offset;
-    var data = (uint32 word) => Ꮡt.Value.Data[(int)(offsetʗ1(word))..];
+    slice<byte> data(uint32 word) => Ꮡt.Value.Data[(int)(offsetʗ1(word))..];
     var exprᴛ1 = possibleVersion;
     if (exprᴛ1 == ver118 || exprᴛ1 == ver120) {
         t.nfunctab = (uint32)offset(0);
@@ -323,7 +323,7 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recov
 
 // go12Funcs returns a slice of Funcs derived from the Go 1.2+ pcln table.
 internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Assume it is malformed and return nil on error.
     if (!disableRecover) {
@@ -356,7 +356,7 @@ internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) => func((defer, r
 
 // findFunc returns the funcData corresponding to the given program counter.
 internal static ΔfuncData findFunc(this ж<LineTable> Ꮡt, uint64 pc) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var ft = ref heap<ΔfuncTab>(out var Ꮡft);
     ft = Ꮡt.funcTab();
@@ -371,7 +371,7 @@ internal static ΔfuncData findFunc(this ж<LineTable> Ꮡt, uint64 pc) {
 
 // readvarint reads, removes, and returns a varint from *pp.
 [GoRecv] internal static uint32 readvarint(this ref LineTable t, ж<slice<byte>> Ꮡpp) {
-    ref var pp = ref Ꮡpp.ValueSlot;
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     uint32 v = default!;
     uint32 shift = default!;
@@ -429,7 +429,7 @@ internal static ΔfuncData findFunc(this ж<LineTable> Ꮡt, uint64 pc) {
 
 // funcTab returns t's funcTab.
 internal static ΔfuncTab funcTab(this ж<LineTable> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return new ΔfuncTab(LineTable: Ꮡt, sz: t.functabFieldSize());
 }
@@ -476,7 +476,7 @@ internal static uint64 @uint(this ΔfuncTab f, slice<byte> b) {
 
 // funcData returns the ith funcData in t.functab.
 internal static ΔfuncData funcData(this ж<LineTable> Ꮡt, uint32 i) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var data = t.funcdata[(int)(Ꮡt.funcTab().funcOff((nint)i))..];
     return new ΔfuncData(t: Ꮡt, data: data);
@@ -540,8 +540,8 @@ internal static uint32 field(this ΔfuncData f, uint32 n) {
 
 // step advances to the next pc, value pair in the encoded table.
 [GoRecv] internal static bool step(this ref LineTable t, ж<slice<byte>> Ꮡp, ж<uint64> Ꮡpc, ж<int32> Ꮡval, bool first) {
-    ref var pc = ref Ꮡpc.Value;
-    ref var val = ref Ꮡval.Value;
+    ref var pc = ref Ꮡpc.DerefOrNull();
+    ref var val = ref Ꮡval.DerefOrNull();
 
     var uvdelta = t.readvarint(Ꮡp);
     if (uvdelta == 0 && !first) {
@@ -633,7 +633,7 @@ internal static uint32 field(this ΔfuncData f, uint32 n) {
 internal static nint /*line*/ go12PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
     nint line = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -655,7 +655,7 @@ internal static nint /*line*/ go12PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
 internal static @string /*file*/ go12PCToFile(this ж<LineTable> Ꮡt, uint64 pc) {
     @string @file = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -695,7 +695,7 @@ internal static @string /*file*/ go12PCToFile(this ж<LineTable> Ꮡt, uint64 pc
 internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @file, nint line) {
     uint64 pc = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -735,7 +735,7 @@ internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @fil
 
 // initFileMap initializes the map from file name to file number.
 internal static void initFileMap(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.of(LineTable.Ꮡmu).Lock();
     defer(Ꮡt.of(LineTable.Ꮡmu).Unlock);
@@ -763,7 +763,7 @@ internal static void initFileMap(this ж<LineTable> Ꮡt) => func((defer, recove
 // Every key maps to obj. That's not a very interesting map, but it provides
 // a way for callers to obtain the list of files in the program.
 internal static void go12MapFiles(this ж<LineTable> Ꮡt, map<@string, ж<Obj>> m, ж<Obj> Ꮡobj) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!disableRecover) {
         defer(() => {

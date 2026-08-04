@@ -486,8 +486,8 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
                 }
                 (@in.Value.p, @in.Value.n) = (0, copy((~@in).b, // in.b is an internal buffer and we can make progress.
  @in.src()));
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && AreEqual(exprᴛ1, default!)) {
             if (i > low) {

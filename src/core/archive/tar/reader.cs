@@ -52,7 +52,7 @@ public static ж<Reader> NewReader(io.Reader r) {
 // Programs that want to accept non-local names can ignore
 // the [ErrInsecurePath] error and use the returned header.
 public static (ж<Header>, error) Next(this ж<Reader> Ꮡtr) {
-    ref var tr = ref Ꮡtr.Value;
+    ref var tr = ref Ꮡtr.DerefOrNull();
 
     if (tr.err != default!) {
         return (default!, tr.err);
@@ -69,7 +69,7 @@ public static (ж<Header>, error) Next(this ж<Reader> Ꮡtr) {
 }
 
 internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
-    ref var tr = ref Ꮡtr.Value;
+    ref var tr = ref Ꮡtr.DerefOrNull();
 
     map<@string, @string> paxHdrs = default!;
     @string gnuLongName = default!;
@@ -196,7 +196,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
 // can only read the following logical data section. It will properly handle
 // special headers that contain no data section.
 [GoRecv] internal static error handleRegularFile(this ref Reader tr, ж<Header> Ꮡhdr) {
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     ref var nb = ref heap<int64>(out var Ꮡnb);
     nb = hdr.Size;
@@ -214,7 +214,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
 // handleSparseFile checks if the current file is a sparse format of any type
 // and sets the curr reader appropriately.
 [GoRecv] internal static error handleSparseFile(this ref Reader tr, ж<Header> Ꮡhdr, ж<block> ᏑrawHdr) {
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     sparseDatas spd = default!;
     error err = default!;
@@ -240,7 +240,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
 // This assumes that 0.0 headers have already been converted to 0.1 headers
 // by the PAX header parsing logic.
 [GoRecv] internal static (sparseDatas, error) readGNUSparsePAXHeaders(this ref Reader tr, ж<Header> Ꮡhdr) {
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     // Identify the version of GNU headers.
     bool is1x0 = default!;
@@ -298,7 +298,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
 internal static error /*err*/ mergePAX(ж<Header> Ꮡhdr, map<@string, @string> paxHdrs) {
     error err = default!;
 
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
     foreach (var (k, v) in paxHdrs) {
         if (v == ""u8) {
             continue;
@@ -404,7 +404,7 @@ internal static (map<@string, @string>, error) parsePAX(io.Reader r) {
 //   - Exactly 1 block of zeros is read and EOF is hit.
 //   - At least 2 blocks of zeros are read.
 internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr) {
-    ref var tr = ref Ꮡtr.Value;
+    ref var tr = ref Ꮡtr.DerefOrNull();
 
     // Two blocks of zero bytes marks the end of the archive.
     {
@@ -465,10 +465,10 @@ internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr)
             if (bytes.IndexFunc(tr.blk[..], notASCII) >= 0) {
                 hdr.Value.Format = FormatUnknown;
             }
-            var nul = (slice<byte> b) => {
+            bool nul(slice<byte> b) {
                 // Non-ASCII characters in block.
                 return (nint)b[len(b) - 1] == 0;
-            };
+            }
             if (!(nul(v7.size()) && nul(v7.mode()) && nul(v7.uid()) && nul(v7.gid()) && nul(v7.modTime()) && nul(ustarΔ3.devMajor()) && nul(ustarΔ3.devMinor()))) {
                 hdr.Value.Format = FormatUnknown;
             }
@@ -547,8 +547,8 @@ internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr)
 // Thus, this function will read from the raw io.Reader to fetch extra headers.
 // This method mutates blk in the process.
 [GoRecv] internal static (sparseDatas, error) readOldGNUSparseMap(this ref Reader tr, ж<Header> Ꮡhdr, ж<block> Ꮡblk) {
-    ref var hdr = ref Ꮡhdr.Value;
-    ref var blk = ref Ꮡblk.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
+    ref var blk = ref Ꮡblk.DerefOrNull();
 
     // Make sure that the input format is GNU.
     // Unfortunately, the STAR format also has a sparse header format that uses
@@ -611,7 +611,7 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
     // feedTokens copies data in blocks from r into buf until there are
     // at least cnt newlines in buf. It will not read more blocks than needed.
     var blkʗ1 = blk;
-    var feedTokens = error (int64 n) => {
+    error feedTokens(int64 n) {
         while (cntNewline < n) {
             {
                 var (_, errΔ1) = mustReadFull(r, blkʗ1[..]); if (errΔ1 != default!) {
@@ -626,14 +626,14 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
             }
         }
         return default!;
-    };
+    }
     // nextToken gets the next token delimited by a newline. This assumes that
     // at least one newline exists in the buffer.
-    var nextToken = @string () => {
+    @string nextToken() {
         cntNewline--;
         var (tok, _) = Ꮡbuf.Value.ReadString((rune)'\n');
         return strings.TrimRight(tok, "\n"u8);
-    };
+    }
     // Parse for the number of entries.
     // Use integer overflow resistant math to check this.
     {
@@ -852,7 +852,7 @@ internal static (int64 n, error err) WriteTo(this ж<sparseFileReader> Ꮡsr, io
     int64 n = default!;
     error err = default!;
 
-    ref var sr = ref Ꮡsr.Value;
+    ref var sr = ref Ꮡsr.DerefOrNull();
     var (ws, ok) = w._<io.WriteSeeker>(ᐧ);
     if (ok) {
         {

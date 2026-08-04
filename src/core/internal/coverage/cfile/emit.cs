@@ -466,13 +466,13 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
 
 [GoRecv] internal static error VisitFuncs(this ref emitState s, Func<uint32, uint32, slice<uint32>, error> f) {
     slice<uint32> tcounters = default!;
-    var rdCounters = (slice<atomic.Uint32> actrs, slice<uint32> ctrs) => {
+    slice<uint32> rdCounters(slice<atomic.Uint32> actrs, slice<uint32> ctrs) {
         ctrs = ctrs[..0];
         foreach (var (i, _) in actrs) {
             ctrs = append(ctrs, Ꮡ(actrs, i).Load());
         }
         return ctrs;
-    };
+    }
     var dpkg = (uint32)0;
     foreach (var (_, c) in s.counterlist) {
         var sd = @unsafe.Slice(c.Counters.Reinterpret<uint32, atomic.Uint32>(), (nint)c.Len);

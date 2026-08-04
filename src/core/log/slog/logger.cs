@@ -69,7 +69,7 @@ public static ж<Logger> Default() {
 // (as with [log.Print], etc.) will be logged using l's Handler,
 // at a level controlled by [SetLogLoggerLevel].
 public static void SetDefault(ж<Logger> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     ᏑdefaultLogger.Store(Ꮡl);
     // If the default's handler is a defaultHandler, then don't use a handleWriter,
@@ -147,7 +147,7 @@ public static void SetDefault(ж<Logger> Ꮡl) {
 public static ж<Logger> With(this ж<Logger> Ꮡl, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
     if (len(args) == 0) {
         return Ꮡl;
     }
@@ -163,7 +163,7 @@ public static ж<Logger> With(this ж<Logger> Ꮡl, params ꓸꓸꓸany argsʗp)
 //
 // If name is empty, WithGroup returns the receiver.
 public static ж<Logger> WithGroup(this ж<Logger> Ꮡl, @string name) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (name == ""u8) {
         return Ꮡl;

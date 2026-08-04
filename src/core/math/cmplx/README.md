@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-24%2F24_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/math.cmplx.html)
+[![Tests](https://img.shields.io/badge/Tests-24%2F24_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/math.cmplx.html)
 
 Package cmplx provides basic constants and mathematical functions for complex numbers. Special case handling conforms to the C99 standard Annex G IEC 60559-compatible complex arithmetic.
 

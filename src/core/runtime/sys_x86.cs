@@ -13,7 +13,7 @@ partial class runtime_package {
 // adjust Gobuf as if it executed a call to fn with context ctxt
 // and then stopped before the first instruction in fn.
 internal static void gostartcall(ж<gobuf> Ꮡbuf, @unsafe.Pointer fn, @unsafe.Pointer ctxt) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var sp = buf.sp;
     sp -= goarch.PtrSize;

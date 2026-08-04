@@ -602,8 +602,8 @@ internal static void setTraceback(@string level) {
                 enableWER();
                 break;
             }
+            fallthrough = true;
         } while (false);
-        fallthrough = true;
     }
     if (fallthrough || !matchᴛ1) { /* default: */
         t = tracebackAll;
@@ -631,7 +631,7 @@ internal static void setTraceback(@string level) {
 //
 //go:nosplit
 internal static int32 timediv(int64 v, int32 div, ж<int32> Ꮡrem) {
-    ref var rem = ref Ꮡrem.DerefOrNil();
+    ref var rem = ref Ꮡrem.DerefOrNull();
 
     var res = (int32)0;
     for (nint bit = 30; bit >= 0; bit--) {
@@ -665,7 +665,7 @@ internal static ж<m> acquirem() {
 
 //go:nosplit
 internal static void releasem(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     var gp = getg();
     mp.locks--;

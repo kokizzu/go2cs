@@ -20,8 +20,8 @@ partial class comment_package {
 // Markdown returns a Markdown formatting of the Doc.
 // See the [Printer] documentation for ways to customize the Markdown output.
 public static slice<byte> Markdown(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
-    ref var p = ref Ꮡp.Value;
-    ref var d = ref Ꮡd.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var mp = Ꮡ(new mdPrinter(
         Printer: Ꮡp,
@@ -39,8 +39,8 @@ public static slice<byte> Markdown(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
 
 // block prints the block x to out.
 internal static void block(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, Block x) {
-    ref var p = ref Ꮡp.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     switch (x.type()) {
     default: {
@@ -110,8 +110,8 @@ internal static void block(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, Blo
 
 // text prints the text sequence x to out.
 internal static void text(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, slice<ΔText> x) {
-    ref var p = ref Ꮡp.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     p.raw.Reset();
     p.rawText(Ꮡp.of(mdPrinter.Ꮡraw), x);
@@ -146,7 +146,7 @@ internal static void text(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, slic
 // without worrying about escaping characters
 // that have special meaning at the start of a Markdown line.
 [GoRecv] internal static void rawText(this ref mdPrinter p, ж<bytes.Buffer> Ꮡout, slice<ΔText> x) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     foreach (var (_, t) in x) {
         switch (t.type()) {
@@ -190,7 +190,7 @@ internal static void text(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, slic
 // escaping special characters to avoid being misinterpreted
 // as Markdown markup sequences.
 [GoRecv] internal static void escape(this ref mdPrinter p, ж<bytes.Buffer> Ꮡout, @string s) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     nint start = 0;
     for (nint i = 0; i < len(s); i++) {

@@ -66,7 +66,7 @@ internal static readonly @string gobEncoderMessageTooBigˢ = "gob: encoder: mess
 
 // writeMessage sends the data item preceded by an unsigned count of its length.
 [GoRecv] internal static void writeMessage(this ref Encoder enc, io.Writer w, ж<encBuffer> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Space has been reserved for the length at the head of the message.
     // This is a little dirty: we grab the slice from the bytes.Buffer and massage
@@ -99,9 +99,9 @@ internal static readonly @string gobEncoderMessageTooBigˢ = "gob: encoder: mess
 internal static bool /*sent*/ sendActualType(this ж<Encoder> Ꮡenc, io.Writer w, ж<encoderState> Ꮡstate, ж<userTypeInfo> Ꮡut, reflectꓸType actual) {
     bool sent = default!;
 
-    ref var enc = ref Ꮡenc.Value;
-    ref var state = ref Ꮡstate.Value;
-    ref var ut = ref Ꮡut.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
+    ref var state = ref Ꮡstate.DerefOrNull();
+    ref var ut = ref Ꮡut.DerefOrNull();
     {
         var (_, alreadySent) = enc.sent[actual, ꟷ]; if (alreadySent) {
             return false;
@@ -215,8 +215,8 @@ public static error Encode(this ж<Encoder> Ꮡenc, any e) {
 // It will send a descriptor if this is the first time the type has been
 // sent.
 internal static void sendTypeDescriptor(this ж<Encoder> Ꮡenc, io.Writer w, ж<encoderState> Ꮡstate, ж<userTypeInfo> Ꮡut) {
-    ref var enc = ref Ꮡenc.Value;
-    ref var ut = ref Ꮡut.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
+    ref var ut = ref Ꮡut.DerefOrNull();
 
     // Make sure the type is known to the other side.
     // First, have we already sent this type?
@@ -248,8 +248,8 @@ internal static void sendTypeDescriptor(this ж<Encoder> Ꮡenc, io.Writer w, ж
 
 // sendTypeId sends the id, which must have already been defined.
 [GoRecv] internal static void sendTypeId(this ref Encoder enc, ж<encoderState> Ꮡstate, ж<userTypeInfo> Ꮡut) {
-    ref var state = ref Ꮡstate.Value;
-    ref var ut = ref Ꮡut.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
+    ref var ut = ref Ꮡut.DerefOrNull();
 
     // Identify the type of this top-level value.
     state.encodeInt((int64)(int32)enc.sent[ut.@base]);
@@ -262,7 +262,7 @@ internal static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode
 // guaranteeing that all necessary type information has been transmitted first.
 // Passing a nil pointer to EncodeValue will panic, as they cannot be transmitted by gob.
 public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) => func((defer, recover) => {
-    ref var enc = ref Ꮡenc.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
 
     if (value.Kind() == reflect.Invalid) {
         return errors.New(gobCannotEncodeNilValueˢ);

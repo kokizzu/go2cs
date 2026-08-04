@@ -184,7 +184,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, nameOffsetFieldˢ))))[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
     var pkgPathName = new Δname((ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.name();
 }
@@ -373,8 +373,8 @@ internal static bool Comparable(this rtype t) {
 
 // implements reports whether the type V implements the interface type T.
 internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.Value;
-    ref var V = ref ᏑV.Value;
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     var t = ᏑT.InterfaceType();
     if (t == nil) {
@@ -469,8 +469,8 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
 // Ignoring the interface rules (implemented elsewhere)
 // and the ideal constant rules (no ideal constants at run time).
 internal static bool directlyAssignable(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     // x's type V is identical to T?
     if (ᏑT == ᏑV) {
@@ -486,8 +486,8 @@ internal static bool directlyAssignable(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
 }
 
 internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     if (cmpTags) {
         return ᏑT == ᏑV;
@@ -499,8 +499,8 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
 }
 
 internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var V = ref ᏑV.DerefOrNil();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
 
     if (ᏑT == ᏑV) {
         return true;

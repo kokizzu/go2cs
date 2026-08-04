@@ -135,7 +135,7 @@ public static (nint n, error err) Read(this ж<File> Ꮡf, slice<byte> b) {
     nint n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -156,7 +156,7 @@ public static (nint n, error err) ReadAt(this ж<File> Ꮡf, slice<byte> b, int6
     nint n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -186,7 +186,7 @@ public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
     int64 n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -230,7 +230,7 @@ public static (nint n, error err) Write(this ж<File> Ꮡf, slice<byte> b) {
     nint n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -261,7 +261,7 @@ public static (nint n, error err) WriteAt(this ж<File> Ꮡf, slice<byte> b, int
     nint n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -291,7 +291,7 @@ public static (int64 n, error err) WriteTo(this ж<File> Ꮡf, Δio.Writer w) {
     int64 n = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -341,7 +341,7 @@ public static (int64 ret, error err) Seek(this ж<File> Ꮡf, int64 offset, nint
     int64 ret = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     {
         var errΔ1 = Ꮡf.checkValid(seekˢ); if (errΔ1 != default!) {
             return (0, errΔ1);

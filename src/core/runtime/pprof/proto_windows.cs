@@ -13,7 +13,7 @@ partial class pprof_package {
 
 // readMapping adds memory mapping information to the profile.
 internal static void readMapping(this ж<profileBuilder> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (snap, err) = createModuleSnapshot();
     if (err != default!) {

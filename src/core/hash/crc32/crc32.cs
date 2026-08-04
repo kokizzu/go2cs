@@ -258,7 +258,7 @@ public static uint32 ChecksumIEEE(slice<byte> data) {
 
 // tableSum returns the IEEE checksum of table t.
 internal static uint32 tableSum(ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     array<byte> a = new(1024);
     var b = a[..0];

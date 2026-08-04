@@ -60,8 +60,8 @@ public static (TypeAndValue, error err) Eval(ж<token.FileSet> Ꮡfset, ж<Packa
 public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡpkg, tokenꓸPos pos, ast.Expr expr, ж<ΔInfo> Ꮡinfo) {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var fset = ref Ꮡfset.Value;
-    ref var pkg = ref Ꮡpkg.DerefOrNil();
+    ref var fset = ref Ꮡfset.DerefOrNull();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         // determine scope

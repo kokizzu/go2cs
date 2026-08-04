@@ -52,9 +52,9 @@ internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this
 internal static readonly @string tlsCertificatePrivateKeyˢ = "tls: certificate private key does not implement crypto.Decrypter"u8;
 
 internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientKeyExchangeMsg> Ꮡckx, uint16 version) {
-    ref var config = ref Ꮡconfig.Value;
-    ref var cert = ref Ꮡcert.Value;
-    ref var ckx = ref Ꮡckx.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
+    ref var ckx = ref Ꮡckx.DerefOrNull();
 
     if (len(ckx.ciphertext) < 2) {
         return (default!, errClientKeyExchange);
@@ -93,9 +93,9 @@ internal static error processServerKeyExchange(this rsaKeyAgreement ka, ж<Confi
 internal static readonly @string tlsServerCertificateˢ = "tls: server certificate contains incorrect key type for selected ciphersuite"u8;
 
 internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<Δx509.Certificate> Ꮡcert) {
-    ref var config = ref Ꮡconfig.Value;
-    ref var clientHello = ref ᏑclientHello.Value;
-    ref var cert = ref Ꮡcert.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
+    ref var clientHello = ref ᏑclientHello.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     var preMasterSecret = new slice<byte>(48);
     preMasterSecret[0] = (byte)((clientHello.vers >> (int)(8)));
@@ -189,10 +189,10 @@ internal static readonly @string tlsNoSupportedEllipticˢ = "tls: no supported e
 internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate cannot be used with the selected cipher suite"u8;
 
 [GoRecv] internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> Ꮡhello) {
-    ref var config = ref Ꮡconfig.Value;
-    ref var cert = ref Ꮡcert.Value;
-    ref var clientHello = ref ᏑclientHello.Value;
-    ref var hello = ref Ꮡhello.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
+    ref var clientHello = ref ᏑclientHello.DerefOrNull();
+    ref var hello = ref Ꮡhello.DerefOrNull();
 
     CurveID curveID = default!;
     foreach (var (_, c) in clientHello.supportedCurves) {
@@ -249,7 +249,7 @@ internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate ca
         return (default!, errors.New(tlsCertificateCannotBeˢ));
     }
     var signed = hashForServerKeyExchange(sigType, sigHash, ka.version, clientHello.random, hello.random, serverECDHEParams);
-    var signOpts = ((crypto.SignerOpts)new crypto_HashᴠSignerOpts(sigHash));
+    var signOpts = ((crypto.SignerOpts)sigHash);
     if (sigType == signatureRSAPSS) {
         signOpts = new rsa_PSSOptionsжSignerOpts(Ꮡ(new rsa.PSSOptions(SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: sigHash)));
     }
@@ -277,7 +277,7 @@ internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate ca
 }
 
 [GoRecv] internal static (slice<byte>, error) processClientKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientKeyExchangeMsg> Ꮡckx, uint16 version) {
-    ref var ckx = ref Ꮡckx.Value;
+    ref var ckx = ref Ꮡckx.DerefOrNull();
 
     if (len(ckx.ciphertext) == 0 || (nint)ckx.ciphertext[0] != len(ckx.ciphertext) - 1) {
         return (default!, errClientKeyExchange);
@@ -297,11 +297,11 @@ internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate ca
 internal static readonly @string tlsServerSelectedˢ4 = "tls: server selected unsupported curve"u8;
 
 [GoRecv] internal static error processServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> ᏑserverHello, ж<Δx509.Certificate> Ꮡcert, ж<serverKeyExchangeMsg> Ꮡskx) {
-    ref var config = ref Ꮡconfig.Value;
-    ref var clientHello = ref ᏑclientHello.Value;
-    ref var serverHello = ref ᏑserverHello.Value;
-    ref var cert = ref Ꮡcert.Value;
-    ref var skx = ref Ꮡskx.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
+    ref var clientHello = ref ᏑclientHello.DerefOrNull();
+    ref var serverHello = ref ᏑserverHello.DerefOrNull();
+    ref var cert = ref Ꮡcert.DerefOrNull();
+    ref var skx = ref Ꮡskx.DerefOrNull();
 
     if (len(skx.key) < 4) {
         return errServerKeyExchange;

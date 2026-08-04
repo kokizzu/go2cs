@@ -43,7 +43,7 @@ public static Handle<T> Make<T>(T value)
         // This is a good time to initialize cleanup, since we must go through
         // this path on the first use of Make, and it's not on the hot path.
         ᏑsetupMake.Do(registerCleanup);
-        ma = addUniqueMap<T>(typ);
+        ma = addUniqueMap<T>(typ).OrTypedNil();
     }
     var m = ma._<ж<uniqueMap<T>>>();
     // Keep around any values we allocate for insertion. There
@@ -55,14 +55,14 @@ public static Handle<T> Make<T>(T value)
     
     ref var toInsertWeak = ref heap(new weak.Pointer<T>(), out var ᏑtoInsertWeak);
     var mʗ1 = m;
-    var newValue = () => {
+    weak.Pointer<T> newValue() {
         if (ᏑtoInsert.ValueSlot == nil) {
             ᏑtoInsert.ValueSlot = @new<T>();
             ᏑtoInsert.ValueSlot.ValueSlot = clone(value, mʗ1.of(uniqueMap<T>.ᏑcloneSeq));
             ᏑtoInsertWeak.Value = weak.Make<T>(ᏑtoInsert.ValueSlot);
         }
         return ᏑtoInsertWeak.Value;
-    };
+    }
     ж<T> ptr = default!;
     while (ᐧ) {
         // Check the map.
@@ -81,7 +81,7 @@ public static Handle<T> Make<T>(T value)
         // Try to remove it and start over.
         m.Value.HashTrieMap.Value.CompareAndDelete(value, wp);
     }
-    Δruntime.KeepAlive(toInsert);
+    Δruntime.KeepAlive(toInsert.OrTypedNil());
     return new Handle<T>(ptr);
 }
 
@@ -111,7 +111,7 @@ internal static ж<uniqueMap<T>> addUniqueMap<T>(ж<abi.Type> Ꮡtyp)
         HashTrieMap: concurrent.NewHashTrieMap<T, weak.Pointer<T>>(),
         cloneSeq: makeCloneSeq(Ꮡtyp)
     ));
-    var (a, loaded) = uniqueMaps.LoadOrStore(Ꮡtyp, m);
+    var (a, loaded) = uniqueMaps.LoadOrStore(Ꮡtyp, m.OrTypedNil());
     if (!loaded) {
         // Add a cleanup function for the new map.
         ᏑcleanupFuncsMu.Lock();

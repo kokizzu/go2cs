@@ -159,10 +159,10 @@ public static @string String(this ж<ExperimentFlags> Ꮡexp) {
 // regardless of base.
 internal static slice<@string> expList(ж<goexperiment.Flags> Ꮡexp, ж<goexperiment.Flags> Ꮡbase, bool all) {
     slice<@string> list = default!;
-    var rv = reflect.ValueOf(Ꮡexp).Elem();
+    var rv = reflect.ValueOf(Ꮡexp.OrTypedNil()).Elem();
     reflectꓸValue rBase = new(nil);
     if (Ꮡbase != nil) {
-        rBase = reflect.ValueOf(Ꮡbase).Elem();
+        rBase = reflect.ValueOf(Ꮡbase.OrTypedNil()).Elem();
     }
     var rt = rv.Type();
     for (nint i = 0; i < rt.NumField(); i++) {

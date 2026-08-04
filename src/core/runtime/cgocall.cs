@@ -210,7 +210,7 @@ internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
     // GC by forcing them to stay live across this time warp.
     KeepAlive(fn);
     KeepAlive(arg);
-    KeepAlive(mp);
+    KeepAlive(mp.OrTypedNil());
     return errno;
 }
 
@@ -221,7 +221,7 @@ internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
 //
 //go:nosplit
 internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool signal) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     var g0 = mp.g0;
     var inBound = sp > (~g0).stack.lo && sp <= (~g0).stack.hi;
@@ -419,7 +419,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
 });
 
 internal static void unwindm(ж<bool> Ꮡrestore) {
-    ref var restore = ref Ꮡrestore.Value;
+    ref var restore = ref Ꮡrestore.DerefOrNull();
 
     if (restore) {
         // Restore sp saved by cgocallback during
@@ -560,7 +560,7 @@ internal static readonly @string cgoResultFail = "cgo result is unpinned Go poin
 // level, where Go pointers are allowed. Go pointers to pinned objects are
 // allowed as long as they don't reference other unpinned pointers.
 internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir, bool top, @string msg) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.Pointers() || Δp == nil) {
         // If the type has no pointers there is nothing to do.

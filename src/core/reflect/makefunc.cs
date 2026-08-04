@@ -151,8 +151,8 @@ internal static partial void methodValueCall();
 //
 //go:nosplit
 internal static void moveMakeFuncArgPtrs(ж<makeFuncCtxt> Ꮡctxt, ж<abi.RegArgs> Ꮡargs) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var args = ref Ꮡargs.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+    ref var args = ref Ꮡargs.DerefOrNull();
 
     foreach (var (i, arg) in args.Ints) {
         // Avoid write barriers! Because our write barrier enqueues what

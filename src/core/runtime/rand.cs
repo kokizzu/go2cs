@@ -162,7 +162,7 @@ internal static uint64 rand() {
 
 // mrandinit initializes the random state of an m.
 internal static void mrandinit(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     array<uint64> seed = new(4);
     foreach (var (i, _) in seed) {

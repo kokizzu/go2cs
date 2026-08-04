@@ -442,7 +442,7 @@ internal static any deferrangefunc() {
     d.Value.sp = getcallersp();
     d.Value.rangefunc = true;
     d.Value.head = @new<atomic.Pointer<_defer>>();
-    return (~d).head;
+    return (~d).head.OrTypedNil();
 }
 
 // badDefer returns a fixed bad defer pointer for poisoning an atomic defer list head.
@@ -479,7 +479,7 @@ internal static void deferprocat(Action fn, any frame) {
 // following d0.
 // See the doc comment for deferrangefunc for details.
 internal static void deferconvert(ж<_defer> Ꮡd0) {
-    ref var d0 = ref Ꮡd0.Value;
+    ref var d0 = ref Ꮡd0.DerefOrNull();
 
     var head = d0.head;
     if (raceenabled) {
@@ -516,7 +516,7 @@ internal static void deferconvert(ж<_defer> Ꮡd0) {
 //
 //go:nosplit
 internal static void deferprocStack(ж<_defer> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
@@ -588,7 +588,7 @@ internal static ж<_defer> newdefer() {
 
 // popDefer pops the head of gp's defer list and frees it.
 internal static void popDefer(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var d = gp._defer;
     d.Value.fn = default!;
@@ -656,7 +656,7 @@ internal static readonly @string panicWhilePrintingPanicˢ = "panic while printi
 // Call all Error and String methods before freezing the world.
 // Used when crashing with panicking.
 internal static void preprintpanics(ж<_panic> Ꮡp) => func((defer, recover) => {
-    ref var Δp = ref Ꮡp.DerefOrNil();
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     defer(() => {
         @string text = panicWhilePrintingPanicˢ;
@@ -686,14 +686,14 @@ internal static void preprintpanics(ж<_panic> Ꮡp) => func((defer, recover) =>
             Δp.arg = v.String();
             break;
         }}
-        Ꮡp = Δp.link; Δp = ref Ꮡp.DerefOrNil();
+        Ꮡp = Δp.link; Δp = ref Ꮡp.DerefOrNull();
     }
 });
 
 // Print all currently active panics. Used when crashing.
 // Should only be called after preprintpanics.
 internal static void printpanics(ж<_panic> Ꮡp) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     if (Δp.link != nil) {
         printpanics(Δp.link);
@@ -852,7 +852,7 @@ internal static void gopanic(any e) {
 //
 // If p.goexit is true, then start may return multiple times.
 internal static void start(this ж<_panic> Ꮡp, uintptr pc, @unsafe.Pointer sp) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     var gp = getg();
     // Record the caller's PC and SP, so recovery can identify panics
@@ -897,7 +897,7 @@ internal static readonly @string recoveryFailedˢ = "recovery failed"u8;
 // Note: The "ok bool" result is necessary to correctly handle when
 // the deferred function itself was nil (e.g., "defer (func())(nil)").
 internal static (Action, bool) nextDefer(this ж<_panic> Ꮡp) {
-    ref var Δp = ref Ꮡp.DerefOrNil();
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     var gp = getg();
     if (!Δp.deferreturn) {
@@ -963,7 +963,7 @@ Recheck:
 internal static bool /*ok*/ nextFrame(this ж<_panic> Ꮡp) {
     bool ok = default!;
 
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
     if (Δp.lr == 0) {
         return false;
     }
@@ -1147,7 +1147,7 @@ internal static readonly @string badRecoveryˢ = "bad recovery"u8;
 // return into the Goexit loop instead, so it can continue processing
 // defers instead.
 internal static void recovery(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var Δp = gp._panic;
     var (pc, sp, fp) = (Δp.Value.retpc, (uintptr)(~Δp).sp, (uintptr)(~Δp).fp);
@@ -1405,7 +1405,7 @@ internal static ref mutex deadlock => ref Ꮡdeadlock.Value;
 // gp is the crashing g running on this M, but may be a user G, while getg() is
 // always g0.
 internal static bool dopanic_m(ж<g> Ꮡgp, uintptr pc, uintptr sp) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (gp.sig != 0) {
         @string signameΔ1 = signame(gp.sig);
@@ -1486,7 +1486,7 @@ internal static bool canpanic() {
 // replacing the top-most frame with sigpanic. This is used by
 // preparePanic.
 internal static bool shouldPushSigpanic(ж<g> Ꮡgp, uintptr pc, uintptr lr) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (pc == 0) {
         // Probably a call to a nil func. The old LR is more

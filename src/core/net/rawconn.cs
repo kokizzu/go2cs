@@ -22,19 +22,19 @@ partial class net_package {
 }
 
 internal static bool ok(this ж<rawConn> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     return Ꮡc != nil && c.fd != nil;
 }
 
 internal static error Control(this ж<rawConn> Ꮡc, Action<uintptr> f) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawControl(f);
-    Δruntime.KeepAlive(c.fd);
+    Δruntime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-control"u8, Net: (~c.fd).net, Source: default!, Addr: (~c.fd).laddr, Err: err)));
     }
@@ -42,13 +42,13 @@ internal static error Control(this ж<rawConn> Ꮡc, Action<uintptr> f) {
 }
 
 internal static error Read(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawRead(f);
-    Δruntime.KeepAlive(c.fd);
+    Δruntime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-read"u8, Net: (~c.fd).net, Source: (~c.fd).laddr, Addr: (~c.fd).raddr, Err: err)));
     }
@@ -56,13 +56,13 @@ internal static error Read(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
 }
 
 internal static error Write(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawWrite(f);
-    Δruntime.KeepAlive(c.fd);
+    Δruntime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-write"u8, Net: (~c.fd).net, Source: (~c.fd).laddr, Addr: (~c.fd).raddr, Err: err)));
     }
@@ -77,7 +77,7 @@ internal static error Write(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
 //
 // PollFD is not intended for use outside the standard library.
 internal static ж<poll.FD> PollFD(this ж<rawConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return default!;
@@ -86,8 +86,6 @@ internal static ж<poll.FD> PollFD(this ж<rawConn> Ꮡc) {
 }
 
 internal static ж<rawConn> newRawConn(ж<netFD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
-
     return Ꮡ(new rawConn(fd: Ꮡfd));
 }
 
@@ -115,8 +113,6 @@ internal static ж<rawConn> newRawConn(ж<netFD> Ꮡfd) {
 }
 
 internal static ж<rawListener> newRawListener(ж<netFD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
-
     return Ꮡ(new rawListener(new rawConn(fd: Ꮡfd)));
 }
 

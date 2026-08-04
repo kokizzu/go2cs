@@ -17,7 +17,7 @@ internal static readonly @string extraneousDataAfterNoˢ = "extraneous data afte
 // data in r.buffer. The blockSize argument is the compressed size.
 // RFC 3.1.1.3.
 internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (builtin.len(r.compressedBuf) >= blockSize){
         r.compressedBuf = r.compressedBuf[..(int)(blockSize)];
@@ -107,7 +107,7 @@ internal static readonly @string invalidSymbolCompressionˢ = "invalid symbol co
 // tables used to read the sequence codes. It returns the number of
 // sequences and the new offset. RFC 3.1.1.3.2.1.
 internal static (nint, nint, error) initSeqs(this ж<Reader> Ꮡr, block data, nint off) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (off >= builtin.len(data)) {
         return (0, 0, r.makeEOFError(off));
@@ -167,7 +167,7 @@ internal static readonly @string missingRepeatSequenceFseˢ = "missing repeat se
 // r.seqTableBits for kind. We store these in the Reader because one of
 // the modes simply reuses the value from the last block in the frame.
 internal static (nint, error) setSeqTable(this ж<Reader> Ꮡr, block data, nint off, seqCode kind, byte mode) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var info = ᏑseqCodeInfo.at<seqCodeInfoData>(kind);
     switch (mode) {
@@ -247,7 +247,7 @@ internal static readonly @string extraneousDataAfterˢ = "extraneous data after 
 
 // execSeqs reads and executes the sequences. RFC 3.1.1.3.2.1.2.
 internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice<byte> litbuf, nint seqCount) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Set up the initial states for the sequence code readers.
     ref var rbr = ref heap<reverseBitReader>(out var Ꮡrbr);
@@ -380,7 +380,7 @@ internal static readonly @string offsetPastWindowˢ = "offset past window"u8;
 
 // Copy match bytes from the decoded output, or the window, at offset.
 [GoRecv] internal static error copyFromWindow(this ref Reader r, ж<reverseBitReader> Ꮡrbr, uint32 offset, uint32 match) {
-    ref var rbr = ref Ꮡrbr.Value;
+    ref var rbr = ref Ꮡrbr.DerefOrNull();
 
     if (offset == 0) {
         return rbr.makeError(invalidZeroOffsetˢ);

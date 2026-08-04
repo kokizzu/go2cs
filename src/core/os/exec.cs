@@ -79,7 +79,7 @@ internal static ж<Process> newPIDProcess(nint pid) {
         Pid: pid,
         mode: modePID
     ));
-    Δruntime.SetFinalizer(p, (Func<ж<Process>, error>)(Release));
+    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
     return p;
 }
 
@@ -91,7 +91,7 @@ internal static ж<Process> newHandleProcess(nint pid, uintptr handle) {
     ));
     p.of(Process.Ꮡstate).Store(1);
     // 1 persistent reference
-    Δruntime.SetFinalizer(p, (Func<ж<Process>, error>)(Release));
+    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
     return p;
 }
 
@@ -104,12 +104,12 @@ internal static ж<Process> newDoneProcess(nint pid) {
     // used, so its value doesn't matter.
     p.of(Process.Ꮡstate).Store((uint64)statusDone);
     // No persistent reference, as there is no handle.
-    Δruntime.SetFinalizer(p, (Func<ж<Process>, error>)(Release));
+    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
     return p;
 }
 
 internal static (uintptr, processStatus) handleTransientAcquire(this ж<Process> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.mode != modeHandle) {
         throw panic("handleTransientAcquire called in invalid mode");
@@ -128,7 +128,7 @@ internal static (uintptr, processStatus) handleTransientAcquire(this ж<Process>
 }
 
 internal static void handleTransientRelease(this ж<Process> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.mode != modeHandle) {
         throw panic("handleTransientRelease called in invalid mode");
@@ -168,7 +168,7 @@ internal static void handleTransientRelease(this ж<Process> Ꮡp) {
 // Returns the status prior to this call. If this is not statusOK, then the
 // reference was not dropped or status changed.
 internal static processStatus handlePersistentRelease(this ж<Process> Ꮡp, processStatus reason) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.mode != modeHandle) {
         throw panic("handlePersistentRelease called in invalid mode");
@@ -201,7 +201,7 @@ internal static processStatus handlePersistentRelease(this ж<Process> Ꮡp, pro
 }
 
 internal static processStatus pidStatus(this ж<Process> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.mode != modePID) {
         throw panic("pidStatus called in invalid mode");
@@ -210,7 +210,7 @@ internal static processStatus pidStatus(this ж<Process> Ꮡp) {
 }
 
 internal static void pidDeactivate(this ж<Process> Ꮡp, processStatus reason) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.mode != modePID) {
         throw panic("pidDeactivate called in invalid mode");
@@ -305,7 +305,7 @@ public static (ж<Process>, error) StartProcess(@string name, slice<@string> arg
 // rendering it unusable in the future.
 // Release only needs to be called if [Process.Wait] is not.
 public static error Release(this ж<Process> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Note to future authors: the Release API is cursed.
     //

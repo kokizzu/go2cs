@@ -191,7 +191,7 @@ internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, 
 
 // bigFtoa uses multiprecision computations to format a float.
 internal static slice<byte> bigFtoa(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.Value;
+    ref var flt = ref Ꮡflt.DerefOrNull();
 
     var d = @new<@decimal>();
     d.Assign(mant);
@@ -280,8 +280,8 @@ internal static slice<byte> formatDigits(slice<byte> dst, bool shortest, bool ne
 // roundShortest rounds d (= mant * 2^exp) to the shortest number of digits
 // that will let the original floating point value be precisely reconstructed.
 internal static void roundShortest(ж<@decimal> Ꮡd, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var d = ref Ꮡd.Value;
-    ref var flt = ref Ꮡflt.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var flt = ref Ꮡflt.DerefOrNull();
 
     // If mantissa is zero, the number is zero; stop now.
     if (mant == 0) {
@@ -518,7 +518,7 @@ internal static slice<byte> fmtF(slice<byte> dst, bool neg, decimalSlice d, nint
 
 // %b: -ddddddddp±ddd
 internal static slice<byte> fmtB(slice<byte> dst, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.Value;
+    ref var flt = ref Ꮡflt.DerefOrNull();
 
     // sign
     if (neg) {
@@ -539,7 +539,7 @@ internal static slice<byte> fmtB(slice<byte> dst, bool neg, uint64 mant, nint ex
 
 // %x: -0x1.yyyyyyyyp±ddd or -0x0p+0. (y is hex digit, d is decimal digit)
 internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.Value;
+    ref var flt = ref Ꮡflt.DerefOrNull();
 
     if (mant == 0) {
         exp = 0;

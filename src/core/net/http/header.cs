@@ -199,7 +199,7 @@ public static error WriteSubset(this ΔHeader h, io.Writer w, map<@string, bool>
 }
 
 internal static error writeSubset(this ΔHeader h, io.Writer w, map<@string, bool> exclude, ж<httptrace.ClientTrace> Ꮡtrace) {
-    ref var trace = ref Ꮡtrace.DerefOrNil();
+    ref var trace = ref Ꮡtrace.DerefOrNull();
 
     var (ws, ok) = w._<io.StringWriter>(ᐧ);
     if (!ok) {
@@ -223,7 +223,7 @@ internal static error writeSubset(this ΔHeader h, io.Writer w, map<@string, boo
             foreach (var (_, s) in new @string[]{kv.key, ": "u8, v, "\r\n"u8}.slice()) {
                 {
                     var (_, err) = ws.WriteString(s); if (err != default!) {
-                        ᏑheaderSorterPool.Put(sorter);
+                        ᏑheaderSorterPool.Put(sorter.OrTypedNil());
                         return err;
                     }
                 }
@@ -237,7 +237,7 @@ internal static error writeSubset(this ΔHeader h, io.Writer w, map<@string, boo
             formattedVals = default!;
         }
     }
-    ᏑheaderSorterPool.Put(sorter);
+    ᏑheaderSorterPool.Put(sorter.OrTypedNil());
     return default!;
 }
 

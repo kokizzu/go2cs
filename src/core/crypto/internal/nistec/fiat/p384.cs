@@ -45,8 +45,8 @@ public static nint IsZero(this ж<P384Element> Ꮡe) {
 
 // Set sets e = t, and returns e.
 public static ж<P384Element> Set(this ж<P384Element> Ꮡe, ж<P384Element> Ꮡt) {
-    ref var e = ref Ꮡe.Value;
-    ref var t = ref Ꮡt.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     e.x = t.x.Clone();
     return Ꮡe;
@@ -61,7 +61,7 @@ public static slice<byte> Bytes(this ж<P384Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P384Element> Ꮡe, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var tmp = ref heap(new p384NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
     p384FromMontgomery(Ꮡtmp, Ꮡe.of(P384Element.Ꮡx));

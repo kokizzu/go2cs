@@ -53,8 +53,8 @@ public static rpc.ClientCodec NewClientCodec(io.ReadWriteCloser conn) {
 }
 
 internal static error WriteRequest(this ж<clientCodec> Ꮡc, ж<rpc.Request> Ꮡr, any param) {
-    ref var c = ref Ꮡc.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡc.of(clientCodec.Ꮡmutex).Lock();
     c.pending[r.Seq] = r.ServiceMethod;
@@ -84,8 +84,8 @@ internal static error WriteRequest(this ж<clientCodec> Ꮡc, ж<rpc.Request> �
 internal static readonly @string unspecifiedErrorˢ = "unspecified error"u8;
 
 internal static error ReadResponseHeader(this ж<clientCodec> Ꮡc, ж<rpc.Response> Ꮡr) {
-    ref var c = ref Ꮡc.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     c.resp.reset();
     {

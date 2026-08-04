@@ -43,7 +43,7 @@ internal static readonly @string msgˢ = "msg="u8;
 internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) => func((defer, recover) => {
     r = r.ΔClone();
 
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
     var buf = buffer.New();
     var bufʗ1 = buf;
     defer(bufʗ1.Free);
@@ -71,7 +71,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
 });
 
 [GoRecv] internal static void appendValue(this ref fastTextHandler h, ж<buffer.Buffer> Ꮡbuf, slog.Value v) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var exprᴛ1 = v.Kind();
     if (exprᴛ1 == slog.KindString) {
@@ -115,7 +115,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
 }
 
 [GoRecv] internal static void appendTime(this ref fastTextHandler h, ж<buffer.Buffer> Ꮡbuf, time.Time t) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     buf = strconv.AppendInt(buf, t.Unix(), 10);
 }

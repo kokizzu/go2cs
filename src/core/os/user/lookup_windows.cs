@@ -384,7 +384,7 @@ internal static (ж<Group>, error) lookupGroupId(@string gid) {
 }
 
 internal static (slice<@string>, error) listGroups(ж<User> Ꮡuser) {
-    ref var user = ref Ꮡuser.Value;
+    ref var user = ref Ꮡuser.DerefOrNull();
 
     var (sid, err) = syscall.StringToSid(user.Uid);
     if (err != default!) {

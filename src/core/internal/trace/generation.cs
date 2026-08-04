@@ -46,7 +46,7 @@ partial class trace_package {
 // If gen is non-nil, it is valid and must be processed before handling the returned
 // error.
 internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufio.Reader> Ꮡr, ж<spilledBatch> Ꮡspill) {
-    ref var spill = ref Ꮡspill.DerefOrNil();
+    ref var spill = ref Ꮡspill.DerefOrNull();
 
     var g = Ꮡ(new generation(
         evTable: Ꮡ(new evTable(
@@ -62,7 +62,7 @@ internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufi
                 return (default!, default!, err);
             }
         }
-        Ꮡspill = default!; spill = ref Ꮡspill.DerefOrNil();
+        Ꮡspill = default!; spill = ref Ꮡspill.DerefOrNull();
     }
     // Read batches one at a time until we either hit EOF or
     // the next generation.
@@ -94,7 +94,7 @@ internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufi
         }
         if (gen == (~g).gen + 1) {
             // TODO: advance this the same way the runtime does.
-            Ꮡspill = Ꮡ(new spilledBatch(gen: gen, batch: Ꮡb)); spill = ref Ꮡspill.DerefOrNil();
+            Ꮡspill = Ꮡ(new spilledBatch(gen: gen, batch: Ꮡb)); spill = ref Ꮡspill.DerefOrNull();
             break;
         }
         if (gen != (~g).gen) {
@@ -143,7 +143,7 @@ internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufi
 
 // processBatch adds the batch to the generation.
 internal static error processBatch(ж<generation> Ꮡg, batch b) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     switch (ᐧ) {
     case {} when b.isStringsBatch(): {
@@ -203,14 +203,13 @@ internal static error processBatch(ж<generation> Ꮡg, batch b) {
 // validateStackStrings makes sure all the string references in
 // the stack table are present in the string table.
 internal static error validateStackStrings(ж<dataTable<stackID, stack>> Ꮡstacks, ж<dataTable<stringID, @string>> Ꮡstrings, map<uint64, frame> frames) {
-    ref var stacks = ref Ꮡstacks.Value;
+    ref var stacks = ref Ꮡstacks.DerefOrNull();
 
     ref var err = ref heap<error>(out var Ꮡerr);
     var framesʗ1 = frames;
     stacks.forEach((stackID id, stack stk) => {
         foreach (var (_, pc) in stk.pcs) {
-            ref var frame = ref heap<frame>(out var Ꮡframe);
-            (frame, var ok) = framesʗ1[pc, ꟷ];
+            var (frame, ok) = framesʗ1[pc, ꟷ];
             if (!ok) {
                 Ꮡerr.ValueSlot = fmt.Errorf("found unknown pc %x for stack %d"u8, pc, id);
                 return false;
@@ -235,7 +234,7 @@ internal static error validateStackStrings(ж<dataTable<stackID, stack>> Ꮡstac
 // (indicating that the batch contains only strings) and adds each
 // string contained therein to the provided strings map.
 internal static error addStrings(ж<dataTable<stringID, @string>> ᏑstringTable, batch b) {
-    ref var stringTable = ref ᏑstringTable.Value;
+    ref var stringTable = ref ᏑstringTable.DerefOrNull();
 
     if (!b.isStringsBatch()) {
         return fmt.Errorf("internal error: addStrings called on non-string batch"u8);
@@ -293,7 +292,7 @@ internal static error addStrings(ж<dataTable<stringID, @string>> ᏑstringTable
 // (indicating that the batch contains only stacks) and adds each
 // string contained therein to the provided stacks map.
 internal static error addStacks(ж<dataTable<stackID, stack>> ᏑstackTable, map<uint64, frame> pcs, batch b) {
-    ref var stackTable = ref ᏑstackTable.Value;
+    ref var stackTable = ref ᏑstackTable.DerefOrNull();
 
     if (!b.isStacksBatch()) {
         return fmt.Errorf("internal error: addStacks called on non-stacks batch"u8);

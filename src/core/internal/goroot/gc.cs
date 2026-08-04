@@ -124,7 +124,7 @@ private static readonly @string dumpmachineˢ = "-dumpmachine"u8;
 
 // isStandard reports whether path is a standard library for gccgo.
 internal static bool isStandard(this ж<gccgoDirs> Ꮡgd, @string path) {
-    ref var gd = ref Ꮡgd.Value;
+    ref var gd = ref Ꮡgd.DerefOrNull();
 
     // Quick check: if the first path component has a '.', it's not
     // in the standard library. This skips most GOPATH directories.

@@ -152,7 +152,7 @@ internal static pollInfo info(this ж<pollDesc> Ꮡpd) {
 // In practice this means after changing closing
 // or changing rd or wd from < 0 to >= 0.
 internal static void publishInfo(this ж<pollDesc> Ꮡpd) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     uint32 info = default!;
     if (pd.closing) {
@@ -290,7 +290,7 @@ internal static readonly @string runtimeBlockedReadOnˢ = "runtime: blocked read
 
 //go:linkname poll_runtime_pollClose internal/poll.runtime_pollClose
 internal static void poll_runtime_pollClose(ж<pollDesc> Ꮡpd) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     if (!pd.closing) {
         @throw(runtimeClosePolldescWOˢ);
@@ -308,8 +308,8 @@ internal static void poll_runtime_pollClose(ж<pollDesc> Ꮡpd) {
 }
 
 internal static void free(this ж<pollCache> Ꮡc, ж<pollDesc> Ꮡpd) {
-    ref var c = ref Ꮡc.Value;
-    ref var pd = ref Ꮡpd.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     // pd can't be shared here, but lock anyhow because
     // that's what publishInfo documents.
@@ -383,7 +383,7 @@ internal static void poll_runtime_pollWaitCanceled(ж<pollDesc> Ꮡpd, nint mode
 
 //go:linkname poll_runtime_pollSetDeadline internal/poll.runtime_pollSetDeadline
 internal static void poll_runtime_pollSetDeadline(ж<pollDesc> Ꮡpd, int64 d, nint mode) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     @lock(Ꮡpd.of(pollDesc.Ꮡlock));
     if (pd.closing) {
@@ -474,7 +474,7 @@ internal static readonly @string runtimeUnblockOnClosingˢ = "runtime: unblock o
 
 //go:linkname poll_runtime_pollUnblock internal/poll.runtime_pollUnblock
 internal static void poll_runtime_pollUnblock(ж<pollDesc> Ꮡpd) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     @lock(Ꮡpd.of(pollDesc.Ꮡlock));
     if (pd.closing) {
@@ -520,7 +520,7 @@ internal static void poll_runtime_pollUnblock(ж<pollDesc> Ꮡpd) {
 //
 //go:nowritebarrier
 internal static int32 netpollready(ж<gList> ᏑtoRun, ж<pollDesc> Ꮡpd, int32 mode) {
-    ref var toRun = ref ᏑtoRun.Value;
+    ref var toRun = ref ᏑtoRun.DerefOrNull();
 
     ref var delta = ref heap<int32>(out var Ꮡdelta);
     delta = (int32)0;
@@ -624,7 +624,7 @@ internal static bool netpollblock(ж<pollDesc> Ꮡpd, int32 mode, bool waitio) {
 // this adjustment should be applied after the goroutine has
 // been marked ready.
 internal static ж<g> netpollunblock(ж<pollDesc> Ꮡpd, int32 mode, bool ioready, ж<int32> Ꮡdelta) {
-    ref var delta = ref Ꮡdelta.Value;
+    ref var delta = ref Ꮡdelta.DerefOrNull();
 
     var gpp = Ꮡpd.of(pollDesc.Ꮡrg);
     if (mode == (rune)'w') {
@@ -661,7 +661,7 @@ internal static readonly @string runtimeInconsistentReadˢ = "runtime: inconsist
 internal static readonly @string runtimeInconsistentWriteˢ = "runtime: inconsistent write deadline"u8;
 
 internal static void netpolldeadlineimpl(ж<pollDesc> Ꮡpd, uintptr seq, bool read, bool write) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     @lock(Ꮡpd.of(pollDesc.Ꮡlock));
     // Seq arg is seq when the timer was set.
@@ -730,7 +730,7 @@ internal static void netpollAdjustWaiters(int32 delta) {
 }
 
 internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     @lock(Ꮡc.of(pollCache.Ꮡlock));
     if (c.first == nil) {

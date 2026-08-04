@@ -11,8 +11,8 @@ using @internal;
 partial class runtime_package {
 
 internal static @unsafe.Pointer mapaccess1_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string kyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var ky = ref heap(kyʗp, out var Ꮡky);
     if (raceenabled && Ꮡh != nil) {
@@ -121,8 +121,8 @@ dohash:
 //
 //go:linkname mapaccess2_faststr
 internal static (@unsafe.Pointer, bool) mapaccess2_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string kyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var ky = ref heap(kyʗp, out var Ꮡky);
     if (raceenabled && Ꮡh != nil) {
@@ -233,8 +233,8 @@ dohash:
 //
 //go:linkname mapassign_faststr
 internal static @unsafe.Pointer mapassign_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string sʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var s = ref heap(sʗp, out var Ꮡs);
     if (Ꮡh == nil) {
@@ -331,8 +331,8 @@ done:
 }
 
 internal static void mapdelete_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string kyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var ky = ref heap(kyʗp, out var Ꮡky);
     if (raceenabled && Ꮡh != nil) {
@@ -424,7 +424,7 @@ break_search:;
 }
 
 internal static void growWork_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // make sure we evacuate the oldbucket corresponding
     // to the bucket we're about to use
@@ -436,8 +436,8 @@ internal static void growWork_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr b
 }
 
 internal static void evacuate_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, oldbucket * (uintptr)t.BucketSize));
     var newbit = h.noldbuckets();

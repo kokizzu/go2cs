@@ -27,7 +27,7 @@ public static bool Valid(slice<byte> data) => func((defer, recover) => {
 // scan is passed in for use by checkValid to avoid an allocation.
 // checkValid returns nil or a SyntaxError.
 internal static error checkValid(slice<byte> data, ж<scanner> Ꮡscan) {
-    ref var scan = ref Ꮡscan.Value;
+    ref var scan = ref Ꮡscan.DerefOrNull();
 
     scan.reset();
     foreach (var (_, c) in data) {
@@ -96,13 +96,13 @@ internal static ж<scanner> newScanner() {
 }
 
 internal static void freeScanner(ж<scanner> Ꮡscan) {
-    ref var scan = ref Ꮡscan.Value;
+    ref var scan = ref Ꮡscan.DerefOrNull();
 
     // Avoid hanging on to too much memory in extreme cases.
     if (len(scan.parseState) > 1024) {
         scan.parseState = default!;
     }
-    ᏑscannerPool.Put(Ꮡscan);
+    ᏑscannerPool.Put(Ꮡscan.OrTypedNil());
 }
 
 // These values are returned by the state transition functions
@@ -162,7 +162,7 @@ internal static UntypedInt maxNestingDepth => 10000;
 // eof tells the scanner that the end of input has been reached.
 // It returns a scan status just as s.step does.
 internal static nint eof(this ж<scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.err != default!) {
         return scanError;
@@ -226,7 +226,7 @@ internal static readonly @string lookingForBeginningOfˢ = "looking for beginnin
 
 // stateBeginValue is the state at the beginning of the input.
 internal static nint stateBeginValue(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (isSpace(c)) {
         return scanSkipSpace;
@@ -279,7 +279,7 @@ internal static nint stateBeginValue(ж<scanner> Ꮡs, byte c) {
 
 // stateBeginStringOrEmpty is the state after reading `{`.
 internal static nint stateBeginStringOrEmpty(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (isSpace(c)) {
         return scanSkipSpace;
@@ -297,7 +297,7 @@ internal static readonly @string lookingForBeginningOfˢ2 = "looking for beginni
 
 // stateBeginString is the state after reading `{"key": value,`.
 internal static nint stateBeginString(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (isSpace(c)) {
         return scanSkipSpace;
@@ -317,7 +317,7 @@ internal static readonly @string afterArrayElementˢ = "after array element"u8;
 // stateEndValue is the state after completing a value,
 // such as after reading `{}` or `true` or `["x"`.
 internal static nint stateEndValue(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     nint n = len(s.parseState);
     if (n == 0) {
@@ -374,7 +374,7 @@ internal static readonly @string afterTopLevelValueˢ = "after top-level value"u
 // such as after reading `{}` or `[1,2,3]`.
 // Only space characters should be seen now.
 internal static nint stateEndTop(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (!isSpace(c)) {
         // Complain about non-space byte on next call.
@@ -388,7 +388,7 @@ internal static readonly @string inStringLiteralˢ = "in string literal"u8;
 
 // stateInString is the state after reading `"`.
 internal static nint stateInString(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'"') {
         s.step = stateEndValue;
@@ -409,7 +409,7 @@ internal static readonly @string inStringEscapeCodeˢ = "in string escape code"u
 
 // stateInStringEsc is the state after reading `"\` during a quoted string.
 internal static nint stateInStringEsc(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     switch (c) {
     case (rune)'b' or (rune)'f' or (rune)'n' or (rune)'r' or (rune)'t' or (rune)'\\' or (rune)'/' or (rune)'"': {
@@ -429,7 +429,7 @@ internal static readonly @string inUHexadecimalCharacterˢ = "in \\u hexadecimal
 
 // stateInStringEscU is the state after reading `"\u` during a quoted string.
 internal static nint stateInStringEscU(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9' || (rune)'a' <= c && c <= (rune)'f' || (rune)'A' <= c && c <= (rune)'F') {
         s.step = stateInStringEscU1;
@@ -441,7 +441,7 @@ internal static nint stateInStringEscU(ж<scanner> Ꮡs, byte c) {
 
 // stateInStringEscU1 is the state after reading `"\u1` during a quoted string.
 internal static nint stateInStringEscU1(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9' || (rune)'a' <= c && c <= (rune)'f' || (rune)'A' <= c && c <= (rune)'F') {
         s.step = stateInStringEscU12;
@@ -453,7 +453,7 @@ internal static nint stateInStringEscU1(ж<scanner> Ꮡs, byte c) {
 
 // stateInStringEscU12 is the state after reading `"\u12` during a quoted string.
 internal static nint stateInStringEscU12(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9' || (rune)'a' <= c && c <= (rune)'f' || (rune)'A' <= c && c <= (rune)'F') {
         s.step = stateInStringEscU123;
@@ -465,7 +465,7 @@ internal static nint stateInStringEscU12(ж<scanner> Ꮡs, byte c) {
 
 // stateInStringEscU123 is the state after reading `"\u123` during a quoted string.
 internal static nint stateInStringEscU123(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9' || (rune)'a' <= c && c <= (rune)'f' || (rune)'A' <= c && c <= (rune)'F') {
         s.step = stateInString;
@@ -480,7 +480,7 @@ internal static readonly @string inNumericLiteralˢ = "in numeric literal"u8;
 
 // stateNeg is the state after reading `-` during a number.
 internal static nint stateNeg(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'0') {
         s.step = state0;
@@ -496,7 +496,7 @@ internal static nint stateNeg(ж<scanner> Ꮡs, byte c) {
 // state1 is the state after reading a non-zero integer during a number,
 // such as after reading `1` or `100` but not `0`.
 internal static nint state1(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9') {
         s.step = state1;
@@ -507,7 +507,7 @@ internal static nint state1(ж<scanner> Ꮡs, byte c) {
 
 // state0 is the state after reading `0` during a number.
 internal static nint state0(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'.') {
         s.step = stateDot;
@@ -526,7 +526,7 @@ internal static readonly @string afterDecimalPointInˢ = "after decimal point in
 // stateDot is the state after reading the integer and decimal point in a number,
 // such as after reading `1.`.
 internal static nint stateDot(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9') {
         s.step = stateDot0;
@@ -538,7 +538,7 @@ internal static nint stateDot(ж<scanner> Ꮡs, byte c) {
 // stateDot0 is the state after reading the integer, decimal point, and subsequent
 // digits of a number, such as after reading `3.14`.
 internal static nint stateDot0(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9') {
         return scanContinue;
@@ -553,7 +553,7 @@ internal static nint stateDot0(ж<scanner> Ꮡs, byte c) {
 // stateE is the state after reading the mantissa and e in a number,
 // such as after reading `314e` or `0.314e`.
 internal static nint stateE(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'+' || c == (rune)'-') {
         s.step = stateESign;
@@ -568,7 +568,7 @@ internal static readonly @string inExponentOfNumericˢ = "in exponent of numeric
 // stateESign is the state after reading the mantissa, e, and sign in a number,
 // such as after reading `314e-` or `0.314e+`.
 internal static nint stateESign(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((rune)'0' <= c && c <= (rune)'9') {
         s.step = stateE0;
@@ -592,7 +592,7 @@ internal static readonly @string inLiteralTrueExpectingRˢ = "in literal true (e
 
 // stateT is the state after reading `t`.
 internal static nint stateT(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'r') {
         s.step = stateTr;
@@ -606,7 +606,7 @@ internal static readonly @string inLiteralTrueExpectingUˢ = "in literal true (e
 
 // stateTr is the state after reading `tr`.
 internal static nint stateTr(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'u') {
         s.step = stateTru;
@@ -620,7 +620,7 @@ internal static readonly @string inLiteralTrueExpectingEˢ = "in literal true (e
 
 // stateTru is the state after reading `tru`.
 internal static nint stateTru(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'e') {
         s.step = stateEndValue;
@@ -634,7 +634,7 @@ internal static readonly @string inLiteralFalseExpectingAˢ = "in literal false 
 
 // stateF is the state after reading `f`.
 internal static nint stateF(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'a') {
         s.step = stateFa;
@@ -648,7 +648,7 @@ internal static readonly @string inLiteralFalseExpectingLˢ = "in literal false 
 
 // stateFa is the state after reading `fa`.
 internal static nint stateFa(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'l') {
         s.step = stateFal;
@@ -662,7 +662,7 @@ internal static readonly @string inLiteralFalseExpectingSˢ = "in literal false 
 
 // stateFal is the state after reading `fal`.
 internal static nint stateFal(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'s') {
         s.step = stateFals;
@@ -676,7 +676,7 @@ internal static readonly @string inLiteralFalseExpectingEˢ = "in literal false 
 
 // stateFals is the state after reading `fals`.
 internal static nint stateFals(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'e') {
         s.step = stateEndValue;
@@ -690,7 +690,7 @@ internal static readonly @string inLiteralNullExpectingUˢ = "in literal null (e
 
 // stateN is the state after reading `n`.
 internal static nint stateN(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'u') {
         s.step = stateNu;
@@ -704,7 +704,7 @@ internal static readonly @string inLiteralNullExpectingLˢ = "in literal null (e
 
 // stateNu is the state after reading `nu`.
 internal static nint stateNu(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'l') {
         s.step = stateNul;
@@ -715,7 +715,7 @@ internal static nint stateNu(ж<scanner> Ꮡs, byte c) {
 
 // stateNul is the state after reading `nul`.
 internal static nint stateNul(ж<scanner> Ꮡs, byte c) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (c == (rune)'l') {
         s.step = stateEndValue;

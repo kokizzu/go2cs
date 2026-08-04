@@ -13,7 +13,6 @@
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
-using edwards25519 = go.crypto.@internal.edwards25519_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -45,7 +44,6 @@ using static go.crypto.ed25519_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<edwards25519.Point, ж<edwards25519.Point>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.crypto;

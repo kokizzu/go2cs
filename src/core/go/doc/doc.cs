@@ -104,7 +104,7 @@ internal static readonly @string bugˢ = "BUG"u8;
 // To have the [Examples] fields populated, use [NewFromFiles] and include
 // the package's _test.go files.
 public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode mode) {
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     ref var r = ref heap(new reader(), out var Ꮡr);
     Ꮡr.readPackage(Ꮡpkg, mode);
@@ -198,7 +198,7 @@ internal static readonly @string testGoˢ = "_test.go"u8;
 public static (ж<Package>, error) NewFromFiles(ж<token.FileSet> Ꮡfset, slice<ж<ast.File>> files, @string importPath, params ꓸꓸꓸany optsʗp) {
     var opts = optsʗp.sslice();
 
-    ref var fset = ref Ꮡfset.DerefOrNil();
+    ref var fset = ref Ꮡfset.DerefOrNull();
     // Check for invalid API usage.
     if (Ꮡfset == nil) {
         throw panic(fmt.Errorf("doc.NewFromFiles: no token.FileSet provided (fset == nil)"u8));
@@ -268,7 +268,7 @@ internal static (ж<ast.Object>, error) simpleImporter(map<@string, ж<ast.Objec
     if (pkg == nil) {
         // note that strings.LastIndex returns -1 if there is no "/"
         pkg = ast.NewObj(ast.Pkg, path[(int)(strings.LastIndex(path, "/"u8) + 1)..]);
-        pkg.Value.Data = ast.NewScope(nil);
+        pkg.Value.Data = ast.NewScope(nil).OrTypedNil();
         // required by ast.NewPackage for dot-import
         imports[path] = pkg;
     }
@@ -346,7 +346,7 @@ public static ж<comment.Parser> Parser(this ж<Package> Ꮡp) {
 // to obtain a [comment.Printer], and configure it
 // before calling its HTML method.
 public static slice<byte> HTML(this ж<Package> Ꮡp, @string text) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p.Printer().HTML(Ꮡp.Parser().Parse(text));
 }
@@ -357,7 +357,7 @@ public static slice<byte> HTML(this ж<Package> Ꮡp, @string text) {
 // to obtain a [comment.Printer], and configure it
 // before calling its Markdown method.
 public static slice<byte> Markdown(this ж<Package> Ꮡp, @string text) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p.Printer().Markdown(Ꮡp.Parser().Parse(text));
 }
@@ -370,7 +370,7 @@ public static slice<byte> Markdown(this ж<Package> Ꮡp, @string text) {
 // to obtain a [comment.Printer], and configure it
 // before calling its Text method.
 public static slice<byte> Text(this ж<Package> Ꮡp, @string text) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     return p.Printer().Text(Ꮡp.Parser().Parse(text));
 }

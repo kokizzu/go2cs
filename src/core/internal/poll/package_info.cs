@@ -16,7 +16,6 @@ global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
-using Δsyscall = go.syscall_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -50,8 +49,6 @@ using static go.@internal.poll_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<Δsyscall.SockaddrInet4, ж<Δsyscall.SockaddrInet4>>(Indirect = true)]
-[assembly: GoImplicitConv<Δsyscall.SockaddrInet6, ж<Δsyscall.SockaddrInet6>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.@internal;

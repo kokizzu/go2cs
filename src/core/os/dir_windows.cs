@@ -43,7 +43,7 @@ internal static ref Δsync.Pool dirBufPool => ref ᏑdirBufPool.Value;
 [GoRecv] internal static void close(this ref dirInfo d) {
     d.h = 0;
     if (d.buf != nil) {
-        ᏑdirBufPool.Put(d.buf);
+        ᏑdirBufPool.Put(d.buf.OrTypedNil());
         d.buf = default!;
     }
 }
@@ -55,7 +55,7 @@ internal static ж<bool> ᏑallowReadDirFileID = new(true);
 internal static ref bool allowReadDirFileID => ref ᏑallowReadDirFileID.Value;
 
 internal static void init(this ж<dirInfo> Ꮡd, syscallꓸHandle h) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     d.h = h;
     d.@class = windows.FileFullDirectoryRestartInfo;

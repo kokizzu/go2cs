@@ -251,7 +251,7 @@ internal static readonly relationship overlaps = "overlaps"u8;                //
 // is either equivalence (they match the same set of requests) or overlap
 // (they both match some requests, but neither is more specific than the other).
 [GoRecv] internal static bool conflictsWith(this ref pattern p1, ж<pattern> Ꮡp2) {
-    ref var p2 = ref Ꮡp2.Value;
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     if (p1.host != p2.host) {
         // Either one host is empty and the other isn't, in which case the
@@ -281,7 +281,7 @@ internal static readonly relationship overlaps = "overlaps"u8;                //
 // "GET" matches both GET and HEAD.
 // Anything else matches only itself.
 [GoRecv] internal static relationship compareMethods(this ref pattern p1, ж<pattern> Ꮡp2) {
-    ref var p2 = ref Ꮡp2.Value;
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     if (p1.method == p2.method) {
         return equivalent;
@@ -306,7 +306,7 @@ internal static readonly relationship overlaps = "overlaps"u8;                //
 // comparePaths determines the relationship between the path
 // part of two patterns.
 [GoRecv] internal static relationship comparePaths(this ref pattern p1, ж<pattern> Ꮡp2) {
-    ref var p2 = ref Ꮡp2.Value;
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     // Optimization: if a path pattern doesn't end in a multi ("...") wildcard, then it
     // can only match paths with the same number of segments.
@@ -442,13 +442,13 @@ internal static bool isLitOrSingle(segment seg) {
 
 // describeConflict returns an explanation of why two patterns conflict.
 internal static @string describeConflict(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
-    ref var p1 = ref Ꮡp1.Value;
+    ref var p1 = ref Ꮡp1.DerefOrNull();
 
     relationship mrel = p1.compareMethods(Ꮡp2);
     relationship prel = p1.comparePaths(Ꮡp2);
     relationship rel = combineRelationships(mrel, prel);
     if (rel == equivalent) {
-        return fmt.Sprintf("%s matches the same requests as %s"u8, Ꮡp1, Ꮡp2);
+        return fmt.Sprintf("%s matches the same requests as %s"u8, Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil());
     }
     if (rel != overlaps) {
         throw panic("describeConflict called with non-conflicting patterns");
@@ -460,15 +460,15 @@ But neither is more specific than the other.
 %[1]s matches %[4]q, but %[2]s doesn't.
 %[2]s matches %[5]q, but %[1]s doesn't.
 """u8,
-            Ꮡp1, Ꮡp2, commonPath(Ꮡp1, Ꮡp2), differencePath(Ꮡp1, Ꮡp2), differencePath(Ꮡp2, Ꮡp1));
+            Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil(), commonPath(Ꮡp1, Ꮡp2), differencePath(Ꮡp1, Ꮡp2), differencePath(Ꮡp2, Ꮡp1));
     }
     if (mrel == moreGeneral && prel == moreSpecific) {
-        return fmt.Sprintf("%s matches more methods than %s, but has a more specific path pattern"u8, Ꮡp1, Ꮡp2);
+        return fmt.Sprintf("%s matches more methods than %s, but has a more specific path pattern"u8, Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil());
     }
     if (mrel == moreSpecific && prel == moreGeneral) {
-        return fmt.Sprintf("%s matches fewer methods than %s, but has a more general path pattern"u8, Ꮡp1, Ꮡp2);
+        return fmt.Sprintf("%s matches fewer methods than %s, but has a more general path pattern"u8, Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil());
     }
-    return fmt.Sprintf("bug: unexpected way for two patterns %s and %s to conflict: methods %s, paths %s"u8, Ꮡp1, Ꮡp2, mrel, prel);
+    return fmt.Sprintf("bug: unexpected way for two patterns %s and %s to conflict: methods %s, paths %s"u8, Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil(), mrel, prel);
 }
 
 // writeMatchingPath writes to b a path that matches the segments.
@@ -488,8 +488,8 @@ internal static void writeSegment(ж<strings.Builder> Ꮡb, segment s) {
 // commonPath returns a path that both p1 and p2 match.
 // It assumes there is such a path.
 internal static @string commonPath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     slice<segment> segs1 = default!;
@@ -515,8 +515,8 @@ internal static @string commonPath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
 // differencePath returns a path that p1 matches and p2 doesn't.
 // It assumes there is such a path.
 internal static @string differencePath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     slice<segment> segs1 = default!;

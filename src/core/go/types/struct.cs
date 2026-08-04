@@ -81,9 +81,9 @@ internal static readonly @string embeddedFieldTypeCannotˢ3 = "embedded field ty
 internal static readonly @string embeddedFieldTypeCannotˢ4 = "embedded field type cannot be a pointer to an interface"u8;
 
 internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, ж<ast.StructType> Ꮡe) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var styp = ref Ꮡstyp.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var styp = ref Ꮡstyp.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     var list = e.Fields;
     if (list == nil) {
@@ -98,7 +98,7 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
     // current field typ and tag
     ref var typ = ref heap<ΔType>(out var Ꮡtyp);
     @string tag = default!;
-    var add = (ж<ast.Ident> ident, bool embedded) => {
+    void add(ж<ast.Ident> ident, bool embedded) {
         if (tag != ""u8 && Ꮡtags.ValueSlot == default!) {
             Ꮡtags.ValueSlot = new slice<@string>(len(Ꮡfields.ValueSlot));
         }
@@ -113,17 +113,17 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
             Ꮡfields.ValueSlot = append(Ꮡfields.ValueSlot, fld);
             Ꮡcheck.Value.recordDef(ident, new VarжObject(fld));
         }
-    };
+    }
     // addInvalid adds an embedded field of invalid type to the struct for
     // fields with errors; this keeps the number of struct fields in sync
     // with the source as long as the fields are _ or have different names
     // (go.dev/issue/25627).
     var addʗ1 = add;
-    var addInvalid = (ж<ast.Ident> ident) => {
+    void addInvalid(ж<ast.Ident> ident) {
         Ꮡtyp.ValueSlot = new BasicжΔType(Typ[Invalid]);
         tag = ""u8;
         addʗ1(ident, true);
-    };
+    }
     foreach (var (_, f) in (~list).List) {
         typ = Ꮡcheck.varType((~f).Type);
         tag = Ꮡcheck.tag((~f).Tag);
@@ -229,7 +229,7 @@ internal static ж<ast.Ident> embeddedFieldIdent(ast.Expr e) {
 
 // invalid embedded field
 internal static bool declareInSet(this ж<Checker> Ꮡcheck, ж<objset> Ꮡoset, tokenꓸPos pos, Object obj) {
-    ref var oset = ref Ꮡoset.ValueSlot;
+    ref var oset = ref Ꮡoset.DerefOrNull();
 
     {
         var alt = oset.insert(obj); if (alt != default!) {
@@ -244,7 +244,7 @@ internal static bool declareInSet(this ж<Checker> Ꮡcheck, ж<objset> Ꮡoset,
 }
 
 internal static @string tag(this ж<Checker> Ꮡcheck, ж<ast.BasicLit> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt != nil) {
         if (t.Kind == token.STRING) {

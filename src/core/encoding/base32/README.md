@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-26%2F26_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/encoding.base32.html)
+[![Tests](https://img.shields.io/badge/Tests-26%2F26_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/encoding.base32.html)
 
 Package base32 implements base32 encoding as specified by RFC 4648.
 

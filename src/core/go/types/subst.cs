@@ -56,10 +56,6 @@ internal static ΔType lookup(this substMap m, ж<TypeParam> Ꮡtpar) {
 // If expanding is non-nil, it is the instance type currently being expanded.
 // One of expanding or ctxt must be non-nil.
 internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType typ, substMap smap, ж<Named> Ꮡexpanding, ж<Context> Ꮡctxt) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var expanding = ref Ꮡexpanding.DerefOrNil();
-    ref var ctxt = ref Ꮡctxt.DerefOrNil();
-
     assert(Ꮡexpanding != nil || Ꮡctxt != nil);
     if (smap.empty()) {
         return typ;
@@ -303,7 +299,7 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
 }
 
 [GoRecv] internal static ж<Var> var_(this ref subster subst, ж<Var> Ꮡv) {
-    ref var v = ref Ꮡv.DerefOrNil();
+    ref var v = ref Ꮡv.DerefOrNull();
 
     if (Ꮡv != nil) {
         {
@@ -316,7 +312,7 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
 }
 
 internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     ref var copy = ref heap<Var>(out var Ꮡcopy);
     copy = v;
@@ -326,7 +322,7 @@ internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
 }
 
 [GoRecv] internal static ж<Tuple> tuple(this ref subster subst, ж<Tuple> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt != nil) {
         {
@@ -362,7 +358,7 @@ internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
 }
 
 [GoRecv] internal static ж<Func> func_(this ref subster subst, ж<Func> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf != nil) {
         {
@@ -375,7 +371,7 @@ internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
 }
 
 internal static ж<Func> substFunc(ж<Func> Ꮡf, ΔType typ) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     ref var copy = ref heap<Func>(out var Ꮡcopy);
     copy = f;

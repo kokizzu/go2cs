@@ -54,8 +54,6 @@ using static go.debug.elf_package;
 [assembly: GoImplement<errorReader, error>(Promoted = true)]
 [assembly: GoImplement<errorReader, io_package.ReadSeeker>]
 [assembly: GoImplement<go.@internal.zstd_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<io_package.ReadSeeker, io_package.Reader>]
 [assembly: GoImplement<io_package.SectionReader, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]

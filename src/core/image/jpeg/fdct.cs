@@ -91,7 +91,7 @@ internal static UntypedInt centerJSample => 128;
 // fdct performs a forward DCT on an 8x8 block of coefficients, including a
 // level shift.
 internal static void fdct(ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Pass 1: process rows.
     for (nint y = 0; y < 8; y++) {

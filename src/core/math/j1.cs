@@ -74,8 +74,8 @@ partial class math_package {
 //	J1(NaN) = NaN
 public static float64 J1(float64 x) {
     const float64 TwoM27 = /* 1.0 / (1 << 27) */ 7.450580596923828e-09; // 2**-27 0x3e40000000000000
-    GoUntyped Two129 = /* 1 << 129 */       // 2**129 0x4800000000000000
-            GoUntyped.Parse("680564733841876926926749214863536422912");
+    GoBigConst Two129 = /* 1 << 129 */       // 2**129 0x4800000000000000
+            GoBigConst.Parse("680564733841876926926749214863536422912");
     const float64 R00 = -6.25000000000000000000e-02; // 0xBFB0000000000000
     const float64 R01 = 1.40705666955189706048e-03; // 0x3F570D9F98472C61
     const float64 R02 = -1.59955631084035597520e-05; // 0xBEF0C5C6BA169668
@@ -153,8 +153,8 @@ public static float64 J1(float64 x) {
 //	Y1(NaN) = NaN
 public static float64 Y1(float64 x) {
     const float64 TwoM54 = /* 1.0 / (1 << 54) */ 5.551115123125783e-17; // 2**-54 0x3c90000000000000
-    GoUntyped Two129 = /* 1 << 129 */                   // 2**129 0x4800000000000000
-            GoUntyped.Parse("680564733841876926926749214863536422912");
+    GoBigConst Two129 = /* 1 << 129 */                   // 2**129 0x4800000000000000
+            GoBigConst.Parse("680564733841876926926749214863536422912");
     const float64 U00 = -1.96057090646238940668e-01; // 0xBFC91866143CBC8A
     const float64 U01 = 5.04438716639811282616e-02; // 0x3FA9D3C776292CD1
     const float64 U02 = -1.91256895875763547298e-03; // 0xBF5F55E54844F50F

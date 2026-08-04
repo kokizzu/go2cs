@@ -461,7 +461,7 @@ internal static slice<byte> appendInt(slice<byte> b, nint x, nint width) {
         u = (nuint)(-x);
     }
     // 2-digit and 4-digit fields are the most common in time formats.
-    var utod = (nuint uΔ1) => (byte)((rune)'0' + (byte)uΔ1);
+    byte utod(nuint uΔ1) => (byte)((rune)'0' + (byte)uΔ1);
     switch (ᐧ) {
     case {} when width == 2 && u < 100: {
         return append(b, utod(u / 10), utod(u % 10));
@@ -1137,7 +1137,7 @@ internal static readonly @string dayOfYearDoesNotMatchDayˢ = ": day-of-year doe
 internal static readonly @string dayOutOfRangeˢ = ": day out of range"u8;
 
 internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation> ᏑdefaultLocation, ж<ΔLocation> Ꮡlocal) {
-    ref var local = ref Ꮡlocal.Value;
+    ref var local = ref Ꮡlocal.DerefOrNull();
 
     @string alayout = layout;
     @string avalue = value;
@@ -1350,8 +1350,8 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
                     z = ΔUTC;
                     break;
                 }
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (exprᴛ1 == stdNumTZ || exprᴛ1 == stdNumShortTZ || exprᴛ1 == stdNumColonTZ || exprᴛ1 == stdNumSecondsTz || exprᴛ1 == stdNumColonSecondsTZ)) { matchᴛ1 = true;
             do {

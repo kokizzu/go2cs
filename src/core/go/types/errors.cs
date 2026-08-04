@@ -52,8 +52,6 @@ internal static void assert(bool p) {
 
 // newError returns a new error_ with the given error code.
 internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code) {
-    ref var check = ref Ꮡcheck.Value;
-
     if (code == 0) {
         throw panic("error code must not be 0");
     }

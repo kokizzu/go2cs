@@ -64,7 +64,7 @@ internal static readonly @string gobDuplicateTypeReceivedˢ = "gob: duplicate ty
 
 // recvType loads the definition of a type.
 internal static void recvType(this ж<Decoder> Ꮡdec, typeId id) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     // Have we already seen this type? That's an error
     if (id < firstUserId || dec.wireType[id] != nil) {
@@ -73,7 +73,7 @@ internal static void recvType(this ж<Decoder> Ꮡdec, typeId id) {
     }
     // Type:
     var wire = @new<wireType>();
-    Ꮡdec.decodeValue(tWireType, reflect.ValueOf(wire));
+    Ꮡdec.decodeValue(tWireType, reflect.ValueOf(wire.OrTypedNil()));
     if (dec.err != default!) {
         return;
     }
@@ -125,7 +125,7 @@ internal static int64 toInt(uint64 x) {
 }
 
 internal static int64 nextInt(this ж<Decoder> Ꮡdec) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     var (n, _, err) = decodeUintReader(new decBufferжReader(Ꮡdec.of(Decoder.Ꮡbuf)), dec.countBuf);
     if (err != default!) {
@@ -135,7 +135,7 @@ internal static int64 nextInt(this ж<Decoder> Ꮡdec) {
 }
 
 internal static uint64 nextUint(this ж<Decoder> Ꮡdec) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     var (n, _, err) = decodeUintReader(new decBufferжReader(Ꮡdec.of(Decoder.Ꮡbuf)), dec.countBuf);
     if (err != default!) {
@@ -157,7 +157,7 @@ internal static readonly @string extraDataInBufferˢ = "extra data in buffer"u8;
 // decoded. If this is an interface value, it can be ignored by
 // resetting that buffer.
 internal static typeId decodeTypeSequence(this ж<Decoder> Ꮡdec, bool isInterface) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     var firstMessage = true;
     while (dec.err == default!) {
@@ -211,7 +211,7 @@ internal static readonly @string gobAttemptToDecodeIntoAˢ = "gob: attempt to de
 // If the input is at EOF, Decode returns [io.EOF] and
 // does not modify e.
 public static error Decode(this ж<Decoder> Ꮡdec, any e) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     if (e == default!) {
         return Ꮡdec.DecodeValue(new reflectꓸValue(nil));
@@ -236,7 +236,7 @@ internal static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unass
 // If the input is at EOF, DecodeValue returns [io.EOF] and
 // does not modify v.
 public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) => func((defer, recover) => {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     if (v.IsValid()) {
         if (v.Kind() == reflect.ΔPointer && !v.IsNil()){

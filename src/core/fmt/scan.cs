@@ -110,7 +110,7 @@ public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
-    return Fscan(new stringReaderжReader(Ꮡ((stringReader)(str))), a.ꓸꓸꓸ);
+    return Fscan(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), a.ꓸꓸꓸ);
 }
 
 // Sscanln is similar to [Sscan], but stops scanning at a newline and
@@ -121,7 +121,7 @@ public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany a�
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
-    return Fscanln(new stringReaderжReader(Ꮡ((stringReader)(str))), a.ꓸꓸꓸ);
+    return Fscanln(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), a.ꓸꓸꓸ);
 }
 
 // Sscanf scans the argument string, storing successive space-separated
@@ -134,7 +134,7 @@ public static (nint n, error err) Sscanf(@string strʗp, @string format, params 
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
-    return Fscanf(new stringReaderжReader(Ꮡ((stringReader)(str))), format, a.ꓸꓸꓸ);
+    return Fscanf(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), format, a.ꓸꓸꓸ);
 }
 
 // Fscan scans text read from r, storing successive space-separated
@@ -300,7 +300,7 @@ internal static (slice<byte> tok, error err) Token(this ж<ss> Ꮡs, bool skipSp
     slice<byte> tok = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             {
@@ -484,7 +484,7 @@ internal static (ж<ss> s, ssave old) newScanState(Δio.Reader r, bool nlIsSpace
 
 // free saves used ss structs in ssFree; avoid an allocation per invocation.
 internal static void free(this ж<ss> Ꮡs, ssave old) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // If it was used recursively, just restore the old state.
     if (old.validSave) {
@@ -497,7 +497,7 @@ internal static void free(this ж<ss> Ꮡs, ssave old) {
     }
     s.buf = s.buf[..0];
     s.rs = default!;
-    ᏑssFree.Put(Ꮡs);
+    ᏑssFree.Put(Ꮡs.OrTypedNil());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1132,7 +1132,7 @@ internal static readonly @string float64ˢ = "float64"u8;
 
 // scanOne scans a single value, deriving the scanner from the type of the argument.
 internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.buf = s.buf[..0];
     error err = default!;
@@ -1288,7 +1288,7 @@ internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
 
 // errorHandler turns local panics into error returns.
 internal static void errorHandler(ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var errp = ref Ꮡerrp.ValueSlot;
+    ref var errp = ref Ꮡerrp.DerefOrNull();
 
     {
         var e = recover(); if (e != default!) {
@@ -1318,7 +1318,7 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
     nint numProcessed = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(errorHandler, Ꮡerr, defer);
@@ -1447,7 +1447,7 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
     nint numProcessed = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(errorHandler, Ꮡerr, defer);

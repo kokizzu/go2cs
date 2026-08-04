@@ -60,7 +60,7 @@ internal static readonly @string invalidCompressionLevelˢ = "invalid compressio
 
 // setup parses the bzip2 header.
 internal static error setup(this ж<reader> Ꮡbz2, bool needMagic) {
-    ref var bz2 = ref Ꮡbz2.Value;
+    ref var bz2 = ref Ꮡbz2.DerefOrNull();
 
     var br = Ꮡbz2.of(reader.Ꮡbr);
     if (needMagic) {
@@ -89,7 +89,7 @@ internal static (nint n, error err) Read(this ж<reader> Ꮡbz2, slice<byte> buf
     nint n = default!;
     error err = default!;
 
-    ref var bz2 = ref Ꮡbz2.Value;
+    ref var bz2 = ref Ꮡbz2.DerefOrNull();
     if (bz2.eof) {
         return (0, io.EOF);
     }
@@ -165,7 +165,7 @@ internal static readonly @string fileChecksumMismatchˢ = "file checksum mismatc
 internal static readonly @string badMagicValueInˢ = "bad magic value in continuation file"u8;
 
 internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
-    ref var bz2 = ref Ꮡbz2.Value;
+    ref var bz2 = ref Ꮡbz2.DerefOrNull();
 
     while (ᐧ) {
         nint n = bz2.readFromBlock(buf);
@@ -256,7 +256,7 @@ internal static readonly @string origPtrOutOfBoundsˢ = "origPtr out of bounds"u
 internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     error err = default!;
 
-    ref var bz2 = ref Ꮡbz2.Value;
+    ref var bz2 = ref Ꮡbz2.DerefOrNull();
     var br = Ꮡbz2.of(reader.Ꮡbr);
     bz2.wantBlockCRC = (uint32)br.ReadBits64(32);
     // skip checksum. TODO: check it if we can figure out what it is.

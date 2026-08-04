@@ -34,9 +34,9 @@ internal static uint64 shiftRightBy51(uint128 a) {
 }
 
 internal static void feMulGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element> Ꮡb) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var a0 = a.l0;
     var a1 = a.l1;
@@ -157,8 +157,8 @@ internal static void feMulGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element
 }
 
 internal static void feSquareGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     var l0 = a.l0;
     var l1 = a.l1;
@@ -233,7 +233,7 @@ internal static void feSquareGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa) {
 // carryPropagateGeneric brings the limbs below 52 bits by applying the reduction
 // identity (a * 2²⁵⁵ + b = a * 19 + b) to the l4 carry.
 internal static ж<Element> carryPropagateGeneric(this ж<Element> Ꮡv) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     var c0 = (v.l0 >> (int)(51));
     var c1 = (v.l1 >> (int)(51));

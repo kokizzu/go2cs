@@ -64,7 +64,7 @@ partial class trace_package {
 // Descendents returns a slice consisting of itself (always the first task returned),
 // and the transitive closure of all of its children.
 public static slice<ж<UserTaskSummary>> Descendents(this ж<UserTaskSummary> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var descendents = new ж<UserTaskSummary>[]{Ꮡs}.slice();
     foreach (var (_, child) in s.Children) {
@@ -212,7 +212,7 @@ internal static GoroutineExecStats /*r*/ clone(this GoroutineExecStats s) {
 // the end of trace processing. This finalizes the execution stat
 // and any active regions in the goroutine, in which case trigger is nil.
 [GoRecv] internal static void finalize(this ref GoroutineSummary g, ΔTime lastTs, ж<ΔEvent> Ꮡtrigger) {
-    ref var trigger = ref Ꮡtrigger.DerefOrNil();
+    ref var trigger = ref Ꮡtrigger.DerefOrNull();
 
     if (Ꮡtrigger != nil) {
         g.EndTime = trigger.Time();
@@ -282,7 +282,7 @@ public static ж<Summarizer> NewSummarizer() {
 
 // Event feeds a single event into the stats summarizer.
 [GoRecv] public static void Event(this ref Summarizer s, ж<ΔEvent> Ꮡev) {
-    ref var ev = ref Ꮡev.Value;
+    ref var ev = ref Ꮡev.DerefOrNull();
 
     if (s.syncTs == 0) {
         s.syncTs = ev.Time();
@@ -423,8 +423,8 @@ ID: id, goroutineSummary: Ꮡ(new goroutineSummary(nil))));
                             g.Value.lastBlockReason = st.Reason;
                             break;
                         }
+                        fallthrough = true;
                     } while (false);
-                    fallthrough = true;
                 }
                 if (fallthrough || !matchᴛ1 && exprᴛ4 == GoNotExist) {
                     g.finalize(ev.Time(), // "Forever" is like goroutine death.

@@ -162,7 +162,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
     var ph = @new<prog>();
     {
-        var errΔ2 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), ph); if (errΔ2 != default!) {
+        var errΔ2 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, ph.OrTypedNil()); if (errΔ2 != default!) {
             return (default!, errΔ2);
         }
     }
@@ -177,7 +177,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     ));
     if ((uint32)((~ph).Magic & (uint32)Magic64) != 0) {
         {
-            var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), f.of(File.ᏑEntry)); if (errΔ3 != default!) {
+            var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, f.of(File.ᏑEntry)); if (errΔ3 != default!) {
                 return (default!, errΔ3);
             }
         }
@@ -210,7 +210,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 }
 
 internal static error walksymtab(slice<byte> data, nint ptrsz, Func<sym, error> fn) {
-    binary.ByteOrder order = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+    binary.ByteOrder order = binary.BigEndian;
     sym s = default!;
     var p = data;
     while (len(p) >= 4) {

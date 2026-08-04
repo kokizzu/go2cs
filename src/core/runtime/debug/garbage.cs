@@ -28,7 +28,7 @@ partial class debug_package {
 // len(stats.PauseQuantiles) is 5, it will be filled with the minimum,
 // 25%, 50%, 75%, and maximum pause times.
 public static void ReadGCStats(ж<GCStats> Ꮡstats) {
-    ref var stats = ref Ꮡstats.Value;
+    ref var stats = ref Ꮡstats.DerefOrNull();
 
     // Create a buffer with space for at least two copies of the
     // pause history tracked by the runtime. One will be returned

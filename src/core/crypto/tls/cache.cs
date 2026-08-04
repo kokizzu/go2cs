@@ -59,11 +59,11 @@ internal static ж<certCache> globalCertCache = @new<certCache>();
 // in the cache is fine, with the only side effect being the memory overhead of
 // there being more than one distinct reference to a certificate alive at once.
 internal static ж<activeCert> active(this ж<certCache> Ꮡcc, ж<cacheEntry> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     Ꮡe.of(cacheEntry.Ꮡrefs).Add(1);
     var a = Ꮡ(new activeCert(e.cert));
-    runtime.SetFinalizer(a, (ж<activeCert> _) => {
+    runtime.SetFinalizer(a.OrTypedNil(), (ж<activeCert> _) => {
         if (Ꮡe.of(cacheEntry.Ꮡrefs).Add(-1) == 0) {
             Ꮡcc.evict(Ꮡe);
         }
@@ -73,7 +73,7 @@ internal static ж<activeCert> active(this ж<certCache> Ꮡcc, ж<cacheEntry> �
 
 // evict removes a cacheEntry from the cache.
 internal static void evict(this ж<certCache> Ꮡcc, ж<cacheEntry> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     Ꮡcc.of(certCache.ᏑMap).Delete(((@string)(~e.cert).Raw));
 }
@@ -94,7 +94,7 @@ internal static (ж<activeCert>, error) newCert(this ж<certCache> Ꮡcc, slice<
     }
     var entry = Ꮡ(new cacheEntry(cert: cert));
     {
-        var (entryΔ2, loaded) = Ꮡcc.of(certCache.ᏑMap).LoadOrStore(((@string)der), entry); if (loaded) {
+        var (entryΔ2, loaded) = Ꮡcc.of(certCache.ᏑMap).LoadOrStore(((@string)der), entry.OrTypedNil()); if (loaded) {
             return (Ꮡcc.active(entryΔ2._<ж<cacheEntry>>()), default!);
         }
     }

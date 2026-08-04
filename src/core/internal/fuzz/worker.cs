@@ -84,7 +84,7 @@ internal static (ж<worker>, error) newWorker(ж<coordinator> Ꮡc, @string dir,
 // those inputs to the worker process, then passes the results back to
 // the coordinator.
 internal static error coordinate(this ж<worker> Ꮡw, context.Context ctx) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     // Main event loop.
     while (ᐧ) {
@@ -237,7 +237,7 @@ internal static (fuzzResult min, error err) minimize(this ж<worker> Ꮡw, conte
     fuzzResult min = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         if ((~w.coordinator).opts.MinimizeTimeout != 0) {
             Action cancel = default!;
@@ -306,7 +306,7 @@ internal static (fuzzResult min, error err) minimize(this ж<worker> Ꮡw, conte
 // likely indicate that the worker did not call F.Fuzz or called F.Fail first.
 // We don't record crashers for these errors.
 internal static error startAndPing(this ж<worker> Ꮡw, context.Context ctx) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (ctx.Err() != default!) {
         return ctx.Err();
@@ -346,7 +346,7 @@ internal static error startAndPing(this ж<worker> Ꮡw, context.Context ctx) {
 internal static error /*err*/ start(this ж<worker> Ꮡw) {
     error err = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         if (w.isRunning()) {
             throw panic("worker already started");
@@ -415,7 +415,7 @@ internal static error /*err*/ start(this ж<worker> Ꮡw) {
 // stop must be called at least once after start returns successfully, even if
 // the worker process terminates unexpectedly.
 internal static error stop(this ж<worker> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (w.termC == default!) {
         throw panic("worker was not started successfully");
@@ -511,14 +511,13 @@ public static error RunFuzzWorker(context.Context ctx, Func<CorpusEntry, error> 
     var srv = Ꮡ(new workerServer(
         workerComm: comm,
         fuzzFn: (CorpusEntry e) => func<(time.Duration, error)>((defer, recover) => {
-            var timer = time.AfterFunc(10000000000L, () => {
+            var timer = time.AfterFunc((time.Duration)(10000000000L), () => {
                 throw panic("deadlocked!");
             });
             // this error message won't be printed
             var timerʗ1 = timer;
             defer(() => timerʗ1.Stop());
-            ref var start = ref heap<time.Time>(out var Ꮡstart);
-            start = time.Now();
+            var start = time.Now();
             var errΔ1 = fn(e);
             return (time.Since(start), errΔ1);
         }),
@@ -665,7 +664,7 @@ internal static readonly @string noArgumentsProvidedForˢ = "no arguments provid
 // does not return errors from method calls; those are passed through serialized
 // responses.
 internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
-    ref var ws = ref Ꮡws.Value;
+    ref var ws = ref Ꮡws.DerefOrNull();
 
     var enc = json.NewEncoder(new os.FileжWriter(ws.fuzzOut));
     var dec = json.NewDecoder(new contextReaderжReader(Ꮡ(new contextReader(ctx: ctx, r: new os_FileжReader(ws.fuzzIn)))));
@@ -734,7 +733,7 @@ internal static readonly @string fuzzFunctionFailedWithNoˢ = "fuzz function fai
 internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.Context ctx, fuzzArgs args) {
     fuzzResponse resp = default!;
     func((defer, recover) => {
-    ref var ws = ref Ꮡws.Value;
+    ref var ws = ref Ꮡws.DerefOrNull();
 
         if (args.CoverageData != default!) {
             if (ws.coverageMask != default! && len(args.CoverageData) != len(ws.coverageMask)) {
@@ -775,9 +774,9 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
         copy(vals, originalVals);
         var argsʗ1 = args;
         var memʗ2 = mem;
-        var shouldStop = () => argsʗ1.Limit > 0 && (~memʗ2.header()).count >= argsʗ1.Limit;
+        bool shouldStop() => argsʗ1.Limit > 0 && (~memʗ2.header()).count >= argsʗ1.Limit;
         var memʗ3 = mem;
-        var fuzzOnce = (time.Duration dur, slice<byte> cov, @string errMsg) (CorpusEntry entry) => {
+        (time.Duration dur, slice<byte> cov, @string errMsg) fuzzOnce(CorpusEntry entry) {
             time.Duration dur = default!;
             slice<byte> cov = default!;
             @string errMsg = default!;
@@ -795,7 +794,7 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
                 return (dur, coverageSnapshot, "");
             }
             return (dur, default!, "");
-        };
+        }
         if (args.Warmup) {
             var (dur, _, errMsg) = fuzzOnce(new CorpusEntry(Values: vals));
             if (errMsg != ""u8) {
@@ -844,7 +843,7 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
 internal static minimizeResponse /*resp*/ minimize(this ж<workerServer> Ꮡws, context.Context ctx, minimizeArgs args) {
     minimizeResponse resp = default!;
     func((defer, recover) => {
-    ref var ws = ref Ꮡws.Value;
+    ref var ws = ref Ꮡws.DerefOrNull();
 
         ref var start = ref heap<time.Time>(out var Ꮡstart);
         start = time.Now();
@@ -904,8 +903,8 @@ internal static (bool success, error retErr) minimizeInput(this ж<workerServer>
     bool success = default!;
     error retErr = default!;
 
-    ref var ws = ref Ꮡws.Value;
-    ref var mem = ref Ꮡmem.Value;
+    ref var ws = ref Ꮡws.DerefOrNull();
+    ref var mem = ref Ꮡmem.DerefOrNull();
     ref var keepCoverage = ref heap<slice<byte>>(out var ᏑkeepCoverage);
     keepCoverage = args.KeepCoverage;
     ref var memBytes = ref heap<slice<byte>>(out var ᏑmemBytes);
@@ -996,7 +995,7 @@ internal static (bool success, error retErr) minimizeInput(this ж<workerServer>
 }
 
 internal static void writeToMem(slice<any> vals, ж<sharedMem> Ꮡmem) {
-    ref var mem = ref Ꮡmem.Value;
+    ref var mem = ref Ꮡmem.DerefOrNull();
 
     var b = marshalCorpusFile(vals.ꓸꓸꓸ);
     mem.setValue(b);
@@ -1023,8 +1022,6 @@ internal static void writeToMem(slice<any> vals, ж<sharedMem> Ꮡmem) {
 }
 
 internal static ж<workerClient> newWorkerClient(workerComm comm, ж<mutator> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
-
     return Ꮡ(new workerClient(workerComm: comm, m: Ꮡm));
 }
 
@@ -1032,7 +1029,7 @@ internal static ж<workerClient> newWorkerClient(workerComm comm, ж<mutator> �
 // closing fuzz_in. Close drains fuzz_out (avoiding a SIGPIPE in the worker),
 // and closes it after the worker process closes the other end.
 internal static error Close(this ж<workerClient> Ꮡwc) => func((defer, recover) => {
-    ref var wc = ref Ꮡwc.Value;
+    ref var wc = ref Ꮡwc.DerefOrNull();
 
     Ꮡwc.of(workerClient.Ꮡmu).Lock();
     defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
@@ -1071,7 +1068,7 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
     heap<minimizeResponse>(out var Ꮡresp);
     error retErr = default!;
     func((defer, recover) => {
-    ref var wc = ref Ꮡwc.Value;
+    ref var wc = ref Ꮡwc.DerefOrNull();
 
     ref var args = ref heap(argsʗp, out var Ꮡargs);
     ref var resp = ref Ꮡresp.Value;
@@ -1174,7 +1171,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
     bool isInternalError = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var wc = ref Ꮡwc.Value;
+    ref var wc = ref Ꮡwc.DerefOrNull();
 
     ref var args = ref heap(argsʗp, out var Ꮡargs);
     ref var resp = ref Ꮡresp.Value;
@@ -1245,7 +1242,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
 
 // ping tells the worker to call the ping method. See workerServer.ping.
 internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) => func((defer, recover) => {
-    ref var wc = ref Ꮡwc.Value;
+    ref var wc = ref Ꮡwc.DerefOrNull();
 
     Ꮡwc.of(workerClient.Ꮡmu).Lock();
     defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
@@ -1283,7 +1280,7 @@ internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) => 
 }
 
 internal static (nint, error) Read(this ж<contextReader> Ꮡcr, slice<byte> b) {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     {
         var ctxErr = cr.ctx.Err(); if (ctxErr != default!) {

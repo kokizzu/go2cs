@@ -22,7 +22,7 @@ partial class sql_package {
 internal static error errNilPtr = errors.New("destination pointer is nil"u8); // embedded in descriptive error
 
 internal static @string describeNamedValue(ж<driver.NamedValue> Ꮡnv) {
-    ref var nv = ref Ꮡnv.Value;
+    ref var nv = ref Ꮡnv.DerefOrNull();
 
     if (len(nv.Name) == 0) {
         return fmt.Sprintf("$%d"u8, nv.Ordinal);
@@ -50,7 +50,7 @@ internal static error validateNamedValueName(@string name) {
 }
 
 internal static error CheckNamedValue(this ccChecker c, ж<driver.NamedValue> Ꮡnv) {
-    ref var nv = ref Ꮡnv.Value;
+    ref var nv = ref Ꮡnv.DerefOrNull();
 
     if (c.cci == default!) {
         return driver.ErrSkip;
@@ -102,7 +102,7 @@ internal static error CheckNamedValue(this ccChecker c, ж<driver.NamedValue> �
 internal static error /*err*/ defaultCheckNamedValue(ж<driver.NamedValue> Ꮡnv) {
     error err = default!;
 
-    ref var nv = ref Ꮡnv.Value;
+    ref var nv = ref Ꮡnv.DerefOrNull();
     (nv.Value, err) = driver.DefaultParameterConverter.ConvertValue(nv.Value);
     return err;
 }
@@ -114,7 +114,7 @@ internal static error /*err*/ defaultCheckNamedValue(ж<driver.NamedValue> Ꮡnv
 //
 // ci must be locked.
 internal static (slice<driver.NamedValue>, error) driverArgsConnLocked(driver.Conn ci, ж<driverStmt> Ꮡds, slice<any> args) {
-    ref var ds = ref Ꮡds.DerefOrNil();
+    ref var ds = ref Ꮡds.DerefOrNull();
 
     var nvargs = new slice<driver.NamedValue>(len(args));
     // -1 means the driver doesn't know how to count the number of
@@ -250,7 +250,7 @@ internal static readonly @string destinationNotAPointerˢ = "destination not a p
 // be used as the parent for any cursor values converted from a
 // driver.Rows to a *Rows.
 internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
-    ref var rows = ref Ꮡrows.DerefOrNil();
+    ref var rows = ref Ꮡrows.DerefOrNull();
 
     // Common cases, without reflect.
     switch (src.type()) {

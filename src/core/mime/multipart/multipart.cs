@@ -160,8 +160,6 @@ public static ж<Reader> NewReader(io.Reader r, @string boundary) {
 internal static readonly @string quotedPrintableˢ = "quoted-printable"u8;
 
 internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 maxMIMEHeaderSize, int64 maxMIMEHeaders) {
-    ref var mr = ref Ꮡmr.Value;
-
     var bp = Ꮡ(new Part(
         Header: new map<@string, slice<@string>>(),
         mr: Ꮡmr
@@ -405,7 +403,7 @@ public static (ж<Part>, error) NextRawPart(this ж<Reader> Ꮡr) {
 }
 
 internal static (ж<Part>, error) nextPart(this ж<Reader> Ꮡr, bool rawPart, int64 maxMIMEHeaderSize, int64 maxMIMEHeaders) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.currentPart != nil) {
         r.currentPart.Close();

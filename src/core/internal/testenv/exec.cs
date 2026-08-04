@@ -111,7 +111,7 @@ private static readonly @string gotracebackˢ = "GOTRACEBACK="u8;
 // If the caller wants to set cmd.Dir, set it before calling this function,
 // so PWD will be set correctly in the environment.
 public static ж<exec.Cmd> CleanCmdEnv(ж<exec.Cmd> Ꮡcmd) {
-    ref var cmd = ref Ꮡcmd.Value;
+    ref var cmd = ref Ꮡcmd.DerefOrNull();
 
     if (cmd.Env != default!) {
         throw panic("environment already set");
@@ -211,13 +211,13 @@ public static ж<exec.Cmd> CommandContext(testing.TB t, context.Context ctx, @st
             // wire! — so mark it as a test failure. That way, if the test expects the
             // command to fail for some other reason, it doesn't have to distinguish
             // between that reason and a timeout.
-            t.Errorf("test timed out while running command: %v"u8, cmdʗ1);
+            t.Errorf("test timed out while running command: %v"u8, cmdʗ1.OrTypedNil());
         } else {
             // The command is being terminated due to ctx being canceled, but
             // apparently not due to an explicit test deadline that we added.
             // Log that information in case it is useful for diagnosing a failure,
             // but don't actually fail the test because of it.
-            t.Logf("%v: terminating command: %v"u8, ctx.Err(), cmdʗ1);
+            t.Logf("%v: terminating command: %v"u8, ctx.Err(), cmdʗ1.OrTypedNil());
         }
         return (~cmdʗ1).Process.Signal(Sigquit);
     };
@@ -229,7 +229,7 @@ public static ж<exec.Cmd> CommandContext(testing.TB t, context.Context ctx, @st
             cancelCtxʗ2();
         }
         if ((~cmdʗ2).Process != nil && (~cmdʗ2).ProcessState == nil) {
-            t.Errorf("command was started, but test did not wait for it to complete: %v"u8, cmdʗ2);
+            t.Errorf("command was started, but test did not wait for it to complete: %v"u8, cmdʗ2.OrTypedNil());
         }
     });
     return cmd;

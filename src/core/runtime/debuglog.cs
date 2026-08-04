@@ -139,7 +139,7 @@ internal static readonly @string recordTooLargeˢ = "record too large"u8;
 
 //go:nosplit
 internal static void end(this ж<dlogger> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return;
@@ -174,7 +174,7 @@ internal static UntypedInt debugLogTraceback => 12;
 
 //go:nosplit
 internal static ж<dlogger> b(this ж<dlogger> Ꮡl, bool x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -209,7 +209,7 @@ internal static ж<dlogger> i32(this ж<dlogger> Ꮡl, int32 x) {
 
 //go:nosplit
 internal static ж<dlogger> i64(this ж<dlogger> Ꮡl, int64 x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -246,7 +246,7 @@ internal static ж<dlogger> u32(this ж<dlogger> Ꮡl, uint32 x) {
 
 //go:nosplit
 internal static ж<dlogger> u64(this ж<dlogger> Ꮡl, uint64 x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -258,7 +258,7 @@ internal static ж<dlogger> u64(this ж<dlogger> Ꮡl, uint64 x) {
 
 //go:nosplit
 internal static ж<dlogger> hex(this ж<dlogger> Ꮡl, uint64 x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -273,7 +273,7 @@ internal static readonly @string notAPointerTypeˢ = "not a pointer type"u8;
 
 //go:nosplit
 internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any xʗp) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     ref var x = ref heap(xʗp, out var Ꮡx);
     if (!dlogEnabled) {
@@ -298,7 +298,7 @@ internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any xʗp) {
 
 //go:nosplit
 internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -335,7 +335,7 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
 
 //go:nosplit
 internal static ж<dlogger> pc(this ж<dlogger> Ꮡl, uintptr x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;
@@ -347,7 +347,7 @@ internal static ж<dlogger> pc(this ж<dlogger> Ꮡl, uintptr x) {
 
 //go:nosplit
 internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!dlogEnabled) {
         return Ꮡl;

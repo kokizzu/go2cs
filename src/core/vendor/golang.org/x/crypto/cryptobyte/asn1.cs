@@ -62,7 +62,7 @@ public static void AddASN1Uint64(this ж<Builder> Ꮡb, uint64 v) {
 
 // AddASN1BigInt appends a DER-encoded ASN.1 INTEGER.
 public static void AddASN1BigInt(this ж<Builder> Ꮡb, ж<bigꓸInt> Ꮡn) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.err != default!) {
         return;
@@ -108,7 +108,7 @@ internal static readonly @string generalizedTimeFormatStr = "20060102150405Z0700
 
 // AddASN1GeneralizedTime appends a DER-encoded ASN.1 GENERALIZEDTIME.
 public static void AddASN1GeneralizedTime(this ж<Builder> Ꮡb, time.Time t) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (t.Year() < 0 || t.Year() > 9999) {
         b.err = fmt.Errorf("cryptobyte: cannot represent %v as a GeneralizedTime"u8, t);
@@ -228,7 +228,7 @@ public static void AddASN1Boolean(this ж<Builder> Ꮡb, bool v) {
 // low-tag-number form only). The child builder passed to the
 // BuilderContinuation can be used to build the content of the ASN.1 object.
 public static void AddASN1(this ж<Builder> Ꮡb, asn1.Tag tag, Action<ж<Builder>> f) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.err != default!) {
         return;
@@ -249,7 +249,7 @@ public static void AddASN1(this ж<Builder> Ꮡb, asn1.Tag tag, Action<ж<Builde
 // representation into out and advances. It reports whether the read
 // was successful.
 [GoRecv] public static bool ReadASN1Boolean(this ref String s, ж<bool> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.BOOLEAN) || len(bytes) != 1) {
@@ -356,7 +356,7 @@ internal static ж<bigꓸInt> bigOne = big.NewInt(1);
 }
 
 [GoRecv] internal static bool readASN1Bytes(this ref String s, ж<slice<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes)) {
@@ -381,7 +381,7 @@ internal static ж<bigꓸInt> bigOne = big.NewInt(1);
 }
 
 internal static bool asn1Signed(ж<int64> Ꮡout, slice<byte> n) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     nint length = len(n);
     if (length > 8) {
@@ -406,7 +406,7 @@ internal static bool asn1Signed(ж<int64> Ꮡout, slice<byte> n) {
 }
 
 internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     nint length = len(n);
     if (length > 9 || length == 9 && n[0] != 0) {
@@ -435,7 +435,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 // ReadASN1Enum decodes an ASN.1 ENUMERATION into out and advances. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadASN1Enum(this ref String s, ж<nint> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     ref var i = ref heap(new int64(), out var Ꮡi);
@@ -450,7 +450,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 }
 
 [GoRecv] internal static bool readBase128Int(this ref String s, ж<nint> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     nint ret = 0;
     for (nint i = 0; len(s) > 0; i++) {
@@ -484,7 +484,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 // ReadASN1ObjectIdentifier decodes an ASN.1 OBJECT IDENTIFIER into out and
 // advances. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1ObjectIdentifier(this ref String s, ж<encoding_asn1.ObjectIdentifier> Ꮡout) {
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.OBJECT_IDENTIFIER) || len(bytes) == 0) {
@@ -522,7 +522,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 // ReadASN1GeneralizedTime decodes an ASN.1 GENERALIZEDTIME into out and
 // advances. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1GeneralizedTime(this ref String s, ж<time.Time> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.GeneralizedTime)) {
@@ -547,7 +547,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // ReadASN1UTCTime decodes an ASN.1 UTCTime into out and advances.
 // It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1UTCTime(this ref String s, ж<time.Time> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.UTCTime)) {
@@ -585,7 +585,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // ReadASN1BitString decodes an ASN.1 BIT STRING into out and advances.
 // It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1BitString(this ref String s, ж<encoding_asn1.BitString> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.BIT_STRING) || len(bytes) == 0 || len(bytes) * 8 / 8 != len(bytes)) {
@@ -605,7 +605,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // an error if the BIT STRING is not a whole number of bytes. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadASN1BitStringAsBytes(this ref String s, ж<slice<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.BIT_STRING) || len(bytes) == 0) {
@@ -623,7 +623,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // tag and length bytes) into out, and advances. The element must match the
 // given tag. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1Bytes(this ref String s, ж<slice<byte>> Ꮡout, asn1.Tag tag) {
-    ref var @out = ref Ꮡout.ValueSlot;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     return s.ReadASN1(Ꮡ(new String(@out)), tag);
 }
@@ -697,7 +697,7 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 // out. It stores whether an element with the tag was found in outPresent,
 // unless outPresent is nil. It reports whether the read was successful.
 [GoRecv] public static bool ReadOptionalASN1(this ref String s, ж<String> Ꮡout, ж<bool> ᏑoutPresent, asn1.Tag tag) {
-    ref var outPresent = ref ᏑoutPresent.DerefOrNil();
+    ref var outPresent = ref ᏑoutPresent.DerefOrNull();
 
     var present = s.PeekASN1Tag(tag);
     if (ᏑoutPresent != nil) {
@@ -773,8 +773,8 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 // matching tag is present, it sets "out" to nil instead. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadOptionalASN1OctetString(this ref String s, ж<slice<byte>> Ꮡout, ж<bool> ᏑoutPresent, asn1.Tag tag) {
-    ref var @out = ref Ꮡout.ValueSlot;
-    ref var outPresent = ref ᏑoutPresent.DerefOrNil();
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var outPresent = ref ᏑoutPresent.DerefOrNull();
 
     ref var present = ref heap(new bool(), out var Ꮡpresent);
     ref var child = ref heap<String>(out var Ꮡchild);
@@ -801,7 +801,7 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 // matching tag is present, it sets "out" to defaultValue instead. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadOptionalASN1Boolean(this ref String s, ж<bool> Ꮡout, asn1.Tag tag, bool defaultValue) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var present = ref heap(new bool(), out var Ꮡpresent);
     ref var child = ref heap<String>(out var Ꮡchild);
@@ -816,8 +816,8 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 }
 
 [GoRecv] internal static bool readASN1(this ref String s, ж<String> Ꮡout, ж<asn1.Tag> ᏑoutTag, bool skipHeader) {
-    ref var @out = ref Ꮡout.ValueSlot;
-    ref var outTag = ref ᏑoutTag.DerefOrNil();
+    ref var @out = ref Ꮡout.DerefOrNull();
+    ref var outTag = ref ᏑoutTag.DerefOrNull();
 
     if (len(s) < 2) {
         return false;

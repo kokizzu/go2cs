@@ -145,8 +145,8 @@ public static ж<Client> DefaultClient = Ꮡ(new Client(nil));
 // an empty string if lastReq scheme is https and newReq scheme is http.
 // If the referer was explicitly set, then it will continue to be used.
 internal static @string refererForURL(ж<url.URL> ᏑlastReq, ж<url.URL> ᏑnewReq, @string explicitRef) {
-    ref var lastReq = ref ᏑlastReq.Value;
-    ref var newReq = ref ᏑnewReq.Value;
+    ref var lastReq = ref ᏑlastReq.DerefOrNull();
+    ref var newReq = ref ᏑnewReq.DerefOrNull();
 
     // https://tools.ietf.org/html/rfc7231#section-5.5.2
     //   "Clients SHOULD NOT include a Referer header field in a
@@ -178,7 +178,7 @@ internal static @string refererForURL(ж<url.URL> ᏑlastReq, ж<url.URL> Ꮡnew
     Func<bool> didTimeout = default!;
     error err = default!;
 
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
     if (c.Jar != default!) {
         foreach (var (_, cookie) in c.Jar.Cookies(req.URL)) {
             req.AddCookie(cookie);
@@ -228,7 +228,7 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
     Func<bool> didTimeout = default!;
     error err = default!;
 
-    ref var ireq = ref Ꮡireq.DerefOrNil();
+    ref var ireq = ref Ꮡireq.DerefOrNull();
     ref var req = ref heap<ж<Request>>(out var Ꮡreq);
     req = Ꮡireq;
     // req is either the original request, or a modified fork
@@ -246,12 +246,12 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
     }
     // forkReq forks req into a shallow clone of ireq the first
     // time it's called.
-    var forkReq = () => {
+    void forkReq() {
         if (Ꮡireq == Ꮡreq.ValueSlot) {
             Ꮡreq.ValueSlot = @new<Request>();
             Ꮡreq.ValueSlot.Value = Ꮡireq.Value;
         }
-    };
+    }
     // shallow clone
     // Most the callers of send (Get, Post, et al) don't need
     // Headers, leaving it uninitialized. We guarantee to the
@@ -382,7 +382,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
     Action stopTimer = default!;
     Func<bool> didTimeout = default!;
 
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
     if (deadline.IsZero()) {
         return (nop, alwaysFalse);
     }
@@ -408,7 +408,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
     var cancel = new channel<EmptyStruct>(0);
     req.Cancel = cancel;
     var cancelʗ1 = cancel;
-    var doCancel = () => {
+    void doCancel() {
         // The second way in the func comment above:
         builtin.close(cancelʗ1);
         {
@@ -416,7 +416,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
                 v.CancelRequest(Ꮡreq);
             }
         }
-    };
+    }
     var stopTimerCh = new channel<EmptyStruct>(0);
     ref var once = ref heap(new sync.Once(), out var Ꮡonce);
     var cancelCtxʗ1 = cancelCtx;
@@ -566,8 +566,8 @@ internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) 
     bool shouldRedirect = default!;
     bool includeBody = default!;
 
-    ref var resp = ref Ꮡresp.Value;
-    ref var ireq = ref Ꮡireq.Value;
+    ref var resp = ref Ꮡresp.DerefOrNull();
+    ref var ireq = ref Ꮡireq.DerefOrNull();
     switch (resp.StatusCode) {
     case 301 or 302 or 303: {
         redirectMethod = reqMethod;
@@ -667,8 +667,8 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
     ж<Response> retres = default!;
     error reterr = default!;
     func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
         if (testHookClientDoResult != default!) {
             defer(() => {
@@ -677,7 +677,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
         }
         if (req.URL == nil) {
             req.closeBody();
-            (retres, reterr) = (default!, new url_ΔErrorжerror(Ꮡ(new urlꓸError(
+            (retres, reterr) = (default!, new url.ΔErrorжerror(Ꮡ(new urlꓸError(
                 Op: urlErrorOp(req.Method),
                 Err: errors.New(httpNilRequestUrlˢ)
             )))); return;
@@ -691,7 +691,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
         bool reqBodyClosed = false; // have we closed the current req.Body?
         ref var redirectMethod = ref heap(new @string(), out var ᏑredirectMethod);
         bool includeBody = default!;
-        var uerr = (error err) => {
+        error uerr(error err) {
             // the body may have been closed already by c.send()
             if (!reqBodyClosed) {
                 Ꮡreq.Value.closeBody();
@@ -702,12 +702,12 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
             } else {
                 urlStr = stripPassword(Ꮡreq.Value.URL);
             }
-            return new url_ΔErrorжerror(Ꮡ(new urlꓸError(
+            return new url.ΔErrorжerror(Ꮡ(new urlꓸError(
                 Op: urlErrorOp((~Ꮡreqs.ValueSlot[0]).Method),
                 URL: urlStr,
                 Err: err
             )));
-        };
+        }
         while (ᐧ) {
             // For all but the first request, create the next
             // request hop and replace req.
@@ -745,7 +745,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     Host: host,
                     Cancel: (~ireq).Cancel,
                     ctx: (~ireq).ctx
-                )); req = ref Ꮡreq.Value;
+                )); req = ref Ꮡreq.DerefOrNull();
                 if (includeBody && (~ireq).GetBody != default!) {
                     (req.Body, errΔ1) = (~ireq).GetBody();
                     if (errΔ1 != default!) {
@@ -824,8 +824,8 @@ internal static readonly @string cookieˢ = "Cookie"u8;
 // initial Request, ireq. For every redirect, this function must be called
 // so that it can copy headers into the upcoming Request.
 internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<Request> Ꮡireq) {
-    ref var c = ref Ꮡc.Value;
-    ref var ireq = ref Ꮡireq.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var ireq = ref Ꮡireq.DerefOrNull();
 
     // The headers to copy are from the very initial request.
     // We use a closured callback to keep a reference to these original headers.
@@ -1102,7 +1102,7 @@ public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string 
 }
 
 internal static bool shouldCopyHeaderOnRedirect(@string headerKey, ж<url.URL> Ꮡinitial, ж<url.URL> Ꮡdest) {
-    ref var initial = ref Ꮡinitial.Value;
+    ref var initial = ref Ꮡinitial.DerefOrNull();
 
     var exprᴛ1 = CanonicalHeaderKey(headerKey);
     if (exprᴛ1 == "Authorization"u8 || exprᴛ1 == "Www-Authenticate"u8 || exprᴛ1 == "Cookie"u8 || exprᴛ1 == "Cookie2"u8) {
@@ -1150,7 +1150,7 @@ internal static bool isDomainOrSubdomain(@string sub, @string parent) {
 }
 
 internal static @string stripPassword(ж<url.URL> Ꮡu) {
-    ref var u = ref Ꮡu.Value;
+    ref var u = ref Ꮡu.DerefOrNull();
 
     var (_, passSet) = u.User.Password();
     if (passSet) {

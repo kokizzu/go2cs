@@ -314,7 +314,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
 // The file's contents must be written to the io.Writer before the next
 // call to [Writer.Create], [Writer.CreateHeader], [Writer.CreateRaw], or [Writer.Close].
 [GoRecv] public static (io.Writer, error) CreateHeader(this ref Writer w, ж<FileHeader> Ꮡfh) {
-    ref var fh = ref Ꮡfh.Value;
+    ref var fh = ref Ꮡfh.DerefOrNull();
 
     {
         var err = w.prepare(Ꮡfh); if (err != default!) {
@@ -434,7 +434,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
 }
 
 internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     const nint maxUint16 = /* 1<<16 - 1 */ 65535;
     if (len(h.Name) > maxUint16) {
@@ -495,7 +495,7 @@ internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
 // [FileHeader] in a [File] obtained from a [Reader] created from in-memory data,
 // then w will refer to all of that memory.
 [GoRecv] public static (io.Writer, error) CreateRaw(this ref Writer w, ж<FileHeader> Ꮡfh) {
-    ref var fh = ref Ꮡfh.Value;
+    ref var fh = ref Ꮡfh.DerefOrNull();
 
     {
         var err = w.prepare(Ꮡfh); if (err != default!) {
@@ -530,7 +530,7 @@ internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
 // Copy copies the file f (obtained from a [Reader]) into w. It copies the raw
 // form directly bypassing decompression, compression, and validation.
 [GoRecv] public static error Copy(this ref Writer w, ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var (r, err) = f.OpenRaw();
     if (err != default!) {

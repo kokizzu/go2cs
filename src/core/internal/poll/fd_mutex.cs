@@ -213,7 +213,7 @@ internal static partial void runtime_Semrelease(ж<uint32> sema);
 // incref adds a reference to fd.
 // It returns an error when fd cannot be used.
 internal static error incref(this ж<FD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     if (!Ꮡfd.of(FD.Ꮡfdmu).incref()) {
         return errClosing(fd.isFile);
@@ -234,7 +234,7 @@ internal static error decref(this ж<FD> Ꮡfd) {
 // readLock adds a reference to fd and locks fd for reading.
 // It returns an error when fd cannot be used for reading.
 internal static error readLock(this ж<FD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     if (!Ꮡfd.of(FD.Ꮡfdmu).rwlock(true)) {
         return errClosing(fd.isFile);
@@ -254,7 +254,7 @@ internal static void readUnlock(this ж<FD> Ꮡfd) {
 // writeLock adds a reference to fd and locks fd for writing.
 // It returns an error when fd cannot be used for writing.
 internal static error writeLock(this ж<FD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     if (!Ꮡfd.of(FD.Ꮡfdmu).rwlock(false)) {
         return errClosing(fd.isFile);

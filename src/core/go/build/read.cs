@@ -440,7 +440,7 @@ internal static readonly @string importˢ = "import"u8;
 // It only returns an error if there are problems reading the file,
 // not for syntax errors in the file itself.
 internal static error readGoInfo(io.Reader f, ж<fileInfo> Ꮡinfo) {
-    ref var info = ref Ꮡinfo.Value;
+    ref var info = ref Ꮡinfo.DerefOrNull();
 
     var r = newImportReader(info.name, f);
     r.readKeyword(packageˢ);
@@ -578,16 +578,16 @@ internal static bool isValidImport(@string s) {
 // This is based on a similar function in cmd/compile/internal/gc/noder.go;
 // this version calculates position information as well.
 internal static (slice<fileEmbed>, error) parseGoEmbed(@string args, tokenꓸPosition pos) {
-    var trimBytes = (nint n) => {
+    void trimBytes(nint n) {
         pos.Offset += n;
         pos.Column += utf8.RuneCountInString(args[..(int)(n)]);
         args = args[(int)(n)..];
-    };
+    }
     var trimBytesʗ1 = trimBytes;
-    var trimSpace = () => {
+    void trimSpace() {
         @string trim = strings.TrimLeftFunc(args, unicode.IsSpace);
         trimBytesʗ1(len(args) - len(trim));
-    };
+    }
     slice<fileEmbed> list = default!;
     for (trimSpace(); args != ""u8; trimSpace()) {
         @string path = default!;

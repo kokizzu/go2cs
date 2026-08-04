@@ -27,7 +27,7 @@ internal static uintptr chanrecvpc;
 internal static void initᴛchanrecvpc() { chanrecvpc = abi.FuncPCABIInternal(chanrecv); }
 
 internal static void selectsetpc(ж<uintptr> Ꮡpc) {
-    ref var pc = ref Ꮡpc.Value;
+    ref var pc = ref Ꮡpc.DerefOrNull();
 
     pc = getcallerpc();
 }
@@ -63,7 +63,7 @@ internal static void selunlock(slice<scase> scases, slice<uint16> lockorder) {
 }
 
 internal static bool selparkcommit(ж<g> Ꮡgp, @unsafe.Pointer _) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // There are unlocked sudogs that point into gp's stack. Stack
     // copying must lock the channels of those sudogs.
@@ -130,15 +130,15 @@ internal static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
 // Also, if the chosen scase was a receive operation, it reports whether
 // a value was received.
 internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, ж<uintptr> Ꮡpc0, nint nsends, nint nrecvs, bool block) {
-    ref var cas0 = ref Ꮡcas0.Value;
+    ref var cas0 = ref Ꮡcas0.DerefOrNull();
 
     if (debugSelect) {
-        print((@string)"select: cas0="u8, Ꮡcas0, (@string)"\n"u8);
+        print((@string)"select: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)"\n"u8);
     }
     // NOTE: In order to maintain a lean stack size, the number of scases
     // is capped at 65536.
-    var cas1 = (ж<array<scase>>)(uintptr)(new @unsafe.Pointer(Ꮡcas0));
-    var order1 = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(Ꮡorder0));
+    var cas1 = array<scase>.AliasPointer(Ꮡcas0, 65536);
+    var order1 = array<uint16>.AliasPointer(Ꮡorder0, 131072);
     nint ncases = nsends + nrecvs;
     var scases = (~cas1).slice(-1, ncases, ncases);
     var pollorder = (~order1).slice(-1, ncases, ncases);
@@ -149,16 +149,16 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     // ensureSigM in runtime/signal_unix.go).
     slice<uintptr> pcs = default!;
     if (raceenabled && Ꮡpc0 != nil) {
-        var pc1 = (ж<array<uintptr>>)(uintptr)(new @unsafe.Pointer(Ꮡpc0));
+        var pc1 = array<uintptr>.AliasPointer(Ꮡpc0, 65536);
         pcs = (~pc1).slice(-1, ncases, ncases);
     }
     var pcsʗ1 = pcs;
-    var casePC = (nint casiΔ1) => {
+    uintptr casePC(nint casiΔ1) {
         if (pcsʗ1 == default!) {
             return (uintptr)(0);
         }
         return pcsʗ1[casiΔ1];
-    };
+    }
     int64 t0 = default!;
     if (blockprofilerate > 0) {
         t0 = cputicks();
@@ -377,7 +377,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     c = cas.Value.c;
     if (debugSelect) {
-        print((@string)"wait-return: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)" cas="u8, cas, (@string)" send="u8, casi < nsends, (@string)"\n"u8);
+        print((@string)"wait-return: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)" c="u8, c.OrTypedNil(), (@string)" cas="u8, cas.OrTypedNil(), (@string)" send="u8, casi < nsends, (@string)"\n"u8);
     }
     if (casi < nsends){
         if (!caseSuccess) {
@@ -467,7 +467,7 @@ recv:
         selunlock(scasesʗ1, lockorderʗ1);
     }, 2);
     if (debugSelect) {
-        print((@string)"syncrecv: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)"\n"u8);
+        print((@string)"syncrecv: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)" c="u8, c.OrTypedNil(), (@string)"\n"u8);
     }
     recvOK = true;
     goto retc;
@@ -499,7 +499,7 @@ send:
         selunlock(scasesʗ3, lockorderʗ3);
     }, 2);
     if (debugSelect) {
-        print((@string)"syncsend: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)"\n"u8);
+        print((@string)"syncsend: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)" c="u8, c.OrTypedNil(), (@string)"\n"u8);
     }
     goto retc;
 retc:
@@ -514,7 +514,7 @@ sclose:
 }
 
 internal static uintptr sortkey(this ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     return (uintptr)(uintptr)@unsafe.Pointer.FromRef(ref c);
 }
@@ -593,7 +593,7 @@ internal static (nint, bool) reflect_rselect(slice<runtimeSelect> cases) {
 }
 
 [GoRecv] internal static void dequeueSudoG(this ref waitq q, ж<sudog> Ꮡsgp) {
-    ref var sgp = ref Ꮡsgp.DerefOrNil();
+    ref var sgp = ref Ꮡsgp.DerefOrNull();
 
     var x = sgp.prev;
     var y = sgp.next;

@@ -78,7 +78,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
             if (written > 0) {
                 io.WriteString(w, ","u8);
             }
-            encʗ2.Encode(v);
+            encʗ2.Encode(v.OrTypedNil());
             // TODO(mknyszek): get rid of the extra \n inserted by enc.Encode.
             // Same should be applied to splittingTraceConsumer.
             written++;
@@ -137,7 +137,7 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
                 return;
             }
             var enc = json.NewEncoder(new countingWriterжWriter(Ꮡcw));
-            enc.Encode(v);
+            enc.Encode(v.OrTypedNil());
             ref var size = ref heap<SplittingTraceConsumer_eventSz>(out var Ꮡsize);
             Ꮡsize.Value = new SplittingTraceConsumer_eventSz(Time: (~v).Time, Sz: Ꮡcw.Value.size + 1);
             // +1 for ",".
@@ -172,10 +172,7 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
             nint eventsSize = 0;
             map<@string, format.Frame> frames = new map<@string, format.Frame>();
             nint framesSize = 0;
-            foreach (var (i, vᴛ1) in Ꮡsizes.ValueSlot) {
-                ref var ev = ref heap(new SplittingTraceConsumer_eventSz(), out var Ꮡev);
-                ev = vᴛ1;
-
+            foreach (var (i, ev) in Ꮡsizes.ValueSlot) {
                 eventsSize += ev.Sz;
                 // Add required stack frames. Note that they
                 // may already be in the map.
@@ -185,8 +182,7 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
                     if (ok) {
                         continue;
                     }
-                    ref var f = ref heap<format.Frame>(out var Ꮡf);
-                    f = allFramesʗ7[sΔ3];
+                    var f = allFramesʗ7[sΔ3];
                     frames[sΔ3] = f;
                     framesSize += stackFrameEncodedSize((nuint)id, f);
                 }

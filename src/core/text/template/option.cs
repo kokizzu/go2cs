@@ -40,7 +40,7 @@ internal static missingKeyAction mapError => 2;    // Error out
 public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring optʗp) {
     var opt = optʗp.sslice();
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     t.init();
     foreach (var (_, s) in opt) {
         t.setOption(s);

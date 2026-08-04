@@ -68,13 +68,13 @@ public static PkgEncoder NewPkgEncoder(nint syncFrames) {
 public static array<byte> /*fingerprint*/ DumpTo(this ж<PkgEncoder> Ꮡpw, io.Writer out0) {
     array<byte> fingerprint = default!;
 
-    ref var pw = ref Ꮡpw.Value;
+    ref var pw = ref Ꮡpw.DerefOrNull();
     var h = md5.New();
     var @out = io.MultiWriter(out0, h);
     var outʗ1 = @out;
-    var writeUint32 = (uint32 x) => {
-        assert(binary.Write(outʗ1, new binary_littleEndianᴠByteOrder(binary.LittleEndian), x) == default!);
-    };
+    void writeUint32(uint32 x) {
+        assert(binary.Write(outʗ1, binary.LittleEndian, x) == default!);
+    }
     writeUint32(currentVersion);
     uint32 flags = default!;
     if (pw.SyncMarkers()) {
@@ -138,7 +138,7 @@ public static Encoder NewEncoder(this ж<PkgEncoder> Ꮡpw, RelocKind k, SyncMar
 //
 // Most callers should use NewEncoder instead.
 public static Encoder NewEncoderRaw(this ж<PkgEncoder> Ꮡpw, RelocKind k) {
-    ref var pw = ref Ꮡpw.Value;
+    ref var pw = ref Ꮡpw.DerefOrNull();
 
     var idx = ((Index)(int32)len(pw.elems[k]));
     pw.elems[k] = append(pw.elems[k], ""u8);
@@ -164,7 +164,7 @@ public static Encoder NewEncoderRaw(this ж<PkgEncoder> Ꮡpw, RelocKind k) {
 
 // Flush finalizes the element's bitstream and returns its Index.
 public static Index Flush(this ж<Encoder> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
     // Backup the data so we write the relocations at the front.
@@ -401,7 +401,7 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
 }
 
 [GoRecv] internal static void bigInt(this ref Encoder w, ж<bigꓸInt> Ꮡv) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     var b = v.Bytes();
     w.String(((@string)b));

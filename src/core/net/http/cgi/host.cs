@@ -132,8 +132,8 @@ internal static readonly @string binUsrBinUsrUcbUsrBsdUsrˢ = "/bin:/usr/bin:/us
 internal static readonly @string locationˢ = "Location"u8;
 
 public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (len(req.TransferEncoding) > 0 && req.TransferEncoding[0] == "chunked") {
         rw.WriteHeader(http.StatusBadRequest);
@@ -238,10 +238,10 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
     if (cwd == ""u8) {
         cwd = "."u8;
     }
-    var internalError = (error errΔ3) => {
+    void internalError(error errΔ3) {
         rw.WriteHeader(http.StatusInternalServerError);
         Ꮡh.Value.printf("CGI error: %v"u8, errΔ3);
-    };
+    }
     var cmd = Ꮡ(new exec.Cmd(
         Path: path,
         Args: append(new @string[]{h.Path}.slice(), h.Args.ꓸꓸꓸ),
@@ -384,7 +384,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
 }
 
 [GoRecv] internal static void handleInternalRedirect(this ref Handler h, http.ResponseWriter rw, ж<http.Request> Ꮡreq, @string path) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var (url, err) = req.URL.Parse(path);
     if (err != default!) {

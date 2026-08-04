@@ -20,7 +20,7 @@ partial class poll_package {
 
 // Shutdown wraps syscall.Shutdown.
 public static error Shutdown(this ж<FD> Ꮡfd, nint how) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {
@@ -56,7 +56,7 @@ public static error Ftruncate(this ж<FD> Ꮡfd, int64 size) => func((defer, rec
 // RawControl invokes the user-defined function f for a non-IO
 // operation.
 public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) => func<error>((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {

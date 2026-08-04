@@ -16,7 +16,7 @@ using global::go.go;
 partial class types_package {
 
 internal static void declare(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope, ж<ast.Ident> Ꮡid, Object obj, tokenꓸPos pos) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // spec: "The blank identifier, represented by the underscore
     // character _, may be used in a declaration like any other
@@ -58,7 +58,7 @@ internal static readonly @string vSShouldHaveBeenDeclaredˢ = "%v: %s should hav
 // objDecl type-checks the declaration of obj in its respective (file) environment.
 // For the meaning of def, see Checker.definedType, in typexpr.go.
 internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName> Ꮡdef) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     if ((~check.conf)._Trace && obj.Type() == default!) {
         if (check.indent == 0) {
@@ -240,7 +240,7 @@ internal static readonly @string errorCycleIsInvalidˢ = "=> error: cycle is inv
 internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj) {
     bool valid = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
         // The object map contains the package scope objects and the non-interface methods.
         if (debug) {
@@ -358,13 +358,13 @@ break_loop:;
 
 // cycleError reports a declaration cycle starting with the object at cycle[start].
 internal static void cycleError(this ж<Checker> Ꮡcheck, slice<Object> cycle, nint start) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // name returns the (possibly qualified) object name.
     // This is needed because with generic types, cycles
     // may refer to imported types. See go.dev/issue/50788.
     // TODO(gri) Thus functionality is used elsewhere. Factor it out.
-    var name = @string (Object objΔ1) => packagePrefix(objΔ1.Pkg(), new Func<ж<Package>, @string>(Ꮡcheck.qualifier)) + objΔ1.Name();
+    @string name(Object objΔ1) => packagePrefix(objΔ1.Pkg(), new Func<ж<Package>, @string>(Ꮡcheck.qualifier)) + objΔ1.Name();
     var obj = cycle[start];
     @string objName = name(obj);
     // If obj is a type alias, mark it as valid (not broken) in order to avoid follow-on errors.
@@ -541,8 +541,8 @@ internal static void walkDecl(this ж<Checker> Ꮡcheck, ast.Decl d, Action<decl
 }
 
 internal static void constDecl(this ж<Checker> Ꮡcheck, ж<Const> Ꮡobj, ast.Expr typ, ast.Expr init, bool inherited) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var obj = ref Ꮡobj.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     assert(obj.typ == default!);
     // use the correct value of iota
@@ -589,8 +589,8 @@ internal static void constDecl(this ж<Checker> Ꮡcheck, ж<Const> Ꮡobj, ast.
 internal static readonly @string variableDeclarationˢ = "variable declaration"u8;
 
 internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж<Var>> lhs, ast.Expr typ, ast.Expr init) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var obj = ref Ꮡobj.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     assert(obj.typ == default!);
     // determine type, if any
@@ -662,9 +662,9 @@ internal static readonly @string genericTypeAliasRequiresˢ2 = "generic type ali
 internal static readonly @string cannotUseATypeParameterˢ = "cannot use a type parameter as RHS in type declaration"u8;
 
 internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж<ast.TypeSpec> Ꮡtdecl, ж<TypeName> Ꮡdef) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var obj = ref Ꮡobj.Value;
-    ref var tdecl = ref Ꮡtdecl.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
+    ref var tdecl = ref Ꮡtdecl.DerefOrNull();
 
     assert(obj.typ == default!);
     // Only report a version error if we have not reported one already.
@@ -771,9 +771,9 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
 internal static readonly @string cannotUseATypeParameterˢ2 = "cannot use a type parameter as constraint"u8;
 
 internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypeParamList>> Ꮡdst, ж<ast.FieldList> Ꮡlist) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var dst = ref Ꮡdst.ValueSlot;
-    ref var list = ref Ꮡlist.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var list = ref Ꮡlist.DerefOrNull();
 
     slice<ж<TypeParam>> tparams = default!;
     // Declare type parameters up-front, with empty interface as type bound.
@@ -856,7 +856,7 @@ internal static ΔType bound(this ж<Checker> Ꮡcheck, ast.Expr x) {
 internal static readonly @string typeParamsVˢ = "type params = %v"u8;
 
 internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck, slice<ж<TypeParam>> tparams, slice<ж<ast.Ident>> names, tokenꓸPos scopePos) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // Use Typ[Invalid] for the type constraint to ensure that a type
     // is present even if the actual constraint has not been assigned
@@ -878,8 +878,8 @@ internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck
 }
 
 internal static void collectMethods(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var obj = ref Ꮡobj.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     // get associated methods
     // (Checker.collectObjects only collects methods with non-blank names;
@@ -912,7 +912,7 @@ internal static void collectMethods(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡo
         var baseʗ7 = @base;
         check.later(() => {
             Ꮡcheck.checkFieldUniqueness(baseʗ7);
-        }).describef(new TypeNameжpositioner(Ꮡobj), "verifying field uniqueness for %v"u8, @base);
+        }).describef(new TypeNameжpositioner(Ꮡobj), "verifying field uniqueness for %v"u8, @base.OrTypedNil());
         // Checker.Files may be called multiple times; additional package files
         // may add methods to already type-checked types. Add pre-existing methods
         // so that we can detect redeclarations.
@@ -976,9 +976,9 @@ internal static void checkFieldUniqueness(this ж<Checker> Ꮡcheck, ж<Named> �
 }
 
 internal static void funcDecl(this ж<Checker> Ꮡcheck, ж<Func> Ꮡobj, ж<declInfo> Ꮡdecl) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var obj = ref Ꮡobj.Value;
-    ref var decl = ref Ꮡdecl.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
+    ref var decl = ref Ꮡdecl.DerefOrNull();
 
     assert(obj.typ == default!);
     // func declarations cannot use iota
@@ -1025,7 +1025,7 @@ internal static void funcDecl(this ж<Checker> Ꮡcheck, ж<Func> Ꮡobj, ж<dec
 }
 
 internal static void declStmt(this ж<Checker> Ꮡcheck, ast.Decl d) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var pkg = check.pkg;
     var pkgʗ1 = pkg;

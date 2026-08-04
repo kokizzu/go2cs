@@ -151,7 +151,7 @@ public static ж<Named> NewNamed(ж<TypeName> Ꮡobj, ΔType underlying, slice<�
 // accessible; but if n is an instantiated type, its methods may still be
 // unexpanded.
 internal static ж<Named> resolve(this ж<Named> Ꮡn) => func((defer, recover) => {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn.state() >= resolved) {
         // avoid locking below
@@ -221,8 +221,8 @@ internal static void setState(this ж<Named> Ꮡn, namedState state) {
 
 // newNamed is like NewNamed but with a *Checker receiver.
 internal static ж<Named> newNamed(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ΔType underlying, slice<ж<Func>> methods) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var obj = ref Ꮡobj.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     var typ = Ꮡ(new Named(check: Ꮡcheck, obj: Ꮡobj, fromRHS: underlying, underlying: underlying, methods: methods));
     if (obj.typ == default!) {
@@ -242,9 +242,9 @@ internal static ж<Named> newNamed(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡob
 // If set, expanding is the named type instance currently being expanded, that
 // led to the creation of this instance.
 internal static ж<Named> newNamedInstance(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Named> Ꮡorig, slice<ΔType> targs, ж<Named> Ꮡexpanding) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var orig = ref Ꮡorig.Value;
-    ref var expanding = ref Ꮡexpanding.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var orig = ref Ꮡorig.DerefOrNull();
+    ref var expanding = ref Ꮡexpanding.DerefOrNull();
 
     assert(len(targs) > 0);
     var obj = NewTypeName(pos, (~orig.obj).pkg, (~orig.obj).name, default!);
@@ -267,7 +267,7 @@ internal static ж<Named> newNamedInstance(this ж<Checker> Ꮡcheck, tokenꓸPo
 }
 
 internal static void cleanup(this ж<Named> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assert(t.inst == nil || (~(~t.inst).orig).inst == nil);
     // Ensure that every defined type created in the course of type-checking has
@@ -307,7 +307,7 @@ internal static void cleanup(this ж<Named> Ꮡt) {
 // Origin returns the generic type from which the named type t is
 // instantiated. If t is not an instantiated type, the result is t.
 public static ж<Named> Origin(this ж<Named> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.inst == nil) {
         return Ꮡt;
@@ -324,7 +324,7 @@ public static ж<TypeParamList> TypeParams(this ж<Named> Ꮡt) {
 // SetTypeParams sets the type parameters of the named type t.
 // t must not have type arguments.
 public static void SetTypeParams(this ж<Named> Ꮡt, slice<ж<TypeParam>> tparams) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assert(t.inst == nil);
     Ꮡt.resolve().Value.tparams = bindTParams(tparams);
@@ -355,7 +355,7 @@ public static nint NumMethods(this ж<Named> Ꮡt) {
 // But the specific ordering is not specified and must not be relied on as it may
 // change in the future.
 public static ж<Func> Method(this ж<Named> Ꮡt, nint i) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.resolve();
     if (Ꮡt.state() >= complete) {
@@ -389,7 +389,7 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) => func((defer, recov
 // expandMethod substitutes type arguments in the i'th method for an
 // instantiated receiver.
 internal static ж<Func> expandMethod(this ж<Named> Ꮡt, nint i) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // t.orig.methods is not lazy. origm is the method instantiated with its
     // receiver type parameters (the "origin" method).
@@ -444,7 +444,7 @@ internal static ж<Func> expandMethod(this ж<Named> Ꮡt, nint i) {
 // SetUnderlying sets the underlying type and marks t as complete.
 // t must not have type arguments.
 public static void SetUnderlying(this ж<Named> Ꮡt, ΔType underlying) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assert(t.inst == nil);
     if (underlying == default!) {
@@ -465,8 +465,8 @@ public static void SetUnderlying(this ж<Named> Ꮡt, ΔType underlying) {
 // The method must be in the same package as t, and t must not have
 // type arguments.
 public static void AddMethod(this ж<Named> Ꮡt, ж<Func> Ꮡm) {
-    ref var t = ref Ꮡt.Value;
-    ref var m = ref Ꮡm.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     assert(samePkg((~t.obj).pkg, m.pkg));
     assert(t.inst == nil);
@@ -538,7 +538,7 @@ public static @string String(this ж<Named> Ꮡt) {
 // The type of C is the (named) type of A which is incomplete,
 // and which has as its underlying type the named type B.
 internal static ΔType under(this ж<Named> Ꮡn0) {
-    ref var n0 = ref Ꮡn0.Value;
+    ref var n0 = ref Ꮡn0.DerefOrNull();
 
     var u = Ꮡn0.Underlying();
     // If the underlying type of a defined type is not a defined
@@ -619,8 +619,8 @@ break_loop:;
 }
 
 internal static (nint, ж<Func>) lookupMethod(this ж<Named> Ꮡn, ж<Package> Ꮡpkg, @string name, bool foldCase) {
-    ref var n = ref Ꮡn.Value;
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     Ꮡn.resolve();
     if (samePkg((~n.obj).pkg, Ꮡpkg) || isExported(name) || foldCase) {
@@ -652,16 +652,16 @@ internal static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under
 // expandUnderlying substitutes type arguments in the underlying type n.orig,
 // returning the result. Returns Typ[Invalid] if there was an error.
 internal static ΔType expandUnderlying(this ж<Named> Ꮡn) => func((defer, recover) => {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     var check = n.check;
     if (check != nil && (~(~check).conf)._Trace) {
-        check.trace((~n.obj).pos, namedExpandUnderlyingSˢ, Ꮡn);
+        check.trace((~n.obj).pos, namedExpandUnderlyingSˢ, Ꮡn.OrTypedNil());
         check.Value.indent++;
         var checkʗ1 = check;
         defer(() => {
             checkʗ1.Value.indent--;
-            checkʗ1.trace((~Ꮡn.Value.obj).pos, sTparamsSUnderSˢ, Ꮡn, Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
+            checkʗ1.trace((~Ꮡn.Value.obj).pos, sTparamsSUnderSˢ, Ꮡn.OrTypedNil(), Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
         });
     }
     assert((~(~n.inst).orig).underlying != default!);

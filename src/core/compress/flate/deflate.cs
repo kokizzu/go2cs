@@ -508,7 +508,7 @@ internal static (nint n, error err) write(this ж<compressor> Ꮡd, slice<byte> 
     nint n = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     if (d.err != default!) {
         return (0, d.err);
     }
@@ -524,7 +524,7 @@ internal static (nint n, error err) write(this ж<compressor> Ꮡd, slice<byte> 
 }
 
 internal static error syncFlush(this ж<compressor> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (d.err != default!) {
         return d.err;
@@ -613,7 +613,7 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
 }
 
 internal static error close(this ж<compressor> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (AreEqual(d.err, errWriterClosed)) {
         return default!;

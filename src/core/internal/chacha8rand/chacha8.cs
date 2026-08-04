@@ -69,7 +69,7 @@ public static void Init(this ж<State> Ꮡs, array<byte> seed) {
 public static void Init64(this ж<State> Ꮡs, array<uint64> seed) {
     seed = seed.Clone();
 
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
     s.seed = seed.Clone();
     block(Ꮡs.of(State.Ꮡseed), Ꮡs.of(State.Ꮡbuf), 0);
     s.c = 0;
@@ -81,7 +81,7 @@ public static void Init64(this ж<State> Ꮡs, array<uint64> seed) {
 // After a call to Refill, an immediate call to Next will succeed
 // (unless multiple goroutines are incorrectly sharing a state).
 public static void Refill(this ж<State> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.c += ctrInc;
     if (s.c == ctrMax) {
@@ -111,7 +111,7 @@ public static void Refill(this ж<State> Ꮡs) {
 // have been erased from the memory of the state and cannot be
 // recovered.
 public static void Reseed(this ж<State> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     array<uint64> seed = new(4);
     foreach (var (i, _) in seed) {
@@ -133,7 +133,7 @@ public static void Reseed(this ж<State> Ꮡs) {
 // when it uses the State struct, since the runtime
 // does not need these.
 public static slice<byte> Marshal(ж<State> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var data = new slice<byte>(6 * 8);
     copy(data, "chacha8:"u8);
@@ -157,7 +157,7 @@ internal static readonly @string invalidChaCha8Encodingˢ = "invalid ChaCha8 enc
 
 // Unmarshal unmarshals the state from a byte slice.
 public static error Unmarshal(ж<State> Ꮡs, slice<byte> data) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (len(data) != 6 * 8 || ((sstring)(data[..8])) != "chacha8:"u8) {
         return new errUnmarshalChaCha8жerror(@new<errUnmarshalChaCha8>());

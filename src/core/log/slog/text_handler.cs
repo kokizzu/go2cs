@@ -29,10 +29,10 @@ partial class slog_package {
 // using the given options.
 // If opts is nil, the default options are used.
 public static ж<TextHandler> NewTextHandler(io.Writer w, ж<HandlerOptions> Ꮡopts) {
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     if (Ꮡopts == nil) {
-        Ꮡopts = Ꮡ(new HandlerOptions(nil)); opts = ref Ꮡopts.DerefOrNil();
+        Ꮡopts = Ꮡ(new HandlerOptions(nil)); opts = ref Ꮡopts.DerefOrNull();
     }
     return Ꮡ(new TextHandler(
         Ꮡ(new commonHandler(
@@ -103,7 +103,7 @@ public static ж<TextHandler> NewTextHandler(io.Writer w, ж<HandlerOptions> Ꮡ
 }
 
 internal static error appendTextValue(ж<handleState> Ꮡs, Value v) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var exprᴛ1 = v.Kind();
     if (exprᴛ1 == KindString) {

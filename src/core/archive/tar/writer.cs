@@ -70,8 +70,8 @@ public static ж<Writer> NewWriter(io.Writer w) {
 // If the current file is not fully written, then this returns an error.
 // This implicitly flushes any padding necessary before writing the header.
 public static error WriteHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
-    ref var tw = ref Ꮡtw.Value;
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     {
         var errΔ1 = tw.Flush(); if (errΔ1 != default!) {
@@ -121,8 +121,8 @@ public static error WriteHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
 
 // Non-fatal error
 internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
-    ref var tw = ref Ꮡtw.Value;
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     // Check if we can use USTAR prefix/suffix splitting.
     @string namePrefix = default!;
@@ -148,8 +148,8 @@ internal static readonly @string globalHead00ˢ = "GlobalHead.0.0"u8;
 internal static readonly @string paxHeaders0ˢ = "PaxHeaders.0"u8;
 
 internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, map<@string, @string> paxHdrs) {
-    ref var tw = ref Ꮡtw.Value;
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     @string realName = hdr.Name;
     var realSize = hdr.Size;
@@ -259,8 +259,8 @@ internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, m
 }
 
 internal static error writeGNUHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
-    ref var tw = ref Ꮡtw.Value;
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     // Use long-link files if Name or Linkname exceeds the field size.
     @string longName = "././@LongLink"u8;
@@ -359,8 +359,8 @@ internal static error writeGNUHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
 // The block returned is only valid until the next call to
 // templateV7Plus or writeRawFile.
 internal static ж<block> templateV7Plus(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, Action<slice<byte>, @string> fmtStr, Action<slice<byte>, int64> fmtNum) {
-    ref var tw = ref Ꮡtw.Value;
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     tw.blk.reset();
     var modTime = hdr.ModTime;
@@ -388,7 +388,7 @@ internal static ж<block> templateV7Plus(this ж<Writer> Ꮡtw, ж<Header> Ꮡhd
 // It uses format to encode the header format and will write data as the body.
 // It uses default values for all of the other fields (as BSD and GNU tar does).
 internal static error writeRawFile(this ж<Writer> Ꮡtw, @string name, @string data, byte flag, Format format) {
-    ref var tw = ref Ꮡtw.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
 
     tw.blk.reset();
     // Best effort for the filename.
@@ -426,7 +426,7 @@ internal static error writeRawFile(this ж<Writer> Ꮡtw, @string name, @string 
 // It sets up the Writer such that it can accept a file of the given size.
 // If the flag is a special header-only flag, then the size is treated as zero.
 [GoRecv] internal static error writeRawHeader(this ref Writer tw, ж<block> Ꮡblk, int64 size, byte flag) {
-    ref var blk = ref Ꮡblk.Value;
+    ref var blk = ref Ꮡblk.DerefOrNull();
 
     {
         var err = tw.Flush(); if (err != default!) {
@@ -689,7 +689,7 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
     int64 n = default!;
     error err = default!;
 
-    ref var sw = ref Ꮡsw.Value;
+    ref var sw = ref Ꮡsw.DerefOrNull();
     var (rs, ok) = r._<io.ReadSeeker>(ᐧ);
     if (ok) {
         {

@@ -25,8 +25,8 @@ partial class comment_package {
 // Text returns a textual formatting of the [Doc].
 // See the [Printer] documentation for ways to customize the text output.
 public static slice<byte> Text(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
-    ref var p = ref Ꮡp.Value;
-    ref var d = ref Ꮡd.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var tp = Ꮡ(new textPrinter(
         Printer: Ꮡp,
@@ -69,7 +69,7 @@ public static slice<byte> Text(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
 // writeNL calls out.WriteByte('\n')
 // but first trims trailing spaces on the previous line.
 internal static void writeNL(ж<bytes.Buffer> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     // Trim trailing spaces.
     var data = @out.Bytes();
@@ -85,8 +85,8 @@ internal static void writeNL(ж<bytes.Buffer> Ꮡout) {
 
 // block prints the block x to out.
 internal static void block(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, Block x) {
-    ref var p = ref Ꮡp.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     switch (x.type()) {
     default: {
@@ -149,8 +149,8 @@ internal static void block(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, B
 
 // text prints the text sequence x to out.
 internal static void text(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, @string indent, slice<ΔText> x) {
-    ref var p = ref Ꮡp.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     p.oneLongLine(Ꮡp.of(textPrinter.Ꮡlong), x);
     var words = strings.Fields(p.@long.String());
@@ -254,8 +254,8 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
     // We care about ending in punctuation characters because
     // it makes the text easier to skim if not too many sentences
     // or phrases begin with a single word on the previous line.
-    var add = (wrap_score s, wrap_score t) => new wrap_score(s.hi + t.hi, s.lo + t.lo);
-    var cmp = (wrap_score s, wrap_score t) => {
+    wrap_score add(wrap_score s, wrap_score t) => new wrap_score(s.hi + t.hi, s.lo + t.lo);
+    nint cmp(wrap_score s, wrap_score t) {
         switch (ᐧ) {
         case {} when s.hi < t.hi: {
             return -1;
@@ -271,7 +271,7 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
         }}
 
         return 0;
-    };
+    }
     // total[j] is the total number of runes
     // (including separating spaces) in words[:j].
     var total = new slice<nint>(len(words) + 1);
@@ -282,7 +282,7 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
     // weight returns weight(i, j).
     var totalʗ1 = total;
     var wordsʗ1 = words;
-    var weight = (nint i, nint j) => {
+    wrap_score weight(nint i, nint j) {
         // On the last line, there is zero weight for being too short.
         nint nΔ1 = totalʗ1[j] - 1 - totalʗ1[i];
         if (j == len(wordsʗ1) && nΔ1 <= max) {
@@ -298,7 +298,7 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
             return new wrap_score(v, p);
         }
         return new wrap_score(0, v + p);
-    };
+    }
     // The rest of this function is “The Basic Algorithm” from
     // Hirschberg and Larmore's conference paper,
     // using the same names as in the paper.
@@ -306,11 +306,11 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
     f = new wrap_score[]{new(0, 0)}.slice();
     var addʗ1 = add;
     var weightʗ1 = weight;
-    var g = (nint i, nint j) => addʗ1(Ꮡf.ValueSlot[i], weightʗ1(i, j));
+    wrap_score g(nint i, nint j) => addʗ1(Ꮡf.ValueSlot[i], weightʗ1(i, j));
     var cmpʗ1 = cmp;
     var gʗ1 = g;
     var wordsʗ2 = words;
-    var bridge = (nint a, nint b, nint c) => {
+    bool bridge(nint a, nint b, nint c) {
         var cmpʗ2 = cmpʗ1;
         var gʗ2 = gʗ1;
         nint k = c + sort.Search(len(wordsʗ2) + 1 - c, (nint kΔ1) => {
@@ -321,7 +321,7 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
             return true;
         }
         return cmpʗ1(gʗ1(c, k), gʗ1(b, k)) <= 0;
-    };
+    }
     // d is a one-ended deque implemented as a slice.
     var d = new slice<nint>(1, len(words));
     d[0] = 0;

@@ -108,7 +108,7 @@ internal static readonly @string tlsInternalErrorEmptyˢ = "tls: internal error:
 // The specific encoding should be considered opaque and may change incompatibly
 // between Go versions.
 public static (slice<byte>, error) Bytes(this ж<SessionState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     ref var b = ref heap(new cryptobyte.Builder(), out var Ꮡb);
     b.AddUint16(s.version);
@@ -327,7 +327,7 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
 // EncryptTicket encrypts a ticket with the [Config]'s configured (or default)
 // session ticket keys. It can be used as a [Config.WrapSession] implementation.
 public static (slice<byte>, error) EncryptTicket(this ж<Config> Ꮡc, ΔConnectionState cs, ж<SessionState> Ꮡss) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var ticketKeys = Ꮡc.ticketKeys(nil);
     var (stateBytes, err) = Ꮡss.Bytes();
@@ -371,7 +371,7 @@ internal static readonly @string tlsInternalErrorSessionˢ = "tls: internal erro
 //
 // If the ticket can't be decrypted or parsed, DecryptTicket returns (nil, nil).
 public static (ж<SessionState>, error) DecryptTicket(this ж<Config> Ꮡc, slice<byte> identity, ΔConnectionState cs) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var ticketKeys = Ꮡc.ticketKeys(nil);
     var stateBytes = c.decryptTicket(identity, ticketKeys);
@@ -430,7 +430,7 @@ public static (slice<byte> ticket, ж<SessionState> state, error err) Resumption
     ж<SessionState> state = default!;
     error err = default!;
 
-    ref var cs = ref Ꮡcs.DerefOrNil();
+    ref var cs = ref Ꮡcs.DerefOrNull();
     if (Ꮡcs == nil || cs.session == nil) {
         return (default!, default!, default!);
     }
@@ -443,7 +443,7 @@ public static (slice<byte> ticket, ж<SessionState> state, error err) Resumption
 // state needs to be returned by [ParseSessionState], and the ticket and session
 // state must have been returned by [ClientSessionState.ResumptionState].
 public static (ж<ClientSessionState>, error) NewResumptionState(slice<byte> ticket, ж<SessionState> Ꮡstate) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     state.ticket = ticket;
     return (Ꮡ(new ClientSessionState(

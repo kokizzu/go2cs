@@ -51,7 +51,7 @@ internal static Func<(@string, error)> getHostname = os.Hostname;      // variab
 // When the rotate option is enabled, this offset increases.
 // Otherwise it is always 0.
 internal static uint32 serverOffset(this ж<dnsConfig> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.rotate) {
         return atomic.AddUint32(Ꮡc.of(dnsConfig.Ꮡsoffset), 1) - 1;

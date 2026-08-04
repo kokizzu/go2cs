@@ -125,7 +125,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         var cʗ1 = c;
         var cancelWorkersʗ2 = cancelWorkers;
         var fuzzCtxʗ1 = fuzzCtx;
-        var stop = (error errΔ2) => {
+        void stop(error errΔ2) {
             if (shouldPrintDebugInfo()) {
                 var (_, @file, line, ok) = Δruntime.Caller(1);
                 if (ok){
@@ -149,7 +149,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
             stopping = true;
             cancelWorkersʗ2();
             ᏑdoneC.ValueSlot = default!;
-        };
+        }
         // Ensure that any crash we find is written to the corpus, even if an error
         // or interruption occurs while minimizing it.
         var crashWritten = false;
@@ -209,7 +209,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         // Do not return until all workers have terminated. We avoid a deadlock by
         // receiving messages from workers even after ctx is canceled.
         nint activeWorkers = len(workers);
-        var statTicker = time.NewTicker(3000000000L);
+        var statTicker = time.NewTicker((time.Duration)(3000000000L));
         var statTickerʗ1 = statTicker;
         defer(statTickerʗ1.Stop);
         var cʗ3 = c;
@@ -1042,7 +1042,7 @@ public static error CheckCorpus(slice<any> vals, slice<reflectꓸType> types) {
 internal static error /*err*/ writeToCorpus(ж<CorpusEntry> Ꮡentry, @string dir) {
     error err = default!;
 
-    ref var entry = ref Ꮡentry.Value;
+    ref var entry = ref Ꮡentry.DerefOrNull();
     @string sum = fmt.Sprintf("%x"u8, sha256.Sum256(entry.Data))[..16];
     entry.Path = filepath.Join(dir, sum);
     {

@@ -108,7 +108,7 @@ internal static (ж<userTypeInfo>, error) validUserType(reflectꓸType rt) {
     // } else if ok, indir := implementsInterface(ut.user, textUnmarshalerInterfaceType); ok {
     // 	ut.externalDec, ut.decIndir = xText, indir
     // }
-    var (ui, _) = ᏑuserTypeCache.LoadOrStore(rt, ut);
+    var (ui, _) = ᏑuserTypeCache.LoadOrStore(rt, ut.OrTypedNil());
     return (ui._<ж<userTypeInfo>>(), default!);
 }
 
@@ -356,7 +356,7 @@ internal static ж<arrayType> newArrayType(@string name) {
 }
 
 internal static void init(this ж<arrayType> Ꮡa, ΔgobType elem, nint len) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     // Set our type id before evaluating the element's, in case it's our own.
     setTypeId(new arrayTypeжΔgobType(Ꮡa));
@@ -408,7 +408,7 @@ internal static ж<mapType> newMapType(@string name) {
 }
 
 internal static void init(this ж<mapType> Ꮡm, ΔgobType key, ΔgobType elem) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // Set our type id before evaluating the element's, in case it's our own.
     setTypeId(new mapTypeжΔgobType(Ꮡm));
@@ -442,7 +442,7 @@ internal static ж<sliceType> newSliceType(@string name) {
 }
 
 internal static void init(this ж<sliceType> Ꮡs, ΔgobType elem) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Set our type id before evaluating the element's, in case it's our own.
     setTypeId(new sliceTypeжΔgobType(Ꮡs));
@@ -478,7 +478,7 @@ internal static void init(this ж<sliceType> Ꮡs, ΔgobType elem) {
 }
 
 internal static @string safeString(this ж<structType> Ꮡs, map<typeId, bool> seen) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (Ꮡs == nil) {
         return nilˢ;
@@ -515,7 +515,7 @@ internal static ж<structType> newStructType(@string name) {
 // This is only called from the encoding side. The decoding side
 // works through typeIds and userTypeInfos alone.
 internal static (ΔgobType, error) newTypeObject(@string name, ж<userTypeInfo> Ꮡut, reflectꓸType rt) => func<(ΔgobType, error)>((defer, recover) => {
-    ref var ut = ref Ꮡut.Value;
+    ref var ut = ref Ꮡut.DerefOrNull();
 
     // Does this type implement GobEncoder?
     if (ut.externalEnc != 0) {
@@ -650,7 +650,7 @@ internal static bool isExported(@string name) {
 // It will be transmitted only if it is exported and not a chan or func field
 // or pointer to chan or func.
 internal static bool isSent(ж<reflect.StructField> Ꮡfield) {
-    ref var field = ref Ꮡfield.Value;
+    ref var field = ref Ꮡfield.DerefOrNull();
 
     if (!isExported(field.Name)) {
         return false;
@@ -734,7 +734,7 @@ internal static typeId bootstrapType(@string name, any e) {
 }
 
 internal static @string @string(this ж<wireType> Ꮡw) {
-    ref var w = ref Ꮡw.DerefOrNil();
+    ref var w = ref Ꮡw.DerefOrNull();
 
     @string unknown = "unknown type"u8;
     if (Ꮡw == nil) {
@@ -799,7 +799,7 @@ internal static ж<typeInfo> lookupTypeInfo(reflectꓸType rt) {
 }
 
 internal static (ж<typeInfo>, error) getTypeInfo(ж<userTypeInfo> Ꮡut) {
-    ref var ut = ref Ꮡut.Value;
+    ref var ut = ref Ꮡut.DerefOrNull();
 
     var rt = ut.@base;
     if (ut.externalEnc != 0) {
@@ -817,7 +817,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(ж<userTypeInfo> Ꮡut) {
 // buildTypeInfo constructs the type information for the type
 // and stores it in the type info map.
 internal static (ж<typeInfo>, error) buildTypeInfo(ж<userTypeInfo> Ꮡut, reflectꓸType rt) => func<(ж<typeInfo>, error)>((defer, recover) => {
-    ref var ut = ref Ꮡut.Value;
+    ref var ut = ref Ꮡut.DerefOrNull();
 
     ᏑtypeLock.Lock();
     defer(ᏑtypeLock.Unlock);

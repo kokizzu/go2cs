@@ -12,7 +12,6 @@
 // <ImportedTypeAliases>
 global using colorꓸRGBA = go.image.color_package.ΔRGBA;
 global using imageꓸRGBA = go.image_package.ΔRGBA;
-using image = go.image_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -41,19 +40,13 @@ using static go.image.draw_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Op, Drawer>]
 [assembly: GoImplement<floydSteinberg, Drawer>]
 [assembly: GoImplement<go.image.color_package.RGBA64, go.image.color_package.Color>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, Image>(Pointer = true)]
-[assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<image.Alpha, ж<image.Alpha>>(Indirect = true)]
-[assembly: GoImplicitConv<image.CMYK, ж<image.CMYK>>(Indirect = true)]
-[assembly: GoImplicitConv<image.Gray, ж<image.Gray>>(Indirect = true)]
-[assembly: GoImplicitConv<image.NRGBA, ж<image.NRGBA>>(Indirect = true)]
-[assembly: GoImplicitConv<image.Uniform, ж<image.Uniform>>(Indirect = true)]
-[assembly: GoImplicitConv<image.YCbCr, ж<image.YCbCr>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.image;

@@ -80,7 +80,7 @@ internal static uintptr pageCachePages => /* 8 * unsafe.Sizeof(pageCache{}.cache
 //
 //go:systemstack
 [GoRecv] internal static void flush(this ref pageCache c, ж<pageAlloc> Ꮡp) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     assertLockHeld(Δp.mheapLock);
     if (c.empty()) {

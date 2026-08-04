@@ -66,7 +66,7 @@ partial class edwards25519_package {
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
 internal static void fiatScalarCmovznzU64(ж<uint64> Ꮡout1, fiatScalarUint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
 
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
@@ -85,9 +85,9 @@ internal static void fiatScalarCmovznzU64(ж<uint64> Ꮡout1, fiatScalarUint1 ar
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarMul(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -385,9 +385,9 @@ internal static void fiatScalarMul(ж<fiatScalarMontgomeryDomainFieldElement> �
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarAdd(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -441,9 +441,9 @@ internal static void fiatScalarAdd(ж<fiatScalarMontgomeryDomainFieldElement> �
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarSub(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -487,8 +487,8 @@ internal static void fiatScalarSub(ж<fiatScalarMontgomeryDomainFieldElement> �
 //	eval (from_montgomery out1) mod m = -eval (from_montgomery arg1) mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarOpp(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -539,8 +539,8 @@ internal static void fiatScalarOpp(ж<fiatScalarMontgomeryDomainFieldElement> �
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
 internal static void fiatScalarNonzero(ж<uint64> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = ((uint64)(arg1[0] | ((uint64)(arg1[1] | ((uint64)(arg1[2] | arg1[3]))))));
     out1 = x1;
@@ -557,8 +557,8 @@ internal static void fiatScalarNonzero(ж<uint64> Ꮡout1, ж<array<uint64>> Ꮡ
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^4) mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarFromMontgomery(ж<fiatScalarNonMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[0];
     uint64 x2 = default!;
@@ -716,8 +716,8 @@ internal static void fiatScalarFromMontgomery(ж<fiatScalarNonMontgomeryDomainFi
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
 internal static void fiatScalarToMontgomery(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarNonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -990,8 +990,8 @@ internal static void fiatScalarToMontgomery(ж<fiatScalarMontgomeryDomainFieldEl
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0x1f]]
 internal static void fiatScalarToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[3];
     var x2 = arg1[2];
@@ -1106,8 +1106,8 @@ internal static void fiatScalarToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0x1fffffffffffffff]]
 internal static void fiatScalarFromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = (((uint64)arg1[31] << (int)(56)));
     var x2 = (((uint64)arg1[30] << (int)(48)));

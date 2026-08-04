@@ -245,11 +245,11 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     var le = binary.LittleEndian.Uint32(ident[0..]);
     var exprᴛ1 = (uint32)(Magic32 & ~1);
     if (exprᴛ1 == (uint32)(be & ~1)) {
-        f.Value.ByteOrder = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+        f.Value.ByteOrder = binary.BigEndian;
         f.Value.Magic = be;
     }
     else if (exprᴛ1 == (uint32)(le & ~1)) {
-        f.Value.ByteOrder = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        f.Value.ByteOrder = binary.LittleEndian;
         f.Value.Magic = le;
     }
     else { /* default: */
@@ -505,7 +505,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 }
 
 [GoRecv] internal static (ж<Symtab>, error) parseSymtab(this ref File f, slice<byte> symdat, slice<byte> strtab, slice<byte> cmddat, ж<SymtabCmd> Ꮡhdr, int64 offset) {
-    ref var hdr = ref Ꮡhdr.Value;
+    ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     var bo = f.ByteOrder;
     nint c = saferio.SliceCap<Symbol>((uint64)hdr.Nsyms);
@@ -563,7 +563,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 }
 
 [GoRecv] internal static error pushSection(this ref File f, ж<ΔSection> Ꮡsh, io.ReaderAt r) {
-    ref var sh = ref Ꮡsh.Value;
+    ref var sh = ref Ꮡsh.DerefOrNull();
 
     f.Sections = append(f.Sections, Ꮡsh);
     sh.sr = io.NewSectionReader(r, (int64)sh.Offset, (int64)sh.Size);
@@ -662,7 +662,7 @@ internal static readonly @string strˢ = "str"u8;
 
 // DWARF returns the DWARF debug information for the Mach-O file.
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
-    var dwarfSuffix = @string (ж<ΔSection> s) => {
+    @string dwarfSuffix(ж<ΔSection> s) {
         switch (ᐧ) {
         case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[8..];
@@ -674,8 +674,8 @@ internal static readonly @string strˢ = "str"u8;
             return ""u8;
         }}
 
-    };
-    var sectionData = (slice<byte>, error) (ж<ΔSection> s) => {
+    }
+    (slice<byte>, error) sectionData(ж<ΔSection> s) {
         var (b, errΔ1) = s.Data();
         if (errΔ1 != default! && (uint64)len(b) < (~s).Size) {
             return (default!, errΔ1);
@@ -700,7 +700,7 @@ internal static readonly @string strˢ = "str"u8;
             b = dbuf;
         }
         return (b, default!);
-    };
+    }
     // There are many other DWARF sections, but these
     // are the ones the debug/dwarf package uses.
     // Don't bother loading others.

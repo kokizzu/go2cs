@@ -116,7 +116,7 @@ internal static readonly @string pageCachePagesLeakedTestˢ = "PageCachePagesLea
 internal static readonly @string resetDebugLogTestˢ = "ResetDebugLog (test)"u8;
 
 internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) {
-    ref var it = ref Ꮡit.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
 
     it.trace = pr;
     it.preInit = true;
@@ -145,13 +145,13 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
     }
     ref var addErr = ref heap<error>(out var ᏑaddErr);
     var evtʗ1 = evt;
-    var add = (stringID id, @string s) => {
+    void add(stringID id, @string s) {
         {
             var err = evtʗ1.of(evTable.Ꮡstrings).insert(id, s); if (err != default! && ᏑaddErr.ValueSlot == default!) {
                 ᏑaddErr.ValueSlot = err;
             }
         }
-    };
+    }
     foreach (var (id, s) in pr.InlineStrings) {
         var nid = max + 1 + (uint64)id;
         it.inlineToStringID = append(it.inlineToStringID, nid);
@@ -165,11 +165,11 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
     }
     it.builtinToStringID = new slice<uint64>(sLast);
     var addʗ1 = add;
-    var addBuiltin = (nint c, @string s) => {
+    void addBuiltin(nint c, @string s) {
         var nid = max + 1 + (uint64)c;
         Ꮡit.Value.builtinToStringID[c] = nid;
         addʗ1(((stringID)nid), s);
-    };
+    }
     addBuiltin(sForever, foreverˢ);
     addBuiltin(sPreempted, preemptedˢ);
     addBuiltin(sGosched, runtimeGoschedˢ);
@@ -227,7 +227,7 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
 // next returns the next event, io.EOF if there are no more events, or a
 // descriptive error for invalid events.
 internal static (ΔEvent, error) next(this ж<oldTraceConverter> Ꮡit) {
-    ref var it = ref Ꮡit.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
 
     if (len(it.extra) > 0) {
         var evΔ1 = it.extra[0].ΔClone();
@@ -276,8 +276,8 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
     ΔEvent OUT = default!;
     error ERR = default!;
 
-    ref var it = ref Ꮡit.Value;
-    ref var ev = ref Ꮡev.Value;
+    ref var it = ref Ꮡit.DerefOrNull();
+    ref var ev = ref Ꮡev.DerefOrNull();
     @event.Type mappedType = default!;
     timedEventArgs mappedArgs = default!;
     copy(mappedArgs[..], ev.Args[..]);

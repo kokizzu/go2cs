@@ -36,7 +36,7 @@ internal static readonly @string chanˢ4 = "chan "u8;
 // Shortened representations are suitable for user interfaces but may not
 // necessarily follow Go syntax.
 public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // The AST preserves source-level parentheses so there is
     // no need to introduce them here to correct for different
@@ -209,8 +209,8 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
 }
 
 internal static void writeSigExpr(ж<bytes.Buffer> Ꮡbuf, ж<ast.FuncType> Ꮡsig) {
-    ref var buf = ref Ꮡbuf.Value;
-    ref var sig = ref Ꮡsig.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
+    ref var sig = ref Ꮡsig.DerefOrNull();
 
     buf.WriteByte((rune)'(');
     writeFieldList(Ꮡbuf, (~sig.Params).List, ", "u8, false);
@@ -234,7 +234,7 @@ internal static void writeSigExpr(ж<bytes.Buffer> Ꮡbuf, ж<ast.FuncType> Ꮡs
 }
 
 internal static void writeFieldList(ж<bytes.Buffer> Ꮡbuf, slice<ж<ast.Field>> list, @string sep, bool iface) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     foreach (var (i, f) in list) {
         if (i > 0) {
@@ -259,7 +259,7 @@ internal static void writeFieldList(ж<bytes.Buffer> Ꮡbuf, slice<ж<ast.Field>
 
 // ignore tag
 internal static void writeIdentList(ж<bytes.Buffer> Ꮡbuf, slice<ж<ast.Ident>> list) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     foreach (var (i, x) in list) {
         if (i > 0) {
@@ -270,7 +270,7 @@ internal static void writeIdentList(ж<bytes.Buffer> Ꮡbuf, slice<ж<ast.Ident>
 }
 
 internal static void writeExprList(ж<bytes.Buffer> Ꮡbuf, slice<ast.Expr> list) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     foreach (var (i, x) in list) {
         if (i > 0) {

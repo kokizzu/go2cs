@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-15%2F15_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/compress.gzip.html)
+[![Tests](https://img.shields.io/badge/Tests-15%2F15_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/compress.gzip.html)
 
 Package gzip implements reading and writing of gzip format compressed files, as specified in RFC 1952.
 

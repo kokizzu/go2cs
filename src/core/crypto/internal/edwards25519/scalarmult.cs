@@ -35,8 +35,8 @@ internal static ref basepointTablePrecompᴛ1 basepointTablePrecomp => ref Ꮡba
 //
 // The scalar multiplication is done in constant time.
 public static ж<Point> ScalarBaseMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡx) {
-    ref var v = ref Ꮡv.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var basepointTableΔ1 = basepointTable();
     // Write x = sum(x_i * 16^i) so  x*B = sum( B*x_i*16^i )
@@ -93,8 +93,8 @@ public static ж<Point> ScalarBaseMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡx) {
 //
 // The scalar multiplication is done in constant time.
 public static ж<Point> ScalarMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡx, ж<Point> Ꮡq) {
-    ref var v = ref Ꮡv.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     checkInitialized(Ꮡq);
     projLookupTable table = new();
@@ -164,8 +164,8 @@ internal static ref basepointNafTablePrecompᴛ1 basepointNafTablePrecomp => ref
 //
 // Execution time depends on the inputs.
 public static ж<Point> VarTimeDoubleScalarBaseMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡa, ж<Point> ᏑA, ж<Scalar> Ꮡb) {
-    ref var v = ref Ꮡv.Value;
-    ref var a = ref Ꮡa.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     checkInitialized(ᏑA);
     // Similarly to the single variable-base approach, we compute

@@ -27,7 +27,7 @@ public static nint Len(this ж<TypeParamList> Ꮡl) {
 // TODO(rfindley): list should probably be eliminated: we can pass around a
 // TypeParamList instead.
 internal static slice<ж<TypeParam>> list(this ж<TypeParamList> Ꮡl) {
-    ref var l = ref Ꮡl.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (Ꮡl == nil) {
         return default!;
@@ -63,7 +63,7 @@ public static nint Len(this ж<TypeList> Ꮡl) {
 // TODO(rfindley): list should probably be eliminated: we can pass around a
 // TypeList instead.
 internal static slice<ΔType> list(this ж<TypeList> Ꮡl) {
-    ref var l = ref Ꮡl.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (Ꮡl == nil) {
         return default!;

@@ -167,7 +167,7 @@ internal static @string String(this ж<stringVal> Ꮡx) {
 // building different string values for all subpieces of a large
 // concatenation. See golang.org/issue/23348.
 internal static @string @string(this ж<stringVal> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     Ꮡx.of(stringVal.Ꮡmu).Lock();
     if (x.l != nil) {
@@ -390,7 +390,7 @@ internal static complexVal vtoc(Value x) {
 }
 
 internal static Value makeInt(ж<bigꓸInt> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.IsInt64()) {
         return ((int64Val)x.Int64());
@@ -412,7 +412,7 @@ internal static Value makeRat(ж<bigꓸRat> Ꮡx) {
 internal static floatVal floatVal0 = new floatVal(newFloat());
 
 internal static Value makeFloat(ж<big.Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // convert -0
     if (Ꮡx.Sign() == 0) {
@@ -466,7 +466,7 @@ internal static UntypedInt maxExp => /* 4 << 10 */ 4096;
 // smallInt reports whether x would lead to "reasonably"-sized fraction
 // if converted to a *big.Rat.
 internal static bool smallInt(ж<bigꓸInt> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     return x.BitLen() < maxExp;
 }
@@ -484,7 +484,7 @@ internal static bool smallFloat64(float64 x) {
 // smallFloat reports whether x would lead to "reasonably"-sized fraction
 // if converted to a *big.Rat.
 internal static bool smallFloat(ж<big.Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.IsInf()) {
         return false;
@@ -776,13 +776,13 @@ public static any Val(Value x) {
         return (int64)xΔ1;
     }
     case intVal xΔ1: {
-        return xΔ1.val;
+        return xΔ1.val.OrTypedNil();
     }
     case ratVal xΔ1: {
-        return xΔ1.val;
+        return xΔ1.val.OrTypedNil();
     }
     case floatVal xΔ1: {
-        return xΔ1.val;
+        return xΔ1.val.OrTypedNil();
     }
     default: {
         var xΔ1 = x;

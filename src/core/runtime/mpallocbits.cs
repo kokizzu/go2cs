@@ -127,7 +127,7 @@ partial struct pageBits;
 
 // summarize returns a packed summary of the bitmap in pallocBits.
 internal static pallocSum summarize(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint start = default!;
     nuint most = default!;
@@ -254,7 +254,7 @@ internal static (nuint, nuint) find(this ж<pallocBits> Ꮡb, uintptr npages, nu
 //
 // See find for an explanation of the searchIdx parameter.
 internal static nuint find1(this ж<pallocBits> Ꮡb, nuint searchIdx) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     _ = b.Value[0];
     // lift nil check out of loop
@@ -279,7 +279,7 @@ internal static nuint find1(this ж<pallocBits> Ꮡb, nuint searchIdx) {
 // findSmallN assumes npages <= 64, where any such contiguous run of pages
 // crosses at most one aligned 64-bit boundary in the bits.
 internal static (nuint, nuint) findSmallN(this ж<pallocBits> Ꮡb, uintptr npages, nuint searchIdx) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint end = (nuint)0;
     nuint newSearchIdx = ~(nuint)0;
@@ -321,7 +321,7 @@ internal static (nuint, nuint) findSmallN(this ж<pallocBits> Ꮡb, uintptr npag
 // findLargeN assumes npages > 64, where any such run of free pages
 // crosses at least one aligned 64-bit boundary in the bits.
 internal static (nuint, nuint) findLargeN(this ж<pallocBits> Ꮡb, uintptr npages, nuint searchIdx) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     nuint start = ~(nuint)0;
     nuint size = (nuint)0;
@@ -361,35 +361,35 @@ internal static (nuint, nuint) findLargeN(this ж<pallocBits> Ꮡb, uintptr npag
 
 // allocRange allocates the range [i, i+n).
 internal static void allocRange(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).setRange(i, n);
 }
 
 // allocAll allocates all the bits of b.
 internal static void allocAll(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).setAll();
 }
 
 // free1 frees a single page in the pallocBits at i.
 internal static void free1(this ж<pallocBits> Ꮡb, nuint i) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).clear(i);
 }
 
 // free frees the range [i, i+n) of pages in the pallocBits.
 internal static void free(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).clearRange(i, n);
 }
 
 // freeAll frees all the bits of b.
 internal static void freeAll(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).clearAll();
 }
@@ -398,7 +398,7 @@ internal static void freeAll(this ж<pallocBits> Ꮡb) {
 // to 64 pages. The returned block of pages is the one containing the i'th
 // page in this pallocBits. Each bit represents whether the page is in-use.
 internal static uint64 pages64(this ж<pallocBits> Ꮡb, nuint i) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return (Ꮡ((pageBits)(b))).block64(i);
 }
@@ -406,7 +406,7 @@ internal static uint64 pages64(this ж<pallocBits> Ꮡb, nuint i) {
 // allocPages64 allocates a 64-bit block of 64 pages aligned to 64 pages according
 // to the bits set in alloc. The block set is the one containing the i'th page.
 internal static void allocPages64(this ж<pallocBits> Ꮡb, nuint i, uint64 alloc) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     (Ꮡ((pageBits)(b))).setBlock64(i, alloc);
 }
@@ -460,7 +460,7 @@ internal static nuint findBitRange64(uint64 c, nuint n) {
 // allocRange sets bits [i, i+n) in the bitmap to 1 and
 // updates the scavenged bits appropriately.
 internal static void allocRange(this ж<pallocData> Ꮡm, nuint i, nuint n) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // Clear the scavenged bits when we alloc the range.
     Ꮡm.of(pallocData.ᏑpallocBits).allocRange(i, n);
@@ -470,7 +470,7 @@ internal static void allocRange(this ж<pallocData> Ꮡm, nuint i, nuint n) {
 // allocAll sets every bit in the bitmap to 1 and updates
 // the scavenged bits appropriately.
 internal static void allocAll(this ж<pallocData> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // Clear the scavenged bits when we alloc the range.
     Ꮡm.of(pallocData.ᏑpallocBits).allocAll();

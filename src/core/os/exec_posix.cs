@@ -30,7 +30,7 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
     ж<Process> p = default!;
     error err = default!;
 
-    ref var attr = ref Ꮡattr.DerefOrNil();
+    ref var attr = ref Ꮡattr.DerefOrNull();
     // If there is no SysProcAttr (ie. no Chroot or changed
     // UID/GID), double-check existence of the directory we want
     // to chdir into. We can make the error clearer this way.
@@ -60,7 +60,7 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
     }
     var (pid, h, e) = syscall.StartProcess(name, argv, sysattr);
     // Make sure we don't run the finalizers of attr.Files.
-    Δruntime.KeepAlive(Ꮡattr);
+    Δruntime.KeepAlive(Ꮡattr.OrTypedNil());
     if (e != default!) {
         return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "fork/exec"u8, Path: name, Err: e))));
     }
@@ -104,7 +104,7 @@ internal static error kill(this ж<Process> Ꮡp) {
 }
 
 [GoRecv] internal static any sysUsage(this ref ProcessState p) {
-    return p.rusage;
+    return p.rusage.OrTypedNil();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -112,7 +112,7 @@ internal static readonly @string nilˢ = "<nil>"u8;
 internal static readonly @string continuedˢ = "continued"u8;
 
 public static @string String(this ж<ProcessState> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil) {
         return nilˢ;
@@ -157,7 +157,7 @@ public static @string String(this ж<ProcessState> Ꮡp) {
 // ExitCode returns the exit code of the exited process, or -1
 // if the process hasn't exited or was terminated by a signal.
 public static nint ExitCode(this ж<ProcessState> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // return -1 if the process hasn't started.
     if (Ꮡp == nil) {

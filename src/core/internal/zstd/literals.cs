@@ -12,7 +12,7 @@ partial class zstd_package {
 // The literals are appended to outbuf, which is returned.
 // Also returns the new input offset. RFC 3.1.1.3.1.
 internal static (nint, slice<byte>, error) readLiterals(this ж<Reader> Ꮡr, block data, nint off, slice<byte> outbuf) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (off >= builtin.len(data)) {
         return (0, default!, r.makeEOFError(off));
@@ -93,7 +93,7 @@ internal static readonly @string missingLiteralsHuffmanˢ = "missing literals Hu
 // readHuffLiterals reads and decompresses a Compressed_Literals_Block or
 // a Treeless_Literals_Block. RFC 3.1.1.3.1.4.
 internal static (nint, slice<byte>, error) readHuffLiterals(this ж<Reader> Ꮡr, block data, nint off, byte hdr, slice<byte> outbuf) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     nint regeneratedSize = default!;
     nint compressedSize = default!;
@@ -187,7 +187,7 @@ internal static readonly @string literalsHuffmanStreamOutˢ = "literals Huffman 
 
 // readLiteralsOneStream reads a single stream of compressed literals.
 internal static (slice<byte>, error) readLiteralsOneStream(this ж<Reader> Ꮡr, block data, nint off, nint compressedSize, nint regeneratedSize, slice<byte> outbuf) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // We let the reverse bit reader read earlier bytes,
     // because the Huffman table ignores bits that it doesn't need.
@@ -218,7 +218,7 @@ internal static readonly @string regeneratedSizeTooSmallˢ = "regenerated size t
 // readLiteralsFourStreams reads four interleaved streams of
 // compressed literals.
 internal static (slice<byte>, error) readLiteralsFourStreams(this ж<Reader> Ꮡr, block data, nint off, nint totalStreamsSize, nint regeneratedSize, slice<byte> outbuf) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Read the jump table to find out where the streams are.
     // RFC 3.1.1.3.1.6.
@@ -288,13 +288,13 @@ internal static (slice<byte>, error) readLiteralsFourStreams(this ж<Reader> Ꮡ
     for (nint i = 0; i < regeneratedStreamSize; i++) {
         var use4 = i < regeneratedStreamSize4;
         var huffTableʗ1 = huffTable;
-        var fetchHuff = (uint16, error) (ж<reverseBitReader> rbr) => {
+        (uint16, error) fetchHuff(ж<reverseBitReader> rbr) {
             if (!rbr.fetch((uint8)huffBits)) {
                 return (0, rbr.makeError(literalsHuffmanStreamOutˢ));
             }
             var idx = (uint32)(((~rbr).bits.Rsh((uint64)(((~rbr).cnt - huffBits)))) & huffMask);
             return (huffTableʗ1[(nint)(idx)], default!);
-        };
+        }
         var (t1, errΔ1) = fetchHuff(Ꮡrbr1);
         if (errΔ1 != default!) {
             return (default!, errΔ1);

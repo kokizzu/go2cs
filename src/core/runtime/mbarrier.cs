@@ -159,7 +159,7 @@ partial class runtime_package {
 //go:linkname typedmemmove
 //go:nosplit
 internal static void typedmemmove(ж<abi.Type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (dst.Value == src.Value) {
         return;
@@ -190,7 +190,7 @@ internal static void typedmemmove(ж<abi.Type> Ꮡtyp, @unsafe.Pointer dst, @uns
 //go:nowritebarrierrec
 //go:nosplit
 internal static void wbZero(ж<_type> Ꮡtyp, @unsafe.Pointer dst) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     // This always copies a full value of type typ so it's safe
     // to pass typ along as an optimization. See the comment on
@@ -205,7 +205,7 @@ internal static void wbZero(ж<_type> Ꮡtyp, @unsafe.Pointer dst) {
 //go:nowritebarrierrec
 //go:nosplit
 internal static void wbMove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     // This always copies a full value of type typ so it's safe to
     // pass a type here.
@@ -228,7 +228,7 @@ internal static void wbMove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Point
 //
 //go:linkname reflect_typedmemmove reflect.typedmemmove
 internal static void reflect_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (raceenabled) {
         raceWriteObjectPC(Ꮡtyp, dst, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
@@ -261,8 +261,8 @@ internal static void reflectlite_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer 
 //
 //go:nosplit
 internal static void reflectcallmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src, uintptr size, ж<abi.RegArgs> Ꮡregs) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
-    ref var regs = ref Ꮡregs.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var regs = ref Ꮡregs.DerefOrNull();
 
     if (writeBarrier.enabled && Ꮡtyp != nil && typ.Pointers() && size >= goarch.PtrSize) {
         // Pass nil for the type. dst does not point to value of type typ,
@@ -290,7 +290,7 @@ internal static void reflectcallmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @uns
 //go:linkname typedslicecopy
 //go:nosplit
 internal static nint typedslicecopy(ж<_type> Ꮡtyp, @unsafe.Pointer dstPtr, nint dstLen, @unsafe.Pointer srcPtr, nint srcLen) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     nint n = dstLen;
     if (n > srcLen) {
@@ -355,7 +355,7 @@ internal static nint typedslicecopy(ж<_type> Ꮡtyp, @unsafe.Pointer dstPtr, ni
 //
 //go:linkname reflect_typedslicecopy reflect.typedslicecopy
 internal static nint reflect_typedslicecopy(ж<_type> ᏑelemType, Δsliceᴛ dst, Δsliceᴛ src) {
-    ref var elemType = ref ᏑelemType.Value;
+    ref var elemType = ref ᏑelemType.DerefOrNull();
 
     if (!elemType.Pointers()) {
         return slicecopy(dst.Δarray, dst.len, src.Δarray, src.len, elemType.Size_);
@@ -375,7 +375,7 @@ internal static nint reflect_typedslicecopy(ж<_type> ᏑelemType, Δsliceᴛ ds
 //
 //go:nosplit
 internal static void typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (writeBarrier.enabled && typ.Pointers()) {
         // This always clears a whole value of type typ, so it's
@@ -401,7 +401,7 @@ internal static void reflect_typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) 
 
 //go:linkname reflect_typedmemclrpartial reflect.typedmemclrpartial
 internal static void reflect_typedmemclrpartial(ж<_type> Ꮡtyp, @unsafe.Pointer ptr, uintptr off, uintptr size) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (writeBarrier.enabled && typ.Pointers()) {
         // Pass nil for the type. ptr does not point to value of type typ,
@@ -415,7 +415,7 @@ internal static void reflect_typedmemclrpartial(ж<_type> Ꮡtyp, @unsafe.Pointe
 
 //go:linkname reflect_typedarrayclear reflect.typedarrayclear
 internal static void reflect_typedarrayclear(ж<_type> Ꮡtyp, @unsafe.Pointer ptr, nint len) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     var size = typ.Size_ * (uintptr)len;
     if (writeBarrier.enabled && typ.Pointers()) {

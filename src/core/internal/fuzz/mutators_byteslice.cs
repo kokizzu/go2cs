@@ -10,7 +10,7 @@ partial class fuzz_package {
 
 // byteSliceRemoveBytes removes a random chunk of bytes from b.
 internal static slice<byte> byteSliceRemoveBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -25,7 +25,7 @@ internal static slice<byte> byteSliceRemoveBytes(ж<mutator> Ꮡm, slice<byte> b
 // byteSliceInsertRandomBytes inserts a chunk of random bytes into b at a random
 // position.
 internal static slice<byte> byteSliceInsertRandomBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     nint pos = m.rand(len(b) + 1);
     nint n = m.chooseLen(1024);
@@ -43,7 +43,7 @@ internal static slice<byte> byteSliceInsertRandomBytes(ж<mutator> Ꮡm, slice<b
 // byteSliceDuplicateBytes duplicates a chunk of bytes in b and inserts it into
 // a random position.
 internal static slice<byte> byteSliceDuplicateBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -78,7 +78,7 @@ internal static slice<byte> byteSliceDuplicateBytes(ж<mutator> Ꮡm, slice<byte
 
 // byteSliceOverwriteBytes overwrites a chunk of b with another chunk of b.
 internal static slice<byte> byteSliceOverwriteBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -95,7 +95,7 @@ internal static slice<byte> byteSliceOverwriteBytes(ж<mutator> Ꮡm, slice<byte
 
 // byteSliceBitFlip flips a random bit in a random byte in b.
 internal static slice<byte> byteSliceBitFlip(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) == 0) {
         return default!;
@@ -107,7 +107,7 @@ internal static slice<byte> byteSliceBitFlip(ж<mutator> Ꮡm, slice<byte> b) {
 
 // byteSliceXORByte XORs a random byte in b with a random value.
 internal static slice<byte> byteSliceXORByte(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) == 0) {
         return default!;
@@ -122,7 +122,7 @@ internal static slice<byte> byteSliceXORByte(ж<mutator> Ꮡm, slice<byte> b) {
 
 // byteSliceSwapByte swaps two random bytes in b.
 internal static slice<byte> byteSliceSwapByte(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -138,7 +138,7 @@ internal static slice<byte> byteSliceSwapByte(ж<mutator> Ꮡm, slice<byte> b) {
 
 // byteSliceArithmeticUint8 adds/subtracts from a random byte in b.
 internal static slice<byte> byteSliceArithmeticUint8(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) == 0) {
         return default!;
@@ -155,7 +155,7 @@ internal static slice<byte> byteSliceArithmeticUint8(ж<mutator> Ꮡm, slice<byt
 
 // byteSliceArithmeticUint16 adds/subtracts from a random uint16 in b.
 internal static slice<byte> byteSliceArithmeticUint16(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) < 2) {
         return default!;
@@ -172,7 +172,7 @@ internal static slice<byte> byteSliceArithmeticUint16(ж<mutator> Ꮡm, slice<by
 
 // byteSliceArithmeticUint32 adds/subtracts from a random uint32 in b.
 internal static slice<byte> byteSliceArithmeticUint32(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) < 4) {
         return default!;
@@ -189,7 +189,7 @@ internal static slice<byte> byteSliceArithmeticUint32(ж<mutator> Ꮡm, slice<by
 
 // byteSliceArithmeticUint64 adds/subtracts from a random uint64 in b.
 internal static slice<byte> byteSliceArithmeticUint64(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) < 8) {
         return default!;
@@ -207,7 +207,7 @@ internal static slice<byte> byteSliceArithmeticUint64(ж<mutator> Ꮡm, slice<by
 // byteSliceOverwriteInterestingUint8 overwrites a random byte in b with an interesting
 // value.
 internal static slice<byte> byteSliceOverwriteInterestingUint8(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) == 0) {
         return default!;
@@ -220,7 +220,7 @@ internal static slice<byte> byteSliceOverwriteInterestingUint8(ж<mutator> Ꮡm,
 // byteSliceOverwriteInterestingUint16 overwrites a random uint16 in b with an interesting
 // value.
 internal static slice<byte> byteSliceOverwriteInterestingUint16(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) < 2) {
         return default!;
@@ -234,7 +234,7 @@ internal static slice<byte> byteSliceOverwriteInterestingUint16(ж<mutator> Ꮡm
 // byteSliceOverwriteInterestingUint32 overwrites a random uint16 in b with an interesting
 // value.
 internal static slice<byte> byteSliceOverwriteInterestingUint32(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) < 4) {
         return default!;
@@ -247,7 +247,7 @@ internal static slice<byte> byteSliceOverwriteInterestingUint32(ж<mutator> Ꮡm
 
 // byteSliceInsertConstantBytes inserts a chunk of constant bytes into a random position in b.
 internal static slice<byte> byteSliceInsertConstantBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -276,7 +276,7 @@ internal static slice<byte> byteSliceInsertConstantBytes(ж<mutator> Ꮡm, slice
 
 // byteSliceOverwriteConstantBytes overwrites a chunk of b with constant bytes.
 internal static slice<byte> byteSliceOverwriteConstantBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -292,7 +292,7 @@ internal static slice<byte> byteSliceOverwriteConstantBytes(ж<mutator> Ꮡm, sl
 
 // byteSliceShuffleBytes shuffles a chunk of bytes in b.
 internal static slice<byte> byteSliceShuffleBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;
@@ -314,7 +314,7 @@ internal static slice<byte> byteSliceShuffleBytes(ж<mutator> Ꮡm, slice<byte> 
 
 // byteSliceSwapBytes swaps two chunks of bytes in b.
 internal static slice<byte> byteSliceSwapBytes(ж<mutator> Ꮡm, slice<byte> b) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (len(b) <= 1) {
         return default!;

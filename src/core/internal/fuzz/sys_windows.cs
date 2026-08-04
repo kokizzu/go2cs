@@ -22,9 +22,8 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
     ж<sharedMem> mem = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var f = ref Ꮡf.Value;
-
     ref var err = ref Ꮡerr.ValueSlot;
+
         defer(() => {
             if (Ꮡerr.ValueSlot != default!) {
                 Ꮡerr.ValueSlot = fmt.Errorf("mapping temporary file %s: %w"u8, Ꮡf.Value.Name(), Ꮡerr.ValueSlot);
@@ -100,7 +99,7 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
 // setWorkerComm configures communication channels on the cmd that will
 // run a worker process.
 internal static void setWorkerComm(ж<exec.Cmd> Ꮡcmd, workerComm comm) {
-    ref var cmd = ref Ꮡcmd.Value;
+    ref var cmd = ref Ꮡcmd.DerefOrNull();
 
     var mem = ᐸꟷ(comm.memMu);
     var memFD = (~mem).f.Fd();

@@ -750,7 +750,7 @@ internal static (int64 n, error err) ReadFrom(this discard _, Reader r) {
         (readSize, err) = r.Read(bufp.ValueSlot);
         n += (int64)readSize;
         if (err != default!) {
-            ᏑblackHolePool.Put(bufp);
+            ᏑblackHolePool.Put(bufp.OrTypedNil());
             if (AreEqual(err, EOF)) {
                 return (n, default!);
             }

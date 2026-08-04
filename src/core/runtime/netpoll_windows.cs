@@ -34,7 +34,7 @@ internal static readonly @string runtimeSourceValueIsTooˢ = "runtime: source va
 // packNetpollKey creates a key from a source and a tag.
 // Bits that don't fit in the result are discarded.
 internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
-    ref var pd = ref Ꮡpd.DerefOrNil();
+    ref var pd = ref Ꮡpd.DerefOrNull();
 
     // TODO: Consider combining the source with pd.fdseq to detect stale pollDescs.
     if (source > ((1 << (int)(sourceBits))) - 1) {
@@ -69,7 +69,7 @@ internal static uint8 unpackNetpollSource(uintptr key) {
 // e. It can return nil if the entry is not from internal/poll.
 // See go.dev/issue/58870
 internal static ж<pollOperation> pollOperationFromOverlappedEntry(ж<overlappedEntry> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.ov == nil) {
         return default!;

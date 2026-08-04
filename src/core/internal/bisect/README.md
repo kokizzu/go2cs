@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package bisect can be used by compilers and other programs to serve as a target for the bisect debugging tool. See [golang.org/x/tools/cmd/bisect](/golang.org/x/tools/cmd/bisect) for details about using the tool.
 

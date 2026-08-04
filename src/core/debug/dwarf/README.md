@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package dwarf provides access to DWARF debugging information loaded from executable files, as defined in the DWARF 2.0 Standard at [http://dwarfstd.org/doc/dwarf-2.0.0.pdf](http://dwarfstd.org/doc/dwarf-2.0.0.pdf).
 

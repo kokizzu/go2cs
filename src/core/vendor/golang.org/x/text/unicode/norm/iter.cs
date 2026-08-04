@@ -128,13 +128,13 @@ public static UntypedInt MaxSegmentSize => /* maxByteBufferSize */ 128;
 // Modifying runes are grouped together with the preceding starter, if such a starter exists.
 // Although not guaranteed, n will typically be the smallest possible n.
 public static slice<byte> Next(this ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     return i.next(Ꮡi);
 }
 
 internal static slice<byte> nextASCIIBytes(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint p = i.p + 1;
     if (p >= i.rb.nsrc) {
@@ -153,7 +153,7 @@ internal static slice<byte> nextASCIIBytes(ж<Iter> Ꮡi) {
 }
 
 internal static slice<byte> nextASCIIString(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint p = i.p + 1;
     if (p >= i.rb.nsrc) {
@@ -172,7 +172,7 @@ internal static slice<byte> nextASCIIString(ж<Iter> Ꮡi) {
 }
 
 internal static slice<byte> nextHangul(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint p = i.p;
     nint next = p + (nint)hangulUTF8Size;
@@ -196,7 +196,7 @@ internal static slice<byte> nextDone(ж<Iter> Ꮡi) {
 // nextMulti is used for iterating over multi-segment decompositions
 // for decomposing normal forms.
 internal static slice<byte> nextMulti(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint j = 0;
     var d = i.multiSeg;
@@ -219,7 +219,7 @@ internal static slice<byte> nextMulti(ж<Iter> Ꮡi) {
 // nextMultiNorm is used for iterating over multi-segment decompositions
 // for composing normal forms.
 internal static slice<byte> nextMultiNorm(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint j = 0;
     var d = i.multiSeg;
@@ -244,7 +244,7 @@ internal static slice<byte> nextMultiNorm(ж<Iter> Ꮡi) {
 internal static slice<byte> /*next*/ nextDecomposed(ж<Iter> Ꮡi) {
     slice<byte> next = default!;
 
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
     nint outp = 0;
     nint inCopyStart = i.p;
     nint outCopyStart = 0;
@@ -384,7 +384,7 @@ doNorm:
 }
 
 internal static slice<byte> doNormDecomposed(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     while (ᐧ) {
         Ꮡi.of(Iter.Ꮡrb).insertUnsafe(i.rb.src, i.p, i.info);
@@ -410,7 +410,7 @@ internal static slice<byte> doNormDecomposed(ж<Iter> Ꮡi) {
 }
 
 internal static slice<byte> nextCGJDecompose(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.rb.ss = 0;
     i.rb.insertCGJ();
@@ -422,7 +422,7 @@ internal static slice<byte> nextCGJDecompose(ж<Iter> Ꮡi) {
 
 // nextComposed is the implementation of Next for forms NFC and NFKC.
 internal static slice<byte> nextComposed(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     nint outp = 0;
     nint startp = i.p;
@@ -486,7 +486,7 @@ doNorm:
 }
 
 internal static slice<byte> doNormComposed(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     // First rune should already be inserted.
     while (ᐧ) {
@@ -514,7 +514,7 @@ internal static slice<byte> doNormComposed(ж<Iter> Ꮡi) {
 }
 
 internal static slice<byte> nextCGJCompose(ж<Iter> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.rb.ss = 0;
     // instead of first

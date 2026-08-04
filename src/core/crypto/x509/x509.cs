@@ -876,8 +876,8 @@ public static @string Error(this ConstraintViolationError _) {
 }
 
 public static bool Equal(this ж<Certificate> Ꮡc, ж<Certificate> Ꮡother) {
-    ref var c = ref Ꮡc.DerefOrNil();
-    ref var other = ref Ꮡother.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var other = ref Ꮡother.DerefOrNull();
 
     if (Ꮡc == nil || Ꮡother == nil) {
         return Ꮡc == Ꮡother;
@@ -894,7 +894,7 @@ public static bool Equal(this ж<Certificate> Ꮡc, ж<Certificate> Ꮡother) {
 // This is a low-level API that performs very limited checks, and not a full
 // path verifier. Most users should use [Certificate.Verify] instead.
 [GoRecv] public static error CheckSignatureFrom(this ref Certificate c, ж<Certificate> Ꮡparent) {
-    ref var parent = ref Ꮡparent.Value;
+    ref var parent = ref Ꮡparent.DerefOrNull();
 
     // RFC 5280, 4.2.1.9:
     // "If the basic constraints extension is not present in a version 3
@@ -993,7 +993,7 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
     switch (publicKey.type()) {
     case ж<rsa.PublicKey> pub: {
         if (pubKeyAlgo != RSA) {
-            return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub);
+            return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub.OrTypedNil());
         }
         if (algo.isRSAPSS()){
             return rsa.VerifyPSS(pub, hashType, signed, signature, Ꮡ(new rsa.PSSOptions(SaltLength: rsa.PSSSaltLengthEqualsHash)));
@@ -1004,7 +1004,7 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
     }
     case ж<ecdsa.PublicKey> pub: {
         if (pubKeyAlgo != ECDSA) {
-            return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub);
+            return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub.OrTypedNil());
         }
         if (!ecdsa.VerifyASN1(pub, signed, signature)) {
             return errors.New(x509EcdsaVerificationˢ);
@@ -1027,7 +1027,7 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
 //
 // Deprecated: Use [RevocationList.CheckSignatureFrom] instead.
 [GoRecv] public static error CheckCRLSignature(this ref Certificate c, ж<pkix.CertificateList> Ꮡcrl) {
-    ref var crl = ref Ꮡcrl.Value;
+    ref var crl = ref Ꮡcrl.DerefOrNull();
 
     SignatureAlgorithm algo = getSignatureAlgorithmFromAI(crl.SignatureAlgorithm);
     return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign());
@@ -1194,7 +1194,7 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ж<Ce
     slice<pkix.Extension> ret = default!;
     error err = default!;
 
-    ref var template = ref Ꮡtemplate.Value;
+    ref var template = ref Ꮡtemplate.DerefOrNull();
     ret = new slice<pkix.Extension>(10);
     /* maximum number of elements. */
     nint n = 0;
@@ -1279,15 +1279,15 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ж<Ce
     if ((builtin.len(template.PermittedDNSDomains) > 0 || builtin.len(template.ExcludedDNSDomains) > 0 || builtin.len(template.PermittedIPRanges) > 0 || builtin.len(template.ExcludedIPRanges) > 0 || builtin.len(template.PermittedEmailAddresses) > 0 || builtin.len(template.ExcludedEmailAddresses) > 0 || builtin.len(template.PermittedURIDomains) > 0 || builtin.len(template.ExcludedURIDomains) > 0) && !oidInExtensions(oidExtensionNameConstraints, template.ExtraExtensions)) {
         ret[n].Id = oidExtensionNameConstraints;
         ret[n].Critical = template.PermittedDNSDomainsCritical;
-        var ipAndMask = (ж<net.IPNet> ipNet) => {
+        slice<byte> ipAndMask(ж<net.IPNet> ipNet) {
             var maskedIP = (~ipNet).IP.Mask((~ipNet).Mask);
             var ipAndMaskΔ1 = new slice<byte>(0, builtin.len(maskedIP) + builtin.len((~ipNet).Mask));
             ipAndMaskΔ1 = append(ipAndMaskΔ1, maskedIP.ꓸꓸꓸ);
             ipAndMaskΔ1 = append(ipAndMaskΔ1, (~ipNet).Mask.ꓸꓸꓸ);
             return ipAndMaskΔ1;
-        };
+        }
         var ipAndMaskʗ1 = ipAndMask;
-        var serialiseConstraints = (slice<byte> der, error err) (slice<@string> dns, slice<ж<net.IPNet>> ips, slice<@string> emails, slice<@string> uriDomains) => {
+        (slice<byte> der, error err) serialiseConstraints(slice<@string> dns, slice<ж<net.IPNet>> ips, slice<@string> emails, slice<@string> uriDomains) {
             slice<byte> der = default!;
             error errΔ1 = default!;
             ref var bΔ1 = ref heap(new cryptobyte.Builder(), out var ᏑbΔ1);
@@ -1339,7 +1339,7 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ж<Ce
                 });
             }
             return bΔ1.Bytes();
-        };
+        }
         var (permitted, errΔ2) = serialiseConstraints(template.PermittedDNSDomains, template.PermittedIPRanges, template.PermittedEmailAddresses, template.PermittedURIDomains);
         if (errΔ2 != default!) {
             return (default!, errΔ2);
@@ -1487,7 +1487,7 @@ internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> po
 }
 
 internal static (slice<pkix.Extension>, error) buildCSRExtensions(ж<CertificateRequest> Ꮡtemplate) {
-    ref var template = ref Ꮡtemplate.Value;
+    ref var template = ref Ꮡtemplate.DerefOrNull();
 
     slice<pkix.Extension> ret = default!;
     if ((builtin.len(template.DNSNames) > 0 || builtin.len(template.EmailAddresses) > 0 || builtin.len(template.IPAddresses) > 0 || builtin.len(template.URIs) > 0) && !oidInExtensions(oidExtensionSubjectAltName, template.ExtraExtensions)) {
@@ -1504,7 +1504,7 @@ internal static (slice<pkix.Extension>, error) buildCSRExtensions(ж<Certificate
 }
 
 internal static (slice<byte>, error) subjectBytes(ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.Value;
+    ref var cert = ref Ꮡcert.DerefOrNull();
 
     if (builtin.len(cert.RawSubject) > 0) {
         return (cert.RawSubject, default!);
@@ -1588,7 +1588,7 @@ internal static (slice<byte>, error) signTBS(slice<byte> tbs, crypto.Signer key,
         h.Write(signed);
         signed = h.Sum(default!);
     }
-    crypto.SignerOpts signerOpts = new crypto_HashᴠSignerOpts(hashFunc);
+    crypto.SignerOpts signerOpts = hashFunc;
     if (sigAlg.isRSAPSS()) {
         signerOpts = new rsa_PSSOptionsжSignerOpts(Ꮡ(new rsa.PSSOptions(
             SaltLength: rsa.PSSSaltLengthEqualsHash,
@@ -1686,8 +1686,8 @@ internal static readonly @string x509ProvidedPrivateKeyˢ = "x509: provided Priv
 // be used to marshal policy OIDs which have components that are larger than 31
 // bits.
 public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certificate> Ꮡtemplate, ж<Certificate> Ꮡparent, any pub, any priv) {
-    ref var template = ref Ꮡtemplate.Value;
-    ref var parent = ref Ꮡparent.Value;
+    ref var template = ref Ꮡtemplate.DerefOrNull();
+    ref var parent = ref Ꮡparent.DerefOrNull();
 
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
     if (!ok) {
@@ -1810,7 +1810,7 @@ internal static readonly @string x509TrailingDataAfterCrlˢ = "x509: trailing da
 public static (ж<pkix.CertificateList>, error) ParseDERCRL(slice<byte> derBytes) {
     var certList = @new<pkix.CertificateList>();
     {
-        var (rest, err) = asn1.Unmarshal(derBytes, certList); if (err != default!){
+        var (rest, err) = asn1.Unmarshal(derBytes, certList.OrTypedNil()); if (err != default!){
             return (default!, err);
         } else 
         if (builtin.len(rest) != 0) {
@@ -2047,7 +2047,7 @@ public static (slice<byte> csr, error err) CreateCertificateRequest(io.Reader ra
     slice<byte> csr = default!;
     error err = default!;
 
-    ref var template = ref Ꮡtemplate.Value;
+    ref var template = ref Ꮡtemplate.DerefOrNull();
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
     if (!ok) {
         return (default!, errors.New(x509CertificatePrivateˢ));
@@ -2188,7 +2188,7 @@ public static (ж<CertificateRequest>, error) ParseCertificateRequest(slice<byte
 internal static readonly @string x509TrailingDataAfterXˢ = "x509: trailing data after X.509 Subject"u8;
 
 internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certificateRequest> Ꮡin) {
-    ref var @in = ref Ꮡin.Value;
+    ref var @in = ref Ꮡin.DerefOrNull();
 
     var @out = Ꮡ(new CertificateRequest(
         Raw: @in.Raw,
@@ -2383,8 +2383,8 @@ internal static readonly @string x509CrlNumberExceeds20ˢ = "x509: CRL number ex
 // extension are populated using the issuer certificate. issuer must have
 // SubjectKeyId set.
 public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<RevocationList> Ꮡtemplate, ж<Certificate> Ꮡissuer, crypto.Signer priv) {
-    ref var template = ref Ꮡtemplate.DerefOrNil();
-    ref var issuer = ref Ꮡissuer.DerefOrNil();
+    ref var template = ref Ꮡtemplate.DerefOrNull();
+    ref var issuer = ref Ꮡissuer.DerefOrNull();
 
     if (Ꮡtemplate == nil) {
         return (default!, errors.New(x509TemplateCanNotBeNilˢ));
@@ -2471,7 +2471,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
             return (default!, errors.New(x509CrlNumberExceeds20ˢ));
         }
     }
-    (var crlNum, err) = asn1.Marshal(template.Number);
+    (var crlNum, err) = asn1.Marshal(template.Number.OrTypedNil());
     if (err != default!) {
         return (default!, err);
     }
@@ -2525,7 +2525,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
 // CheckSignatureFrom verifies that the signature on rl is a valid signature
 // from issuer.
 [GoRecv] public static error CheckSignatureFrom(this ref RevocationList rl, ж<Certificate> Ꮡparent) {
-    ref var parent = ref Ꮡparent.Value;
+    ref var parent = ref Ꮡparent.DerefOrNull();
 
     if (parent.Version == 3 && !parent.BasicConstraintsValid || parent.BasicConstraintsValid && !parent.IsCA) {
         return new ConstraintViolationError(nil);

@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package boring provides access to BoringCrypto implementation functions. Check the constant Enabled to find out whether BoringCrypto is available. If BoringCrypto is not available, the functions in this package all panic.
 

@@ -126,10 +126,10 @@ internal static error numError(error err) {
 [GoType("bool")] partial struct boolValue;
 
 internal static ж<boolValue> newBoolValue(bool val, ж<bool> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((boolValue)(p));
+    return Ꮡp.Reinterpret<bool, boolValue>();
 }
 
 [GoRecv] internal static error Set(this ref boolValue b, @string s) {
@@ -164,10 +164,10 @@ internal static ж<boolValue> newBoolValue(bool val, ж<bool> Ꮡp) {
 [GoType("num:nint")] partial struct intValue;
 
 internal static ж<intValue> newIntValue(nint val, ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((intValue)(p));
+    return Ꮡp.Reinterpret<nint, intValue>();
 }
 
 [GoRecv] internal static error Set(this ref intValue i, @string s) {
@@ -190,10 +190,10 @@ internal static ж<intValue> newIntValue(nint val, ж<nint> Ꮡp) {
 [GoType("num:int64")] partial struct int64Value;
 
 internal static ж<int64Value> newInt64Value(int64 val, ж<int64> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((int64Value)(p));
+    return Ꮡp.Reinterpret<int64, int64Value>();
 }
 
 [GoRecv] internal static error Set(this ref int64Value i, @string s) {
@@ -216,10 +216,10 @@ internal static ж<int64Value> newInt64Value(int64 val, ж<int64> Ꮡp) {
 [GoType("num:nuint")] partial struct uintValue;
 
 internal static ж<uintValue> newUintValue(nuint val, ж<nuint> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((uintValue)(p));
+    return Ꮡp.Reinterpret<nuint, uintValue>();
 }
 
 [GoRecv] internal static error Set(this ref uintValue i, @string s) {
@@ -242,10 +242,10 @@ internal static ж<uintValue> newUintValue(nuint val, ж<nuint> Ꮡp) {
 [GoType("num:uint64")] partial struct uint64Value;
 
 internal static ж<uint64Value> newUint64Value(uint64 val, ж<uint64> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((uint64Value)(p));
+    return Ꮡp.Reinterpret<uint64, uint64Value>();
 }
 
 [GoRecv] internal static error Set(this ref uint64Value i, @string s) {
@@ -268,10 +268,10 @@ internal static ж<uint64Value> newUint64Value(uint64 val, ж<uint64> Ꮡp) {
 [GoType("@string")] partial struct stringValue;
 
 internal static ж<stringValue> newStringValue(@string val, ж<@string> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((stringValue)(p));
+    return Ꮡp.Reinterpret<@string, stringValue>();
 }
 
 [GoRecv] internal static error Set(this ref stringValue s, @string val) {
@@ -290,10 +290,10 @@ internal static ж<stringValue> newStringValue(@string val, ж<@string> Ꮡp) {
 [GoType("num:float64")] partial struct float64Value;
 
 internal static ж<float64Value> newFloat64Value(float64 val, ж<float64> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((float64Value)(p));
+    return Ꮡp.Reinterpret<float64, float64Value>();
 }
 
 [GoRecv] internal static error Set(this ref float64Value f, @string s) {
@@ -316,10 +316,10 @@ internal static ж<float64Value> newFloat64Value(float64 val, ж<float64> Ꮡp) 
 [GoType("time_package.Duration")] partial struct durationValue;
 
 internal static ж<durationValue> newDurationValue(time.Duration val, ж<time.Duration> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p = val;
-    return Ꮡ((durationValue)(p));
+    return Ꮡp.Reinterpret<time.Duration, durationValue>();
 }
 
 [GoRecv] internal static error Set(this ref durationValue d, @string s) {
@@ -336,9 +336,7 @@ internal static ж<durationValue> newDurationValue(time.Duration val, ж<time.Du
 }
 
 internal static @string String(this ж<durationValue> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
-
-    return (Ꮡ((time.Duration)(d))).Value.String();
+    return (Ꮡd.Reinterpret<durationValue, time.Duration>()).Value.String();
 }
 
 // -- encoding.TextUnmarshaler Value
@@ -597,7 +595,7 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
     bool ok = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var flag = ref Ꮡflag.Value;
+    ref var flag = ref Ꮡflag.DerefOrNull();
 
         // Build a zero value of the flag's Value type, and see if the
         // result of calling its String method equals the value passed in.
@@ -645,7 +643,7 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
     @string name = default!;
     @string usage = default!;
 
-    ref var flag = ref Ꮡflag.Value;
+    ref var flag = ref Ꮡflag.DerefOrNull();
     // Look for a back-quoted name, but avoid the strings package.
     usage = flag.Usage;
     for (nint i = 0; i < len(usage); i++) {
@@ -701,7 +699,7 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
 // default values of all defined command-line flags in the set. See the
 // documentation for the global function PrintDefaults for more information.
 public static void PrintDefaults(this ж<FlagSet> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     ref var isZeroValueErrs = ref heap<slice<error>>(out var ᏑisZeroValueErrs);
     f.VisitAll((ж<Flag> flag) => {
@@ -788,7 +786,7 @@ public static void PrintDefaults() {
 
 // defaultUsage is the default function to print a usage message.
 internal static void defaultUsage(this ж<FlagSet> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (f.name == ""u8){
         fmt.Fprintf(f.Output(), "Usage:\n"u8);
@@ -1184,7 +1182,7 @@ public static void Var(Value value, @string name, @string usage) {
 internal static error failf(this ж<FlagSet> Ꮡf, @string format, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     @string msg = f.sprintf(format, a.ꓸꓸꓸ);
     Ꮡf.usage();
     return errors.New(msg);
@@ -1193,7 +1191,7 @@ internal static error failf(this ж<FlagSet> Ꮡf, @string format, params ꓸꓸ
 // usage calls the Usage method for the flag set if one is specified,
 // or the appropriate default usage function otherwise.
 internal static void usage(this ж<FlagSet> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (f.Usage == default!){
         Ꮡf.defaultUsage();
@@ -1207,7 +1205,7 @@ internal static readonly @string trueˢ = "true"u8;
 
 // parseOne parses one flag. It reports whether a flag was seen.
 internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (len(f.args) == 0) {
         return (false, default!);
@@ -1296,7 +1294,7 @@ internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {
 // are defined and before flags are accessed by the program.
 // The return value will be [ErrHelp] if -help or -h were set but not defined.
 public static error Parse(this ж<FlagSet> Ꮡf, slice<@string> arguments) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     f.parsed = true;
     f.args = arguments;

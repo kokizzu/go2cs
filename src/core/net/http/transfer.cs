@@ -179,7 +179,7 @@ internal static (ж<transferWriter> t, error err) newTransferWriter(any r) {
 // common case, we act as if their Body were nil instead, and don't send
 // a body.
 internal static bool shouldSendChunkedRequestBody(this ж<transferWriter> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Note that t.ContentLength is the corrected content length
     // from rr.outgoingLength, so 0 actually means zero, not unknown.
@@ -221,7 +221,7 @@ internal static bool shouldSendChunkedRequestBody(this ж<transferWriter> Ꮡt) 
 // In other words, this delay will not normally affect anybody, and there
 // are workarounds if it does.
 internal static void probeRequestBody(this ж<transferWriter> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.ByteReadCh = new channel<readResult>(1);
     goǃ((io.Reader body) => {
@@ -305,7 +305,7 @@ internal static readonly @string transferEncodingChunkedˢ = "Transfer-Encoding:
 internal static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
 
 [GoRecv] internal static error writeHeader(this ref transferWriter t, io.Writer w, ж<httptrace.ClientTrace> Ꮡtrace) {
-    ref var trace = ref Ꮡtrace.DerefOrNil();
+    ref var trace = ref Ꮡtrace.DerefOrNull();
 
     if (t.Close && !hasToken(t.Header.get(connectionˢ), closeˢ)) {
         {
@@ -380,7 +380,7 @@ internal static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
 internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer w) {
     error err = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         int64 ncopy = default!;
         var closed = false;
@@ -467,7 +467,7 @@ internal static (int64 n, error err) doBodyCopy(this ж<transferWriter> Ꮡt, io
     int64 n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         var buf = getCopyBuf();
         deferǃ(putCopyBuf, buf, defer);
@@ -556,7 +556,6 @@ internal static slice<@string> suppressedHeaders(nint status) {
 internal static error /*err*/ readTransfer(any msg, ж<bufio.Reader> Ꮡr) {
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
     var t = Ꮡ(new transferReader(RequestMethod: "GET"u8));
     // Unify input
     var isResponse = false;
@@ -909,7 +908,7 @@ internal static (nint n, error err) Read(this ж<body> Ꮡb, slice<byte> p) {
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock);
@@ -979,7 +978,7 @@ internal static slice<byte> singleCRLF = slice<byte>("\r\n"u8);
 internal static slice<byte> doubleCRLF = slice<byte>("\r\n\r\n"u8);
 
 internal static bool seeUpcomingDoubleCRLF(ж<bufio.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     for (nint peekSize = 4; ᐧ ; peekSize++) {
         // This loop stops when Peek returns an error,
@@ -1044,7 +1043,7 @@ internal static readonly @string httpSuspiciouslyLongˢ = "http: suspiciously lo
 }
 
 internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
-    ref var dst = ref Ꮡdst.ValueSlot;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     if (dst == default!) {
         dst = src;
@@ -1068,7 +1067,7 @@ internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
 }
 
 internal static error Close(this ж<body> Ꮡb) => func<error>((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.of(body.Ꮡmu).Lock();
     defer(Ꮡb.of(body.Ꮡmu).Unlock);
@@ -1121,7 +1120,7 @@ internal static error Close(this ж<body> Ꮡb) => func<error>((defer, recover) 
 });
 
 internal static bool didEarlyClose(this ж<body> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.of(body.Ꮡmu).Lock();
     defer(Ꮡb.of(body.Ꮡmu).Unlock);
@@ -1131,7 +1130,7 @@ internal static bool didEarlyClose(this ж<body> Ꮡb) => func((defer, recover) 
 // bodyRemains reports whether future Read calls might
 // yield data.
 internal static bool bodyRemains(this ж<body> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.of(body.Ꮡmu).Lock();
     defer(Ꮡb.of(body.Ꮡmu).Unlock);
@@ -1139,7 +1138,7 @@ internal static bool bodyRemains(this ж<body> Ꮡb) => func((defer, recover) =>
 });
 
 internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.of(body.Ꮡmu).Lock();
     defer(Ꮡb.of(body.Ꮡmu).Unlock);

@@ -297,7 +297,7 @@ internal static partial @unsafe.Pointer unsafe_New(ж<abi.Type> _);
 // It panics if v is not assignable to typ.
 // For a conversion to an interface type, target is a suggested scratch space to use.
 internal static Value assignTo(this Value v, @string context, ж<abi.Type> Ꮡdst, @unsafe.Pointer target) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     // if v.flag&flagMethod != 0 {
     // 	v = makeMethodValue(context, v)

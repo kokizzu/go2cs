@@ -171,11 +171,11 @@ internal static void Swap(this typeParamsById s, nint i, nint j) {
 // If both type parameters already have a type associated with them
 // and they are not joined, join fails and returns false.
 [GoRecv] internal static bool join(this ref unifier u, ж<TypeParam> Ꮡx, ж<TypeParam> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (traceInference) {
-        u.tracef("%s ⇄ %s"u8, Ꮡx, Ꮡy);
+        u.tracef("%s ⇄ %s"u8, Ꮡx.OrTypedNil(), Ꮡy.OrTypedNil());
     }
     {
         var (hx, hy) = (u.handles[Ꮡx], u.handles[Ꮡy]);
@@ -244,7 +244,7 @@ internal static void Swap(this typeParamsById s, nint i, nint j) {
 [GoRecv] internal static void set(this ref unifier u, ж<TypeParam> Ꮡx, ΔType t) {
     assert(t != default!);
     if (traceInference) {
-        u.tracef("%s ➞ %s"u8, Ꮡx, t);
+        u.tracef("%s ➞ %s"u8, Ꮡx.OrTypedNil(), t);
     }
     u.handles[Ꮡx].ValueSlot = t;
 }
@@ -292,8 +292,8 @@ internal static ж<Interface> /*i*/ asInterface(ΔType x) {
 internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType yʗp, unifyMode mode, ж<ifacePair> Ꮡp) {
     bool result = default!;
     func((defer, recover) => {
-    ref var u = ref Ꮡu.Value;
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var x = ref heap(xʗp, out var Ꮡx);
     ref var y = ref heap(yʗp, out var Ꮡy);
@@ -351,7 +351,7 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
         {
             var ny = asNamed(y); if ((unifyMode)(mode & exact) == 0 && ny != nil && isTypeLit(x) && !(u.enableInterfaceInference && IsInterface(x))) {
                 if (traceInference) {
-                    u.tracef("%s ≡ under %s"u8, x, ny);
+                    u.tracef("%s ≡ under %s"u8, x, ny.OrTypedNil());
                 }
                 y = ny.under();
                 // Per the spec, a defined type cannot have an underlying type
@@ -526,7 +526,7 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
                         result = true; return;
                     }
                     // same pair was compared before
-                    Ꮡp = p.prev; p = ref Ꮡp.DerefOrNil();
+                    Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                 }
                 // The method set of x must be a subset of the method set
                 // of y or vice versa, and the common methods must unify.
@@ -744,7 +744,7 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
                                 result = true; return;
                             }
                             // same pair was compared before
-                            Ꮡp = p.prev; p = ref Ꮡp.DerefOrNil();
+                            Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                         }
                         if (debug) {
                             assertSortedMethods(a);

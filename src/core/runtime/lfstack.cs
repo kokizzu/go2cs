@@ -16,46 +16,41 @@ partial class runtime_package {
 internal static readonly @string lfstackPushˢ = "lfstack.push"u8;
 
 internal static void push(this ж<lfstack> Ꮡhead, ж<lfnode> Ꮡnode) {
-    ref var head = ref Ꮡhead.Value;
-    ref var node = ref Ꮡnode.DerefOrNil();
+    ref var node = ref Ꮡnode.DerefOrNull();
 
     node.pushcnt++;
     var @new = lfstackPack(Ꮡnode, node.pushcnt);
     {
         var node1 = lfstackUnpack(@new); if (node1 != Ꮡnode) {
-            print((@string)"runtime: lfstack.push invalid packing: node="u8, Ꮡnode, (@string)" cnt="u8, ((Δhex)(uint64)node.pushcnt), (@string)" packed="u8, ((Δhex)@new), (@string)" -> node="u8, node1, (@string)"\n"u8);
+            print((@string)"runtime: lfstack.push invalid packing: node="u8, Ꮡnode.OrTypedNil(), (@string)" cnt="u8, ((Δhex)(uint64)node.pushcnt), (@string)" packed="u8, ((Δhex)@new), (@string)" -> node="u8, node1.OrTypedNil(), (@string)"\n"u8);
             @throw(lfstackPushˢ);
         }
     }
     while (ᐧ) {
-        var old = atomic.Load64(Ꮡ((uint64)(head)));
+        var old = atomic.Load64(Ꮡhead.Reinterpret<lfstack, uint64>());
         node.next = old;
-        if (atomic.Cas64(Ꮡ((uint64)(head)), old, @new)) {
+        if (atomic.Cas64(Ꮡhead.Reinterpret<lfstack, uint64>(), old, @new)) {
             break;
         }
     }
 }
 
 internal static @unsafe.Pointer pop(this ж<lfstack> Ꮡhead) {
-    ref var head = ref Ꮡhead.Value;
-
     while (ᐧ) {
-        var old = atomic.Load64(Ꮡ((uint64)(head)));
+        var old = atomic.Load64(Ꮡhead.Reinterpret<lfstack, uint64>());
         if (old == 0) {
             return default!;
         }
         var node = lfstackUnpack(old);
         var next = atomic.Load64(node.of(lfnode.Ꮡnext));
-        if (atomic.Cas64(Ꮡ((uint64)(head)), old, next)) {
+        if (atomic.Cas64(Ꮡhead.Reinterpret<lfstack, uint64>(), old, next)) {
             return new @unsafe.Pointer(node);
         }
     }
 }
 
 internal static bool empty(this ж<lfstack> Ꮡhead) {
-    ref var head = ref Ꮡhead.Value;
-
-    return atomic.Load64(Ꮡ((uint64)(head))) == 0;
+    return atomic.Load64(Ꮡhead.Reinterpret<lfstack, uint64>()) == 0;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

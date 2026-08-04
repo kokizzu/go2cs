@@ -319,7 +319,7 @@ internal static void bw(ж<strings.Builder> Ꮡb, params ꓸꓸꓸstring argsʗp
 }
 
 internal static void dumpProg(ж<strings.Builder> Ꮡb, ж<Prog> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     foreach (var (j, _) in p.Inst) {
         var i = Ꮡ(p.Inst, j);
@@ -355,7 +355,7 @@ internal static readonly @string anyˢ = "any -> "u8;
 internal static readonly @string anynotnlˢ = "anynotnl -> "u8;
 
 internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     var exprᴛ1 = i.Op;
     if (exprᴛ1 == InstAlt) {

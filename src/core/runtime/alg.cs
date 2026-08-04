@@ -229,7 +229,7 @@ internal static uintptr nilinterhash(@unsafe.Pointer Δp, uintptr h) {
 //
 //go:linkname typehash
 internal static uintptr typehash(ж<_type> Ꮡt, @unsafe.Pointer Δp, uintptr h) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if ((abi.TFlag)(t.TFlag & abi.TFlagRegularMemory) != 0) {
         // Handle ptr sizes specially, see issue 37086.
@@ -294,7 +294,7 @@ internal static uintptr typehash(ж<_type> Ꮡt, @unsafe.Pointer Δp, uintptr h)
 // Should never happen, as typehash should only be called
 // with comparable types.
 internal static error mapKeyError(ж<maptype> Ꮡt, @unsafe.Pointer Δp) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.HashMightPanic()) {
         return default!;
@@ -303,7 +303,7 @@ internal static error mapKeyError(ж<maptype> Ꮡt, @unsafe.Pointer Δp) {
 }
 
 internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if ((abi.TFlag)(t.TFlag & abi.TFlagRegularMemory) != 0) {
         return default!;
@@ -435,7 +435,7 @@ internal static bool nilinterequal(@unsafe.Pointer Δp, @unsafe.Pointer q) {
 }
 
 internal static bool efaceeq(ж<_type> Ꮡt, @unsafe.Pointer x, @unsafe.Pointer y) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return true;
@@ -454,7 +454,7 @@ internal static bool efaceeq(ж<_type> Ꮡt, @unsafe.Pointer x, @unsafe.Pointer 
 }
 
 internal static bool ifaceeq(ж<itab> Ꮡtab, @unsafe.Pointer x, @unsafe.Pointer y) {
-    ref var tab = ref Ꮡtab.DerefOrNil();
+    ref var tab = ref Ꮡtab.DerefOrNull();
 
     if (Ꮡtab == nil) {
         return true;

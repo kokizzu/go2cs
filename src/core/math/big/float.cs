@@ -158,7 +158,7 @@ public static Accuracy Above => 1;
 // SetPrec(0) maps all finite values to ±0; infinite values remain unchanged.
 // If prec > [MaxPrec], it is set to [MaxPrec].
 public static ж<Float> SetPrec(this ж<Float> Ꮡz, nuint prec) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     z.acc = Exact;
     // optimistically assume no rounding is needed
@@ -195,7 +195,7 @@ internal static Accuracy makeAcc(bool above) {
 // z remains unchanged otherwise.
 // z.SetMode(z.Mode()) is a cheap way to set z's accuracy to [Exact].
 public static ж<Float> SetMode(this ж<Float> Ꮡz, RoundingMode mode) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     z.mode = mode;
     z.acc = Exact;
@@ -235,7 +235,7 @@ public static ж<Float> SetMode(this ж<Float> Ꮡz, RoundingMode mode) {
 //   - 0 if x is ±0;
 //   - +1 if x > 0.
 public static nint Sign(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -267,8 +267,8 @@ public static nint Sign(this ж<Float> Ꮡx) {
 public static nint /*exp*/ MantExp(this ж<Float> Ꮡx, ж<Float> Ꮡmant) {
     nint exp = default!;
 
-    ref var x = ref Ꮡx.Value;
-    ref var mant = ref Ꮡmant.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var mant = ref Ꮡmant.DerefOrNull();
     if (debugFloat) {
         Ꮡx.validate();
     }
@@ -285,7 +285,7 @@ public static nint /*exp*/ MantExp(this ж<Float> Ꮡx, ж<Float> Ꮡmant) {
 }
 
 internal static void setExpAndRound(this ж<Float> Ꮡz, int64 exp, nuint sbit) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (exp < MinExp) {
         // underflow
@@ -322,8 +322,8 @@ internal static void setExpAndRound(this ж<Float> Ꮡz, int64 exp, nuint sbit) 
 // z and mant may be the same in which case z's exponent
 // is set to exp.
 public static ж<Float> SetMantExp(this ж<Float> Ꮡz, ж<Float> Ꮡmant, nint exp) {
-    ref var z = ref Ꮡz.Value;
-    ref var mant = ref Ꮡmant.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var mant = ref Ꮡmant.DerefOrNull();
 
     if (debugFloat) {
         Ꮡz.validate();
@@ -350,7 +350,7 @@ public static ж<Float> SetMantExp(this ж<Float> Ꮡz, ж<Float> Ꮡmant, nint 
 // IsInt reports whether x is an integer.
 // ±Inf values are not integers.
 public static bool IsInt(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -387,7 +387,7 @@ internal static readonly @string nonzeroFiniteNumberWithˢ = "nonzero finite num
 internal static readonly @string zeroPrecisionFiniteˢ = "zero precision finite number"u8;
 
 internal static @string validate0(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.form != finite) {
         return ""u8;
@@ -415,7 +415,7 @@ internal static @string validate0(this ж<Float> Ꮡx) {
 // sign of z. For correct rounding, the sign of z must be set correctly before
 // calling round.
 internal static void round(this ж<Float> Ꮡz, nuint sbit) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (debugFloat) {
         Ꮡz.validate();
@@ -530,7 +530,7 @@ internal static void round(this ж<Float> Ꮡz, nuint sbit) {
 }
 
 internal static ж<Float> setBits64(this ж<Float> Ꮡz, bool neg, uint64 x) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (z.prec == 0) {
         z.prec = 64;
@@ -564,7 +564,7 @@ public static ж<Float> SetUint64(this ж<Float> Ꮡz, uint64 x) {
 // If z's precision is 0, it is changed to 64 (and rounding will have
 // no effect).
 public static ж<Float> SetInt64(this ж<Float> Ꮡz, int64 x) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     var u = x;
     if (u < 0) {
@@ -579,7 +579,7 @@ public static ж<Float> SetInt64(this ж<Float> Ꮡz, int64 x) {
 // If z's precision is 0, it is changed to 53 (and rounding will have
 // no effect). SetFloat64 panics with [ErrNaN] if x is a NaN.
 public static ж<Float> SetFloat64(this ж<Float> Ꮡz, float64 x) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (z.prec == 0) {
         z.prec = 53;
@@ -632,8 +632,8 @@ internal static int64 fnorm(nat m) {
 // If z's precision is 0, it is changed to the larger of x.BitLen()
 // or 64 (and rounding will have no effect).
 public static ж<Float> SetInt(this ж<Float> Ꮡz, ж<ΔInt> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // TODO(gri) can be more efficient if z.prec > 0
     // but small compared to the size of x, or if there
@@ -659,8 +659,8 @@ public static ж<Float> SetInt(this ж<Float> Ꮡz, ж<ΔInt> Ꮡx) {
 // If z's precision is 0, it is changed to the largest of a.BitLen(),
 // b.BitLen(), or 64; with x = a/b.
 public static ж<Float> SetRat(this ж<Float> Ꮡz, ж<ΔRat> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.IsInt()) {
         return Ꮡz.SetInt(Ꮡx.Num());
@@ -680,7 +680,7 @@ public static ж<Float> SetRat(this ж<Float> Ꮡz, ж<ΔRat> Ꮡx) {
 // precision of z is unchanged and the result is always
 // [Exact].
 public static ж<Float> SetInf(this ж<Float> Ꮡz, bool signbit) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     z.acc = Exact;
     z.form = inf;
@@ -695,8 +695,8 @@ public static ж<Float> SetInf(this ж<Float> Ꮡz, bool signbit) {
 // mode; and z's accuracy reports the result error relative to the
 // exact (not rounded) result.
 public static ж<Float> Set(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.DerefOrNil();
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -722,8 +722,8 @@ public static ж<Float> Set(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
 // Copy sets z to x, with the same precision, rounding mode, and accuracy as x.
 // Copy returns z. If x and z are identical, Copy is a no-op.
 public static ж<Float> Copy(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.DerefOrNil();
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -792,7 +792,7 @@ internal static uint64 msb64(nat x) {
 // The result is (0, [Above]) for x < 0, and ([math.MaxUint64], [Below])
 // for x > [math.MaxUint64].
 public static (uint64, Accuracy) Uint64(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -839,7 +839,7 @@ public static (uint64, Accuracy) Uint64(this ж<Float> Ꮡx) {
 // The result is ([math.MinInt64], [Above]) for x < [math.MinInt64],
 // and ([math.MaxInt64], [Below]) for x > [math.MaxInt64].
 public static (int64, Accuracy) Int64(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -895,7 +895,7 @@ public static (int64, Accuracy) Int64(this ж<Float> Ꮡx) {
 // If x is too large to be represented by a float32 (|x| > [math.MaxFloat32]),
 // the result is (+Inf, [Above]) or (-Inf, [Below]), depending on the sign of x.
 public static (float32, Accuracy) Float32(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1015,7 +1015,7 @@ public static (float32, Accuracy) Float32(this ж<Float> Ꮡx) {
 // If x is too large to be represented by a float64 (|x| > [math.MaxFloat64]),
 // the result is (+Inf, [Above]) or (-Inf, [Below]), depending on the sign of x.
 public static (float64, Accuracy) Float64(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1136,14 +1136,14 @@ public static (float64, Accuracy) Float64(this ж<Float> Ꮡx) {
 // If a non-nil *[Int] argument z is provided, [Int] stores
 // the result in z instead of allocating a new [Int].
 public static (ж<ΔInt>, Accuracy) Int(this ж<Float> Ꮡx, ж<ΔInt> Ꮡz) {
-    ref var x = ref Ꮡx.Value;
-    ref var z = ref Ꮡz.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
     }
     if (Ꮡz == nil && x.form <= finite) {
-        Ꮡz = @new<ΔInt>(); z = ref Ꮡz.DerefOrNil();
+        Ꮡz = @new<ΔInt>(); z = ref Ꮡz.DerefOrNull();
     }
     var exprᴛ1 = x.form;
     if (exprᴛ1 == finite) {
@@ -1163,7 +1163,7 @@ public static (ж<ΔInt>, Accuracy) Int(this ж<Float> Ꮡx, ж<ΔInt> Ꮡz) {
         }
         if (Ꮡz == nil) {
             // shift mantissa as needed
-            Ꮡz = @new<ΔInt>(); z = ref Ꮡz.DerefOrNil();
+            Ꮡz = @new<ΔInt>(); z = ref Ꮡz.DerefOrNull();
         }
         z.neg = x.neg;
         switch (ᐧ) {
@@ -1198,14 +1198,14 @@ public static (ж<ΔInt>, Accuracy) Int(this ж<Float> Ꮡx, ж<ΔInt> Ꮡz) {
 // If a non-nil *[Rat] argument z is provided, [Rat] stores
 // the result in z instead of allocating a new [Rat].
 public static (ж<ΔRat>, Accuracy) Rat(this ж<Float> Ꮡx, ж<ΔRat> Ꮡz) {
-    ref var x = ref Ꮡx.Value;
-    ref var z = ref Ꮡz.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
     }
     if (Ꮡz == nil && x.form <= finite) {
-        Ꮡz = @new<ΔRat>(); z = ref Ꮡz.DerefOrNil();
+        Ꮡz = @new<ΔRat>(); z = ref Ꮡz.DerefOrNull();
     }
     var exprᴛ1 = x.form;
     if (exprᴛ1 == finite) {
@@ -1251,7 +1251,7 @@ public static (ж<ΔRat>, Accuracy) Rat(this ж<Float> Ꮡx, ж<ΔRat> Ꮡz) {
 // Abs sets z to the (possibly rounded) value |x| (the absolute value of x)
 // and returns z.
 public static ж<Float> Abs(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
     z.neg = false;
@@ -1261,7 +1261,7 @@ public static ж<Float> Abs(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
 // Neg sets z to the (possibly rounded) value of x with its sign negated,
 // and returns z.
 public static ж<Float> Neg(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
     z.neg = !z.neg;
@@ -1269,8 +1269,8 @@ public static ж<Float> Neg(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
 }
 
 internal static void validateBinaryOperands(ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (!debugFloat) {
         // avoid performance bugs
@@ -1288,9 +1288,9 @@ internal static void validateBinaryOperands(ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // but using the sign of z for rounding the result.
 // x and y must have a non-empty mantissa and valid exponent.
 internal static void uadd(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // Note: This implementation requires 2 shifts most of the
     // time. It is also inefficient if exponents or precisions
@@ -1347,9 +1347,9 @@ internal static void uadd(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // but using the sign of z for rounding the result.
 // x and y must have a non-empty mantissa and valid exponent.
 internal static void usub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // This code is symmetric to uadd.
     // We have not factored the common code out because
@@ -1404,9 +1404,9 @@ internal static void usub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // but using the sign of z for rounding the result.
 // x and y must have a non-empty mantissa and valid exponent.
 internal static void umul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.DerefOrNil();
-    ref var y = ref Ꮡy.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         validateBinaryOperands(Ꮡx, Ꮡy);
@@ -1429,9 +1429,9 @@ internal static void umul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // but using the sign of z for rounding the result.
 // x and y must have a non-empty mantissa and valid exponent.
 internal static void uquo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         validateBinaryOperands(Ꮡx, Ꮡy);
@@ -1474,8 +1474,8 @@ internal static void uquo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // |x| < |y|, |x| == |y|, or |x| > |y|.
 // x and y must have a non-empty mantissa and valid exponent.
 internal static nint ucmp(this ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         validateBinaryOperands(Ꮡx, Ꮡy);
@@ -1541,9 +1541,9 @@ internal static nint ucmp(this ж<Float> Ꮡx, ж<Float> Ꮡy) {
 // result. Add panics with [ErrNaN] if x and y are infinities with opposite
 // signs. The value of z is undefined in that case.
 public static ж<Float> Add(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1612,9 +1612,9 @@ public static ж<Float> Add(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
 // Sub panics with [ErrNaN] if x and y are infinities with equal
 // signs. The value of z is undefined in that case.
 public static ж<Float> Sub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1678,9 +1678,9 @@ public static ж<Float> Sub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
 // Mul panics with [ErrNaN] if one operand is zero and the other
 // operand an infinity. The value of z is undefined in that case.
 public static ж<Float> Mul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1721,9 +1721,9 @@ public static ж<Float> Mul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
 // Quo panics with [ErrNaN] if both operands are zero or infinities.
 // The value of z is undefined in that case.
 public static ж<Float> Quo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();
@@ -1764,8 +1764,8 @@ public static ж<Float> Quo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
 //   - 0 if x == y (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf);
 //   - +1 if x > y.
 public static nint Cmp(this ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
         Ꮡx.validate();

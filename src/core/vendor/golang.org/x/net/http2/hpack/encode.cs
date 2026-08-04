@@ -45,7 +45,7 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 // This function may also produce bytes for "Header Table Size Update"
 // if necessary. If produced, it is done before encoding f.
 public static error WriteField(this ж<Encoder> Ꮡe, HeaderField f) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     e.buf = e.buf[..0];
     if (e.tableSizeUpdate) {

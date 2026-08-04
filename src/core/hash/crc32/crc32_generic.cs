@@ -27,7 +27,7 @@ internal static ж<Table> simpleMakeTable(uint32 poly) {
 // simplePopulateTable constructs a Table for the specified polynomial, suitable
 // for use with simpleUpdate.
 internal static void simplePopulateTable(uint32 poly, ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     for (nint i = 0; i < 256; i++) {
         var crc = (uint32)i;
@@ -45,7 +45,7 @@ internal static void simplePopulateTable(uint32 poly, ж<Table> Ꮡt) {
 // simpleUpdate uses the simple algorithm to update the CRC, given a table that
 // was previously computed using simpleMakeTable.
 internal static uint32 simpleUpdate(uint32 crc, ж<Table> Ꮡtab, slice<byte> p) {
-    ref var tab = ref Ꮡtab.Value;
+    ref var tab = ref Ꮡtab.DerefOrNull();
 
     crc = ~crc;
     foreach (var (_, v) in p) {
@@ -77,7 +77,7 @@ internal static ж<slicing8Table> slicingMakeTable(uint32 poly) {
 // slicingUpdate uses the slicing-by-8 algorithm to update the CRC, given a
 // table that was previously computed using slicingMakeTable.
 internal static uint32 slicingUpdate(uint32 crc, ж<slicing8Table> Ꮡtab, slice<byte> p) {
-    ref var tab = ref Ꮡtab.Value;
+    ref var tab = ref Ꮡtab.DerefOrNull();
 
     if (len(p) >= slicing8Cutoff) {
         crc = ~crc;

@@ -145,7 +145,7 @@ public static error ProcessCoverTestDir(@string dir, @string cfile, @string cm, 
 
 // processPod reads coverage counter data for a specific pod.
 internal static error processPod(this ж<tstate> Ꮡts, pods.Pod p, map<@string, EmptyStruct> importpaths) => func<error>((defer, recover) => {
-    ref var ts = ref Ꮡts.Value;
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     // Open meta-data file
     var (f, err) = os.Open(p.MetaFile);
@@ -197,8 +197,7 @@ internal static error processPod(this ж<tstate> Ꮡts, pods.Pod p, map<@string,
                 break;
             }
             // NB: sanity check on pkg and func IDs?
-            ref var key = ref heap<pkfunc>(out var Ꮡkey);
-            key = new pkfunc(pk: data.PkgIdx, fcn: data.FuncIdx);
+            var key = new pkfunc(pk: data.PkgIdx, fcn: data.FuncIdx);
             {
                 var (prev, found) = pmmʗ1[key, ꟷ]; if (found) {
                     // Note: no overflow reporting here.

@@ -161,7 +161,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     // Read XCOFF target machine
     ref var magic = ref heap(new uint16(), out var Ꮡmagic);
     {
-        var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡmagic); if (err != default!) {
+        var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡmagic); if (err != default!) {
             return (default!, err);
         }
     }
@@ -185,7 +185,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     if (exprᴛ1 == U802TOCMAGIC) {
         var fhdr = @new<FileHeader32>();
         {
-            var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), fhdr); if (err != default!) {
+            var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, fhdr.OrTypedNil()); if (err != default!) {
                 return (default!, err);
             }
         }
@@ -198,7 +198,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     else if (exprᴛ1 == U64_TOCMAGIC) {
         var fhdr = @new<FileHeader64>();
         {
-            var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), fhdr); if (err != default!) {
+            var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, fhdr.OrTypedNil()); if (err != default!) {
                 return (default!, err);
             }
         }
@@ -222,7 +222,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     // The first 4 bytes contain the length (in bytes).
     ref var l = ref heap(new uint32(), out var Ꮡl);
     {
-        var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡl); if (err != default!) {
+        var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, Ꮡl); if (err != default!) {
             return (default!, err);
         }
     }
@@ -251,7 +251,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (exprᴛ2 == U802TOCMAGIC) {
             var shdr = @new<SectionHeader32>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), shdr); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, shdr.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -266,7 +266,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         else if (exprᴛ2 == U64_TOCMAGIC) {
             var shdr = @new<SectionHeader64>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), shdr); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, shdr.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -306,7 +306,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (exprᴛ3 == U802TOCMAGIC) {
             var se = @new<SymEnt32>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), se); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, se.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -329,7 +329,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         else if (exprᴛ3 == U64_TOCMAGIC) {
             var se = @new<SymEnt64>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), se); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, se.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -369,7 +369,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             if (exprᴛ4 == U802TOCMAGIC) {
                 var aux = @new<AuxFcn32>();
                 {
-                    var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), aux); if (err != default!) {
+                    var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, aux.OrTypedNil()); if (err != default!) {
                         return (default!, err);
                     }
                 }
@@ -378,7 +378,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             else if (exprᴛ4 == U64_TOCMAGIC) {
                 var aux = @new<AuxFcn64>();
                 {
-                    var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), aux); if (err != default!) {
+                    var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, aux.OrTypedNil()); if (err != default!) {
                         return (default!, err);
                     }
                 }
@@ -400,7 +400,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (exprᴛ5 == U802TOCMAGIC) {
             var aux = @new<AuxCSect32>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), aux); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, aux.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -411,7 +411,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         else if (exprᴛ5 == U64_TOCMAGIC) {
             var aux = @new<AuxCSect64>();
             {
-                var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), aux); if (err != default!) {
+                var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, aux.OrTypedNil()); if (err != default!) {
                     return (default!, err);
                 }
             }
@@ -455,7 +455,7 @@ skip:
             if (exprᴛ6 == U802TOCMAGIC) {
                 var rel = @new<Reloc32>();
                 {
-                    var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), rel); if (err != default!) {
+                    var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, rel.OrTypedNil()); if (err != default!) {
                         return (default!, err);
                     }
                 }
@@ -473,7 +473,7 @@ skip:
             else if (exprᴛ6 == U64_TOCMAGIC) {
                 var rel = @new<Reloc64>();
                 {
-                    var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), rel); if (err != default!) {
+                    var err = binary.Read(new io_SectionReaderжReader(sr), binary.BigEndian, rel.OrTypedNil()); if (err != default!) {
                         return (default!, err);
                     }
                 }
@@ -564,7 +564,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
 // readImportID returns the import file IDs stored inside the .loader section.
 // Library name pattern is either path/base/member or base/member
 [GoRecv] internal static (slice<@string>, error) readImportIDs(this ref File f, ж<ΔSection> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Read loader header
     {
@@ -579,7 +579,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
     if (exprᴛ1 == U802TOCMAGIC) {
         var lhdr = @new<LoaderHeader32>();
         {
-            var err = binary.Read(new io_SectionReaderжReader(s.sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), lhdr); if (err != default!) {
+            var err = binary.Read(new io_SectionReaderжReader(s.sr), binary.BigEndian, lhdr.OrTypedNil()); if (err != default!) {
                 return (default!, err);
             }
         }
@@ -590,7 +590,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
     else if (exprᴛ1 == U64_TOCMAGIC) {
         var lhdr = @new<LoaderHeader64>();
         {
-            var err = binary.Read(new io_SectionReaderжReader(s.sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), lhdr); if (err != default!) {
+            var err = binary.Read(new io_SectionReaderжReader(s.sr), binary.BigEndian, lhdr.OrTypedNil()); if (err != default!) {
                 return (default!, err);
             }
         }
@@ -659,7 +659,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
     if (exprᴛ1 == U802TOCMAGIC) {
         var lhdr = @new<LoaderHeader32>();
         {
-            var errΔ4 = binary.Read(new io_SectionReaderжReader((~s).sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), lhdr); if (errΔ4 != default!) {
+            var errΔ4 = binary.Read(new io_SectionReaderжReader((~s).sr), binary.BigEndian, lhdr.OrTypedNil()); if (errΔ4 != default!) {
                 return (default!, errΔ4);
             }
         }
@@ -671,7 +671,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
     else if (exprᴛ1 == U64_TOCMAGIC) {
         var lhdr = @new<LoaderHeader64>();
         {
-            var errΔ5 = binary.Read(new io_SectionReaderжReader((~s).sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), lhdr); if (errΔ5 != default!) {
+            var errΔ5 = binary.Read(new io_SectionReaderжReader((~s).sr), binary.BigEndian, lhdr.OrTypedNil()); if (errΔ5 != default!) {
                 return (default!, errΔ5);
             }
         }
@@ -713,7 +713,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
         if (exprᴛ2 == U802TOCMAGIC) {
             var ldsym = @new<LoaderSymbol32>();
             {
-                var errΔ11 = binary.Read(new io_SectionReaderжReader((~s).sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), ldsym); if (errΔ11 != default!) {
+                var errΔ11 = binary.Read(new io_SectionReaderжReader((~s).sr), binary.BigEndian, ldsym.OrTypedNil()); if (errΔ11 != default!) {
                     return (default!, errΔ11);
                 }
             }
@@ -736,7 +736,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
         else if (exprᴛ2 == U64_TOCMAGIC) {
             var ldsym = @new<LoaderSymbol64>();
             {
-                var errΔ12 = binary.Read(new io_SectionReaderжReader((~s).sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), ldsym); if (errΔ12 != default!) {
+                var errΔ12 = binary.Read(new io_SectionReaderжReader((~s).sr), binary.BigEndian, ldsym.OrTypedNil()); if (errΔ12 != default!) {
                     return (default!, errΔ12);
                 }
             }

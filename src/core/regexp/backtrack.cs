@@ -53,16 +53,16 @@ internal static ж<bitState> newBitState() {
 }
 
 internal static void freeBitState(ж<bitState> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.inputs.clear();
-    ᏑbitStatePool.Put(Ꮡb);
+    ᏑbitStatePool.Put(Ꮡb.OrTypedNil());
 }
 
 // maxBitStateLen returns the maximum length of a string to search with
 // the backtracker using prog.
 internal static nint maxBitStateLen(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
 
     if (!shouldBacktrack(Ꮡprog)) {
         return 0;
@@ -73,7 +73,7 @@ internal static nint maxBitStateLen(ж<syntax.Prog> Ꮡprog) {
 // shouldBacktrack reports whether the program is too
 // long for the backtracker to run.
 internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
 
     return len(prog.Inst) <= maxBacktrackProg;
 }
@@ -82,7 +82,7 @@ internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
 // end is the end position in the input.
 // ncap is the number of captures.
 [GoRecv] internal static void reset(this ref bitState b, ж<syntax.Prog> Ꮡprog, nint end, nint ncap) {
-    ref var prog = ref Ꮡprog.Value;
+    ref var prog = ref Ꮡprog.DerefOrNull();
 
     b.end = end;
     if (cap(b.jobs) == 0){
@@ -130,7 +130,7 @@ internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
 // push pushes (pc, pos, arg) onto the job stack if it should be
 // visited.
 [GoRecv] internal static void push(this ref bitState b, ж<Regexp> Ꮡre, uint32 pc, nint pos, bool arg) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     // Only check shouldVisit when arg is false.
     // When arg is true, we are continuing a previous visit.
@@ -141,8 +141,8 @@ internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
 
 // tryBacktrack runs a backtracking search starting at pos.
 internal static bool tryBacktrack(this ж<Regexp> Ꮡre, ж<bitState> Ꮡb, input i, uint32 pc, nint pos) {
-    ref var re = ref Ꮡre.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var longest = re.longest;
     b.push(Ꮡre, pc, pos, false);
@@ -309,7 +309,7 @@ Skip:
 
 // backtrack runs a backtracking search of prog on the input starting at pos.
 internal static slice<nint> backtrack(this ж<Regexp> Ꮡre, slice<byte> ib, @string @is, nint pos, nint ncap, slice<nint> dstCap) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     var startCond = re.cond;
     if (startCond == ~((syntax.EmptyOp)((syntax.EmptyOp)0))) {

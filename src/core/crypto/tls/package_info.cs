@@ -27,7 +27,6 @@ global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
 using net = go.net_package;
-using rsa = go.crypto.rsa_package;
 using Δx509 = go.crypto.x509_package;
 // </ImportedTypeAliases>
 
@@ -73,7 +72,6 @@ using static go.crypto.tls_package;
 [assembly: GoImplement<certificateVerifyMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<clientHelloMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<clientKeyExchangeMsg, handshakeMessage>(Pointer = true)]
-[assembly: GoImplement<crypto_package.Hash, crypto_package.SignerOpts>]
 [assembly: GoImplement<cthWrapper, hash_package.Hash>(Pointer = true)]
 [assembly: GoImplement<ecdheKeyAgreement, keyAgreement>(Pointer = true)]
 [assembly: GoImplement<encryptedExtensionsMsg, handshakeMessage>(Pointer = true)]
@@ -111,7 +109,6 @@ using static go.crypto.tls_package;
 [assembly: GoImplicitConv<clientHelloMsg, ж<clientHelloMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<clientKeyExchangeMsg, ж<clientKeyExchangeMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<echContext, ж<echContext>>(Indirect = true)]
-[assembly: GoImplicitConv<rsa.PSSOptions, ж<rsa.PSSOptions>>(Indirect = true)]
 [assembly: GoImplicitConv<serverHelloMsg, ж<serverHelloMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<serverKeyExchangeMsg, ж<serverKeyExchangeMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<Δx509.Certificate, ж<Δx509.Certificate>>(Indirect = true)]

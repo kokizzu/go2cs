@@ -19,7 +19,7 @@ partial class comment_package {
 // HTML returns an HTML formatting of the [Doc].
 // See the [Printer] documentation for ways to customize the HTML output.
 public static slice<byte> HTML(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var hp = Ꮡ(new htmlPrinter(Printer: Ꮡp));
     ref var @out = ref heap(new bytes.Buffer(), out var Ꮡout);
@@ -36,7 +36,7 @@ internal static readonly @string valueˢ = @" value="""u8;
 
 // block prints the block x to out.
 [GoRecv] internal static void block(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, Block x) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     switch (x.type()) {
     default: {
@@ -129,7 +129,7 @@ internal static readonly @string aHrefˢ = @"<a href="""u8;
 
 // text prints the text sequence x to out.
 [GoRecv] internal static void text(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, slice<ΔText> x) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     foreach (var (_, t) in x) {
         switch (t.type()) {
@@ -176,7 +176,7 @@ internal static readonly @string aposˢ = "&apos;"u8;
 // escaping < & " ' and > to avoid being misinterpreted
 // in larger HTML constructs.
 [GoRecv] internal static void escape(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, @string s) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     nint start = 0;
     for (nint i = 0; i < len(s); i++) {

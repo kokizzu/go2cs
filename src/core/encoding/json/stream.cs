@@ -51,7 +51,7 @@ public static ж<Decoder> NewDecoder(io.Reader r) {
 // See the documentation for [Unmarshal] for details about
 // the conversion of JSON into a Go value.
 public static error Decode(this ж<Decoder> Ꮡdec, any v) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     if (dec.err != default!) {
         return dec.err;
@@ -89,7 +89,7 @@ public static error Decode(this ж<Decoder> Ꮡdec, any v) {
 // readValue reads a JSON value into dec.buf.
 // It returns the length of the encoding.
 internal static (nint, error) readValue(this ж<Decoder> Ꮡdec) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     dec.scan.reset();
     nint scanp = dec.scanp;
@@ -201,13 +201,13 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 // See the documentation for [Marshal] for details about the
 // conversion of Go values to JSON.
 public static error Encode(this ж<Encoder> Ꮡenc, any v) => func((defer, recover) => {
-    ref var enc = ref Ꮡenc.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
 
     if (enc.err != default!) {
         return enc.err;
     }
     var e = newEncodeState();
-    deferǃ(ᏑencodeStatePool.Put, e, defer);
+    deferǃ(ᏑencodeStatePool.Put, e.OrTypedNil(), defer);
     var err = e.marshal(v, new encOpts(escapeHTML: enc.escapeHTML));
     if (err != default!) {
         return err;
@@ -269,7 +269,7 @@ internal static readonly @string jsonRawMessageˢ = "json.RawMessage: UnmarshalJ
 
 // UnmarshalJSON sets *m to a copy of data.
 public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
-    ref var m = ref Ꮡm.DerefOrNil();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (Ꮡm == nil) {
         return errors.New(jsonRawMessageˢ);
@@ -362,7 +362,7 @@ public static @string String(this Delim d) {
 // to mark the start and end of arrays and objects.
 // Commas and colons are elided.
 public static (ΔToken, error) Token(this ж<Decoder> Ꮡdec) {
-    ref var dec = ref Ꮡdec.Value;
+    ref var dec = ref Ꮡdec.DerefOrNull();
 
     while (ᐧ) {
         var (c, err) = dec.peek();

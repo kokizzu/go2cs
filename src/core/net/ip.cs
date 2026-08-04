@@ -432,7 +432,7 @@ internal static (IP ip, IPMask m) networkNumberAndMask(ж<IPNet> Ꮡn) {
     IP ip = default!;
     IPMask m = default!;
 
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
     {
         ip = n.IP.To4(); if (ip == default!) {
             ip = n.IP;

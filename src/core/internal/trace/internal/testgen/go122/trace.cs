@@ -109,7 +109,7 @@ public static ж<Trace> NewTrace() {
 // This provides more structure than Event to allow for more easily
 // creating complex traces that are mostly or completely correct.
 public static ж<ΔGeneration> Generation(this ж<Trace> Ꮡt, uint64 gen) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var g = Ꮡ(new ΔGeneration(
         trace: Ꮡt,
@@ -140,7 +140,7 @@ public static ж<ΔGeneration> Generation(this ж<Trace> Ꮡt, uint64 gen) {
     // Expectation file contents.
     var expect = slice<byte>("SUCCESS\n"u8);
     if (t.bad) {
-        expect = slice<byte>(fmt.Sprintf("FAILURE %q\n"u8, t.badMatch));
+        expect = slice<byte>(fmt.Sprintf("FAILURE %q\n"u8, t.badMatch.OrTypedNil()));
     }
     // Create the test file's contents.
     return txtar.Format(Ꮡ(new txtar.Archive(
@@ -194,7 +194,7 @@ public static slice<trace.StackFrame> NoStack = new trace.StackFrame[]{}.slice()
 //
 // This is convenience function for generating correct batches.
 public static ж<ΔBatch> Batch(this ж<ΔGeneration> Ꮡg, trace.ThreadID thread, Time time) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     if (!(~g.trace).validTimestamps) {
         time = 0;
@@ -252,7 +252,7 @@ public static ж<ΔBatch> Batch(this ж<ΔGeneration> Ꮡg, trace.ThreadID threa
 
 // writeEventsTo emits event batches in the generation to tw.
 internal static void writeEventsTo(this ж<ΔGeneration> Ꮡg, ж<raw.TextWriter> Ꮡtw) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     // Write event batches for the generation.
     foreach (var (_, bΔ1) in g.batches) {
@@ -409,7 +409,7 @@ internal static ж<ΔBatch> newStructuralBatch(this ж<ΔGeneration> Ꮡg) {
 
 // writeEventsTo emits events in the batch, including the batch header, to tw.
 [GoRecv] internal static void writeEventsTo(this ref ΔBatch b, ж<raw.TextWriter> Ꮡtw) {
-    ref var tw = ref Ꮡtw.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
 
     tw.WriteEvent(new raw.Event(
         Version: version.Go122,

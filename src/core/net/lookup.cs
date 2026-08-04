@@ -187,13 +187,13 @@ public static ref ж<Resolver> DefaultResolver => ref ᏑDefaultResolver.ValueSl
 // TODO(bradfitz): optional interface impl override hook
 // TODO(bradfitz): Timeout time.Duration?
 internal static bool preferGo(this ж<Resolver> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return Ꮡr != nil && r.PreferGo;
 }
 
 internal static bool strictErrors(this ж<Resolver> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return Ꮡr != nil && r.StrictErrors;
 }
@@ -377,11 +377,11 @@ internal static (slice<IPAddr>, error) lookupIPAddr(this ж<Resolver> Ꮡr, cont
         var (ᴛ1, ᴛ2) = testHookLookupIP(lookupGroupCtxʗ1, resolverFuncʗ1, network, host);
         return (ᴛ1, ᴛ2);
     });
-    var dnsWaitGroupDone = (/*<-*/channel<singleflight.Result> chΔ1, Action cancelFn) => {
+    void dnsWaitGroupDone(/*<-*/channel<singleflight.Result> chΔ1, Action cancelFn) {
         ᐸꟷ(chΔ1);
         ᏑdnsWaitGroup.Done();
         cancelFn();
-    };
+    }
     var selᴛ11 = ctx.Done();
     var selᴛ12 = ch;
     switch (select(ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
@@ -745,7 +745,7 @@ internal static @string errMalformedDNSRecordsDetail = "DNS response contained r
 // an IP address) with the provided network type, using either r.Dial
 // (if both r and r.Dial are non-nil) or else Dialer.DialContext.
 internal static (Conn, error) dial(this ж<Resolver> Ꮡr, context.Context ctx, @string network, @string server) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Calling Dial here is scary -- we have to be sure not to
     // dial a name that will require a DNS lookup, or Dial will

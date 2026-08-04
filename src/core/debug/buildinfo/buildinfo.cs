@@ -230,9 +230,9 @@ internal static (@string vers, @string mod, error err) readRawBuildInfo(io.Reade
         var bigEndian = data[15] != 0;
         binary.ByteOrder bo = default!;
         if (bigEndian){
-            bo = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+            bo = binary.BigEndian;
         } else {
-            bo = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+            bo = binary.LittleEndian;
         }
         Func<slice<byte>, uint64> readPtr = default!;
         if (ptrSize == 4){

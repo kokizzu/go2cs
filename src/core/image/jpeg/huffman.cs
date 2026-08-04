@@ -189,7 +189,7 @@ internal static readonly @string badHuffmanCodeˢ = "bad Huffman code"u8;
 // decodeHuffman returns the next Huffman-coded value from the bit-stream,
 // decoded according to h.
 [GoRecv] internal static (uint8, error) decodeHuffman(this ref decoder d, ж<huffman> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (h.nCodes == 0) {
         return (0, ((FormatError)(@string)uninitializedHuffmanˢ));

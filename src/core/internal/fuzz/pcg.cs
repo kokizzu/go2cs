@@ -85,8 +85,8 @@ internal static ж<pcgRand> newPcgRand() {
 }
 
 [GoRecv] internal static void save(this ref pcgRand r, ж<uint64> ᏑrandState, ж<uint64> ᏑrandInc) {
-    ref var randState = ref ᏑrandState.Value;
-    ref var randInc = ref ᏑrandInc.Value;
+    ref var randState = ref ᏑrandState.DerefOrNull();
+    ref var randInc = ref ᏑrandInc.DerefOrNull();
 
     randState = r.state;
     randInc = r.inc;

@@ -29,7 +29,7 @@ internal static ж<nint> defaultMaxCount = flag.Int("quickchecks"u8, 100, "The d
 
 // randFloat32 generates a random float taking the full range of a float32.
 internal static float32 randFloat32(ж<rand.Rand> Ꮡrand) {
-    ref var randΔ1 = ref Ꮡrand.Value;
+    ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var f = randΔ1.Float64() * (float64)math.MaxFloat32;
     if ((nint)(randΔ1.Int() & 1) == 1) {
@@ -40,7 +40,7 @@ internal static float32 randFloat32(ж<rand.Rand> Ꮡrand) {
 
 // randFloat64 generates a random float taking the full range of a float64.
 internal static float64 randFloat64(ж<rand.Rand> Ꮡrand) {
-    ref var randΔ1 = ref Ꮡrand.Value;
+    ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var f = randΔ1.Float64() * (float64)math.MaxFloat64;
     if ((nint)(randΔ1.Int() & 1) == 1) {
@@ -51,7 +51,7 @@ internal static float64 randFloat64(ж<rand.Rand> Ꮡrand) {
 
 // randInt64 returns a random int64.
 internal static int64 randInt64(ж<rand.Rand> Ꮡrand) {
-    ref var randΔ1 = ref Ꮡrand.Value;
+    ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     return (int64)randΔ1.Uint64();
 }
@@ -77,7 +77,7 @@ internal static (reflectꓸValue value, bool ok) sizedValue(reflectꓸType t, ж
     reflectꓸValue value = new(nil);
     bool ok = default!;
 
-    ref var randΔ1 = ref Ꮡrand.Value;
+    ref var randΔ1 = ref Ꮡrand.DerefOrNull();
     {
         var (m, okΔ1) = reflect.Zero(t).Interface()._<Generator>(ᐧ); if (okΔ1) {
             return (m.Generate(Ꮡrand, size), true);
@@ -310,10 +310,10 @@ internal static readonly @string functionDoesNotReturnAˢ = "function does not r
 //		}
 //	}
 public static error Check(any f, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.DerefOrNil();
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     if (Ꮡconfig == nil) {
-        Ꮡconfig = ᏑdefaultConfig; config = ref Ꮡconfig.DerefOrNil();
+        Ꮡconfig = ᏑdefaultConfig; config = ref Ꮡconfig.DerefOrNull();
     }
     var (fVal, fType, ok) = functionAndType(f);
     if (!ok) {
@@ -350,10 +350,10 @@ internal static readonly @string functionsHaveDifferentˢ = "functions have diff
 // If f and g return different answers, CheckEqual returns a *[CheckEqualError]
 // describing the input and the outputs.
 public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.DerefOrNil();
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     if (Ꮡconfig == nil) {
-        Ꮡconfig = ᏑdefaultConfig; config = ref Ꮡconfig.DerefOrNil();
+        Ꮡconfig = ᏑdefaultConfig; config = ref Ꮡconfig.DerefOrNull();
     }
     var (x, xType, ok) = functionAndType(f);
     if (!ok) {
@@ -388,7 +388,7 @@ public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
 internal static error /*err*/ arbitraryValues(slice<reflectꓸValue> args, reflectꓸType f, ж<Config> Ꮡconfig, ж<rand.Rand> Ꮡrand) {
     error err = default!;
 
-    ref var config = ref Ꮡconfig.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
     if (config.Values != default!) {
         config.Values(args, Ꮡrand);
         return err;

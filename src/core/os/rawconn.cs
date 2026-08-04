@@ -24,7 +24,7 @@ internal static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawControl(f);
-    Δruntime.KeepAlive(c.@file);
+    Δruntime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 
@@ -38,7 +38,7 @@ internal static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawRead(f);
-    Δruntime.KeepAlive(c.@file);
+    Δruntime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 
@@ -52,13 +52,11 @@ internal static readonly @string syscallConnWriteˢ = "SyscallConn.Write"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawWrite(f);
-    Δruntime.KeepAlive(c.@file);
+    Δruntime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 
 internal static (ж<rawConn>, error) newRawConn(ж<File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.Value;
-
     return (Ꮡ(new rawConn(@file: Ꮡfile)), default!);
 }
 

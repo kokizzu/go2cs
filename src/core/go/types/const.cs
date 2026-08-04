@@ -23,7 +23,7 @@ internal static readonly @string constantResultIsNotˢ = "constant result is not
 // For untyped constants, it checks that the value doesn't become
 // arbitrarily large.
 internal static void overflow(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, tokenꓸPos opPos) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     assert(x.mode == constant_);
     if (x.val.Kind() == constant.Unknown) {
@@ -66,9 +66,9 @@ internal static void overflow(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, token
 // (indirectly) through an exported API call (AssignableTo, ConvertibleTo)
 // because we don't need the Checker's config for those calls.
 internal static bool representableConst(constant.Value x, ж<Checker> Ꮡcheck, ж<Basic> Ꮡtyp, ж<constant.Value> Ꮡrounded) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var typ = ref Ꮡtyp.Value;
-    ref var rounded = ref Ꮡrounded.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var rounded = ref Ꮡrounded.DerefOrNull();
 
     if (x.Kind() == constant.Unknown) {
         return true;
@@ -79,10 +79,10 @@ internal static bool representableConst(constant.Value x, ж<Checker> Ꮡcheck, 
         conf = check.conf;
     }
     var confʗ1 = conf;
-    var @sizeof = (ΔType T) => {
+    int64 @sizeof(ΔType T) {
         var s = confʗ1.@sizeof(T);
         return s;
-    };
+    }
     switch (ᐧ) {
     case {} when isInteger(new BasicжΔType(Ꮡtyp)): {
         var xΔ3 = constant.ToInt(x);
@@ -274,7 +274,7 @@ internal static constant.Value roundFloat64(constant.Value x) {
 // representable checks that a constant operand is representable in the given
 // basic type.
 internal static void representable(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<Basic> Ꮡtyp) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var (v, code) = Ꮡcheck.representation(Ꮡx, Ꮡtyp);
     if (code != 0) {
@@ -291,8 +291,8 @@ internal static void representable(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, 
 //
 // If no such representation is possible, it returns a non-zero error code.
 internal static (constant.Value, errors.Code) representation(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<Basic> Ꮡtyp) {
-    ref var x = ref Ꮡx.Value;
-    ref var typ = ref Ꮡtyp.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     assert(x.mode == constant_);
     ref var v = ref heap<constant.Value>(out var Ꮡv);
@@ -332,13 +332,13 @@ internal static void invalidConversion(this ж<Checker> Ꮡcheck, errors.Code co
         msg = sOverflowsSˢ;
     }
 
-    Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, msg, Ꮡx, target);
+    Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, msg, Ꮡx.OrTypedNil(), target);
 }
 
 // convertUntyped attempts to set the type of an untyped value to the target type.
 internal static void convertUntyped(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔType target) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var (newType, val, code) = Ꮡcheck.implicitTypeAndValue(Ꮡx, target);
     if (code != 0) {

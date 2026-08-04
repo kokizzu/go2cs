@@ -58,7 +58,7 @@ public static ж<Validator> NewValidator() {
 public static error Event(this ж<Validator> Ꮡv, traceꓸEvent ev) {
     ev = ev.ΔClone();
 
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
     var e = @new<errAccumulator>();
     // Validate timestamp order.
     if (v.lastTs != 0){
@@ -349,10 +349,10 @@ public static error Event(this ж<Validator> Ꮡv, traceꓸEvent ev) {
 internal static ж<schedContext> getOrCreateThread(this ж<Validator> Ꮡv, ж<errAccumulator> Ꮡe, traceꓸEvent ev, trace.ThreadID m) {
     ev = ev.ΔClone();
 
-    ref var v = ref Ꮡv.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
     var evʗ1 = ev;
-    var lenient = () => {
+    bool lenient() {
         // Be lenient about GoUndetermined -> GoSyscall transitions if they
         // originate from an old trace. These transitions lack thread
         // information in trace formats older than 1.22.
@@ -362,14 +362,13 @@ internal static ж<schedContext> getOrCreateThread(this ж<Validator> Ꮡv, ж<e
         if (evʗ1.Kind() != trace.EventStateTransition) {
             return false;
         }
-        ref var tr = ref heap<traceꓸStateTransition>(out var Ꮡtr);
-        tr = evʗ1.StateTransition();
+        var tr = evʗ1.StateTransition();
         if (tr.Resource.Kind != trace.ResourceGoroutine) {
             return false;
         }
         var (from, to) = tr.Goroutine();
         return from == trace.GoUndetermined && to == trace.GoSyscall;
-    };
+    }
     if (m == trace.NoThread && !lenient()) {
         e.Errorf("must have thread, but thread ID is none"u8);
         return default!;

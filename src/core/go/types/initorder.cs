@@ -22,7 +22,7 @@ internal static readonly object initializationOrderˢ = (@string)"Initialization
 
 // initOrder computes the Info.InitOrder for package variables.
 internal static void initOrder(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // An InitOrder may already have been computed if a package is
     // built from several calls to (*Checker).Files. Clear it.
@@ -34,7 +34,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
     heap.Init(new nodeQueueжInterface(Ꮡpq));
     const bool debug = false;
     if (debug) {
-        fmt.Printf("Computing initialization order for %s\n\n"u8, check.pkg);
+        fmt.Printf("Computing initialization order for %s\n\n"u8, check.pkg.OrTypedNil());
         fmt.Println(objectDependencyGraphˢ);
         foreach (var (obj, d) in check.objMap) {
             // only print objects that may appear in the dependency graph
@@ -127,7 +127,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
         fmt.Println();
         fmt.Println(initializationOrderˢ);
         foreach (var (_, init) in (~check.Info).InitOrder) {
-            fmt.Printf("\t%s\n"u8, init);
+            fmt.Printf("\t%s\n"u8, init.OrTypedNil());
         }
         fmt.Println();
     }
@@ -335,7 +335,7 @@ internal static bool Less(this nodeQueue a, nint i, nint j) {
     x.Value.index = -1;
     // for safety
     a = (a)[..(int)(n - 1)];
-    return x;
+    return x.OrTypedNil();
 }
 
 } // end types_package

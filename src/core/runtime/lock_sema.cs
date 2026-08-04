@@ -60,7 +60,7 @@ internal static void unlock(ж<mutex> Ꮡl) {
 
 // One-time notifications.
 internal static void noteclear(ж<note> Ꮡn) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     n.key = 0;
 }

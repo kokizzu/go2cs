@@ -27,7 +27,7 @@ internal static readonly @string typeUnitTypeOffsetˢ = "type unit type offset o
 
 // Parse a .debug_types section.
 internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> types) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var b = makeBuf(Ꮡd, new unknownFormat(nil), name, 0, types);
     while (len(b.data) > 0) {
@@ -89,7 +89,7 @@ internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> t
 
 // Return the type for a type signature.
 internal static (ΔType, error) sigToType(this ж<Data> Ꮡd, uint64 sig) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var tu = d.typeSigs[sig];
     if (tu == nil) {
@@ -135,7 +135,7 @@ internal static (ΔType, error) sigToType(this ж<Data> Ꮡd, uint64 sig) {
 
 // Next reads the next [Entry] from the type unit.
 internal static (ж<Entry>, error) Next(this ж<typeUnitReader> Ꮡtur) {
-    ref var tur = ref Ꮡtur.Value;
+    ref var tur = ref Ꮡtur.DerefOrNull();
 
     if (tur.err != default!) {
         return (default!, tur.err);

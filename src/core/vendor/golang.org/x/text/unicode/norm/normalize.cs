@@ -78,7 +78,7 @@ public static bool IsNormal(this Form f, slice<byte> b) {
 }
 
 internal static bool cmpNormalBytes(ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     var b = rb.@out;
     for (nint i = 0; i < rb.nrune; i++) {
@@ -110,8 +110,7 @@ public static bool IsNormalString(this Form f, @string s) {
     rb = new reorderBuffer(f: ft.Value, src: src, nsrc: len(s));
     rb.setFlusher(default!, (ж<reorderBuffer> rbΔ1) => {
         for (nint i = 0; i < (~rbΔ1).nrune; i++) {
-            ref var info = ref heap<ΔProperties>(out var Ꮡinfo);
-            info = (~rbΔ1).rune[i];
+            var info = (~rbΔ1).rune[i];
             if (bp + (nint)info.size > len(s)) {
                 return false;
             }
@@ -141,7 +140,7 @@ public static bool IsNormalString(this Form f, @string s) {
 // if it is followed by illegal continuation bytes. It returns the
 // patched buffer and whether the decomposition is still in progress.
 internal static bool patchTail(ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     var (info, p) = lastRuneStart(Ꮡrb.of(reorderBuffer.Ꮡf), rb.@out);
     if (p == -1 || info.size == 0) {
@@ -179,7 +178,7 @@ internal static bool patchTail(ж<reorderBuffer> Ꮡrb) {
 }
 
 internal static nint appendQuick(ж<reorderBuffer> Ꮡrb, nint i) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     if (rb.nsrc == i) {
         return i;
@@ -219,7 +218,7 @@ internal static slice<byte> doAppend(this Form f, slice<byte> @out, input src, n
 }
 
 internal static slice<byte> doAppend(ж<reorderBuffer> Ꮡrb, slice<byte> @out, nint p) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     rb.setFlusher(@out, appendFlush);
     var src = rb.src;
@@ -259,7 +258,7 @@ internal static slice<byte> doAppend(ж<reorderBuffer> Ꮡrb, slice<byte> @out, 
 }
 
 internal static slice<byte> doAppendInner(ж<reorderBuffer> Ꮡrb, nint p) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     for (nint n = rb.nsrc; p < n; ) {
         p = decomposeSegment(Ꮡrb, p, true);
@@ -539,7 +538,7 @@ internal static nint lastBoundary(ж<formInfo> Ꮡfd, slice<byte> b) {
 // (Grapheme Joiner) when it encounters a sequence of more than 30 non-starters
 // and returns the number of bytes consumed from src or iShortDst or iShortSrc.
 internal static nint decomposeSegment(ж<reorderBuffer> Ꮡrb, nint sp, bool atEOF) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     // Force one character to be consumed.
     var info = rb.f.info(rb.src, sp);
@@ -603,7 +602,7 @@ end:
 // lastRuneStart returns the runeInfo and position of the last
 // rune in buf or the zero runeInfo and -1 if no rune was found.
 internal static (ΔProperties, nint) lastRuneStart(ж<formInfo> Ꮡfd, slice<byte> buf) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     nint p = len(buf) - 1;
     for (; p >= 0 && !utf8.RuneStart(buf[p]); p--) {
@@ -617,7 +616,7 @@ internal static (ΔProperties, nint) lastRuneStart(ж<formInfo> Ꮡfd, slice<byt
 // decomposeToLastBoundary finds an open segment at the end of the buffer
 // and scans it into rb. Returns the buffer minus the last segment.
 internal static void decomposeToLastBoundary(ж<reorderBuffer> Ꮡrb) {
-    ref var rb = ref Ꮡrb.Value;
+    ref var rb = ref Ꮡrb.DerefOrNull();
 
     var fd = Ꮡrb.of(reorderBuffer.Ꮡf);
     var (info, i) = lastRuneStart(fd, rb.@out);

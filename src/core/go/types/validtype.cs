@@ -32,7 +32,7 @@ internal static readonly @string validTypeSNestVPathVˢ = "validType(%s) nest %v
 // (say S->F->S) we have an invalid recursive type. The path list is the full
 // path of named types in a cycle, it is only needed for error reporting.
 internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType typ, slice<ж<Named>> nest, slice<ж<Named>> path) => func<bool>((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     typ = Unalias(typ);
     if ((~check.conf)._Trace) {

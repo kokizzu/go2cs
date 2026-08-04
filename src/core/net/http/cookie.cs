@@ -259,7 +259,7 @@ internal static readonly @string partitionedˢ = "; Partitioned"u8;
 // header (if other fields are set).
 // If c is nil or c.Name is invalid, the empty string is returned.
 public static @string String(this ж<ΔCookie> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil || !isCookieNameValid(c.Name)) {
         return ""u8;
@@ -339,7 +339,7 @@ internal static readonly @string httpPartitionedCookiesˢ = "http: partitioned c
 
 // Valid reports whether the cookie is valid.
 public static error Valid(this ж<ΔCookie> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return errors.New(httpNilCookieˢ);

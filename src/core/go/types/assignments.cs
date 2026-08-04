@@ -23,8 +23,8 @@ partial class types_package {
 // Use T == nil to indicate assignment to an untyped blank identifier.
 // If the assignment check fails, x.mode is set to invalid.
 internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔType T, @string context) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     Ꮡcheck.singleValue(Ꮡx);
     var exprᴛ1 = x.mode;
@@ -42,7 +42,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
  // ok
  // we may get here because of other problems (go.dev/issue/39634, crash 12)
  // TODO(gri) do we need a new "generic" error code here?
- IncompatibleAssign, "cannot assign %s to %s in %s"u8, Ꮡx, T, context);
+ IncompatibleAssign, "cannot assign %s to %s in %s"u8, Ꮡx.OrTypedNil(), T, context);
         x.mode = invalid;
         return;
     }
@@ -78,7 +78,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
         }
         var (newType, val, code) = Ꮡcheck.implicitTypeAndValue(Ꮡx, target);
         if (code != 0) {
-            @string msg = Ꮡcheck.sprintf("cannot use %s as %s value in %s"u8, Ꮡx, target, context);
+            @string msg = Ꮡcheck.sprintf("cannot use %s as %s value in %s"u8, Ꮡx.OrTypedNil(), target, context);
             var exprᴛ2 = code;
             if (exprᴛ2 == TruncatedFloat) {
                 msg += " (truncated)"u8;
@@ -107,7 +107,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     // A generic (non-instantiated) function value cannot be assigned to a variable.
     {
         var (sig, _) = under(x.typ)._<ж<ΔSignature>>(ᐧ); if (sig != nil && sig.TypeParams().Len() > 0) {
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), WrongTypeArgCount, "cannot use generic function %s without instantiation in %s"u8, Ꮡx, context);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), WrongTypeArgCount, "cannot use generic function %s without instantiation in %s"u8, Ꮡx.OrTypedNil(), context);
             x.mode = invalid;
             return;
         }
@@ -123,9 +123,9 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     {
         var (ok, code) = Ꮡx.assignableTo(Ꮡcheck, T, Ꮡcause); if (!ok) {
             if (cause != ""u8){
-                Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "cannot use %s as %s value in %s: %s"u8, Ꮡx, T, context, cause);
+                Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "cannot use %s as %s value in %s: %s"u8, Ꮡx.OrTypedNil(), T, context, cause);
             } else {
-                Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "cannot use %s as %s value in %s"u8, Ꮡx, T, context);
+                Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "cannot use %s as %s value in %s"u8, Ꮡx.OrTypedNil(), T, context);
             }
             x.mode = invalid;
         }
@@ -136,8 +136,8 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
 internal static readonly @string constantDeclarationˢ = "constant declaration"u8;
 
 internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<operand> Ꮡx) {
-    ref var lhs = ref Ꮡlhs.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var lhs = ref Ꮡlhs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.mode == invalid || !isValid(x.typ) || !isValid(lhs.typ)) {
         if (lhs.typ == default!) {
@@ -147,7 +147,7 @@ internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<o
     }
     // rhs must be a constant
     if (x.mode != constant_) {
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConstInit, "%s is not constant"u8, Ꮡx);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConstInit, "%s is not constant"u8, Ꮡx.OrTypedNil());
         if (lhs.typ == default!) {
             lhs.typ = new BasicжΔType(Typ[Invalid]);
         }
@@ -170,8 +170,8 @@ internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<o
 // or Typ[Invalid] in case of an error.
 // If the initialization check fails, x.mode is set to invalid.
 internal static void initVar(this ж<Checker> Ꮡcheck, ж<Var> Ꮡlhs, ж<operand> Ꮡx, @string context) {
-    ref var lhs = ref Ꮡlhs.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var lhs = ref Ꮡlhs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.mode == invalid || !isValid(x.typ) || !isValid(lhs.typ)) {
         if (lhs.typ == default!) {
@@ -203,7 +203,7 @@ internal static void initVar(this ж<Checker> Ꮡcheck, ж<Var> Ꮡlhs, ж<opera
 // that identifier. The result is nil if it is the blank identifier,
 // and Typ[Invalid] if it is an invalid lhs expression.
 internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // Determine if the lhs is a (possibly parenthesized) identifier.
     var (ident, _) = ast.Unparen(lhs)._<ж<ast.Ident>>(ᐧ);
@@ -275,7 +275,7 @@ internal static readonly @string assignmentToIdentifierˢ = "assignment to _ ide
 // If x != nil, it must be the evaluation of rhs (and rhs will be ignored).
 // If the assignment check fails and x != nil, x.mode is set to invalid.
 internal static void assignVar(this ж<Checker> Ꮡcheck, ast.Expr lhs, ast.Expr rhs, ж<operand> Ꮡx, @string context) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var T = Ꮡcheck.lhsVar(lhs);
     // nil if lhs is _
@@ -297,7 +297,7 @@ internal static void assignVar(this ж<Checker> Ꮡcheck, ast.Expr lhs, ast.Expr
                 }
             }
         }
-        Ꮡx = @new<operand>(); x = ref Ꮡx.DerefOrNil();
+        Ꮡx = @new<operand>(); x = ref Ꮡx.DerefOrNull();
         Ꮡcheck.expr(target, Ꮡx, rhs);
     }
     if (T == default! && context == "assignment"u8) {
@@ -432,7 +432,7 @@ internal static readonly @string resultVariableˢ = "result variable"u8;
 // If returnStmt is non-nil, initVars type-checks the implicit assignment
 // of result expressions orig_rhs to function result parameters lhs.
 internal static void initVars(this ж<Checker> Ꮡcheck, slice<ж<Var>> lhs, slice<ast.Expr> orig_rhs, ast.Stmt returnStmt) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     @string context = assignmentˢ;
     if (returnStmt != default!) {
@@ -514,7 +514,7 @@ internal static void initVars(this ж<Checker> Ꮡcheck, slice<ж<Var>> lhs, sli
 
 // assignVars type-checks assignments of expressions orig_rhs to variables lhs.
 internal static void assignVars(this ж<Checker> Ꮡcheck, slice<ast.Expr> lhs, slice<ast.Expr> orig_rhs) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     nint l = len(lhs);
     nint r = len(orig_rhs);
@@ -566,7 +566,7 @@ internal static void assignVars(this ж<Checker> Ꮡcheck, slice<ast.Expr> lhs, 
 
 // orig_rhs[0] was already evaluated
 internal static void shortVarDecl(this ж<Checker> Ꮡcheck, positioner pos, slice<ast.Expr> lhs, slice<ast.Expr> rhs) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     nint top = len(check.delayed);
     var scope = check.scope;

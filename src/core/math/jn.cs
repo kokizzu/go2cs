@@ -53,8 +53,8 @@ partial class math_package {
 //	Jn(n, NaN) = NaN
 public static float64 Jn(nint n, float64 x) {
     const float64 TwoM29 = /* 1.0 / (1 << 29) */ 1.862645149230957e-09; // 2**-29 0x3e10000000000000
-    GoUntyped Two302 = /* 1 << 302 */       // 2**302 0x52D0000000000000
-            GoUntyped.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+    GoBigConst Two302 = /* 1 << 302 */       // 2**302 0x52D0000000000000
+            GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
     // special cases
     switch (ᐧ) {
     case {} when IsNaN(x): {
@@ -246,8 +246,8 @@ public static float64 Jn(nint n, float64 x) {
 //	Yn(n, x < 0) = NaN
 //	Yn(n, NaN) = NaN
 public static float64 Yn(nint n, float64 x) {
-    GoUntyped Two302 = /* 1 << 302 */ // 2**302 0x52D0000000000000
-            GoUntyped.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+    GoBigConst Two302 = /* 1 << 302 */ // 2**302 0x52D0000000000000
+            GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
     // special cases
     switch (ᐧ) {
     case {} when x < 0D || IsNaN(x): {

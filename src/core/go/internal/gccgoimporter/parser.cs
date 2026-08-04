@@ -56,7 +56,7 @@ partial class gccgoimporter_package {
 }
 
 internal static void init(this ж<parser> Ꮡp, @string filename, io.Reader src, map<@string, ж<types.Package>> imports) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.scanner = @new<scanner.Scanner>();
     Ꮡp.initScanner(filename, src);
@@ -66,7 +66,7 @@ internal static void init(this ж<parser> Ꮡp, @string filename, io.Reader src,
 }
 
 internal static void initScanner(this ж<parser> Ꮡp, @string filename, io.Reader src) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.scanner.Init(src);
     p.scanner.Value.Error = (ж<scanner.Scanner> _, @string msg) => {
@@ -279,7 +279,7 @@ internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> �
     ж<types.Var> field = default!;
     @string tag = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     @string name = p.parseName();
     var (typ, n) = Ꮡp.parseTypeExtended(Ꮡpkg);
     var anon = false;
@@ -324,7 +324,7 @@ internal static (ж<types.Var> param, bool isVariadic) parseParam(this ж<parser
     ж<types.Var> param = default!;
     bool isVariadic = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     @string name = p.parseName();
     // Ignore names invented for inlinable functions.
     if (strings.HasPrefix(name, "p."u8) || strings.HasPrefix(name, "r."u8) || strings.HasPrefix(name, retˢ)) {
@@ -354,7 +354,7 @@ internal static (ж<types.Var> param, bool isVariadic) parseParam(this ж<parser
 
 // Var = Name Type .
 internal static ж<types.Var> parseVar(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     @string name = p.parseName();
     var v = types.NewVar(token.NoPos, Ꮡpkg, name, Ꮡp.parseType(Ꮡpkg));
@@ -375,7 +375,7 @@ internal static (constant.Value val, typesꓸType typ) parseConversion(this ж<p
     constant.Value val = default!;
     typesꓸType typ = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     p.expectKeyword(convertˢ);
     p.expect((rune)'(');
     typ = Ꮡp.parseType(Ꮡpkg);
@@ -397,7 +397,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
     constant.Value val = default!;
     typesꓸType typ = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     // v3 changed to $false, $true, $convert, to avoid confusion
     // with variable names in inline function bodies.
     if (p.tok == (rune)'$') {
@@ -501,7 +501,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
 
 // Const = Name [Type] "=" ConstValue .
 internal static ж<types.Const> parseConst(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     @string name = p.parseName();
     typesꓸType typ = default!;
@@ -610,7 +610,7 @@ internal static readonly @string funcˢ = "func"u8;
 // TypeName  = ExportedName .
 // Method    = "func" "(" Param ")" Name ParamList ResultList [InlineBody] ";" .
 internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var (pkg, name) = p.parseExportedName();
     var scope = pkg.Scope();
@@ -637,7 +637,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
             return tΔ1;
         }
         var tΔ2 = Ꮡp.parseType(pkg, nlist.ꓸꓸꓸ);
-        obj = new types_TypeNameжObject(types.NewTypeName(token.NoPos, pkg, name, tΔ2));
+        obj = new types.TypeNameжObject(types.NewTypeName(token.NoPos, pkg, name, tΔ2));
         scope.Insert(obj);
         return tΔ2;
     }
@@ -647,8 +647,8 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
         // is known - set it up.
         var tname = types.NewTypeName(token.NoPos, pkg, name, default!);
         types.NewNamed(tname, default!, default!);
-        scope.Insert(new types_TypeNameжObject(tname));
-        obj = new types_TypeNameжObject(tname);
+        scope.Insert(new types.TypeNameжObject(tname));
+        obj = new types.TypeNameжObject(tname);
     }
     // use the previously imported (canonical), or newly created type
     var t = obj.Type();
@@ -722,7 +722,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
 
 // ArrayOrSliceType = "[" [ int ] "]" Type .
 internal static typesꓸType parseArrayOrSliceType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expect((rune)'[');
     if (p.tok == (rune)']') {
@@ -745,7 +745,7 @@ internal static readonly @string mapˢ = "map"u8;
 
 // MapType = "map" "[" Type "]" Type .
 internal static typesꓸType parseMapType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expectKeyword(mapˢ);
     var t = @new<types.Map>();
@@ -763,7 +763,7 @@ internal static readonly @string chanˢ = "chan"u8;
 
 // ChanType = "chan" ["<-" | "-<"] Type .
 internal static typesꓸType parseChanType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expectKeyword(chanˢ);
     var t = @new<types.Chan>();
@@ -795,7 +795,7 @@ internal static readonly @string structˢ = "struct"u8;
 
 // StructType = "struct" "{" { Field } "}" .
 internal static typesꓸType parseStructType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expectKeyword(structˢ);
     var t = @new<types.Struct>();
@@ -819,7 +819,7 @@ internal static readonly object notOnFinalArgumentˢ = (@string)"... not on fina
 
 // ParamList = "(" [ { Parameter "," } Parameter ] ")" .
 internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     slice<ж<types.Var>> list = default!;
     var isVariadic = false;
@@ -843,7 +843,7 @@ internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<
 
 // ResultList = Type | ParamList .
 internal static ж<types.Tuple> parseResultList(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (p.tok) {
     case (rune)'<': {
@@ -866,10 +866,10 @@ internal static ж<types.Tuple> parseResultList(this ж<parser> Ꮡp, ж<types.P
 
 // FunctionType = ParamList ResultList .
 internal static ж<typesꓸSignature> parseFunctionType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var t = @new<typesꓸSignature>();
-    p.update(new types_ΔSignatureжΔType(t), nlist);
+    p.update(new types.ΔSignatureжΔType(t), nlist);
     var (@params, isVariadic) = Ꮡp.parseParamList(Ꮡpkg);
     var results = Ꮡp.parseResultList(Ꮡpkg);
     t.Value = types.NewSignatureType(nil, default!, default!, @params, results, isVariadic).Value;
@@ -878,7 +878,7 @@ internal static ж<typesꓸSignature> parseFunctionType(this ж<parser> Ꮡp, ж
 
 // Func = Name FunctionType [InlineBody] .
 internal static ж<types.Func> parseFunc(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.tok == (rune)'/') {
         // Skip an /*asm ID */ comment.
@@ -908,7 +908,7 @@ internal static readonly @string interfaceˢ = "interface"u8;
 
 // InterfaceType = "interface" "{" { ("?" Type | Func) ";" } "}" .
 internal static typesꓸType parseInterfaceType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expectKeyword(interfaceˢ);
     var t = @new<types.Interface>();
@@ -938,7 +938,7 @@ internal static readonly @string anyˢ = "any"u8;
 
 // PointerType = "*" ("any" | Type) .
 internal static typesꓸType parsePointerType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.expect((rune)'*');
     if (p.tok == scanner.Ident) {
@@ -949,13 +949,13 @@ internal static typesꓸType parsePointerType(this ж<parser> Ꮡp, ж<types.Pac
     }
     var t = @new<types.Pointer>();
     p.update(new types.PointerжΔType(t), nlist);
-    t.Value = types.NewPointer(Ꮡp.parseType(Ꮡpkg, t)).Value;
+    t.Value = types.NewPointer(Ꮡp.parseType(Ꮡpkg, t.OrTypedNil())).Value;
     return new types.PointerжΔType(t);
 }
 
 // TypeSpec = NamedType | MapType | ChanType | StructType | InterfaceType | PointerType | ArrayOrSliceType | FunctionType .
 internal static typesꓸType parseTypeSpec(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var exprᴛ1 = p.tok;
     if (exprᴛ1 == scanner.ΔString) {
@@ -984,7 +984,7 @@ internal static typesꓸType parseTypeSpec(this ж<parser> Ꮡp, ж<types.Packag
         return Ꮡp.parseArrayOrSliceType(Ꮡpkg, nlist);
     }
     else if (exprᴛ1 is (rune)'(') {
-        return new types_ΔSignatureжΔType(Ꮡp.parseFunctionType(Ꮡpkg, nlist));
+        return new types.ΔSignatureжΔType(Ꮡp.parseFunctionType(Ꮡpkg, nlist));
     }
 
     p.errorf("expected type name or literal, got %s"u8, scanner.TokenString(p.tok));
@@ -1029,7 +1029,7 @@ internal static typesꓸType lookupBuiltinType(nint typ) {
 internal static typesꓸType parseType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, params ꓸꓸꓸany nʗp) {
     var n = nʗp.slice();
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     p.expect((rune)'<');
     var (t, _) = Ꮡp.parseTypeAfterAngle(Ꮡpkg, n.ꓸꓸꓸ);
     return t;
@@ -1044,7 +1044,7 @@ internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> �
     nint n1 = default!;
     var n = nʗp.slice();
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     p.expectKeyword(typeˢ);
     n1 = 0;
     var exprᴛ1 = p.tok;
@@ -1090,7 +1090,7 @@ internal static (typesꓸType t, nint n1) parseTypeExtended(this ж<parser> Ꮡp
     nint n1 = default!;
     var n = nʗp.slice();
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     p.expect((rune)'<');
     (t, n1) = Ꮡp.parseTypeAfterAngle(Ꮡpkg, n.ꓸꓸꓸ);
     return (t, n1);
@@ -1102,7 +1102,7 @@ internal static readonly @string inlˢ = "inl"u8;
 // InlineBody = "<inl:NN>" .{NN}
 // Reports whether a body was skipped.
 internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // We may or may not have seen the '<' already, depending on
     // whether the function had a result type or not.
@@ -1139,7 +1139,7 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recove
 
 // Types = "types" maxp1 exportedp1 (offset length)* .
 internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint maxp1 = p.parseInt();
     nint exportedp1 = p.parseInt();
@@ -1178,7 +1178,7 @@ internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) 
 
 // parseSavedType parses one saved type definition.
 internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, nint i, slice<any> nlist) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     deferǃ((ж<scanner.Scanner> s, rune tok, @string lit) => {
         Ꮡp.Value.scanner = s;
@@ -1228,7 +1228,7 @@ internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡp
 //	"init" { PackageInit } ";" |
 //	"checksum" unquotedString ";" .
 internal static void parseInitDataDirective(this ж<parser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.tok != scanner.Ident) {
         // unexpected token kind; panic
@@ -1289,7 +1289,7 @@ internal static void parseInitDataDirective(this ж<parser> Ꮡp) => func((defer
 //	"var" Var ";" |
 //	"const" Const ";" .
 internal static void parseDirective(this ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (p.tok != scanner.Ident) {
         // unexpected token kind; panic
@@ -1344,7 +1344,7 @@ internal static void parseDirective(this ж<parser> Ꮡp) {
         p.next();
         var fun = Ꮡp.parseFunc(p.pkg);
         if (fun != nil) {
-            p.pkg.Scope().Insert(new types_FuncжObject(fun));
+            p.pkg.Scope().Insert(new types.FuncжObject(fun));
         }
         p.expectEOL();
     }
@@ -1357,14 +1357,14 @@ internal static void parseDirective(this ж<parser> Ꮡp) {
         p.next();
         var v = Ꮡp.parseVar(p.pkg);
         if (v != nil) {
-            p.pkg.Scope().Insert(new types_VarжObject(v));
+            p.pkg.Scope().Insert(new types.VarжObject(v));
         }
         p.expectEOL();
     }
     else if (exprᴛ1 == "const"u8) {
         p.next();
         var c = Ꮡp.parseConst(p.pkg);
-        p.pkg.Scope().Insert(new types_ConstжObject(c));
+        p.pkg.Scope().Insert(new types.ConstжObject(c));
         p.expectEOL();
     }
     else { /* default: */
@@ -1375,7 +1375,7 @@ internal static void parseDirective(this ж<parser> Ꮡp) {
 
 // Package = { Directive } .
 internal static ж<types.Package> parsePackage(this ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     while (p.tok != scanner.EOF) {
         Ꮡp.parseDirective();

@@ -190,7 +190,7 @@ internal static (echCipher, error) pickECHCipherSuite(slice<echCipher> suites) {
 }
 
 internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> Ꮡinner, nint maxNameLength) {
-    ref var inner = ref Ꮡinner.Value;
+    ref var inner = ref Ꮡinner.DerefOrNull();
 
     var (h, err) = Ꮡinner.marshalMsg(true);
     if (err != default!) {
@@ -227,8 +227,8 @@ internal static (slice<byte>, error) generateOuterECHExt(uint8 id, uint16 kdfID,
 }
 
 internal static error computeAndUpdateOuterECHExtension(ж<clientHelloMsg> Ꮡouter, ж<clientHelloMsg> Ꮡinner, ж<echContext> Ꮡech, bool useKey) {
-    ref var outer = ref Ꮡouter.Value;
-    ref var ech = ref Ꮡech.Value;
+    ref var outer = ref Ꮡouter.DerefOrNull();
+    ref var ech = ref Ꮡech.DerefOrNull();
 
     slice<byte> encapKey = default!;
     if (useKey) {

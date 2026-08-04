@@ -181,7 +181,7 @@ internal static slice<byte> appendBase128Int(slice<byte> dst, int64 n) {
 }
 
 internal static (encoder, error) makeBigInt(ж<bigꓸInt> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn == nil) {
         return (default!, new StructuralError("empty integer"u8));

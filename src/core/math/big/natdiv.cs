@@ -755,7 +755,7 @@ internal static void divRecursive(this nat z, nat u, nat v) {
 // It uses temps[depth] (allocating if needed) as a temporary live across
 // the recursive call. It also uses tmp, but not live across the recursion.
 internal static void divRecursiveStep(this nat z, nat u, nat v, nint depth, ж<nat> Ꮡtmp, slice<ж<nat>> temps) {
-    ref var tmp = ref Ꮡtmp.ValueSlot;
+    ref var tmp = ref Ꮡtmp.DerefOrNull();
 
     // u is a subsection of the original and may have leading zeros.
     // TODO(rsc): The v = v.norm() is useless and should be removed.

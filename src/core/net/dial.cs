@@ -475,7 +475,7 @@ internal static readonly @string dialˢ = "dial"u8;
 // See func [Dial] for a description of the network and address
 // parameters.
 public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ctx, @string network, @string address) => func<(Conn, error)>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (ctx == default!) {
         throw panic("nil context");
@@ -568,7 +568,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
     var primariesʗ1 = primaries;
     var resultsʗ1 = results;
     var returnedʗ1 = returned;
-    var startRacer = (context.Context ctxΔ1, bool primaryΔ1) => {
+    void startRacer(context.Context ctxΔ1, bool primaryΔ1) {
         var ras = primariesʗ1;
         if (!primaryΔ1) {
             ras = fallbacksʗ1;
@@ -586,7 +586,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
             }
             break;
         }}
-    };
+    }
     dialParallel_dialResult primary = default!;
     dialParallel_dialResult fallback = default!;
     // Start the main racer.
@@ -638,7 +638,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
 // dialSerial connects to a list of addresses in sequence, returning
 // either the first successful connection, or the first error.
 internal static (Conn, error) dialSerial(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList ras) => func<(Conn, error)>((defer, recover) => {
-    ref var sd = ref Ꮡsd.Value;
+    ref var sd = ref Ꮡsd.DerefOrNull();
 
     error firstErr = default!;    // The error from the first address is most relevant.
     foreach (var (i, ra) in ras) {
@@ -689,7 +689,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
     Conn c = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var sd = ref Ꮡsd.Value;
+    ref var sd = ref Ꮡsd.DerefOrNull();
 
         var (trace, _) = ctx.Value(new nettrace.TraceKey(nil))._<ж<nettrace.Trace>>(ᐧ);
         if (trace != nil) {

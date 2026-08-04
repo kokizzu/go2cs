@@ -260,8 +260,8 @@ internal static readonly @string gifImageBlockIsTooLargeˢ = "gif: image block i
 internal static readonly @string gifImageBlockIsOutOfˢ = "gif: image block is out of bounds"u8;
 
 internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> Ꮡpm, nint delay, byte disposal) {
-    ref var e = ref Ꮡe.Value;
-    ref var pm = ref Ꮡpm.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var pm = ref Ꮡpm.DerefOrNull();
 
     if (e.err != default!) {
         return;
@@ -408,7 +408,7 @@ internal static readonly @string gifGifColorModelMustBeAˢ = "gif: GIF color mod
 // EncodeAll writes the images in g to w in GIF format with the
 // given loop count and delay between frames.
 public static error EncodeAll(io.Writer w, ж<GIF> Ꮡg) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     if (len(g.Image) == 0) {
         return errors.New(gifMustProvideAtLeastOneˢ);
@@ -461,7 +461,7 @@ internal static readonly @string gifImageIsTooLargeToˢ = "gif: image is too lar
 
 // Encode writes the Image m to w in GIF format.
 public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
-    ref var o = ref Ꮡo.DerefOrNil();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     // Check for bounds and size restrictions.
     var b = m.Bounds();
@@ -515,7 +515,7 @@ public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
         Image: new ж<image.Paletted>[]{pm}.slice(),
         Delay: new nint[]{0}.slice(),
         Config: new image.Config(
-            ColorModel: new color_PaletteᴠModel((~pm).Palette),
+            ColorModel: (~pm).Palette,
             Width: b.Dx(),
             Height: b.Dy()
         )

@@ -182,7 +182,7 @@ internal static error emsaPSSVerify(slice<byte> mHash, slice<byte> em, nint emBi
 // given hash function. salt is a random sequence of bytes whose length will be
 // later used to verify the signature.
 internal static (slice<byte>, error) signPSSWithSalt(ж<PrivateKey> Ꮡpriv, crypto.Hash hash, slice<byte> hashed, slice<byte> salt) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     nint emBits = priv.N.BitLen() - 1;
     var (em, err) = emsaPSSEncode(hashed, emBits, salt, hash.New());
@@ -241,7 +241,7 @@ public static UntypedInt PSSSaltLengthEqualsHash => -1;
 }
 
 internal static nint saltLength(this ж<PSSOptions> Ꮡopts) {
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     if (Ꮡopts == nil) {
         return PSSSaltLengthAuto;
@@ -261,8 +261,8 @@ internal static error invalidSaltLenErr = errors.New("crypto/rsa: PSSOptions.Sal
 // using bytes from rand. Most applications should use [crypto/rand.Reader] as
 // rand.
 public static (slice<byte>, error) SignPSS(io.Reader rand, ж<PrivateKey> Ꮡpriv, crypto.Hash hash, slice<byte> digest, ж<PSSOptions> Ꮡopts) {
-    ref var priv = ref Ꮡpriv.Value;
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var priv = ref Ꮡpriv.DerefOrNull();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     // Note that while we don't commit to deterministic execution with respect
     // to the rand stream, we also don't apply MaybeReadByte, so per Hyrum's Law
@@ -318,7 +318,7 @@ public static (slice<byte>, error) SignPSS(io.Reader rand, ж<PrivateKey> Ꮡpri
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static error VerifyPSS(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> digest, slice<byte> sig, ж<PSSOptions> Ꮡopts) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     if (boring.Enabled) {
         var (bkey, errΔ1) = boringPublicKey(Ꮡpub);

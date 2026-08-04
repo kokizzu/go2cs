@@ -125,7 +125,7 @@ public static (any value, bool ok) Load(this ж<Map> Ꮡm, any key) {
     any value = default!;
     bool ok = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     var read = Ꮡm.loadReadOnly();
     (var e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
@@ -168,7 +168,7 @@ public static void Store(this ж<Map> Ꮡm, any key, any value) {
 
 // Clear deletes all the entries, resulting in an empty Map.
 public static void Clear(this ж<Map> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var read = Ꮡm.loadReadOnly();
     if (len(read.m) == 0 && !read.amended) {
@@ -237,7 +237,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<Map> Ꮡm, any key, 
     any actual = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     // Avoid locking if it's a clean hit.
     var read = Ꮡm.loadReadOnly();
     {
@@ -319,7 +319,7 @@ public static (any value, bool loaded) LoadAndDelete(this ж<Map> Ꮡm, any key)
     any value = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     var read = Ꮡm.loadReadOnly();
     var (e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
@@ -384,7 +384,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
     any previous = default!;
     bool loaded = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
     var read = Ꮡm.loadReadOnly();
     {
@@ -444,7 +444,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
 public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
     func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
         var read = Ꮡm.loadReadOnly();
         {
@@ -489,7 +489,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any ol
 public static bool /*deleted*/ CompareAndDelete(this ж<Map> Ꮡm, any key, any old) {
     bool deleted = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     var read = Ꮡm.loadReadOnly();
     var (e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
@@ -533,7 +533,7 @@ public static bool /*deleted*/ CompareAndDelete(this ж<Map> Ꮡm, any key, any 
 // Range may be O(N) with the number of elements in the map even if f returns
 // false after a constant number of calls.
 public static void Range(this ж<Map> Ꮡm, Func<any, any, bool> f) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // We need to be able to iterate over all of the keys that were already
     // present at the start of the call to Range.
@@ -569,7 +569,7 @@ public static void Range(this ж<Map> Ꮡm, Func<any, any, bool> f) {
 }
 
 internal static void missLocked(this ж<Map> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     m.misses++;
     if (m.misses < len(m.dirty)) {
@@ -581,7 +581,7 @@ internal static void missLocked(this ж<Map> Ꮡm) {
 }
 
 internal static void dirtyLocked(this ж<Map> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (m.dirty != default!) {
         return;

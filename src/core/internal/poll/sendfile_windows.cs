@@ -13,7 +13,7 @@ public static (int64 written, error err) SendFile(ж<FD> Ꮡfd, syscallꓸHandle
     int64 written = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         defer(() => {

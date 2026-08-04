@@ -15,7 +15,7 @@ partial class sha3_package {
 
 // xorIn xors the bytes in buf into the state.
 internal static void xorIn(ж<state> Ꮡd, slice<byte> buf) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (cpu.IsBigEndian){
         for (nint i = 0; len(buf) >= 8; i++) {
@@ -31,7 +31,7 @@ internal static void xorIn(ж<state> Ꮡd, slice<byte> buf) {
 
 // copyOut copies uint64s to a byte buffer.
 internal static void copyOut(ж<state> Ꮡd, slice<byte> b) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (cpu.IsBigEndian){
         for (nint i = 0; len(b) >= 8; i++) {

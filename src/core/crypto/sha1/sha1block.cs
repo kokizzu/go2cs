@@ -16,7 +16,7 @@ internal static UntypedInt _K3 => 0xCA62C1D6;
 // blockGeneric is a portable, pure Go version of the SHA-1 block step.
 // It's used by sha1block_generic.go and tests.
 internal static void blockGeneric(ж<digest> Ꮡdig, slice<byte> p) {
-    ref var dig = ref Ꮡdig.Value;
+    ref var dig = ref Ꮡdig.DerefOrNull();
 
     array<uint32> w = new(16);
     var (h0, h1, h2, h3, h4) = (dig.h[0], dig.h[1], dig.h[2], dig.h[3], dig.h[4]);

@@ -50,7 +50,7 @@ internal static error escapeOK = fmt.Errorf("template escaped correctly"u8);
 // Templates returns a slice of the templates associated with t, including t
 // itself.
 public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var ns = t.nameSpace;
     ns.of(nameSpace.Ꮡmu).Lock();
@@ -85,7 +85,7 @@ public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func((def
 public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring optʗp) {
     var opt = optʗp.slice();
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     t.text.Option(opt.ꓸꓸꓸ);
     return Ꮡt;
 }
@@ -93,7 +93,7 @@ public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring
 // checkCanParse checks whether it is OK to parse templates.
 // If not, it returns an error.
 internal static error checkCanParse(this ж<Template> Ꮡt) => func<error>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return default!;
@@ -108,7 +108,7 @@ internal static error checkCanParse(this ж<Template> Ꮡt) => func<error>((defe
 
 // escape escapes all associated templates.
 internal static error escape(this ж<Template> Ꮡt) => func<error>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.nameSpace.of(nameSpace.Ꮡmu).Lock();
     defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
@@ -118,7 +118,7 @@ internal static error escape(this ж<Template> Ꮡt) => func<error>((defer, reco
             return fmt.Errorf("template: %q is an incomplete or empty template"u8, t.Name());
         }
         {
-            var err = escapeTemplate(Ꮡt, new parse_ListNodeжNode((~t.text).Root), t.Name()); if (err != default!) {
+            var err = escapeTemplate(Ꮡt, new parse.ListNodeжNode((~t.text).Root), t.Name()); if (err != default!) {
                 return err;
             }
         }
@@ -137,7 +137,7 @@ internal static error escape(this ж<Template> Ꮡt) => func<error>((defer, reco
 // A template may be executed safely in parallel, although if parallel
 // executions share a Writer the output may be interleaved.
 public static error Execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var err = Ꮡt.escape(); if (err != default!) {
@@ -169,7 +169,7 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
     ж<Template> tmpl = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
@@ -188,7 +188,7 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
             throw panic("html/template internal error: template escaping out of sync");
         }
         if ((~tmpl).escapeErr == default!) {
-            err = escapeTemplate(tmpl, new parse_ListNodeжNode((~(~tmpl).text).Root), name);
+            err = escapeTemplate(tmpl, new parse.ListNodeжNode((~(~tmpl).text).Root), name);
         }
     });
     return (tmpl, err);
@@ -213,7 +213,7 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
 // This allows using Parse to add new named template definitions without
 // overwriting the main template body.
 public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
@@ -246,7 +246,7 @@ public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) 
 //
 // It returns an error if t or any associated template has already been executed.
 public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
@@ -278,7 +278,7 @@ public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string
 //
 // It returns an error if t has already been executed.
 public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.nameSpace.of(nameSpace.Ꮡmu).Lock();
     defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
@@ -338,7 +338,7 @@ public static ж<Template> New(@string name) {
 // will replace it. The existing template will be reset and disassociated with
 // t.
 public static ж<Template> New(this ж<Template> Ꮡt, @string name) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.nameSpace.of(nameSpace.Ꮡmu).Lock();
     defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
@@ -374,7 +374,7 @@ public static ж<Template> New(this ж<Template> Ꮡt, @string name) => func((de
 // type. However, it is legal to overwrite elements of the map. The return
 // value is the template, so calls can be chained.
 public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.text.Funcs(((template.FuncMap)funcMap));
     return Ꮡt;
@@ -386,7 +386,7 @@ public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) {
 // corresponding default: {{ or }}.
 // The return value is the template, so calls can be chained.
 public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string right) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.text.Delims(left, right);
     return Ꮡt;
@@ -395,7 +395,7 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 // Lookup returns the template with the given name that is associated with t,
 // or nil if there is no such template.
 public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.nameSpace.of(nameSpace.Ꮡmu).Lock();
     defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
@@ -448,7 +448,7 @@ public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params �
 internal static (ж<Template>, error) parseFiles(ж<Template> Ꮡt, Func<@string, (@string, slice<byte>, error)> readFile, params ꓸꓸꓸstring filenamesʗp) {
     var filenames = filenamesʗp.sslice();
 
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
     {
         var err = Ꮡt.checkCanParse(); if (err != default!) {
             return (default!, err);
@@ -472,7 +472,7 @@ internal static (ж<Template>, error) parseFiles(ж<Template> Ꮡt, Func<@string
         // works. Otherwise we create a new template associated with t.
         ж<Template> tmpl = default!;
         if (Ꮡt == nil) {
-            Ꮡt = New(name); t = ref Ꮡt.DerefOrNil();
+            Ꮡt = New(name); t = ref Ꮡt.DerefOrNull();
         }
         if (name == t.Name()){
             tmpl = Ꮡt;

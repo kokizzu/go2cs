@@ -245,7 +245,7 @@ internal static UntypedInt bufSize => /* 16 << 10 */ 16384; // reasonable for Be
 // lookupAll returns a slice into the matching region of the index.
 // The runtime is O(log(N)*len(s)).
 internal static ints lookupAll(this ж<Index> Ꮡx, slice<byte> s) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // find matching suffix index range [i:j]
     // find the first index where s would be the prefix
@@ -297,8 +297,8 @@ public static slice<nint> /*result*/ Lookup(this ж<Index> Ꮡx, slice<byte> s, 
 public static slice<slice<nint>> /*result*/ FindAllIndex(this ж<Index> Ꮡx, ж<regexp.Regexp> Ꮡr, nint n) {
     slice<slice<nint>> result = default!;
 
-    ref var x = ref Ꮡx.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
     // a non-empty literal prefix is used to determine possible
     // match start indices with Lookup
     var (prefix, complete) = r.LiteralPrefix();
@@ -357,7 +357,7 @@ public static slice<slice<nint>> /*result*/ FindAllIndex(this ж<Index> Ꮡx, ж
     // the indices of possible complete matches; use these as starting
     // points for anchored searches
     // (regexp "^" matches beginning of input, not beginning of line)
-    Ꮡr = regexp.MustCompile("^"u8 + r.String()); r = ref Ꮡr.Value;
+    Ꮡr = regexp.MustCompile("^"u8 + r.String()); r = ref Ꮡr.DerefOrNull();
     // compiles because r compiled
     // same comment about Lookup applies here as in the loop above
     for (nint n1 = n; ᐧ ; n1 += 2 * (n - builtin.len(result))) {

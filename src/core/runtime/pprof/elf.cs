@@ -39,11 +39,11 @@ internal static (@string, error) elfBuildID(@string @file) => func<(@string, err
         return ("", errBadELF);
     }
     case 1: {
-        byteOrder = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        byteOrder = binary.LittleEndian;
         break;
     }
     case 2: {
-        byteOrder = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+        byteOrder = binary.BigEndian;
         break;
     }}
 

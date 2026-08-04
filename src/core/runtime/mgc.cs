@@ -1355,7 +1355,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
 // on p is potentially useful. p may be nil, in which case it only
 // checks the global sources of work.
 internal static bool gcMarkWorkAvailable(ж<Δp> Ꮡp) {
-    ref var Δp = ref Ꮡp.DerefOrNil();
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp != nil && !Δp.gcw.empty()) {
         return true;

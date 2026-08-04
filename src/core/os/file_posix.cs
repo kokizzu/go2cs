@@ -18,7 +18,7 @@ partial class os_package {
 // be canceled and return immediately with an [ErrClosed] error.
 // Close will return an error if it has already been called.
 public static error Close(this ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf == nil) {
         return ErrInvalid;
@@ -33,7 +33,7 @@ internal static (nint n, error err) read(this ж<File> Ꮡf, slice<byte> b) {
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Read(b);
-    Δruntime.KeepAlive(Ꮡf);
+    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -45,7 +45,7 @@ internal static (nint n, error err) pread(this ж<File> Ꮡf, slice<byte> b, int
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Pread(b, off);
-    Δruntime.KeepAlive(Ꮡf);
+    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -56,7 +56,7 @@ internal static (nint n, error err) write(this ж<File> Ꮡf, slice<byte> b) {
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Write(b);
-    Δruntime.KeepAlive(Ꮡf);
+    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -67,7 +67,7 @@ internal static (nint n, error err) pwrite(this ж<File> Ꮡf, slice<byte> b, in
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Pwrite(b, off);
-    Δruntime.KeepAlive(Ꮡf);
+    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -104,7 +104,7 @@ internal static readonly @string chmodˢ = "chmod"u8;
 
 // See docs in file.go:(*File).Chmod.
 internal static error chmod(this ж<File> Ꮡf, FileMode mode) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var err = Ꮡf.checkValid(chmodˢ); if (err != default!) {
@@ -157,7 +157,7 @@ internal static readonly @string chownˢ = "chown"u8;
 // On Windows, it always returns the [syscall.EWINDOWS] error, wrapped
 // in *PathError.
 public static error Chown(this ж<File> Ꮡf, nint uid, nint gid) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var err = Ꮡf.checkValid(chownˢ); if (err != default!) {
@@ -179,7 +179,7 @@ internal static readonly @string truncateˢ = "truncate"u8;
 // It does not change the I/O offset.
 // If there is an error, it will be of type [*PathError].
 public static error Truncate(this ж<File> Ꮡf, int64 size) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var err = Ꮡf.checkValid(truncateˢ); if (err != default!) {
@@ -201,7 +201,7 @@ internal static readonly @string syncˢ = "sync"u8;
 // Typically, this means flushing the file system's in-memory copy
 // of recently written data to disk.
 public static error Sync(this ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var err = Ꮡf.checkValid(syncˢ); if (err != default!) {
@@ -225,13 +225,13 @@ public static error Sync(this ж<File> Ꮡf) {
 // If there is an error, it will be of type [*PathError].
 public static error Chtimes(@string name, time.Time atime, time.Time mtime) {
     ref var utimes = ref heap(new array<syscall.Timespec>(2), out var Ꮡutimes);
-    var set = (nint i, time.Time t) => {
+    void set(nint i, time.Time t) {
         if (t.IsZero()){
             Ꮡutimes.Value[i] = new syscall.Timespec(Sec: _UTIME_OMIT, Nsec: _UTIME_OMIT);
         } else {
             Ꮡutimes.Value[i] = syscall.NsecToTimespec(t.UnixNano());
         }
-    };
+    }
     set(0, atime);
     set(1, mtime);
     {
@@ -246,7 +246,7 @@ public static error Chtimes(@string name, time.Time atime, time.Time mtime) {
 // which must be a directory.
 // If there is an error, it will be of type [*PathError].
 public static error Chdir(this ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     {
         var err = Ꮡf.checkValid(chdirˢ); if (err != default!) {

@@ -33,7 +33,7 @@ internal static error setKeepAliveIdle(ж<netFD> Ꮡfd, time.Duration d) {
     // The kernel expects seconds so round to next highest second.
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPIDLE, secs);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return os.NewSyscallError(setsockoptˢ, err);
 }
 
@@ -50,7 +50,7 @@ internal static error setKeepAliveInterval(ж<netFD> Ꮡfd, time.Duration d) {
     // The kernel expects seconds so round to next highest second.
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPINTVL, secs);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return os.NewSyscallError(setsockoptˢ, err);
 }
 
@@ -62,7 +62,7 @@ internal static error setKeepAliveCount(ж<netFD> Ꮡfd, nint n) {
         return default!;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPCNT, n);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return os.NewSyscallError(setsockoptˢ, err);
 }
 
@@ -122,7 +122,7 @@ internal static error setKeepAliveIdleAndInterval(ж<netFD> Ꮡfd, time.Duration
     ret = (uint32)0;
     var size = (uint32)/* unsafe.Sizeof(ka) */ (uintptr)12;
     var err = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(syscall.SIO_KEEPALIVE_VALS, Ꮡka.Reinterpret<syscall.TCPKeepalive, byte>(), size, nil, 0, Ꮡret, nil, 0);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return os.NewSyscallError(wsaioctlˢ, err);
 }
 

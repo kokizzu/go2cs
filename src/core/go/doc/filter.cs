@@ -11,7 +11,7 @@ partial class doc_package {
 // type ΔFilter is a methodless func type — rendered inline as its base delegate
 
 internal static bool matchFields(ж<ast.FieldList> Ꮡfields, Func<@string, bool> f) {
-    ref var fields = ref Ꮡfields.DerefOrNil();
+    ref var fields = ref Ꮡfields.DerefOrNull();
 
     if (Ꮡfields != nil) {
         foreach (var (_, field) in fields.List) {
@@ -26,7 +26,7 @@ internal static bool matchFields(ж<ast.FieldList> Ꮡfields, Func<@string, bool
 }
 
 internal static bool matchDecl(ж<ast.GenDecl> Ꮡd, Func<@string, bool> f) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     foreach (var (_, dΔ1) in d.Specs) {
         switch (dΔ1.type()) {

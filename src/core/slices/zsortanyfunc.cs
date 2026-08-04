@@ -280,7 +280,7 @@ internal static (nint pivot, sortedHint hint) choosePivotCmpFunc<E>(slice<E> dat
 
 // order2CmpFunc returns x,y where data[x] <= data[y], where x,y=a,b or x,y=b,a.
 internal static (nint, nint) order2CmpFunc<E>(slice<E> data, nint a, nint b, ж<nint> Ꮡswaps, Func<E, E, nint> cmp) {
-    ref var swaps = ref Ꮡswaps.Value;
+    ref var swaps = ref Ꮡswaps.DerefOrNull();
 
     if (cmp(data[b], data[a]) < 0) {
         swaps++;

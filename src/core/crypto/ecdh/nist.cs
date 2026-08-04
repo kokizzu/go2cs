@@ -44,7 +44,7 @@ internal static error errInvalidPrivateKey = errors.New("crypto/ecdh: invalid pr
 internal static (ж<PrivateKey>, error) GenerateKey<Point>(this ж<nistCurve<Point>> Ꮡc, io.Reader rand)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (boring.Enabled && AreEqual(rand, boring.RandReader)) {
         var (keyΔ1, bytes, err) = boring.GenerateKeyECDH(c.name);
@@ -86,7 +86,7 @@ private static readonly @string cryptoEcdhInvalidPrivateˢ = "crypto/ecdh: inval
 internal static (ж<PrivateKey>, error) NewPrivateKey<Point>(this ж<nistCurve<Point>> Ꮡc, slice<byte> key)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (len(key) != len(c.scalarOrder)) {
         return (default!, errors.New(cryptoEcdhInvalidPrivateˢ));
@@ -120,8 +120,8 @@ internal static (ж<PrivateKey>, error) newBoringPrivateKey(ΔCurve c, ж<boring
 internal static ж<ΔPublicKey> privateKeyToPublicKey<Point>(this ж<nistCurve<Point>> Ꮡc, ж<PrivateKey> Ꮡkey)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.DerefOrNil();
-    ref var key = ref Ꮡkey.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     boring.Unreachable();
     if (!AreEqual(key.curve, Ꮡc)) {
@@ -187,7 +187,7 @@ private static readonly @string cryptoEcdhInvalidPublicˢ = "crypto/ecdh: invali
 internal static (ж<ΔPublicKey>, error) NewPublicKey<Point>(this ж<nistCurve<Point>> Ꮡc, slice<byte> key)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Reject the point at infinity and compressed encodings.
     if (len(key) == 0 || key[0] != 4) {
@@ -217,8 +217,8 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey<Point>(this ж<nistCurve<P
 [GoRecv] internal static (slice<byte>, error) ecdh<Point>(this ref nistCurve<Point> c, ж<PrivateKey> Ꮡlocal, ж<ΔPublicKey> Ꮡremote)
     where Point : nistPoint<Point>
 {
-    ref var local = ref Ꮡlocal.Value;
-    ref var remote = ref Ꮡremote.Value;
+    ref var local = ref Ꮡlocal.DerefOrNull();
+    ref var remote = ref Ꮡremote.DerefOrNull();
 
     // Note that this function can't return an error, as NewPublicKey rejects
     // invalid points and the point at infinity, and NewPrivateKey rejects

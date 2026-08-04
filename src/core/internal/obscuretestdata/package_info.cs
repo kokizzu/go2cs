@@ -15,8 +15,6 @@ global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
-using base64 = go.encoding.base64_package;
-using os = go.os_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -49,7 +47,6 @@ using static go.@internal.obscuretestdata_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<os.File, ж<os.File>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.@internal;

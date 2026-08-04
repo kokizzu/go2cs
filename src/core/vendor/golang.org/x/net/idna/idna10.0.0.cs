@@ -351,7 +351,7 @@ internal static @string Error(this runeError e) {
 // process implements the algorithm described in section 4 of UTS #46,
 // see https://www.unicode.org/reports/tr46.
 internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool toASCII) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     error err = default!;
     bool isBidi = default!;
@@ -463,7 +463,7 @@ internal static (@string idem, bool bidi, error err) validateRegistration(ж<Pro
     bool bidi = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     // TODO: filter need for normalization in loop below.
     if (!norm.NFC.IsNormalString(s)) {
         return (s, false, new labelErrorжerror(Ꮡ(new labelError(s, "V1"u8))));
@@ -510,7 +510,7 @@ internal static (@string vm, bool bidi, error err) validateAndMap(ж<Profile> �
     bool bidi = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     slice<byte> b = default!;
     nint k = default!;
     // combinedInfoBits contains the or-ed bits of all runes. We use this
@@ -669,7 +669,7 @@ internal static readonly @string acePrefix = "xn--"u8;
 }
 
 internal static error validateFromPunycode(ж<Profile> Ꮡp, @string s) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (!norm.NFC.IsNormalString(s)) {
         return new labelErrorжerror(Ꮡ(new labelError(s, "V1"u8)));

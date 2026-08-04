@@ -251,7 +251,7 @@ public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-add
 }
 
 internal static bool hijacked(this ж<conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(conn.Ꮡmu).Lock();
     defer(Ꮡc.of(conn.Ꮡmu).Unlock);
@@ -264,7 +264,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) hijackLocked
     ж<bufio.ReadWriter> buf = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (c.hijackedv) {
         return (default!, default!, ErrHijacked);
     }
@@ -530,7 +530,7 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
     int64 n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         var buf = getCopyBuf();
         deferǃ(putCopyBuf, buf, defer);
@@ -612,7 +612,7 @@ internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
 }
 
 internal static void @lock(this ж<connReader> Ꮡcr) {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     Ꮡcr.of(connReader.Ꮡmu).Lock();
     if (cr.cond == nil) {
@@ -625,7 +625,7 @@ internal static void unlock(this ж<connReader> Ꮡcr) {
 }
 
 internal static void startBackgroundRead(this ж<connReader> Ꮡcr) => func((defer, recover) => {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     Ꮡcr.@lock();
     defer(Ꮡcr.unlock);
@@ -641,7 +641,7 @@ internal static void startBackgroundRead(this ж<connReader> Ꮡcr) => func((def
 });
 
 internal static void backgroundRead(this ж<connReader> Ꮡcr) {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     var (n, err) = (~cr.conn).rwc.Read(cr.byteBuf[..]);
     Ꮡcr.@lock();
@@ -686,7 +686,7 @@ internal static void backgroundRead(this ж<connReader> Ꮡcr) {
 }
 
 internal static void abortPendingRead(this ж<connReader> Ꮡcr) => func((defer, recover) => {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     Ꮡcr.@lock();
     defer(Ꮡcr.unlock);
@@ -740,7 +740,7 @@ internal static (nint n, error err) Read(this ж<connReader> Ꮡcr, slice<byte> 
     nint n = default!;
     error err = default!;
 
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
     Ꮡcr.@lock();
     if (cr.inRead) {
         Ꮡcr.unlock();
@@ -800,7 +800,7 @@ internal static void putCopyBuf(slice<byte> b) {
     if (builtin.len(b) != copyBufPoolSize) {
         throw panic("trying to put back buffer of the wrong size in the copyBufPool");
     }
-    ᏑcopyBufPool.Put(Ꮡ(array<byte>.Alias(b, 32768)));
+    ᏑcopyBufPool.Put(Ꮡ(array<byte>.Alias(b, 32768)).OrTypedNil());
 }
 
 internal static ж<sync.Pool> bufioWriterPool(nint size) {
@@ -848,7 +848,7 @@ internal static ж<bufio.Reader> newBufioReader(io.Reader r) {
 //go:linkname putBufioReader
 internal static void putBufioReader(ж<bufio.Reader> Ꮡbr) {
     Ꮡbr.Reset(default!);
-    ᏑbufioReaderPool.Put(Ꮡbr);
+    ᏑbufioReaderPool.Put(Ꮡbr.OrTypedNil());
 }
 
 // newBufioWriterSize should be an internal detail,
@@ -884,12 +884,12 @@ internal static ж<bufio.Writer> newBufioWriterSize(io.Writer w, nint size) {
 //
 //go:linkname putBufioWriter
 internal static void putBufioWriter(ж<bufio.Writer> Ꮡbw) {
-    ref var bw = ref Ꮡbw.Value;
+    ref var bw = ref Ꮡbw.DerefOrNull();
 
     Ꮡbw.Reset(default!);
     {
         var pool = bufioWriterPool(bw.Available()); if (pool != nil) {
-            pool.Put(Ꮡbw);
+            pool.Put(Ꮡbw.OrTypedNil());
         }
     }
 }
@@ -950,7 +950,7 @@ internal static (nint n, error err) Read(this ж<expectContinueReader> Ꮡecr, s
     nint n = default!;
     error err = default!;
 
-    ref var ecr = ref Ꮡecr.Value;
+    ref var ecr = ref Ꮡecr.DerefOrNull();
     if (Ꮡecr.of(expectContinueReader.Ꮡclosed).Load()) {
         return (0, ErrBodyReadAfterClose);
     }
@@ -972,7 +972,7 @@ internal static (nint n, error err) Read(this ж<expectContinueReader> Ꮡecr, s
 }
 
 internal static error Close(this ж<expectContinueReader> Ꮡecr) {
-    ref var ecr = ref Ꮡecr.Value;
+    ref var ecr = ref Ꮡecr.DerefOrNull();
 
     Ꮡecr.of(expectContinueReader.Ꮡclosed).Store(true);
     return ecr.readCloser.Close();
@@ -1019,7 +1019,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
     ж<response> w = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
         if (Ꮡc.hijacked()) {
             (w, err) = (default!, ErrHijacked); return;
@@ -1123,7 +1123,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
 // http1ServerSupportsRequest reports whether Go's HTTP/1.x server
 // supports the given request.
 internal static bool http1ServerSupportsRequest(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (req.ProtoMajor == 1) {
         return true;
@@ -1199,7 +1199,7 @@ internal static runtime.Frame relevantCaller() {
 }
 
 internal static void WriteHeader(this ж<response> Ꮡw, nint code) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (w.conn.hijacked()) {
         var caller = relevantCaller();
@@ -1274,7 +1274,7 @@ internal static slice<byte> headerDate = slice<byte>("Date: "u8);
 // of h, because it prevents an allocation. The escape analysis isn't
 // smart enough to realize this function doesn't mutate h.
 internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (h.date != default!) {
         w.Write(headerDate);
@@ -1327,7 +1327,7 @@ internal static readonly @string chunkedˢ = "chunked"u8;
     }
     ref var excludeHeader = ref heap<map<@string, bool>>(out var ᏑexcludeHeader);
     var headerʗ1 = header;
-    var delHeader = (@string key) => {
+    void delHeader(@string key) {
         if (owned) {
             headerʗ1.Del(key);
             return;
@@ -1341,7 +1341,7 @@ internal static readonly @string chunkedˢ = "chunked"u8;
             ᏑexcludeHeader.ValueSlot = new map<@string, bool>();
         }
         ᏑexcludeHeader.ValueSlot[key] = true;
-    };
+    }
     extraHeader setHeader = default!;
     // Don't write out the fake "Trailer:foo" keys. See TrailerPrefix.
     var trailers = false;
@@ -1620,7 +1620,7 @@ internal static readonly @string http10ˢ = "HTTP/1.0 "u8;
 // code is the response status code.
 // scratch is an optional scratch buffer. If it has at least capacity 3, it's used.
 internal static void writeStatusLine(ж<bufio.Writer> Ꮡbw, bool is11, nint code, slice<byte> scratch) {
-    ref var bw = ref Ꮡbw.Value;
+    ref var bw = ref Ꮡbw.DerefOrNull();
 
     if (is11){
         bw.WriteString(http11ˢ2);
@@ -1702,7 +1702,7 @@ internal static (nint n, error err) write(this ж<response> Ꮡw, nint lenData, 
     nint n = default!;
     error err = default!;
 
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
     if (w.conn.hijacked()) {
         if (lenData > 0) {
             var caller = relevantCaller();
@@ -1736,7 +1736,7 @@ internal static (nint n, error err) write(this ж<response> Ꮡw, nint lenData, 
 }
 
 internal static void finishRequest(this ж<response> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     Ꮡw.of(response.ᏑhandlerDone).Store(true);
     if (!w.wroteHeader) {
@@ -1789,7 +1789,7 @@ internal static void Flush(this ж<response> Ꮡw) {
 }
 
 internal static error FlushError(this ж<response> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (!w.wroteHeader) {
         Ꮡw.WriteHeader(StatusOK);
@@ -1895,7 +1895,7 @@ internal const bool runHooks = true;
 internal const bool skipHooks = false;
 
 internal static void setState(this ж<conn> Ꮡc, net.Conn nc, ConnState state, bool runHook) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var srv = c.server;
     var exprᴛ1 = state;
@@ -1980,14 +1980,14 @@ internal static readonly @string clientSentAnHttpRequestˢ = "client sent an HTT
 
 // Serve a new connection.
 internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var ra = c.rwc.RemoteAddr(); if (ra != default!) {
             c.remoteAddr = ra.String();
         }
     }
-    ctx = context_package.WithValue(ctx, LocalAddrContextKey, c.rwc.LocalAddr());
+    ctx = context_package.WithValue(ctx, LocalAddrContextKey.OrTypedNil(), c.rwc.LocalAddr());
     ref var inFlightResponse = ref heap<ж<response>>(out var ᏑinFlightResponse);
     defer(() => {
         {
@@ -2189,7 +2189,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((def
 });
 
 internal static void sendExpectationFailed(this ж<response> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     // TODO(bradfitz): let ServeHTTP handlers handle
     // requests with non-standard expectation[s]? Seems
@@ -2215,7 +2215,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
     ж<bufio.ReadWriter> buf = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         if (Ꮡw.of(response.ᏑhandlerDone).Load()) {
             throw panic("net/http: Hijack called after ServeHTTP finished");
@@ -2240,7 +2240,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
 }
 
 internal static /*<-*/channel<bool> CloseNotify(this ж<response> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (Ꮡw.of(response.ᏑhandlerDone).Load()) {
         throw panic("net/http: CloseNotify called after ServeHTTP finished");
@@ -2376,7 +2376,7 @@ public static ΔHandler StripPrefix(@string prefix, ΔHandler h) {
 // Setting the Content-Type header to any value, including nil,
 // disables that behavior.
 public static void Redirect(ResponseWriter w, ж<Request> Ꮡr, @string url, nint code) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var (u, err) = urlpkg.Parse(url); if (err == default!) {
@@ -2674,8 +2674,8 @@ internal static (ΔHandler h, @string patStr, ж<pattern>, slice<@string> matche
     @string patStr = default!;
     slice<@string> matches = default!;
 
-    ref var mux = ref Ꮡmux.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
     ж<routingNode> n = default!;
     @string host = r.URL.Value.Host;
     @string escapedPath = r.URL.EscapedPath();
@@ -2743,7 +2743,7 @@ internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirec
     slice<@string> matches = default!;
     ж<urlpkg.URL> redirectTo = default!;
     func((defer, recover) => {
-    ref var u = ref Ꮡu.DerefOrNil();
+    ref var u = ref Ꮡu.DerefOrNull();
 
         Ꮡmux.of(ServeMux.Ꮡmu).RLock();
         defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock);
@@ -2790,7 +2790,7 @@ internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirec
 //	/         /a
 //	/a/{x...} /a/b
 internal static bool exactMatch(ж<routingNode> Ꮡn, @string path) {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn == nil) {
         return false;
@@ -2832,7 +2832,7 @@ internal static slice<@string> matchingMethods(this ж<ServeMux> Ꮡmux, @string
 // ServeHTTP dispatches the request to the handler whose
 // pattern most closely matches the request URL.
 public static void ServeHTTP(this ж<ServeMux> Ꮡmux, ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.RequestURI == "*"u8) {
         if (r.ProtoAtLeast(1, 1)) {
@@ -2909,7 +2909,7 @@ internal static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
 internal static readonly @string unknownLocationˢ = "unknown location"u8;
 
 internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) => func<error>((defer, recover) => {
-    ref var mux = ref Ꮡmux.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
 
     if (patstr == ""u8) {
         return errors.New(httpInvalidPatternˢ);
@@ -2943,7 +2943,7 @@ internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHa
             if (patʗ1.conflictsWith(pat2)) {
                 @string d = describeConflict(patʗ1, pat2);
                 return fmt.Errorf("pattern %q (registered at %s) conflicts with pattern %q (registered at %s):\n%s"u8,
-                    patʗ1, (~patʗ1).loc, pat2, (~pat2).loc, d);
+                    patʗ1.OrTypedNil(), (~patʗ1).loc, pat2.OrTypedNil(), (~pat2).loc, d);
             }
             return default!;
         }); if (errΔ1 != default!) {
@@ -3094,7 +3094,7 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
 // Close returns any error returned from closing the [Server]'s
 // underlying Listener(s).
 public static error Close(this ж<Server> Ꮡsrv) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
     Ꮡsrv.of(Server.Ꮡmu).Lock();
@@ -3144,7 +3144,7 @@ internal static time.Duration shutdownPollIntervalMax => /* 500 * time.Milliseco
 // Once Shutdown has been called on a server, it may not be reused;
 // future calls to methods such as Serve will return ErrServerClosed.
 public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
     Ꮡsrv.of(Server.Ꮡmu).Lock();
@@ -3156,7 +3156,7 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => fun
     Ꮡsrv.of(Server.Ꮡmu).Unlock();
     Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
     var pollIntervalBase = time.Millisecond;
-    var nextPollInterval = () => {
+    time.Duration nextPollInterval() {
         // Add 10% jitter.
         var interval = pollIntervalBase + ((time.Duration)(int64)rand.Intn((nint)(int64)(pollIntervalBase / 10)));
         // Double and clamp for next time.
@@ -3165,7 +3165,7 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => fun
             pollIntervalBase = shutdownPollIntervalMax;
         }
         return interval;
-    };
+    }
     var timer = time.NewTimer(nextPollInterval());
     var timerʗ1 = timer;
     defer(() => timerʗ1.Stop());
@@ -3192,7 +3192,7 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => fun
 // This function should start protocol-specific graceful shutdown,
 // but should not wait for shutdown to complete.
 public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     Ꮡsrv.of(Server.Ꮡmu).Lock();
     srv.onShutdown = append(srv.onShutdown, f);
@@ -3202,7 +3202,7 @@ public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
 // closeIdleConns closes all idle connections and reports whether the
 // server is quiescent.
 internal static bool closeIdleConns(this ж<Server> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     defer(Ꮡs.of(Server.Ꮡmu).Unlock);
@@ -3275,7 +3275,7 @@ public static @string String(this ConnState c) {
 //
 //go:linkname badServeHTTP net/http.serverHandler.ServeHTTP
 internal static void ServeHTTP(this serverHandler sh, ResponseWriter rw, ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var handler = sh.srv.Value.Handler;
     if (handler == default!) {
@@ -3325,7 +3325,7 @@ internal static readonly @string httpˢ3 = ":http"u8;
 // ListenAndServe always returns a non-nil error. After [Server.Shutdown] or [Server.Close],
 // the returned error is [ErrServerClosed].
 public static error ListenAndServe(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     if (Ꮡsrv.shuttingDown()) {
         return ErrServerClosed;
@@ -3380,7 +3380,7 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 // Serve always returns a non-nil error and closes l.
 // After [Server.Shutdown] or [Server.Close], the returned error is [ErrServerClosed].
 public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     ref var l = ref heap(lʗp, out var Ꮡl);
     {
@@ -3409,7 +3409,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) => func((de
         }
     }
     time.Duration tempDelay = default!;                   // how long to sleep on accept failure
-    var ctx = context_package.WithValue(baseCtx, ServerContextKey, Ꮡsrv);
+    var ctx = context_package.WithValue(baseCtx, ServerContextKey.OrTypedNil(), Ꮡsrv.OrTypedNil());
     while (ᐧ) {
         var (rw, err) = l.Accept();
         if (err != default!) {
@@ -3468,7 +3468,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) => func((de
 // ServeTLS always returns a non-nil error. After [Server.Shutdown] or [Server.Close], the
 // returned error is [ErrServerClosed].
 public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string certFile, @string keyFile) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     // Setup HTTP/2 before srv.Serve, to initialize srv.TLSConfig
     // before we clone it and create the TLS Listener.
@@ -3505,7 +3505,7 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
 //
 // It reports whether the server is still up (not Shutdown or Closed).
 internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln, bool add) => func<bool>((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     defer(Ꮡs.of(Server.Ꮡmu).Unlock);
@@ -3526,7 +3526,7 @@ internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln,
 });
 
 internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     defer(Ꮡs.of(Server.Ꮡmu).Unlock);
@@ -3593,8 +3593,8 @@ public static void SetKeepAlivesEnabled(this ж<Server> Ꮡsrv, bool v) {
 internal static void logf(ж<Request> Ꮡr, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    ref var r = ref Ꮡr.Value;
-    var (s, _) = r.Context().Value(ServerContextKey)._<ж<Server>>(ᐧ);
+    ref var r = ref Ꮡr.DerefOrNull();
+    var (s, _) = r.Context().Value(ServerContextKey.OrTypedNil())._<ж<Server>>(ᐧ);
     if (s != nil && (~s).ErrorLog != nil){
         (~s).ErrorLog.Printf(format, args.ꓸꓸꓸ);
     } else {
@@ -3643,7 +3643,7 @@ internal static readonly @string httpsˢ2 = ":https"u8;
 // ListenAndServeTLS always returns a non-nil error. After [Server.Shutdown] or
 // [Server.Close], the returned error is [ErrServerClosed].
 public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, @string keyFile) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     if (Ꮡsrv.shuttingDown()) {
         return ErrServerClosed;
@@ -3665,7 +3665,7 @@ public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, 
 // srv and reports whether there was an error setting it up. If it is
 // not configured for policy reasons, nil is returned.
 internal static error setupHTTP2_ServeTLS(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     Ꮡsrv.of(Server.ᏑnextProtoOnce).Do(Ꮡsrv.onceSetNextProtoDefaults);
     return srv.nextProtoErr;
@@ -3680,14 +3680,14 @@ internal static error setupHTTP2_ServeTLS(this ж<Server> Ꮡsrv) {
 // TestConcurrentServerServe in server_test.go demonstrate some
 // of the supported use cases and motivations.
 internal static error setupHTTP2_Serve(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     Ꮡsrv.of(Server.ᏑnextProtoOnce).Do(Ꮡsrv.onceSetNextProtoDefaults_Serve);
     return srv.nextProtoErr;
 }
 
 internal static void onceSetNextProtoDefaults_Serve(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     if (srv.shouldConfigureHTTP2ForServe()) {
         Ꮡsrv.onceSetNextProtoDefaults();
@@ -3700,7 +3700,7 @@ internal static ж<godebug.Setting> http2server = godebug.New("http2server"u8);
 // configured otherwise. (by setting srv.TLSNextProto non-nil)
 // It must only be called via srv.nextProtoOnce (use srv.setupHTTP2_*).
 internal static void onceSetNextProtoDefaults(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.Value;
+    ref var srv = ref Ꮡsrv.DerefOrNull();
 
     if (omitBundledHTTP2) {
         return;
@@ -3760,8 +3760,8 @@ internal static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Ti
 }
 
 internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, ж<Request> Ꮡr) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var ctx = h.testContext;
     if (ctx == default!) {
@@ -3770,7 +3770,7 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
         var cancelCtxʗ1 = cancelCtx;
         defer(() => cancelCtxʗ1());
     }
-    Ꮡr = r.WithContext(ctx); r = ref Ꮡr.Value;
+    Ꮡr = r.WithContext(ctx); r = ref Ꮡr.DerefOrNull();
     var done = new channel<EmptyStruct>(0);
     var tw = Ꮡ(new timeoutWriter(
         w: w,
@@ -3866,7 +3866,7 @@ internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher(((ж<timeoutWriter>)
 }
 
 internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p) => func<(nint, error)>((defer, recover) => {
-    ref var tw = ref Ꮡtw.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
 
     Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
     defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock);
@@ -3901,7 +3901,7 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
 }
 
 internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) => func((defer, recover) => {
-    ref var tw = ref Ꮡtw.Value;
+    ref var tw = ref Ꮡtw.DerefOrNull();
 
     Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
     defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock);
@@ -3917,7 +3917,7 @@ internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) => fun
 }
 
 internal static error Close(this ж<onceCloseListener> Ꮡoc) {
-    ref var oc = ref Ꮡoc.Value;
+    ref var oc = ref Ꮡoc.DerefOrNull();
 
     Ꮡoc.of(onceCloseListener.Ꮡonce).Do(Ꮡoc.close);
     return oc.closeErr;
@@ -3932,7 +3932,7 @@ internal static error Close(this ж<onceCloseListener> Ꮡoc) {
 }
 
 internal static void ServeHTTP(this globalOptionsHandler _, ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     w.Header().Set(contentLengthˢ, "0"u8);
     if (r.ContentLength != 0) {
@@ -3964,7 +3964,7 @@ internal static context.Context BaseContext(this initALPNRequest h) {
 }
 
 internal static void ServeHTTP(this initALPNRequest h, ResponseWriter rw, ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (req.TLS == nil) {
         req.TLS = Ꮡ(new tlsꓸConnectionState(nil));

@@ -58,7 +58,7 @@ public static (ж<Template>, error) ParseFiles(params ꓸꓸꓸstring filenames�
 public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params ꓸꓸꓸstring filenamesʗp) {
     var filenames = filenamesʗp.slice();
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     t.init();
     return parseFiles(Ꮡt, readFileOS, filenames.ꓸꓸꓸ);
 }
@@ -68,7 +68,7 @@ public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params �
 internal static (ж<Template>, error) parseFiles(ж<Template> Ꮡt, Func<@string, (@string, slice<byte>, error)> readFile, params ꓸꓸꓸstring filenamesʗp) {
     var filenames = filenamesʗp.sslice();
 
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
     if (len(filenames) == 0) {
         // Not really a problem, but be consistent.
         return (default!, fmt.Errorf("template: no files named in call to ParseFiles"u8));
@@ -87,7 +87,7 @@ internal static (ж<Template>, error) parseFiles(ж<Template> Ꮡt, Func<@string
         // works. Otherwise we create a new template associated with t.
         ж<Template> tmpl = default!;
         if (Ꮡt == nil) {
-            Ꮡt = New(name); t = ref Ꮡt.DerefOrNil();
+            Ꮡt = New(name); t = ref Ꮡt.DerefOrNull();
         }
         if (name == t.Name()){
             tmpl = Ꮡt;
@@ -124,7 +124,7 @@ public static (ж<Template>, error) ParseGlob(@string pattern) {
 // When parsing multiple files with the same name in different directories,
 // the last one mentioned will be the one that results.
 public static (ж<Template>, error) ParseGlob(this ж<Template> Ꮡt, @string pattern) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.init();
     return parseGlob(Ꮡt, pattern);
@@ -159,7 +159,7 @@ public static (ж<Template>, error) ParseFS(fs.FS fsys, params ꓸꓸꓸstring p
 public static (ж<Template>, error) ParseFS(this ж<Template> Ꮡt, fs.FS fsys, params ꓸꓸꓸstring patternsʗp) {
     var patterns = patternsʗp.slice();
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     t.init();
     return parseFS(Ꮡt, fsys, patterns);
 }

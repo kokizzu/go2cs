@@ -49,7 +49,7 @@ internal static (ж<Form>, error err) readForm(this ж<Reader> Ꮡr, int64 maxMe
     ж<Form> _ᴛ1 = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
         var form = Ꮡ(new Form(new map<@string, slice<@string>>(), new map<@string, slice<ж<FileHeader>>>()));
         ref var @file = ref heap<ж<os.File>>(out var Ꮡfile);

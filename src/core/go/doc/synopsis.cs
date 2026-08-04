@@ -61,7 +61,7 @@ public static slice<@string> IllegalPrefixes = new @string[]{
 // spaces between words. If text starts with any of the [IllegalPrefixes],
 // the result is the empty string.
 public static @string Synopsis(this ж<Package> Ꮡp, @string text) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     text = firstSentence(text);
     @string lower = strings.ToLower(text);

@@ -31,7 +31,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
     netꓸAddr _ᴛ1 = default!;
     error ctxErr = default!;
     func((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
         var (host, port, err) = sockssplitHostPort(address);
         if (err != default!) {
@@ -328,7 +328,7 @@ internal static readonly @string socksˢ = "socks"u8;
 internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static @string String(this ж<socksAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return nilˢ;
@@ -349,7 +349,7 @@ internal static @string String(this ж<socksAddr> Ꮡa) {
 // BoundAddr returns the address assigned by the proxy server for
 // connecting to the command target address from the proxy server.
 internal static netꓸAddr BoundAddr(this ж<socksConn> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return default!;
@@ -389,7 +389,7 @@ internal static readonly @string nilContextˢ = "nil context"u8;
 // See func Dial of the net package of standard library for a
 // description of the network and address parameters.
 internal static (net.Conn, error) DialContext(this ж<socksDialer> Ꮡd, context.Context ctx, @string network, @string address) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     {
         var errΔ1 = d.validateTarget(network, address); if (errΔ1 != default!) {
@@ -429,7 +429,7 @@ internal static (net.Conn, error) DialContext(this ж<socksDialer> Ꮡd, context
 // It returns the connection's local address assigned by the SOCKS
 // server.
 internal static (netꓸAddr, error) DialWithConn(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string network, @string address) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     {
         var errΔ1 = d.validateTarget(network, address); if (errΔ1 != default!) {
@@ -456,7 +456,7 @@ internal static (netꓸAddr, error) DialWithConn(this ж<socksDialer> Ꮡd, cont
 //
 // Deprecated: Use DialContext or DialWithConn instead.
 internal static (net.Conn, error) Dial(this ж<socksDialer> Ꮡd, @string network, @string address) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     {
         var errΔ1 = d.validateTarget(network, address); if (errΔ1 != default!) {

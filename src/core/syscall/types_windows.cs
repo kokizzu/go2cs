@@ -354,8 +354,8 @@ public static Filetime /*ft*/ NsecToFiletime(int64 nsec) {
 // ¹ https://docs.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-win32_find_dataw
 // ² https://golang.org/issue/42637#issuecomment-760715755
 internal static void copyFindData(ж<Win32finddata> Ꮡdst, ж<win32finddata1> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     dst.FileAttributes = src.FileAttributes;
     dst.CreationTime = src.CreationTime;

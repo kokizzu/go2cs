@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package netip defines an IP address type that's a small value type. Building on that \[Addr] type, the package also defines \[AddrPort] (an IP address and a port) and \[Prefix] (an IP address and a bit length prefix).
 

@@ -10,8 +10,6 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-using base64 = go.encoding.base64_package;
-using strings = go.strings_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -45,7 +43,6 @@ using static go.mime_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<strings.Builder, ж<strings.Builder>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go;

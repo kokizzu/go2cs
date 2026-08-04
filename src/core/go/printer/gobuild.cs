@@ -66,7 +66,7 @@ partial class printer_package {
             if (x == default!){
                 x = y;
             } else {
-                x = new constraint_AndExprжExpr(Ꮡ(new constraint.AndExpr(X: x, Y: y)));
+                x = new constraint.AndExprжExpr(Ꮡ(new constraint.AndExpr(X: x, Y: y)));
             }
         }
         break;

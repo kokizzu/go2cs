@@ -54,7 +54,7 @@ internal static (ж<netFD>, error) newFD(syscallꓸHandle sysfd, nint family, ni
 }
 
 internal static error init(this ж<netFD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     var (errcall, err) = Ꮡfd.of(netFD.Ꮡpfd).Init(fd.net, true);
     if (errcall != ""u8) {
@@ -71,7 +71,7 @@ internal static readonly @string setsockoptˢ = "setsockopt"u8;
 
 // Always returns nil for connected peer address result.
 internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, context.Context ctx, syscallꓸSockaddr la, syscallꓸSockaddr ra) => func<(syscallꓸSockaddr, error)>((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     // Do not need to call fd.writeLock here,
     // because fd is not yet accessible to user,
@@ -197,7 +197,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
 });
 
 internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return (0, syscall.EINVAL);
@@ -214,12 +214,12 @@ internal static readonly @string wsasendˢ = "wsasend"u8;
 
 internal static (int64, error) writeBuffers(this ж<netFD> Ꮡfd, ж<Buffers> Ꮡbuf) {
     var (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Writev(Ꮡbuf.of(Buffers.Ꮡm_value));
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(wsasendˢ, err));
 }
 
 internal static (ж<netFD>, error) accept(this ж<netFD> Ꮡfd) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     var (s, rawsa, rsan, errcall, err) = Ꮡfd.of(netFD.Ꮡpfd).Accept(() => sysSocket(Ꮡfd.Value.family, Ꮡfd.Value.sotype, 0));
     if (err != default!) {

@@ -765,7 +765,7 @@ internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour 
 // Clone returns a shallow clone of c or nil if c is nil. It is safe to clone a [Config] that is
 // being used concurrently by a TLS client or server.
 public static ж<Config> Clone(this ж<Config> Ꮡc) => func<ж<Config>>((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return default!;
@@ -815,7 +815,7 @@ internal static slice<byte> deprecatedSessionTicketKey = slice<byte>("DEPRECATED
 // initLegacySessionTicketKeyRLocked ensures the legacy SessionTicketKey field is
 // randomized if empty, and that sessionTicketKeys is populated from it otherwise.
 internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Don't write if SessionTicketKey is already defined as our deprecated string,
     // or if it is defined by the user but sessionTicketKeys is already set.
@@ -854,8 +854,8 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) => 
 // is not fresh, then a new session ticket key will be
 // created and prepended to c.sessionTicketKeys.
 internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> ᏑconfigForClient) => func<slice<ticketKey>>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
-    ref var configForClient = ref ᏑconfigForClient.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var configForClient = ref ᏑconfigForClient.DerefOrNull();
 
     // If the ConfigForClient callback returned a Config with explicitly set
     // keys, use those, otherwise just use the original Config.
@@ -927,7 +927,7 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
 // previously recorded and future TLS connections using those keys might be
 // compromised.
 public static void SetSessionTicketKeys(this ж<Config> Ꮡc, slice<array<byte>> keys) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (len(keys) == 0) {
         throw panic("tls: keys must have at least one key");
@@ -989,7 +989,7 @@ internal const bool roleServer = false;
 internal static ж<godebug.Setting> tls10server = godebug.New("tls10server"u8);
 
 internal static slice<uint16> supportedVersions(this ж<Config> Ꮡc, bool isClient) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var versions = new slice<uint16>(0, len(ΔsupportedVersions));
     foreach (var (_, v) in ΔsupportedVersions) {
@@ -1038,7 +1038,7 @@ internal static slice<uint16> supportedVersionsFromMax(uint16 maxVersion) {
 }
 
 internal static slice<CurveID> curvePreferences(this ж<Config> Ꮡc, uint16 version) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     slice<CurveID> curvePreferences = default!;
     if (Ꮡc != nil && len(c.CurvePreferences) != 0){
@@ -1095,7 +1095,7 @@ public static error errNoCertificates = errors.New("tls: no certificates configu
 // getCertificate returns the best certificate for the given ClientHelloInfo,
 // defaulting to the first element of c.Certificates.
 [GoRecv] internal static (ж<Certificate>, error) getCertificate(this ref Config c, ж<ClientHelloInfo> ᏑclientHello) {
-    ref var clientHello = ref ᏑclientHello.Value;
+    ref var clientHello = ref ᏑclientHello.DerefOrNull();
 
     if (c.GetCertificate != default! && (len(c.Certificates) == 0 || len(clientHello.ServerName) > 0)) {
         var (cert, err) = c.GetCertificate(ᏑclientHello);
@@ -1161,8 +1161,8 @@ internal static readonly @string clientDoesnTSupportAnyˢ = "client doesn't supp
 // This function will call x509.ParseCertificate unless c.Leaf is set, which can
 // incur a significant performance cost.
 public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Certificate> Ꮡc) {
-    ref var chi = ref Ꮡchi.Value;
-    ref var c = ref Ꮡc.Value;
+    ref var chi = ref Ꮡchi.DerefOrNull();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Note we don't currently support certificate_authorities nor
     // signature_algorithms_cert, and don't check the algorithms of the
@@ -1194,7 +1194,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
     // supporting static RSA is completely disjoint from the logic for
     // supporting signed key exchanges, so we just check it as a fallback.
     var configʗ1 = config;
-    var supportsRSAFallback = error (error unsupported) => {
+    error supportsRSAFallback(error unsupported) {
         // TLS 1.3 dropped support for the static RSA key exchange.
         if (vers == VersionTLS13) {
             return unsupported;
@@ -1228,7 +1228,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
             return unsupported;
         }
         return default!;
-    };
+    }
     // If the client sent the signature_algorithms extension, ensure it supports
     // schemes we can use with this certificate and TLS version.
     if (len(chi.SignatureSchemes) > 0) {
@@ -1334,7 +1334,7 @@ internal static readonly @string chainIsNotSignedByAnˢ = "chain is not signed b
 // the server that sent the CertificateRequest. Otherwise, it returns an error
 // describing the reason for the incompatibility.
 [GoRecv] public static error SupportsCertificate(this ref CertificateRequestInfo cri, ж<Certificate> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var (_, err) = selectSignatureScheme(cri.Version, Ꮡc, cri.SignatureSchemes); if (err != default!) {
@@ -1491,7 +1491,7 @@ public static ClientSessionCache NewLRUClientSessionCache(nint capacity) {
 // Put adds the provided (sessionKey, cs) pair to the cache. If cs is nil, the entry
 // corresponding to sessionKey is removed from the cache instead.
 internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<ClientSessionState> Ꮡcs) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
     defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock);
@@ -1510,7 +1510,7 @@ internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<C
     }
     if (c.q.Len() < c.capacity) {
         var entryΔ2 = Ꮡ(new lruSessionCacheEntry(sessionKey, Ꮡcs));
-        c.m[sessionKey] = c.q.PushFront(entryΔ2);
+        c.m[sessionKey] = c.q.PushFront(entryΔ2.OrTypedNil());
         return;
     }
     var elem = c.q.Back();
@@ -1525,7 +1525,7 @@ internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<C
 // Get returns the [ClientSessionState] value associated with a given key. It
 // returns (nil, false) if no value is found.
 internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc, @string sessionKey) => func<(ж<ClientSessionState>, bool)>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
     defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock);

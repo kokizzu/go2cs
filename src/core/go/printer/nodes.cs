@@ -46,7 +46,7 @@ partial class printer_package {
 internal static nint /*nbreaks*/ linebreak(this ж<printer> Ꮡp, nint line, nint min, whiteSpace ws, bool newSection) {
     nint nbreaks = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     nint n = max(nlimit(line - p.pos.Line), min);
     if (n > 0) {
         Ꮡp.print(ws);
@@ -71,8 +71,8 @@ internal static readonly object setCommentFoundPendingˢ = (@string)"setComment 
 // as exports only. It assumes that there is no pending comment in p.comments
 // and at most one pending comment in the p.comment cache.
 internal static void setComment(this ж<printer> Ꮡp, ж<ast.CommentGroup> Ꮡg) {
-    ref var p = ref Ꮡp.Value;
-    ref var g = ref Ꮡg.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var g = ref Ꮡg.DerefOrNull();
 
     if (Ꮡg == nil || !p.useNodeComments) {
         return;
@@ -133,7 +133,7 @@ internal static readonly @string filteredMsg = "contains filtered or unexported 
 //
 //	(e.g., pass list via a channel over which to range).
 internal static void exprList(this ж<printer> Ꮡp, tokenꓸPos prev0, slice<ast.Expr> list, nint depth, exprListMode mode, tokenꓸPos next0, bool isIncomplete) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(list) == 0) {
         if (isIncomplete) {
@@ -322,8 +322,8 @@ internal static paramMode funcTParam => 1;
 internal static paramMode typeTParam => 2;
 
 internal static void parameters(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfields, paramMode mode) {
-    ref var p = ref Ꮡp.Value;
-    ref var fields = ref Ꮡfields.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var fields = ref Ꮡfields.DerefOrNull();
 
     token.Token openTok = token.LPAREN;
     token.Token closeTok = token.RPAREN;
@@ -448,7 +448,7 @@ internal static bool isTypeElem(ast.Expr x) {
 }
 
 internal static void signature(this ж<printer> Ꮡp, ж<ast.FuncType> Ꮡsig) {
-    ref var sig = ref Ꮡsig.Value;
+    ref var sig = ref Ꮡsig.DerefOrNull();
 
     if (sig.TypeParams != nil) {
         Ꮡp.parameters(sig.TypeParams, funcTParam);
@@ -516,8 +516,8 @@ internal static void setLineComment(this ж<printer> Ꮡp, @string text) {
 internal static readonly @string containsFilteredOrˢ = "// contains filtered or unexported methods"u8;
 
 internal static void fieldList(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfields, bool isStruct, bool isIncomplete) {
-    ref var p = ref Ꮡp.Value;
-    ref var fields = ref Ꮡfields.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var fields = ref Ꮡfields.DerefOrNull();
 
     tokenꓸPos lbrace = fields.Opening;
     var list = fields.List;
@@ -680,7 +680,7 @@ internal static (bool has4, bool has5, nint maxProblem) walkBinary(ж<ast.Binary
     bool has5 = default!;
     nint maxProblem = default!;
 
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
     switch (e.Op.Precedence()) {
     case 4: {
         has4 = true;
@@ -808,8 +808,8 @@ internal static nint reduceDepth(nint depth) {
 //     cutoff is 6 (always use spaces) in Normal mode
 //     and 4 (never use spaces) in Compact mode.
 internal static void binaryExpr(this ж<printer> Ꮡp, ж<ast.BinaryExpr> Ꮡx, nint prec1, nint cutoff, nint depth) {
-    ref var p = ref Ꮡp.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     nint prec = x.Op.Precedence();
     if (prec < prec1) {
@@ -861,7 +861,7 @@ internal static readonly object badExprˢ = (@string)"BadExpr"u8;
 internal static readonly object depth1ˢ = (@string)"depth < 1:"u8;
 
 internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nint depth) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.setPos(expr.Pos());
     switch (expr.type()) {
@@ -870,7 +870,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
         break;
     }
     case ж<ast.Ident> x: {
-        Ꮡp.print(x);
+        Ꮡp.print(x.OrTypedNil());
         break;
     }
     case ж<ast.BinaryExpr> x: {
@@ -925,7 +925,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
         if ((Mode)(p.Config.Mode & normalizeNumbers) != 0) {
             x = normalizedNumber(x);
         }
-        Ꮡp.print(x);
+        Ꮡp.print(x.OrTypedNil());
         break;
     }
     case ж<ast.FuncLit> x: {
@@ -1178,7 +1178,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
 // If lit is not a number or a number in canonical format already,
 // lit is returned as is. Otherwise a new ast.BasicLit is created.
 internal static ж<ast.BasicLit> normalizedNumber(ж<ast.BasicLit> Ꮡlit) {
-    ref var lit = ref Ꮡlit.Value;
+    ref var lit = ref Ꮡlit.DerefOrNull();
 
     if (lit.Kind != token.INT && lit.Kind != token.FLOAT && lit.Kind != token.IMAG) {
         return Ꮡlit;
@@ -1261,8 +1261,8 @@ internal static bool possibleSelectorExpr(this ж<printer> Ꮡp, ast.Expr expr, 
 // selectorExpr handles an *ast.SelectorExpr node and reports whether x spans
 // multiple lines.
 internal static bool selectorExpr(this ж<printer> Ꮡp, ж<ast.SelectorExpr> Ꮡx, nint depth, bool isMethod) {
-    ref var p = ref Ꮡp.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     Ꮡp.expr1(x.X, token.HighestPrec, depth);
     Ꮡp.print(token.PERIOD);
@@ -1270,7 +1270,7 @@ internal static bool selectorExpr(this ж<printer> Ꮡp, ж<ast.SelectorExpr> �
         nint line = p.lineFor(x.Sel.Pos()); if (p.pos.IsValid() && p.pos.Line < line) {
             Ꮡp.print(indent, newline);
             p.setPos(x.Sel.Pos());
-            Ꮡp.print(x.Sel);
+            Ꮡp.print(x.Sel.OrTypedNil());
             if (!isMethod) {
                 Ꮡp.print(unindent);
             }
@@ -1278,7 +1278,7 @@ internal static bool selectorExpr(this ж<printer> Ꮡp, ж<ast.SelectorExpr> �
         }
     }
     p.setPos(x.Sel.Pos());
-    Ꮡp.print(x.Sel);
+    Ꮡp.print(x.Sel.OrTypedNil());
     return false;
 }
 
@@ -1298,7 +1298,7 @@ internal static void expr(this ж<printer> Ꮡp, ast.Expr x) {
 // Extra line breaks between statements in the source are respected but at most one
 // empty line is printed between statements.
 internal static void stmtList(this ж<printer> Ꮡp, slice<ast.Stmt> list, nint nindent, bool nextIsRBrace) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (nindent > 0) {
         Ꮡp.print(indent);
@@ -1340,8 +1340,8 @@ internal static void stmtList(this ж<printer> Ꮡp, slice<ast.Stmt> list, nint 
 
 // block prints an *ast.BlockStmt; it always spans at least two lines.
 internal static void block(this ж<printer> Ꮡp, ж<ast.BlockStmt> Ꮡb, nint nindent) {
-    ref var p = ref Ꮡp.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     p.setPos(b.Lbrace);
     Ꮡp.print(token.LBRACE);
@@ -1474,7 +1474,7 @@ internal static void controlClause(this ж<printer> Ꮡp, bool isForStmt, ast.St
 internal static readonly object badStmtˢ = (@string)"BadStmt"u8;
 
 internal static void stmt(this ж<printer> Ꮡp, ast.Stmt stmt, bool nextIsRBrace) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.setPos(stmt.Pos());
     switch (stmt.type()) {
@@ -1735,13 +1735,13 @@ internal static void stmt(this ж<printer> Ꮡp, ast.Stmt stmt, bool nextIsRBrac
 internal static slice<bool> keepTypeColumn(slice<ast.Spec> specs) {
     var m = new slice<bool>(len(specs));
     var mʗ1 = m;
-    var populate = (nint i, nint j, bool keepTypeΔ1) => {
+    void populate(nint i, nint j, bool keepTypeΔ1) {
         if (keepTypeΔ1) {
             for (; i < j; i++) {
                 mʗ1[i] = true;
             }
         }
-    };
+    }
     nint i0 = -1;
     // if i0 >= 0 we are in a run and i0 is the start of the run
     bool keepType = default!;
@@ -1772,7 +1772,7 @@ internal static slice<bool> keepTypeColumn(slice<ast.Spec> specs) {
 }
 
 internal static void valueSpec(this ж<printer> Ꮡp, ж<ast.ValueSpec> Ꮡs, bool keepType) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡp.setComment(s.Doc);
     Ꮡp.identList(s.Names, false);
@@ -1799,7 +1799,7 @@ internal static void valueSpec(this ж<printer> Ꮡp, ж<ast.ValueSpec> Ꮡs, bo
 }
 
 internal static ж<ast.BasicLit> sanitizeImportPath(ж<ast.BasicLit> Ꮡlit) {
-    ref var lit = ref Ꮡlit.Value;
+    ref var lit = ref Ꮡlit.DerefOrNull();
 
     // Note: An unmodified AST generated by go/parser will already
     // contain a backward- or double-quoted path string that does
@@ -1849,7 +1849,7 @@ internal static readonly object expectedN1Gotˢ = (@string)"expected n = 1; got"
 // multi-line identifier lists in the spec are indented when the first
 // linebreak is encountered.
 internal static void spec(this ж<printer> Ꮡp, ast.Spec spec, nint n, bool doIndent) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (spec.type()) {
     case ж<ast.ImportSpec> s: {
@@ -1907,8 +1907,8 @@ internal static void spec(this ж<printer> Ꮡp, ast.Spec spec, nint n, bool doI
 }
 
 internal static void genDecl(this ж<printer> Ꮡp, ж<ast.GenDecl> Ꮡd) {
-    ref var p = ref Ꮡp.Value;
-    ref var d = ref Ꮡd.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡp.setComment(d.Doc);
     p.setPos(d.Pos());
@@ -2028,8 +2028,8 @@ internal static void genDecl(this ж<printer> Ꮡp, ж<ast.GenDecl> Ꮡd) {
 
 // bodySize is like nodeSize but it is specialized for *ast.BlockStmt's.
 internal static nint bodySize(this ж<printer> Ꮡp, ж<ast.BlockStmt> Ꮡb, nint maxSize) {
-    ref var p = ref Ꮡp.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     tokenꓸPos pos1 = b.Pos();
     tokenꓸPos pos2 = b.Rbrace;
@@ -2063,8 +2063,8 @@ internal static nint bodySize(this ж<printer> Ꮡp, ж<ast.BlockStmt> Ꮡb, nin
 // by sep. Otherwise the block's opening "{" is printed on the current line, followed by
 // lines for the block's statements and its closing "}".
 internal static void funcBody(this ж<printer> Ꮡp, nint headerSize, whiteSpace sep, ж<ast.BlockStmt> Ꮡb) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡb == nil) {
         return;
@@ -2112,8 +2112,8 @@ internal static void funcBody(this ж<printer> Ꮡp, nint headerSize, whiteSpace
 }
 
 internal static void funcDecl(this ж<printer> Ꮡp, ж<ast.FuncDecl> Ꮡd) {
-    ref var p = ref Ꮡp.Value;
-    ref var d = ref Ꮡd.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡp.setComment(d.Doc);
     p.setPos(d.Pos());
@@ -2136,7 +2136,7 @@ internal static void funcDecl(this ж<printer> Ꮡp, ж<ast.FuncDecl> Ꮡd) {
 internal static readonly object badDeclˢ = (@string)"BadDecl"u8;
 
 internal static void decl(this ж<printer> Ꮡp, ast.Decl decl) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (decl.type()) {
     case ж<ast.BadDecl> d: {
@@ -2178,7 +2178,7 @@ internal static token.Token /*tok*/ declToken(ast.Decl decl) {
 }
 
 internal static void declList(this ж<printer> Ꮡp, slice<ast.Decl> list) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     token.Token tok = token.ILLEGAL;
     foreach (var (_, d) in list) {
@@ -2207,8 +2207,8 @@ internal static void declList(this ж<printer> Ꮡp, slice<ast.Decl> list) {
 }
 
 internal static void @file(this ж<printer> Ꮡp, ж<ast.File> Ꮡsrc) {
-    ref var p = ref Ꮡp.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     Ꮡp.setComment(src.Doc);
     p.setPos(src.Pos());

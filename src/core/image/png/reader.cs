@@ -443,7 +443,7 @@ internal static readonly @string tooMuchPixelDataˢ = "too much pixel data"u8;
 
 // decode decodes the IDAT data into an image.
 internal static (image.Image, error) decode(this ж<decoder> Ꮡd) => func<(image.Image, error)>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var (r, err) = zlib.NewReader(new decoderжReader(Ꮡd));
     if (err != default!) {
@@ -543,7 +543,7 @@ internal static readonly @string badFilterTypeˢ = "bad filter type"u8;
             img = new image.NRGBAжImage(nrgba);
         } else {
             rgba = image.NewRGBA(image.Rect(0, 0, width, height));
-            img = new image_ΔRGBAжImage(rgba);
+            img = new image.ΔRGBAжImage(rgba);
         }
     }
     else if (exprᴛ1 == cbP1 || exprᴛ1 == cbP2 || exprᴛ1 == cbP4 || exprᴛ1 == cbP8) {
@@ -984,7 +984,7 @@ internal static readonly @string badFilterTypeˢ = "bad filter type"u8;
 internal static error /*err*/ parseIDAT(this ж<decoder> Ꮡd, uint32 length) {
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     d.idatLength = length;
     (d.img, err) = Ꮡd.decode();
     if (err != default!) {
@@ -1004,7 +1004,7 @@ internal static readonly @string badIendLengthˢ = "bad IEND length"u8;
 }
 
 internal static error parseChunk(this ж<decoder> Ꮡd, bool configOnly) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Read the length and chunk type.
     {
@@ -1195,7 +1195,7 @@ public static (image.Config, error) DecodeConfig(io.Reader r) {
         cm = color.RGBAModel;
     }
     else if (exprᴛ1 == cbP1 || exprᴛ1 == cbP2 || exprᴛ1 == cbP4 || exprᴛ1 == cbP8) {
-        cm = new color_PaletteᴠModel(d.Value.palette);
+        cm = d.Value.palette;
     }
     else if (exprᴛ1 == cbTCA8) {
         cm = color.NRGBAModel;

@@ -244,7 +244,7 @@ internal static UntypedInt maxBitsLimit => 16;
 // Look at the leaves and assign them a bit count and an encoding as specified
 // in RFC 1951 3.2.2
 internal static void assignEncodingAndSize(this ж<huffmanEncoder> Ꮡh, slice<int32> bitCount, slice<literalNode> list) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var code = (uint16)0;
     foreach (var (n, bits) in bitCount) {
@@ -271,7 +271,7 @@ internal static void assignEncodingAndSize(this ж<huffmanEncoder> Ꮡh, slice<i
 // freq is an array of frequencies, in which freq[i] gives the frequency of literal i.
 // maxBits  The maximum number of bits to use for any literal.
 internal static void generate(this ж<huffmanEncoder> Ꮡh, slice<int32> freq, int32 maxBits) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (h.freqcache == default!) {
         // Allocate a reusable buffer with the longest possible frequency table.
@@ -311,7 +311,7 @@ internal static void generate(this ж<huffmanEncoder> Ꮡh, slice<int32> freq, i
 [GoType("[]literalNode")] partial struct byLiteral;
 
 internal static void sort(this ж<byLiteral> Ꮡs, slice<literalNode> a) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = ((byLiteral)a);
     sort_package.Sort(new byLiteralжInterface(Ꮡs));
@@ -332,7 +332,7 @@ internal static void Swap(this byLiteral s, nint i, nint j) {
 [GoType("[]literalNode")] partial struct byFreq;
 
 internal static void sort(this ж<byFreq> Ꮡs, slice<literalNode> a) {
-    ref var s = ref Ꮡs.ValueSlot;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s = ((byFreq)a);
     sort_package.Sort(new byFreqжInterface(Ꮡs));

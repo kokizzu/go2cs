@@ -189,7 +189,7 @@ public static (ж<Response>, error) ReadResponse(ж<bufio.Reader> Ꮡr, ж<Reque
     }
     resp.Value.Header = ((ΔHeader)(map<@string, slice<@string>>)mimeHeader);
     fixPragmaCacheControl((~resp).Header);
-    err = readTransfer(resp, Ꮡr);
+    err = readTransfer(resp.OrTypedNil(), Ꮡr);
     if (err != default!) {
         return (default!, err);
     }
@@ -297,7 +297,7 @@ internal static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
         r1.Value.Close = true;
     }
     // Process Body,ContentLength,Close,Trailer
-    var (tw, err) = newTransferWriter(r1);
+    var (tw, err) = newTransferWriter(r1.OrTypedNil());
     if (err != default!) {
         return err;
     }

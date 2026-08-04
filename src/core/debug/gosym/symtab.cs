@@ -197,12 +197,12 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
         // missing symtab is okay
         return default!;
     }
-    binary.ByteOrder order = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+    binary.ByteOrder order = binary.BigEndian;
     var newTable = false;
     switch (ᐧ) {
     case {} when bytes.HasPrefix(data, oldLittleEndianSymtab): {
         data = data[6..];
-        order = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        order = binary.LittleEndian;
         break;
     }
     case {} when bytes.HasPrefix(data, // Same as Go 1.0, but little endian.
@@ -214,7 +214,7 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
     }
     case {} when bytes.HasPrefix(data, littleEndianSymtab): {
         newTable = true;
-        order = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        order = binary.LittleEndian;
         break;
     }}
 
@@ -343,7 +343,7 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
 // returning an in-memory representation.
 // Starting with Go 1.3, the Go symbol table no longer includes symbol data.
 public static (ж<Table>, error) NewTable(slice<byte> symtab, ж<LineTable> Ꮡpcln) {
-    ref var pcln = ref Ꮡpcln.DerefOrNil();
+    ref var pcln = ref Ꮡpcln.DerefOrNull();
 
     nint n = default!;
     var err = walksymtab(symtab, (sym s) => {
@@ -534,7 +534,7 @@ break_countloop:;
             } else 
             if (Ꮡpcln != nil) {
                 fn.Value.LineTable = pcln.Δslice((~fn).Entry);
-                Ꮡpcln = fn.Value.LineTable; pcln = ref Ꮡpcln.DerefOrNil();
+                Ꮡpcln = fn.Value.LineTable; pcln = ref Ꮡpcln.DerefOrNull();
             }
             for (nint j = i; j < end; j++) {
                 var s = Ꮡ(t.Syms, j);

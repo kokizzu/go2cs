@@ -62,7 +62,7 @@ using static go.flag_package;
 [assembly: GoImplement<intValue, Value>(Pointer = true)]
 [assembly: GoImplement<stringValue, Value>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<textValue, Value>]
+[assembly: GoImplement<textValue, Getter>]
 [assembly: GoImplement<uint64Value, Value>(Pointer = true)]
 [assembly: GoImplement<uintValue, Value>(Pointer = true)]
 // </InterfaceImplementations>

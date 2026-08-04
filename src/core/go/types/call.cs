@@ -37,10 +37,10 @@ partial class types_package {
 // If an error (other than a version error) occurs in any case, it is reported
 // and x.mode is set to invalid.
 internal static (slice<ΔType>, slice<ast.Expr>) funcInst(this ж<Checker> Ꮡcheck, ж<target> ᏑT, tokenꓸPos pos, ж<operand> Ꮡx, ж<typeparams.IndexExpr> Ꮡix, bool infer) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var T = ref ᏑT.DerefOrNil();
-    ref var x = ref Ꮡx.Value;
-    ref var ix = ref Ꮡix.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var ix = ref Ꮡix.DerefOrNull();
 
     assert(ᏑT != nil || Ꮡix != nil);
     positioner instErrPos = default!;
@@ -141,17 +141,17 @@ internal static readonly @string sUnderSˢ = "=> %s (under = %s)"u8;
 internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ast.Expr expr, ж<ΔSignature> Ꮡtyp, slice<ΔType> targs, slice<ast.Expr> xlist) {
     ж<ΔSignature> res = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var typ = ref Ꮡtyp.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
         assert(Ꮡcheck != nil);
         assert(len(targs) == typ.TypeParams().Len());
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(pos, instantiatingSignatureSˢ, Ꮡtyp, targs);
+            Ꮡcheck.trace(pos, instantiatingSignatureSˢ, Ꮡtyp.OrTypedNil(), targs);
             check.indent++;
             defer(() => {
                 Ꮡcheck.Value.indent--;
-                Ꮡcheck.trace(pos, sUnderSˢ, res, res.Underlying());
+                Ꮡcheck.trace(pos, sUnderSˢ, res.OrTypedNil(), res.Underlying());
             });
         }
         var inst = Ꮡcheck.instance(pos, new ΔSignatureжΔgenericType(Ꮡtyp), targs, nil, check.context())._<ж<ΔSignature>>();
@@ -191,9 +191,9 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
 }
 
 internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.CallExpr> Ꮡcall) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var call = ref Ꮡcall.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     var ix = typeparams.UnpackIndexExpr(call.Fun);
     if (ix != nil){
@@ -281,7 +281,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
     // a type parameter may be "called" if all types have the same signature
     var (sig, _) = coreType(x.typ)._<ж<ΔSignature>>(ᐧ);
     if (sig == nil) {
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidCall, invalidOp + "cannot call non-function %s", Ꮡx);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidCall, invalidOp + "cannot call non-function %s", Ꮡx.OrTypedNil());
         x.mode = invalid;
         x.expr = new ast_CallExprжExpr(Ꮡcall);
         return statement;
@@ -398,7 +398,7 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
     slice<slice<ΔType>> targsList = default!;
     slice<slice<ast.Expr>> xlistList = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
         if (debug) {
             defer(() => {
@@ -513,9 +513,9 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
 internal static ж<ΔSignature> /*rsig*/ arguments(this ж<Checker> Ꮡcheck, ж<ast.CallExpr> Ꮡcall, ж<ΔSignature> Ꮡsig, slice<ΔType> targs, slice<ast.Expr> xlist, slice<ж<operand>> args, slice<slice<ΔType>> atargs, slice<slice<ast.Expr>> atxlist) {
     ж<ΔSignature> rsig = default!;
 
-    ref var check = ref Ꮡcheck.Value;
-    ref var call = ref Ꮡcall.Value;
-    ref var sig = ref Ꮡsig.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var call = ref Ꮡcall.DerefOrNull();
+    ref var sig = ref Ꮡsig.DerefOrNull();
     rsig = Ꮡsig;
     // Function call argument/parameter count requirements
     //
@@ -742,10 +742,10 @@ internal static readonly @string illegalCycleInMethodˢ = "illegal cycle in meth
 internal static readonly @string vSVSˢ = "%v: (%s).%v -> %s"u8;
 
 internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SelectorExpr> Ꮡe, ж<TypeName> Ꮡdef, bool wantType) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var e = ref Ꮡe.Value;
-    ref var def = ref Ꮡdef.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var def = ref Ꮡdef.DerefOrNull();
 
     // these must be declared before the "goto Error" statements
     Object obj = default!;
@@ -867,7 +867,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
     }
     else if (exprᴛ1 == Δbuiltinᴛ) {
         Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), // types2 uses the position of '.' for the error
- UncalledBuiltin, "cannot select on %s"u8, Ꮡx);
+ UncalledBuiltin, "cannot select on %s"u8, Ꮡx.OrTypedNil());
         goto ΔError;
     }
     else if (exprᴛ1 == invalid) {
@@ -1023,8 +1023,8 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                 var mset = NewMethodSet(typ);
                 {
                     var m = mset.Lookup(check.pkg, sel); if (m == nil || !AreEqual((~m).obj, objΔ2)) {
-                        Ꮡcheck.dump(vSVSˢ, e.Pos(), typ, (~objΔ2).name, m);
-                        Ꮡcheck.dump("%s\n"u8, mset);
+                        Ꮡcheck.dump(vSVSˢ, e.Pos(), typ, (~objΔ2).name, m.OrTypedNil());
+                        Ꮡcheck.dump("%s\n"u8, mset.OrTypedNil());
                         // Caution: MethodSets are supposed to be used externally
                         // only (after all interface types were completed). It's
                         // now possible that we get here incorrectly. Not urgent
@@ -1088,7 +1088,7 @@ internal static bool useN(this ж<Checker> Ꮡcheck, slice<ast.Expr> args, bool 
 }
 
 internal static bool use1(this ж<Checker> Ꮡcheck, ast.Expr e, bool lhs) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     ref var x = ref heap(new operand(), out var Ꮡx);
     x.mode = value;

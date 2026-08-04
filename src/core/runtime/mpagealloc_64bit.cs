@@ -91,7 +91,7 @@ internal static readonly @string sysGrowBoundsNotAlignedˢ = "sysGrow bounds not
 //
 // The caller must update p.start and p.end after calling sysGrow.
 internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr limit) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
         print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
@@ -100,14 +100,14 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
     // addrRangeToSummaryRange converts a range of addresses into a range
     // of summary indices which must be mapped to support those addresses
     // in the summary range.
-    var addrRangeToSummaryRange = (nint level, addrRange r) => {
+    (nint, nint) addrRangeToSummaryRange(nint level, addrRange r) {
         var (sumIdxBase, sumIdxLimit) = addrsToSummaryRange(level, r.@base.addr(), r.limit.addr());
         return blockAlignSummaryRange(level, sumIdxBase, sumIdxLimit);
-    };
+    }
     // summaryRangeToSumAddrRange converts a range of indices in any
     // level of p.summary into page-aligned addresses which cover that
     // range of indices.
-    var summaryRangeToSumAddrRange = (nint level, nint sumIdxBase, nint sumIdxLimit) => {
+    addrRange summaryRangeToSumAddrRange(nint level, nint sumIdxBase, nint sumIdxLimit) {
         var baseOffset = alignDown((uintptr)sumIdxBase * pallocSumBytes, physPageSize);
         var limitOffset = alignUp((uintptr)sumIdxLimit * pallocSumBytes, physPageSize);
         @unsafe.Pointer baseΔ1 = new @unsafe.Pointer(Ꮡ(Ꮡp.Value.summary[level], 0));
@@ -115,16 +115,16 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
             new offAddr((uintptr)(uintptr)add(baseΔ1, baseOffset)),
             new offAddr((uintptr)(uintptr)add(baseΔ1, limitOffset))
         );
-    };
+    }
     // addrRangeToSumAddrRange is a convenience function that converts
     // an address range r to the address range of the given summary level
     // that stores the summaries for r.
     var addrRangeToSummaryRangeʗ1 = addrRangeToSummaryRange;
     var summaryRangeToSumAddrRangeʗ1 = summaryRangeToSumAddrRange;
-    var addrRangeToSumAddrRange = (nint level, addrRange r) => {
+    addrRange addrRangeToSumAddrRange(nint level, addrRange r) {
         var (sumIdxBase, sumIdxLimit) = addrRangeToSummaryRangeʗ1(level, r);
         return summaryRangeToSumAddrRangeʗ1(level, sumIdxBase, sumIdxLimit);
-    };
+    }
     // Find the first inUse index which is strictly greater than base.
     //
     // Because this function will never be asked remap the same memory
@@ -176,7 +176,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
 //
 // Returns the amount of memory added to sysStat.
 internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uintptr limit, ж<sysMemStat> ᏑsysStat) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
         print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);

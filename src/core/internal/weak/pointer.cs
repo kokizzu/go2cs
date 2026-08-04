@@ -55,15 +55,15 @@ partial class weak_package {
 
 // Make creates a weak pointer from a strong pointer to some value of type T.
 public static Pointer<T> Make<T>(ж<T> Ꮡptr) {
-    ref var ptr = ref Ꮡptr.DerefOrNil();
+    ref var ptr = ref Ꮡptr.DerefOrNull();
 
     // Explicitly force ptr to escape to the heap.
-    Ꮡptr = abi.Escape(Ꮡptr); ptr = ref Ꮡptr.DerefOrNil();
+    Ꮡptr = abi.Escape(Ꮡptr); ptr = ref Ꮡptr.DerefOrNull();
     @unsafe.Pointer u = default!;
     if (Ꮡptr != nil) {
         u = (uintptr)runtime_registerWeakPointer(new @unsafe.Pointer(Ꮡptr));
     }
-    Δruntime.KeepAlive(Ꮡptr);
+    Δruntime.KeepAlive(Ꮡptr.OrTypedNil());
     return new Pointer<T>(u.Value);
 }
 

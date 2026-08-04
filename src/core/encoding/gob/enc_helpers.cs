@@ -55,7 +55,7 @@ internal static bool encBoolArray(ж<encoderState> Ꮡstate, reflectꓸValue v) 
 }
 
 internal static bool encBoolSlice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<bool>>(ᐧ);
     if (!ok) {
@@ -83,7 +83,7 @@ internal static bool encComplex64Array(ж<encoderState> Ꮡstate, reflectꓸValu
 }
 
 internal static bool encComplex64Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<complex64>>(ᐧ);
     if (!ok) {
@@ -110,7 +110,7 @@ internal static bool encComplex128Array(ж<encoderState> Ꮡstate, reflectꓸVal
 }
 
 internal static bool encComplex128Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<complex128>>(ᐧ);
     if (!ok) {
@@ -137,7 +137,7 @@ internal static bool encFloat32Array(ж<encoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool encFloat32Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<float32>>(ᐧ);
     if (!ok) {
@@ -162,7 +162,7 @@ internal static bool encFloat64Array(ж<encoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool encFloat64Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<float64>>(ᐧ);
     if (!ok) {
@@ -187,7 +187,7 @@ internal static bool encIntArray(ж<encoderState> Ꮡstate, reflectꓸValue v) {
 }
 
 internal static bool encIntSlice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<nint>>(ᐧ);
     if (!ok) {
@@ -211,7 +211,7 @@ internal static bool encInt16Array(ж<encoderState> Ꮡstate, reflectꓸValue v)
 }
 
 internal static bool encInt16Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<int16>>(ᐧ);
     if (!ok) {
@@ -235,7 +235,7 @@ internal static bool encInt32Array(ж<encoderState> Ꮡstate, reflectꓸValue v)
 }
 
 internal static bool encInt32Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<int32>>(ᐧ);
     if (!ok) {
@@ -259,7 +259,7 @@ internal static bool encInt64Array(ж<encoderState> Ꮡstate, reflectꓸValue v)
 }
 
 internal static bool encInt64Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<int64>>(ᐧ);
     if (!ok) {
@@ -283,7 +283,7 @@ internal static bool encInt8Array(ж<encoderState> Ꮡstate, reflectꓸValue v) 
 }
 
 internal static bool encInt8Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<int8>>(ᐧ);
     if (!ok) {
@@ -307,7 +307,7 @@ internal static bool encStringArray(ж<encoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool encStringSlice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<@string>>(ᐧ);
     if (!ok) {
@@ -332,7 +332,7 @@ internal static bool encUintArray(ж<encoderState> Ꮡstate, reflectꓸValue v) 
 }
 
 internal static bool encUintSlice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<nuint>>(ᐧ);
     if (!ok) {
@@ -356,7 +356,7 @@ internal static bool encUint16Array(ж<encoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool encUint16Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<uint16>>(ᐧ);
     if (!ok) {
@@ -380,7 +380,7 @@ internal static bool encUint32Array(ж<encoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool encUint32Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<uint32>>(ᐧ);
     if (!ok) {
@@ -404,7 +404,7 @@ internal static bool encUint64Array(ж<encoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool encUint64Slice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<uint64>>(ᐧ);
     if (!ok) {
@@ -428,7 +428,7 @@ internal static bool encUintptrArray(ж<encoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool encUintptrSlice(ж<encoderState> Ꮡstate, reflectꓸValue v) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     var (Δslice, ok) = v.Interface()._<slice<uintptr>>(ᐧ);
     if (!ok) {

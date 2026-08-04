@@ -11,8 +11,8 @@ using @internal;
 partial class runtime_package {
 
 internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
@@ -66,8 +66,8 @@ internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡ
 //
 //go:linkname mapaccess2_fast32
 internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
@@ -123,8 +123,8 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<h
 //
 //go:linkname mapassign_fast32
 internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (Ꮡh == nil) {
@@ -221,8 +221,8 @@ done:
 //
 //go:linkname mapassign_fast32ptr
 internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer keyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (Ꮡh == nil) {
@@ -310,8 +310,8 @@ done:
 }
 
 internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
@@ -403,7 +403,7 @@ break_search:;
 }
 
 internal static void growWork_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // make sure we evacuate the oldbucket corresponding
     // to the bucket we're about to use
@@ -415,8 +415,8 @@ internal static void growWork_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bu
 }
 
 internal static void evacuate_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket) {
-    ref var t = ref Ꮡt.Value;
-    ref var h = ref Ꮡh.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, oldbucket * (uintptr)t.BucketSize));
     var newbit = h.noldbuckets();

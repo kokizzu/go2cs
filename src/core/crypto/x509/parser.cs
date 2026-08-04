@@ -193,7 +193,7 @@ internal static readonly @string x509Malformedˢ = "x509: malformed GeneralizedT
 internal static readonly @string x509UnsupportedTimeˢ = "x509: unsupported time format"u8;
 
 internal static (time.Time, error) parseTime(ж<cryptobyte.String> Ꮡder) {
-    ref var der = ref Ꮡder.ValueSlot;
+    ref var der = ref Ꮡder.DerefOrNull();
 
     ref var t = ref heap(new time.Time(), out var Ꮡt);
     switch (ᐧ) {
@@ -272,7 +272,7 @@ internal static readonly @string x509ZeroOrNegativeDsaˢ = "x509: zero or negati
 internal static readonly @string x509UnknownPublicKeyˢ = "x509: unknown public key algorithm"u8;
 
 internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
-    ref var keyData = ref ᏑkeyData.Value;
+    ref var keyData = ref ᏑkeyData.DerefOrNull();
 
     var oid = keyData.Algorithm.Algorithm;
     var @params = keyData.Algorithm.Parameters;
@@ -289,7 +289,7 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
         if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
             return (default!, errors.New(x509InvalidRsaPublicKeyˢ));
         }
-        if (!der.ReadASN1Integer((~p).N)) {
+        if (!der.ReadASN1Integer((~p).N.OrTypedNil())) {
             return (default!, errors.New(x509InvalidRsaModulusˢ));
         }
         if (!der.ReadASN1Integer(p.of(pkcs1PublicKey.ᏑE))) {
@@ -305,7 +305,7 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
             E: (~p).E,
             N: (~p).N
         ));
-        return (pub, default!);
+        return (pub.OrTypedNil(), default!);
     }
     case {} when oid.Equal(oidPublicKeyECDSA): {
         var paramsDer = ((cryptobyte.String)@params.FullBytes);
@@ -326,7 +326,7 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
             X: x,
             Y: y
         ));
-        return (pub, default!);
+        return (pub.OrTypedNil(), default!);
     }
     case {} when oid.Equal(oidPublicKeyEd25519): {
         if (builtin.len(@params.FullBytes) != 0) {
@@ -350,7 +350,7 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
     }
     case {} when oid.Equal(oidPublicKeyDSA): {
         var y = @new<bigꓸInt>();
-        if (!der.ReadASN1Integer(y)) {
+        if (!der.ReadASN1Integer(y.OrTypedNil())) {
             return (default!, errors.New(x509InvalidDsaPublicKeyˢ));
         }
         var pub = Ꮡ(new dsa.PublicKey(
@@ -363,13 +363,13 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
         ));
         ref var paramsDer = ref heap<cryptobyte.String>(out var ᏑparamsDer);
         paramsDer = ((cryptobyte.String)@params.FullBytes);
-        if (!paramsDer.ReadASN1(ᏑparamsDer, cryptobyte_asn1.SEQUENCE) || !paramsDer.ReadASN1Integer((~pub).Parameters.P) || !paramsDer.ReadASN1Integer((~pub).Parameters.Q) || !paramsDer.ReadASN1Integer((~pub).Parameters.G)) {
+        if (!paramsDer.ReadASN1(ᏑparamsDer, cryptobyte_asn1.SEQUENCE) || !paramsDer.ReadASN1Integer((~pub).Parameters.P.OrTypedNil()) || !paramsDer.ReadASN1Integer((~pub).Parameters.Q.OrTypedNil()) || !paramsDer.ReadASN1Integer((~pub).Parameters.G.OrTypedNil())) {
             return (default!, errors.New(x509InvalidDsaParametersˢ));
         }
         if ((~pub).Y.Sign() <= 0 || (~pub).Parameters.P.Sign() <= 0 || (~pub).Parameters.Q.Sign() <= 0 || (~pub).Parameters.G.Sign() <= 0) {
             return (default!, errors.New(x509ZeroOrNegativeDsaˢ));
         }
-        return (pub, default!);
+        return (pub.OrTypedNil(), default!);
     }
     default: {
         return (default!, errors.New(x509UnknownPublicKeyˢ));
@@ -623,7 +623,7 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Cer
     bool unhandled = default!;
     error err = default!;
 
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
     // RFC 5280, 4.2.1.10
     // NameConstraints ::= SEQUENCE {
     //      permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
@@ -653,7 +653,7 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Cer
         //   present”
         return (false, errors.New(x509EmptyNameConstraintsˢ));
     }
-    var getValues = (slice<@string> dnsNames, slice<ж<net.IPNet>> ips, slice<@string> emails, slice<@string> uriDomains, error err) (cryptobyte.String subtrees) => {
+    (slice<@string> dnsNames, slice<ж<net.IPNet>> ips, slice<@string> emails, slice<@string> uriDomains, error err) getValues(cryptobyte.String subtrees) {
         slice<@string> dnsNames = default!;
         slice<ж<net.IPNet>> ips = default!;
         slice<@string> emails = default!;
@@ -777,7 +777,7 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Cer
 
         }
         return (dnsNames, ips, emails, uriDomains, default!);
-    };
+    }
     {
         (@out.PermittedDNSDomains, @out.PermittedIPRanges, @out.PermittedEmailAddresses, @out.PermittedURIDomains, err) = getValues(permitted); if (err != default!) {
             return (false, err);
@@ -801,7 +801,7 @@ internal static readonly @string x509AuthorityInfoAccessˢ = "x509: authority in
 internal static readonly @string x509InvalidAuthorityInfoˢ = "x509: invalid authority info access"u8;
 
 internal static error processExtensions(ж<Certificate> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     error err = default!;
     foreach (var (_, e) in @out.Extensions) {
@@ -1046,7 +1046,7 @@ internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
         return (default!, errors.New(x509InvalidVersionˢ));
     }
     var serial = @new<bigꓸInt>();
-    if (!tbs.ReadASN1Integer(serial)) {
+    if (!tbs.ReadASN1Integer(serial.OrTypedNil())) {
         return (default!, errors.New(x509MalformedSerialˢ));
     }
     if (serial.Sign() == -1) {
@@ -1325,7 +1325,7 @@ public static (ж<RevocationList>, error) ParseRevocationList(slice<byte> der) {
                 return (default!, errors.New(x509MalformedCrlˢ));
             }
             rce.SerialNumber = @new<bigꓸInt>();
-            if (!certSeq.ReadASN1Integer(rce.SerialNumber)) {
+            if (!certSeq.ReadASN1Integer(rce.SerialNumber.OrTypedNil())) {
                 return (default!, errors.New(x509MalformedSerialˢ));
             }
             (rce.RevocationTime, err) = parseTime(ᏑcertSeq);
@@ -1392,7 +1392,7 @@ public static (ж<RevocationList>, error) ParseRevocationList(slice<byte> der) {
             if (ext.Id.Equal(oidExtensionCRLNumber)) {
                 var value = ((cryptobyte.String)ext.Value);
                 rl.Value.Number = @new<bigꓸInt>();
-                if (!value.ReadASN1Integer((~rl).Number)) {
+                if (!value.ReadASN1Integer((~rl).Number.OrTypedNil())) {
                     return (default!, errors.New(x509MalformedCrlNumberˢ));
                 }
             }

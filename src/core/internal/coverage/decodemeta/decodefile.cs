@@ -45,8 +45,6 @@ partial class decodemeta_package {
 // will read the contents of the file using regular file Read
 // operations.
 public static (ж<CoverageMetaFileReader>, error) NewCoverageMetaFileReader(ж<os.File> Ꮡf, slice<byte> fileView) {
-    ref var f = ref Ꮡf.Value;
-
     var r = Ꮡ(new CoverageMetaFileReader(
         f: Ꮡf,
         fileView: fileView,
@@ -61,13 +59,13 @@ public static (ж<CoverageMetaFileReader>, error) NewCoverageMetaFileReader(ж<o
 }
 
 internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     error err = default!;
     r.fileRdr = bufio.NewReader(new os_FileжReader(r.f));
     // Read file header.
     {
-        var errΔ1 = binary.Read(new bufio_ReaderжReader(r.fileRdr), new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡr.of(CoverageMetaFileReader.Ꮡhdr)); if (errΔ1 != default!) {
+        var errΔ1 = binary.Read(new bufio_ReaderжReader(r.fileRdr), binary.LittleEndian, Ꮡr.of(CoverageMetaFileReader.Ꮡhdr)); if (errΔ1 != default!) {
             return errΔ1;
         }
     }

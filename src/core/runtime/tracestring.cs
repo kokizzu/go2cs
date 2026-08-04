@@ -53,7 +53,7 @@ internal static uint64 emit(this ж<traceStringTable> Ꮡt, uintptr gen, @string
 //
 //go:systemstack
 internal static void writeString(this ж<traceStringTable> Ꮡt, uintptr gen, uint64 id, @string s) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Truncate the string if necessary.
     if (len(s) > maxTraceStringLen) {
@@ -84,7 +84,7 @@ internal static void writeString(this ж<traceStringTable> Ꮡt, uintptr gen, ui
 // Must be called only once the caller is certain nothing else will be
 // added to this table.
 internal static void reset(this ж<traceStringTable> Ꮡt, uintptr gen) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.buf != nil) {
         systemstack(() => {

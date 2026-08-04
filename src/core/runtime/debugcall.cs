@@ -48,8 +48,7 @@ internal static @string debugCallCheck(uintptr pc) {
     // stack.
     @string ret = default!;
     systemstack(() => {
-        ref var f = ref heap<ΔfuncInfo>(out var Ꮡf);
-        f = findfunc(pc);
+        var f = findfunc(pc);
         if (!f.valid()) {
             ret = debugCallUnknownFunc;
             return;
@@ -154,8 +153,7 @@ internal static void debugCallWrap(uintptr dispatch) {
         var newg = (~gpΔ1).schedlink.ptr();
         gpΔ1.Value.schedlink = 0;
         // Park the calling goroutine.
-        ref var Δtrace = ref heap<traceLocker>(out var Ꮡtrace);
-        Δtrace = traceAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             // Trace the event before the transition. It may take a
             // stack trace, but we won't own the stack after the
@@ -212,8 +210,7 @@ internal static void debugCallWrap1() {
         // Switch back to the calling goroutine. At some point
         // the scheduler will schedule us again and we'll
         // finish exiting.
-        ref var Δtrace = ref heap<traceLocker>(out var Ꮡtrace);
-        Δtrace = traceAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             // Trace the event before the transition. It may take a
             // stack trace, but we won't own the stack after the

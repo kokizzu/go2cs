@@ -84,9 +84,9 @@ internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle rʗp
 // destination image's coordinate space) and shifts the points sp and mp by
 // the same amount as the change in r.Min.
 internal static void clip(Image dst, ж<image.Rectangle> Ꮡr, image.Image src, ж<image.Point> Ꮡsp, image.Image mask, ж<image.Point> Ꮡmp) {
-    ref var r = ref Ꮡr.Value;
-    ref var sp = ref Ꮡsp.Value;
-    ref var mp = ref Ꮡmp.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var sp = ref Ꮡsp.DerefOrNull();
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     var orig = r.Min;
     r = r.Intersect(dst.Bounds());
@@ -443,7 +443,7 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
 }
 
 internal static void drawFillOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, uint32 sr, uint32 sg, uint32 sb, uint32 sa) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     // The 0x101 is here for the same reason as in drawRGBA.
     var a = ((uint32)m - sa) * 0x101;
@@ -466,7 +466,7 @@ internal static void drawFillOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ui
 }
 
 internal static void drawFillSrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, uint32 sr, uint32 sg, uint32 sb, uint32 sa) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     var sr8 = (uint8)((sr >> (int)(8)));
     var sg8 = (uint8)((sg >> (int)(8)));
@@ -492,8 +492,8 @@ internal static void drawFillSrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, uin
 }
 
 internal static void drawCopyOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<imageꓸRGBA> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint dx = r.Dx();
     nint dy = r.Dy();
@@ -569,8 +569,8 @@ internal static void drawCopySrc(slice<byte> dstPix, nint dstStride, image.Recta
 }
 
 internal static void drawNRGBAOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.NRGBA> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
@@ -606,8 +606,8 @@ internal static void drawNRGBAOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, �
 }
 
 internal static void drawNRGBASrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.NRGBA> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
@@ -637,8 +637,8 @@ internal static void drawNRGBASrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж
 }
 
 internal static void drawGray(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.Gray> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
@@ -662,8 +662,8 @@ internal static void drawGray(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<ima
 }
 
 internal static void drawCMYK(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.CMYK> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
@@ -685,9 +685,9 @@ internal static void drawCMYK(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<ima
 }
 
 internal static void drawGlyphOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.Uniform> Ꮡsrc, ж<image.Alpha> Ꮡmask, image.Point mp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
-    ref var mask = ref Ꮡmask.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
+    ref var mask = ref Ꮡmask.DerefOrNull();
 
     nint i0 = dst.PixOffset(r.Min.X, r.Min.Y);
     nint i1 = i0 + r.Dx() * 4;
@@ -716,9 +716,9 @@ internal static void drawGlyphOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, �
 }
 
 internal static void drawGrayMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.Gray> Ꮡsrc, image.Point sp, ж<image.Alpha> Ꮡmask, image.Point mp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
-    ref var mask = ref Ꮡmask.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
+    ref var mask = ref Ꮡmask.DerefOrNull();
 
     nint x0 = r.Min.X;
     nint x1 = r.Max.X;
@@ -771,9 +771,9 @@ internal static void drawGrayMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r
 }
 
 internal static void drawRGBAMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<imageꓸRGBA> Ꮡsrc, image.Point sp, ж<image.Alpha> Ꮡmask, image.Point mp) {
-    ref var dst = ref Ꮡdst.DerefOrNil();
-    ref var src = ref Ꮡsrc.DerefOrNil();
-    ref var mask = ref Ꮡmask.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
+    ref var mask = ref Ꮡmask.DerefOrNull();
 
     nint x0 = r.Min.X;
     nint x1 = r.Max.X;
@@ -831,8 +831,8 @@ internal static void drawRGBAMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r
 }
 
 internal static void drawRGBA64ImageMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, image.RGBA64Image src, image.Point sp, ж<image.Alpha> Ꮡmask, image.Point mp) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var mask = ref Ꮡmask.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var mask = ref Ꮡmask.DerefOrNull();
 
     nint x0 = r.Min.X;
     nint x1 = r.Max.X;
@@ -840,7 +840,7 @@ internal static void drawRGBA64ImageMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rect
     nint y0 = r.Min.Y;
     nint y1 = r.Max.Y;
     nint dy = 1;
-    if (AreEqual(((image.Image)new image_ΔRGBAжImage(Ꮡdst)), src) && r.Overlaps(r.Add(sp.Sub(r.Min)))) {
+    if (AreEqual(((image.Image)new image.ΔRGBAжImage(Ꮡdst)), src) && r.Overlaps(r.Add(sp.Sub(r.Min)))) {
         if (sp.Y < r.Min.Y || sp.Y == r.Min.Y && sp.X < r.Min.X) {
             (x0, x1, dx) = (x1 - 1, x0 - 1, -1);
             (y0, y1, dy) = (y1 - 1, y0 - 1, -1);
@@ -882,7 +882,7 @@ internal static void drawRGBA64ImageMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rect
 }
 
 internal static void drawRGBA(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, image.Image src, image.Point sp, image.Image mask, image.Point mp, Op op) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     nint x0 = r.Min.X;
     nint x1 = r.Max.X;
@@ -890,7 +890,7 @@ internal static void drawRGBA(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, image.
     nint y0 = r.Min.Y;
     nint y1 = r.Max.Y;
     nint dy = 1;
-    if (AreEqual(((image.Image)new image_ΔRGBAжImage(Ꮡdst)), src) && r.Overlaps(r.Add(sp.Sub(r.Min)))) {
+    if (AreEqual(((image.Image)new image.ΔRGBAжImage(Ꮡdst)), src) && r.Overlaps(r.Add(sp.Sub(r.Min)))) {
         if (sp.Y < r.Min.Y || sp.Y == r.Min.Y && sp.X < r.Min.X) {
             (x0, x1, dx) = (x1 - 1, x0 - 1, -1);
             (y0, y1, dy) = (y1 - 1, y0 - 1, -1);

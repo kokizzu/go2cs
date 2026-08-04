@@ -138,8 +138,6 @@ internal static slice<Node> nodeList(Node n) {
 // trailing an assignment, the comment is associated with the entire
 // assignment rather than just the last operand in the assignment.
 public static CommentMap NewCommentMap(ж<token.FileSet> Ꮡfset, Node node, slice<ж<CommentGroup>> comments) {
-    ref var fset = ref Ꮡfset.Value;
-
     if (len(comments) == 0) {
         return default!;
     }

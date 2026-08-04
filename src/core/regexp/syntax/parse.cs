@@ -137,7 +137,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
 }
 
 [GoRecv] internal static void reuse(this ref parser p, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (p.height != default!) {
         delete(p.height, Ꮡre);
@@ -155,7 +155,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
 }
 
 [GoRecv] internal static void checkSize(this ref parser p, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (p.size == default!) {
         // We haven't started tracking size yet.
@@ -197,7 +197,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
 }
 
 [GoRecv] internal static int64 calcSize(this ref parser p, ж<Regexp> Ꮡre, bool force) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (!force) {
         {
@@ -270,7 +270,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
 }
 
 [GoRecv] internal static nint calcHeight(this ref parser p, ж<Regexp> Ꮡre, bool force) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (!force) {
         {
@@ -294,7 +294,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
 
 // push pushes the regexp re onto the parse stack and returns the regexp.
 [GoRecv] internal static ж<Regexp> push(this ref parser p, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     p.numRunes += len(re.Rune);
     if (re.Op == OpCharClass && len(re.Rune) == 2 && re.Rune[0] == re.Rune[1]){
@@ -442,7 +442,7 @@ internal static rune minFoldRune(rune r) {
 // In that case the depth of any >= 2 nesting can only get to 9 without
 // triggering a parse error, so each subtree can only be rewalked 9 times.
 internal static bool repeatIsValid(ж<Regexp> Ꮡre, nint n) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (re.Op == OpRepeat) {
         nint m = re.Max;
@@ -509,7 +509,7 @@ internal static bool repeatIsValid(ж<Regexp> Ꮡre, nint n) {
 
 // cleanAlt cleans re for eventual inclusion in an alternation.
 internal static void cleanAlt(ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpCharClass) {
@@ -757,10 +757,10 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
 // leadingString returns the leading literal string that re begins with.
 // The string refers to storage in re or its children.
 [GoRecv] internal static (slice<rune>, Flags) leadingString(this ref parser p, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (re.Op == OpConcat && len(re.Sub) > 0) {
-        Ꮡre = re.Sub[0]; re = ref Ꮡre.Value;
+        Ꮡre = re.Sub[0]; re = ref Ꮡre.DerefOrNull();
     }
     if (re.Op != OpLiteral) {
         return (default!, 0);
@@ -771,7 +771,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
 // removeLeadingString removes the first n leading runes
 // from the beginning of re. It returns the replacement for re.
 [GoRecv] internal static ж<Regexp> removeLeadingString(this ref parser p, ж<Regexp> Ꮡre, nint n) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (re.Op == OpConcat && len(re.Sub) > 0) {
         // Removing a leading string in a concatenation
@@ -789,7 +789,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
             }
             case 2: {
                 var old = Ꮡre;
-                Ꮡre = re.Sub[1]; re = ref Ꮡre.Value;
+                Ꮡre = re.Sub[1]; re = ref Ꮡre.DerefOrNull();
                 p.reuse(old);
                 break;
             }
@@ -815,7 +815,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
 // leadingRegexp returns the leading regexp that re begins with.
 // The regexp refers to storage in re or its children.
 [GoRecv] internal static ж<Regexp> leadingRegexp(this ref parser p, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (re.Op == OpEmptyMatch) {
         return default!;
@@ -834,7 +834,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
 // It returns the replacement for re.
 // If reuse is true, it passes the removed regexp (if no longer needed) to p.reuse.
 [GoRecv] internal static ж<Regexp> removeLeadingRegexp(this ref parser p, ж<Regexp> Ꮡre, bool reuse) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (re.Op == OpConcat && len(re.Sub) > 0) {
         if (reuse) {
@@ -849,7 +849,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
         }
         case 1: {
             var old = Ꮡre;
-            Ꮡre = re.Sub[0]; re = ref Ꮡre.Value;
+            Ꮡre = re.Sub[0]; re = ref Ꮡre.DerefOrNull();
             p.reuse(old);
             break;
         }}
@@ -1395,14 +1395,14 @@ internal static bool isValidCaptureName(@string name) {
 // can this be represented as a character class?
 // single-rune literal string, char class, ., and .|\n.
 internal static bool isCharClass(ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     return re.Op == OpLiteral && len(re.Rune) == 1 || re.Op == OpCharClass || re.Op == OpAnyCharNotNL || re.Op == OpAnyChar;
 }
 
 // does re match r?
 internal static bool matchRune(ж<Regexp> Ꮡre, rune r) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
@@ -1442,8 +1442,8 @@ internal static bool matchRune(ж<Regexp> Ꮡre, rune r) {
 // The caller must ensure that dst.Op >= src.Op,
 // to reduce the amount of copying.
 internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     var exprᴛ1 = dst.Op;
     if (exprᴛ1 == OpAnyChar) {
@@ -1580,8 +1580,8 @@ Switch:
                 // Single non-zero digit is a backreference; not supported
                 break;
             }
+            fallthrough = true;
         } while (false);
-        fallthrough = true;
     }
     if (fallthrough || !matchᴛ1 && exprᴛ1 is (rune)'0') { matchᴛ1 = true;
         r = c - (rune)'0';
@@ -1715,7 +1715,7 @@ internal static (slice<rune> @out, @string rest) parsePerlClassEscape(this ж<pa
     slice<rune> @out = default!;
     @string rest = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     if ((Flags)(p.flags & PerlX) == 0 || len(s) < 2 || s[0] != (rune)'\\') {
         return (@out, rest);
     }
@@ -1753,7 +1753,7 @@ internal static (slice<rune> @out, @string rest, error err) parseNamedClass(this
 }
 
 internal static slice<rune> appendGroup(this ж<parser> Ꮡp, slice<rune> r, charGroup g) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if ((Flags)(p.flags & FoldCase) == 0){
         if (g.sign < 0){
@@ -1808,7 +1808,7 @@ internal static (slice<rune> @out, @string rest, error err) parseUnicodeClass(th
     @string rest = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     if ((Flags)(p.flags & UnicodeGroups) == 0 || len(s) < 2 || s[0] != (rune)'\\' || s[1] != (rune)'p' && s[1] != (rune)'P') {
         return (@out, rest, err);
     }
@@ -1886,7 +1886,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
     @string rest = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     @string t = s[1..];
     // chop [
     var re = p.newRegexp(OpCharClass);
@@ -1986,7 +1986,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
 // cleanClass sorts the ranges (pairs of elements of r),
 // merges them, and eliminates duplicates.
 internal static slice<rune> cleanClass(ж<slice<rune>> Ꮡrp) {
-    ref var rp = ref Ꮡrp.ValueSlot;
+    ref var rp = ref Ꮡrp.DerefOrNull();
 
     // Sort by lo increasing, hi decreasing to break ties.
     sort.Sort(new ranges(Ꮡrp));
@@ -2137,7 +2137,7 @@ internal static slice<rune> appendNegatedClass(slice<rune> r, slice<rune> x) {
 
 // appendTable returns the result of appending x to the class r.
 internal static slice<rune> appendTable(slice<rune> r, ж<unicode.RangeTable> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     foreach (var (_, xr) in x.R16) {
         var (lo, hi, stride) = ((rune)xr.Lo, (rune)xr.Hi, (rune)xr.Stride);
@@ -2164,7 +2164,7 @@ internal static slice<rune> appendTable(slice<rune> r, ж<unicode.RangeTable> �
 
 // appendNegatedTable returns the result of appending the negation of x to the class r.
 internal static slice<rune> appendNegatedTable(slice<rune> r, ж<unicode.RangeTable> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var nextLo = (rune)'\u0000';
     // lo end of next class to add

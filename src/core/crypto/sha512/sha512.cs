@@ -272,7 +272,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     nint nn = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     if (d.function != crypto.SHA512_224 && d.function != crypto.SHA512_256) {
         boring.Unreachable();
     }
@@ -323,7 +323,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 }
 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Padding. Add a 1 bit and 0 bits until 112 bytes mod 128.
     var len = d.len;

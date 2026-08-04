@@ -17,8 +17,8 @@ internal static ref sync.Once p224GGOnce => ref Ꮡp224GGOnce.Value;
 
 // p224SqrtCandidate sets r to a square root candidate for x. r and x must not overlap.
 internal static void p224SqrtCandidate(ж<fiat.P224Element> Ꮡr, ж<fiat.P224Element> Ꮡx) {
-    ref var r = ref Ꮡr.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // Since p = 1 mod 4, we can't use the exponentiation by (p + 1) / 4 like
     // for the other primes. Instead, implement a variation of Tonelli–Shanks.

@@ -139,7 +139,7 @@ internal static readonly @string methodExprˢ = "method expr "u8;
 //	"method (T) f(X) Y"
 //	"method expr (T) f(X) Y"
 public static @string SelectionString(ж<Selection> Ꮡs, Func<ж<Package>, @string> qf) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @string k = default!;
     var exprᴛ1 = s.kind;

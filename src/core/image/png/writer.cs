@@ -227,7 +227,7 @@ internal static readonly @string idatˢ = "IDAT"u8;
 // Chooses the filter to use for encoding the current row, and applies it.
 // The return value is the index of the filter and also of the row in cr that has had it applied.
 internal static nint filter(ж<array<slice<byte>>> Ꮡcr, slice<byte> pr, nint bpp) {
-    ref var cr = ref Ꮡcr.Value;
+    ref var cr = ref Ꮡcr.DerefOrNull();
 
     // We try all five filter types, and pick the one that minimizes the sum of absolute differences.
     // This is the same heuristic that libpng uses, although the filters are attempted in order of
@@ -314,7 +314,7 @@ internal static nint filter(ж<array<slice<byte>>> Ꮡcr, slice<byte> pr, nint b
 }
 
 internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image m, nint cb, nint level) => func<error>((defer, recover) => {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.zw == nil || e.zwLevel != level){
         var (zw, err) = zlib.NewWriterLevel(w, level);
@@ -579,7 +579,7 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
 
 // Write the actual image data to one or more IDAT chunks.
 internal static void writeIDATs(this ж<encoder> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (e.err != default!) {
         return;
@@ -634,7 +634,7 @@ public static error Encode(io.Writer w, image.Image m) {
 
 // Encode writes the Image m to w in PNG format.
 public static error Encode(this ж<Encoder> Ꮡenc, io.Writer w, image.Image m) => func((defer, recover) => {
-    ref var enc = ref Ꮡenc.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
 
     // Obviously, negative widths and heights are invalid. Furthermore, the PNG
     // spec section 11.2.2 says that zero is invalid. Excessively large images are
@@ -646,13 +646,13 @@ public static error Encode(this ж<Encoder> Ꮡenc, io.Writer w, image.Image m) 
     ж<encoder> e = default!;
     if (enc.BufferPool != default!) {
         var buffer = enc.BufferPool.Get();
-        e = Ꮡ((encoder)(~buffer));
+        e = buffer.Reinterpret<EncoderBuffer, encoder>();
     }
     if (e == nil) {
         e = Ꮡ(new encoder(nil));
     }
     if (enc.BufferPool != default!) {
-        deferǃ(Ꮡenc.Value.BufferPool.Put, Ꮡ((EncoderBuffer)(~e)), defer);
+        deferǃ(Ꮡenc.Value.BufferPool.Put, e.Reinterpret<encoder, EncoderBuffer>(), defer);
     }
     e.Value.enc = Ꮡenc;
     e.Value.w = w;

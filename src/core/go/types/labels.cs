@@ -18,7 +18,7 @@ internal static readonly @string labelSNotDeclaredˢ = "label %s not declared"u8
 
 // labels checks correct label use in body.
 internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody) {
-    ref var body = ref Ꮡbody.Value;
+    ref var body = ref Ꮡbody.DerefOrNull();
 
     // set of all labels in this body
     var all = NewScope(nil, body.Pos(), body.End(), labelˢ);
@@ -67,8 +67,8 @@ internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody
 // insert records a new label declaration for the current block.
 // The label must not have been declared before in any block.
 internal static void insert(this ж<block> Ꮡb, ж<ast.LabeledStmt> Ꮡs) {
-    ref var b = ref Ꮡb.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @string name = s.Label.Value.Name;
     if (debug) {
@@ -112,9 +112,7 @@ internal static ж<ast.LabeledStmt> enclosingTarget(this ж<block> Ꮡb, @string
 // all is the scope of all declared labels, parent the set of labels declared in the immediately
 // enclosing block, and lstmt is the labeled statement this block is associated with (or nil).
 internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡall, ж<block> Ꮡparent, ж<ast.LabeledStmt> Ꮡlstmt, slice<ast.Stmt> list) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var parent = ref Ꮡparent.DerefOrNil();
-    ref var lstmt = ref Ꮡlstmt.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var b = Ꮡ(new block(parent: Ꮡparent, lstmt: Ꮡlstmt));
     tokenꓸPos varDeclPos = default!;
@@ -123,12 +121,12 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
     // All forward jumps jumping over a variable declaration are possibly
     // invalid (they may still jump out of the block and be ok).
     // recordVarDecl records them for the given position.
-    var recordVarDecl = (tokenꓸPos pos) => {
+    void recordVarDecl(tokenꓸPos pos) {
         varDeclPos = pos;
         ᏑbadJumps.ValueSlot = append(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot.ꓸꓸꓸ);
-    };
+    }
     // copy fwdJumps to badJumps
-    var jumpsOverVarDecl = (ж<ast.BranchStmt> jmp) => {
+    bool jumpsOverVarDecl(ж<ast.BranchStmt> jmp) {
         if (varDeclPos.IsValid()) {
             foreach (var (_, bad) in ᏑbadJumps.ValueSlot) {
                 if (jmp == bad) {
@@ -137,13 +135,13 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
             }
         }
         return false;
-    };
+    }
     var bʗ1 = b;
-    var blockBranches = (ж<ast.LabeledStmt> lstmtΔ1, slice<ast.Stmt> listΔ1) => {
+    void blockBranches(ж<ast.LabeledStmt> lstmtΔ1, slice<ast.Stmt> listΔ1) {
         // Unresolved forward jumps inside the nested block
         // become forward jumps in the current block.
         ᏑfwdJumps.ValueSlot = append(ᏑfwdJumps.ValueSlot, Ꮡcheck.blockBranches(Ꮡall, bʗ1, lstmtΔ1, listΔ1).ꓸꓸꓸ);
-    };
+    }
     ref var stmtBranches = ref heap<Action<ast.Stmt>>(out var ᏑstmtBranches);
     var bʗ2 = b;
     var blockBranchesʗ1 = blockBranches;

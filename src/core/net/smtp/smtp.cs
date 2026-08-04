@@ -88,7 +88,7 @@ public static (ж<Client>, error) NewClient(net.Conn conn, @string host) {
 
 // hello runs a hello exchange if needed.
 internal static error hello(this ж<Client> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.didHello) {
         c.didHello = true;
@@ -109,7 +109,7 @@ internal static readonly @string smtpHelloCalledAfterˢ = "smtp: Hello called af
 // automatically otherwise. If Hello is called, it must be called before
 // any of the other methods.
 public static error Hello(this ж<Client> Ꮡc, @string localName) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var err = validateLine(localName); if (err != default!) {
@@ -127,7 +127,7 @@ public static error Hello(this ж<Client> Ꮡc, @string localName) {
 internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) => func<ꓸꓸꓸany, (nint, @string, error)>(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);
     if (err != default!) {
         return (0, "", err);
@@ -144,7 +144,7 @@ internal static readonly @string heloSˢ = "HELO %s"u8;
 // helo sends the HELO greeting to the server. It should be used only when the
 // server does not support ehlo.
 internal static error helo(this ж<Client> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.ext = default!;
     var (_, _, err) = Ꮡc.cmd(250, heloSˢ, c.localName);
@@ -158,7 +158,7 @@ internal static readonly @string authˢ = "AUTH"u8;
 // ehlo sends the EHLO (extended hello) greeting to the server. It
 // should be the preferred greeting for servers that support it.
 internal static error ehlo(this ж<Client> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var (_, msg, err) = Ꮡc.cmd(250, ehloSˢ, c.localName);
     if (err != default!) {
@@ -188,7 +188,7 @@ internal static readonly @string starttlsˢ = "STARTTLS"u8;
 // StartTLS sends the STARTTLS command and encrypts all further communication.
 // Only servers that advertise the STARTTLS extension support this function.
 public static error StartTLS(this ж<Client> Ꮡc, ж<tls.Config> Ꮡconfig) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var errΔ1 = Ꮡc.hello(); if (errΔ1 != default!) {
@@ -245,7 +245,7 @@ public static error Verify(this ж<Client> Ꮡc, @string addr) {
 // A failed authentication closes the connection.
 // Only servers that advertise the AUTH extension support this function.
 public static error Auth(this ж<Client> Ꮡc, ΔAuth a) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var errΔ1 = Ꮡc.hello(); if (errΔ1 != default!) {
@@ -275,7 +275,7 @@ public static error Auth(this ж<Client> Ꮡc, ΔAuth a) {
             break;
         }
         default: {
-            err = new textproto_ΔErrorжerror(Ꮡ(new textprotoꓸError( // the last message isn't base64 because it isn't a challenge
+            err = new textproto.ΔErrorжerror(Ꮡ(new textprotoꓸError( // the last message isn't base64 because it isn't a challenge
 Code: code, Msg: msg64)));
             break;
         }}
@@ -309,7 +309,7 @@ internal static readonly @string smtputf8ˢ = "SMTPUTF8"u8;
 // SMTPUTF8 parameter.
 // This initiates a mail transaction and is followed by one or more [Client.Rcpt] calls.
 public static error Mail(this ж<Client> Ꮡc, @string from) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var errΔ1 = validateLine(from); if (errΔ1 != default!) {
@@ -373,7 +373,7 @@ internal static readonly @string dataˢ = "DATA"u8;
 // close the writer before calling any more methods on c. A call to
 // Data must be preceded by one or more calls to [Client.Rcpt].
 public static (io.WriteCloser, error) Data(this ж<Client> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var (_, _, err) = Ꮡc.cmd(354, dataˢ);
     if (err != default!) {
@@ -488,7 +488,7 @@ public static error SendMail(@string addr, ΔAuth a, @string from, slice<@string
 // Extension also returns a string that contains any parameters the
 // server specifies for the extension.
 public static (bool, @string) Extension(this ж<Client> Ꮡc, @string ext) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var err = Ꮡc.hello(); if (err != default!) {
@@ -538,7 +538,7 @@ internal static readonly @string quitˢ = "QUIT"u8;
 
 // Quit sends the QUIT command and closes the connection to the server.
 public static error Quit(this ж<Client> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var errΔ1 = Ꮡc.hello(); if (errΔ1 != default!) {

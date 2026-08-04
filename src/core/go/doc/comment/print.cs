@@ -57,7 +57,7 @@ partial class comment_package {
 }
 
 [GoRecv] internal static @string headingID(this ref Printer p, ж<Heading> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     if (p.HeadingID == default!) {
         return h.DefaultID();
@@ -66,7 +66,7 @@ partial class comment_package {
 }
 
 [GoRecv] internal static @string docLinkURL(this ref Printer p, ж<DocLink> Ꮡlink) {
-    ref var link = ref Ꮡlink.Value;
+    ref var link = ref Ꮡlink.DerefOrNull();
 
     if (p.DocLinkURL != default!) {
         return p.DocLinkURL(Ꮡlink);
@@ -157,7 +157,7 @@ internal static readonly @string hdrˢ = "hdr-"u8;
 // Comment returns the standard Go formatting of the [Doc],
 // without any comment markers.
 public static slice<byte> Comment(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var cp = Ꮡ(new commentPrinter(Printer: Ꮡp));
     ref var @out = ref heap(new bytes.Buffer(), out var Ꮡout);
@@ -205,7 +205,7 @@ internal static bool blankBefore(Block x) {
 
 // block prints the block x to out.
 [GoRecv] internal static void block(this ref commentPrinter p, ж<bytes.Buffer> Ꮡout, Block x) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     switch (x.type()) {
     default: {
@@ -265,7 +265,7 @@ internal static bool blankBefore(Block x) {
 
 // text prints the text sequence x to out.
 [GoRecv] internal static void text(this ref commentPrinter p, ж<bytes.Buffer> Ꮡout, @string indent, slice<ΔText> x) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     foreach (var (_, t) in x) {
         switch (t.type()) {
@@ -299,7 +299,7 @@ internal static bool blankBefore(Block x) {
 // indent prints s to out, indenting with the indent string
 // after each newline in s.
 [GoRecv] internal static void indent(this ref commentPrinter p, ж<bytes.Buffer> Ꮡout, @string indent, @string s) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     while (s != ""u8) {
         var (line, rest, ok) = strings.Cut(s, "\n"u8);

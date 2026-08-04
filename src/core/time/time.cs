@@ -213,10 +213,10 @@ internal static UntypedInt nsecShift => 30;
 
 // setLoc sets the location associated with the time.
 [GoRecv] internal static void setLoc(this ref Time t, ж<ΔLocation> Ꮡloc) {
-    ref var loc = ref Ꮡloc.DerefOrNil();
+    ref var loc = ref Ꮡloc.DerefOrNull();
 
     if (Ꮡloc == ᏑutcLoc) {
-        Ꮡloc = default!; loc = ref Ꮡloc.DerefOrNil();
+        Ꮡloc = default!; loc = ref Ꮡloc.DerefOrNull();
     }
     t.stripMono();
     t.loc = Ꮡloc;
@@ -676,7 +676,7 @@ public static @string String(this Duration d) {
 // format formats the representation of d into the end of buf and
 // returns the offset of the first character.
 internal static nint format(this Duration d, ж<array<byte>> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // Largest time is 2540400h10m10.000000000s
     nint w = len(buf);

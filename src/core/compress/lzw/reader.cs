@@ -108,7 +108,7 @@ internal static UntypedInt flushBuffer => /* 1 << maxWidth */ 4096;
 
 // Read implements io.Reader, reading uncompressed bytes from its underlying [Reader].
 public static (nint, error) Read(this ж<Reader> Ꮡr, slice<byte> b) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     while (ᐧ) {
         if (len(r.toRead) > 0) {
@@ -130,7 +130,7 @@ internal static readonly @string lzwInvalidCodeˢ = "lzw: invalid code"u8;
 // read specifies how to decode bytes into codes.
 // litWidth is the width in bits of literal codes.
 internal static void decode(this ж<Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Loop over the code stream, converting codes into decompressed bytes.
 loop:

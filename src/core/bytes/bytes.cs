@@ -1000,7 +1000,7 @@ internal static slice<byte> trimLeftByte(slice<byte> s, byte c) {
 }
 
 internal static slice<byte> trimLeftASCII(slice<byte> s, ж<asciiSet> Ꮡas) {
-    ref var @as = ref Ꮡas.Value;
+    ref var @as = ref Ꮡas.DerefOrNull();
 
     while (len(s) > 0) {
         if (!@as.contains(s[0])) {
@@ -1060,7 +1060,7 @@ internal static slice<byte> trimRightByte(slice<byte> s, byte c) {
 }
 
 internal static slice<byte> trimRightASCII(slice<byte> s, ж<asciiSet> Ꮡas) {
-    ref var @as = ref Ꮡas.Value;
+    ref var @as = ref Ꮡas.DerefOrNull();
 
     while (len(s) > 0) {
         if (!@as.contains(s[len(s) - 1])) {

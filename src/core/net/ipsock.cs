@@ -182,12 +182,12 @@ public static (@string host, @string port, error err) SplitHostPort(@string host
 
     @string missingPort = "missing port in address"u8;
     @string tooManyColons = "too many colons in address"u8;
-    var addrErr = (@string host, @string port, error err) (@string addr, @string why) => {
+    (@string host, @string port, error err) addrErr(@string addr, @string why) {
         @string hostΔ1 = default!;
         @string portΔ1 = default!;
         error errΔ1 = default!;
         return ("", "", new AddrErrorжerror(Ꮡ(new AddrError(Err: why, Addr: addr))));
-    };
+    }
     nint j = 0;
     nint k = 0;
     // The port starts after the last colon.

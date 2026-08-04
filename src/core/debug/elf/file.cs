@@ -106,7 +106,7 @@ partial class elf_package {
 //
 // For an [SHT_NOBITS] section, Data always returns a non-nil error.
 public static (slice<byte>, error) Data(this ж<ΔSection> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     return saferio.ReadData(new io_ReadSeekerᴠReader(Ꮡs.Open()), s.Size);
 }
@@ -133,7 +133,7 @@ internal static readonly @string zdebugˢ = ".zdebug"u8;
 // For an [SHT_NOBITS] section, all calls to the opened reader
 // will return a non-nil error.
 public static io.ReadSeeker Open(this ж<ΔSection> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.Type == SHT_NOBITS) {
         return new io_SectionReaderжReadSeeker(io.NewSectionReader(new nobitsSectionReaderжReaderAt(Ꮡ(new nobitsSectionReader(nil))), 0, (int64)s.Size));
@@ -307,10 +307,10 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     binary.ByteOrder bo = default!;
     var exprᴛ2 = (~f).Data;
     if (exprᴛ2 == ELFDATA2LSB) {
-        bo = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        bo = binary.LittleEndian;
     }
     else if (exprᴛ2 == ELFDATA2MSB) {
-        bo = new binary_bigEndianᴠByteOrder(binary.BigEndian);
+        bo = binary.BigEndian;
     }
     else { /* default: */
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "unknown ELF data encoding"u8, (~f).Data))));
@@ -469,7 +469,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (exprᴛ6 == ELFCLASS32) {
             var sh = @new<Section32>();
             {
-                var errΔ8 = binary.Read(new io_SectionReaderжReader(sr), bo, sh); if (errΔ8 != default!) {
+                var errΔ8 = binary.Read(new io_SectionReaderжReader(sr), bo, sh.OrTypedNil()); if (errΔ8 != default!) {
                     return (default!, errΔ8);
                 }
             }
@@ -480,7 +480,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         else if (exprᴛ6 == ELFCLASS64) {
             var sh = @new<Section64>();
             {
-                var errΔ9 = binary.Read(new io_SectionReaderжReader(sr), bo, sh); if (errΔ9 != default!) {
+                var errΔ9 = binary.Read(new io_SectionReaderжReader(sr), bo, sh.OrTypedNil()); if (errΔ9 != default!) {
                     return (default!, errΔ9);
                 }
             }
@@ -819,7 +819,7 @@ internal static readonly @string applyRelocationsNotˢ = "applyRelocations: not 
 // some target non-section symbols (for example, low_PC attrs on
 // subprogram or compilation unit DIEs that target function symbols).
 internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
-    ref var sym = ref Ꮡsym.Value;
+    ref var sym = ref Ꮡsym.DerefOrNull();
 
     return sym.Section != SHN_UNDEF && sym.Section < SHN_LORESERVE;
 }
@@ -1326,9 +1326,9 @@ internal static readonly @string rangesˢ = "ranges"u8;
 internal static readonly @string strˢ = "str"u8;
 
 public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
-    var dwarfSuffix = @string (ж<ΔSection> s) => {
+    @string dwarfSuffix(ж<ΔSection> s) {
         switch (ᐧ) {
         case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[7..];
@@ -1340,10 +1340,10 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
             return ""u8;
         }}
 
-    };
+    }
     // sectionData gets the data for s, checks its size, and
     // applies any applicable relations.
-    var sectionData = (slice<byte>, error) (nint i, ж<ΔSection> s) => {
+    (slice<byte>, error) sectionData(nint i, ж<ΔSection> s) {
         var (b, errΔ1) = s.Data();
         if (errΔ1 != default! && (uint64)len(b) < (~s).Size) {
             return (default!, errΔ1);
@@ -1371,7 +1371,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
             }
         }
         return (b, default!);
-    };
+    }
     // There are many DWARf sections, but these are the ones
     // the debug/dwarf package started with.
     map<@string, slice<byte>> dat = new map<@string, slice<byte>>{["abbrev"u8] = default!, ["info"u8] = default!, ["str"u8] = default!, ["line"u8] = default!, ["ranges"u8] = default!};

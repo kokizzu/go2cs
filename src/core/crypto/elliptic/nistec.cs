@@ -125,8 +125,8 @@ internal static void initP521() {
 [GoRecv] internal static bool IsOnCurve<Point>(this ref nistCurve<Point> curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy)
     where Point : nistPoint<Point>
 {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // IsOnCurve is documented to reject (0, 0), the conventional point at
     // infinity, which however is accepted by pointFromAffine.
@@ -147,8 +147,8 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     Point p = default!;
     error err = default!;
 
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
     // (0, 0) is by convention the point at infinity, which can't be represented
     // in affine coordinates. See Issue 37294.
     if (x.Sign() == 0 && y.Sign() == 0) {

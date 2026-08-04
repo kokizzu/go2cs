@@ -40,7 +40,7 @@ internal static array<uint64> rc = new uint64[]{
 // keccakF1600 applies the Keccak permutation to a 1600b-wide
 // state represented as a slice of 25 uint64s.
 internal static void keccakF1600(ж<array<uint64>> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     // Implementation translated from Keccak-inplace.c
     // in the keccak reference code.

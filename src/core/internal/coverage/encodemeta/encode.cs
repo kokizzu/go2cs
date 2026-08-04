@@ -139,7 +139,7 @@ internal static void h32(uint32 x, hash.Hash h, slice<byte> tmp) {
 // Emit writes the meta-data accumulated so far in this builder to 'w'.
 // Returns a hash of the meta-data payload and an error.
 public static (array<byte>, error) Emit(this ж<CoverageMetaDataBuilder> Ꮡb, io.WriteSeeker w) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Emit header.  Length will initially be zero, we'll
     // back-patch it later.
@@ -158,7 +158,7 @@ public static (array<byte>, error) Emit(this ж<CoverageMetaDataBuilder> Ꮡb, i
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=-= writing header: %+v\n"u8, mh);
     }
     {
-        var err = binary.Write(w, new binary_littleEndianᴠByteOrder(binary.LittleEndian), mh); if (err != default!) {
+        var err = binary.Write(w, binary.LittleEndian, mh); if (err != default!) {
             return (digest.Clone(), fmt.Errorf("error writing meta-file header: %v"u8, err));
         }
     }
@@ -211,7 +211,7 @@ public static array<byte> HashFuncDesc(ж<coverage.FuncDesc> Ꮡf) {
 
 // hashFuncDesc incorporates a given function 'f' into the hash 'h'.
 internal static void hashFuncDesc(hash.Hash h, ж<coverage.FuncDesc> Ꮡf, slice<byte> tmp) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     io.WriteString(h, f.Funcname);
     io.WriteString(h, f.Srcfile);

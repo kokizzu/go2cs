@@ -654,7 +654,7 @@ internal static ж<nat> getNat(nint n) {
 }
 
 internal static void putNat(ж<nat> Ꮡx) {
-    ᏑnatPool.Put(Ꮡx);
+    ᏑnatPool.Put(Ꮡx.OrTypedNil());
 }
 
 internal static ж<sync.Pool> ᏑnatPool = new(default(sync.Pool));
@@ -901,7 +901,7 @@ internal static nat xor(this nat z, nat x, nat y) {
 // random creates a random integer in [0..limit), using the space in z if
 // possible. n is the bit length of limit.
 internal static nat random(this nat z, ж<rand.Rand> Ꮡrand, nat limit, nint n) {
-    ref var randΔ1 = ref Ꮡrand.Value;
+    ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     if (alias(z, limit)) {
         z = default!;

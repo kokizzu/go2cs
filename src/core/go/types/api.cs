@@ -185,7 +185,7 @@ public static @string Error(this ΔError err) {
 // Linkname for use from srcimporter.
 //go:linkname srcimporter_setUsesCgo
 internal static void srcimporter_setUsesCgo(ж<Config> Ꮡconf) {
-    ref var conf = ref Ꮡconf.Value;
+    ref var conf = ref Ꮡconf.DerefOrNull();
 
     conf.go115UsesCgo = true;
 }
@@ -350,7 +350,7 @@ internal static void srcimporter_setUsesCgo(ж<Config> Ꮡconf) {
 //
 // Precondition: the Defs and Implicts maps are populated.
 [GoRecv] public static ж<PkgName> PkgNameOf(this ref ΔInfo info, ж<ast.ImportSpec> Ꮡimp) {
-    ref var imp = ref Ꮡimp.Value;
+    ref var imp = ref Ꮡimp.DerefOrNull();
 
     Object obj = default!;
     if (imp.Name != nil){

@@ -120,7 +120,7 @@ internal static readonly @string comparableˢ = "comparable"u8;
 
 // subsetOf reports whether s1 ⊆ s2.
 [GoRecv] internal static bool subsetOf(this ref _TypeSet s1, ж<_TypeSet> Ꮡs2) {
-    ref var s2 = ref Ꮡs2.Value;
+    ref var s2 = ref Ꮡs2.DerefOrNull();
 
     return s1.terms.subsetOf(s2.terms);
 }
@@ -177,8 +177,8 @@ internal static readonly @string typeSetForSˢ = "-- type set for %s"u8;
 
 // computeInterfaceTypeSet may be called with check == nil.
 internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var ityp = ref Ꮡityp.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var ityp = ref Ꮡityp.DerefOrNull();
 
     if (ityp.tset != nil) {
         return ityp.tset;
@@ -203,11 +203,11 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         if (!pos.IsValid() && len(ityp.methods) > 0) {
             pos = ityp.methods[0].Value.pos;
         }
-        Ꮡcheck.trace(pos, typeSetForSˢ, Ꮡityp);
+        Ꮡcheck.trace(pos, typeSetForSˢ, Ꮡityp.OrTypedNil());
         check.indent++;
         defer(() => {
             Ꮡcheck.Value.indent--;
-            Ꮡcheck.trace(pos, "=> %s "u8, Ꮡityp.typeSet());
+            Ꮡcheck.trace(pos, "=> %s "u8, Ꮡityp.typeSet().OrTypedNil());
         });
     }
     // An infinitely expanding interface (due to a cycle) is detected
@@ -243,7 +243,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
     var mpos = new map<ж<Func>, tokenꓸPos>();
     // method specification or method embedding position, for good error messages
     var mposʗ1 = mpos;
-    var addMethod = (tokenꓸPos posΔ1, ж<Func> m, bool @explicit) => {
+    void addMethod(tokenꓸPos posΔ1, ж<Func> m, bool @explicit) {
         {
             var other = Ꮡseen.ValueSlot.insert(new FuncжObject(m));
             switch (ᐧ) {
@@ -292,7 +292,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
             }}
         }
 
-    };
+    }
     foreach (var (_, m) in ityp.methods) {
         addMethod((~m).pos, m, true);
     }
@@ -327,7 +327,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         }
         case ж<Union> u: {
             if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // use embedding position pos rather than m.pos
- go1_18, "embedding interface element %s"u8, u)) {
+ go1_18, "embedding interface element %s"u8, u.OrTypedNil())) {
                 continue;
             }
             var tset = computeUnionTypeSet(Ꮡcheck, unionSets, posΔ2, u);
@@ -433,7 +433,7 @@ internal static ref _TypeSet invalidTypeSet => ref ᏑinvalidTypeSet.Value;
 // computeUnionTypeSet may be called with check == nil.
 // The result is &invalidTypeSet if the union overflows.
 internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Union>, ж<_TypeSet>> unionSets, tokenꓸPos pos, ж<Union> Ꮡutyp) {
-    ref var utyp = ref Ꮡutyp.Value;
+    ref var utyp = ref Ꮡutyp.DerefOrNull();
 
     {
         var (tset, _) = unionSets[Ꮡutyp, ꟷ]; if (tset != nil) {
@@ -463,7 +463,7 @@ internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Un
                     t = default!;
                 }
                 // ∅ term
-                terms = new Δtermlist(new ж<term>[]{Ꮡ((term)(~t))}.slice());
+                terms = new Δtermlist(new ж<term>[]{t.Reinterpret<ΔTerm, term>()}.slice());
             }
         }
         // The type set of a union expression is the union

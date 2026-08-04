@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
 
 Package cryptobyte contains types that help with parsing and constructing length-prefixed, binary messages, including ASN.1 DER. (The asn1 subpackage contains useful ASN.1 constants.)
 

@@ -208,8 +208,8 @@ internal static @string receiverType(any val) {
 // unmarshalInterface unmarshals a single XML element into val.
 // start is the opening tag of the element.
 internal static error unmarshalInterface(this ж<Decoder> Ꮡd, Unmarshaler val, ж<StartElement> Ꮡstart) {
-    ref var d = ref Ꮡd.Value;
-    ref var start = ref Ꮡstart.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var start = ref Ꮡstart.DerefOrNull();
 
     // Record that decoder must stop at end tag corresponding to start.
     d.pushEOF();
@@ -321,8 +321,8 @@ internal static error errUnmarshalDepth = errors.New("exceeded max depth"u8);
 
 // Unmarshal a single XML element into val.
 internal static error unmarshal(this ж<Decoder> Ꮡd, reflectꓸValue val, ж<StartElement> Ꮡstart, nint depth) {
-    ref var d = ref Ꮡd.Value;
-    ref var start = ref Ꮡstart.DerefOrNil();
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var start = ref Ꮡstart.DerefOrNull();
 
     if (depth >= maxUnmarshalDepth || runtime.GOARCH == "wasm"u8 && depth >= maxUnmarshalDepthWasm) {
         return errUnmarshalDepth;
@@ -337,7 +337,7 @@ internal static error unmarshal(this ж<Decoder> Ꮡd, reflectꓸValue val, ж<S
             {
                 ref var t = ref heap<StartElement>(out var Ꮡt);
                 (t, var ok) = tok._<StartElement>(ᐧ); if (ok) {
-                    Ꮡstart = Ꮡt; start = ref Ꮡstart.DerefOrNil();
+                    Ꮡstart = Ꮡt; start = ref Ꮡstart.DerefOrNull();
                     break;
                 }
             }
@@ -732,9 +732,9 @@ internal static (bool consumed, error err) unmarshalPath(this ж<Decoder> Ꮡd, 
     bool consumed = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
-    ref var tinfo = ref Ꮡtinfo.Value;
-    ref var start = ref Ꮡstart.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var tinfo = ref Ꮡtinfo.DerefOrNull();
+    ref var start = ref Ꮡstart.DerefOrNull();
     var recurse = false;
 Loop:
     foreach (var (i, _) in tinfo.fields) {

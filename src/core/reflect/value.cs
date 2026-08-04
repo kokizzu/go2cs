@@ -638,9 +638,9 @@ internal static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
 // regs contains the argument values passed in registers and will contain
 // the values returned from ctxt.fn in registers.
 internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame, ж<bool> ᏑretValid, ж<abi.RegArgs> Ꮡregs) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var retValid = ref ᏑretValid.Value;
-    ref var regs = ref Ꮡregs.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+    ref var retValid = ref ᏑretValid.DerefOrNull();
+    ref var regs = ref Ꮡregs.DerefOrNull();
 
     if (callGC) {
         // Call GC upon entry during testing.
@@ -814,7 +814,7 @@ break_stepsLoop:;
     // runtime.getArgInfo expects to be able to find ctxt on the
     // stack when it finds our caller, makeFuncStub. Make sure it
     // doesn't get garbage collected.
-    Δruntime.KeepAlive(Ꮡctxt);
+    Δruntime.KeepAlive(Ꮡctxt.OrTypedNil());
 }
 
 // methodReceiver returns information about the receiver
@@ -914,9 +914,9 @@ internal static readonly @string methodFrameSSizeˢ = "methodFrame's size > retO
 // regs contains the argument values passed in registers and will contain
 // the values returned from ctxt.fn in registers.
 internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, ж<bool> ᏑretValid, ж<abi.RegArgs> Ꮡregs) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var retValid = ref ᏑretValid.Value;
-    ref var regs = ref Ꮡregs.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+    ref var retValid = ref ᏑretValid.DerefOrNull();
+    ref var regs = ref Ꮡregs.DerefOrNull();
 
     var rcvr = ctxt.rcvr;
     var (rcvrType, valueFuncType, methodFn) = methodReceiver(callˢ, rcvr, ctxt.method);
@@ -1115,11 +1115,11 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     typedmemclr(methodFrameType, methodFrame);
     methodFramePool.Put(methodFrame);
     // See the comment in callReflect.
-    Δruntime.KeepAlive(Ꮡctxt);
+    Δruntime.KeepAlive(Ꮡctxt.OrTypedNil());
     // Keep valueRegs alive because it may hold live pointer results.
     // The caller (methodValueCall) has it as a stack object, which is only
     // scanned when there is a reference to it.
-    Δruntime.KeepAlive(valueRegs);
+    Δruntime.KeepAlive(valueRegs.OrTypedNil());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1594,7 +1594,7 @@ internal static readonly @string reflectMapIterSetKeyˢ = "reflect.MapIter.SetKe
 // As in Go, the key must be assignable to v's type and
 // must not be derived from an unexported field.
 public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
-    ref var iter = ref Ꮡiter.Value;
+    ref var iter = ref Ꮡiter.DerefOrNull();
 
     if (!iter.hiter.initialized()) {
         throw panic("reflect: Value.SetIterKey called before Next");
@@ -1627,7 +1627,7 @@ internal static readonly @string reflectMapIterSetValueˢ = "reflect.MapIter.Set
 // As in Go, the value must be assignable to v's type and
 // must not be derived from an unexported field.
 public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
-    ref var iter = ref Ꮡiter.Value;
+    ref var iter = ref Ꮡiter.DerefOrNull();
 
     if (!iter.hiter.initialized()) {
         throw panic("reflect: Value.SetIterValue called before Next");
@@ -1683,7 +1683,7 @@ internal static void panicNotMap(this flag f) {
 // copyVal returns a Value containing the map key or value at ptr,
 // allocating a new variable as needed.
 internal static ΔValue copyVal(ж<abi.Type> Ꮡtyp, flag fl, @unsafe.Pointer ptr) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (typ.IfaceIndir()) {
         // Copy result so future changes to the map
@@ -2583,7 +2583,7 @@ public static ΔValue NewAt(ΔType typ, @unsafe.Pointer p) {
 // is a suggested scratch space to use.
 // target must be initialized memory (or nil).
 internal static ΔValue assignTo(this ΔValue v, @string context, ж<abi.Type> Ꮡdst, @unsafe.Pointer target) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     if ((flag)(v.flag & flagMethod) != 0) {
         v = makeMethodValue(context, v);
@@ -2777,8 +2777,8 @@ public static bool Equal(this ΔValue v, ΔValue u) {
 // convertOp returns the function to convert a value of type src
 // to a value of type dst. If the conversion is illegal, convertOp returns nil.
 internal static Func<ΔValue, ΔType, ΔValue> convertOp(ж<abi.Type> Ꮡdst, ж<abi.Type> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     var exprᴛ1 = ((ΔKind)(nuint)(uint8)src.Kind());
     if (exprᴛ1 == ΔInt || exprᴛ1 == Int8 || exprᴛ1 == Int16 || exprᴛ1 == Int32 || exprᴛ1 == Int64) {

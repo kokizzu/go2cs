@@ -32,8 +32,7 @@ internal static iter.Seq<ΔValue> rangeNum<T, N>(N v)
 public static iter.Seq<ΔValue> Seq(this ΔValue v) {
     if (canRangeFunc(v.typ())) {
         return (Func<ΔValue, bool> yield) => {
-            ref var rf = ref heap<ΔValue>(out var Ꮡrf);
-            rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0]))}.slice());
+            var rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0]))}.slice());
             v.Call(new ΔValue[]{rf}.slice());
         };
     }
@@ -116,13 +115,10 @@ public static iter.Seq<ΔValue> Seq(this ΔValue v) {
     }
     else if (exprᴛ1 == Chan) {
         return (Func<ΔValue, bool> yield) => {
-            for (var (valueᴛ1, ok) = v.Recv(); ok; (valueᴛ1, ok) = v.Recv()) {
-                ref var value = ref heap<ΔValue>(out var Ꮡvalue);
-                value = valueᴛ1;
+            for (var (value, ok) = v.Recv(); ok; (value, ok) = v.Recv()) {
                 if (!yield(value)) {
                     return;
                 }
-                valueᴛ1 = value;
             }
         };
     }
@@ -138,8 +134,7 @@ public static iter.Seq<ΔValue> Seq(this ΔValue v) {
 public static iter.Seq2<ΔValue, ΔValue> Seq2(this ΔValue v) {
     if (canRangeFunc2(v.typ())) {
         return (Func<ΔValue, ΔValue, bool> yield) => {
-            ref var rf = ref heap<ΔValue>(out var Ꮡrf);
-            rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0], @in[1]))}.slice());
+            var rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0], @in[1]))}.slice());
             v.Call(new ΔValue[]{rf}.slice());
         };
     }

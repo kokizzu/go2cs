@@ -471,8 +471,8 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
     @unsafe.Pointer v = default!;
     uintptr size = default!;
 
-    ref var h = ref Ꮡh.Value;
-    ref var hintList = ref ᏑhintList.DerefOrNil();
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var hintList = ref ᏑhintList.DerefOrNull();
     assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
     n = alignUp(n, heapArenaBytes);
     if (ᏑhintList == Ꮡh.of(mheap.ᏑarenaHints)) {
@@ -712,7 +712,7 @@ retry:
 //
 //go:systemstack
 internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // Enable huge pages for page structure.
     h.pages.enableChunkHugePages();
@@ -745,7 +745,7 @@ internal static ref uintptr zerobase => ref Ꮡzerobase.Value;
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     nint theBit = sys.TrailingZeros64(s.allocCache);
     // Is there a free object in the allocCache?
@@ -832,7 +832,7 @@ internal static readonly @string mallocgcCalledWithˢ = "mallocgc called with gc
 //
 //go:linkname mallocgc
 internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool needzero) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (gcphase == _GCmarktermination) {
         @throw(mallocgcCalledWithˢ);
@@ -1222,7 +1222,7 @@ internal static void memclrNoHeapPointersChunked(uintptr size, @unsafe.Pointer x
 // compiler (both frontend and SSA backend) knows the signature
 // of this function.
 internal static @unsafe.Pointer newobject(ж<_type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     return (uintptr)mallocgc(typ.Size_, Ꮡtyp, true);
 }
@@ -1240,14 +1240,14 @@ internal static @unsafe.Pointer newobject(ж<_type> Ꮡtyp) {
 //
 //go:linkname reflect_unsafe_New reflect.unsafe_New
 internal static @unsafe.Pointer reflect_unsafe_New(ж<_type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     return (uintptr)mallocgc(typ.Size_, Ꮡtyp, true);
 }
 
 //go:linkname reflectlite_unsafe_New internal/reflectlite.unsafe_New
 internal static @unsafe.Pointer reflectlite_unsafe_New(ж<_type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     return (uintptr)mallocgc(typ.Size_, Ꮡtyp, true);
 }
@@ -1266,7 +1266,7 @@ internal static @unsafe.Pointer reflectlite_unsafe_New(ж<_type> Ꮡtyp) {
 //
 //go:linkname newarray
 internal static @unsafe.Pointer newarray(ж<_type> Ꮡtyp, nint n) {
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (n == 1) {
         return (uintptr)mallocgc(typ.Size_, Ꮡtyp, true);
@@ -1564,7 +1564,7 @@ internal static bool inPersistentAlloc(uintptr Δp) {
 }
 
 internal static ж<notInHeap> add(this ж<notInHeap> Ꮡp, uintptr bytes) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     return (ж<notInHeap>)(uintptr)((@unsafe.Pointer)((uintptr)(uintptr)@unsafe.Pointer.FromRef(ref Δp) + bytes));
 }

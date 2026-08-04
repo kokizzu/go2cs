@@ -347,7 +347,7 @@ internal static readonly @string xmlPrefix = "xml"u8;
 // The default name space (for Space=="")
 // applies only to element names, not to attribute names.
 [GoRecv] internal static void translate(this ref Decoder d, ж<Name> Ꮡn, bool isElementName) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     switch (ᐧ) {
     case {} when n.Space == xmlnsPrefix: {
@@ -490,7 +490,7 @@ internal static UntypedInt stkEOF => 2;
 // the stack to restore the name translations that existed
 // before we saw this element.
 [GoRecv] internal static bool popElement(this ref Decoder d, ж<EndElement> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var s = d.pop();
     var name = t.Name;

@@ -52,7 +52,7 @@ internal static readonly @string tlsUnexpectedServerNameˢ = "tls: unexpected se
 // handshake requires hs.c, hs.hello, hs.serverHello, hs.keyShareKeys, and,
 // optionally, hs.session, hs.earlySecret and hs.binderKey to be set.
 internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     if (needFIPS()) {
@@ -432,7 +432,7 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
     var (serverHello, ok) = msg._<ж<serverHelloMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(serverHello, msg);
+        return unexpectedMessageError(serverHello.OrTypedNil(), msg);
     }
     hs.serverHello = serverHello;
     {
@@ -453,7 +453,7 @@ internal static readonly @string tlsServerSelectedAnˢ2 = "tls: server selected 
 internal static readonly @string tlsServerSelectedAnˢ3 = "tls: server selected an invalid PSK and cipher suite pair"u8;
 
 internal static error processServerHello(this ж<clientHandshakeStateTLS13> Ꮡhs) {
-    ref var hs = ref Ꮡhs.Value;
+    ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
     if (bytes.Equal((~hs.serverHello).random, helloRetryRequestRandom)) {
@@ -593,7 +593,7 @@ internal static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH
     var (encryptedExtensions, ok) = msg._<ж<encryptedExtensionsMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(encryptedExtensions, msg);
+        return unexpectedMessageError(encryptedExtensions.OrTypedNil(), msg);
     }
     {
         var errΔ1 = checkALPN((~hs.hello).alpnProtocols, (~encryptedExtensions).alpnProtocol, (~c).quic != nil); if (errΔ1 != default!) {
@@ -680,7 +680,7 @@ internal static readonly @string tlsCertificateUsedWithˢ = "tls: certificate us
     (var certMsg, ok) = msg._<ж<certificateMsgTLS13>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(certMsg, msg);
+        return unexpectedMessageError(certMsg.OrTypedNil(), msg);
     }
     if (len((~certMsg).certificate.ΔCertificate) == 0) {
         c.sendAlert(alertDecodeError);
@@ -703,7 +703,7 @@ internal static readonly @string tlsCertificateUsedWithˢ = "tls: certificate us
     (var certVerify, ok) = msg._<ж<certificateVerifyMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(certVerify, msg);
+        return unexpectedMessageError(certVerify.OrTypedNil(), msg);
     }
     // See RFC 8446, Section 4.4.3.
     if (!isSupportedSignatureAlgorithm((~certVerify).signatureAlgorithm, supportedSignatureAlgorithms())) {
@@ -749,7 +749,7 @@ internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serv
     var (finished, ok) = msg._<ж<finishedMsg>>(ᐧ);
     if (!ok) {
         c.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(finished, msg);
+        return unexpectedMessageError(finished.OrTypedNil(), msg);
     }
     var expectedMAC = hs.suite.finishedHash((~c).@in.trafficSecret, hs.transcript);
     if (!hmac.Equal(expectedMAC, (~finished).verifyData)) {
@@ -831,7 +831,7 @@ internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serv
         return c.sendAlert(alertInternalError);
     }
     var signed = signedMessage(sigHash, clientSignatureContext, hs.transcript);
-    var signOpts = ((crypto.SignerOpts)new crypto_HashᴠSignerOpts(sigHash));
+    var signOpts = ((crypto.SignerOpts)sigHash);
     if (sigType == signatureRSAPSS) {
         signOpts = new rsa_PSSOptionsжSignerOpts(Ꮡ(new rsa.PSSOptions(SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: sigHash)));
     }
@@ -880,8 +880,8 @@ internal static readonly @string tlsInvalidEarlyDataForˢ = "tls: invalid early 
 internal static readonly @string resumptionˢ = "resumption"u8;
 
 internal static error handleNewSessionTicket(this ж<Conn> Ꮡc, ж<newSessionTicketMsgTLS13> Ꮡmsg) {
-    ref var c = ref Ꮡc.Value;
-    ref var msg = ref Ꮡmsg.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var msg = ref Ꮡmsg.DerefOrNull();
 
     if (!c.isClient) {
         Ꮡc.sendAlert(alertUnexpectedMessage);

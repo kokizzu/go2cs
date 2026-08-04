@@ -78,7 +78,7 @@ public static void Sort(this ErrorList p) {
 
 // RemoveMultiples sorts an [ErrorList] and removes all but the first error per line.
 public static void RemoveMultiples(this ж<ErrorList> Ꮡp) {
-    ref var p = ref Ꮡp.ValueSlot;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     sort.Sort(new ErrorListжInterface(Ꮡp));
     tokenꓸPosition last = default!;                          // initial last.Line is != any legal error line
@@ -106,7 +106,7 @@ public static @string Error(this ErrorList p) {
         return (~p[0]).Error();
     }}
 
-    return fmt.Sprintf("%s (and %d more errors)"u8, p[0], len(p) - 1);
+    return fmt.Sprintf("%s (and %d more errors)"u8, p[0].OrTypedNil(), len(p) - 1);
 }
 
 // Err returns an error equivalent to this error list.
@@ -125,7 +125,7 @@ public static void PrintError(io.Writer w, error err) {
     {
         var (list, ok) = err._<ErrorList>(ᐧ); if (ok){
             foreach (var (_, e) in list) {
-                fmt.Fprintf(w, "%s\n"u8, e);
+                fmt.Fprintf(w, "%s\n"u8, e.OrTypedNil());
             }
         } else 
         if (err != default!) {

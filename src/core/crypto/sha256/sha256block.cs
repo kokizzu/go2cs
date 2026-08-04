@@ -79,7 +79,7 @@ internal static slice<uint32> _K = new uint32[]{
 }.slice();
 
 internal static void blockGeneric(ж<digest> Ꮡdig, slice<byte> p) {
-    ref var dig = ref Ꮡdig.Value;
+    ref var dig = ref Ꮡdig.DerefOrNull();
 
     array<uint32> w = new(64);
     var (h0, h1, h2, h3, h4, h5, h6, h7) = (dig.h[0], dig.h[1], dig.h[2], dig.h[3], dig.h[4], dig.h[5], dig.h[6], dig.h[7]);

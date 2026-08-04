@@ -280,7 +280,7 @@ internal static (nint pivot, sortedHint hint) choosePivot_func(lessSwap data, ni
 
 // order2_func returns x,y where data[x] <= data[y], where x,y=a,b or x,y=b,a.
 internal static (nint, nint) order2_func(lessSwap data, nint a, nint b, ж<nint> Ꮡswaps) {
-    ref var swaps = ref Ꮡswaps.Value;
+    ref var swaps = ref Ꮡswaps.DerefOrNull();
 
     if (data.Less(b, a)) {
         swaps++;

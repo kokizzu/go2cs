@@ -93,7 +93,7 @@ internal static error errOutOfCodes = errors.New("lzw: out of codes"u8);
 // unused codes. In the latter case, incHi sends a clear code, resets the
 // writer state and returns errOutOfCodes.
 internal static error incHi(this ж<Writer> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     w.hi++;
     if (w.hi == w.overflow) {
@@ -126,7 +126,7 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> p) {
     nint n = default!;
     error err = default!;
 
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
     if (w.err != default!) {
         return (0, w.err);
     }
@@ -215,7 +215,7 @@ break_loop:;
 // Close closes the [Writer], flushing any pending output. It does not close
 // w's underlying writer.
 public static error Close(this ж<Writer> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (w.err != default!) {
         if (AreEqual(w.err, errClosed)) {

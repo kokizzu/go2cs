@@ -107,7 +107,7 @@ internal static ж<conn> newConn(io.ReadWriteCloser rwc) {
 
 // Close closes the conn if it is not already closed.
 internal static error Close(this ж<conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(conn.Ꮡmutex).Lock();
     defer(Ꮡc.of(conn.Ꮡmutex).Unlock);
@@ -129,9 +129,9 @@ internal static readonly @string fcgiInvalidHeaderVersionˢ = "fcgi: invalid hea
 internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
     error err = default!;
 
-    ref var rec = ref Ꮡrec.Value;
+    ref var rec = ref Ꮡrec.DerefOrNull();
     {
-        err = binary.Read(r, new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡrec.of(record.Ꮡh)); if (err != default!) {
+        err = binary.Read(r, binary.BigEndian, Ꮡrec.of(record.Ꮡh)); if (err != default!) {
             return err;
         }
     }
@@ -153,14 +153,14 @@ internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
 
 // writeRecord writes and sends a single record.
 internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 reqId, slice<byte> b) => func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(conn.Ꮡmutex).Lock();
     defer(Ꮡc.of(conn.Ꮡmutex).Unlock);
     c.buf.Reset();
     c.h.init(recType, reqId, len(b));
     {
-        var errΔ1 = binary.Write(new bytes_BufferжWriter(Ꮡc.of(conn.Ꮡbuf)), new binary_bigEndianᴠByteOrder(binary.BigEndian), c.h); if (errΔ1 != default!) {
+        var errΔ1 = binary.Write(new bytes_BufferжWriter(Ꮡc.of(conn.Ꮡbuf)), binary.BigEndian, c.h); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -263,8 +263,6 @@ internal static nint encodeSize(slice<byte> b, uint32 size) {
 }
 
 internal static ж<bufWriter> newWriter(ж<conn> Ꮡc, recType recType, uint16 reqId) {
-    ref var c = ref Ꮡc.Value;
-
     var s = Ꮡ(new streamWriter(c: Ꮡc, recType: recType, reqId: reqId));
     var w = bufio.NewWriterSize(new streamWriterжWriter(s), maxWrite);
     return Ꮡ(new bufWriter(new streamWriterжCloser(s), w));

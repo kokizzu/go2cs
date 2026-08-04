@@ -90,7 +90,7 @@ internal static abiPartKind abiPartReg => 2; // Move a value from memory to a re
 }
 
 [GoRecv] internal static void assignArg(this ref abiDesc Δp, ж<_type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Size_ > goarch.PtrSize) {
         // We don't support this right now. In
@@ -171,7 +171,7 @@ internal static abiPartKind abiPartReg => 2; // Move a value from memory to a re
 //
 // Returns whether the assignment succeeded.
 [GoRecv] internal static bool tryRegAssignArg(this ref abiDesc Δp, ж<_type> Ꮡt, uintptr offset) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var k = (abiꓸKind)(t.Kind_ & abi.KindMask);
@@ -376,7 +376,7 @@ internal static uintptr /*code*/ compileCallback(eface fn, bool cdecl) {
 
 // callbackWrap is called by callbackasm to invoke a registered C callback.
 internal static void callbackWrap(ж<callbackArgs> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     var c = cbs.ctxt[(nint)(a.index)];
     a.retPop = c.retPop;
@@ -429,7 +429,7 @@ internal static (uintptr handle, uintptr err) syscall_loadsystemlibrary(ж<uint1
     uintptr err = default!;
 
     (handle, _, err) = syscall_SyscallN((uintptr)(@unsafe.Pointer)_LoadLibraryExW, (uintptr)Ꮡfilename, 0, _LOAD_LIBRARY_SEARCH_SYSTEM32);
-    KeepAlive(Ꮡfilename);
+    KeepAlive(Ꮡfilename.OrTypedNil());
     if (handle != 0) {
         err = 0;
     }
@@ -446,7 +446,7 @@ internal static (uintptr handle, uintptr err) syscall_loadlibrary(ж<uint16> Ꮡ
     uintptr err = default!;
 
     (handle, _, err) = syscall_SyscallN((uintptr)(@unsafe.Pointer)_LoadLibraryW, (uintptr)Ꮡfilename);
-    KeepAlive(Ꮡfilename);
+    KeepAlive(Ꮡfilename.OrTypedNil());
     if (handle != 0) {
         err = 0;
     }
@@ -463,7 +463,7 @@ internal static (uintptr outhandle, uintptr err) syscall_getprocaddress(uintptr 
     uintptr err = default!;
 
     (outhandle, _, err) = syscall_SyscallN((uintptr)(@unsafe.Pointer)_GetProcAddress, handle, (uintptr)Ꮡprocname);
-    KeepAlive(Ꮡprocname);
+    KeepAlive(Ꮡprocname.OrTypedNil());
     if (outhandle != 0) {
         err = 0;
     }

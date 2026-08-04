@@ -46,7 +46,7 @@ internal static readonly @string traceRegionOutOfMemoryˢ = "traceRegion: out of
 
 // alloc allocates n-byte block. The block is always aligned to 8 bytes, regardless of platform.
 internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     n = alignUp(n, 8);
     if (n > traceRegionAllocBlockData) {
@@ -98,7 +98,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
 // drop is not safe to call concurrently with other calls to drop or with calls to alloc. The caller
 // must ensure that it is not possible for anything else to be using the same structure.
 internal static void drop(this ж<traceRegionAlloc> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     Ꮡa.of(traceRegionAlloc.Ꮡdropping).Store(true);
     while (a.full != nil) {

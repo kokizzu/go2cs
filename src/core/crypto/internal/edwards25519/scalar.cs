@@ -61,8 +61,8 @@ public static ж<Scalar> NewScalar() {
 // MultiplyAdd sets s = x * y + z mod l, and returns s. It is equivalent to
 // using Multiply and then Add.
 public static ж<Scalar> MultiplyAdd(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scalar> Ꮡy, ж<Scalar> Ꮡz) {
-    ref var s = ref Ꮡs.Value;
-    ref var z = ref Ꮡz.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     // Make a copy of z in case it aliases s.
     var zCopy = @new<Scalar>().Set(Ꮡz);
@@ -71,9 +71,9 @@ public static ж<Scalar> MultiplyAdd(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<S
 
 // Add sets s = x + y mod l, and returns s.
 public static ж<Scalar> Add(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scalar> Ꮡy) {
-    ref var s = ref Ꮡs.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // s = 1 * x + y mod l
     fiatScalarAdd(Ꮡs.of(Scalar.Ꮡs), Ꮡx.of(Scalar.Ꮡs), Ꮡy.of(Scalar.Ꮡs));
@@ -82,9 +82,9 @@ public static ж<Scalar> Add(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scalar> �
 
 // Subtract sets s = x - y mod l, and returns s.
 public static ж<Scalar> Subtract(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scalar> Ꮡy) {
-    ref var s = ref Ꮡs.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // s = -1 * y + x mod l
     fiatScalarSub(Ꮡs.of(Scalar.Ꮡs), Ꮡx.of(Scalar.Ꮡs), Ꮡy.of(Scalar.Ꮡs));
@@ -93,8 +93,8 @@ public static ж<Scalar> Subtract(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scal
 
 // Negate sets s = -x mod l, and returns s.
 public static ж<Scalar> Negate(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
-    ref var s = ref Ꮡs.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // s = -1 * x + 0 mod l
     fiatScalarOpp(Ꮡs.of(Scalar.Ꮡs), Ꮡx.of(Scalar.Ꮡs));
@@ -103,9 +103,9 @@ public static ж<Scalar> Negate(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
 
 // Multiply sets s = x * y mod l, and returns s.
 public static ж<Scalar> Multiply(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scalar> Ꮡy) {
-    ref var s = ref Ꮡs.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // s = x * y + 0 mod l
     fiatScalarMul(Ꮡs.of(Scalar.Ꮡs), Ꮡx.of(Scalar.Ꮡs), Ꮡy.of(Scalar.Ꮡs));
@@ -114,8 +114,8 @@ public static ж<Scalar> Multiply(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx, ж<Scal
 
 // Set sets s = x, and returns s.
 public static ж<Scalar> Set(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
-    ref var s = ref Ꮡs.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     s = x.ΔClone();
     return Ꮡs;
@@ -258,7 +258,7 @@ public static slice<byte> Bytes(this ж<Scalar> Ꮡs) {
 }
 
 internal static slice<byte> bytes(this ж<Scalar> Ꮡs, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var ss = ref heap(new fiatScalarNonMontgomeryDomainFieldElement(), out var Ꮡss);
     fiatScalarFromMontgomery(Ꮡss, Ꮡs.of(Scalar.Ꮡs));
@@ -285,7 +285,7 @@ public static nint Equal(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡt) {
 //
 // w must be between 2 and 8, or nonAdjacentForm will panic.
 internal static array<int8> nonAdjacentForm(this ж<Scalar> Ꮡs, nuint w) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // This implementation is adapted from the one
     // in curve25519-dalek and is documented there:

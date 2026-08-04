@@ -179,7 +179,7 @@ public static ж<ResponseController> NewResponseController(ResponseWriter rw) {
 // errNotSupported returns an error that Is ErrNotSupported,
 // but is not == to it.
 internal static error errNotSupported() {
-    return fmt.Errorf("%w"u8, ErrNotSupported);
+    return fmt.Errorf("%w"u8, ErrNotSupported.OrTypedNil());
 }
 
 } // end http_package

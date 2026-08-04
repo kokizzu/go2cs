@@ -26,7 +26,7 @@ internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<
     bool ok = default!;
     error err = default!;
 
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
     // Batches should generally always have at least one event,
     // but let's be defensive about that and accept empty batches.
     while (b.idx < len(batches) && len(batches[b.idx].data) == b.dataOff) {
@@ -57,7 +57,7 @@ internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<
 }
 
 [GoRecv] internal static nint compare(this ref batchCursor b, ж<batchCursor> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     return cmp.Compare(b.ev.time, a.ev.time);
 }
@@ -70,7 +70,7 @@ internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<
 // It requires that the event its reading be timed, which must
 // be the case for every event in a plain EventBatch.
 internal static (nint, timestamp, error) readTimedBaseEvent(slice<byte> b, ж<baseEvent> Ꮡe) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     // Get the event type.
     var typ = ((@event.Type)b[0]);

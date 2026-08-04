@@ -105,7 +105,7 @@ public static bool IsValid(this ΔPos p) {
 
 // LineCount returns the number of lines in file f.
 public static nint LineCount(this ж<ΔFile> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
     nint n = len(f.lines);
@@ -117,7 +117,7 @@ public static nint LineCount(this ж<ΔFile> Ꮡf) {
 // The line offset must be larger than the offset for the previous line
 // and smaller than the file size; otherwise the line offset is ignored.
 public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
     {
@@ -133,7 +133,7 @@ public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
 // remaining offsets). To obtain the line number, consult e.g. [Position.Line].
 // MergeLine will panic if given an invalid line number.
 public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) => func((defer, recover) => {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (line < 1) {
         throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
@@ -155,7 +155,7 @@ public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) => func((defer, re
 // Lines returns the effective line offset table of the form described by [File.SetLines].
 // Callers must not mutate the result.
 public static slice<nint> Lines(this ж<ΔFile> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
     var lines = f.lines;
@@ -172,7 +172,7 @@ public static slice<nint> Lines(this ж<ΔFile> Ꮡf) {
 // false.
 // Callers must not mutate the provided slice after SetLines returns.
 public static bool SetLines(this ж<ΔFile> Ꮡf, slice<nint> lines) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     // verify validity of lines table
     nint size = f.size;
@@ -191,7 +191,7 @@ public static bool SetLines(this ж<ΔFile> Ꮡf, slice<nint> lines) {
 // SetLinesForContent sets the line offsets for the given file content.
 // It ignores position-altering //line comments.
 public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     slice<nint> lines = default!;
     nint line = 0;
@@ -214,7 +214,7 @@ public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content)
 // It ignores any alternative positions set using [File.AddLineColumnInfo].
 // LineStart panics if the 1-based line number is invalid.
 public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) => func((defer, recover) => {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (line < 1) {
         throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
@@ -252,7 +252,7 @@ public static void AddLineInfo(this ж<ΔFile> Ꮡf, nint offset, @string filena
 // AddLineColumnInfo is typically used to register alternative position
 // information for line directives such as //line filename:line:column.
 public static void AddLineColumnInfo(this ж<ΔFile> Ꮡf, nint offset, @string filename, nint line, nint column) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
     {
@@ -342,7 +342,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
     nint line = default!;
     nint column = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
     filename = f.name;
     {
@@ -388,7 +388,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
 internal static ΔPosition /*pos*/ position(this ж<ΔFile> Ꮡf, ΔPos p, bool adjusted) {
     ΔPosition pos = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     nint offset = f.fixOffset((nint)p - f.@base);
     pos.Offset = offset;
     (pos.Filename, pos.Line, pos.Column) = Ꮡf.unpack(offset, adjusted);
@@ -462,7 +462,7 @@ public static ж<FileSet> NewFileSet() {
 // Base returns the minimum base offset that must be provided to
 // [FileSet.AddFile] when adding the next file.
 public static nint Base(this ж<FileSet> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(FileSet.Ꮡmutex).RLock();
     nint b = s.@base;
@@ -486,7 +486,7 @@ public static nint Base(this ж<FileSet> Ꮡs) {
 // For convenience, [File.Pos] may be used to create file-specific position
 // values from a file offset.
 public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @base, nint size) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Allocate f outside the critical section.
     var f = Ꮡ(new ΔFile(name: filename, size: size, lines: new nint[]{0}.slice()));
@@ -522,8 +522,8 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
 //
 // Removing a file that does not belong to the set has no effect.
 public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
-    ref var @file = ref Ꮡfile.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil);
     // clear last file cache
@@ -543,7 +543,7 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) => func
 // Iterate calls f for the files in the file set in the order they were added
 // until f returns false.
 public static void Iterate(this ж<FileSet> Ꮡs, Func<ж<ΔFile>, bool> f) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     for (nint i = 0; ᐧ ; i++) {
         ж<ΔFile> @file = default!;
@@ -569,7 +569,7 @@ internal static nint searchFiles(slice<ж<ΔFile>> a, nint x) {
 }
 
 internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) => func<ж<ΔFile>>((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // common case: p is in last file.
     {

@@ -53,7 +53,7 @@ internal static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; 
 // At the moment this package only provides APIs for looking at
 // aux symbols of format 5 (associated with section definition symbols).
 internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh, io.ReadSeeker r) {
-    ref var fh = ref Ꮡfh.Value;
+    ref var fh = ref Ꮡfh.DerefOrNull();
 
     if (fh.PointerToSymbolTable == 0) {
         return (default!, default!);
@@ -75,7 +75,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
         ref var sym = ref heap(new COFFSymbol(), out var Ꮡsym);
         if (naux == 0){
             // Read a primary symbol.
-            err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡsym);
+            err = binary.Read(r, binary.LittleEndian, Ꮡsym);
             if (err != default!) {
                 return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
             }
@@ -88,7 +88,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
             // are supported in the future).
             naux--;
             var aux = Ꮡsym.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>();
-            err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), aux);
+            err = binary.Read(r, binary.LittleEndian, aux.OrTypedNil());
             if (err != default!) {
                 return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
             }

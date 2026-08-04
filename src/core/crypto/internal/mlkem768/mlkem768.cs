@@ -149,7 +149,7 @@ public static (ж<DecapsulationKey>, error) NewKeyFromExtendedEncoding(slice<byt
 internal static readonly @string mlkem768Invalidˢ = "mlkem768: invalid decapsulation key length"u8;
 
 internal static (ж<DecapsulationKey>, error) newKeyFromExtendedEncoding(ж<DecapsulationKey> Ꮡdk, slice<byte> dkBytes) {
-    ref var dk = ref Ꮡdk.Value;
+    ref var dk = ref Ꮡdk.DerefOrNull();
 
     if (len(dkBytes) != DecapsulationKeySize) {
         return (default!, errors.New(mlkem768Invalidˢ));
@@ -179,12 +179,12 @@ internal static (ж<DecapsulationKey>, error) newKeyFromExtendedEncoding(ж<Deca
 // K-PKE.KeyGen according to FIPS 203 (DRAFT), Algorithm 12. The two are merged
 // to save copies and allocations.
 internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, ж<array<byte>> Ꮡd, ж<array<byte>> Ꮡz) {
-    ref var dk = ref Ꮡdk.DerefOrNil();
-    ref var d = ref Ꮡd.Value;
-    ref var z = ref Ꮡz.Value;
+    ref var dk = ref Ꮡdk.DerefOrNull();
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (Ꮡdk == nil) {
-        Ꮡdk = Ꮡ(new DecapsulationKey(nil)); dk = ref Ꮡdk.DerefOrNil();
+        Ꮡdk = Ꮡ(new DecapsulationKey(nil)); dk = ref Ꮡdk.DerefOrNull();
     }
     var G = sha3.Sum512(d[..]);
     var (ρ, σ) = (G[..32], G[32..]);
@@ -281,10 +281,10 @@ internal static (slice<byte> c, slice<byte> K, error err) kemEncaps(ж<array<byt
     slice<byte> K = default!;
     error err = default!;
 
-    ref var cc = ref Ꮡcc.DerefOrNil();
-    ref var m = ref Ꮡm.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
+    ref var m = ref Ꮡm.DerefOrNull();
     if (Ꮡcc == nil) {
-        Ꮡcc = Ꮡ(new byte[]{}.array(1088)); cc = ref Ꮡcc.DerefOrNil();
+        Ꮡcc = Ꮡ(new byte[]{}.array(1088)); cc = ref Ꮡcc.DerefOrNull();
     }
     var H = sha3.Sum256(ek[..]);
     var g = sha3.New512();
@@ -311,7 +311,7 @@ internal static readonly @string mlkem768Invalidˢ3 = "mlkem768: invalid encrypt
 // It implements the initial stages of K-PKE.Encrypt according to FIPS 203
 // (DRAFT), Algorithm 13.
 internal static error parseEK(ж<encryptionKey> Ꮡex, slice<byte> ekPKE) {
-    ref var ex = ref Ꮡex.Value;
+    ref var ex = ref Ꮡex.DerefOrNull();
 
     if (len(ekPKE) != encryptionKeySize) {
         return errors.New(mlkem768Invalidˢ3);
@@ -340,8 +340,8 @@ internal static error parseEK(ж<encryptionKey> Ꮡex, slice<byte> ekPKE) {
 // It implements K-PKE.Encrypt according to FIPS 203 (DRAFT), Algorithm 13,
 // although the computation of t and AT is done in parseEK.
 internal static slice<byte> pkeEncrypt(ж<array<byte>> Ꮡcc, ж<encryptionKey> Ꮡex, ж<array<byte>> Ꮡm, slice<byte> rnd) {
-    ref var cc = ref Ꮡcc.Value;
-    ref var ex = ref Ꮡex.Value;
+    ref var cc = ref Ꮡcc.DerefOrNull();
+    ref var ex = ref Ꮡex.DerefOrNull();
 
     byte N = default!;
     var (r, e1) = (new slice<nttElement>(k), new slice<ringElement>(k));
@@ -403,8 +403,8 @@ public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey
 internal static slice<byte> /*K*/ kemDecaps(ж<DecapsulationKey> Ꮡdk, ж<array<byte>> Ꮡc) {
     slice<byte> K = default!;
 
-    ref var dk = ref Ꮡdk.Value;
-    ref var c = ref Ꮡc.Value;
+    ref var dk = ref Ꮡdk.DerefOrNull();
+    ref var c = ref Ꮡc.DerefOrNull();
     var h = dk.dk[(int)(decryptionKeySize + encryptionKeySize)..(int)(decryptionKeySize + encryptionKeySize + 32)];
     var z = dk.dk[(int)(decryptionKeySize + encryptionKeySize + 32)..];
     var m = pkeDecrypt(Ꮡdk.of(DecapsulationKey.ᏑdecryptionKey), Ꮡc);
@@ -432,7 +432,7 @@ internal static readonly @string mlkem768Invalidˢ5 = "mlkem768: invalid decrypt
 // It implements the computation of s from K-PKE.Decrypt according to FIPS 203
 // (DRAFT), Algorithm 14.
 internal static error parseDK(ж<decryptionKey> Ꮡdx, slice<byte> dkPKE) {
-    ref var dx = ref Ꮡdx.Value;
+    ref var dx = ref Ꮡdx.DerefOrNull();
 
     if (len(dkPKE) != decryptionKeySize) {
         return errors.New(mlkem768Invalidˢ5);
@@ -453,8 +453,8 @@ internal static error parseDK(ж<decryptionKey> Ꮡdx, slice<byte> dkPKE) {
 // It implements K-PKE.Decrypt according to FIPS 203 (DRAFT), Algorithm 14,
 // although the computation of s is done in parseDK.
 internal static slice<byte> pkeDecrypt(ж<decryptionKey> Ꮡdx, ж<array<byte>> Ꮡc) {
-    ref var dx = ref Ꮡdx.Value;
-    ref var c = ref Ꮡc.Value;
+    ref var dx = ref Ꮡdx.DerefOrNull();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var u = new slice<ringElement>(k);
     foreach (var (i, _) in u) {
@@ -704,7 +704,7 @@ internal static slice<byte> ringCompressAndEncode1(slice<byte> s, ringElement f)
 // It implements ByteDecode₁, according to FIPS 203 (DRAFT), Algorithm 5,
 // followed by Decompress₁, according to FIPS 203 (DRAFT), Definition 4.6.
 internal static ringElement ringDecodeAndDecompress1(ж<array<byte>> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     ringElement f = default!;
     foreach (var (i, _) in f) {
@@ -737,7 +737,7 @@ internal static slice<byte> ringCompressAndEncode4(slice<byte> s, ringElement f)
 // It implements ByteDecode₄, according to FIPS 203 (DRAFT), Algorithm 5,
 // followed by Decompress₄, according to FIPS 203 (DRAFT), Definition 4.6.
 internal static ringElement ringDecodeAndDecompress4(ж<array<byte>> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     ringElement f = default!;
     for (nint i = 0; i < n; i += 2) {
@@ -778,7 +778,7 @@ internal static slice<byte> ringCompressAndEncode10(slice<byte> s, ringElement f
 // It implements ByteDecode₁₀, according to FIPS 203 (DRAFT), Algorithm 5,
 // followed by Decompress₁₀, according to FIPS 203 (DRAFT), Definition 4.6.
 internal static ringElement ringDecodeAndDecompress10(ж<array<byte>> Ꮡbb) {
-    ref var bb = ref Ꮡbb.Value;
+    ref var bb = ref Ꮡbb.DerefOrNull();
 
     var b = bb[..];
     ringElement f = default!;

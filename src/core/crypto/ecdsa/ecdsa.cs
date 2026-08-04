@@ -156,8 +156,8 @@ public static cryptoꓸPublicKey Public(this ж<PrivateKey> Ꮡpriv) {
 // bigIntEqual reports whether a and b are equal leaking only their bit length
 // through timing side-channels.
 internal static bool bigIntEqual(ж<bigꓸInt> Ꮡa, ж<bigꓸInt> Ꮡb) {
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return subtle.ConstantTimeCompare(a.Bytes(), b.Bytes()) == 1;
 }
@@ -210,7 +210,7 @@ public static (ж<PrivateKey>, error) GenerateKey(elliptic.Curve c, io.Reader ra
 internal static (ж<PrivateKey>, error) generateNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, io.Reader rand)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var (k, Q, err) = randomPoint(Ꮡc, rand);
     if (err != default!) {
@@ -235,7 +235,7 @@ internal static (ж<bigmodꓸNat> k, Point p, error err) randomPoint<Point>(ж<n
     Point p = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     k = bigmod.NewNat();
     while (ᐧ) {
         var b = new slice<byte>(c.N.Size());
@@ -292,7 +292,7 @@ internal static error errNoAsm = errors.New("no assembly implementation availabl
 // as rand. Note that the returned signature does not depend deterministically on
 // the bytes read from rand, and may change between calls and/or between versions.
 public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpriv, slice<byte> hash) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     randutil.MaybeReadByte(rand);
     if (boring.Enabled && AreEqual(rand, boring.RandReader)) {
@@ -341,8 +341,8 @@ internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Poin
     slice<byte> sig = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
-    ref var priv = ref Ꮡpriv.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var priv = ref Ꮡpriv.DerefOrNull();
     // SEC 1, Version 2.0, Section 4.1.3
     (var k, var R, err) = randomPoint(Ꮡc, csprng);
     if (err != default!) {
@@ -398,7 +398,7 @@ internal static readonly @string invalidIntegerˢ = "invalid integer"u8;
 // addASN1IntBytes encodes in ASN.1 a positive integer represented as
 // a big-endian byte slice with zero or more leading zeroes.
 internal static void addASN1IntBytes(ж<cryptobyte.Builder> Ꮡb, slice<byte> bytes) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     while (len(bytes) > 0 && bytes[0] == 0) {
         bytes = bytes[1..];
@@ -420,8 +420,8 @@ internal static void addASN1IntBytes(ж<cryptobyte.Builder> Ꮡb, slice<byte> by
 internal static void inverse<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> ᏑkInv, ж<bigmodꓸNat> Ꮡk)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
-    ref var k = ref Ꮡk.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var k = ref Ꮡk.DerefOrNull();
 
     if ((~c.curve.Params()).Name == "P-256"u8) {
         var (kBytes, err) = nistec.P256OrdInverse(k.Bytes(c.N));
@@ -444,7 +444,7 @@ internal static void inverse<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> 
 internal static void hashToNat<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> Ꮡe, slice<byte> hash)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // ECDSA asks us to take the left-most log2(N) bits of hash, and use them as
     // an integer modulo N. This is the absolute worst of all worlds: we still
@@ -477,7 +477,7 @@ internal static void hashToNat<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat
 // equivalent in security to RFC 6979 deterministic nonce generation, but still
 // produces randomized signatures.
 internal static (io.Reader, error) mixedCSPRNG(io.Reader rand, ж<PrivateKey> Ꮡpriv, slice<byte> hash) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     // This implementation derives the nonce from an AES-CTR CSPRNG keyed by:
     //
@@ -541,7 +541,7 @@ internal static (nint n, error err) Read(this zr _, slice<byte> dst) {
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     if (boring.Enabled) {
         var (key, err) = boringPublicKey(Ꮡpub);
@@ -578,8 +578,8 @@ public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte
 internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
-    ref var pub = ref Ꮡpub.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     var (rBytes, sBytes, err) = parseSignature(sig);
     if (err != default!) {
@@ -671,8 +671,8 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     Point p = default!;
     error err = default!;
 
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
     nint bitSize = curve.curve.Params().Value.BitSize;
     // Reject values that would not get correctly encoded.
     if (x.Sign() < 0 || y.Sign() < 0) {
@@ -776,7 +776,7 @@ internal static ж<nistCurve<P521PointжnistPoint>> p521() {
 internal static void precomputeParams<Point>(ж<nistCurve<Point>> Ꮡc, elliptic.Curve curve)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var @params = curve.Params();
     c.curve = curve;

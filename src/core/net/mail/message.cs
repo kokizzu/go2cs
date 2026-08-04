@@ -79,7 +79,7 @@ public static (ж<Message> msg, error err) ReadMessage(io.Reader r) {
 // This function copies the relevant code from net/textproto,
 // simplified for RFC 5322.
 internal static (map<@string, slice<@string>>, error) readHeader(ж<textproto.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var m = new map<@string, slice<@string>>();
     // The first line cannot start with a leading space.
@@ -348,7 +348,7 @@ internal static readonly @string utf8ˢ = "utf-8"u8;
 internal static readonly @string mailExpectedCommaˢ = "mail: expected comma"u8;
 
 internal static (slice<ж<Address>>, error) parseAddressList(this ж<addrParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     slice<ж<Address>> list = default!;
     while (ᐧ) {
@@ -387,7 +387,7 @@ internal static readonly @string mailEmptyGroupˢ = "mail: empty group"u8;
 internal static readonly @string mailGroupWithMultipleˢ = "mail: group with multiple addresses"u8;
 
 internal static (ж<Address>, error) parseSingleAddress(this ж<addrParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var (addrs, err) = Ꮡp.parseAddress(true);
     if (err != default!) {
@@ -416,7 +416,7 @@ internal static readonly @string mailUnclosedAngleAddrˢ = "mail: unclosed angle
 
 // parseAddress parses a single RFC 5322 address at the start of p.
 internal static (slice<ж<Address>>, error) parseAddress(this ж<addrParser> Ꮡp, bool handleGroup) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     debug.Printf("parseAddress: %q"u8, p.s);
     p.skipSpace();
@@ -495,7 +495,7 @@ internal static (slice<ж<Address>>, error) parseAddress(this ж<addrParser> Ꮡ
 }
 
 internal static (slice<ж<Address>>, error) consumeGroupList(this ж<addrParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     slice<ж<Address>> group = default!;
     // handle empty group.
@@ -541,7 +541,7 @@ internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> �
     @string spec = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         debug.Printf("consumeAddrSpec: %q"u8, p.s);
         ref var orig = ref heap<addrParser>(out var Ꮡorig);

@@ -50,7 +50,7 @@ partial class types_package {
 public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
     int64 result = default!;
     func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             assert(result >= 1);
@@ -182,7 +182,7 @@ internal static array<byte> basicSizes = new golib.SparseArray<byte>{
 }.array(17);
 
 public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var switchᴛ23 = under(T);
     switch (switchᴛ23.type()) {
@@ -335,7 +335,7 @@ internal static void initᴛstdSizes() { stdSizes = SizesFor("gc"u8, "amd64"u8);
 }
 
 [GoRecv] internal static slice<int64> offsetsof(this ref Config conf, ж<Struct> ᏑT) {
-    ref var T = ref ᏑT.Value;
+    ref var T = ref ᏑT.DerefOrNull();
 
     slice<int64> offsets = default!;
     if (T.NumFields() > 0) {

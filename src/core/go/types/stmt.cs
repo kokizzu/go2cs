@@ -23,16 +23,15 @@ partial class types_package {
 internal static readonly @string missingReturnˢ = "missing return"u8;
 
 internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var decl = ref Ꮡdecl.Value;
-    ref var sig = ref Ꮡsig.Value;
-    ref var body = ref Ꮡbody.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var sig = ref Ꮡsig.DerefOrNull();
+    ref var body = ref Ꮡbody.DerefOrNull();
 
     if ((~check.conf).IgnoreFuncBodies) {
         throw panic("function body not ignored");
     }
     if ((~check.conf)._Trace) {
-        Ꮡcheck.trace(body.Pos(), "-- %s: %s"u8, name, Ꮡsig);
+        Ꮡcheck.trace(body.Pos(), "-- %s: %s"u8, name, Ꮡsig.OrTypedNil());
     }
     // save/restore current environment and set up function environment
     // (and use 0 indentation at function start)
@@ -60,7 +59,7 @@ internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @
 });
 
 internal static void usage(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope) {
-    ref var scope = ref Ꮡscope.Value;
+    ref var scope = ref Ꮡscope.DerefOrNull();
 
     slice<ж<Var>> unused = default!;
     foreach (var (name, vᴛ1) in scope.elems) {
@@ -130,7 +129,7 @@ internal static void stmtList(this ж<Checker> Ꮡcheck, stmtContext ctxt, slice
 internal static readonly @string caseCommunicationClauseˢ = "case/communication clause expected"u8;
 
 internal static void multipleDefaults(this ж<Checker> Ꮡcheck, slice<ast.Stmt> list) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     ast.Stmt first = default!;
     foreach (var (_, s) in list) {
@@ -262,7 +261,7 @@ internal static any goVal(constant.Value val) {
 }
 
 internal static void caseValues(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, slice<ast.Expr> values, valueMap seen) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
 L:
     foreach (var (_, e) in values) {
@@ -329,7 +328,7 @@ break_L:;
 internal static ΔType /*T*/ caseTypes(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, slice<ast.Expr> types, map<ΔType, ast.Expr> seen) {
     ΔType T = default!;
 
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
     ref var dummy = ref heap(new operand(), out var Ꮡdummy);
 L:
     foreach (var (_, e) in types) {
@@ -440,7 +439,7 @@ internal static readonly @string invalidStatementˢ = "invalid statement"u8;
 
 // stmt typechecks statement s.
 internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt s) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // statements must end with the same top scope as they started with
     if (debug) {
@@ -614,7 +613,7 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                     var alt = Ꮡcheck.of(Checker.Ꮡenvironment).lookup((~obj).name); if (alt != default! && !AreEqual(alt, obj)) {
                         var err = Ꮡcheck.newError(OutOfScopeResult);
                         err.addf(new ast_ReturnStmtжpositioner(sΔ1), "result parameter %s not in scope at return"u8, (~obj).name);
-                        err.addf(new Objectᴠpositioner(alt), "inner declaration of %s"u8, obj);
+                        err.addf(new Objectᴠpositioner(alt), "inner declaration of %s"u8, obj.OrTypedNil());
                         err.report();
                     }
                 }
@@ -977,10 +976,10 @@ internal static readonly @string rangeClauseˢ = "range clause"u8;
 internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
 
 internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    var identName = @string (ж<identType> n) => (~n).Name;
+    @string identName(ж<identType> n) => (~n).Name;
     var (sKey, sValue) = (s.Key, s.Value);
     ast.Expr sExtra = default!;         // (used only in types2 fork)
     var isDef = s.Tok == token.DEFINE;
@@ -1160,11 +1159,11 @@ internal static (ΔType key, ΔType val, @string cause, bool ok) rangeKeyVal(ΔT
     @string cause = default!;
     bool ok = default!;
 
-    var bad = (@string causeΔ1) => (new BasicжΔType(Typ[Invalid]), new BasicжΔType(Typ[Invalid]), causeΔ1, false);
-    var toSig = (ΔType t) => {
+    (ΔType, ΔType, @string, bool) bad(@string causeΔ1) => (new BasicжΔType(Typ[Invalid]), new BasicжΔType(Typ[Invalid]), causeΔ1, false);
+    ж<ΔSignature> toSig(ΔType t) {
         var (sig, _) = coreType(t)._<ж<ΔSignature>>(ᐧ);
         return sig;
-    };
+    }
     var orig = typ;
     switch (arrayPtrDeref(coreType(typ)).type()) {
     case null: {

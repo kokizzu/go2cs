@@ -66,7 +66,7 @@ internal static UntypedInt maxRate => 168;
 // permute applies the KeccakF-1600 permutation. It handles
 // any input-output buffering.
 internal static void permute(this ж<state> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var exprᴛ1 = d.Δstate;
     if (exprᴛ1 == spongeAbsorbing) {
@@ -89,7 +89,7 @@ internal static void permute(this ж<state> Ꮡd) {
 // pads appends the domain separation bits in dsbyte, applies
 // the multi-bitrate 10..1 padding rule, and permutes the state.
 internal static void padAndPermute(this ж<state> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Pad with this instance's domain-separator bits. We know that there's
     // at least one byte of space in d.buf because, if it were full,
@@ -118,7 +118,7 @@ internal static (nint written, error err) Write(this ж<state> Ꮡd, slice<byte>
     nint written = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     if (d.Δstate != spongeAbsorbing) {
         throw panic("sha3: Write after Read");
     }
@@ -151,7 +151,7 @@ internal static (nint n, error err) Read(this ж<state> Ꮡd, slice<byte> @out) 
     nint n = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     // If we're still absorbing, pad and apply the permutation.
     if (d.Δstate == spongeAbsorbing) {
         Ꮡd.padAndPermute();

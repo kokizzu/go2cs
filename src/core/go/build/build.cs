@@ -589,7 +589,7 @@ internal static readonly @string cgoˢ = "cgo"u8;
 // If an error occurs, Import returns a non-nil error and a non-nil
 // *[Package] containing partial information.
 public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path, @string srcDir, ImportMode mode) {
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     var p = Ꮡ(new Package(
         ImportPath: path
@@ -617,7 +617,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
     }
 
     var pʗ1 = p;
-    var setPkga = () => {
+    void setPkga() {
         var exprᴛ2 = Ꮡctxt.Value.Compiler;
         if (exprᴛ2 == "gccgo"u8) {
             var (dir, elem) = pathpkg.Split((~pʗ1).ImportPath);
@@ -627,7 +627,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
             pkga = pkgtargetroot + "/"u8 + (~pʗ1).ImportPath + ".a"u8;
         }
 
-    };
+    }
     setPkga();
     var binaryOnly = false;
     if (IsLocalImport(path)){
@@ -642,7 +642,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         // p.Dir directory may or may not exist. Gather partial information first, check if it exists later.
         // Determine canonical import path, if any.
         // Exclude results where the import path would include /testdata/.
-        var inTestdata = (@string sub) => strings.Contains(sub, testdataˢ) || strings.HasSuffix(sub, testdataˢ2) || strings.HasPrefix(sub, testdataˢ3) || sub == "testdata"u8;
+        bool inTestdata(@string sub) => strings.Contains(sub, testdataˢ) || strings.HasSuffix(sub, testdataˢ2) || strings.HasPrefix(sub, testdataˢ3) || sub == "testdata"u8;
         if (ctxt.GOROOT != ""u8) {
             @string root = ctxt.joinPath(ctxt.GOROOT, srcˢ);
             {
@@ -712,7 +712,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         if ((ImportMode)(mode & IgnoreVendor) == 0 && srcDir != ""u8) {
             var pʗ2 = p;
             var setPkgaʗ1 = setPkga;
-            var searchVendor = (@string root, bool isGoroot) => {
+            bool searchVendor(@string root, bool isGoroot) {
                 var (sub, ok) = Ꮡctxt.Value.hasSubdir(root, srcDir);
                 if (!ok || !strings.HasPrefix(sub, srcˢ2) || strings.Contains(sub, testdataˢ)) {
                     return false;
@@ -739,7 +739,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                     sub = sub[..(int)(i)];
                 }
                 return false;
-            };
+            }
             if (ctxt.Compiler != "gccgo"u8 && ctxt.GOROOT != ""u8 && searchVendor(ctxt.GOROOT, true)) {
                 goto Found;
             }
@@ -882,7 +882,7 @@ Found:
     var badGoFiles = new map<@string, bool>();
     var badGoFilesʗ1 = badGoFiles;
     var pʗ3 = p;
-    var badGoFile = (@string name, error errΔ2) => {
+    void badGoFile(@string name, error errΔ2) {
         if (ᏑbadGoError.ValueSlot == default!) {
             ᏑbadGoError.ValueSlot = errΔ2;
         }
@@ -890,7 +890,7 @@ Found:
             pʗ3.Value.InvalidGoFiles = append((~pʗ3).InvalidGoFiles, name);
             badGoFilesʗ1[name] = true;
         }
-    };
+    }
     slice<@string> Sfiles = default!;            // files with ".S"(capital S)/.sx(capital s equivalent for case insensitive filesystems)
     @string firstFile = default!;
     @string firstCommentFile = default!;
@@ -1175,7 +1175,7 @@ internal static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.I
 // Then we reinvoke it for every dependency. But this is still better than not working at all.
 // See golang.org/issue/26504.
 [GoRecv] internal static error importGo(this ref Context ctxt, ж<Package> Ꮡp, @string path, @string srcDir, ImportMode mode) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // To invoke the go command,
     // we must not being doing special things like AllowBinary or IgnoreVendor,
@@ -1335,7 +1335,7 @@ internal static bool equal(slice<@string> x, slice<@string> y) {
 // Otherwise it is not possible to vendor just a/b/c and still import the
 // non-vendored a/b. See golang.org/issue/13832.
 internal static bool hasGoFiles(ж<Context> Ꮡctxt, @string dir) {
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     var (ents, _) = ctxt.readDir(dir);
     foreach (var (_, ent) in ents) {
@@ -1509,9 +1509,8 @@ internal static ref Package dummyPkg => ref ᏑdummyPkg.Value;
 // If allTags is non-nil, matchFile records any encountered build tag
 // by setting allTags[tag] = true.
 internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @string dir, @string name, map<@string, bool> allTags, ж<bool> ᏑbinaryOnly, ж<token.FileSet> Ꮡfset) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
-    ref var fset = ref Ꮡfset.DerefOrNil();
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+    ref var binaryOnly = ref ᏑbinaryOnly.DerefOrNull();
 
     if (strings.HasPrefix(name, "_"u8) || strings.HasPrefix(name, "."u8)) {
         return (default!, default!);
@@ -1540,11 +1539,11 @@ internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @strin
     if (strings.HasSuffix(name, ".go"u8)){
         err = readGoInfo(f, info);
         if (strings.HasSuffix(name, testGoˢ)) {
-            ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
+            ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull();
         }
     } else {
         // ignore //go:binary-only-package comments in _test.go files
-        ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
+        ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull();
         // ignore //go:binary-only-package comments in non-Go sources
         (info.Value.header, err) = readComments(f);
     }
@@ -1770,8 +1769,8 @@ break_Lines:;
 // These lines set CFLAGS, CPPFLAGS, CXXFLAGS and LDFLAGS and pkg-config directives
 // that affect the way cgo's C code is built.
 internal static error saveCgo(this ж<Context> Ꮡctxt, @string filename, ж<Package> Ꮡdi, ж<ast.CommentGroup> Ꮡcg) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var di = ref Ꮡdi.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+    ref var di = ref Ꮡdi.DerefOrNull();
 
     @string text = Ꮡcg.Text();
     foreach (var (_, vᴛ1) in strings.Split(text, "\n"u8)) {

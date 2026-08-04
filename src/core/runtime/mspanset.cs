@@ -67,7 +67,7 @@ internal static UntypedInt spanSetInitSpineCap => 256; // Enough for 1GB heap on
 // push adds span s to buffer b. push is safe to call concurrently
 // with other push and pop operations.
 internal static void push(this ж<spanSet> Ꮡb, ж<mspan> Ꮡs) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Obtain our slot.
     var cursor = (uintptr)(Ꮡb.of(spanSet.Ꮡindex).incTail().tail() - 1);

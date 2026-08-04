@@ -404,7 +404,7 @@ internal static readonly @string funcˢ = "func("u8;
 
 // Type reads the type at off in the DWARF “info” section.
 public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     return Ꮡd.readType(infoˢ, new ΔReaderжtypeReader(Ꮡd.Reader()), off, d.typeCache, nil);
 }
@@ -415,7 +415,7 @@ public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
 }
 
 [GoRecv] internal static void recordArrayType(this ref typeFixer tf, ж<ΔType> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return;
@@ -455,8 +455,8 @@ internal static readonly @string volatileˢ = "volatile"u8;
 // sizes of types. Callers should pass nil for typedefs; this is used
 // for internal recursion.
 internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeReader r, Offset off, map<Offset, ΔType> typeCache, ж<typeFixer> Ꮡfixups) => func<(ΔType, error)>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
-    ref var fixups = ref Ꮡfixups.DerefOrNil();
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var fixups = ref Ꮡfixups.DerefOrNull();
 
     {
         var (t, ok) = typeCache[off, ꟷ]; if (ok) {
@@ -483,7 +483,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
         defer(() => {
             Ꮡfixer.Value.apply();
         });
-        Ꮡfixups = Ꮡfixer; fixups = ref Ꮡfixups.DerefOrNil();
+        Ꮡfixups = Ꮡfixer; fixups = ref Ꮡfixups.DerefOrNull();
     }
     // Parse type from Entry.
     // Must always set typeCache[off] before calling
@@ -492,7 +492,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
     nint nextDepth = 0;
     // Get next child; set err if error happens.
     var eʗ1 = e;
-    var next = () => {
+    ж<Entry> next() {
         if (!(~eʗ1).Children) {
             return default!;
         }
@@ -526,11 +526,11 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
             }
             return kid;
         }
-    };
+    }
     // Get Type referred to by Entry's AttrType field.
     // Set err if error happens. Not having a type is an error.
     var typeCacheʗ1 = typeCache;
-    var typeOf = ΔType (ж<Entry> eΔ1) => {
+    ΔType typeOf(ж<Entry> eΔ1) {
         var tval = eΔ1.Val(AttrType);
         ΔType t = default!;
         switch (tval.type()) {
@@ -556,7 +556,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
         }}
         // It appears that no Type means "void".
         return t;
-    };
+    }
     var exprᴛ1 = (~e).Tag;
     if (exprᴛ1 == TagArrayType) {
         var t = @new<ArrayType>();
@@ -936,7 +936,7 @@ Error:
 });
 
 internal static void zeroArray(ж<ΔType> Ꮡt) {
-    ref var t = ref Ꮡt.ValueSlot;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var at = (t)._<ж<ArrayType>>();
     if ((~at).Type.Size() == 0) {

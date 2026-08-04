@@ -170,7 +170,7 @@ internal static readonly @string jsonUnmarshalNilˢ = "json: Unmarshal(nil)"u8;
 }
 
 internal static error unmarshal(this ж<decodeState> Ꮡd, any v) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var rv = reflect.ValueOf(v);
     if (rv.Kind() != reflect.ΔPointer || rv.IsNil()) {
@@ -233,7 +233,7 @@ public static (int64, error) Int64(this Number n) {
 internal static readonly @string phasePanicMsg = "JSON decoder out of sync - data changing underfoot?"u8;
 
 internal static ж<decodeState> init(this ж<decodeState> Ꮡd, slice<byte> data) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     d.data = data;
     d.off = 0;
@@ -269,7 +269,7 @@ internal static ж<decodeState> init(this ж<decodeState> Ꮡd, slice<byte> data
 
 // skip scans to the end of what was started.
 internal static void skip(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var s = Ꮡd.of(decodeState.Ꮡscan);
     var data = d.data;
@@ -288,7 +288,7 @@ internal static void skip(this ж<decodeState> Ꮡd) {
 
 // scanNext processes the byte at d.data[d.off].
 internal static void scanNext(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if (d.off < len(d.data)){
         d.opcode = d.scan.step(Ꮡd.of(decodeState.Ꮡscan), d.data[d.off]);
@@ -304,7 +304,7 @@ internal static void scanNext(this ж<decodeState> Ꮡd) {
 // scanWhile processes bytes in d.data[d.off:] until it
 // receives a scan code not equal to op.
 internal static void scanWhile(this ж<decodeState> Ꮡd, nint op) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var s = Ꮡd.of(decodeState.Ꮡscan);
     var data = d.data;
@@ -332,7 +332,7 @@ internal static void scanWhile(this ж<decodeState> Ꮡd, nint op) {
 // know there aren't any syntax errors. We can take advantage of that knowledge,
 // and scan a literal's bytes much more quickly.
 internal static void rescanLiteral(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var data = d.data;
     nint i = d.off;
@@ -401,7 +401,7 @@ Switch:
 // reads the following byte ahead. If v is invalid, the value is discarded.
 // The first byte of the value has been read already.
 internal static error value(this ж<decodeState> Ꮡd, reflectꓸValue v) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var exprᴛ1 = d.opcode;
     if (exprᴛ1 == scanBeginArray) {
@@ -455,7 +455,7 @@ internal static error value(this ж<decodeState> Ꮡd, reflectꓸValue v) {
 // If it finds anything other than a quoted string literal or null,
 // valueQuoted returns unquotedValue{}.
 internal static any valueQuoted(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var exprᴛ1 = d.opcode;
     if (exprᴛ1 == scanBeginArray || exprᴛ1 == scanBeginObject) {
@@ -559,7 +559,7 @@ internal static (Unmarshaler, encoding.TextUnmarshaler, reflectꓸValue) indirec
 // array consumes an array from d.data[d.off-1:], decoding into v.
 // The first byte of the array ('[') has been read already.
 internal static error Δarray(this ж<decodeState> Ꮡd, reflectꓸValue v) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Check for unmarshaler.
     var (u, ut, pv) = indirect(v, false);
@@ -665,7 +665,7 @@ internal static reflectꓸType textUnmarshalerType = reflect.TypeFor<encoding.Te
 // object consumes an object from d.data[d.off-1:], decoding into v.
 // The first byte ('{') of the object has been read already.
 internal static error @object(this ж<decodeState> Ꮡd, reflectꓸValue v) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Check for unmarshaler.
     var (u, ut, pv) = indirect(v, false);
@@ -1155,7 +1155,7 @@ internal static readonly @string boolˢ = "bool"u8;
 internal static any /*val*/ valueInterface(this ж<decodeState> Ꮡd) {
     any val = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     var exprᴛ1 = d.opcode;
     if (exprᴛ1 == scanBeginArray) {
         val = Ꮡd.arrayInterface();
@@ -1177,7 +1177,7 @@ internal static any /*val*/ valueInterface(this ж<decodeState> Ꮡd) {
 
 // arrayInterface is like array but returns []interface{}.
 internal static slice<any> arrayInterface(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     slice<any> v = new slice<any>(0);
     while (ᐧ) {
@@ -1203,7 +1203,7 @@ internal static slice<any> arrayInterface(this ж<decodeState> Ꮡd) {
 
 // objectInterface is like object but returns map[string]interface{}.
 internal static map<@string, any> objectInterface(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var m = new map<@string, any>();
     while (ᐧ) {
@@ -1252,7 +1252,7 @@ internal static map<@string, any> objectInterface(this ж<decodeState> Ꮡd) {
 // it reads the following byte ahead. The first byte of the literal has been
 // read already (that's how the caller knows it's a literal).
 internal static any literalInterface(this ж<decodeState> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // All bytes inside literal return scanContinue op code.
     nint start = d.readIndex();

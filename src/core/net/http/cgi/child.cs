@@ -165,7 +165,7 @@ public static error Serve(httpꓸHandler handler) {
         req.Value.Body = http.NoBody;
     }
     if (handler == default!) {
-        handler = new http_ServeMuxжΔHandler(http.DefaultServeMux);
+        handler = new http.ServeMuxжΔHandler(http.DefaultServeMux);
     }
     var rw = Ꮡ(new response(
         req: req,
@@ -216,7 +216,7 @@ public static error Serve(httpꓸHandler handler) {
 [GoRecv] internal static void WriteHeader(this ref response r, nint code) {
     if (r.wroteHeader) {
         // Note: explicitly using Stderr, as Stdout is our HTTP output.
-        fmt.Fprintf(new os.FileжWriter(os.Stderr), "CGI attempted to write header twice on request for %s"u8, (~r.req).URL);
+        fmt.Fprintf(new os.FileжWriter(os.Stderr), "CGI attempted to write header twice on request for %s"u8, (~r.req).URL.OrTypedNil());
         return;
     }
     r.wroteHeader = true;

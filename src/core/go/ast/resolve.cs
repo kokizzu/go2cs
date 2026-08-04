@@ -29,9 +29,9 @@ partial class ast_package {
 }
 
 [GoRecv] internal static void declare(this ref pkgBuilder p, ж<Scope> Ꮡscope, ж<Scope> ᏑaltScope, ж<Object> Ꮡobj) {
-    ref var scope = ref Ꮡscope.Value;
-    ref var altScope = ref ᏑaltScope.DerefOrNil();
-    ref var obj = ref Ꮡobj.Value;
+    ref var scope = ref Ꮡscope.DerefOrNull();
+    ref var altScope = ref ᏑaltScope.DerefOrNull();
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     var alt = scope.Insert(Ꮡobj);
     if (alt == nil && ᏑaltScope != nil) {
@@ -50,11 +50,11 @@ partial class ast_package {
 }
 
 internal static bool resolve(ж<Scope> Ꮡscope, ж<Ident> Ꮡident) {
-    ref var scope = ref Ꮡscope.DerefOrNil();
-    ref var ident = ref Ꮡident.Value;
+    ref var scope = ref Ꮡscope.DerefOrNull();
+    ref var ident = ref Ꮡident.DerefOrNull();
 
     for (; Ꮡscope != nil; Ꮡscope = scope.Outer) {
-        scope = ref Ꮡscope.DerefOrNil();
+        scope = ref Ꮡscope.DerefOrNull();
         {
             var obj = scope.Lookup(ident.Name); if (obj != nil) {
                 ident.Obj = obj;
@@ -78,8 +78,8 @@ internal static bool resolve(ж<Scope> Ꮡscope, ж<Ident> Ꮡident) {
 //
 // Deprecated: use the type checker [go/types] instead; see [Object].
 public static (ж<Package>, error) NewPackage(ж<token.FileSet> Ꮡfset, map<@string, ж<File>> files, Func<map<@string, ж<Object>>, @string, (ж<Object>, error)> importer, ж<Scope> Ꮡuniverse) {
-    ref var fset = ref Ꮡfset.Value;
-    ref var universe = ref Ꮡuniverse.Value;
+    ref var fset = ref Ꮡfset.DerefOrNull();
+    ref var universe = ref Ꮡuniverse.DerefOrNull();
 
     pkgBuilder p = default!;
     p.fset = Ꮡfset;
@@ -154,7 +154,7 @@ public static (ж<Package>, error) NewPackage(ж<token.FileSet> Ꮡfset, map<@st
                 // a new object instead; the Decl field is different
                 // for different files)
                 var obj = NewObj(Pkg, name);
-                obj.Value.Decl = spec;
+                obj.Value.Decl = spec.OrTypedNil();
                 obj.Value.Data = pkg.Value.Data;
                 p.declare(fileScope, pkgScope, obj);
             }

@@ -140,7 +140,7 @@ public static void AddUint32LengthPrefixed(this ж<Builder> Ꮡb, Action<ж<Buil
 }
 
 internal static void callContinuation(this ж<Builder> Ꮡb, Action<ж<Builder>> f, ж<Builder> Ꮡarg) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (!b.inContinuation.Value) {
         b.inContinuation.Value = true;
@@ -164,7 +164,7 @@ internal static void callContinuation(this ж<Builder> Ꮡb, Action<ж<Builder>>
 });
 
 internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool isASN1, Action<ж<Builder>> f) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Subsequent writes can be ignored if the builder has encountered an error.
     if (b.err != default!) {
@@ -328,7 +328,7 @@ private static readonly @string cryptobyteBuilderIsˢ = "cryptobyte: Builder is 
 // If Marshal returns an error, it is set on the Builder so that subsequent
 // appends don't have an effect.
 public static void AddValue(this ж<Builder> Ꮡb, MarshalingValue v) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var err = v.Marshal(Ꮡb);
     if (err != default!) {

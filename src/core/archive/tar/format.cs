@@ -102,25 +102,25 @@ partial struct block;
 
 // Convert block to any number of formats.
 internal static ж<headerV7> toV7(this ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return Ꮡ((headerV7)(b.Value));
 }
 
 internal static ж<headerGNU> toGNU(this ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return Ꮡ((headerGNU)(b.Value));
 }
 
 internal static ж<headerSTAR> toSTAR(this ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return Ꮡ((headerSTAR)(b.Value));
 }
 
 internal static ж<headerUSTAR> toUSTAR(this ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return Ꮡ((headerUSTAR)(b.Value));
 }
@@ -133,7 +133,7 @@ internal static ж<headerUSTAR> toUSTAR(this ж<block> Ꮡb) {
 // It then attempts to guess the specific format based on magic values.
 // If the checksum fails, then FormatUnknown is returned.
 internal static Format getFormat(this ж<block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Verify checksum.
     parser p = default!;
@@ -165,7 +165,7 @@ internal static Format getFormat(this ж<block> Ꮡb) {
 // setFormat writes the magic values necessary for specified format
 // and then updates the checksum accordingly.
 internal static void setFormat(this ж<block> Ꮡb, Format format) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Set the magic values.
     switch (ᐧ) {
@@ -274,7 +274,7 @@ partial struct headerV7;
 partial struct headerGNU;
 
 internal static ж<headerV7> v7(this ж<headerGNU> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     return Ꮡ((headerV7)(h.Value));
 }
@@ -323,7 +323,7 @@ internal static ж<headerV7> v7(this ж<headerGNU> Ꮡh) {
 partial struct headerSTAR;
 
 internal static ж<headerV7> v7(this ж<headerSTAR> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     return Ꮡ((headerV7)(h.Value));
 }
@@ -372,7 +372,7 @@ internal static ж<headerV7> v7(this ж<headerSTAR> Ꮡh) {
 partial struct headerUSTAR;
 
 internal static ж<headerV7> v7(this ж<headerUSTAR> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     return Ꮡ((headerV7)(h.Value));
 }

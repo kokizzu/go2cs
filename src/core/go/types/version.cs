@@ -49,7 +49,7 @@ internal static goVersion go_current = asGoVersion(fmt.Sprintf("go1.%d"u8, (nint
 // module version (Config.GoVersion) is used. If that version is invalid,
 // allowVersion returns true.
 internal static bool allowVersion(this ж<Checker> Ꮡcheck, positioner at, goVersion v) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     @string fileVersion = check.conf.Value.GoVersion;
     {
@@ -85,7 +85,7 @@ internal static bool verifyVersionf(this ж<Checker> Ꮡcheck, positioner at, go
 // If there are no files, the result is nil.
 // The position must be valid.
 internal static ж<ast.File> fileFor(this ж<Checker> Ꮡcheck, tokenꓸPos pos) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     assert(pos.IsValid());
     // Eval and CheckExpr tests may not have any source files.

@@ -320,7 +320,7 @@ internal static readonly @string cpuˢ = "cpu"u8;
 
 // build completes and returns the constructed profile.
 internal static void build(this ж<profileBuilder> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.end = time.Now();
     b.pb.int64Opt(tagProfile_TimeNanos, b.start.UnixNano());
@@ -374,7 +374,7 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
 internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuilder> Ꮡb, slice<uint64> locs, slice<uintptr> stk) {
     slice<uint64> newLocs = default!;
 
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
     b.deck.reset();
     // The last frame might be truncated. Recover lost inline frames.
     stk = runtime_expandFinalInlineFrame(stk);
@@ -583,7 +583,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // It emits to b.pb, so there must be no message encoding in progress.
 // It resets the deck.
 internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) => func<uint64>((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (len(b.deck.pcs) == 0) {
         return 0;
@@ -676,12 +676,12 @@ internal static void parseProcSelfMaps(slice<byte> data, Action<uint64, uint64, 
     ref var line = ref heap<slice<byte>>(out var Ꮡline);
     // next removes and returns the next field in the line.
     // It also removes from line any spaces following the field.
-    var next = () => {
+    slice<byte> next() {
         slice<byte> f = default!;
         (f, Ꮡline.ValueSlot, _) = bytes.Cut(Ꮡline.ValueSlot, space);
         Ꮡline.ValueSlot = bytes.TrimLeft(Ꮡline.ValueSlot, " "u8);
         return f;
-    };
+    }
     while (len(data) > 0) {
         (line, data, _) = bytes.Cut(data, newline);
         var addr = next();

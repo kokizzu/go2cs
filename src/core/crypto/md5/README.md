@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-11%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/crypto.md5.html)
+[![Tests](https://img.shields.io/badge/Tests-11%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/crypto.md5.html)
 
 Package md5 implements the MD5 hash algorithm as defined in RFC 1321.
 

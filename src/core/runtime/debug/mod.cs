@@ -170,7 +170,7 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
         @string buildLine = buildˢ;
         @string newline = "\n"u8;
         @string tab = "\t"u8;
-        var readModuleLine = (slice<@string> elem) => {
+        (Module, error) readModuleLine(slice<@string> elem) {
             if (len(elem) != 2 && len(elem) != 3) {
                 return (new Module(nil), fmt.Errorf("expected 2 or 3 columns; got %d"u8, len(elem)));
             }
@@ -184,7 +184,7 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 Version: version,
                 Sum: sum
             ), default!);
-        };
+        }
         bi = @new<BuildInfo>();
         ж<Module> last = default!;
         @string line = default!;

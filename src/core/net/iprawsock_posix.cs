@@ -21,7 +21,7 @@ internal static ΔAddr sockaddrToIP(syscallꓸSockaddr sa) {
 }
 
 internal static nint family(this ж<IPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil || len(a.IP) <= IPv4len) {
         return syscall.AF_INET;
@@ -33,7 +33,7 @@ internal static nint family(this ж<IPAddr> Ꮡa) {
 }
 
 internal static (syscallꓸSockaddr, error) sockaddr(this ж<IPAddr> Ꮡa, nint family) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return (default!, default!);
@@ -132,7 +132,7 @@ internal static nint stripIPv4Header(nint n, slice<byte> b) {
 }
 
 internal static (ж<IPConn>, error) dialIP(this ж<sysDialer> Ꮡsd, context.Context ctx, ж<IPAddr> Ꮡladdr, ж<IPAddr> Ꮡraddr) {
-    ref var sd = ref Ꮡsd.Value;
+    ref var sd = ref Ꮡsd.DerefOrNull();
 
     var (network, proto, err) = parseNetwork(ctx, sd.network, true);
     if (err != default!) {
@@ -157,7 +157,7 @@ internal static (ж<IPConn>, error) dialIP(this ж<sysDialer> Ꮡsd, context.Con
 }
 
 internal static (ж<IPConn>, error) listenIP(this ж<sysListener> Ꮡsl, context.Context ctx, ж<IPAddr> Ꮡladdr) {
-    ref var sl = ref Ꮡsl.Value;
+    ref var sl = ref Ꮡsl.DerefOrNull();
 
     var (network, proto, err) = parseNetwork(ctx, sl.network, true);
     if (err != default!) {

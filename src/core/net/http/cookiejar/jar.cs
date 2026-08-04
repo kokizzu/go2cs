@@ -73,7 +73,7 @@ partial class cookiejar_package {
 // New returns a new cookie jar. A nil [*Options] is equivalent to a zero
 // Options.
 public static (ж<Jar>, error) New(ж<Options> Ꮡo) {
-    ref var o = ref Ꮡo.DerefOrNil();
+    ref var o = ref Ꮡo.DerefOrNull();
 
     var jar = Ꮡ(new Jar(
         entries: new map<@string, map<@string, entry>>()
@@ -166,8 +166,8 @@ public static slice<ж<httpꓸCookie>> /*cookies*/ Cookies(this ж<Jar> Ꮡj, ж
 internal static slice<ж<httpꓸCookie>> /*cookies*/ cookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, time.Time now) {
     slice<ж<httpꓸCookie>> cookies = default!;
     func((defer, recover) => {
-    ref var j = ref Ꮡj.Value;
-    ref var u = ref Ꮡu.Value;
+    ref var j = ref Ꮡj.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
 
         if (u.Scheme != "http"u8 && u.Scheme != "https"u8) {
             return;
@@ -244,8 +244,8 @@ public static void SetCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<http
 
 // setCookies is like SetCookies but takes the current time as parameter.
 internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies, time.Time now) => func((defer, recover) => {
-    ref var j = ref Ꮡj.Value;
-    ref var u = ref Ꮡu.Value;
+    ref var j = ref Ꮡj.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (len(cookies) == 0) {
         return;
@@ -419,7 +419,7 @@ internal static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
     bool remove = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     e.Name = c.Name;
     if (c.Path == ""u8 || c.Path[0] != (rune)'/'){
         e.Path = defPath;

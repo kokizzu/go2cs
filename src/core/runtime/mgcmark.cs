@@ -30,7 +30,7 @@ internal static UntypedInt pagesPerSpanRoot => 512;
 internal static void gcMarkRootPrepare() {
     assertWorldStopped();
     // Compute how many data and BSS root blocks there are.
-    var nBlocks = (uintptr bytes) => (nint)divRoundUp(bytes, rootBlockBytes);
+    nint nBlocks(uintptr bytes) => (nint)divRoundUp(bytes, rootBlockBytes);
     work.nDataRoots = 0;
     work.nBSSRoots = 0;
     // Scan globals.
@@ -98,7 +98,7 @@ internal static void gcMarkRootCheck() {
             return;
         }
         if (!(~gp).gcscandone) {
-            println((@string)"gp"u8, gp, (@string)"goid"u8, (~gp).goid,
+            println((@string)"gp"u8, gp.OrTypedNil(), (@string)"goid"u8, (~gp).goid,
                 (@string)"status"u8, readgstatus(gp),
                 (@string)"gcscandone"u8, (~gp).gcscandone);
             @throw(scanMissedAGˢ);
@@ -199,8 +199,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
             // we scan the stacks we can and ask running
             // goroutines to scan themselves; and the
             // second blocks.
-            ref var stopped = ref heap<suspendGState>(out var Ꮡstopped);
-            stopped = suspendG(gpʗ1);
+            var stopped = suspendG(gpʗ1);
             if (stopped.dead) {
                 gpʗ1.Value.gcscandone = true;
                 return;
@@ -237,7 +236,7 @@ internal static readonly @string rootBlockBytesMustBeAˢ = "rootBlockBytes must 
 //
 //go:nowritebarrier
 internal static int64 markrootBlock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask0, ж<gcWork> Ꮡgcw, nint shard) {
-    ref var ptrmask0 = ref Ꮡptrmask0.Value;
+    ref var ptrmask0 = ref Ꮡptrmask0.DerefOrNull();
 
     if (rootBlockBytes % (8 * goarch.PtrSize) != 0) {
         // This is necessary to pick byte offsets in ptrmask0.
@@ -390,7 +389,7 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
 //
 // This must be called with preemption enabled.
 internal static void gcAssistAlloc(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Don't assist in non-preemptible contexts. These are
     // generally fragile and won't allow the assist to block.
@@ -589,7 +588,7 @@ internal static readonly @string nwaitWorkNprocsˢ = "nwait > work.nprocs"u8;
 //
 //go:systemstack
 internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Clear the flag indicating that this assist completed the
     // mark phase.
@@ -788,10 +787,10 @@ internal static readonly @string remainingPointerBuffersˢ = "remaining pointer 
 //go:nowritebarrier
 //go:systemstack
 internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if ((uint32)(readgstatus(Ꮡgp) & (uint32)_Gscan) == 0) {
-        print((@string)"runtime:scanstack: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, ((Δhex)(uint64)readgstatus(Ꮡgp)), (@string)"\n"u8);
+        print((@string)"runtime:scanstack: gp="u8, Ꮡgp.OrTypedNil(), (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, ((Δhex)(uint64)readgstatus(Ꮡgp)), (@string)"\n"u8);
         @throw(scanstackBadStatusˢ);
     }
     var exprᴛ1 = (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan);
@@ -799,13 +798,13 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         return 0;
     }
     if (exprᴛ1 == _Grunning) {
-        print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
+        print((@string)"runtime: gp="u8, Ꮡgp.OrTypedNil(), (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
         @throw(scanstackGoroutineNotˢ);
     }
     else if (exprᴛ1 == _Grunnable || exprᴛ1 == _Gsyscall || exprᴛ1 == _Gwaiting) {
     }
     else { /* default: */
-        print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
+        print((@string)"runtime: gp="u8, Ꮡgp.OrTypedNil(), (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
         @throw(markBadStatusˢ);
     }
 
@@ -968,8 +967,8 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
 //
 //go:nowritebarrier
 internal static void scanframeworker(ж<stkframe> Ꮡframe, ж<stackScanState> Ꮡstate, ж<gcWork> Ꮡgcw) {
-    ref var frame = ref Ꮡframe.Value;
-    ref var state = ref Ꮡstate.Value;
+    ref var frame = ref Ꮡframe.DerefOrNull();
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     if (_DebugGC > 1 && frame.continpc != 0) {
         print((@string)"scanframe "u8, funcname(frame.fn), (@string)"\n"u8);
@@ -1116,7 +1115,7 @@ internal static readonly @string gcDrainPhaseIncorrectˢ = "gcDrain phase incorr
 //
 //go:nowritebarrier
 internal static void gcDrain(ж<gcWork> Ꮡgcw, gcDrainFlags flags) {
-    ref var gcw = ref Ꮡgcw.Value;
+    ref var gcw = ref Ꮡgcw.DerefOrNull();
 
     if (!writeBarrier.enabled) {
         @throw(gcDrainPhaseIncorrectˢ);
@@ -1239,7 +1238,7 @@ internal static readonly @string gcDrainNPhaseIncorrectˢ = "gcDrainN phase inco
 //go:nowritebarrier
 //go:systemstack
 internal static int64 gcDrainN(ж<gcWork> Ꮡgcw, int64 scanWork) {
-    ref var gcw = ref Ꮡgcw.Value;
+    ref var gcw = ref Ꮡgcw.DerefOrNull();
 
     if (!writeBarrier.enabled) {
         @throw(gcDrainNPhaseIncorrectˢ);
@@ -1301,7 +1300,7 @@ internal static int64 gcDrainN(ж<gcWork> Ꮡgcw, int64 scanWork) {
 //
 //go:nowritebarrier
 internal static void scanblock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask, ж<gcWork> Ꮡgcw, ж<stackScanState> Ꮡstk) {
-    ref var stk = ref Ꮡstk.DerefOrNil();
+    ref var stk = ref Ꮡstk.DerefOrNull();
 
     // Use local copies of original parameters, so that a stack trace
     // due to one of the throws below shows the original block
@@ -1347,7 +1346,7 @@ internal static readonly @string scanobjectOfANoscanˢ = "scanobject of a noscan
 //
 //go:nowritebarrier
 internal static void scanobject(uintptr b, ж<gcWork> Ꮡgcw) {
-    ref var gcw = ref Ꮡgcw.Value;
+    ref var gcw = ref Ꮡgcw.DerefOrNull();
 
     // Prefetch object before we scan it.
     //
@@ -1449,8 +1448,8 @@ internal static readonly @string misalignedMaskˢ = "misaligned mask"u8;
 // If state != nil, it's assumed that [b, b+n) is a block in the stack
 // and may contain pointers to stack objects.
 internal static void scanConservative(uintptr b, uintptr n, ж<uint8> Ꮡptrmask, ж<gcWork> Ꮡgcw, ж<stackScanState> Ꮡstate) {
-    ref var ptrmask = ref Ꮡptrmask.DerefOrNil();
-    ref var state = ref Ꮡstate.DerefOrNil();
+    ref var ptrmask = ref Ꮡptrmask.DerefOrNull();
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     if (debugScanConservative) {
         printlock();
@@ -1556,8 +1555,8 @@ internal static readonly @string markingFreeObjectˢ = "marking free object"u8;
 //
 //go:nowritebarrierrec
 internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspan> Ꮡspan, ж<gcWork> Ꮡgcw, uintptr objIndex) {
-    ref var span = ref Ꮡspan.Value;
-    ref var gcw = ref Ꮡgcw.Value;
+    ref var span = ref Ꮡspan.DerefOrNull();
+    ref var gcw = ref Ꮡgcw.DerefOrNull();
 
     // obj should be start of allocation, and so must be at least pointer-aligned.
     if ((uintptr)(obj & (uintptr)(goarch.PtrSize - 1)) != 0) {
@@ -1664,7 +1663,7 @@ internal static readonly @string gcmarknewobjectCalledˢ = "gcmarknewobject call
 //go:nowritebarrier
 //go:nosplit
 internal static void gcmarknewobject(ж<mspan> Ꮡspan, uintptr obj) {
-    ref var span = ref Ꮡspan.Value;
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     if (useCheckmark) {
         // The world should be stopped so this should not happen.

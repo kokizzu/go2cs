@@ -29,7 +29,7 @@ internal static readonly object methodSetˢ2 = (@string)"MethodSet {"u8;
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), methodSetˢ2);
     foreach (var (_, f) in s.list) {
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "\t%s\n"u8, f);
+        fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "\t%s\n"u8, f.OrTypedNil());
     }
     fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"}"u8);
     return buf.String();
@@ -47,7 +47,7 @@ internal static readonly object methodSetˢ2 = (@string)"MethodSet {"u8;
 
 // Lookup returns the method with matching package and name, or nil if not found.
 public static ж<Selection> Lookup(this ж<MethodSet> Ꮡs, ж<Package> Ꮡpkg, @string name) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.Len() == 0) {
         return default!;
@@ -227,7 +227,7 @@ internal static methodSet add(this methodSet s, slice<ж<Func>> list, slice<nint
 }
 
 internal static methodSet addOne(this methodSet s, ж<Func> Ꮡf, slice<nint> index, bool indirect, bool multiples) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (s == default!) {
         s = new methodSet(0);

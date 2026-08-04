@@ -117,7 +117,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     nint nn = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     // Note that we currently call block or blockGeneric
     // directly (guarded using haveAsm) because this allows
     // escape analysis to see that p and d don't escape.
@@ -160,7 +160,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 }
 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Append 0x80 to the end of the message and then append zeros
     // until the length is a multiple of 56 bytes. Finally append

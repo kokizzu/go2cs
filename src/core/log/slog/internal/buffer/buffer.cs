@@ -25,13 +25,13 @@ public static ж<Buffer> New() {
 }
 
 public static void Free(this ж<Buffer> Ꮡb) {
-    ref var b = ref Ꮡb.ValueSlot;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // To reduce peak allocation, return only smaller buffers to the pool.
     const nint maxBufferSize = /* 16 << 10 */ 16384;
     if (cap(b) <= maxBufferSize) {
         b = (b)[..0];
-        ᏑbufPool.Put(Ꮡb);
+        ᏑbufPool.Put(Ꮡb.OrTypedNil());
     }
 }
 

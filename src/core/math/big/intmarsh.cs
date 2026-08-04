@@ -15,7 +15,7 @@ internal const byte intGobVersion = 1;
 
 // GobEncode implements the [encoding/gob.GobEncoder] interface.
 public static (slice<byte>, error) GobEncode(this ж<ΔInt> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (Ꮡx == nil) {
         return (default!, default!);
@@ -54,7 +54,7 @@ public static (slice<byte> text, error err) MarshalText(this ж<ΔInt> Ꮡx) {
     slice<byte> text = default!;
     error err = default!;
 
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
     if (Ꮡx == nil) {
         return (slice<byte>("<nil>"u8), default!);
     }
@@ -77,7 +77,7 @@ public static error UnmarshalText(this ж<ΔInt> Ꮡz, slice<byte> text) {
 
 // MarshalJSON implements the [encoding/json.Marshaler] interface.
 public static (slice<byte>, error) MarshalJSON(this ж<ΔInt> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (Ꮡx == nil) {
         return (slice<byte>("null"u8), default!);

@@ -77,7 +77,7 @@ internal static void traceSnapshotMemory(uintptr gen) {
 }
 
 internal static traceArg traceSpanTypeAndClass(ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (Ꮡs.of(mspan.Ꮡstate).get() == mSpanInUse) {
         return (((traceArg)(uint64)(uint8)s.spanclass) << (int)(1));
@@ -87,14 +87,14 @@ internal static traceArg traceSpanTypeAndClass(ж<mspan> Ꮡs) {
 
 // SpanExists records an event indicating that the span exists.
 internal static void SpanExists(this traceLocker tl, ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSpan, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
 }
 
 // SpanAlloc records an event indicating that the span has just been allocated.
 internal static void SpanAlloc(this traceLocker tl, ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSpanAlloc, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
 }
@@ -106,7 +106,7 @@ internal static void SpanFree(this traceLocker tl, ж<mspan> Ꮡs) {
 
 // traceSpanID creates a trace ID for the span s for the trace.
 internal static traceArg traceSpanID(ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     return ((traceArg)((uint64)s.@base() - Δtrace.minPageHeapAddr)) / (uint64)pageSize;
 }

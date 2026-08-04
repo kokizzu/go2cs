@@ -31,8 +31,7 @@ internal static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to pack
 // If declErr is non-nil, it is used to report declaration errors during
 // resolution. tok is used to format position in error messages.
 internal static void resolveFile(ж<ast.File> Ꮡfile, ж<tokenꓸFile> Ꮡhandle, Action<tokenꓸPos, @string> declErr) {
-    ref var @file = ref Ꮡfile.Value;
-    ref var handle = ref Ꮡhandle.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     var pkgScope = ast.NewScope(nil);
     var r = Ꮡ(new resolver(
@@ -154,7 +153,7 @@ internal static readonly @string declaringSVˢ = "declaring %s@%v"u8;
 [GoRecv] internal static void declare(this ref resolver r, any decl, any data, ж<ast.Scope> Ꮡscope, ast.ObjKind kind, params ꓸꓸꓸжastꓸIdent identsʗp) {
     var idents = identsʗp.sslice();
 
-    ref var scope = ref Ꮡscope.Value;
+    ref var scope = ref Ꮡscope.DerefOrNull();
     foreach (var (_, ident) in idents) {
         if ((~ident).Obj != nil) {
             throw panic(fmt.Sprintf("%v: identifier %s already declared or resolved"u8, ident.Pos(), (~ident).Name));
@@ -195,7 +194,7 @@ internal static readonly @string identifierAlreadyˢ = "identifier already decla
 internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
 
 [GoRecv] internal static void shortVarDecl(this ref resolver r, ж<ast.AssignStmt> Ꮡdecl) {
-    ref var decl = ref Ꮡdecl.Value;
+    ref var decl = ref Ꮡdecl.DerefOrNull();
 
     // Go spec: A short variable declaration may redeclare variables
     // provided they were originally declared in the same block with
@@ -208,7 +207,7 @@ internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables 
                 assert((~ident).Obj == nil, identifierAlreadyˢ);
                 var obj = ast.NewObj(ast.Var, (~ident).Name);
                 // remember corresponding assignment for other tools
-                obj.Value.Decl = Ꮡdecl;
+                obj.Value.Decl = Ꮡdecl.OrTypedNil();
                 ident.Value.Obj = obj;
                 if ((~ident).Name != "_"u8) {
                     if (debugResolve) {
@@ -246,7 +245,7 @@ internal static readonly @string objWithNoNameˢ = "obj with no name"u8;
 // set, x is marked as unresolved and collected in the list of unresolved
 // identifiers.
 [GoRecv] internal static void resolve(this ref resolver r, ж<ast.Ident> Ꮡident, bool collectUnresolved) {
-    ref var ident = ref Ꮡident.Value;
+    ref var ident = ref Ꮡident.DerefOrNull();
 
     if (ident.Obj != nil) {
         throw panic(r.sprintf("%v: identifier %s already declared or resolved"u8, ident.Pos(), ident.Name));
@@ -260,7 +259,7 @@ internal static readonly @string objWithNoNameˢ = "obj with no name"u8;
         {
             var obj = s.Lookup(ident.Name); if (obj != nil) {
                 if (debugResolve) {
-                    r.trace(resolvedVSToVˢ, ident.Pos(), ident.Name, obj);
+                    r.trace(resolvedVSToVˢ, ident.Pos(), ident.Name, obj.OrTypedNil());
                 }
                 assert((~obj).Name != ""u8, objWithNoNameˢ);
                 // Identifiers (for receiver type parameters) are written to the scope,
@@ -311,7 +310,7 @@ internal static void walkStmts(this ж<resolver> Ꮡr, slice<ast.Stmt> list) {
 internal static readonly @string nodeTVˢ = "node %T@%v"u8;
 
 internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func<ast.Visitor>((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (debugResolve && node != default!) {
         r.trace(nodeTVˢ, node, node.Pos());
@@ -379,7 +378,7 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func
         break;
     }
     case ж<ast.LabeledStmt> n: {
-        r.declare(n, // Statements
+        r.declare(n.OrTypedNil(), // Statements
  default!, r.labelScope, ast.Lbl, (~n).Label);
         ast.Walk(new resolverжVisitor(Ꮡr), (~n).Stmt);
         break;
@@ -546,7 +545,7 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func
                 if ((~specΔ1).Type != default!) {
                     ast.Walk(new resolverжVisitor(Ꮡr), (~specΔ1).Type);
                 }
-                r.declare(specΔ1, i, r.topScope, kind, (~specΔ1).Names.ꓸꓸꓸ);
+                r.declare(specΔ1.OrTypedNil(), i, r.topScope, kind, (~specΔ1).Names.ꓸꓸꓸ);
             }
         }
         else if (exprᴛ1 == token.TYPE) {
@@ -555,7 +554,7 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func
                 // Go spec: The scope of a type identifier declared inside a function begins
                 // at the identifier in the TypeSpec and ends at the end of the innermost
                 // containing block.
-                r.declare(specΔ1, default!, r.topScope, ast.Typ, (~specΔ1).Name);
+                r.declare(specΔ1.OrTypedNil(), default!, r.topScope, ast.Typ, (~specΔ1).Name);
                 if ((~specΔ1).TypeParams != nil) {
                     r.openScope(specΔ1.Pos());
                     defer(Ꮡr.closeScope);
@@ -587,7 +586,7 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func
         r.declareList((~(~n).Type).Results, ast.Var);
         Ꮡr.walkBody((~n).Body);
         if ((~n).Recv == nil && (~(~n).Name).Name != "init"u8) {
-            r.declare(n, default!, r.pkgScope, ast.Fun, (~n).Name);
+            r.declare(n.OrTypedNil(), default!, r.pkgScope, ast.Fun, (~n).Name);
         }
         break;
     }
@@ -599,8 +598,8 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func
 });
 
 internal static void walkFuncType(this ж<resolver> Ꮡr, ж<ast.FuncType> Ꮡtyp) {
-    ref var r = ref Ꮡr.Value;
-    ref var typ = ref Ꮡtyp.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     // typ.TypeParams must be walked separately for FuncDecls.
     Ꮡr.resolveList(typ.Params);
@@ -610,7 +609,7 @@ internal static void walkFuncType(this ж<resolver> Ꮡr, ж<ast.FuncType> Ꮡty
 }
 
 internal static void resolveList(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡlist) {
-    ref var list = ref Ꮡlist.DerefOrNil();
+    ref var list = ref Ꮡlist.DerefOrNull();
 
     if (Ꮡlist == nil) {
         return;
@@ -623,19 +622,19 @@ internal static void resolveList(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡli
 }
 
 [GoRecv] internal static void declareList(this ref resolver r, ж<ast.FieldList> Ꮡlist, ast.ObjKind kind) {
-    ref var list = ref Ꮡlist.DerefOrNil();
+    ref var list = ref Ꮡlist.DerefOrNull();
 
     if (Ꮡlist == nil) {
         return;
     }
     foreach (var (_, f) in list.List) {
-        r.declare(f, default!, r.topScope, kind, (~f).Names.ꓸꓸꓸ);
+        r.declare(f.OrTypedNil(), default!, r.topScope, kind, (~f).Names.ꓸꓸꓸ);
     }
 }
 
 internal static void walkRecv(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡrecv) {
-    ref var r = ref Ꮡr.Value;
-    ref var recv = ref Ꮡrecv.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var recv = ref Ꮡrecv.DerefOrNull();
 
     // If our receiver has receiver type parameters, we must declare them before
     // trying to resolve the rest of the receiver, and avoid re-resolving the
@@ -693,7 +692,7 @@ internal static void walkRecv(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡrecv)
 }
 
 internal static void walkFieldList(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡlist, ast.ObjKind kind) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (Ꮡlist == nil) {
         return;
@@ -706,15 +705,15 @@ internal static void walkFieldList(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡ
 // that they may be resolved in the constraint expressions held in the field
 // Type.
 internal static void walkTParams(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡlist) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.declareList(Ꮡlist, ast.Typ);
     Ꮡr.resolveList(Ꮡlist);
 }
 
 internal static void walkBody(this ж<resolver> Ꮡr, ж<ast.BlockStmt> Ꮡbody) => func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
-    ref var body = ref Ꮡbody.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var body = ref Ꮡbody.DerefOrNull();
 
     if (Ꮡbody == nil) {
         return;

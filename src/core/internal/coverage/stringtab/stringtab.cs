@@ -70,9 +70,9 @@ partial class stringtab_package {
 // Write writes the string table in serialized form to the specified
 // io.Writer.
 public static error Write(this ж<Writer> Ꮡstw, io.Writer w) {
-    ref var stw = ref Ꮡstw.Value;
+    ref var stw = ref Ꮡstw.DerefOrNull();
 
-    var wr128 = error (nuint v) => {
+    error wr128(nuint v) {
         Ꮡstw.Value.tmp = Ꮡstw.Value.tmp[..0];
         Ꮡstw.Value.tmp = uleb128.AppendUleb128(Ꮡstw.Value.tmp, v);
         {
@@ -84,7 +84,7 @@ public static error Write(this ж<Writer> Ꮡstw, io.Writer w) {
             }
         }
         return default!;
-    };
+    }
     {
         var err = wr128((nuint)len(stw.strs)); if (err != default!) {
             return err;
@@ -126,8 +126,6 @@ public static error Write(this ж<Writer> Ꮡstw, io.Writer w) {
 // NewReader creates a stringtab.Reader to read the contents
 // of a string table from 'r'.
 public static ж<Reader> NewReader(ж<slicereader.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
-
     var str = Ꮡ(new Reader(
         r: Ꮡr
     ));

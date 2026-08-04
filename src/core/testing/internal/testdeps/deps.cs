@@ -111,7 +111,7 @@ internal static void Chdir(this ж<testLog> Ꮡl, @string name) {
 
 // add adds the (op, name) pair to the test log.
 internal static void add(this ж<testLog> Ꮡl, @string op, @string name) => func((defer, recover) => {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (strings.Contains(name, "\n"u8) || name == ""u8) {
         return;

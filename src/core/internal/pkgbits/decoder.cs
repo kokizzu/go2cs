@@ -78,7 +78,7 @@ public static PkgDecoder NewPkgDecoder(@string pkgPath, @string input) {
     // TODO(mdempsky): Implement direct indexing of input string to
     // avoid copying the position information.
     var r = strings.NewReader(input);
-    assert(binary.Read(new strings_ReaderжReader(r), new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡpr.of(PkgDecoder.Ꮡversion)) == default!);
+    assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, Ꮡpr.of(PkgDecoder.Ꮡversion)) == default!);
     switch (pr.version) {
     default: {
         throw panic(fmt.Errorf("unsupported version: %v"u8, pr.version));
@@ -90,14 +90,14 @@ public static PkgDecoder NewPkgDecoder(@string pkgPath, @string input) {
     case 1: {
 // no flags
         ref var flags = ref heap(new uint32(), out var Ꮡflags);
-        assert(binary.Read(new strings_ReaderжReader(r), new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡflags) == default!);
+        assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, Ꮡflags) == default!);
         pr.sync = (uint32)(flags & (uint32)flagSyncMarkers) != 0;
         break;
     }}
 
-    assert(binary.Read(new strings_ReaderжReader(r), new binary_littleEndianᴠByteOrder(binary.LittleEndian), pr.elemEndsEnds[..]) == default!);
+    assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, pr.elemEndsEnds[..]) == default!);
     pr.elemEnds = new slice<uint32>((nint)(pr.elemEndsEnds[len(pr.elemEndsEnds) - 1]));
-    assert(binary.Read(new strings_ReaderжReader(r), new binary_littleEndianᴠByteOrder(binary.LittleEndian), pr.elemEnds[..]) == default!);
+    assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, pr.elemEnds[..]) == default!);
     var (pos, err) = r.Seek(0, io.SeekCurrent);
     assert(err == default!);
     pr.elemData = input[(int)(pos)..];
@@ -177,7 +177,7 @@ public static Decoder TempDecoder(this ж<PkgDecoder> Ꮡpr, RelocKind k, Index 
 }
 
 [GoRecv] public static void RetireDecoder(this ref PkgDecoder pr, ж<Decoder> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     pr.scratchRelocEnt = d.Relocs;
     d.Relocs = default!;
@@ -187,7 +187,7 @@ public static Decoder TempDecoder(this ж<PkgDecoder> Ꮡpr, RelocKind k, Index 
 //
 // Most callers should use NewDecoder instead.
 public static Decoder NewDecoderRaw(this ж<PkgDecoder> Ꮡpr, RelocKind k, Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     ref var r = ref heap<Decoder>(out var Ꮡr);
     r = new Decoder(
@@ -206,7 +206,7 @@ public static Decoder NewDecoderRaw(this ж<PkgDecoder> Ꮡpr, RelocKind k, Inde
 }
 
 public static Decoder TempDecoderRaw(this ж<PkgDecoder> Ꮡpr, RelocKind k, Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     ref var r = ref heap<Decoder>(out var Ꮡr);
     r = new Decoder(
@@ -247,7 +247,7 @@ public static Decoder TempDecoderRaw(this ж<PkgDecoder> Ꮡpr, RelocKind k, Ind
 }
 
 internal static uint64 rawUvarint(this ж<Decoder> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var (x, err) = readUvarint(Ꮡr.of(Decoder.ᏑData));
     r.checkErr(err);
@@ -258,7 +258,7 @@ internal static uint64 rawUvarint(this ж<Decoder> Ꮡr) {
 // This avoids the interface conversion and thus has better escape properties,
 // which flows up the stack.
 internal static (uint64, error) readUvarint(ж<strings.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     uint64 x = default!;
     nuint s = default!;
@@ -305,7 +305,7 @@ internal static int64 rawVarint(this ж<Decoder> Ꮡr) {
 //
 // If EnableSync is false, then Sync is a no-op.
 public static void Sync(this ж<Decoder> Ꮡr, SyncMarker mWant) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (!(~r.common).sync) {
         return;
@@ -356,7 +356,7 @@ public static void Sync(this ж<Decoder> Ꮡr, SyncMarker mWant) {
 
 // Bool decodes and returns a bool value from the element bitstream.
 public static bool Bool(this ж<Decoder> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.Sync(SyncBool);
     var (x, err) = r.Data.ReadByte();
@@ -416,7 +416,7 @@ public static nint Code(this ж<Decoder> Ꮡr, SyncMarker mark) {
 // Reloc decodes a relocation of expected section k from the element
 // bitstream and returns an index to the referenced element.
 public static Index Reloc(this ж<Decoder> Ꮡr, RelocKind k) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.Sync(SyncUseReloc);
     return r.rawReloc(k, Ꮡr.Len());
@@ -425,7 +425,7 @@ public static Index Reloc(this ж<Decoder> Ꮡr, RelocKind k) {
 // String decodes and returns a string value from the element
 // bitstream.
 public static @string String(this ж<Decoder> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.Sync(SyncString);
     return r.common.StringIdx(Ꮡr.Reloc(RelocString));
@@ -467,15 +467,15 @@ internal static constant.Value scalar(this ж<Decoder> Ꮡr) {
             return constant.MakeInt64(Ꮡr.Int64());
         }
         if (exprᴛ1 == ValBigInt) {
-            return constant.Make(Ꮡr.bigInt());
+            return constant.Make(Ꮡr.bigInt().OrTypedNil());
         }
         if (exprᴛ1 == ValBigRat) {
             var num = Ꮡr.bigInt();
             var denom = Ꮡr.bigInt();
-            return constant.Make(@new<bigꓸRat>().SetFrac(num, denom));
+            return constant.Make(@new<bigꓸRat>().SetFrac(num, denom).OrTypedNil());
         }
         if (exprᴛ1 == ValBigFloat) {
-            return constant.Make(Ꮡr.bigFloat());
+            return constant.Make(Ꮡr.bigFloat().OrTypedNil());
         }
         { /* default: */
             throw panic(fmt.Errorf("unexpected scalar tag: %v"u8, tag));
@@ -505,7 +505,7 @@ internal static ж<big.Float> bigFloat(this ж<Decoder> Ꮡr) {
 // PeekPkgPath returns the package path for the specified package
 // index.
 public static @string PeekPkgPath(this ж<PkgDecoder> Ꮡpr, Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     @string path = default!;
     {
@@ -523,7 +523,7 @@ public static @string PeekPkgPath(this ж<PkgDecoder> Ꮡpr, Index idx) {
 // PeekObj returns the package path, object name, and CodeObj for the
 // specified object index.
 public static (@string, @string, CodeObj) PeekObj(this ж<PkgDecoder> Ꮡpr, Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     Index ridx = default!;
     @string name = default!;

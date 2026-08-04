@@ -201,7 +201,7 @@ internal static Ordering calculateOrdering(slice<level> levels, slice<rune> rune
 
 // Order computes the visual ordering of all the runs in a Paragraph.
 public static (Ordering, error) Order(this ж<Paragraph> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(p.types) == 0) {
         return (new Ordering(nil), default!);

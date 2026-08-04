@@ -62,10 +62,10 @@ public static UntypedInt SYMLINK_FLAG_RELATIVE => 1;
 }
 
 // Path returns path stored in rb.
-[GoRecv] public static unsafe @string Path(this ref SymbolicLinkReparseBuffer rb) {
+[GoRecv] public static @string Path(this ref SymbolicLinkReparseBuffer rb) {
     var n1 = (uint16)(rb.SubstituteNameOffset / 2);
     var n2 = (uint16)((rb.SubstituteNameOffset + rb.SubstituteNameLength) / 2);
-    return syscall.UTF16ToString(new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(rb.PathBuffer, 0))) + (int)(n1), (int)(n2) - (int)(n1))));
+    return syscall.UTF16ToString((~array<uint16>.AliasPointer(Ꮡ(rb.PathBuffer, 0), 65535)).slice(n1, n2, n2));
 }
 
 [GoType] [GoValueClone("PathBuffer")] partial struct MountPointReparseBuffer {
@@ -86,10 +86,10 @@ public static UntypedInt SYMLINK_FLAG_RELATIVE => 1;
 }
 
 // Path returns path stored in rb.
-[GoRecv] public static unsafe @string Path(this ref MountPointReparseBuffer rb) {
+[GoRecv] public static @string Path(this ref MountPointReparseBuffer rb) {
     var n1 = (uint16)(rb.SubstituteNameOffset / 2);
     var n2 = (uint16)((rb.SubstituteNameOffset + rb.SubstituteNameLength) / 2);
-    return syscall.UTF16ToString(new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(rb.PathBuffer, 0))) + (int)(n1), (int)(n2) - (int)(n1))));
+    return syscall.UTF16ToString((~array<uint16>.AliasPointer(Ꮡ(rb.PathBuffer, 0), 65535)).slice(n1, n2, n2));
 }
 
 } // end windows_package

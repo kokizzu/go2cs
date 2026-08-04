@@ -24,7 +24,7 @@ internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
     ж<ProcessState> ps = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         var (handle, status) = Ꮡp.handleTransientAcquire();
         var exprᴛ1 = status;
@@ -87,7 +87,7 @@ internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) => func<error>
         if (e != default!) {
             return NewSyscallError(duplicateHandleˢ, e);
         }
-        Δruntime.KeepAlive(Ꮡp);
+        Δruntime.KeepAlive(Ꮡp.OrTypedNil());
         deferǃ(syscall.CloseHandle, terminationHandle, defer);
         e = syscall.TerminateProcess(terminationHandle, 1);
         return NewSyscallError(terminateProcessˢ, e);
@@ -108,7 +108,7 @@ internal static error release(this ж<Process> Ꮡp) {
         }
     }
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡp, default!);
+    Δruntime.SetFinalizer(Ꮡp.OrTypedNil(), default!);
     return default!;
 }
 
@@ -217,7 +217,7 @@ internal static slice<@string> commandLineToArgv(@string cmd) {
 }
 
 internal static time.Duration ftToDuration(ж<syscall.Filetime> Ꮡft) {
-    ref var ft = ref Ꮡft.Value;
+    ref var ft = ref Ꮡft.DerefOrNull();
 
     var n = ((int64)ft.HighDateTime << (int)(32)) + (int64)ft.LowDateTime;
     // in 100-nanosecond intervals

@@ -50,7 +50,7 @@ internal static nint addrsize(this unknownFormat u) {
 }
 
 internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offset off, slice<byte> data) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     return new buf(Ꮡd, d.order, format, name, off, data, default!);
 }

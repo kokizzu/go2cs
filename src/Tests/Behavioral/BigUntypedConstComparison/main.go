@@ -1,5 +1,5 @@
 // Regression test: a named untyped constant whose value exceeds int64/uint64 is emitted as
-// GoUntyped (= System.Numerics.BigInteger), which has no implicit operator with the built-in
+// GoBigConst (= System.Numerics.BigInteger), which has no implicit operator with the built-in
 // numeric types. Every CONCRETE numeric context therefore has to cast such a reference.
 //
 // Originally only COMPARISON was covered — `x > Two129` (double > BigInteger) failed with CS0019
@@ -25,7 +25,7 @@ package main
 import "fmt"
 
 const (
-	Two129    = 1 << 129 // 2**129 ~= 6.8e38, exceeds uint64 -> GoUntyped (BigInteger)
+	Two129    = 1 << 129 // 2**129 ~= 6.8e38, exceeds uint64 -> GoBigConst (BigInteger)
 	below1e23 = 99999999999999974834176
 	above1e23 = 100000000000000008388608
 	small     = 1000 // fits int64 -> UntypedInt wrapper, must NOT gain a cast

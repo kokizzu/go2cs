@@ -715,7 +715,7 @@ internal static readonly @string runtimeSemawakeupˢ = "runtime.semawakeup"u8;
 
 //go:nosplit
 internal static void semawakeup(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (stdcall1(_SetEvent, mp.waitsema) == 0) {
         systemstack(() => {
@@ -730,7 +730,7 @@ internal static readonly @string runtimeSemacreateˢ = "runtime.semacreate"u8;
 
 //go:nosplit
 internal static void semacreate(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (mp.waitsema != 0) {
         return;
@@ -918,7 +918,7 @@ internal static void unminit() {
 //
 //go:nosplit
 internal static void mdestroy(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (mp.highResTimer != 0) {
         stdcall1(_CloseHandle, mp.highResTimer);
@@ -1172,7 +1172,7 @@ internal static void profilem(ж<m> Ꮡmp, uintptr thread) {
 }
 
 internal static ж<g> gFromSP(ж<m> Ꮡmp, uintptr sp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     {
         var gp = mp.g0; if (gp != nil && (~gp).stack.lo < sp && sp < (~gp).stack.hi) {
@@ -1281,7 +1281,7 @@ internal static readonly @string runtimePreemptMˢ = "runtime.preemptM: duplicat
 internal static readonly @string unsupportedArchitectureˢ = "unsupported architecture"u8;
 
 internal static void preemptM(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNil();
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (Ꮡmp == (~getg()).m) {
         @throw(selfPreemptˢ);

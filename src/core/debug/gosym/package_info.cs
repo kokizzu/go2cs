@@ -41,8 +41,6 @@ using static go.debug.gosym_package;
 [assembly: GoImplement<DecodingError, error>(Pointer = true)]
 [assembly: GoImplement<UnknownFileError, error>]
 [assembly: GoImplement<UnknownLineError, error>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

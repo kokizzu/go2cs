@@ -50,7 +50,7 @@ public static (@string hdr, nint size, error err) FindExportData(ж<bufio.Reader
     nint size = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     // Read first line to make sure this is an object file.
     (var line, err) = r.ReadSlice((rune)'\n');
     if (err != default!) {

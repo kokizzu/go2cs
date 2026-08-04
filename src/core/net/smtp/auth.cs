@@ -64,7 +64,7 @@ internal static readonly @string wrongHostNameˢ = "wrong host name"u8;
 internal static readonly @string plainˢ = "PLAIN"u8;
 
 [GoRecv] internal static (@string, slice<byte>, error) Start(this ref plainAuth a, ж<ServerInfo> Ꮡserver) {
-    ref var server = ref Ꮡserver.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
 
     // Must have TLS, or else localhost server.
     // Note: If TLS is not true, then we can't trust ANYTHING in ServerInfo.

@@ -25,9 +25,7 @@ global using templateꓸFuncMap = go.text.template_package.FuncMap;
 global using tokenꓸFile = go.go.token_package.ΔFile;
 global using tokenꓸPos = go.go.token_package.ΔPos;
 global using tokenꓸPosition = go.go.token_package.ΔPosition;
-using bufio = go.bufio_package;
 using sync = go.sync_package;
-using Δhttp = go.net.http_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -76,7 +74,6 @@ using static go.net.rpc_package;
 [assembly: GoImplicitConv<methodType, ж<methodType>>(Indirect = true)]
 [assembly: GoImplicitConv<sync.Mutex, ж<sync.Mutex>>(Indirect = true)]
 [assembly: GoImplicitConv<sync.WaitGroup, ж<sync.WaitGroup>>(Indirect = true)]
-[assembly: GoImplicitConv<Δhttp.Request, ж<Δhttp.Request>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.net;

@@ -116,7 +116,7 @@ internal static readonly @string sqlDriverDoesNotSupportˢ = "sql: driver does n
 internal static readonly @string sqlDriverDoesNotSupportˢ2 = "sql: driver does not support read-only transactions"u8;
 
 internal static (driver.Tx, error) ctxDriverBegin(context.Context ctx, ж<TxOptions> Ꮡopts, driver.Conn ci) {
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     {
         var (ciCtx, @is) = ci._<driver.ConnBeginTx>(ᐧ); if (@is) {

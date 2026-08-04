@@ -39,7 +39,7 @@
     <PublishTrimmed>True</PublishTrimmed>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- NuGet packaging metadata for library projects; packing itself is explicit ('dotnet pack' via push-nuget.ps1), so plain builds emit no .nupkg -->
@@ -103,7 +103,7 @@
     <Using Include="System.Double" Alias="float64" />
     <Using Include="System.Numerics.Complex" Alias="complex128" />
     <Using Include="System.Int32" Alias="rune" />
-    <Using Include="System.Numerics.BigInteger" Alias="GoUntyped" />
+    <Using Include="System.Numerics.BigInteger" Alias="GoBigConst" />
     <Using Include="System.ComponentModel.DescriptionAttribute" Alias="GoTagAttribute" />
     <Using Include="System.Runtime.CompilerServices.ModuleInitializerAttribute" Alias="GoInitAttribute" />
   </ItemGroup>

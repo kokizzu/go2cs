@@ -49,9 +49,7 @@ public static ж<ΔSignature> NewSignature(ж<Var> Ꮡrecv, ж<Tuple> Ꮡparams,
 // If recv is non-nil, typeParams must be empty. If recvTypeParams is
 // non-empty, recv must be non-nil.
 public static ж<ΔSignature> NewSignatureType(ж<Var> Ꮡrecv, slice<ж<TypeParam>> recvTypeParams, slice<ж<TypeParam>> typeParams, ж<Tuple> Ꮡparams, ж<Tuple> Ꮡresults, bool variadic) {
-    ref var recv = ref Ꮡrecv.DerefOrNil();
-    ref var @params = ref Ꮡparams.DerefOrNil();
-    ref var results = ref Ꮡresults.Value;
+    ref var @params = ref Ꮡparams.DerefOrNull();
 
     if (variadic) {
         nint n = Ꮡparams.Len();
@@ -136,10 +134,10 @@ internal static readonly @string pointerOrInterfaceTypeˢ = "pointer or interfac
 
 // funcType type-checks a function or method type.
 internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig, ж<ast.FieldList> ᏑrecvPar, ж<ast.FuncType> Ꮡftyp) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var sig = ref Ꮡsig.Value;
-    ref var recvPar = ref ᏑrecvPar.DerefOrNil();
-    ref var ftyp = ref Ꮡftyp.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var sig = ref Ꮡsig.DerefOrNull();
+    ref var recvPar = ref ᏑrecvPar.DerefOrNull();
+    ref var ftyp = ref Ꮡftyp.DerefOrNull();
 
     check.openScope(new ast.FuncTypeжNode(Ꮡftyp), functionˢ);
     check.scope.Value.isFunc = true;
@@ -318,7 +316,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                 Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s"u8, (~recvʗ7).typ);
                 break;
             }}
-        }).describef(new Varжpositioner(recv), "validate receiver %s"u8, recv);
+        }).describef(new Varжpositioner(recv), "validate receiver %s"u8, recv.OrTypedNil());
     }
     sig.@params = NewTuple(@params.ꓸꓸꓸ);
     sig.results = NewTuple(results.ꓸꓸꓸ);
@@ -335,8 +333,8 @@ internal static (slice<ж<Var>> @params, bool variadic) collectParams(this ж<Ch
     slice<ж<Var>> @params = default!;
     bool variadic = default!;
 
-    ref var check = ref Ꮡcheck.Value;
-    ref var list = ref Ꮡlist.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var list = ref Ꮡlist.DerefOrNull();
     if (Ꮡlist == nil) {
         return (@params, variadic);
     }

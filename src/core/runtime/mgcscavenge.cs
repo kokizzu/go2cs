@@ -288,7 +288,7 @@ internal static readonly @string scavengerStateIsAlreadyˢ = "scavenger state is
 //
 // Must be called from a regular goroutine that can allocate.
 internal static void init(this ж<scavengerState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.g != nil) {
         @throw(scavengerStateIsAlreadyˢ);
@@ -299,7 +299,7 @@ internal static void init(this ж<scavengerState> Ꮡs) {
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {
         sΔ1._<ж<scavengerState>>().wake();
     };
-    s.timer.init(f, Ꮡs);
+    s.timer.init(f, Ꮡs.OrTypedNil());
     // input: fraction of CPU time actually used.
     // setpoint: ideal CPU fraction.
     // output: ratio of time worked to time slept (determines sleep time).
@@ -352,7 +352,7 @@ internal static readonly @string triedToParkScavengerFromˢ = "tried to park sca
 
 // park parks the scavenger goroutine.
 internal static void park(this ж<scavengerState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
@@ -371,7 +371,7 @@ internal static void ready(this ж<scavengerState> Ꮡs) {
 //
 // Safe to run without a P.
 internal static void wake(this ж<scavengerState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (s.parked) {
@@ -403,7 +403,7 @@ internal static readonly @string triedToSleepScavengerˢ = "tried to sleep scave
 // The scavenger may be woken up earlier by a pacing change, and it may not go
 // to sleep at all if there's a pending pacing change.
 internal static void sleep(this ж<scavengerState> Ꮡs, float64 worked) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
@@ -493,7 +493,7 @@ internal static void sleep(this ж<scavengerState> Ꮡs, float64 worked) {
 // controllerFailed indicates that the scavenger's scheduling
 // controller failed.
 internal static void controllerFailed(this ж<scavengerState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     s.printControllerReset = true;
@@ -514,7 +514,7 @@ internal static (uintptr released, float64 worked) run(this ж<scavengerState> �
     uintptr released = default!;
     float64 worked = default!;
 
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
         @throw(triedToRunScavengerFromˢ);
@@ -747,7 +747,7 @@ internal static readonly @string badMValueˢ = "bad m value"u8;
 //
 // m must be a power of 2 <= maxPagesPerPhysPage.
 internal static uint64 fillAligned(uint64 x, nuint m) {
-    var apply = (uint64 xΔ1, uint64 c) => {
+    uint64 apply(uint64 xΔ1, uint64 c) {
         // The technique used it here is derived from
         // https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
         // and extended for more than just bytes (like nibbles
@@ -764,7 +764,7 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
         // bits are zero by ORing with ones everywhere except the
         // high bits and inverting the result."
         return ~((uint64)(((uint64)((((uint64)(xΔ1 & c)) + c) | xΔ1)) | c));
-    };
+    }
     // Transform x to contain a 1 bit at the top of each m-aligned
     // group of m zero bits.
     switch (m) {
@@ -989,7 +989,7 @@ internal static readonly @string minTooLargeˢ = "min too large"u8;
 //
 // Returns the amount added to sysStat.
 internal static uintptr init(this ж<scavengeIndex> Ꮡs, bool test, ж<sysMemStat> ᏑsysStat) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     Ꮡs.of(scavengeIndex.ᏑsearchAddrBg).Clear();
     Ꮡs.of(scavengeIndex.ᏑsearchAddrForce).Clear();
@@ -1002,7 +1002,7 @@ internal static uintptr init(this ж<scavengeIndex> Ꮡs, bool test, ж<sysMemSt
 //
 // Returns the amount of memory added to sysStat.
 internal static uintptr grow(this ж<scavengeIndex> Ꮡs, uintptr @base, uintptr limit, ж<sysMemStat> ᏑsysStat) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Update minHeapIdx. Note that even if there's no mapping work to do,
     // we may still have a new, lower minimum heap address.
@@ -1018,7 +1018,7 @@ internal static uintptr grow(this ж<scavengeIndex> Ꮡs, uintptr @base, uintptr
 // find returns the highest chunk index that may contain pages available to scavenge.
 // It also returns an offset to start searching in the highest chunk.
 internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var cursor = Ꮡs.of(scavengeIndex.ᏑsearchAddrBg);
     if (force) {
@@ -1088,7 +1088,7 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
 //
 // free may only run concurrently with find.
 internal static void free(this ж<scavengeIndex> Ꮡs, chunkIdx ci, nuint page, nuint npages) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var sc = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
     sc.free(npages, s.gen);
@@ -1115,7 +1115,7 @@ internal static void free(this ж<scavengeIndex> Ꮡs, chunkIdx ci, nuint page, 
 //
 // nextGen may only run concurrently with find.
 internal static void nextGen(this ж<scavengeIndex> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.gen++;
     var (searchAddr, _) = Ꮡs.of(scavengeIndex.ᏑsearchAddrBg).Load();

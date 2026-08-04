@@ -59,7 +59,7 @@ internal static (ж<PrivateKey>, error) NewPrivateKey(this ж<x25519Curve> Ꮡc,
 }
 
 internal static ж<ΔPublicKey> privateKeyToPublicKey(this ж<x25519Curve> Ꮡc, ж<PrivateKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.Value;
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     if (!AreEqual(key.curve, Ꮡc)) {
         throw panic("crypto/ecdh: internal error: converting the wrong key type");
@@ -87,8 +87,8 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey(this ж<x25519Curve> Ꮡc,
 private static readonly @string cryptoEcdhBadX25519ˢ = "crypto/ecdh: bad X25519 remote ECDH input: low order point"u8;
 
 [GoRecv] internal static (slice<byte>, error) ecdh(this ref x25519Curve c, ж<PrivateKey> Ꮡlocal, ж<ΔPublicKey> Ꮡremote) {
-    ref var local = ref Ꮡlocal.Value;
-    ref var remote = ref Ꮡremote.Value;
+    ref var local = ref Ꮡlocal.DerefOrNull();
+    ref var remote = ref Ꮡremote.DerefOrNull();
 
     var @out = new slice<byte>(x25519SharedSecretSize);
     x25519ScalarMult(@out, local.privateKey, remote.publicKey);

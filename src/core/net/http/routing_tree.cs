@@ -39,7 +39,7 @@ partial class http_package {
 // addPattern adds a pattern and its associated Handler to the tree
 // at root.
 internal static void addPattern(this ж<routingNode> Ꮡroot, ж<pattern> Ꮡp, ΔHandler h) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // First level of tree is host.
     var n = Ꮡroot.addChild(p.host);
@@ -53,7 +53,7 @@ internal static void addPattern(this ж<routingNode> Ꮡroot, ж<pattern> Ꮡp, 
 // If there are no segments, then n is a leaf node that holds
 // the given pattern and handler.
 internal static void addSegments(this ж<routingNode> Ꮡn, slice<segment> segs, ж<pattern> Ꮡp, ΔHandler h) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (builtin.len(segs) == 0) {
         n.set(Ꮡp, h);
@@ -88,7 +88,7 @@ internal static void addSegments(this ж<routingNode> Ꮡn, slice<segment> segs,
 // addChild adds a child node with the given key to n
 // if one does not exist, and returns the child.
 internal static ж<routingNode> addChild(this ж<routingNode> Ꮡn, @string key) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (key == ""u8) {
         if (n.emptyChild == nil) {
@@ -109,7 +109,7 @@ internal static ж<routingNode> addChild(this ж<routingNode> Ꮡn, @string key)
 // findChild returns the child of n with the given key, or nil
 // if there is no child with that key.
 internal static ж<routingNode> findChild(this ж<routingNode> Ꮡn, @string key) {
-    ref var n = ref Ꮡn.Value;
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (key == ""u8) {
         return n.emptyChild;
@@ -123,7 +123,7 @@ internal static ж<routingNode> findChild(this ж<routingNode> Ꮡn, @string key
 // For example, if the request path is "/a/b/c" and the pattern is "/{x}/b/{y}",
 // then the second return value will be []string{"a", "c"}.
 internal static (ж<routingNode>, slice<@string>) match(this ж<routingNode> Ꮡroot, @string host, @string method, @string path) {
-    ref var root = ref Ꮡroot.Value;
+    ref var root = ref Ꮡroot.DerefOrNull();
 
     if (host != ""u8) {
         // There is a host. If there is a pattern that specifies that host and it
@@ -142,7 +142,7 @@ internal static (ж<routingNode>, slice<@string>) match(this ж<routingNode> Ꮡ
 // Its return values are the same as [routingNode.match].
 // The receiver should be a child of the root.
 internal static (ж<routingNode>, slice<@string>) matchMethodAndPath(this ж<routingNode> Ꮡn, @string method, @string path) {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn == nil) {
         return (default!, default!);
@@ -170,7 +170,7 @@ internal static (ж<routingNode>, slice<@string>) matchMethodAndPath(this ж<rou
 // matchPath calls itself recursively. The matches argument holds the wildcard matches
 // found so far.
 internal static (ж<routingNode>, slice<@string>) matchPath(this ж<routingNode> Ꮡn, @string path, slice<@string> matches) {
-    ref var n = ref Ꮡn.DerefOrNil();
+    ref var n = ref Ꮡn.DerefOrNull();
 
     if (Ꮡn == nil) {
         return (default!, default!);
@@ -248,7 +248,7 @@ internal static (@string seg, @string rest) firstSegment(@string path) {
 // matchingMethods adds to methodSet all the methods that would result in a
 // match if passed to routingNode.match with the given host and path.
 internal static void matchingMethods(this ж<routingNode> Ꮡroot, @string host, @string path, map<@string, bool> methodSet) {
-    ref var root = ref Ꮡroot.Value;
+    ref var root = ref Ꮡroot.DerefOrNull();
 
     if (host != ""u8) {
         Ꮡroot.findChild(host).matchingMethodsPath(path, methodSet);

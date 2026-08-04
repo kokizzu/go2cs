@@ -654,7 +654,7 @@ internal static (ж<heapArena> arena, uintptr pageIdx, uint8 pageMask) pageIndex
 
 // Initialize the heap.
 internal static void init(this ж<mheap> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     lockInit(Ꮡh.of(mheap.Ꮡlock), lockRankMheap);
     lockInit(Ꮡh.of(mheap.Ꮡspeciallock), lockRankMheapSpecial);
@@ -688,7 +688,7 @@ internal static void init(this ж<mheap> Ꮡh) {
 //
 // h.lock must NOT be held.
 internal static void reclaim(this ж<mheap> Ꮡh, uintptr npage) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // TODO(austin): Half of the time spent freeing spans is in
     // locking/unlocking the heap (even with low contention). We
@@ -764,7 +764,7 @@ internal static void reclaim(this ж<mheap> Ꮡh, uintptr npage) {
 // temporarily unlocked and re-locked in order to do sweeping or if tracing is
 // enabled.
 internal static uintptr reclaimChunk(this ж<mheap> Ꮡh, slice<arenaIdx> arenas, uintptr pageIdx, uintptr n) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // The heap lock must be held because this accesses the
     // heapArena.spans arrays using potentially non-live pointers.
@@ -1013,7 +1013,7 @@ internal static readonly @string potentiallyOverlappingInˢ = "potentially overl
 //
 //go:systemstack
 internal static ж<mspan> allocMSpanLocked(this ж<mheap> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
     var pp = (~(~getg()).m).p.ptr();
@@ -1046,7 +1046,7 @@ internal static ж<mspan> allocMSpanLocked(this ж<mheap> Ꮡh) {
 //
 //go:systemstack
 internal static void freeMSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
     var pp = (~(~getg()).m).p.ptr();
@@ -1084,7 +1084,7 @@ internal static readonly @string grewHeapButNoAdequateˢ = "grew heap, but no ad
 internal static ж<mspan> /*s*/ allocSpan(this ж<mheap> Ꮡh, uintptr npages, spanAllocType typ, spanClass spanclass) {
     ж<mspan> s = default!;
 
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
     // Function-global state.
     var gp = getg();
     var (@base, scav) = ((uintptr)0, (uintptr)0);
@@ -1293,8 +1293,8 @@ HaveSpan:
 // initSpan initializes a blank span s which will represent the range
 // [base, base+npages*pageSize). typ is the type of span being allocated.
 internal static void initSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType typ, spanClass spanclass, uintptr @base, uintptr npages) {
-    ref var h = ref Ꮡh.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // At this point, both s != nil and base != 0, and the heap
     // lock is no longer held. Initialize the span.
@@ -1379,7 +1379,7 @@ internal static void initSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType
 //
 // h.lock must be held.
 internal static (uintptr, bool) grow(this ж<mheap> Ꮡh, uintptr npage) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
     // We must grow the heap in whole palloc chunks.
@@ -1464,8 +1464,7 @@ internal static void freeSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
     systemstack(() => {
         // Trace the span free.
         if (traceAllocFreeEnabled()) {
-            ref var Δtrace = ref heap<traceLocker>(out var Ꮡtrace);
-            Δtrace = traceTryAcquire();
+            var Δtrace = traceTryAcquire();
             if (Δtrace.ok()) {
                 Δtrace.SpanFree(Ꮡs);
                 traceRelease(Δtrace);
@@ -1501,7 +1500,7 @@ internal static void freeSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
 //
 //go:systemstack
 internal static void freeManual(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType typ) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Trace the span free.
     if (traceAllocFreeEnabled()) {
@@ -1524,8 +1523,8 @@ internal static readonly @string mheapFreeSpanLockedˢ3 = "mheap.freeSpanLocked 
 internal static readonly @string mheapFreeSpanLockedˢ4 = "mheap.freeSpanLocked - invalid span state"u8;
 
 internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType typ) {
-    ref var h = ref Ꮡh.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
     var exprᴛ1 = Ꮡs.of(mspan.Ꮡstate).get();
@@ -1539,7 +1538,7 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
             @throw(mheapFreeSpanLockedˢ2);
         }
         if (s.allocCount != 0 || s.sweepgen != h.sweepgen) {
-            print((@string)"mheap.freeSpanLocked - span "u8, Ꮡs, (@string)" ptr "u8, ((Δhex)(uint64)s.@base()), (@string)" allocCount "u8, s.allocCount, (@string)" sweepgen "u8, s.sweepgen, (@string)"/"u8, h.sweepgen, (@string)"\n"u8);
+            print((@string)"mheap.freeSpanLocked - span "u8, Ꮡs.OrTypedNil(), (@string)" ptr "u8, ((Δhex)(uint64)s.@base()), (@string)" allocCount "u8, s.allocCount, (@string)" sweepgen "u8, s.sweepgen, (@string)"/"u8, h.sweepgen, (@string)"\n"u8);
             @throw(mheapFreeSpanLockedˢ3);
         }
         Ꮡh.of(mheap.ᏑpagesInUse).Add(((uintptr)0 - s.npages));
@@ -1614,7 +1613,7 @@ internal static void runtime_debug_freeOSMemory() {
 
 // Initialize a new span with the given start and npages.
 internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages) {
-    ref var span = ref Ꮡspan.Value;
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     // span is *not* zeroed.
     span.next = default!;
@@ -1651,12 +1650,12 @@ internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages)
 internal static readonly @string mSpanListRemoveˢ = "mSpanList.remove"u8;
 
 internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
-    ref var list = ref Ꮡlist.DerefOrNil();
-    ref var span = ref Ꮡspan.DerefOrNil();
+    ref var list = ref Ꮡlist.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     if (span.list != Ꮡlist) {
         print((@string)"runtime: failed mSpanList.remove span.npages="u8, span.npages,
-            (@string)" span="u8, Ꮡspan, (@string)" prev="u8, span.prev, (@string)" span.list="u8, span.list, (@string)" list="u8, Ꮡlist, (@string)"\n"u8);
+            (@string)" span="u8, Ꮡspan.OrTypedNil(), (@string)" prev="u8, span.prev.OrTypedNil(), (@string)" span.list="u8, span.list.OrTypedNil(), (@string)" list="u8, Ꮡlist.OrTypedNil(), (@string)"\n"u8);
         @throw(mSpanListRemoveˢ);
     }
     if (list.first == Ꮡspan){
@@ -1682,11 +1681,11 @@ internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
 internal static readonly @string mSpanListInsertˢ = "mSpanList.insert"u8;
 
 internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
-    ref var list = ref Ꮡlist.Value;
-    ref var span = ref Ꮡspan.Value;
+    ref var list = ref Ꮡlist.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println((@string)"runtime: failed mSpanList.insert"u8, Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insert"u8, Ꮡspan.OrTypedNil(), span.next.OrTypedNil(), span.prev.OrTypedNil(), span.list.OrTypedNil());
         @throw(mSpanListInsertˢ);
     }
     span.next = list.first;
@@ -1706,11 +1705,11 @@ internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
 internal static readonly @string mSpanListInsertBackˢ = "mSpanList.insertBack"u8;
 
 internal static void insertBack(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
-    ref var list = ref Ꮡlist.Value;
-    ref var span = ref Ꮡspan.Value;
+    ref var list = ref Ꮡlist.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println((@string)"runtime: failed mSpanList.insertBack"u8, Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insertBack"u8, Ꮡspan.OrTypedNil(), span.next.OrTypedNil(), span.prev.OrTypedNil(), span.list.OrTypedNil());
         @throw(mSpanListInsertBackˢ);
     }
     span.prev = list.last;
@@ -1728,8 +1727,8 @@ internal static void insertBack(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
 // takeAll removes all spans from other and inserts them at the front
 // of list.
 internal static void takeAll(this ж<mSpanList> Ꮡlist, ж<mSpanList> Ꮡother) {
-    ref var list = ref Ꮡlist.Value;
-    ref var other = ref Ꮡother.Value;
+    ref var list = ref Ꮡlist.DerefOrNull();
+    ref var other = ref Ꮡother.DerefOrNull();
 
     if (other.isEmpty()) {
         return;
@@ -1765,7 +1764,7 @@ internal static UntypedInt _KindSpecialPinCounter => 5;
 
 // spanHasSpecials marks a span as having specials in the arena bitmap.
 internal static void spanHasSpecials(ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var arenaPage = (s.@base() / (uintptr)pageSize) % (uintptr)pagesPerArena;
     arenaIdx ai = arenaIndex(s.@base());
@@ -1775,7 +1774,7 @@ internal static void spanHasSpecials(ж<mspan> Ꮡs) {
 
 // spanHasNoSpecials marks a span as having no specials in the arena bitmap.
 internal static void spanHasNoSpecials(ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var arenaPage = (s.@base() / (uintptr)pageSize) % (uintptr)pagesPerArena;
     arenaIdx ai = arenaIndex(s.@base());
@@ -1793,7 +1792,7 @@ internal static readonly @string addspecialOnInvalidˢ = "addspecial on invalid 
 // (The add will fail only if a record with the same p and s->kind
 // already exists.)
 internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var span = spanOfHeap((uintptr)Δp);
     if (span == nil) {
@@ -1895,8 +1894,8 @@ internal static (ж<ж<special>>, bool) specialFindSplicePoint(this ж<mspan> �
 
 // Adds a finalizer to the object p. Returns true if it succeeded.
 internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr nret, ж<_type> Ꮡfint, ж<ptrtype> Ꮡot) {
-    ref var fint = ref Ꮡfint.Value;
-    ref var ot = ref Ꮡot.Value;
+    ref var fint = ref Ꮡfint.DerefOrNull();
+    ref var ot = ref Ꮡot.DerefOrNull();
 
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     var s = (ж<specialfinalizer>)(uintptr)(Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).alloc());
@@ -2103,7 +2102,7 @@ internal static readonly @string setprofilebucketProfileˢ = "setprofilebucket: 
 
 // Set the heap profile bucket associated with addr to b.
 internal static void setprofilebucket(@unsafe.Pointer Δp, ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     var s = (ж<specialprofile>)(uintptr)(Ꮡmheap_.of(mheap.Ꮡspecialprofilealloc).alloc());
@@ -2136,7 +2135,7 @@ internal static void setprofilebucket(@unsafe.Pointer Δp, ж<bucket> Ꮡb) {
 }
 
 internal static specialsIter newSpecialsIter(ж<mspan> Ꮡspan) {
-    ref var span = ref Ꮡspan.Value;
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     return new specialsIter(Ꮡspan.of(mspan.Ꮡspecials), span.specials);
 }
@@ -2165,7 +2164,7 @@ internal static readonly @string badSpecialKindˢ = "bad special kind"u8;
 // freeSpecial performs any cleanup on special s and deallocates it.
 // s must already be unlinked from the specials list.
 internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr size) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var exprᴛ1 = s.kind;
     if (exprᴛ1 == _KindSpecialFinalizer) {
@@ -2258,7 +2257,7 @@ internal static ref gcBitsArenasᴛ1 gcBitsArenas => ref ᏑgcBitsArenas.Value;
 // tryAlloc allocates from b or returns nil if b does not have enough room.
 // This is safe to call concurrently.
 internal static ж<gcBits> tryAlloc(this ж<gcBitsArena> Ꮡb, uintptr bytes) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡb == nil || atomic.Loaduintptr(Ꮡb.of(gcBitsArena.Ꮡfree)) + bytes > (uintptr)len(b.bits)) {
         return default!;

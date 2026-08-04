@@ -46,7 +46,7 @@ public static (context.Context ctx, ж<Task> task) NewTask(context.Context pctx,
     id = newID();
     userTaskCreate(id, pid, taskType);
     var s = Ꮡ(new Task(id: id));
-    return (context.WithValue(pctx, new traceContextKey(nil), s), s);
+    return (context.WithValue(pctx, new traceContextKey(nil), s.OrTypedNil()), s);
 }
 
 // We allocate a new task even when
@@ -178,7 +178,7 @@ internal static ж<Region> noopRegion = Ꮡ(new Region(nil));
 
 // End marks the end of the traced code region.
 public static void End(this ж<Region> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (Ꮡr == noopRegion) {
         return;

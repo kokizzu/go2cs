@@ -56,7 +56,7 @@ internal static readonly @string runtimeFixallocSizeTooˢ = "runtime: fixalloc s
 // Initialize f to allocate objects of the given size,
 // using the allocator to obtain chunks of memory.
 [GoRecv] internal static void init(this ref fixalloc f, uintptr size, Action<@unsafe.Pointer, @unsafe.Pointer> first, @unsafe.Pointer arg, ж<sysMemStat> Ꮡstat) {
-    ref var stat = ref Ꮡstat.Value;
+    ref var stat = ref Ꮡstat.DerefOrNull();
 
     if (size > _FixAllocChunk) {
         @throw(runtimeFixallocSizeTooˢ);

@@ -136,7 +136,7 @@ internal static @string getEnvAny(params ꓸꓸꓸstring namesʗp) {
 private static readonly @string refusingToUseHttpProxyˢ = "refusing to use HTTP_PROXY value in CGI environment; see golang.org/s/cgihttpproxy"u8;
 
 [GoRecv] internal static (ж<url.URL>, error) proxyForURL(this ref config cfg, ж<url.URL> ᏑreqURL) {
-    ref var reqURL = ref ᏑreqURL.Value;
+    ref var reqURL = ref ᏑreqURL.DerefOrNull();
 
     ж<url.URL> proxy = default!;
     if (reqURL.Scheme == "https"u8){
@@ -297,7 +297,7 @@ internal static map<@string, @string> portMap = new map<@string, @string>{
 
 // canonicalAddr returns url.Host but always with a ":port" suffix
 internal static @string canonicalAddr(ж<url.URL> Ꮡurl) {
-    ref var urlΔ1 = ref Ꮡurl.Value;
+    ref var urlΔ1 = ref Ꮡurl.DerefOrNull();
 
     @string addr = urlΔ1.Hostname();
     {

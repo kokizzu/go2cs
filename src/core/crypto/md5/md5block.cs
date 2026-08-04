@@ -12,7 +12,7 @@ using math;
 partial class md5_package {
 
 internal static void blockGeneric(ж<digest> Ꮡdig, slice<byte> p) {
-    ref var dig = ref Ꮡdig.Value;
+    ref var dig = ref Ꮡdig.DerefOrNull();
 
     // load state
     var (a, b, c, d) = (dig.s[0], dig.s[1], dig.s[2], dig.s[3]);

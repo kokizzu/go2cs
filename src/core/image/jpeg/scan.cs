@@ -376,7 +376,7 @@ internal static readonly @string tooManyCoefficientsˢ = "too many coefficients"
 // refine decodes a successive approximation refinement block, as specified in
 // section G.1.2.
 [GoRecv] internal static error refine(this ref decoder d, ж<block> Ꮡb, ж<huffman> Ꮡh, int32 zigStart, int32 zigEnd, int32 delta) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     // Refining a DC component is trivial.
     if (zigStart == 0) {
@@ -462,7 +462,7 @@ break_loop:;
 // refineNonZeroes refines non-zero entries of b in zig-zag order. If nz >= 0,
 // the first nz zero entries are skipped over.
 [GoRecv] internal static (int32, error) refineNonZeroes(this ref decoder d, ж<block> Ꮡb, int32 zig, int32 zigEnd, int32 nz, int32 delta) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (; zig <= zigEnd; zig++) {
         nint u = unzig[zig];
@@ -520,7 +520,7 @@ internal static readonly @string tooManyComponentsˢ = "too many components"u8;
 // reconstructBlock dequantizes, performs the inverse DCT and stores the block
 // to the image.
 [GoRecv] internal static error reconstructBlock(this ref decoder d, ж<block> Ꮡb, nint bx, nint by, nint compIndex) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var qt = Ꮡ(d.quant, d.comp[compIndex].tq);
     for (nint zig = 0; zig < blockSize; zig++) {

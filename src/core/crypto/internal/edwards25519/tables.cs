@@ -98,7 +98,7 @@ partial class edwards25519_package {
 
 // Set dest to x*Q, where -8 <= x <= 8, in constant time.
 [GoRecv] internal static void SelectInto(this ref projLookupTable v, ж<projCached> Ꮡdest, int8 x) {
-    ref var dest = ref Ꮡdest.Value;
+    ref var dest = ref Ꮡdest.DerefOrNull();
 
     // Compute xabs = |x|
     var xmask = (int8)((x >> (int)(7)));
@@ -115,7 +115,7 @@ partial class edwards25519_package {
 
 // Set dest to x*Q, where -8 <= x <= 8, in constant time.
 [GoRecv] internal static void SelectInto(this ref affineLookupTable v, ж<affineCached> Ꮡdest, int8 x) {
-    ref var dest = ref Ꮡdest.Value;
+    ref var dest = ref Ꮡdest.DerefOrNull();
 
     // Compute xabs = |x|
     var xmask = (int8)((x >> (int)(7)));
@@ -132,14 +132,14 @@ partial class edwards25519_package {
 
 // Given odd x with 0 < x < 2^4, return x*Q (in variable time).
 [GoRecv] internal static void SelectInto(this ref nafLookupTable5 v, ж<projCached> Ꮡdest, int8 x) {
-    ref var dest = ref Ꮡdest.Value;
+    ref var dest = ref Ꮡdest.DerefOrNull();
 
     dest = v.points[x / 2];
 }
 
 // Given odd x with 0 < x < 2^7, return x*Q (in variable time).
 [GoRecv] internal static void SelectInto(this ref nafLookupTable8 v, ж<affineCached> Ꮡdest, int8 x) {
-    ref var dest = ref Ꮡdest.Value;
+    ref var dest = ref Ꮡdest.DerefOrNull();
 
     dest = v.points[x / 2];
 }

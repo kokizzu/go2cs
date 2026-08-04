@@ -38,8 +38,6 @@ partial class tls_package {
 // The configuration config must be non-nil and must include
 // at least one certificate or else set GetCertificate.
 public static ж<Conn> Server(net.Conn conn, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.Value;
-
     var c = Ꮡ(new Conn(
         conn: conn,
         config: Ꮡconfig
@@ -54,8 +52,6 @@ public static ж<Conn> Server(net.Conn conn, ж<Config> Ꮡconfig) {
 // The config cannot be nil: users must set either ServerName or
 // InsecureSkipVerify in the config.
 public static ж<Conn> Client(net.Conn conn, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.Value;
-
     var c = Ꮡ(new Conn(
         conn: conn,
         config: Ꮡconfig,
@@ -87,7 +83,7 @@ public static ж<Conn> Client(net.Conn conn, ж<Config> Ꮡconfig) {
 // The configuration config must be non-nil and must include
 // at least one certificate or else set GetCertificate.
 public static net.Listener NewListener(net.Listener inner, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.Value;
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     var l = @new<listener>();
     l.Value.Listener = inner;
@@ -103,7 +99,7 @@ internal static readonly @string tlsNeitherCertificatesˢ = "tls: neither Certif
 // The configuration config must be non-nil and must include
 // at least one certificate or else set GetCertificate.
 public static (net.Listener, error) Listen(@string network, @string laddr, ж<Config> Ꮡconfig) {
-    ref var config = ref Ꮡconfig.DerefOrNil();
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     // If this condition changes, consider updating http.Server.ServeTLS too.
     if (Ꮡconfig == nil || len(config.Certificates) == 0 && config.GetCertificate == default! && config.GetConfigForClient == default!) {
@@ -149,8 +145,8 @@ public static (ж<Conn>, error) DialWithDialer(ж<net.Dialer> Ꮡdialer, @string
 }
 
 internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> ᏑnetDialer, @string network, @string addr, ж<Config> Ꮡconfig) => func<(ж<Conn>, error)>((defer, recover) => {
-    ref var netDialer = ref ᏑnetDialer.Value;
-    ref var config = ref Ꮡconfig.DerefOrNil();
+    ref var netDialer = ref ᏑnetDialer.DerefOrNull();
+    ref var config = ref Ꮡconfig.DerefOrNull();
 
     if (netDialer.Timeout != 0) {
         Action cancel = default!;
@@ -174,7 +170,7 @@ internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> Ꮡne
     }
     @string hostname = addr[..(int)(colonPos)];
     if (Ꮡconfig == nil) {
-        Ꮡconfig = defaultConfig(); config = ref Ꮡconfig.DerefOrNil();
+        Ꮡconfig = defaultConfig(); config = ref Ꮡconfig.DerefOrNull();
     }
     // If no ServerName is set, infer the ServerName
     // from the hostname we're connecting to.
@@ -182,7 +178,7 @@ internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> Ꮡne
         // Make a copy to avoid polluting argument or default.
         var c = Ꮡconfig.Clone();
         c.Value.ServerName = hostname;
-        Ꮡconfig = c; config = ref Ꮡconfig.DerefOrNil();
+        Ꮡconfig = c; config = ref Ꮡconfig.DerefOrNull();
     }
     var conn = Client(rawConn, Ꮡconfig);
     {
@@ -294,7 +290,7 @@ internal static readonly @string tlsUnknownPublicKeyˢ = "tls: unknown public ke
 // discarded. This behavior can be re-enabled by setting "x509keypairleaf=0"
 // in the GODEBUG environment variable.
 public static (Certificate, error) X509KeyPair(slice<byte> certPEMBlock, slice<byte> keyPEMBlock) {
-    var fail = (error errΔ1) => (new Certificate(nil), errΔ1);
+    (Certificate, error) fail(error errΔ1) => (new Certificate(nil), errΔ1);
     Certificate cert = default!;
     slice<@string> skippedBlockTypes = default!;
     while (ᐧ) {
@@ -399,7 +395,7 @@ internal static readonly @string tlsFailedToParsePrivateˢ = "tls: failed to par
 internal static (cryptoꓸPrivateKey, error) parsePrivateKey(slice<byte> der) {
     {
         var (key, err) = Δx509.ParsePKCS1PrivateKey(der); if (err == default!) {
-            return (key, default!);
+            return (key.OrTypedNil(), default!);
         }
     }
     {
@@ -419,7 +415,7 @@ internal static (cryptoꓸPrivateKey, error) parsePrivateKey(slice<byte> der) {
     }
     {
         var (key, err) = Δx509.ParseECPrivateKey(der); if (err == default!) {
-            return (key, default!);
+            return (key.OrTypedNil(), default!);
         }
     }
     return (default!, errors.New(tlsFailedToParsePrivateˢ));

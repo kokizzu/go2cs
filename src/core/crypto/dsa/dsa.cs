@@ -63,7 +63,7 @@ internal static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid Param
 // GenerateParameters puts a random, valid set of DSA parameters into params.
 // This function can take many seconds, even on fast machines.
 public static error GenerateParameters(ж<Parameters> Ꮡparams, io.Reader rand, ParameterSizes sizes) {
-    ref var @params = ref Ꮡparams.Value;
+    ref var @params = ref Ꮡparams.DerefOrNull();
 
     // This function doesn't follow FIPS 186-3 exactly in that it doesn't
     // use a verification seed to generate the primes. The verification
@@ -159,7 +159,7 @@ internal static readonly @string cryptoDsaParametersNotˢ = "crypto/dsa: paramet
 // GenerateKey generates a public&private key pair. The Parameters of the
 // [PrivateKey] must already be valid (see [GenerateParameters]).
 public static error GenerateKey(ж<PrivateKey> Ꮡpriv, io.Reader rand) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     if (priv.P == nil || priv.Q == nil || priv.G == nil) {
         return errors.New(cryptoDsaParametersNotˢ);
@@ -208,7 +208,7 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
     ж<bigꓸInt> s = default!;
     error err = default!;
 
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
     randutil.MaybeReadByte(rand);
     // FIPS 186-3, section 4.6
     nint n = priv.Q.BitLen();
@@ -266,9 +266,9 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
 // to the byte-length of the subgroup. This function does not perform that
 // truncation itself.
 public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> Ꮡr, ж<bigꓸInt> Ꮡs) {
-    ref var pub = ref Ꮡpub.Value;
-    ref var r = ref Ꮡr.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // FIPS 186-3, section 4.7
     if (pub.P.Sign() == 0) {

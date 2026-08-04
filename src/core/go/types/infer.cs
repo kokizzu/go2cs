@@ -36,9 +36,9 @@ internal static readonly @string inferSSSˢ = "== infer : %s%s ➞ %s"u8;
 internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, positioner posn, slice<ж<TypeParam>> tparams, slice<ΔType> targs, ж<Tuple> Ꮡparams, slice<ж<operand>> args, bool reverse, ж<error_> Ꮡerr) {
     slice<ΔType> inferred = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var @params = ref Ꮡparams.Value;
-    ref var err = ref Ꮡerr.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var @params = ref Ꮡparams.DerefOrNull();
+    ref var err = ref Ꮡerr.DerefOrNull();
 
         // Don't verify result conditions if there's no error handler installed:
         // in that case, an error leads to an exit panic and the result value may
@@ -51,7 +51,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             });
         }
         if (traceInference) {
-            Ꮡcheck.dump(inferSSSˢ, tparams, Ꮡparams, targs);
+            Ꮡcheck.dump(inferSSSˢ, tparams, Ꮡparams.OrTypedNil(), targs);
             // aligned with rename print below
             var tparamsʗ2 = tparams;
             defer(() => {
@@ -110,7 +110,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         //           the substitution (which always happens).
         if (Ꮡparams.Len() > 0) {
             var smap = makeSubstMap(tparams, targs);
-            Ꮡparams = Ꮡcheck.subst(nopos, new TupleжΔType(Ꮡparams), smap, nil, check.context())._<ж<Tuple>>(); @params = ref Ꮡparams.Value;
+            Ꮡparams = Ꮡcheck.subst(nopos, new TupleжΔType(Ꮡparams), smap, nil, check.context())._<ж<Tuple>>(); @params = ref Ꮡparams.DerefOrNull();
         }
         // Unify parameter and argument types for generic parameters with typed arguments
         // and collect the indices of generic parameters with untyped arguments.
@@ -118,7 +118,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         var u = newUnifier(tparams, targs, Ꮡcheck.allowVersion(posn, go1_21));
         var tparamsʗ3 = tparams;
         var uʗ1 = u;
-        var errorf = (ΔType tpar, ΔType targ, ж<operand> arg) => {
+        void errorf(ΔType tpar, ΔType targ, ж<operand> arg) {
             // provide a better error message if we can
             var targsΔ1 = uʗ1.inferred(tparamsʗ3);
             if (targsΔ1[0] == default!) {
@@ -153,13 +153,13 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             } else {
                 Ꮡerr.Value.addf(new operandжpositioner(arg), "type %s of %s does not match %s"u8, targ, (~arg).expr, tpar);
             }
-        };
+        }
         // indices of generic parameters with untyped arguments, for later use
         slice<nint> untyped = default!;
         // --- 1 ---
         // use information from function arguments
         if (traceInference) {
-            u.tracef("== function parameters: %s"u8, Ꮡparams);
+            u.tracef("== function parameters: %s"u8, Ꮡparams.OrTypedNil());
             u.tracef("-- function arguments : %s"u8, args);
         }
         foreach (var (i, arg) in args) {
@@ -233,7 +233,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                 var tx = u.at(tpar);
                 var (core, single) = coreTerm(tpar);
                 if (traceInference) {
-                    u.tracef("-- type parameter %s = %s: core(%s) = %s, single = %v"u8, tpar, tx, tpar, core, single);
+                    u.tracef("-- type parameter %s = %s: core(%s) = %s, single = %v"u8, tpar.OrTypedNil(), tx, tpar.OrTypedNil(), core.OrTypedNil(), single);
                 }
                 // If there is a core term (i.e., a core type with tilde information)
                 // unify the type parameter with the core type.
@@ -255,7 +255,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                             // TODO(gri) Type parameters that appear in the constraint and
                             //           for which we have type arguments inferred should
                             //           use those type arguments for a better error message.
-                            err.addf(posn, "%s (type %s) does not satisfy %s"u8, tpar, tx, tpar.Constraint());
+                            err.addf(posn, "%s (type %s) does not satisfy %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint());
                             inferred = default!; return;
                         }
                         break;
@@ -286,7 +286,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                             var uʗ2 = u;
                             var (m, _) = Ꮡcheck.missingMethod(tx, new InterfaceжΔType(constraint), true, (ΔType x, ΔType y) => uʗ2.unify(x, y, exact), Ꮡcause); if (m != nil) {
                                 // TODO(gri) better error message (see TODO above)
-                                err.addf(posn, "%s (type %s) does not satisfy %s %s"u8, tpar, tx, tpar.Constraint(), cause);
+                                err.addf(posn, "%s (type %s) does not satisfy %s %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint(), cause);
                                 inferred = default!; return;
                             }
                         }
@@ -326,7 +326,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                 } else {
                     var m = maxType(max, (~arg).typ);
                     if (m == default!) {
-                        err.addf(new operandжpositioner(arg), "mismatched types %s and %s (cannot infer %s)"u8, max, (~arg).typ, tpar);
+                        err.addf(new operandжpositioner(arg), "mismatched types %s and %s (cannot infer %s)"u8, max, (~arg).typ, tpar.OrTypedNil());
                         inferred = default!; return;
                     }
                     max = m;
@@ -459,7 +459,7 @@ internal static bool containsNil(slice<ΔType> list) {
 // must be updated separately if desired.
 // The positions is only used for debug traces.
 internal static (slice<ж<TypeParam>>, ΔType) renameTParams(this ж<Checker> Ꮡcheck, tokenꓸPos pos, slice<ж<TypeParam>> tparams, ΔType typ) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // For the purpose of type inference we must differentiate type parameters
     // occurring in explicit type or value function arguments from the type
@@ -558,7 +558,7 @@ internal static bool isParameterized(slice<ж<TypeParam>> tparams, ΔType typ) {
 internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ) {
     bool res = default!;
     func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
         // detect cycles
         {
@@ -658,7 +658,7 @@ internal static bool varList(this ж<tpWalker> Ꮡw, slice<ж<Var>> list) {
 // core type and false. In that case, if any term of tpar has a tilde, the core
 // term has a tilde. In all other cases coreTerm returns (nil, false).
 internal static (ж<term>, bool) coreTerm(ж<TypeParam> Ꮡtpar) {
-    ref var tpar = ref Ꮡtpar.Value;
+    ref var tpar = ref Ꮡtpar.DerefOrNull();
 
     nint n = 0;
     ref var single = ref heap<ж<term>>(out var Ꮡsingle);      // valid if n == 1
@@ -717,7 +717,7 @@ internal static void killCycles(slice<ж<TypeParam>> tparams, slice<ΔType> infe
 }
 
 internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) => func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     typ = Unalias(typ);
     if (w.seen[typ]) {

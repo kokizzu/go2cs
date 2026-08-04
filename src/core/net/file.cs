@@ -30,7 +30,7 @@ public static (Conn c, error err) FileConn(ж<os.File> Ꮡf) {
     Conn c = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     (c, err) = fileConn(Ꮡf);
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "file"u8, Net: "file+net"u8, Source: default!, Addr: ((fileAddr)f.Name()), Err: err)));
@@ -46,7 +46,7 @@ public static (Listener ln, error err) FileListener(ж<os.File> Ꮡf) {
     Listener ln = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     (ln, err) = fileListener(Ꮡf);
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "file"u8, Net: "file+net"u8, Source: default!, Addr: ((fileAddr)f.Name()), Err: err)));
@@ -62,7 +62,7 @@ public static (PacketConn c, error err) FilePacketConn(ж<os.File> Ꮡf) {
     PacketConn c = default!;
     error err = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     (c, err) = filePacketConn(Ꮡf);
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "file"u8, Net: "file+net"u8, Source: default!, Addr: ((fileAddr)f.Name()), Err: err)));

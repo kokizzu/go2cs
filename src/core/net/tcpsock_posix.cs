@@ -24,7 +24,7 @@ internal static ΔAddr sockaddrToTCP(syscallꓸSockaddr sa) {
 }
 
 internal static nint family(this ж<TCPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil || len(a.IP) <= IPv4len) {
         return syscall.AF_INET;
@@ -36,7 +36,7 @@ internal static nint family(this ж<TCPAddr> Ꮡa) {
 }
 
 internal static (syscallꓸSockaddr, error) sockaddr(this ж<TCPAddr> Ꮡa, nint family) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return (default!, default!);
@@ -49,7 +49,7 @@ internal static (syscallꓸSockaddr, error) sockaddr(this ж<TCPAddr> Ꮡa, nint
 }
 
 internal static (int64, error) readFrom(this ж<TCPConn> Ꮡc, Δio.Reader r) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var (n, err, handled) = spliceFrom(c.fd, r); if (handled) {
@@ -65,7 +65,7 @@ internal static (int64, error) readFrom(this ж<TCPConn> Ꮡc, Δio.Reader r) {
 }
 
 internal static (int64, error) writeTo(this ж<TCPConn> Ꮡc, Δio.Writer w) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         var (n, err, handled) = spliceTo(w, c.fd); if (handled) {
@@ -76,7 +76,7 @@ internal static (int64, error) writeTo(this ж<TCPConn> Ꮡc, Δio.Writer w) {
 }
 
 internal static (ж<TCPConn>, error) dialTCP(this ж<sysDialer> Ꮡsd, context.Context ctx, ж<TCPAddr> Ꮡladdr, ж<TCPAddr> Ꮡraddr) {
-    ref var sd = ref Ꮡsd.Value;
+    ref var sd = ref Ꮡsd.DerefOrNull();
 
     {
         var h = sd.testHookDialTCP; if (h != default!) {
@@ -96,8 +96,8 @@ internal static (ж<TCPConn>, error) doDialTCP(this ж<sysDialer> Ꮡsd, context
 }
 
 internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, context.Context ctx, ж<TCPAddr> Ꮡladdr, ж<TCPAddr> Ꮡraddr, nint proto) {
-    ref var sd = ref Ꮡsd.Value;
-    ref var laddr = ref Ꮡladdr.DerefOrNil();
+    ref var sd = ref Ꮡsd.DerefOrNull();
+    ref var laddr = ref Ꮡladdr.DerefOrNull();
 
     var ctrlCtxFn = sd.Dialer.ControlContext;
     if (ctrlCtxFn == default! && sd.Dialer.Control != default!) {
@@ -141,7 +141,7 @@ internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, co
 }
 
 internal static bool selfConnect(ж<netFD> Ꮡfd, error err) {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     // If the connect failed, we clearly didn't connect to ourselves.
     if (err != default!) {
@@ -178,7 +178,7 @@ internal static bool spuriousENOTAVAIL(error err) {
 }
 
 internal static bool ok(this ж<TCPListener> Ꮡln) {
-    ref var ln = ref Ꮡln.DerefOrNil();
+    ref var ln = ref Ꮡln.DerefOrNull();
 
     return Ꮡln != nil && ln.fd != nil;
 }
@@ -208,7 +208,7 @@ internal static (ж<TCPListener>, error) listenTCP(this ж<sysListener> Ꮡsl, c
 }
 
 internal static (ж<TCPListener>, error) listenTCPProto(this ж<sysListener> Ꮡsl, context.Context ctx, ж<TCPAddr> Ꮡladdr, nint proto) {
-    ref var sl = ref Ꮡsl.Value;
+    ref var sl = ref Ꮡsl.DerefOrNull();
 
     Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn = default!;
     if (sl.ListenConfig.Control != default!) {

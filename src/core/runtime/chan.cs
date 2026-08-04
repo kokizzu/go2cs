@@ -74,7 +74,7 @@ internal static readonly @string makechanInvalidChannelˢ = "makechan: invalid c
 internal static readonly @string makechanBadAlignmentˢ = "makechan: bad alignment"u8;
 
 internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var elem = t.Elem;
     // compiler checks this but be safe.
@@ -120,7 +120,7 @@ internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
     c.Value.dataqsiz = (nuint)size;
     lockInit(c.of(runtime_package.Δhchan.Ꮡlock), lockRankHchan);
     if (debugChan) {
-        print((@string)"makechan: chan="u8, c, (@string)"; elemsize="u8, (~elem).Size_, (@string)"; dataqsiz="u8, size, (@string)"\n"u8);
+        print((@string)"makechan: chan="u8, c.OrTypedNil(), (@string)"; elemsize="u8, (~elem).Size_, (@string)"; dataqsiz="u8, size, (@string)"\n"u8);
     }
     return c;
 }
@@ -137,7 +137,7 @@ internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
 //
 //go:linkname chanbuf
 internal static @unsafe.Pointer chanbuf(ж<Δhchan> Ꮡc, nuint i) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     return (uintptr)add(c.buf, (uintptr)i * (uintptr)c.elemsize);
 }
@@ -147,7 +147,7 @@ internal static @unsafe.Pointer chanbuf(ж<Δhchan> Ꮡc, nuint i) {
 // the answer is instantaneously true, the correct answer may have changed
 // by the time the calling function receives the return value.
 internal static bool full(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // c.dataqsiz is immutable (never written after the channel is created)
     // so it is safe to read at any time during channel operation.
@@ -185,7 +185,7 @@ internal static readonly @string chansendSpuriousWakeupˢ = "chansend: spurious 
  * the operation; we'll see that it's now closed.
  */
 internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, uintptr callerpc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         if (!block) {
@@ -195,7 +195,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
         @throw(unreachableˢ);
     }
     if (debugChan) {
-        print((@string)"chansend: chan="u8, Ꮡc, (@string)"\n"u8);
+        print((@string)"chansend: chan="u8, Ꮡc.OrTypedNil(), (@string)"\n"u8);
     }
     if (raceenabled) {
         racereadpc((uintptr)Ꮡc.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend));
@@ -314,8 +314,8 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
 // sg must already be dequeued from c.
 // ep must be non-nil and point to the heap or the caller's stack.
 internal static void send(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep, Action unlockf, nint skip) {
-    ref var c = ref Ꮡc.Value;
-    ref var sg = ref Ꮡsg.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     if (raceenabled) {
         if (c.dataqsiz == 0){
@@ -354,7 +354,7 @@ internal static void send(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
 // handle waiting senders at all (all timer channels
 // use non-blocking sends to fill the buffer).
 internal static bool timerchandrain(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Note: Cannot use empty(c) because we are called
     // while holding c.timer.sendLock, and empty(c) will
@@ -389,8 +389,8 @@ internal static bool timerchandrain(ж<Δhchan> Ꮡc) {
 // are not in the heap, so that will not help. We arrange to call
 // memmove and typeBitsBulkBarrier instead.
 internal static void sendDirect(ж<_type> Ꮡt, ж<sudog> Ꮡsg, @unsafe.Pointer src) {
-    ref var t = ref Ꮡt.Value;
-    ref var sg = ref Ꮡsg.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     // src is on our stack, dst is a slot on another stack.
     // Once we read sg.elem out of sg, it will no longer
@@ -404,8 +404,8 @@ internal static void sendDirect(ж<_type> Ꮡt, ж<sudog> Ꮡsg, @unsafe.Pointer
 }
 
 internal static void recvDirect(ж<_type> Ꮡt, ж<sudog> Ꮡsg, @unsafe.Pointer dst) {
-    ref var t = ref Ꮡt.Value;
-    ref var sg = ref Ꮡsg.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     // dst is on our stack or the heap, src is on another stack.
     // The channel is locked, so src will not move during this
@@ -420,7 +420,7 @@ internal static readonly @string closeOfNilChannelˢ = "close of nil channel"u8;
 internal static readonly @string closeOfClosedChannelˢ = "close of closed channel"u8;
 
 internal static void closechan(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         throw panic(((plainError)(@string)closeOfNilChannelˢ));
@@ -490,7 +490,7 @@ internal static void closechan(ж<Δhchan> Ꮡc) {
 // it returns, but since the channel is unlocked, the channel may become
 // non-empty immediately afterward.
 internal static bool empty(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // c.dataqsiz is immutable.
     if (c.dataqsiz == 0) {
@@ -529,11 +529,11 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
     bool selected = default!;
     bool received = default!;
 
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
     // raceenabled: don't need to check ep, as it is always on the stack
     // or is new memory allocated by reflect.
     if (debugChan) {
-        print((@string)"chanrecv: chan="u8, Ꮡc, (@string)"\n"u8);
+        print((@string)"chanrecv: chan="u8, Ꮡc.OrTypedNil(), (@string)"\n"u8);
     }
     if (Ꮡc == nil) {
         if (!block) {
@@ -691,8 +691,8 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
 // sg must already be dequeued from c.
 // A non-nil ep must point to the heap or the caller's stack.
 internal static void recv(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep, Action unlockf, nint skip) {
-    ref var c = ref Ꮡc.Value;
-    ref var sg = ref Ꮡsg.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     if (c.dataqsiz == 0){
         if (raceenabled) {
@@ -737,7 +737,7 @@ internal static void recv(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
 }
 
 internal static bool chanparkcommit(ж<g> Ꮡgp, @unsafe.Pointer chanLock) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // There are unlocked sudogs that point into gp's stack. Stack
     // copying must lock the channels of those sudogs.
@@ -819,7 +819,7 @@ internal static (bool selected, bool received) reflect_chanrecv(ж<Δhchan> Ꮡc
 }
 
 internal static nint chanlen(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return 0;
@@ -838,7 +838,7 @@ internal static nint chanlen(ж<Δhchan> Ꮡc) {
 }
 
 internal static nint chancap(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return 0;
@@ -877,7 +877,7 @@ internal static void reflect_chanclose(ж<Δhchan> Ꮡc) {
 }
 
 [GoRecv] internal static void enqueue(this ref waitq q, ж<sudog> Ꮡsgp) {
-    ref var sgp = ref Ꮡsgp.Value;
+    ref var sgp = ref Ꮡsgp.DerefOrNull();
 
     sgp.next = default!;
     var x = q.last;
@@ -933,7 +933,7 @@ internal static @unsafe.Pointer raceaddr(this ж<Δhchan> Ꮡc) {
 }
 
 internal static void racesync(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg) {
-    ref var sg = ref Ꮡsg.Value;
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     racerelease((uintptr)chanbuf(Ꮡc, 0));
     raceacquireg(sg.g, (uintptr)chanbuf(Ꮡc, 0));
@@ -945,8 +945,8 @@ internal static void racesync(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg) {
 // and a channel c or its communicating partner sg.
 // This function handles the special case of c.elemsize==0.
 internal static void racenotify(ж<Δhchan> Ꮡc, nuint idx, ж<sudog> Ꮡsg) {
-    ref var c = ref Ꮡc.Value;
-    ref var sg = ref Ꮡsg.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var sg = ref Ꮡsg.DerefOrNull();
 
     // We could have passed the unsafe.Pointer corresponding to entry idx
     // instead of idx itself.  However, in a future version of this function,

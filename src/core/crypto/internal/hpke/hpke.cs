@@ -94,7 +94,7 @@ internal static readonly @string eaePrkˢ = "eae_prk"u8;
 internal static readonly @string sharedSecretˢ = "shared_secret"u8;
 
 internal static slice<byte> ExtractAndExpand(this ж<dhKEM> Ꮡdh, slice<byte> dhKey, slice<byte> kemContext) {
-    ref var dh = ref Ꮡdh.Value;
+    ref var dh = ref Ꮡdh.DerefOrNull();
 
     var eaePRK = Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExtract(dh.suiteID[..], default!, eaePrkˢ, dhKey);
     return Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExpand(dh.suiteID[..], eaePRK, sharedSecretˢ, kemContext, dh.nSecret);
@@ -105,8 +105,8 @@ internal static (slice<byte> sharedSecret, slice<byte> encapPub, error err) Enca
     slice<byte> encapPub = default!;
     error err = default!;
 
-    ref var dh = ref Ꮡdh.Value;
-    ref var pubRecipient = ref ᏑpubRecipient.Value;
+    ref var dh = ref Ꮡdh.DerefOrNull();
+    ref var pubRecipient = ref ᏑpubRecipient.DerefOrNull();
     ж<ecdh.PrivateKey> privEph = default!;
     if (testingOnlyGenerateKey != default!){
         (privEph, err) = testingOnlyGenerateKey();

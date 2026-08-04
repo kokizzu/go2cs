@@ -30,7 +30,7 @@ partial class http_package {
 }
 
 [GoRecv] internal static void addPattern(this ref routingIndex idx, ж<pattern> Ꮡpat) {
-    ref var pat = ref Ꮡpat.Value;
+    ref var pat = ref Ꮡpat.DerefOrNull();
 
     if (pat.lastSegment().multi){
         idx.multis = append(idx.multis, Ꮡpat);
@@ -60,13 +60,13 @@ partial class http_package {
 [GoRecv] internal static error /*err*/ possiblyConflictingPatterns(this ref routingIndex idx, ж<pattern> Ꮡpat, Func<ж<pattern>, error> f) {
     error err = default!;
 
-    ref var pat = ref Ꮡpat.Value;
+    ref var pat = ref Ꮡpat.DerefOrNull();
     // Terminology:
     //   dollar pattern: one ending in "{$}"
     //   multi pattern: one ending in a trailing slash or "{x...}" wildcard
     //   ordinary pattern: neither of the above
     // apply f to all the pats, stopping on error.
-    var apply = error (slice<ж<pattern>> pats) => {
+    error apply(slice<ж<pattern>> pats) {
         if (err != default!) {
             return err;
         }
@@ -77,7 +77,7 @@ partial class http_package {
             }
         }
         return default!;
-    };
+    }
     // Our simple indexing scheme doesn't try to prune multi patterns; assume
     // any of them can match the argument.
     {

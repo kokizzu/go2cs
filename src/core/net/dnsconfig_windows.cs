@@ -15,7 +15,7 @@ internal static ж<dnsConfig> /*conf*/ dnsReadConfig(@string ignoredFilename) {
     func((defer, recover) => {
         conf = Ꮡ(new dnsConfig(
             ndots: 1,
-            timeout: 5000000000L,
+            timeout: (time.Duration)(5000000000L),
             attempts: 2
         ));
         defer(() => {

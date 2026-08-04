@@ -42,8 +42,7 @@ partial class srcimporter_package {
 // os functions. The file set is used to track position information of package
 // files; and imported packages are added to the packages map.
 public static ж<Importer> New(ж<build.Context> Ꮡctxt, ж<token.FileSet> Ꮡfset, map<@string, ж<types.Package>> packages) {
-    ref var ctxt = ref Ꮡctxt.Value;
-    ref var fset = ref Ꮡfset.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     return Ꮡ(new Importer(
         ctxt: Ꮡctxt,
@@ -73,7 +72,7 @@ public static (ж<types.Package>, error) Import(this ж<Importer> Ꮡp, @string 
 // Packages that are not comprised entirely of pure Go files may fail to import because the
 // type checker may not be able to determine all exported entities (e.g. due to cgo dependencies).
 public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @string path, @string srcDir, types.ImportMode mode) => func<(ж<types.Package>, error)>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (mode != 0) {
         throw panic("non-zero import mode");
@@ -175,7 +174,7 @@ public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @str
 });
 
 internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, @string dir, slice<@string> filenames) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // use build.Context's OpenFile if there is one
     var open = p.ctxt.Value.OpenFile;
@@ -222,8 +221,8 @@ internal static readonly @string cgoCflagsˢ = "CGO_CFLAGS"u8;
 internal static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
 
 internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) => func<(ж<ast.File>, error)>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
-    ref var bp = ref Ꮡbp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var bp = ref Ꮡbp.DerefOrNull();
 
     var (tmpdir, err) = os.MkdirTemp(""u8, srcimporterˢ);
     if (err != default!) {

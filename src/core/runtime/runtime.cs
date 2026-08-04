@@ -172,7 +172,7 @@ internal static void godebug_setNewIncNonDefault(Func<@string, Action> newIncNon
 }
 
 internal static void IncNonDefault(this ж<godebugInc> Ꮡg) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     var inc = Ꮡg.of(godebugInc.Ꮡinc).Load();
     if (inc == nil) {

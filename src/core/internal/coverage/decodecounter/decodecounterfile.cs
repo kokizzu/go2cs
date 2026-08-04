@@ -45,7 +45,7 @@ public static (ж<CounterDataReader>, error) NewCounterDataReader(@string fn, io
     ));
     // Read header
     {
-        var err = binary.Read(rs, new binary_littleEndianᴠByteOrder(binary.LittleEndian), cdr.of(CounterDataReader.Ꮡhdr)); if (err != default!) {
+        var err = binary.Read(rs, binary.LittleEndian, cdr.of(CounterDataReader.Ꮡhdr)); if (err != default!) {
             return (default!, err);
         }
     }
@@ -88,7 +88,7 @@ internal static bool checkMagic(array<byte> v) {
 }
 
 internal static error readFooter(this ж<CounterDataReader> Ꮡcdr) {
-    ref var cdr = ref Ꮡcdr.Value;
+    ref var cdr = ref Ꮡcdr.DerefOrNull();
 
     var ftrSize = (int64)/* unsafe.Sizeof(cdr.ftr) */ (uintptr)16;
     {
@@ -97,7 +97,7 @@ internal static error readFooter(this ж<CounterDataReader> Ꮡcdr) {
         }
     }
     {
-        var err = binary.Read(cdr.mr, new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡcdr.of(CounterDataReader.Ꮡftr)); if (err != default!) {
+        var err = binary.Read(cdr.mr, binary.LittleEndian, Ꮡcdr.of(CounterDataReader.Ꮡftr)); if (err != default!) {
             return err;
         }
     }
@@ -113,11 +113,11 @@ internal static error readFooter(this ж<CounterDataReader> Ꮡcdr) {
 // readSegmentPreamble reads and consumes the segment header, segment string
 // table, and segment args table.
 internal static error readSegmentPreamble(this ж<CounterDataReader> Ꮡcdr) {
-    ref var cdr = ref Ꮡcdr.Value;
+    ref var cdr = ref Ꮡcdr.DerefOrNull();
 
     // Read segment header.
     {
-        var err = binary.Read(cdr.mr, new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡcdr.of(CounterDataReader.Ꮡshdr)); if (err != default!) {
+        var err = binary.Read(cdr.mr, binary.LittleEndian, Ꮡcdr.of(CounterDataReader.Ꮡshdr)); if (err != default!) {
             return err;
         }
     }
@@ -178,7 +178,7 @@ private static readonly @string goosˢ = "GOOS"u8;
 private static readonly @string goarchˢ = "GOARCH"u8;
 
 internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
-    ref var cdr = ref Ꮡcdr.Value;
+    ref var cdr = ref Ꮡcdr.DerefOrNull();
 
     var b = new slice<byte>((nint)(cdr.shdr.ArgsLen));
     var (nr, err) = cdr.mr.Read(b);
@@ -191,13 +191,13 @@ internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
     var slr = slicereader.NewReader(b, false);
     /* not readonly */
     var slrʗ1 = slr;
-    var sget = (@string, error) () => {
+    (@string, error) sget() {
         var kidx = slrʗ1.ReadULEB128();
         if ((nint)kidx >= Ꮡcdr.Value.stab.Entries()) {
             return ("", fmt.Errorf("malformed string table ref"u8));
         }
         return (Ꮡcdr.Value.stab.Get((uint32)kidx), default!);
-    };
+    }
     var nents = slr.ReadULEB128();
     cdr.args = new map<@string, @string>((nint)nents);
     for (var i = (uint64)0; i < nents; i++) {
@@ -286,7 +286,7 @@ internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
 // if we're done with all the segments (also an error if
 // something went wrong).
 public static (bool, error) BeginNextSegment(this ж<CounterDataReader> Ꮡcdr) {
-    ref var cdr = ref Ꮡcdr.Value;
+    ref var cdr = ref Ꮡcdr.DerefOrNull();
 
     if (cdr.segCount >= cdr.ftr.NumSegments) {
         return (false, default!);
@@ -323,8 +323,8 @@ internal const bool supportDeadFunctionsInCounterData = false;
 // something went wrong with the read or we hit a premature
 // EOF).
 public static (bool, error) NextFunc(this ж<CounterDataReader> Ꮡcdr, ж<FuncPayload> Ꮡp) {
-    ref var cdr = ref Ꮡcdr.Value;
-    ref var p = ref Ꮡp.Value;
+    ref var cdr = ref Ꮡcdr.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (cdr.fcnCount >= (uint32)cdr.shdr.FcnEntries) {
         return (false, default!);

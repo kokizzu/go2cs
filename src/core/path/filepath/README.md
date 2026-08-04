@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Go tests](https://img.shields.io/badge/Go_tests-61%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/path.filepath.html)
+[![Tests](https://img.shields.io/badge/Tests-61%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/path.filepath.html)
 
 Package filepath implements utility routines for manipulating filename paths in a way compatible with the target operating system-defined file paths.
 

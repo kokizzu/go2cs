@@ -18,7 +18,7 @@ internal const byte floatGobVersion = 1;
 // The [Float] value and all its attributes (precision,
 // rounding mode, accuracy) are marshaled.
 public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (Ꮡx == nil) {
         return (default!, default!);
@@ -69,7 +69,7 @@ internal static readonly @string floatGobDecodeBufferTooˢ2 = "Float.GobDecode: 
 // z unless z's precision is 0, in which case z is set exactly
 // to the decoded value.
 public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (len(buf) == 0) {
         // Other side sent a nil or default value.

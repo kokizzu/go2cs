@@ -35,7 +35,7 @@ public static ж<P384Point> NewP384Point() {
 
 // SetGenerator sets p to the canonical generator and returns p.
 public static ж<P384Point> SetGenerator(this ж<P384Point> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.x.SetBytes(new byte[]{0xaa, 0x87, 0xca, 0x22, 0xbe, 0x8b, 0x5, 0x37, 0x8e, 0xb1, 0xc7, 0x1e, 0xf3, 0x20, 0xad, 0x74, 0x6e, 0x1d, 0x3b, 0x62, 0x8b, 0xa7, 0x9b, 0x98, 0x59, 0xf7, 0x41, 0xe0, 0x82, 0x54, 0x2a, 0x38, 0x55, 0x2, 0xf2, 0x5d, 0xbf, 0x55, 0x29, 0x6c, 0x3a, 0x54, 0x5e, 0x38, 0x72, 0x76, 0xa, 0xb7}.slice());
     p.y.SetBytes(new byte[]{0x36, 0x17, 0xde, 0x4a, 0x96, 0x26, 0x2c, 0x6f, 0x5d, 0x9e, 0x98, 0xbf, 0x92, 0x92, 0xdc, 0x29, 0xf8, 0xf4, 0x1d, 0xbd, 0x28, 0x9a, 0x14, 0x7c, 0xe9, 0xda, 0x31, 0x13, 0xb5, 0xf0, 0xb8, 0xc0, 0xa, 0x60, 0xb1, 0xce, 0x1d, 0x7e, 0x81, 0x9d, 0x7a, 0x43, 0x1d, 0x7c, 0x90, 0xea, 0xe, 0x5f}.slice());
@@ -45,8 +45,8 @@ public static ж<P384Point> SetGenerator(this ж<P384Point> Ꮡp) {
 
 // Set sets p = q and returns p.
 public static ж<P384Point> Set(this ж<P384Point> Ꮡp, ж<P384Point> Ꮡq) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     p.x.Set(q.x);
     p.y.Set(q.y);
@@ -63,7 +63,7 @@ private static readonly @string invalidP384PointEncodingˢ = "invalid P384 point
 // the curve, it returns nil and an error, and the receiver is unchanged.
 // Otherwise, it returns p.
 public static (ж<P384Point>, error) SetBytes(this ж<P384Point> Ꮡp, slice<byte> b) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (ᐧ) {
     case {} when len(b) == 1 && b[0] == 0: {
@@ -144,8 +144,8 @@ internal static ж<fiat.P384Element> p384Polynomial(ж<fiat.P384Element> Ꮡy2, 
 private static readonly @string p384PointNotOnCurveˢ = "P384 point not on curve"u8;
 
 internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384Element> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // y² = x³ - 3x + b
     var rhs = p384Polynomial(@new<fiat.P384Element>(), Ꮡx);
@@ -167,7 +167,7 @@ internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384El
 }
 
 [GoRecv] internal static slice<byte> bytes(this ref P384Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -194,7 +194,7 @@ internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384El
 private static readonly @string p384PointIsThePointAtˢ = "P384 point is the point at infinity"u8;
 
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P384Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return (default!, errors.New(p384PointIsThePointAtˢ));
@@ -215,7 +215,7 @@ private static readonly @string p384PointIsThePointAtˢ = "P384 point is the poi
 }
 
 [GoRecv] internal static slice<byte> bytesCompressed(this ref P384Point p, ж<array<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
         return append(@out[..0], (byte)(0));
@@ -233,9 +233,9 @@ private static readonly @string p384PointIsThePointAtˢ = "P384 point is the poi
 
 // Add sets q = p1 + p2, and returns q. The points may overlap.
 public static ж<P384Point> Add(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp1, ж<P384Point> Ꮡp2) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -333,8 +333,8 @@ public static ж<P384Point> Add(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp1, ж
 
 // Double sets q = p + p, and returns q. The points may overlap.
 public static ж<P384Point> Double(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp) {
-    ref var q = ref Ꮡq.Value;
-    ref var p = ref Ꮡp.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Complete addition formula for a = -3 from "Complete addition formulas for
     // prime order elliptic curves" (https://eprint.iacr.org/2015/1060), §A.2.
@@ -414,9 +414,9 @@ public static ж<P384Point> Double(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp) 
 
 // Select sets q to p1 if cond == 1, and to p2 if cond == 0.
 public static ж<P384Point> Select(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp1, ж<P384Point> Ꮡp2, nint cond) {
-    ref var q = ref Ꮡq.Value;
-    ref var p1 = ref Ꮡp1.Value;
-    ref var p2 = ref Ꮡp2.Value;
+    ref var q = ref Ꮡq.DerefOrNull();
+    ref var p1 = ref Ꮡp1.DerefOrNull();
+    ref var p2 = ref Ꮡp2.DerefOrNull();
 
     q.x.Select(p1.x, p2.x, cond);
     q.y.Select(p1.y, p2.y, cond);
@@ -441,8 +441,8 @@ public static ж<P384Point> Select(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp1,
 
 // ScalarMult sets p = scalar * q, and returns p.
 public static (ж<P384Point>, error) ScalarMult(this ж<P384Point> Ꮡp, ж<P384Point> Ꮡq, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
-    ref var q = ref Ꮡq.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var q = ref Ꮡq.DerefOrNull();
 
     // Compute a p384Table for the base point q. The explicit NewP384Point
     // calls get inlined, letting the allocations live on the stack.
@@ -511,7 +511,7 @@ internal static ref sync.Once p384GeneratorTableOnce => ref Ꮡp384GeneratorTabl
 // ScalarBaseMult sets p = scalar * B, where B is the canonical generator, and
 // returns p.
 public static (ж<P384Point>, error) ScalarBaseMult(this ж<P384Point> Ꮡp, slice<byte> scalar) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (len(scalar) != p384ElementLength) {
         return (default!, errors.New(invalidScalarLengthˢ));

@@ -105,13 +105,13 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
             }
         }
     }
-    var (ti, _) = ᏑtinfoMap.LoadOrStore(typ, tinfo);
+    var (ti, _) = ᏑtinfoMap.LoadOrStore(typ, tinfo.OrTypedNil());
     return (ti._<ж<typeInfo>>(), default!);
 }
 
 // structFieldInfo builds and returns a fieldInfo for f.
 internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<reflect.StructField> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var finfo = Ꮡ(new fieldInfo(idx: f.Index));
     // Split the tag from the xml namespace if necessary.
@@ -273,8 +273,8 @@ internal static ж<fieldInfo> /*xmlname*/ lookupXMLName(reflectꓸType typ) {
 // itself a prefix of another path, or when two paths match exactly.
 // It is okay for field paths to share a common, shorter prefix.
 internal static error addFieldInfo(reflectꓸType typ, ж<typeInfo> Ꮡtinfo, ж<fieldInfo> Ꮡnewf) {
-    ref var tinfo = ref Ꮡtinfo.Value;
-    ref var newf = ref Ꮡnewf.Value;
+    ref var tinfo = ref Ꮡtinfo.DerefOrNull();
+    ref var newf = ref Ꮡnewf.DerefOrNull();
 
     slice<nint> conflicts = default!;
 Loop:

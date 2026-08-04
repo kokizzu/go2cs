@@ -242,7 +242,7 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<R
 
 // checkHeader performs basic sanity checks on the header.
 internal static error checkHeader(ж<dnsmessage.Parser> Ꮡp, dnsmessage.Header h) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var (rcode, hasAdd) = extractExtendedRCode(p, h);
     if (rcode == dnsmessage.RCodeNameError) {
@@ -272,7 +272,7 @@ internal static error checkHeader(ж<dnsmessage.Parser> Ꮡp, dnsmessage.Header 
 }
 
 internal static error skipToAnswer(ж<dnsmessage.Parser> Ꮡp, dnsmessage.Type qtype) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     while (ᐧ) {
         var (h, err) = p.AnswerHeader();
@@ -320,7 +320,7 @@ internal static (dnsmessage.RCode, bool) extractExtendedRCode(dnsmessage.Parser 
 // Do a lookup for a single name, which must be rooted
 // (otherwise answer will not find the answers).
 internal static (dnsmessage.Parser, @string, error) tryOneName(this ж<Resolver> Ꮡr, context.Context ctx, ж<dnsConfig> Ꮡcfg, @string name, dnsmessage.Type qtype) {
-    ref var cfg = ref Ꮡcfg.Value;
+    ref var cfg = ref Ꮡcfg.DerefOrNull();
 
     error lastErr = default!;
     var serverOffset = Ꮡcfg.serverOffset();
@@ -402,7 +402,7 @@ internal static ж<dnsConfig> getSystemDNSConfig() {
 
 // init initializes conf and is only called via conf.initOnce.
 internal static void init(this ж<resolverConfig> Ꮡconf) {
-    ref var conf = ref Ꮡconf.Value;
+    ref var conf = ref Ꮡconf.DerefOrNull();
 
     // Set dnsConfig and lastChecked so we don't parse
     // resolv.conf twice the first time.
@@ -417,7 +417,7 @@ internal static void init(this ж<resolverConfig> Ꮡconf) {
 // The name variable only exists for testing. It is otherwise always
 // "/etc/resolv.conf".
 internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) => func((defer, recover) => {
-    ref var conf = ref Ꮡconf.Value;
+    ref var conf = ref Ꮡconf.DerefOrNull();
 
     Ꮡconf.of(resolverConfig.ᏑinitOnce).Do(Ꮡconf.init);
     if ((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).noReload) {
@@ -429,7 +429,7 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) =>
     }
     defer(Ꮡconf.releaseSema);
     var now = time.Now();
-    if (conf.lastChecked.After(now.Add(-5000000000L))) {
+    if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
         return;
     }
     conf.lastChecked = now;
@@ -473,7 +473,7 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) =>
 }
 
 internal static (dnsmessage.Parser, @string, error) lookup(this ж<Resolver> Ꮡr, context.Context ctx, @string name, dnsmessage.Type qtype, ж<dnsConfig> Ꮡconf) {
-    ref var conf = ref Ꮡconf.DerefOrNil();
+    ref var conf = ref Ꮡconf.DerefOrNull();
 
     if (!isDomainName(name)) {
         // We used to use "invalid domain name" as the error,
@@ -484,7 +484,7 @@ internal static (dnsmessage.Parser, @string, error) lookup(this ж<Resolver> Ꮡ
         return (new dnsmessage.Parser(nil), "", new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), name, ""u8)));
     }
     if (Ꮡconf == nil) {
-        Ꮡconf = getSystemDNSConfig(); conf = ref Ꮡconf.DerefOrNil();
+        Ꮡconf = getSystemDNSConfig(); conf = ref Ꮡconf.DerefOrNull();
     }
     dnsmessage.Parser p = default!;
     @string server = default!;
@@ -664,7 +664,7 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
     dnsmessage.Name cname = default!;
     error err = default!;
 
-    ref var conf = ref Ꮡconf.DerefOrNil();
+    ref var conf = ref Ꮡconf.DerefOrNull();
     if (order == hostLookupFilesDNS || order == hostLookupFiles) {
         @string canonical = default!;
         (addrs, canonical) = goLookupIPFiles(name);
@@ -685,7 +685,7 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
         return (default!, new dnsmessage.Name(nil), new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), name, ""u8)));
     }
     if (Ꮡconf == nil) {
-        Ꮡconf = getSystemDNSConfig(); conf = ref Ꮡconf.DerefOrNil();
+        Ꮡconf = getSystemDNSConfig(); conf = ref Ꮡconf.DerefOrNull();
     }
     var lane = new channel<goLookupIPCNAMEOrder_result>(1);
     var qtypes = new dnsmessage.Type[]{dnsmessage.TypeA, dnsmessage.TypeAAAA}.slice();
@@ -710,14 +710,11 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
         responseFn = (@string fqdn, dnsmessage.Type qtype) => func<goLookupIPCNAMEOrder_result>((defer, recover) => {
             ᏑdnsWaitGroup.Add(1);
             defer(ᏑdnsWaitGroup.Done);
-            ref var p = ref heap<dnsmessage.Parser>(out var Ꮡp);
-            (p, var server, var errΔ2) = Ꮡr.tryOneName(ctx, Ꮡconf, fqdn, qtype);
+            var (p, server, errΔ2) = Ꮡr.tryOneName(ctx, Ꮡconf, fqdn, qtype);
             return new goLookupIPCNAMEOrder_result(p, server, errΔ2);
         });
     } else {
         var laneʗ1 = lane;
-
-            var laneʗ2 = laneʗ1;
         queryFn = (@string fqdn, dnsmessage.Type qtype) => {
             ᏑdnsWaitGroup.Add(1);
             var laneʗ3 = laneʗ1;

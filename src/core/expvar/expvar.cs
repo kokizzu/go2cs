@@ -176,7 +176,7 @@ internal static slice<byte> appendJSONMayExpand(this ж<Map> Ꮡv, slice<byte> b
 
 // Init removes all keys from the map.
 public static ж<Map> Init(this ж<Map> Ꮡv) => func((defer, recover) => {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     Ꮡv.of(Map.ᏑkeysMu).Lock();
     defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
@@ -187,7 +187,7 @@ public static ж<Map> Init(this ж<Map> Ꮡv) => func((defer, recover) => {
 
 // addKey updates the sorted list of keys in v.keys.
 internal static void addKey(this ж<Map> Ꮡv, @string key) => func((defer, recover) => {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     Ꮡv.of(Map.ᏑkeysMu).Lock();
     defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
@@ -260,7 +260,7 @@ public static void AddFloat(this ж<Map> Ꮡv, @string key, float64 delta) {
 
 // Delete deletes the given key from the map.
 public static void Delete(this ж<Map> Ꮡv, @string key) => func((defer, recover) => {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     Ꮡv.of(Map.ᏑkeysMu).Lock();
     defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
@@ -275,7 +275,7 @@ public static void Delete(this ж<Map> Ꮡv, @string key) => func((defer, recove
 // The map is locked during the iteration,
 // but existing entries may be concurrently updated.
 public static void Do(this ж<Map> Ꮡv, Action<KeyValue> f) => func((defer, recover) => {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.DerefOrNull();
 
     Ꮡv.of(Map.ᏑkeysMu).RLock();
     defer(Ꮡv.of(Map.ᏑkeysMu).RUnlock);

@@ -338,7 +338,7 @@ internal static readonly @string mappedReadyAndOtherˢ = "mappedReady and other 
 //
 // The world must be stopped.
 internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
-    ref var stats = ref Ꮡstats.Value;
+    ref var stats = ref Ꮡstats.DerefOrNull();
 
     assertWorldStopped();
     // Flush mcaches to mcentral before doing anything else.
@@ -523,7 +523,7 @@ internal static readonly @string shortSlicePassedToˢ = "short slice passed to r
 //
 //go:systemstack
 internal static void readGCStats_m(ж<slice<uint64>> Ꮡpauses) {
-    ref var pauses = ref Ꮡpauses.ValueSlot;
+    ref var pauses = ref Ꮡpauses.DerefOrNull();
 
     var Δp = pauses;
     // Calling code in runtime/debug should make the slice large enough.
@@ -589,9 +589,7 @@ internal static void flushallmcaches() {
 //
 //go:nosplit
 internal static uint64 load(this ж<sysMemStat> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
-
-    return atomic.Load64(Ꮡ((uint64)(s)));
+    return atomic.Load64(Ꮡs.Reinterpret<sysMemStat, uint64>());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -603,9 +601,7 @@ internal static readonly @string sysMemStatOverflowˢ = "sysMemStat overflow"u8;
 //
 //go:nosplit
 internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
-    ref var s = ref Ꮡs.Value;
-
-    var val = atomic.Xadd64(Ꮡ((uint64)(s)), n);
+    var val = atomic.Xadd64(Ꮡs.Reinterpret<sysMemStat, uint64>(), n);
     if ((n > 0 && (int64)val < n) || (n < 0 && (int64)val + n < n)) {
         print((@string)"runtime: val="u8, val, (@string)" n="u8, n, (@string)"\n"u8);
         @throw(sysMemStatOverflowˢ);
@@ -642,7 +638,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
 
 // merge adds in the deltas from b into a.
 [GoRecv] internal static void merge(this ref heapStatsDelta a, ж<heapStatsDelta> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     a.committed += b.committed;
     a.released += b.released;
@@ -725,7 +721,7 @@ internal static readonly @string badSequenceNumberˢ = "bad sequence number"u8;
 //
 //go:nosplit
 internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     {
         var pp = (~(~getg()).m).p.ptr(); if (pp != nil){
@@ -758,7 +754,7 @@ internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
 //
 //go:nosplit
 internal static void release(this ж<consistentHeapStats> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     {
         var pp = (~(~getg()).m).p.ptr(); if (pp != nil){
@@ -779,7 +775,7 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
 // Unsafe because it does so without any synchronization. The
 // world must be stopped.
 [GoRecv] internal static void unsafeRead(this ref consistentHeapStats m, ж<heapStatsDelta> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     assertWorldStopped();
     foreach (var (i, _) in m.stats) {
@@ -806,8 +802,8 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
 // Not safe to call concurrently. The world must be stopped
 // or metricsSema must be held.
 internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> Ꮡout) {
-    ref var m = ref Ꮡm.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
+    ref var @out = ref Ꮡout.DerefOrNull();
 
     // Getting preempted after this point is not safe because
     // we read allp. We need to make sure a STW can't happen

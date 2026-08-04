@@ -38,7 +38,7 @@ partial class dwarf_package {
 internal static readonly @string unitLengthOverflowˢ = "unit length overflow"u8;
 
 internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Count units.
     nint nunit = 0;
@@ -126,7 +126,7 @@ internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
 // offsetToUnit returns the index of the unit containing offset off.
 // It returns -1 if no unit contains this offset.
 internal static nint offsetToUnit(this ж<Data> Ꮡd, Offset off) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Find the unit after off
     nint next = sort.Search(len(d.unit), (nint i) => Ꮡd.Value.unit[i].off > off);

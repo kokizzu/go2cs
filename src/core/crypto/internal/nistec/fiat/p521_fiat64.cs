@@ -66,7 +66,7 @@ partial class fiat_package {
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
 internal static void p521CmovznzU64(ж<uint64> Ꮡout1, p521Uint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
 
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
@@ -85,9 +85,9 @@ internal static void p521CmovznzU64(ж<uint64> Ꮡout1, p521Uint1 arg1, uint64 a
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p521Mul(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p521MontgomeryDomainFieldElement> Ꮡarg1, ж<p521MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -1612,8 +1612,8 @@ internal static void p521Mul(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p5
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg1)) mod m
 //	0 ≤ eval out1 < m
 internal static void p521Square(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p521MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[1];
     var x2 = arg1[2];
@@ -3139,9 +3139,9 @@ internal static void p521Square(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p521Add(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p521MontgomeryDomainFieldElement> Ꮡarg1, ж<p521MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -3240,9 +3240,9 @@ internal static void p521Add(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p5
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
 internal static void p521Sub(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p521MontgomeryDomainFieldElement> Ꮡarg1, ж<p521MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -3317,7 +3317,7 @@ internal static void p521Sub(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p5
 //	eval (from_montgomery out1) mod m = 1 mod m
 //	0 ≤ eval out1 < m
 internal static void p521SetOne(ж<p521MontgomeryDomainFieldElement> Ꮡout1) {
-    ref var out1 = ref Ꮡout1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
 
     out1[0] = 0x80000000000000UL;
     out1[1] = (uint64)0x0;
@@ -3341,8 +3341,8 @@ internal static void p521SetOne(ж<p521MontgomeryDomainFieldElement> Ꮡout1) {
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^9) mod m
 //	0 ≤ eval out1 < m
 internal static void p521FromMontgomery(ж<p521NonMontgomeryDomainFieldElement> Ꮡout1, ж<p521MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[0];
     uint64 x2 = default!;
@@ -4300,8 +4300,8 @@ internal static void p521FromMontgomery(ж<p521NonMontgomeryDomainFieldElement> 
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
 internal static void p521ToMontgomery(ж<p521MontgomeryDomainFieldElement> Ꮡout1, ж<p521NonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     uint64 x1 = default!;
     uint64 x2 = default!;
@@ -5171,9 +5171,9 @@ internal static void p521ToMontgomery(ж<p521MontgomeryDomainFieldElement> Ꮡou
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 internal static void p521Selectznz(ж<array<uint64>> Ꮡout1, p521Uint1 arg1, ж<array<uint64>> Ꮡarg2, ж<array<uint64>> Ꮡarg3) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg2 = ref Ꮡarg2.Value;
-    ref var arg3 = ref Ꮡarg3.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg2 = ref Ꮡarg2.DerefOrNull();
+    ref var arg3 = ref Ꮡarg3.DerefOrNull();
 
     ref var x1 = ref heap(new uint64(), out var Ꮡx1);
     p521CmovznzU64(Ꮡx1, arg1, arg2[0], arg3[0]);
@@ -5222,8 +5222,8 @@ internal static void p521Selectznz(ж<array<uint64>> Ꮡout1, p521Uint1 arg1, ж
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0x1]]
 internal static void p521ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = arg1[8];
     var x2 = arg1[7];
@@ -5435,8 +5435,8 @@ internal static void p521ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡ
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0x1ff]]
 internal static void p521FromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.Value;
-    ref var arg1 = ref Ꮡarg1.Value;
+    ref var out1 = ref Ꮡout1.DerefOrNull();
+    ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = (((uint64)((p521Uint1)(uint64)arg1[65]) << (int)(8)));
     var x2 = arg1[64];

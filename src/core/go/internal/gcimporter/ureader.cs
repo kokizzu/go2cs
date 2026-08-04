@@ -45,8 +45,6 @@ partial class gcimporter_package {
 internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) => func((defer, recover) => {
     input = input.ΔClone();
 
-    ref var fset = ref Ꮡfset.Value;
-    ref var ctxt = ref Ꮡctxt.DerefOrNil();
     ref var pr = ref heap<pkgReader>(out var Ꮡpr);
     pr = new pkgReader(
         PkgDecoder: input.ΔClone(),
@@ -135,7 +133,7 @@ internal static ж<reader> tempReader(this ж<pkgReader> Ꮡpr, pkgbits.RelocKin
 
 // @@@ Positions
 internal static tokenꓸPos pos(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(reader.ᏑDecoder).Sync(pkgbits.SyncPos);
     if (!Ꮡr.of(reader.ᏑDecoder).Bool()) {
@@ -149,13 +147,13 @@ internal static tokenꓸPos pos(this ж<reader> Ꮡr) {
 }
 
 internal static @string posBase(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.p.posBaseIdx(Ꮡr.of(reader.ᏑDecoder).Reloc(pkgbits.RelocPosBase));
 }
 
 internal static @string posBaseIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     {
         @string bΔ1 = pr.posBases[idx]; if (bΔ1 != ""u8) {
@@ -192,14 +190,14 @@ internal static @string posBaseIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index idx) 
 
 // @@@ Packages
 internal static ж<types.Package> pkg(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(reader.ᏑDecoder).Sync(pkgbits.SyncPkg);
     return r.p.pkgIdx(Ꮡr.of(reader.ᏑDecoder).Reloc(pkgbits.RelocPkg));
 }
 
 internal static ж<types.Package> pkgIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     // TODO(mdempsky): Consider using some non-nil pointer to indicate
     // the universe scope, so we don't need to keep re-reading it.
@@ -214,7 +212,7 @@ internal static ж<types.Package> pkgIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index
 }
 
 internal static ж<types.Package> doPkg(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     @string path = Ꮡr.of(reader.ᏑDecoder).String();
     var exprᴛ1 = path;
@@ -242,7 +240,7 @@ internal static ж<types.Package> doPkg(this ж<reader> Ꮡr) {
 
 // @@@ Types
 internal static typesꓸType typ(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     return r.p.typIdx(Ꮡr.typInfo(), r.dict);
 }
@@ -256,8 +254,8 @@ internal static typeInfo typInfo(this ж<reader> Ꮡr) {
 }
 
 internal static typesꓸType typIdx(this ж<pkgReader> Ꮡpr, typeInfo info, ж<readerDict> Ꮡdict) {
-    ref var pr = ref Ꮡpr.Value;
-    ref var dict = ref Ꮡdict.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
+    ref var dict = ref Ꮡdict.DerefOrNull();
 
     var idx = info.idx;
     ж<typesꓸType> where = default!;
@@ -293,7 +291,7 @@ internal static typesꓸType typIdx(this ж<pkgReader> Ꮡpr, typeInfo info, ж<
 internal static typesꓸType /*res*/ doTyp(this ж<reader> Ꮡr) {
     typesꓸType res = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     {
         pkgbits.CodeType tag = ((pkgbits.CodeType)Ꮡr.of(reader.ᏑDecoder).Code(pkgbits.SyncType));
         var exprᴛ1 = tag;
@@ -327,7 +325,7 @@ internal static typesꓸType /*res*/ doTyp(this ж<reader> Ꮡr) {
             return new types.PointerжΔType(types.NewPointer(Ꮡr.typ()));
         }
         if (exprᴛ1 == pkgbits.TypeSignature) {
-            return new types_ΔSignatureжΔType(Ꮡr.signature(nil, default!, default!));
+            return new types.ΔSignatureжΔType(Ꮡr.signature(nil, default!, default!));
         }
         if (exprᴛ1 == pkgbits.TypeSlice) {
             return new types.SliceжΔType(types.NewSlice(Ꮡr.typ()));
@@ -378,7 +376,7 @@ internal static ж<types.Union> unionType(this ж<reader> Ꮡr) {
 }
 
 internal static ж<types.Interface> interfaceType(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var methods = new slice<ж<types.Func>>(Ꮡr.of(reader.ᏑDecoder).Len());
     var embeddeds = new slice<typesꓸType>(Ꮡr.of(reader.ᏑDecoder).Len());
@@ -434,7 +432,7 @@ internal static ж<types.Var> param(this ж<reader> Ꮡr) {
 
 // @@@ Objects
 internal static (types.Object, slice<typesꓸType>) obj(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(reader.ᏑDecoder).Sync(pkgbits.SyncObject);
     assert(!Ꮡr.of(reader.ᏑDecoder).Bool());
@@ -448,7 +446,7 @@ internal static (types.Object, slice<typesꓸType>) obj(this ж<reader> Ꮡr) {
 }
 
 internal static (ж<types.Package>, @string) objIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     ж<types.Package> objPkg = default!;
     @string objName = default!;
@@ -475,32 +473,32 @@ internal static (ж<types.Package>, @string) objIdx(this ж<pkgReader> Ꮡpr, pk
         var r = Ꮡpr.newReader(pkgbits.RelocObj, idx, pkgbits.SyncObject1);
         r.Value.dict = dict;
         var objPkgʗ1 = objPkg;
-        var declare = (types.Object obj) => {
+        void declare(types.Object obj) {
             objPkgʗ1.Scope().Insert(obj);
-        };
+        }
         var exprᴛ1 = tag;
         if (exprᴛ1 == pkgbits.ObjAlias) {
             tokenꓸPos pos = r.pos();
             var typ = r.typ();
-            declare(new types_TypeNameжObject(newAliasTypeName(pos, objPkg, objName, typ)));
+            declare(new types.TypeNameжObject(newAliasTypeName(pos, objPkg, objName, typ)));
         }
         else if (exprᴛ1 == pkgbits.ObjConst) {
             tokenꓸPos pos = r.pos();
             var typ = r.typ();
             var val = r.of(reader.ᏑDecoder).Value();
-            declare(new types_ConstжObject(types.NewConst(pos, objPkg, objName, typ, val)));
+            declare(new types.ConstжObject(types.NewConst(pos, objPkg, objName, typ, val)));
         }
         else if (exprᴛ1 == pkgbits.ObjFunc) {
             tokenꓸPos pos = r.pos();
             var tparams = r.typeParamNames();
             var sig = r.signature(nil, default!, tparams);
-            declare(new types_FuncжObject(types.NewFunc(pos, objPkg, objName, sig)));
+            declare(new types.FuncжObject(types.NewFunc(pos, objPkg, objName, sig)));
         }
         else if (exprᴛ1 == pkgbits.ObjType) {
             tokenꓸPos pos = r.pos();
             var obj = types.NewTypeName(pos, objPkg, objName, default!);
             var named = types.NewNamed(obj, default!, default!);
-            declare(new types_TypeNameжObject(obj));
+            declare(new types.TypeNameжObject(obj));
             named.SetTypeParams(r.typeParamNames());
             var underlying = r.typ().Underlying();
             {
@@ -532,7 +530,7 @@ internal static (ж<types.Package>, @string) objIdx(this ж<pkgReader> Ꮡpr, pk
         else if (exprᴛ1 == pkgbits.ObjVar) {
             tokenꓸPos pos = r.pos();
             var typ = r.typ();
-            declare(new types_VarжObject(types.NewVar(pos, objPkg, objName, typ)));
+            declare(new types.VarжObject(types.NewVar(pos, objPkg, objName, typ)));
         }
         else { /* default: */
             throw panic("weird");
@@ -543,7 +541,7 @@ internal static (ж<types.Package>, @string) objIdx(this ж<pkgReader> Ꮡpr, pk
 }
 
 internal static ж<readerDict> objDictIdx(this ж<pkgReader> Ꮡpr, pkgbits.Index idx) {
-    ref var pr = ref Ꮡpr.Value;
+    ref var pr = ref Ꮡpr.DerefOrNull();
 
     ref var dict = ref heap(new readerDict(), out var Ꮡdict);
     {
@@ -569,7 +567,7 @@ internal static ж<readerDict> objDictIdx(this ж<pkgReader> Ꮡpr, pkgbits.Inde
 }
 
 internal static slice<ж<types.TypeParam>> typeParamNames(this ж<reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(reader.ᏑDecoder).Sync(pkgbits.SyncTypeParamNames);
     // Note: This code assumes it only processes objects without

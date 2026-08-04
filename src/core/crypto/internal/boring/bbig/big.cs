@@ -12,7 +12,7 @@ using math;
 partial class bbig_package {
 
 public static boring.BigInt Enc(ж<bigꓸInt> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡb == nil) {
         return default!;
@@ -21,7 +21,7 @@ public static boring.BigInt Enc(ж<bigꓸInt> Ꮡb) {
     if (len(x) == 0) {
         return new boring.BigInt(new nuint[]{}.slice());
     }
-    return @unsafe.Slice(Ꮡ((nuint)(~Ꮡ(x, 0))), len(x));
+    return @unsafe.Slice(Ꮡ(x, 0).Reinterpret<big.Word, nuint>(), len(x));
 }
 
 public static ж<bigꓸInt> Dec(boring.BigInt b) {
@@ -31,7 +31,7 @@ public static ж<bigꓸInt> Dec(boring.BigInt b) {
     if (len(b) == 0) {
         return @new<bigꓸInt>();
     }
-    var x = @unsafe.Slice(Ꮡ((big.Word)(b[0])), len(b));
+    var x = @unsafe.Slice(Ꮡ(b, 0).Reinterpret<nuint, big.Word>(), len(b));
     return @new<bigꓸInt>().SetBits(x);
 }
 

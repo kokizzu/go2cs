@@ -376,7 +376,7 @@ internal static bool aesgcmPreferred(slice<uint16> ciphers) {
 
 internal static any cipherRC4(slice<byte> key, slice<byte> iv, bool isRead) {
     var (cipher, _) = rc4.NewCipher(key);
-    return cipher;
+    return cipher.OrTypedNil();
 }
 
 internal static any cipher3DES(slice<byte> key, slice<byte> iv, bool isRead) {

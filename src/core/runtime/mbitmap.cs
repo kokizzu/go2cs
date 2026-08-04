@@ -179,7 +179,7 @@ internal static readonly @string badTypePassedToˢ = "bad type passed to typePoi
 //
 //go:nosplit
 [GoRecv] internal static typePointers typePointersOfType(this ref mspan span, ж<abi.Type> Ꮡtyp, uintptr addr) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     const bool doubleCheck = false;
     if (doubleCheck && (Ꮡtyp == nil || (abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0)) {
@@ -381,7 +381,7 @@ internal static readonly @string bulkBarrierPreWriteˢ = "bulkBarrierPreWrite: u
 //
 //go:nosplit
 internal static void bulkBarrierPreWrite(uintptr dst, uintptr src, uintptr size, ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if ((uintptr)(((uintptr)((uintptr)(dst | src) | size)) & (uintptr)(goarch.PtrSize - 1)) != 0) {
         @throw(bulkBarrierPreWriteˢ);
@@ -472,7 +472,7 @@ internal static void bulkBarrierPreWrite(uintptr dst, uintptr src, uintptr size,
 //
 //go:nosplit
 internal static void bulkBarrierPreWriteSrcOnly(uintptr dst, uintptr src, uintptr size, ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if ((uintptr)(((uintptr)((uintptr)(dst | src) | size)) & (uintptr)(goarch.PtrSize - 1)) != 0) {
         @throw(bulkBarrierPreWriteˢ);
@@ -617,7 +617,7 @@ internal static readonly @string badPointerBitsWrittenForˢ = "bad pointer bits 
 [GoRecv] internal static uintptr /*scanSize*/ writeHeapBitsSmall(this ref mspan span, uintptr x, uintptr dataSize, ж<_type> Ꮡtyp) {
     uintptr scanSize = default!;
 
-    ref var typ = ref Ꮡtyp.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
     // The objects here are always really small, so a single load is sufficient.
     var src0 = readUintptr(typ.GCData);
     // Create repetitions of the bitmap if we have a small array.
@@ -687,9 +687,9 @@ internal static readonly @string gcProgForTypeThatIsnTˢ = "GCProg for type that
 internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
     uintptr scanSize = default!;
 
-    ref var typ = ref Ꮡtyp.Value;
-    ref var header = ref Ꮡheader.DerefOrNil();
-    ref var span = ref Ꮡspan.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var header = ref Ꮡheader.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
     const bool doubleCheck = false;
     var gctyp = Ꮡtyp;
     if (Ꮡheader == nil){
@@ -765,8 +765,8 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
 internal static readonly @string heapSetTypePointerEntryˢ = "heapSetType: pointer entry not correct"u8;
 
 internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
-    ref var typ = ref Ꮡtyp.Value;
-    ref var span = ref Ꮡspan.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     // Check that scanning the full object works.
     var tp = span.typePointersOfUnchecked(span.objBase(x));
@@ -830,8 +830,8 @@ internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_ty
 internal static readonly @string foundBadInteriorPointerˢ = "found bad interior pointer"u8;
 
 internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior, uintptr size, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
-    ref var typ = ref Ꮡtyp.Value;
-    ref var span = ref Ꮡspan.Value;
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     var bad = false;
     if (interior < x) {
@@ -914,8 +914,8 @@ internal static readonly @string mismatchBetweenˢ = "mismatch between typePoint
 
 //go:nosplit
 internal static void doubleCheckTypePointersOfType(ж<mspan> Ꮡs, ж<_type> Ꮡtyp, uintptr addr, uintptr size) {
-    ref var s = ref Ꮡs.Value;
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (Ꮡtyp == nil || (abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         return;
@@ -1048,7 +1048,7 @@ internal static ж<byte> subtract1(ж<byte> Ꮡp) {
 // can be used. It then places these 8 bytes into the cached 64 bit
 // s.allocCache.
 [GoRecv] internal static void refillAllocCache(this ref mspan s, uint16 whichByte) {
-    var bytes = (ж<array<uint8>>)(uintptr)(new @unsafe.Pointer(s.allocBits.bytep((uintptr)whichByte)));
+    var bytes = array<uint8>.AliasPointer(s.allocBits.bytep((uintptr)whichByte), 8);
     var aCache = (uint64)0;
     aCache |= (uint64)((uint64)bytes.Value[0]);
     aCache |= (uint64)(((uint64)bytes.Value[1] << (int)((1 * 8))));
@@ -1232,7 +1232,7 @@ internal static readonly @string foundBadPointerInGoHeapˢ = "found bad pointer 
 
 // badPointer throws bad pointer in heap panic.
 internal static void badPointer(ж<mspan> Ꮡs, uintptr Δp, uintptr refBase, uintptr refOff) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Typically this indicates an incorrect use
     // of unsafe or cgo to store a bad pointer in
@@ -1347,15 +1347,15 @@ internal static UntypedInt ptrBits => /* 8 * goarch.PtrSize */ 64;
 //
 //go:nosplit
 internal static void bulkBarrierBitmap(uintptr dst, uintptr src, uintptr size, uintptr maskOffset, ж<uint8> Ꮡbits) {
-    ref var bits = ref Ꮡbits.Value;
+    ref var bits = ref Ꮡbits.DerefOrNull();
 
     var word = maskOffset / (uintptr)goarch.PtrSize;
-    Ꮡbits = addb(Ꮡbits, word / 8); bits = ref Ꮡbits.Value;
+    Ꮡbits = addb(Ꮡbits, word / 8); bits = ref Ꮡbits.DerefOrNull();
     var mask = (uint8)((uint8)1 << (int)((word % 8)));
     var buf = (~(~getg()).m).p.ptr().of(runtime_package.Δp.ᏑwbBuf);
     for (var i = (uintptr)0; i < size; i += goarch.PtrSize) {
         if (mask == 0) {
-            Ꮡbits = addb(Ꮡbits, 1); bits = ref Ꮡbits.Value;
+            Ꮡbits = addb(Ꮡbits, 1); bits = ref Ꮡbits.DerefOrNull();
             if (bits == 0) {
                 // Skip 8 words.
                 i += 7 * goarch.PtrSize;
@@ -1401,7 +1401,7 @@ internal static readonly @string runtimeInvalidˢ = "runtime: invalid typeBitsBu
 //
 //go:nosplit
 internal static void typeBitsBulkBarrier(ж<_type> Ꮡtyp, uintptr dst, uintptr src, uintptr size) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (Ꮡtyp == nil) {
         @throw(runtimeˢ2);
@@ -1511,7 +1511,7 @@ internal static unsafe bitvector progToPointerMask(ж<byte> Ꮡprog, uintptr siz
 
 // runGCProg returns the number of 1-bit entries written to memory.
 internal static uintptr runGCProg(ж<byte> Ꮡprog, ж<byte> Ꮡdst) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     var dstStart = Ꮡdst;
     // Bits waiting to be written to memory.
@@ -1524,7 +1524,7 @@ Run:
         // The rest of the loop assumes that nbits <= 7.
         for (; nbits >= 8; nbits -= 8) {
             dst = (uint8)bits;
-            Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.Value;
+            Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
             bits >>= (int)(8);
         }
         // Process one instruction.
@@ -1542,7 +1542,7 @@ Run:
                 bits |= (uintptr)(((uintptr)(Δp.Value)).Lsh((uint64)(nbits)));
                 Δp = add1(Δp);
                 dst = (uint8)bits;
-                Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.Value;
+                Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
                 bits >>= (int)(8);
             }
             {
@@ -1645,7 +1645,7 @@ Run:
                 nbits += npattern;
                 while (nbits >= 8) {
                     dst = (uint8)bits;
-                    Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.Value;
+                    Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
                     bits >>= (int)(8);
                     nbits -= 8;
                 }
@@ -1679,7 +1679,7 @@ Run:
             bits |= (uintptr)(((uintptr)(src.Value)).Lsh((uint64)(nbits)));
             src = add1(src);
             dst = (uint8)bits;
-            Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.Value;
+            Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
             bits >>= (int)(8);
         }
         // Final src fragment.
@@ -1697,7 +1697,7 @@ break_Run:;
     nbits += (uintptr)(((uintptr)0 - nbits) & 7);
     for (; nbits > 0; nbits -= 8) {
         dst = (uint8)bits;
-        Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.Value;
+        Ꮡdst = add1(Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
         bits >>= (int)(8);
     }
     return totalBits;
@@ -1723,12 +1723,12 @@ internal static void dematerializeGCProg(ж<mspan> Ꮡs) {
 }
 
 internal static void dumpGCProg(ж<byte> Ꮡp) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     nint nptr = 0;
     while (ᐧ) {
         var x = Δp;
-        Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.Value;
+        Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.DerefOrNull();
         if (x == 0) {
             print((@string)"\t"u8, nptr, (@string)" end\n"u8);
             break;
@@ -1738,7 +1738,7 @@ internal static void dumpGCProg(ж<byte> Ꮡp) {
             nint n = (nint)(x + 7) / 8;
             for (nint i = 0; i < n; i++) {
                 print((@string)" "u8, ((Δhex)(uint64)(Δp)));
-                Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.Value;
+                Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.DerefOrNull();
             }
             print((@string)"\n"u8);
             nptr += (nint)x;
@@ -1747,7 +1747,7 @@ internal static void dumpGCProg(ж<byte> Ꮡp) {
             if (nbit == 0) {
                 for (nuint nb = (nuint)0; ᐧ ; nb += 7) {
                     var xΔ1 = Δp;
-                    Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.Value;
+                    Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.DerefOrNull();
                     nbit |= (nint)(((nint)((byte)(xΔ1 & 0x7f))).Lsh(nb));
                     if ((byte)(xΔ1 & 0x80) == 0) {
                         break;
@@ -1757,7 +1757,7 @@ internal static void dumpGCProg(ж<byte> Ꮡp) {
             nint count = 0;
             for (nuint nb = (nuint)0; ᐧ ; nb += 7) {
                 var xΔ2 = Δp;
-                Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.Value;
+                Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.DerefOrNull();
                 count |= (nint)(((nint)((byte)(xΔ2 & 0x7f))).Lsh(nb));
                 if ((byte)(xΔ2 & 0x80) == 0) {
                     break;

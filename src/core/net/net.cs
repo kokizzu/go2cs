@@ -163,7 +163,7 @@ partial class net_package {
 }
 
 internal static bool ok(this ж<conn> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     return Ꮡc != nil && c.fd != nil;
 }
@@ -172,7 +172,7 @@ internal static bool ok(this ж<conn> Ꮡc) {
 
 // Read implements the Conn Read method.
 internal static (nint, error) Read(this ж<conn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return (0, syscall.EINVAL);
@@ -186,7 +186,7 @@ internal static (nint, error) Read(this ж<conn> Ꮡc, slice<byte> b) {
 
 // Write implements the Conn Write method.
 internal static (nint, error) Write(this ж<conn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return (0, syscall.EINVAL);
@@ -200,7 +200,7 @@ internal static (nint, error) Write(this ж<conn> Ꮡc, slice<byte> b) {
 
 // Close closes the connection.
 internal static error Close(this ж<conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -216,7 +216,7 @@ internal static error Close(this ж<conn> Ꮡc) {
 // The Addr returned is shared by all invocations of LocalAddr, so
 // do not modify it.
 internal static ΔAddr LocalAddr(this ж<conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return default!;
@@ -228,7 +228,7 @@ internal static ΔAddr LocalAddr(this ж<conn> Ꮡc) {
 // The Addr returned is shared by all invocations of RemoteAddr, so
 // do not modify it.
 internal static ΔAddr RemoteAddr(this ж<conn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return default!;
@@ -238,7 +238,7 @@ internal static ΔAddr RemoteAddr(this ж<conn> Ꮡc) {
 
 // SetDeadline implements the Conn SetDeadline method.
 internal static error SetDeadline(this ж<conn> Ꮡc, time.Time t) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -253,7 +253,7 @@ internal static error SetDeadline(this ж<conn> Ꮡc, time.Time t) {
 
 // SetReadDeadline implements the Conn SetReadDeadline method.
 internal static error SetReadDeadline(this ж<conn> Ꮡc, time.Time t) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -268,7 +268,7 @@ internal static error SetReadDeadline(this ж<conn> Ꮡc, time.Time t) {
 
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
 internal static error SetWriteDeadline(this ж<conn> Ꮡc, time.Time t) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -284,7 +284,7 @@ internal static error SetWriteDeadline(this ж<conn> Ꮡc, time.Time t) {
 // SetReadBuffer sets the size of the operating system's
 // receive buffer associated with the connection.
 internal static error SetReadBuffer(this ж<conn> Ꮡc, nint bytes) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -300,7 +300,7 @@ internal static error SetReadBuffer(this ж<conn> Ꮡc, nint bytes) {
 // SetWriteBuffer sets the size of the operating system's
 // transmit buffer associated with the connection.
 internal static error SetWriteBuffer(this ж<conn> Ꮡc, nint bytes) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.ok()) {
         return syscall.EINVAL;
@@ -511,7 +511,7 @@ internal static error mapErr(error err) {
 }
 
 public static @string Error(this ж<OpError> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (Ꮡe == nil) {
         return nilˢ;
@@ -601,7 +601,7 @@ internal static channel<EmptyStruct> noCancel = (channel<EmptyStruct>)(default!)
 }
 
 public static @string Error(this ж<AddrError> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (Ꮡe == nil) {
         return nilˢ;
@@ -789,7 +789,7 @@ internal static ж<DNSError> newDNSError(error err, @string name, @string server
 }
 
 public static @string Error(this ж<DNSError> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNil();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (Ꮡe == nil) {
         return nilˢ;
@@ -937,7 +937,7 @@ public static (int64 n, error err) WriteTo(this ж<Buffers> Ꮡv, Δio.Writer w)
     int64 n = default!;
     error err = default!;
 
-    ref var v = ref Ꮡv.ValueSlot;
+    ref var v = ref Ꮡv.DerefOrNull();
     {
         var (wv, ok) = w._<buffersWriter>(ᐧ); if (ok) {
             return wv.writeBuffers(Ꮡv);

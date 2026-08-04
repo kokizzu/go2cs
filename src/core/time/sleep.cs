@@ -113,7 +113,7 @@ internal static partial bool resetTimer(ж<Timer> t, int64 when, int64 period);
 // <-t.C if Stop returned false to drain a potential stale value.
 // See the [NewTimer] documentation for more details.
 public static bool Stop(this ж<Timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.initTimer) {
         throw panic("time: Stop called on uninitialized Timer");
@@ -173,7 +173,7 @@ public static ж<Timer> NewTimer(Duration d) {
 // explicitly drain the timer first.
 // See the [NewTimer] documentation for more details.
 public static bool Reset(this ж<Timer> Ꮡt, Duration d) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.initTimer) {
         throw panic("time: Reset called on uninitialized Timer");

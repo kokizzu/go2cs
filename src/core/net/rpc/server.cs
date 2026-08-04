@@ -269,7 +269,7 @@ internal static error register(this ж<Server> Ꮡserver, any rcvr, @string name
         return errors.New(str);
     }
     {
-        var (_, dup) = Ꮡserver.of(Server.ᏑserviceMap).LoadOrStore(sname, s); if (dup) {
+        var (_, dup) = Ꮡserver.of(Server.ᏑserviceMap).LoadOrStore(sname, s.OrTypedNil()); if (dup) {
             return errors.New("rpc: service already defined: "u8 + sname);
         }
     }
@@ -349,7 +349,7 @@ internal static EmptyStruct invalidRequest = new EmptyStruct();
 internal static readonly object rpcWritingResponseˢ = (@string)"rpc: writing response:"u8;
 
 internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<Request> Ꮡreq, any reply, ServerCodec codec, @string errmsg) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var resp = Ꮡserver.getResponse();
     // Encode the response header
@@ -371,7 +371,7 @@ internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡs
 public static nuint /*n*/ NumCalls(this ж<methodType> Ꮡm) {
     nuint n = default!;
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     Ꮡm.of(methodType.ᏑMutex).Lock();
     n = m.numCalls;
     Ꮡm.of(methodType.ᏑMutex).Unlock();
@@ -379,8 +379,8 @@ public static nuint /*n*/ NumCalls(this ж<methodType> Ꮡm) {
 }
 
 internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<sync.WaitGroup> Ꮡwg, ж<methodType> Ꮡmtype, ж<Request> Ꮡreq, reflectꓸValue argv, reflectꓸValue replyv, ServerCodec codec) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
-    ref var mtype = ref Ꮡmtype.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var mtype = ref Ꮡmtype.DerefOrNull();
 
     if (Ꮡwg != nil) {
         defer(Ꮡwg.Done);
@@ -410,7 +410,7 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
 }
 
 [GoRecv] internal static error ReadRequestHeader(this ref gobServerCodec c, ж<Request> Ꮡr) {
-    return c.dec.Decode(Ꮡr);
+    return c.dec.Decode(Ꮡr.OrTypedNil());
 }
 
 [GoRecv] internal static error ReadRequestBody(this ref gobServerCodec c, any body) {
@@ -425,7 +425,7 @@ internal static readonly object rpcGobErrorEncodingBodyˢ = (@string)"rpc: gob e
     error err = default!;
 
     {
-        err = c.enc.Encode(Ꮡr); if (err != default!) {
+        err = c.enc.Encode(Ꮡr.OrTypedNil()); if (err != default!) {
             if (c.encBuf.Flush() == default!) {
                 // Gob couldn't encode the header. Should not happen, so if it does,
                 // shut down the connection to signal that the connection is broken.
@@ -532,7 +532,7 @@ public static error ServeRequest(this ж<Server> Ꮡserver, ServerCodec codec) {
 }
 
 internal static ж<Request> getRequest(this ж<Server> Ꮡserver) {
-    ref var server = ref Ꮡserver.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
 
     Ꮡserver.of(Server.ᏑreqLock).Lock();
     var req = server.freeReq;
@@ -547,8 +547,8 @@ internal static ж<Request> getRequest(this ж<Server> Ꮡserver) {
 }
 
 internal static void freeRequest(this ж<Server> Ꮡserver, ж<Request> Ꮡreq) {
-    ref var server = ref Ꮡserver.Value;
-    ref var req = ref Ꮡreq.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     Ꮡserver.of(Server.ᏑreqLock).Lock();
     req.next = server.freeReq;
@@ -557,7 +557,7 @@ internal static void freeRequest(this ж<Server> Ꮡserver, ж<Request> Ꮡreq) 
 }
 
 internal static ж<Response> getResponse(this ж<Server> Ꮡserver) {
-    ref var server = ref Ꮡserver.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
 
     Ꮡserver.of(Server.ᏑrespLock).Lock();
     var resp = server.freeResp;
@@ -572,8 +572,8 @@ internal static ж<Response> getResponse(this ж<Server> Ꮡserver) {
 }
 
 internal static void freeResponse(this ж<Server> Ꮡserver, ж<Response> Ꮡresp) {
-    ref var server = ref Ꮡserver.Value;
-    ref var resp = ref Ꮡresp.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
+    ref var resp = ref Ꮡresp.DerefOrNull();
 
     Ꮡserver.of(Server.ᏑrespLock).Lock();
     resp.next = server.freeResp;
@@ -636,7 +636,7 @@ internal static (ж<service> svc, ж<methodType> mtype, ж<Request> req, bool ke
     bool keepReading = default!;
     error err = default!;
 
-    ref var server = ref Ꮡserver.Value;
+    ref var server = ref Ꮡserver.DerefOrNull();
     // Grab the request header.
     req = Ꮡserver.getRequest();
     err = codec.ReadRequestHeader(req);
@@ -757,7 +757,7 @@ internal static readonly object rpcHijackingˢ = (@string)"rpc hijacking "u8;
 
 // ServeHTTP implements an [http.Handler] that answers RPC requests.
 public static void ServeHTTP(this ж<Server> Ꮡserver, Δhttp.ResponseWriter w, ж<Δhttp.Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (req.Method != "CONNECT"u8) {
         w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);

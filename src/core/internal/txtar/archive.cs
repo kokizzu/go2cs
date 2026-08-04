@@ -56,7 +56,7 @@ partial class txtar_package {
 // a.Comment and all a.File[i].Data contain no file marker lines,
 // and all a.File[i].Name is non-empty.
 public static slice<byte> Format(ж<Archive> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     buf.Write(fixNL(a.Comment));

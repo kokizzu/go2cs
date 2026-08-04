@@ -216,7 +216,7 @@ internal static readonly @string badSymbolTableˢ = "bad symbol table"u8;
             }
             locals = stackmapdata(stkmap, stackid);
             if (stackDebug >= 3 && debug) {
-                print((@string)"      locals "u8, stackid, (@string)"/"u8, (~stkmap).n, (@string)" "u8, locals.n, (@string)" words "u8, locals.bytedata, (@string)"\n"u8);
+                print((@string)"      locals "u8, stackid, (@string)"/"u8, (~stkmap).n, (@string)" "u8, locals.n, (@string)" words "u8, locals.bytedata.OrTypedNil(), (@string)"\n"u8);
             }
         } else 
         if (stackDebug >= 3 && debug) {

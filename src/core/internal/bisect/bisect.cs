@@ -338,7 +338,7 @@ public static (ж<Matcher>, error) New(@string pattern) {
 
 // ShouldEnable reports whether the change with the given id should be enabled.
 public static bool ShouldEnable(this ж<Matcher> Ꮡm, uint64 id) {
-    ref var m = ref Ꮡm.DerefOrNil();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (Ꮡm == nil) {
         return true;
@@ -348,7 +348,7 @@ public static bool ShouldEnable(this ж<Matcher> Ꮡm, uint64 id) {
 
 // ShouldPrint reports whether to print identifying information about the change with the given id.
 public static bool ShouldPrint(this ж<Matcher> Ꮡm, uint64 id) {
-    ref var m = ref Ꮡm.DerefOrNil();
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (Ꮡm == nil || m.quiet) {
         return false;
@@ -379,7 +379,7 @@ public static bool FileLine(this ж<Matcher> Ꮡm, Writer w, @string @file, nint
 // fileLine does the real work for FileLine.
 // This lets FileLine's body handle m == nil and potentially be inlined.
 internal static bool fileLine(this ж<Matcher> Ꮡm, Writer w, @string @file, nint line) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var h = Hash(@file, line);
     if (Ꮡm.ShouldPrint(h)) {
@@ -436,7 +436,7 @@ public static bool Stack(this ж<Matcher> Ꮡm, Writer w) {
 // stack does the real work for Stack.
 // This lets stack's body handle m == nil and potentially be inlined.
 internal static bool stack(this ж<Matcher> Ꮡm, Writer w) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     UntypedInt maxStack = 16;
     array<uintptr> stk = new(16); /* maxStack */
@@ -819,7 +819,7 @@ internal static uint64 fnvUint32(uint64 h, uint32 x) {
 // seen records that h has now been seen and reports whether it was seen before.
 // When seen returns false, the caller is expected to print a report for h.
 internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡd.of(dedup.Ꮡmu).Lock();
     if (d.m == default!) {

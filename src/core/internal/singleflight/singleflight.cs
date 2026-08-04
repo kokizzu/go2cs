@@ -49,7 +49,7 @@ public static (any v, error err, bool shared) Do(this ж<Group> Ꮡg, @string ke
     error err = default!;
     bool shared = default!;
 
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
     Ꮡg.of(Group.Ꮡmu).Lock();
     if (g.m == default!) {
         g.m = new map<@string, ж<call>>();
@@ -73,7 +73,7 @@ public static (any v, error err, bool shared) Do(this ж<Group> Ꮡg, @string ke
 // DoChan is like Do but returns a channel that will receive the
 // results when they are ready.
 public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Func<(any, error)> fn) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     var ch = new channel<Result>(1);
     Ꮡg.of(Group.Ꮡmu).Lock();
@@ -98,8 +98,8 @@ public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Fun
 
 // doCall handles the single call for a key.
 internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Func<(any, error)> fn) {
-    ref var g = ref Ꮡg.Value;
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var g = ref Ꮡg.DerefOrNull();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     (c.val, c.err) = fn();
     Ꮡg.of(Group.Ꮡmu).Lock();
@@ -119,7 +119,7 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
 // Returns whether the key was forgotten or unknown--that is, whether no
 // other goroutines are waiting for the result.
 public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) => func<bool>((defer, recover) => {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     Ꮡg.of(Group.Ꮡmu).Lock();
     defer(Ꮡg.of(Group.Ꮡmu).Unlock);

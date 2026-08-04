@@ -18,7 +18,7 @@ partial class ring_package {
 }
 
 internal static ж<Ring> init(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.next = Ꮡr;
     r.prev = Ꮡr;
@@ -27,7 +27,7 @@ internal static ж<Ring> init(this ж<Ring> Ꮡr) {
 
 // Next returns the next ring element. r must not be empty.
 public static ж<Ring> Next(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
@@ -37,7 +37,7 @@ public static ж<Ring> Next(this ж<Ring> Ꮡr) {
 
 // Prev returns the previous ring element. r must not be empty.
 public static ж<Ring> Prev(this ж<Ring> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
@@ -48,7 +48,7 @@ public static ж<Ring> Prev(this ж<Ring> Ꮡr) {
 // Move moves n % r.Len() elements backward (n < 0) or forward (n >= 0)
 // in the ring and returns that ring element. r must not be empty.
 public static ж<Ring> Move(this ж<Ring> Ꮡr, nint n) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.next == nil) {
         return Ꮡr.init();
@@ -56,13 +56,13 @@ public static ж<Ring> Move(this ж<Ring> Ꮡr, nint n) {
     switch (ᐧ) {
     case {} when n is < 0: {
         for (; n < 0; n++) {
-            Ꮡr = r.prev; r = ref Ꮡr.Value;
+            Ꮡr = r.prev; r = ref Ꮡr.DerefOrNull();
         }
         break;
     }
     case {} when n is > 0: {
         for (; n > 0; n--) {
-            Ꮡr = r.next; r = ref Ꮡr.Value;
+            Ꮡr = r.next; r = ref Ꮡr.DerefOrNull();
         }
         break;
     }}
@@ -102,8 +102,8 @@ public static ж<Ring> New(nint n) {
 // after r. The result points to the element following the
 // last element of s after insertion.
 public static ж<Ring> Link(this ж<Ring> Ꮡr, ж<Ring> Ꮡs) {
-    ref var r = ref Ꮡr.Value;
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var n = Ꮡr.Next();
     if (Ꮡs != nil) {
@@ -144,7 +144,7 @@ public static nint Len(this ж<Ring> Ꮡr) {
 // Do calls function f on each element of the ring, in forward order.
 // The behavior of Do is undefined if f changes *r.
 public static void Do(this ж<Ring> Ꮡr, Action<any> f) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (Ꮡr != nil) {
         f(r.Value);

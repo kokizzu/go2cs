@@ -53,9 +53,9 @@ public static ж<CurveParams> Params(this ж<CurveParams> Ꮡcurve) {
 // For ECDSA, use the [crypto/ecdsa] package with a [Curve] value returned directly
 // from [P224], [P256], [P384], or [P521].
 public static bool IsOnCurve(this ж<CurveParams> Ꮡcurve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy) {
-    ref var curve = ref Ꮡcurve.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var curve = ref Ꮡcurve.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // If there is a dedicated constant-time implementation for this curve operation,
     // use that instead of the generic one.
@@ -77,8 +77,8 @@ public static bool IsOnCurve(this ж<CurveParams> Ꮡcurve, ж<bigꓸInt> Ꮡx, 
 // y are zero, it assumes that they represent the point at infinity because (0,
 // 0) is not on the any of the curves handled here.
 internal static ж<bigꓸInt> zForAffine(ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     var z = @new<bigꓸInt>();
     if (x.Sign() != 0 || y.Sign() != 0) {
@@ -93,7 +93,7 @@ internal static ж<bigꓸInt> zForAffine(ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy)
     ж<bigꓸInt> xOut = default!;
     ж<bigꓸInt> yOut = default!;
 
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
     if (z.Sign() == 0) {
         return (@new<bigꓸInt>(), @new<bigꓸInt>());
     }
@@ -114,7 +114,7 @@ internal static ж<bigꓸInt> zForAffine(ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy)
 // For ECDSA, use the [crypto/ecdsa] package with a [Curve] value returned directly
 // from [P224], [P256], [P384], or [P521].
 public static (ж<bigꓸInt>, ж<bigꓸInt>) Add(this ж<CurveParams> Ꮡcurve, ж<bigꓸInt> Ꮡx1, ж<bigꓸInt> Ꮡy1, ж<bigꓸInt> Ꮡx2, ж<bigꓸInt> Ꮡy2) {
-    ref var curve = ref Ꮡcurve.Value;
+    ref var curve = ref Ꮡcurve.DerefOrNull();
 
     // If there is a dedicated constant-time implementation for this curve operation,
     // use that instead of the generic one.
@@ -134,8 +134,8 @@ public static (ж<bigꓸInt>, ж<bigꓸInt>) Add(this ж<CurveParams> Ꮡcurve, 
 // addJacobian takes two points in Jacobian coordinates, (x1, y1, z1) and
 // (x2, y2, z2) and returns their sum, also in Jacobian form.
 [GoRecv] internal static (ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>) addJacobian(this ref CurveParams curve, ж<bigꓸInt> Ꮡx1, ж<bigꓸInt> Ꮡy1, ж<bigꓸInt> Ꮡz1, ж<bigꓸInt> Ꮡx2, ж<bigꓸInt> Ꮡy2, ж<bigꓸInt> Ꮡz2) {
-    ref var z1 = ref Ꮡz1.Value;
-    ref var z2 = ref Ꮡz2.Value;
+    ref var z1 = ref Ꮡz1.DerefOrNull();
+    ref var z2 = ref Ꮡz2.DerefOrNull();
 
     // See https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl
     var (x3, y3, z3) = (@new<bigꓸInt>(), @new<bigꓸInt>(), @new<bigꓸInt>());
@@ -212,7 +212,7 @@ public static (ж<bigꓸInt>, ж<bigꓸInt>) Add(this ж<CurveParams> Ꮡcurve, 
 // For ECDSA, use the [crypto/ecdsa] package with a [Curve] value returned directly
 // from [P224], [P256], [P384], or [P521].
 public static (ж<bigꓸInt>, ж<bigꓸInt>) Double(this ж<CurveParams> Ꮡcurve, ж<bigꓸInt> Ꮡx1, ж<bigꓸInt> Ꮡy1) {
-    ref var curve = ref Ꮡcurve.Value;
+    ref var curve = ref Ꮡcurve.DerefOrNull();
 
     // If there is a dedicated constant-time implementation for this curve operation,
     // use that instead of the generic one.
@@ -288,7 +288,7 @@ public static (ж<bigꓸInt>, ж<bigꓸInt>) Double(this ж<CurveParams> Ꮡcurv
 // For ECDSA, use the [crypto/ecdsa] package with a [Curve] value returned directly
 // from [P224], [P256], [P384], or [P521].
 public static (ж<bigꓸInt>, ж<bigꓸInt>) ScalarMult(this ж<CurveParams> Ꮡcurve, ж<bigꓸInt> ᏑBx, ж<bigꓸInt> ᏑBy, slice<byte> k) {
-    ref var curve = ref Ꮡcurve.Value;
+    ref var curve = ref Ꮡcurve.DerefOrNull();
 
     // If there is a dedicated constant-time implementation for this curve operation,
     // use that instead of the generic one.
@@ -321,7 +321,7 @@ public static (ж<bigꓸInt>, ж<bigꓸInt>) ScalarMult(this ж<CurveParams> Ꮡ
 // For ECDSA, use the [crypto/ecdsa] package with a [Curve] value returned directly
 // from [P224], [P256], [P384], or [P521].
 public static (ж<bigꓸInt>, ж<bigꓸInt>) ScalarBaseMult(this ж<CurveParams> Ꮡcurve, slice<byte> k) {
-    ref var curve = ref Ꮡcurve.Value;
+    ref var curve = ref Ꮡcurve.DerefOrNull();
 
     // If there is a dedicated constant-time implementation for this curve operation,
     // use that instead of the generic one.

@@ -401,7 +401,7 @@ public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
                 }
                 cmd.Value.createdByStack = stack;
             }
-            runtime.SetFinalizer(cmd, (ж<Cmd> c) => {
+            runtime.SetFinalizer(cmd.OrTypedNil(), (ж<Cmd> c) => {
                 if ((~c).Process != nil && (~c).ProcessState == nil) {
                     @string debugHint = ""u8;
                     if ((~c).createdByStack == default!){
@@ -507,7 +507,7 @@ internal static bool interfaceEqual(any a, any b) => func((defer, recover) => {
 }
 
 internal static (ж<os.File>, error) childStdin(this ж<Cmd> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.Stdin == default!) {
         var (f, errΔ1) = os.Open(os.DevNull);
@@ -634,7 +634,7 @@ internal static readonly @string execCommandWithANonNilˢ = "exec: command with 
 // After a successful call to Start the [Cmd.Wait] method must be called in
 // order to release associated system resources.
 public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // Check for doubled Start calls before we defer failure cleanup. If the prior
     // call to Start succeeded, we don't want to spuriously close its pipes.
@@ -922,7 +922,7 @@ internal static readonly @string execWaitWasAlreadyCalledˢ = "exec: Wait was al
 //
 // Wait releases any resources associated with the [Cmd].
 public static error Wait(this ж<Cmd> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.Process == nil) {
         return errors.New(execNotStartedˢ);
@@ -967,8 +967,8 @@ public static error Wait(this ж<Cmd> Ꮡc) {
 //
 // If timer is non-nil, it must send to timer.C at the end of c.WaitDelay.
 internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer) => func<error>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
-    ref var timer = ref Ꮡtimer.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var timer = ref Ꮡtimer.DerefOrNull();
 
     defer(() => {
         if (Ꮡtimer != nil) {
@@ -995,7 +995,7 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
         // Avoid the overhead of starting a timer.
         // No existing timer was started: either there is no Context associated with
         // the command, or c.Process.Wait completed before the Context was done.
-        Ꮡtimer = time.NewTimer(c.WaitDelay); timer = ref Ꮡtimer.DerefOrNil();
+        Ꮡtimer = time.NewTimer(c.WaitDelay); timer = ref Ꮡtimer.DerefOrNull();
     }
     var selᴛ8 = timer.C;
     var selᴛ9 = c.goroutineErr;
@@ -1021,7 +1021,7 @@ internal static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already 
 // Any returned error will usually be of type [*ExitError].
 // If c.Stderr was nil, Output populates [ExitError.Stderr].
 public static (slice<byte>, error) Output(this ж<Cmd> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.Stdout != default!) {
         return (default!, errors.New(execStdoutAlreadySetˢ));
@@ -1049,7 +1049,7 @@ internal static readonly @string execStderrAlreadySetˢ = "exec: Stderr already 
 // CombinedOutput runs the command and returns its combined standard
 // output and standard error.
 public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.Stdout != default!) {
         return (default!, errors.New(execStdoutAlreadySetˢ));
@@ -1167,7 +1167,7 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
     nint n = default!;
     error err = default!;
 
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
     nint lenp = len(p);
     p = w.fill(Ꮡw.of(prefixSuffixSaver.Ꮡprefix), p);
     // Only keep the last w.N bytes of suffix data.
@@ -1197,7 +1197,7 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
 [GoRecv] internal static slice<byte> /*pRemain*/ fill(this ref prefixSuffixSaver w, ж<slice<byte>> Ꮡdst, slice<byte> p) {
     slice<byte> pRemain = default!;
 
-    ref var dst = ref Ꮡdst.ValueSlot;
+    ref var dst = ref Ꮡdst.DerefOrNull();
     {
         nint remain = w.N - len(dst); if (remain > 0) {
             nint add = min(len(p), remain);

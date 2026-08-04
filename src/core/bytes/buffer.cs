@@ -70,7 +70,7 @@ internal static readonly @string nilˢ = "<nil>"u8;
 //
 // To build strings more efficiently, see the [strings.Builder] type.
 public static @string String(this ж<Buffer> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡb == nil) {
         // Special case, useful in debugging.

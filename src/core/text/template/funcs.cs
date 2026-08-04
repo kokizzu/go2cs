@@ -156,7 +156,7 @@ internal static (reflectꓸValue v, bool isBuiltin, bool ok) findFunction(@strin
     bool isBuiltin = default!;
     bool ok = default!;
     func((defer, recover) => {
-    ref var tmpl = ref Ꮡtmpl.DerefOrNil();
+    ref var tmpl = ref Ꮡtmpl.DerefOrNull();
 
         if (Ꮡtmpl != nil && tmpl.common != nil) {
             Ꮡtmpl.of(Template.ᏑmuFuncs).RLock();

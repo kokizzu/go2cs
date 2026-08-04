@@ -204,7 +204,7 @@ internal static readonly @string uncachingSpanButSˢ = "uncaching span but s.all
 // s must have a span class corresponding to this
 // mcentral and it must not be empty.
 [GoRecv] internal static void uncacheSpan(this ref mcentral c, ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.allocCount == 0) {
         @throw(uncachingSpanButSˢ);

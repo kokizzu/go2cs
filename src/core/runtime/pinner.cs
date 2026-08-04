@@ -44,7 +44,7 @@ internal static uintptr pinnerRefStoreSize => /* (pinnerSize - unsafe.Sizeof([]u
 }
 
 internal static void unpin(this ж<pinner> Ꮡp) {
-    ref var Δp = ref Ꮡp.DerefOrNil();
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil || Δp.refs == default!) {
         return;
@@ -229,9 +229,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
 //
 //go:nosplit
 internal static pinState ofObject(this ж<pinnerBits> Ꮡp, uintptr n) {
-    ref var Δp = ref Ꮡp.Value;
-
-    var (bytep, mask) = (Ꮡ((gcBits)(Δp))).bitp(n * 2);
+    var (bytep, mask) = (Ꮡp.Reinterpret<pinnerBits, gcBits>()).bitp(n * 2);
     var byteVal = atomic.Load8(bytep);
     return new pinState(bytep, byteVal, mask);
 }
@@ -244,7 +242,7 @@ internal static pinState ofObject(this ж<pinnerBits> Ꮡp, uintptr n) {
 // span's pinner bits. newPinnerBits is used to mark objects that are pinned.
 // They are copied when the span is swept.
 [GoRecv] internal static ж<pinnerBits> newPinnerBits(this ref mspan s) {
-    return Ꮡ((pinnerBits)(~newMarkBits((uintptr)s.nelems * 2)));
+    return newMarkBits((uintptr)s.nelems * 2).Reinterpret<gcBits, pinnerBits>();
 }
 
 // nosplit, because it's called by isPinned, which is nosplit
@@ -262,7 +260,7 @@ internal static void setPinnerBits(this ж<mspan> Ꮡs, ж<pinnerBits> Ꮡp) {
 // next GC cycle. If it does not contain any pinned objects, pinnerBits of the
 // span is set to nil.
 internal static void refreshPinnerBits(this ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var Δp = Ꮡs.getPinnerBits();
     if (Δp == nil) {
@@ -316,7 +314,7 @@ internal static readonly @string runtimePinnerDecreasedˢ = "runtime.Pinner: dec
 // decPinCounter decreases the counter. If the counter reaches 0, the counter
 // special is deleted and false is returned. Otherwise true is returned.
 internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
-    ref var span = ref Ꮡspan.Value;
+    ref var span = ref Ꮡspan.DerefOrNull();
 
     var (@ref, exists) = Ꮡspan.specialFindSplicePoint(offset, _KindSpecialPinCounter);
     if (!exists) {

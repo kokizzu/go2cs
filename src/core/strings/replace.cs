@@ -93,7 +93,7 @@ public static ж<Replacer> NewReplacer(params ꓸꓸꓸstring oldnewʗp) {
 
 // Replace returns a copy of s with all replacements performed.
 public static @string Replace(this ж<Replacer> Ꮡr, @string s) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     return r.r.Replace(s);
@@ -104,7 +104,7 @@ public static (nint n, error err) WriteString(this ж<Replacer> Ꮡr, io.Writer 
     nint n = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     return r.r.WriteString(w, s);
 }
@@ -160,7 +160,7 @@ public static (nint n, error err) WriteString(this ж<Replacer> Ꮡr, io.Writer 
 }
 
 [GoRecv] internal static void add(this ref trieNode t, @string key, @string val, nint priority, ж<genericReplacer> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (key == ""u8) {
         if (t.priority == 0) {
@@ -230,7 +230,7 @@ internal static (@string val, nint keylen, bool found) lookup(this ж<genericRep
     nint keylen = default!;
     bool found = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     // Iterate down the trie to the end, and grab the value and keylen with
     // the highest priority.
     nint bestPriority = 0;
@@ -347,7 +347,7 @@ internal static (nint n, error err) WriteString(this ж<genericReplacer> Ꮡr, i
     nint n = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     var sw = getStringWriter(w);
     nint last = default!;
     nint wn = default!;

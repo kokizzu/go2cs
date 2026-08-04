@@ -85,7 +85,7 @@ public static ж<Rand> New(Source src) {
 // Seed uses the provided seed value to initialize the generator to a deterministic state.
 // Seed should not be called concurrently with any other [Rand] method.
 public static void Seed(this ж<Rand> Ꮡr, int64 seed) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var (lk, ok) = r.src._<ж<lockedSource>>(ᐧ); if (ok) {
@@ -289,7 +289,7 @@ public static (nint n, error err) Read(this ж<Rand> Ꮡr, slice<byte> p) {
     nint n = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     switch (r.src.type()) {
     case ж<lockedSource> src: {
         return src.read(p, Ꮡr.of(Rand.ᏑreadVal), Ꮡr.of(Rand.ᏑreadPos));
@@ -304,8 +304,8 @@ internal static (nint n, error err) read(slice<byte> p, Source src, ж<int64> �
     nint n = default!;
     error err = default!;
 
-    ref var readVal = ref ᏑreadVal.Value;
-    ref var readPos = ref ᏑreadPos.Value;
+    ref var readVal = ref ᏑreadVal.DerefOrNull();
+    ref var readPos = ref ᏑreadPos.DerefOrNull();
     var pos = readPos;
     var val = readVal;
     var (rng, _) = src._<ж<rngSource>>(ᐧ);
@@ -564,7 +564,7 @@ public static float64 ExpFloat64() {
 internal static int64 /*n*/ Int63(this ж<lockedSource> Ꮡr) {
     int64 n = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
     n = r.s.Int63();
     Ꮡr.of(lockedSource.Ꮡlk).Unlock();
@@ -574,7 +574,7 @@ internal static int64 /*n*/ Int63(this ж<lockedSource> Ꮡr) {
 internal static uint64 /*n*/ Uint64(this ж<lockedSource> Ꮡr) {
     uint64 n = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
     n = r.s.Uint64();
     Ꮡr.of(lockedSource.Ꮡlk).Unlock();
@@ -582,7 +582,7 @@ internal static uint64 /*n*/ Uint64(this ж<lockedSource> Ꮡr) {
 }
 
 internal static void Seed(this ж<lockedSource> Ꮡr, int64 seed) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
     r.seed(seed);
@@ -591,8 +591,8 @@ internal static void Seed(this ж<lockedSource> Ꮡr, int64 seed) {
 
 // seedPos implements Seed for a lockedSource without a race condition.
 internal static void seedPos(this ж<lockedSource> Ꮡr, int64 seed, ж<int8> ᏑreadPos) {
-    ref var r = ref Ꮡr.Value;
-    ref var readPos = ref ᏑreadPos.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var readPos = ref ᏑreadPos.DerefOrNull();
 
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
     r.seed(seed);
@@ -615,7 +615,7 @@ internal static (nint n, error err) read(this ж<lockedSource> Ꮡr, slice<byte>
     nint n = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
     (n, err) = read(p, new rngSourceжSource(r.s), ᏑreadVal, ᏑreadPos);
     Ꮡr.of(lockedSource.Ꮡlk).Unlock();

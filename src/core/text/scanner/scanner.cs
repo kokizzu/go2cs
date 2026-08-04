@@ -188,7 +188,7 @@ internal static UntypedInt bufLen => 1024; // at least utf8.UTFMax
 // [Scanner.Error] is set to nil, [Scanner.ErrorCount] is set to 0, [Scanner.Mode] is set to [GoTokens],
 // and [Scanner.Whitespace] is set to [GoWhitespace].
 public static ж<Scanner> Init(this ж<Scanner> Ꮡs, io.Reader src) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.src = src;
     // initialize source buffer
@@ -228,7 +228,7 @@ internal static readonly @string invalidCharacterNulˢ = "invalid character NUL"
 // case (one test to check for both ASCII and end-of-buffer, and one test
 // to check for newlines).
 internal static rune next(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var ch = (rune)s.srcBuf[s.srcPos];
     nint width = 1;
@@ -318,7 +318,7 @@ internal static rune next(this ж<Scanner> Ꮡs) {
 // update the [Scanner.Position] field; use [Scanner.Pos]() to
 // get the current position.
 public static rune Next(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.tokPos = -1;
     // don't collect token text
@@ -335,7 +335,7 @@ public static rune Next(this ж<Scanner> Ꮡs) {
 // the scanner. It returns [EOF] if the scanner's position is at the last
 // character of the source.
 public static rune Peek(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.ch == -2) {
         // this code is only run for the very first character
@@ -349,7 +349,7 @@ public static rune Peek(this ж<Scanner> Ꮡs) {
 }
 
 internal static void error(this ж<Scanner> Ꮡs, @string msg) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.tokEnd = s.srcPos - s.lastCharLen;
     // make sure token text is terminated
@@ -379,7 +379,7 @@ internal static void errorf(this ж<Scanner> Ꮡs, @string format, params ꓸꓸ
 }
 
 internal static rune scanIdentifier(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // we know the zero'th rune is OK; start scanning at the next one
     var ch = Ꮡs.next();
@@ -412,7 +412,7 @@ internal static (rune ch, nint digsep) digits(this ж<Scanner> Ꮡs, rune ch0, n
     rune ch = default!;
     nint digsep = default!;
 
-    ref var invalid = ref Ꮡinvalid.DerefOrNil();
+    ref var invalid = ref Ꮡinvalid.DerefOrNull();
     ch = ch0;
     if (@base <= 10){
         var max = (rune)((rune)'0' + @base);
@@ -446,7 +446,7 @@ internal static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa r
 internal static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
 
 internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool seenDot) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     nint @base = 10;
     // number base
@@ -755,7 +755,7 @@ internal static rune scanComment(this ж<Scanner> Ꮡs, rune ch) {
 // token errors) by calling s.Error, if not nil; otherwise it prints an error
 // message to [os.Stderr].
 public static rune Scan(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var ch = Ꮡs.Peek();
     // reset token text position
@@ -900,7 +900,7 @@ break_redo:;
 // TokenText returns the string corresponding to the most recently scanned token.
 // Valid after calling [Scanner.Scan] and in calls of [Scanner.Error].
 public static @string TokenText(this ж<Scanner> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.tokPos < 0) {
         // no token text

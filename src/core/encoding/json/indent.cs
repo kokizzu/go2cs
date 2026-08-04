@@ -13,7 +13,7 @@ partial class json_package {
 // For historical reasons, web browsers don't honor standard HTML
 // escaping within <script> tags, so an alternative JSON encoding must be used.
 public static void HTMLEscape(ж<bytes.Buffer> Ꮡdst, slice<byte> src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst.Grow(len(src));
     dst.Write(appendHTMLEscape(dst.AvailableBuffer(), src));
@@ -42,7 +42,7 @@ internal static slice<byte> appendHTMLEscape(slice<byte> dst, slice<byte> src) {
 // Compact appends to dst the JSON-encoded src with
 // insignificant space characters elided.
 public static error Compact(ж<bytes.Buffer> Ꮡdst, slice<byte> src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst.Grow(len(src));
     var b = dst.AvailableBuffer();
@@ -121,7 +121,7 @@ internal static UntypedInt indentGrowthFactor => 2;
 // For example, if src has no trailing spaces, neither will dst;
 // if src ends in a trailing newline, so will dst.
 public static error Indent(ж<bytes.Buffer> Ꮡdst, slice<byte> src, @string prefix, @string indent) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst.Grow((nint)indentGrowthFactor * len(src));
     var b = dst.AvailableBuffer();

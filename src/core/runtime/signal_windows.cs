@@ -66,7 +66,7 @@ internal static void initExceptionHandler() {
 //
 //go:nosplit
 internal static bool isAbort(ж<context> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var pc = r.ip();
     if (GOARCH == "386"u8 || GOARCH == "amd64"u8 || GOARCH == "arm"u8) {
@@ -86,8 +86,8 @@ internal static bool isAbort(ж<context> Ꮡr) {
 //
 //go:nosplit
 internal static bool isgoexception(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr) {
-    ref var info = ref Ꮡinfo.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var info = ref Ꮡinfo.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // Only handle exception if executing instructions in Go binary
     // (not Windows library code).
@@ -157,7 +157,7 @@ internal static readonly @string unknownSigtrampCallbackˢ = "unknown sigtramp c
 //
 //go:nosplit
 internal static int32 sigtrampgo(ж<exceptionpointers> Ꮡep, nint kind) {
-    ref var ep = ref Ꮡep.Value;
+    ref var ep = ref Ꮡep.DerefOrNull();
 
     var gp = sigFetchG();
     if (gp == nil) {
@@ -235,9 +235,9 @@ internal static int32 sigtrampgo(ж<exceptionpointers> Ꮡep, nint kind) {
 //
 //go:nosplit
 internal static int32 exceptionhandler(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<g> Ꮡgp) {
-    ref var info = ref Ꮡinfo.Value;
-    ref var r = ref Ꮡr.Value;
-    ref var gp = ref Ꮡgp.Value;
+    ref var info = ref Ꮡinfo.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (!isgoexception(Ꮡinfo, Ꮡr)) {
         return _EXCEPTION_CONTINUE_SEARCH;
@@ -293,7 +293,7 @@ internal static int32 exceptionhandler(ж<exceptionrecord> Ꮡinfo, ж<context> 
 //
 //go:nosplit
 internal static int32 sehhandler(ж<exceptionrecord> _Δp0, uint64 _Δp1, ж<context> _Δp2, ж<_DISPATCHER_CONTEXT> Ꮡdctxt) {
-    ref var dctxt = ref Ꮡdctxt.Value;
+    ref var dctxt = ref Ꮡdctxt.DerefOrNull();
 
     var g0 = getg();
     if (g0 == nil || (~(~g0).m).curg == nil) {
@@ -349,8 +349,8 @@ internal static int32 firstcontinuehandler(ж<exceptionrecord> Ꮡinfo, ж<conte
 //
 //go:nosplit
 internal static int32 lastcontinuehandler(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<g> Ꮡgp) {
-    ref var info = ref Ꮡinfo.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var info = ref Ꮡinfo.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (islibrary || isarchive) {
         // Go DLL/archive has been loaded in a non-go program.
@@ -377,9 +377,9 @@ internal static int32 lastcontinuehandler(ж<exceptionrecord> Ꮡinfo, ж<contex
 //
 //go:nosplit
 internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<g> Ꮡgp) {
-    ref var info = ref Ꮡinfo.Value;
-    ref var r = ref Ꮡr.Value;
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var info = ref Ꮡinfo.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var g0 = getg();
     if (Ꮡpanicking.Load() != 0) {
@@ -399,7 +399,7 @@ internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<
         if (iscgo) {
             print((@string)"signal arrived during external code execution\n"u8);
         }
-        Ꮡgp = g0.Value.m.Value.curg; gp = ref Ꮡgp.DerefOrNil();
+        Ꮡgp = g0.Value.m.Value.curg; gp = ref Ꮡgp.DerefOrNull();
     }
     print((@string)"\n"u8);
     g0.Value.m.Value.throwing = throwTypeRuntime;
@@ -483,7 +483,7 @@ internal static void crash() {
 //
 //go:nosplit
 internal static void dieFromException(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr) {
-    ref var info = ref Ꮡinfo.DerefOrNil();
+    ref var info = ref Ꮡinfo.DerefOrNull();
 
     if (Ꮡinfo == nil) {
         var gp = getg();
@@ -494,7 +494,7 @@ internal static void dieFromException(ж<exceptionrecord> Ꮡinfo, ж<context> �
                 exceptionaddress: (~gp).sigpc,
                 exceptioncode: (~gp).sig,
                 numberparameters: 2
-            )); info = ref Ꮡinfo.DerefOrNil();
+            )); info = ref Ꮡinfo.DerefOrNull();
             info.exceptioninformation[0] = gp.Value.sigcode0;
             info.exceptioninformation[1] = gp.Value.sigcode1;
         } else {
@@ -502,7 +502,7 @@ internal static void dieFromException(ж<exceptionrecord> Ꮡinfo, ж<context> �
             // Use this value when gp does not contain exception info.
             Ꮡinfo = Ꮡ(new exceptionrecord(
                 exceptioncode: 2
-            )); info = ref Ꮡinfo.DerefOrNil();
+            )); info = ref Ꮡinfo.DerefOrNull();
         }
     }
     uintptr FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;

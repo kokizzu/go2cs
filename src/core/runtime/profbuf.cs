@@ -108,21 +108,15 @@ internal static profIndex profReaderSleeping => /* 1 << 32 */ unchecked((profInd
 internal static profIndex profWriteExtra => /* 1 << 33 */ unchecked((profIndex)8589934592);       // overflow or eof waiting
 
 internal static profIndex load(this ж<profAtomic> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return ((profIndex)atomic.Load64(Ꮡ((uint64)(x))));
+    return ((profIndex)atomic.Load64(Ꮡx.Reinterpret<profAtomic, uint64>()));
 }
 
 internal static void store(this ж<profAtomic> Ꮡx, profIndex @new) {
-    ref var x = ref Ꮡx.Value;
-
-    atomic.Store64(Ꮡ((uint64)(x)), (uint64)@new);
+    atomic.Store64(Ꮡx.Reinterpret<profAtomic, uint64>(), (uint64)@new);
 }
 
 internal static bool cas(this ж<profAtomic> Ꮡx, profIndex old, profIndex @new) {
-    ref var x = ref Ꮡx.Value;
-
-    return atomic.Cas64(Ꮡ((uint64)(x)), (uint64)old, (uint64)@new);
+    return atomic.Cas64(Ꮡx.Reinterpret<profAtomic, uint64>(), (uint64)old, (uint64)@new);
 }
 
 internal static uint32 dataCount(this profIndex x) {
@@ -181,7 +175,7 @@ internal static (uint32 count, uint64 time) takeOverflow(this ж<profBuf> Ꮡb) 
 // incrementOverflow records a single overflow at time now.
 // It is racing against a possible takeOverflow in the reader.
 internal static void incrementOverflow(this ж<profBuf> Ꮡb, int64 now) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     while (ᐧ) {
         var overflow = Ꮡb.of(profBuf.Ꮡoverflow).Load();
@@ -242,7 +236,7 @@ internal static ж<profBuf> newProfBuf(nint hdrsize, nint bufwords, nint tags) {
 // canWriteRecord reports whether the buffer has room
 // for a single contiguous record with a stack of length nstk.
 internal static bool canWriteRecord(this ж<profBuf> Ꮡb, nint nstk) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var br = Ꮡb.of(profBuf.Ꮡr).load();
     var bw = Ꮡb.of(profBuf.Ꮡw).load();
@@ -268,7 +262,7 @@ internal static bool canWriteRecord(this ж<profBuf> Ꮡb, nint nstk) {
 // records need not be contiguous (one can be at the end of the buffer
 // and the other can wrap around and start at the beginning of the buffer).
 internal static bool canWriteTwoRecords(this ж<profBuf> Ꮡb, nint nstk1, nint nstk2) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var br = Ꮡb.of(profBuf.Ꮡr).load();
     var bw = Ꮡb.of(profBuf.Ꮡw).load();
@@ -309,8 +303,8 @@ internal static readonly @string misuseOfProfBufWriteˢ = "misuse of profBuf.wri
 // and a single tag pointer *tagPtr (or nil if tagPtr is nil).
 // No write barriers allowed because this might be called from a signal handler.
 internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr, int64 now, slice<uint64> hdr, slice<uintptr> stk) {
-    ref var b = ref Ꮡb.DerefOrNil();
-    ref var tagPtr = ref ᏑtagPtr.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var tagPtr = ref ᏑtagPtr.DerefOrNull();
 
     if (Ꮡb == nil) {
         return;
@@ -446,7 +440,7 @@ internal static (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) read
     slice<@unsafe.Pointer> tags = default!;
     bool eof = default!;
 
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
     if (Ꮡb == nil) {
         return (default!, default!, true);
     }

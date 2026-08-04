@@ -61,9 +61,7 @@ public static ж<ΔTerm> NewTerm(bool tilde, ΔType typ) {
 }
 
 public static @string String(this ж<ΔTerm> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
-
-    return (Ꮡ((term)(t))).String();
+    return (Ꮡt.Reinterpret<ΔTerm, term>()).String();
 }
 
 // ----------------------------------------------------------------------------
@@ -78,7 +76,7 @@ internal static readonly @string cannotUseComparableInˢ = "cannot use comparabl
 // parseUnion parses uexpr as a union of expressions.
 // The result is a Union type, or Typ[Invalid] for some errors.
 internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var (blist, tlist) = flattenUnion(default!, uexpr);
     assert(len(blist) == len(tlist) - 1);
@@ -144,7 +142,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
                 var tset = f.typeSet();
                 switch (ᐧ) {
                 case {} when tset.NumMethods() is not 0: {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s contains methods)"u8, t, t);
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s contains methods)"u8, t.OrTypedNil(), t.OrTypedNil());
                     break;
                 }
                 case {} when AreEqual((~t).typ, universeComparable.Type()): {
@@ -152,7 +150,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
                     break;
                 }
                 case {} when (~tset).comparable: {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s embeds comparable)"u8, t, t);
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s embeds comparable)"u8, t.OrTypedNil(), t.OrTypedNil());
                     break;
                 }}
 
@@ -160,7 +158,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
             }
             {
                 nint j = overlappingTerm(termsʗ7[..(int)(i)], t); if (j >= 0) {
-                    Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "overlapping terms %s and %s"u8, t, termsʗ7[j]);
+                    Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "overlapping terms %s and %s"u8, t.OrTypedNil(), termsʗ7[j].OrTypedNil());
                 }
             }
         }
@@ -172,7 +170,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
 internal static readonly @string termCannotBeATypeˢ = "term cannot be a type parameter"u8;
 
 internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var x = tx;
     bool tilde = default!;
@@ -208,7 +206,7 @@ internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
 // such term. The type of term y must not be an interface, and terms
 // with an interface type are ignored in the terms list.
 internal static nint overlappingTerm(slice<ж<ΔTerm>> terms, ж<ΔTerm> Ꮡy) {
-    ref var y = ref Ꮡy.DerefOrNil();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     assert(!IsInterface(y.typ));
     foreach (var (i, x) in terms) {
@@ -222,7 +220,7 @@ internal static nint overlappingTerm(slice<ж<ΔTerm>> terms, ж<ΔTerm> Ꮡy) {
                 throw panic("empty or top union term");
             }
         }
-        if (!(Ꮡ((term)(~x))).disjoint(Ꮡ((term)(y)))) {
+        if (!(x.Reinterpret<ΔTerm, term>()).disjoint(Ꮡy.Reinterpret<ΔTerm, term>())) {
             return i;
         }
     }

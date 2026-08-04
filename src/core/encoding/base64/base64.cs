@@ -276,8 +276,6 @@ public static ж<Encoding> RawURLEncoding = (~URLEncoding).WithPadding(NoPadding
 // writing, the caller must Close the returned encoder to flush any
 // partially written blocks.
 public static io.WriteCloser NewEncoder(ж<Encoding> Ꮡenc, io.Writer w) {
-    ref var enc = ref Ꮡenc.Value;
-
     return new encoderжWriteCloser(Ꮡ(new encoder(enc: Ꮡenc, w: w)));
 }
 
@@ -634,8 +632,6 @@ internal static (uint64 dn, bool ok) assemble64(byte n1, byte n2, byte n3, byte 
 
 // NewDecoder constructs a new base64 stream decoder.
 public static io.Reader NewDecoder(ж<Encoding> Ꮡenc, io.Reader r) {
-    ref var enc = ref Ꮡenc.Value;
-
     return new decoderжReader(Ꮡ(new decoder(enc: Ꮡenc, r: new newlineFilteringReaderжReader(Ꮡ(new newlineFilteringReader(r))))));
 }
 

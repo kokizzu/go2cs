@@ -115,7 +115,7 @@ internal static void poll_runtime_Semrelease(ж<uint32> Ꮡaddr) {
 }
 
 internal static void readyWithTime(ж<sudog> Ꮡs, nint traceskip) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.releasetime != 0) {
         s.releasetime = cputicks();
@@ -290,9 +290,9 @@ internal static bool cansemacquire(ж<uint32> Ꮡaddr) {
 
 // queue adds s to the blocked goroutines in semaRoot.
 internal static void queue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr, ж<sudog> Ꮡs, bool lifo) {
-    ref var root = ref Ꮡroot.Value;
-    ref var addr = ref Ꮡaddr.Value;
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var root = ref Ꮡroot.DerefOrNull();
+    ref var addr = ref Ꮡaddr.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.g = getg();
     s.elem = new @unsafe.Pointer(Ꮡaddr);
@@ -394,8 +394,8 @@ internal static (ж<sudog> found, int64 now, int64 tailtime) dequeue(this ж<sem
     int64 now = default!;
     int64 tailtime = default!;
 
-    ref var root = ref Ꮡroot.Value;
-    ref var addr = ref Ꮡaddr.Value;
+    ref var root = ref Ꮡroot.DerefOrNull();
+    ref var addr = ref Ꮡaddr.DerefOrNull();
     var ps = Ꮡroot.of(semaRoot.Ꮡtreap);
     var s = ps.ValueSlot;
     for (; s != nil; s = ps.ValueSlot) {
@@ -481,7 +481,7 @@ internal static readonly @string semaRootRotateLeftˢ = "semaRoot rotateLeft"u8;
 // rotateLeft rotates the tree rooted at node x.
 // turning (x a (y b c)) into (y (x a b) c).
 [GoRecv] internal static void rotateLeft(this ref semaRoot root, ж<sudog> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // p -> (x a (y b c))
     var Δp = x.parent;
@@ -513,7 +513,7 @@ internal static readonly @string semaRootRotateRightˢ = "semaRoot rotateRight"u
 // rotateRight rotates the tree rooted at node y.
 // turning (y (x a b) c) into (x a (y b c)).
 [GoRecv] internal static void rotateRight(this ref semaRoot root, ж<sudog> Ꮡy) {
-    ref var y = ref Ꮡy.DerefOrNil();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // p -> (y (x a b) c)
     var Δp = y.parent;
@@ -582,7 +582,7 @@ internal static uint32 notifyListAdd(ж<notifyList> Ꮡl) {
 //
 //go:linkname notifyListWait sync.runtime_notifyListWait
 internal static void notifyListWait(ж<notifyList> Ꮡl, uint32 t) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     lockWithRank(Ꮡl.of(notifyList.Ꮡlock), lockRankNotifyList);
     // Return right away if this ticket has already been notified.
@@ -617,7 +617,7 @@ internal static void notifyListWait(ж<notifyList> Ꮡl, uint32 t) {
 //
 //go:linkname notifyListNotifyAll sync.runtime_notifyListNotifyAll
 internal static void notifyListNotifyAll(ж<notifyList> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     // Fast-path: if there are no new waiters since the last notification
     // we don't need to acquire the lock.
@@ -649,7 +649,7 @@ internal static void notifyListNotifyAll(ж<notifyList> Ꮡl) {
 //
 //go:linkname notifyListNotifyOne sync.runtime_notifyListNotifyOne
 internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     // Fast-path: if there are no new waiters since the last notification
     // we don't need to acquire the lock at all.

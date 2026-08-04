@@ -49,7 +49,7 @@ internal static bool use121;
 
 // Formerly ServeMux.Handle.
 internal static void handle(this ж<serveMux121> Ꮡmux, @string pattern, ΔHandler handler) => func((defer, recover) => {
-    ref var mux = ref Ꮡmux.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
 
     Ꮡmux.of(serveMux121.Ꮡmu).Lock();
     defer(Ꮡmux.of(serveMux121.Ꮡmu).Unlock);
@@ -106,8 +106,8 @@ internal static (ΔHandler h, @string pattern) findHandler(this ж<serveMux121> 
     ΔHandler h = default!;
     @string pattern = default!;
 
-    ref var mux = ref Ꮡmux.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
     // CONNECT requests are not canonicalized.
     if (r.Method == "CONNECT"u8) {
         // If r.URL.Path is /tree and its handler is not registered,
@@ -146,7 +146,7 @@ internal static (ΔHandler h, @string pattern) handler(this ж<serveMux121> Ꮡm
     ΔHandler h = default!;
     @string pattern = default!;
     func((defer, recover) => {
-    ref var mux = ref Ꮡmux.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
 
         Ꮡmux.of(serveMux121.Ꮡmu).RLock();
         defer(Ꮡmux.of(serveMux121.Ꮡmu).RUnlock);
@@ -190,8 +190,8 @@ internal static (ΔHandler h, @string pattern) handler(this ж<serveMux121> Ꮡm
 // not for path itself. If the path needs appending to, it creates a new
 // URL, setting the path to u.Path + "/" and returning true to indicate so.
 internal static (ж<url.URL>, bool) redirectToPathSlash(this ж<serveMux121> Ꮡmux, @string host, @string path, ж<url.URL> Ꮡu) {
-    ref var mux = ref Ꮡmux.Value;
-    ref var u = ref Ꮡu.Value;
+    ref var mux = ref Ꮡmux.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     Ꮡmux.of(serveMux121.Ꮡmu).RLock();
     var shouldRedirect = mux.shouldRedirectRLocked(host, path);
@@ -200,7 +200,7 @@ internal static (ж<url.URL>, bool) redirectToPathSlash(this ж<serveMux121> Ꮡ
         return (Ꮡu, false);
     }
     path = path + "/"u8;
-    Ꮡu = Ꮡ(new url.URL(Path: path, RawQuery: u.RawQuery)); u = ref Ꮡu.Value;
+    Ꮡu = Ꮡ(new url.URL(Path: path, RawQuery: u.RawQuery)); u = ref Ꮡu.DerefOrNull();
     return (Ꮡu, true);
 }
 

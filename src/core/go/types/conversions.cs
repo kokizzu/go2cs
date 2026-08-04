@@ -19,10 +19,10 @@ partial class types_package {
 // conversion type-checks the conversion T(x).
 // The result is in x.
 internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔType T) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     var constArg = x.mode == constant_;
-    var constConvertibleTo = (ΔType TΔ1, ж<constant.Value> val) => {
+    bool constConvertibleTo(ΔType TΔ1, ж<constant.Value> val) {
         {
             var (t, _) = under(TΔ1)._<ж<Basic>>(ᐧ);
             switch (ᐧ) {
@@ -48,7 +48,7 @@ internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
         }
 
         return false;
-    };
+    }
     bool ok = default!;
     ref var cause = ref heap(new @string(), out var Ꮡcause);
     switch (ᐧ) {
@@ -86,7 +86,7 @@ internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
                     // see comment above on constant conversion
                     Ꮡcause.Value = Ꮡcheck.sprintf("constant %s overflows %s (in %s)"u8, Ꮡx.Value.val, u, T);
                 } else {
-                    Ꮡcause.Value = Ꮡcheck.sprintf("cannot convert %s to type %s (in %s)"u8, Ꮡx, u, T);
+                    Ꮡcause.Value = Ꮡcheck.sprintf("cannot convert %s to type %s (in %s)"u8, Ꮡx.OrTypedNil(), u, T);
                 }
                 return false;
             }
@@ -105,9 +105,9 @@ internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     // non-constant conversion
     if (!ok) {
         if (cause != ""u8){
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConversion, "cannot convert %s to type %s: %s"u8, Ꮡx, T, cause);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConversion, "cannot convert %s to type %s: %s"u8, Ꮡx.OrTypedNil(), T, cause);
         } else {
-            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConversion, "cannot convert %s to type %s"u8, Ꮡx, T);
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidConversion, "cannot convert %s to type %s"u8, Ꮡx.OrTypedNil(), T);
         }
         x.mode = invalid;
         return;
@@ -159,9 +159,9 @@ internal static readonly @string conversionOfSliceToArrayˢ2 = "conversion of sl
 // The check parameter may be nil if convertibleTo is invoked through an
 // exported API call, i.e., when all methods have been type-checked.
 internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, ΔType T, ж<@string> Ꮡcause) {
-    ref var x = ref Ꮡx.Value;
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var cause = ref Ꮡcause.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var cause = ref Ꮡcause.DerefOrNull();
 
     // "x is assignable to T"
     {
@@ -262,7 +262,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
     if (Vp == nil && Tp == nil) {
         return false;
     }
-    var errorf = (@string format, params ꓸꓸꓸany argsʗp) => {
+    void errorf(@string format, params ꓸꓸꓸany argsʗp) {
         var args = argsʗp.slice();
         if (Ꮡcheck != nil && Ꮡcause != nil) {
             @string msg = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
@@ -271,7 +271,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             }
             Ꮡcause.Value = msg;
         }
-    };
+    }
     // generic cases with specific type terms
     // (generic operands cannot be constants, so we can ignore x.val)
     switch (ᐧ) {
@@ -297,7 +297,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
                 }
                 // no specific types
                 if (!ᏑxΔ2.convertibleTo(Ꮡcheck, (~TΔ4).typ, Ꮡcause)) {
-                    errorfʗ2("cannot convert %s (in %s) to type %s (in %s)"u8, (~VΔ4).typ, Vpʗ2, (~TΔ4).typ, Tpʗ2);
+                    errorfʗ2("cannot convert %s (in %s) to type %s (in %s)"u8, (~VΔ4).typ, Vpʗ2.OrTypedNil(), (~TΔ4).typ, Tpʗ2.OrTypedNil());
                     return false;
                 }
                 return true;
@@ -318,7 +318,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             // no specific types
             ᏑxΔ3.Value.typ = VΔ5.Value.typ;
             if (!ᏑxΔ3.convertibleTo(Ꮡcheck, T, Ꮡcause)) {
-                errorfʗ7("cannot convert %s (in %s) to type %s"u8, (~VΔ5).typ, Vpʗ7, origTʗ1);
+                errorfʗ7("cannot convert %s (in %s) to type %s"u8, (~VΔ5).typ, Vpʗ7.OrTypedNil(), origTʗ1);
                 return false;
             }
             return true;
@@ -333,7 +333,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             }
             // no specific types
             if (!Ꮡx.convertibleTo(Ꮡcheck, (~TΔ5).typ, Ꮡcause)) {
-                errorfʗ9("cannot convert %s to type %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ5).typ, Tpʗ7);
+                errorfʗ9("cannot convert %s to type %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ5).typ, Tpʗ7.OrTypedNil());
                 return false;
             }
             return true;

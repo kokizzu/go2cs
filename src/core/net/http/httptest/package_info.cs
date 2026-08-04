@@ -55,7 +55,6 @@ using static go.net.http.httptest_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.net.http_package.Transport, go.net.http_package.RoundTripper>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>

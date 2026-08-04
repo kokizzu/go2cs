@@ -10,7 +10,7 @@ partial class poll_package {
 
 // SetsockoptInt wraps the setsockopt network call with an int argument.
 public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint arg) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {
@@ -25,7 +25,7 @@ public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint
 public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name, array<byte> arg) => func((defer, recover) => {
     arg = arg.Clone();
 
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
     {
         var err = Ꮡfd.incref(); if (err != default!) {
             return err;
@@ -37,7 +37,7 @@ public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name
 
 // SetsockoptLinger wraps the setsockopt network call with a Linger argument.
 public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.Linger> Ꮡl) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {
@@ -50,7 +50,7 @@ public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, �
 
 // GetsockoptInt wraps the getsockopt network call with an int argument.
 public static (nint, error) GetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name) => func<(nint, error)>((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {

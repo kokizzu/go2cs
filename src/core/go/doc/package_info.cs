@@ -55,9 +55,7 @@ using static go.go.doc_package;
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<ast.FieldList, ж<ast.FieldList>>(Indirect = true)]
-[assembly: GoImplicitConv<ast.FuncDecl, ж<ast.FuncDecl>>(Indirect = true)]
 [assembly: GoImplicitConv<ast.InterfaceType, ж<ast.InterfaceType>>(Indirect = true)]
-[assembly: GoImplicitConv<ast.TypeSpec, ж<ast.TypeSpec>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.go;

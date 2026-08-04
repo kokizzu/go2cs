@@ -84,7 +84,7 @@ internal static @string instanceHash(this ж<Context> Ꮡctxt, ΔType orig, slic
 // lookup returns an existing instantiation of orig with targs, if it exists.
 // Otherwise, it returns nil.
 internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs) => func<ΔType>((defer, recover) => {
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     Ꮡctxt.of(Context.Ꮡmu).Lock();
     defer(Ꮡctxt.of(Context.Ꮡmu).Unlock);
@@ -105,7 +105,7 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
 // returned. Otherwise, n is returned, and recorded in the Context for the hash
 // h.
 internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) => func((defer, recover) => {
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     assert(inst != default!);
     Ꮡctxt.of(Context.Ꮡmu).Lock();
@@ -129,7 +129,7 @@ internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
 
 // getID returns a unique ID for the type t.
 internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) => func((defer, recover) => {
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
     Ꮡctxt.of(Context.Ꮡmu).Lock();
     defer(Ꮡctxt.of(Context.Ꮡmu).Unlock);

@@ -24,7 +24,7 @@ partial class lazytemplate_package {
 }
 
 internal static ж<template.Template> tp(this ж<Template> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(Template.Ꮡonce).Do(Ꮡr.build);
     return r.tmpl;

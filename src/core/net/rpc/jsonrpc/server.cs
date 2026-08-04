@@ -67,8 +67,8 @@ public static rpc.ServerCodec NewServerCodec(io.ReadWriteCloser conn) {
 }
 
 internal static error ReadRequestHeader(this ж<serverCodec> Ꮡc, ж<rpc.Request> Ꮡr) {
-    ref var c = ref Ꮡc.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     c.req.reset();
     {
@@ -112,8 +112,8 @@ internal static ref json.RawMessage @null => ref Ꮡnull.ValueSlot;
 internal static readonly @string invalidSequenceNumberInˢ = "invalid sequence number in response"u8;
 
 internal static error WriteResponse(this ж<serverCodec> Ꮡc, ж<rpc.Response> Ꮡr, any x) {
-    ref var c = ref Ꮡc.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡc.of(serverCodec.Ꮡmutex).Lock();
     var (b, ok) = c.pending[r.Seq, ꟷ];

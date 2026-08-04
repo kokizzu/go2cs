@@ -29,7 +29,7 @@ partial class net_package {
 }
 
 public static @string String(this ж<UnixAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return nilˢ;
@@ -38,7 +38,7 @@ public static @string String(this ж<UnixAddr> Ꮡa) {
 }
 
 internal static bool isWildcard(this ж<UnixAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     return Ꮡa == nil || a.Name == ""u8;
 }
@@ -76,7 +76,7 @@ public static (ж<UnixAddr>, error) ResolveUnixAddr(@string network, @string add
 // SyscallConn returns a raw network connection.
 // This implements the [syscall.Conn] interface.
 public static (syscall.RawConn, error) SyscallConn(this ж<UnixConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (default!, syscall.EINVAL);
@@ -87,7 +87,7 @@ public static (syscall.RawConn, error) SyscallConn(this ж<UnixConn> Ꮡc) {
 // CloseRead shuts down the reading side of the Unix domain connection.
 // Most callers should just use Close.
 public static error CloseRead(this ж<UnixConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -103,7 +103,7 @@ public static error CloseRead(this ж<UnixConn> Ꮡc) {
 // CloseWrite shuts down the writing side of the Unix domain connection.
 // Most callers should just use Close.
 public static error CloseWrite(this ж<UnixConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -118,7 +118,7 @@ public static error CloseWrite(this ж<UnixConn> Ꮡc) {
 
 // ReadFromUnix acts like [UnixConn.ReadFrom] but returns a [UnixAddr].
 public static (nint, ж<UnixAddr>, error) ReadFromUnix(this ж<UnixConn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, default!, syscall.EINVAL);
@@ -132,7 +132,7 @@ public static (nint, ж<UnixAddr>, error) ReadFromUnix(this ж<UnixConn> Ꮡc, s
 
 // ReadFrom implements the [PacketConn] ReadFrom method.
 public static (nint, ΔAddr, error) ReadFrom(this ж<UnixConn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, default!, syscall.EINVAL);
@@ -161,7 +161,7 @@ public static (nint n, nint oobn, nint flags, ж<UnixAddr> addr, error err) Read
     ж<UnixAddr> addr = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, 0, 0, default!, syscall.EINVAL);
     }
@@ -174,7 +174,7 @@ public static (nint n, nint oobn, nint flags, ж<UnixAddr> addr, error err) Read
 
 // WriteToUnix acts like [UnixConn.WriteTo] but takes a [UnixAddr].
 public static (nint, error) WriteToUnix(this ж<UnixConn> Ꮡc, slice<byte> b, ж<UnixAddr> Ꮡaddr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -188,7 +188,7 @@ public static (nint, error) WriteToUnix(this ж<UnixConn> Ꮡc, slice<byte> b, �
 
 // WriteTo implements the [PacketConn] WriteTo method.
 public static (nint, error) WriteTo(this ж<UnixConn> Ꮡc, slice<byte> b, ΔAddr addr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -215,7 +215,7 @@ public static (nint n, nint oobn, error err) WriteMsgUnix(this ж<UnixConn> Ꮡc
     nint oobn = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(UnixConn.Ꮡconn).ok()) {
         return (0, 0, syscall.EINVAL);
     }
@@ -263,7 +263,7 @@ public static (ж<UnixConn>, error) DialUnix(@string network, ж<UnixAddr> Ꮡla
 }
 
 internal static bool ok(this ж<UnixListener> Ꮡln) {
-    ref var ln = ref Ꮡln.DerefOrNil();
+    ref var ln = ref Ꮡln.DerefOrNull();
 
     return Ꮡln != nil && ln.fd != nil;
 }
@@ -274,7 +274,7 @@ internal static bool ok(this ж<UnixListener> Ꮡln) {
 // The returned RawConn only supports calling Control. Read and
 // Write return an error.
 public static (syscall.RawConn, error) SyscallConn(this ж<UnixListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -285,7 +285,7 @@ public static (syscall.RawConn, error) SyscallConn(this ж<UnixListener> Ꮡl) {
 // AcceptUnix accepts the next incoming call and returns the new
 // connection.
 public static (ж<UnixConn>, error) AcceptUnix(this ж<UnixListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -300,7 +300,7 @@ public static (ж<UnixConn>, error) AcceptUnix(this ж<UnixListener> Ꮡl) {
 // Accept implements the Accept method in the [Listener] interface.
 // Returned connections will be of type [*UnixConn].
 public static (Conn, error) Accept(this ж<UnixListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -315,7 +315,7 @@ public static (Conn, error) Accept(this ж<UnixListener> Ꮡl) {
 // Close stops listening on the Unix address. Already accepted
 // connections are not closed.
 public static error Close(this ж<UnixListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return syscall.EINVAL;
@@ -338,7 +338,7 @@ public static error Close(this ж<UnixListener> Ꮡl) {
 // SetDeadline sets the deadline associated with the listener.
 // A zero time value disables the deadline.
 public static error SetDeadline(this ж<UnixListener> Ꮡl, time.Time t) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return syscall.EINVAL;
@@ -357,7 +357,7 @@ public static (ж<os.File> f, error err) File(this ж<UnixListener> Ꮡl) {
     ж<os.File> f = default!;
     error err = default!;
 
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
     }

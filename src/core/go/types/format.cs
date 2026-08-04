@@ -106,7 +106,7 @@ internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @st
 internal static @string sprintf(this ж<Checker> Ꮡcheck, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    ref var check = ref Ꮡcheck.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
     ж<token.FileSet> fset = default!;
     Func<ж<Package>, @string> qf = default!;
     if (Ꮡcheck != nil) {
@@ -119,7 +119,7 @@ internal static @string sprintf(this ж<Checker> Ꮡcheck, @string format, param
 internal static void trace(this ж<Checker> Ꮡcheck, tokenꓸPos pos, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
     fmt.Printf("%s:\t%s%s\n"u8,
         check.fset.Position(pos),
         strings.Repeat(".  "u8, check.indent),
@@ -130,12 +130,12 @@ internal static void trace(this ж<Checker> Ꮡcheck, tokenꓸPos pos, @string f
 internal static void dump(this ж<Checker> Ꮡcheck, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
     fmt.Println(sprintf(check.fset, new Func<ж<Package>, @string>(Ꮡcheck.qualifier), true, format, args.ꓸꓸꓸ));
 }
 
 [GoRecv] internal static @string qualifier(this ref Checker check, ж<Package> Ꮡpkg) {
-    ref var pkg = ref Ꮡpkg.DerefOrNil();
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     // Qualify the package unless it's the package being type-checked.
     if (Ꮡpkg != check.pkg) {
@@ -156,7 +156,7 @@ internal static void dump(this ж<Checker> Ꮡcheck, @string format, params ꓸ�
 // markImports recursively walks pkg and its imports, to record unique import
 // paths in pkgPathMap.
 [GoRecv] internal static void markImports(this ref Checker check, ж<Package> Ꮡpkg) {
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
 
     if (check.seenPkgMap[Ꮡpkg]) {
         return;

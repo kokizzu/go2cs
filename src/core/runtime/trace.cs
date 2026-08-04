@@ -361,8 +361,7 @@ internal static void traceAdvance(bool stopTrace) {
             // The only situation that we might is that we're racing with a G
             // that's running for the first time in this generation. Therefore,
             // this should be relatively fast.
-            ref var s = ref heap<suspendGState>(out var Ꮡs);
-            s = suspendG(gp);
+            var s = suspendG(gp);
             if (!s.dead) {
                 Ꮡug.Value.goid = s.g.Value.goid;
                 if ((~s.g).m != nil) {
@@ -592,8 +591,7 @@ internal static void traceAdvance(bool stopTrace) {
         // which does this during the STW.
         semacquire(Ꮡworldsema);
         forEachP(waitReasonTraceProcStatus, (ж<Δp> pp) => {
-            ref var tl = ref heap<traceLocker>(out var Ꮡtl);
-            tl = traceAcquire();
+            var tl = traceAcquire();
             if (!pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).statusWasTraced(tl.gen)) {
                 tl.writer().writeProcStatusForP(pp, false).end();
             }
@@ -724,7 +722,7 @@ top:
                 } else 
                 if (g2 != nil) {
                     printlock();
-                    println((@string)"runtime: got trace reader"u8, g2, (~g2).goid);
+                    println((@string)"runtime: got trace reader"u8, g2.OrTypedNil(), (~g2).goid);
                     @throw(unexpectedTraceReaderˢ);
                 }
             }
@@ -909,7 +907,7 @@ internal static ref traceAdvancerState traceAdvancer => ref ᏑtraceAdvancer.Val
 
 // start starts a new traceAdvancer.
 internal static void start(this ж<traceAdvancerState> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Start a goroutine to periodically advance the trace generation.
     s.done = new channel<EmptyStruct>(0);
@@ -958,7 +956,7 @@ internal static ж<wakeableSleep> newWakeableSleep() {
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {
         sΔ1._<ж<wakeableSleep>>().wake();
     };
-    (~s).timer.init(f, s);
+    (~s).timer.init(f, s.OrTypedNil());
     return s;
 }
 
@@ -968,7 +966,7 @@ internal static ж<wakeableSleep> newWakeableSleep() {
 // Must not be called by more than one goroutine at a time and
 // must not be called concurrently with close.
 internal static void sleep(this ж<wakeableSleep> Ꮡs, int64 ns) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     s.timer.reset(nanotime() + ns, 0);
     @lock(Ꮡs.of(wakeableSleep.Ꮡlock));
@@ -988,7 +986,7 @@ internal static void sleep(this ж<wakeableSleep> Ꮡs, int64 ns) {
 //
 // Safe for concurrent use with all other methods.
 internal static void wake(this ж<wakeableSleep> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Grab the wakeup channel, which may be nil if we're
     // racing with close.
@@ -1025,7 +1023,7 @@ internal static void wake(this ж<wakeableSleep> Ꮡs) {
 // It must only be called once no goroutine is sleeping on the
 // timer *and* nothing else will call wake concurrently.
 internal static void close(this ж<wakeableSleep> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Set wakeup to nil so that a late timer ends up being a no-op.
     @lock(Ꮡs.of(wakeableSleep.Ꮡlock));

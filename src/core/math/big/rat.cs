@@ -35,7 +35,7 @@ public static ж<ΔRat> NewRat(int64 a, int64 b) {
 // SetFloat64 sets z to exactly f and returns z.
 // If f is not finite, SetFloat returns nil.
 public static ж<ΔRat> SetFloat64(this ж<ΔRat> Ꮡz, float64 f) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     UntypedInt expMask = /* 1<<11 - 1 */ 2047;
     var bits = math.Float64bits(f);
@@ -312,9 +312,9 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
 // SetFrac sets z to a/b and returns z.
 // If b == 0, SetFrac panics.
 public static ж<ΔRat> SetFrac(this ж<ΔRat> Ꮡz, ж<ΔInt> Ꮡa, ж<ΔInt> Ꮡb) {
-    ref var z = ref Ꮡz.Value;
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     z.a.neg = a.neg != b.neg;
     var babs = b.abs;
@@ -333,7 +333,7 @@ public static ж<ΔRat> SetFrac(this ж<ΔRat> Ꮡz, ж<ΔInt> Ꮡa, ж<ΔInt> �
 // SetFrac64 sets z to a/b and returns z.
 // If b == 0, SetFrac64 panics.
 public static ж<ΔRat> SetFrac64(this ж<ΔRat> Ꮡz, int64 a, int64 b) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (b == 0) {
         throw panic("division by zero");
@@ -349,7 +349,7 @@ public static ж<ΔRat> SetFrac64(this ж<ΔRat> Ꮡz, int64 a, int64 b) {
 
 // SetInt sets z to x (by making a copy of x) and returns z.
 public static ж<ΔRat> SetInt(this ж<ΔRat> Ꮡz, ж<ΔInt> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.of(big_package.ΔRat.Ꮡa).Set(Ꮡx);
     z.b.abs = z.b.abs.setWord(1);
@@ -358,7 +358,7 @@ public static ж<ΔRat> SetInt(this ж<ΔRat> Ꮡz, ж<ΔInt> Ꮡx) {
 
 // SetInt64 sets z to x and returns z.
 public static ж<ΔRat> SetInt64(this ж<ΔRat> Ꮡz, int64 x) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.of(big_package.ΔRat.Ꮡa).SetInt64(x);
     z.b.abs = z.b.abs.setWord(1);
@@ -367,7 +367,7 @@ public static ж<ΔRat> SetInt64(this ж<ΔRat> Ꮡz, int64 x) {
 
 // SetUint64 sets z to x and returns z.
 public static ж<ΔRat> SetUint64(this ж<ΔRat> Ꮡz, uint64 x) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.of(big_package.ΔRat.Ꮡa).SetUint64(x);
     z.b.abs = z.b.abs.setWord(1);
@@ -376,7 +376,7 @@ public static ж<ΔRat> SetUint64(this ж<ΔRat> Ꮡz, uint64 x) {
 
 // Set sets z to x (by making a copy of x) and returns z.
 public static ж<ΔRat> Set(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
-    ref var z = ref Ꮡz.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (Ꮡz != Ꮡx) {
         Ꮡz.of(big_package.ΔRat.Ꮡa).Set(Ꮡx.of(big_package.ΔRat.Ꮡa));
@@ -390,7 +390,7 @@ public static ж<ΔRat> Set(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
 
 // Abs sets z to |x| (the absolute value of x) and returns z.
 public static ж<ΔRat> Abs(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
     z.a.neg = false;
@@ -399,7 +399,7 @@ public static ж<ΔRat> Abs(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
 
 // Neg sets z to -x and returns z.
 public static ж<ΔRat> Neg(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
     z.a.neg = len(z.a.abs) > 0 && !z.a.neg;
@@ -410,8 +410,8 @@ public static ж<ΔRat> Neg(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
 // Inv sets z to 1/x and returns z.
 // If x == 0, Inv panics.
 public static ж<ΔRat> Inv(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (len(x.a.abs) == 0) {
         throw panic("division by zero");
@@ -450,7 +450,7 @@ public static ж<ΔInt> Num(this ж<ΔRat> Ꮡx) {
 // If the result is a reference to x's denominator it
 // may change if a new value is assigned to x, and vice versa.
 public static ж<ΔInt> Denom(this ж<ΔRat> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // Note that x.b.neg is guaranteed false.
     if (len(x.b.abs) == 0) {
@@ -463,7 +463,7 @@ public static ж<ΔInt> Denom(this ж<ΔRat> Ꮡx) {
 }
 
 internal static ж<ΔRat> norm(this ж<ΔRat> Ꮡz) {
-    ref var z = ref Ꮡz.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
 
     var matchᴛ1 = false;
     if (len(z.a.abs) is 0) { matchᴛ1 = true;
@@ -513,8 +513,8 @@ internal static nat mulDenom(nat z, nat x, nat y) {
 // scaleDenom sets z to the product x*f.
 // If f == 0 (zero value of denominator), z is set to (a copy of) x.
 internal static void scaleDenom(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, nat f) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (len(f) == 0) {
         Ꮡz.Set(Ꮡx);
@@ -529,8 +529,8 @@ internal static void scaleDenom(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, nat f) {
 //   - 0 if x == y;
 //   - +1 if x > y.
 public static nint Cmp(this ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     ref var a = ref heap(new ΔInt(), out var Ꮡa);
     ref var b = ref heap(new ΔInt(), out var Ꮡb);
@@ -541,9 +541,9 @@ public static nint Cmp(this ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
 
 // Add sets z to the sum x+y and returns z.
 public static ж<ΔRat> Add(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     ref var a1 = ref heap(new ΔInt(), out var Ꮡa1);
     ref var a2 = ref heap(new ΔInt(), out var Ꮡa2);
@@ -556,9 +556,9 @@ public static ж<ΔRat> Add(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy)
 
 // Sub sets z to the difference x-y and returns z.
 public static ж<ΔRat> Sub(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     ref var a1 = ref heap(new ΔInt(), out var Ꮡa1);
     ref var a2 = ref heap(new ΔInt(), out var Ꮡa2);
@@ -571,9 +571,9 @@ public static ж<ΔRat> Sub(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy)
 
 // Mul sets z to the product x*y and returns z.
 public static ж<ΔRat> Mul(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.DerefOrNil();
-    ref var y = ref Ꮡy.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (Ꮡx == Ꮡy) {
         // a squared Rat is positive and can't be reduced (no need to call norm())
@@ -594,9 +594,9 @@ public static ж<ΔRat> Mul(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy)
 // Quo sets z to the quotient x/y and returns z.
 // If y == 0, Quo panics.
 public static ж<ΔRat> Quo(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx, ж<ΔRat> Ꮡy) {
-    ref var z = ref Ꮡz.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var z = ref Ꮡz.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     if (len(y.a.abs) == 0) {
         throw panic("division by zero");

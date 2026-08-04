@@ -44,7 +44,7 @@ public static ж<CoverageMetaFileWriter> NewCoverageMetaFileWriter(@string mfnam
 public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, array<byte> finalHash, slice<slice<byte>> blobs, coverage.CounterMode mode, coverage.CounterGranularity granularity) {
     finalHash = finalHash.Clone();
 
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
     var mhsz = (uint64)/* unsafe.Sizeof(coverage.MetaFileHeader{}) */ (uintptr)56;
     var stSize = m.stab.Size();
     var stOffset = mhsz + (uint64)(16 * len(blobs));
@@ -72,7 +72,7 @@ public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, array<byte> fina
     );
     error err = default!;
     {
-        err = binary.Write(new bufio_WriterжWriter(m.w), new binary_littleEndianᴠByteOrder(binary.LittleEndian), mh); if (err != default!) {
+        err = binary.Write(new bufio_WriterжWriter(m.w), binary.LittleEndian, mh); if (err != default!) {
             return fmt.Errorf("error writing %s: %v"u8, m.mfname, err);
         }
     }

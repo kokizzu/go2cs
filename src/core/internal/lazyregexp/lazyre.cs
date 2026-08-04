@@ -22,7 +22,7 @@ partial class lazyregexp_package {
 }
 
 internal static ж<regexp.Regexp> re(this ж<Regexp> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(Regexp.Ꮡonce).Do(Ꮡr.build);
     return r.rx;

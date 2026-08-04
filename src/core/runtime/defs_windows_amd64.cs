@@ -90,14 +90,14 @@ internal static UntypedInt _CONTEXT_CONTROL => 0x100001;
 }
 
 internal static void prepareContextForSigResume(ж<context> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.r8 = c.rsp;
     c.r9 = c.rip;
 }
 
 internal static void dumpregs(ж<context> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     print((@string)"rax     "u8, ((Δhex)r.rax), (@string)"\n"u8);
     print((@string)"rbx     "u8, ((Δhex)r.rbx), (@string)"\n"u8);

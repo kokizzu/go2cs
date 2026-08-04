@@ -42,7 +42,7 @@ public static Mode SkipFuncCheck => 2;       // do not check that functions are 
 
 // Copy returns a copy of the [Tree]. Any parsing state is discarded.
 public static ж<Tree> Copy(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return default!;
@@ -222,8 +222,8 @@ internal static readonly @string actionˢ = " action"u8;
 
 // recover is the handler that turns panics into returns from the top level of Parse.
 internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNil();
-    ref var errp = ref Ꮡerrp.ValueSlot;
+    ref var t = ref Ꮡt.DerefOrNull();
+    ref var errp = ref Ꮡerrp.DerefOrNull();
 
     var e = recover();
     if (e != default!) {
@@ -245,7 +245,7 @@ internal static readonly @string continueˢ2 = "continue"u8;
 
 // startParse initializes the parser, using the lexer.
 [GoRecv] internal static void startParse(this ref Tree t, slice<map<@string, any>> funcs, ж<lexer> Ꮡlex, map<@string, ж<Tree>> treeSet) {
-    ref var lex = ref Ꮡlex.Value;
+    ref var lex = ref Ꮡlex.DerefOrNull();
 
     t.Root = default!;
     t.lex = Ꮡlex;
@@ -277,7 +277,7 @@ public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text,
     func(ref funcsʗp, (ref Span<map<@string, any>> funcsʗp, Defer defer, Recover recover) => {
     var funcs = funcsʗp.slice();
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(Ꮡt.recover, Ꮡerr, defer);
         t.ParseName = t.Name;
@@ -294,7 +294,7 @@ public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text,
 
 // add adds tree to t.treeSet.
 internal static void add(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var tree = t.treeSet[t.Name];
     if (tree == nil || IsEmptyTree(new ListNodeжNode((~tree).Root))) {
@@ -356,7 +356,7 @@ internal static readonly @string definitionˢ = "definition"u8;
 // as itemList except it also parses {{define}} actions.
 // It runs to EOF.
 internal static void parse(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.Root = Ꮡt.newList(t.peek().pos);
     while (t.peek().typ != itemEOF) {
@@ -392,7 +392,7 @@ internal static void parse(this ж<Tree> Ꮡt) {
 // installs the definition in t.treeSet. The "define" keyword has already
 // been scanned.
 internal static void parseDefinition(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string context = "define clause"u8;
     var name = t.expectOneOf(itemString, itemRawString, context);
@@ -420,7 +420,7 @@ internal static (ж<ListNode> list, Node next) itemList(this ж<Tree> Ꮡt) {
     ж<ListNode> list = default!;
     Node next = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     list = Ꮡt.newList(t.peekNonSpace().pos);
     while (t.peekNonSpace().typ != itemEOF) {
         var n = Ꮡt.textOrAction();
@@ -442,7 +442,7 @@ internal static readonly @string inputˢ = "input"u8;
 //
 //	text | comment | action
 internal static Node textOrAction(this ж<Tree> Ꮡt) => func<Node>((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var token = t.nextNonSpace();
@@ -483,7 +483,7 @@ internal static readonly @string commandˢ = "command"u8;
 internal static Node /*n*/ action(this ж<Tree> Ꮡt) {
     Node n = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     {
         var tokenΔ1 = t.nextNonSpace();
         var exprᴛ1 = tokenΔ1.typ;
@@ -528,7 +528,7 @@ internal static Node /*n*/ action(this ж<Tree> Ꮡt) {
 //
 // Break keyword is past.
 internal static Node breakControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var token = t.nextNonSpace(); if (token.typ != itemRightDelim) {
@@ -547,7 +547,7 @@ internal static Node breakControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
 //
 // Continue keyword is past.
 internal static Node continueControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var token = t.nextNonSpace(); if (token.typ != itemRightDelim) {
@@ -566,7 +566,7 @@ internal static Node continueControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
 internal static ж<PipeNode> /*pipe*/ pipeline(this ж<Tree> Ꮡt, @string context, itemType end) {
     ж<PipeNode> pipe = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     var token = t.peekNonSpace();
     pipe = Ꮡt.newPipeline(token.pos, token.line, default!);
     // Are there declarations or assignments?
@@ -639,7 +639,7 @@ decls:
 }
 
 [GoRecv] internal static void checkPipeline(this ref Tree t, ж<PipeNode> Ꮡpipe, @string context) {
-    ref var pipe = ref Ꮡpipe.Value;
+    ref var pipe = ref Ꮡpipe.DerefOrNull();
 
     // Reject empty pipelines
     if (len(pipe.Cmds) == 0) {
@@ -663,7 +663,7 @@ internal static (Pos pos, nint line, ж<PipeNode> pipe, ж<ListNode> list, ж<Li
     ж<ListNode> list = default!;
     ж<ListNode> elseList = default!;
     func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
         deferǃ(Ꮡt.popVars, len(Ꮡt.Value.vars), defer);
         pipe = Ꮡt.pipeline(context, itemRightDelim);
@@ -756,7 +756,7 @@ internal static readonly @string endˢ2 = "end"u8;
 //
 // End keyword is past.
 internal static Node endControl(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return new endNodeжNode(Ꮡt.newEnd(t.expect(itemRightDelim, endˢ2).pos));
 }
@@ -770,7 +770,7 @@ internal static readonly @string elseˢ2 = "else"u8;
 //
 // Else keyword is past.
 internal static Node elseControl(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var peek = t.peekNonSpace();
     // The "{{else if ... " and "{{else with ..." will be
@@ -791,7 +791,7 @@ internal static Node elseControl(this ж<Tree> Ꮡt) {
 // The name must be something that can evaluate to a string.
 // The pipeline is mandatory.
 internal static Node blockControl(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string context = "block clause"u8;
     var token = t.nextNonSpace();
@@ -820,7 +820,7 @@ internal static Node blockControl(this ж<Tree> Ꮡt) {
 // Template keyword is past. The name must be something that can evaluate
 // to a string.
 internal static Node templateControl(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     @string context = "template clause"u8;
     var token = t.nextNonSpace();
@@ -862,7 +862,7 @@ internal static readonly @string operandˢ = "operand"u8;
 // space-separated arguments up to a pipeline character or right delimiter.
 // we consume the pipe character but leave the right delim to terminate the action.
 internal static ж<CommandNode> command(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var cmd = Ꮡt.newCommand(t.peekNonSpace().pos);
     while (ᐧ) {
@@ -905,7 +905,7 @@ internal static ж<CommandNode> command(this ж<Tree> Ꮡt) {
 // a term possibly followed by field accesses.
 // A nil return means the next item is not an operand.
 internal static Node operand(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var node = Ꮡt.term();
     if (node == default!) {
@@ -954,7 +954,7 @@ internal static readonly @string parenthesizedPipelineˢ = "parenthesized pipeli
 // A term is a simple "expression".
 // A nil return means the next item is not a term.
 internal static Node term(this ж<Tree> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     {
         var token = t.nextNonSpace();
@@ -1025,7 +1025,7 @@ internal static Node term(this ж<Tree> Ꮡt) {
 // useVar returns a node for a variable reference. It errors if the
 // variable is not defined.
 internal static Node useVar(this ж<Tree> Ꮡt, Pos pos, @string name) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var v = Ꮡt.newVariable(pos, name);
     foreach (var (_, varName) in t.vars) {

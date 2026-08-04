@@ -54,8 +54,8 @@ internal static ref handlersᴛ1 handlers => ref Ꮡhandlers.Value;
 internal static void cancel(slice<osꓸSignal> sigs, Action<nint> action) => func((defer, recover) => {
     Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
     defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
-    var remove = (nint n) => {
-        ref var zerohandler = ref heap(new handler(), out var Ꮡzerohandler);
+    void remove(nint n) {
+        handler zerohandler = new();
         foreach (var (c, h) in handlers.m) {
             if (h.want(n)) {
                 handlers.@ref[n]--;
@@ -66,7 +66,7 @@ internal static void cancel(slice<osꓸSignal> sigs, Action<nint> action) => fun
             }
         }
         action(n);
-    };
+    }
     if (len(sigs) == 0){
         for (nint n = 0; n < numSig; n++) {
             remove(n);
@@ -131,7 +131,7 @@ public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSig
         handlers.m[c] = h;
     }
     var hʗ1 = h;
-    var add = (nint n) => {
+    void add(nint n) {
         if (n < 0) {
             return;
         }
@@ -149,7 +149,7 @@ public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSig
             }
             handlers.@ref[n]++;
         }
-    };
+    }
     if (len(sig) == 0){
         for (nint n = 0; n < numSig; n++) {
             add(n);

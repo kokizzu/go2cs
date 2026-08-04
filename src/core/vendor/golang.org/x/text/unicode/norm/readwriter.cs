@@ -20,7 +20,7 @@ internal static (nint n, error err) Write(this ж<normWriter> Ꮡw, slice<byte> 
     nint n = default!;
     error err = default!;
 
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
     // Process data in pieces to keep w.buf size bounded.
     const nint chunk = 4000;
     while (len(data) > 0) {
@@ -86,7 +86,7 @@ public static io.WriteCloser Writer(this Form f, io.Writer w) {
 
 // Read implements the standard read interface.
 internal static (nint, error) Read(this ж<normReader> Ꮡr, slice<byte> p) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     while (ᐧ) {
         if (r.lastBoundary - r.bufStart > 0) {

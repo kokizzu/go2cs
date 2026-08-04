@@ -62,12 +62,12 @@ internal static readonly @string errorˢ = "ERROR"u8;
 //	LevelWarn.String() => "WARN"
 //	(LevelInfo+2).String() => "INFO+2"
 public static @string String(this ΔLevel l) {
-    var str = @string (@string @base, ΔLevel val) => {
+    @string str(@string @base, ΔLevel val) {
         if (val == 0) {
             return @base;
         }
         return fmt.Sprintf("%s%+d"u8, @base, val);
-    };
+    }
     switch (ᐧ) {
     case {} when l < LevelInfo: {
         return str(debugˢ, l - LevelDebug);
@@ -127,7 +127,7 @@ internal static readonly @string unknownNameˢ = "unknown name"u8;
 internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
     error err = default!;
     func((defer, recover) => {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
         defer(() => {
             if (err != default!) {

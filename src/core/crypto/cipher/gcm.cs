@@ -236,8 +236,8 @@ internal static nint reverseBits(nint i) {
 
 // gcmAdd adds two elements of GF(2¹²⁸) and returns the sum.
 internal static gcmFieldElement gcmAdd(ж<gcmFieldElement> Ꮡx, ж<gcmFieldElement> Ꮡy) {
-    ref var x = ref Ꮡx.Value;
-    ref var y = ref Ꮡy.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
 
     // Addition in a characteristic 2 field is just XOR.
     return new gcmFieldElement((uint64)(x.low ^ y.low), (uint64)(x.high ^ y.high));
@@ -247,7 +247,7 @@ internal static gcmFieldElement gcmAdd(ж<gcmFieldElement> Ꮡx, ж<gcmFieldElem
 internal static gcmFieldElement /*double*/ gcmDouble(ж<gcmFieldElement> Ꮡx) {
     gcmFieldElement @double = default!;
 
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
     var msbSet = (uint64)(x.high & 1) == 1;
     // Because of the bit-ordering, doubling is actually a right shift.
     @double.high = (x.high >> (int)(1));
@@ -273,7 +273,7 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
 
 // mul sets y to y*H, where H is the GCM key, fixed during NewGCMWithNonceSize.
 [GoRecv] internal static void mul(this ref gcm g, ж<gcmFieldElement> Ꮡy) {
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
 
     gcmFieldElement z = default!;
     for (nint i = 0; i < 2; i++) {
@@ -304,7 +304,7 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
 // updateBlocks extends y with more polynomial terms from blocks, based on
 // Horner's rule. There must be a multiple of gcmBlockSize bytes in blocks.
 [GoRecv] internal static void updateBlocks(this ref gcm g, ж<gcmFieldElement> Ꮡy, slice<byte> blocks) {
-    ref var y = ref Ꮡy.Value;
+    ref var y = ref Ꮡy.DerefOrNull();
 
     while (len(blocks) > 0) {
         y.low ^= (uint64)(byteorder.BeUint64(blocks));
@@ -329,7 +329,7 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
 // gcmInc32 treats the final four bytes of counterBlock as a big-endian value
 // and increments it.
 internal static void gcmInc32(ж<array<byte>> ᏑcounterBlock) {
-    ref var counterBlock = ref ᏑcounterBlock.Value;
+    ref var counterBlock = ref ᏑcounterBlock.DerefOrNull();
 
     var ctr = counterBlock[(int)(len(counterBlock) - 4)..];
     byteorder.BePutUint32(ctr, byteorder.BeUint32(ctr) + 1);
@@ -357,7 +357,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 
 // counterCrypt crypts in to out using g.cipher in counter mode.
 [GoRecv] internal static void counterCrypt(this ref gcm g, slice<byte> @out, slice<byte> @in, ж<array<byte>> Ꮡcounter) {
-    ref var counter = ref Ꮡcounter.Value;
+    ref var counter = ref Ꮡcounter.DerefOrNull();
 
     array<byte> mask = new(16); /* gcmBlockSize */
     while (len(@in) >= gcmBlockSize) {
@@ -378,7 +378,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 // See NIST SP 800-38D, section 7.1. This assumes that counter is filled with
 // zeros on entry.
 [GoRecv] internal static void deriveCounter(this ref gcm g, ж<array<byte>> Ꮡcounter, slice<byte> nonce) {
-    ref var counter = ref Ꮡcounter.Value;
+    ref var counter = ref Ꮡcounter.DerefOrNull();
 
     // GCM has two modes of operation with respect to the initial counter
     // state: a "fast path" for 96-bit (12-byte) nonces, and a "slow path"
@@ -402,7 +402,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 // auth calculates GHASH(ciphertext, additionalData), masks the result with
 // tagMask and writes the result to out.
 [GoRecv] internal static void auth(this ref gcm g, slice<byte> @out, slice<byte> ciphertext, slice<byte> additionalData, ж<array<byte>> ᏑtagMask) {
-    ref var tagMask = ref ᏑtagMask.Value;
+    ref var tagMask = ref ᏑtagMask.DerefOrNull();
 
     ref var y = ref heap(new gcmFieldElement(), out var Ꮡy);
     g.update(Ꮡy, additionalData);

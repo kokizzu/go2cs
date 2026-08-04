@@ -58,7 +58,7 @@ internal static void panicunsafestringnilptr() {
 
 // Keep this code in sync with cmd/compile/internal/walk/builtin.go:walkUnsafeSlice
 internal static void unsafeslice(ж<_type> Ꮡet, @unsafe.Pointer ptr, nint len) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     if (len < 0) {
         panicunsafeslicelen1(getcallerpc());
@@ -90,7 +90,7 @@ internal static void unsafeslice64(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 l
 internal static readonly @string checkptrUnsafeSliceˢ = "checkptr: unsafe.Slice result straddles multiple allocations"u8;
 
 internal static void unsafeslicecheckptr(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 len64) {
-    ref var et = ref Ꮡet.Value;
+    ref var et = ref Ꮡet.DerefOrNull();
 
     unsafeslice64(Ꮡet, ptr, len64);
     // Check that underlying array doesn't straddle multiple heap objects.

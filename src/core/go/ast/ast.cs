@@ -111,7 +111,7 @@ internal static @string stripTrailingWhitespace(@string s) {
 // Multiple empty lines are reduced to one, and trailing space on lines is trimmed.
 // Unless the result is empty, it is newline-terminated.
 public static @string Text(this ж<CommentGroup> Ꮡg) {
-    ref var g = ref Ꮡg.DerefOrNil();
+    ref var g = ref Ꮡg.DerefOrNull();
 
     if (Ꮡg == nil) {
         return ""u8;
@@ -284,7 +284,7 @@ internal static bool isDirective(@string c) {
 
 // NumFields returns the number of parameters or struct fields represented by a [FieldList].
 public static nint NumFields(this ж<FieldList> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     nint n = 0;
     if (Ꮡf != nil) {
@@ -771,7 +771,7 @@ public static bool IsExported(@string name) {
 internal static readonly @string nilˢ = "<nil>"u8;
 
 public static @string String(this ж<Ident> Ꮡid) {
-    ref var id = ref Ꮡid.DerefOrNil();
+    ref var id = ref Ꮡid.DerefOrNull();
 
     if (Ꮡid != nil) {
         return id.Name;
@@ -1448,7 +1448,7 @@ public static bool IsGenerated(ж<File> Ꮡfile) {
 internal static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
 
 internal static (@string, bool) generator(ж<File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.Value;
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
     foreach (var (_, group) in @file.Comments) {
         foreach (var (_, comment) in (~group).List) {

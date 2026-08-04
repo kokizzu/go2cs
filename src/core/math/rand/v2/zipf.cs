@@ -37,7 +37,7 @@ partial class rand_package {
 // such that P(k) is proportional to (v + k) ** (-s).
 // Requirements: s > 1 and v >= 1.
 public static ж<Zipf> NewZipf(ж<Rand> Ꮡr, float64 s, float64 v, uint64 imax) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var z = @new<Zipf>();
     if (s <= 1.0D || v < 1D) {
@@ -58,7 +58,7 @@ public static ж<Zipf> NewZipf(ж<Rand> Ꮡr, float64 s, float64 v, uint64 imax)
 // Uint64 returns a value drawn from the Zipf distribution described
 // by the Zipf object.
 public static uint64 Uint64(this ж<Zipf> Ꮡz) {
-    ref var z = ref Ꮡz.DerefOrNil();
+    ref var z = ref Ꮡz.DerefOrNull();
 
     if (Ꮡz == nil) {
         throw panic("rand: nil Zipf");

@@ -55,7 +55,7 @@ partial class runtime_package {
 //   - writeRank is placed in the lock order wherever a write lock of this
 //     rwmutex belongs.
 internal static void init(this ж<rwmutex> Ꮡrw, lockRank readRank, lockRank readRankInternal, lockRank writeRank) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     rw.readRank = readRank;
     lockInit(Ꮡrw.of(rwmutex.ᏑrLock), readRankInternal);
@@ -66,7 +66,7 @@ internal static UntypedInt rwmutexMaxReaders => /* 1 << 30 */ 1073741824;
 
 // rlock locks rw for reading.
 internal static void rlock(this ж<rwmutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     // The reader must not be allowed to lose its P or else other
     // things blocking on the lock may consume all of the Ps and
@@ -101,7 +101,7 @@ internal static readonly @string runlockOfUnlockedRwmutexˢ = "runlock of unlock
 
 // runlock undoes a single rlock call on rw.
 internal static void runlock(this ж<rwmutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     {
         var r = Ꮡrw.of(rwmutex.ᏑreaderCount).Add(-1); if (r < 0) {
@@ -151,7 +151,7 @@ internal static readonly @string unlockOfUnlockedRwmutexˢ = "unlock of unlocked
 
 // unlock unlocks rw for writing.
 internal static void unlock(this ж<rwmutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     // Announce to readers that there is no active writer.
     var r = Ꮡrw.of(rwmutex.ᏑreaderCount).Add(rwmutexMaxReaders);

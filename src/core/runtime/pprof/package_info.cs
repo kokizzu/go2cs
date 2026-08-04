@@ -59,8 +59,6 @@ using static go.runtime.pprof_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<go.text.tabwriter_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<keysByCount, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<runtimeProfile, countProfile>(Pointer = true)]

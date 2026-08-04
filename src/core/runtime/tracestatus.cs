@@ -56,7 +56,7 @@ internal static readonly @string attemptToTraceInvalidOrˢ = "attempt to trace i
 // The caller must fully own pp and it must be prevented from transitioning (e.g. this can be
 // called by a forEachP callback or from a STW).
 internal static traceWriter writeProcStatusForP(this traceWriter w, ж<Δp> Ꮡpp, bool inSTW) {
-    ref var pp = ref Ꮡpp.DerefOrNil();
+    ref var pp = ref Ꮡpp.DerefOrNull();
 
     if (!Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).acquireStatus(w.gen)) {
         return w;

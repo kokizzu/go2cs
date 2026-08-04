@@ -211,7 +211,7 @@ internal static (byte, error) readByte(io.ByteReader r) {
 
 // decode reads a GIF image from r and stores the result in d.
 internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly, bool keepAllFrames) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     // Add buffering if r does not provide ReadByte.
     {
@@ -392,7 +392,7 @@ internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly
 internal static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
 
 internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) => func<error>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var (m, err) = d.newImageFromDescriptor();
     if (err != default!) {
@@ -577,7 +577,7 @@ internal static slice<interlaceScan> interlacing = new interlaceScan[]{
 
 // uninterlace rearranges the pixels in m to account for interlaced input.
 internal static void uninterlace(ж<image.Paletted> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     slice<uint8> nPix = default!;
     nint dx = m.Bounds().Dx();
@@ -654,7 +654,7 @@ public static (ж<GIF>, error) DecodeAll(io.Reader r) {
         Delay: d.delay,
         Disposal: d.disposal,
         Config: new image.Config(
-            ColorModel: new color_PaletteᴠModel(d.globalColorTable),
+            ColorModel: d.globalColorTable,
             Width: d.width,
             Height: d.height
         ),
@@ -673,7 +673,7 @@ public static (image.Config, error) DecodeConfig(io.Reader r) {
         }
     }
     return (new image.Config(
-        ColorModel: new color_PaletteᴠModel(d.globalColorTable),
+        ColorModel: d.globalColorTable,
         Width: d.width,
         Height: d.height
     ), default!);

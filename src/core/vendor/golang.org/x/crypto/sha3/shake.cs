@@ -90,7 +90,7 @@ internal static ShakeHash newCShake(slice<byte> N, slice<byte> S, nint rate, nin
 
 // Reset resets the hash to initial state.
 internal static void Reset(this ж<cshakeState> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.state.Reset();
     Ꮡc.Write(bytepad(c.initBlock, c.rate));

@@ -35,7 +35,7 @@ internal static (uint64 g, gState init, gState next) stateTransition(ж<Event> �
     gState init = default!;
     gState next = default!;
 
-    ref var ev = ref Ꮡev.Value;
+    ref var ev = ref Ꮡev.DerefOrNull();
     // Note that we have an explicit return in each case, as that produces slightly better code (tested on Go 1.19).
     var exprᴛ1 = ev.Type;
     if (exprᴛ1 == EvGoCreate) {
@@ -146,13 +146,13 @@ internal static error transition(map<uint64, gState> gs, uint64 g, gState init, 
 internal static void Push(this ж<orderEventList> Ꮡh, orderEvent x) {
     x = x.ΔClone();
 
-    ref var h = ref Ꮡh.ValueSlot;
+    ref var h = ref Ꮡh.DerefOrNull();
     h = builtin.append(h, x.ΔClone());
     heapUp(Ꮡh, len(h) - 1);
 }
 
 internal static orderEvent Pop(this ж<orderEventList> Ꮡh) {
-    ref var h = ref Ꮡh.ValueSlot;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     nint n = len(h) - 1;
     ((h)[0], (h)[n]) = ((h)[n].ΔClone(), (h)[0].ΔClone());
@@ -163,7 +163,7 @@ internal static orderEvent Pop(this ж<orderEventList> Ꮡh) {
 }
 
 internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
-    ref var h = ref Ꮡh.ValueSlot;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     while (ᐧ) {
         nint i = (j - 1) / 2;
@@ -177,7 +177,7 @@ internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
 }
 
 internal static bool heapDown(ж<orderEventList> Ꮡh, nint i0, nint n) {
-    ref var h = ref Ꮡh.ValueSlot;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     nint i = i0;
     while (ᐧ) {

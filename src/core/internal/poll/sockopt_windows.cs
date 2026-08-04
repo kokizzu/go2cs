@@ -9,7 +9,7 @@ partial class poll_package {
 
 // WSAIoctl wraps the WSAIoctl network call.
 public static error WSAIoctl(this ж<FD> Ꮡfd, uint32 iocc, ж<byte> Ꮡinbuf, uint32 cbif, ж<byte> Ꮡoutbuf, uint32 cbob, ж<uint32> Ꮡcbbr, ж<Δsyscall.Overlapped> Ꮡoverlapped, uintptr completionRoutine) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.Value;
+    ref var fd = ref Ꮡfd.DerefOrNull();
 
     {
         var err = Ꮡfd.incref(); if (err != default!) {

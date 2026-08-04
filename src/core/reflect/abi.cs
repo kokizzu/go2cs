@@ -116,7 +116,7 @@ internal static abiStepKind abiStepFloatReg => 4; // copy to/from FP register
 // If the value was stack-assigned, returns the single
 // abiStep describing that translation, and nil otherwise.
 [GoRecv] internal static ж<abiStep> addArg(this ref abiSeq a, ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // We'll always be adding a new value, so do that first.
     nint pStart = len(a.steps);
@@ -159,7 +159,7 @@ internal static abiStepKind abiStepFloatReg => 4; // copy to/from FP register
 // abiStep describing that translation, and nil otherwise.
 // Returns true if the receiver is a pointer.
 [GoRecv] internal static (ж<abiStep>, bool) addRcvr(this ref abiSeq a, ж<abi.Type> Ꮡrcvr) {
-    ref var rcvr = ref Ꮡrcvr.Value;
+    ref var rcvr = ref Ꮡrcvr.DerefOrNull();
 
     // The receiver is always one word.
     a.valueStart = builtin.append(a.valueStart, len(a.steps));
@@ -195,7 +195,7 @@ internal static abiStepKind abiStepFloatReg => 4; // copy to/from FP register
 // This method along with the assign* methods represent the
 // complete register-assignment algorithm for the Go ABI.
 [GoRecv] internal static bool regAssign(this ref abiSeq a, ж<abi.Type> Ꮡt, uintptr offset) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var exprᴛ1 = ((ΔKind)(nuint)(uint8)t.Kind());
     if (exprᴛ1 == ΔUnsafePointer || exprᴛ1 == ΔPointer || exprᴛ1 == Chan || exprᴛ1 == Map || exprᴛ1 == Func) {
@@ -483,7 +483,7 @@ internal static abiDesc newAbiDesc(ж<funcType> Ꮡt, ж<abi.Type> Ꮡrcvr) {
 //
 // argSize must be non-zero, fit in a register, and a power-of-two.
 internal static void intFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @unsafe.Pointer to) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     memmove(to, (uintptr)r.IntRegArgAddr(reg, argSize), argSize);
 }
@@ -492,7 +492,7 @@ internal static void intFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize,
 //
 // argSize must be non-zero, fit in a register, and a power-of-two.
 internal static void intToReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @unsafe.Pointer from) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     memmove((uintptr)r.IntRegArgAddr(reg, argSize), from, argSize);
 }
@@ -501,7 +501,7 @@ internal static void intToReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @
 //
 // argSize must be 4 or 8.
 internal static void floatFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @unsafe.Pointer to) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var exprᴛ1 = argSize;
     if (exprᴛ1 == 4) {
@@ -520,7 +520,7 @@ internal static void floatFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSiz
 //
 // argSize must be either 4 or 8.
 internal static void floatToReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @unsafe.Pointer from) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var exprᴛ1 = argSize;
     if (exprᴛ1 == 4) {

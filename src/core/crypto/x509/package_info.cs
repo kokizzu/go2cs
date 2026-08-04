@@ -32,7 +32,6 @@ global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
 global using urlꓸError = go.net.url_package.ΔError;
-using rsa = go.crypto.rsa_package;
 using syscall = go.syscall_package;
 // </ImportedTypeAliases>
 
@@ -69,13 +68,11 @@ using static go.crypto.x509_package;
 [assembly: GoImplement<SystemRootsError, error>]
 [assembly: GoImplement<UnhandledCriticalExtension, error>]
 [assembly: GoImplement<UnknownAuthorityError, error>]
-[assembly: GoImplement<crypto_package.Hash, crypto_package.SignerOpts>]
 [assembly: GoImplement<go.crypto.rsa_package.PSSOptions, crypto_package.SignerOpts>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<VerifyOptions, ж<VerifyOptions>>(Indirect = true)]
-[assembly: GoImplicitConv<rsa.PSSOptions, ж<rsa.PSSOptions>>(Indirect = true)]
 [assembly: GoImplicitConv<syscall.CertChainContext, ж<syscall.CertChainContext>>(Indirect = true)]
 // </ImplicitConversions>
 

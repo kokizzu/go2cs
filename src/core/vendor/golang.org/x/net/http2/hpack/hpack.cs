@@ -217,7 +217,7 @@ public static error ErrStringLength = errors.New("hpack: string too long"u8);
 // TODO: remove this method and make it incremental later? This is
 // easier for debugging now.
 public static (slice<HeaderField>, error) DecodeFull(this ж<Decoder> Ꮡd, slice<byte> p) => func<(slice<HeaderField>, error)>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     ref var hf = ref heap<slice<HeaderField>>(out var Ꮡhf);
     var saveFunc = d.emit;
@@ -557,7 +557,7 @@ internal static (uint64 i, slice<byte> remain, error err) readVarInt(byte n, sli
     }
     buf.Reset();
     // be nice to GC
-    ᏑbufPool.Put(buf);
+    ᏑbufPool.Put(buf.OrTypedNil());
     return (s, err);
 }
 

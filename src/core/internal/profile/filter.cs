@@ -34,7 +34,7 @@ internal static (bool fm, bool im) focusedSample(ж<Sample> Ꮡs, Func<@string, 
     bool fm = default!;
     bool im = default!;
 
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
     fm = focus == default!;
     foreach (var (key, vals) in s.Label) {
         foreach (var (_, val) in vals) {

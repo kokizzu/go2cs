@@ -38,7 +38,7 @@ internal static UntypedInt invalidNodeValue => 0xffff;
 [GoRecv] internal static uint16 /*v*/ Decode(this ref huffmanTree t, ж<bitReader> Ꮡbr) {
     uint16 v = default!;
 
-    ref var br = ref Ꮡbr.Value;
+    ref var br = ref Ꮡbr.DerefOrNull();
     var nodeIndex = (uint16)0;
     // node 0 is the root of the tree.
     while (ᐧ) {
@@ -155,7 +155,7 @@ internal static (uint16 nodeIndex, error err) buildHuffmanNode(ж<huffmanTree> �
     uint16 nodeIndex = default!;
     error err = default!;
 
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
     var test = ((uint32)1).Lsh((uint64)((31 - level)));
     // We have to search the list of codes to find the divide between the left and right sides.
     nint firstRightIndex = len(codes);

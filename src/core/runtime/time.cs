@@ -72,7 +72,7 @@ partial class runtime_package {
 // The arg and f can be set during init, or they can be nil in init
 // and set by a future call to t.modify.
 internal static void init(this ж<timer> Ꮡt, Action<any, uintptr, int64> f, any arg) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     lockInit(Ꮡt.of(timer.Ꮡmu), lockRankTimer);
     t.f = f;
@@ -115,7 +115,7 @@ internal static void @lock(this ж<timers> Ꮡts) {
 }
 
 internal static void unlock(this ж<timers> Ꮡts) {
-    ref var ts = ref Ꮡts.Value;
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     // Update atomic copy of len(ts.heap).
     // We only update at unlock so that the len is always
@@ -145,7 +145,7 @@ internal static void trace(this ж<timer> Ꮡt, @string op) {
 }
 
 internal static void trace1(this ж<timer> Ꮡt, @string op) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!timerDebug) {
         return;
@@ -159,12 +159,12 @@ internal static void trace1(this ж<timer> Ꮡt, @string op) {
     if (!t.isChan) {
         bits[3] = "-"u8;
     }
-    print((@string)"T "u8, Ꮡt, (@string)" "u8, bits[0], bits[1], bits[2], bits[3], (@string)" b="u8, t.blocked, (@string)" "u8, op, (@string)"\n"u8);
+    print((@string)"T "u8, Ꮡt.OrTypedNil(), (@string)" "u8, bits[0], bits[1], bits[2], bits[3], (@string)" b="u8, t.blocked, (@string)" "u8, op, (@string)"\n"u8);
 }
 
 internal static void trace(this ж<timers> Ꮡts, @string op) {
     if (timerDebug) {
-        println((@string)"TS"u8, Ꮡts, op);
+        println((@string)"TS"u8, Ꮡts.OrTypedNil(), op);
     }
 }
 
@@ -182,7 +182,7 @@ internal static readonly @string unlockˢ = "unlock"u8;
 
 // unlock updates t.astate and unlocks the timer.
 internal static void unlock(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.trace(unlockˢ);
     // Let heap fast paths know whether heap[i].when is accurate.
@@ -194,7 +194,7 @@ internal static void unlock(this ж<timer> Ꮡt) {
 // hchan returns the channel in t.arg.
 // t must be a timer with a channel.
 internal static ж<Δhchan> hchan(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.isChan) {
         badTimer();
@@ -218,7 +218,7 @@ internal static readonly @string updateHeapˢ = "updateHeap"u8;
 internal static bool /*updated*/ updateHeap(this ж<timer> Ꮡt) {
     bool updated = default!;
 
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
     assertWorldStoppedOrLockHeld(Ꮡt.of(timer.Ꮡmu));
     Ꮡt.trace(updateHeapˢ);
     var ts = t.ts;
@@ -266,7 +266,7 @@ internal static void timeSleep(int64 ns) {
     var t = gp.Value.timer;
     if (t == nil) {
         t = @new<timer>();
-        t.init(goroutineReady, gp);
+        t.init(goroutineReady, gp.OrTypedNil());
         gp.Value.timer = t;
     }
     var when = nanotime() + ns;
@@ -283,7 +283,7 @@ internal static void timeSleep(int64 ns) {
 // sleep and there are many goroutines then the P can wind up running the
 // timer function, goroutineReady, before the goroutine has been parked.
 internal static bool resetForSleep(ж<g> Ꮡgp, @unsafe.Pointer _) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     gp.timer.reset(gp.sleepWhen, 0);
     return true;
@@ -307,7 +307,7 @@ internal static readonly @string invalidTimerChannelNoˢ = "invalid timer channe
 //
 //go:linkname newTimer time.newTimer
 internal static ж<timeTimer> newTimer(int64 when, int64 period, Action<any, uintptr, int64> f, any arg, ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var t = @new<timeTimer>();
     t.of(timeTimer.Ꮡtimer).init(default!, default!);
@@ -364,8 +364,8 @@ internal static readonly @string tsSetInTimerˢ = "ts set in timer"u8;
 // Callers that are not sure can call t.maybeAdd instead,
 // but note that maybeAdd has different locking requirements.
 internal static void addHeap(this ж<timers> Ꮡts, ж<timer> Ꮡt) {
-    ref var ts = ref Ꮡts.Value;
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assertWorldStoppedOrLockHeld(Ꮡts.of(timers.Ꮡmu));
     // Timers rely on the network poller, so make sure the poller
@@ -390,7 +390,7 @@ internal static void addHeap(this ж<timers> Ꮡts, ж<timer> Ꮡt) {
 // maybeRunAsync will unlock and re-lock it.
 // The timer is always locked on return.
 internal static void maybeRunAsync(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assertLockHeld(Ꮡt.of(timer.Ꮡmu));
     if ((uint8)(t.state & timerHeaped) == 0 && t.isChan && t.when > 0) {
@@ -421,7 +421,7 @@ internal static readonly @string stopˢ = "stop"u8;
 // It will be removed in due course by the P whose heap it is on.
 // Reports whether the timer was stopped before it was run.
 internal static bool stop(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var async = Ꮡdebug.of(debugᴛ1.Ꮡasynctimerchan).Load() != 0;
     if (!async && t.isChan) {
@@ -462,7 +462,7 @@ internal static readonly @string wrongTimersˢ = "wrong timers"u8;
 // deleteMin removes timer 0 from ts.
 // ts must be locked.
 internal static void deleteMin(this ж<timers> Ꮡts) {
-    ref var ts = ref Ꮡts.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
     var t = ts.heap[0].timer;
@@ -496,7 +496,7 @@ internal static readonly @string modifyˢ = "modify"u8;
 // Reports whether the timer was modified before it was run.
 // If f == nil, then t.f, t.arg, and t.seq are not modified.
 internal static bool modify(this ж<timer> Ꮡt, int64 when, int64 period, Action<any, uintptr, int64> f, any arg, uintptr seq) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (when <= 0) {
         @throw(timerWhenMustBePositiveˢ);
@@ -571,7 +571,7 @@ internal static readonly @string needsAddˢ2 = "needsAdd-"u8;
 // needsAdd reports whether t needs to be added to a timers heap.
 // t must be locked.
 internal static bool needsAdd(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     assertLockHeld(Ꮡt.of(timer.Ꮡmu));
     var need = (uint8)(t.state & timerHeaped) == 0 && t.when > 0 && (!t.isChan || t.blocked > 0);
@@ -605,7 +605,7 @@ internal static readonly @string maybeAddˢ = "maybeAdd"u8;
 // may result in concurrent calls to t.maybeAdd,
 // so we cannot assume that t is not in a heap on entry to t.maybeAdd.
 internal static void maybeAdd(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Note: Not holding any locks on entry to t.maybeAdd,
     // so the current g can be rescheduled to a different M and P
@@ -655,7 +655,7 @@ internal static readonly @string badTsˢ = "bad ts"u8;
 // slows down heap operations.
 // The caller must have locked ts.
 internal static void cleanHead(this ж<timers> Ꮡts) {
-    ref var ts = ref Ꮡts.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     Ꮡts.trace(cleanHeadˢ);
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
@@ -717,8 +717,8 @@ internal static readonly @string takeˢ = "take"u8;
 // The caller must not have locked either timers.
 // For now this is only called when the world is stopped.
 internal static void take(this ж<timers> Ꮡts, ж<timers> Ꮡsrc) {
-    ref var ts = ref Ꮡts.Value;
-    ref var src = ref Ꮡsrc.Value;
+    ref var ts = ref Ꮡts.DerefOrNull();
+    ref var src = ref Ꮡsrc.DerefOrNull();
 
     Ꮡts.trace(takeˢ);
     assertWorldStopped();
@@ -754,7 +754,7 @@ internal static readonly @string adjustˢ = "adjust"u8;
 // it also moves timers that have been modified to run later,
 // and removes deleted timers. The caller must have locked ts.
 internal static void adjust(this ж<timers> Ꮡts, int64 now, bool force) {
-    ref var ts = ref Ꮡts.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     Ꮡts.trace(adjustˢ);
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
@@ -909,7 +909,7 @@ internal static (int64 rnow, int64 pollUntil, bool ran) check(this ж<timers> �
     int64 pollUntil = default!;
     bool ran = default!;
 
-    ref var ts = ref Ꮡts.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
     Ꮡts.trace(checkˢ);
     // If it's not yet time for the first timer, or the first adjusted
     // timer, then there is nothing to do.
@@ -974,7 +974,7 @@ internal static readonly @string runˢ = "run"u8;
 //
 //go:systemstack
 internal static int64 run(this ж<timers> Ꮡts, int64 now) {
-    ref var ts = ref Ꮡts.DerefOrNil();
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     Ꮡts.trace(runˢ);
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
@@ -1021,7 +1021,7 @@ internal static readonly @string unexpectedRacectxˢ = "unexpected racectx"u8;
 //
 //go:systemstack
 internal static void unlockAndRun(this ж<timer> Ꮡt, int64 now) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.trace(unlockAndRunˢ);
     assertLockHeld(Ꮡt.of(timer.Ꮡmu));
@@ -1121,7 +1121,7 @@ internal static readonly @string badTimerHeapLenˢ = "bad timer heap len"u8;
 // This is only for debugging, and is only called if verifyTimers is true.
 // The caller must have locked ts.
 internal static void verify(this ж<timers> Ꮡts) {
-    ref var ts = ref Ꮡts.Value;
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
     foreach (var (i, tw) in ts.heap) {
@@ -1147,7 +1147,7 @@ internal static void verify(this ж<timers> Ꮡts) {
 // updateMinWhenHeap sets ts.minWhenHeap to ts.heap[0].when.
 // The caller must have locked ts or the world must be stopped.
 internal static void updateMinWhenHeap(this ж<timers> Ꮡts) {
-    ref var ts = ref Ꮡts.Value;
+    ref var ts = ref Ꮡts.DerefOrNull();
 
     assertWorldStoppedOrLockHeld(Ꮡts.of(timers.Ꮡmu));
     if (len(ts.heap) == 0){
@@ -1304,7 +1304,7 @@ internal static readonly @string maybeRunChanˢ2 = "maybeRunChan+"u8;
 // to send a value to its associated channel. If so, it does.
 // The timer must not be locked.
 internal static void maybeRunChan(this ж<timer> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if ((uint8)(Ꮡt.of(timer.Ꮡastate).Load() & timerHeaped) != 0) {
         // If the timer is in the heap, the ordinary timer code
@@ -1333,7 +1333,7 @@ internal static readonly @string blockTimerChanˢ = "blockTimerChan"u8;
 // blockTimerChan makes sure that c is in a timer heap,
 // adding it if needed.
 internal static void blockTimerChan(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var t = c.timer;
     t.@lock();
@@ -1372,7 +1372,7 @@ internal static readonly @string unblockTimerChanˢ = "unblockTimerChan"u8;
 // unblockTimerChan removes c from the timer heap when nothing is
 // blocked on it anymore.
 internal static void unblockTimerChan(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var t = c.timer;
     t.@lock();

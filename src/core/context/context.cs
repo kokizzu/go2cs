@@ -369,7 +369,7 @@ public static Func<bool> /*stop*/ AfterFunc(Context ctx, Action f) {
 }
 
 internal static void cancel(this ж<afterFuncCtx> Ꮡa, bool removeFromParent, error err, error cause) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     Ꮡa.of(afterFuncCtx.ᏑcancelCtx).cancel(false, err, cause);
     if (removeFromParent) {
@@ -463,7 +463,7 @@ internal static channel<EmptyStruct> closedchan = new channel<EmptyStruct>(0);
 }
 
 internal static any Value(this ж<cancelCtx> Ꮡc, any key) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (key == ᏑcancelCtxKey) {
         return Ꮡc;
@@ -487,7 +487,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) => func
 });
 
 internal static error Err(this ж<cancelCtx> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(cancelCtx.Ꮡmu).Lock();
     var err = c.err;
@@ -498,7 +498,7 @@ internal static error Err(this ж<cancelCtx> Ꮡc) {
 // propagateCancel arranges for child to be canceled when parent is.
 // It sets the parent context of cancelCtx.
 internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, canceler child) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     c.Context = parent;
     var done = parent.Done();
@@ -584,7 +584,7 @@ internal static @string contextName(Context c) {
 // removeFromParent is true, removes c from its parent's children.
 // cancel sets c.cause to cause if this is the first time c is canceled.
 internal static void cancel(this ж<cancelCtx> Ꮡc, bool removeFromParent, error err, error cause) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (err == default!) {
         throw panic("context: internal error: missing cancel error");
@@ -729,7 +729,7 @@ public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, e
 }
 
 internal static void cancel(this ж<timerCtx> Ꮡc, bool removeFromParent, error err, error cause) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     Ꮡc.of(timerCtx.ᏑcancelCtx).cancel(false, err, cause);
     if (removeFromParent) {

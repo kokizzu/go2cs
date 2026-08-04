@@ -18,7 +18,6 @@ global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
 global using ecdhꓸCurve = go.crypto.ecdh_package.ΔCurve;
 global using ecdhꓸPublicKey = go.crypto.ecdh_package.ΔPublicKey;
-using bigmod = go.crypto.@internal.bigmod_package;
 using nistec = go.crypto.@internal.nistec_package;
 // </ImportedTypeAliases>
 
@@ -60,7 +59,6 @@ using static go.crypto.ecdsa_package;
 // <ImplicitConversions>
 [assembly: GoImplicitConv<PrivateKey, ж<PrivateKey>>(Indirect = true)]
 [assembly: GoImplicitConv<PublicKey, ж<PublicKey>>(Indirect = true)]
-[assembly: GoImplicitConv<bigmod.Modulus, ж<bigmod.Modulus>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.crypto;

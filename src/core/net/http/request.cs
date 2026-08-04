@@ -435,7 +435,7 @@ public static error ErrNoCookie = errors.New("http: named cookie not present"u8)
 // AddCookie only sanitizes c's name and value, and does not sanitize
 // a Cookie header already present in the request.
 [GoRecv] public static void AddCookie(this ref Request r, ж<ΔCookie> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     @string s = fmt.Sprintf("%s=%s"u8, sanitizeCookieName(c.Name), sanitizeCookieValue(c.Value, c.Quoted));
     {
@@ -571,7 +571,7 @@ internal static readonly @string netHttpCanTWriteControlˢ = "net/http: can't wr
 internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usingProxy, ΔHeader extraHeaders, Func<bool> waitForContinue) {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         var trace = httptrace.ContextClientTrace(r.Context());
@@ -695,7 +695,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             }
         }
         // Process Body,ContentLength,Close,Trailer
-        (var tw, err) = newTransferWriter(Ꮡr);
+        (var tw, err) = newTransferWriter(Ꮡr.OrTypedNil());
         if (err != default!) {
             return;
         }
@@ -1081,10 +1081,10 @@ internal static ж<textproto.Reader> newTextprotoReader(ж<bufio.Reader> Ꮡbr) 
 }
 
 internal static void putTextprotoReader(ж<textproto.Reader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     r.R = default!;
-    ᏑtextprotoReaderPool.Put(Ꮡr);
+    ᏑtextprotoReaderPool.Put(Ꮡr.OrTypedNil());
 }
 
 // ReadRequest reads and parses an incoming request from b.
@@ -1197,7 +1197,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         }
         fixPragmaCacheControl((~req).Header);
         req.Value.Close = shouldClose((~req).ProtoMajor, (~req).ProtoMinor, (~req).Header, false);
-        err = readTransfer(req, Ꮡb);
+        err = readTransfer(req.OrTypedNil(), Ꮡb);
         if (err != default!) {
             (req, err) = (default!, err); return;
         }
@@ -1317,7 +1317,7 @@ internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
     urlpkg.Values vs = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
     if (r.Body == default!) {
         err = errors.New(missingFormBodyˢ);
         return (vs, err);
@@ -1389,7 +1389,7 @@ internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
 // [Request.ParseMultipartForm] calls ParseForm automatically.
 // ParseForm is idempotent.
 public static error ParseForm(this ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     error err = default!;
     if (r.PostForm == default!) {
@@ -1437,7 +1437,7 @@ internal static readonly @string httpMultipartHandledByˢ2 = "http: multipart ha
 // continues parsing the request body.
 // After one call to ParseMultipartForm, subsequent calls have no effect.
 public static error ParseMultipartForm(this ж<Request> Ꮡr, int64 maxMemory) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.MultipartForm == multipartByReader) {
         return errors.New(httpMultipartHandledByˢ2);
@@ -1483,7 +1483,7 @@ public static error ParseMultipartForm(this ж<Request> Ꮡr, int64 maxMemory) {
 // To access multiple values of the same key, call ParseForm and
 // then inspect [Request.Form] directly.
 public static @string FormValue(this ж<Request> Ꮡr, @string key) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.Form == default!) {
         Ꮡr.ParseMultipartForm(defaultMaxMemory);
@@ -1502,7 +1502,7 @@ public static @string FormValue(this ж<Request> Ꮡr, @string key) {
 // any errors returned by these functions.
 // If key is not present, PostFormValue returns the empty string.
 public static @string PostFormValue(this ж<Request> Ꮡr, @string key) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.PostForm == default!) {
         Ꮡr.ParseMultipartForm(defaultMaxMemory);
@@ -1518,7 +1518,7 @@ public static @string PostFormValue(this ж<Request> Ꮡr, @string key) {
 // FormFile returns the first file for the provided form key.
 // FormFile calls [Request.ParseMultipartForm] and [Request.ParseForm] if necessary.
 public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж<Request> Ꮡr, @string key) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.MultipartForm == multipartByReader) {
         return (default!, default!, errors.New(httpMultipartHandledByˢ2));

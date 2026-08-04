@@ -96,7 +96,7 @@ internal static error errPublicExponentLarge = errors.New("crypto/rsa: public ex
 // int is 32 or 64 bits. See also
 // https://www.imperialviolet.org/2012/03/16/rsae.html.
 internal static error checkPub(ж<PublicKey> Ꮡpub) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     if (pub.N == nil) {
         return errPublicModulus;
@@ -150,8 +150,8 @@ public static cryptoꓸPublicKey Public(this ж<PrivateKey> Ꮡpriv) {
 // bigIntEqual reports whether a and b are equal leaking only their bit length
 // through timing side-channels.
 internal static bool bigIntEqual(ж<bigꓸInt> Ꮡa, ж<bigꓸInt> Ꮡb) {
-    ref var a = ref Ꮡa.Value;
-    ref var b = ref Ꮡb.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
 
     return subtle.ConstantTimeCompare(a.Bytes(), b.Bytes()) == 1;
 }
@@ -253,7 +253,7 @@ internal static readonly @string cryptoRsaInvalidˢ = "crypto/rsa: invalid expon
 // Validate performs basic sanity checks on the key.
 // It returns nil if the key is valid, or else an error describing a problem.
 public static error Validate(this ж<PrivateKey> Ꮡpriv) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     {
         var err = checkPub(Ꮡpriv.of(PrivateKey.ᏑPublicKey)); if (err != default!) {
@@ -458,7 +458,7 @@ break_NextSetOfPrimes:;
 
 // incCounter increments a four byte, big-endian counter.
 internal static void incCounter(ж<array<byte>> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     {
         c[3]++; if (c[3] != 0) {
@@ -503,7 +503,7 @@ internal static void mgf1XOR(slice<byte> @out, hash.Hash hashΔ1, slice<byte> se
 public static error ErrMessageTooLong = errors.New("crypto/rsa: message too long for RSA key size"u8);
 
 internal static (slice<byte>, error) encrypt(ж<PublicKey> Ꮡpub, slice<byte> plaintext) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     boring.Unreachable();
     var (N, err) = bigmod.NewModulusFromBig(pub.N);
@@ -537,7 +537,7 @@ internal static (slice<byte>, error) encrypt(ж<PublicKey> Ꮡpub, slice<byte> p
 // The message must be no longer than the length of the public modulus minus
 // twice the hash length, minus a further 2.
 public static (slice<byte>, error) EncryptOAEP(hash.Hash hashΔ1, io.Reader random, ж<PublicKey> Ꮡpub, slice<byte> msg, slice<byte> label) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     // Note that while we don't commit to deterministic execution with respect
     // to the random stream, we also don't apply MaybeReadByte, so per Hyrum's
@@ -650,7 +650,7 @@ internal const bool noCheck = false;
 // m^e is calculated and compared with ciphertext, in order to defend against
 // errors in the CRT computation.
 internal static (slice<byte>, error) decrypt(ж<PrivateKey> Ꮡpriv, slice<byte> ciphertext, bool check) {
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
 
     if (len(priv.Primes) <= 2) {
         boring.Unreachable();

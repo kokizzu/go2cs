@@ -165,8 +165,7 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
             return (default!, new DNSErrorжerror(newDNSError(err, name, ""u8)));
         }
         var dnsConf = getSystemDNSConfig();
-        ref var start = ref heap<time.Time>(out var Ꮡstart);
-        start = time.Now();
+        var start = time.Now();
         error e = default!;
         for (nint i = 0; i < (~dnsConf).attempts; i++) {
             e = syscall.GetAddrInfoW(name16p, nil, Ꮡhints, Ꮡresult);
@@ -183,13 +182,11 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
             @unsafe.Pointer addr = ((@unsafe.Pointer)(uintptr)((~result).Addr));
             var exprᴛ1 = (~result).Family;
             if (exprᴛ1 == syscall.AF_INET) {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = ((ж<syscall.RawSockaddrInet4>)(uintptr)(addr)).Value.Addr.Clone();
+                var a = ((ж<syscall.RawSockaddrInet4>)(uintptr)(addr)).Value.Addr.Clone();
                 addrs = append(addrs, new IPAddr(IP: copyIP(a[..])));
             }
             else if (exprᴛ1 == syscall.AF_INET6) {
-                ref var a = ref heap<array<byte>>(out var Ꮡa);
-                a = ((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Addr.Clone();
+                var a = ((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Addr.Clone();
                 @string zone = zoneCache.name((nint)((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Scope_id);
                 addrs = append(addrs, new IPAddr(IP: copyIP(a[..]), Zone: zone));
             }
@@ -375,7 +372,7 @@ internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡ
     var srvs = new slice<ж<SRV>>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_SRV, target)) {
         var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>();
-        srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~(ж<array<uint16>>)(uintptr)(new @unsafe.Pointer((~v).Target)))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
+        srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Target, 256))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
     }
     ((byPriorityWeight)srvs).sort();
     return (absDomainName(target), srvs, default!);
@@ -435,12 +432,12 @@ internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.
     var nss = new slice<ж<NS>>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_NS, name)) {
         var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
-        nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~(ж<array<uint16>>)(uintptr)(new @unsafe.Pointer((~v).Host)))[..])))));
+        nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Host, 256))[..])))));
     }
     return (nss, default!);
 });
 
-internal static unsafe (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(slice<@string>, error)>((defer, recover) => {
+internal static (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(slice<@string>, error)>((defer, recover) => {
     if (systemConf().mustUseGoResolver(Ꮡr)) {
         return Ꮡr.goLookupTXT(ctx, name);
     }
@@ -465,7 +462,7 @@ internal static unsafe (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr,
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_TEXT, name)) {
         var d = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSTXTData>();
         @string s = ""u8;
-        foreach (var (_, v) in new slice<ж<uint16>>(new ReadOnlySpan<ж<uint16>>((uint16**)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡ(((~d).StringArray[0]))).Value)), (int)((~d).StringCount)))) {
+        foreach (var (_, v) in (~array<ж<uint16>>.AliasPointer(Ꮡ(((~d).StringArray[0])), 1024)).slice(-1, (~d).StringCount, (~d).StringCount)) {
             s += windows.UTF16PtrToString(v);
         }
         txts = append(txts, s);
@@ -535,7 +532,7 @@ internal static slice<ж<syscall.DNSRecord>> validRecs(ж<syscall.DNSRecord> Ꮡ
 
 // returns the last CNAME in chain.
 internal static ж<uint16> resolveCNAME(ж<uint16> Ꮡname, ж<syscall.DNSRecord> Ꮡr) {
-    ref var name = ref Ꮡname.Value;
+    ref var name = ref Ꮡname.DerefOrNull();
 
     // limit cname resolving to 10 in case of an infinite CNAME loop
 Cname:
@@ -550,7 +547,7 @@ Cname:
             if (!syscall.DnsNameCompare(Ꮡname, (~p).Name)) {
                 continue;
             }
-            Ꮡname = (Ꮡr.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>()).Value.Host; name = ref Ꮡname.Value;
+            Ꮡname = (Ꮡr.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>()).Value.Host; name = ref Ꮡname.DerefOrNull();
             goto continue_Cname;
         }
         break;

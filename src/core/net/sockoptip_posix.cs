@@ -18,30 +18,30 @@ internal static error joinIPv4Group(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi, IP ip
         }
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptIPMreq(syscall.IPPROTO_IP, syscall.IP_ADD_MEMBERSHIP, mreq);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv6MulticastInterface(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi) {
-    ref var ifi = ref Ꮡifi.DerefOrNil();
+    ref var ifi = ref Ꮡifi.DerefOrNull();
 
     nint v = default!;
     if (Ꮡifi != nil) {
         v = ifi.Index;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IPV6, syscall.IPV6_MULTICAST_IF, v);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv6MulticastLoopback(ж<netFD> Ꮡfd, bool v) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IPV6, syscall.IPV6_MULTICAST_LOOP, boolint(v));
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error joinIPv6Group(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi, IP ip) {
-    ref var ifi = ref Ꮡifi.DerefOrNil();
+    ref var ifi = ref Ꮡifi.DerefOrNull();
 
     var mreq = Ꮡ(new syscall.IPv6Mreq(nil));
     copy((~mreq).Multiaddr[..], ip);
@@ -49,7 +49,7 @@ internal static error joinIPv6Group(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi, IP ip
         mreq.Value.Interface = (uint32)ifi.Index;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptIPv6Mreq(syscall.IPPROTO_IPV6, syscall.IPV6_JOIN_GROUP, mreq);
-    Δruntime.KeepAlive(Ꮡfd);
+    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

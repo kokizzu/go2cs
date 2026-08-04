@@ -90,7 +90,7 @@ internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
 // outgoingLength is a copy of the unexported
 // (*http.Request).outgoingLength method.
 internal static int64 outgoingLength(ж<http.Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     if (req.Body == default! || AreEqual(req.Body, http.NoBody)) {
         return 0;
@@ -109,7 +109,7 @@ internal static readonly @string http11204NoContentˢ = "HTTP/1.1 204 No Content
 // includes any headers that the standard [http.Transport] adds, such as
 // User-Agent.
 public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool body) => func<(slice<byte>, error)>((defer, recover) => {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     var save = req.Body;
     var dummyBody = false;
@@ -266,7 +266,7 @@ internal static readonly @string httpsˢ = "https://"u8;
 // The documentation for [http.Request.Write] details which fields
 // of req are included in the dump.
 public static (slice<byte>, error) DumpRequest(ж<http.Request> Ꮡreq, bool body) {
-    ref var req = ref Ꮡreq.Value;
+    ref var req = ref Ꮡreq.DerefOrNull();
 
     error err = default!;
     var save = req.Body;
@@ -352,7 +352,7 @@ internal static io.ReadCloser emptyBody = io.NopCloser(new strings_ReaderжReade
 
 // DumpResponse is like DumpRequest but dumps a response.
 public static (slice<byte>, error) DumpResponse(ж<http.Response> Ꮡresp, bool body) {
-    ref var resp = ref Ꮡresp.Value;
+    ref var resp = ref Ꮡresp.DerefOrNull();
 
     ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
     error err = default!;

@@ -159,7 +159,7 @@ internal static void dumpstr(@string s) {
 
 // dump information for a type.
 internal static void dumptype(ж<_type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return;
@@ -221,7 +221,7 @@ internal static void dumpotherroot(@string description, @unsafe.Pointer to) {
 }
 
 internal static void dumpfinalizer(@unsafe.Pointer obj, ж<funcval> Ꮡfn, ж<_type> Ꮡfint, ж<ptrtype> Ꮡot) {
-    ref var fn = ref Ꮡfn.Value;
+    ref var fn = ref Ꮡfn.DerefOrNull();
 
     dumpint(tagFinalizer);
     dumpint((uint64)(uintptr)obj);
@@ -243,7 +243,7 @@ internal static void dumpfinalizer(@unsafe.Pointer obj, ж<funcval> Ꮡfn, ж<_t
 
 // dump kinds & offsets of interesting fields in bv.
 internal static void dumpbv(ж<bitvector> Ꮡcbv, uintptr offset) {
-    ref var cbv = ref Ꮡcbv.Value;
+    ref var cbv = ref Ꮡcbv.DerefOrNull();
 
     for (var i = (uintptr)0; i < (uintptr)cbv.n; i++) {
         if (cbv.ptrbit(i) == 1) {
@@ -257,8 +257,8 @@ internal static void dumpbv(ж<bitvector> Ꮡcbv, uintptr offset) {
 internal static readonly @string unknownFunctionˢ = "unknown function"u8;
 
 internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
-    ref var s = ref Ꮡs.Value;
-    ref var child = ref Ꮡchild.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
+    ref var child = ref Ꮡchild.DerefOrNull();
 
     var f = s.fn;
     // Figure out what we can about our stack map
@@ -347,7 +347,7 @@ internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
 }
 
 internal static void dumpgoroutine(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     uintptr sp = default!;
     uintptr pc = default!;
@@ -441,7 +441,7 @@ internal static void dumpgs() {
 
 // ok
 internal static void finq_callback(ж<funcval> Ꮡfn, @unsafe.Pointer obj, uintptr nret, ж<_type> Ꮡfint, ж<ptrtype> Ꮡot) {
-    ref var fn = ref Ꮡfn.Value;
+    ref var fn = ref Ꮡfn.DerefOrNull();
 
     dumpint(tagQueuedFinalizer);
     dumpint((uint64)(uintptr)obj);
@@ -557,7 +557,7 @@ internal static void dumpparams() {
 }
 
 internal static void itab_callback(ж<itab> Ꮡtab) {
-    ref var tab = ref Ꮡtab.Value;
+    ref var tab = ref Ꮡtab.DerefOrNull();
 
     var t = tab.Type;
     dumptype(t);
@@ -581,7 +581,7 @@ internal static void dumpms() {
 
 //go:systemstack
 internal static void dumpmemstats(ж<MemStats> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     assertWorldStopped();
     // These ints should be identical to the exported
@@ -619,7 +619,7 @@ internal static void dumpmemstats(ж<MemStats> Ꮡm) {
 }
 
 internal static void dumpmemprof_callback(ж<bucket> Ꮡb, uintptr nstk, ж<uintptr> Ꮡpstk, uintptr size, uintptr allocs, uintptr frees) {
-    var stk = (ж<array<uintptr>>)(uintptr)(new @unsafe.Pointer(Ꮡpstk));
+    var stk = array<uintptr>.AliasPointer(Ꮡpstk, 100000);
     dumpint(tagMemProf);
     dumpint((uint64)(uintptr)Ꮡb);
     dumpint((uint64)size);
@@ -712,7 +712,7 @@ internal static void mdump(ж<MemStats> Ꮡm) {
 }
 
 internal static void writeheapdump_m(uintptr fd, ж<MemStats> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     assertWorldStopped();
     var gp = getg();

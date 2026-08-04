@@ -857,8 +857,6 @@ internal static error validateTableIDs(this ΔEvent e) {
 }
 
 internal static ΔEvent syncEvent(ж<evTable> Ꮡtable, ΔTime ts) {
-    ref var table = ref Ꮡtable.Value;
-
     return new ΔEvent(
         table: Ꮡtable,
         ctx: new schedCtx(

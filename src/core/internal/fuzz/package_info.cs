@@ -66,8 +66,6 @@ using static go.@internal.fuzz_package;
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<contextReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<crashError, error>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<pcgRand, mutatorRand>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]

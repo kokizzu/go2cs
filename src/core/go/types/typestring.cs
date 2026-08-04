@@ -113,7 +113,7 @@ internal static readonly @string unnamedTypeParameterˢ = "unnamed type paramete
 internal static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
 
 internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     if (w.seen[typ]) {
         w.error("cycle to "u8 + goTypeName(typ));
@@ -391,8 +391,8 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
 
 // typeSet writes a canonical hash for an interface type set.
 internal static void typeSet(this ж<typeWriter> Ꮡw, ж<_TypeSet> Ꮡs) {
-    ref var w = ref Ꮡw.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     assert(w.ctxt != nil);
     var first = true;
@@ -435,7 +435,7 @@ internal static void typeSet(this ж<typeWriter> Ꮡw, ж<_TypeSet> Ꮡs) {
 }
 
 internal static void typeList(this ж<typeWriter> Ꮡw, slice<ΔType> list) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     w.@byte((rune)'[');
     foreach (var (i, typ) in list) {
@@ -451,7 +451,7 @@ internal static void typeList(this ж<typeWriter> Ꮡw, slice<ΔType> list) {
 internal static readonly @string nilTypeParameterˢ = "nil type parameter"u8;
 
 internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> list) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     w.@byte((rune)'[');
     ΔType prev = default!;
@@ -482,7 +482,7 @@ internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> l
 }
 
 [GoRecv] internal static void typeName(this ref typeWriter w, ж<TypeName> Ꮡobj) {
-    ref var obj = ref Ꮡobj.Value;
+    ref var obj = ref Ꮡobj.DerefOrNull();
 
     w.@string(packagePrefix(obj.pkg, w.qf));
     w.@string(obj.name);
@@ -492,8 +492,8 @@ internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> l
 internal static readonly @string expectedStringTypeˢ = "expected string type"u8;
 
 internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool variadic) {
-    ref var w = ref Ꮡw.Value;
-    ref var tup = ref Ꮡtup.DerefOrNil();
+    ref var w = ref Ꮡw.DerefOrNull();
+    ref var tup = ref Ꮡtup.DerefOrNull();
 
     w.@byte((rune)'(');
     if (Ꮡtup != nil) {
@@ -534,8 +534,8 @@ internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool vari
 }
 
 internal static void signature(this ж<typeWriter> Ꮡw, ж<ΔSignature> Ꮡsig) => func((defer, recover) => {
-    ref var w = ref Ꮡw.Value;
-    ref var sig = ref Ꮡsig.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
+    ref var sig = ref Ꮡsig.DerefOrNull();
 
     if (sig.TypeParams().Len() != 0) {
         if (w.ctxt != nil) {

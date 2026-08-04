@@ -66,8 +66,8 @@ public static error ErrShutdown = errors.New("connection is shut down"u8);
 }
 
 internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) => func((defer, recover) => {
-    ref var client = ref Ꮡclient.Value;
-    ref var call = ref Ꮡcall.DerefOrNil();
+    ref var client = ref Ꮡclient.DerefOrNull();
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     Ꮡclient.of(Client.ᏑreqMutex).Lock();
     defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock);
@@ -89,7 +89,7 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) => func
     var err = client.codec.WriteRequest(Ꮡclient.of(Client.Ꮡrequest), call.Args);
     if (err != default!) {
         Ꮡclient.of(Client.Ꮡmutex).Lock();
-        Ꮡcall = client.pending[seq]; call = ref Ꮡcall.DerefOrNil();
+        Ꮡcall = client.pending[seq]; call = ref Ꮡcall.DerefOrNull();
         delete(client.pending, seq);
         Ꮡclient.of(Client.Ꮡmutex).Unlock();
         if (Ꮡcall != nil) {
@@ -103,7 +103,7 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) => func
 internal static readonly object rpcClientProtocolErrorˢ = (@string)"rpc: client protocol error:"u8;
 
 internal static void input(this ж<Client> Ꮡclient) {
-    ref var client = ref Ꮡclient.Value;
+    ref var client = ref Ꮡclient.DerefOrNull();
 
     error err = default!;
     ref var response = ref heap(new Response(), out var Ꮡresponse);
@@ -180,7 +180,7 @@ internal static void input(this ж<Client> Ꮡclient) {
 internal static readonly object rpcDiscardingCallReplyˢ = (@string)"rpc: discarding Call reply due to insufficient Done chan capacity"u8;
 
 internal static void done(this ж<ΔCall> Ꮡcall) {
-    ref var call = ref Ꮡcall.Value;
+    ref var call = ref Ꮡcall.DerefOrNull();
 
     var selᴛ1 = call.Done.ᐸꟷ(Ꮡcall, ꓸꓸꓸ);
     switch (trySelect(selᴛ1)) {
@@ -236,7 +236,7 @@ public static ж<Client> NewClientWithCodec(ClientCodec codec) {
     error err = default!;
 
     {
-        err = c.enc.Encode(Ꮡr); if (err != default!) {
+        err = c.enc.Encode(Ꮡr.OrTypedNil()); if (err != default!) {
             return err;
         }
     }
@@ -249,7 +249,7 @@ public static ж<Client> NewClientWithCodec(ClientCodec codec) {
 }
 
 [GoRecv] internal static error ReadResponseHeader(this ref gobClientCodec c, ж<Response> Ꮡr) {
-    return c.dec.Decode(Ꮡr);
+    return c.dec.Decode(Ꮡr.OrTypedNil());
 }
 
 [GoRecv] internal static error ReadResponseBody(this ref gobClientCodec c, any body) {
@@ -304,7 +304,7 @@ public static (ж<Client>, error) Dial(@string network, @string address) {
 // Close calls the underlying codec's Close method. If the connection is already
 // shutting down, [ErrShutdown] is returned.
 public static error Close(this ж<Client> Ꮡclient) {
-    ref var client = ref Ꮡclient.Value;
+    ref var client = ref Ꮡclient.DerefOrNull();
 
     Ꮡclient.of(Client.Ꮡmutex).Lock();
     if (client.closing) {

@@ -44,7 +44,6 @@ using static go.@internal.coverage.encodemeta_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

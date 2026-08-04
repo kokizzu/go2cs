@@ -69,7 +69,7 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
     (r, s) = (@new<bigꓸInt>(), @new<bigꓸInt>());
     ref var inner = ref heap<cryptobyte.String>(out var Ꮡinner);
     var input = ((cryptobyte.String)sig);
-    if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(r) || !inner.ReadASN1Integer(s) || !inner.Empty()) {
+    if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(r.OrTypedNil()) || !inner.ReadASN1Integer(s.OrTypedNil()) || !inner.Empty()) {
         return (default!, default!, errors.New(invalidAsn1FromSignASN1ˢ));
     }
     return (r, s, default!);
@@ -79,7 +79,7 @@ internal static (slice<byte> sig, error err) signLegacy(ж<PrivateKey> Ꮡpriv, 
     slice<byte> sig = default!;
     error err = default!;
 
-    ref var priv = ref Ꮡpriv.Value;
+    ref var priv = ref Ꮡpriv.DerefOrNull();
     var c = priv.Curve;
     // SEC 1, Version 2.0, Section 4.1.3
     var N = c.Params().Value.N;
@@ -123,8 +123,8 @@ internal static (slice<byte> sig, error err) signLegacy(ж<PrivateKey> Ꮡpriv, 
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> Ꮡr, ж<bigꓸInt> Ꮡs) {
-    ref var r = ref Ꮡr.Value;
-    ref var s = ref Ꮡs.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (r.Sign() <= 0 || s.Sign() <= 0) {
         return false;
@@ -137,7 +137,7 @@ public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> 
 }
 
 internal static bool verifyLegacy(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     var (rBytes, sBytes, err) = parseSignature(sig);
     if (err != default!) {

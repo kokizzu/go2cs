@@ -85,7 +85,7 @@ internal static slice<byte> clientFinishedLabel = slice<byte>("client finished"u
 internal static slice<byte> serverFinishedLabel = slice<byte>("server finished"u8);
 
 internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, crypto.Hash) prfAndHashForVersion(uint16 version, ж<cipherSuite> Ꮡsuite) {
-    ref var suite = ref Ꮡsuite.Value;
+    ref var suite = ref Ꮡsuite.DerefOrNull();
 
     var exprᴛ1 = version;
     if (exprᴛ1 == VersionTLS10 || exprᴛ1 == VersionTLS11) {

@@ -52,7 +52,7 @@ partial class pe_package {
 }
 
 internal static (slice<Reloc>, error) readRelocs(ж<SectionHeader> Ꮡsh, io.ReadSeeker r) {
-    ref var sh = ref Ꮡsh.Value;
+    ref var sh = ref Ꮡsh.DerefOrNull();
 
     if (sh.NumberOfRelocations <= 0) {
         return (default!, default!);
@@ -62,7 +62,7 @@ internal static (slice<Reloc>, error) readRelocs(ж<SectionHeader> Ꮡsh, io.Rea
         return (default!, fmt.Errorf("fail to seek to %q section relocations: %v"u8, sh.Name, err));
     }
     var relocs = new slice<Reloc>(sh.NumberOfRelocations);
-    err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), relocs);
+    err = binary.Read(r, binary.LittleEndian, relocs);
     if (err != default!) {
         return (default!, fmt.Errorf("fail to read section relocations: %v"u8, err));
     }

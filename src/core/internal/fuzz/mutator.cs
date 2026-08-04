@@ -26,9 +26,9 @@ internal static ж<mutator> newMutator() {
 
 [GoRecv] internal static binary.ByteOrder randByteOrder(this ref mutator m) {
     if (m.r.@bool()) {
-        return new binary_littleEndianᴠByteOrder(binary.LittleEndian);
+        return binary.LittleEndian;
     }
-    return new binary_bigEndianᴠByteOrder(binary.BigEndian);
+    return binary.BigEndian;
 }
 
 // chooseLen chooses length of range mutation in range [1,n]. It gives
@@ -52,7 +52,7 @@ internal static ж<mutator> newMutator() {
 
 // mutate performs several mutations on the provided values.
 internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxBytes) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // TODO(katiehockman): pull some of these functions into helper methods and
     // test that each case is working as expected.
@@ -304,8 +304,8 @@ internal static void initᴛbyteSliceMutators() { byteSliceMutators = new Func<�
 }.slice(); }
 
 internal static void mutateBytes(this ж<mutator> Ꮡm, ж<slice<byte>> ᏑptrB) => func((defer, recover) => {
-    ref var m = ref Ꮡm.Value;
-    ref var ptrB = ref ᏑptrB.ValueSlot;
+    ref var m = ref Ꮡm.DerefOrNull();
+    ref var ptrB = ref ᏑptrB.DerefOrNull();
 
     ref var b = ref heap<slice<byte>>(out var Ꮡb);
     b = ptrB;

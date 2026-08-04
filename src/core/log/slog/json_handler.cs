@@ -30,10 +30,10 @@ partial class slog_package {
 // using the given options.
 // If opts is nil, the default options are used.
 public static ж<JSONHandler> NewJSONHandler(io.Writer w, ж<HandlerOptions> Ꮡopts) {
-    ref var opts = ref Ꮡopts.DerefOrNil();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     if (Ꮡopts == nil) {
-        Ꮡopts = Ꮡ(new HandlerOptions(nil)); opts = ref Ꮡopts.DerefOrNil();
+        Ꮡopts = Ꮡ(new HandlerOptions(nil)); opts = ref Ꮡopts.DerefOrNull();
     }
     return Ꮡ(new JSONHandler(
         Ꮡ(new commonHandler(
@@ -102,7 +102,7 @@ internal static readonly @string timeTimeYearOutsideOfˢ = "time.Time year outsi
 
 // Adapted from time.Time.MarshalJSON to avoid allocation.
 internal static void appendJSONTime(ж<handleState> Ꮡs, time.Time t) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     {
         nint y = t.Year(); if (y < 0 || y >= 10000) {
@@ -117,7 +117,7 @@ internal static void appendJSONTime(ж<handleState> Ꮡs, time.Time t) {
 }
 
 internal static error appendJSONValue(ж<handleState> Ꮡs, Value v) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var exprᴛ1 = v.Kind();
     if (exprᴛ1 == KindString) {
@@ -168,7 +168,7 @@ internal static error appendJSONValue(ж<handleState> Ꮡs, Value v) {
 }
 
 internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // Use a json.Encoder to avoid escaping HTML.
     ref var bb = ref heap(new bytes.Buffer(), out var Ꮡbb);
@@ -196,12 +196,12 @@ internal static readonly @string u202ˢ = @"\u202"u8;
 // Modified from encoding/json/encode.go:encodeState.string,
 // with escapeHTML set to false.
 internal static slice<byte> appendEscapedJSONString(slice<byte> buf, @string s) {
-    var @char = (byte b) => {
+    void @char(byte b) {
         buf = builtin.append(buf, b);
-    };
-    var str = (@string sΔ1) => {
+    }
+    void str(@string sΔ1) {
         buf = builtin.append(buf, sΔ1.ꓸꓸꓸ);
-    };
+    }
     nint start = 0;
     for (nint i = 0; i < len(s); ) {
         {

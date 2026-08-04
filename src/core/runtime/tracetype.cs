@@ -24,7 +24,7 @@ partial class runtime_package {
 //
 // N.B. typ must be kept alive forever for this to work correctly.
 internal static uint64 put(this ж<traceTypeTable> Ꮡt, ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.DerefOrNil();
+    ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (Ꮡtyp == nil) {
         return 0;
@@ -49,7 +49,7 @@ internal static void dump(this ж<traceTypeTable> Ꮡt, uintptr gen) {
 }
 
 internal static traceExpWriter dumpTypesRec(ж<traceMapNode> Ꮡnode, traceExpWriter w) {
-    ref var node = ref Ꮡnode.Value;
+    ref var node = ref Ꮡnode.DerefOrNull();
 
     var typ = (ж<abi.Type>)(uintptr)(~Ꮡ(node.data, 0).Reinterpret<byte, @unsafe.Pointer>());
     @string typName = toRType(typ).@string();

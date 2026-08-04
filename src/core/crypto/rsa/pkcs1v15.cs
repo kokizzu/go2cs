@@ -41,7 +41,7 @@ partial class rsa_package {
 // WARNING: use of this function to encrypt plaintexts other than
 // session keys is dangerous. Use RSA OAEP in new protocols.
 public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKey> Ꮡpub, slice<byte> msg) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     randutil.MaybeReadByte(random);
     {
@@ -306,7 +306,7 @@ internal static readonly @string cryptoRsaInputMustBeˢ = "crypto/rsa: input mus
 internal static readonly @string cryptoRsaUnsupportedHashˢ = "crypto/rsa: unsupported hash function"u8;
 
 internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     // Special case: crypto.Hash(0) is used to indicate that the data is
     // signed directly.
@@ -345,7 +345,7 @@ internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, c
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static error VerifyPKCS1v15(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed, slice<byte> sig) {
-    ref var pub = ref Ꮡpub.Value;
+    ref var pub = ref Ꮡpub.DerefOrNull();
 
     if (boring.Enabled) {
         var (bkey, errΔ1) = boringPublicKey(Ꮡpub);

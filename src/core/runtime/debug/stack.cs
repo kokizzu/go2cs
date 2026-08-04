@@ -49,7 +49,7 @@ public static slice<byte> Stack() {
 // If called concurrently with a crash, some in-progress output may be written
 // to the old file even after an overriding SetCrashOutput returns.
 public static error SetCrashOutput(ж<os.File> Ꮡf, CrashOptions opts) {
-    ref var f = ref Ꮡf.DerefOrNil();
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var fd = ~(uintptr)0;
     if (Ꮡf != nil) {
@@ -82,7 +82,7 @@ public static error SetCrashOutput(ж<os.File> Ꮡf, CrashOptions opts) {
         if (err != default!) {
             return err;
         }
-        runtime.KeepAlive(Ꮡf);
+        runtime.KeepAlive(Ꮡf.OrTypedNil());
         // prevent finalization before dup
         fd = (uintptr)fd2;
     }

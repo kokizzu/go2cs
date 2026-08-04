@@ -61,8 +61,6 @@ using static go.debug.dwarf_package;
 [assembly: GoImplement<UnspecifiedType, ΔType>(Pointer = true)]
 [assembly: GoImplement<UnsupportedType, ΔType>(Pointer = true)]
 [assembly: GoImplement<VoidType, ΔType>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.bigEndian, go.encoding.binary_package.ByteOrder>]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<typeUnit, dataFormat>(Pointer = true)]
 [assembly: GoImplement<typeUnitReader, typeReader>(Pointer = true)]
 [assembly: GoImplement<unit, dataFormat>(Pointer = true)]

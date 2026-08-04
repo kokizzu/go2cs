@@ -26,7 +26,7 @@ internal static @string cstring(slice<byte> b) {
 [GoType("[]byte")] partial struct StringTable;
 
 internal static (StringTable, error) readStringTable(ж<FileHeader> Ꮡfh, io.ReadSeeker r) {
-    ref var fh = ref Ꮡfh.Value;
+    ref var fh = ref Ꮡfh.DerefOrNull();
 
     // COFF string table is located right after COFF symbol table.
     if (fh.PointerToSymbolTable <= 0) {
@@ -38,7 +38,7 @@ internal static (StringTable, error) readStringTable(ж<FileHeader> Ꮡfh, io.Re
         return (default!, fmt.Errorf("fail to seek to string table: %v"u8, err));
     }
     ref var l = ref heap(new uint32(), out var Ꮡl);
-    err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), Ꮡl);
+    err = binary.Read(r, binary.LittleEndian, Ꮡl);
     if (err != default!) {
         return (default!, fmt.Errorf("fail to read string table length: %v"u8, err));
     }

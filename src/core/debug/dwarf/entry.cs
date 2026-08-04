@@ -38,7 +38,7 @@ internal static readonly @string abbrevˢ = "abbrev"u8;
 // parseAbbrev returns the abbreviation table that starts at byte off
 // in the .debug_abbrev section.
 internal static (abbrevTable, error) parseAbbrev(this ж<Data> Ꮡd, uint64 off, nint vers) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     {
         var (mΔ1, ok) = d.abbrevCache[off, ꟷ]; if (ok) {
@@ -162,7 +162,7 @@ internal static readonly @string cannotDetermineClassOfˢ = "cannot determine cl
 // DWARF version is less then 4, it will disambiguate some forms
 // depending on the attribute.
 internal static Class formToClass(format form, Attr attr, nint vers, ж<buf> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var exprᴛ1 = form;
     if (exprᴛ1 == formIndirect) {
@@ -367,8 +367,8 @@ internal static readonly @string unknownSizeForDwFormStrpˢ2 = "unknown size for
 // Entry reads a single entry from buf, decoding
 // according to the given abbreviation table.
 internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable atab, Offset ubase, nint vers) {
-    ref var b = ref Ꮡb.Value;
-    ref var cu = ref Ꮡcu.DerefOrNil();
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var cu = ref Ꮡcu.DerefOrNull();
 
     ref var off = ref heap<Offset>(out var Ꮡoff);
     off = b.off;
@@ -388,13 +388,12 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
         Field: new slice<Field>(len(a.field))
     ));
     slice<entry_delayed> delay = default!;
-    var resolveStrx = @string (uint64 strBase, uint64 offΔ1) => {
+    @string resolveStrx(uint64 strBase, uint64 offΔ1) {
         offΔ1 += strBase;
         if ((uint64)(nint)offΔ1 != offΔ1) {
             Ꮡb.Value.error(dwFormStrxOffsetOutOfˢ);
         }
-        ref var b1 = ref heap<buf>(out var Ꮡb1);
-        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, strOffsetsˢ, 0, (~Ꮡb.Value.dwarf).strOffsets);
+        var b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, strOffsetsˢ, 0, (~Ꮡb.Value.dwarf).strOffsets);
         b1.skip((nint)offΔ1);
         var (is64, _) = Ꮡb.Value.format.dwarf64();
         if (is64){
@@ -416,8 +415,8 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             Ꮡb.Value.err = b1.err;
         }
         return val;
-    };
-    var resolveRnglistx = (uint64 rnglistsBase, uint64 offΔ2) => {
+    }
+    uint64 resolveRnglistx(uint64 rnglistsBase, uint64 offΔ2) {
         var (is64, _) = Ꮡb.Value.format.dwarf64();
         if (is64){
             offΔ2 *= 8;
@@ -428,8 +427,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
         if ((uint64)(nint)offΔ2 != offΔ2) {
             Ꮡb.Value.error(dwFormRnglistxOffsetOutˢ);
         }
-        ref var b1 = ref heap<buf>(out var Ꮡb1);
-        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, rnglistsˢ, 0, (~Ꮡb.Value.dwarf).rngLists);
+        var b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, rnglistsˢ, 0, (~Ꮡb.Value.dwarf).rngLists);
         b1.skip((nint)offΔ2);
         if (is64){
             offΔ2 = b1.uint64();
@@ -444,7 +442,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             Ꮡb.Value.error(dwFormRnglistxIndirectˢ);
         }
         return rnglistsBase + offΔ2;
-    };
+    }
     foreach (var (i, _) in (~e).Field) {
         (~e).Field[i].Attr = a.field[i].attr;
         (~e).Field[i].Class = a.field[i].@class;
@@ -802,8 +800,6 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
 // Reader returns a new Reader for [Data].
 // The reader is positioned at byte offset 0 in the DWARF “info” section.
 public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
-
     var r = Ꮡ(new ΔReader(d: Ꮡd));
     r.Seek(0);
     return r;
@@ -873,7 +869,7 @@ internal static readonly @string offsetOutOfRangeˢ = "offset out of range"u8;
 // It returns an error if the current offset is invalid or the data at the
 // offset cannot be decoded as a valid [Entry].
 public static (ж<Entry>, error) Next(this ж<ΔReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.err != default!) {
         return (default!, r.err);
@@ -908,7 +904,7 @@ public static (ж<Entry>, error) Next(this ж<ΔReader> Ꮡr) {
 // the last [Entry] returned by [Reader.Next]. If that [Entry] did not have
 // children or [Reader.Next] has not been called, SkipChildren is a no-op.
 public static void SkipChildren(this ж<ΔReader> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (r.err != default! || !r.lastChildren) {
         return;
@@ -961,7 +957,7 @@ public static void SkipChildren(this ж<ΔReader> Ꮡr) {
 // the caller wishes to do repeated fast PC lookups, it should build
 // an appropriate index using the Ranges method.
 public static (ж<Entry>, error) SeekPC(this ж<ΔReader> Ꮡr, uint64 pc) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     nint unit = r.unit;
     for (nint i = 0; i < len((~r.d).unit); i++) {
@@ -1001,8 +997,8 @@ public static (ж<Entry>, error) SeekPC(this ж<ΔReader> Ꮡr, uint64 pc) {
 // Only some entry types, such as [TagCompileUnit] or [TagSubprogram], have PC
 // ranges; for others, this will return nil with no error.
 public static (slice<array<uint64>>, error) Ranges(this ж<Data> Ꮡd, ж<Entry> Ꮡe) {
-    ref var d = ref Ꮡd.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     slice<array<uint64>> ret = default!;
     var (low, lowOK) = e.Val(AttrLowpc)._<uint64>(ᐧ);
@@ -1087,8 +1083,8 @@ internal static readonly @string noUnitForEntryˢ = "no unit for entry"u8;
 // compilation unit, however comments in gdb/dwarf2read.c say that some
 // versions of GCC use the entrypc attribute, so we check that too.
 internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡd, ж<Entry> Ꮡe) {
-    ref var d = ref Ꮡd.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     ж<Entry> cu = default!;
     if (e.Tag == TagCompileUnit){
@@ -1123,8 +1119,8 @@ internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡ
 internal static readonly @string rangesˢ = "ranges"u8;
 
 internal static (slice<array<uint64>>, error) dwarf2Ranges(this ж<Data> Ꮡd, ж<unit> Ꮡu, uint64 @base, int64 ranges, slice<array<uint64>> ret) {
-    ref var d = ref Ꮡd.Value;
-    ref var u = ref Ꮡu.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var u = ref Ꮡu.DerefOrNull();
 
     if (ranges < 0 || ranges > (int64)len(d.ranges)) {
         return (default!, fmt.Errorf("invalid range offset %d (max %d)"u8, ranges, len(d.ranges)));
@@ -1148,8 +1144,8 @@ internal static (slice<array<uint64>>, error) dwarf2Ranges(this ж<Data> Ꮡd, �
 // dwarf5Ranges interprets a debug_rnglists sequence, see DWARFv5 section
 // 2.17.3 (page 53).
 internal static (slice<array<uint64>>, error) dwarf5Ranges(this ж<Data> Ꮡd, ж<unit> Ꮡu, ж<Entry> Ꮡcu, uint64 @base, int64 ranges, slice<array<uint64>> ret) {
-    ref var d = ref Ꮡd.Value;
-    ref var cu = ref Ꮡcu.DerefOrNil();
+    ref var d = ref Ꮡd.DerefOrNull();
+    ref var cu = ref Ꮡcu.DerefOrNull();
 
     if (ranges < 0 || ranges > (int64)len(d.rngLists)) {
         return (default!, fmt.Errorf("invalid rnglist offset %d (max %d)"u8, ranges, len(d.ranges)));
@@ -1226,7 +1222,7 @@ internal static readonly @string addrˢ = "addr"u8;
 
 // debugAddr returns the address at idx in debug_addr
 internal static (uint64, error) debugAddr(this ж<Data> Ꮡd, dataFormat format, uint64 addrBase, uint64 idx) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var off = idx * (uint64)format.addrsize() + addrBase;
     if ((uint64)(nint)off != off) {

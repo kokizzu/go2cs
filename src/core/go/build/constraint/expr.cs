@@ -260,7 +260,7 @@ internal static (Expr x, error err) parseExpr(@string text) {
 // On entry, the next input token has not yet been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
 internal static Expr or(this ж<exprParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var x = Ꮡp.and();
     while (p.tok == "||"u8) {
@@ -273,7 +273,7 @@ internal static Expr or(this ж<exprParser> Ꮡp) {
 // On entry, the next input token has not yet been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
 internal static Expr and(this ж<exprParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var x = Ꮡp.not();
     while (p.tok == "&&"u8) {
@@ -286,7 +286,7 @@ internal static Expr and(this ж<exprParser> Ꮡp) {
 // On entry, the next input token has not yet been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
 internal static Expr not(this ж<exprParser> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.size++;
     if (p.size > maxSize) {
@@ -310,7 +310,7 @@ internal static readonly @string missingCloseParenˢ = "missing close paren"u8;
 // On entry, the next input token HAS been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
 internal static Expr atom(this ж<exprParser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // first token already in p.tok
     if (p.tok == "("u8) {

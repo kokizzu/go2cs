@@ -43,8 +43,6 @@ public static error Fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any x, Func<@
 internal static error /*err*/ fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any x, Func<@string, reflectꓸValue, bool> f) {
     error err = default!;
     func((defer, recover) => {
-    ref var fset = ref Ꮡfset.Value;
-
         // setup printer
         ref var p = ref heap<printer>(out var Ꮡp);
         p = new printer(
@@ -155,7 +153,7 @@ internal static void printf(this ж<printer> Ꮡp, @string format, params ꓸꓸ
 // same slice or map. Code for general data structures probably
 // should catch those as well.
 internal static void print(this ж<printer> Ꮡp, reflectꓸValue x) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (!NotNilFilter(""u8, x)) {
         Ꮡp.printf("nil"u8);

@@ -123,7 +123,7 @@ public static void Cmdline(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 }
 
 internal static void sleep(ж<http.Request> Ꮡr, time.Duration d) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var selᴛ1 = time.After(d);
     var selᴛ2 = r.Context().Done();
@@ -137,9 +137,9 @@ internal static void sleep(ж<http.Request> Ꮡr, time.Duration d) {
 }
 
 internal static void configureWriteDeadline(http.ResponseWriter w, ж<http.Request> Ꮡr, float64 seconds) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
-    var (srv, ok) = r.Context().Value(http.ServerContextKey)._<ж<http.Server>>(ᐧ);
+    var (srv, ok) = r.Context().Value(http.ServerContextKey.OrTypedNil())._<ж<http.Server>>(ᐧ);
     if (ok && (~srv).WriteTimeout > 0) {
         var timeout = (~srv).WriteTimeout + ((time.Duration)(int64)(seconds * (float64)(int64)time.ΔSecond));
         var rc = http.NewResponseController(w);
@@ -223,7 +223,7 @@ public static void Trace(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 // responding with a table mapping program counters to function names.
 // The package initialization registers it as /debug/pprof/symbol.
 public static void Symbol(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
     w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
@@ -312,7 +312,7 @@ internal static readonly @string failedToCollectProfileˢ = "failed to collect p
 internal static readonly @string failedToComputeDeltaˢ = "failed to compute delta"u8;
 
 internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) => func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     var (sec, err) = strconv.ParseInt(secStr, 10, 64);
     if (err != default! || sec <= 0) {
@@ -428,7 +428,7 @@ internal static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf
 // Index responds to a request for "/debug/pprof/" with an HTML page
 // listing the available profiles.
 public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
+    ref var r = ref Ꮡr.DerefOrNull();
 
     {
         var (name, found) = strings.CutPrefix((~r.URL).Path, debugPprofˢ); if (found) {
@@ -509,7 +509,7 @@ internal static error indexTmplExecute(io.Writer w, slice<profileEntry> profiles
     b.WriteString(htmlHeadTitleDebugPprofˢ);
     foreach (var (_, profile) in profiles) {
         var link = Ꮡ(new url.URL(Path: profile.Href, RawQuery: "debug=1"u8));
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<tr><td>%d</td><td><a href='%s'>%s</a></td></tr>\n"u8, profile.Count, link, html.EscapeString(profile.Name));
+        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<tr><td>%d</td><td><a href='%s'>%s</a></td></tr>\n"u8, profile.Count, link.OrTypedNil(), html.EscapeString(profile.Name));
     }
     b.WriteString(tableAHrefGoroutineDebugˢ);
     foreach (var (_, profile) in profiles) {

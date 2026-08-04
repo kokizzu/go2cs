@@ -26,9 +26,9 @@ internal static readonly @string cannotUseIotaOutsideˢ = "cannot use iota outsi
 // For the meaning of def, see Checker.definedType, below.
 // If wantType is set, the identifier e is expected to denote a type.
 internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.Ident> Ꮡe, ж<TypeName> Ꮡdef, bool wantType) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var x = ref Ꮡx.Value;
-    ref var e = ref Ꮡe.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var e = ref Ꮡe.DerefOrNull();
 
     x.mode = invalid;
     x.expr = new ast_IdentжExpr(Ꮡe);
@@ -195,7 +195,7 @@ internal static ΔType varType(this ж<Checker> Ꮡcheck, ast.Expr e) {
 // validVarType reports an error if typ is a constraint interface.
 // The expression e is used for error reporting, if any.
 internal static void validVarType(this ж<Checker> Ꮡcheck, ast.Expr e, ΔType typ) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // If we have a type parameter there's nothing to do.
     if (isTypeParam(typ)) {
@@ -225,7 +225,7 @@ internal static void validVarType(this ж<Checker> Ꮡcheck, ast.Expr e, ΔType 
 // in a type declaration, and def.typ.underlying will be set to the type of e
 // before any components of e are type-checked.
 internal static ΔType definedType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<TypeName> Ꮡdef) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var typ = Ꮡcheck.typInternal(e, Ꮡdef);
     assert(isTyped(typ));
@@ -241,8 +241,8 @@ internal static ΔType definedType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<Typ
 // type. If cause is non-nil and the type expression was a valid type but not
 // generic, cause will be populated with a message describing the error.
 internal static ΔType genericType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<@string> Ꮡcause) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var cause = ref Ꮡcause.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var cause = ref Ꮡcause.DerefOrNull();
 
     var typ = Ꮡcheck.typInternal(e, nil);
     assert(isTyped(typ));
@@ -277,7 +277,7 @@ internal static readonly @string missingComparableˢ = " (missing comparable con
 internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0, ж<TypeName> Ꮡdef) {
     ΔType T = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(e0.Pos(), typeSˢ, e0);
@@ -475,7 +475,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
 }
 
 internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
-    ref var def = ref Ꮡdef.DerefOrNil();
+    ref var def = ref Ꮡdef.DerefOrNull();
 
     if (Ꮡdef != nil) {
         switch (def.typ.type()) {
@@ -510,8 +510,8 @@ internal static readonly @string instantiatingTypeSWithSˢ = "-- instantiating t
 internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡix, ж<TypeName> Ꮡdef) {
     ΔType res = default!;
     func((defer, recover) => {
-    ref var check = ref Ꮡcheck.Value;
-    ref var ix = ref Ꮡix.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var ix = ref Ꮡix.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.X, ix.Indices);
@@ -574,7 +574,7 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
                 }
             }
             Ꮡcheck.validType(instʗ7);
-        }).describef(new typeparams_IndexExprжpositioner(Ꮡix), "resolve instance %s"u8, inst);
+        }).describef(new typeparams_IndexExprжpositioner(Ꮡix), "resolve instance %s"u8, inst.OrTypedNil());
         res = new NamedжΔType(inst);
     });
     return res;

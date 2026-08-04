@@ -152,7 +152,7 @@ internal static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-
 // checkDir checks the directory dir, which is expected to exist
 // (it is either the root or was found in a directory listing with IsDir true).
 internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Read entire directory.
     t.dirs = append(t.dirs, dir);
@@ -495,10 +495,10 @@ internal static @string formatInfo(fs.FileInfo info) {
 // checkDirList checks that two directory lists contain the same files and file info.
 // The order of the lists need not match.
 internal static void checkDirList(this ж<fsTester> Ꮡt, @string dir, @string desc, slice<fs.DirEntry> list1, slice<fs.DirEntry> list2) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var old = new map<@string, fs.DirEntry>();
-    var checkMode = (fs.DirEntry entry) => {
+    void checkMode(fs.DirEntry entry) {
         if (entry.IsDir() != ((fs.FileMode)(entry.Type() & fs.ModeDir) != 0)) {
             if (entry.IsDir()){
                 Ꮡt.Value.errorf("%s: ReadDir returned %s with IsDir() = true, Type() & ModeDir = 0"u8, dir, entry.Name());
@@ -506,7 +506,7 @@ internal static void checkDirList(this ж<fsTester> Ꮡt, @string dir, @string d
                 Ꮡt.Value.errorf("%s: ReadDir returned %s with IsDir() = false, Type() & ModeDir = ModeDir"u8, dir, entry.Name());
             }
         }
-    };
+    }
     foreach (var (_, entry1) in list1) {
         old[entry1.Name()] = entry1;
         checkMode(entry1);
@@ -547,7 +547,7 @@ internal static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile
 
 // checkFile checks that basic file reading works correctly.
 internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.files = append(t.files, @file);
     // Read entire file.
@@ -632,7 +632,7 @@ internal static readonly @string openˢ = "Open"u8;
 
 // checkBadPath checks that various invalid forms of file's name cannot be opened using t.fsys.Open.
 internal static void checkOpen(this ж<fsTester> Ꮡt, @string @file) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     t.checkBadPath(@file, openˢ, (@string fileΔ1) => {
         var (f, err) = Ꮡt.Value.fsys.Open(fileΔ1);

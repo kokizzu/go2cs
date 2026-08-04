@@ -109,7 +109,7 @@ internal static readonly @string dekInfoˢ = "DEK-Info"u8;
 // design. Since it does not authenticate the ciphertext, it is vulnerable to
 // padding oracle attacks that can let an attacker recover the plaintext.
 public static bool IsEncryptedPEMBlock(ж<pem.Block> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (_, ok) = b.Headers[dekInfoˢ, ꟷ];
     return ok;
@@ -139,7 +139,7 @@ internal static readonly @string x509InvalidPaddingˢ = "x509: invalid padding"u
 // design. Since it does not authenticate the ciphertext, it is vulnerable to
 // padding oracle attacks that can let an attacker recover the plaintext.
 public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byte> password) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var (dek, ok) = b.Headers[dekInfoˢ, ꟷ];
     if (!ok) {

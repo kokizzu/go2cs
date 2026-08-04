@@ -31,7 +31,7 @@ partial class net_package {
 //
 // If a is nil, a zero value is returned.
 public static netip.AddrPort AddrPort(this ж<TCPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return new netip.AddrPort(nil);
@@ -47,7 +47,7 @@ public static netip.AddrPort AddrPort(this ж<TCPAddr> Ꮡa) {
 }
 
 public static @string String(this ж<TCPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return nilˢ;
@@ -60,7 +60,7 @@ public static @string String(this ж<TCPAddr> Ꮡa) {
 }
 
 internal static bool isWildcard(this ж<TCPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil || a.IP == default!) {
         return true;
@@ -161,7 +161,7 @@ public static ж<TCPAddr> TCPAddrFromAddrPort(netip.AddrPort addr) {
 // SyscallConn returns a raw network connection.
 // This implements the [syscall.Conn] interface.
 public static (syscall.RawConn, error) SyscallConn(this ж<TCPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return (default!, syscall.EINVAL);
@@ -171,7 +171,7 @@ public static (syscall.RawConn, error) SyscallConn(this ж<TCPConn> Ꮡc) {
 
 // ReadFrom implements the [io.ReaderFrom] ReadFrom method.
 public static (int64, error) ReadFrom(this ж<TCPConn> Ꮡc, Δio.Reader r) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -185,7 +185,7 @@ public static (int64, error) ReadFrom(this ж<TCPConn> Ꮡc, Δio.Reader r) {
 
 // WriteTo implements the io.WriterTo WriteTo method.
 public static (int64, error) WriteTo(this ж<TCPConn> Ꮡc, Δio.Writer w) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -200,7 +200,7 @@ public static (int64, error) WriteTo(this ж<TCPConn> Ꮡc, Δio.Writer w) {
 // CloseRead shuts down the reading side of the TCP connection.
 // Most callers should just use Close.
 public static error CloseRead(this ж<TCPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -216,7 +216,7 @@ public static error CloseRead(this ж<TCPConn> Ꮡc) {
 // CloseWrite shuts down the writing side of the TCP connection.
 // Most callers should just use Close.
 public static error CloseWrite(this ж<TCPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -244,7 +244,7 @@ public static error CloseWrite(this ж<TCPConn> Ꮡc) {
 // On some operating systems after sec seconds have elapsed any remaining
 // unsent data may be discarded.
 public static error SetLinger(this ж<TCPConn> Ꮡc, nint sec) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -260,7 +260,7 @@ public static error SetLinger(this ж<TCPConn> Ꮡc, nint sec) {
 // SetKeepAlive sets whether the operating system should send
 // keep-alive messages on the connection.
 public static error SetKeepAlive(this ж<TCPConn> Ꮡc, bool keepalive) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -279,7 +279,7 @@ public static error SetKeepAlive(this ж<TCPConn> Ꮡc, bool keepalive) {
 // Note that calling this method on Windows prior to Windows 10 version 1709
 // will reset the KeepAliveInterval to the default system value, which is normally 1 second.
 public static error SetKeepAlivePeriod(this ж<TCPConn> Ꮡc, time.Duration d) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -297,7 +297,7 @@ public static error SetKeepAlivePeriod(this ж<TCPConn> Ꮡc, time.Duration d) {
 // algorithm).  The default is true (no delay), meaning that data is
 // sent as soon as possible after a Write.
 public static error SetNoDelay(this ж<TCPConn> Ꮡc, bool noDelay) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return syscall.EINVAL;
@@ -320,7 +320,7 @@ public static error SetNoDelay(this ж<TCPConn> Ꮡc, bool noDelay) {
 // On Linux, more conditions are verified on kernels >= v5.16, improving
 // the results.
 public static (bool, error) MultipathTCP(this ж<TCPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return (false, syscall.EINVAL);
@@ -388,7 +388,7 @@ public static (ж<TCPConn>, error) DialTCP(@string network, ж<TCPAddr> Ꮡladdr
 // The returned RawConn only supports calling Control. Read and
 // Write return an error.
 public static (syscall.RawConn, error) SyscallConn(this ж<TCPListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -399,7 +399,7 @@ public static (syscall.RawConn, error) SyscallConn(this ж<TCPListener> Ꮡl) {
 // AcceptTCP accepts the next incoming call and returns the new
 // connection.
 public static (ж<TCPConn>, error) AcceptTCP(this ж<TCPListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -414,7 +414,7 @@ public static (ж<TCPConn>, error) AcceptTCP(this ж<TCPListener> Ꮡl) {
 // Accept implements the Accept method in the [Listener] interface; it
 // waits for the next call and returns a generic [Conn].
 public static (Conn, error) Accept(this ж<TCPListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
@@ -429,7 +429,7 @@ public static (Conn, error) Accept(this ж<TCPListener> Ꮡl) {
 // Close stops listening on the TCP address.
 // Already Accepted connections are not closed.
 public static error Close(this ж<TCPListener> Ꮡl) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return syscall.EINVAL;
@@ -452,7 +452,7 @@ public static error Close(this ж<TCPListener> Ꮡl) {
 // SetDeadline sets the deadline associated with the listener.
 // A zero time value disables the deadline.
 public static error SetDeadline(this ж<TCPListener> Ꮡl, time.Time t) {
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (!Ꮡl.ok()) {
         return syscall.EINVAL;
@@ -471,7 +471,7 @@ public static (ж<os.File> f, error err) File(this ж<TCPListener> Ꮡl) {
     ж<os.File> f = default!;
     error err = default!;
 
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
     if (!Ꮡl.ok()) {
         return (default!, syscall.EINVAL);
     }
@@ -492,7 +492,7 @@ public static (ж<os.File> f, error err) File(this ж<TCPListener> Ꮡl) {
 // If the Port field of laddr is 0, a port number is automatically
 // chosen.
 public static (ж<TCPListener>, error) ListenTCP(@string network, ж<TCPAddr> Ꮡladdr) {
-    ref var laddr = ref Ꮡladdr.DerefOrNil();
+    ref var laddr = ref Ꮡladdr.DerefOrNull();
 
     var exprᴛ1 = network;
     if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp4"u8 || exprᴛ1 == "tcp6"u8) {
@@ -502,7 +502,7 @@ public static (ж<TCPListener>, error) ListenTCP(@string network, ж<TCPAddr> �
     }
 
     if (Ꮡladdr == nil) {
-        Ꮡladdr = Ꮡ(new TCPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNil();
+        Ꮡladdr = Ꮡ(new TCPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNull();
     }
     var sl = Ꮡ(new sysListener(network: network, address: Ꮡladdr.String()));
     var (ln, err) = sl.listenTCP(context.Background(), Ꮡladdr);

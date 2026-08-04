@@ -169,7 +169,7 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 //
 // Encode calls [Encoder.Flush] before returning.
 public static error Encode(this ж<Encoder> Ꮡenc, any v) {
-    ref var enc = ref Ꮡenc.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
 
     var err = Ꮡenc.of(Encoder.Ꮡp).marshalValue(reflect.ValueOf(v), nil, nil);
     if (err != default!) {
@@ -186,7 +186,7 @@ public static error Encode(this ж<Encoder> Ꮡenc, any v) {
 //
 // EncodeElement calls [Encoder.Flush] before returning.
 public static error EncodeElement(this ж<Encoder> Ꮡenc, any v, StartElement startʗp) {
-    ref var enc = ref Ꮡenc.Value;
+    ref var enc = ref Ꮡenc.DerefOrNull();
 
     ref var start = ref heap(startʗp, out var Ꮡstart);
     var err = Ꮡenc.of(Encoder.Ꮡp).marshalValue(reflect.ValueOf(v), nil, Ꮡstart);
@@ -368,7 +368,7 @@ internal static readonly @string xmlnsˢ = @"xmlns:"u8;
 // createAttrPrefix finds the name space prefix attribute to use for the given name space,
 // defining a new prefix if necessary. It returns the prefix.
 internal static @string createAttrPrefix(this ж<printer> Ꮡp, @string url) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     {
         @string prefixΔ1 = p.attrPrefix[url]; if (prefixΔ1 != ""u8) {
@@ -455,9 +455,9 @@ internal static reflectꓸType textMarshalerType = reflect.TypeFor<encoding.Text
 // marshalValue writes one or more XML elements representing val.
 // If val was obtained from a struct field, finfo must have its details.
 internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, ж<fieldInfo> Ꮡfinfo, ж<StartElement> ᏑstartTemplate) {
-    ref var p = ref Ꮡp.Value;
-    ref var finfo = ref Ꮡfinfo.DerefOrNil();
-    ref var startTemplate = ref ᏑstartTemplate.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var finfo = ref Ꮡfinfo.DerefOrNull();
+    ref var startTemplate = ref ᏑstartTemplate.DerefOrNull();
 
     if (ᏑstartTemplate != nil && startTemplate.Name.Local == ""u8) {
         return fmt.Errorf("xml: EncodeElement of StartElement with missing name"u8);
@@ -609,7 +609,7 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
 
 // marshalAttr marshals an attribute with the given name and value, adding to start.Attr.
 [GoRecv] internal static error marshalAttr(this ref printer p, ж<StartElement> Ꮡstart, Name name, reflectꓸValue val) {
-    ref var start = ref Ꮡstart.Value;
+    ref var start = ref Ꮡstart.DerefOrNull();
 
     if (val.CanInterface() && val.Type().Implements(marshalerAttrType)) {
         var (attr, errΔ1) = val.Interface()._<MarshalerAttr>().MarshalXMLAttr(name);
@@ -692,8 +692,8 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
 // defaultStart returns the default start element to use,
 // given the reflect type, field info, and start template.
 internal static StartElement defaultStart(reflectꓸType typ, ж<fieldInfo> Ꮡfinfo, ж<StartElement> ᏑstartTemplate) {
-    ref var finfo = ref Ꮡfinfo.DerefOrNil();
-    ref var startTemplate = ref ᏑstartTemplate.DerefOrNil();
+    ref var finfo = ref Ꮡfinfo.DerefOrNull();
+    ref var startTemplate = ref ᏑstartTemplate.DerefOrNull();
 
     StartElement start = default!;
     // Precedence for the XML element name is as above,
@@ -736,7 +736,7 @@ internal static StartElement defaultStart(reflectꓸType typ, ж<fieldInfo> Ꮡf
 
 // marshalTextInterface marshals a TextMarshaler interface value.
 internal static error marshalTextInterface(this ж<printer> Ꮡp, encoding.TextMarshaler val, StartElement startʗp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     ref var start = ref heap(startʗp, out var Ꮡstart);
     {
@@ -757,8 +757,8 @@ internal static readonly @string xmlnsˢ2 = @" xmlns="""u8;
 
 // writeStart writes the given start element.
 internal static error writeStart(this ж<printer> Ꮡp, ж<StartElement> Ꮡstart) {
-    ref var p = ref Ꮡp.Value;
-    ref var start = ref Ꮡstart.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var start = ref Ꮡstart.DerefOrNull();
 
     if (start.Name.Local == ""u8) {
         return fmt.Errorf("xml: start tag with no name"u8);
@@ -881,8 +881,8 @@ internal static reflectꓸValue indirect(reflectꓸValue vf) {
 }
 
 internal static error marshalStruct(this ж<printer> Ꮡp, ж<typeInfo> Ꮡtinfo, reflectꓸValue val) {
-    ref var p = ref Ꮡp.Value;
-    ref var tinfo = ref Ꮡtinfo.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
+    ref var tinfo = ref Ꮡtinfo.DerefOrNull();
 
     var s = new parentStack(p: Ꮡp);
     foreach (var (i, _) in tinfo.fields) {

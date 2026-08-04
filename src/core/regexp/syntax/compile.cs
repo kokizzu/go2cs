@@ -26,7 +26,7 @@ internal static patchList makePatchList(uint32 n) {
 }
 
 internal static void patch(this patchList l, ж<Prog> Ꮡp, uint32 val) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var head = l.head;
     while (head != 0) {
@@ -42,7 +42,7 @@ internal static void patch(this patchList l, ж<Prog> Ꮡp, uint32 val) {
 }
 
 internal static patchList append(this patchList l1, ж<Prog> Ꮡp, patchList l2) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (l1.head == 0) {
         return l2;
@@ -93,7 +93,7 @@ internal static slice<rune> anyRuneNotNL = new rune[]{0, (rune)'\n' - 1, (rune)'
 internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 
 [GoRecv] internal static frag compile(this ref compiler c, ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.Value;
+    ref var re = ref Ꮡre.DerefOrNull();
 
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpNoMatch) {

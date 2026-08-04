@@ -58,7 +58,7 @@ internal static bool decBoolArray(ж<decoderState> Ꮡstate, reflectꓸValue v, 
 }
 
 internal static bool decBoolSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<bool>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<bool>>(ᐧ);
@@ -88,7 +88,7 @@ internal static bool decComplex64Array(ж<decoderState> Ꮡstate, reflectꓸValu
 }
 
 internal static bool decComplex64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<complex64>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<complex64>>(ᐧ);
@@ -120,7 +120,7 @@ internal static bool decComplex128Array(ж<decoderState> Ꮡstate, reflectꓸVal
 }
 
 internal static bool decComplex128Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<complex128>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<complex128>>(ᐧ);
@@ -152,7 +152,7 @@ internal static bool decFloat32Array(ж<decoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool decFloat32Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<float32>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<float32>>(ᐧ);
@@ -182,7 +182,7 @@ internal static bool decFloat64Array(ж<decoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool decFloat64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<float64>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<float64>>(ᐧ);
@@ -212,7 +212,7 @@ internal static bool decIntArray(ж<decoderState> Ꮡstate, reflectꓸValue v, n
 }
 
 internal static bool decIntSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<nint>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<nint>>(ᐧ);
@@ -247,7 +247,7 @@ internal static bool decInt16Array(ж<decoderState> Ꮡstate, reflectꓸValue v,
 }
 
 internal static bool decInt16Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<int16>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<int16>>(ᐧ);
@@ -281,7 +281,7 @@ internal static bool decInt32Array(ж<decoderState> Ꮡstate, reflectꓸValue v,
 }
 
 internal static bool decInt32Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<int32>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<int32>>(ᐧ);
@@ -315,7 +315,7 @@ internal static bool decInt64Array(ж<decoderState> Ꮡstate, reflectꓸValue v,
 }
 
 internal static bool decInt64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<int64>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<int64>>(ᐧ);
@@ -345,7 +345,7 @@ internal static bool decInt8Array(ж<decoderState> Ꮡstate, reflectꓸValue v, 
 }
 
 internal static bool decInt8Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<int8>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<int8>>(ᐧ);
@@ -379,7 +379,7 @@ internal static bool decStringArray(ж<decoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool decStringSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<@string>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<@string>>(ᐧ);
@@ -423,7 +423,7 @@ internal static bool decUintArray(ж<decoderState> Ꮡstate, reflectꓸValue v, 
 }
 
 internal static bool decUintSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<nuint>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<nuint>>(ᐧ);
@@ -457,7 +457,7 @@ internal static bool decUint16Array(ж<decoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool decUint16Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<uint16>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<uint16>>(ᐧ);
@@ -491,7 +491,7 @@ internal static bool decUint32Array(ж<decoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool decUint32Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<uint32>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<uint32>>(ᐧ);
@@ -525,7 +525,7 @@ internal static bool decUint64Array(ж<decoderState> Ꮡstate, reflectꓸValue v
 }
 
 internal static bool decUint64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<uint64>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<uint64>>(ᐧ);
@@ -555,7 +555,7 @@ internal static bool decUintptrArray(ж<decoderState> Ꮡstate, reflectꓸValue 
 }
 
 internal static bool decUintptrSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, nint length, error ovfl) {
-    ref var state = ref Ꮡstate.Value;
+    ref var state = ref Ꮡstate.DerefOrNull();
 
     ref var Δslice = ref heap<slice<uintptr>>(out var Ꮡslice);
     (Δslice, var ok) = v.Interface()._<slice<uintptr>>(ᐧ);
@@ -583,7 +583,7 @@ internal static bool decUintptrSlice(ж<decoderState> Ꮡstate, reflectꓸValue 
 // growSlice is called for a slice that we only partially allocated,
 // to grow it up to length.
 internal static void growSlice<E>(reflectꓸValue v, ж<slice<E>> Ꮡps, nint length) {
-    ref var ps = ref Ꮡps.ValueSlot;
+    ref var ps = ref Ꮡps.DerefOrNull();
 
     E zero = default!;
     var s = ps;

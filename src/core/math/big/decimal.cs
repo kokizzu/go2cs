@@ -52,7 +52,7 @@ internal static UntypedInt maxShift => /* _W - 4 */ 60;
 // Init initializes x to the decimal representation of m << shift (for
 // shift >= 0), or m >> -shift (for shift < 0).
 internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // special case 0
     if (len(m) == 0) {
@@ -100,7 +100,7 @@ internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
 
 // shr implements x >> s, for s <= maxShift.
 internal static void shr(ж<@decimal> Ꮡx, nuint s) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // Division by 1<<s using shift-and-subtract algorithm.
     // pick up enough leading digits to cover first shift
@@ -198,7 +198,7 @@ internal static slice<byte> appendZeros(slice<byte> buf, nint n) {
 // if shortened to n digits. n must be a valid index
 // for x.mant.
 internal static bool shouldRoundUp(ж<@decimal> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.mant[n] == (rune)'5' && n + 1 == len(x.mant)) {
         // exactly halfway - round to even
@@ -212,7 +212,7 @@ internal static bool shouldRoundUp(ж<@decimal> Ꮡx, nint n) {
 // to the nearest even value with n (or fever) mantissa digits.
 // If n < 0, x remains unchanged.
 internal static void round(this ж<@decimal> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (n < 0 || n >= len(x.mant)) {
         return;
@@ -250,7 +250,7 @@ internal static void round(this ж<@decimal> Ꮡx, nint n) {
 
 // x already trimmed
 internal static void roundDown(this ж<@decimal> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     if (n < 0 || n >= len(x.mant)) {
         return;
@@ -263,7 +263,7 @@ internal static void roundDown(this ж<@decimal> Ꮡx, nint n) {
 // trim cuts off any trailing zeros from x's mantissa;
 // they are meaningless for the value of x.
 internal static void trim(ж<@decimal> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     nint i = len(x.mant);
     while (i > 0 && x.mant[i - 1] == (rune)'0') {

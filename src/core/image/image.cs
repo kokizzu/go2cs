@@ -1251,7 +1251,7 @@ public static ж<CMYK> NewCMYK(Rectangle r) {
 }
 
 [GoRecv] public static color.Model ColorModel(this ref Paletted p) {
-    return new color_PaletteᴠModel(p.Palette);
+    return p.Palette;
 }
 
 [GoRecv] public static Rectangle Bounds(this ref Paletted p) {

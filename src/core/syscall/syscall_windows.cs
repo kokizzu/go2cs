@@ -92,7 +92,7 @@ public static @string UTF16ToString(slice<uint16> s) {
 // utf16PtrToString is like UTF16ToString, but takes *uint16
 // as a parameter instead of []uint16.
 internal static @string utf16PtrToString(ж<uint16> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil) {
         return ""u8;
@@ -456,7 +456,7 @@ public static (nint n, error err) Write(ΔHandle fd, slice<byte> p) {
 }
 
 public static error ReadFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж<Overlapped> Ꮡoverlapped) {
-    ref var done = ref Ꮡdone.Value;
+    ref var done = ref Ꮡdone.DerefOrNull();
 
     var err = readFile(fd, p, Ꮡdone, Ꮡoverlapped);
     if (race.Enabled) {
@@ -475,7 +475,7 @@ public static error ReadFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж<
 }
 
 public static error WriteFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж<Overlapped> Ꮡoverlapped) {
-    ref var done = ref Ꮡdone.Value;
+    ref var done = ref Ꮡdone.DerefOrNull();
 
     if (race.Enabled) {
         race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
@@ -689,7 +689,7 @@ public static error /*err*/ Ftruncate(ΔHandle fd, int64 length) {
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
     error err = default!;
 
-    ref var tv = ref Ꮡtv.Value;
+    ref var tv = ref Ꮡtv.DerefOrNull();
     ref var ft = ref heap(new Filetime(), out var Ꮡft);
     GetSystemTimeAsFileTime(Ꮡft);
     tv = NsecToTimeval(ft.Nanoseconds());
@@ -889,7 +889,7 @@ public static bool SocketDisableIPv6;
 }
 
 internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> Ꮡsa) {
-    ref var sa = ref Ꮡsa.Value;
+    ref var sa = ref Ꮡsa.DerefOrNull();
 
     if (sa.Port < 0 || sa.Port > 0xFFFF) {
         return (default!, 0, EINVAL);
@@ -910,7 +910,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> 
 }
 
 internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet6> Ꮡsa) {
-    ref var sa = ref Ꮡsa.Value;
+    ref var sa = ref Ꮡsa.DerefOrNull();
 
     if (sa.Port < 0 || sa.Port > 0xFFFF) {
         return (default!, 0, EINVAL);
@@ -935,7 +935,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet6> 
 }
 
 internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrUnix> Ꮡsa) {
-    ref var sa = ref Ꮡsa.Value;
+    ref var sa = ref Ꮡsa.DerefOrNull();
 
     @string name = sa.Name;
     nint n = len(name);
@@ -964,7 +964,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrUnix> �
 }
 
 public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
-    ref var rsa = ref Ꮡrsa.Value;
+    ref var rsa = ref Ꮡrsa.DerefOrNull();
 
     var exprᴛ1 = rsa.Addr.Family;
     if (exprᴛ1 == AF_UNIX) {
@@ -1341,7 +1341,7 @@ public static (nint, error) GetsockoptInt(ΔHandle fd, nint level, nint opt) {
 public static error /*err*/ SetsockoptLinger(ΔHandle fd, nint level, nint opt, ж<Linger> Ꮡl) {
     error err = default!;
 
-    ref var l = ref Ꮡl.Value;
+    ref var l = ref Ꮡl.DerefOrNull();
     ref var sys = ref heap<sysLinger>(out var Ꮡsys);
     sys = new sysLinger(Onoff: (uint16)l.Onoff, Linger: (uint16)l.ΔLinger);
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)/* unsafe.Sizeof(sys) */ (uintptr)4);
@@ -1357,7 +1357,7 @@ public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint op
 public static error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
     error err = default!;
 
-    ref var mreq = ref Ꮡmreq.Value;
+    ref var mreq = ref Ꮡmreq.DerefOrNull();
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)/* unsafe.Sizeof(*mreq) */ (uintptr)8);
 }
 
@@ -1587,7 +1587,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
         var exprᴛ1 = (~rdb).ReparseTag;
         if (exprᴛ1 == IO_REPARSE_TAG_SYMLINK) {
             var data = rdb.of(reparseDataBuffer.ᏑreparseBuffer).Reinterpret<byte, symbolicLinkReparseBuffer>();
-            var p = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(data.at(symbolicLinkReparseBuffer.ᏑPathBuffer, 0)));
+            var p = array<uint16>.AliasPointer(data.at(symbolicLinkReparseBuffer.ᏑPathBuffer, 0), 65535);
             s = UTF16ToString((~p)[(int)((~data).SubstituteNameOffset / 2)..(int)(((~data).SubstituteNameOffset + (~data).SubstituteNameLength) / 2)]);
             if ((uint32)((~data).Flags & (uint32)_SYMLINK_FLAG_RELATIVE) == 0) {
                 if (len(s) >= 4 && s[..4] == @"\??\"){
@@ -1610,7 +1610,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
         }
         else if (exprᴛ1 == _IO_REPARSE_TAG_MOUNT_POINT) {
             var data = rdb.of(reparseDataBuffer.ᏑreparseBuffer).Reinterpret<byte, mountPointReparseBuffer>();
-            var p = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(data.at(mountPointReparseBuffer.ᏑPathBuffer, 0)));
+            var p = array<uint16>.AliasPointer(data.at(mountPointReparseBuffer.ᏑPathBuffer, 0), 65535);
             s = UTF16ToString((~p)[(int)((~data).SubstituteNameOffset / 2)..(int)(((~data).SubstituteNameOffset + (~data).SubstituteNameLength) / 2)]);
             if (len(s) >= 4 && s[..4] == @"\??\"){
                 // \??\C:\foo\bar
@@ -1646,7 +1646,7 @@ internal static readonly @string getQueuedCompletionStatusˢ = "GetQueuedComplet
 
 // Deprecated: GetQueuedCompletionStatus has the wrong function signature. Use x/sys/windows.GetQueuedCompletionStatus.
 public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡqty, ж<uint32> Ꮡkey, ж<ж<Overlapped>> Ꮡoverlapped, uint32 timeout) {
-    ref var key = ref Ꮡkey.DerefOrNil();
+    ref var key = ref Ꮡkey.DerefOrNull();
 
     ref var ukey = ref heap(new uintptr(), out var Ꮡukey);
     ж<uintptr> pukey = default!;

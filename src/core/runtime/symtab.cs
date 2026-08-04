@@ -126,7 +126,7 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
 //
 //go:linkname runtime_FrameStartLine runtime/pprof.runtime_FrameStartLine
 internal static nint runtime_FrameStartLine(ж<Frame> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     return f.startLine;
 }
@@ -145,7 +145,7 @@ internal static nint runtime_FrameStartLine(ж<Frame> Ꮡf) {
 //
 //go:linkname runtime_FrameSymbolName runtime/pprof.runtime_FrameSymbolName
 internal static @string runtime_FrameSymbolName(ж<Frame> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     if (!f.funcInfo.valid()) {
         return f.Function;
@@ -261,7 +261,7 @@ internal static ΔfuncInfo funcInfo(this ж<Func> Ꮡf) {
 }
 
 internal static ΔfuncInfo funcInfo(this ж<_func> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     // Find the module containing fn. fn is located in the pclntable.
     // The unsafe.Pointer to uintptr conversions and arithmetic
@@ -505,7 +505,7 @@ internal static readonly @string abiMismatchˢ = "abi mismatch"u8;
 //
 //go:linkname moduledataverify1
 internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
-    ref var datap = ref Ꮡdatap.Value;
+    ref var datap = ref Ꮡdatap.DerefOrNull();
 
     // Check that the pclntab's format is valid.
     var hdr = datap.pcHeader;
@@ -704,7 +704,7 @@ public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc
     @string @file = default!;
     nint line = default!;
 
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
     var fn = Ꮡf.raw();
     if (fn.isInlined()) {
         // inlined version
@@ -1183,8 +1183,8 @@ internal static (slice<byte> newp, bool ok) step(slice<byte> Δp, ж<uintptr> �
     slice<byte> newp = default!;
     bool ok = default!;
 
-    ref var pc = ref Ꮡpc.Value;
-    ref var val = ref Ꮡval.Value;
+    ref var pc = ref Ꮡpc.DerefOrNull();
+    ref var val = ref Ꮡval.DerefOrNull();
     // For both uvdelta and pcdelta, the common case (~70%)
     // is that they are a single byte. If so, avoid calling readvarint.
     var uvdelta = (uint32)Δp[0];
@@ -1247,7 +1247,7 @@ internal static readonly @string stackmapdataIndexOutOfˢ = "stackmapdata: index
 //go:linkname stackmapdata
 //go:nowritebarrier
 internal static bitvector stackmapdata(ж<stackmap> Ꮡstkmap, int32 n) {
-    ref var stkmap = ref Ꮡstkmap.Value;
+    ref var stkmap = ref Ꮡstkmap.DerefOrNull();
 
     // Check this invariant only when stackDebug is on at all.
     // The invariant is already checked by many of stackmapdata's callers,

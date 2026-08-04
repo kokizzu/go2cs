@@ -36,14 +36,14 @@ public static ж<ClientTrace> ContextClientTrace(context.Context ctx) {
 // registered with ctx. Any hooks defined in the provided trace will
 // be called first.
 public static context.Context WithClientTrace(context.Context ctx, ж<ClientTrace> Ꮡtrace) {
-    ref var trace = ref Ꮡtrace.DerefOrNil();
+    ref var trace = ref Ꮡtrace.DerefOrNull();
 
     if (Ꮡtrace == nil) {
         throw panic("nil trace");
     }
     var old = ContextClientTrace(ctx);
     Ꮡtrace.compose(old);
-    ctx = context.WithValue(ctx, new clientEventContextKey(nil), Ꮡtrace);
+    ctx = context.WithValue(ctx, new clientEventContextKey(nil), Ꮡtrace.OrTypedNil());
     if (Ꮡtrace.hasNetHooks()) {
         var nt = Ꮡ(new nettrace.Trace(
             ConnectStart: trace.ConnectStart,
@@ -67,7 +67,7 @@ public static context.Context WithClientTrace(context.Context ctx, ж<ClientTrac
                 ));
             };
         }
-        ctx = context.WithValue(ctx, new nettrace.TraceKey(nil), nt);
+        ctx = context.WithValue(ctx, new nettrace.TraceKey(nil), nt.OrTypedNil());
     }
     return ctx;
 }
@@ -166,8 +166,8 @@ internal static void compose(this ж<ClientTrace> Ꮡt, ж<ClientTrace> Ꮡold) 
     if (Ꮡold == nil) {
         return;
     }
-    var tv = reflect.ValueOf(Ꮡt).Elem();
-    var ov = reflect.ValueOf(Ꮡold).Elem();
+    var tv = reflect.ValueOf(Ꮡt.OrTypedNil()).Elem();
+    var ov = reflect.ValueOf(Ꮡold.OrTypedNil()).Elem();
     var structType = tv.Type();
     for (nint i = 0; i < structType.NumField(); i++) {
         var tf = tv.Field(i);
@@ -217,7 +217,7 @@ internal static void compose(this ж<ClientTrace> Ꮡt, ж<ClientTrace> Ꮡold) 
 }
 
 internal static bool hasNetHooks(this ж<ClientTrace> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt == nil) {
         return false;

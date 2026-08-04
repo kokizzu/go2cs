@@ -17,7 +17,7 @@ partial class io_package {
 }
 
 internal static void Store(this ж<onceError> Ꮡa, error err) => func((defer, recover) => {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     Ꮡa.of(onceError.ᏑMutex).Lock();
     defer(Ꮡa.of(onceError.ᏑMutex).Unlock);
@@ -28,7 +28,7 @@ internal static void Store(this ж<onceError> Ꮡa, error err) => func((defer, r
 });
 
 internal static error Load(this ж<onceError> Ꮡa) => func((defer, recover) => {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     Ꮡa.of(onceError.ᏑMutex).Lock();
     defer(Ꮡa.of(onceError.ᏑMutex).Unlock);
@@ -53,7 +53,7 @@ internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     var selᴛ1 = p.done;
     switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out _): {
@@ -91,7 +91,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         var selᴛ4 = p.done;
         switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {

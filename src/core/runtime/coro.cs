@@ -111,7 +111,7 @@ internal static readonly @string coroswitchOfAGoroutineToˢ = "coroswitch of a g
 // It is important not to add more atomic operations or other
 // expensive operations to the fast path.
 internal static void coroswitch_m(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var c = gp.coroarg;
     gp.coroarg = default!;
@@ -152,7 +152,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
         // the thread, because we'll be switching back to another goroutine anyway, which
         // will take back its thread-lock state before returning.
         gdestroy(Ꮡgp);
-        Ꮡgp = default!; gp = ref Ꮡgp.DerefOrNil();
+        Ꮡgp = default!; gp = ref Ꮡgp.DerefOrNull();
     } else {
         // If we can CAS ourselves directly from running to waiting, so do,
         // keeping the control transfer as lightweight as possible.

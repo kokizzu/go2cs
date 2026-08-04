@@ -45,7 +45,6 @@ using static go.@internal.coverage.decodemeta_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<go.@internal.coverage.slicereader_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.encoding.binary_package.littleEndian, go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 

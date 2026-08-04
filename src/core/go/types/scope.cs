@@ -33,7 +33,7 @@ partial class types_package {
 // NewScope returns a new, empty scope contained in the given parent
 // scope, if any. The comment is for debugging only.
 public static ж<ΔScope> NewScope(ж<ΔScope> Ꮡparent, tokenꓸPos pos, tokenꓸPos end, @string comment) {
-    ref var parent = ref Ꮡparent.DerefOrNil();
+    ref var parent = ref Ꮡparent.DerefOrNull();
 
     var s = Ꮡ(new ΔScope(Ꮡparent, default!, 0, default!, pos, end, comment, false));
     // don't add children to Universe scope!
@@ -105,10 +105,10 @@ public static ж<ΔScope> NewScope(ж<ΔScope> Ꮡparent, tokenꓸPos pos, token
 // time (see Insert). This can only happen for dot-imported objects
 // whose scope is the scope of the package that exported them.
 public static (ж<ΔScope>, Object) LookupParent(this ж<ΔScope> Ꮡs, @string name, tokenꓸPos pos) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     for (; Ꮡs != nil; Ꮡs = s.parent) {
-        s = ref Ꮡs.DerefOrNil();
+        s = ref Ꮡs.DerefOrNull();
         {
             var obj = s.Lookup(name); if (obj != default! && (!pos.IsValid() || cmpPos(obj.scopePos(), pos) <= 0)) {
                 return (Ꮡs, obj);
@@ -124,7 +124,7 @@ public static (ж<ΔScope>, Object) LookupParent(this ж<ΔScope> Ꮡs, @string 
 // Otherwise it inserts obj, sets the object's parent scope
 // if not already set, and returns nil.
 public static Object Insert(this ж<ΔScope> Ꮡs, Object obj) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @string name = obj.Name();
     {
@@ -147,7 +147,7 @@ public static Object Insert(this ж<ΔScope> Ꮡs, Object obj) {
 // records the binding and returns true. The object's parent scope
 // will be set to s after resolve is called.
 internal static bool _InsertLazy(this ж<ΔScope> Ꮡs, @string name, Func<Object> resolve) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.elems[name] != default!) {
         return false;
@@ -170,7 +170,7 @@ internal static bool _InsertLazy(this ж<ΔScope> Ꮡs, @string name, Func<Objec
 // has an object alt in p. s should be discarded after
 // having been squashed.
 internal static void squash(this ж<ΔScope> Ꮡs, Action<Object, Object> err) {
-    ref var s = ref Ꮡs.DerefOrNil();
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var p = s.parent;
     assert(p != nil);
@@ -227,7 +227,7 @@ internal static void squash(this ж<ΔScope> Ꮡs, Action<Object, Object> err) {
 // The result is guaranteed to be valid only if the type-checked
 // AST has complete position information.
 public static ж<ΔScope> Innermost(this ж<ΔScope> Ꮡs, tokenꓸPos pos) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Package scopes do not have extents since they may be
     // discontiguous, so iterate over the package's files.
@@ -257,11 +257,11 @@ public static ж<ΔScope> Innermost(this ж<ΔScope> Ꮡs, tokenꓸPos pos) {
 // n == 0 for no indentation.
 // If recurse is set, it also writes nested (children) scopes.
 public static void WriteTo(this ж<ΔScope> Ꮡs, io.Writer w, nint n, bool recurse) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     @string ind = ".  "u8;
     @string indn = strings.Repeat(ind, n);
-    fmt.Fprintf(w, "%s%s scope %p {\n"u8, indn, s.comment, Ꮡs);
+    fmt.Fprintf(w, "%s%s scope %p {\n"u8, indn, s.comment, Ꮡs.OrTypedNil());
     @string indn1 = indn + ind;
     foreach (var (_, name) in s.Names()) {
         fmt.Fprintf(w, "%s%s\n"u8, indn1, s.Lookup(name));

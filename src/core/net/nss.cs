@@ -49,7 +49,7 @@ internal static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
 
 // tryUpdate tries to update conf.
 internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) => func((defer, recover) => {
-    ref var conf = ref Ꮡconf.Value;
+    ref var conf = ref Ꮡconf.DerefOrNull();
 
     Ꮡconf.of(nsswitchConfig.ᏑinitOnce).Do(Ꮡconf.init);
     // Ensure only one update at a time checks nsswitch.conf
@@ -58,7 +58,7 @@ internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) => func((defer, 
     }
     defer(Ꮡconf.releaseSema);
     var now = time.Now();
-    if (conf.lastChecked.After(now.Add(-5000000000L))) {
+    if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
         return;
     }
     conf.lastChecked = now;
@@ -178,7 +178,7 @@ internal static readonly @string noColonOnLineˢ = "no colon on line"u8;
 internal static readonly @string unclosedCriterionBracketˢ = "unclosed criterion bracket"u8;
 
 internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var conf = @new<nssConf>();
     for (var (line, ok) = f.readLine(); ok; (line, ok) = f.readLine()) {

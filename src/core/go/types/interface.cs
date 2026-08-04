@@ -27,7 +27,7 @@ partial class types_package {
 
 // typeSet returns the type set for interface t.
 internal static ж<_TypeSet> typeSet(this ж<Interface> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     return computeInterfaceTypeSet(t.check, nopos, Ꮡt);
 }
@@ -79,7 +79,7 @@ public static ж<Interface> NewInterfaceType(slice<ж<Func>> methods, slice<ΔTy
 
 // check may be nil
 internal static ж<Interface> newInterface(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     var typ = Ꮡ(new Interface(check: Ꮡcheck));
     if (Ꮡcheck != nil) {
@@ -165,7 +165,7 @@ public static bool IsMethodSet(this ж<Interface> Ꮡt) {
 //
 // Interface types that have been completed are safe for concurrent use.
 public static ж<Interface> Complete(this ж<Interface> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.complete) {
         t.complete = true;
@@ -186,7 +186,7 @@ public static @string String(this ж<Interface> Ꮡt) {
 // ----------------------------------------------------------------------------
 // Implementation
 internal static void cleanup(this ж<Interface> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.typeSet();
     // any interface that escapes type checking must be safe for concurrent use
@@ -199,18 +199,18 @@ internal static readonly @string methodsMustHaveAUniqueˢ = "methods must have a
 internal static readonly @string methodsCannotHaveTypeˢ = "methods cannot have type parameters"u8;
 
 internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡityp, ж<ast.InterfaceType> Ꮡiface, ж<TypeName> Ꮡdef) {
-    ref var check = ref Ꮡcheck.Value;
-    ref var ityp = ref Ꮡityp.Value;
-    ref var iface = ref Ꮡiface.Value;
-    ref var def = ref Ꮡdef.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var ityp = ref Ꮡityp.DerefOrNull();
+    ref var iface = ref Ꮡiface.DerefOrNull();
+    ref var def = ref Ꮡdef.DerefOrNull();
 
-    var addEmbedded = (tokenꓸPos pos, ΔType typ) => {
+    void addEmbedded(tokenꓸPos pos, ΔType typ) {
         Ꮡityp.Value.embeddeds = append(Ꮡityp.Value.embeddeds, typ);
         if (Ꮡityp.Value.embedPos == nil) {
             Ꮡityp.Value.embedPos = @new<slice<tokenꓸPos>>();
         }
         Ꮡityp.Value.embedPos.ValueSlot = append(Ꮡityp.Value.embedPos.ValueSlot, pos);
-    };
+    }
     foreach (var (_, f) in (~iface.Methods).List) {
         if (len((~f).Names) == 0) {
             addEmbedded((~f).Type.Pos(), parseUnion(Ꮡcheck, (~f).Type));
@@ -273,7 +273,7 @@ internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡi
     // set and won't need to pass in a *Checker.
     check.later(() => {
         computeInterfaceTypeSet(Ꮡcheck, Ꮡiface.Value.Pos(), Ꮡityp);
-    }).describef(new ast_InterfaceTypeжpositioner(Ꮡiface), "compute type set for %s"u8, Ꮡityp);
+    }).describef(new ast_InterfaceTypeжpositioner(Ꮡiface), "compute type set for %s"u8, Ꮡityp.OrTypedNil());
 }
 
 } // end types_package

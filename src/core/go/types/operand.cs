@@ -117,7 +117,7 @@ internal static readonly @string withInvalidTypeˢ = " with invalid type"u8;
 // cgofunc    <expr> (<untyped kind> <mode>                    )
 // cgofunc    <expr> (               <mode>       of type <typ>)
 internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @string> qf) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.DerefOrNull();
 
     // special-case nil
     if (isTypes2){
@@ -284,9 +284,9 @@ internal static readonly @string needTypeAssertionˢ = "need type assertion"u8;
 // if assignableTo is invoked through an exported API call, i.e., when all
 // methods have been type-checked.
 internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, ΔType T, ж<@string> Ꮡcause) {
-    ref var x = ref Ꮡx.Value;
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var cause = ref Ꮡcause.DerefOrNil();
+    ref var x = ref Ꮡx.DerefOrNull();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var cause = ref Ꮡcause.DerefOrNull();
 
     if (x.mode == invalid || !isValid(T)) {
         return (true, 0);
@@ -376,7 +376,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
     if (Vp == nil && Tp == nil) {
         return (false, IncompatibleAssign);
     }
-    var errorf = (@string format, params ꓸꓸꓸany argsʗp) => {
+    void errorf(@string format, params ꓸꓸꓸany argsʗp) {
         var args = argsʗp.slice();
         if (Ꮡcheck != nil && Ꮡcause != nil) {
             @string msg = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
@@ -385,7 +385,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
             }
             Ꮡcause.Value = msg;
         }
-    };
+    }
     // x's type V is not a named type and T is a type parameter, and
     // x is assignable to each specific type in T's type set.
     if (!hasName(V) && Tp != nil) {
@@ -400,7 +400,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
             // no specific types
             (ok, code) = Ꮡx.assignableTo(Ꮡcheck, (~TΔ1).typ, Ꮡcause);
             if (!ok) {
-                errorfʗ1("cannot assign %s to %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ1).typ, Tpʗ1);
+                errorfʗ1("cannot assign %s to %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ1).typ, Tpʗ1.OrTypedNil());
                 return false;
             }
             return true;
@@ -427,7 +427,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
             ᏑxΔ1.Value.typ = VΔ1.Value.typ;
             (ok, code) = ᏑxΔ1.assignableTo(Ꮡcheck, T, Ꮡcause);
             if (!ok) {
-                errorfʗ3("cannot assign %s (in %s) to %s"u8, (~VΔ1).typ, Vpʗ1, origTʗ1);
+                errorfʗ3("cannot assign %s (in %s) to %s"u8, (~VΔ1).typ, Vpʗ1.OrTypedNil(), origTʗ1);
                 return false;
             }
             return true;

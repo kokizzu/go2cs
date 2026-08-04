@@ -106,7 +106,7 @@ internal static readonly @string invalidGStatusˢ = "invalid g status"u8;
 //
 //go:systemstack
 internal static suspendGState suspendG(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     {
         var mp = getg().Value.m; if ((~mp).curg != nil && readgstatus((~mp).curg) == _Grunning) {
@@ -156,8 +156,8 @@ dead: true);
                     }
                     stopped = true;
                     s = _Gwaiting;
+                    fallthrough = true;
                 } while (false);
-                fallthrough = true;
             }
             if (fallthrough || !matchᴛ1 && (exprᴛ1 == _Grunnable || exprᴛ1 == _Gsyscall || exprᴛ1 == _Gwaiting)) { matchᴛ1 = true;
                 do {
@@ -295,7 +295,7 @@ internal static void resumeG(suspendGState state) {
 //
 //go:nosplit
 internal static bool canPreemptM(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     return mp.locks == 0 && mp.mallocing == 0 && mp.preemptoff == ""u8 && (~mp.p.ptr()).status == _Prunning;
 }
@@ -352,7 +352,7 @@ internal static uintptr asyncPreemptStack = ~(uintptr)0;
 // wantAsyncPreempt returns whether an asynchronous preemption is
 // queued for gp.
 internal static bool wantAsyncPreempt(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Check both the G and the P.
     return (gp.preempt || (~gp.m).p != 0 && (~(~gp.m).p.ptr()).preempt) && (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan) == _Grunning;
@@ -380,7 +380,7 @@ internal static readonly @string badRestartPcˢ = "bad restart PC"u8;
 // also needs to adjust the resumption PC. The new PC is returned in
 // the second result.
 internal static (bool, uintptr) isAsyncSafePoint(ж<g> Ꮡgp, uintptr pc, uintptr sp, uintptr lr) {
-    ref var gp = ref Ꮡgp.DerefOrNil();
+    ref var gp = ref Ꮡgp.DerefOrNull();
 
     var mp = gp.m;
     // Only user Gs can have safe-points. We check this first

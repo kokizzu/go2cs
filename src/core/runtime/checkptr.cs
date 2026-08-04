@@ -13,7 +13,7 @@ internal static readonly @string checkptrMisalignedˢ = "checkptr: misaligned po
 internal static readonly @string checkptrConvertedPointerˢ = "checkptr: converted pointer straddles multiple allocations"u8;
 
 internal static void checkptrAlignment(@unsafe.Pointer Δp, ж<_type> Ꮡelem, uintptr n) {
-    ref var elem = ref Ꮡelem.Value;
+    ref var elem = ref Ꮡelem.DerefOrNull();
 
     // nil pointer is always suitably aligned (#47430).
     if (Δp == nil) {

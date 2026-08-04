@@ -123,7 +123,7 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
     slice<nint> index = default!;
     bool indirect = default!;
 
-    ref var pkg = ref Ꮡpkg.Value;
+    ref var pkg = ref Ꮡpkg.DerefOrNull();
     // WARNING: The code in this function is extremely subtle - do not modify casually!
     if (name == "_"u8) {
         return (obj, index, indirect);
@@ -378,8 +378,8 @@ internal static (ж<Func> method, bool wrongType) missingMethod(this ж<Checker>
     ж<Func> method = default!;
     bool wrongType = default!;
 
-    ref var check = ref Ꮡcheck.DerefOrNil();
-    ref var cause = ref Ꮡcause.DerefOrNil();
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var cause = ref Ꮡcause.DerefOrNull();
     var methods = under(T)._<ж<Interface>>().typeSet().Value.methods;
     // T must be an interface
     if (len(methods) == 0) {
@@ -561,7 +561,7 @@ internal static @string interfacePtrError(this ж<Checker> Ꮡcheck, ΔType T) {
 // funcString returns a string of the form name + signature for f.
 // check may be nil.
 internal static @string funcString(this ж<Checker> Ꮡcheck, ж<Func> Ꮡf, bool pkgInfo) {
-    ref var f = ref Ꮡf.Value;
+    ref var f = ref Ꮡf.DerefOrNull();
 
     var buf = bytes.NewBufferString(f.name);
     Func<ж<Package>, @string> qf = default!;
@@ -582,7 +582,7 @@ internal static @string funcString(this ж<Checker> Ꮡcheck, ж<Func> Ꮡf, boo
 // If the result is false and cause is not nil, *cause describes the error.
 // TODO(gri) replace calls to this function with calls to newAssertableTo.
 internal static bool assertableTo(this ж<Checker> Ꮡcheck, ΔType V, ΔType T, ж<@string> Ꮡcause) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // no static check is required if T is an interface
     // spec: "If T is an interface type, x.(T) asserts that the
@@ -601,7 +601,7 @@ internal static bool assertableTo(this ж<Checker> Ꮡcheck, ΔType V, ΔType T,
 // The underlying type of V must be an interface.
 // If the result is false and cause is not nil, *cause is set to the error cause.
 internal static bool newAssertableTo(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType V, ΔType T, ж<@string> Ꮡcause) {
-    ref var check = ref Ꮡcheck.Value;
+    ref var check = ref Ꮡcheck.DerefOrNull();
 
     // no static check is required if T is an interface
     // spec: "If T is an interface type, x.(T) asserts that the

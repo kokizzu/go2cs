@@ -400,7 +400,7 @@ internal static (bool, error) matchEmailConstraint(rfc2821Mailbox mailbox, @stri
 }
 
 internal static (bool, error) matchURIConstraint(ж<url.URL> Ꮡuri, @string constraint) {
-    ref var uri = ref Ꮡuri.Value;
+    ref var uri = ref Ꮡuri.DerefOrNull();
 
     // From RFC 5280, Section 4.2.1.10:
     // “a uniformResourceIdentifier that does not include an authority
@@ -427,7 +427,7 @@ internal static (bool, error) matchURIConstraint(ж<url.URL> Ꮡuri, @string con
 }
 
 internal static (bool, error) matchIPConstraint(net.IP ip, ж<net.IPNet> Ꮡconstraint) {
-    ref var constraint = ref Ꮡconstraint.Value;
+    ref var constraint = ref Ꮡconstraint.DerefOrNull();
 
     if (builtin.len(ip) != builtin.len(constraint.IP)) {
         return (false, default!);
@@ -482,7 +482,7 @@ internal static (bool, error) matchDomainConstraint(@string domain, @string cons
 // of comparisons is tracked in the given count and should not exceed the given
 // limit.
 internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> Ꮡcount, nint maxConstraintComparisons, @string nameType, @string name, any parsedName, Func<any, any, (bool, error)> match, any permitted, any excluded) {
-    ref var count = ref Ꮡcount.Value;
+    ref var count = ref Ꮡcount.DerefOrNull();
 
     var excludedValue = reflect.ValueOf(excluded);
     count += excludedValue.Len();
@@ -533,8 +533,8 @@ internal static readonly @string ipAddressˢ = "IP address"u8;
 // isValid performs validity checks on c given that it is a candidate to append
 // to the chain in currentChain.
 internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж<Certificate>> currentChain, ж<VerifyOptions> Ꮡopts) {
-    ref var c = ref Ꮡc.Value;
-    ref var opts = ref Ꮡopts.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
+    ref var opts = ref Ꮡopts.DerefOrNull();
 
     if (builtin.len(c.UnhandledCriticalExtensions) > 0) {
         return new UnhandledCriticalExtension(nil);
@@ -586,8 +586,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                 var exprᴛ1 = tag;
                 if (exprᴛ1 == nameTypeEmail) {
                     @string name = ((@string)data);
-                    ref var mailbox = ref heap<rfc2821Mailbox>(out var Ꮡmailbox);
-                    (mailbox, var ok) = parseRFC2821Mailbox(name);
+                    var (mailbox, ok) = parseRFC2821Mailbox(name);
                     if (!ok) {
                         return fmt.Errorf("x509: cannot parse rfc822Name %q"u8, mailbox);
                     }
@@ -619,7 +618,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                         return fmt.Errorf("x509: internal error: URI SAN %q failed to parse"u8, name);
                     }
                     {
-                        var errΔ9 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, uriˢ, name, uri,
+                        var errΔ9 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, uriˢ, name, uri.OrTypedNil(),
                             (any parsedName, any constraint) => matchURIConstraint(parsedName._<ж<url.URL>>(), constraint._<@string>()), Ꮡc.Value.PermittedURIDomains, Ꮡc.Value.ExcludedURIDomains); if (errΔ9 != default!) {
                             return errΔ9;
                         }
@@ -720,7 +719,7 @@ public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<C
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     ref var opts = ref heap(optsʗp, out var Ꮡopts);
     // Platform-specific verification needs the ASN.1 contents so
     // this makes the behavior consistent across platforms.
@@ -818,7 +817,7 @@ internal static slice<ж<Certificate>> appendToFreshChain(slice<ж<Certificate>>
 // are created by mutual cross-signatures, or other cross-signature bridge
 // oddities.
 internal static bool alreadyInChain(ж<Certificate> Ꮡcandidate, slice<ж<Certificate>> chain) {
-    ref var candidate = ref Ꮡcandidate.Value;
+    ref var candidate = ref Ꮡcandidate.DerefOrNull();
 
     ж<pkix.Extension> candidateSAN = default!;
     foreach (var (_, vᴛ1) in candidate.Extensions) {
@@ -873,11 +872,11 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(th
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
 
-    ref var opts = ref Ꮡopts.Value;
+    ref var opts = ref Ꮡopts.DerefOrNull();
     ref var hintErr = ref heap<error>(out var ᏑhintErr);
     ref var hintCert = ref heap<ж<Certificate>>(out var ᏑhintCert);
     var currentChainʗ1 = currentChain;
-    var considerCandidate = (nint certType, potentialParent candidate) => {
+    void considerCandidate(nint certType, potentialParent candidate) {
         if ((~candidate.cert).PublicKey == default! || alreadyInChain(candidate.cert, currentChainʗ1)) {
             return;
         }
@@ -927,7 +926,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(th
             chains = append(chains, childChains.ꓸꓸꓸ);
         }
 
-    };
+    }
     foreach (var (_, root) in opts.Roots.findPotentialParents(Ꮡc)) {
         considerCandidate(rootCertificate, root);
     }
@@ -1070,7 +1069,7 @@ internal static @string toLowerCaseASCII(@string @in) {
 //
 // Note that the legacy Common Name field is ignored.
 public static error VerifyHostname(this ж<Certificate> Ꮡc, @string h) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     // IP addresses may be written in [ ].
     @string candidateIP = h;

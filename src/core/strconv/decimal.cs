@@ -72,7 +72,7 @@ internal static nint digitZero(slice<byte> dst) {
 // (They are meaningless; the decimal point is tracked
 // independent of the number of digits.)
 internal static void trim(ж<@decimal> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     while (a.nd > 0 && a.d[a.nd - 1] == (rune)'0') {
         a.nd--;
@@ -84,7 +84,7 @@ internal static void trim(ж<@decimal> Ꮡa) {
 
 // Assign v to a.
 internal static void Assign(this ж<@decimal> Ꮡa, uint64 v) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     array<byte> buf = new(24);
     // Write reversed decimal in buf.
@@ -114,7 +114,7 @@ internal static UntypedInt maxShift => /* uintSize - 4 */ 60;
 
 // Binary shift right (/ 2) by k bits.  k <= maxShift to avoid overflow.
 internal static void rightShift(ж<@decimal> Ꮡa, nuint k) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     nint r = 0;
     // read pointer
@@ -332,7 +332,7 @@ internal static bool prefixIsLessThan(slice<byte> b, @string s) {
 
 // Binary shift left (* 2) by k bits.  k <= maxShift to avoid overflow.
 internal static void leftShift(ж<@decimal> Ꮡa, nuint k) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     nint delta = leftcheats[(nint)(k)].delta;
     if (prefixIsLessThan(a.d[0..(int)(a.nd)], leftcheats[(nint)(k)].cutoff)) {
@@ -380,7 +380,7 @@ internal static void leftShift(ж<@decimal> Ꮡa, nuint k) {
 
 // Binary shift left (k > 0) or right (k < 0).
 internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     switch (ᐧ) {
     case {} when a.nd is 0: {
@@ -408,7 +408,7 @@ internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
 
 // If we chop a at nd digits, should we round up?
 internal static bool shouldRoundUp(ж<@decimal> Ꮡa, nint nd) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (nd < 0 || nd >= a.nd) {
         return false;
@@ -430,7 +430,7 @@ internal static bool shouldRoundUp(ж<@decimal> Ꮡa, nint nd) {
 // just to the left of the digits, as in
 // 0.09 -> 0.1.
 internal static void Round(this ж<@decimal> Ꮡa, nint nd) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (nd < 0 || nd >= a.nd) {
         return;
@@ -444,7 +444,7 @@ internal static void Round(this ж<@decimal> Ꮡa, nint nd) {
 
 // Round a down to nd digits (or fewer).
 internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (nd < 0 || nd >= a.nd) {
         return;
@@ -478,7 +478,7 @@ internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
 // Extract integer part, rounded appropriately.
 // No guarantees about overflow.
 internal static uint64 RoundedInteger(this ж<@decimal> Ꮡa) {
-    ref var a = ref Ꮡa.Value;
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (a.dp > 20) {
         return 0xFFFFFFFFFFFFFFFFUL;

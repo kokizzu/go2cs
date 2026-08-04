@@ -44,7 +44,7 @@ internal static slice<byte> dotcrnl = new byte[]{(rune)'.', (rune)'\r', (rune)'\
 //
 // See the documentation for the [Reader.DotReader] method for details about dot-encoding.
 public static io.WriteCloser DotWriter(this ж<Writer> Ꮡw) {
-    ref var w = ref Ꮡw.Value;
+    ref var w = ref Ꮡw.DerefOrNull();
 
     w.closeDot();
     w.dot = Ꮡ(new dotWriter(w: Ꮡw));
@@ -112,7 +112,7 @@ internal static UntypedInt wstateData => 3; // writing data in middle of line
 }
 
 internal static error Close(this ж<dotWriter> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNil();
+    ref var d = ref Ꮡd.DerefOrNull();
 
     if ((~d.w).dot == Ꮡd) {
         d.w.Value.dot = default!;

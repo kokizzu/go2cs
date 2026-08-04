@@ -174,7 +174,7 @@ internal static ж<pp> newPrinter() {
 
 // free saves used pp structs in ppFree; avoids an allocation per invocation.
 internal static void free(this ж<pp> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Proper usage of a sync.Pool requires each entry to have approximately
     // the same memory cost. To obtain this property when the stored type
@@ -194,7 +194,7 @@ internal static void free(this ж<pp> Ꮡp) {
     p.arg = default!;
     p.value = new reflectꓸValue(nil);
     p.wrappedErrs = p.wrappedErrs[..0];
-    ᏑppFree.Put(Ꮡp);
+    ᏑppFree.Put(Ꮡp.OrTypedNil());
 }
 
 [GoRecv] internal static (nint wid, bool ok) Width(this ref pp p) {
@@ -457,7 +457,7 @@ internal static (nint num, bool isnum, nint newi) parsenum(@string s, nint start
 }
 
 internal static void badVerb(this ж<pp> Ꮡp, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.erroring = true;
     p.buf.writeString(percentBangString);
@@ -486,7 +486,7 @@ internal static void badVerb(this ж<pp> Ꮡp, rune verb) {
 }
 
 internal static void fmtBool(this ж<pp> Ꮡp, bool v, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
     case (rune)'t' or (rune)'v': {
@@ -511,7 +511,7 @@ internal static void fmtBool(this ж<pp> Ꮡp, bool v, rune verb) {
 
 // fmtInteger formats a signed or unsigned integer.
 internal static void fmtInteger(this ж<pp> Ꮡp, uint64 v, bool isSigned, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
     case (rune)'v': {
@@ -564,7 +564,7 @@ internal static void fmtInteger(this ж<pp> Ꮡp, uint64 v, bool isSigned, rune 
 // fmtFloat formats a float. The default precision for each verb
 // is specified as last argument in the call to fmt_float.
 internal static void fmtFloat(this ж<pp> Ꮡp, float64 v, nint size, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
     case (rune)'v': {
@@ -594,7 +594,7 @@ internal static void fmtFloat(this ж<pp> Ꮡp, float64 v, nint size, rune verb)
 // r = real(v) and j = imag(v) as (r+ji) using
 // fmtFloat for r and j formatting.
 internal static void fmtComplex(this ж<pp> Ꮡp, complex128 v, nint size, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Make sure any unsupported verbs are found before the
     // calls to fmtFloat to not generate an incorrect error string.
@@ -618,7 +618,7 @@ internal static void fmtComplex(this ж<pp> Ꮡp, complex128 v, nint size, rune 
 }
 
 internal static void fmtString(this ж<pp> Ꮡp, @string v, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
     case (rune)'v': {
@@ -653,7 +653,7 @@ internal static void fmtString(this ж<pp> Ꮡp, @string v, rune verb) {
 }
 
 internal static void fmtBytes(this ж<pp> Ꮡp, slice<byte> v, rune verb, @string typeString) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
     case (rune)'v' or (rune)'d': {
@@ -707,7 +707,7 @@ internal static void fmtBytes(this ж<pp> Ꮡp, slice<byte> v, rune verb, @strin
 }
 
 internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     uintptr u = default!;
     var exprᴛ1 = value.Kind();
@@ -759,7 +759,7 @@ internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune ve
 internal static readonly @string methodˢ = " method: "u8;
 
 internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     {
         var err = recover(); if (err != default!) {
@@ -804,7 +804,7 @@ internal static readonly @string stringˢ = "String"u8;
 internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     bool handled = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.erroring) {
             return;
@@ -871,7 +871,7 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
 internal static readonly @string byteˢ = "[]byte"u8;
 
 internal static void printArg(this ж<pp> Ꮡp, any arg, rune verb) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     p.arg = arg;
     p.value = new reflectꓸValue(nil);
@@ -1001,7 +1001,7 @@ internal static void printArg(this ж<pp> Ꮡp, any arg, rune verb) {
 // printValue is similar to printArg but starts with a reflect value, not an interface{} value.
 // It does not handle 'p' and 'T' verbs because these should have been already handled by printArg.
 internal static void printValue(this ж<pp> Ꮡp, reflectꓸValue value, rune verb, nint depth) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Handle values with special methods if not already handled by printArg (depth == 0).
     if (depth > 0 && value.IsValid() && value.CanInterface()) {
@@ -1306,7 +1306,7 @@ internal static (nint index, nint wid, bool ok) parseArgNumber(@string format) {
 }
 
 internal static void doPrintf(this ж<pp> Ꮡp, @string format, slice<any> a) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     nint end = len(format);
     nint argNum = 0;
@@ -1510,7 +1510,7 @@ break_formatLoop:;
 }
 
 internal static void doPrint(this ж<pp> Ꮡp, slice<any> a) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     var prevString = false;
     foreach (var (argNum, arg) in a) {
@@ -1527,7 +1527,7 @@ internal static void doPrint(this ж<pp> Ꮡp, slice<any> a) {
 // doPrintln is like doPrint but always adds a space between arguments
 // and a newline after the last argument.
 internal static void doPrintln(this ж<pp> Ꮡp, slice<any> a) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     foreach (var (argNum, arg) in a) {
         if (argNum > 0) {

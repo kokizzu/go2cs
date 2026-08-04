@@ -56,18 +56,16 @@ internal static UntypedInt numSweepClasses => /* numSpanClasses * 2 */ 272;
 internal static sweepClass sweepClassDone => /* sweepClass(^uint32(0)) */ 4294967295;
 
 internal static sweepClass load(this ж<sweepClass> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
-
-    return ((sweepClass)atomic.Load(Ꮡ((uint32)(s))));
+    return ((sweepClass)atomic.Load(Ꮡs.Reinterpret<sweepClass, uint32>()));
 }
 
 internal static void update(this ж<sweepClass> Ꮡs, sweepClass sNew) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Only update *s if its current value is less than sNew,
     // since *s increases monotonically.
     var sOld = Ꮡs.load();
-    while (sOld < sNew && !atomic.Cas(Ꮡ((uint32)(s)), (uint32)sOld, (uint32)sNew)) {
+    while (sOld < sNew && !atomic.Cas(Ꮡs.Reinterpret<sweepClass, uint32>(), (uint32)sOld, (uint32)sNew)) {
         sOld = Ꮡs.load();
     }
 }
@@ -78,9 +76,7 @@ internal static void update(this ж<sweepClass> Ꮡs, sweepClass sNew) {
 // as the above on most architectures. Some architectures
 // like RISC-V however have native support for an atomic max.
 internal static void clear(this ж<sweepClass> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
-
-    atomic.Store(Ꮡ((uint32)(s)), 0);
+    atomic.Store(Ꮡs.Reinterpret<sweepClass, uint32>(), 0);
 }
 
 // split returns the underlying span class as well as
@@ -339,7 +335,7 @@ internal static readonly @string useOfInvalidSweepLockerˢ = "use of invalid swe
 // tryAcquire attempts to acquire sweep ownership of span s. If it
 // successfully acquires ownership, it blocks sweep completion.
 [GoRecv] internal static (sweepLocked, bool) tryAcquire(this ref sweepLocker l, ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (!l.valid) {
         @throw(useOfInvalidSweepLockerˢ);
@@ -465,7 +461,7 @@ internal static readonly @string mspanEnsureSweptMIsNotˢ = "mspan.ensureSwept: 
 //
 //go:nowritebarrier
 internal static void ensureSwept(this ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     // Caller must disable preemption.
     // Otherwise when this function returns the span can become unswept again
@@ -861,10 +857,10 @@ internal static readonly @string foundPointerToFreeObjectˢ = "found pointer to 
 // but it was still live in the last cycle, so this GC cycle found a
 // pointer to that object and marked it.
 internal static void reportZombies(this ж<mspan> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     printlock();
-    print((@string)"runtime: marked free object in span "u8, Ꮡs, (@string)", elemsize="u8, s.elemsize, (@string)" freeindex="u8, s.freeindex, (@string)" (bad use of unsafe.Pointer? try -d=checkptr)\n"u8);
+    print((@string)"runtime: marked free object in span "u8, Ꮡs.OrTypedNil(), (@string)", elemsize="u8, s.elemsize, (@string)" freeindex="u8, s.freeindex, (@string)" (bad use of unsafe.Pointer? try -d=checkptr)\n"u8);
     var mbits = s.markBitsForBase();
     var abits = s.allocBitsForIndex(0);
     for (var i = (uintptr)0; i < (uintptr)s.nelems; i++) {

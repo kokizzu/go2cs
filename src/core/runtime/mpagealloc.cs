@@ -273,9 +273,9 @@ internal static (nint, nint) blockAlignSummaryRange(nint level, nint lo, nint hi
 internal static readonly @string rootLevelMaxPagesDoesnTˢ = "root level max pages doesn't fit in summary"u8;
 
 internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sysMemStat> ᏑsysStat, bool test) {
-    ref var Δp = ref Ꮡp.Value;
-    ref var mheapLock = ref ᏑmheapLock.Value;
-    ref var sysStat = ref ᏑsysStat.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
+    ref var mheapLock = ref ᏑmheapLock.DerefOrNull();
+    ref var sysStat = ref ᏑsysStat.DerefOrNull();
 
     if (levelLogPages[0] > logMaxPackedValue) {
         // We can't represent 1<<levelLogPages[0] pages, the maximum number
@@ -326,7 +326,7 @@ internal static readonly @string pageAllocOutOfMemoryˢ = "pageAlloc: out of mem
 //
 // p.mheapLock must be held.
 internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     assertLockHeld(Δp.mheapLock);
     // Round up to chunks, since we can't deal with increments smaller
@@ -667,7 +667,7 @@ internal static readonly @string badSummaryDataˢ = "bad summary data"u8;
     // pages on the root level and narrow that down if we descend into
     // that summary. But as soon as we need to iterate beyond that summary
     // in a level to find a large enough range, we'll stop narrowing.
-    var foundFree = (offAddr addrΔ1, uintptr size) => {
+    void foundFree(offAddr addrΔ1, uintptr size) {
         if (ᏑfirstFree.Value.@base.lessEqual(addrΔ1) && addrΔ1.add(size - 1).lessEqual(ᏑfirstFree.Value.bound)){
             // This range fits within the current firstFree window, so narrow
             // down the firstFree window to the base and bound of this range.
@@ -681,7 +681,7 @@ internal static readonly @string badSummaryDataˢ = "bad summary data"u8;
             print((@string)"runtime: base = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), (@string)", bound = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), (@string)"\n"u8);
             @throw(rangePartiallyOverlapsˢ);
         }
-    };
+    }
     // lastSum is the summary which we saw on the previous level that made us
     // move on to the next level. Used to print additional information in the
     // case of a catastrophic failure.
@@ -891,7 +891,7 @@ Found:
 //
 //go:systemstack
 internal static void free(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr npages) {
-    ref var Δp = ref Ꮡp.Value;
+    ref var Δp = ref Ꮡp.DerefOrNull();
 
     assertLockHeld(Δp.mheapLock);
     // If we're freeing pages below the p.searchAddr, update searchAddr.

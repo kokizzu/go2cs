@@ -101,7 +101,6 @@ using static go.net.http_package;
 [assembly: GoImplement<finishAsyncByteRead, io_package.Reader>]
 [assembly: GoImplement<globalOptionsHandler, ΔHandler>]
 [assembly: GoImplement<go.net.http.internal_package.FlushAfterChunkWriter, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.net.url_package.ΔError, error>(Pointer = true)]
 [assembly: GoImplement<gzipReader, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<htmlSig, sniffSig>]
 [assembly: GoImplement<http2ConnectionError, error>]
@@ -209,6 +208,7 @@ using static go.net.http_package;
 [assembly: GoImplement<rᴛ1, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<rᴛ1, io_package.Reader>]
 [assembly: GoImplement<rᴛ1, io_package.WriterTo>(Promoted = true)]
+[assembly: GoImplement<serverHandler, ΔHandler>]
 [assembly: GoImplement<socksAddr, net_package.ΔAddr>(Pointer = true)]
 [assembly: GoImplement<socksConn, net_package.Conn>(Pointer = true)]
 [assembly: GoImplement<socksConn, net_package.Conn>(Promoted = true)]
@@ -230,7 +230,6 @@ using static go.net.http_package;
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<Request, ж<Request>>(Indirect = true)]
-[assembly: GoImplicitConv<bufio.Writer, ж<bufio.Writer>>(Indirect = true)]
 [assembly: GoImplicitConv<http2ClientConn, ж<http2ClientConn>>(Indirect = true)]
 [assembly: GoImplicitConv<http2MetaHeadersFrame, ж<http2MetaHeadersFrame>>(Indirect = true)]
 [assembly: GoImplicitConv<http2Server, ж<http2Server>>(Indirect = true)]

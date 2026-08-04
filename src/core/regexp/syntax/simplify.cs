@@ -13,7 +13,7 @@ partial class syntax_package {
 // for /(x){1,2}/ is /(x)(x)?/ but both parentheses capture as $1.
 // The returned regexp may share structure with or be the original.
 public static ж<Regexp> Simplify(this ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.DerefOrNil();
+    ref var re = ref Ꮡre.DerefOrNull();
 
     if (Ꮡre == nil) {
         return default!;
@@ -126,8 +126,8 @@ Op: OpNoMatch));
 // Letting them call simplify1 makes sure the expressions they
 // generate are simple.
 internal static ж<Regexp> simplify1(Op op, Flags flags, ж<Regexp> Ꮡsub, ж<Regexp> Ꮡre) {
-    ref var sub = ref Ꮡsub.DerefOrNil();
-    ref var re = ref Ꮡre.DerefOrNil();
+    ref var sub = ref Ꮡsub.DerefOrNull();
+    ref var re = ref Ꮡre.DerefOrNull();
 
     // Special case: repeat the empty string as much as
     // you want, but it's still the empty string.
@@ -141,7 +141,7 @@ internal static ж<Regexp> simplify1(Op op, Flags flags, ж<Regexp> Ꮡsub, ж<R
     if (Ꮡre != nil && re.Op == op && (Flags)(re.Flags & NonGreedy) == (Flags)(flags & NonGreedy) && Ꮡsub == re.Sub[0]) {
         return Ꮡre;
     }
-    Ꮡre = Ꮡ(new Regexp(Op: op, Flags: flags)); re = ref Ꮡre.DerefOrNil();
+    Ꮡre = Ꮡ(new Regexp(Op: op, Flags: flags)); re = ref Ꮡre.DerefOrNull();
     re.Sub = builtin.append(re.Sub0[..0], Ꮡsub);
     return Ꮡre;
 }

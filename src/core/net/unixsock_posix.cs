@@ -106,7 +106,7 @@ internal static @string sotypeToNet(nint sotype) {
 }
 
 internal static (syscallꓸSockaddr, error) sockaddr(this ж<UnixAddr> Ꮡa, nint family) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return (default!, default!);
@@ -154,7 +154,7 @@ internal static Δsockaddr toLocal(this ж<UnixAddr> Ꮡa, @string net) {
 }
 
 [GoRecv] internal static (nint, error) writeTo(this ref UnixConn c, slice<byte> b, ж<UnixAddr> Ꮡaddr) {
-    ref var addr = ref Ꮡaddr.DerefOrNil();
+    ref var addr = ref Ꮡaddr.DerefOrNull();
 
     if ((~c.fd).isConnected) {
         return (0, ErrWriteToConnected);
@@ -174,7 +174,7 @@ internal static Δsockaddr toLocal(this ж<UnixAddr> Ꮡa, @string net) {
     nint oobn = default!;
     error err = default!;
 
-    ref var addr = ref Ꮡaddr.DerefOrNil();
+    ref var addr = ref Ꮡaddr.DerefOrNull();
     if ((~c.fd).sotype == syscall.SOCK_DGRAM && (~c.fd).isConnected) {
         return (0, 0, ErrWriteToConnected);
     }
@@ -189,7 +189,7 @@ internal static Δsockaddr toLocal(this ж<UnixAddr> Ꮡa, @string net) {
 }
 
 internal static (ж<UnixConn>, error) dialUnix(this ж<sysDialer> Ꮡsd, context.Context ctx, ж<UnixAddr> Ꮡladdr, ж<UnixAddr> Ꮡraddr) {
-    ref var sd = ref Ꮡsd.Value;
+    ref var sd = ref Ꮡsd.DerefOrNull();
 
     var ctrlCtxFn = sd.Dialer.ControlContext;
     if (ctrlCtxFn == default! && sd.Dialer.Control != default!) {
@@ -211,7 +211,7 @@ internal static (ж<UnixConn>, error) dialUnix(this ж<sysDialer> Ꮡsd, context
 }
 
 internal static error close(this ж<UnixListener> Ꮡln) {
-    ref var ln = ref Ꮡln.Value;
+    ref var ln = ref Ꮡln.DerefOrNull();
 
     // The operating system doesn't clean up
     // the file that announcing created, so
@@ -253,8 +253,8 @@ internal static error close(this ж<UnixListener> Ꮡln) {
 }
 
 internal static (ж<UnixListener>, error) listenUnix(this ж<sysListener> Ꮡsl, context.Context ctx, ж<UnixAddr> Ꮡladdr) {
-    ref var sl = ref Ꮡsl.Value;
-    ref var laddr = ref Ꮡladdr.Value;
+    ref var sl = ref Ꮡsl.DerefOrNull();
+    ref var laddr = ref Ꮡladdr.DerefOrNull();
 
     Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn = default!;
     if (sl.ListenConfig.Control != default!) {
@@ -268,7 +268,7 @@ internal static (ж<UnixListener>, error) listenUnix(this ж<sysListener> Ꮡsl,
 }
 
 internal static (ж<UnixConn>, error) listenUnixgram(this ж<sysListener> Ꮡsl, context.Context ctx, ж<UnixAddr> Ꮡladdr) {
-    ref var sl = ref Ꮡsl.Value;
+    ref var sl = ref Ꮡsl.DerefOrNull();
 
     Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn = default!;
     if (sl.ListenConfig.Control != default!) {

@@ -135,7 +135,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
 
 // push queues buf into queue of buffers.
 [GoRecv] internal static void push(this ref traceBufQueue q, ж<traceBuf> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     buf.link = default!;
     if (q.head == nil){
@@ -249,7 +249,7 @@ internal static readonly @string vCouldNotFitInˢ = "v could not fit in traceByt
 //
 //go:systemstack
 internal static void traceBufFlush(ж<traceBuf> Ꮡbuf, uintptr gen) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.DerefOrNull();
 
     assertLockHeld(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
     // Write out the non-header length of the batch in the header.

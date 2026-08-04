@@ -133,7 +133,7 @@ internal static UntypedInt maxProfStackDepth => 1024;
 
 // add accumulates b into a. It does not zero b.
 [GoRecv] internal static void add(this ref memRecordCycle a, ж<memRecordCycle> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     a.allocs += b.allocs;
     a.frees += b.frees;
@@ -244,7 +244,7 @@ internal static readonly @string badProfileStackCountˢ = "bad profile stack cou
 // stk returns the slice in b holding the stack. The caller can asssume that the
 // backing array is immutable.
 internal static slice<uintptr> stk(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var stk = (ж<array<uintptr>>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref b), /* unsafe.Sizeof(*b) */ (uintptr)48));
     if (b.nstk > maxProfStackDepth) {
@@ -259,7 +259,7 @@ internal static readonly @string badUseOfBucketMpˢ = "bad use of bucket.mp"u8;
 
 // mp returns the memRecord associated with the memProfile bucket b.
 internal static ж<memRecord> mp(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.typ != memProfile) {
         @throw(badUseOfBucketMpˢ);
@@ -273,7 +273,7 @@ internal static readonly @string badUseOfBucketBpˢ = "bad use of bucket.bp"u8;
 
 // bp returns the blockRecord associated with the blockProfile bucket b.
 internal static ж<blockRecord> bp(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (b.typ != blockProfile && b.typ != mutexProfile) {
         @throw(badUseOfBucketBpˢ);
@@ -435,7 +435,7 @@ internal static void mProf_PostSweep() {
 
 // Called by malloc to record a profiled block.
 internal static void mProf_Malloc(ж<m> Ꮡmp, @unsafe.Pointer Δp, uintptr size) {
-    ref var mp = ref Ꮡmp.Value;
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (mp.profStack == default!) {
         // mp.profStack is nil if we happen to sample an allocation during the
@@ -581,7 +581,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
     nint n = default!;
     var lastFuncID = abi.FuncIDNormal;
     var pcBufʗ1 = pcBuf;
-    var skipOrAdd = (uintptr retPC) => {
+    bool skipOrAdd(uintptr retPC) {
         if (skip > 0){
             skip--;
         } else 
@@ -590,7 +590,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
             n++;
         }
         return n < len(pcBufʗ1);
-    };
+    }
     while (n < len(pcBuf) && fp != nil) {
         // return addr sits one word above the frame pointer
         var pc = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)((uintptr)fp + (uintptr)goarch.PtrSize));
@@ -766,7 +766,7 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
 //
 //go:nowritebarrierrec
 internal static void recordUnlock(this ж<mLockProfile> Ꮡprof, ж<mutex> Ꮡl) {
-    ref var prof = ref Ꮡprof.Value;
+    ref var prof = ref Ꮡprof.DerefOrNull();
 
     if ((uintptr)Ꮡl == prof.pending) {
         Ꮡprof.captureStack();
@@ -779,7 +779,7 @@ internal static void recordUnlock(this ж<mLockProfile> Ꮡprof, ж<mutex> Ꮡl)
 }
 
 internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
-    ref var prof = ref Ꮡprof.Value;
+    ref var prof = ref Ꮡprof.DerefOrNull();
 
     if (debug.profstackdepth == 0) {
         // profstackdepth is set to 0 by the user, so mp.profStack is nil and we
@@ -1082,7 +1082,7 @@ internal static (nint n, bool ok) memProfileInternal(nint size, bool inuseZero, 
 }
 
 internal static void copyMemProfileRecord(ж<MemProfileRecord> Ꮡdst, profilerecord.MemProfileRecord src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst.AllocBytes = src.AllocBytes;
     dst.FreeBytes = src.FreeBytes;
@@ -1209,7 +1209,7 @@ internal static (nint n, bool ok) blockProfileInternal(nint size, Action<profile
 // The call stack is copied as-is. The caller is responsible for handling inline
 // expansion, needed when the call stack was collected with frame pointer unwinding.
 internal static void copyBlockProfileRecord(ж<BlockProfileRecord> Ꮡdst, profilerecord.BlockProfileRecord src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.DerefOrNull();
 
     dst.Count = src.Count;
     dst.Cycles = src.Cycles;
@@ -1391,21 +1391,15 @@ internal static goroutineProfileState goroutineProfileSatisfied => 2;
 [GoType("@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
 
 internal static goroutineProfileState Load(this ж<goroutineProfileStateHolder> Ꮡp) {
-    ref var Δp = ref Ꮡp.Value;
-
-    return ((goroutineProfileState)(Ꮡ((atomic.Uint32)(Δp))).Load());
+    return ((goroutineProfileState)(Ꮡp.Reinterpret<goroutineProfileStateHolder, atomic.Uint32>()).Load());
 }
 
 internal static void Store(this ж<goroutineProfileStateHolder> Ꮡp, goroutineProfileState value) {
-    ref var Δp = ref Ꮡp.Value;
-
-    (Ꮡ((atomic.Uint32)(Δp))).Store((uint32)value);
+    (Ꮡp.Reinterpret<goroutineProfileStateHolder, atomic.Uint32>()).Store((uint32)value);
 }
 
 internal static bool CompareAndSwap(this ж<goroutineProfileStateHolder> Ꮡp, goroutineProfileState old, goroutineProfileState @new) {
-    ref var Δp = ref Ꮡp.Value;
-
-    return (Ꮡ((atomic.Uint32)(Δp))).CompareAndSwap((uint32)old, (uint32)@new);
+    return (Ꮡp.Reinterpret<goroutineProfileStateHolder, atomic.Uint32>()).CompareAndSwap((uint32)old, (uint32)@new);
 }
 
 internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
@@ -1537,7 +1531,7 @@ internal static void tryRecordGoroutineProfileWB(ж<g> Ꮡgp1) {
 // in the current goroutine profile: either that it should not be profiled, or
 // that a snapshot of its call stack and labels are now in the profile.
 internal static void tryRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf, Action yield) {
-    ref var gp1 = ref Ꮡgp1.Value;
+    ref var gp1 = ref Ꮡgp1.DerefOrNull();
 
     if (readgstatus(Ꮡgp1) == _Gdead) {
         // Dead goroutines should not appear in the profile. Goroutines that
@@ -1589,7 +1583,7 @@ internal static readonly @string cannotReadStackOfRunningˢ = "cannot read stack
 // stack), or from the scheduler in preparation to execute gp1 (running on the
 // system stack).
 internal static void doRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf) {
-    ref var gp1 = ref Ꮡgp1.Value;
+    ref var gp1 = ref Ꮡgp1.DerefOrNull();
 
     if (readgstatus(Ꮡgp1) == _Grunning) {
         print((@string)"doRecordGoroutineProfile gp1="u8, gp1.goid, (@string)"\n"u8);
@@ -1625,11 +1619,11 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
 
     var gp = getg();
     var gpʗ1 = gp;
-    var isOK = (ж<g> gp1) => {
+    bool isOK(ж<g> gp1) {
         // Checking isSystemGoroutine here makes GoroutineProfile
         // consistent with both NumGoroutine and Stack.
         return gp1 != gpʗ1 && readgstatus(gp1) != _Gdead && !isSystemGoroutine(gp1, false);
-    };
+    }
     var pcbuf = makeProfStack();
     // see saveg() for explanation
     var stw = stopTheWorld(stwGoroutineProfile);
@@ -1725,8 +1719,8 @@ internal static (nint n, bool ok) goroutineProfileInternal(slice<profilerecord.S
 }
 
 internal static void saveg(uintptr pc, uintptr sp, ж<g> Ꮡgp, ж<profilerecord.StackRecord> Ꮡr, slice<uintptr> pcbuf) {
-    ref var gp = ref Ꮡgp.Value;
-    ref var r = ref Ꮡr.Value;
+    ref var gp = ref Ꮡgp.DerefOrNull();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     // To reduce memory usage, we want to allocate a r.Stack that is just big
     // enough to hold gp's stack trace. Naively we might achieve this by

@@ -65,9 +65,9 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
     var procs = new MutatorUtilizationV2_procsCount[]{}.slice();
     var seenSync = false;
     // Helpers.
-    var handleSTW = (ΔRange r) => (UtilFlags)(flags & UtilSTW) != 0 && isGCSTW(r);
-    var handleMarkAssist = (ΔRange r) => (UtilFlags)(flags & UtilAssist) != 0 && isGCMarkAssist(r);
-    var handleSweep = (ΔRange r) => (UtilFlags)(flags & UtilSweep) != 0 && isGCSweep(r);
+    bool handleSTW(ΔRange r) => (UtilFlags)(flags & UtilSTW) != 0 && isGCSTW(r);
+    bool handleMarkAssist(ΔRange r) => (UtilFlags)(flags & UtilAssist) != 0 && isGCMarkAssist(r);
+    bool handleSweep(ΔRange r) => (UtilFlags)(flags & UtilSweep) != 0 && isGCSweep(r);
     // Iterate through the trace, tracking mutator utilization.
     ж<ΔEvent> lastEv = default!;
     foreach (var (i, _) in events) {
@@ -138,8 +138,8 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                             // assist doesn't actually count.
                             break;
                         }
+                        fallthrough = true;
                     } while (false);
-                    fallthrough = true;
                 }
                 if (fallthrough || !matchᴛ2 && (handleSweep(r))) { matchᴛ2 = true;
                     do {
@@ -174,8 +174,8 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                     } while (false);
                 }
 
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ2 == EventRangeBegin) { matchᴛ1 = true;
             var r = (~ev).Range();
@@ -527,7 +527,7 @@ internal static void Swap(this utilHeap h, nint i, nint j) {
 //
 // It returns true if further calls to addMU would be pointless.
 internal static bool addMU(this ж<accumulator> Ꮡacc, int64 timeΔ1, float64 mu, time.Duration window) {
-    ref var acc = ref Ꮡacc.Value;
+    ref var acc = ref Ꮡacc.DerefOrNull();
 
     if (mu < acc.mmu) {
         acc.mmu = mu;
@@ -700,7 +700,7 @@ keep:;
 }
 
 [GoRecv] internal static void mmu(this ref MMUCurve c, time.Duration window, ж<accumulator> Ꮡacc) {
-    ref var acc = ref Ꮡacc.Value;
+    ref var acc = ref Ꮡacc.DerefOrNull();
 
     if (window <= 0) {
         acc.mmu = 0D;
@@ -802,7 +802,7 @@ keep:;
 // bandMMU computes the precise minimum mutator utilization for
 // windows with a left edge in band bandIdx.
 [GoRecv] internal static void bandMMU(this ref mmuSeries c, nint bandIdx, time.Duration window, ж<accumulator> Ꮡacc) {
-    ref var acc = ref Ꮡacc.Value;
+    ref var acc = ref Ꮡacc.DerefOrNull();
 
     var util = c.util;
     // We think of the mutator utilization over time as the

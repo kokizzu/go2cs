@@ -106,7 +106,7 @@ internal static ж<defaultHandler> newDefaultHandler(Func<uintptr, slice<byte>, 
 internal static error Handle(this ж<defaultHandler> Ꮡh, context.Context ctx, Record r) => func((defer, recover) => {
     r = r.ΔClone();
 
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
     var buf = buffer.New();
     buf.WriteString(r.Level.String());
     buf.WriteByte((rune)' ');
@@ -217,7 +217,7 @@ public static readonly @string SourceKey = "source"u8;
 }
 
 internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<Attr> @as) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     // We are going to ignore empty groups, so if the entire slice consists of
     // them, there is nothing to do.
@@ -264,7 +264,7 @@ internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<A
 internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((defer, recover) => {
     r = r.ΔClone();
 
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.DerefOrNull();
     ref var state = ref heap<handleState>(out var Ꮡstate);
     state = Ꮡh.newHandleState(buffer.New(), true, ""u8);
     defer(Ꮡstate.free);
@@ -299,7 +299,7 @@ internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((def
     }
     // source
     if (h.opts.AddSource) {
-        Ꮡstate.appendAttr(Any(SourceKey, r.source()));
+        Ꮡstate.appendAttr(Any(SourceKey, r.source().OrTypedNil()));
     }
     key = MessageKey;
     @string msg = r.Message;
@@ -322,7 +322,7 @@ internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((def
 internal static void appendNonBuiltIns(this ж<handleState> Ꮡs, Record r) {
     r = r.ΔClone();
 
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
     // preformatted Attrs
     {
         var pfa = s.h.Value.preformattedAttrs; if (len(pfa) > 0) {
@@ -397,8 +397,7 @@ internal static ж<sync.Pool> ᏑgroupPool = new(new sync.Pool(New: () => {
 internal static ref sync.Pool groupPool => ref ᏑgroupPool.Value;
 
 internal static handleState newHandleState(this ж<commonHandler> Ꮡh, ж<buffer.Buffer> Ꮡbuf, bool freeBuf, @string sep) {
-    ref var h = ref Ꮡh.Value;
-    ref var buf = ref Ꮡbuf.ValueSlot;
+    ref var h = ref Ꮡh.DerefOrNull();
 
     var s = new handleState(
         h: Ꮡh,
@@ -421,7 +420,7 @@ internal static handleState newHandleState(this ж<commonHandler> Ꮡh, ж<buffe
     {
         var gs = s.groups; if (gs != nil) {
             gs.ValueSlot = (gs.ValueSlot)[..0];
-            ᏑgroupPool.Put(gs);
+            ᏑgroupPool.Put(gs.OrTypedNil());
         }
     }
     s.prefix.Free();
@@ -483,7 +482,7 @@ internal static bool appendAttrs(this ж<handleState> Ꮡs, slice<Attr> @as) {
 // It handles replacement and checking for an empty key.
 // It reports whether something was appended.
 internal static bool appendAttr(this ж<handleState> Ꮡs, Attr a) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     a.Value = a.Value.Resolve();
     {
@@ -583,7 +582,7 @@ internal static bool appendAttr(this ж<handleState> Ꮡs, Attr a) {
 internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static void appendValue(this ж<handleState> Ꮡs, Value v) => func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     var vʗ1 = v;
     defer(() => {
@@ -618,7 +617,7 @@ internal static void appendValue(this ж<handleState> Ꮡs, Value v) => func((de
 });
 
 internal static void appendTime(this ж<handleState> Ꮡs, time.Time t) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if ((~s.h).json){
         appendJSONTime(Ꮡs, t);

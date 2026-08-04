@@ -36,7 +36,7 @@ partial class net_package {
 }
 
 public static @string String(this ж<IPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil) {
         return nilˢ;
@@ -49,7 +49,7 @@ public static @string String(this ж<IPAddr> Ꮡa) {
 }
 
 internal static bool isWildcard(this ж<IPAddr> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNil();
+    ref var a = ref Ꮡa.DerefOrNull();
 
     if (Ꮡa == nil || a.IP == default!) {
         return true;
@@ -109,7 +109,7 @@ public static (ж<IPAddr>, error) ResolveIPAddr(@string network, @string address
 // SyscallConn returns a raw network connection.
 // This implements the [syscall.Conn] interface.
 public static (syscall.RawConn, error) SyscallConn(this ж<IPConn> Ꮡc) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (default!, syscall.EINVAL);
@@ -119,7 +119,7 @@ public static (syscall.RawConn, error) SyscallConn(this ж<IPConn> Ꮡc) {
 
 // ReadFromIP acts like ReadFrom but returns an IPAddr.
 public static (nint, ж<IPAddr>, error) ReadFromIP(this ж<IPConn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, default!, syscall.EINVAL);
@@ -133,7 +133,7 @@ public static (nint, ж<IPAddr>, error) ReadFromIP(this ж<IPConn> Ꮡc, slice<b
 
 // ReadFrom implements the [PacketConn] ReadFrom method.
 public static (nint, ΔAddr, error) ReadFrom(this ж<IPConn> Ꮡc, slice<byte> b) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, default!, syscall.EINVAL);
@@ -162,7 +162,7 @@ public static (nint n, nint oobn, nint flags, ж<IPAddr> addr, error err) ReadMs
     ж<IPAddr> addr = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, 0, 0, default!, syscall.EINVAL);
     }
@@ -175,7 +175,7 @@ public static (nint n, nint oobn, nint flags, ж<IPAddr> addr, error err) ReadMs
 
 // WriteToIP acts like [IPConn.WriteTo] but takes an [IPAddr].
 public static (nint, error) WriteToIP(this ж<IPConn> Ꮡc, slice<byte> b, ж<IPAddr> Ꮡaddr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -189,7 +189,7 @@ public static (nint, error) WriteToIP(this ж<IPConn> Ꮡc, slice<byte> b, ж<IP
 
 // WriteTo implements the [PacketConn] WriteTo method.
 public static (nint, error) WriteTo(this ж<IPConn> Ꮡc, slice<byte> b, ΔAddr addr) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, syscall.EINVAL);
@@ -216,7 +216,7 @@ public static (nint n, nint oobn, error err) WriteMsgIP(this ж<IPConn> Ꮡc, sl
     nint oobn = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
     if (!Ꮡc.of(IPConn.Ꮡconn).ok()) {
         return (0, 0, syscall.EINVAL);
     }
@@ -258,10 +258,10 @@ public static (ж<IPConn>, error) DialIP(@string network, ж<IPAddr> Ꮡladdr, �
 // ListenIP listens on all available IP addresses of the local system
 // except multicast IP addresses.
 public static (ж<IPConn>, error) ListenIP(@string network, ж<IPAddr> Ꮡladdr) {
-    ref var laddr = ref Ꮡladdr.DerefOrNil();
+    ref var laddr = ref Ꮡladdr.DerefOrNull();
 
     if (Ꮡladdr == nil) {
-        Ꮡladdr = Ꮡ(new IPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNil();
+        Ꮡladdr = Ꮡ(new IPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNull();
     }
     var sl = Ꮡ(new sysListener(network: network, address: Ꮡladdr.String()));
     var (c, err) = sl.listenIP(context.Background(), Ꮡladdr);

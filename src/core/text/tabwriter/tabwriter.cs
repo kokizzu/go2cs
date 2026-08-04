@@ -198,7 +198,7 @@ public const nuint Debug = 32;
 //			to the tab width in the viewer displaying the result)
 //	flags		formatting control
 public static ж<Writer> Init(this ж<Writer> Ꮡb, io.Writer output, nint minwidth, nint tabwidth, nint padding, byte padchar, nuint flags) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     if (minwidth < 0 || tabwidth < 0 || padding < 0) {
         throw panic("negative minwidth, tabwidth, or padding");
@@ -469,8 +469,8 @@ public static UntypedInt Escape => /* '\xff' */ 255;
 }
 
 internal static void handlePanic(this ж<Writer> Ꮡb, ж<error> Ꮡerr, @string op) => func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
-    ref var err = ref Ꮡerr.ValueSlot;
+    ref var b = ref Ꮡb.DerefOrNull();
+    ref var err = ref Ꮡerr.DerefOrNull();
 
     {
         var e = recover(); if (e != default!) {
@@ -505,7 +505,7 @@ private static readonly @string flushˢ = "Flush"u8;
 internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(Ꮡb.handlePanic, Ꮡerr, flushˢ, defer);
@@ -544,7 +544,7 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
     nint n = default!;
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
         deferǃ(Ꮡb.handlePanic, Ꮡerr, writeˢ, defer);

@@ -75,7 +75,7 @@ internal static ж<Table> makeTable(uint64 poly) {
 }
 
 internal static ж<array<Table>> makeSlicingBy8Table(ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     ref var helperTable = ref heap(new array<Table>(8), out var ᏑhelperTable);
     helperTable[0] = t.Clone();
@@ -147,7 +147,7 @@ internal static readonly @string hashCrc64TablesDoNotˢ = "hash/crc64: tables do
 }
 
 internal static uint64 update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
-    ref var tab = ref Ꮡtab.Value;
+    ref var tab = ref Ꮡtab.DerefOrNull();
 
     buildSlicing8TablesOnce();
     crc = ~crc;
@@ -212,7 +212,7 @@ public static uint64 Checksum(slice<byte> data, ж<Table> Ꮡtab) {
 
 // tableSum returns the ISO checksum of table t.
 internal static uint64 tableSum(ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNil();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     array<byte> a = new(2048);
     var b = a[..0];

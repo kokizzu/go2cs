@@ -162,7 +162,7 @@ partial class json_package {
 // an error.
 public static (slice<byte>, error) Marshal(any v) => func<(slice<byte>, error)>((defer, recover) => {
     var e = newEncodeState();
-    deferǃ(ᏑencodeStatePool.Put, e, defer);
+    deferǃ(ᏑencodeStatePool.Put, e.OrTypedNil(), defer);
     var err = e.marshal(v, new encOpts(escapeHTML: true));
     if (err != default!) {
         return (default!, err);
@@ -454,7 +454,7 @@ internal static void invalidValueEncoder(ж<encodeState> Ꮡe, reflectꓸValue v
 }
 
 internal static void marshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
         Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -478,7 +478,7 @@ internal static void marshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, e
 }
 
 internal static void addrMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     var va = v.Addr();
     if (va.IsNil()) {
@@ -499,7 +499,7 @@ internal static void addrMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
 }
 
 internal static void textMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
         Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -518,7 +518,7 @@ internal static void textMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
 }
 
 internal static void addrTextMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     var va = v.Addr();
     if (va.IsNil()) {
@@ -560,7 +560,7 @@ internal static void uintEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpt
 [GoType("num:nint")] partial struct floatEncoder;
 
 internal static void encode(this floatEncoder bits, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     var f = v.Float();
     if (math.IsInf(f, 0) || math.IsNaN(f)) {
@@ -598,7 +598,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> float32Encoder
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> float64Encoder = (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => (((floatEncoder)64)).encode(p1, p2, p3);
 
 internal static void stringEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (AreEqual(v.Type(), numberType)) {
         @string numStr = v.String();
@@ -703,7 +703,7 @@ internal static void interfaceEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, e
 }
 
 internal static void unsupportedTypeEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts _) {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     e.error(new UnsupportedTypeErrorжerror(Ꮡ(new UnsupportedTypeError(v.Type()))));
 }
@@ -766,7 +766,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newStructEncod
 }
 
 internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (v.IsNil()) {
         Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -852,7 +852,7 @@ internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, en
 }
 
 internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (v.IsNil()) {
         Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -917,7 +917,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newArrayEncode
 }
 
 internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
-    ref var e = ref Ꮡe.Value;
+    ref var e = ref Ꮡe.DerefOrNull();
 
     if (v.IsNil()) {
         Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);

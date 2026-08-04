@@ -187,7 +187,7 @@ internal static bool goosPrefersCgo() {
 // required to use the go resolver. The provided Resolver is optional.
 // This will report true if the cgo resolver is not available.
 [GoRecv] internal static bool mustUseGoResolver(this ref conf c, ж<Resolver> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNil();
+    ref var r = ref Ꮡr.DerefOrNull();
 
     if (!cgoAvailable) {
         return true;
@@ -214,7 +214,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) addrLookupOrder(t
     ΔhostLookupOrder ret = default!;
     ж<dnsConfig> dnsConf = default!;
     func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
@@ -233,7 +233,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
     ΔhostLookupOrder ret = default!;
     ж<dnsConfig> dnsConf = default!;
     func((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
@@ -514,7 +514,7 @@ internal static (@string dnsMode, nint debugLevel) goDebugNetDNS() {
     nint debugLevel = default!;
 
     @string goDebug = netdns.Value();
-    var parsePart = (@string s) => {
+    void parsePart(@string s) {
         if (s == ""u8) {
             return;
         }
@@ -523,7 +523,7 @@ internal static (@string dnsMode, nint debugLevel) goDebugNetDNS() {
         } else {
             dnsMode = s;
         }
-    };
+    }
     {
         nint i = bytealg.IndexByteString(goDebug, (rune)'+'); if (i != -1) {
             parsePart(goDebug[..(int)(i)]);

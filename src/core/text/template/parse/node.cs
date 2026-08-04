@@ -104,7 +104,7 @@ internal static ж<ListNode> newList(this ж<Tree> Ꮡt, Pos pos) {
 }
 
 public static ж<ListNode> CopyList(this ж<ListNode> Ꮡl) {
-    ref var l = ref Ꮡl.DerefOrNil();
+    ref var l = ref Ꮡl.DerefOrNull();
 
     if (Ꮡl == nil) {
         return Ꮡl;
@@ -232,7 +232,7 @@ internal static ж<PipeNode> newPipeline(this ж<Tree> Ꮡt, Pos pos, nint line,
 }
 
 public static ж<PipeNode> CopyPipe(this ж<PipeNode> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (Ꮡp == nil) {
         return Ꮡp;
@@ -332,7 +332,7 @@ internal static ж<CommandNode> newCommand(this ж<Tree> Ꮡt, Pos pos) {
 }
 
 public static Node Copy(this ж<CommandNode> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNil();
+    ref var c = ref Ꮡc.DerefOrNull();
 
     if (Ꮡc == nil) {
         return new CommandNodeжNode(Ꮡc);
@@ -361,7 +361,7 @@ public static ж<IdentifierNode> NewIdentifier(@string ident) {
 // Chained for convenience.
 // TODO: fix one day?
 public static ж<IdentifierNode> SetPos(this ж<IdentifierNode> Ꮡi, Pos pos) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.Pos = pos;
     return Ꮡi;
@@ -371,7 +371,7 @@ public static ж<IdentifierNode> SetPos(this ж<IdentifierNode> Ꮡi, Pos pos) {
 // Chained for convenience.
 // TODO: fix one day?
 public static ж<IdentifierNode> SetTree(this ж<IdentifierNode> Ꮡi, ж<Tree> Ꮡt) {
-    ref var i = ref Ꮡi.Value;
+    ref var i = ref Ꮡi.DerefOrNull();
 
     i.tr = Ꮡt;
     return Ꮡi;

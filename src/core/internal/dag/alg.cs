@@ -21,7 +21,7 @@ partial class dag_package {
 
 // Topo returns a topological sort of g. This function is deterministic.
 public static slice<@string> Topo(this ж<Graph> Ꮡg) {
-    ref var g = ref Ꮡg.Value;
+    ref var g = ref Ꮡg.DerefOrNull();
 
     ref var topo = ref heap<slice<@string>>(out var Ꮡtopo);
     topo = new slice<@string>(0, len(g.Nodes));

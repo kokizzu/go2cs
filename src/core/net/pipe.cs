@@ -28,7 +28,7 @@ internal static pipeDeadline makePipeDeadline() {
 //
 // A zero value for t prevents timeout.
 internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) => func((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
     defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock);
@@ -65,7 +65,7 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) => func((defer
 
 // wait returns a channel that is closed when the deadline is exceeded.
 internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) => func((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
     defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock);
@@ -163,7 +163,7 @@ internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     switch (ᐧ) {
     case {} when isClosedChan(p.localDone): {
         return (0, Δio.ErrClosedPipe);
@@ -209,7 +209,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
     func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
         switch (ᐧ) {
         case {} when isClosedChan(p.localDone): {
@@ -253,7 +253,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
 }
 
 internal static error SetDeadline(this ж<pipe> Ꮡp, time.Time t) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (isClosedChan(p.localDone) || isClosedChan(p.remoteDone)) {
         return Δio.ErrClosedPipe;
@@ -264,7 +264,7 @@ internal static error SetDeadline(this ж<pipe> Ꮡp, time.Time t) {
 }
 
 internal static error SetReadDeadline(this ж<pipe> Ꮡp, time.Time t) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (isClosedChan(p.localDone) || isClosedChan(p.remoteDone)) {
         return Δio.ErrClosedPipe;
@@ -274,7 +274,7 @@ internal static error SetReadDeadline(this ж<pipe> Ꮡp, time.Time t) {
 }
 
 internal static error SetWriteDeadline(this ж<pipe> Ꮡp, time.Time t) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (isClosedChan(p.localDone) || isClosedChan(p.remoteDone)) {
         return Δio.ErrClosedPipe;
