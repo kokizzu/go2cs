@@ -571,8 +571,8 @@ internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCa
         nint h = (nint)((nint)(~typΔ1).Hash & (newN - 1));
         while (ᐧ) {
             if (newEntriesʗ1[h].Typ == 0) {
-                newEntriesʗ1[h].Typ = (uintptr)new @unsafe.Pointer(typΔ1);
-                newEntriesʗ1[h].Itab = (uintptr)new @unsafe.Pointer(tabΔ1);
+                newEntriesʗ1[h].Typ = (uintptr)typΔ1;
+                newEntriesʗ1[h].Itab = (uintptr)tabΔ1;
                 return;
             }
             h = (nint)((h + 1) & (newN - 1));
@@ -672,9 +672,9 @@ internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.In
         nint h = (nint)((nint)(~typΔ1).Hash & (newN - 1));
         while (ᐧ) {
             if (newEntriesʗ1[h].Typ == 0) {
-                newEntriesʗ1[h].Typ = (uintptr)new @unsafe.Pointer(typΔ1);
+                newEntriesʗ1[h].Typ = (uintptr)typΔ1;
                 newEntriesʗ1[h].Case = case_Δ1;
-                newEntriesʗ1[h].Itab = (uintptr)new @unsafe.Pointer(tabΔ1);
+                newEntriesʗ1[h].Itab = (uintptr)tabΔ1;
                 return;
             }
             h = (nint)((h + 1) & (newN - 1));

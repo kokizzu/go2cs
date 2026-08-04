@@ -103,7 +103,7 @@ public static (ж<SID>, error) StringToSid(@string s) => func<(ж<SID>, error)>(
     if (e != default!) {
         return (default!, e);
     }
-    deferǃ(LocalFree, ((ΔHandle)(uintptr)new @unsafe.Pointer(sid)), defer);
+    deferǃ(LocalFree, ((ΔHandle)(uintptr)sid), defer);
     return sid.Copy();
 });
 
@@ -159,7 +159,7 @@ public static (@string, error) String(this ж<SID> Ꮡsid) => func<(@string, err
     if (e != default!) {
         return ("", e);
     }
-    deferǃ(LocalFree, ((ΔHandle)(uintptr)new @unsafe.Pointer(s)), defer);
+    deferǃ(LocalFree, ((ΔHandle)(uintptr)s), defer);
     return (utf16PtrToString(s), default!);
 });
 

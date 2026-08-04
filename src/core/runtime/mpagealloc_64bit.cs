@@ -206,7 +206,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
         needMin = haveMax;
     }
     // Avoid a panic from indexing one past the last element.
-    var chunksBase = (uintptr)new @unsafe.Pointer(Ꮡ(s.chunks, 0));
+    var chunksBase = (uintptr)Ꮡ(s.chunks, 0);
     var have = makeAddrRange(chunksBase + haveMin * scSize, chunksBase + haveMax * scSize);
     var need = makeAddrRange(chunksBase + needMin * scSize, chunksBase + needMax * scSize);
     // Subtract any overlap from rounding. We can't re-map memory because

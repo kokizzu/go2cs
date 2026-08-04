@@ -827,7 +827,7 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
                 // Free the space for the unrolled bitmap.
                 var sʗ3 = s;
                 systemstack(() => {
-                    var sΔ1 = spanOf((uintptr)new @unsafe.Pointer((~sʗ3).largeType));
+                    var sΔ1 = spanOf((uintptr)(~sʗ3).largeType);
                     Ꮡmheap_.freeManual(sΔ1, spanAllocPtrScalarBits);
                 });
                 // Make sure to zero this pointer without putting the old

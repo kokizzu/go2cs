@@ -25,7 +25,7 @@ internal static T clone<T>(T valueʗp, ж<cloneSeq> Ꮡseq)
 
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
     foreach (var (_, offset) in seq.stringOffsets) {
-        var ps = (ж<@string>)(uintptr)((@unsafe.Pointer)((uintptr)new @unsafe.Pointer(Ꮡvalue) + offset));
+        var ps = (ж<@string>)(uintptr)((@unsafe.Pointer)((uintptr)Ꮡvalue + offset));
         ps.Value = stringslite.Clone(ps.Value);
     }
     return value;

@@ -208,7 +208,7 @@ internal static stdFunction windowsFindfunc(uintptr lib, slice<byte> name) {
     if (name[len(name) - 1] != 0) {
         @throw(usageˢ);
     }
-    var f = stdcall2(_GetProcAddress, lib, (uintptr)new @unsafe.Pointer(Ꮡ(name, 0)));
+    var f = stdcall2(_GetProcAddress, lib, (uintptr)Ꮡ(name, 0));
     return ((stdFunction)(@unsafe.Pointer)f);
 }
 
@@ -223,7 +223,7 @@ internal static uintptr sysDirectoryLen;
 internal static readonly @string unableToDetermineSystemˢ = "Unable to determine system directory"u8;
 
 internal static void initSysDirectory() {
-    var l = stdcall2(_GetSystemDirectoryA, (uintptr)new @unsafe.Pointer(ᏑsysDirectory.at<byte>(0)), (uintptr)(len(sysDirectory) - 1));
+    var l = stdcall2(_GetSystemDirectoryA, (uintptr)ᏑsysDirectory.at<byte>(0), (uintptr)(len(sysDirectory) - 1));
     if (l == 0 || l > (uintptr)(len(sysDirectory) - 1)) {
         @throw(unableToDetermineSystemˢ);
     }
@@ -237,20 +237,20 @@ internal static @string windows_GetSystemDirectory() {
 }
 
 internal static uintptr windowsLoadSystemLib(slice<uint16> name) {
-    return stdcall3(_LoadLibraryExW, (uintptr)new @unsafe.Pointer(Ꮡ(name, 0)), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32);
+    return stdcall3(_LoadLibraryExW, (uintptr)Ꮡ(name, 0), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
 //go:linkname windows_QueryPerformanceCounter internal/syscall/windows.QueryPerformanceCounter
 internal static int64 windows_QueryPerformanceCounter() {
     ref var counter = ref heap(new int64(), out var Ꮡcounter);
-    stdcall1(_QueryPerformanceCounter, (uintptr)new @unsafe.Pointer(Ꮡcounter));
+    stdcall1(_QueryPerformanceCounter, (uintptr)Ꮡcounter);
     return counter;
 }
 
 //go:linkname windows_QueryPerformanceFrequency internal/syscall/windows.QueryPerformanceFrequency
 internal static int64 windows_QueryPerformanceFrequency() {
     ref var frequency = ref heap(new int64(), out var Ꮡfrequency);
-    stdcall1(_QueryPerformanceFrequency, (uintptr)new @unsafe.Pointer(Ꮡfrequency));
+    stdcall1(_QueryPerformanceFrequency, (uintptr)Ꮡfrequency);
     return frequency;
 }
 
@@ -320,7 +320,7 @@ internal static void monitorSuspendResume() {
     ref var handle = ref heap<uintptr>(out var Ꮡhandle);
     handle = (uintptr)0;
     stdcall3(powerRegisterSuspendResumeNotification, _DEVICE_NOTIFY_CALLBACK,
-        (uintptr)new @unsafe.Pointer(Ꮡparams), (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡhandle).Value));
+        (uintptr)Ꮡparams, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡhandle).Value));
 }
 
 internal static int32 getproccount() {
@@ -341,13 +341,13 @@ internal static int32 getproccount() {
     }
     // use GetSystemInfo if GetProcessAffinityMask fails
     ref var info = ref heap(new systeminfo(), out var Ꮡinfo);
-    stdcall1(_GetSystemInfo, (uintptr)new @unsafe.Pointer(Ꮡinfo));
+    stdcall1(_GetSystemInfo, (uintptr)Ꮡinfo);
     return (int32)info.dwnumberofprocessors;
 }
 
 internal static uintptr getPageSize() {
     ref var info = ref heap(new systeminfo(), out var Ꮡinfo);
-    stdcall1(_GetSystemInfo, (uintptr)new @unsafe.Pointer(Ꮡinfo));
+    stdcall1(_GetSystemInfo, (uintptr)Ꮡinfo);
     return (uintptr)info.dwpagesize;
 }
 
@@ -454,7 +454,7 @@ internal static void initLongPathSupport() {
     ref var info = ref heap<_OSVERSIONINFOW>(out var Ꮡinfo);
     info = new _OSVERSIONINFOW(nil);
     info.osVersionInfoSize = (uint32)/* unsafe.Sizeof(info) */ (uintptr)276;
-    stdcall1(_RtlGetVersion, (uintptr)new @unsafe.Pointer(Ꮡinfo));
+    stdcall1(_RtlGetVersion, (uintptr)Ꮡinfo);
     if (info.majorVersion < 10 || (info.majorVersion == 10 && info.minorVersion == 0 && info.buildNumber < 15063)) {
         return;
     }
@@ -487,7 +487,7 @@ internal static void osinit() {
 //go:nosplit
 internal static nint readRandom(slice<byte> r) {
     nint n = 0;
-    if ((uintptr)(stdcall2(_ProcessPrng, (uintptr)new @unsafe.Pointer(Ꮡ(r, 0)), (uintptr)len(r)) & 0xff) != 0) {
+    if ((uintptr)(stdcall2(_ProcessPrng, (uintptr)Ꮡ(r, 0), (uintptr)len(r)) & 0xff) != 0) {
         n = len(r);
     }
     return n;
@@ -576,7 +576,7 @@ internal static unsafe int32 write1(uintptr fd, @unsafe.Pointer buf, int32 n) {
     }
     if (!isASCII) {
         ref var m = ref heap(new uint32(), out var Ꮡm);
-        var isConsole = stdcall2(_GetConsoleMode, handle, (uintptr)new @unsafe.Pointer(Ꮡm)) != 0;
+        var isConsole = stdcall2(_GetConsoleMode, handle, (uintptr)Ꮡm) != 0;
         // If this is a console output, various non-unicode code pages can be in use.
         // Use the dedicated WriteConsole call to ensure unicode is printed correctly.
         if (isConsole) {
@@ -584,7 +584,7 @@ internal static unsafe int32 write1(uintptr fd, @unsafe.Pointer buf, int32 n) {
         }
     }
     ref var written = ref heap(new uint32(), out var Ꮡwritten);
-    stdcall5(_WriteFile, handle, (uintptr)buf, (uintptr)n, (uintptr)new @unsafe.Pointer(Ꮡwritten), 0);
+    stdcall5(_WriteFile, handle, (uintptr)buf, (uintptr)n, (uintptr)Ꮡwritten, 0);
     return (int32)written;
 }
 
@@ -637,9 +637,9 @@ internal static void writeConsoleUTF16(uintptr handle, slice<uint16> b) {
     ref var written = ref heap(new uint32(), out var Ꮡwritten);
     stdcall5(_WriteConsoleW,
         handle,
-        (uintptr)new @unsafe.Pointer(Ꮡ(b, 0)),
+        (uintptr)Ꮡ(b, 0),
         (uintptr)l,
-        (uintptr)new @unsafe.Pointer(Ꮡwritten),
+        (uintptr)Ꮡwritten,
         0);
     return;
 }
@@ -667,7 +667,7 @@ internal static int32 semasleep(int64 ns) {
                 ms = 1;
             }
             result = stdcall4(_WaitForMultipleObjects, 2,
-                (uintptr)new @unsafe.Pointer(Ꮡ(new uintptr[]{(~(~getg()).m).waitsema, (~(~getg()).m).resumesema}.array())),
+                (uintptr)Ꮡ(new uintptr[]{(~(~getg()).m).waitsema, (~(~getg()).m).resumesema}.array()),
                 0, (uintptr)ms);
             if (result != _WAIT_OBJECT_0 + 1) {
                 // Not a suspend/resume event
@@ -765,7 +765,7 @@ internal static readonly @string runtimeNewosprocˢ = "runtime.newosproc"u8;
 internal static void newosproc(ж<m> Ꮡmp) {
     // We pass 0 for the stack size to use the default for this binary.
     var thandle = stdcall6(_CreateThread, 0, 0,
-        abi.FuncPCABI0(tstart_stdcall), (uintptr)new @unsafe.Pointer(Ꮡmp),
+        abi.FuncPCABI0(tstart_stdcall), (uintptr)Ꮡmp,
         0, 0);
     if (thandle == 0) {
         if (atomic.Load(Ꮡexiting) != 0) {
@@ -874,7 +874,7 @@ internal static void minit() {
     // Query the true stack base from the OS. Currently we're
     // running on a small assumed stack.
     ref var mbi = ref heap(new memoryBasicInformation(), out var Ꮡmbi);
-    var res = stdcall3(_VirtualQuery, (uintptr)new @unsafe.Pointer(Ꮡmbi), (uintptr)new @unsafe.Pointer(Ꮡmbi), /* unsafe.Sizeof(mbi) */ (uintptr)48);
+    var res = stdcall3(_VirtualQuery, (uintptr)Ꮡmbi, (uintptr)Ꮡmbi, /* unsafe.Sizeof(mbi) */ (uintptr)48);
     if (res == 0) {
         print((@string)"runtime: VirtualQuery failed; errno="u8, getlasterror(), (@string)"\n"u8);
         @throw(virtualQueryForStackBaseˢ);
@@ -1117,7 +1117,7 @@ internal static void usleep(uint32 us) {
             ref var dt = ref heap<int64>(out var Ꮡdt);
             dt = -10 * (int64)us;
             // relative sleep (negative), 100ns units
-            stdcall6(_SetWaitableTimer, h, (uintptr)new @unsafe.Pointer(Ꮡdt), 0, 0, 0, 0);
+            stdcall6(_SetWaitableTimer, h, (uintptr)Ꮡdt, 0, 0, 0, 0);
             timeout = _INFINITE;
         } else {
             h = _INVALID_HANDLE_VALUE;
@@ -1164,9 +1164,9 @@ internal static void profilem(ж<m> Ꮡmp, uintptr thread) {
     // Align Context to 16 bytes.
     ж<context> c = default!;
     ref var cbuf = ref heap(new array<byte>(1247), out var Ꮡcbuf);
-    c = (ж<context>)(uintptr)((@unsafe.Pointer)((uintptr)(((uintptr)new @unsafe.Pointer(Ꮡcbuf.at<byte>(15))) & ~(uintptr)15)));
+    c = (ж<context>)(uintptr)((@unsafe.Pointer)((uintptr)(((uintptr)Ꮡcbuf.at<byte>(15)) & ~(uintptr)15)));
     c.Value.contextflags = _CONTEXT_CONTROL;
-    stdcall2(_GetThreadContext, thread, (uintptr)new @unsafe.Pointer(c));
+    stdcall2(_GetThreadContext, thread, (uintptr)c);
     var gp = gFromSP(Ꮡmp, c.sp());
     sigprof(c.ip(), c.sp(), c.lr(), gp, Ꮡmp);
 }
@@ -1264,7 +1264,7 @@ internal static void setThreadCPUProfiler(int32 hz) {
         }
         due = (int64)ms * -10000;
     }
-    stdcall6(_SetWaitableTimer, profiletimer, (uintptr)new @unsafe.Pointer(Ꮡdue), (uintptr)ms, 0, 0, 0);
+    stdcall6(_SetWaitableTimer, profiletimer, (uintptr)Ꮡdue, (uintptr)ms, 0, 0, 0);
     atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
 }
 
@@ -1311,7 +1311,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
     // Prepare thread context buffer. This must be aligned to 16 bytes.
     ж<context> c = default!;
     ref var cbuf = ref heap(new array<byte>(1247), out var Ꮡcbuf);
-    c = (ж<context>)(uintptr)((@unsafe.Pointer)((uintptr)(((uintptr)new @unsafe.Pointer(Ꮡcbuf.at<byte>(15))) & ~(uintptr)15)));
+    c = (ж<context>)(uintptr)((@unsafe.Pointer)((uintptr)(((uintptr)Ꮡcbuf.at<byte>(15)) & ~(uintptr)15)));
     c.Value.contextflags = _CONTEXT_CONTROL;
     // Serialize thread suspension. SuspendThread is asynchronous,
     // so it's otherwise possible for two threads to suspend each
@@ -1337,7 +1337,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
     // We have to get the thread context before inspecting the M
     // because SuspendThread only requests a suspend.
     // GetThreadContext actually blocks until it's suspended.
-    stdcall2(_GetThreadContext, thread, (uintptr)new @unsafe.Pointer(c));
+    stdcall2(_GetThreadContext, thread, (uintptr)c);
     unlock(ᏑsuspendLock);
     // Does it want a preemption and is it safe to preempt?
     var gp = gFromSP(Ꮡmp, c.sp());
@@ -1384,7 +1384,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
                 // this extra slot. See sigctxt.pushCall in
                 // signal_arm64.go.
                 // SP needs 16-byte alignment
-                stdcall2(_SetThreadContext, thread, (uintptr)new @unsafe.Pointer(c));
+                stdcall2(_SetThreadContext, thread, (uintptr)c);
             }
         }
     }

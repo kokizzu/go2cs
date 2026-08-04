@@ -8,22 +8,22 @@ partial class main_package {
 [GoType("num:uintptr")] partial struct Handle;
 
 internal static uintptr addrOfNamed(ж<Handle> Ꮡh) {
-    return (uintptr)new @unsafe.Pointer(Ꮡh);
+    return (uintptr)Ꮡh;
 }
 
 internal static uintptr addrOfPtrPtr(ж<ж<uint16>> Ꮡpp) {
-    return (uintptr)new @unsafe.Pointer(Ꮡpp);
+    return (uintptr)Ꮡpp;
 }
 
 internal static uintptr addrOfBasic(ж<uint16> Ꮡb) {
-    return (uintptr)new @unsafe.Pointer(Ꮡb);
+    return (uintptr)Ꮡb;
 }
 
 internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
     ref var h = ref Ꮡh.DerefOrNull();
 
     h = h + 7;
-    return ((uintptr)new @unsafe.Pointer(Ꮡh), h);
+    return ((uintptr)Ꮡh, h);
 }
 
 [GoType] partial struct node {

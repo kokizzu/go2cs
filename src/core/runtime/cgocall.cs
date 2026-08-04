@@ -601,7 +601,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         if (it == nil) {
             return;
         }
-        if (inheap((uintptr)new @unsafe.Pointer(it))) {
+        if (inheap((uintptr)it)) {
             // A type known at compile time is OK since it's
             // constant. A type not known at compile time will be
             // in the heap and will not be OK.

@@ -135,7 +135,7 @@ internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, ni
 // stringDataOnStack reports whether the string's data is
 // stored on the current goroutine's stack.
 internal static bool stringDataOnStack(@string s) {
-    var ptr = (uintptr)new @unsafe.Pointer(@unsafe.StringData(s));
+    var ptr = (uintptr)@unsafe.StringData(s);
     var stk = getg().Value.stack;
     return stk.lo <= ptr && ptr < stk.hi;
 }

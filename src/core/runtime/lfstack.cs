@@ -66,13 +66,13 @@ internal static readonly @string badLfnodeAddressˢ = "bad lfnode address"u8;
 // lfstack.push. This only needs to be called when node is allocated.
 internal static void lfnodeValidate(ж<lfnode> Ꮡnode) {
     {
-        var (@base, _, _) = findObject((uintptr)new @unsafe.Pointer(Ꮡnode), 0, 0); if (@base != 0) {
+        var (@base, _, _) = findObject((uintptr)Ꮡnode, 0, 0); if (@base != 0) {
             @throw(lfstackNodeAllocatedFromˢ);
         }
     }
     if (lfstackUnpack(lfstackPack(Ꮡnode, ~(uintptr)0)) != Ꮡnode) {
         printlock();
-        println((@string)"runtime: bad lfnode address"u8, ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡnode)));
+        println((@string)"runtime: bad lfnode address"u8, ((Δhex)(uint64)(uintptr)Ꮡnode));
         @throw(badLfnodeAddressˢ);
     }
 }

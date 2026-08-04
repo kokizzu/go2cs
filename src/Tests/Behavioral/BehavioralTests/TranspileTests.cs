@@ -1525,6 +1525,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckTypeSwitchTagShadowRename() => CheckTarget("TypeSwitchTagShadowRename");
 
     [TestMethod]
+    public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
+
+    [TestMethod]
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]

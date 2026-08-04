@@ -1528,6 +1528,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckTypeSwitchTagShadowRename() => CheckTarget("TypeSwitchTagShadowRename");
 
     [TestMethod]
+    public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
+
+    [TestMethod]
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]

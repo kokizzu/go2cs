@@ -286,7 +286,7 @@ internal static void stkobjinit() {
     }
     // Set methodValueCallFrameObjs[0].gcdataoff so that
     // stackObjectRecord.gcdata() will work correctly with it.
-    var ptr = (uintptr)new @unsafe.Pointer(ᏑmethodValueCallFrameObjs.at<stackObjectRecord>(0));
+    var ptr = (uintptr)ᏑmethodValueCallFrameObjs.at<stackObjectRecord>(0);
     ж<moduledata> mod = default!;
     for (var datap = Ꮡfirstmoduledata; datap != nil; datap = datap.Value.next) {
         if ((~datap).gofunc <= ptr && ptr < (~datap).end) {
@@ -302,7 +302,7 @@ internal static void stkobjinit() {
 
         size: (int32)(~abiRegArgsType).Size_,
         _ptrdata: (int32)(~abiRegArgsType).PtrBytes,
-        gcdataoff: (uint32)((uintptr)new @unsafe.Pointer((~abiRegArgsType).GCData) - (~mod).rodata)
+        gcdataoff: (uint32)((uintptr)(~abiRegArgsType).GCData - (~mod).rodata)
     );
 }
 

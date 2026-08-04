@@ -287,7 +287,7 @@ public static error WSASendMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, uint32 fl
     if (err != default!) {
         return err;
     }
-    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.sendAddr, 6, (uintptr)fd, (uintptr)new @unsafe.Pointer(Ꮡmsg), (uintptr)flags, (uintptr)new @unsafe.Pointer(ᏑbytesSent), (uintptr)new @unsafe.Pointer(Ꮡoverlapped), (uintptr)new @unsafe.Pointer(Ꮡcroutine));
+    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.sendAddr, 6, (uintptr)fd, (uintptr)Ꮡmsg, (uintptr)flags, (uintptr)ᏑbytesSent, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
     if (r1 == socket_error) {
         if (e1 != 0){
             err = errnoErr(e1);
@@ -303,7 +303,7 @@ public static error WSARecvMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, ж<uint32
     if (err != default!) {
         return err;
     }
-    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.recvAddr, 5, (uintptr)fd, (uintptr)new @unsafe.Pointer(Ꮡmsg), (uintptr)new @unsafe.Pointer(ᏑbytesReceived), (uintptr)new @unsafe.Pointer(Ꮡoverlapped), (uintptr)new @unsafe.Pointer(Ꮡcroutine), 0);
+    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.recvAddr, 5, (uintptr)fd, (uintptr)Ꮡmsg, (uintptr)ᏑbytesReceived, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine, 0);
     if (r1 == socket_error) {
         if (e1 != 0){
             err = errnoErr(e1);

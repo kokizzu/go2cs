@@ -1464,7 +1464,7 @@ internal static bool isZero(slice<byte> b) {
     }
     const nint n = 32;
     // Align memory addresses to 8 bytes.
-    while ((uintptr)new @unsafe.Pointer(Ꮡ(b, 0)) % 8 != 0) {
+    while ((uintptr)Ꮡ(b, 0) % 8 != 0) {
         if (b[0] != 0) {
             return false;
         }

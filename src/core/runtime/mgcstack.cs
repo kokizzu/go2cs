@@ -160,7 +160,7 @@ internal const bool stackTraceDebug = false;
 internal static void setRecord(this ж<stackObject> Ꮡobj, ж<stackObjectRecord> Ꮡr) {
     // Types of stack objects are always in read-only memory, not the heap.
     // So not using a write barrier is ok.
-    (Ꮡobj.of(stackObject.Ꮡr).Reinterpret<ж<stackObjectRecord>, uintptr>()).Value = (uintptr)new @unsafe.Pointer(Ꮡr);
+    (Ꮡobj.of(stackObject.Ꮡr).Reinterpret<ж<stackObjectRecord>, uintptr>()).Value = (uintptr)Ꮡr;
 }
 
 // A stackScanState keeps track of the state used during the GC walk

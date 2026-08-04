@@ -42,7 +42,7 @@ internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
         @throw(runtimeSourceValueIsTooˢ);
     }
     if (goarch.PtrSize == 4) {
-        return (uintptr)(((uintptr)new @unsafe.Pointer(Ꮡpd) << (int)(sourceBits)) | (uintptr)source);
+        return (uintptr)(((uintptr)Ꮡpd << (int)(sourceBits)) | (uintptr)source);
     }
     return (uintptr)(uint64)taggedPointerPack(new @unsafe.Pointer(Ꮡpd), (uintptr)source);
 }
@@ -78,7 +78,7 @@ internal static ж<pollOperation> pollOperationFromOverlappedEntry(ж<overlapped
     // Check that the key matches the pollDesc pointer.
     bool keyMatch = default!;
     if (goarch.PtrSize == 4){
-        keyMatch = (uintptr)(e.key & ~(uintptr)(uintptr)sourceMasks) == ((uintptr)new @unsafe.Pointer((~op).pd) << (int)(sourceBits));
+        keyMatch = (uintptr)(e.key & ~(uintptr)(uintptr)sourceMasks) == ((uintptr)(~op).pd << (int)(sourceBits));
     } else {
         keyMatch = (ж<pollDesc>)(uintptr)(((taggedPointer)(uint64)e.key).pointer()) == (~op).pd;
     }
@@ -205,7 +205,7 @@ internal static (gList, int32) netpoll(int64 delay) {
     if (delay != 0) {
         mp.Value.blocked = true;
     }
-    if (stdcall6(_GetQueuedCompletionStatusEx, iocphandle, (uintptr)new @unsafe.Pointer(Ꮡentries.at<overlappedEntry>(0)), (uintptr)n, (uintptr)new @unsafe.Pointer(Ꮡn), (uintptr)wait, 0) == 0) {
+    if (stdcall6(_GetQueuedCompletionStatusEx, iocphandle, (uintptr)Ꮡentries.at<overlappedEntry>(0), (uintptr)n, (uintptr)Ꮡn, (uintptr)wait, 0) == 0) {
         mp.Value.blocked = false;
         var errno = getlasterror();
         if (errno == _WAIT_TIMEOUT) {
@@ -280,13 +280,13 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
         if (stdcall6(_SetWaitableTimer, // STATUS_CANCELLED is returned when the associated timer has already expired,
  // in which automatically cancels the wait completion packet.
  // relative sleep (negative), 100ns units
- (~mp).waitIocpTimer, (uintptr)new @unsafe.Pointer(Ꮡdt), 0, 0, 0, 0) == 0) {
+ (~mp).waitIocpTimer, (uintptr)Ꮡdt, 0, 0, 0, 0) == 0) {
             println((@string)"runtime: SetWaitableTimer failed; errno="u8, getlasterror());
             @throw(runtimeNetpollFailedˢ);
         }
         var key = packNetpollKey(netpollSourceTimer, nil);
         {
-            var errnoΔ2 = stdcall8(_NtAssociateWaitCompletionPacket, (~mp).waitIocpHandle, iocphandle, (~mp).waitIocpTimer, key, 0, 0, 0, (uintptr)new @unsafe.Pointer(Ꮡsignaled)); if (errnoΔ2 != 0) {
+            var errnoΔ2 = stdcall8(_NtAssociateWaitCompletionPacket, (~mp).waitIocpHandle, iocphandle, (~mp).waitIocpTimer, key, 0, 0, 0, (uintptr)Ꮡsignaled); if (errnoΔ2 != 0) {
                 println((@string)"runtime: NtAssociateWaitCompletionPacket failed; errno="u8, errnoΔ2);
                 @throw(runtimeNetpollFailedˢ);
             }

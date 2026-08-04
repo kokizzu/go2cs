@@ -148,7 +148,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
     case {} when i == fixedRootFinalizers: {
         for (var fb = allfin; fb != nil; fb = fb.Value.alllink) {
             var cnt = (uintptr)atomic.Load(fb.of(finblock.Ꮡcnt));
-            scanblock((uintptr)new @unsafe.Pointer(fb.at(finblock.Ꮡfin, 0)), cnt * /* unsafe.Sizeof(fb.fin[0]) */ (uintptr)40, Ꮡfinptrmask.at<byte>(0), Ꮡgcw, nil);
+            scanblock((uintptr)fb.at(finblock.Ꮡfin, 0), cnt * /* unsafe.Sizeof(fb.fin[0]) */ (uintptr)40, Ꮡfinptrmask.at<byte>(0), Ꮡgcw, nil);
         }
         break;
     }
@@ -864,7 +864,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         if ((~d).fn != default!) {
             // Scan the func value, which could be a stack allocated closure.
             // See issue 30453.
-            scanblock((uintptr)new @unsafe.Pointer(d.of(_defer.Ꮡfn)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
+            scanblock((uintptr)d.of(_defer.Ꮡfn), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
         }
         if ((~d).link != nil) {
             // The link field of a stack-allocated defer record might point
@@ -881,7 +881,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     }
     if (gp._panic != nil) {
         // Panics are always stack allocated.
-        Ꮡstate.putPtr((uintptr)new @unsafe.Pointer(gp._panic), false);
+        Ꮡstate.putPtr((uintptr)gp._panic, false);
     }
     // Find and scan all reachable stack objects.
     //

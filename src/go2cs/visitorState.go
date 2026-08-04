@@ -321,6 +321,7 @@ type Visitor struct {
 	sstringHoistedConvExprs map[*ast.CallExpr]string      // Per-func: eligible `string(x)` uses lifted to a shared sstring temp — each emits the temp NAME (see planSStringHoists)
 	sstringHoistsByStmt     map[ast.Stmt][]sstringHoist   // Per-func: hoisted sstring temp decls to inject before a top-level body statement (its anchor)
 	suppressSStringHoist    bool                          // Transient: while rendering a hoisted temp's OWN initializer, ignore sstringHoistedConvExprs so the real `((sstring)x)` view is emitted
+	deadUnsafePointerBoxes  map[*ast.CallExpr]bool        // `unsafe.Pointer(x)` conversions whose wrapper object an enclosing `uintptr(…)` reads straight back — emitted without it (see markDeadUnsafePointerBox)
 	identNames              map[*ast.Ident]string         // Local identifiers to adjusted names map
 	isReassigned            map[*ast.Ident]bool           // Local identifiers to reassignment status map
 	// untypedConstContexts maps an UNTYPED constant subexpression to the resolved type of its

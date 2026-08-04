@@ -559,7 +559,7 @@ internal static nint netpollcheckerr(ж<pollDesc> Ꮡpd, int32 mode) {
 }
 
 internal static bool netpollblockcommit(ж<g> Ꮡgp, @unsafe.Pointer gpp) {
-    var r = atomic.Casuintptr((ж<uintptr>)(uintptr)(gpp), pdWait, (uintptr)new @unsafe.Pointer(Ꮡgp));
+    var r = atomic.Casuintptr((ж<uintptr>)(uintptr)(gpp), pdWait, (uintptr)Ꮡgp);
     if (r) {
         // Bump the count of goroutines waiting for the poller.
         // The scheduler uses this to decide whether to block
