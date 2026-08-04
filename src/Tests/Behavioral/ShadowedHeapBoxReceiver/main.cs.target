@@ -17,7 +17,7 @@ public static void With(this ж<Builder> Ꮡb, Action<ж<Builder>> f) {
 }
 
 internal static nint compute() {
-    var inner = () => {
+    nint inner() {
         ref var bΔ1 = ref heap(new Builder(), out var ᏑbΔ1);
         ᏑbΔ1.With((ж<Builder> bΔ2) => {
             bΔ2.Value.n += 1;
@@ -29,7 +29,7 @@ internal static nint compute() {
             bΔ4.Value.n += 3;
         });
         return bΔ1.Sum();
-    };
+    }
     nint a = inner();
     ref var b = ref heap(new Builder(), out var Ꮡb);
     Ꮡb.With((ж<Builder> bΔ5) => {

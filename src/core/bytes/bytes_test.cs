@@ -61,10 +61,7 @@ internal static @string dots = "1....2....3....4"u8;
 public static void TestEqual(ж<testing.T> Ꮡt) {
     // Run the tests and check for allocation at the same time.
     var allocs = testing.AllocsPerRun(10, () => {
-        foreach (var (_, vᴛ1) in compareTests) {
-            ref var tt = ref heap(new compareTestsᴛ1(), out var Ꮡtt);
-            tt = vᴛ1;
-
+        foreach (var (_, tt) in compareTests) {
             var eql = Equal(tt.a, tt.b);
             if (eql != (tt.i == 0)) {
                 Ꮡt.Errorf(@"Equal(%q, %q) = %v"u8, tt.a, tt.b, eql);
@@ -512,7 +509,7 @@ public static void TestCountByte(ж<testing.T> Ꮡt) {
     // bigger than a page
     var windows = new nint[]{1, 2, 3, 4, 15, 16, 17, 31, 32, 33, 63, 64, 65, 128}.slice();
     var bʗ1 = b;
-    var testCountWindow = (nint i, nint window) => {
+    void testCountWindow(nint i, nint window) {
         for (nint j = 0; j < window; j++) {
             bʗ1[i + j] = (byte)100;
             nint p = Count(bʗ1[(int)(i)..(int)(i + window)], new byte[]{100}.slice());
@@ -520,7 +517,7 @@ public static void TestCountByte(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("TestCountByte.Count(%q, 100) = %d"u8, bʗ1[(int)(i)..(int)(i + window)], p);
             }
         }
-    };
+    }
     nint maxWnd = windows[len(windows) - 1];
     for (nint i = 0; i <= 2 * maxWnd; i++) {
         foreach (var (_, vᴛ1) in windows) {
@@ -552,7 +549,7 @@ public static void TestCountByte(ж<testing.T> Ꮡt) {
 
 // Make sure we don't count bytes outside our window
 public static void TestCountByteNoMatch(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     var b = new slice<byte>(5015);
     var windows = new nint[]{1, 2, 3, 4, 15, 16, 17, 31, 32, 33, 63, 64, 65, 128}.slice();
@@ -683,7 +680,7 @@ internal static readonly @string sameˢ = "same"u8;
 
 public static void BenchmarkEqual(ж<testing.B> Ꮡb) {
     Ꮡb.Run("0"u8, (ж<testing.B> bΔ1) => {
-        ref var buf = ref heap(new array<byte>(4), out var Ꮡbuf);
+        array<byte> buf = new(4);
         var buf1 = buf[0..0];
         var buf2 = buf[1..1];
         for (nint i = 0; i < (~bΔ1).N; i++) {
@@ -866,7 +863,7 @@ internal static slice<SplitTest> splittests = new SplitTest[]{
 }.slice();
 
 public static void TestSplit(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in splittests) {
         var a = SplitN(slice<byte>(tt.s), slice<byte>(tt.sep), tt.n);
@@ -1350,11 +1347,8 @@ internal static readonly @string bitˢ = "64-bit"u8;
 
 // See Issue golang.org/issue/16237
 public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
-    var runTestCases = (@string prefix, slice<TestRepeatCatchesOverflow_testCase> tests) => {
-        foreach (var (i, vᴛ1) in tests) {
-            ref var tt = ref heap(new TestRepeatCatchesOverflow_testCase(), out var Ꮡtt);
-            tt = vᴛ1;
-
+    void runTestCases(@string prefix, slice<TestRepeatCatchesOverflow_testCase> tests) {
+        foreach (var (i, tt) in tests) {
             var err = repeat(slice<byte>(tt.s), tt.count);
             if (tt.errStr == ""u8) {
                 if (err != default!) {
@@ -1366,7 +1360,7 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("%s#%d got %q want %q"u8, prefix, i, err, tt.errStr);
             }
         }
-    };
+    }
     nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
     runTestCases(""u8, new slice<TestRepeatCatchesOverflow_testCase>(7){
         [0] = new("--"u8, -2147483647, "negative"u8),
@@ -1415,7 +1409,7 @@ public static slice<RunesTest> RunesTests = new RunesTest[]{
 }.slice();
 
 public static void TestRunes(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in RunesTests) {
         var tin = slice<byte>(tt.@in);
@@ -1515,9 +1509,9 @@ internal static slice<TrimNilTest> trimNilTests = new TrimNilTest[]{
 internal static readonly @string nilˢ = "nil"u8;
 
 public static void TestTrim(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    var toFn = (Func<slice<byte>, @string, slice<byte>>, Func<slice<byte>, slice<byte>, slice<byte>>) (@string name) => {
+    (Func<slice<byte>, @string, slice<byte>>, Func<slice<byte>, slice<byte>, slice<byte>>) toFn(@string name) {
         var exprᴛ1 = name;
         if (exprᴛ1 == "Trim"u8) {
             return (Trim, default!);
@@ -1539,7 +1533,7 @@ public static void TestTrim(ж<testing.T> Ꮡt) {
             return (default!, default!);
         }
 
-    };
+    }
     foreach (var (_, tc) in trimTests) {
         @string name = tc.f;
         var (f, fb) = toFn(name);
@@ -1568,13 +1562,13 @@ public static void TestTrim(ж<testing.T> Ꮡt) {
         } else {
             actual = fb(tc.@in, slice<byte>(tc.arg));
         }
-        var report = @string (slice<byte> s) => {
+        @string report(slice<byte> s) {
             if (s == default!){
                 return nilˢ;
             } else {
                 return fmt.Sprintf("%q"u8, s);
             }
-        };
+        }
         if (len(actual) != 0){
             Ꮡt.Errorf("%s(%s, %q) returned non-empty value"u8, name, report(tc.@in), tc.arg);
         } else {
@@ -1758,7 +1752,7 @@ public static slice<ReplaceTest> ReplaceTests = new ReplaceTest[]{
 }.slice();
 
 public static void TestReplace(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in ReplaceTests) {
         var @in = append(slice<byte>(tt.@in), ((@string)"<spare>"u8).ꓸꓸꓸ);
@@ -1849,7 +1843,7 @@ public static slice<EqualFoldTestsᴛ1> EqualFoldTests = new EqualFoldTestsᴛ1[
 }.slice();
 
 public static void TestEqualFold(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (_, tt) in EqualFoldTests) {
         {
@@ -2093,8 +2087,8 @@ internal static Func<slice<byte>> makeFieldsInput = () => {
                     copy(x[(int)(i - 1)..], "χ"u8);
                     break;
                 }
+                fallthrough = true;
             } while (false);
-            fallthrough = true;
         }
         if (fallthrough || !matchᴛ1) { /* default: */
             x[i] = (rune)'x';
@@ -2204,7 +2198,7 @@ public static void BenchmarkTrimSpace(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkToValidUTF8(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var tests = new BenchmarkToValidUTF8_tests[]{
         new("Valid"u8, slice<byte>("typical"u8)),
@@ -2247,7 +2241,7 @@ internal static slice<byte> makeBenchInputHard() {
 internal static slice<byte> benchInputHard = makeBenchInputHard();
 
 internal static void benchmarkIndexHard(ж<testing.B> Ꮡb, slice<byte> sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Index(benchInputHard, sep);
@@ -2255,7 +2249,7 @@ internal static void benchmarkIndexHard(ж<testing.B> Ꮡb, slice<byte> sep) {
 }
 
 internal static void benchmarkLastIndexHard(ж<testing.B> Ꮡb, slice<byte> sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         LastIndex(benchInputHard, sep);
@@ -2263,7 +2257,7 @@ internal static void benchmarkLastIndexHard(ж<testing.B> Ꮡb, slice<byte> sep)
 }
 
 internal static void benchmarkCountHard(ж<testing.B> Ꮡb, slice<byte> sep) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Count(benchInputHard, sep);
@@ -2279,13 +2273,13 @@ public static void BenchmarkIndexHard2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexHard3(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkIndexHard(Ꮡb, slice<byte>("<b>hello world</b>"u8));
 }
 
 public static void BenchmarkIndexHard4(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkIndexHard(Ꮡb, slice<byte>("<pre><b>hello</b><strong>world</strong></pre>"u8));
 }
@@ -2299,7 +2293,7 @@ public static void BenchmarkLastIndexHard2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexHard3(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkLastIndexHard(Ꮡb, slice<byte>("<b>hello world</b>"u8));
 }
@@ -2313,13 +2307,13 @@ public static void BenchmarkCountHard2(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCountHard3(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     benchmarkCountHard(Ꮡb, slice<byte>("<b>hello world</b>"u8));
 }
 
 public static void BenchmarkSplitEmptySeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Split(benchInputHard, default!);
@@ -2327,7 +2321,7 @@ public static void BenchmarkSplitEmptySeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitSingleByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var sep = slice<byte>("/"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -2336,7 +2330,7 @@ public static void BenchmarkSplitSingleByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitMultiByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var sep = slice<byte>("hello"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -2345,7 +2339,7 @@ public static void BenchmarkSplitMultiByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitNSingleByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var sep = slice<byte>("/"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -2354,7 +2348,7 @@ public static void BenchmarkSplitNSingleByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSplitNMultiByteSeparator(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var sep = slice<byte>("hello"u8);
     for (nint i = 0; i < b.N; i++) {
@@ -2363,7 +2357,7 @@ public static void BenchmarkSplitNMultiByteSeparator(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkRepeat(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     for (nint i = 0; i < b.N; i++) {
         Repeat(slice<byte>("-"u8), 80);
@@ -2503,7 +2497,7 @@ public static void BenchmarkTrimASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkTrimByte(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var x = slice<byte>("  the quick brown fox   "u8);
     for (nint i = 0; i < b.N; i++) {

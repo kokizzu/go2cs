@@ -166,6 +166,7 @@
     <Project Path="Tests/Behavioral/ClosureCapturedPointerAddress/ClosureCapturedPointerAddress.csproj" />
     <Project Path="Tests/Behavioral/ClosureDefer/ClosureDefer.csproj" />
     <Project Path="Tests/Behavioral/ClosureEmbeddedPromotedPtrMethod/ClosureEmbeddedPromotedPtrMethod.csproj" />
+    <Project Path="Tests/Behavioral/ClosureLocalNoHeapBox/ClosureLocalNoHeapBox.csproj" />
     <Project Path="Tests/Behavioral/ClosureMixedReturnUnsigned/ClosureMixedReturnUnsigned.csproj" />
     <Project Path="Tests/Behavioral/ClosureParamShadow/ClosureParamShadow.csproj" />
     <Project Path="Tests/Behavioral/ClosureReassignsPtrParam/ClosureReassignsPtrParam.csproj" />
@@ -354,6 +355,7 @@
     <Project Path="Tests/Behavioral/LinknameVarPull/LinknameVarPull.csproj" />
     <Project Path="Tests/Behavioral/LinknameVarPullLib/LinknameVarPullLib.csproj" />
     <Project Path="Tests/Behavioral/LocalNamedTypeDecls/LocalNamedTypeDecls.csproj" />
+    <Project Path="Tests/Behavioral/LocalFunctionEmission/LocalFunctionEmission.csproj" />
     <Project Path="Tests/Behavioral/LocalShadowsEmbedHopType/LocalShadowsEmbedHopType.csproj" />
     <Project Path="Tests/Behavioral/LocalStructFieldAddr/LocalStructFieldAddr.csproj" />
     <Project Path="Tests/Behavioral/LocalTimeZone/LocalTimeZone.csproj" />
@@ -603,6 +605,7 @@
     <Project Path="Tests/Behavioral/SynthesizedDelegateChildPkg/SynthesizedDelegateChildPkg.csproj" />
     <Project Path="Tests/Behavioral/SynthesizedDelegateChildPkg/inner/SynthesizedDelegateChildPkg.inner.csproj" />
     <Project Path="Tests/Behavioral/SynthesizedDelegateCrossPkg/SynthesizedDelegateCrossPkg.csproj" />
+    <Project Path="Tests/Behavioral/SyncTimerChannel/SyncTimerChannel.csproj" />
     <Project Path="Tests/Behavioral/SwitchDefaultOrder/SwitchDefaultOrder.csproj" />
     <Project Path="Tests/Behavioral/SwitchFallthroughDefault/SwitchFallthroughDefault.csproj" />
     <Project Path="Tests/Behavioral/SwitchFallthroughDefaultReturn/SwitchFallthroughDefaultReturn.csproj" />

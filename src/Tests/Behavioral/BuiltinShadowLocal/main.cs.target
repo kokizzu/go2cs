@@ -56,13 +56,13 @@ private static readonly object shadowedˢ = (@string)"shadowed"u8;
 internal static void shadowedCalls() {
     ref var a = ref heap<arr>(out var Ꮡa);
     a = new arr(new nint[]{1, 2, 3}.array());
-    var make = (nint n) => n * 2;
-    var @new = (nint n) => n * 3;
-    var panic = (nint n) => n * 4;
-    var print = (nint n) => n * 5;
-    var println = (nint n) => n * 6;
-    var len = (ж<arr> p) => p.Value[0] + 100;
-    var cap = (ж<arr> p) => p.Value[1] + 200;
+    nint make(nint n) => n * 2;
+    nint @new(nint n) => n * 3;
+    nint panic(nint n) => n * 4;
+    nint print(nint n) => n * 5;
+    nint println(nint n) => n * 6;
+    nint len(ж<arr> p) => p.Value[0] + 100;
+    nint cap(ж<arr> p) => p.Value[1] + 200;
     fmt.Println(shadowedˢ, make(21), @new(7), panic(5));
     fmt.Println(shadowedˢ, print(4), println(3), len(Ꮡa), cap(Ꮡa));
 }

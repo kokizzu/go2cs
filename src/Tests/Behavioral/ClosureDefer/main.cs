@@ -75,9 +75,9 @@ internal static void Main() {
     fmt.Println(counted());
     var greet = makeGreeter(go2csˢ);
     greet();
-    var run = (Action fn) => {
+    void run(Action fn) {
         fn();
-    };
+    }
     run(() => func((defer, recover) => {
         deferǃ(ᴛ1 => fmt.Println(ᴛ1), argClosureDeferredˢ, defer);
         fmt.Println(argClosureBodyˢ);

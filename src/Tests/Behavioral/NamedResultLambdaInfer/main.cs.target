@@ -13,7 +13,7 @@ internal static (slice<nint> evens, slice<nint> odds, error err) parse(slice<nin
     slice<nint> odds = default!;
     error err = default!;
 
-    var classify = (slice<nint> e, slice<nint> o, error err) (slice<nint> vals) => {
+    (slice<nint> e, slice<nint> o, error err) classify(slice<nint> vals) {
         slice<nint> e = default!;
         slice<nint> o = default!;
         error errΔ1 = default!;
@@ -28,7 +28,7 @@ internal static (slice<nint> evens, slice<nint> odds, error err) parse(slice<nin
             }
         }
         return (e, o, default!);
-    };
+    }
     return classify(items);
 }
 

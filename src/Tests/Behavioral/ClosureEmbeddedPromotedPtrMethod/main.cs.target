@@ -31,17 +31,17 @@ private static readonly object appliedˢ2 = (@string)"applied:"u8;
 internal static (@string, nint) run() {
     ref var rep = ref heap(new run_rep(), out var Ꮡrep);
     rep.label = startˢ;
-    var build = () => {
+    nint build() {
         Ꮡrep.of(run_rep.Ꮡcounter).bump();
         Ꮡrep.Value.label = builtˢ;
         return Ꮡrep.Value.n;
-    };
+    }
     fmt.Println(innerˢ, build(), rep.label);
     nint got = apply(() => {
-        var touch = () => {
+        void touch() {
             Ꮡrep.of(run_rep.Ꮡcounter).bump();
             Ꮡrep.Value.label = appliedˢ;
-        };
+        }
         touch();
         return Ꮡrep.Value.n;
     });

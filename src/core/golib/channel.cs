@@ -54,6 +54,37 @@ public interface IChannel<T> : IChannel
 }
 
 /// <summary>
+/// The timer that OWNS a timer channel — Go's <c>hchan.timer</c>, installed by package <c>time</c>
+/// on the channel behind a <c>Timer</c> or <c>Ticker</c> (Go 1.23, proposal #37196).
+/// </summary>
+/// <remarks>
+/// <para>
+/// A timer channel is physically BUFFERED (capacity 1) so a tick can be produced with no receiver
+/// present, but Go 1.23 PRESENTS it as unbuffered, because its owner may still revoke an
+/// unreceived tick: <c>Stop</c> and <c>Reset</c> guarantee that no tick from before the call can be
+/// received after it, and they honor that partly by emptying the buffer
+/// (<see cref="channel{T}.DrainBuffer"/>). A <c>len</c> or <c>cap</c> that revealed a value the
+/// next <c>Stop</c> may take back would contradict the guarantee, so the owner masks both.
+/// </para>
+/// <para>
+/// <see cref="HidesBuffer"/> is asked LIVE rather than snapshotted at attach time because Go's
+/// <c>GODEBUG=asynctimerchan</c> selects between the synchronous (Go 1.23) and asynchronous
+/// (pre-1.23) models at every observation — <c>runtime.chanlen</c> and <c>chancap</c> re-read the
+/// setting on every call.
+/// </para>
+/// </remarks>
+public interface IChannelTimer
+{
+    /// <summary>
+    /// Gets whether the channel must currently PRESENT as unbuffered: <c>cap()</c> and <c>len()</c>
+    /// report 0 regardless of the physical buffer, exactly as Go's <c>chancap</c>/<c>chanlen</c>
+    /// timer-channel branch does. The buffer itself is untouched — sends still fill it and receives
+    /// still drain it.
+    /// </summary>
+    bool HidesBuffer { get; }
+}
+
+/// <summary>
 /// Describes one registered case of a Go <c>select</c> statement — a pending send or receive on a
 /// specific channel. Returned by the select-registration methods (<see cref="channel{T}.Receiving"/>,
 /// <see cref="channel{T}.Sending"/> and their operator forms) and consumed by
@@ -237,10 +268,29 @@ internal abstract class ChanCore
     internal readonly WaiterQueue Recvq = new();
     internal readonly WaiterQueue Sendq = new();
 
+    /// <summary>
+    /// The owning timer when this channel is a timer channel (Go's <c>hchan.timer</c>); null
+    /// otherwise. Installed once, before the channel is published — see
+    /// <see cref="channel{T}.AttachTimer"/>.
+    /// </summary>
+    internal IChannelTimer? Timer;
+
+    /// <summary>
+    /// Whether <c>cap()</c>/<c>len()</c> must report 0 for this channel right now — true only for a
+    /// timer channel in Go 1.23's synchronous mode.
+    /// </summary>
+    internal bool HidesBuffer => Timer is { HidesBuffer: true };
+
     protected ChanCore(nint size)
     {
         Dataqsiz = (int)size;
     }
+
+    /// <summary>
+    /// Go's <c>timerchandrain</c>: removes every buffered element, reporting whether any were
+    /// removed — the buffer half of a timer's "no tick from before this call survives it".
+    /// </summary>
+    internal abstract bool DrainBuffer();
 
     /// <summary>
     /// Attempts to commit a send under the channel lock (held by the caller): direct handoff to a
@@ -448,6 +498,44 @@ internal sealed class ChanCore<T> : ChanCore
             claimed.Elem = null;
             claimed.Ok = false;
             claimed.Wake();
+        }
+    }
+
+    /// <summary>
+    /// Go's <c>timerchandrain</c>. Parked SENDERS are deliberately not serviced: a timer channel is
+    /// only ever filled by the non-blocking send in <c>time.sendTime</c>, so it can have none, and
+    /// waking one here would deliver the very value this call exists to revoke. Parked RECEIVERS
+    /// are irrelevant — a receiver can only be parked on an EMPTY buffer.
+    /// </summary>
+    /// <remarks>
+    /// Go states that precondition in a comment; this ENFORCES it, because <c>DrainBuffer</c> is
+    /// reachable from hand-written C# where <c>runtime.timerchandrain</c> is not. Emptying the
+    /// buffer under a parked sender would break the invariant
+    /// <c>a parked sender implies a full buffer</c> that <c>TryCommitRecvLocked</c>'s hand-off
+    /// branch rests on, and the next receive would then hand back a fabricated zero value while
+    /// swallowing the sender's — silent corruption in exchange for a saved branch.
+    /// </remarks>
+    internal override bool DrainBuffer()
+    {
+        lock (SyncRoot)
+        {
+            if (!Sendq.IsEmpty)
+                throw new PanicException("drain of a channel with a blocked sender");
+
+            if (Qcount == 0)
+                return false;
+
+            while (Qcount > 0)
+            {
+                m_buf![m_recvx] = default!;
+
+                if (++m_recvx == Dataqsiz)
+                    m_recvx = 0;
+
+                Qcount--;
+            }
+
+            return true;
         }
     }
 
@@ -883,18 +971,27 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
 
     /// <summary>
     /// Gets the capacity of the channel (0 for an unbuffered or nil channel) — Go's <c>cap()</c>.
+    /// A synchronous TIMER channel reports 0 despite its physical buffer (see
+    /// <see cref="IChannelTimer"/>).
     /// </summary>
-    public nint Capacity => m_core?.Dataqsiz ?? 0;
+    public nint Capacity => m_core is null || m_core.HidesBuffer ? 0 : m_core.Dataqsiz;
 
     /// <summary>
     /// Gets the count of buffered items in the channel — Go's <c>len()</c> (0 for an unbuffered or
-    /// nil channel).
+    /// nil channel). A synchronous TIMER channel reports 0 whatever its buffer holds (see
+    /// <see cref="IChannelTimer"/>).
     /// </summary>
-    public nint Length => m_core?.Qcount ?? 0;
+    public nint Length => m_core is null || m_core.HidesBuffer ? 0 : m_core.Qcount;
 
     /// <summary>
     /// Gets a flag that determines if the channel is unbuffered.
     /// </summary>
+    /// <remarks>
+    /// This is the channel's PHYSICAL shape — whether a send can complete with no receiver present
+    /// — so a synchronous timer channel reports <c>false</c> even though its <see cref="Capacity"/>
+    /// is masked to 0. Go exposes no such property (only <c>cap()</c>), and conflating the two
+    /// would have a timer channel claim rendezvous behavior it does not have.
+    /// </remarks>
     public bool IsUnbuffered => m_core is null || m_core.Dataqsiz == 0;
 
     /// <summary>
@@ -930,6 +1027,57 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
             throw new PanicException("close of nil channel");
 
         m_core.Close();
+    }
+
+    /// <summary>
+    /// Installs <paramref name="timer"/> as this channel's owning timer — Go's
+    /// <c>c.timer = &amp;t.timer</c> in <c>runtime.newTimer</c>.
+    /// </summary>
+    /// <param name="timer">Owning timer.</param>
+    /// <remarks>
+    /// Must be called before the channel is handed to anyone else and before the timer is armed:
+    /// Go treats <c>hchan.timer</c> as immutable ("set after make(chan) but before any channel
+    /// operations") and reads it without the channel lock. Attaching twice, or to a channel with no
+    /// buffer, is the caller's bug — Go throws on the latter too.
+    /// </remarks>
+    /// <remarks>
+    /// The field is deliberately NOT volatile, and that is safe only because of the order above:
+    /// the write happens while the channel is still private to its creator, and the creator then
+    /// publishes it through a lock (package <c>time</c> arms the timer under its heap lock before
+    /// storing the channel in the <c>Timer</c>/<c>Ticker</c>), so the release/acquire pair carries
+    /// the write. Generalizing this hook to attach an owner AFTER a channel is in use would need a
+    /// fence here.
+    /// </remarks>
+    public void AttachTimer(IChannelTimer timer)
+    {
+        ArgumentNullException.ThrowIfNull(timer);
+
+        if (m_core is null)
+            throw new PanicException("invalid timer channel: nil channel");
+
+        if (m_core.Dataqsiz == 0)
+            throw new PanicException("invalid timer channel: no capacity");
+
+        if (m_core.Timer is not null)
+            throw new PanicException("invalid timer channel: timer already attached");
+
+        m_core.Timer = timer;
+    }
+
+    /// <summary>
+    /// Removes every buffered value, reporting whether any were removed — Go's
+    /// <c>timerchandrain</c>.
+    /// </summary>
+    /// <returns><c>true</c> if at least one buffered value was discarded.</returns>
+    /// <remarks>
+    /// This REVOKES values already accepted by the channel, so it is only sound for a channel whose
+    /// producer owns it exclusively — the timer channel behind a <c>Timer</c>/<c>Ticker</c>, whose
+    /// <c>Stop</c>/<c>Reset</c> must leave no tick from before the call receivable after it. A nil
+    /// channel has nothing to drain and reports <c>false</c>.
+    /// </remarks>
+    public bool DrainBuffer()
+    {
+        return m_core is not null && m_core.DrainBuffer();
     }
 
     /// <summary>

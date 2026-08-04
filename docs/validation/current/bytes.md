@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `bytes` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-02 · converter `8dc18ad33`*
+*Validated 2026-08-04 · converter `34f593bf3`*
 
-**81 matched · 7 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**82 matched · 6 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes).
 
 ## Verdicts
@@ -37,7 +37,7 @@ comparison — it is the evidence behind the `bytes` row in
 | `TestCutSuffix` | pass | pass |
 | `TestEmptyReaderConcurrent` | pass | pass |
 | `TestEndianBaseCompare` | pass | pass |
-| `TestEqual` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestEqual` | pass | pass |
 | `TestEqualExhaustive` | pass | pass |
 | `TestEqualFold` | pass | pass |
 | `TestFields` | pass | pass |
@@ -113,7 +113,6 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestEqual` | `alloc-profile` | want-zero AllocsPerRun assert: the managed runtime allocates during the converted Equal comparison loop where Go's compiler-optimized code does not; a malloc-counting shim would fail identically |
 | `TestGrow` | `alloc-profile` | want-zero AllocsPerRun assert: the converted Buffer.Grow/Write path allocates in the managed slice model where Go's pre-grown buffer writes allocation-free |
 | `TestIndex` | `alloc-profile` | want-zero AllocsPerRun assert: the converted Index search allocates in the managed runtime where Go's compiler stack-allocates its working state |
 | `TestIndexRune` | `alloc-profile` | want-zero AllocsPerRun assert: string(r) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring) |
@@ -125,7 +124,9 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 Declarations filtered from **both** sides of the comparison, and therefore not claimed above:
 `Benchmark`, `Fuzz` and `Example` declarations the converted host does not execute, plus any
-test requiring a testing capability the host does not yet provide.
+test requiring a capability the managed runtime does not provide — a `testing` member the host
+has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
+the capability it needs.
 
 - BenchmarkBufferAppendNoCopy (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkBufferFullSmallReads (benchmark): benchmark execution is deferred to Phase 4D

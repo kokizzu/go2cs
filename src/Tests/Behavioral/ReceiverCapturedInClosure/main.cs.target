@@ -17,9 +17,9 @@ internal static void addInt(ж<nint> Ꮡx, nint d) {
 internal static nint addInClosure(this ж<counter> Ꮡc, nint d) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var apply = () => {
+    void apply() {
         Ꮡc.Value.n += d;
-    };
+    }
     apply();
     return c.n;
 }
@@ -27,9 +27,9 @@ internal static nint addInClosure(this ж<counter> Ꮡc, nint d) {
 internal static nint addViaFieldPtr(this ж<counter> Ꮡc, nint d) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var apply = () => {
+    void apply() {
         addInt(Ꮡc.of(counter.Ꮡn), d);
-    };
+    }
     apply();
     return c.n;
 }

@@ -217,6 +217,13 @@ type LambdaContext struct {
 	// convSelectorExpr appending them too produced `pkg.Func<T><T>` (CS1525/CS0119/CS8124 across
 	// encoding/gob/xml/asn1/json, text/template, debug/*, unique).
 	suppressGenericTypeArgs bool
+	// localFuncName, when non-empty, emits the literal as a C# LOCAL FUNCTION of that name —
+	// `<result> <name>(<params>) { … }` — instead of a lambda bound to a variable. A lambda that
+	// captures anything costs a display-class allocation PLUS a delegate allocation every time it
+	// is evaluated; a local function that is only ever CALLED captures through a by-ref struct
+	// closure and allocates nothing. Set by visitAssignStmt for the `name := func(…){…}` shape
+	// whose variable is only ever called (see localFunctionDefine).
+	localFuncName string
 }
 
 func DefaultLambdaContext() LambdaContext {

@@ -22,11 +22,11 @@ internal static void Main() {
     p.ValueSlot = append(p.ValueSlot, (byte)((rune)'!'));
     fmt.Println(((@string)(slice<byte>)p.ValueSlot));
     fmt.Println(len(p.ValueSlot));
-    var makeBuf = () => {
+    ж<Buf> makeBuf() {
         ref var s = ref heap<slice<byte>>(out var Ꮡs);
         s = new slice<byte>(0, 4);
         return Ꮡ(new Buf(s));
-    };
+    }
     var q = makeBuf();
     q.ValueSlot = append(q.ValueSlot, (byte)((rune)'x'), (byte)((rune)'y'));
     fmt.Println(((@string)(slice<byte>)q.ValueSlot));

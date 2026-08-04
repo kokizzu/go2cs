@@ -68,12 +68,12 @@ internal static @string floatControl() {
 }
 
 internal static @string intControl(bool ok) {
-    var count = () => {
+    (nint, error) count() {
         if (!ok) {
             return (0, errSeek);
         }
         return (21, default!);
-    };
+    }
     var (n, err) = count();
     if (err != default!) {
         return "err:"u8 + err.Error();

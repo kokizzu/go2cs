@@ -80,6 +80,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `testing/quick` | [`testing.quick.md`](current/testing.quick.md) | [`src/core/testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) |
 | `text/scanner` | [`text.scanner.md`](current/text.scanner.md) | [`src/core/text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) |
 | `text/tabwriter` | [`text.tabwriter.md`](current/text.tabwriter.md) | [`src/core/text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) |
+| `time` | [`time.md`](current/time.md) | [`src/core/time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) |
 | `unicode` | [`unicode.md`](current/unicode.md) | [`src/core/unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) |
 | `unicode/utf16` | [`unicode.utf16.md`](current/unicode.utf16.md) | [`src/core/unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) |
 | `unicode/utf8` | [`unicode.utf8.md`](current/unicode.utf8.md) | [`src/core/unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) |

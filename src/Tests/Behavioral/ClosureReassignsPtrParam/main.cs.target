@@ -7,12 +7,12 @@ partial class main_package {
 internal static nint accumulate(ж<nint> Ꮡcounter, slice<nint> vals) {
     ref var counter = ref Ꮡcounter.DerefOrNull();
 
-    var add = (nint v) => {
+    void add(nint v) {
         if (Ꮡcounter == nil) {
             Ꮡcounter = @new<nint>();
         }
         Ꮡcounter.Value += v;
-    };
+    }
     foreach (var (_, v) in vals) {
         add(v);
     }

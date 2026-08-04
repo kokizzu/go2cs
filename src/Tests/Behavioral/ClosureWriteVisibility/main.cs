@@ -17,9 +17,9 @@ partial class main_package {
 internal static void probeA1() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var bump = () => {
+    void bump() {
         Ꮡt.Value.total += 100;
-    };
+    }
     bump();
     t.total++;
     fmt.Println((@string)"A1:"u8, t.total, t.log);
@@ -28,7 +28,7 @@ internal static void probeA1() {
 internal static void probeA2() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var get = () => Ꮡt.Value.total;
+    nint get() => Ꮡt.Value.total;
     t.total += 10;
     fmt.Println((@string)"A2:"u8, get());
 }
@@ -38,21 +38,21 @@ internal static void probeA3() {
     t = new Tally(5, "s"u8);
     t.total += 2;
     var tʗ1 = t;
-    var get = () => tʗ1.total;
+    nint get() => tʗ1.total;
     fmt.Println((@string)"A3:"u8, get());
 }
 
 internal static void probeB1(Tally t) {
-    var bump = () => {
+    void bump() {
         t.total += 100;
-    };
+    }
     bump();
     t.total++;
     fmt.Println((@string)"B1:"u8, t.total);
 }
 
 internal static void probeB2(Tally t) {
-    var get = () => t.total;
+    nint get() => t.total;
     t.total += 10;
     fmt.Println((@string)"B2:"u8, get());
 }
@@ -60,9 +60,9 @@ internal static void probeB2(Tally t) {
 internal static void probeC1() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var bump = () => {
+    void bump() {
         Ꮡt.Value.total += 100;
-    };
+    }
     bump();
     t.Add(3);
     bump();
@@ -72,15 +72,15 @@ internal static void probeC1() {
 internal static void probeC2() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var get = () => Ꮡt.Value.total;
+    nint get() => Ꮡt.Value.total;
     t.Add(3);
     fmt.Println((@string)"C2:"u8, get());
 }
 
 internal static void probeD1(Tally t) {
-    var bump = () => {
+    void bump() {
         t.total += 100;
-    };
+    }
     bump();
     t.Add(3);
     bump();
@@ -141,10 +141,10 @@ internal static void probeG3() {
 internal static void probeH1() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var inc = () => {
+    void inc() {
         Ꮡt.Value.total++;
-    };
-    var get = () => Ꮡt.Value.total;
+    }
+    nint get() => Ꮡt.Value.total;
     inc();
     inc();
     fmt.Println((@string)"H1:"u8, get());
@@ -153,9 +153,9 @@ internal static void probeH1() {
 internal static void probeI1() {
     ref var s = ref heap<slice<nint>>(out var Ꮡs);
     s = new nint[]{1}.slice();
-    var app = () => {
+    void app() {
         Ꮡs.ValueSlot = append(Ꮡs.ValueSlot, (nint)(2));
-    };
+    }
     app();
     fmt.Println((@string)"I1:"u8, len(s), s[0]);
 }
@@ -173,7 +173,7 @@ internal static void probeK1() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
     var p = Ꮡt;
-    var get = () => Ꮡt.Value.total;
+    nint get() => Ꮡt.Value.total;
     p.Value.total = 50;
     fmt.Println((@string)"K1:"u8, get());
 }
@@ -181,9 +181,9 @@ internal static void probeK1() {
 internal static void probeL1() {
     ref var m = ref heap<map<nint, nint>>(out var Ꮡm);
     m = new map<nint, nint>{};
-    var set = () => {
+    void set() {
         Ꮡm.ValueSlot = new map<nint, nint>{[1] = 1};
-    };
+    }
     set();
     fmt.Println((@string)"L1:"u8, len(m));
 }
@@ -191,19 +191,19 @@ internal static void probeL1() {
 internal static void probeM1() {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s"u8);
-    var bump = () => {
+    void bump() {
         Ꮡt.Value.total += 100;
-    };
-    var get = () => Ꮡt.Value.total;
+    }
+    nint get() => Ꮡt.Value.total;
     bump();
     fmt.Println((@string)"M1:"u8, get(), t.total);
 }
 
 internal static void probeN1() {
     nint n = 0;
-    var inc = () => {
+    void inc() {
         n++;
-    };
+    }
     inc();
     fmt.Println((@string)"N1:"u8, n);
 }
@@ -212,9 +212,9 @@ internal static void probeN2() {
     ref var n = ref heap<nint>(out var Ꮡn);
     n = 0;
     var p = Ꮡn;
-    var inc = () => {
+    void inc() {
         Ꮡn.Value += 5;
-    };
+    }
     inc();
     p.Value += 2;
     fmt.Println((@string)"N2:"u8, n);
@@ -224,9 +224,9 @@ internal static (V, nint) probeP1<V>(slice<V> seq) {
     ref var v = ref heap<V>(out var Ꮡv);
     nint n = 0;
     var p = Ꮡv;
-    var set = (V x) => {
+    void set(V x) {
         (Ꮡv.ValueSlot, n) = (x, n + 1);
-    };
+    }
     foreach (var (_, x) in seq) {
         set(x);
     }

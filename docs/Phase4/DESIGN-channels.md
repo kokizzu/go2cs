@@ -102,6 +102,9 @@ struct over `ChanCore<T>`:
   winner CAS or skips it**; close never touches a waiter it failed to claim (the hole the critic
   found in D2's close spec).
 - `cap() = dataqsiz`, `len() = qcount`, `IsUnbuffered = dataqsiz == 0` — gaps 1+2 by construction.
+  (**Amended 2026-08-03:** a channel with an owning `IChannelTimer` masks `cap()`/`len()` to 0 while
+  that owner hides its buffer — Go's own `chancap`/`chanlen` branch. `IsUnbuffered` still reports
+  `dataqsiz == 0`. See §4's timer entry.)
 - Publish-before-signal discipline (set value/ok before `Release`); park = unlock **then** wait,
   never hold the channel lock across a park.
 
@@ -197,8 +200,35 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
   separate value temp would infer `var t = 200;` as an `int` for a `chan byte` — CS1503). Guard
   `SelectOperandSourceOrder`; counter-proven against the pre-fix converter, which prints
   `3:recv-chan 1:send-chan 2:send-val` where Go prints `1:send-chan 2:send-val 3:recv-chan`.
+- **A channel can now have an OWNING TIMER — the successor arc, landed 2026-08-03 (r39b).** The
+  design above deliberately stopped at Go's `hchan`; Go 1.23's SYNCHRONOUS timer channel (#37196)
+  is the one piece of `hchan` that was left out, because it is the only place a producer may
+  **un-send**. It is now here, as the general hook rather than a `time` special case: `ChanCore`
+  carries an optional `IChannelTimer` (Go's `hchan.timer`), installed by `channel<T>.AttachTimer`
+  before the timer is armed; `Capacity`/`Length` report 0 while that owner answers `HidesBuffer`
+  (Go's `chanlen`/`chancap` branch, asked LIVE because `GODEBUG=asynctimerchan` selects the model at
+  every observation); and `channel<T>.DrainBuffer()` — Go's `runtime.timerchandrain` — empties the
+  buffer without servicing parked waiters. The other half lives in `time_impl.cs` (a per-timer send
+  lock plus a stale-send `seq`, so a firing committed before a `Stop`/`Reset` is ABANDONED rather
+  than delivered after it). `IsUnbuffered` still reports the PHYSICAL shape — a timer channel's send
+  does not rendezvous — since Go exposes only `cap()`. This closed `time`'s last four semantic rows
+  (`TestChan` now passes in all three `asynctimerchan` modes, Timer and Ticker); guard
+  `SyncTimerChannel`, and the property statement lives in `time_impl.cs` under SYNCHRONOUS TIMER
+  CHANNELS and in [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md).
+  ⚠ `DrainBuffer` is a revocation primitive: it is sound ONLY for a channel whose producer owns it
+  exclusively. Do not reach for it to "clear" an ordinary channel. Go states that precondition in a
+  comment; here it is ENFORCED (a parked sender throws), because emptying the buffer under one
+  breaks the `parked sender implies full buffer` invariant `TryCommitRecvLocked`'s hand-off branch
+  rests on — the next receive then hands back a fabricated zero and swallows the sender's value.
+  Measured by the adversarial round against a hand-written C# caller; unreachable from converted Go,
+  since `Timer.C` is `<-chan Time` upstream.
 - **NuGet lockstep:** golib signatures and the gen template change together — `go.lib` and `go.gen`
   must version-bump in the same release or `-recurse=nuget` apps can restore mismatched pairs.
+  The timer hook widens that to a THIRD pair: `go.time` from build N calls golib members that build
+  N−1 does not have, so a consumer pinning `go.lib` while floating `go.time` fails at RUNTIME with a
+  `MissingMethodException`, not at compile time. `version.props` is single-source and
+  `push-nuget.ps1 -Push` ships every package at one version, so the shipped flow cannot produce the
+  mismatch — but it is exactly what this note exists to predict, and it belongs in the release notes.
 - **A parked receiver is NOT evidence of a lost wakeup — read the core's state, never the source
   flow (2026-08-02).** The first post-wave3 "channel defect" sighting (`os`'s `TestPipeEOF`: a
   goroutine parked in `ChanCore.Recv` inside a `for range`, reported as ranging over an

@@ -485,6 +485,31 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 		}
 	}
 
+	// A `name := func(…) {…}` whose variable is only ever CALLED emits as a C# LOCAL FUNCTION
+	// rather than a lambda bound to a variable — the capturing form costs a display class plus a
+	// delegate on every evaluation, the local function nothing (see localFunctionDefine). The
+	// literal renders the whole statement, so nothing here appends a `;`.
+	if ident, funcLit, ok := v.localFunctionDefine(assignStmt, format); ok {
+		lambdaContext := DefaultLambdaContext()
+		lambdaContext.localFuncName = getSanitizedIdentifier(v.getIdentName(ident))
+		lambdaContext.deferredDecls = hoistBuf
+
+		localFunc := v.convFuncLit(funcLit, lambdaContext)
+
+		if hoistBuf != nil && hoistBuf.Len() > 0 {
+			v.outputBuilder.WriteString(hoistBuf.String())
+		} else if format.useNewLine {
+			v.outputBuilder.WriteString(v.newline)
+		}
+
+		if format.useIndent {
+			v.outputBuilder.WriteString(v.indent(v.indentLevel))
+		}
+
+		v.outputBuilder.WriteString(localFunc)
+		return
+	}
+
 	reassignedCount := 0
 	declaredCount := 0
 

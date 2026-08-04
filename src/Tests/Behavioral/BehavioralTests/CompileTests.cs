@@ -205,6 +205,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckClosureEmbeddedPromotedPtrMethod() => CheckTarget("ClosureEmbeddedPromotedPtrMethod");
 
     [TestMethod]
+    public void CheckClosureLocalNoHeapBox() => CheckTarget("ClosureLocalNoHeapBox");
+
+    [TestMethod]
     public void CheckClosureMixedReturnUnsigned() => CheckTarget("ClosureMixedReturnUnsigned");
 
     [TestMethod]
@@ -725,6 +728,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckLinknameVarPullLib() => CheckTarget("LinknameVarPullLib");
+
+    [TestMethod]
+    public void CheckLocalFunctionEmission() => CheckTarget("LocalFunctionEmission");
 
     [TestMethod]
     public void CheckLocalNamedTypeDecls() => CheckTarget("LocalNamedTypeDecls");
@@ -1457,6 +1463,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
+
+    [TestMethod]
+    public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
 
     [TestMethod]
     public void CheckSynthesizedDelegateChildPkg() => CheckTarget("SynthesizedDelegateChildPkg");

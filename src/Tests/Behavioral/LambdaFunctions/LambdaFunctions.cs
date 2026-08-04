@@ -40,7 +40,7 @@ private static readonly @string anonymousStringyˢ = "anonymous stringy\n"u8;
 private static readonly @string zoneˢ = "zone"u8;
 
 internal static void Main() {
-    var probe = (nint n, error errΔ1) => {
+    error probe(nint n, error errΔ1) {
         if (errΔ1 != default!) {
             return errΔ1;
         }
@@ -51,7 +51,7 @@ internal static void Main() {
         (var k, errΔ1) = half(m);
         fmt.Println(halvedˢ, m, k);
         return errΔ1;
-    };
+    }
     fmt.Println(probe(8, default!), probe(3, default!));
     takesAFunction(new Func<@string>(foo));
     Func<@string> f = returnsAFunction();

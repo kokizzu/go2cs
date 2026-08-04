@@ -50,8 +50,8 @@ internal static nint /*total*/ closures(nint n) {
         defer(() => {
             total += 1;
         });
-        var dbl = (nint x) => x * 2;
-        var noisy = () => 99;
+        nint dbl(nint x) => x * 2;
+        nint noisy() => 99;
         _ = noisy();
         total = dbl(n);
     });

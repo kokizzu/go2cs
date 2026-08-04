@@ -161,7 +161,7 @@ public static void TestEndianBaseCompare(ж<testing.T> Ꮡt) {
 internal static readonly object b1B2ˢ = (@string)"b1 != b2"u8;
 
 public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>("Hello Gophers!"u8);
     var b2 = slice<byte>("Hello Gophers!"u8);
@@ -176,7 +176,7 @@ public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
 internal static readonly object b1B2Failedˢ = (@string)"b1 > b2 failed"u8;
 
 public static void BenchmarkCompareBytesToNil(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>("Hello Gophers!"u8);
     slice<byte> b2 = default!;
@@ -188,7 +188,7 @@ public static void BenchmarkCompareBytesToNil(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCompareBytesEmpty(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>(""u8);
     var b2 = b1;
@@ -200,7 +200,7 @@ public static void BenchmarkCompareBytesEmpty(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCompareBytesIdentical(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>("Hello Gophers!"u8);
     var b2 = b1;
@@ -215,7 +215,7 @@ public static void BenchmarkCompareBytesIdentical(ж<testing.B> Ꮡb) {
 internal static readonly object b1B2Failedˢ2 = (@string)"b1 < b2 failed"u8;
 
 public static void BenchmarkCompareBytesSameLength(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>("Hello Gophers!"u8);
     var b2 = slice<byte>("Hello, Gophers"u8);
@@ -227,7 +227,7 @@ public static void BenchmarkCompareBytesSameLength(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCompareBytesDifferentLength(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     var b1 = slice<byte>("Hello Gophers!"u8);
     var b2 = slice<byte>("Hello, Gophers!"u8);
@@ -239,7 +239,7 @@ public static void BenchmarkCompareBytesDifferentLength(ж<testing.B> Ꮡb) {
 }
 
 internal static void benchmarkCompareBytesBigUnaligned(ж<testing.B> Ꮡb, nint offset) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var b1 = new slice<byte>(0, (1 << (int)(20)));
@@ -266,7 +266,7 @@ public static void BenchmarkCompareBytesBigUnaligned(ж<testing.B> Ꮡb) {
 }
 
 internal static void benchmarkCompareBytesBigBothUnaligned(ж<testing.B> Ꮡb, nint offset) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var pattern = slice<byte>("Hello Gophers!"u8);
@@ -295,7 +295,7 @@ public static void BenchmarkCompareBytesBigBothUnaligned(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCompareBytesBig(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var b1 = new slice<byte>(0, (1 << (int)(20)));
@@ -313,7 +313,7 @@ public static void BenchmarkCompareBytesBig(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCompareBytesBigIdentical(ж<testing.B> Ꮡb) {
-    ref var b = ref Ꮡb.Value;
+    ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var b1 = new slice<byte>(0, (1 << (int)(20)));

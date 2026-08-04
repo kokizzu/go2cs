@@ -251,7 +251,7 @@ internal static (raceResult, bool) raceSend() {
     var primary = true;
     var doneʗ1 = done;
     var resultsʗ1 = results;
-    var racer = (bool primaryΔ1) => {
+    void racer(bool primaryΔ1) {
         var selᴛ15 = resultsʗ1.ᐸꟷ(new raceResult(value: 7, primary: primaryΔ1), ꓸꓸꓸ);
         var selᴛ16 = doneʗ1;
         switch (select(selᴛ15, ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
@@ -261,7 +261,7 @@ internal static (raceResult, bool) raceSend() {
         case 1 when selᴛ16.ꟷᐳ(out _): {
             break;
         }}
-    };
+    }
     racer(false);
     return (ᐸꟷ(results), primary);
 }

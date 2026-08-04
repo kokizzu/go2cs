@@ -109,6 +109,113 @@ func (v *Visitor) constExprContainsUntypedNamedConstRef(expr ast.Expr) bool {
 	}
 }
 
+// localFunctionDefine reports whether assignStmt is the `name := func(…) {…}` shape that can be
+// emitted as a C# LOCAL FUNCTION (`<result> name(<params>) { … }`) instead of a lambda bound to a
+// variable, returning the declared identifier and the literal when it is.
+//
+// Why it matters: a C# lambda that captures anything allocates a display class to hold the captured
+// variables AND a delegate object bound to it, on EVERY evaluation of the lambda expression — 88
+// bytes for the two-word case, charged per call of the enclosing function. Go allocates neither when
+// escape analysis proves the closure does not outlive the frame, which is why `time`'s
+// `TestUnmarshalTextAllocations` asserts zero: `parseRFC3339`'s `parseUint := func(…)` captures `ok`
+// and was costing exactly that on every parse. A C# local function that is only ever CALLED captures
+// through a by-ref STRUCT closure the compiler passes as a hidden `ref` parameter — no heap object,
+// same shared-storage semantics as the display class.
+//
+// The gate is the "only ever called" proof, and it is what keeps the by-ref struct closure available:
+// Roslyn falls back to a heap display class the moment a local function is converted to a delegate,
+// so a variable that is stored, returned, compared, or passed as a value must stay a lambda (and a
+// local function has no VALUE form to give those uses anyway). The declaring occurrence is exempt;
+// every other reference must be the callee of a call. That also subsumes reassignment (`f = …` is a
+// non-call use) and address-taking, so the emitted name can never need to be a first-class value.
+//
+// Deliberately EXCLUDED: a literal that uses defer or recover. Its body is emitted inside a
+// `func((defer, recover) => …)` execution context whose GoFunc frame, display class and per-defer
+// delegates dominate the cost this change removes; converting the outer binding alone would churn
+// the goldens for no measurable win. Making that shape allocation-free is the ref-struct frame
+// design (docs/Phase4/DESIGN-closure-emission.md), not this rule.
+func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format FormattingContext) (*ast.Ident, *ast.FuncLit, bool) {
+	// A local function is a DECLARATION statement: it is only legal in a statement list, never in
+	// the init/post clause of a `for`, or an `if`/`switch` init, which is what !useNewLine marks.
+	if !format.useNewLine || assignStmt.Tok != token.DEFINE || len(assignStmt.Lhs) != 1 || len(assignStmt.Rhs) != 1 {
+		return nil, nil, false
+	}
+
+	funcLit, ok := assignStmt.Rhs[0].(*ast.FuncLit)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	ident, ok := assignStmt.Lhs[0].(*ast.Ident)
+
+	if !ok || isDiscardedVar(ident.Name) {
+		return nil, nil, false
+	}
+
+	// A mixed `f, err := …` re-use records the name in Uses, not Defs; only a genuine new
+	// declaration binds the literal to a fresh object this statement owns.
+	obj, ok := v.info.Defs[ident].(*types.Var)
+
+	if !ok || obj == nil {
+		return nil, nil, false
+	}
+
+	if hasDefer, hasRecover := v.funcBodyDeferRecover(funcLit.Body); hasDefer || hasRecover {
+		return nil, nil, false
+	}
+
+	if v.currentFuncDecl == nil || !v.objectOnlyCalled(obj, v.currentFuncDecl) {
+		return nil, nil, false
+	}
+
+	return ident, funcLit, true
+}
+
+// objectOnlyCalled reports whether every reference to obj within root — other than its declaring
+// occurrence — is the callee identifier of a call expression. See localFunctionDefine for what the
+// proof buys; the walk covers nested function literals because root is the whole declaration, so a
+// closure that captures the name and uses it as a value is caught.
+func (v *Visitor) objectOnlyCalled(obj types.Object, root ast.Node) bool {
+	if obj == nil || root == nil {
+		return false
+	}
+
+	callees := HashSet[*ast.Ident]{}
+
+	ast.Inspect(root, func(node ast.Node) bool {
+		if callExpr, ok := node.(*ast.CallExpr); ok {
+			if ident, ok := callExpr.Fun.(*ast.Ident); ok {
+				callees.Add(ident)
+			}
+		}
+
+		return true
+	})
+
+	onlyCalled := true
+
+	ast.Inspect(root, func(node ast.Node) bool {
+		if !onlyCalled {
+			return false
+		}
+
+		ident, ok := node.(*ast.Ident)
+
+		if !ok || v.info.Uses[ident] != obj {
+			return true
+		}
+
+		if !callees.Contains(ident) {
+			onlyCalled = false
+		}
+
+		return true
+	})
+
+	return onlyCalled
+}
+
 func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) string {
 	if v.currentFuncSignature == nil {
 		v.currentFuncSignature = v.info.Types[funcLit].Type.(*types.Signature)
@@ -522,7 +629,20 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		inner = body
 	}
 
-	if context.isIIFE {
+	if context.localFuncName != "" {
+		// LOCAL FUNCTION emission (see LambdaContext.localFuncName): the whole statement, result
+		// type included, so visitAssignStmt writes it verbatim. The result type is generated by
+		// the same helper visitFuncDecl uses, so a local function reads exactly like a declared
+		// one. A collapsed single-return body arrives as an EXPRESSION and takes the
+		// expression-bodied form (which needs its own terminating `;`); a block body does not.
+		result.WriteString(v.generateResultSignature(litSig) + " " + context.localFuncName + "(" + parameterSignature + ") ")
+
+		if strings.HasPrefix(inner, "{") {
+			result.WriteString(inner)
+		} else {
+			result.WriteString("=> " + inner + ";")
+		}
+	} else if context.isIIFE {
 		// Immediately-invoked function literal: emit `paramNames => BODY` (names only — the
 		// delegate-cast in convCallExpr supplies the types). The transient boxed-param set is
 		// scoped to the name rendering so a boxed param emits its incoming `ʗp` name here too.

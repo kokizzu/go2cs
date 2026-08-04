@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **72 / 215 testable packages validated — 33.5%**
+> ### Phase 4 progress: **73 / 215 testable packages validated — 34.0%**
 >
-> **2,553 matching test verdicts · 51 disclosed** *(updated 2026-08-02 — maintained as part of the
+> **2,713 matching test verdicts · 50 disclosed** *(updated 2026-08-03 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -36,7 +36,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
 | [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. · [proof](validation/current/bufio.md) |
-| [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 81 | 7 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |
+| [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 82 | 6 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/cmp) | 4 | | Generics with an ordered-type constraint. · [proof](validation/current/cmp.md) |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. · [proof](validation/current/compress.bzip2.md) |
 | [`compress/flate`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/compress/flate) | 64 | | DEFLATE itself — all ten compression levels, the Huffman bit-writer's stored/fixed/dynamic block selection against golden bit streams, the LZ77 match chains and dictionaries, and a whole-`Writer` `reflect.DeepEqual` after `Reset`. · [proof](validation/current/compress.flate.md) |
@@ -104,6 +104,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |
 | [`text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) | 18 | | Rune-level source scanning. · [proof](validation/current/text.scanner.md) |
 | [`text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) | 3 | | Elastic-tab column formatting; panic-during-write recovery. · [proof](validation/current/text.tabwriter.md) |
+| [`time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) | 159 | | Monotonic and wall clocks, timer/ticker delivery including Go 1.23's synchronous timer channel, RFC 3339 and layout parse/format, zone loading. · [proof](validation/current/time.md) |
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. · [proof](validation/current/unicode.md) |
 | [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) | 8 | 1 | Encode/decode round-trips via `reflect.DeepEqual`. · [proof](validation/current/unicode.utf16.md) |
 | [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) | 14 | | UTF-8 encode/decode — the first suite to pass (2026-07-17). · [proof](validation/current/unicode.utf8.md) |

@@ -11,9 +11,9 @@ internal static void setViaDefer(ж<nint> Ꮡp) => func((defer, recover) => {
 });
 
 internal static void bumpInClosure(ж<nint> Ꮡp) {
-    var add = () => {
+    void add() {
         Ꮡp.Value = Ꮡp.Value + 1;
-    };
+    }
     add();
     add();
 }

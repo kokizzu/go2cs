@@ -107,7 +107,7 @@ public static void TestReaderAt(ж<testing.T> Ꮡt) {
 }
 
 public static void TestReaderAtConcurrent(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test for the race detector, to verify ReadAt doesn't mutate
     // any state.
@@ -126,7 +126,7 @@ public static void TestReaderAtConcurrent(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEmptyReaderConcurrent(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     // Test for the race detector, to verify a Read that doesn't yield any bytes
     // is okay to use from multiple goroutines. This was our historic behavior.

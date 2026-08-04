@@ -74,9 +74,9 @@ private static readonly object clsPairˢ = (@string)"cls pair:"u8;
 internal static error /*err*/ cls(nint n) {
     ref var err = ref heap<error>(out var Ꮡerr);
 
-    var set = () => {
+    void set() {
         Ꮡerr.ValueSlot = fmt.Errorf("cls %d"u8, n);
-    };
+    }
     (var v, err) = pair(n);
     fmt.Println(clsPairˢ, v, err);
     set();

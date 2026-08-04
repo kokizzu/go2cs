@@ -82,7 +82,7 @@ internal static nint capturedLen(params ꓸꓸꓸжbox bsʗp) {
     var bs = bsʗp.slice();
 
     var bsʗ1 = bs;
-    var count = () => len(bsʗ1);
+    nint count() => len(bsʗ1);
     return count();
 }
 

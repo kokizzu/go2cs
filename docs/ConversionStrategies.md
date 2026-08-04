@@ -69,6 +69,7 @@ directly (interface satisfaction, receiver overloads, struct-embedding promotion
 | `type I interface{…}` | [`[GoType]`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoTypeAttribute.cs) `partial interface` + [generated implementing glue](https://github.com/ritchiecarroll/go2cs/blob/master/src/gen/go2cs-gen/ImplementGenerator.cs) | `ImplementGenerator` |
 | struct embedding | [promoted field accessors + method forwarders](https://github.com/ritchiecarroll/go2cs/blob/master/src/gen/go2cs-gen/TypeGenerator.cs) | `TypeGenerator` |
 | `func (t T) M()` / `func (t *T) M()` | [`[GoRecv]`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoRecvAttribute.cs)/`this` extension method + a [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) overload | `RecvGenerator` |
+| `f := func(…){…}`, only ever called | a C# **local function** `ret f(…) {…}` — captures with no display class and no delegate | converter |
 | `defer f()` · `panic(x)` · `recover()` | body-wrapped [`func((defer, recover) => {…})`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFunc.cs); `defer(f)`; [`throw panic(x)`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/PanicException.cs) | golib |
 | `go f()` · `select {…}` | [`goǃ(…)`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) · [`switch (select(…))`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) | golib |
 | `x.(T)` · `switch x.(type)` | [`x._<T>()`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) · [`x.type()`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) | golib / converter |
@@ -777,7 +778,11 @@ golib's `channel<T>` is a faithful port of Go's runtime channel (hchan + selectg
 send really waits for a receiver, `cap`/`len` report Go's values, a blocking `select` commits
 exactly ONE case chosen uniformly at random among the ready ones, and close/panic semantics match
 Go — see the [channel runtime](ConversionStrategies-Reference.md#real-channel-runtime--the-hchanselectgo-port-rendezvous-caplen-single-fire-uniform-random)
-section of the reference.
+section of the reference. One channel has an owner that can take a value BACK: Go 1.23's synchronous
+timer channel, where `Stop`/`Reset` guarantee that no tick from before the call can be received after
+it — so `time.Timer.C` reports `len` and `cap` of 0 even while it holds a tick, and the pre-1.23
+"drain the channel if `Stop` returned false" idiom is unnecessary. golib models it with Go's own
+`hchan.timer` hook rather than a `time` special case.
 
 A goroutine over a `select` — the concurrency core — lowers to `goǃ(...)` and a `switch` over `select(...)`,
 with `ᐸꟷ` marking a receive-case and `ꟷᐳ` performing the receive. Every case's operands are hoisted
