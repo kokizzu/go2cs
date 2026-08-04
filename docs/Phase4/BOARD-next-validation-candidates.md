@@ -951,13 +951,14 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
-## `os` — 681 of 683 rows agree + 1 disclosed; ONE residual left (r35-os → r38-os-fin, 2026-08-03)
+## `os` — 681 of 683 rows agree + 1 disclosed; ONE residual, now ROOTED (r35-os → r39-osalloc, 2026-08-03)
 
-> **Current state is the r38-os-fin sub-section at the END of this block** — 681 of 683 rows agreeing
+> **Current state is the r39-osalloc sub-section at the END of this block** — 681 of 683 rows agreeing
 > (173 of 175 top-level), 34 matching skips, 4 capability-excluded, and exactly one real divergence
-> (`TestWriteStringAlloc`), stable across two identical pipeline runs. Everything between here and
-> there is the arc that got it there, kept for its roots and its retractions. The header below is the
-> r36 state.
+> (`TestWriteStringAlloc`). r39 decomposed that divergence to the byte and closed 65.6 % of it in two
+> golib fixes; the remainder is architectural and is recorded there as an arc, so `os` does NOT bank on
+> this row. Everything between here and there is the arc that got it there, kept for its roots and its
+> retractions. The header below is the r36 state.
 >
 > *Header as it stood before r38-os-fin:* **`os` — 164 of 178 match + 1 disclosed; the unreached block
 > is gone (r35-os → r36-os-tail, 2026-08-02)**
@@ -1437,9 +1438,16 @@ soften the doctrine the badges depend on — and not a capability exclusion eith
 unownable. It is a real divergence with a known shape and no cheap fix: Go's `WriteString` avoids the
 copy with `unsafe.Slice(unsafe.StringData(s), len(s))`, while the converted path allocates a
 `PinnedBuffer` + box for `StringData`, then pays the `func<T>((defer, recover) => …)` closure and defer
-context of `os.File.Write` and `internal/poll.FD.Write`, then the syscall's own boxes. The defer
-machinery dominates, so this is the `sstring`/`GoFunc` performance arc, not an `os` row. It moved from
+context of `os.File.Write` and `internal/poll.FD.Write`, then the syscall's own boxes. ~~The defer
+machinery dominates, so this is the `sstring`/`GoFunc` performance arc, not an `os` row.~~ It moved from
 9088 to 8856-9184 bytes across the arc — noise, not regression.
+
+> ⚠ **RETRACTED by r39-osalloc (2026-08-03): the defer machinery does NOT dominate — it is 440 of
+> 9,208 bytes, under 5 %.** The sentence above was an attribution, never a decomposition, and it named
+> a component costing a twentieth of the bill. 62 % was two silent allocations inside `ж<T>`: `IsNull`
+> boxing the whole pointee on every dereference (4,760 B) and `of(…)` minting its untyped accessor
+> wrapper per call (968 B). Both are fixed; see the *r39-osalloc* sub-section below for the byte-exact
+> decomposition and the arc that owns the rest.
 
 **`os` is therefore an honest NEAR-BANK: every row accounted — 681 agreeing, 1 disclosed, 34 matching
 skips, 4 capability-excluded — with exactly one real divergence, stable across two identical pipeline
@@ -1454,6 +1462,103 @@ banking 72 pages that also carry a fresh date/converter stamp — a partial reba
 they are RESTORED with the rest of the sweep's drift and will level at the scheduled whole-corpus
 regen (ruling #6). The per-entry text, which is the substance, is already correct in the pages that
 have such an entry.
+
+### r39-osalloc (2026-08-03) — the 9,184 decomposes, and it was NOT the defer machinery
+
+r38 attributed the residual to the `func((defer, recover) => …)` closure and defer context of
+`os.File.Write` / `internal/poll.FD.Write`, and filed it against "the `sstring`/`GoFunc` performance
+arc". **That attribution was plausible and wrong.** Decomposed to the byte, the defer machinery is
+**440 of 9,208 bytes — under 5 %**; 62 % was two silent allocations inside `ж<T>` itself, both of
+which are now gone. The lesson generalizes: an attribution that was never *decomposed* is a
+hypothesis, and this one sent the fix at a component costing a twentieth of the bill.
+
+**Method (reproducible).** A console probe references `core/os`, `core/syscall`, `core/internal/poll`
+and `golib` and measures `GC.GetAllocatedBytesForCurrentThread` deltas across N calls — the same
+instrument the `AllocsPerRun` shim uses, so the numbers ARE the ones the test sees. A temporary
+`AllocMark` slot table (begin/end pairs with depth suppression, so nesting is charged once) was
+threaded through every frame of `WriteString → File.Write → file.write → FD.Write → syscall.Write →
+WriteFile`, plus per-`TElem` buckets inside `ж<T>.of` and `ж<T>.Value`. The instrumentation is
+temporary by construction and was reverted; what survives is the arithmetic, which **closes exactly**
+at every level — the ibyteseq standard. (The probe reads 9,208 where the pipeline read 9,184: the
+probe writes to its own file rather than the host's `t.TempDir()` one, a 24-byte difference in the
+path taken above `File.Write`. The two agree to the byte AFTER the fix, both at **3,168** — the
+figure the pipeline now prints in `expected 0 allocs for File.WriteString, got 3168`.)
+
+| Cost | B/op | Share | Root |
+|:--|--:|--:|:--|
+| `ж<T>.IsNull` boxing the pointee on every standard-box deref | **4,760** | 51.7 % | `m_val is null` on an unconstrained `T` compiles to `box !T` — 8 × a 592-byte `os.file` copy, + 24 for one `os.File` |
+| `of(…)` minting the untyped accessor wrapper per call | **968** | 10.5 % | display class + delegate, 88 B × 11 field pointers |
+| the `ж<T>` boxes themselves | 1,488 | 16.2 % | 11 boxes; `ж<FD>` alone is 608 B because a field-ref box still carries an inline `m_val` of the pointee type |
+| syscall seam | 1,048 | 11.4 % | `heap(new uint32())` 136 · `Ꮡ(buf,0)` 152 · 3 × `new unsafe.Pointer` 664 · `procWriteFile.Addr()` 96 |
+| `GoFunc` + defer machinery | 440 | 4.8 % | `func<>` object + closure + delegates 224 · defer delegates 128 · the `Stack<Action>` 88 |
+| `unsafe.Slice(unsafe.StringData(s), len(s))` | 136 | 1.5 % | `PinnedBuffer` + `ж<byte>`; free in Go |
+| loop/slice residues | 368 | 4.0 % | |
+
+**The two fixes, both golib-only, both pure defect removal** (detail and the emitted-form rule:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) *Reading a pointer and
+taking a field pointer allocate NOTHING*). `IsNull`'s value-peeking term is now guarded by a per-`T`
+`s_valueCanBeNull` — the question is only answerable for a reference type or a `Nullable<>`, and for
+everything else evaluating it boxed the whole pointee for a constant-false answer; the guard also
+made the peek read the right slot, correcting `ж<Nullable<T>>` (latent — Go has no `Nullable`).
+`of(…)`'s untyped wrapper is a pure function of the accessor, and the accessor is a compiler-cached
+static method group, so the wrapper is now memoized per accessor in a weak-keyed table.
+
+| probe measurement | before | after |
+|:--|--:|--:|
+| `os.File.WriteString(s)` | 9,208 B/op | **3,168 B/op (−65.6 %)** |
+| `os.File.Write(b)` | 9,072 | 3,032 |
+| `syscall.Write(h, b)` | 1,072 | 784 |
+| `ж<Mutex>.Value` (a field-pointer deref) | 592 | **0** |
+
+Guard: `GolibTests.PointerDereferenceAllocationTests`, a neutered-fix control — with the fixes removed
+it reports 528 B/deref for a 512-byte pointee, 288 for a reference-bearing one, 32 through a
+field-pointer chain, and 200-vs-112 B/call for `of(…)` against a bare box of the same type.
+
+#### `TestWriteStringAlloc` still does not reach zero — and the reason is architectural, not a missing fix
+
+3,168 bytes remain and **none of them is waste**; each is the current model charging for something Go
+gets from its compiler. `os` therefore does **not** bank on this row, ruling #1 still stands (a
+want-zero assert is satisfiable in principle, so it is not a disclosure), and the honest statement is
+that the row is an ARC, not a defect. The arc, in descending value, with what each item would cost:
+
+1. **`ж<T>` serves four box kinds from one class (1,488 B, 47 % of the remainder).** A field-reference
+   box, an element box and a native-address box all carry an inline `m_val` slot of the pointee type
+   that they never read — `ж<FD>` is 608 bytes for a *pointer*. They also each carry BOTH
+   `m_structFieldRef` (a `Nullable<(object, Delegate, Delegate)>`, 32 B) and `m_arrayIndexRef`
+   (`Nullable<(IArray,int)>`, 24 B) although the kinds are mutually exclusive. Two independent moves:
+   flattening the two nullable tuples into four plain fields is contained and worth ~28 B per box
+   (~308 B here); removing the inline `m_val` from the three non-standard kinds needs the class split
+   into per-kind subclasses, or `m_val` moved into `m_slot` unconditionally — which would ADD an
+   allocation to every standard box, so it is a real trade and wants the whole-corpus measurement
+   before it is taken. Blast radius: every converted package. **Chip-class, design-WITH-user.**
+2. **`uintptr(unsafe.Pointer(x))` materializes a dead `Pointer` object (496 B here, 15.7 %).** The
+   converter emits `(uintptr)new @unsafe.Pointer(x)` for Go's most common syscall idiom; the object is
+   provably dead — the ctor takes `(uintptr)x` and the cast reads it straight back. A converter
+   peephole would remove three allocations from EVERY zsyscall wrapper in the corpus. This is the
+   cheapest remaining increment and the one with the widest reach outside `os`; it was deliberately
+   NOT taken in this lane because it is a different change class (converter → CNR + corpus build +
+   goldens) and would have made the A/B footprint non-minimal for a row that cannot bank either way.
+3. **`GoFunc` is a heap frame (440 B, 13.9 %).** The `func<T>((defer, recover) => …)` shape costs a
+   `GoFunc<T>`, a display class, the body delegate, one delegate per `defer`, and a `Stack<Action>`
+   on the first registration. Go's `defer` record is stack-allocated and, since Go 1.14, usually
+   *open-coded* into the frame. The managed analogue is a `ref struct` frame with the defers in
+   inline fields — which cannot hold the body as a lambda, so it is an EMISSION change (the converter
+   would have to emit the body as a local function taking `ref` to the frame). **Chip-class**; do not
+   attempt it as a golib-local edit.
+4. **The syscall seam boxes the arguments (288 B beyond item 2).** `heap(new uint32(), out Ꮡdone)` is
+   Go's `var done uint32; &done` — a stack variable in Go, a heap box here — and `Ꮡ(buf, 0)` is
+   `&buf[0]`. Both fall out of item 1 if a pointer stops being a class.
+5. **`unsafe.StringData` pins eagerly (136 B).** It builds a `PinnedBuffer` view over the string's
+   bytes so the pointer has a stable address. Since r38, `ж<T>`'s address operators pin on demand
+   (`EnsureStableAddress`), so the eager pin is no longer load-bearing: returning an element reference
+   into the string's own backing array would drop the `PinnedBuffer`, make
+   `unsafe.Slice(StringData(s), len(s))` a true aliasing window (which is what Go's does), and give
+   `StringData(s) == StringData(s)` for free. Small, principled, and touching a hand-owned file with
+   subtle empty-string history — worth doing WITH the item-1 work rather than alone.
+
+**What this lane changes about `os`'s accounting: nothing.** The row still diverges, so `os` stays at
+681 of 683 agreeing + 1 disclosed + 34 matching skips + 4 capability-excluded, with one real
+divergence — now measured at 3,168 bytes instead of 9,184, and rooted rather than attributed.
 
 ## `encoding/gob` — build blocker CLOSED; first real census: 86 of 106 match (2026-08-02, r37-gob)
 
@@ -1978,6 +2083,14 @@ another, force `go build -o bin/go2cs.exe` and re-measure before recording a cou
 1. **`time`/`TestUnmarshalTextAllocations`: NO disclosure.** A want-zero alloc assert is
    satisfiable, so disclosing it would soften the doctrine the badges depend on. The `IByteSeq<T>`
    boxing redesign (CleanupBacklog #7) is PROMOTED onto `time`'s critical path.
+   **The doctrine paid off twice on `os`'s instance (r39-osalloc, 2026-08-03).** Refusing the
+   disclosure forced `TestWriteStringAlloc`'s 9,208 bytes to be DECOMPOSED rather than argued about,
+   and the decomposition found two silent allocations in `ж<T>` — `IsNull` boxing the whole pointee on
+   every dereference, and `of(…)` minting its untyped accessor wrapper per call — worth 62 % of the
+   bill and paid by *every* pointer read and field address in the corpus, not just by `os`. A
+   disclosure would have banked the package and left both in place. The row still does not reach zero
+   and `os` still does not bank; the remainder is an architectural arc, recorded in the `os` block's
+   *r39-osalloc* sub-section.
 2. **Capability-exclusion SANCTIONED for the provably-unownable os class** — the hostfxr
    apphost-relocation limitation (`TestRemoveAllWithExecutedProcess`), `TestCmdArgs` (a managed
    materialization would let Go `LocalFree` GC memory), and `TestDirectoryJunction` (raw-metal on
