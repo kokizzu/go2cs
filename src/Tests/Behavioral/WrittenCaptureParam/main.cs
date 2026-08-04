@@ -19,7 +19,7 @@ internal static (fmt.Stringer, nint) swap(fmt.Stringer s) {
 internal static (@string, @string) declRedeclare(fmt.Stringer sʗp) {
     ref var s = ref heap(sʗp, out var Ꮡs);
 
-    var get = @string () => Ꮡs.ValueSlot.String();
+    @string get() => Ꮡs.ValueSlot.String();
     @string before = get();
     (s, var n) = swap(s);
     _ = n;
@@ -46,37 +46,37 @@ internal static @string /*result*/ declDeferObserver(fmt.Stringer xʗp, fmt.Stri
 internal static @string declClosureWrite(fmt.Stringer sʗp) {
     ref var s = ref heap(sʗp, out var Ꮡs);
 
-    var set = () => {
+    void set() {
         Ꮡs.ValueSlot = new label(name: "closure-set"u8);
-    };
+    }
     (s, var n) = swap(s);
     set();
     return fmt.Sprintf("%s n=%d"u8, s.String(), n);
 }
 
 internal static (@string, @string) litRedeclare(fmt.Stringer seed) {
-    var f = (fmt.Stringer sʗp) => {
+    (@string, @string) f(fmt.Stringer sʗp) {
         ref var s = ref heap(sʗp, out var Ꮡs);
-        var get = @string () => Ꮡs.ValueSlot.String();
+        @string get() => Ꮡs.ValueSlot.String();
         @string before = get();
         (s, var n) = swap(s);
         _ = n;
         @string after = get();
         return (before, after);
-    };
+    }
     return f(seed);
 }
 
 internal static (nint, nint) declSliceRedeclare(slice<nint> vʗp) {
     ref var v = ref heap(vʗp, out var Ꮡv);
 
-    var sum = () => {
+    nint sum() {
         nint t = 0;
         foreach (var (_, e) in Ꮡv.ValueSlot) {
             t += e;
         }
         return t;
-    };
+    }
     nint before = sum();
     (v, var extra) = grow(v);
     nint after = sum() + extra;

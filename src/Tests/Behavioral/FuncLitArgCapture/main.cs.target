@@ -41,13 +41,13 @@ internal static nint nestedStructCapture() {
     var @out = new channel<nint>(1);
     var outʗ1 = @out;
     var pʗ1 = p;
-    var outer = () => {
+    void outer() {
         var outʗ2 = outʗ1;
         var pʗ2 = pʗ1;
         goǃ(() => {
             outʗ2.ᐸꟷ(pʗ2.sum());
         });
-    };
+    }
     outer();
     return ᐸꟷ(@out);
 }
@@ -55,10 +55,10 @@ internal static nint nestedStructCapture() {
 internal static nint selfRefCapture() {
     var done = new channel<nint>(1);
     var doneʗ1 = done;
-    var worker = (Action cb) => {
+    void worker(Action cb) {
         cb();
         doneʗ1.ᐸꟷ(5);
-    };
+    }
     var workerʗ1 = worker;
     goǃ(workerʗ1, () => {
     });
@@ -116,9 +116,9 @@ internal static void Main() {
     });
     fmt.Println((@string)"3:"u8, c.x);
     ref var d = ref heap(new box(), out var Ꮡd);
-    var f = () => {
+    void f() {
         set(Ꮡd);
-    };
+    }
     f();
     fmt.Println((@string)"4:"u8, d.x);
     ref var e = ref heap(new box(), out var Ꮡe);
@@ -136,7 +136,7 @@ internal static void Main() {
     fmt.Println((@string)"6:"u8, e.x);
     var vals = new nint[]{5}.slice();
     var valsʗ1 = vals;
-    var adder = (nint k) => k + valsʗ1[0];
+    nint adder(nint k) => k + valsʗ1[0];
     fmt.Println((@string)"7:"u8, adder(10));
     var @base = new nint[]{3}.slice();
         var baseʗ1 = @base;
@@ -149,7 +149,7 @@ internal static void Main() {
     var seedʗ1 = seed;
     Func<nint, nint> mul = (nint k) => k * seedʗ1[0];
     fmt.Println((@string)"9:"u8, mul(21));
-    var pick = (nint sel) => {
+    (nint x, bool ok) pick(nint sel) {
         nint x = default!;
         bool ok = default!;
         if (sel > 0) {
@@ -158,15 +158,15 @@ internal static void Main() {
             return (x, ok);
         }
         return (x, ok);
-    };
+    }
     var (a, b) = pick(3);
     var (zx, zok) = pick(-1);
     fmt.Println((@string)"10:"u8, a, b, zx, zok);
-    var zero = () => {
+    (nint n, @string s) zero() {
         nint nΔ1 = default!;
         @string s = default!;
         return (nΔ1, s);
-    };
+    }
     var (n0, s0) = zero();
     fmt.Println((@string)"11:"u8, n0, s0 == ""u8);
     fmt.Println((@string)"12:"u8, nestedStructCapture());

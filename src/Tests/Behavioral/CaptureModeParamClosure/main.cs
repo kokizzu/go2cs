@@ -21,7 +21,7 @@ public static void Add(this ж<Tally> Ꮡt, nint n) => func((defer, recover) => 
 internal static (nint, nint, @string) closureRead(Tally tʗp, nint n) {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-    var get = () => Ꮡt.Value.total;
+    nint get() => Ꮡt.Value.total;
     nint before = get();
     Ꮡt.Add(n);
     nint after = get();
@@ -31,9 +31,9 @@ internal static (nint, nint, @string) closureRead(Tally tʗp, nint n) {
 internal static (nint, @string) closureWrite(Tally tʗp, nint n) {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-    var bump = () => {
+    void bump() {
         Ꮡt.Value.total += 100;
-    };
+    }
     bump();
     Ꮡt.Add(n);
     bump();

@@ -94,9 +94,8 @@ internal static void Main() {
     fmt.Println(iSecondStopPendingˢ, i.Stop(), staleˢ, tryRecv((~i).C));
     const nint batch = 600;
     time.Duration armAt = /* 40 * time.Millisecond */ 40000000;
-    var stopRound = (bool reset) => {
-        ref var start = ref heap<time.Time>(out var Ꮡstart);
-        start = time.Now();
+    (nint, nint) stopRound(bool reset) {
+        var start = time.Now();
         var timers = new slice<ж<time.Timer>>(batch);
         foreach (var (n, _) in timers) {
             timers[n] = time.NewTimer(armAt - time.Since(start));
@@ -121,7 +120,7 @@ internal static void Main() {
             }
         }
         return (pending, stale);
-    };
+    }
     var (jPending, jStale) = stopRound(false);
     fmt.Println(jBatchStopPendingˢ, jPending, (@string)"of"u8, (nint)(batch), staleˢ, jStale);
     var (kPending, kStale) = stopRound(true);

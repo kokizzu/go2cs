@@ -192,12 +192,12 @@ internal static void Main() {
     (inc2, err) = (new CounterжIncrementer(ᴛ1), ᴛ2);
     inc2.Inc();
     fmt.Println(deconstructedIntoIfaceˢ, inc2.Total(), err == default!);
-    var makeAnimal = Animal (bool feline) => {
+    Animal makeAnimal(bool feline) {
         if (feline) {
             return new CatжAnimal(Ꮡ(new Cat(nil)));
         }
         return new Dog(nil);
-    };
+    }
     fmt.Println(madeˢ, makeAnimal(true).Speak(), makeAnimal(false).Speak());
     fmt.Println(plumbedˢ, runPlumbing());
     speakShutter ss = new wrapSinkжspeakShutter(Ꮡ(new wrapSink(Animal: new Dog(nil))));

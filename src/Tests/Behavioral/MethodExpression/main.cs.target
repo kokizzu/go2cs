@@ -26,7 +26,7 @@ internal static void Main() {
     fmt.Println(cv.get());
     var g = (Func<counter, nint>)(get);
     fmt.Println(g(c.Value));
-    var apply = (Func<ж<counter>, nint, nint> fn, ж<counter> @base, nint dΔ1) => fn(@base, dΔ1);
+    nint apply(Func<ж<counter>, nint, nint> fn, ж<counter> @base, nint dΔ1) => fn(@base, dΔ1);
     fmt.Println(apply((Func<ж<counter>, nint, nint>)(add), c, 3));
     fmt.Println(g(c.Value));
     Func<nint, nint> bump = c.add;

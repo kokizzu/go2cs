@@ -44,16 +44,16 @@ internal static @string inspect(any n) {
 private static readonly @string shadowˢ = "shadow"u8;
 
 internal static (@string, @string) classifyVia(any v) {
-    var unwrap = (any vΔ1) => {
+    any unwrap(any vΔ1) {
         {
             var (p, ok) = vΔ1._<ж<node>>(ᐧ); if (ok) {
                 return (~p).inner;
             }
         }
         return vΔ1;
-    };
+    }
     var unwrapʗ1 = unwrap;
-    var pick = @string (any vΔ2) => {
+    @string pick(any vΔ2) {
         var switchᴛ1 = unwrapʗ1(vΔ2);
         switch (switchᴛ1.type()) {
         case nint vΔ3: {
@@ -69,7 +69,7 @@ internal static (@string, @string) classifyVia(any v) {
             var vΔ3 = switchᴛ1;
             return fmt.Sprintf("other:%v"u8, vΔ3);
         }}
-    };
+    }
     @string label = shadowˢ;
     var other = Ꮡ(new node(nil));
     other.Value.inner = label;

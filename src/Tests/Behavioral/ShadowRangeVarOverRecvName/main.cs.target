@@ -12,7 +12,7 @@ partial class main_package {
 private static readonly object describeˢ = (@string)"describe:"u8;
 
 internal static slice<ж<node>> collect(this ж<node> Ꮡc, slice<ж<node>> chain) {
-    var describe = @string () => Ꮡc.Value.name;
+    @string describe() => Ꮡc.Value.name;
     slice<ж<node>> toCheck = default!;
     toCheck = append(toCheck, Ꮡc);
     foreach (var (_, cΔ1) in chain) {

@@ -846,6 +846,28 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 			}
 
 		case *ast.FuncLit:
+			// A variable DECLARED INSIDE this literal is not CAPTURED by it — it is one of its
+			// own locals, and Go scoping puts it out of reach of every frame but this one, so
+			// there is nothing for a shared box to make visible. The walk below cannot tell the
+			// two apart on its own: it matches any mention of the object lexically inside the
+			// literal's body, which for an inside-declared variable is its own declaration. That
+			// made `var t Time; t.UnmarshalText(in)` inside a closure heap-box `t` — 128 bytes
+			// per call, and the box `Ꮡt` was never even referenced (`time`'s
+			// TestUnmarshalTextAllocations asserts zero) — while the identical statements outside
+			// one emitted a plain local. Compare it with the pointer-method-value note below: the
+			// escape trigger is code OUTSIDE the frame reaching the storage, and no code outside
+			// this literal can name this variable.
+			//
+			// Skip only THIS literal, and keep descending: a literal NESTED inside it does close
+			// over the variable, and its own turn through this arm marks the escape correctly.
+			// Everything that makes an inside-declared variable genuinely escape — `&x`, `&x.f`,
+			// `&x[i]`, a pointer argument, a capture-mode method, a pointer-receiver method value,
+			// a go/defer use — is decided by an arm that walks the WHOLE enclosing body, literal
+			// bodies included, so none of them is lost here.
+			if identObj.Pos() >= n.Pos() && identObj.Pos() < n.End() {
+				return true
+			}
+
 			// Check if ident is used inside a closure
 			closureContainsIdent := false
 			takesAddress := false

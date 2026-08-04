@@ -18,7 +18,7 @@ private static readonly object uintptrWordˢ = (@string)"uintptr word"u8;
 private static readonly object textˢ = (@string)"text"u8;
 
 internal static void Main() {
-    var whatAmI = (any i) => {
+    void whatAmI(any i) {
         switch (i.type()) {
         case null: {
             fmt.Println(iMNilˢ);
@@ -41,14 +41,14 @@ internal static void Main() {
             fmt.Printf("Don't know type %T\n"u8, t);
             break;
         }}
-    };
+    }
     whatAmI(true);
     whatAmI((nint)(1));
     whatAmI((int64)2);
     whatAmI((uint64)2);
     whatAmI(heyˢ);
     whatAmI(default!);
-    var classify = (any i) => {
+    void classify(any i) {
         switch (i.type()) {
         case nint: {
             fmt.Println(intˢ);
@@ -71,7 +71,7 @@ internal static void Main() {
             break;
         }}
 
-    };
+    }
     nint a = 1;
     int32 b = 2;
     nuint c = 3;
@@ -80,7 +80,7 @@ internal static void Main() {
     classify(b);
     classify(c);
     classify(d);
-    var kind = (any i) => {
+    void kind(any i) {
         switch (i.type()) {
         case nuint: {
             fmt.Println(uintWordˢ);
@@ -103,7 +103,7 @@ internal static void Main() {
             break;
         }}
 
-    };
+    }
     nuint u = 5;
     uintptr p = 6;
     kind(u);

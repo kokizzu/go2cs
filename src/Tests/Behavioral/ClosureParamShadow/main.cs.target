@@ -16,7 +16,7 @@ internal static void Main() {
     });
     fmt.Println(r, n);
     nint add = 7;
-    var g = (nint nΔ2) => nΔ2 + add;
+    nint g(nint nΔ2) => nΔ2 + add;
     fmt.Println(g(n), n);
 }
 

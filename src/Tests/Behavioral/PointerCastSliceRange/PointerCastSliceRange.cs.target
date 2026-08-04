@@ -26,12 +26,12 @@ internal static void Main() {
     ip = Ꮡarr;
     var back = (~Ꮡip.Reinterpret<ж<array<nint>>, ж<array<int64>>>()).Value.Clone();
     _ = back;
-    var pick = @unsafe.Pointer (bool u) => {
+    @unsafe.Pointer pick(bool u) {
         if (u) {
             return (@unsafe.Pointer)(uintptr)0;
         }
         return new @unsafe.Pointer(Ꮡip.ValueSlot);
-    };
+    }
     _ = (uintptr)pick(true);
     var op = ((opaque)(ж<array<nint>>)(uintptr)(new @unsafe.Pointer(ip)));
     _ = op;

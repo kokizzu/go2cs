@@ -2049,3 +2049,77 @@ cache was first filled.
    perf win). The 128 B half = escape-analysis refinement (an address-taken local Go stack-allocates
    need not heap-box). Sequenced AFTER r39-osalloc's dock so its defer-closure findings unify with
    the local-function mode into ONE reviewed closure-emission design.
+   **IMPLEMENTED 2026-08-03 (r39e-closure)** — both halves landed, `time` at **157 pass / 0 fail /
+   2 skip of 159** and banked as package #73. The unified design the ruling asked for is
+   [`DESIGN-closure-emission.md`](DESIGN-closure-emission.md): §3 records what landed, §4 is the
+   ref-struct frame (r39-osalloc arc item 3) written up as a proposal for user review, NOT
+   implemented. Detail in the section below.
+
+## r39e-closure (2026-08-03) — 216 = 128 + 88, both halves are converter emission, and `time` banks
+
+Ruling #2 commissioned this arc on r39-timer's decomposition. That decomposition was **exact**: each
+half was re-measured here in isolation, by reverting one emitted form at a time in the built test
+host and re-running the single row.
+
+| `time` `TestUnmarshalTextAllocations` | allocs |
+|:--|--:|
+| branch base `18423efaf` | 216 |
+| local-function fix only (test-body box restored by hand) | **128** |
+| escape-narrowing fix only (parseUint lambda restored by hand) | **88** |
+| both | **0 — passes** |
+
+**Fix 1 — a func literal that is only ever CALLED emits as a C# local function (88 B).** A capturing
+lambda allocates a display class AND a delegate on every evaluation of the lambda expression — per
+call of the enclosing function, whether the closure runs or not. A local function that is never
+converted to a delegate captures through a by-ref STRUCT closure: same single storage location per
+captured variable, no heap object. The gate is the proof that keeps that compilation available —
+every reference other than the declaration must be a call callee, which also subsumes reassignment
+and address-taking. Emission is a new `LambdaContext.localFuncName` mode in `convFuncLit`, so the
+whole body pipeline (capture hoisting, boxed value params, variadic prologue, array clones, named
+results, the single-return collapse) is shared verbatim with the lambda path. A literal that
+**defers or recovers is deliberately excluded**: its 440 B execution context dominates the 88 this
+removes, and lifting the exclusion is §4 of the design, not a workaround here.
+
+**Fix 2 — a variable DECLARED INSIDE a closure is not captured BY it (128 B).** The escape
+analysis's function-literal arm matched any mention of an object lexically inside a literal's body,
+and for a variable declared *there* that mention is its own declaration. `var t Time;
+t.UnmarshalText(in)` inside a closure heap-boxed `t` — and the box `Ꮡt` was **never referenced in
+the emitted body** — while the identical statements outside a closure emitted a plain local. One
+containment test fixes it, and the skip keeps descending so a literal NESTED inside still marks the
+escape it genuinely causes. The narrowing direction is the dangerous one, so the proof is explicit:
+Go scoping puts a literal's own local out of reach of every other frame, and every route by which
+such a local can still escape (`&x`, `&x.f`, `&x[i]`, a pointer argument, a capture-mode method, a
+pointer-receiver method value, a `go`/`defer` use) is decided by an arm that walks the whole
+enclosing body, literal bodies included.
+
+**Whole-corpus footprint — two-temp-root A/B (both roots seeded per CLAUDE.md §1/§1a; base exe built
+from `HEAD` versions of the four changed converter files):**
+
+| | files | sites |
+|:--|--:|--:|
+| local-function emission | 91 | **152** (133 block-bodied, 19 expression-bodied) |
+| heap box removed | 22 | **32** |
+| both families in one file | 8 | |
+| **total changed** | **105** | |
+
+Every changed line in the 105 files falls in one of the two families — verified by attribution, not
+by sampling: each removed line is a lambda declaration, a `};`→`}` close, a `= ref heap` box, or a
+statement in a file that has a box removal (the collapse's second line, and in `reflect/iter.cs` the
+`valueᴛ1` for-loop temp that only existed because the variable was a `ref` local). Marker gate:
+**39** `[module: GoManualConversion]` files, line-anchored, **0 clobbered**, 16 carrying a `.cs.auto`.
+
+Behavioral CNR: **41** files, 96 local-function sites + 1 box removal, 168 added / 169 deleted —
+arithmetic closes exactly (96 + 71 `};` + 2 box lines removed = 169; 96 + 71 + 1 = 168). Guards:
+`LocalFunctionEmission` (10 probes, 5 negative controls — one per disqualifying reason) and
+`ClosureLocalNoHeapBox` (8 probes, 5 of them boxes that must survive, each writing through the
+escaping alias and reading it back). Both neuter-proven: with the fix removed each golden
+mismatches (24 and 11 changed lines respectively) and restoring it returns them to green.
+
+**One incidental finding worth recording.** The committed `src/core` is **stale by 685 files**
+against a seeded reconvert with the BASE converter — the r36 four-deref-accessor change
+(`Ꮡp.Value` → `Ꮡp.DerefOrNull()` on pointer receivers and parameters) landed as a converter fix
+without a corpus regen, which is correct policy but means a plain overlay-then-`git diff` is NOT a
+usable A/B instrument on this branch. The two-temp-root form is, and it is what the numbers above
+come from. The same staleness is what makes a `time` `-tests` run show `DerefOrNull` and
+`fallthrough`-placement diffs in its production `.cs`; those are pre-existing, not `-tests`-closure
+drift, and they are restored rather than banked.

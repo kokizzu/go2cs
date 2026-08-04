@@ -66,13 +66,13 @@ internal static void Main() {
 internal static nint digitSum<T>(T s)
     where T : /* []byte | string */ IByteSeq<T, byte>, new()
 {
-    var parse = (T part) => {
+    nint parse(T part) {
         nint n = 0;
         foreach (var (_, c) in part.ToSlice()) {
             n = n * 10 + (nint)(c - (rune)'0');
         }
         return n;
-    };
+    }
     return parse(((T)(s[0..2]))) + parse(((T)(s[3..5])));
 }
 

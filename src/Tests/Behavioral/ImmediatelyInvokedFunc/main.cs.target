@@ -69,10 +69,10 @@ internal static void Main() {
     })))(scopeˢ);
     fmt.Println(afterArgRecoverˢ);
     nint calls = 0;
-    var bump = () => {
+    nint bump() {
         calls++;
         return 99;
-    };
+    }
     ((Action<nint>)(_ => {
         fmt.Println(ignoredArgCallsˢ, calls);
     }))(bump());

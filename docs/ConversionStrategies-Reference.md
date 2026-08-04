@@ -9326,6 +9326,46 @@ internal static nint sumList(ж<node> Ꮡp) {
 
 A **package-level global** referenced inside a closure is *not* captured at all — it is a C# static, accessed live. A value snapshot (`var gʗ1 = g`) would copy the struct (so `&gʗ1` has no box → CS0103, and writes through the global from inside the closure would be lost) and is semantically wrong, since Go reads/writes the live global. For an address-taken (heap-boxed) global the closure references the static box `Ꮡg` directly — a method call routes as `Ꮡg.method()` and a field address as `Ꮡg.of(T.Ꮡfield)`. (Guarded by `GlobalCapturedInClosure`; the runtime does this in every `systemstack(func(){ … mheap_ … })`.)
 
+### A func literal that is only ever CALLED emits as a C# LOCAL FUNCTION
+A C# lambda that captures anything allocates **two** heap objects every time the lambda expression is evaluated: a display class holding the captured variables, and a delegate bound to it. That is charged per call of the *enclosing* function, whether or not the closure is ever invoked — 88 bytes for the two-word case, measured. Go allocates neither when its escape analysis proves the closure does not outlive the frame, which is why `time`'s `TestUnmarshalTextAllocations` asserts `want 0 allocs`, and why `parseRFC3339`'s `parseUint := func(…)` was 88 of that row's 216.
+
+A `name := func(…){…}` whose variable is **only ever the callee of a call** is therefore emitted as a C# *local function* instead:
+```csharp
+//  Go:   ok := true
+//        parseUint := func(s bytes, min, max int) (x int) { … ok = false … return x }
+var ok = true;
+nint /*x*/ parseUint(bytes sΔ1, nint minΔ1, nint max) {
+    nint x = default!;
+    …
+    ok = false;          // the SAME `ok` — both sites are rewritten to one struct-closure field
+    …
+    return x;
+}
+nint year = parseUint(((bytes)(s[0..4])), 0, 9999);
+```
+Roslyn compiles a local function that is never converted to a delegate with a **by-ref struct closure**: the captured variables move into a struct that lives in the enclosing frame and is passed as a hidden `ref` parameter. There is still exactly one storage location per captured variable — the enclosing method's own uses are rewritten to the same field — so sharing, write-visibility and the capture-snapshot machinery are all unchanged. Only the heap objects are gone. The result type is rendered by the same helper `visitFuncDecl` uses, so a named Go result keeps its `/*x*/` comment and a local function reads exactly like a declared one; a single-return literal keeps the expression-bodied collapse (`byte num2(slice<byte> bΔ1) => …;`).
+
+**The "only ever called" proof is what keeps that compilation available**, not a convenience: converting a local function to a delegate anywhere makes Roslyn fall back to a heap display class, and a local function has no value form to give a store, a return, an argument or a comparison in the first place. Every reference other than the declaring occurrence must be a call callee — which also subsumes reassignment (`f = …` is a non-call use of `f`) and address-taking, so the emitted name can never be required as a first-class value. Four further gates: the statement must be a `:=` **define** with one LHS ident and one RHS literal (a mixed `f, err := …` re-use records the name in `Uses`, not `Defs`, and binds no fresh object); it must be in statement position, since a local function is a declaration and cannot sit in a `for`/`if`/`switch` init clause; the enclosing function declaration must be known (a literal inside a package-level `var` initializer is left alone); and the literal must **not use `defer` or `recover`**.
+
+That last exclusion is deliberate and is the seam to a separate design. Such a literal is emitted inside a `func((defer, recover) => …)` execution context whose `GoFunc` frame, display class and per-defer delegates measure 440 B/call — dominating the 88 this rule removes — so converting the outer binding alone would churn goldens for no measurable win. Making that shape allocation-free is the ref-struct frame proposal in [`Phase4/DESIGN-closure-emission.md`](Phase4/DESIGN-closure-emission.md), which is also where the exclusion is lifted.
+
+Go's two-step recursion idiom (`var f func(int) int; f = func(int) int {…}`) is an ASSIGN, not a DEFINE, so it is not this shape at all and keeps the lambda — correctly, since the recursive reference reads `f` as a value. (Guarded by the `LocalFunctionEmission` behavioral test: the `parseUint` shape with a named result and a mutated capture, the expression-bodied collapse, a struct-and-array capture mutated through the local function, two nested levels — plus five negative controls, one per disqualifying reason: value use, reassignment, defer/recover, the recursion two-step, and argument position. The golden pins the emitted form; the stdout comparison against `go run` pins the capture semantics.)
+
+### A variable DECLARED INSIDE a closure is not captured BY it
+The escape analysis heap-boxes a local when something *outside* its frame can reach its storage; a closure is one such route, because the emitted C# serves the shared variable through a `ж<T>` box. The closure arm of that analysis matched on any mention of the object lexically inside a function literal's body — and for a variable declared *there*, that mention is its own declaration. So a literal's own local was treated as if the literal closed over it:
+```csharp
+//  Go:   testing.AllocsPerRun(100, func() { var t Time; t.UnmarshalText(in) })
+Δtesting.AllocsPerRun(100, () => {
+    ref var tΔ1 = ref heap(new Δtime.Time(), out var ᏑtΔ1);   // ← 128 B, and ᏑtΔ1 is never used
+    tΔ1.UnmarshalText(inʗ1);
+});
+```
+The box `ᏑtΔ1` is **never referenced anywhere in the emitted body** — `UnmarshalText` is a `this ref Time` extension, which binds the variable directly — while the identical two statements written outside a closure emitted a plain `Δtime.Time tΔ1 = default!;`. The arm now skips an object whose declaration position lies inside the literal, and the emission is the plain local. That was the other 128 of `time`'s 216.
+
+The narrowing direction of an escape rule is the dangerous one — an under-box drops writes silently — so the proof is stated rather than assumed. Go scoping puts a literal's own local out of reach of every other frame, so there is nothing for a shared box to make visible; and every route by which such a local can *still* genuinely escape is decided by an arm that walks the **whole enclosing function body**, literal bodies included: `&x` / `&x.f` / `&x[i]` (the address-of arm), a pointer argument (the call arm), a `go`/`defer` use (their own arms), a capture-mode method call, and a pointer-receiver **method value** — Go's `(&x).M` written without the `&`. None of them is lost. The skip also keeps descending rather than stopping, so a literal **nested** inside the skipped one — which does close over the variable — still gets its own turn through the arm and still marks the escape.
+
+(Guarded by the `ClosureLocalNoHeapBox` behavioral test. Five of its eight probes are the boxes that must SURVIVE, one per escape route, and each writes through the escaping alias and reads the value back so an over-narrowed rule prints a wrong number rather than merely emitting a different shape; the two positive probes are the pointer-receiver-method and copy-only shapes that now emit plain locals. Its N3 probe is the nesting case, and it is also the interaction test with the local-function rule above: the nested literal is emitted as a local function and captures the surviving box.)
+
 ### Capture-mode methods called through a value field of the receiver
 A pointer-receiver method that takes the address of one of its own fields (`func (c *Counter) Add(d int32) int32 { return bump(&c.n, d) }`) is *capture-mode*: it is emitted with the heap box **as** its receiver (`this ж<Counter> Ꮡc`) so `&c.n` can field-reference the real storage as `Ꮡc.of(Counter.Ꮡn)`. When another struct embeds such a type as a **value field** and drives it through that field — `func (f *Flag) Incr() int32 { return f.c.Add(1) }` — the call needs a `ж<Counter>` aliasing the real `f.c`. The enclosing method is therefore itself promoted to capture-mode (direct-ж), and `f.c.Add(1)` is emitted as `(&f.c).Add(1)`:
 ```csharp

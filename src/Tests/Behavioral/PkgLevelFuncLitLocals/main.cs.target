@@ -81,9 +81,9 @@ internal static slice<entry> table = new entry[]{
     }),
     new("nested-literal"u8, () => {
         ref var c = ref heap(new counter(), out var Ꮡc);
-        var inner = () => {
+        void inner() {
             Ꮡc.inc(6);
-        };
+        }
         inner();
         inner();
         return Ꮡc.Value.get();

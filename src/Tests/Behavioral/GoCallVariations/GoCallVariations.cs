@@ -82,11 +82,11 @@ private static readonly object innerFnRanˢ = (@string)"inner fn ran"u8;
 
 internal static void runPair(channel<EmptyStruct> done) {
     @string tag = pairˢ;
-    var handler = (channel<EmptyStruct> ch, Action fn) => {
+    void handler(channel<EmptyStruct> ch, Action fn) {
         fn();
         fmt.Println(handledˢ, tag);
         ch.ᐸꟷ(new EmptyStruct());
-    };
+    }
     var handlerʗ1 = handler;
     goǃ(handlerʗ1, done, () => {
         fmt.Println(innerFnRanˢ);

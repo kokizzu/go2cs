@@ -247,10 +247,10 @@ private static readonly object funcLitParamˢ = (@string)"funcLitParam:"u8;
 
 internal static void funcLitParam() {
     var a = new nint[]{1, 2, 3}.array();
-    var fl = (array<nint> x) => {
+    void fl(array<nint> x) {
         x = x.Clone();
         x[0] = 99;
-    };
+    }
     fl(a);
     fmt.Println(funcLitParamˢ, a);
 }

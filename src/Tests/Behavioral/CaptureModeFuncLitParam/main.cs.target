@@ -39,12 +39,12 @@ private static readonly object nestedˢ = (@string)"nested:"u8;
 private static readonly object variadicˢ = (@string)"variadic:"u8;
 
 internal static void Main() {
-    var f = (Tally tʗp, nint m) => {
+    (nint, @string) f(Tally tʗp, nint m) {
         ref var t = ref heap(tʗp, out var Ꮡt);
         t.total++;
         Ꮡt.Add(m);
         return (t.total, t.log);
-    };
+    }
     var seed = new Tally(total: 5, log: "s"u8);
     var (total, log) = f(seed, 3);
     fmt.Println(assignedˢ, total, log);
@@ -58,25 +58,25 @@ internal static void Main() {
     var @base = new Tally(total: 2, log: "d"u8);
     runDeferred(@base);
     fmt.Println(deferredSourceUntouchedˢ, @base.total, @base.log);
-    var g = (Tally tʗp) => {
+    (nint, @string) g(Tally tʗp) {
         ref var t = ref heap(tʗp, out var Ꮡt);
-        var bump = () => {
+        void bump() {
             Ꮡt.Add(9);
-        };
+        }
         bump();
         t.total++;
         return (t.total, t.log);
-    };
+    }
     var (total4, log4) = g(new Tally(total: 3, log: "n"u8));
     fmt.Println(nestedˢ, total4, log4);
-    var h = (Tally tʗp, params ꓸꓸꓸnint nsʗp) => {
+    (nint, @string) h(Tally tʗp, params ꓸꓸꓸnint nsʗp) {
         var ns = nsʗp.sslice();
         ref var t = ref heap(tʗp, out var Ꮡt);
         foreach (var (_, n) in ns) {
             Ꮡt.Add(n);
         }
         return (t.total, t.log);
-    };
+    }
     var (total5, log5) = h(new Tally(total: 10, log: "v"u8), 1, 2);
     fmt.Println(variadicˢ, total5, log5);
 }

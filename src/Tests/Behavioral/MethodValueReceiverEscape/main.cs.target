@@ -103,9 +103,9 @@ internal static nint directCallStaysUnboxed() {
 internal static nint viaClosure() {
     ref var c = ref heap<counter>(out var Ꮡc);
     c = new counter(n: 60);
-    var run = () => {
+    void run() {
         applyInt(Ꮡc.dec, 8, 9);
-    };
+    }
     run();
     return c.n;
 }

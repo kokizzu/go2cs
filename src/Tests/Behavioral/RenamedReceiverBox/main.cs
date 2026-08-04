@@ -36,10 +36,10 @@ internal static void bumpTwice(this ж<counter> Ꮡp) {
 internal static nint addInClosure(ж<counter> Ꮡp, nint d) {
     ref var Δp = ref Ꮡp.DerefOrNull();
 
-    var apply = () => {
+    void apply() {
         Ꮡp.Value.n += d;
         addInt(Ꮡp.of(counter.Ꮡn), d);
-    };
+    }
     apply();
     return Δp.n;
 }

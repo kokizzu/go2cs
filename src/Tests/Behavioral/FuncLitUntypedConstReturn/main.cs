@@ -29,12 +29,12 @@ internal static void Main() {
     fmt.Println(apply(encode, runeSelf));
     fmt.Println(apply(encode, maxRune));
     fmt.Println(apply(encode, (rune)'x'));
-    var pick = int64 (bool neg) => {
+    int64 pick(bool neg) {
         if (neg) {
             return -1;
         }
         return bigConst;
-    };
+    }
     fmt.Println(pick(false), pick(true));
     var invalid = rune (rune r) => maxRune + 1;
     fmt.Println(apply(invalid, (rune)'c'));

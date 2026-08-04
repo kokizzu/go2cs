@@ -143,10 +143,10 @@ internal static void Main() {
     );
     var (ip, found) = res.lookupPackage(fmtˢ);
     fmt.Println(ip, found, res.lookupSym(""u8, printfˢ), res.lookupSym("T"u8, "M"u8));
-    var fetch = () => {
+    (any, error) fetch() {
         var (ᴛ1, ᴛ2) = fetchPair();
         return (ᴛ1, ᴛ2);
-    };
+    }
     var (got, gerr) = fetch();
     fmt.Println(collapseHoistˢ, got, gerr == default!);
     fmt.Println(passThrough());
