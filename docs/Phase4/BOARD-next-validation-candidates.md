@@ -61,7 +61,18 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
-## OWED — the issue-#32 `-recurse` change landed on master UNVERIFIED on Windows (2026-08-05)
+## ~~OWED~~ DISCHARGED — the issue-#32 `-recurse` change is now measured on Windows (2026-08-05, same day)
+
+**All four gates ran or were legitimately waived; the change is clean.** (1) `check-no-regression`:
+**byte-identical across all 569** behavioral packages — the entry's highest-stakes expectation held
+exactly. (2) Full behavioral suite: **544/544** Transpile+Compile+Target, **514/514** output
+comparisons, 0 failed (1,092.5s). (3) The recurse tests' first real Windows run: `TestRecurseModuleOnly`
+**PASS** (0.81s — the Windows-path assertion that could only fail-on-Linux now actually exercises),
+`TestRecurseSyntheticModule` PASS, `TestModuleConverterPartitionScope` both scopes PASS; full
+`go test ./...` ok with nothing new failing. (4) The sweep was waived by this entry's own condition —
+1–3 clean and byte-identical emission leaves no path into the banked suites. The stray remote branch
+`claude/go2cs-issue-32-5osg4q` is deleted. The container's original record follows, kept for its
+observations (the CRLF-coupled `packageInfoWriter` seam remains recorded-not-owed).
 
 For the next **local (Windows)** session: commit `d00cac5` — [issue #32](https://github.com/ritchiecarroll/go2cs/issues/32),
 `-recurse=module` plus the load-failure fix — was authored and pushed from a **remote Linux container**,
