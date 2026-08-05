@@ -27,7 +27,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func processConversion(inputFilePath string, isDir bool, outputFilePath string, options Options) {
+// processConversion converts ONE resolved input — a single .go file or a package directory — into
+// C# at outputFilePath. It returns an error only for a PACKAGE LOAD failure, which is the one
+// failure mode that belongs to the input rather than to the environment: a batch driver
+// (ModuleConverter, StdLibConverter) records the package as failed and converts the rest, while a
+// single-package caller (main) reports it and exits. Everything after the load still exits on
+// failure — those are I/O faults on the output tree, not a property of the package being converted.
+func processConversion(inputFilePath string, isDir bool, outputFilePath string, options Options) error {
 	var err error
 
 	cfg := &packages.Config{
@@ -69,8 +75,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		}
 	}
 
+	// A load failure is a property of THIS package (a dependency with a missing go.sum entry, a
+	// toolchain the module requires but the host lacks, a broken import), so it is returned rather
+	// than fatal: under -recurse a single unloadable third-party package used to abort the entire
+	// run, discarding every package still queued behind it.
 	if err != nil {
-		log.Fatalf("Failed to parse files in directory \"%s\": %s\n", inputFilePath, err)
+		return fmt.Errorf("failed to parse files in directory %q: %w", inputFilePath, err)
 	}
 
 	for _, pkg := range pkgs {
@@ -351,6 +361,8 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			log.Fatalf("Failed to convert package tests in %q: %v\n", inputFilePath, err)
 		}
 	}
+
+	return nil
 }
 
 // aliasCoveredImplementationKeys returns the "canonicalIface|impl" keys of every GoImplement pair

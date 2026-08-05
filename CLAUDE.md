@@ -104,6 +104,9 @@ ONE stdlib in a build; there is now only one on disk.
     stdlib via local `$(go2csPath)` project refs). A second positional output root isolates the generated
     `src\` app + `pkg\` dependency trees from that runtime root; converted packages reference one another
     relatively. Without it, recurse output defaults to `-go2cspath` for backward compatibility.
+    `-recurse=module` narrows the SCOPE to the input module's own packages: every third-party package is
+    still referenced into `pkg\<import-path>` but none is converted, so a dependency closure go2cs cannot
+    convert can't hold up the module's own code (issue #32). Values compose — `-recurse=module,nuget`.
     `-recurse=nuget` instead emits NuGet PackageReferences
     (`go.<pkg>`/`go.lib`/`go.gen`, versioned `$(GoStdLibVersion)`) for the go2cs stdlib/runtime/analyzer so a
     converted app restores from nuget.org with no `deploy-core` staging; the app's own converted packages

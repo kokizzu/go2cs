@@ -30,6 +30,7 @@ type Options struct {
 	recurse             bool
 	recurseOutputRoot   string // -recurse: writable root for generated src\ + pkg\ trees; defaults to go2csPath
 	mainModulePath      string // -recurse: import path of the app (main) module; routes its packages to src\, deps to pkg\
+	moduleOnly          bool   // -recurse=module: convert the input module's OWN packages only; the third-party closure is referenced (into pkg\) but not converted
 	nugetRefs           bool   // -recurse=nuget: reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local $(go2csPath) project references
 	targetPlatform      string
 	buildTags           []string // -tags: build tags applied to package loading AND constraint evaluation
@@ -62,13 +63,21 @@ type Options struct {
 
 // recurseMode backs the -recurse flag. It is an optional-value boolean-ish flag: it implements
 // IsBoolFlag so a bare `-recurse` (or `-recurse .`) sets the mode without consuming the next argument,
-// while an explicit `-recurse=<value>` selects the reference style. `-recurse` / `-recurse=true` convert an
-// end-user module against LOCAL project references ($(go2csPath)core\... staged by deploy-core), and
-// `-recurse=nuget` instead emits NuGet PackageReferences (go.<pkg> stdlib + go.lib runtime + go.gen
-// analyzer) so a converted app restores the go2cs stack from nuget.org with no local checkout.
+// while an explicit `-recurse=<value>` selects the reference style and the conversion SCOPE. Values
+// are comma-separated and compose (`-recurse=module,nuget`):
+//
+//	(bare) / true  convert the module AND its third-party dependency closure, against LOCAL project
+//	               references ($(go2csPath)core\... staged by deploy-core)
+//	nuget          reference style: the stdlib, runtime and analyzer come from NuGet
+//	               (go.<pkg> + go.lib + go.gen) instead, so nothing is staged locally
+//	module         scope: convert the input module's OWN packages only — every third-party package is
+//	               referenced (into the pkg\ tree) but never converted, so an unconvertible dependency
+//	               closure cannot hold up the app's own code
+//	false          disable recursion (single-package conversion)
 type recurseMode struct {
-	enabled bool
-	nuget   bool
+	enabled    bool
+	nuget      bool
+	moduleOnly bool
 }
 
 // IsBoolFlag lets the flag package treat a bare `-recurse` as a boolean (Set("true")) rather than
@@ -80,23 +89,50 @@ func (r *recurseMode) String() string {
 		return "false"
 	}
 
-	if r.nuget {
-		return "nuget"
+	var modes []string
+
+	if r.moduleOnly {
+		modes = append(modes, "module")
 	}
 
-	return "true"
+	if r.nuget {
+		modes = append(modes, "nuget")
+	}
+
+	if len(modes) == 0 {
+		return "true"
+	}
+
+	return strings.Join(modes, ",")
 }
 
+// Set accepts the comma-separated (or space-separated) mode list documented on recurseMode. The
+// values are independent — a reference style and a scope compose — so each is applied in turn
+// rather than selected exclusively; `false` anywhere in the list turns recursion off entirely.
 func (r *recurseMode) Set(value string) error {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "", "true", "1", "on":
-		r.enabled, r.nuget = true, false
-	case "false", "0", "off":
-		r.enabled, r.nuget = false, false
-	case "nuget":
-		r.enabled, r.nuget = true, true
-	default:
-		return fmt.Errorf("invalid -recurse value %q (want: (bare) | nuget | false)", value)
+	values := parseBuildTags(value) // same comma/whitespace splitting, no empty fields
+
+	if len(values) == 0 {
+		// A bare `-recurse` (flag.Value sees "true") or an empty `-recurse=`: the established
+		// default — module plus its third-party closure, local project references.
+		r.enabled, r.nuget, r.moduleOnly = true, false, false
+		return nil
+	}
+
+	for _, mode := range values {
+		switch strings.ToLower(mode) {
+		case "true", "1", "on":
+			r.enabled = true
+		case "false", "0", "off":
+			r.enabled, r.nuget, r.moduleOnly = false, false, false
+			return nil
+		case "nuget":
+			r.enabled, r.nuget = true, true
+		case "module":
+			r.enabled, r.moduleOnly = true, true
+		default:
+			return fmt.Errorf("invalid -recurse value %q (want: (bare) | module | nuget | false, comma-separated to combine)", mode)
+		}
 	}
 
 	return nil

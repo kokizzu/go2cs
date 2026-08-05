@@ -430,10 +430,11 @@ out-of-corpus and narrower than the namespace fix. Left for Phase-4 hardening (n
    (`Δslice_package`) while the producer emits it un-prefixed (`slice_package`) — dangling reference.
 5. *(low, converter)* An **alias-to-alias-to-named** chain (`type A = Named; type B = A`) emits
    `global using B = go.<pkg>.A;`, referencing the intermediate alias `A` as if a class member (CS0426).
-6. *(robustness, recurse)* `processConversion`'s `log.Fatalf` on a package **load failure** (e.g. a dependency
+6. ~~*(robustness, recurse)* `processConversion`'s `log.Fatalf` on a package **load failure** (e.g. a dependency
    whose transitive test-dep has a missing `go.sum` entry — `gopkg.in/yaml.v3` → `gopkg.in/check.v1`) aborts
    the ENTIRE `-recurse` run rather than logging + skipping that one package. `ModuleConverter.convertAll`
-   already recovers panics; the load path should return an error instead of exiting.
+   already recovers panics; the load path should return an error instead of exiting.~~ **FIXED 2026-08-05**
+   (issue #32) — see *Conversion scope: the module without its dependency graph* below.
 7. *(robustness, recurse)* A **deeply-nested module-cache subpackage** (`github.com/google/go-cmp/cmp/internal/
    flags`) converted with a bare `namespace go;` instead of the full dotted namespace — `getProjectName`'s
    walk-up-to-`go.mod` needs to handle the `@version`-segmented cache path at depth.
@@ -443,6 +444,46 @@ out-of-corpus and narrower than the namespace fix. Left for Phase-4 hardening (n
    own package compiles while its importers mis-reference it. Needs a dot-splitting sanitizer in
    `convertImportPathToNamespace` that escapes the embedded keyword WITHOUT Δ-prefixing the `_package` class
    suffix (the naive `getCoreSanitizedIdentifier` swap does the latter — see the reverted attempt above).
+
+### Conversion scope: the module without its dependency graph (`-recurse=module`, 2026-08-05)
+
+[Issue #32](https://github.com/ritchiecarroll/go2cs/issues/32) reported the gap from the outside: `-recurse`
+converts the module **and** its third-party closure and dies on a dependency it cannot handle (there, a
+Google API SDK), while a plain package conversion converts only the input directory's own package — the
+module's other packages are never reached. There was **nothing in between**, and the thing the user wanted
+("convert my project, I'll deal with the dependencies myself") was exactly that in-between.
+
+Two changes, one for each half of the report.
+
+- **A scope value on the existing flag.** `-recurse` was already an optional-value flag choosing a
+  *reference style* (`nuget`); the values are now a comma-separated list so a *scope* composes with it
+  (`-recurse=module,nuget`). `module` keeps app packages in the convert-set and leaves every
+  `classThirdParty` package out of it, recording the import path instead (`referencedThirdParty`). Nothing
+  else changes: `getRecurseDependencyInfo` routes a dependency to `pkg\<import-path>` from the **import
+  path alone**, never from anything converted, so the app's emitted `.cs` and `.csproj` are byte-identical
+  to the full run's (verified on the two-module fixture; only the per-project `.slnx` differs, by the
+  `/pkg/` folder an unconverted dependency has no project to fill). Re-running the same conversion without
+  `=module` therefore writes the dependencies at exactly the paths already referenced and resolves them,
+  leaving the app's own output untouched. The trade (the emitted solution does not build until they are
+  there) is printed as a list at the end of the run, not left to be discovered at build time.
+  The closure load also drops to `NeedName|NeedFiles|NeedImports|NeedDeps|NeedModule` under this scope: the
+  closure load exists to DISCOVER and CLASSIFY (each package is re-loaded with full syntax and types when it
+  is converted), so type-checking a graph that is not going to be converted is exactly the coupling the mode
+  is meant to remove. The full-closure path keeps `LoadAllSyntax` — there, every package in the graph is
+  about to be converted anyway.
+- **A load failure stops being fatal (backlog item 6).** `processConversion` now RETURNS the load error
+  instead of `log.Fatalf`-ing on it. `ModuleConverter.convertAll` already survived a panic per package; it
+  now survives an unloadable one the same way (recorded in `failed`, run continues), `StdLibConverter`
+  inherits the same behavior through its existing error channel, and `main`'s single-package call site
+  re-raises it as fatal — the behavior that call site always had. Only the load path changed: everything
+  after it exits on failure as before, because those faults are I/O on the output tree, not a property of
+  the package being converted.
+
+Guarded by `TestRecurseModuleOnly` (integration: the same two-module fixture as `TestRecurseSyntheticModule`,
+asserting the app converts, the dependency does not, no `pkg\` tree is written, and the app's reference to it
+is emitted anyway), `TestModuleConverterPartitionScope` (both scopes over one classified closure), and the
+extended `TestRecurseModeFlag` (value composition in either order, `false` clearing the list, an invalid
+value inside a valid list still an error).
 
 ### Operational stdlib — native sync primitives (2026-07-11, Phase-4 start)
 

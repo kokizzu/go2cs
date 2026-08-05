@@ -94,7 +94,7 @@ func main() {
 	testActionCmd := commandLine.String("test-action", "convert", "Converted-test action: convert, build, run, compare, or all")
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
 	var recurseVal recurseMode
-	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references")
+	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
 	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform for conversion, format: os/arch")
 	buildTagsCmd := commandLine.String("tags", "", "Comma-separated build tags applied when loading packages, e.g. -tags purego to select the portable Go implementations over assembly ones (with -stdlib, purego is applied by default and any explicit -tags value replaces it)")
 	indentSpacesCmd := commandLine.Int("indent", 4, "Number of spaces for indentation")
@@ -177,7 +177,9 @@ Examples:
   go2cs -stdlib fmt io/ioutil strings     # Convert specific standard library packages
   go2cs -recurse module_dir               # Convert a module + its third-party deps (references stdlib)
   go2cs -recurse module_dir output_root   # Same, with generated src/pkg trees isolated under output_root
+  go2cs -recurse=module module_dir        # Convert only the module's own packages (deps referenced, not converted)
   go2cs -recurse=nuget module_dir         # Same, but reference the go2cs stdlib from NuGet (go.*, no deploy-core)
+  go2cs -recurse=module,nuget module_dir  # Values combine: module-only scope with NuGet references
   go2cs -stdlib -comments -tags purego    # Explicit form of the default: the portable Go crypto over the assembly ones
   go2cs -stdlib -tags=                    # Opt OUT of the purego default (reproduce the asm-backed default build)
  `)
@@ -193,6 +195,7 @@ Examples:
 		testAction:          strings.ToLower(strings.TrimSpace(*testActionCmd)),
 		testTimeout:         *testTimeoutCmd,
 		recurse:             recurseVal.enabled,
+		moduleOnly:          recurseVal.moduleOnly,
 		nugetRefs:           recurseVal.nuget,
 		targetPlatform:      *targetPlatformCmd,
 		buildTags:           buildTags,
@@ -352,7 +355,12 @@ Examples:
 					collectSiblingTestClosure(inputFilePath, options)
 				}
 
-				processConversion(inputFilePath, isDir, outputFilePath, options)
+				// A single-package conversion has nothing to continue with, so the load failure
+				// processConversion returns — for a batch driver to record and skip — is fatal
+				// here, the behavior this call site always had.
+				if err := processConversion(inputFilePath, isDir, outputFilePath, options); err != nil {
+					log.Fatalf("Conversion failed: %v\n", err)
+				}
 			}
 
 			if options.convertTests && options.testAction != "convert" {

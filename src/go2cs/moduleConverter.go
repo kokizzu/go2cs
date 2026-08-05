@@ -43,11 +43,12 @@ const (
 // ModuleConverter converts an end-user module and its third-party dependency closure in
 // dependency order, referencing the pre-converted standard library.
 type ModuleConverter struct {
-	options           Options
-	graph             *DependencyGraph
-	startTime         time.Time
-	convertedProjects []string          // csproj paths of successfully converted app + third-party packages
-	convertedCsproj   map[string]string // import path -> its generated .csproj path (successful conversions)
+	options              Options
+	graph                *DependencyGraph
+	startTime            time.Time
+	convertedProjects    []string          // csproj paths of successfully converted app + third-party packages
+	convertedCsproj      map[string]string // import path -> its generated .csproj path (successful conversions)
+	referencedThirdParty []string          // -recurse=module: third-party import paths left OUT of the convert-set
 }
 
 // NewModuleConverter creates a recursive end-user module converter.
@@ -83,6 +84,10 @@ func (m *ModuleConverter) ConvertModule(moduleDir string) error {
 	m.partition(closure)
 
 	if len(m.graph.packages) == 0 {
+		if m.options.moduleOnly {
+			return fmt.Errorf("found no packages of the module itself to convert at %s", moduleDir)
+		}
+
 		return fmt.Errorf("found no app or third-party packages to convert in module at %s", moduleDir)
 	}
 
@@ -99,8 +104,13 @@ func (m *ModuleConverter) ConvertModule(moduleDir string) error {
 	// stdlib never depends back on app/third-party code.
 	conversionGraph = m.graph
 
-	// 4. Convert app + third-party packages in dependency order.
+	// 4. Convert the convert-set in dependency order.
 	m.convertAll()
+
+	// 4a. Under -recurse=module, report the dependency packages that were referenced but deliberately
+	//     left unconverted, so the unresolved references in the emitted projects are expected, listed
+	//     and actionable rather than a surprise at build time.
+	m.reportUnconvertedDependencies()
 
 	// 5. Emit a per-project .slnx next to each converted .csproj, over that project + its transitive
 	//    converted dependencies + golib + the analyzer, tied to the pre-converted stdlib (referenced via
@@ -122,8 +132,21 @@ func (m *ModuleConverter) ConvertModule(moduleDir string) error {
 // import path (roots + every reachable import, including the standard library, which is classified
 // out later).
 func (m *ModuleConverter) loadClosure(moduleDir string) (map[string]*packages.Package, error) {
+	// Discovery mode: names, source dirs, the import graph and module identity — everything
+	// partition/buildEdges read, and nothing more. Each package is re-loaded with full syntax and
+	// types when it is converted (processConversion), so the closure load never needs them.
+	mode := packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedModule
+
+	if !m.options.moduleOnly {
+		// The established full-closure behavior: type-check the whole graph up front, since every
+		// package in it is about to be converted anyway. Under -recurse=module the third-party
+		// closure is NOT being converted, and the point of the mode is that its type errors — the
+		// ones that make an unconvertible dependency graph block the app — never enter the picture.
+		mode |= packages.LoadAllSyntax
+	}
+
 	cfg := &packages.Config{
-		Mode:       packages.LoadAllSyntax | packages.NeedModule,
+		Mode:       mode,
 		Dir:        moduleDir,
 		BuildFlags: m.options.loaderBuildFlags(),
 	}
@@ -216,8 +239,9 @@ func (m *ModuleConverter) classify(pkg *packages.Package) packageClass {
 	return classSkip
 }
 
-// partition classifies every closure package and adds the app + third-party packages to the graph
-// as the convert-set, printing a one-line census.
+// partition classifies every closure package and adds the convert-set to the graph, printing a
+// one-line census. The convert-set is the app + third-party packages, or — under -recurse=module —
+// the app's packages alone, with the third-party packages recorded as referenced-only.
 func (m *ModuleConverter) partition(closure map[string]*packages.Package) {
 	var appCount, thirdPartyCount, stdlibCount, skipCount int
 
@@ -232,8 +256,18 @@ func (m *ModuleConverter) partition(closure map[string]*packages.Package) {
 			}
 			appCount++
 		case classThirdParty:
-			m.graph.AddPackage(pkgPath, pkg.Dir)
 			thirdPartyCount++
+
+			// -recurse=module: keep the dependency OUT of the convert-set. Its references are still
+			// emitted (getRecurseDependencyInfo routes it to pkg\<import-path> from the import path
+			// alone, not from anything converted), so converting it later into the same output root
+			// resolves them — but nothing about it can fail this run.
+			if m.options.moduleOnly {
+				m.referencedThirdParty = append(m.referencedThirdParty, pkgPath)
+				continue
+			}
+
+			m.graph.AddPackage(pkgPath, pkg.Dir)
 		case classStdLib:
 			stdlibCount++
 		case classSkip:
@@ -241,8 +275,43 @@ func (m *ModuleConverter) partition(closure map[string]*packages.Package) {
 		}
 	}
 
+	if m.options.moduleOnly {
+		fmt.Printf("Closure: %d packages discovered — converting %d app, referencing %d third-party + %d stdlib (%d skipped)\n",
+			len(closure), appCount, thirdPartyCount, stdlibCount, skipCount)
+		return
+	}
+
 	fmt.Printf("Closure: %d packages discovered — converting %d app + %d third-party, referencing %d stdlib (%d skipped)\n",
 		len(closure), appCount, thirdPartyCount, stdlibCount, skipCount)
+}
+
+// reportUnconvertedDependencies lists the third-party packages -recurse=module referenced without
+// converting. Their generated project references point into the output root's pkg\ tree, where
+// nothing has been written yet, so the emitted solution does not build until those packages are
+// converted there — a deliberate trade the mode makes, printed rather than left to be discovered.
+func (m *ModuleConverter) reportUnconvertedDependencies() {
+	if len(m.referencedThirdParty) == 0 {
+		return
+	}
+
+	sort.Strings(m.referencedThirdParty)
+
+	const listLimit = 25
+
+	fmt.Printf("\nThird-party packages referenced but NOT converted (-recurse=module): %d\n", len(m.referencedThirdParty))
+
+	for i, pkgPath := range m.referencedThirdParty {
+		if i == listLimit {
+			fmt.Printf("  ... and %d more\n", len(m.referencedThirdParty)-listLimit)
+			break
+		}
+
+		fmt.Printf("  %s\n", pkgPath)
+	}
+
+	fmt.Printf("Each is referenced as %s, so the converted projects will not build until those packages\n"+
+		"are converted into the same output root (or the module is re-converted without =module).\n",
+		filepath.Join(m.recurseRoot(), "pkg", "<import-path>", "<name>.csproj"))
 }
 
 // buildEdges records intra-convert-set dependency edges for every convert-set package. Imports to
@@ -292,7 +361,8 @@ func (m *ModuleConverter) outputDirFor(pkgPath string) string {
 }
 
 // convertAll converts every convert-set package in the sorted (least-dependencies-first) order,
-// surviving a panic in any single package so the rest still convert (partial compile acceptable).
+// surviving a panic OR a load failure in any single package so the rest still convert (partial
+// compile acceptable) — one unloadable dependency must not discard the packages queued behind it.
 func (m *ModuleConverter) convertAll() {
 	total := len(m.graph.sortedQueue)
 	fmt.Printf("Converting %d packages in dependency order...\n", total)
@@ -312,8 +382,7 @@ func (m *ModuleConverter) convertAll() {
 				}
 			}()
 
-			processConversion(pkg.Dir, true, outputDir, m.options)
-			return nil
+			return processConversion(pkg.Dir, true, outputDir, m.options)
 		}()
 
 		if err != nil {

@@ -658,8 +658,7 @@ func (c *StdLibConverter) convertPackage(inputPath, outputPath string) error {
 		}()
 
 		// Call the existing processConversion function
-		processConversion(inputPath, true, outputPath, c.options)
-		done <- nil
+		done <- processConversion(inputPath, true, outputPath, c.options)
 	}()
 
 	// Set a timeout for package conversion (10 minutes should be plenty)

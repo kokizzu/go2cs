@@ -8,6 +8,8 @@ package main
 
 import (
 	"path/filepath"
+	"reflect"
+	"sort"
 	"testing"
 
 	"golang.org/x/tools/go/packages"
@@ -82,6 +84,78 @@ func TestModuleConverterConvertSetOrder(t *testing.T) {
 
 	if len(appDeps) != 1 || appDeps[0] != "example.com/lib" {
 		t.Errorf("app convert-set dependencies = %v, want [example.com/lib]", appDeps)
+	}
+}
+
+// TestModuleConverterPartitionScope locks what each -recurse scope puts in the convert-set. The
+// default converts the app AND its third-party dependencies; -recurse=module converts the app's own
+// packages alone and records the third-party ones as referenced-only, so an unconvertible dependency
+// closure cannot hold up the module's own code. The standard library is never in the convert-set
+// either way, and mainModulePath is recorded from the main module in both.
+func TestModuleConverterPartitionScope(t *testing.T) {
+	goRoot := filepath.FromSlash("C:/go")
+	appDir := filepath.FromSlash("C:/work/app")
+	depDir := filepath.FromSlash("C:/gopath/pkg/mod/google.golang.org/api@v0.1.0")
+
+	appMod := &packages.Module{Path: "example.com/app", Main: true, Dir: appDir}
+	depMod := &packages.Module{Path: "google.golang.org/api", Main: false, Dir: depDir}
+
+	closure := func() map[string]*packages.Package {
+		return map[string]*packages.Package{
+			"example.com/app":                 {PkgPath: "example.com/app", Dir: appDir, Module: appMod},
+			"example.com/app/internal/util":   {PkgPath: "example.com/app/internal/util", Dir: filepath.Join(appDir, "internal", "util"), Module: appMod},
+			"google.golang.org/api/option":    {PkgPath: "google.golang.org/api/option", Dir: filepath.Join(depDir, "option"), Module: depMod},
+			"google.golang.org/api/transport": {PkgPath: "google.golang.org/api/transport", Dir: filepath.Join(depDir, "transport"), Module: depMod},
+			"fmt":                             {PkgPath: "fmt", Dir: filepath.Join(goRoot, "src", "fmt")},
+		}
+	}
+
+	cases := []struct {
+		name           string
+		moduleOnly     bool
+		wantConvertSet []string
+		wantReferenced []string
+	}{
+		{
+			name:           "default converts app + third-party",
+			moduleOnly:     false,
+			wantConvertSet: []string{"example.com/app", "example.com/app/internal/util", "google.golang.org/api/option", "google.golang.org/api/transport"},
+			wantReferenced: nil,
+		},
+		{
+			name:           "module scope converts the app alone",
+			moduleOnly:     true,
+			wantConvertSet: []string{"example.com/app", "example.com/app/internal/util"},
+			wantReferenced: []string{"google.golang.org/api/option", "google.golang.org/api/transport"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := NewModuleConverter(Options{goRoot: goRoot, moduleOnly: tc.moduleOnly})
+			m.partition(closure())
+
+			var convertSet []string
+
+			for pkgPath := range m.graph.packages {
+				convertSet = append(convertSet, pkgPath)
+			}
+
+			sort.Strings(convertSet)
+			sort.Strings(m.referencedThirdParty)
+
+			if !reflect.DeepEqual(convertSet, tc.wantConvertSet) {
+				t.Errorf("convert-set = %v, want %v", convertSet, tc.wantConvertSet)
+			}
+
+			if !reflect.DeepEqual(m.referencedThirdParty, tc.wantReferenced) {
+				t.Errorf("referenced-only third-party = %v, want %v", m.referencedThirdParty, tc.wantReferenced)
+			}
+
+			if m.options.mainModulePath != "example.com/app" {
+				t.Errorf("mainModulePath = %q, want %q", m.options.mainModulePath, "example.com/app")
+			}
+		})
 	}
 }
 

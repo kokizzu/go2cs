@@ -276,6 +276,117 @@ func TestRecurseNuGetReferences(t *testing.T) {
 	}
 }
 
+// TestRecurseModuleOnly is the -recurse=module counterpart to TestRecurseSyntheticModule: the same
+// two-module fixture (app importing a co-located lib via replace, each importing the standard
+// library), converted with the scope narrowed to the input module's own packages. The app converts;
+// the dependency does NOT — no pkg\ output is written for it and it never enters the convert-set —
+// while the app's reference to it is still emitted into pkg\ (from the import path alone), so
+// converting it later into the same output root resolves that reference. This is the mode that lets
+// a module whose third-party closure cannot be converted still convert its own code.
+// Deterministic and network-free.
+func TestRecurseModuleOnly(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	libDir := filepath.Join(root, "lib")
+
+	writeModuleFile(t, filepath.Join(libDir, "go.mod"), "module example.com/lib\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(libDir, "greeting.go"),
+		"package lib\n\nimport \"strings\"\n\nfunc Greeting(name string) string {\n\treturn strings.TrimSpace(\"Hello, \"+name+\"!\")\n}\n")
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire example.com/lib v0.0.0\n\nreplace example.com/lib => ../lib\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\t\"example.com/lib\"\n)\n\nfunc main() {\n\tfmt.Println(lib.Greeting(\"go2cs\"))\n}\n")
+
+	goRoot := build.Default.GOROOT
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		moduleOnly:          true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	// getImportPackageInfo resolves stdlib references through build.Default; pin it as main() does.
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	// The convert-set is the module's own package alone; the dependency is recorded as referenced.
+	if queue := converter.graph.sortedQueue; len(queue) != 1 || queue[0] != "example.com/app" {
+		t.Fatalf("convert order = %v, want [example.com/app]", queue)
+	}
+
+	if refs := converter.referencedThirdParty; len(refs) != 1 || refs[0] != "example.com/lib" {
+		t.Fatalf("referenced-only third-party = %v, want [example.com/lib]", refs)
+	}
+
+	// The app converts into src\<import-path> exactly as it does under the full recurse.
+	mainCs := readGenerated(t, filepath.Join(options.recurseOutputRoot, "src", "example.com", "app", "main.cs"))
+
+	if !strings.Contains(mainCs, "lib.Greeting") {
+		t.Errorf("app main.cs missing the cross-package call lib.Greeting:\n%s", mainCs)
+	}
+
+	// The dependency is NOT converted — nothing at all is written under pkg\.
+	if _, err := os.Stat(filepath.Join(options.recurseOutputRoot, "pkg")); !os.IsNotExist(err) {
+		t.Errorf("dependency tree pkg\\ was written under -recurse=module (want nothing converted there)")
+	}
+
+	// The app csproj still carries the relative reference to where that dependency WOULD be
+	// converted, so converting it into the same output root later resolves the reference.
+	appProjectDir := filepath.Join(options.recurseOutputRoot, "src", "example.com", "app")
+	libProject := filepath.Join(options.recurseOutputRoot, "pkg", "example.com", "lib", "example.com.lib.csproj")
+	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
+	libReference, err := filepath.Rel(appProjectDir, libProject)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(appCsproj, `<ProjectReference Include="`+libReference+`" />`) {
+		t.Errorf("app csproj missing the relative lib ProjectReference %q:\n%s", libReference, appCsproj)
+	}
+
+	// The standard library is referenced exactly as before — the scope narrows the CONVERT-set only.
+	if !strings.Contains(appCsproj, "$(go2csPath)core\\fmt\\fmt.csproj") {
+		t.Errorf("app csproj missing the stdlib fmt reference:\n%s", appCsproj)
+	}
+
+	// The per-project solution lists the app + runtime + analyzer; the unconverted dependency has no
+	// project to list, so the /pkg/ folder is empty and skipped.
+	appSlnx := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.slnx"))
+
+	for _, want := range []string{"example.com.app.csproj", "golib.csproj", "go2cs-gen.csproj", `<Folder Name="/src/">`} {
+		if !strings.Contains(appSlnx, want) {
+			t.Errorf("app per-project solution missing %q:\n%s", want, appSlnx)
+		}
+	}
+
+	for _, notWant := range []string{"example.com.lib.csproj", `<Folder Name="/pkg/">`} {
+		if strings.Contains(appSlnx, notWant) {
+			t.Errorf("app per-project solution should not list %q under -recurse=module:\n%s", notWant, appSlnx)
+		}
+	}
+}
+
 func writeModuleFile(t *testing.T, path, content string) {
 	t.Helper()
 

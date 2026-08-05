@@ -184,6 +184,7 @@ go2cs -stdlib fmt strings io           # convert specific standard library packa
 go2cs -recurse=nuget module_dir out    # convert a module + its third-party deps, stdlib from NuGet
 go2cs -recurse module_dir              # same, referencing a locally-staged standard library
 go2cs -recurse module_dir output_root  # ...with the generated app/dep trees under output_root
+go2cs -recurse=module module_dir out   # convert only the module's own packages (deps referenced, not converted)
 go2cs -tests package_dir               # convert a package plus its Go test suite
 go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build, run, and diff vs go test
 ```
@@ -193,8 +194,9 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | Option | Description |
 |:--|:--|
 | `-stdlib` | Convert the Go standard library (optionally followed by specific package names). |
-| `-recurse` | Recursively convert a downloaded module **and its third-party dependencies** in dependency order, referencing (not reconverting) the pre-converted standard library through `$(go2csPath)`. An optional second positional output root isolates the generated `src\` app and `pkg\` dependency trees; references inside that graph are relative. See [Converting a real-world module](#converting-a-real-world-module). |
-| `-recurse=nuget` | Same, but the standard library, the `golib` runtime and the analyzer come from NuGet — [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) + [`go.lib`](https://www.nuget.org/packages/go.lib) + [`go.gen`](https://www.nuget.org/packages/go.gen) — so nothing is staged locally. The app's own and third-party converted packages stay project references. |
+| `-recurse` | Recursively convert a downloaded module **and its third-party dependencies** in dependency order, referencing (not reconverting) the pre-converted standard library through `$(go2csPath)`. An optional second positional output root isolates the generated `src\` app and `pkg\` dependency trees; references inside that graph are relative. A package that fails to load or convert is reported and skipped, and the run continues with the rest. See [Converting a real-world module](#converting-a-real-world-module). |
+| `-recurse=module` | Same recursion, narrower **scope**: convert the input module's own packages (every package under its `go.mod`, in dependency order) and **stop there** — each third-party package is still referenced into the `pkg\` tree, but none of them is converted, so a dependency closure that go2cs cannot yet convert can no longer hold up the module's own code. The referenced-but-unconverted packages are listed at the end of the run; converting them into the same output root later resolves those references. See [Converting a real-world module](#converting-a-real-world-module). |
+| `-recurse=nuget` | Same, but the standard library, the `golib` runtime and the analyzer come from NuGet — [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) + [`go.lib`](https://www.nuget.org/packages/go.lib) + [`go.gen`](https://www.nuget.org/packages/go.gen) — so nothing is staged locally. The app's own and third-party converted packages stay project references. A reference style and a scope are independent, so the values combine: `-recurse=module,nuget`. |
 | `-tests` | Also convert the package's eligible `_test.go` suite and emit a runnable C# test-host project (default off; cannot be combined with `-recurse`). Forces `-comments` on and self-locates `$(go2csPath)` by walking up from the output directory, so the two-argument form works from a bare clone with no flags or environment setup. See [Try it yourself](#try-it-yourself--validate-a-converted-test-suite). |
 | `-test-action <action>` | With `-tests`: one of `convert` (default), `build`, `run`, `compare`, or `all`. `convert` and `all` convert the package and its tests; `build` / `run` / `compare` act on the **existing** converted artifacts — validated against the test manifest's recorded input digest — without reconverting. `compare` (and `all`) runs both `go test -json -count=1` and the converted C# test host and diffs the terminal results by test name. |
 | `-test-timeout <duration>` | Package deadline for a converted-test action, in Go duration syntax (default `2m`). For `run`/`compare` it is handed to **both** sides — `go test -timeout` and the converted host's own `-timeout` — so they agree. A suite that legitimately runs long needs a value above both defaults: `hash/maphash` takes ~15 minutes in C# where Go's takes 7.6 seconds, so it is validated with `-test-timeout 30m`. |
@@ -314,6 +316,35 @@ _Expected output:_
 ![colorapp-output](images/colorapp-output.png)
 
 > **NOTE:** this `fatih/color` example **compiles clean** — app plus all four dependency projects — **and runs**. Bigger programs are a deeper milestone: the referenced standard library compiles in full, and making it **operational** package by package is the [Phase-4](Roadmap.md#phase-4--convert-and-run-go-package-tests) work that [Validated Test Packages](ValidatedTestPackages.md) tracks.
+
+#### Optional: convert the module only, and deal with its dependencies later
+
+A dependency closure is not always convertible today — a large third-party SDK can hit a converter defect,
+or pull in a package go2cs cannot yet handle — and under plain `-recurse` that blocks the packages you
+actually came for. `-recurse=module` narrows the **scope** to the input module's own packages:
+
+```bat
+cd path\to\myapp
+go2cs -recurse=module . csharp
+```
+
+Every package under the module's own `go.mod` converts, in dependency order, exactly as it would under the
+full `-recurse`; every third-party package is *referenced* — into `csharp\pkg\<import-path>`, the same place
+the full run would have converted it — but never converted, so nothing about it can fail the run. The
+converter prints the referenced-but-unconverted list when it finishes:
+
+```text
+Closure: 214 packages discovered — converting 9 app, referencing 118 third-party + 87 stdlib (0 skipped)
+...
+Third-party packages referenced but NOT converted (-recurse=module): 118
+  google.golang.org/api/googleapi
+  ...
+```
+
+Those references are unresolved until something is written at those paths, so the generated solution does
+**not** build yet — the mode's deliberate trade. Re-running the same conversion **without** `=module` (once
+the dependencies convert) writes them at exactly those paths and resolves the references; the app's own
+converted `.cs` and `.csproj` come out byte-identical either way, so nothing you have done to them is lost.
 
 #### Optional: build against a local standard library
 
