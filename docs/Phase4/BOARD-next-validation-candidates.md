@@ -61,6 +61,57 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## OWED — the issue-#32 `-recurse` change landed on master UNVERIFIED on Windows (2026-08-05)
+
+For the next **local (Windows)** session: commit `d00cac5` — [issue #32](https://github.com/ritchiecarroll/go2cs/issues/32),
+`-recurse=module` plus the load-failure fix — was authored and pushed from a **remote Linux container**,
+where the standing gates **cannot run**. It is on `master` with unit-level evidence only. Nothing about it
+is suspected; it is simply **unmeasured against the corpus**, and that is the whole point of this entry.
+
+What the container could not do, and why it is not a converter defect:
+
+- **No `pwsh`, no `dotnet`** — `check-no-regression.ps1`, `run-behavioral.ps1` and
+  `run-validated-sweep.ps1` are all Windows/pwsh instruments; none of the three ran.
+- **The converter cannot write `package_info.cs` on an LF checkout at all.** `packageInfoWriter`
+  splits the template on `"\r\n"` (packageInfoWriter.go:52,57), so on a `core.autocrlf`-less clone the
+  `<ImportedTypeAliases>` section is never found and every package conversion `log.Fatalf`s. The recurse
+  integration tests therefore fail **identically before and after** the change there — a checkout
+  artifact, not a regression. (Recorded as its own observation: the converter is Windows-line-ending
+  coupled at that one seam. Not owed as work; noted so the next reader does not re-diagnose it.)
+
+What WAS established, so the re-check knows what to expect:
+
+- `go test -short ./` failure set is **identical to baseline** — the same 6 pre-existing Windows-path
+  tests (`TestParseCoreProjectRefs`, `TestCollectConvertedProjects*`, `TestIsSelfProjectReference`,
+  `TestValidationPack*`), nothing new.
+- New guards pass: `TestRecurseModeFlag` (extended), `TestModuleConverterPartitionScope`; the new
+  `TestRecurseModuleOnly` fails on Linux at exactly the one Windows-path assertion its sibling
+  `TestRecurseSyntheticModule` fails on (`$(go2csPath)core\fmt\fmt.csproj` emitted as `core\fmt/\fmt.csproj`).
+- Smoke-run end to end against a CRLF'd template: `-recurse=module` converts an app plus its
+  sub-package in dependency order and writes no `pkg\` tree, and a later plain `-recurse` fills exactly
+  the referenced `pkg\` path. `diff -r` of the two runs' `src\` trees: `.cs`/`.csproj` byte-identical,
+  only the `.slnx` `/pkg/` folder differs.
+
+Owed, in order (budgets from the CLAUDE.md table):
+
+1. `./src/Tests/Behavioral/check-no-regression.ps1` — timeout 700s. **Expect byte-identical**: the
+   change touches only error paths and `-recurse`-scoped branches, and no emission logic. A non-empty
+   `git status` here is a real finding and outranks everything else in this entry.
+2. `./src/Tests/Behavioral/run-behavioral.ps1` (full, 4 phases) — timeout 2100s. Expect 544/544 +
+   514/514 output comparisons.
+3. The three recurse integration tests on Windows — `go test -run 'TestRecurse' ./` from `src/go2cs` —
+   which is the FIRST real run `TestRecurseModuleOnly` will get.
+4. `./src/run-validated-sweep.ps1` (backgrounded, 46–53 min) only if 1–3 surface anything; a
+   converter change confined to the recurse driver has no path to the banked suites, so a clean 1–2
+   discharges this item without it.
+
+Also owed, trivially: **delete the remote branch `claude/go2cs-issue-32-5osg4q`.** It is fully
+contained in `master` (both point at `d00cac5`) and the local copy is gone, but the remote one could
+not be deleted from the container — the session's git proxy rejects ref-deletion pushes
+(`send-pack: unexpected disconnect`, twice, for both `--delete` and `:branch` forms), and the GitHub
+MCP surface here has no delete-branch tool. One `git push origin --delete claude/go2cs-issue-32-5osg4q`
+locally, or the button on GitHub.
+
 ## The `-tests` reference-closure family — CLOSED (2026-07-27)
 
 `DisableTransitiveProjectReferences=true` means the generated test project lists only the imports
