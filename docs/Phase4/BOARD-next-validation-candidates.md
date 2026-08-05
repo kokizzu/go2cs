@@ -123,6 +123,43 @@ not be deleted from the container — the session's git proxy rejects ref-deleti
 MCP surface here has no delete-branch tool. One `git push origin --delete claude/go2cs-issue-32-5osg4q`
 locally, or the button on GitHub.
 
+## COMMISSIONED — the GoFrame arc (user rulings 2026-08-05), and two tasks it queues
+
+**The closure-emission frame design is APPROVED** ([`DESIGN-closure-emission.md`](DESIGN-closure-emission.md)
+§4–§5): the execution-context lambda gives way to the `ref struct` frame with the body emitted inline in
+`try`/`catch`/`finally`. The user's context, recorded because it shapes the work: the lambda form was
+chosen for *visual* parity and was long suspected of a capture-semantics divergence class (the lambda
+captures variables the original Go never captured); the frame form removes that class by construction and
+the allocation cost was never weighed. One ruling amends the design:
+
+- **Evaluate the NEED for the `deferǃ` bang-suffixed name and DROP the bang if possible.** It exists
+  solely to disambiguate calls against the `defer`-named delegate parameter of the GoFunc lambda — a
+  parameter the frame design eliminates. Go source can never declare identifiers named `defer`/`recover`
+  (keyword/builtin), so with the lambda gone the collision source should be gone too; the arc verifies
+  there is no other collision (golib surface, generated code) and documents the verdict either way. Same
+  evaluation for any sibling bang-named member of the defer/recover family. (Symbols.cs constants, never
+  the literal glyph.)
+
+Arc mechanics: lands with its OWN corpus regen (post-r40 doctrine — the corpus stays level with its
+converter; no new standing-drift era), full gate battery including the sweep (the banked alloc rows are
+the design's own motivation), and per-stage checkpoint commits along §4.8's migration path.
+
+**Queued task 1 — the documentation-reality pass (dedicated sub-agent, AFTER the arc lands).** The frame
+changes every deferred function's emitted shape: `ConversionStrategies.md` and
+`ConversionStrategies-Reference.md` examples, and any doc quoting the lambda form, must be brought to
+match reality. Style ruling: present tense, educating a new reader — no history in the teaching docs;
+posterity lives in the design doc.
+
+**Queued task 2 — the `[GoTestMatchingConsoleOutput]` audit (idle-point, measured).** Before `core/fmt`
+was real, some behavioral tests skipped output-matching because the stub could not format their output.
+Measured 2026-08-05: **14 projects** have `package main` but no attribute — ChannelReceiveFromNil,
+ChannelSendToClosed, ChannelSendToNil, DeferSimple, ForVariants, GoCallVariations,
+InferredForeignTypeNoImport, InterfaceInheritance, PointerCastSliceRange, RangePointerArrayConversion,
+SelectStatement, StructWithPointer, TypeConversionReturnType, UnsafePointerReinterpret. Evaluate each
+against `go run` under the real fmt; some are deliberate (nondeterministic or panic-exit programs), but
+the number that can graduate to output-compared is likely not zero. Adding the attribute + regenerating
+the test classes via UpdateTestTargets is the whole change per graduate.
+
 ## The `-tests` reference-closure family — CLOSED (2026-07-27)
 
 `DisableTransitiveProjectReferences=true` means the generated test project lists only the imports
@@ -2463,7 +2500,7 @@ The user-ruled hand-own landed: `src/core/internal/concurrent/hashtriemap.cs` is
 reimplementation carrying `[module: go.GoManualConversion]` (corpus marker census **39 → 40**). Rationale,
 the API map, and the equality-bridge verification live in
 [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *`internal/concurrent.HashTrieMap`*;
-the hand-own mechanics in [`Baseline-vs-FullConversion.md`](../Baseline-vs-FullConversion.md). Summary of
+the hand-own mechanics in [`Baseline-vs-FullConversion.md`](../../src/Archived/Baseline-vs-FullConversion.md). Summary of
 what was measured, because the shape of the result matters more than the row count:
 
 **Gates.** `internal/concurrent` and `unique` build clean; `go2cs-stdlib.slnx` builds **304/304, 0 errors**.

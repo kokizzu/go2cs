@@ -23,7 +23,7 @@ what the behavioral suite builds: cold ~48 s, warm ~4 s.*
 ## Phase 0 — Documentation ✅ done
 
 Orientation docs so any task starts informed: [`/CLAUDE.md`](../CLAUDE.md),
-[`Architecture.md`](Architecture.md), [`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md),
+[`Architecture.md`](Architecture.md), [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md),
 this file; plus a refresh of `README.md`.
 
 ## Phase 1 — Restore the separation (repo surgery) ✅ done
@@ -133,7 +133,7 @@ The original Phase-3 plan:
    (Phase 4)** and may not be needed at all. Compiling ≠ operating; a clean compile is NOT a promotion
    trigger. `core` stays the bootstrap **stub**. The hand-owned `[module: GoManualConversion]` / `*_impl.cs`
    files live in `core` and are copied **back** into `go-src-converted` (the real final state). See
-   [`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md) *The corrected end-state* and its
+   [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md) *The corrected end-state* and its
    contract rules 4–5. `golib`'s hand-written core stays shared and never auto-overwritten.
 
 ### Phase 3 iteration 1 — converter fixes landed (2026-06-25)

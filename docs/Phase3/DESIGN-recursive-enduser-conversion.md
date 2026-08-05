@@ -298,7 +298,7 @@ baselined; `deploy-core stdlib -NoBuild` staged the 302-package compilable stdli
   built; and a pure-Go control lib `github.com/google/uuid` built. The rest failed on **three per-package
   CONVERTER defects** (Phase-4 territory — not recurse-orchestration defects):
   1. `uintptr`→C# `nuint` cannot be `const` (`x/sys/windows`, ~180 × CS0283/CS0133) — the syscall
-     "raw-metal on non-native types" case flagged in [`Baseline-vs-FullConversion.md`].
+     "raw-metal on non-native types" case flagged in `Baseline-vs-FullConversion.md` (archived under `src/Archived/`).
   2. A hyphen in a package's import-path segment is emitted into C# identifiers unsanitized
      (`go-colorable` → `go-colorable_package`, ~8 × CS1002/CS0116) — invalid C# identifier.
   3. A non-stdlib imported type-alias is namespace-qualified from the bare package name, not the dotted

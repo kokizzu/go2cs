@@ -11898,7 +11898,7 @@ zero-length array (`System.IndexOutOfRangeException` on the FIRST directory read
 `ShortName` sit at the wrong offsets, and merely *copying* the reinterpreted struct hands the GC a
 fabricated object reference. No converter or golib change can rescue this — a managed array reference
 can never be laid out like an inline OS array — so it is the *raw metal on non-native types* arm of the
-[conversion fork](Baseline-vs-FullConversion.md): the declaration is hand-owned.
+[conversion fork](../src/Archived/Baseline-vs-FullConversion.md): the declaration is hand-owned.
 
 Scope is one declaration, via the type-level registry (`manualConversionFuncs["os"]["File.readdir"]`);
 everything else in `dir_windows.go` (`dirInfo.init`/`close`, the pool, `dirEntry`) stays auto and keeps
@@ -12036,7 +12036,7 @@ the SEMANTICS rather than the mechanism.** `sync`'s Mutex/RWMutex/WaitGroup are 
 `SemaphoreSlim`/monitors because Go's sleeping semaphore is co-designed with the state machine and cannot be
 emulated; here the coupling is to the descriptor surface instead of to the scheduler, but the fork is the
 same one — the raw-metal arm of the S1 fork (see
-[`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md)). `src/core/internal/concurrent/hashtriemap.cs`
+[`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md)). `src/core/internal/concurrent/hashtriemap.cs`
 carries `[module: go.GoManualConversion]` and contains **no trie at all**. The exported API and its
 concurrency contract are preserved exactly; the store is a `ConcurrentDictionary`, whose guarantees line up
 member for member:
@@ -12099,7 +12099,7 @@ all). `unique` itself goes **0 → 1 of 19** and, more usefully, stops being a o
 `GCHandle: Object contains references` on `abi.Escape`, an `IndexOutOfRangeException` in `makeCloneSeq`'s
 `slice<T>` enumeration, and the `TypeFor` hole above). The hand-owned file is also its package's only Go
 file, which makes `internal/concurrent` fully hand-owned — see
-[`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md) for what that does to the package's
+[`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md) for what that does to the package's
 `.csproj`/`package_info.cs`/`README.md`, and for the seeded-reconvert proof in both directions.
 
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)

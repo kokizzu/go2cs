@@ -3,7 +3,7 @@
 > Canonical orientation for any Claude/AI task working in this repo. This file is **authoritative**;
 > where it disagrees with `docs/README.md` or the `.bat`/`.cmd` build scripts, those are considered **stale** —
 > trust this file and the source. See companion docs: [`docs/Architecture.md`](docs/Architecture.md),
-> [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConversion.md), [`docs/Roadmap.md`](docs/Roadmap.md).
+> [`docs/Roadmap.md`](docs/Roadmap.md).
 
 ## What this is
 
@@ -76,8 +76,7 @@ What lives under it:
    F15b's "ONE testing package, period" structural instead of a remap. `testing`'s **subpackages**
    (`fstest`, `iotest`, `quick`, `slogtest`, `internal/testdeps`) are ordinary converted packages.
 3. **Hand-owned FILES inside converted packages** — the `[module: GoManualConversion]` whole-file
-   replacements and the `*_impl.cs` companions (see
-   [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConversion.md)). A reconvert leaves the
+   replacements and the `*_impl.cs` companions. A reconvert leaves the
    marked `.cs` alone and drops a `<name>.cs.auto` review sibling beside it.
 4. **`golib`** (`src/core/golib/`) — the hand-written runtime, shared by everything, never auto-generated.
    `src/core/go2cs` (the `Symbols.cs` shared project) sits beside it.
@@ -482,17 +481,16 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
     **whole-file** hand rewrite *replaces* the converted `<name>.cs` and **must carry `[module:
     go.GoManualConversion]`** — else a `-stdlib` reconvert regenerates the Go version over it (`main.go`'s
     `containsManualConversionMarker` drops marked files from the convert set; place it after the `using`s,
-    before the file-scoped namespace). Detail:
-    [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConversion.md) *Hand-owning a package to make it
-    OPERATIONAL*.
+    before the file-scoped namespace). Further hand-own detail:
+    [`docs/ConversionStrategies-Reference.md`](docs/ConversionStrategies-Reference.md) (the two-tree history
+    is archived at `src/Archived/Baseline-vs-FullConversion.md`).
   - **⚠ The S1/CS0030 "architectural wall" was a FORK, not a wall (2026-07-01) — and the fork held to 302/302.**
     **Native-type** pointer/unsafe ops (identical memory semantics in both GC languages) get a faithful
     conversion in the converter/`golib`. **Managed-referent** cases (`guintptr`/`muintptr`/… hiding a managed
     pointer in a `uintptr`) hold the `ж<T>`/`object` **directly** (like `core/sync/atomic` `atomic.Pointer<T>`),
     never a `nuint` round-trip. Genuine **raw-metal on non-native types** (memory-layout math, type-descriptor
     walking, `*.asm`) is stubbed with `[module: GoManualConversion]` (a stub that compiles is an acceptable
-    milestone solution). Full detail:
-    [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConversion.md) *The corrected end-state*.
+    milestone solution).
   - **Next — Phase 4 (operational):** convert and run Go's own `_test.go` suites against the compiling
     packages; design in [`docs/TestingInfrastructureRequirements.md`](docs/TestingInfrastructureRequirements.md)
     and Phase 4 of [`docs/Roadmap.md`](docs/Roadmap.md). The `-tests` pipeline is live (`go2cs -tests

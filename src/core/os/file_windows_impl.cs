@@ -25,7 +25,7 @@ using go;
 // No converter or golib change can rescue this: a managed array reference can never be laid out like
 // an inline OS array. It is the same "raw metal on non-native types" arm of the conversion fork that
 // dir_windows_impl.cs already owns for FILE_ID_BOTH_DIR_INFO (see
-// docs/Baseline-vs-FullConversion.md), and it takes the same remedy — decode the OS record straight
+// src/Archived/Baseline-vs-FullConversion.md), and it takes the same remedy — decode the OS record straight
 // out of the byte slice at its documented offsets and never materialize a managed struct over it.
 // Every read below is an ordinary bounds-checked managed read of `rdbbuf`; there is no pointer, no
 // pinning and no unsafe block in this file.

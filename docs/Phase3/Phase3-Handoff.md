@@ -15,7 +15,7 @@
 > stop: native-type ops → convert; managed-referent (`ж<T>` model) → model; raw-metal dragons →
 > `[module: GoManualConversion]` stub. Do NOT promote `go-src-converted → core` on a clean compile
 > (deferred to post-Go-test, maybe never); copy the hand-owned manual/`*_impl.cs` files BACK into
-> `go-src-converted` religiously. See [`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md)
+> `go-src-converted` religiously. See [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md)
 > *The corrected end-state* and [`Phase3-AutonomousLoop.md`](Phase3-AutonomousLoop.md) *S1 is a FORK*.
 
 ## Where things stand (2026-07-04 night, ~120 commits)
@@ -1794,7 +1794,7 @@ field-box accessors (`02a610466`, −3, FIRST generator root), pallocBits/pMask 
   mixed-return closure delegate type, +~6-golden churn) and **CS0118** (tracetime.cs:80, unclear — needs
   investigation). Escalate to the user ONLY a specific site you cannot sort into convert/model/stub, or a
   ж<T> model that needs a design decision. Full rationale:
-  [`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md) *The corrected end-state* +
+  [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md) *The corrected end-state* +
   [`Phase3-AutonomousLoop.md`](Phase3-AutonomousLoop.md) *S1 is a FORK to SORT*.
 
 - [x] **Empty `struct{}` lift poisoning a `map[K]struct{}` parameter** *(landed 2026-06-30, `ccab3e458`;

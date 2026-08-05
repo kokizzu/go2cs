@@ -10,7 +10,7 @@
 > the **process** vocabulary — plus a short [**.NET and tooling terms**](#net-and-tooling-terms) section at
 > the end for the general .NET/toolchain acronyms the conversion docs assume (BCL, Roslyn, CRTP, …).
 > Companion docs: [`CLAUDE.md`](../CLAUDE.md) (authoritative workflow),
-> [`Baseline-vs-FullConversion.md`](Baseline-vs-FullConversion.md).
+> [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md).
 
 ## Gates (the checks a change must pass before it lands)
 

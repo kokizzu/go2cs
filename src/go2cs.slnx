@@ -78,8 +78,7 @@
     <File Path="../CLAUDE.md" />
     <File Path="../docs/Architecture.md" />
     <File Path="../docs/Background.md" />
-    <File Path="../docs/Baseline-vs-FullConversion.md" />
-    <File Path="../docs/CNAME" />
+        <File Path="../docs/CNAME" />
     <File Path="../docs/coding-style.md" />
     <File Path="../docs/ConversionStrategies-Reference.md" />
     <File Path="../docs/ConversionStrategies.md" />

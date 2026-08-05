@@ -41,7 +41,7 @@
 // call outright even with the layout right.)
 //
 // This is the same seam as exec_windows.go's StartProcess (_STARTUPINFOEXW) and takes the same
-// remedy, described in docs/Baseline-vs-FullConversion.md "Child-process creation": a blittable
+// remedy, described in src/Archived/Baseline-vs-FullConversion.md "Child-process creation": a blittable
 // mirror of the native layout, a direct P/Invoke, and an explicit field-for-field copy back into
 // the converted struct. Note what does NOT need this: every other declaration in
 // zsyscall_windows.go passes scalars and handles, which convert faithfully — only a struct
