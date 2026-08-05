@@ -54,9 +54,12 @@ namespace go;
 public ref struct GoFrame
 {
     // Inline slots for the common defer arities; m_overflow is the correctness tail past them.
-    // The slot count is set from a CENSUS of the converted standard library, not from a guess —
-    // see the arity table in docs/Phase4/DESIGN-closure-emission.md §4.2 — so the overflow list
-    // is allocated by a vanishing fraction of frames and by none of the hot ones.
+    // FOUR comes from a census of the Go standard library, not from a guess: of its 1,454 deferring
+    // scopes (defer statements counted per function or literal, the way Go scopes them), 85.7%
+    // register one, 96.3% two or fewer, and 99.2% four or fewer — one scope reaches sixteen. So the
+    // overflow list exists for correctness and is allocated by a vanishing fraction of frames.
+    // A defer inside a LOOP registers once per iteration and is what actually reaches it, which is
+    // also why the count cannot be a purely syntactic property (see docs/Phase4/DESIGN-closure-emission.md §4.2).
     private Action? m_d0, m_d1, m_d2, m_d3;
     private List<Action>? m_overflow;
     private int m_count;

@@ -276,6 +276,19 @@ type Visitor struct {
 	// result params. namedReturnNames holds those result identifiers in order.
 	namedReturnDeferMode bool
 	namedReturnNames     []string
+	// inGoFrame is set while emitting the body of a function whose defer/recover scope is a
+	// GoFrame — the ref-struct frame declared beside an INLINE body inside try/catch/finally
+	// (docs/Phase4/DESIGN-closure-emission.md §4) — rather than the `func((defer, recover) => …)`
+	// execution-context lambda. It is what visitDeferStmt consults to register into the frame
+	// (`deferǃ(f, a, ref ᒐ)`) instead of calling the wrapper's `defer` delegate, so it must be
+	// FALSE while a nested function literal's own body is converted: that literal owns its own
+	// defer scope, and a ref struct cannot be captured by a lambda in any case. convFuncLit saves
+	// and restores it for exactly that reason.
+	inGoFrame bool
+	// goFrameNamedExit records that the body emitted at least one `goto ᒐdone;` — the named-result
+	// form's early exit (§4.4). The label is emitted only when something targets it, so a function
+	// whose body simply falls off the end carries no unreferenced label.
+	goFrameNamedExit bool
 	// blankResultNames interns the generated slot name for each BLANK (`_`) result of a
 	// namedReturnDefer signature — Go allows mixing blank and named results
 	// (`func parse(…) (_ *Regexp, err error)`), and the blank slot still needs a C# local so

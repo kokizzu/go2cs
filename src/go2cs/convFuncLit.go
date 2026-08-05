@@ -242,10 +242,29 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	var litHasDefer, litHasRecover, litNamedDefer bool
 	var litNamedNames []string
 
-	if litSig != nil && !context.deferCall {
+	if litSig != nil {
 		litHasDefer, litHasRecover = v.funcBodyDeferRecover(funcLit.Body)
+
+		if context.deferCall {
+			// A DEFERRED literal's `recover()` recovers the ENCLOSING function — that is the whole
+			// point of `defer func(){ recover() }()` — so it gets no recover scope of its own. A
+			// `defer` written INSIDE it is a different matter: Go scopes that to the literal, and
+			// dropping both together registered it into the enclosing function's scope instead, to
+			// run at the wrong time. The frame form is what makes the split expressible, since the
+			// literal can now carry its own frame while recover() keeps resolving statically to the
+			// enclosing panic slot. (The shape occurs nowhere in the converted corpus, so this
+			// closes a latent hole rather than fixing a live defect.)
+			litHasRecover = false
+		}
+
 		litNamedDefer, litNamedNames = v.detectNamedReturnDefer(litSig, litHasDefer, litHasRecover)
 	}
+
+	// Does THIS literal's defer/recover scope emit as a GoFrame? A literal is a lambda (or a local
+	// function), and a ref struct is a perfectly ordinary local of one — it is only CAPTURE that is
+	// forbidden, and an inline body captures nothing. So the same frame the enclosing function gets
+	// works here verbatim, which is also what lifts §3.1's local-function exclusion.
+	useLitFrame := v.litGoFrameEligible(litSig, litHasDefer, litHasRecover, litNamedDefer, funcLit)
 
 	// A function literal with NAMED results needs their declarations at the top of its block —
 	// Go zero-initializes them and a bare `return` returns them. iter.Pull's
@@ -280,11 +299,23 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	savedInFunction := v.inFunction
 	v.inFunction = true
 
+	// A literal's body is NOT inside the enclosing function's GoFrame, whatever the enclosing
+	// function emits as: a `defer` written here belongs to this literal, and a ref struct cannot be
+	// captured by a lambda in any case. So the frame flag drops for the body conversion and is
+	// restored after — the same save/restore, and for the same reason, as the named-result mode
+	// above (see visitorState's inGoFrame).
+	savedInGoFrame := v.inGoFrame
+	savedGoFrameNamedExit := v.goFrameNamedExit
+	v.inGoFrame = useLitFrame
+	v.goFrameNamedExit = false
+
 	defer func() {
 		v.namedReturnDeferMode = savedNamedReturnDeferMode
 		v.namedReturnNames = savedNamedReturnNames
 		v.currentReturnSignature = savedReturnSignature
 		v.inFunction = savedInFunction
+		v.inGoFrame = savedInGoFrame
+		v.goFrameNamedExit = savedGoFrameNamedExit
 	}()
 
 	if v.lambdaCapture == nil {
@@ -379,7 +410,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	_, parameterSignature = v.convFuncType(funcLit.Type)
 	v.funcLitHeapBoxParamNames = nil
 
-	litVariadicExecRefMode := litSig != nil && litSig.Variadic() && (litHasDefer || litHasRecover)
+	// A frame-form literal's body is not inside a nested lambda, so it simply USES its variadic
+	// params Span and needs no ref threading (and with it, no GoFunc<TRef1,…> rung).
+	litVariadicExecRefMode := litSig != nil && litSig.Variadic() && (litHasDefer || litHasRecover) && !useLitFrame
 	litVariadicExecParamType := ""
 	litVariadicExecParamName := ""
 
@@ -397,8 +430,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	blockStatementContext.format.useNewLine = false
 
 	// In namedReturnDefer mode the literal's body sits inside an extra block + func() wrapper, so
-	// indent it one level deeper.
-	if litNamedDefer {
+	// indent it one level deeper. A frame-form literal nests the same way — its body is the `try`
+	// block inside the lambda's own block.
+	if litNamedDefer || useLitFrame {
 		v.indentLevel++
 	}
 
@@ -420,7 +454,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 
 	v.hoistedDecls = savedHoist
 
-	if litNamedDefer {
+	if litNamedDefer || useLitFrame {
 		v.indentLevel--
 	}
 
@@ -534,7 +568,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// source); other single-return literals collapse to an expression-bodied lambda. A
 	// namedReturnDefer literal always keeps a block (it returns its named results after the
 	// func() wrapper).
-	if v.firstStatementIsReturn && !context.isIIFE && !litNamedDefer && !litHasNamedResults {
+	if v.firstStatementIsReturn && !context.isIIFE && !litNamedDefer && !litHasNamedResults && !useLitFrame {
 		// Find return statement in string and remove it
 		returnIndex := strings.Index(body, "return ")
 
@@ -583,6 +617,49 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	var inner string
 
 	switch {
+	case useLitFrame:
+		// The frame form, in the literal's own block. A value-returning literal's catch arm ends
+		// with Go's zero results for the same reason a value-returning function's does (see
+		// visitFuncDecl): a recovered panic returns them, and an unrecovered one never gets there.
+		catchReturn := ""
+
+		if litSig != nil && litSig.Results() != nil && litSig.Results().Len() > 0 && !litNamedDefer {
+			catchReturn = "return default!;"
+		}
+
+		namedDecls := ""
+		exitAndClose := fmt.Sprintf("%s%s}", v.newline, v.indent(v.indentLevel))
+
+		if litNamedDefer {
+			// §4.4 in a literal: results declared before the try, mutated by the deferred calls,
+			// read back after the finally through the label the body's exits jump to.
+			namedDecls = v.namedReturnDeclLines(litSig, v.indentLevel+1, true)
+
+			returnNames := v.namedReturnBoxReadNames(litSig, litNamedNames)
+			returnExpr := strings.Join(returnNames, ", ")
+
+			if len(returnNames) > 1 {
+				returnExpr = "(" + returnExpr + ")"
+			}
+
+			exitLabel := ""
+
+			if v.goFrameNamedExit {
+				exitLabel = goFrameExitLabel() + ": "
+			}
+
+			if aliases := v.namedResultBoxAliasLines(litSig, v.indentLevel+2); aliases != "" && strings.HasPrefix(body, "{") {
+				body = "{" + aliases + strings.TrimPrefix(body, "{")
+			}
+
+			exitAndClose = fmt.Sprintf("%s%s%sreturn %s;%s%s}", v.newline, v.indent(v.indentLevel+1), exitLabel, returnExpr, v.newline, v.indent(v.indentLevel))
+		}
+
+		inner = fmt.Sprintf("{%s%s%sGoFrame %s = default;%s%stry %s%s%s",
+			namedDecls,
+			v.newline, v.indent(v.indentLevel+1), goFrameName(),
+			v.newline, v.indent(v.indentLevel+1), body,
+			v.goFrameTail(v.indentLevel, catchReturn), exitAndClose)
 	case litNamedDefer:
 		// `{ T r = default!; func((defer, recover) => <body>); return r; }`
 		// A heap-box-backed named result declares only its box out here (the wrapper lambda

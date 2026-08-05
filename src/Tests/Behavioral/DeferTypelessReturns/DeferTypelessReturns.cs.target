@@ -23,15 +23,20 @@ internal static nint idx(this handle h) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object findDoneˢ = (@string)"find done"u8;
 
-internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<item>, error)>((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), findDoneˢ, defer);
-    foreach (var (i, _) in xs) {
-        if (xs[i].n == want) {
-            return (Ꮡ(xs, i), default!);
+internal static (ж<item>, error) find(slice<item> xs, nint want) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), findDoneˢ, ref ᒐ);
+        foreach (var (i, _) in xs) {
+            if (xs[i].n == want) {
+                return (Ꮡ(xs, i), default!);
+            }
         }
+        return (default!, fmt.Errorf("not found"u8));
     }
-    return (default!, fmt.Errorf("not found"u8));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object closeItˢ = (@string)"closeIt"u8;
@@ -54,33 +59,43 @@ internal static uint32 width() {
     return 9;
 }
 
-internal static (uint32, error) mixedRet(bool ok) => func<(uint32, error)>((defer, recover) => {
-    deferǃ(closeIt, (ж<nint>)(nil), (nint)(4), defer);
-    if (!ok) {
-        return (0, fmt.Errorf("nope"u8));
+internal static (uint32, error) mixedRet(bool ok) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(closeIt, (ж<nint>)(nil), (nint)(4), ref ᒐ);
+        if (!ok) {
+            return (0, fmt.Errorf("nope"u8));
+        }
+        return (width(), errNil);
     }
-    return (width(), errNil);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static void Main() => func((defer, recover) => {
-    deferǃ(closeIt, (ж<nint>)(nil), (nint)(3), defer);
-    ref var h = ref heap<res>(out var Ꮡh);
-    h = new res(id: 4);
-    var hʗ1 = h;
-    defer(() => hʗ1.close());
-    var (w, werr) = mixedRet(true);
-    fmt.Println(w, werr == default!);
-    var (_, werr2) = mixedRet(false);
-    fmt.Println(werr2);
-    var xs = new item[]{new(1), new(2)}.slice();
-    var (p, err) = find(xs, 2);
-    fmt.Println(p != nil, err == default!);
-    (_, err) = find(xs, 9);
-    fmt.Println(err);
-    fmt.Println(first(new byte[]{7, 8, 9, 10}.array()));
-    fmt.Println(big.idx());
-    fmt.Println(invalid == big, invalid == invalid);
-});
+internal static void Main() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(closeIt, (ж<nint>)(nil), (nint)(3), ref ᒐ);
+        ref var h = ref heap<res>(out var Ꮡh);
+        h = new res(id: 4);
+        var hʗ1 = h;
+        deferǃ(() => hʗ1.close(), ref ᒐ);
+        var (w, werr) = mixedRet(true);
+        fmt.Println(w, werr == default!);
+        var (_, werr2) = mixedRet(false);
+        fmt.Println(werr2);
+        var xs = new item[]{new(1), new(2)}.slice();
+        var (p, err) = find(xs, 2);
+        fmt.Println(p != nil, err == default!);
+        (_, err) = find(xs, 9);
+        fmt.Println(err);
+        fmt.Println(first(new byte[]{7, 8, 9, 10}.array()));
+        fmt.Println(big.idx());
+        fmt.Println(invalid == big, invalid == invalid);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct res {
     internal nint id;

@@ -29,41 +29,46 @@ private static readonly object heldˢ = (@string)"| held:"u8;
 private static readonly object notifyˢ = (@string)"notify:"u8;
 private static readonly object mainFunctionˢ = (@string)"Main function"u8;
 
-internal static void Main() => func((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ, defer);
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), secondˢ, defer);
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, defer);
-    var f1 = fmt.Println;
-    var f1ʗ1 = f1;
-    deferǃ(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, defer);
-    var msgs = new channel<@string>(2);
-    var cancel = makeStop(stoppedˢ, msgs);
-    var cancelʗ1 = cancel;
-    defer(() => cancelʗ1());
-    var msgsʗ1 = msgs;
-    goǃ(() => makeStop(goStoppedˢ, msgsʗ1)());
-    fmt.Println(ᐸꟷ(msgs));
-    var drained = new channel<nint>(1);
-    var drainedʗ1 = drained;
-    defer(() => {
-        var (v, open) = ᐸꟷ(drainedʗ1, ꟷ);
-        fmt.Println(afterCloseˢ, v, open);
-    });
-    deferǃ(ᴛ1 => close(ᴛ1), drained, defer);
-    deferǃ(GetPrintLn(), fifthˢ, defer);
-    var c = Ꮡ(new acc(nil));
-    var (s1, e1) = c.add(5);
-    fmt.Println(s1, e1);
-    var (s2, e2) = c.add(-1);
-    fmt.Println(s2, e2, (~c).total);
-    var sm = Ꮡ(new sema(nil));
-    acquireAndWork(sm);
-    fmt.Println(afterˢ, (~sm).held);
-    watchAndSend(sm);
-    fmt.Println(sentˢ, ᐸꟷ((~sm).@out), heldˢ, (~sm).held);
-    fmt.Println(notifyˢ, notifyAll(1, 2, 3));
-    fmt.Println(mainFunctionˢ);
-});
+internal static void Main() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ, ref ᒐ);
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), secondˢ, ref ᒐ);
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, ref ᒐ);
+        var f1 = fmt.Println;
+        var f1ʗ1 = f1;
+        deferǃ(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, ref ᒐ);
+        var msgs = new channel<@string>(2);
+        var cancel = makeStop(stoppedˢ, msgs);
+        var cancelʗ1 = cancel;
+        deferǃ(() => cancelʗ1(), ref ᒐ);
+        var msgsʗ1 = msgs;
+        goǃ(() => makeStop(goStoppedˢ, msgsʗ1)());
+        fmt.Println(ᐸꟷ(msgs));
+        var drained = new channel<nint>(1);
+        var drainedʗ1 = drained;
+        deferǃ(() => {
+            var (v, open) = ᐸꟷ(drainedʗ1, ꟷ);
+            fmt.Println(afterCloseˢ, v, open);
+        }, ref ᒐ);
+        deferǃ(ᴛ1 => close(ᴛ1), drained, ref ᒐ);
+        deferǃ(GetPrintLn(), fifthˢ, ref ᒐ);
+        var c = Ꮡ(new acc(nil));
+        var (s1, e1) = c.add(5);
+        fmt.Println(s1, e1);
+        var (s2, e2) = c.add(-1);
+        fmt.Println(s2, e2, (~c).total);
+        var sm = Ꮡ(new sema(nil));
+        acquireAndWork(sm);
+        fmt.Println(afterˢ, (~sm).held);
+        watchAndSend(sm);
+        fmt.Println(sentˢ, ᐸꟷ((~sm).@out), heldˢ, (~sm).held);
+        fmt.Println(notifyˢ, notifyAll(1, 2, 3));
+        fmt.Println(mainFunctionˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct sema {
     internal bool held;
@@ -86,42 +91,57 @@ private static readonly object semaReleasedˢ = (@string)"sema released"u8;
 private static readonly object sentFirstˢ = (@string)"sent-first:"u8;
 private static readonly object watchingHeldˢ = (@string)"watching, held:"u8;
 
-internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
+internal static void watchAndSend(ж<sema> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    s.@out = new channel<nint>(2);
-    s.held = true;
-    goǃ(Ꮡs.send, (nint)(7));
-    fmt.Println(sentFirstˢ, ᐸꟷ(s.@out));
-    deferǃ(Ꮡs.send, (nint)(9), defer);
-    defer(Ꮡs.release);
-    fmt.Println(watchingHeldˢ, s.held);
-});
+        s.@out = new channel<nint>(2);
+        s.held = true;
+        goǃ(Ꮡs.send, (nint)(7));
+        fmt.Println(sentFirstˢ, ᐸꟷ(s.@out));
+        deferǃ(Ꮡs.send, (nint)(9), ref ᒐ);
+        deferǃ(Ꮡs.release, ref ᒐ);
+        fmt.Println(watchingHeldˢ, s.held);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object workingHeldˢ = (@string)"working, held:"u8;
 
-internal static void acquireAndWork(ж<sema> Ꮡs) => func((defer, recover) => {
+internal static void acquireAndWork(ж<sema> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    s.held = true;
-    defer(Ꮡs.release);
-    fmt.Println(workingHeldˢ, s.held);
-});
+        s.held = true;
+        deferǃ(Ꮡs.release, ref ᒐ);
+        fmt.Println(workingHeldˢ, s.held);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object notifiedˢ = (@string)"notified"u8;
 
-internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) => func(ref valsʗp, (ref ꓸꓸꓸnint valsʗp, Defer defer, Recover recover) => {
+internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) {
+    GoFrame ᒐ = default;
+    try {
     var vals = valsʗp.sslice();
 
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, defer);
-    nint total = 0;
-    foreach (var (_, v) in vals) {
-        total += v;
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, ref ᒐ);
+        nint total = 0;
+        foreach (var (_, v) in vals) {
+            total += v;
+        }
+        return total;
     }
-    return total;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct acc {
     internal nint total;

@@ -92,8 +92,21 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		result.WriteString(v.indent(v.indentLevel))
 	}
 
+	// A frame-form function registers into its own GoFrame local by name; the lambda form calls the
+	// execution context's `defer` delegate, which is in scope only as that wrapper's parameter. The
+	// arity-0 case is where the two forms differ in more than the trailing argument: the delegate
+	// IS the registration, so the lambda form calls it directly, while the frame form goes through
+	// the ladder's nullary rung like every other arity (see goFrameOperations.go).
+	deferRegistrar := "defer("
+	deferTarget := ", defer);"
+
+	if v.inGoFrame {
+		deferRegistrar = "deferǃ("
+		deferTarget = fmt.Sprintf(", ref %s);", goFrameName())
+	}
+
 	if paramCount == 0 {
-		result.WriteString("defer(")
+		result.WriteString(deferRegistrar)
 
 		// C# `defer` method implementation expects an Action delegate. The bare
 		// method-group form (`defer(k.Close)`) binds only when the callee returns VOID —
@@ -140,7 +153,12 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		}
 
 		result.WriteString(callExpr)
-		result.WriteString(");")
+
+		if v.inGoFrame {
+			result.WriteString(deferTarget)
+		} else {
+			result.WriteString(");")
+		}
 	} else {
 		result.WriteString("defer\u01C3(")
 
@@ -173,7 +191,7 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		result.WriteString(callExpr)
 		result.WriteString(", ")
 		result.WriteString(strings.Join(lambdaContext.callArgs, ", "))
-		result.WriteString(", defer);")
+		result.WriteString(deferTarget)
 	}
 
 	v.outputBuilder.WriteString(result.String())

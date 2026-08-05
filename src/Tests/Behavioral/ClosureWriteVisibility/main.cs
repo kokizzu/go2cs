@@ -87,21 +87,31 @@ internal static void probeD1(Tally t) {
     fmt.Println((@string)"D1:"u8, t.total, t.log);
 }
 
-internal static void probeE1() => func((defer, recover) => {
-    ref var t = ref heap<Tally>(out var Ꮡt);
-    t = new Tally(5, "s"u8);
-    defer(() => {
-        fmt.Println((@string)"E1:"u8, Ꮡt.Value.total);
-    });
-    t.total = 42;
-});
+internal static void probeE1() {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref heap<Tally>(out var Ꮡt);
+        t = new Tally(5, "s"u8);
+        deferǃ(() => {
+            fmt.Println((@string)"E1:"u8, Ꮡt.Value.total);
+        }, ref ᒐ);
+        t.total = 42;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void probeE2() => func((defer, recover) => {
-    ref var t = ref heap<Tally>(out var Ꮡt);
-    t = new Tally(5, "s"u8);
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"E2:", t.total, defer);
-    t.total = 42;
-});
+internal static void probeE2() {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref heap<Tally>(out var Ꮡt);
+        t = new Tally(5, "s"u8);
+        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"E2:", t.total, ref ᒐ);
+        t.total = 42;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void probeF1() {
     ref var t = ref heap<Tally>(out var Ꮡt);

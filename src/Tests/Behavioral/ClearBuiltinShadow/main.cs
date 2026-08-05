@@ -33,10 +33,15 @@ internal static void recover(this ж<guard> Ꮡg) => func((defer, recover) => {
     }
 });
 
-internal static void run(this ж<guard> Ꮡg) => func((defer, recover) => {
-    defer(Ꮡg.recover);
-    throw panic("boom");
-});
+internal static void run(this ж<guard> Ꮡg) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(Ꮡg.recover, ref ᒐ);
+        throw panic("boom");
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void Main() {
     var s = new nint[]{1, 2, 3}.slice();

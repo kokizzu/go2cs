@@ -49,21 +49,31 @@ internal static nint countCap(params ꓸꓸꓸжbox bsʗp) {
     return cap(bs);
 }
 
-internal static nint deferredLen(params ꓸꓸꓸжbox bsʗp) => func(ref bsʗp, (ref ꓸꓸꓸжbox bsʗp, Defer defer, Recover recover) => {
+internal static nint deferredLen(params ꓸꓸꓸжbox bsʗp) {
+    GoFrame ᒐ = default;
+    try {
     var bs = bsʗp.sslice();
 
-    defer(() => {
-    });
-    return len(bs);
-});
+        deferǃ(() => {
+        }, ref ᒐ);
+        return len(bs);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static void deferredReplaceFirst(params ꓸꓸꓸжbox bsʗp) => func(ref bsʗp, (ref ꓸꓸꓸжbox bsʗp, Defer defer, Recover recover) => {
+internal static void deferredReplaceFirst(params ꓸꓸꓸжbox bsʗp) {
+    GoFrame ᒐ = default;
+    try {
     var bs = bsʗp.sslice();
 
-    defer(() => {
-    });
-    bs[0] = Ꮡ(new box(v: 45));
-});
+        deferǃ(() => {
+        }, ref ᒐ);
+        bs[0] = Ꮡ(new box(v: 45));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static nint /*n*/ deferredNamedLen(params ꓸꓸꓸжbox bsʗp) {
     nint n = default!;

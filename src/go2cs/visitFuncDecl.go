@@ -344,6 +344,14 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		v.namedReturnDeferMode, v.namedReturnNames = v.detectNamedReturnDefer(signature, v.hasDefer, v.hasRecover)
 	}
 
+	// Does this function's defer/recover scope emit as a GoFrame (an inline body in
+	// try/catch/finally) rather than as the func((defer, recover) => …) execution context? Decided
+	// HERE, before the body is visited, because the body's own `defer` statements register into the
+	// frame by name and visitDeferStmt reads this to know that (see goFrameOperations.go).
+	useGoFrame := v.goFrameEligible(funcDecl, signature)
+	v.inGoFrame = useGoFrame
+	v.goFrameNamedExit = false
+
 	// Collect parameter names from the function declaration
 	if v.paramNames == nil {
 		v.paramNames = HashSet[string]{}
@@ -481,8 +489,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 		// In namedReturnDeferMode the func() wrapper is nested inside an extra block body, so
 		// the lambda body sits one level deeper. Bump the indent across the body visit so the
-		// statements (and the closing `}` that the `);` attaches to) align under `func(…`.
-		bodyInBlockForm := v.namedReturnDeferMode
+		// statements (and the closing `}` that the `);` attaches to) align under `func(…`. The
+		// frame form nests the same way: its body is the `try` block inside the method's own block.
+		bodyInBlockForm := v.namedReturnDeferMode || useGoFrame
 
 		if bodyInBlockForm {
 			v.indentLevel++
@@ -502,7 +511,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// Pass a variadic params Span explicitly through the one-ref execution wrapper. The wrapper
 	// lambda uses its own ref Span parameter instead of capturing the outer ref-like parameter
 	// (CS9108), so the slice prologue remains inside and eligible uses retain an aliasing sslice.
-	variadicExecRefMode := useFuncExecutionContext && signature.Variadic()
+	// A frame-form body is not in a lambda at all, so it simply USES the parameter and the whole
+	// ref-threading question — and with it the GoFunc<TRef1,…> ladder — does not arise.
+	variadicExecRefMode := useFuncExecutionContext && !useGoFrame && signature.Variadic()
 	variadicExecParamType := ""
 	variadicExecParamName := ""
 
@@ -1029,7 +1040,13 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	var funcExecutionContext string
 
-	if useFuncExecutionContext {
+	if useGoFrame {
+		// The frame form has no wrapper to assemble: the body is the method's own `try` block, so
+		// all that goes here is the frame declaration and the `try` the body's `{` attaches to.
+		// Named results are declared ahead of it for the same reason they were declared ahead of
+		// the wrapper — deferred code mutates them and the exit reads them back afterwards.
+		funcExecutionContext = v.goFrameHead(v.indentLevel, namedReturnDeclsStr)
+	} else if useFuncExecutionContext {
 		// Always name the wrapper's two parameters by their roles, even when one is unused.
 		// Using `_` for an unused parameter is unsafe: a single `_` is a *named* C# lambda
 		// parameter (not a discard), so a `_ = expr` discard in the body would bind to it
@@ -1085,7 +1102,53 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	v.replaceMarker(functionPrefixMarker, v.currentFuncPrefix.String())
 
-	if useFuncExecutionContext {
+	if useGoFrame {
+		// Close the frame: the catch that parks a panic where recover() can read it, the finally
+		// that drains the defers on every exit path, and the method's own closing brace.
+		//
+		// The catch arm of a value-returning function ends with Go's zero results. A panic a
+		// deferred call RECOVERED leaves the function returning those (Go's rule), and one no
+		// deferred call recovered never reaches the return at all — Run() re-throws it from the
+		// finally, which overrides the pending return. It is also what keeps the method's endpoint
+		// unreachable, so a value-returning function needs nothing after the try statement.
+		catchReturn := ""
+
+		if signature.Results().Len() > 0 && !v.namedReturnDeferMode {
+			catchReturn = "return default!;"
+		}
+
+		savedIndent := v.indentLevel
+		v.indentLevel = 0
+
+		if v.namedReturnDeferMode {
+			// The named-result exit (§4.4). Go assigns the result params, runs the deferred calls,
+			// and only then returns — which a `finally` cannot do to a value a `return` has already
+			// evaluated. So the results were declared before the try, every `return` inside it left
+			// through a goto (which runs the finally exactly as a return would), and the read
+			// happens out here. A heap-box-backed result's value alias lives inside the try, so the
+			// read goes through the box (`Ꮡerr.ValueSlot`).
+			returnNames := v.namedReturnBoxReadNames(signature, v.namedReturnNames)
+			returnExpr := strings.Join(returnNames, ", ")
+
+			if len(returnNames) > 1 {
+				returnExpr = "(" + returnExpr + ")"
+			}
+
+			// The label exists only if something jumps to it: a body that simply falls off the end
+			// reaches this return anyway, and an unreferenced label is a warning worth not emitting.
+			exitLabel := ""
+
+			if v.goFrameNamedExit {
+				exitLabel = goFrameExitLabel() + ": "
+			}
+
+			v.writeOutputLn("%s%s%s%sreturn %s;%s%s}", v.goFrameTail(savedIndent, catchReturn), v.newline, v.indent(savedIndent+1), exitLabel, returnExpr, v.newline, v.indent(savedIndent))
+		} else {
+			v.writeOutputLn("%s%s%s}", v.goFrameTail(savedIndent, catchReturn), v.newline, v.indent(savedIndent))
+		}
+
+		v.indentLevel = savedIndent
+	} else if useFuncExecutionContext {
 		if v.namedReturnDeferMode {
 			// Close the func(...) call (attaches to the lambda's `}` → `});`), then return the
 			// named results — which the deferred code / recover may have mutated — and close the
@@ -1123,6 +1186,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	}
 
 	v.inFunction = false
+	v.inGoFrame = false
 }
 
 // allExecWrapperReturnsAreTypeless reports whether no top-level return statement in the function

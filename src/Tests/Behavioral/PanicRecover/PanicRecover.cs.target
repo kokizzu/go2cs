@@ -36,15 +36,20 @@ private static readonly object panickingˢ = (@string)"Panicking!"u8;
 private static readonly object deferInGˢ = (@string)"Defer in g"u8;
 private static readonly object printingInGˢ = (@string)"Printing in g"u8;
 
-internal static void g(nint i) => func((defer, recover) => {
-    if (i > 3) {
-        fmt.Println(panickingˢ);
-        throw panic(fmt.Sprintf("%v"u8, i));
+internal static void g(nint i) {
+    GoFrame ᒐ = default;
+    try {
+        if (i > 3) {
+            fmt.Println(panickingˢ);
+            throw panic(fmt.Sprintf("%v"u8, i));
+        }
+        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, ref ᒐ);
+        fmt.Println(printingInGˢ, i);
+        g(i + 1);
     }
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, defer);
-    fmt.Println(printingInGˢ, i);
-    g(i + 1);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string noPanicˢ = "no panic"u8;

@@ -212,6 +212,13 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 		} else if len(assignTargets) == 1 {
 			result.WriteString(assignTargets[0] + " = ")
 		}
+	} else if namedDefer && v.inGoFrame {
+		// The named-result frame form's exit (§4.4): the results live outside the try and are
+		// returned after the finally, so an exit from inside it leaves through a goto — which runs
+		// the finally exactly as a return would, and unlike a return does not freeze a result value
+		// the deferred calls are still entitled to change.
+		result.WriteString("goto " + goFrameExitLabel())
+		v.goFrameNamedExit = true
 	} else {
 		result.WriteString("return")
 	}
@@ -539,7 +546,12 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 	// needs none (the wrapper falls off its end), and a naked/collapsed return already produced
 	// just `return;`.
 	if namedDeferAssign && !isTerminalReturn {
-		result.WriteString(" return;")
+		if v.inGoFrame {
+			result.WriteString(" goto " + goFrameExitLabel() + ";")
+			v.goFrameNamedExit = true
+		} else {
+			result.WriteString(" return;")
+		}
 	}
 
 	// Hoisted capture-snapshot decls (each `\n<indent>decl;` with a trailing newline) precede any

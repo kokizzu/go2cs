@@ -23,14 +23,19 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object insideˢ = (@string)"inside:"u8;
 
-internal static void run(this ж<builder> Ꮡb) => func((defer, recover) => {
+internal static void run(this ж<builder> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    defer(Ꮡb.of(builder.Ꮡc).reset);
-    b.c.inc();
-    b.c.inc();
-    fmt.Println(insideˢ, b.c.n);
-});
+        deferǃ(Ꮡb.of(builder.Ꮡc).reset, ref ᒐ);
+        b.c.inc();
+        b.c.inc();
+        fmt.Println(insideˢ, b.c.n);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object afterˢ = (@string)"after:"u8;

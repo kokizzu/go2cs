@@ -84,7 +84,7 @@ var keywords = NewHashSet([]string{
 // (emitterSpelledTypeNames). Guarded by Tests/Behavioral/ReservedNameShadows.
 var reserved = NewHashSet([]string{
 	"AreEqual", "array", "builtin", "channel", "defer\u01C3", "EmptyStruct", "Equals", "Finalize", "GetGoTypeName",
-	"GetHashCode", "GetType", "GoFunc", "GoFuncRoot", "GoImplement", "GoImplementAttribute", "GoImplicitConv",
+	"GetHashCode", "GetType", "GoFrame", "GoFunc", "GoFuncRoot", "GoImplement", "GoImplementAttribute", "GoImplicitConv",
 	"GoImplicitConvAttribute", "GoPackage", "GoPackageAttribute", "GoRecv", "GoRecvAttribute",
 	"GoTestMatchingConsoleOutput", "GoTestMatchingConsoleOutputAttribute", "GoTag", "GoTagAttribute",
 	"GoTypeAlias", "GoTypeAliasAttribute", "GoType", "GoTypeAttribute", "GoBigConst", "go\u01C3",

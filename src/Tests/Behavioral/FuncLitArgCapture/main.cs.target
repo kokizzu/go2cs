@@ -65,14 +65,19 @@ internal static nint selfRefCapture() {
     return ᐸꟷ(done);
 }
 
-internal static void deferArgCapture(ж<box> Ꮡout) => func((defer, recover) => {
-    var pf = Ꮡout;
-    var pfʗ1 = pf;
-    deferǃ(run, () => {
-        pfʗ1.Value.x = 77;
-    }, defer);
-    pf.Value.x = 5;
-});
+internal static void deferArgCapture(ж<box> Ꮡout) {
+    GoFrame ᒐ = default;
+    try {
+        var pf = Ꮡout;
+        var pfʗ1 = pf;
+        deferǃ(run, () => {
+            pfʗ1.Value.x = 77;
+        }, ref ᒐ);
+        pf.Value.x = 5;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static nint nestedArgLiteralCapture() {
     var total = new channel<nint>(1);

@@ -304,6 +304,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDeferEvalParamFunc() => CheckTarget("DeferEvalParamFunc");
 
     [TestMethod]
+    public void CheckDeferFrameScopes() => CheckTarget("DeferFrameScopes");
+
+    [TestMethod]
     public void CheckDeferHeapFieldPtrMethod() => CheckTarget("DeferHeapFieldPtrMethod");
 
     [TestMethod]
