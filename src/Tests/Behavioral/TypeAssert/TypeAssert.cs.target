@@ -63,19 +63,24 @@ private static readonly object recoveredFromPanicˢ = (@string)"Recovered from p
 private static readonly object stringValueˢ = (@string)"String value:"u8;
 private static readonly object integerValueˢ = (@string)"Integer value:"u8;
 
-internal static void assertionsWithPanic() => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                fmt.Println(recoveredFromPanicˢ, r);
+internal static void assertionsWithPanic() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Println(recoveredFromPanicˢ, r);
+                }
             }
-        }
-    });
-    any i = helloˢ;
-    @string s = i._<@string>();
-    fmt.Println(stringValueˢ, s);
-    nint n = i._<nint>();
-    fmt.Println(integerValueˢ, n);
-});
+        }, ref ᒐ);
+        any i = helloˢ;
+        @string s = i._<@string>();
+        fmt.Println(stringValueˢ, s);
+        nint n = i._<nint>();
+        fmt.Println(integerValueˢ, n);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end main_package

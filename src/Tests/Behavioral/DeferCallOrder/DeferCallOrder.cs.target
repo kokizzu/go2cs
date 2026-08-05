@@ -150,22 +150,25 @@ internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) {
 internal static (nint sum, error err) add(this ж<acc> Ꮡa, nint n) {
     nint sum = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var a = ref Ꮡa.DerefOrNull();
 
-        defer(() => {
+        deferǃ(() => {
             {
                 var e = recover(); if (e != default!) {
                     err = fmt.Errorf("boom"u8);
                 }
             }
-        });
+        }, ref ᒐ);
         a.total += n;
         if (n < 0) {
             throw panic("negative");
         }
         sum = a.total;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (sum, err);
 }
 

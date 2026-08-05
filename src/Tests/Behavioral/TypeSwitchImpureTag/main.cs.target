@@ -36,8 +36,9 @@ private static readonly @string noPanicˢ = "no panic?"u8;
 
 internal static @string /*result*/ recovered(any v) {
     @string result = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             var switchᴛ2 = recover();
             switch (switchᴛ2.type()) {
             case @string _:
@@ -56,9 +57,11 @@ internal static @string /*result*/ recovered(any v) {
                 result = fmt.Sprintf("caught-other:%v"u8, p);
                 break;
             }}
-        });
+        }, ref ᒐ);
         throw panic(v);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return result;
 }
 

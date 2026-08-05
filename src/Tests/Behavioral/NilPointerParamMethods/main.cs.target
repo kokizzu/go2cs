@@ -100,18 +100,23 @@ internal static ж<node> orDefault(ж<node> Ꮡp) {
     return Ꮡp;
 }
 
-internal static void @try(@string label, Action fn) => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                fmt.Printf("%s -> panic: %v\n"u8, label, r);
-                return;
+internal static void @try(@string label, Action fn) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Printf("%s -> panic: %v\n"u8, label, r);
+                    return;
+                }
             }
-        }
-    });
-    fn();
-    fmt.Printf("%s -> returned\n"u8, label);
-});
+        }, ref ᒐ);
+        fn();
+        fmt.Printf("%s -> returned\n"u8, label);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object nilArgumentDelegatedˢ = (@string)"== 1. nil argument, DELEGATED guard: must not panic =="u8;

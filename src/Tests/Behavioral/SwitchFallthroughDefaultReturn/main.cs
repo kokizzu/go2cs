@@ -66,26 +66,29 @@ internal static nint conditionalReturn(nint n) {
 internal static (nint r, bool ok) namedDefer(nint n) {
     nint r = default!;
     bool ok = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             if (recover() != default!) {
                 (r, ok) = (-1, false);
             }
-        });
+        }, ref ᒐ);
         var exprᴛ1 = n;
         var matchᴛ1 = false;
         if (exprᴛ1 is 0) { matchᴛ1 = true;
-            (r, ok) = (100, true); return;
+            (r, ok) = (100, true); goto ᒐdone;
         }
         if (exprᴛ1 is 1) { matchᴛ1 = true;
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1) { /* default: */
-            (r, ok) = (n * 10, true); return;
+            (r, ok) = (n * 10, true); goto ᒐdone;
         }
 
-    });
-    return (r, ok);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (r, ok);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

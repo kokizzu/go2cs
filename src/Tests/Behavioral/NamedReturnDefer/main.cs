@@ -6,37 +6,46 @@ partial class main_package {
 
 internal static nint /*x*/ incr() {
     nint x = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             x++;
-        });
+        }, ref ᒐ);
         x = 5;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return x;
 }
 
 internal static nint /*x*/ incrBare() {
     nint x = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             x += 10;
-        });
+        }, ref ᒐ);
         x = 1;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return x;
 }
 
 internal static (nint a, nint b) swapAndBump() {
     nint a = default!;
     nint b = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             (a, b) = (b, a);
             a += 100;
-        });
+        }, ref ᒐ);
         a = 1;
         b = 2;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (a, b);
 }
 
@@ -46,15 +55,18 @@ internal static nint @double(nint n) {
 
 internal static nint /*total*/ closures(nint n) {
     nint total = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             total += 1;
-        });
+        }, ref ᒐ);
         nint dbl(nint x) => x * 2;
         nint noisy() => 99;
         _ = noisy();
         total = dbl(n);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return total;
 }
 
@@ -64,17 +76,20 @@ private static readonly @string negˢ = "neg"u8;
 internal static (nint @out, @string label) compute(nint x) {
     nint @out = default!;
     @string label = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             @out += 1000;
-        });
+        }, ref ᒐ);
         if (x < 0) {
             (@out, label) = (-1, negˢ);
-            return;
+            goto ᒐdone;
         }
         (@out, label) = (@double(x), fmt.Sprintf("v=%d"u8, x));
-    });
-    return (@out, label);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (@out, label);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -83,40 +98,46 @@ private static readonly @string recoveredˢ = "recovered"u8;
 internal static (nint code, @string msg) guarded(bool boom) {
     nint code = default!;
     @string msg = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             {
                 var r = recover(); if (r != default!) {
                     code = -1;
                     msg = recoveredˢ;
                 }
             }
-        });
+        }, ref ᒐ);
         if (boom) {
             throw panic("kaboom");
         }
         code = 0;
         msg = "ok"u8;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (code, msg);
 }
 
 internal static (ж<box>, error err) parseLimited(nint n) {
     ж<box> _ᴛ1 = default!;
     error err = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             {
                 var r = recover(); if (r != default!) {
                     err = fmt.Errorf("too big: %v"u8, r);
                 }
             }
-        });
+        }, ref ᒐ);
         if (n > 10) {
             throw panic(n);
         }
         (_ᴛ1, err) = (Ꮡ(new box(n * 2)), default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (_ᴛ1, err);
 }
 

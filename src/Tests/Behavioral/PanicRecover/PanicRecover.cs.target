@@ -18,18 +18,23 @@ private static readonly object recoveredInFˢ = (@string)"Recovered in f"u8;
 private static readonly object callingGˢ = (@string)"Calling g."u8;
 private static readonly object returnedNormallyFromGˢ = (@string)"Returned normally from g."u8;
 
-internal static void f() => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                fmt.Println(recoveredInFˢ, r);
+internal static void f() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Println(recoveredInFˢ, r);
+                }
             }
-        }
-    });
-    fmt.Println(callingGˢ);
-    g(0);
-    fmt.Println(returnedNormallyFromGˢ);
-});
+        }, ref ᒐ);
+        fmt.Println(callingGˢ);
+        g(0);
+        fmt.Println(returnedNormallyFromGˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object panickingˢ = (@string)"Panicking!"u8;

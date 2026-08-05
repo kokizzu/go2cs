@@ -24,25 +24,35 @@ public static nint Area(this Square s) {
     return s.S * s.S;
 }
 
-internal static Shape pick(nint kind) => func<Shape>((defer, recover) => {
-    defer(() => {
-        _ = recover();
-    });
-    if (kind == 0) {
-        return new Circle(R: 2);
+internal static Shape pick(nint kind) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            _ = recover();
+        }, ref ᒐ);
+        if (kind == 0) {
+            return new Circle(R: 2);
+        }
+        return new Square(S: 5);
     }
-    return new Square(S: 5);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (Shape, bool) classify(nint kind) => func<(Shape, bool)>((defer, recover) => {
-    defer(() => {
-        _ = recover();
-    });
-    if (kind == 0) {
-        return (new Circle(R: 3), true);
+internal static (Shape, bool) classify(nint kind) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            _ = recover();
+        }, ref ᒐ);
+        if (kind == 0) {
+            return (new Circle(R: 3), true);
+        }
+        return (new Square(S: 4), false);
     }
-    return (new Square(S: 4), false);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void Main() {
     fmt.Println(pick(0).Area());

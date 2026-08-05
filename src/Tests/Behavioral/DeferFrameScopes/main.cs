@@ -46,34 +46,37 @@ private static readonly @string fallthroughˢ = "fallthrough"u8;
 internal static (@string label, nint score) classify(nint n) {
     @string label = default!;
     nint score = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             score += 100;
             label = "<"u8 + label + ">"u8;
-        });
+        }, ref ᒐ);
         for (nint i = 0; i < 3; i++) {
             if (i == 2 && n == 2) {
                 (label, score) = (fromLoopˢ, i);
-                return;
+                goto ᒐdone;
             }
         }
         switch (n) {
         case 3: {
             (label, score) = (fromSwitchˢ, 3);
-            return;
+            goto ᒐdone;
         }
         case 4: {
-            (label, score) = (fromSwitchExprˢ, 4); return;
+            (label, score) = (fromSwitchExprˢ, 4); goto ᒐdone;
         }}
 
         if (n > 10) {
             label = bigˢ;
             score = n;
-            return;
+            goto ᒐdone;
         }
         (label, score) = (fallthroughˢ, n);
-    });
-    return (label, score);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (label, score);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -129,20 +132,23 @@ private static readonly @string noPanicˢ = "no panic"u8;
 
 internal static @string /*msg*/ guarded(bool boom) {
     @string msg = default!;
-    func((defer, recover) => {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), guardedCleanupˢ, defer);
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), guardedCleanupˢ, ref ᒐ);
+        deferǃ(() => {
             {
                 var r = recover(); if (r != default!) {
                     msg = fmt.Sprint(recoveredˢ, r);
                 }
             }
-        });
+        }, ref ᒐ);
         if (boom) {
             throw panic("frame boom");
         }
         msg = noPanicˢ;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return msg;
 }
 

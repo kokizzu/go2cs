@@ -77,14 +77,17 @@ internal static void deferredReplaceFirst(params ꓸꓸꓸжbox bsʗp) {
 
 internal static nint /*n*/ deferredNamedLen(params ꓸꓸꓸжbox bsʗp) {
     nint n = default!;
-    func(ref bsʗp, (ref ꓸꓸꓸжbox bsʗp, Defer defer, Recover recover) => {
+    GoFrame ᒐ = default;
+    try {
     var bs = bsʗp.sslice();
 
-        defer(() => {
+        deferǃ(() => {
             n++;
-        });
+        }, ref ᒐ);
         n = len(bs);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return n;
 }
 

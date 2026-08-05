@@ -84,25 +84,6 @@ func (v *Visitor) goFrameEligible(funcDecl *ast.FuncDecl, signature *types.Signa
 		return false
 	}
 
-	// --- MIGRATION GATES (§4.8). Each is removed by the stage that lands its lowering rule. ---
-
-	// Stage 3a: recover(). The body's `recover()` currently binds the wrapper's `Recover`
-	// parameter; under the frame it resolves to the static builtin.recover(), which reads the same
-	// thread-local slot the emitted catch parks the panic in.
-	if v.hasRecover {
-		return false
-	}
-
-	// Stage 3b: named results (§4.4). Go runs the deferred calls AFTER the result params are
-	// assigned and BEFORE the caller sees them, which a C# `finally` cannot do to a value a
-	// `return` has already evaluated — so the results are declared before the try and every exit
-	// leaves through a goto to a label after the finally.
-	if v.namedReturnDeferMode {
-		return false
-	}
-
-	// --- END MIGRATION GATES ---
-
 	// A DEFERRED function literal that contains a `defer` of its OWN. Go scopes that inner defer
 	// to the literal, but the literal is a deferred-call target, so convFuncLit deliberately gives
 	// it no defer scope (its recover() belongs to the enclosing function, which is the case that

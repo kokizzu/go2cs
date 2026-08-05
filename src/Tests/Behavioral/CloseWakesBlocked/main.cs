@@ -4,12 +4,17 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void expectPanic(@string name, Action f) => func((defer, recover) => {
-    defer(() => {
-        fmt.Println(name, (@string)"->"u8, recover());
-    });
-    f();
-});
+internal static void expectPanic(@string name, Action f) {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            fmt.Println(name, (@string)"->"u8, recover());
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string senderCompletedWrongˢ = "sender completed (wrong)"u8;

@@ -1,20 +1,20 @@
 # DESIGN — closure emission: the lambda, the frame, and what a Go function should compile to
 
-> **Status: §3 LANDED (r39e-closure, 2026-08-03); §4–§8 are a PROPOSAL for user review — do not
-> implement from this document.** The user's "Rulings 2026-08-03" (board commit `87f807042`)
-> commissioned ONE unified design for the closure findings rather than three separate arcs. §3 is the
-> half that was already rooted, gated and shipped in this same change: the local-function emission
-> mode and the escape-analysis narrowing that together took `time`'s `TestUnmarshalTextAllocations`
-> from **216 B/op to 0** and banked the package. §4 onward is the part that stays on paper: the
+> **Status: §3 LANDED (r39e-closure, 2026-08-03). §4 LANDED (r41-goframe, 2026-08-05) — it is now the
+> AS-BUILT record, not a proposal; §4.10 says what the build changed about it and what it left.** The
+> user's "Rulings 2026-08-03" (board commit `87f807042`) commissioned ONE unified design for the
+> closure findings rather than three separate arcs. §3 was the half already rooted, gated and shipped
+> in that change: the local-function emission mode and the escape-analysis narrowing that together
+> took `time`'s `TestUnmarshalTextAllocations` from **216 B/op to 0** and banked the package. §4 is the
 > `ref struct` frame that r39-osalloc's arc item 3 sketched after measuring the
-> `func<T>((defer, recover) => …)` machinery at **440 B/call**. It is written up here — with §3 — because
-> the two are the same subject seen twice, and because §3's one deliberate exclusion (a literal that
-> defers) is precisely what §4 dissolves.
+> `func<T>((defer, recover) => …)` machinery, approved by the user on 2026-08-05 and built out over
+> the staged path §4.8 lays down. The two are the same subject seen twice, which is why they share a
+> document — and §3's one deliberate exclusion (a literal that defers) is precisely what §4 dissolved.
 >
 > Related: [`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md) — r39-osalloc's
-> decomposition (arc items 1–5) and r39e's measurement table;
+> decomposition (arc items 1–5), r39e's measurement table, and the arc's commissioning rulings;
 > [`../ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) — the emitted-form
-> rules for both §3 mechanisms.
+> rules for §3's two mechanisms and for the frame itself.
 
 ## 1. The subject in one paragraph
 
@@ -185,9 +185,24 @@ public ref struct GoFrame
 ```
 
 A `ref struct` local costs nothing: it lives in the caller's frame and the JIT can enregister the
-slots. The corpus's defer arity is overwhelmingly 1–2 (`FD.Write` has 2), so `m_overflow` is dead
-weight that is never allocated in practice; four inline slots is a starting number to be set from a
-census, not a guess to be shipped.
+slots. Four inline slots is a number to be set from a census, not a guess to be shipped — and the
+census (built for the arc: every `defer` statement in Go 1.23.1's non-test standard-library sources,
+counted per function or literal, the way Go scopes them) says four:
+
+| `defer` statements in one scope | scopes | cumulative |
+|--:|--:|--:|
+| 1 | 1,246 | 85.69% |
+| 2 | 154 | 96.29% |
+| 3 | 32 | 98.49% |
+| **4** | 10 | **99.17%** |
+| 5 | 7 | 99.66% |
+| 6 | 2 | 99.79% |
+| 7 | 2 | 99.93% |
+| 16 | 1 | 100.00% |
+
+1,454 deferring scopes in all. Note what the table does *not* measure: a `defer` inside a **loop**
+registers once per iteration, so the count reached at run time is not a syntactic property and the
+overflow list is a correctness requirement, not a decoration. It is simply never the hot path.
 
 `Run()` keeps today's `HandleFinally` semantics verbatim — the `HandledPanic` save/restore, the
 re-panic `InheritThrowSite` rule, the final re-throw of an unrecovered panic. That logic is correct
@@ -347,19 +362,114 @@ not to have traded allocation for wall time.
   `uintptr(unsafe.Pointer(x))` peephole (item 2). Both are larger wins than this one in the `os`
   decomposition and both are independent of it.
 
-## 5. Recommendation
+### 4.10 As built (r41-goframe, 2026-08-05) — what the build changed, and what it left
 
-Land nothing from §4 without the user's decision on two questions the design cannot self-rule:
+§4.1–§4.9 above are the design as approved. This section is the record of building it: where the
+emitted shape differs from the sketch, what the design did not anticipate, and what is deliberately
+not in the arc.
 
-1. **Is the blast radius acceptable now?** §4 is correct and it is worth ~440 B/call on every
-   deferring function, but it re-emits a large fraction of the corpus and re-opens goldens that have
-   been stable for months. The alternative is to leave it until a Phase-4 row *requires* it — and
-   `os`'s `TestWriteStringAlloc` does not, because 3,168 B remain above it even at zero (r39-osalloc
-   §"still does not reach zero").
-2. **Staged or wholesale?** §4.8 proposes five stages because each has a distinct failure mode; a
-   wholesale change would be one shorter arc with one much larger blast.
+**The measured numbers, which are not the ones §2 predicted.** Every row is
+`GC.GetAllocatedBytesForCurrentThread` over 5,000 Release calls, with the probe's own 24 B result
+boxing subtracted:
 
-The measurement in §2 that *should* be taken regardless of that decision is the
-`HandleDefer`/`HandleRecover` method-group term — it is a golib-local question, answerable in an hour,
-and it either adds ~128 B to the 440 (making §4 more valuable) or it does not (making the existing
-decomposition exact).
+| shape | execution context | GoFrame |
+|:--|--:|--:|
+| no defers (recover only) | 160 B | **0 B** |
+| 1 defer, cached static target | 248 B | **0 B** |
+| 2 defers, cached static targets | 248 B | **0 B** |
+| 2 defers that CAPTURE (the `internal/poll.FD.Write` shape) | 440 B | **192 B** |
+
+The 440 B r39-osalloc measured is confirmed exactly — for the *capturing* two-defer shape. What §2
+did not separate is that a defer whose target is a **static method group** costs nothing at all under
+the frame, because C# caches that delegate; §4.5's remaining 128-ish B is entirely the display class
++ delegate of a defer that genuinely closes over something. So there is no cheap subset of §4.5 to
+take: the shapes it would help are exactly the ones that need argument/receiver temps hoisted out of
+the `try` (a `finally` cannot see a variable declared inside the `try`), which is the fiddly half.
+**§4.5 is therefore NOT in this arc** — it is a separately reviewable increment worth ~192 B on a
+two-capturing-defer function and 0 on the rest, and the conservative-cut question §4.5 flags stands
+unchanged.
+
+**One shape §4 did not anticipate: a DEFERRED literal that contains a `defer` of its own.** Go scopes
+that inner defer to the literal, but `convFuncLit` deliberately gave a deferred-call target no
+defer/recover scope — correctly for `recover()`, which recovers the *enclosing* function, and
+wrongly for `defer`, which was therefore registered into the enclosing function's scope. Under the
+lambda form that is silently the wrong frame; under the frame form it cannot even be expressed,
+because a `ref struct` cannot be captured by a lambda. The frame is what makes the split
+expressible: the literal carries its own frame while `recover()` keeps resolving statically to the
+enclosing panic slot. The shape occurs **zero** times across the corpus's 4,951 emitted files, so
+this closed a latent hole rather than fixing a live defect; it is guarded by
+`Tests/Behavioral/DeferFrameScopes`.
+
+**`bodyWrappedInDeferContext` is now optional, and is kept anyway.** A method that defers and
+references its receiver was forced onto the direct-`ж` receiver because a `ref T` receiver cannot be
+referenced from inside a lambda (CS1628). An inline body removes that constraint entirely — `this ref
+T` would compile. The rule is kept deliberately: the direct-`ж` form is also the alloc-free,
+race-free one, and changing receiver shapes corpus-wide is its own change with its own blast radius.
+Recorded as an open simplification.
+
+**What the ladder's disappearance actually looks like.** §4.6 predicted the `GoFunc<TRef1…TRef16>`
+ladder would go because an inlined body has no parameters to thread. Two behavioral guards show it
+happening at the emission level rather than by assertion: `GenericVariadicFunc` and
+`VariadicPointerParam` both lose `func(ref valsʗp, (ref Span<T> valsʗp, Defer defer, Recover recover)
+=> …)` for a plain method body. The `allExecWrapperReturnsAreTypeless` /
+`execWrapperReturnsLackCommonType` machinery goes the same way and for the same reason — it existed
+only to help C# infer a lambda's `T`, and there is no lambda.
+
+**The `deferǃ` bang.** See §4.11.
+
+### 4.11 The bang verdict
+
+The ruling that amended this design asked whether the bang-suffixed registration name is still
+needed once the frame removes the `defer`-named delegate parameter it was disambiguating against.
+
+**Verdict: not needed — dropped.** The collision analysis, in full:
+
+- **Go source can never produce it.** `defer` is a Go *keyword*, so no Go identifier is ever named
+  `defer`, at any scope. (Contrast `recover`, `panic`, `len`: those are predeclared *identifiers*,
+  which Go code may shadow — which is why `recover` needs the `builtin.` qualification treatment when
+  a package declares its own, and why it is not a candidate for this rename.)
+- **C# does not reserve it.** `defer` is neither a keyword nor a contextual keyword in any C#
+  version; a static method named `defer` is legal and needs no `@` escape.
+- **The golib public surface has no other `defer`.** The `Defer` delegate type differs in case (C# is
+  case-sensitive) and is deleted with the rest of the lambda machinery anyway.
+- **Emitted code has no other `defer`.** The one binder that ever put the bare name in scope was the
+  execution context's lambda parameter, and the frame retires it. The migration ordered declarations
+  before literals precisely so that a frame-form scope is never nested inside a lambda-form one, and
+  the rename lands only after every emission site has moved — so the two spellings never coexist in a
+  scope.
+- **`goǃ` and `makeǃ` KEEP their bangs, and for a different reason each.** `goǃ` cannot become `go`:
+  that is the root **namespace** every converted file sits in (`namespace go;`), so the bare name is
+  already bound. `makeǃ` cannot become `make`: `make` is a predeclared Go identifier that a package
+  may shadow, and the bang is what keeps the emitter's own spelling out of that contest. Neither is
+  affected by this design, and the reserved-identifier set keeps both.
+
+`deferǃ` is also removed from the converter's `reserved` set: the set exists so a *Go* identifier
+spelled like a name the emitter produces gets Δ-renamed, and `defer` can never be a Go identifier.
+`GoFrame` joins the set for exactly that reason — it is a new emitter-spelled type name, and a Go
+type of that name inside a package class would shadow it.
+
+## 5. Recommendation — SETTLED (user, 2026-08-05)
+
+Both questions this section could not self-rule were answered when the arc was commissioned
+(`BOARD-next-validation-candidates.md`, "COMMISSIONED — the GoFrame arc"): the blast radius is
+accepted, the change is **staged** along §4.8, and the corpus regen rides with the arc rather than
+opening a standing-drift era. The original text is kept below for the record.
+
+> Land nothing from §4 without the user's decision on two questions the design cannot self-rule:
+>
+> 1. **Is the blast radius acceptable now?** §4 is correct and it is worth ~440 B/call on every
+>    deferring function, but it re-emits a large fraction of the corpus and re-opens goldens that have
+>    been stable for months. The alternative is to leave it until a Phase-4 row *requires* it — and
+>    `os`'s `TestWriteStringAlloc` does not, because 3,168 B remain above it even at zero (r39-osalloc
+>    §"still does not reach zero").
+> 2. **Staged or wholesale?** §4.8 proposes five stages because each has a distinct failure mode; a
+>    wholesale change would be one shorter arc with one much larger blast.
+>
+> The measurement in §2 that *should* be taken regardless of that decision is the
+> `HandleDefer`/`HandleRecover` method-group term — it is a golib-local question, answerable in an hour,
+> and it either adds ~128 B to the 440 (making §4 more valuable) or it does not (making the existing
+> decomposition exact).
+
+That last measurement was taken and is now moot in the useful direction: the whole execution context,
+handler delegates included, measures 160–248 B and the frame that replaces it measures **0**, so the
+question of how the 440 divided internally no longer decides anything.

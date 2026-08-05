@@ -115,28 +115,33 @@ private static readonly object closedChannelSentˢ = (@string)"closed channel: s
 private static readonly object closedChannelDefaultˢ = (@string)"closed channel: default"u8;
 private static readonly object closedChannelNotReachedˢ = (@string)"closed channel: NOT REACHED"u8;
 
-internal static void closedChannel() => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                fmt.Println(closedChannelRecoveredˢ, r);
+internal static void closedChannel() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Println(closedChannelRecoveredˢ, r);
+                }
             }
+        }, ref ᒐ);
+        var ch = new channel<nint>(1);
+        close(ch);
+        var selᴛ6 = ch.ᐸꟷ(1, ꓸꓸꓸ);
+        switch (trySelect(selᴛ6)) {
+        case 0: {
+            fmt.Println(closedChannelSentˢ);
+            break;
         }
-    });
-    var ch = new channel<nint>(1);
-    close(ch);
-    var selᴛ6 = ch.ᐸꟷ(1, ꓸꓸꓸ);
-    switch (trySelect(selᴛ6)) {
-    case 0: {
-        fmt.Println(closedChannelSentˢ);
-        break;
+        default: {
+            fmt.Println(closedChannelDefaultˢ);
+            break;
+        }}
+        fmt.Println(closedChannelNotReachedˢ);
     }
-    default: {
-        fmt.Println(closedChannelDefaultˢ);
-        break;
-    }}
-    fmt.Println(closedChannelNotReachedˢ);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object oneOfManyChoseFullˢ = (@string)"one of many: chose full"u8;

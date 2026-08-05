@@ -174,13 +174,18 @@ type captureCandidate struct {
 // its imports, used by the transitive fixpoint in collectCaptureModeMethods.
 var captureModeCandidates []*captureCandidate
 
-// bodyWrappedInDeferContext reports whether the method's body will be emitted inside the
-// synthesized defer/recover execution-context lambda (`func((defer, recover) => { … })`) while
-// still referencing the receiver. Any FUNCTION-LEVEL defer or recover wraps the WHOLE body in
-// that lambda, so a `ref T` receiver reference inside it is CS1628 — the method must take the
-// direct-ж receiver, whose deref alias is emitted INSIDE the wrapper (fmt ss.Token's
-// `defer func(){ recover() }()` + `s.buf`, CS1628 ×3). Defer/recover inside a nested function
-// literal belongs to that literal (mirrors funcBodyDeferRecover) and does not wrap this body.
+// bodyWrappedInDeferContext reports whether a method that defers or recovers at FUNCTION level also
+// references its receiver, in which case the method takes the direct-ж receiver (`this ж<T> Ꮡx`)
+// rather than `this ref T`. Defer/recover inside a nested function literal belongs to that literal
+// (mirrors funcBodyDeferRecover) and does not count.
+//
+// The rule was FORCED when such a body was emitted inside the `func((defer, recover) => { … })`
+// execution-context lambda: a `ref T` receiver cannot be referenced from inside a lambda (CS1628 ×3,
+// fmt ss.Token's `defer func(){ recover() }()` + `s.buf`). The GoFrame emission puts the body inline
+// in the method, so that constraint is gone and `this ref T` would now compile. The rule is KEPT
+// anyway, deliberately: the direct-ж form is also the alloc-free, race-free one (see the ThreadLocal
+// note above), and switching receiver shapes corpus-wide is a change of its own with its own blast
+// radius, not a side effect of the frame. Recorded as an open simplification rather than taken here.
 func bodyWrappedInDeferContext(body *ast.BlockStmt, recvName string, info *types.Info) bool {
 	hasDeferRecover := false
 

@@ -10,35 +10,41 @@ private static readonly object recoveredˢ = (@string)"  recovered:"u8;
 internal static (nint result, bool recovered) safeDiv(nint a, nint b) {
     nint result = default!;
     bool recovered = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             {
                 var r = recover(); if (r != default!) {
                     fmt.Println(recoveredˢ, r);
                     (result, recovered) = (-1, true);
                 }
             }
-        });
+        }, ref ᒐ);
         result = a / b;
         (result, recovered) = (result, false);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (result, recovered);
 }
 
 internal static (nint result, bool recovered) safeMod(nint a, nint b) {
     nint result = default!;
     bool recovered = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             {
                 var r = recover(); if (r != default!) {
                     (result, recovered) = (-2, true);
                 }
             }
-        });
+        }, ref ᒐ);
         result = a % b;
         (result, recovered) = (result, false);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (result, recovered);
 }
 
@@ -48,15 +54,18 @@ internal static nint divide(nint a, nint b) {
 
 internal static bool /*ok*/ outerGuard(nint a, nint b) {
     bool ok = default!;
-    func((defer, recover) => {
-        defer(() => {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(() => {
             if (recover() != default!) {
                 ok = false;
             }
-        });
+        }, ref ᒐ);
         divide(a, b);
         ok = true;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return ok;
 }
 

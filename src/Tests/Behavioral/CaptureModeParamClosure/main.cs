@@ -48,32 +48,38 @@ internal static (nint, @string) closureWrite(Tally tʗp, nint n) {
 internal static (nint result, @string log) deferClosure(Tally tʗp, nint n) {
     nint result = default!;
     @string log = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-        defer(() => {
+        deferǃ(() => {
             (result, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
-        });
+        }, ref ᒐ);
         Ꮡt.Add(n);
         t.total += 7;
         (result, log) = (0, "");
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (result, log);
 }
 
 internal static (nint total, @string log) deferMethodValue(Tally tʗp, nint n) {
     nint total = default!;
     @string log = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-        defer(() => {
+        deferǃ(() => {
             (total, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
-        });
-        deferǃ(Ꮡt.Add, n, defer);
+        }, ref ᒐ);
+        deferǃ(Ꮡt.Add, n, ref ᒐ);
         t.total++;
         (total, log) = (0, "");
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (total, log);
 }
 

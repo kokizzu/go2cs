@@ -23,15 +23,20 @@ partial class main_package {
     internal error err;
 }
 
-internal static void recover(this ж<guard> Ꮡg) => func((defer, recover) => {
+internal static void recover(this ж<guard> Ꮡg) {
+    GoFrame ᒐ = default;
+    try {
     ref var g = ref Ꮡg.DerefOrNull();
 
-    {
-        var e = recover(); if (e != default!) {
-            g.err = fmt.Errorf("recovered: %v"u8, e);
+        {
+            var e = builtin.recover(); if (e != default!) {
+                g.err = fmt.Errorf("recovered: %v"u8, e);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void run(this ж<guard> Ꮡg) {
     GoFrame ᒐ = default;
