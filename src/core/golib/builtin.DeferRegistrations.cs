@@ -584,4 +584,561 @@ public static partial class builtin
     }
 
     #endregion
+
+    #region [ Frame registrations ]
+
+    // -----------------------------------------------------------------------------------------
+    // THE FRAME FORM of every rung above: the same registration, into a GoFrame passed by
+    // reference instead of through a Defer delegate.
+    //
+    // The trailing `Defer defer` parameter of the rungs above exists because the retired
+    // execution-context lambda OWNED the defer list, so the body had to be handed a delegate to
+    // reach it. A frame is a local of the function that defers, so the registration simply names
+    // it: `deferǃ(fd.writeUnlock, ref ᒐ)`. Nothing is captured, nothing is allocated for the
+    // list itself, and the arity ladder keeps doing the one job it was always for — evaluating
+    // the deferred call's ARGUMENTS at the `defer` statement, generically, without boxing.
+    //
+    // A NULLARY rung exists here and does not above, because the nullary lambda form called the
+    // `defer` delegate directly (`defer(() => …)`); there is no delegate to call now.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Registers a deferred call taking no arguments.
+    /// </summary>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ(Action action, ref GoFrame frame)
+    {
+        frame.Push(action);
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 1 parameter, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T">First parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg">First parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T>(Action<T> action, T arg, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T, TResult>(Func<T, TResult> action, T arg, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 2 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, TResult>(Func<T1, T2, TResult> action, T1 arg1, T2 arg2, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 3 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3>(Action<T1, T2, T3> action, T1 arg1, T2 arg2, T3 arg3, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 4 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4>(Action<T1, T2, T3, T4> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, TResult>(Func<T1, T2, T3, T4, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 5 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, TResult>(Func<T1, T2, T3, T4, T5, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 6 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, TResult>(Func<T1, T2, T3, T4, T5, T6, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 7 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7>(Action<T1, T2, T3, T4, T5, T6, T7> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 8 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8>(Action<T1, T2, T3, T4, T5, T6, T7, T8> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 9 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 10 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 11 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 12 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <typeparam name="T12">Twelfth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="arg12">Twelfth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 13 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <typeparam name="T12">Twelfth parameter type.</typeparam>
+    /// <typeparam name="T13">Thirteenth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="arg12">Twelfth parameter.</param>
+    /// <param name="arg13">Thirteenth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 14 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <typeparam name="T12">Twelfth parameter type.</typeparam>
+    /// <typeparam name="T13">Thirteenth parameter type.</typeparam>
+    /// <typeparam name="T14">Fourteenth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="arg12">Twelfth parameter.</param>
+    /// <param name="arg13">Thirteenth parameter.</param>
+    /// <param name="arg14">Fourteenth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 15 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <typeparam name="T12">Twelfth parameter type.</typeparam>
+    /// <typeparam name="T13">Thirteenth parameter type.</typeparam>
+    /// <typeparam name="T14">Fourteenth parameter type.</typeparam>
+    /// <typeparam name="T15">Fifteenth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="arg12">Twelfth parameter.</param>
+    /// <param name="arg13">Thirteenth parameter.</param>
+    /// <param name="arg14">Fourteenth parameter.</param>
+    /// <param name="arg15">Fifteenth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15); });
+    }
+
+    /// <summary>
+    /// Registers a deferred call with 16 parameters, evaluated now and passed on exit.
+    /// </summary>
+    /// <typeparam name="T1">First parameter type.</typeparam>
+    /// <typeparam name="T2">Second parameter type.</typeparam>
+    /// <typeparam name="T3">Third parameter type.</typeparam>
+    /// <typeparam name="T4">Fourth parameter type.</typeparam>
+    /// <typeparam name="T5">Fifth parameter type.</typeparam>
+    /// <typeparam name="T6">Sixth parameter type.</typeparam>
+    /// <typeparam name="T7">Seventh parameter type.</typeparam>
+    /// <typeparam name="T8">Eighth parameter type.</typeparam>
+    /// <typeparam name="T9">Ninth parameter type.</typeparam>
+    /// <typeparam name="T10">Tenth parameter type.</typeparam>
+    /// <typeparam name="T11">Eleventh parameter type.</typeparam>
+    /// <typeparam name="T12">Twelfth parameter type.</typeparam>
+    /// <typeparam name="T13">Thirteenth parameter type.</typeparam>
+    /// <typeparam name="T14">Fourteenth parameter type.</typeparam>
+    /// <typeparam name="T15">Fifteenth parameter type.</typeparam>
+    /// <typeparam name="T16">Sixteenth parameter type.</typeparam>
+    /// <param name="action">Deferred call.</param>
+    /// <param name="arg1">First parameter.</param>
+    /// <param name="arg2">Second parameter.</param>
+    /// <param name="arg3">Third parameter.</param>
+    /// <param name="arg4">Fourth parameter.</param>
+    /// <param name="arg5">Fifth parameter.</param>
+    /// <param name="arg6">Sixth parameter.</param>
+    /// <param name="arg7">Seventh parameter.</param>
+    /// <param name="arg8">Eighth parameter.</param>
+    /// <param name="arg9">Ninth parameter.</param>
+    /// <param name="arg10">Tenth parameter.</param>
+    /// <param name="arg11">Eleventh parameter.</param>
+    /// <param name="arg12">Twelfth parameter.</param>
+    /// <param name="arg13">Thirteenth parameter.</param>
+    /// <param name="arg14">Fourteenth parameter.</param>
+    /// <param name="arg15">Fifteenth parameter.</param>
+    /// <param name="arg16">Sixteenth parameter.</param>
+    /// <param name="frame">Registering function's frame.</param>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16, ref GoFrame frame)
+    {
+        frame.Push(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16));
+    }
+
+    /// <summary>Registers a deferred call to a value-returning function, discarding the result.</summary>
+    public static void deferǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16, ref GoFrame frame)
+    {
+        frame.Push(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16); });
+    }
+
+    #endregion
 }

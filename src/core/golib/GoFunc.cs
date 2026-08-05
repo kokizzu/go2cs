@@ -54,6 +54,23 @@ public class GoFuncRoot
     /// recover Go's observable output — see runtime's Stack.
     /// </remarks>
     public static PanicException? InFlightPanic => HandledPanic.Value ?? CapturedPanic.Value;
+
+    // The two panic slots, reachable by the golib types that are NOT GoFunc subclasses: GoFrame
+    // (a ref struct, which cannot inherit) and builtin.recover(). Both slots stay HERE — a single
+    // owner, thread-local and statically reachable — because that is precisely what lets a
+    // deferred closure recover a panic without holding any handle on the frame that registered it,
+    // and so what makes the ref-struct frame viable at all (DESIGN-closure-emission.md §4.1).
+    internal static PanicException? CapturedPanicValue
+    {
+        get => CapturedPanic.Value;
+        set => CapturedPanic.Value = value!;
+    }
+
+    internal static PanicException? HandledPanicValue
+    {
+        get => HandledPanic.Value;
+        set => HandledPanic.Value = value;
+    }
 }
 
 /// <summary>
