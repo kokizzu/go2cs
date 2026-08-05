@@ -764,49 +764,54 @@ internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour 
 
 // Clone returns a shallow clone of c or nil if c is nil. It is safe to clone a [Config] that is
 // being used concurrently by a TLS client or server.
-public static ж<Config> Clone(this ж<Config> Ꮡc) => func<ж<Config>>((defer, recover) => {
+public static ж<Config> Clone(this ж<Config> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    if (Ꮡc == nil) {
-        return default!;
+        if (Ꮡc == nil) {
+            return default!;
+        }
+        Ꮡc.of(Config.Ꮡmutex).RLock();
+        defer(Ꮡc.of(Config.Ꮡmutex).RUnlock, ref ᒐ);
+        return Ꮡ(new Config(
+            Rand: c.Rand,
+            Time: c.Time,
+            Certificates: c.Certificates,
+            NameToCertificate: c.NameToCertificate,
+            GetCertificate: c.GetCertificate,
+            GetClientCertificate: c.GetClientCertificate,
+            GetConfigForClient: c.GetConfigForClient,
+            VerifyPeerCertificate: c.VerifyPeerCertificate,
+            VerifyConnection: c.VerifyConnection,
+            RootCAs: c.RootCAs,
+            NextProtos: c.NextProtos,
+            ServerName: c.ServerName,
+            ClientAuth: c.ClientAuth,
+            ClientCAs: c.ClientCAs,
+            InsecureSkipVerify: c.InsecureSkipVerify,
+            CipherSuites: c.CipherSuites,
+            PreferServerCipherSuites: c.PreferServerCipherSuites,
+            SessionTicketsDisabled: c.SessionTicketsDisabled,
+            SessionTicketKey: c.SessionTicketKey.Clone(),
+            ClientSessionCache: c.ClientSessionCache,
+            UnwrapSession: c.UnwrapSession,
+            WrapSession: c.WrapSession,
+            MinVersion: c.MinVersion,
+            MaxVersion: c.MaxVersion,
+            CurvePreferences: c.CurvePreferences,
+            DynamicRecordSizingDisabled: c.DynamicRecordSizingDisabled,
+            Renegotiation: c.Renegotiation,
+            KeyLogWriter: c.KeyLogWriter,
+            EncryptedClientHelloConfigList: c.EncryptedClientHelloConfigList,
+            EncryptedClientHelloRejectionVerify: c.EncryptedClientHelloRejectionVerify,
+            sessionTicketKeys: c.sessionTicketKeys,
+            autoSessionTicketKeys: c.autoSessionTicketKeys
+        ));
     }
-    Ꮡc.of(Config.Ꮡmutex).RLock();
-    defer(Ꮡc.of(Config.Ꮡmutex).RUnlock);
-    return Ꮡ(new Config(
-        Rand: c.Rand,
-        Time: c.Time,
-        Certificates: c.Certificates,
-        NameToCertificate: c.NameToCertificate,
-        GetCertificate: c.GetCertificate,
-        GetClientCertificate: c.GetClientCertificate,
-        GetConfigForClient: c.GetConfigForClient,
-        VerifyPeerCertificate: c.VerifyPeerCertificate,
-        VerifyConnection: c.VerifyConnection,
-        RootCAs: c.RootCAs,
-        NextProtos: c.NextProtos,
-        ServerName: c.ServerName,
-        ClientAuth: c.ClientAuth,
-        ClientCAs: c.ClientCAs,
-        InsecureSkipVerify: c.InsecureSkipVerify,
-        CipherSuites: c.CipherSuites,
-        PreferServerCipherSuites: c.PreferServerCipherSuites,
-        SessionTicketsDisabled: c.SessionTicketsDisabled,
-        SessionTicketKey: c.SessionTicketKey.Clone(),
-        ClientSessionCache: c.ClientSessionCache,
-        UnwrapSession: c.UnwrapSession,
-        WrapSession: c.WrapSession,
-        MinVersion: c.MinVersion,
-        MaxVersion: c.MaxVersion,
-        CurvePreferences: c.CurvePreferences,
-        DynamicRecordSizingDisabled: c.DynamicRecordSizingDisabled,
-        Renegotiation: c.Renegotiation,
-        KeyLogWriter: c.KeyLogWriter,
-        EncryptedClientHelloConfigList: c.EncryptedClientHelloConfigList,
-        EncryptedClientHelloRejectionVerify: c.EncryptedClientHelloRejectionVerify,
-        sessionTicketKeys: c.sessionTicketKeys,
-        autoSessionTicketKeys: c.autoSessionTicketKeys
-    ));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // deprecatedSessionTicketKey is set as the prefix of SessionTicketKey if it was
 // randomized for backwards compatibility but is not in use.
@@ -814,35 +819,40 @@ internal static slice<byte> deprecatedSessionTicketKey = slice<byte>("DEPRECATED
 
 // initLegacySessionTicketKeyRLocked ensures the legacy SessionTicketKey field is
 // randomized if empty, and that sessionTicketKeys is populated from it otherwise.
-internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) => func((defer, recover) => {
+internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    // Don't write if SessionTicketKey is already defined as our deprecated string,
-    // or if it is defined by the user but sessionTicketKeys is already set.
-    if (c.SessionTicketKey != new byte[]{}.array(32) && (bytes.HasPrefix(c.SessionTicketKey[..], deprecatedSessionTicketKey) || len(c.sessionTicketKeys) > 0)) {
-        return;
-    }
-    // We need to write some data, so get an exclusive lock and re-check any conditions.
-    Ꮡc.of(Config.Ꮡmutex).RUnlock();
-    defer(Ꮡc.of(Config.Ꮡmutex).RLock);
-    Ꮡc.of(Config.Ꮡmutex).Lock();
-    defer(Ꮡc.of(Config.Ꮡmutex).Unlock);
-    if (c.SessionTicketKey == new byte[]{}.array(32)){
-        {
-            var (_, err) = io.ReadFull(c.rand(), c.SessionTicketKey[..]); if (err != default!) {
-                throw panic(fmt.Sprintf("tls: unable to generate random session ticket key: %v"u8, err));
-            }
+        // Don't write if SessionTicketKey is already defined as our deprecated string,
+        // or if it is defined by the user but sessionTicketKeys is already set.
+        if (c.SessionTicketKey != new byte[]{}.array(32) && (bytes.HasPrefix(c.SessionTicketKey[..], deprecatedSessionTicketKey) || len(c.sessionTicketKeys) > 0)) {
+            return;
         }
-        // Write the deprecated prefix at the beginning so we know we created
-        // it. This key with the DEPRECATED prefix isn't used as an actual
-        // session ticket key, and is only randomized in case the application
-        // reuses it for some reason.
-        copy(c.SessionTicketKey[..], deprecatedSessionTicketKey);
-    } else 
-    if (!bytes.HasPrefix(c.SessionTicketKey[..], deprecatedSessionTicketKey) && len(c.sessionTicketKeys) == 0) {
-        c.sessionTicketKeys = new ticketKey[]{c.ticketKeyFromBytes(c.SessionTicketKey)}.slice();
+        // We need to write some data, so get an exclusive lock and re-check any conditions.
+        Ꮡc.of(Config.Ꮡmutex).RUnlock();
+        defer(Ꮡc.of(Config.Ꮡmutex).RLock, ref ᒐ);
+        Ꮡc.of(Config.Ꮡmutex).Lock();
+        defer(Ꮡc.of(Config.Ꮡmutex).Unlock, ref ᒐ);
+        if (c.SessionTicketKey == new byte[]{}.array(32)){
+            {
+                var (_, err) = io.ReadFull(c.rand(), c.SessionTicketKey[..]); if (err != default!) {
+                    throw panic(fmt.Sprintf("tls: unable to generate random session ticket key: %v"u8, err));
+                }
+            }
+            // Write the deprecated prefix at the beginning so we know we created
+            // it. This key with the DEPRECATED prefix isn't used as an actual
+            // session ticket key, and is only randomized in case the application
+            // reuses it for some reason.
+            copy(c.SessionTicketKey[..], deprecatedSessionTicketKey);
+        } else 
+        if (!bytes.HasPrefix(c.SessionTicketKey[..], deprecatedSessionTicketKey) && len(c.sessionTicketKeys) == 0) {
+            c.sessionTicketKeys = new ticketKey[]{c.ticketKeyFromBytes(c.SessionTicketKey)}.slice();
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // ticketKeys returns the ticketKeys for this connection.
 // If configForClient has explicitly set keys, those will
@@ -853,65 +863,70 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) => 
 // encrypting tickets (ie. the first ticketKey in c.sessionTicketKeys)
 // is not fresh, then a new session ticket key will be
 // created and prepended to c.sessionTicketKeys.
-internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> ᏑconfigForClient) => func<slice<ticketKey>>((defer, recover) => {
+internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> ᏑconfigForClient) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var configForClient = ref ᏑconfigForClient.DerefOrNull();
 
-    // If the ConfigForClient callback returned a Config with explicitly set
-    // keys, use those, otherwise just use the original Config.
-    if (ᏑconfigForClient != nil) {
-        ᏑconfigForClient.of(Config.Ꮡmutex).RLock();
-        if (configForClient.SessionTicketsDisabled) {
+        // If the ConfigForClient callback returned a Config with explicitly set
+        // keys, use those, otherwise just use the original Config.
+        if (ᏑconfigForClient != nil) {
+            ᏑconfigForClient.of(Config.Ꮡmutex).RLock();
+            if (configForClient.SessionTicketsDisabled) {
+                return default!;
+            }
+            ᏑconfigForClient.initLegacySessionTicketKeyRLocked();
+            if (len(configForClient.sessionTicketKeys) != 0) {
+                var ret = configForClient.sessionTicketKeys;
+                ᏑconfigForClient.of(Config.Ꮡmutex).RUnlock();
+                return ret;
+            }
+            ᏑconfigForClient.of(Config.Ꮡmutex).RUnlock();
+        }
+        Ꮡc.of(Config.Ꮡmutex).RLock();
+        defer(Ꮡc.of(Config.Ꮡmutex).RUnlock, ref ᒐ);
+        if (c.SessionTicketsDisabled) {
             return default!;
         }
-        ᏑconfigForClient.initLegacySessionTicketKeyRLocked();
-        if (len(configForClient.sessionTicketKeys) != 0) {
-            var ret = configForClient.sessionTicketKeys;
-            ᏑconfigForClient.of(Config.Ꮡmutex).RUnlock();
-            return ret;
+        Ꮡc.initLegacySessionTicketKeyRLocked();
+        if (len(c.sessionTicketKeys) != 0) {
+            return c.sessionTicketKeys;
         }
-        ᏑconfigForClient.of(Config.Ꮡmutex).RUnlock();
-    }
-    Ꮡc.of(Config.Ꮡmutex).RLock();
-    defer(Ꮡc.of(Config.Ꮡmutex).RUnlock);
-    if (c.SessionTicketsDisabled) {
-        return default!;
-    }
-    Ꮡc.initLegacySessionTicketKeyRLocked();
-    if (len(c.sessionTicketKeys) != 0) {
-        return c.sessionTicketKeys;
-    }
-    // Fast path for the common case where the key is fresh enough.
-    if (len(c.autoSessionTicketKeys) > 0 && c.time().Sub(c.autoSessionTicketKeys[0].created) < ticketKeyRotation) {
+        // Fast path for the common case where the key is fresh enough.
+        if (len(c.autoSessionTicketKeys) > 0 && c.time().Sub(c.autoSessionTicketKeys[0].created) < ticketKeyRotation) {
+            return c.autoSessionTicketKeys;
+        }
+        // autoSessionTicketKeys are managed by auto-rotation.
+        Ꮡc.of(Config.Ꮡmutex).RUnlock();
+        defer(Ꮡc.of(Config.Ꮡmutex).RLock, ref ᒐ);
+        Ꮡc.of(Config.Ꮡmutex).Lock();
+        defer(Ꮡc.of(Config.Ꮡmutex).Unlock, ref ᒐ);
+        // Re-check the condition in case it changed since obtaining the new lock.
+        if (len(c.autoSessionTicketKeys) == 0 || c.time().Sub(c.autoSessionTicketKeys[0].created) >= ticketKeyRotation) {
+            array<byte> newKey = new(32);
+            {
+                var (_, err) = io.ReadFull(c.rand(), newKey[..]); if (err != default!) {
+                    throw panic(fmt.Sprintf("unable to generate random session ticket key: %v"u8, err));
+                }
+            }
+            var valid = new slice<ticketKey>(0, () => new(), len(c.autoSessionTicketKeys) + 1);
+            valid = append(valid, c.ticketKeyFromBytes(newKey));
+            foreach (var (_, vᴛ1) in c.autoSessionTicketKeys) {
+                var k = vᴛ1.ΔClone();
+
+                // While rotating the current key, also remove any expired ones.
+                if (c.time().Sub(k.created) < ticketKeyLifetime) {
+                    valid = append(valid, k.ΔClone());
+                }
+            }
+            c.autoSessionTicketKeys = valid;
+        }
         return c.autoSessionTicketKeys;
     }
-    // autoSessionTicketKeys are managed by auto-rotation.
-    Ꮡc.of(Config.Ꮡmutex).RUnlock();
-    defer(Ꮡc.of(Config.Ꮡmutex).RLock);
-    Ꮡc.of(Config.Ꮡmutex).Lock();
-    defer(Ꮡc.of(Config.Ꮡmutex).Unlock);
-    // Re-check the condition in case it changed since obtaining the new lock.
-    if (len(c.autoSessionTicketKeys) == 0 || c.time().Sub(c.autoSessionTicketKeys[0].created) >= ticketKeyRotation) {
-        array<byte> newKey = new(32);
-        {
-            var (_, err) = io.ReadFull(c.rand(), newKey[..]); if (err != default!) {
-                throw panic(fmt.Sprintf("unable to generate random session ticket key: %v"u8, err));
-            }
-        }
-        var valid = new slice<ticketKey>(0, () => new(), len(c.autoSessionTicketKeys) + 1);
-        valid = append(valid, c.ticketKeyFromBytes(newKey));
-        foreach (var (_, vᴛ1) in c.autoSessionTicketKeys) {
-            var k = vᴛ1.ΔClone();
-
-            // While rotating the current key, also remove any expired ones.
-            if (c.time().Sub(k.created) < ticketKeyLifetime) {
-                valid = append(valid, k.ΔClone());
-            }
-        }
-        c.autoSessionTicketKeys = valid;
-    }
-    return c.autoSessionTicketKeys;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // SetSessionTicketKeys updates the session ticket keys for a server.
 //
@@ -1490,53 +1505,63 @@ public static ClientSessionCache NewLRUClientSessionCache(nint capacity) {
 
 // Put adds the provided (sessionKey, cs) pair to the cache. If cs is nil, the entry
 // corresponding to sessionKey is removed from the cache instead.
-internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<ClientSessionState> Ꮡcs) => func((defer, recover) => {
+internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<ClientSessionState> Ꮡcs) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
-    defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock);
-    {
-        var (elemΔ1, ok) = c.m[sessionKey, ꟷ]; if (ok) {
-            if (Ꮡcs == nil){
-                c.q.Remove(elemΔ1);
-                delete(c.m, sessionKey);
-            } else {
-                var entryΔ1 = (~elemΔ1).Value._<ж<lruSessionCacheEntry>>();
-                entryΔ1.Value.state = Ꮡcs;
-                c.q.MoveToFront(elemΔ1);
+        Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
+        defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);
+        {
+            var (elemΔ1, ok) = c.m[sessionKey, ꟷ]; if (ok) {
+                if (Ꮡcs == nil){
+                    c.q.Remove(elemΔ1);
+                    delete(c.m, sessionKey);
+                } else {
+                    var entryΔ1 = (~elemΔ1).Value._<ж<lruSessionCacheEntry>>();
+                    entryΔ1.Value.state = Ꮡcs;
+                    c.q.MoveToFront(elemΔ1);
+                }
+                return;
             }
+        }
+        if (c.q.Len() < c.capacity) {
+            var entryΔ2 = Ꮡ(new lruSessionCacheEntry(sessionKey, Ꮡcs));
+            c.m[sessionKey] = c.q.PushFront(entryΔ2.OrTypedNil());
             return;
         }
+        var elem = c.q.Back();
+        var entry = (~elem).Value._<ж<lruSessionCacheEntry>>();
+        delete(c.m, (~entry).sessionKey);
+        entry.Value.sessionKey = sessionKey;
+        entry.Value.state = Ꮡcs;
+        c.q.MoveToFront(elem);
+        c.m[sessionKey] = elem;
     }
-    if (c.q.Len() < c.capacity) {
-        var entryΔ2 = Ꮡ(new lruSessionCacheEntry(sessionKey, Ꮡcs));
-        c.m[sessionKey] = c.q.PushFront(entryΔ2.OrTypedNil());
-        return;
-    }
-    var elem = c.q.Back();
-    var entry = (~elem).Value._<ж<lruSessionCacheEntry>>();
-    delete(c.m, (~entry).sessionKey);
-    entry.Value.sessionKey = sessionKey;
-    entry.Value.state = Ꮡcs;
-    c.q.MoveToFront(elem);
-    c.m[sessionKey] = elem;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Get returns the [ClientSessionState] value associated with a given key. It
 // returns (nil, false) if no value is found.
-internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc, @string sessionKey) => func<(ж<ClientSessionState>, bool)>((defer, recover) => {
+internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc, @string sessionKey) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
-    defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock);
-    {
-        var (elem, ok) = c.m[sessionKey, ꟷ]; if (ok) {
-            c.q.MoveToFront(elem);
-            return ((~(~elem).Value._<ж<lruSessionCacheEntry>>()).state, true);
+        Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
+        defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);
+        {
+            var (elem, ok) = c.m[sessionKey, ꟷ]; if (ok) {
+                c.q.MoveToFront(elem);
+                return ((~(~elem).Value._<ж<lruSessionCacheEntry>>()).state, true);
+            }
         }
+        return (default!, false);
     }
-    return (default!, false);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<Config> ᏑemptyConfig = new(new Config());
 internal static ref Config emptyConfig => ref ᏑemptyConfig.Value;

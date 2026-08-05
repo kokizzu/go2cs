@@ -66,7 +66,7 @@ private static readonly object integerValueˢ = (@string)"Integer value:"u8;
 internal static void assertionsWithPanic() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     fmt.Println(recoveredFromPanicˢ, r);

@@ -14,7 +14,7 @@ public static void Add(this ж<Tally> Ꮡt, nint n) {
     try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-        deferǃ(() => {
+        defer(() => {
             Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
         }, ref ᒐ);
         t.total += n;
@@ -43,7 +43,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ((Tally t) => {
+            defer((Tally t) => {
                 report(deferredˢ, t, 4);
             }, baseʗ1, ref ᒐ);
         }
@@ -54,7 +54,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(report, namedˢ, baseʗ2, (nint)(5), ref ᒐ);
+            defer(report, namedˢ, baseʗ2, (nint)(5), ref ᒐ);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }

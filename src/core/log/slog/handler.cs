@@ -103,20 +103,25 @@ internal static ж<defaultHandler> newDefaultHandler(Func<uintptr, slice<byte>, 
 // Collect the level, attributes and message in a string and
 // write it with the default log.Logger.
 // Let the log.Logger handle time and file/line.
-internal static error Handle(this ж<defaultHandler> Ꮡh, context.Context ctx, Record r) => func((defer, recover) => {
+internal static error Handle(this ж<defaultHandler> Ꮡh, context.Context ctx, Record r) {
+    GoFrame ᒐ = default;
+    try {
     r = r.ΔClone();
 
     ref var h = ref Ꮡh.DerefOrNull();
-    var buf = buffer.New();
-    buf.WriteString(r.Level.String());
-    buf.WriteByte((rune)' ');
-    buf.WriteString(r.Message);
-    ref var state = ref heap<handleState>(out var Ꮡstate);
-    state = h.ch.newHandleState(buf, true, " "u8);
-    defer(Ꮡstate.free);
-    Ꮡstate.appendNonBuiltIns(r);
-    return h.output(r.PC, buf.ValueSlot);
-});
+        var buf = buffer.New();
+        buf.WriteString(r.Level.String());
+        buf.WriteByte((rune)' ');
+        buf.WriteString(r.Message);
+        ref var state = ref heap<handleState>(out var Ꮡstate);
+        state = h.ch.newHandleState(buf, true, " "u8);
+        defer(Ꮡstate.free, ref ᒐ);
+        Ꮡstate.appendNonBuiltIns(r);
+        return h.output(r.PC, buf.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static ΔHandler WithAttrs(this ref defaultHandler h, slice<Attr> @as) {
     return new defaultHandlerжΔHandler(Ꮡ(new defaultHandler(h.ch.withAttrs(@as), h.output)));
@@ -216,42 +221,47 @@ public static readonly @string SourceKey = "source"u8;
     return l >= minLevel;
 }
 
-internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<Attr> @as) => func((defer, recover) => {
+internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<Attr> @as) {
+    GoFrame ᒐ = default;
+    try {
     ref var h = ref Ꮡh.DerefOrNull();
 
-    // We are going to ignore empty groups, so if the entire slice consists of
-    // them, there is nothing to do.
-    if (countEmptyGroups(@as) == len(@as)) {
-        return Ꮡh;
-    }
-    var h2 = h.clone();
-    // Pre-format the attributes as an optimization.
-    ref var state = ref heap<handleState>(out var Ꮡstate);
-    state = h2.newHandleState(Ꮡ(new buffer.Buffer((~h2).preformattedAttrs)), false, ""u8);
-    defer(Ꮡstate.free);
-    state.prefix.WriteString(h.groupPrefix);
-    {
-        var pfa = h2.Value.preformattedAttrs; if (len(pfa) > 0) {
-            state.sep = h.attrSep();
-            if ((~h2).json && pfa[len(pfa) - 1] == (rune)'{') {
-                state.sep = ""u8;
+        // We are going to ignore empty groups, so if the entire slice consists of
+        // them, there is nothing to do.
+        if (countEmptyGroups(@as) == len(@as)) {
+            return Ꮡh;
+        }
+        var h2 = h.clone();
+        // Pre-format the attributes as an optimization.
+        ref var state = ref heap<handleState>(out var Ꮡstate);
+        state = h2.newHandleState(Ꮡ(new buffer.Buffer((~h2).preformattedAttrs)), false, ""u8);
+        defer(Ꮡstate.free, ref ᒐ);
+        state.prefix.WriteString(h.groupPrefix);
+        {
+            var pfa = h2.Value.preformattedAttrs; if (len(pfa) > 0) {
+                state.sep = h.attrSep();
+                if ((~h2).json && pfa[len(pfa) - 1] == (rune)'{') {
+                    state.sep = ""u8;
+                }
             }
         }
+        // Remember the position in the buffer, in case all attrs are empty.
+        nint pos = state.buf.Len();
+        state.openGroups();
+        if (!Ꮡstate.appendAttrs(@as)){
+            state.buf.SetLen(pos);
+        } else {
+            // Remember the new prefix for later keys.
+            h2.Value.groupPrefix = state.prefix.String();
+            // Remember how many opened groups are in preformattedAttrs,
+            // so we don't open them again when we handle a Record.
+            h2.Value.nOpenGroups = len((~h2).groups);
+        }
+        return h2;
     }
-    // Remember the position in the buffer, in case all attrs are empty.
-    nint pos = state.buf.Len();
-    state.openGroups();
-    if (!Ꮡstate.appendAttrs(@as)){
-        state.buf.SetLen(pos);
-    } else {
-        // Remember the new prefix for later keys.
-        h2.Value.groupPrefix = state.prefix.String();
-        // Remember how many opened groups are in preformattedAttrs,
-        // so we don't open them again when we handle a Record.
-        h2.Value.nOpenGroups = len((~h2).groups);
-    }
-    return h2;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static ж<commonHandler> withGroup(this ref commonHandler h, @string name) {
     var h2 = h.clone();
@@ -261,63 +271,68 @@ internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<A
 
 // handle is the internal implementation of Handler.Handle
 // used by TextHandler and JSONHandler.
-internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((defer, recover) => {
+internal static error handle(this ж<commonHandler> Ꮡh, Record r) {
+    GoFrame ᒐ = default;
+    try {
     r = r.ΔClone();
 
     ref var h = ref Ꮡh.DerefOrNull();
-    ref var state = ref heap<handleState>(out var Ꮡstate);
-    state = Ꮡh.newHandleState(buffer.New(), true, ""u8);
-    defer(Ꮡstate.free);
-    if (h.json) {
-        state.buf.WriteByte((rune)'{');
-    }
-    // Built-in attributes. They are not in a group.
-    var stateGroups = state.groups;
-    state.groups = default!;
-    // So ReplaceAttrs sees no groups instead of the pre groups.
-    var rep = h.opts.ReplaceAttr;
-    // time
-    if (!r.Time.IsZero()) {
-        @string keyΔ1 = TimeKey;
-        var valΔ1 = r.Time.Round(0);
-        // strip monotonic to match Attr behavior
-        if (rep == default!){
-            state.appendKey(keyΔ1);
-            Ꮡstate.appendTime(valΔ1);
-        } else {
-            Ꮡstate.appendAttr(Time(keyΔ1, valΔ1));
+        ref var state = ref heap<handleState>(out var Ꮡstate);
+        state = Ꮡh.newHandleState(buffer.New(), true, ""u8);
+        defer(Ꮡstate.free, ref ᒐ);
+        if (h.json) {
+            state.buf.WriteByte((rune)'{');
         }
+        // Built-in attributes. They are not in a group.
+        var stateGroups = state.groups;
+        state.groups = default!;
+        // So ReplaceAttrs sees no groups instead of the pre groups.
+        var rep = h.opts.ReplaceAttr;
+        // time
+        if (!r.Time.IsZero()) {
+            @string keyΔ1 = TimeKey;
+            var valΔ1 = r.Time.Round(0);
+            // strip monotonic to match Attr behavior
+            if (rep == default!){
+                state.appendKey(keyΔ1);
+                Ꮡstate.appendTime(valΔ1);
+            } else {
+                Ꮡstate.appendAttr(Time(keyΔ1, valΔ1));
+            }
+        }
+        // level
+        @string key = LevelKey;
+        ΔLevel val = r.Level;
+        if (rep == default!){
+            state.appendKey(key);
+            state.appendString(val.String());
+        } else {
+            Ꮡstate.appendAttr(Any(key, val));
+        }
+        // source
+        if (h.opts.AddSource) {
+            Ꮡstate.appendAttr(Any(SourceKey, r.source().OrTypedNil()));
+        }
+        key = MessageKey;
+        @string msg = r.Message;
+        if (rep == default!){
+            state.appendKey(key);
+            state.appendString(msg);
+        } else {
+            Ꮡstate.appendAttr(String(key, msg));
+        }
+        state.groups = stateGroups;
+        // Restore groups passed to ReplaceAttrs.
+        Ꮡstate.appendNonBuiltIns(r);
+        state.buf.WriteByte((rune)'\n');
+        h.mu.Lock();
+        defer(Ꮡh.Value.mu.Unlock, ref ᒐ);
+        var (_, err) = h.w.Write(state.buf.ValueSlot);
+        return err;
     }
-    // level
-    @string key = LevelKey;
-    ΔLevel val = r.Level;
-    if (rep == default!){
-        state.appendKey(key);
-        state.appendString(val.String());
-    } else {
-        Ꮡstate.appendAttr(Any(key, val));
-    }
-    // source
-    if (h.opts.AddSource) {
-        Ꮡstate.appendAttr(Any(SourceKey, r.source().OrTypedNil()));
-    }
-    key = MessageKey;
-    @string msg = r.Message;
-    if (rep == default!){
-        state.appendKey(key);
-        state.appendString(msg);
-    } else {
-        Ꮡstate.appendAttr(String(key, msg));
-    }
-    state.groups = stateGroups;
-    // Restore groups passed to ReplaceAttrs.
-    Ꮡstate.appendNonBuiltIns(r);
-    state.buf.WriteByte((rune)'\n');
-    h.mu.Lock();
-    defer(Ꮡh.Value.mu.Unlock);
-    var (_, err) = h.w.Write(state.buf.ValueSlot);
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void appendNonBuiltIns(this ж<handleState> Ꮡs, Record r) {
     r = r.ΔClone();
@@ -581,40 +596,45 @@ internal static bool appendAttr(this ж<handleState> Ꮡs, Attr a) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string nilˢ = "<nil>"u8;
 
-internal static void appendValue(this ж<handleState> Ꮡs, Value v) => func((defer, recover) => {
+internal static void appendValue(this ж<handleState> Ꮡs, Value v) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    var vʗ1 = v;
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                // If it panics with a nil pointer, the most likely cases are
-                // an encoding.TextMarshaler or error fails to guard against nil,
-                // in which case "<nil>" seems to be the feasible choice.
-                //
-                // Adapted from the code in fmt/print.go.
-                {
-                    ref var vΔ1 = ref heap<reflectꓸValue>(out var ᏑvΔ1);
-                    vΔ1 = reflect.ValueOf(vʗ1.any); if (vΔ1.Kind() == reflect.ΔPointer && vΔ1.IsNil()) {
-                        Ꮡs.Value.appendString(nilˢ);
-                        return;
+        var vʗ1 = v;
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    // If it panics with a nil pointer, the most likely cases are
+                    // an encoding.TextMarshaler or error fails to guard against nil,
+                    // in which case "<nil>" seems to be the feasible choice.
+                    //
+                    // Adapted from the code in fmt/print.go.
+                    {
+                        ref var vΔ1 = ref heap<reflectꓸValue>(out var ᏑvΔ1);
+                        vΔ1 = reflect.ValueOf(vʗ1.any); if (vΔ1.Kind() == reflect.ΔPointer && vΔ1.IsNil()) {
+                            Ꮡs.Value.appendString(nilˢ);
+                            return;
+                        }
                     }
+                    // Otherwise just print the original panic message.
+                    Ꮡs.Value.appendString(fmt.Sprintf("!PANIC: %v"u8, r));
                 }
-                // Otherwise just print the original panic message.
-                Ꮡs.Value.appendString(fmt.Sprintf("!PANIC: %v"u8, r));
             }
+        }, ref ᒐ);
+        error err = default!;
+        if ((~s.h).json){
+            err = appendJSONValue(Ꮡs, v);
+        } else {
+            err = appendTextValue(Ꮡs, v);
         }
-    });
-    error err = default!;
-    if ((~s.h).json){
-        err = appendJSONValue(Ꮡs, v);
-    } else {
-        err = appendTextValue(Ꮡs, v);
+        if (err != default!) {
+            s.appendError(err);
+        }
     }
-    if (err != default!) {
-        s.appendError(err);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void appendTime(this ж<handleState> Ꮡs, time.Time t) {
     ref var s = ref Ꮡs.DerefOrNull();

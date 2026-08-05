@@ -153,141 +153,146 @@ internal static readonly @string cgoNotifyRuntimeInitDoneˢ = "_cgo_notify_runti
 internal static readonly @string setCrosscall2Missingˢ = "set_crosscall2 missing"u8;
 
 // The main goroutine.
-internal static void Main() => func((defer, recover) => {
-    var mp = getg().Value.m;
-    // Racectx of m0->g0 is used only as the parent of the main goroutine.
-    // It must not be used for anything else.
-    mp.Value.g0.Value.racectx = 0;
-    // Max stack size is 1 GB on 64-bit, 250 MB on 32-bit.
-    // Using decimal instead of binary GB and MB because
-    // they look nicer in the stack overflow failure message.
-    if (goarch.PtrSize == 8){
-        maxstacksize = 1000000000;
-    } else {
-        maxstacksize = 250000000;
-    }
-    // An upper limit for max stack size. Used to avoid random crashes
-    // after calling SetMaxStack and trying to allocate a stack that is too big,
-    // since stackalloc works with 32-bit sizes.
-    maxstackceiling = 2 * maxstacksize;
-    // Allow newproc to start new Ms.
-    mainStarted = true;
-    if (haveSysmon) {
-        systemstack(() => {
-            newm(sysmon, nil, -1);
-        });
-    }
-    // Lock the main goroutine onto this, the main OS thread,
-    // during initialization. Most programs won't care, but a few
-    // do require certain calls to be made by the main thread.
-    // Those can arrange for main.main to run in the main thread
-    // by calling runtime.LockOSThread during initialization
-    // to preserve the lock.
-    lockOSThread();
-    if (mp != Ꮡm0) {
-        @throw(runtimeMainNotOnM0ˢ);
-    }
-    // Record when the world started.
-    // Must be before doInit for tracing init.
-    runtimeInitTime = nanotime();
-    if (runtimeInitTime == 0) {
-        @throw(nanotimeReturningZeroˢ);
-    }
-    if (debug.inittrace != 0) {
-        inittrace.id = getg().Value.goid;
-        inittrace.active = true;
-    }
-    doInit(runtime_inittasks);
-    // Must be before defer.
-    // Defer unlock so that runtime.Goexit during init does the unlock too.
-    var needUnlock = true;
-    defer(() => {
-        if (needUnlock) {
-            unlockOSThread();
+internal static void Main() {
+    GoFrame ᒐ = default;
+    try {
+        var mp = getg().Value.m;
+        // Racectx of m0->g0 is used only as the parent of the main goroutine.
+        // It must not be used for anything else.
+        mp.Value.g0.Value.racectx = 0;
+        // Max stack size is 1 GB on 64-bit, 250 MB on 32-bit.
+        // Using decimal instead of binary GB and MB because
+        // they look nicer in the stack overflow failure message.
+        if (goarch.PtrSize == 8){
+            maxstacksize = 1000000000;
+        } else {
+            maxstacksize = 250000000;
         }
-    });
-    gcenable();
-    main_init_done = new channel<bool>(0);
-    if (iscgo) {
-        if (_cgo_pthread_key_created == nil) {
-            @throw(cgoPthreadKeyCreatedˢ);
+        // An upper limit for max stack size. Used to avoid random crashes
+        // after calling SetMaxStack and trying to allocate a stack that is too big,
+        // since stackalloc works with 32-bit sizes.
+        maxstackceiling = 2 * maxstacksize;
+        // Allow newproc to start new Ms.
+        mainStarted = true;
+        if (haveSysmon) {
+            systemstack(() => {
+                newm(sysmon, nil, -1);
+            });
         }
-        if (_cgo_thread_start == nil) {
-            @throw(cgoThreadStartMissingˢ);
+        // Lock the main goroutine onto this, the main OS thread,
+        // during initialization. Most programs won't care, but a few
+        // do require certain calls to be made by the main thread.
+        // Those can arrange for main.main to run in the main thread
+        // by calling runtime.LockOSThread during initialization
+        // to preserve the lock.
+        lockOSThread();
+        if (mp != Ꮡm0) {
+            @throw(runtimeMainNotOnM0ˢ);
         }
-        if (GOOS != "windows"u8) {
-            if (_cgo_setenv == nil) {
-                @throw(cgoSetenvMissingˢ);
+        // Record when the world started.
+        // Must be before doInit for tracing init.
+        runtimeInitTime = nanotime();
+        if (runtimeInitTime == 0) {
+            @throw(nanotimeReturningZeroˢ);
+        }
+        if (debug.inittrace != 0) {
+            inittrace.id = getg().Value.goid;
+            inittrace.active = true;
+        }
+        doInit(runtime_inittasks);
+        // Must be before defer.
+        // Defer unlock so that runtime.Goexit during init does the unlock too.
+        var needUnlock = true;
+        defer(() => {
+            if (needUnlock) {
+                unlockOSThread();
             }
-            if (_cgo_unsetenv == nil) {
-                @throw(cgoUnsetenvMissingˢ);
+        }, ref ᒐ);
+        gcenable();
+        main_init_done = new channel<bool>(0);
+        if (iscgo) {
+            if (_cgo_pthread_key_created == nil) {
+                @throw(cgoPthreadKeyCreatedˢ);
+            }
+            if (_cgo_thread_start == nil) {
+                @throw(cgoThreadStartMissingˢ);
+            }
+            if (GOOS != "windows"u8) {
+                if (_cgo_setenv == nil) {
+                    @throw(cgoSetenvMissingˢ);
+                }
+                if (_cgo_unsetenv == nil) {
+                    @throw(cgoUnsetenvMissingˢ);
+                }
+            }
+            if (_cgo_notify_runtime_init_done == nil) {
+                @throw(cgoNotifyRuntimeInitDoneˢ);
+            }
+            // Set the x_crosscall2_ptr C function pointer variable point to crosscall2.
+            if (set_crosscall2 == default!) {
+                @throw(setCrosscall2Missingˢ);
+            }
+            set_crosscall2();
+            // Start the template thread in case we enter Go from
+            // a C-created thread and need to create a new thread.
+            startTemplateThread();
+            cgocall(_cgo_notify_runtime_init_done, nil);
+        }
+        // Run the initializing tasks. Depending on build mode this
+        // list can arrive a few different ways, but it will always
+        // contain the init tasks computed by the linker for all the
+        // packages in the program (excluding those added at runtime
+        // by package plugin). Run through the modules in dependency
+        // order (the order they are initialized by the dynamic
+        // loader, i.e. they are added to the moduledata linked list).
+        for (var m = Ꮡfirstmoduledata; m != nil; m = m.Value.next) {
+            doInit((~m).inittasks);
+        }
+        // Disable init tracing after main init done to avoid overhead
+        // of collecting statistics in malloc and newproc
+        inittrace.active = false;
+        builtin.close(main_init_done);
+        needUnlock = false;
+        unlockOSThread();
+        if (isarchive || islibrary) {
+            // A program compiled with -buildmode=c-archive or c-shared
+            // has a main, but it is not executed.
+            return;
+        }
+        var fn = main_main;
+        // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
+        fn();
+        if (raceenabled) {
+            runExitHooks(0);
+            // run hooks now, since racefini does not return
+            racefini();
+        }
+        // Make racy client program work: if panicking on
+        // another goroutine at the same time as main returns,
+        // let the other goroutine finish printing the panic trace.
+        // Once it does, it will exit. See issues 3934 and 20018.
+        if (ᏑrunningPanicDefers.Load() != 0) {
+            // Running deferred functions should not take long.
+            for (nint c = 0; c < 1000; c++) {
+                if (ᏑrunningPanicDefers.Load() == 0) {
+                    break;
+                }
+                Gosched();
             }
         }
-        if (_cgo_notify_runtime_init_done == nil) {
-            @throw(cgoNotifyRuntimeInitDoneˢ);
+        if (Ꮡpanicking.Load() != 0) {
+            gopark(default!, nil, waitReasonPanicWait, traceBlockForever, 1);
         }
-        // Set the x_crosscall2_ptr C function pointer variable point to crosscall2.
-        if (set_crosscall2 == default!) {
-            @throw(setCrosscall2Missingˢ);
-        }
-        set_crosscall2();
-        // Start the template thread in case we enter Go from
-        // a C-created thread and need to create a new thread.
-        startTemplateThread();
-        cgocall(_cgo_notify_runtime_init_done, nil);
-    }
-    // Run the initializing tasks. Depending on build mode this
-    // list can arrive a few different ways, but it will always
-    // contain the init tasks computed by the linker for all the
-    // packages in the program (excluding those added at runtime
-    // by package plugin). Run through the modules in dependency
-    // order (the order they are initialized by the dynamic
-    // loader, i.e. they are added to the moduledata linked list).
-    for (var m = Ꮡfirstmoduledata; m != nil; m = m.Value.next) {
-        doInit((~m).inittasks);
-    }
-    // Disable init tracing after main init done to avoid overhead
-    // of collecting statistics in malloc and newproc
-    inittrace.active = false;
-    builtin.close(main_init_done);
-    needUnlock = false;
-    unlockOSThread();
-    if (isarchive || islibrary) {
-        // A program compiled with -buildmode=c-archive or c-shared
-        // has a main, but it is not executed.
-        return;
-    }
-    var fn = main_main;
-    // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
-    fn();
-    if (raceenabled) {
         runExitHooks(0);
-        // run hooks now, since racefini does not return
-        racefini();
-    }
-    // Make racy client program work: if panicking on
-    // another goroutine at the same time as main returns,
-    // let the other goroutine finish printing the panic trace.
-    // Once it does, it will exit. See issues 3934 and 20018.
-    if (ᏑrunningPanicDefers.Load() != 0) {
-        // Running deferred functions should not take long.
-        for (nint c = 0; c < 1000; c++) {
-            if (ᏑrunningPanicDefers.Load() == 0) {
-                break;
-            }
-            Gosched();
+        exit(0);
+        while (ᐧ) {
+            ж<int32> x = default!;
+            x.Value = 0;
         }
     }
-    if (Ꮡpanicking.Load() != 0) {
-        gopark(default!, nil, waitReasonPanicWait, traceBlockForever, 1);
-    }
-    runExitHooks(0);
-    exit(0);
-    while (ᐧ) {
-        ж<int32> x = default!;
-        x.Value = 0;
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // os_beforeExit is called from os.Exit(0).
 //

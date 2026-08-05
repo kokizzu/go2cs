@@ -167,24 +167,29 @@ public static void Store(this ж<Map> Ꮡm, any key, any value) {
 }
 
 // Clear deletes all the entries, resulting in an empty Map.
-public static void Clear(this ж<Map> Ꮡm) => func((defer, recover) => {
+public static void Clear(this ж<Map> Ꮡm) {
+    GoFrame ᒐ = default;
+    try {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    var read = Ꮡm.loadReadOnly();
-    if (len(read.m) == 0 && !read.amended) {
-        // Avoid allocating a new readOnly when the map is already clear.
-        return;
+        var read = Ꮡm.loadReadOnly();
+        if (len(read.m) == 0 && !read.amended) {
+            // Avoid allocating a new readOnly when the map is already clear.
+            return;
+        }
+        Ꮡm.of(Map.Ꮡmu).Lock();
+        defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
+        read = Ꮡm.loadReadOnly();
+        if (len(read.m) > 0 || read.amended) {
+            Ꮡm.of(Map.Ꮡread).Store(Ꮡ(new readOnly(nil)));
+        }
+        clear(m.dirty);
+        // Don't immediately promote the newly-cleared dirty map on the next operation.
+        m.misses = 0;
     }
-    Ꮡm.of(Map.Ꮡmu).Lock();
-    defer(Ꮡm.of(Map.Ꮡmu).Unlock);
-    read = Ꮡm.loadReadOnly();
-    if (len(read.m) > 0 || read.amended) {
-        Ꮡm.of(Map.Ꮡread).Store(Ꮡ(new readOnly(nil)));
-    }
-    clear(m.dirty);
-    // Don't immediately promote the newly-cleared dirty map on the next operation.
-    m.misses = 0;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // tryCompareAndSwap compare the entry with the given old value and swaps
 // it with a new value if the entry is equal to the old value, and the entry
@@ -443,21 +448,22 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
 // The old value must be of a comparable type.
 public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var m = ref Ꮡm.DerefOrNull();
 
         var read = Ꮡm.loadReadOnly();
         {
             var (e, ok) = read.m[key, ꟷ]; if (ok){
-                swapped = e.tryCompareAndSwap(old, @new); return;
+                swapped = e.tryCompareAndSwap(old, @new); goto ᒐdone;
             } else 
             if (!read.amended) {
-                swapped = false; return;
+                swapped = false; goto ᒐdone;
             }
         }
         // No existing value for key.
         Ꮡm.of(Map.Ꮡmu).Lock();
-        defer(Ꮡm.of(Map.Ꮡmu).Unlock);
+        defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
         read = Ꮡm.loadReadOnly();
         swapped = false;
         {
@@ -477,8 +483,10 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any ol
                 }
             }
         }
-    });
-    return swapped;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return swapped;
 }
 
 // CompareAndDelete deletes the entry for key if its value is equal to old.

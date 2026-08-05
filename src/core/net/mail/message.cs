@@ -540,7 +540,8 @@ internal static readonly @string mailNoDomainInAddrSpecˢ = "mail: no domain in 
 internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> Ꮡp) {
     @string spec = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
         debug.Printf("consumeAddrSpec: %q"u8, p.s);
@@ -551,12 +552,12 @@ internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> �
             if (err != default!) {
                 Ꮡp.Value = origʗ1;
             }
-        });
+        }, ref ᒐ);
         // local-part = dot-atom / quoted-string
         @string localPart = default!;
         p.skipSpace();
         if (p.empty()) {
-            (spec, err) = ("", errors.New(mailNoAddrSpecˢ)); return;
+            (spec, err) = ("", errors.New(mailNoAddrSpecˢ)); goto ᒐdone;
         }
         if (p.peek() == (rune)'"'){
             // quoted-string
@@ -572,33 +573,35 @@ internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> �
         }
         if (err != default!) {
             debug.Printf("consumeAddrSpec: failed: %v"u8, err);
-            (spec, err) = ("", err); return;
+            (spec, err) = ("", err); goto ᒐdone;
         }
         if (!p.consume((rune)'@')) {
-            (spec, err) = ("", errors.New(mailMissingInAddrSpecˢ)); return;
+            (spec, err) = ("", errors.New(mailMissingInAddrSpecˢ)); goto ᒐdone;
         }
         // domain = dot-atom / domain-literal
         @string domain = default!;
         p.skipSpace();
         if (p.empty()) {
-            (spec, err) = ("", errors.New(mailNoDomainInAddrSpecˢ)); return;
+            (spec, err) = ("", errors.New(mailNoDomainInAddrSpecˢ)); goto ᒐdone;
         }
         if (p.peek() == (rune)'['){
             // domain-literal
             (domain, err) = p.consumeDomainLiteral();
             if (err != default!) {
-                (spec, err) = ("", err); return;
+                (spec, err) = ("", err); goto ᒐdone;
             }
         } else {
             // dot-atom
             (domain, err) = p.consumeAtom(true, false);
             if (err != default!) {
-                (spec, err) = ("", err); return;
+                (spec, err) = ("", err); goto ᒐdone;
             }
         }
         (spec, err) = (localPart + "@" + domain, default!);
-    });
-    return (spec, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (spec, err);
 }
 
 // consumePhrase parses the RFC 5322 phrase at the start of p.

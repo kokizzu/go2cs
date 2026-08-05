@@ -8,7 +8,7 @@ internal static any /*r*/ tryMake(nint length, nint capacity) {
     any r = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             r = recover();
         }, ref ᒐ);
         slice<byte> b = default!;

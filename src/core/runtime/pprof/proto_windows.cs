@@ -12,38 +12,43 @@ using go.@internal.syscall;
 partial class pprof_package {
 
 // readMapping adds memory mapping information to the profile.
-internal static void readMapping(this ж<profileBuilder> Ꮡb) => func((defer, recover) => {
+internal static void readMapping(this ж<profileBuilder> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    var (snap, err) = createModuleSnapshot();
-    if (err != default!) {
-        // pprof expects a map entry, so fake one, when we haven't added anything yet.
-        b.addMappingEntry(0, 0, 0, ""u8, ""u8, true);
-        return;
+        var (snap, err) = createModuleSnapshot();
+        if (err != default!) {
+            // pprof expects a map entry, so fake one, when we haven't added anything yet.
+            b.addMappingEntry(0, 0, 0, ""u8, ""u8, true);
+            return;
+        }
+        defer(() => {
+            _ = syscall.CloseHandle(snap);
+        }, ref ᒐ);
+        ref var module = ref heap(new windows.ModuleEntry32(), out var Ꮡmodule);
+        module.Size = (uint32)windows.SizeofModuleEntry32;
+        err = windows.Module32First(snap, Ꮡmodule);
+        if (err != default!) {
+            // pprof expects a map entry, so fake one, when we haven't added anything yet.
+            b.addMappingEntry(0, 0, 0, ""u8, ""u8, true);
+            return;
+        }
+        while (err == default!) {
+            @string exe = syscall.UTF16ToString(module.ExePath[..]);
+            b.addMappingEntry(
+                (uint64)module.ModBaseAddr,
+                (uint64)module.ModBaseAddr + (uint64)module.ModBaseSize,
+                0,
+                exe,
+                peBuildID(exe),
+                false);
+            err = windows.Module32Next(snap, Ꮡmodule);
+        }
     }
-    defer(() => {
-        _ = syscall.CloseHandle(snap);
-    });
-    ref var module = ref heap(new windows.ModuleEntry32(), out var Ꮡmodule);
-    module.Size = (uint32)windows.SizeofModuleEntry32;
-    err = windows.Module32First(snap, Ꮡmodule);
-    if (err != default!) {
-        // pprof expects a map entry, so fake one, when we haven't added anything yet.
-        b.addMappingEntry(0, 0, 0, ""u8, ""u8, true);
-        return;
-    }
-    while (err == default!) {
-        @string exe = syscall.UTF16ToString(module.ExePath[..]);
-        b.addMappingEntry(
-            (uint64)module.ModBaseAddr,
-            (uint64)module.ModBaseAddr + (uint64)module.ModBaseSize,
-            0,
-            exe,
-            peBuildID(exe),
-            false);
-        err = windows.Module32Next(snap, Ꮡmodule);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static (uint64 start, uint64 end, @string exe, @string buildID, error err) readMainModuleMapping() {
     uint64 start = default!;
@@ -51,27 +56,30 @@ internal static (uint64 start, uint64 end, @string exe, @string buildID, error e
     @string exe = default!;
     @string buildID = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         (exe, err) = os.Executable();
         if (err != default!) {
-            (start, end, exe, buildID, err) = (0, 0, "", "", err); return;
+            (start, end, exe, buildID, err) = (0, 0, "", "", err); goto ᒐdone;
         }
         (var snap, err) = createModuleSnapshot();
         if (err != default!) {
-            (start, end, exe, buildID, err) = (0, 0, "", "", err); return;
+            (start, end, exe, buildID, err) = (0, 0, "", "", err); goto ᒐdone;
         }
         defer(() => {
             _ = syscall.CloseHandle(snap);
-        });
+        }, ref ᒐ);
         ref var module = ref heap(new windows.ModuleEntry32(), out var Ꮡmodule);
         module.Size = (uint32)windows.SizeofModuleEntry32;
         err = windows.Module32First(snap, Ꮡmodule);
         if (err != default!) {
-            (start, end, exe, buildID, err) = (0, 0, "", "", err); return;
+            (start, end, exe, buildID, err) = (0, 0, "", "", err); goto ᒐdone;
         }
         (start, end, exe, buildID, err) = ((uint64)module.ModBaseAddr, (uint64)module.ModBaseAddr + (uint64)module.ModBaseSize, exe, peBuildID(exe), default!);
-    });
-    return (start, end, exe, buildID, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (start, end, exe, buildID, err);
 }
 
 internal static (syscallꓸHandle, error) createModuleSnapshot() {

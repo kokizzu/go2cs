@@ -415,22 +415,6 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	_, parameterSignature = v.convFuncType(funcLit.Type)
 	v.funcLitHeapBoxParamNames = nil
 
-	// A frame-form literal's body is not inside a nested lambda, so it simply USES its variadic
-	// params Span and needs no ref threading (and with it, no GoFunc<TRef1,…> rung).
-	litVariadicExecRefMode := litSig != nil && litSig.Variadic() && (litHasDefer || litHasRecover) && !useLitFrame
-	litVariadicExecParamType := ""
-	litVariadicExecParamName := ""
-
-	if litVariadicExecRefMode {
-		param := litSig.Params().At(litSig.Params().Len() - 1)
-		litVariadicExecParamType = v.variadicParamType(param.Type().(*types.Slice).Elem())
-		litVariadicExecParamName = getVariadicParamName(param)
-
-		if context.isIIFE {
-			litVariadicExecParamName = v.iifeParamName(param)
-		}
-	}
-
 	blockStatementContext := DefaultBlockStmtContext()
 	blockStatementContext.format.useNewLine = false
 
@@ -665,48 +649,6 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			v.newline, v.indent(v.indentLevel+1), v.goFrameName(),
 			v.newline, v.indent(v.indentLevel+1), body,
 			v.goFrameTail(v.indentLevel, catchReturn), exitAndClose)
-	case litNamedDefer:
-		// `{ T r = default!; func((defer, recover) => <body>); return r; }`
-		// A heap-box-backed named result declares only its box out here (the wrapper lambda
-		// cannot capture a ref local — CS8175); the wrapper re-aliases the value name inside,
-		// and the trailing return reads through the box (`Ꮡe.ValueSlot`).
-		returnNames := v.namedReturnBoxReadNames(litSig, litNamedNames)
-		returnExpr := strings.Join(returnNames, ", ")
-
-		if len(returnNames) > 1 {
-			returnExpr = "(" + returnExpr + ")"
-		}
-
-		if aliases := v.namedResultBoxAliasLines(litSig, v.indentLevel+2); aliases != "" && strings.HasPrefix(body, "{") {
-			body = "{" + aliases + strings.TrimPrefix(body, "{")
-		}
-
-		execHead := "func((defer, recover) =>"
-
-		if litVariadicExecRefMode {
-			execHead = fmt.Sprintf("func(ref %s, (ref %s %s, Defer defer, Recover recover) =>", litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName)
-		}
-
-		inner = fmt.Sprintf("{%s%s%s%s %s);%s%sreturn %s;%s%s}",
-			v.namedReturnDeclLines(litSig, v.indentLevel+1, true),
-			v.newline, v.indent(v.indentLevel+1), execHead, body,
-			v.newline, v.indent(v.indentLevel+1), returnExpr,
-			v.newline, v.indent(v.indentLevel))
-	case litHasDefer || litHasRecover:
-		// A result-RETURNING literal wraps in the VALUE execution context — the void
-		// `func((defer, recover) => …)` cannot return a value (CS8030 ×4, net
-		// lookup_windows' `getaddr := func() ([]IPAddr, error) { defer …; return … }`).
-		if litSig != nil && litSig.Results() != nil && litSig.Results().Len() > 0 && !litHasNamedResults {
-			if litVariadicExecRefMode {
-				inner = fmt.Sprintf("func<%s, %s>(ref %s, (ref %s %s, Defer defer, Recover recover) => %s)", litVariadicExecParamType, v.generateResultSignature(litSig), litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName, body)
-			} else {
-				inner = fmt.Sprintf("func<%s>((defer, recover) => %s)", v.generateResultSignature(litSig), body)
-			}
-		} else if litVariadicExecRefMode {
-			inner = fmt.Sprintf("func(ref %s, (ref %s %s, Defer defer, Recover recover) => %s)", litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName, body)
-		} else {
-			inner = wrapIIFEFuncContext(body, litHasDefer, litHasRecover)
-		}
 	default:
 		inner = body
 	}

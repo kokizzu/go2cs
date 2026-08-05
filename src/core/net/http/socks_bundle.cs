@@ -30,17 +30,18 @@ internal static readonly @string nonZeroReservedFieldˢ = "non-zero reserved fie
 internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string address) {
     netꓸAddr _ᴛ1 = default!;
     error ctxErr = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var d = ref Ꮡd.DerefOrNull();
 
         var (host, port, err) = sockssplitHostPort(address);
         if (err != default!) {
-            (_ᴛ1, ctxErr) = (default!, err); return;
+            (_ᴛ1, ctxErr) = (default!, err); goto ᒐdone;
         }
         {
             var (deadline, ok) = ctx.Deadline(); if (ok && !deadline.IsZero()) {
                 c.SetDeadline(deadline);
-                deferǃ(c.SetDeadline, socksnoDeadline, defer);
+                defer(c.SetDeadline, socksnoDeadline, ref ᒐ);
             }
         }
         if (!AreEqual(ctx, context_package.Background())) {
@@ -53,7 +54,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
                 if (ctxErr == default!) {
                     ctxErr = ᐸꟷ(errChʗ1);
                 }
-            });
+            }, ref ᒐ);
             var doneʗ2 = done;
             var errChʗ2 = errCh;
             goǃ(() => {
@@ -79,7 +80,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         } else {
             var ams = d.AuthMethods;
             if (builtin.len(ams) > 255) {
-                (_ᴛ1, ctxErr) = (default!, errors.New(tooManyAuthenticationˢ)); return;
+                (_ᴛ1, ctxErr) = (default!, errors.New(tooManyAuthenticationˢ)); goto ᒐdone;
             }
             b = append(b, (byte)builtin.len(ams));
             foreach (var (_, amΔ1) in ams) {
@@ -88,25 +89,25 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         }
         {
             (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         {
             (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..2]); if (ctxErr != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         if (b[0] != socksVersion5) {
-            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); return;
+            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); goto ᒐdone;
         }
         socksAuthMethod am = ((socksAuthMethod)(nint)b[1]);
         if (am == socksAuthMethodNoAcceptableMethods) {
-            (_ᴛ1, ctxErr) = (default!, errors.New(noAcceptableˢ)); return;
+            (_ᴛ1, ctxErr) = (default!, errors.New(noAcceptableˢ)); goto ᒐdone;
         }
         if (d.Authenticate != default!) {
             {
                 ctxErr = d.Authenticate(ctx, new net_ConnᴠReadWriter(c), am); if (ctxErr != default!) {
-                    return;
+                    goto ᒐdone;
                 }
             }
         }
@@ -124,13 +125,13 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
                             b = append(b, (byte)(socksAddrTypeIPv6));
                             b = append(b, ip6.ꓸꓸꓸ);
                         } else {
-                            (_ᴛ1, ctxErr) = (default!, errors.New(unknownAddressTypeˢ)); return;
+                            (_ᴛ1, ctxErr) = (default!, errors.New(unknownAddressTypeˢ)); goto ᒐdone;
                         }
                     }
                 }
             } else {
                 if (builtin.len(host) > 255) {
-                    (_ᴛ1, ctxErr) = (default!, errors.New(fqdnTooLongˢ)); return;
+                    (_ᴛ1, ctxErr) = (default!, errors.New(fqdnTooLongˢ)); goto ᒐdone;
                 }
                 b = append(b, (byte)(socksAddrTypeFQDN));
                 b = append(b, (byte)builtin.len(host));
@@ -140,24 +141,24 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         b = append(b, (byte)((port >> (int)(8))), (byte)port);
         {
             (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         {
             (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..4]); if (ctxErr != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         if (b[0] != socksVersion5) {
-            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); return;
+            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); goto ᒐdone;
         }
         {
             socksReply cmdErr = ((socksReply)(nint)b[1]); if (cmdErr != socksStatusSucceeded) {
-                (_ᴛ1, ctxErr) = (default!, errors.New("unknown error "u8 + cmdErr.String())); return;
+                (_ᴛ1, ctxErr) = (default!, errors.New("unknown error "u8 + cmdErr.String())); goto ᒐdone;
             }
         }
         if (b[2] != 0) {
-            (_ᴛ1, ctxErr) = (default!, errors.New(nonZeroReservedFieldˢ)); return;
+            (_ᴛ1, ctxErr) = (default!, errors.New(nonZeroReservedFieldˢ)); goto ᒐdone;
         }
         nint l = 2;
         ref var a = ref heap(new socksAddr(), out var Ꮡa);
@@ -173,13 +174,13 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         else if (exprᴛ1 == socksAddrTypeFQDN) {
             {
                 var (_, errΔ2) = io.ReadFull(new net_ConnᴠReader(c), b[..1]); if (errΔ2 != default!) {
-                    (_ᴛ1, ctxErr) = (default!, errΔ2); return;
+                    (_ᴛ1, ctxErr) = (default!, errΔ2); goto ᒐdone;
                 }
             }
             l += (nint)b[0];
         }
         else { /* default: */
-            (_ᴛ1, ctxErr) = (default!, errors.New("unknown address type "u8 + strconv.Itoa((nint)b[3]))); return;
+            (_ᴛ1, ctxErr) = (default!, errors.New("unknown address type "u8 + strconv.Itoa((nint)b[3]))); goto ᒐdone;
         }
 
         if (cap(b) < l){
@@ -189,7 +190,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         }
         {
             (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b); if (ctxErr != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         if (a.IP != default!){
@@ -199,8 +200,10 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         }
         a.Port = (nint)(((nint)b[builtin.len(b) - 2] << (int)(8)) | (nint)b[builtin.len(b) - 1]);
         (_ᴛ1, ctxErr) = (new socksAddrжΔAddr(Ꮡa), default!);
-    });
-    return (_ᴛ1, ctxErr);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (_ᴛ1, ctxErr);
 }
 
 internal static (@string, nint, error) sockssplitHostPort(@string address) {

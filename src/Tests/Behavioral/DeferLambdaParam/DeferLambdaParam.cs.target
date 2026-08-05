@@ -12,7 +12,7 @@ internal static void Main() {
     GoFrame ᒐ = default;
     try {
         nint count = 1;
-        deferǃ((nint cnt) => {
+        defer((nint cnt) => {
             fmt.Println(deferredCountClosureˢ, cnt);
         }, count, ref ᒐ);
         count = 10;

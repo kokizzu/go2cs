@@ -110,22 +110,27 @@ internal static void Chdir(this ж<testLog> Ꮡl, @string name) {
 }
 
 // add adds the (op, name) pair to the test log.
-internal static void add(this ж<testLog> Ꮡl, @string op, @string name) => func((defer, recover) => {
+internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
+    GoFrame ᒐ = default;
+    try {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (strings.Contains(name, "\n"u8) || name == ""u8) {
-        return;
+        if (strings.Contains(name, "\n"u8) || name == ""u8) {
+            return;
+        }
+        Ꮡl.of(testLog.Ꮡmu).Lock();
+        defer(Ꮡl.of(testLog.Ꮡmu).Unlock, ref ᒐ);
+        if (l.w == nil) {
+            return;
+        }
+        l.w.WriteString(op);
+        l.w.WriteByte((rune)' ');
+        l.w.WriteString(name);
+        l.w.WriteByte((rune)'\n');
     }
-    Ꮡl.of(testLog.Ꮡmu).Lock();
-    defer(Ꮡl.of(testLog.Ꮡmu).Unlock);
-    if (l.w == nil) {
-        return;
-    }
-    l.w.WriteString(op);
-    l.w.WriteByte((rune)' ');
-    l.w.WriteString(name);
-    l.w.WriteByte((rune)'\n');
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<testLog> Ꮡlog = new(default(testLog));
 internal static ref testLog log => ref Ꮡlog.Value;
@@ -149,13 +154,18 @@ public static void StartTestLog(this TestDeps _, io.Writer w) {
     Ꮡlog.of(testLog.Ꮡmu).Unlock();
 }
 
-public static error StopTestLog(this TestDeps _) => func((defer, recover) => {
-    Ꮡlog.of(testLog.Ꮡmu).Lock();
-    defer(Ꮡlog.of(testLog.Ꮡmu).Unlock);
-    var err = log.w.Flush();
-    log.w = default!;
-    return err;
-});
+public static error StopTestLog(this TestDeps _) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡlog.of(testLog.Ꮡmu).Lock();
+        defer(Ꮡlog.of(testLog.Ꮡmu).Unlock, ref ᒐ);
+        var err = log.w.Flush();
+        log.w = default!;
+        return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // SetPanicOnExit0 tells the os package whether to panic on os.Exit(0).
 public static void SetPanicOnExit0(this TestDeps _, bool v) {
@@ -164,13 +174,14 @@ public static void SetPanicOnExit0(this TestDeps _, bool v) {
 
 public static error /*err*/ CoordinateFuzzing(this TestDeps _, time.Duration timeout, int64 limit, time.Duration minimizeTimeout, int64 minimizeLimit, nint parallel, slice<fuzzꓸCorpusEntry> seed, slice<reflectꓸType> types, @string corpusDir, @string cacheDir) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         // Fuzzing may be interrupted with a timeout or if the user presses ^C.
         // In either case, we'll stop worker processes gracefully and save
         // crashers and interesting values.
         var (ctx, cancel) = signal.NotifyContext(context.Background(), os.Interrupt);
         var cancelʗ1 = cancel;
-        defer(() => cancelʗ1());
+        defer(() => cancelʗ1(), ref ᒐ);
         err = fuzz.CoordinateFuzzing(ctx, new fuzz.CoordinateFuzzingOpts(
             Log: new os.FileжWriter(os.Stderr),
             Timeout: timeout,
@@ -184,28 +195,35 @@ public static error /*err*/ CoordinateFuzzing(this TestDeps _, time.Duration tim
             CacheDir: cacheDir
         ));
         if (AreEqual(err, ctx.Err())) {
-            err = default!; return;
+            err = default!; goto ᒐdone;
         }
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
-public static error RunFuzzWorker(this TestDeps _, Func<fuzzꓸCorpusEntry, error> fn) => func<error>((defer, recover) => {
-    // Worker processes may or may not receive a signal when the user presses ^C
-    // On POSIX operating systems, a signal sent to a process group is delivered
-    // to all processes in that group. This is not the case on Windows.
-    // If the worker is interrupted, return quickly and without error.
-    // If only the coordinator process is interrupted, it tells each worker
-    // process to stop by closing its "fuzz_in" pipe.
-    var (ctx, cancel) = signal.NotifyContext(context.Background(), os.Interrupt);
-    var cancelʗ1 = cancel;
-    defer(() => cancelʗ1());
-    var err = fuzz.RunFuzzWorker(ctx, fn);
-    if (AreEqual(err, ctx.Err())) {
-        return default!;
+public static error RunFuzzWorker(this TestDeps _, Func<fuzzꓸCorpusEntry, error> fn) {
+    GoFrame ᒐ = default;
+    try {
+        // Worker processes may or may not receive a signal when the user presses ^C
+        // On POSIX operating systems, a signal sent to a process group is delivered
+        // to all processes in that group. This is not the case on Windows.
+        // If the worker is interrupted, return quickly and without error.
+        // If only the coordinator process is interrupted, it tells each worker
+        // process to stop by closing its "fuzz_in" pipe.
+        var (ctx, cancel) = signal.NotifyContext(context.Background(), os.Interrupt);
+        var cancelʗ1 = cancel;
+        defer(() => cancelʗ1(), ref ᒐ);
+        var err = fuzz.RunFuzzWorker(ctx, fn);
+        if (AreEqual(err, ctx.Err())) {
+            return default!;
+        }
+        return err;
     }
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 public static (slice<fuzzꓸCorpusEntry>, error) ReadCorpus(this TestDeps _, @string dir, slice<reflectꓸType> types) {
     return fuzz.ReadCorpus(dir, types);
@@ -255,23 +273,28 @@ private static readonly @string gocoverdirˢ = "gocoverdir"u8;
 private static readonly @string errorSettingGocoverdirˢ = "error setting GOCOVERDIR: bad os.MkdirTemp return"u8;
 private static readonly @string errorGeneratingCoverageˢ = "error generating coverage report"u8;
 
-internal static (@string, error) coverTearDown(@string coverprofile, @string gocoverdir) => func<(@string, error)>((defer, recover) => {
-    error err = default!;
-    if (gocoverdir == ""u8) {
-        (gocoverdir, err) = os.MkdirTemp(""u8, gocoverdirˢ);
-        if (err != default!) {
-            return (errorSettingGocoverdirˢ, err);
+internal static (@string, error) coverTearDown(@string coverprofile, @string gocoverdir) {
+    GoFrame ᒐ = default;
+    try {
+        error err = default!;
+        if (gocoverdir == ""u8) {
+            (gocoverdir, err) = os.MkdirTemp(""u8, gocoverdirˢ);
+            if (err != default!) {
+                return (errorSettingGocoverdirˢ, err);
+            }
+            defer(os.RemoveAll, gocoverdir, ref ᒐ);
         }
-        deferǃ(os.RemoveAll, gocoverdir, defer);
-    }
-    CoverMarkProfileEmittedFunc(true);
-    @string cmode = CoverMode;
-    {
-        var errΔ1 = CoverProcessTestDirFunc(gocoverdir, coverprofile, cmode, Covered, new os.FileжWriter(os.Stdout), CoverSelectedPackages); if (errΔ1 != default!) {
-            return (errorGeneratingCoverageˢ, errΔ1);
+        CoverMarkProfileEmittedFunc(true);
+        @string cmode = CoverMode;
+        {
+            var errΔ1 = CoverProcessTestDirFunc(gocoverdir, coverprofile, cmode, Covered, new os.FileжWriter(os.Stdout), CoverSelectedPackages); if (errΔ1 != default!) {
+                return (errorGeneratingCoverageˢ, errΔ1);
+            }
         }
+        return ("", default!);
     }
-    return ("", default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end testdeps_package

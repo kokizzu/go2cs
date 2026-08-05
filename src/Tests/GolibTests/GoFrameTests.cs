@@ -77,28 +77,12 @@ public class GoFrameTests
             throw escaped;
     }
 
-    // The same scenario through the shipped GoFunc execution context, for the A/B side.
-    private static PanicException? RunInGoFunc(GoFunc<object>.GoAction body)
-    {
-        try
-        {
-            func(body);
-        }
-        catch (PanicException escaped)
-        {
-            return Completed(escaped);
-        }
-
-        return null;
-    }
-
     // --- ordering ------------------------------------------------------------------------------
 
     [TestMethod]
     public void DefersRunLastInFirstOut()
     {
         List<int> frameOrder = [];
-        List<int> goFuncOrder = [];
 
         RunInFrame((ref GoFrame frame) =>
         {
@@ -109,17 +93,7 @@ public class GoFrameTests
             }
         });
 
-        RunInGoFunc((defer, _) =>
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                int captured = i;
-                defer(() => goFuncOrder.Add(captured));
-            }
-        });
-
         CollectionAssert.AreEqual(new[] { 2, 1, 0 }, frameOrder, "frame drained out of order");
-        CollectionAssert.AreEqual(goFuncOrder, frameOrder, "frame and GoFunc disagree on order");
     }
 
     [TestMethod]
@@ -163,7 +137,6 @@ public class GoFrameTests
     public void DefersRunOnPanicAndTheUnrecoveredPanicIsRethrown()
     {
         bool frameRan = false;
-        bool goFuncRan = false;
 
         PanicException? fromFrame = RunInFrame((ref GoFrame frame) =>
         {
@@ -171,24 +144,15 @@ public class GoFrameTests
             throw panic("boom");
         });
 
-        PanicException? fromGoFunc = RunInGoFunc((defer, _) =>
-        {
-            defer(() => goFuncRan = true);
-            throw panic("boom");
-        });
-
         Assert.IsTrue(frameRan, "the frame's defer did not run on the panic path");
-        Assert.IsTrue(goFuncRan);
         Assert.IsNotNull(fromFrame, "an unrecovered panic must escape the frame");
-        Assert.IsNotNull(fromGoFunc);
-        Assert.AreEqual(fromGoFunc.State, fromFrame.State);
+        Assert.AreEqual((@string)"boom", fromFrame.State);
     }
 
     [TestMethod]
-    public void RecoverStopsThePanicInBothForms()
+    public void RecoverStopsThePanic()
     {
         object? frameRecovered = null;
-        object? goFuncRecovered = null;
 
         PanicException? fromFrame = RunInFrame((ref GoFrame frame) =>
         {
@@ -196,16 +160,8 @@ public class GoFrameTests
             throw panic("boom");
         });
 
-        PanicException? fromGoFunc = RunInGoFunc((defer, recover) =>
-        {
-            defer(() => goFuncRecovered = recover());
-            throw panic("boom");
-        });
-
         Assert.IsNull(fromFrame, "a recovered panic must not escape the frame");
-        Assert.IsNull(fromGoFunc);
         Assert.AreEqual((@string)"boom", frameRecovered);
-        Assert.AreEqual(goFuncRecovered, frameRecovered);
     }
 
     [TestMethod]
@@ -339,16 +295,8 @@ public class GoFrameTests
             raiseOriginPanic();
         });
 
-        PanicException? fromGoFunc = RunInGoFunc((defer, recover) =>
-        {
-            defer(() => throw panic(recover()!));
-            raiseOriginPanic();
-        });
-
         Assert.IsNotNull(fromFrame);
-        Assert.IsNotNull(fromGoFunc);
         StringAssert.Contains(fromFrame.StackTrace, nameof(raiseOriginPanic));
-        StringAssert.Contains(fromGoFunc.StackTrace, nameof(raiseOriginPanic));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -422,7 +370,7 @@ public class GoFrameTests
 
             try
             {
-                deferǃ(Nothing, ref frame);
+                defer(Nothing, ref frame);
             }
             catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException? p))
             {
@@ -434,15 +382,12 @@ public class GoFrameTests
             }
         });
 
-        long goFuncBytes = Allocated(static () => func((defer, _) => { defer(Nothing); }));
-
-        Assert.IsTrue(frameBytes < goFuncBytes,
-            $"the frame form must allocate less than the execution context (frame {frameBytes} B, GoFunc {goFuncBytes} B)");
-
-        // The frame form's whole remaining cost is the ONE deferred delegate; the execution
-        // context paid for a GoFunc object, a body display class, a body delegate, two handler
-        // delegates and a Stack<Action> on top of it.
-        Assert.IsTrue(frameBytes <= 32,
+        // ZERO, not merely less. The execution context this replaced measured 248 B for the same
+        // scenario (a GoFunc object, a body display class, a body delegate, two handler delegates
+        // and a Stack<Action>); the frame is inline storage and a cached static method group, so
+        // there is nothing left to charge. A capturing deferred closure still pays for ITS closure,
+        // which is what open-coding (DESIGN-closure-emission.md §4.5) would address.
+        Assert.AreEqual(0, frameBytes,
             $"the frame machinery itself must be free; measured {frameBytes} B for one static-method defer");
     }
 

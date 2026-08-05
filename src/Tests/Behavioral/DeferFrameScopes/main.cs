@@ -12,7 +12,7 @@ internal static void manyDefers() {
     GoFrame ᒐ = default;
     try {
         for (nint i = 1; i <= 6; i++) {
-            deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), manyDeferˢ, i, ref ᒐ);
+            defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), manyDeferˢ, i, ref ᒐ);
         }
         fmt.Println(manyBodyˢ);
     }
@@ -28,7 +28,7 @@ internal static void loopDefers(nint n) {
     GoFrame ᒐ = default;
     try {
         for (nint i = 0; i < n; i++) {
-            deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), loopDeferˢ, i, ref ᒐ);
+            defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), loopDeferˢ, i, ref ᒐ);
         }
         fmt.Println(loopBodyˢ, n);
     }
@@ -48,7 +48,7 @@ internal static (@string label, nint score) classify(nint n) {
     nint score = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             score += 100;
             label = "<"u8 + label + ">"u8;
         }, ref ᒐ);
@@ -89,17 +89,17 @@ private static readonly object nestedBodyˢ = (@string)"nested body"u8;
 internal static void nestedDeferScopes() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer1ˢ, ref ᒐ);
-        deferǃ(() => {
+        defer(ᴛ1 => fmt.Println(ᴛ1), outerDefer1ˢ, ref ᒐ);
+        defer(() => {
             GoFrame ᒐ = default;
             try {
-                deferǃ(ᴛ1 => fmt.Println(ᴛ1), innerDeferˢ, ref ᒐ);
+                defer(ᴛ1 => fmt.Println(ᴛ1), innerDeferˢ, ref ᒐ);
                 fmt.Println(closureBodyˢ);
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         }, ref ᒐ);
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer2ˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), outerDefer2ˢ, ref ᒐ);
         fmt.Println(nestedBodyˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -114,7 +114,7 @@ internal static nint mixedScopes() {
     GoFrame ᒐ = default;
     try {
         nint total = 0;
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), mixedDeferTotalˢ, total, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), mixedDeferTotalˢ, total, ref ᒐ);
         nint add(nint n) => n * 2;
         var addʗ1 = add;
         void bump() {
@@ -125,7 +125,7 @@ internal static nint mixedScopes() {
         ((Action)(() => {
             GoFrame ᒐ = default;
             try {
-                deferǃ(() => {
+                defer(() => {
                     total += 1;
                 }, ref ᒐ);
                 total += 10;
@@ -149,8 +149,8 @@ internal static @string /*msg*/ guarded(bool boom) {
     @string msg = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), guardedCleanupˢ, ref ᒐ);
-        deferǃ(() => {
+        defer(ᴛ1 => fmt.Println(ᴛ1), guardedCleanupˢ, ref ᒐ);
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     msg = fmt.Sprint(recoveredˢ, r);

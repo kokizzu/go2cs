@@ -16,7 +16,7 @@ internal static (@string @out, error err) fprint(this ж<Config> Ꮡcfg, @string
     try {
     ref var cfg = ref Ꮡcfg.DerefOrNull();
 
-        deferǃ(() => {
+        defer(() => {
             {
                 var e = recover(); if (e != default!) {
                     err = fmt.Errorf("panic: %v"u8, e);

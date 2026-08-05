@@ -51,32 +51,37 @@ internal static ref handlersᴛ1 handlers => ref Ꮡhandlers.Value;
 // Stop relaying the signals, sigs, to any channels previously registered to
 // receive them and either reset the signal handlers to their original values
 // (action=disableSignal) or ignore the signals (action=ignoreSignal).
-internal static void cancel(slice<osꓸSignal> sigs, Action<nint> action) => func((defer, recover) => {
-    Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
-    defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
-    void remove(nint n) {
-        handler zerohandler = new();
-        foreach (var (c, h) in handlers.m) {
-            if (h.want(n)) {
-                handlers.@ref[n]--;
-                h.clear(n);
-                if ((~h).mask == zerohandler.mask) {
-                    delete(handlers.m, c);
+internal static void cancel(slice<osꓸSignal> sigs, Action<nint> action) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
+        defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        void remove(nint n) {
+            handler zerohandler = new();
+            foreach (var (c, h) in handlers.m) {
+                if (h.want(n)) {
+                    handlers.@ref[n]--;
+                    h.clear(n);
+                    if ((~h).mask == zerohandler.mask) {
+                        delete(handlers.m, c);
+                    }
                 }
             }
+            action(n);
         }
-        action(n);
+        if (len(sigs) == 0){
+            for (nint n = 0; n < numSig; n++) {
+                remove(n);
+            }
+        } else {
+            foreach (var (_, s) in sigs) {
+                remove(signum(s));
+            }
+        }
     }
-    if (len(sigs) == 0){
-        for (nint n = 0; n < numSig; n++) {
-            remove(n);
-        }
-    } else {
-        foreach (var (_, s) in sigs) {
-            remove(signum(s));
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Ignore causes the provided signals to be ignored. If they are received by
 // the program, nothing will happen. Ignore undoes the effect of any prior
@@ -114,52 +119,57 @@ internal static Action watchSignalLoop;
 // It is allowed to call Notify multiple times with different channels
 // and the same signals: each channel receives copies of incoming
 // signals independently.
-public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSignal sigʗp) => func(ref sigʗp, (ref ꓸꓸꓸosꓸSignal sigʗp, Defer defer, Recover recover) => {
+public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSignal sigʗp) {
+    GoFrame ᒐ = default;
+    try {
     var sig = sigʗp.sslice();
 
-    if (c == default!) {
-        throw panic("os/signal: Notify using nil channel");
-    }
-    Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
-    defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
-    var h = handlers.m[c];
-    if (h == nil) {
-        if (handlers.m == default!) {
-            handlers.m = new map<channel/*<-*/<osꓸSignal>, ж<handler>>();
+        if (c == default!) {
+            throw panic("os/signal: Notify using nil channel");
         }
-        h = @new<handler>();
-        handlers.m[c] = h;
-    }
-    var hʗ1 = h;
-    void add(nint n) {
-        if (n < 0) {
-            return;
-        }
-        if (!hʗ1.want(n)) {
-            hʗ1.set(n);
-            if (handlers.@ref[n] == 0) {
-                enableSignal(n);
-                // The runtime requires that we enable a
-                // signal before starting the watcher.
-                ᏑwatchSignalLoopOnce.Do(() => {
-                    if (watchSignalLoop != default!) {
-                        goǃ(watchSignalLoop);
-                    }
-                });
+        Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
+        defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        var h = handlers.m[c];
+        if (h == nil) {
+            if (handlers.m == default!) {
+                handlers.m = new map<channel/*<-*/<osꓸSignal>, ж<handler>>();
             }
-            handlers.@ref[n]++;
+            h = @new<handler>();
+            handlers.m[c] = h;
+        }
+        var hʗ1 = h;
+        void add(nint n) {
+            if (n < 0) {
+                return;
+            }
+            if (!hʗ1.want(n)) {
+                hʗ1.set(n);
+                if (handlers.@ref[n] == 0) {
+                    enableSignal(n);
+                    // The runtime requires that we enable a
+                    // signal before starting the watcher.
+                    ᏑwatchSignalLoopOnce.Do(() => {
+                        if (watchSignalLoop != default!) {
+                            goǃ(watchSignalLoop);
+                        }
+                    });
+                }
+                handlers.@ref[n]++;
+            }
+        }
+        if (len(sig) == 0){
+            for (nint n = 0; n < numSig; n++) {
+                add(n);
+            }
+        } else {
+            foreach (var (_, s) in sig) {
+                add(signum(s));
+            }
         }
     }
-    if (len(sig) == 0){
-        for (nint n = 0; n < numSig; n++) {
-            add(n);
-        }
-    } else {
-        foreach (var (_, s) in sig) {
-            add(signum(s));
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Reset undoes the effect of any prior calls to [Notify] for the provided
 // signals.
@@ -216,40 +226,45 @@ public static void Stop(channel/*<-*/<osꓸSignal> c) {
 // Defined by the runtime package.
 internal static partial void signalWaitUntilIdle();
 
-internal static void process(osꓸSignal sig) => func((defer, recover) => {
-    nint n = signum(sig);
-    if (n < 0) {
-        return;
-    }
-    Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
-    defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
-    foreach (var (c, h) in handlers.m) {
-        if (h.want(n)) {
-            // send but do not block for it
-            var selᴛ1 = c.ᐸꟷ(sig, ꓸꓸꓸ);
-            switch (trySelect(selᴛ1)) {
-            case 0: {
-                break;
+internal static void process(osꓸSignal sig) {
+    GoFrame ᒐ = default;
+    try {
+        nint n = signum(sig);
+        if (n < 0) {
+            return;
+        }
+        Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
+        defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        foreach (var (c, h) in handlers.m) {
+            if (h.want(n)) {
+                // send but do not block for it
+                var selᴛ1 = c.ᐸꟷ(sig, ꓸꓸꓸ);
+                switch (trySelect(selᴛ1)) {
+                case 0: {
+                    break;
+                }
+                default: {
+                    break;
+                }}
             }
-            default: {
-                break;
-            }}
+        }
+        // Avoid the race mentioned in Stop.
+        foreach (var (_, d) in handlers.stopping) {
+            if (d.h.want(n)) {
+                var selᴛ2 = d.c.ᐸꟷ(sig, ꓸꓸꓸ);
+                switch (trySelect(selᴛ2)) {
+                case 0: {
+                    break;
+                }
+                default: {
+                    break;
+                }}
+            }
         }
     }
-    // Avoid the race mentioned in Stop.
-    foreach (var (_, d) in handlers.stopping) {
-        if (d.h.want(n)) {
-            var selᴛ2 = d.c.ᐸꟷ(sig, ꓸꓸꓸ);
-            switch (trySelect(selᴛ2)) {
-            case 0: {
-                break;
-            }
-            default: {
-                break;
-            }}
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // NotifyContext returns a copy of the parent context that is marked done
 // (its Done channel is closed) when one of the listed signals arrives,

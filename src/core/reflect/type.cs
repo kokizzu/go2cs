@@ -1734,29 +1734,34 @@ internal static slice<ΔType> funcTypes;
 internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new(default(Δsync.Mutex));
 internal static ref Δsync.Mutex funcTypesMutex => ref ᏑfuncTypesMutex.Value;
 
-internal static ΔType initFuncTypes(nint n) => func((defer, recover) => {
-    ᏑfuncTypesMutex.Lock();
-    defer(ᏑfuncTypesMutex.Unlock);
-    if (n >= len(funcTypes)) {
-        var newFuncTypes = new slice<ΔType>(n + 1);
-        copy(newFuncTypes, funcTypes);
-        funcTypes = newFuncTypes;
-    }
-    if (funcTypes[n] != default!) {
+internal static ΔType initFuncTypes(nint n) {
+    GoFrame ᒐ = default;
+    try {
+        ᏑfuncTypesMutex.Lock();
+        defer(ᏑfuncTypesMutex.Unlock, ref ᒐ);
+        if (n >= len(funcTypes)) {
+            var newFuncTypes = new slice<ΔType>(n + 1);
+            copy(newFuncTypes, funcTypes);
+            funcTypes = newFuncTypes;
+        }
+        if (funcTypes[n] != default!) {
+            return funcTypes[n];
+        }
+        funcTypes[n] = StructOf(new StructField[]{
+            new(
+                Name: "FuncType"u8,
+                Type: TypeOf(new funcType())
+            ),
+            new(
+                Name: "Args"u8,
+                Type: ArrayOf(n, TypeOf(Ꮡ(new rtype(nil))))
+            )
+        }.slice());
         return funcTypes[n];
     }
-    funcTypes[n] = StructOf(new StructField[]{
-        new(
-            Name: "FuncType"u8,
-            Type: TypeOf(new funcType())
-        ),
-        new(
-            Name: "Args"u8,
-            Type: ArrayOf(n, TypeOf(Ꮡ(new rtype(nil))))
-        )
-    }.slice());
-    return funcTypes[n];
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // FuncOf returns the function type with the given argument and result types.
 // For example if k represents int and e represents string,
@@ -1765,90 +1770,95 @@ internal static ΔType initFuncTypes(nint n) => func((defer, recover) => {
 // The variadic argument controls whether the function is variadic. FuncOf
 // panics if the in[len(in)-1] does not represent a slice and variadic is
 // true.
-public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic) => func((defer, recover) => {
-    if (variadic && (len(@in) == 0 || @in[len(@in) - 1].Kind() != ΔSlice)) {
-        throw panic("reflect.FuncOf: last arg of variadic func must be slice");
-    }
-    // Make a func type.
-    ref var ifunc = ref heap<any>(out var Ꮡifunc);
+public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic) {
+    GoFrame ᒐ = default;
+    try {
+        if (variadic && (len(@in) == 0 || @in[len(@in) - 1].Kind() != ΔSlice)) {
+            throw panic("reflect.FuncOf: last arg of variadic func must be slice");
+        }
+        // Make a func type.
+        ref var ifunc = ref heap<any>(out var Ꮡifunc);
 
-    ifunc = (Action)(default!);
-    var prototype = ~Ꮡifunc.Reinterpret<any, ж<funcType>>();
-    nint n = len(@in) + len(@out);
-    if (n > 128) {
-        throw panic("reflect.FuncOf: too many arguments");
-    }
-    var o = New(initFuncTypes(n)).Elem();
-    var ft = (ж<funcType>)(uintptr)((@unsafe.Pointer)o.Field(0).Addr().Pointer());
-    var args = @unsafe.Slice((ж<ж<rtype>>)(uintptr)((@unsafe.Pointer)o.Field(1).Addr().Pointer()), n).slice(0, 0, n);
-    ft.Value = prototype.Value;
-    // Build a hash and minimally populate ft.
-    uint32 hash = default!;
-    foreach (var (_, inΔ1) in @in) {
-        var t = inΔ1._<ж<rtype>>();
-        args = builtin.append(args, t);
-        hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
-    }
-    if (variadic) {
-        hash = fnv1(hash, (rune)'v');
-    }
-    hash = fnv1(hash, (rune)'.');
-    foreach (var (_, outΔ1) in @out) {
-        var t = outΔ1._<ж<rtype>>();
-        args = builtin.append(args, t);
-        hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
-    }
-    ft.Value.TFlag = 0;
-    ft.Value.Hash = hash;
-    ft.Value.InCount = (uint16)len(@in);
-    ft.Value.OutCount = (uint16)len(@out);
-    if (variadic) {
-        ft.Value.OutCount |= (uint16)((uint16)(1 << (int)(15)));
-    }
-    // Look in cache.
-    {
-        var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-            foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
-                if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
-                    return new rtypeжΔType(toRType(t));
-                }
-            }
+        ifunc = (Action)(default!);
+        var prototype = ~Ꮡifunc.Reinterpret<any, ж<funcType>>();
+        nint n = len(@in) + len(@out);
+        if (n > 128) {
+            throw panic("reflect.FuncOf: too many arguments");
         }
-    }
-    // Not in cache, lock and retry.
-    ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Lock();
-    defer(ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Unlock);
-    {
-        var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-            foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
-                if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
-                    return new rtypeжΔType(toRType(t));
-                }
-            }
+        var o = New(initFuncTypes(n)).Elem();
+        var ft = (ж<funcType>)(uintptr)((@unsafe.Pointer)o.Field(0).Addr().Pointer());
+        var args = @unsafe.Slice((ж<ж<rtype>>)(uintptr)((@unsafe.Pointer)o.Field(1).Addr().Pointer()), n).slice(0, 0, n);
+        ft.Value = prototype.Value;
+        // Build a hash and minimally populate ft.
+        uint32 hash = default!;
+        foreach (var (_, inΔ1) in @in) {
+            var t = inΔ1._<ж<rtype>>();
+            args = builtin.append(args, t);
+            hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
         }
-    }
-    ΔType addToCache(ж<abi.Type> tt) {
-        slice<ж<abi.Type>> rts = default!;
+        if (variadic) {
+            hash = fnv1(hash, (rune)'v');
+        }
+        hash = fnv1(hash, (rune)'.');
+        foreach (var (_, outΔ1) in @out) {
+            var t = outΔ1._<ж<rtype>>();
+            args = builtin.append(args, t);
+            hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
+        }
+        ft.Value.TFlag = 0;
+        ft.Value.Hash = hash;
+        ft.Value.InCount = (uint16)len(@in);
+        ft.Value.OutCount = (uint16)len(@out);
+        if (variadic) {
+            ft.Value.OutCount |= (uint16)((uint16)(1 << (int)(15)));
+        }
+        // Look in cache.
         {
-            var (rti, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-                rts = rti._<slice<ж<abi.Type>>>();
+            var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
+                    if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
+                        return new rtypeжΔType(toRType(t));
+                    }
+                }
             }
         }
-        ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(rts, tt));
-        return toType(tt);
-    }
-    // Look in known types for the same string representation.
-    @string str = funcStr(ft);
-    foreach (var (_, tt) in typesByString(str)) {
-        if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), tt, true)) {
-            return addToCache(tt);
+        // Not in cache, lock and retry.
+        ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Lock();
+        defer(ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        {
+            var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
+                    if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
+                        return new rtypeжΔType(toRType(t));
+                    }
+                }
+            }
         }
+        ΔType addToCache(ж<abi.Type> tt) {
+            slice<ж<abi.Type>> rts = default!;
+            {
+                var (rti, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                    rts = rti._<slice<ж<abi.Type>>>();
+                }
+            }
+            ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(rts, tt));
+            return toType(tt);
+        }
+        // Look in known types for the same string representation.
+        @string str = funcStr(ft);
+        foreach (var (_, tt) in typesByString(str)) {
+            if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), tt, true)) {
+                return addToCache(tt);
+            }
+        }
+        // Populate the remaining fields of ft and store in cache.
+        ft.Value.Str = resolveReflectName(newName(str, ""u8, false, false));
+        ft.Value.PtrToThis = 0;
+        return addToCache(ft.of(funcType.ᏑType));
     }
-    // Populate the remaining fields of ft and store in cache.
-    ft.Value.Str = resolveReflectName(newName(str, ""u8, false, false));
-    ft.Value.PtrToThis = 0;
-    return addToCache(ft.of(funcType.ᏑType));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static @string stringFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).String();
@@ -2231,377 +2241,382 @@ internal static readonly @string xFieldSafeˢ = "&x.field safe"u8;
 //
 // StructOf currently does not support promoted methods of embedded fields
 // and panics if passed unexported StructFields.
-public static ΔType StructOf(slice<StructField> fields) => func((defer, recover) => {
-    uint32 hash = fnv1(0, slice<byte>("struct {"u8).ꓸꓸꓸ);
-    uintptr size = default!;
-    uint8 typalign = default!;
-    bool comparable = true;
-    slice<abi.Method> methods = default!;
-    slice<structField> fs = new slice<structField>(len(fields));
-    slice<byte> repr = new slice<byte>(0, 64);
-    map<@string, EmptyStruct> fset = new map<@string, EmptyStruct>{};                          // fields' names
-    bool hasGCProg = false; // records whether a struct-field type has a GCProg
-    var lastzero = (uintptr)0;
-    repr = builtin.append(repr, ((@string)"struct {"u8).ꓸꓸꓸ);
-    @string pkgpath = ""u8;
-    foreach (var (i, field) in fields) {
-        if (field.Name == ""u8) {
-            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no name");
+public static ΔType StructOf(slice<StructField> fields) {
+    GoFrame ᒐ = default;
+    try {
+        uint32 hash = fnv1(0, slice<byte>("struct {"u8).ꓸꓸꓸ);
+        uintptr size = default!;
+        uint8 typalign = default!;
+        bool comparable = true;
+        slice<abi.Method> methods = default!;
+        slice<structField> fs = new slice<structField>(len(fields));
+        slice<byte> repr = new slice<byte>(0, 64);
+        map<@string, EmptyStruct> fset = new map<@string, EmptyStruct>{};                          // fields' names
+        bool hasGCProg = false; // records whether a struct-field type has a GCProg
+        var lastzero = (uintptr)0;
+        repr = builtin.append(repr, ((@string)"struct {"u8).ꓸꓸꓸ);
+        @string pkgpath = ""u8;
+        foreach (var (i, field) in fields) {
+            if (field.Name == ""u8) {
+                throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no name");
+            }
+            if (!isValidFieldName(field.Name)) {
+                throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has invalid name");
+            }
+            if (field.Type == default!) {
+                throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no type");
+            }
+            var (f, fpkgpath) = runtimeStructField(field);
+            var ft = f.Typ;
+            if ((abiꓸKind)((~ft).Kind_ & abi.KindGCProg) != 0) {
+                hasGCProg = true;
+            }
+            if (fpkgpath != ""u8) {
+                if (pkgpath == ""u8){
+                    pkgpath = fpkgpath;
+                } else 
+                if (pkgpath != fpkgpath) {
+                    throw panic("reflect.Struct: fields with different PkgPath " + pkgpath + " and " + fpkgpath);
+                }
+            }
+            // Update string and hash
+            @string name = f.Name.Name();
+            hash = fnv1(hash, slice<byte>(name).ꓸꓸꓸ);
+            if (!f.Embedded()){
+                repr = builtin.append(repr, ((@string)((" "u8 + name))).ꓸꓸꓸ);
+            } else {
+                // Embedded field
+                if (f.Typ.Kind() == abi.Pointer) {
+                    // Embedded ** and *interface{} are illegal
+                    var elem = ft.Elem();
+                    {
+                        var k = elem.Kind(); if (k == abi.Pointer || k == abi.Interface) {
+                            throw panic("reflect.StructOf: illegal embedded field type " + stringFor(ft));
+                        }
+                    }
+                }
+                var exprᴛ1 = ((ΔKind)(nuint)(uint8)f.Typ.Kind());
+                if (exprᴛ1 == ΔInterface) {
+                    var ift = ft.Reinterpret<abi.Type, interfaceType>();
+                    foreach (var (_, m) in (~ift).Methods) {
+                        if (pkgPath(ift.nameOff(m.Name)) != ""u8) {
+                            // TODO(sbinet).  Issue 15924.
+                            throw panic("reflect: embedded interface with unexported method(s) not implemented");
+                        }
+                        var fnStub = resolveReflectText((@unsafe.Pointer)abi.FuncPCABIInternal(embeddedIfaceMethStub));
+                        methods = builtin.append(methods, new abi.Method(
+                            Name: resolveReflectName(ift.nameOff(m.Name)),
+                            Mtyp: resolveReflectType(ift.typeOff(m.Typ)),
+                            Ifn: fnStub,
+                            Tfn: fnStub
+                        ));
+                    }
+                }
+                else if (exprᴛ1 == ΔPointer) {
+                    var ptr = ft.Reinterpret<abi.Type, ptrType>();
+                    {
+                        var unt = ptr.of(ptrType.ᏑPtrType).of(abi.PtrType.ᏑType).Uncommon(); if (unt != nil) {
+                            if (i > 0 && (~unt).Mcount > 0) {
+                                // Issue 15924.
+                                throw panic("reflect: embedded type with methods not implemented if type is not first field");
+                            }
+                            if (len(fields) > 1) {
+                                throw panic("reflect: embedded type with methods not implemented if there is more than one field");
+                            }
+                            foreach (var (_, m) in unt.Methods()) {
+                                var mname = nameOffFor(ft, m.Name);
+                                if (pkgPath(mname) != ""u8) {
+                                    // TODO(sbinet).
+                                    // Issue 15924.
+                                    throw panic("reflect: embedded interface with unexported method(s) not implemented");
+                                }
+                                methods = builtin.append(methods, new abi.Method(
+                                    Name: resolveReflectName(mname),
+                                    Mtyp: resolveReflectType(typeOffFor(ft, m.Mtyp)),
+                                    Ifn: resolveReflectText((uintptr)textOffFor(ft, m.Ifn)),
+                                    Tfn: resolveReflectText((uintptr)textOffFor(ft, m.Tfn))
+                                ));
+                            }
+                        }
+                    }
+                    {
+                        var unt = (~ptr).Elem.Uncommon(); if (unt != nil) {
+                            foreach (var (_, m) in unt.Methods()) {
+                                var mname = nameOffFor(ft, m.Name);
+                                if (pkgPath(mname) != ""u8) {
+                                    // TODO(sbinet)
+                                    // Issue 15924.
+                                    throw panic("reflect: embedded interface with unexported method(s) not implemented");
+                                }
+                                methods = builtin.append(methods, new abi.Method(
+                                    Name: resolveReflectName(mname),
+                                    Mtyp: resolveReflectType(typeOffFor((~ptr).Elem, m.Mtyp)),
+                                    Ifn: resolveReflectText((uintptr)textOffFor((~ptr).Elem, m.Ifn)),
+                                    Tfn: resolveReflectText((uintptr)textOffFor((~ptr).Elem, m.Tfn))
+                                ));
+                            }
+                        }
+                    }
+                }
+                else { /* default: */
+                    {
+                        var unt = ft.Uncommon(); if (unt != nil) {
+                            if (i > 0 && (~unt).Mcount > 0) {
+                                // Issue 15924.
+                                throw panic("reflect: embedded type with methods not implemented if type is not first field");
+                            }
+                            if (len(fields) > 1 && (abiꓸKind)((~ft).Kind_ & abi.KindDirectIface) != 0) {
+                                throw panic("reflect: embedded type with methods not implemented for non-pointer type");
+                            }
+                            foreach (var (_, m) in unt.Methods()) {
+                                var mname = nameOffFor(ft, m.Name);
+                                if (pkgPath(mname) != ""u8) {
+                                    // TODO(sbinet)
+                                    // Issue 15924.
+                                    throw panic("reflect: embedded interface with unexported method(s) not implemented");
+                                }
+                                methods = builtin.append(methods, new abi.Method(
+                                    Name: resolveReflectName(mname),
+                                    Mtyp: resolveReflectType(typeOffFor(ft, m.Mtyp)),
+                                    Ifn: resolveReflectText((uintptr)textOffFor(ft, m.Ifn)),
+                                    Tfn: resolveReflectText((uintptr)textOffFor(ft, m.Tfn))
+                                ));
+                            }
+                        }
+                    }
+                }
+
+            }
+            {
+                var (_, dup) = fset[name, ꟷ]; if (dup && name != "_"u8) {
+                    throw panic("reflect.StructOf: duplicate field " + name);
+                }
+            }
+            fset[name] = new EmptyStruct();
+            hash = fnv1(hash, (byte)(((~ft).Hash >> (int)(24))), (byte)(((~ft).Hash >> (int)(16))), (byte)(((~ft).Hash >> (int)(8))), (byte)(~ft).Hash);
+            repr = builtin.append(repr, ((@string)((" "u8 + stringFor(ft)))).ꓸꓸꓸ);
+            if (f.Name.HasTag()) {
+                hash = fnv1(hash, slice<byte>(f.Name.Tag()).ꓸꓸꓸ);
+                repr = builtin.append(repr, ((@string)((" "u8 + strconv.Quote(f.Name.Tag())))).ꓸꓸꓸ);
+            }
+            if (i < len(fields) - 1) {
+                repr = builtin.append(repr, (byte)((rune)';'));
+            }
+            comparable = comparable && ((~ft).Equal != default!);
+            var offset = align(size, (uintptr)(~ft).Align_);
+            if (offset < size) {
+                throw panic("reflect.StructOf: struct size would exceed virtual address space");
+            }
+            if ((~ft).Align_ > typalign) {
+                typalign = ft.Value.Align_;
+            }
+            size = offset + (~ft).Size_;
+            if (size < offset) {
+                throw panic("reflect.StructOf: struct size would exceed virtual address space");
+            }
+            f.Offset = offset;
+            if ((~ft).Size_ == 0) {
+                lastzero = size;
+            }
+            fs[i] = f;
         }
-        if (!isValidFieldName(field.Name)) {
-            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has invalid name");
-        }
-        if (field.Type == default!) {
-            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no type");
-        }
-        var (f, fpkgpath) = runtimeStructField(field);
-        var ft = f.Typ;
-        if ((abiꓸKind)((~ft).Kind_ & abi.KindGCProg) != 0) {
-            hasGCProg = true;
-        }
-        if (fpkgpath != ""u8) {
-            if (pkgpath == ""u8){
-                pkgpath = fpkgpath;
-            } else 
-            if (pkgpath != fpkgpath) {
-                throw panic("reflect.Struct: fields with different PkgPath " + pkgpath + " and " + fpkgpath);
+        if (size > 0 && lastzero == size) {
+            // This is a non-zero sized struct that ends in a
+            // zero-sized field. We add an extra byte of padding,
+            // to ensure that taking the address of the final
+            // zero-sized field can't manufacture a pointer to the
+            // next object in the heap. See issue 9401.
+            size++;
+            if (size == 0) {
+                throw panic("reflect.StructOf: struct size would exceed virtual address space");
             }
         }
-        // Update string and hash
-        @string name = f.Name.Name();
-        hash = fnv1(hash, slice<byte>(name).ꓸꓸꓸ);
-        if (!f.Embedded()){
-            repr = builtin.append(repr, ((@string)((" "u8 + name))).ꓸꓸꓸ);
+        ж<structType> typ = default!;
+        ж<uncommonType> ut = default!;
+        if (len(methods) == 0){
+            var t = @new<structTypeUncommon>();
+            typ = t.of(structTypeUncommon.ᏑstructType);
+            ut = t.of(structTypeUncommon.Ꮡu);
         } else {
-            // Embedded field
-            if (f.Typ.Kind() == abi.Pointer) {
-                // Embedded ** and *interface{} are illegal
-                var elem = ft.Elem();
-                {
-                    var k = elem.Kind(); if (k == abi.Pointer || k == abi.Interface) {
-                        throw panic("reflect.StructOf: illegal embedded field type " + stringFor(ft));
-                    }
-                }
-            }
-            var exprᴛ1 = ((ΔKind)(nuint)(uint8)f.Typ.Kind());
-            if (exprᴛ1 == ΔInterface) {
-                var ift = ft.Reinterpret<abi.Type, interfaceType>();
-                foreach (var (_, m) in (~ift).Methods) {
-                    if (pkgPath(ift.nameOff(m.Name)) != ""u8) {
-                        // TODO(sbinet).  Issue 15924.
-                        throw panic("reflect: embedded interface with unexported method(s) not implemented");
-                    }
-                    var fnStub = resolveReflectText((@unsafe.Pointer)abi.FuncPCABIInternal(embeddedIfaceMethStub));
-                    methods = builtin.append(methods, new abi.Method(
-                        Name: resolveReflectName(ift.nameOff(m.Name)),
-                        Mtyp: resolveReflectType(ift.typeOff(m.Typ)),
-                        Ifn: fnStub,
-                        Tfn: fnStub
-                    ));
-                }
-            }
-            else if (exprᴛ1 == ΔPointer) {
-                var ptr = ft.Reinterpret<abi.Type, ptrType>();
-                {
-                    var unt = ptr.of(ptrType.ᏑPtrType).of(abi.PtrType.ᏑType).Uncommon(); if (unt != nil) {
-                        if (i > 0 && (~unt).Mcount > 0) {
-                            // Issue 15924.
-                            throw panic("reflect: embedded type with methods not implemented if type is not first field");
-                        }
-                        if (len(fields) > 1) {
-                            throw panic("reflect: embedded type with methods not implemented if there is more than one field");
-                        }
-                        foreach (var (_, m) in unt.Methods()) {
-                            var mname = nameOffFor(ft, m.Name);
-                            if (pkgPath(mname) != ""u8) {
-                                // TODO(sbinet).
-                                // Issue 15924.
-                                throw panic("reflect: embedded interface with unexported method(s) not implemented");
-                            }
-                            methods = builtin.append(methods, new abi.Method(
-                                Name: resolveReflectName(mname),
-                                Mtyp: resolveReflectType(typeOffFor(ft, m.Mtyp)),
-                                Ifn: resolveReflectText((uintptr)textOffFor(ft, m.Ifn)),
-                                Tfn: resolveReflectText((uintptr)textOffFor(ft, m.Tfn))
-                            ));
-                        }
-                    }
-                }
-                {
-                    var unt = (~ptr).Elem.Uncommon(); if (unt != nil) {
-                        foreach (var (_, m) in unt.Methods()) {
-                            var mname = nameOffFor(ft, m.Name);
-                            if (pkgPath(mname) != ""u8) {
-                                // TODO(sbinet)
-                                // Issue 15924.
-                                throw panic("reflect: embedded interface with unexported method(s) not implemented");
-                            }
-                            methods = builtin.append(methods, new abi.Method(
-                                Name: resolveReflectName(mname),
-                                Mtyp: resolveReflectType(typeOffFor((~ptr).Elem, m.Mtyp)),
-                                Ifn: resolveReflectText((uintptr)textOffFor((~ptr).Elem, m.Ifn)),
-                                Tfn: resolveReflectText((uintptr)textOffFor((~ptr).Elem, m.Tfn))
-                            ));
-                        }
-                    }
-                }
-            }
-            else { /* default: */
-                {
-                    var unt = ft.Uncommon(); if (unt != nil) {
-                        if (i > 0 && (~unt).Mcount > 0) {
-                            // Issue 15924.
-                            throw panic("reflect: embedded type with methods not implemented if type is not first field");
-                        }
-                        if (len(fields) > 1 && (abiꓸKind)((~ft).Kind_ & abi.KindDirectIface) != 0) {
-                            throw panic("reflect: embedded type with methods not implemented for non-pointer type");
-                        }
-                        foreach (var (_, m) in unt.Methods()) {
-                            var mname = nameOffFor(ft, m.Name);
-                            if (pkgPath(mname) != ""u8) {
-                                // TODO(sbinet)
-                                // Issue 15924.
-                                throw panic("reflect: embedded interface with unexported method(s) not implemented");
-                            }
-                            methods = builtin.append(methods, new abi.Method(
-                                Name: resolveReflectName(mname),
-                                Mtyp: resolveReflectType(typeOffFor(ft, m.Mtyp)),
-                                Ifn: resolveReflectText((uintptr)textOffFor(ft, m.Ifn)),
-                                Tfn: resolveReflectText((uintptr)textOffFor(ft, m.Tfn))
-                            ));
-                        }
-                    }
-                }
-            }
-
+            // A *rtype representing a struct is followed directly in memory by an
+            // array of method objects representing the methods attached to the
+            // struct. To get the same layout for a run time generated type, we
+            // need an array directly following the uncommonType memory.
+            // A similar strategy is used for funcTypeFixed4, ...funcTypeFixedN.
+            var tt = New(StructOf(new StructField[]{
+                new(Name: "S"u8, Type: TypeOf(new structType(nil))),
+                new(Name: "U"u8, Type: TypeOf(new uncommonType())),
+                new(Name: "M"u8, Type: ArrayOf(len(methods), TypeOf(methods[0])))
+            }.slice()));
+            typ = (ж<structType>)(uintptr)(tt.Elem().Field(0).Addr().UnsafePointer());
+            ut = (ж<uncommonType>)(uintptr)(tt.Elem().Field(1).Addr().UnsafePointer());
+            copy(tt.Elem().Field(2).Slice(0, len(methods)).Interface()._<slice<abi.Method>>(), methods);
         }
+        // TODO(sbinet): Once we allow embedding multiple types,
+        // methods will need to be sorted like the compiler does.
+        // TODO(sbinet): Once we allow non-exported methods, we will
+        // need to compute xcount as the number of exported methods.
+        ut.Value.Mcount = (uint16)len(methods);
+        ut.Value.Xcount = ut.Value.Mcount;
+        ut.Value.Moff = (uint32)/* unsafe.Sizeof(uncommonType{}) */ (uintptr)16;
+        if (len(fs) > 0) {
+            repr = builtin.append(repr, (byte)((rune)' '));
+        }
+        repr = builtin.append(repr, (byte)((rune)'}'));
+        hash = fnv1(hash, (rune)'}');
+        @string str = ((@string)repr);
+        // Round the size up to be a multiple of the alignment.
+        var s = align(size, (uintptr)typalign);
+        if (s < size) {
+            throw panic("reflect.StructOf: struct size would exceed virtual address space");
+        }
+        size = s;
+        // Make the struct type.
+        ref var istruct = ref heap<any>(out var Ꮡistruct);
+
+        istruct = new EmptyStruct();
+        var prototype = ~Ꮡistruct.Reinterpret<any, ж<structType>>();
+        typ.Value = prototype.Value;
+        typ.Value.Fields = fs;
+        if (pkgpath != ""u8) {
+            typ.Value.PkgPath = newName(pkgpath, ""u8, false, false);
+        }
+        // Look in cache.
         {
-            var (_, dup) = fset[name, ꟷ]; if (dup && name != "_"u8) {
-                throw panic("reflect.StructOf: duplicate field " + name);
-            }
-        }
-        fset[name] = new EmptyStruct();
-        hash = fnv1(hash, (byte)(((~ft).Hash >> (int)(24))), (byte)(((~ft).Hash >> (int)(16))), (byte)(((~ft).Hash >> (int)(8))), (byte)(~ft).Hash);
-        repr = builtin.append(repr, ((@string)((" "u8 + stringFor(ft)))).ꓸꓸꓸ);
-        if (f.Name.HasTag()) {
-            hash = fnv1(hash, slice<byte>(f.Name.Tag()).ꓸꓸꓸ);
-            repr = builtin.append(repr, ((@string)((" "u8 + strconv.Quote(f.Name.Tag())))).ꓸꓸꓸ);
-        }
-        if (i < len(fields) - 1) {
-            repr = builtin.append(repr, (byte)((rune)';'));
-        }
-        comparable = comparable && ((~ft).Equal != default!);
-        var offset = align(size, (uintptr)(~ft).Align_);
-        if (offset < size) {
-            throw panic("reflect.StructOf: struct size would exceed virtual address space");
-        }
-        if ((~ft).Align_ > typalign) {
-            typalign = ft.Value.Align_;
-        }
-        size = offset + (~ft).Size_;
-        if (size < offset) {
-            throw panic("reflect.StructOf: struct size would exceed virtual address space");
-        }
-        f.Offset = offset;
-        if ((~ft).Size_ == 0) {
-            lastzero = size;
-        }
-        fs[i] = f;
-    }
-    if (size > 0 && lastzero == size) {
-        // This is a non-zero sized struct that ends in a
-        // zero-sized field. We add an extra byte of padding,
-        // to ensure that taking the address of the final
-        // zero-sized field can't manufacture a pointer to the
-        // next object in the heap. See issue 9401.
-        size++;
-        if (size == 0) {
-            throw panic("reflect.StructOf: struct size would exceed virtual address space");
-        }
-    }
-    ж<structType> typ = default!;
-    ж<uncommonType> ut = default!;
-    if (len(methods) == 0){
-        var t = @new<structTypeUncommon>();
-        typ = t.of(structTypeUncommon.ᏑstructType);
-        ut = t.of(structTypeUncommon.Ꮡu);
-    } else {
-        // A *rtype representing a struct is followed directly in memory by an
-        // array of method objects representing the methods attached to the
-        // struct. To get the same layout for a run time generated type, we
-        // need an array directly following the uncommonType memory.
-        // A similar strategy is used for funcTypeFixed4, ...funcTypeFixedN.
-        var tt = New(StructOf(new StructField[]{
-            new(Name: "S"u8, Type: TypeOf(new structType(nil))),
-            new(Name: "U"u8, Type: TypeOf(new uncommonType())),
-            new(Name: "M"u8, Type: ArrayOf(len(methods), TypeOf(methods[0])))
-        }.slice()));
-        typ = (ж<structType>)(uintptr)(tt.Elem().Field(0).Addr().UnsafePointer());
-        ut = (ж<uncommonType>)(uintptr)(tt.Elem().Field(1).Addr().UnsafePointer());
-        copy(tt.Elem().Field(2).Slice(0, len(methods)).Interface()._<slice<abi.Method>>(), methods);
-    }
-    // TODO(sbinet): Once we allow embedding multiple types,
-    // methods will need to be sorted like the compiler does.
-    // TODO(sbinet): Once we allow non-exported methods, we will
-    // need to compute xcount as the number of exported methods.
-    ut.Value.Mcount = (uint16)len(methods);
-    ut.Value.Xcount = ut.Value.Mcount;
-    ut.Value.Moff = (uint32)/* unsafe.Sizeof(uncommonType{}) */ (uintptr)16;
-    if (len(fs) > 0) {
-        repr = builtin.append(repr, (byte)((rune)' '));
-    }
-    repr = builtin.append(repr, (byte)((rune)'}'));
-    hash = fnv1(hash, (rune)'}');
-    @string str = ((@string)repr);
-    // Round the size up to be a multiple of the alignment.
-    var s = align(size, (uintptr)typalign);
-    if (s < size) {
-        throw panic("reflect.StructOf: struct size would exceed virtual address space");
-    }
-    size = s;
-    // Make the struct type.
-    ref var istruct = ref heap<any>(out var Ꮡistruct);
-
-    istruct = new EmptyStruct();
-    var prototype = ~Ꮡistruct.Reinterpret<any, ж<structType>>();
-    typ.Value = prototype.Value;
-    typ.Value.Fields = fs;
-    if (pkgpath != ""u8) {
-        typ.Value.PkgPath = newName(pkgpath, ""u8, false, false);
-    }
-    // Look in cache.
-    {
-        var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-            foreach (var (_, st) in ts._<slice<ΔType>>()) {
-                var t = st.common();
-                if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
-                    return toType(t);
+            var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                foreach (var (_, st) in ts._<slice<ΔType>>()) {
+                    var t = st.common();
+                    if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
+                        return toType(t);
+                    }
                 }
             }
         }
-    }
-    // Not in cache, lock and retry.
-    ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Lock();
-    defer(ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Unlock);
-    {
-        var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-            foreach (var (_, st) in ts._<slice<ΔType>>()) {
-                var t = st.common();
-                if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
-                    return toType(t);
-                }
-            }
-        }
-    }
-    ΔType addToCache(ΔType t) {
-        slice<ΔType> ts = default!;
+        // Not in cache, lock and retry.
+        ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Lock();
+        defer(ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Unlock, ref ᒐ);
         {
-            var (ti, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-                ts = ti._<slice<ΔType>>();
-            }
-        }
-        ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(ts, t));
-        return t;
-    }
-    // Look in known types.
-    foreach (var (_, t) in typesByString(str)) {
-        if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
-            // even if 't' wasn't a structType with methods, we should be ok
-            // as the 'u uncommonType' field won't be accessed except when
-            // tflag&abi.TFlagUncommon is set.
-            return addToCache(toType(t));
-        }
-    }
-    typ.Value.Str = resolveReflectName(newName(str, ""u8, false, false));
-    if (isRegularMemory(toType(typ.of(structType.ᏑType)))){
-        typ.Value.TFlag = abi.TFlagRegularMemory;
-    } else {
-        typ.Value.TFlag = 0;
-    }
-    typ.Value.Hash = hash;
-    typ.Value.Size_ = size;
-    typ.Value.PtrBytes = typeptrdata(typ.of(structType.ᏑType));
-    typ.Value.Align_ = typalign;
-    typ.Value.FieldAlign_ = typalign;
-    typ.Value.PtrToThis = 0;
-    if (len(methods) > 0) {
-        typ.Value.TFlag |= (abi.TFlag)(abi.TFlagUncommon);
-    }
-    if (hasGCProg){
-        nint lastPtrField = 0;
-        foreach (var (i, ft) in fs) {
-            if (ft.Typ.Pointers()) {
-                lastPtrField = i;
-            }
-        }
-        var prog = new byte[]{0, 0, 0, 0}.slice();
-        // will be length of prog
-        uintptr off = default!;
-        foreach (var (i, ft) in fs) {
-            if (i > lastPtrField) {
-                // gcprog should not include anything for any field after
-                // the last field that contains pointer data
-                break;
-            }
-            if (!ft.Typ.Pointers()) {
-                // Ignore pointerless fields.
-                continue;
-            }
-            // Pad to start of this field with zeros.
-            if (ft.Offset > off) {
-                var n = (ft.Offset - off) / (uintptr)goarch.PtrSize;
-                prog = builtin.append(prog, (byte)(0x01), (byte)(0x00));
-                // emit a 0 bit
-                if (n > 1) {
-                    prog = builtin.append(prog, (byte)(0x81));
-                    // repeat previous bit
-                    prog = appendVarint(prog, n - 1);
-                }
-                // n-1 times
-                off = ft.Offset;
-            }
-            prog = appendGCProg(prog, ft.Typ);
-            off += ft.Typ.Value.PtrBytes;
-        }
-        prog = builtin.append(prog, (byte)(0));
-        (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
-        typ.Value.Kind_ |= (abiꓸKind)(abi.KindGCProg);
-        typ.Value.GCData = Ꮡ(prog, 0);
-    } else {
-        typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindGCProg));
-        var bv = @new<bitVector>();
-        addTypeBits(bv, 0, typ.of(structType.ᏑType));
-        if (len((~bv).data) > 0) {
-            typ.Value.GCData = Ꮡ((~bv).data, 0);
-        }
-    }
-    typ.Value.Equal = default!;
-    if (comparable) {
-        var typʗ1 = typ;
-        typ.Value.Equal = (@unsafe.Pointer p, @unsafe.Pointer q) => {
-            foreach (var (_, ft) in (~typʗ1).Fields) {
-                @unsafe.Pointer pi = (uintptr)add(p, ft.Offset, xFieldSafeˢ);
-                @unsafe.Pointer qi = (uintptr)add(q, ft.Offset, xFieldSafeˢ);
-                if (!(~ft.Typ).Equal(pi, qi)) {
-                    return false;
+            var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                foreach (var (_, st) in ts._<slice<ΔType>>()) {
+                    var t = st.common();
+                    if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
+                        return toType(t);
+                    }
                 }
             }
-            return true;
-        };
-    }
-    switch (ᐧ) {
-    case {} when len(fs) == 1 && !fs[0].Typ.IfaceIndir(): {
-        typ.Value.Kind_ |= (abiꓸKind)(abi.KindDirectIface);
-        break;
-    }
-    default: {
-        typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindDirectIface));
-        break;
-    }}
+        }
+        ΔType addToCache(ΔType t) {
+            slice<ΔType> ts = default!;
+            {
+                var (ti, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                    ts = ti._<slice<ΔType>>();
+                }
+            }
+            ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(ts, t));
+            return t;
+        }
+        // Look in known types.
+        foreach (var (_, t) in typesByString(str)) {
+            if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
+                // even if 't' wasn't a structType with methods, we should be ok
+                // as the 'u uncommonType' field won't be accessed except when
+                // tflag&abi.TFlagUncommon is set.
+                return addToCache(toType(t));
+            }
+        }
+        typ.Value.Str = resolveReflectName(newName(str, ""u8, false, false));
+        if (isRegularMemory(toType(typ.of(structType.ᏑType)))){
+            typ.Value.TFlag = abi.TFlagRegularMemory;
+        } else {
+            typ.Value.TFlag = 0;
+        }
+        typ.Value.Hash = hash;
+        typ.Value.Size_ = size;
+        typ.Value.PtrBytes = typeptrdata(typ.of(structType.ᏑType));
+        typ.Value.Align_ = typalign;
+        typ.Value.FieldAlign_ = typalign;
+        typ.Value.PtrToThis = 0;
+        if (len(methods) > 0) {
+            typ.Value.TFlag |= (abi.TFlag)(abi.TFlagUncommon);
+        }
+        if (hasGCProg){
+            nint lastPtrField = 0;
+            foreach (var (i, ft) in fs) {
+                if (ft.Typ.Pointers()) {
+                    lastPtrField = i;
+                }
+            }
+            var prog = new byte[]{0, 0, 0, 0}.slice();
+            // will be length of prog
+            uintptr off = default!;
+            foreach (var (i, ft) in fs) {
+                if (i > lastPtrField) {
+                    // gcprog should not include anything for any field after
+                    // the last field that contains pointer data
+                    break;
+                }
+                if (!ft.Typ.Pointers()) {
+                    // Ignore pointerless fields.
+                    continue;
+                }
+                // Pad to start of this field with zeros.
+                if (ft.Offset > off) {
+                    var n = (ft.Offset - off) / (uintptr)goarch.PtrSize;
+                    prog = builtin.append(prog, (byte)(0x01), (byte)(0x00));
+                    // emit a 0 bit
+                    if (n > 1) {
+                        prog = builtin.append(prog, (byte)(0x81));
+                        // repeat previous bit
+                        prog = appendVarint(prog, n - 1);
+                    }
+                    // n-1 times
+                    off = ft.Offset;
+                }
+                prog = appendGCProg(prog, ft.Typ);
+                off += ft.Typ.Value.PtrBytes;
+            }
+            prog = builtin.append(prog, (byte)(0));
+            (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
+            typ.Value.Kind_ |= (abiꓸKind)(abi.KindGCProg);
+            typ.Value.GCData = Ꮡ(prog, 0);
+        } else {
+            typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindGCProg));
+            var bv = @new<bitVector>();
+            addTypeBits(bv, 0, typ.of(structType.ᏑType));
+            if (len((~bv).data) > 0) {
+                typ.Value.GCData = Ꮡ((~bv).data, 0);
+            }
+        }
+        typ.Value.Equal = default!;
+        if (comparable) {
+            var typʗ1 = typ;
+            typ.Value.Equal = (@unsafe.Pointer p, @unsafe.Pointer q) => {
+                foreach (var (_, ft) in (~typʗ1).Fields) {
+                    @unsafe.Pointer pi = (uintptr)add(p, ft.Offset, xFieldSafeˢ);
+                    @unsafe.Pointer qi = (uintptr)add(q, ft.Offset, xFieldSafeˢ);
+                    if (!(~ft.Typ).Equal(pi, qi)) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+        }
+        switch (ᐧ) {
+        case {} when len(fs) == 1 && !fs[0].Typ.IfaceIndir(): {
+            typ.Value.Kind_ |= (abiꓸKind)(abi.KindDirectIface);
+            break;
+        }
+        default: {
+            typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindDirectIface));
+            break;
+        }}
 
-    // structs of 1 direct iface type can be direct
-    return addToCache(toType(typ.of(structType.ᏑType)));
-});
+        // structs of 1 direct iface type can be direct
+        return addToCache(toType(typ.of(structType.ᏑType)));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void embeddedIfaceMethStub() {
     throw panic("reflect: StructOf does not support methods of embedded interfaces");

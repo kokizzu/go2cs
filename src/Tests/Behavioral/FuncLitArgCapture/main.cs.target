@@ -70,7 +70,7 @@ internal static void deferArgCapture(ж<box> Ꮡout) {
     try {
         var pf = Ꮡout;
         var pfʗ1 = pf;
-        deferǃ(run, () => {
+        defer(run, () => {
             pfʗ1.Value.x = 77;
         }, ref ᒐ);
         pf.Value.x = 5;

@@ -11,7 +11,7 @@ private static readonly object doingSomethingElseˢ = (@string)"Doing something 
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredResultˢ, add(3, 4), ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredResultˢ, add(3, 4), ref ᒐ);
         fmt.Println(doingSomethingElseˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

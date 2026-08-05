@@ -14,20 +14,25 @@ public static Action OnceFunc(Action f) {
     bool valid = default!;
     ref var p = ref heap<any>(out var Ꮡp);
     // Construct the inner closure just once to reduce costs on the fast path.
-    var g = () => func((defer, recover) => {
-        defer(() => {
-            Ꮡp.ValueSlot = recover();
-            if (!valid) {
-                // Re-panic immediately so on the first call the user gets a
-                // complete stack trace into f.
-                throw panic(Ꮡp.ValueSlot);
-            }
-        });
-        f();
-        f = default!;
-        // Do not keep f alive after invoking it.
-        valid = true;
-    });
+    var g = () => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                Ꮡp.ValueSlot = recover();
+                if (!valid) {
+                    // Re-panic immediately so on the first call the user gets a
+                    // complete stack trace into f.
+                    throw panic(Ꮡp.ValueSlot);
+                }
+            }, ref ᒐ);
+            f();
+            f = default!;
+            // Do not keep f alive after invoking it.
+            valid = true;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    };
     // Set only if f does not panic.
     var gʗ1 = g;
     return () => {
@@ -47,17 +52,22 @@ public static Func<T> OnceValue<T>(Func<T> f) {
     bool valid = default!;
     ref var p = ref heap<any>(out var Ꮡp);
     ref var result = ref heap<T>(out var Ꮡresult);
-    var g = () => func((defer, recover) => {
-        defer(() => {
-            Ꮡp.ValueSlot = recover();
-            if (!valid) {
-                throw panic(Ꮡp.ValueSlot);
-            }
-        });
-        Ꮡresult.ValueSlot = f();
-        f = default!;
-        valid = true;
-    });
+    var g = () => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                Ꮡp.ValueSlot = recover();
+                if (!valid) {
+                    throw panic(Ꮡp.ValueSlot);
+                }
+            }, ref ᒐ);
+            Ꮡresult.ValueSlot = f();
+            f = default!;
+            valid = true;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    };
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);
@@ -78,17 +88,22 @@ public static Func<(T1, T2)> OnceValues<T1, T2>(Func<(T1, T2)> f) {
     ref var p = ref heap<any>(out var Ꮡp);
     ref var r1 = ref heap<T1>(out var Ꮡr1);
     ref var r2 = ref heap<T2>(out var Ꮡr2);
-    var g = () => func((defer, recover) => {
-        defer(() => {
-            Ꮡp.ValueSlot = recover();
-            if (!valid) {
-                throw panic(Ꮡp.ValueSlot);
-            }
-        });
-        (Ꮡr1.ValueSlot, Ꮡr2.ValueSlot) = f();
-        f = default!;
-        valid = true;
-    });
+    var g = () => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                Ꮡp.ValueSlot = recover();
+                if (!valid) {
+                    throw panic(Ꮡp.ValueSlot);
+                }
+            }, ref ᒐ);
+            (Ꮡr1.ValueSlot, Ꮡr2.ValueSlot) = f();
+            f = default!;
+            valid = true;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    };
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);

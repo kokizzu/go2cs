@@ -92,7 +92,7 @@ internal static void probeE1() {
     try {
         ref var t = ref heap<Tally>(out var Ꮡt);
         t = new Tally(5, "s"u8);
-        deferǃ(() => {
+        defer(() => {
             fmt.Println((@string)"E1:"u8, Ꮡt.Value.total);
         }, ref ᒐ);
         t.total = 42;
@@ -106,7 +106,7 @@ internal static void probeE2() {
     try {
         ref var t = ref heap<Tally>(out var Ꮡt);
         t = new Tally(5, "s"u8);
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"E2:", t.total, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"E2:", t.total, ref ᒐ);
         t.total = 42;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

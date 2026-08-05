@@ -145,15 +145,20 @@ public static hash.Hash New(Func<hash.Hash> h, slice<byte> key) {
     hm.Value.inner = h();
     var unique = true;
     var hmʗ1 = hm;
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            // The comparison might panic if the underlying types are not comparable.
-            _ = recover();
-        });
-        if (AreEqual((~hmʗ1).outer, (~hmʗ1).inner)) {
-            unique = false;
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                // The comparison might panic if the underlying types are not comparable.
+                _ = recover();
+            }, ref ᒐ);
+            if (AreEqual((~hmʗ1).outer, (~hmʗ1).inner)) {
+                unique = false;
+            }
         }
-    })))();
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     if (!unique) {
         throw panic("crypto/hmac: hash generation function does not produce unique values");
     }

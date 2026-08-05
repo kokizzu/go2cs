@@ -378,28 +378,33 @@ public static nuint /*n*/ NumCalls(this ж<methodType> Ꮡm) {
     return n;
 }
 
-internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<sync.WaitGroup> Ꮡwg, ж<methodType> Ꮡmtype, ж<Request> Ꮡreq, reflectꓸValue argv, reflectꓸValue replyv, ServerCodec codec) => func((defer, recover) => {
+internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<sync.WaitGroup> Ꮡwg, ж<methodType> Ꮡmtype, ж<Request> Ꮡreq, reflectꓸValue argv, reflectꓸValue replyv, ServerCodec codec) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
     ref var mtype = ref Ꮡmtype.DerefOrNull();
 
-    if (Ꮡwg != nil) {
-        defer(Ꮡwg.Done);
+        if (Ꮡwg != nil) {
+            defer(Ꮡwg.Done, ref ᒐ);
+        }
+        Ꮡmtype.of(methodType.ᏑMutex).Lock();
+        mtype.numCalls++;
+        Ꮡmtype.of(methodType.ᏑMutex).Unlock();
+        var function = mtype.method.Func;
+        // Invoke the method, providing a new value for the reply.
+        var returnValues = function.Call(new reflectꓸValue[]{s.rcvr, argv, replyv}.slice());
+        // The return value for the method is an error.
+        var errInter = returnValues[0].Interface();
+        @string errmsg = ""u8;
+        if (errInter != default!) {
+            errmsg = errInter._<error>().Error();
+        }
+        Ꮡserver.sendResponse(Ꮡsending, Ꮡreq, replyv.Interface(), codec, errmsg);
+        Ꮡserver.freeRequest(Ꮡreq);
     }
-    Ꮡmtype.of(methodType.ᏑMutex).Lock();
-    mtype.numCalls++;
-    Ꮡmtype.of(methodType.ᏑMutex).Unlock();
-    var function = mtype.method.Func;
-    // Invoke the method, providing a new value for the reply.
-    var returnValues = function.Call(new reflectꓸValue[]{s.rcvr, argv, replyv}.slice());
-    // The return value for the method is an error.
-    var errInter = returnValues[0].Interface();
-    @string errmsg = ""u8;
-    if (errInter != default!) {
-        errmsg = errInter._<error>().Error();
-    }
-    Ꮡserver.sendResponse(Ꮡsending, Ꮡreq, replyv.Interface(), codec, errmsg);
-    Ꮡserver.freeRequest(Ꮡreq);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct gobServerCodec {
     internal io.ReadWriteCloser rwc;

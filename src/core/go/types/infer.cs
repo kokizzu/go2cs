@@ -35,7 +35,8 @@ internal static readonly @string inferSSSˢ = "== infer : %s%s ➞ %s"u8;
 // Note: infer may fail (return nil) due to invalid args operands without reporting additional errors.
 internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, positioner posn, slice<ж<TypeParam>> tparams, slice<ΔType> targs, ж<Tuple> Ꮡparams, slice<ж<operand>> args, bool reverse, ж<error_> Ꮡerr) {
     slice<ΔType> inferred = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var @params = ref Ꮡparams.DerefOrNull();
     ref var err = ref Ꮡerr.DerefOrNull();
@@ -48,7 +49,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             var tparamsʗ1 = tparams;
             defer(() => {
                 assert(inferred == default! || len(inferred) == len(tparamsʗ1) && !containsNil(inferred));
-            });
+            }, ref ᒐ);
         }
         if (traceInference) {
             Ꮡcheck.dump(inferSSSˢ, tparams, Ꮡparams.OrTypedNil(), targs);
@@ -56,7 +57,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             var tparamsʗ2 = tparams;
             defer(() => {
                 Ꮡcheck.dump("=> %s ➞ %s\n"u8, tparamsʗ2, inferred);
-            });
+            }, ref ᒐ);
         }
         // There must be at least one type parameter, and no more type arguments than type parameters.
         nint n = len(tparams);
@@ -65,13 +66,13 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         assert(Ꮡparams.Len() == len(args));
         // If we already have all type arguments, we're done.
         if (len(targs) == n && !containsNil(targs)) {
-            inferred = targs; return;
+            inferred = targs; goto ᒐdone;
         }
         // If we have invalid (ordinary) arguments, an error was reported before.
         // Avoid additional inference errors and exit early (go.dev/issue/60434).
         foreach (var (_, arg) in args) {
             if ((~arg).mode == invalid) {
-                inferred = default!; return;
+                inferred = default!; goto ᒐdone;
             }
         }
         // Make sure we have a "full" list of type arguments, some of which may
@@ -177,7 +178,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                 if (isTyped((~arg).typ)){
                     if (!u.unify((~par).typ, (~arg).typ, Δassign)) {
                         errorf((~par).typ, (~arg).typ, arg);
-                        inferred = default!; return;
+                        inferred = default!; goto ᒐdone;
                     }
                 } else 
                 {
@@ -256,7 +257,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                             //           for which we have type arguments inferred should
                             //           use those type arguments for a better error message.
                             err.addf(posn, "%s (type %s) does not satisfy %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint());
-                            inferred = default!; return;
+                            inferred = default!; goto ᒐdone;
                         }
                         break;
                     }
@@ -287,7 +288,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                             var (m, _) = Ꮡcheck.missingMethod(tx, new InterfaceжΔType(constraint), true, (ΔType x, ΔType y) => uʗ2.unify(x, y, exact), Ꮡcause); if (m != nil) {
                                 // TODO(gri) better error message (see TODO above)
                                 err.addf(posn, "%s (type %s) does not satisfy %s %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint(), cause);
-                                inferred = default!; return;
+                                inferred = default!; goto ᒐdone;
                             }
                         }
                     }
@@ -327,7 +328,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                     var m = maxType(max, (~arg).typ);
                     if (m == default!) {
                         err.addf(new operandжpositioner(arg), "mismatched types %s and %s (cannot infer %s)"u8, max, (~arg).typ, tpar.OrTypedNil());
-                        inferred = default!; return;
+                        inferred = default!; goto ᒐdone;
                     }
                     max = m;
                 }
@@ -434,11 +435,13 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             if (typ == default! || isParameterized(tparams, typ)) {
                 var obj = tparams[i].Value.obj;
                 err.addf(posn, "cannot infer %s (%v)"u8, (~obj).name, (~obj).pos);
-                inferred = default!; return;
+                inferred = default!; goto ᒐdone;
             }
         }
-    });
-    return inferred;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return inferred;
 }
 
 // containsNil reports whether list contains a nil entry.
@@ -557,43 +560,44 @@ internal static bool isParameterized(slice<ж<TypeParam>> tparams, ΔType typ) {
 
 internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ) {
     bool res = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var w = ref Ꮡw.DerefOrNull();
 
         // detect cycles
         {
             var (x, ok) = w.seen[typ, ꟷ]; if (ok) {
-                res = x; return;
+                res = x; goto ᒐdone;
             }
         }
         w.seen[typ] = false;
         defer(() => {
             Ꮡw.Value.seen[typ] = res;
-        });
+        }, ref ᒐ);
         switch (typ.type()) {
         case ж<Basic> t: {
             break;
         }
         case ж<Alias> t: {
-            res = Ꮡw.isParameterized(Unalias(new AliasжΔType(t))); return;
+            res = Ꮡw.isParameterized(Unalias(new AliasжΔType(t))); goto ᒐdone;
         }
         case ж<Array> t: {
-            res = Ꮡw.isParameterized((~t).elem); return;
+            res = Ꮡw.isParameterized((~t).elem); goto ᒐdone;
         }
         case ж<Slice> t: {
-            res = Ꮡw.isParameterized((~t).elem); return;
+            res = Ꮡw.isParameterized((~t).elem); goto ᒐdone;
         }
         case ж<Struct> t: {
-            res = Ꮡw.varList((~t).fields); return;
+            res = Ꮡw.varList((~t).fields); goto ᒐdone;
         }
         case ж<Pointer> t: {
-            res = Ꮡw.isParameterized((~t).@base); return;
+            res = Ꮡw.isParameterized((~t).@base); goto ᒐdone;
         }
         case ж<Tuple> t: {
-            res = t != nil && Ꮡw.varList((~t).vars); return;
+            res = t != nil && Ꮡw.varList((~t).vars); goto ᒐdone;
         }
         case ж<ΔSignature> t: {
-            res = (~t).@params != nil && Ꮡw.varList((~(~t).@params).vars) || (~t).results != nil && Ꮡw.varList((~(~t).results).vars); return;
+            res = (~t).@params != nil && Ꮡw.varList((~(~t).@params).vars) || (~t).results != nil && Ꮡw.varList((~(~t).results).vars); goto ᒐdone;
         }
         case ж<Interface> t: {
             var tset = t.typeSet();
@@ -612,27 +616,27 @@ internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ)
                 // use) type parameters, we don't care about those either.
                 // Thus, we only need to look at the input and result parameters.
                 if (Ꮡw.isParameterized((~m).typ)) {
-                    res = true; return;
+                    res = true; goto ᒐdone;
                 }
             }
-            res = tset.@is((ж<term> tΔ1) => tΔ1 != nil && Ꮡw.isParameterized((~tΔ1).typ)); return;
+            res = tset.@is((ж<term> tΔ1) => tΔ1 != nil && Ꮡw.isParameterized((~tΔ1).typ)); goto ᒐdone;
         }
         case ж<Map> t: {
-            res = Ꮡw.isParameterized((~t).key) || Ꮡw.isParameterized((~t).elem); return;
+            res = Ꮡw.isParameterized((~t).key) || Ꮡw.isParameterized((~t).elem); goto ᒐdone;
         }
         case ж<Chan> t: {
-            res = Ꮡw.isParameterized((~t).elem); return;
+            res = Ꮡw.isParameterized((~t).elem); goto ᒐdone;
         }
         case ж<Named> t: {
             foreach (var (_, tΔ2) in t.TypeArgs().list()) {
                 if (Ꮡw.isParameterized(tΔ2)) {
-                    res = true; return;
+                    res = true; goto ᒐdone;
                 }
             }
             break;
         }
         case ж<TypeParam> t: {
-            res = tparamIndex(w.tparams, t) >= 0; return;
+            res = tparamIndex(w.tparams, t) >= 0; goto ᒐdone;
         }
         default: {
             var t = typ;
@@ -640,8 +644,10 @@ internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ)
             break;
         }}
         res = false;
-    });
-    return res;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return res;
 }
 
 internal static bool varList(this ж<tpWalker> Ꮡw, slice<ж<Var>> list) {
@@ -716,109 +722,114 @@ internal static void killCycles(slice<ж<TypeParam>> tparams, slice<ΔType> infe
     internal map<ΔType, bool> seen;
 }
 
-internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) => func((defer, recover) => {
+internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) {
+    GoFrame ᒐ = default;
+    try {
     ref var w = ref Ꮡw.DerefOrNull();
 
-    typ = Unalias(typ);
-    if (w.seen[typ]) {
-        // We have seen typ before. If it is one of the type parameters
-        // in w.tparams, iterative substitution will lead to infinite expansion.
-        // Nil out the corresponding type which effectively kills the cycle.
-        {
-            var (tpar, _) = typ._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
-                {
-                    nint i = tparamIndex(w.tparams, tpar); if (i >= 0) {
-                        // cycle through tpar
-                        w.inferred[i] = default!;
+        typ = Unalias(typ);
+        if (w.seen[typ]) {
+            // We have seen typ before. If it is one of the type parameters
+            // in w.tparams, iterative substitution will lead to infinite expansion.
+            // Nil out the corresponding type which effectively kills the cycle.
+            {
+                var (tpar, _) = typ._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
+                    {
+                        nint i = tparamIndex(w.tparams, tpar); if (i >= 0) {
+                            // cycle through tpar
+                            w.inferred[i] = default!;
+                        }
                     }
                 }
             }
+            // If we don't have one of our type parameters, the cycle is due
+            // to an ordinary recursive type and we can just stop walking it.
+            return;
         }
-        // If we don't have one of our type parameters, the cycle is due
-        // to an ordinary recursive type and we can just stop walking it.
-        return;
-    }
-    w.seen[typ] = true;
-    deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡw.Value.seen, typ, defer);
-    switch (typ.type()) {
-    case ж<Basic> t: {
-        break;
-    }
-    case ж<Array> t: {
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Slice> t: {
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Struct> t: {
-        Ꮡw.varList((~t).fields);
-        break;
-    }
-    case ж<Pointer> t: {
-        Ꮡw.typ((~t).@base);
-        break;
-    }
-    case ж<ΔSignature> t: {
-        if ((~t).@params != nil) {
-            // nothing to do
-            // *Alias:
-            //      This case should not occur because of Unalias(typ) at the top.
-            // case *Tuple:
-            //      This case should not occur because tuples only appear
-            //      in signatures where they are handled explicitly.
-            Ꮡw.varList((~(~t).@params).vars);
+        w.seen[typ] = true;
+        defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡw.Value.seen, typ, ref ᒐ);
+        switch (typ.type()) {
+        case ж<Basic> t: {
+            break;
         }
-        if ((~t).results != nil) {
-            Ꮡw.varList((~(~t).results).vars);
+        case ж<Array> t: {
+            Ꮡw.typ((~t).elem);
+            break;
         }
-        break;
-    }
-    case ж<Union> t: {
-        foreach (var (_, tΔ1) in (~t).terms) {
-            Ꮡw.typ((~tΔ1).typ);
+        case ж<Slice> t: {
+            Ꮡw.typ((~t).elem);
+            break;
         }
-        break;
-    }
-    case ж<Interface> t: {
-        foreach (var (_, m) in (~t).methods) {
-            Ꮡw.typ((~m).typ);
+        case ж<Struct> t: {
+            Ꮡw.varList((~t).fields);
+            break;
         }
-        foreach (var (_, tΔ2) in (~t).embeddeds) {
-            Ꮡw.typ(tΔ2);
+        case ж<Pointer> t: {
+            Ꮡw.typ((~t).@base);
+            break;
         }
-        break;
-    }
-    case ж<Map> t: {
-        Ꮡw.typ((~t).key);
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Chan> t: {
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Named> t: {
-        foreach (var (_, tpar) in t.TypeArgs().list()) {
-            Ꮡw.typ(tpar);
-        }
-        break;
-    }
-    case ж<TypeParam> t: {
-        {
-            nint i = tparamIndex(w.tparams, t); if (i >= 0 && w.inferred[i] != default!) {
-                Ꮡw.typ(w.inferred[i]);
+        case ж<ΔSignature> t: {
+            if ((~t).@params != nil) {
+                // nothing to do
+                // *Alias:
+                //      This case should not occur because of Unalias(typ) at the top.
+                // case *Tuple:
+                //      This case should not occur because tuples only appear
+                //      in signatures where they are handled explicitly.
+                Ꮡw.varList((~(~t).@params).vars);
             }
+            if ((~t).results != nil) {
+                Ꮡw.varList((~(~t).results).vars);
+            }
+            break;
         }
-        break;
+        case ж<Union> t: {
+            foreach (var (_, tΔ1) in (~t).terms) {
+                Ꮡw.typ((~tΔ1).typ);
+            }
+            break;
+        }
+        case ж<Interface> t: {
+            foreach (var (_, m) in (~t).methods) {
+                Ꮡw.typ((~m).typ);
+            }
+            foreach (var (_, tΔ2) in (~t).embeddeds) {
+                Ꮡw.typ(tΔ2);
+            }
+            break;
+        }
+        case ж<Map> t: {
+            Ꮡw.typ((~t).key);
+            Ꮡw.typ((~t).elem);
+            break;
+        }
+        case ж<Chan> t: {
+            Ꮡw.typ((~t).elem);
+            break;
+        }
+        case ж<Named> t: {
+            foreach (var (_, tpar) in t.TypeArgs().list()) {
+                Ꮡw.typ(tpar);
+            }
+            break;
+        }
+        case ж<TypeParam> t: {
+            {
+                nint i = tparamIndex(w.tparams, t); if (i >= 0 && w.inferred[i] != default!) {
+                    Ꮡw.typ(w.inferred[i]);
+                }
+            }
+            break;
+        }
+        default: {
+            var t = typ;
+            throw panic(fmt.Sprintf("unexpected %T"u8, typ));
+            break;
+        }}
     }
-    default: {
-        var t = typ;
-        throw panic(fmt.Sprintf("unexpected %T"u8, typ));
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void varList(this ж<cycleFinder> Ꮡw, slice<ж<Var>> list) {
     foreach (var (_, v) in list) {

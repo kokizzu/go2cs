@@ -414,106 +414,111 @@ internal static nint get2(slice<byte> b) {
 
 // loadTzinfoFromZip returns the contents of the file with the given name
 // in the given uncompressed zip file.
-internal static (slice<byte>, error) loadTzinfoFromZip(@string zipfile, @string name) => func<(slice<byte>, error)>((defer, recover) => {
-    var (fd, err) = open(zipfile);
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(closefd, fd, defer);
-    const nint zecheader = 0x06054b50;
-    const nint zcheader = 0x02014b50;
-    UntypedInt ztailsize = 22;
-    const nint zheadersize = 30;
-    const nint zheader = 0x04034b50;
-    var buf = new slice<byte>(ztailsize);
-    {
-        var errΔ1 = preadn(fd, buf, -ztailsize); if (errΔ1 != default! || get4(buf) != zecheader) {
-            return (default!, errors.New("corrupt zip file "u8 + zipfile));
+internal static (slice<byte>, error) loadTzinfoFromZip(@string zipfile, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        var (fd, err) = open(zipfile);
+        if (err != default!) {
+            return (default!, err);
         }
-    }
-    nint n = get2(buf[10..]);
-    nint size = get4(buf[12..]);
-    nint off = get4(buf[16..]);
-    buf = new slice<byte>(size);
-    {
-        var errΔ2 = preadn(fd, buf, off); if (errΔ2 != default!) {
-            return (default!, errors.New("corrupt zip file "u8 + zipfile));
-        }
-    }
-    for (nint i = 0; i < n; i++) {
-        // zip entry layout:
-        //	0	magic[4]
-        //	4	madevers[1]
-        //	5	madeos[1]
-        //	6	extvers[1]
-        //	7	extos[1]
-        //	8	flags[2]
-        //	10	meth[2]
-        //	12	modtime[2]
-        //	14	moddate[2]
-        //	16	crc[4]
-        //	20	csize[4]
-        //	24	uncsize[4]
-        //	28	namelen[2]
-        //	30	xlen[2]
-        //	32	fclen[2]
-        //	34	disknum[2]
-        //	36	iattr[2]
-        //	38	eattr[4]
-        //	42	off[4]
-        //	46	name[namelen]
-        //	46+namelen+xlen+fclen - next header
-        //
-        if (get4(buf) != zcheader) {
-            break;
-        }
-        nint meth = get2(buf[10..]);
-        nint sizeΔ1 = get4(buf[24..]);
-        nint namelen = get2(buf[28..]);
-        nint xlen = get2(buf[30..]);
-        nint fclen = get2(buf[32..]);
-        nint offΔ1 = get4(buf[42..]);
-        var zname = buf[46..(int)(46 + namelen)];
-        buf = buf[(int)(46 + namelen + xlen + fclen)..];
-        if (((sstring)zname) != name) {
-            continue;
-        }
-        if (meth != 0) {
-            return (default!, errors.New("unsupported compression for "u8 + name + " in "u8 + zipfile));
-        }
-        // zip per-file header layout:
-        //	0	magic[4]
-        //	4	extvers[1]
-        //	5	extos[1]
-        //	6	flags[2]
-        //	8	meth[2]
-        //	10	modtime[2]
-        //	12	moddate[2]
-        //	14	crc[4]
-        //	18	csize[4]
-        //	22	uncsize[4]
-        //	26	namelen[2]
-        //	28	xlen[2]
-        //	30	name[namelen]
-        //	30+namelen+xlen - file data
-        //
-        buf = new slice<byte>(zheadersize + namelen);
+        defer(closefd, fd, ref ᒐ);
+        const nint zecheader = 0x06054b50;
+        const nint zcheader = 0x02014b50;
+        UntypedInt ztailsize = 22;
+        const nint zheadersize = 30;
+        const nint zheader = 0x04034b50;
+        var buf = new slice<byte>(ztailsize);
         {
-            var errΔ3 = preadn(fd, buf, offΔ1); if (errΔ3 != default! || get4(buf) != zheader || get2(buf[8..]) != meth || get2(buf[26..]) != namelen || ((sstring)(buf[30..(int)(30 + namelen)])) != name) {
+            var errΔ1 = preadn(fd, buf, -ztailsize); if (errΔ1 != default! || get4(buf) != zecheader) {
                 return (default!, errors.New("corrupt zip file "u8 + zipfile));
             }
         }
-        xlen = get2(buf[28..]);
-        buf = new slice<byte>(sizeΔ1);
+        nint n = get2(buf[10..]);
+        nint size = get4(buf[12..]);
+        nint off = get4(buf[16..]);
+        buf = new slice<byte>(size);
         {
-            var errΔ4 = preadn(fd, buf, offΔ1 + 30 + namelen + xlen); if (errΔ4 != default!) {
+            var errΔ2 = preadn(fd, buf, off); if (errΔ2 != default!) {
                 return (default!, errors.New("corrupt zip file "u8 + zipfile));
             }
         }
-        return (buf, default!);
+        for (nint i = 0; i < n; i++) {
+            // zip entry layout:
+            //	0	magic[4]
+            //	4	madevers[1]
+            //	5	madeos[1]
+            //	6	extvers[1]
+            //	7	extos[1]
+            //	8	flags[2]
+            //	10	meth[2]
+            //	12	modtime[2]
+            //	14	moddate[2]
+            //	16	crc[4]
+            //	20	csize[4]
+            //	24	uncsize[4]
+            //	28	namelen[2]
+            //	30	xlen[2]
+            //	32	fclen[2]
+            //	34	disknum[2]
+            //	36	iattr[2]
+            //	38	eattr[4]
+            //	42	off[4]
+            //	46	name[namelen]
+            //	46+namelen+xlen+fclen - next header
+            //
+            if (get4(buf) != zcheader) {
+                break;
+            }
+            nint meth = get2(buf[10..]);
+            nint sizeΔ1 = get4(buf[24..]);
+            nint namelen = get2(buf[28..]);
+            nint xlen = get2(buf[30..]);
+            nint fclen = get2(buf[32..]);
+            nint offΔ1 = get4(buf[42..]);
+            var zname = buf[46..(int)(46 + namelen)];
+            buf = buf[(int)(46 + namelen + xlen + fclen)..];
+            if (((sstring)zname) != name) {
+                continue;
+            }
+            if (meth != 0) {
+                return (default!, errors.New("unsupported compression for "u8 + name + " in "u8 + zipfile));
+            }
+            // zip per-file header layout:
+            //	0	magic[4]
+            //	4	extvers[1]
+            //	5	extos[1]
+            //	6	flags[2]
+            //	8	meth[2]
+            //	10	modtime[2]
+            //	12	moddate[2]
+            //	14	crc[4]
+            //	18	csize[4]
+            //	22	uncsize[4]
+            //	26	namelen[2]
+            //	28	xlen[2]
+            //	30	name[namelen]
+            //	30+namelen+xlen - file data
+            //
+            buf = new slice<byte>(zheadersize + namelen);
+            {
+                var errΔ3 = preadn(fd, buf, offΔ1); if (errΔ3 != default! || get4(buf) != zheader || get2(buf[8..]) != meth || get2(buf[26..]) != namelen || ((sstring)(buf[30..(int)(30 + namelen)])) != name) {
+                    return (default!, errors.New("corrupt zip file "u8 + zipfile));
+                }
+            }
+            xlen = get2(buf[28..]);
+            buf = new slice<byte>(sizeΔ1);
+            {
+                var errΔ4 = preadn(fd, buf, offΔ1 + 30 + namelen + xlen); if (errΔ4 != default!) {
+                    return (default!, errors.New("corrupt zip file "u8 + zipfile));
+                }
+            }
+            return (buf, default!);
+        }
+        return (default!, syscall.ENOENT);
     }
-    return (default!, syscall.ENOENT);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // loadTzinfoFromTzdata returns the time zone information of the time zone
 // with the given name, from a tzdata database file as they are typically
@@ -590,28 +595,33 @@ internal static (ж<ΔLocation> z, error firstErr) loadLocation(@string name, sl
 // It is a trivial implementation of os.ReadFile, reimplemented
 // here to avoid depending on io/ioutil or os.
 // It returns an error if name exceeds maxFileSize bytes.
-internal static (slice<byte>, error) readFile(@string name) => func<(slice<byte>, error)>((defer, recover) => {
-    var (f, err) = open(name);
-    if (err != default!) {
-        return (default!, err);
+internal static (slice<byte>, error) readFile(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = open(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        defer(closefd, f, ref ᒐ);
+        array<byte> buf = new(4096);
+        slice<byte> ret = default!;
+        nint n = default!;
+        while (ᐧ) {
+            (n, err) = read(f, buf[..]);
+            if (n > 0) {
+                ret = append(ret, buf[..(int)(n)].ꓸꓸꓸ);
+            }
+            if (n == 0 || err != default!) {
+                break;
+            }
+            if (len(ret) > maxFileSize) {
+                return (default!, ((fileSizeError)name));
+            }
+        }
+        return (ret, err);
     }
-    deferǃ(closefd, f, defer);
-    array<byte> buf = new(4096);
-    slice<byte> ret = default!;
-    nint n = default!;
-    while (ᐧ) {
-        (n, err) = read(f, buf[..]);
-        if (n > 0) {
-            ret = append(ret, buf[..(int)(n)].ꓸꓸꓸ);
-        }
-        if (n == 0 || err != default!) {
-            break;
-        }
-        if (len(ret) > maxFileSize) {
-            return (default!, ((fileSizeError)name));
-        }
-    }
-    return (ret, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end time_package

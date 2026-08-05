@@ -11,7 +11,7 @@ internal static Action makeGreeter(@string name) {
     return () => {
         GoFrame ᒐ = default;
         try {
-            deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), byeˢ, name, ref ᒐ);
+            defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), byeˢ, name, ref ᒐ);
             fmt.Println((@string)"hi"u8, name);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -36,7 +36,7 @@ internal static void Main() {
     void f() {
         GoFrame ᒐ = default;
         try {
-            deferǃ(ᴛ1 => fmt.Println(ᴛ1), deferredˢ, ref ᒐ);
+            defer(ᴛ1 => fmt.Println(ᴛ1), deferredˢ, ref ᒐ);
             fmt.Println(bodyˢ);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -46,7 +46,7 @@ internal static void Main() {
     void divPrint(nint a, nint b) {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         fmt.Println(closureRecoveredˢ, r);
@@ -64,7 +64,7 @@ internal static void Main() {
         nint result = default!;
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         result = -1;
@@ -83,7 +83,7 @@ internal static void Main() {
         nint n = default!;
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 n++;
             }, ref ᒐ);
             n = 10;
@@ -102,7 +102,7 @@ internal static void Main() {
     run(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(ᴛ1 => fmt.Println(ᴛ1), argClosureDeferredˢ, ref ᒐ);
+            defer(ᴛ1 => fmt.Println(ᴛ1), argClosureDeferredˢ, ref ᒐ);
             fmt.Println(argClosureBodyˢ);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -111,7 +111,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         fmt.Println(outerRecoveredˢ, r);
@@ -126,7 +126,7 @@ internal static void Main() {
     (nint, error) fetch() {
         GoFrame ᒐ = default;
         try {
-            deferǃ(ᴛ1 => fmt.Println(ᴛ1), fetchDeferredˢ, ref ᒐ);
+            defer(ᴛ1 => fmt.Println(ᴛ1), fetchDeferredˢ, ref ᒐ);
             return (42, default!);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }

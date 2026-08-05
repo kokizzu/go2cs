@@ -83,8 +83,8 @@ var keywords = NewHashSet([]string{
 // named one of those is instead renamed package-scoped via performNameCollisionAnalysis
 // (emitterSpelledTypeNames). Guarded by Tests/Behavioral/ReservedNameShadows.
 var reserved = NewHashSet([]string{
-	"AreEqual", "array", "builtin", "channel", "defer\u01C3", "EmptyStruct", "Equals", "Finalize", "GetGoTypeName",
-	"GetHashCode", "GetType", "GoFrame", "GoFunc", "GoFuncRoot", "GoImplement", "GoImplementAttribute", "GoImplicitConv",
+	"AreEqual", "array", "builtin", "channel", "EmptyStruct", "Equals", "Finalize", "GetGoTypeName",
+	"GetHashCode", "GetType", "GoFrame", "GoFuncRoot", "GoImplement", "GoImplementAttribute", "GoImplicitConv",
 	"GoImplicitConvAttribute", "GoPackage", "GoPackageAttribute", "GoRecv", "GoRecvAttribute",
 	"GoTestMatchingConsoleOutput", "GoTestMatchingConsoleOutputAttribute", "GoTag", "GoTagAttribute",
 	"GoTypeAlias", "GoTypeAliasAttribute", "GoType", "GoTypeAttribute", "GoBigConst", "go\u01C3",

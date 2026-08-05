@@ -200,40 +200,45 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 //
 // See the documentation for [Marshal] for details about the
 // conversion of Go values to JSON.
-public static error Encode(this ж<Encoder> Ꮡenc, any v) => func((defer, recover) => {
+public static error Encode(this ж<Encoder> Ꮡenc, any v) {
+    GoFrame ᒐ = default;
+    try {
     ref var enc = ref Ꮡenc.DerefOrNull();
 
-    if (enc.err != default!) {
-        return enc.err;
-    }
-    var e = newEncodeState();
-    deferǃ(ᏑencodeStatePool.Put, e.OrTypedNil(), defer);
-    var err = e.marshal(v, new encOpts(escapeHTML: enc.escapeHTML));
-    if (err != default!) {
-        return err;
-    }
-    // Terminate each value with a newline.
-    // This makes the output look a little nicer
-    // when debugging, and some kind of space
-    // is required if the encoded value was a number,
-    // so that the reader knows there aren't more
-    // digits coming.
-    e.of(encodeState.ᏑBuffer).WriteByte((rune)'\n');
-    var b = e.of(encodeState.ᏑBuffer).Bytes();
-    if (enc.indentPrefix != ""u8 || enc.indentValue != ""u8) {
-        (enc.indentBuf, err) = appendIndent(enc.indentBuf[..0], b, enc.indentPrefix, enc.indentValue);
+        if (enc.err != default!) {
+            return enc.err;
+        }
+        var e = newEncodeState();
+        defer(ᏑencodeStatePool.Put, e.OrTypedNil(), ref ᒐ);
+        var err = e.marshal(v, new encOpts(escapeHTML: enc.escapeHTML));
         if (err != default!) {
             return err;
         }
-        b = enc.indentBuf;
-    }
-    {
-        (_, err) = enc.w.Write(b); if (err != default!) {
-            enc.err = err;
+        // Terminate each value with a newline.
+        // This makes the output look a little nicer
+        // when debugging, and some kind of space
+        // is required if the encoded value was a number,
+        // so that the reader knows there aren't more
+        // digits coming.
+        e.of(encodeState.ᏑBuffer).WriteByte((rune)'\n');
+        var b = e.of(encodeState.ᏑBuffer).Bytes();
+        if (enc.indentPrefix != ""u8 || enc.indentValue != ""u8) {
+            (enc.indentBuf, err) = appendIndent(enc.indentBuf[..0], b, enc.indentPrefix, enc.indentValue);
+            if (err != default!) {
+                return err;
+            }
+            b = enc.indentBuf;
         }
+        {
+            (_, err) = enc.w.Write(b); if (err != default!) {
+                enc.err = err;
+            }
+        }
+        return err;
     }
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // SetIndent instructs the encoder to format each subsequent encoded
 // value as if indented by the package-level function Indent(dst, src, prefix, indent).

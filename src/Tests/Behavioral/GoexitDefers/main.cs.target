@@ -14,7 +14,7 @@ internal static void exitFromHelper(channel/*<-*/<@string> log) {
     GoFrame ᒐ = default;
     try {
         var logʗ1 = log;
-        deferǃ(() => {
+        defer(() => {
             logʗ1.ᐸꟷ(helperDeferRanˢ);
         }, ref ᒐ);
         log.ᐸꟷ(helperCallingRuntimeˢ);
@@ -42,13 +42,13 @@ internal static void Main() {
     goǃ(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(ᴛ1 => close(ᴛ1), doneʗ1, ref ᒐ);
+            defer(ᴛ1 => close(ᴛ1), doneʗ1, ref ᒐ);
             var logʗ2 = logʗ1;
-            deferǃ(() => {
+            defer(() => {
                 logʗ2.ᐸꟷ(goroutineDefer2Ranˢ);
             }, ref ᒐ);
             var logʗ3 = logʗ1;
-            deferǃ(() => {
+            defer(() => {
                 if (recover() == default!){
                     logʗ3.ᐸꟷ(recoverDuringGoexitˢ);
                 } else {

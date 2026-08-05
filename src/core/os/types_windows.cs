@@ -301,56 +301,61 @@ internal static ж<godebug.Setting> winsymlink = godebug.New("winsymlink"u8);
     ));
 }
 
-internal static error loadFileId(this ж<fileStat> Ꮡfs) => func<error>((defer, recover) => {
+internal static error loadFileId(this ж<fileStat> Ꮡfs) {
+    GoFrame ᒐ = default;
+    try {
     ref var fs = ref Ꮡfs.DerefOrNull();
 
-    Ꮡfs.of(fileStat.ᏑMutex).Lock();
-    defer(Ꮡfs.of(fileStat.ᏑMutex).Unlock);
-    if (fs.path == ""u8) {
-        // already done
+        Ꮡfs.of(fileStat.ᏑMutex).Lock();
+        defer(Ꮡfs.of(fileStat.ᏑMutex).Unlock, ref ᒐ);
+        if (fs.path == ""u8) {
+            // already done
+            return default!;
+        }
+        @string path = default!;
+        if (fs.appendNameToPath){
+            path = fixLongPath(fs.path + @"\"u8 + fs.name);
+        } else {
+            path = fs.path;
+        }
+        var (pathp, err) = syscall.UTF16PtrFromString(path);
+        if (err != default!) {
+            return err;
+        }
+        // Per https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-points-and-file-operations,
+        // “Applications that use the CreateFile function should specify the
+        // FILE_FLAG_OPEN_REPARSE_POINT flag when opening the file if it is a reparse
+        // point.”
+        //
+        // And per https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew,
+        // “If the file is not a reparse point, then this flag is ignored.”
+        //
+        // So we set FILE_FLAG_OPEN_REPARSE_POINT unconditionally, since we want
+        // information about the reparse point itself.
+        //
+        // If the file is a symlink, the symlink target should have already been
+        // resolved when the fileStat was created, so we don't need to worry about
+        // resolving symlink reparse points again here.
+        var attrs = (uint32)((uint32)((uint32)syscall.FILE_FLAG_BACKUP_SEMANTICS | (uint32)syscall.FILE_FLAG_OPEN_REPARSE_POINT));
+        (var h, err) = syscall.CreateFile(pathp, 0, 0, nil, syscall.OPEN_EXISTING, attrs, 0);
+        if (err != default!) {
+            return err;
+        }
+        defer(syscall.CloseHandle, h, ref ᒐ);
+        ref var i = ref heap(new syscall.ByHandleFileInformation(), out var Ꮡi);
+        err = syscall.GetFileInformationByHandle(h, Ꮡi);
+        if (err != default!) {
+            return err;
+        }
+        fs.path = ""u8;
+        fs.vol = i.VolumeSerialNumber;
+        fs.idxhi = i.FileIndexHigh;
+        fs.idxlo = i.FileIndexLow;
         return default!;
     }
-    @string path = default!;
-    if (fs.appendNameToPath){
-        path = fixLongPath(fs.path + @"\"u8 + fs.name);
-    } else {
-        path = fs.path;
-    }
-    var (pathp, err) = syscall.UTF16PtrFromString(path);
-    if (err != default!) {
-        return err;
-    }
-    // Per https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-points-and-file-operations,
-    // “Applications that use the CreateFile function should specify the
-    // FILE_FLAG_OPEN_REPARSE_POINT flag when opening the file if it is a reparse
-    // point.”
-    //
-    // And per https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew,
-    // “If the file is not a reparse point, then this flag is ignored.”
-    //
-    // So we set FILE_FLAG_OPEN_REPARSE_POINT unconditionally, since we want
-    // information about the reparse point itself.
-    //
-    // If the file is a symlink, the symlink target should have already been
-    // resolved when the fileStat was created, so we don't need to worry about
-    // resolving symlink reparse points again here.
-    var attrs = (uint32)((uint32)((uint32)syscall.FILE_FLAG_BACKUP_SEMANTICS | (uint32)syscall.FILE_FLAG_OPEN_REPARSE_POINT));
-    (var h, err) = syscall.CreateFile(pathp, 0, 0, nil, syscall.OPEN_EXISTING, attrs, 0);
-    if (err != default!) {
-        return err;
-    }
-    deferǃ(syscall.CloseHandle, h, defer);
-    ref var i = ref heap(new syscall.ByHandleFileInformation(), out var Ꮡi);
-    err = syscall.GetFileInformationByHandle(h, Ꮡi);
-    if (err != default!) {
-        return err;
-    }
-    fs.path = ""u8;
-    fs.vol = i.VolumeSerialNumber;
-    fs.idxhi = i.FileIndexHigh;
-    fs.idxlo = i.FileIndexLow;
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // saveInfoFromPath saves full path of the file to be used by os.SameFile later,
 // and set name from path.

@@ -42,7 +42,8 @@ public static error Fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any x, Func<@
 
 internal static error /*err*/ fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any x, Func<@string, reflectꓸValue, bool> f) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         // setup printer
         ref var p = ref heap<printer>(out var Ꮡp);
         p = new printer(
@@ -60,17 +61,19 @@ internal static error /*err*/ fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any
                     err = e._<localError>().err;
                 }
             }
-        });
+        }, ref ᒐ);
         // re-panics if it's not a localError
         // print x
         if (x == default!) {
             Ꮡp.printf("nil\n"u8);
-            return;
+            goto ᒐdone;
         }
         Ꮡp.print(reflect.ValueOf(x));
         Ꮡp.printf("\n"u8);
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // Print prints x to standard output, skipping nil fields.

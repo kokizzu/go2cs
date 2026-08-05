@@ -12,7 +12,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         fmt.Println(fmt.Errorf("recovered: %v"u8, r));

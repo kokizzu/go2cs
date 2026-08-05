@@ -84,7 +84,7 @@ internal static void p6() {
         nint r = default!;
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var e = recover(); if (e != default!) {
                         r = -1;

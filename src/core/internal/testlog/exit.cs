@@ -13,11 +13,16 @@ partial class testlog_package {
 // package testlog, it is a hook between the testing package and the
 // os package. This is used to ensure that an early call to os.Exit(0)
 // does not cause a test to pass.
-public static bool PanicOnExit0() => func((defer, recover) => {
-    ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Lock();
-    defer(ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Unlock);
-    return panicOnExit0.val;
-});
+public static bool PanicOnExit0() {
+    GoFrame ᒐ = default;
+    try {
+        ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Lock();
+        defer(ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Unlock, ref ᒐ);
+        return panicOnExit0.val;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // panicOnExit0 is the flag used for PanicOnExit0. This uses a lock
 // because the value can be cleared via a timer call that may race
@@ -40,10 +45,15 @@ internal static ref panicOnExit0ᴛ1 panicOnExit0 => ref ᏑpanicOnExit0.Value;
 // See go.dev/issue/67401.
 //
 //go:linkname SetPanicOnExit0
-public static void SetPanicOnExit0(bool v) => func((defer, recover) => {
-    ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Lock();
-    defer(ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Unlock);
-    panicOnExit0.val = v;
-});
+public static void SetPanicOnExit0(bool v) {
+    GoFrame ᒐ = default;
+    try {
+        ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Lock();
+        defer(ᏑpanicOnExit0.of(panicOnExit0ᴛ1.Ꮡmu).Unlock, ref ᒐ);
+        panicOnExit0.val = v;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end testlog_package

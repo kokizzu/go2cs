@@ -33,7 +33,7 @@ internal static @string /*result*/ declDeferObserver(fmt.Stringer xʗp, fmt.Stri
     try {
     ref var x = ref heap(xʗp, out var Ꮡx);
 
-        deferǃ(() => {
+        defer(() => {
             result = "final:"u8 + Ꮡx.ValueSlot.String() + "/"u8 + y.String();
         }, ref ᒐ);
         (x, y) = (y, x);

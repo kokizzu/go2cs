@@ -492,12 +492,17 @@ public static ж<Cmd> CommandContext(context.Context ctx, @string name, params �
 
 // interfaceEqual protects against panics from doing equality tests on
 // two interfaces with non-comparable underlying types.
-internal static bool interfaceEqual(any a, any b) => func((defer, recover) => {
-    defer(() => {
-        recover();
-    });
-    return AreEqual(a, b);
-});
+internal static bool interfaceEqual(any a, any b) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            recover();
+        }, ref ᒐ);
+        return AreEqual(a, b);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static slice<@string> argv(this ref Cmd c) {
     if (len(c.Args) > 0) {
@@ -633,145 +638,150 @@ internal static readonly @string execCommandWithANonNilˢ = "exec: command with 
 //
 // After a successful call to Start the [Cmd.Wait] method must be called in
 // order to release associated system resources.
-public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => {
+public static error Start(this ж<Cmd> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    // Check for doubled Start calls before we defer failure cleanup. If the prior
-    // call to Start succeeded, we don't want to spuriously close its pipes.
-    if (c.Process != nil) {
-        return errors.New(execAlreadyStartedˢ);
-    }
-    var started = false;
-    defer(() => {
-        closeDescriptors(Ꮡc.Value.childIOFiles);
-        Ꮡc.Value.childIOFiles = default!;
-        if (!started) {
-            closeDescriptors(Ꮡc.Value.parentIOPipes);
-            Ꮡc.Value.parentIOPipes = default!;
+        // Check for doubled Start calls before we defer failure cleanup. If the prior
+        // call to Start succeeded, we don't want to spuriously close its pipes.
+        if (c.Process != nil) {
+            return errors.New(execAlreadyStartedˢ);
         }
-    });
-    if (c.Path == ""u8 && c.Err == default! && c.lookPathErr == default!) {
-        c.Err = errors.New(execNoCommandˢ);
-    }
-    if (c.Err != default! || c.lookPathErr != default!) {
-        if (c.lookPathErr != default!) {
-            return c.lookPathErr;
+        var started = false;
+        defer(() => {
+            closeDescriptors(Ꮡc.Value.childIOFiles);
+            Ꮡc.Value.childIOFiles = default!;
+            if (!started) {
+                closeDescriptors(Ꮡc.Value.parentIOPipes);
+                Ꮡc.Value.parentIOPipes = default!;
+            }
+        }, ref ᒐ);
+        if (c.Path == ""u8 && c.Err == default! && c.lookPathErr == default!) {
+            c.Err = errors.New(execNoCommandˢ);
         }
-        return c.Err;
-    }
-    @string lp = c.Path;
-    if (runtime.GOOS == "windows"u8) {
-        if (c.Path == c.cachedLookExtensions.@in){
-            // If Command was called with an absolute path, we already resolved
-            // its extension and shouldn't need to do so again (provided c.Path
-            // wasn't set to another value between the calls to Command and Start).
-            lp = c.cachedLookExtensions.@out;
-        } else {
-            // If *Cmd was made without using Command at all, or if Command was
-            // called with a relative path, we had to wait until now to resolve
-            // it in case c.Dir was changed.
-            //
-            // Unfortunately, we cannot write the result back to c.Path because programs
-            // may assume that they can call Start concurrently with reading the path.
-            // (It is safe and non-racy to do so on Unix platforms, and users might not
-            // test with the race detector on all platforms;
-            // see https://go.dev/issue/62596.)
-            //
-            // So we will pass the fully resolved path to os.StartProcess, but leave
-            // c.Path as is: missing a bit of logging information seems less harmful
-            // than triggering a surprising data race, and if the user really cares
-            // about that bit of logging they can always use LookPath to resolve it.
-            error errΔ1 = default!;
-            (lp, errΔ1) = lookExtensions(c.Path, c.Dir);
-            if (errΔ1 != default!) {
-                return errΔ1;
+        if (c.Err != default! || c.lookPathErr != default!) {
+            if (c.lookPathErr != default!) {
+                return c.lookPathErr;
+            }
+            return c.Err;
+        }
+        @string lp = c.Path;
+        if (runtime.GOOS == "windows"u8) {
+            if (c.Path == c.cachedLookExtensions.@in){
+                // If Command was called with an absolute path, we already resolved
+                // its extension and shouldn't need to do so again (provided c.Path
+                // wasn't set to another value between the calls to Command and Start).
+                lp = c.cachedLookExtensions.@out;
+            } else {
+                // If *Cmd was made without using Command at all, or if Command was
+                // called with a relative path, we had to wait until now to resolve
+                // it in case c.Dir was changed.
+                //
+                // Unfortunately, we cannot write the result back to c.Path because programs
+                // may assume that they can call Start concurrently with reading the path.
+                // (It is safe and non-racy to do so on Unix platforms, and users might not
+                // test with the race detector on all platforms;
+                // see https://go.dev/issue/62596.)
+                //
+                // So we will pass the fully resolved path to os.StartProcess, but leave
+                // c.Path as is: missing a bit of logging information seems less harmful
+                // than triggering a surprising data race, and if the user really cares
+                // about that bit of logging they can always use LookPath to resolve it.
+                error errΔ1 = default!;
+                (lp, errΔ1) = lookExtensions(c.Path, c.Dir);
+                if (errΔ1 != default!) {
+                    return errΔ1;
+                }
             }
         }
-    }
-    if (c.Cancel != default! && c.ctx == default!) {
-        return errors.New(execCommandWithANonNilˢ);
-    }
-    if (c.ctx != default!) {
-        var selᴛ1 = c.ctx.Done();
-        switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
-        case 0 when selᴛ1.ꟷᐳ(out _): {
-            return c.ctx.Err();
+        if (c.Cancel != default! && c.ctx == default!) {
+            return errors.New(execCommandWithANonNilˢ);
         }
-        default: {
-            break;
-        }}
-    }
-    var childFiles = new slice<ж<os.File>>(0, 3 + len(c.ExtraFiles));
-    var (stdin, err) = Ꮡc.childStdin();
-    if (err != default!) {
-        return err;
-    }
-    childFiles = append(childFiles, stdin);
-    (var stdout, err) = c.childStdout();
-    if (err != default!) {
-        return err;
-    }
-    childFiles = append(childFiles, stdout);
-    (var stderr, err) = c.childStderr(stdout);
-    if (err != default!) {
-        return err;
-    }
-    childFiles = append(childFiles, stderr);
-    childFiles = append(childFiles, c.ExtraFiles.ꓸꓸꓸ);
-    (var env, err) = c.environ();
-    if (err != default!) {
-        return err;
-    }
-    (c.Process, err) = os.StartProcess(lp, c.argv(), Ꮡ(new os.ProcAttr(
-        Dir: c.Dir,
-        Files: childFiles,
-        Env: env,
-        Sys: c.SysProcAttr
-    )));
-    if (err != default!) {
-        return err;
-    }
-    started = true;
-    // Don't allocate the goroutineErr channel unless there are goroutines to start.
-    if (len(c.goroutine) > 0) {
-        var goroutineErr = new channel<error>(1);
-        c.goroutineErr = goroutineErr;
-        var statusc = new channel<Start_goroutineStatus>(1);
-        statusc.ᐸꟷ(new Start_goroutineStatus(running: len(c.goroutine)));
-        foreach (var (_, fn) in c.goroutine) {
-            var goroutineErrʗ2 = goroutineErr;
-            var statuscʗ2 = statusc;
-            goǃ((Func<error> fnΔ1) => {
-                var errΔ2 = fnΔ1();
-                ref var status = ref heap<Start_goroutineStatus>(out var Ꮡstatus);
-                status = ᐸꟷ(statuscʗ2);
-                if (status.firstErr == default!) {
-                    status.firstErr = errΔ2;
-                }
-                status.running--;
-                if (status.running == 0){
-                    goroutineErrʗ2.ᐸꟷ(status.firstErr);
-                } else {
-                    statuscʗ2.ᐸꟷ(status);
-                }
-            }, fn);
+        if (c.ctx != default!) {
+            var selᴛ1 = c.ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
+            case 0 when selᴛ1.ꟷᐳ(out _): {
+                return c.ctx.Err();
+            }
+            default: {
+                break;
+            }}
         }
-        c.goroutine = default!;
+        var childFiles = new slice<ж<os.File>>(0, 3 + len(c.ExtraFiles));
+        var (stdin, err) = Ꮡc.childStdin();
+        if (err != default!) {
+            return err;
+        }
+        childFiles = append(childFiles, stdin);
+        (var stdout, err) = c.childStdout();
+        if (err != default!) {
+            return err;
+        }
+        childFiles = append(childFiles, stdout);
+        (var stderr, err) = c.childStderr(stdout);
+        if (err != default!) {
+            return err;
+        }
+        childFiles = append(childFiles, stderr);
+        childFiles = append(childFiles, c.ExtraFiles.ꓸꓸꓸ);
+        (var env, err) = c.environ();
+        if (err != default!) {
+            return err;
+        }
+        (c.Process, err) = os.StartProcess(lp, c.argv(), Ꮡ(new os.ProcAttr(
+            Dir: c.Dir,
+            Files: childFiles,
+            Env: env,
+            Sys: c.SysProcAttr
+        )));
+        if (err != default!) {
+            return err;
+        }
+        started = true;
+        // Don't allocate the goroutineErr channel unless there are goroutines to start.
+        if (len(c.goroutine) > 0) {
+            var goroutineErr = new channel<error>(1);
+            c.goroutineErr = goroutineErr;
+            var statusc = new channel<Start_goroutineStatus>(1);
+            statusc.ᐸꟷ(new Start_goroutineStatus(running: len(c.goroutine)));
+            foreach (var (_, fn) in c.goroutine) {
+                var goroutineErrʗ2 = goroutineErr;
+                var statuscʗ2 = statusc;
+                goǃ((Func<error> fnΔ1) => {
+                    var errΔ2 = fnΔ1();
+                    ref var status = ref heap<Start_goroutineStatus>(out var Ꮡstatus);
+                    status = ᐸꟷ(statuscʗ2);
+                    if (status.firstErr == default!) {
+                        status.firstErr = errΔ2;
+                    }
+                    status.running--;
+                    if (status.running == 0){
+                        goroutineErrʗ2.ᐸꟷ(status.firstErr);
+                    } else {
+                        statuscʗ2.ᐸꟷ(status);
+                    }
+                }, fn);
+            }
+            c.goroutine = default!;
+        }
+        // Allow the goroutines' closures to be GC'd when they complete.
+        // If we have anything to do when the command's Context expires,
+        // start a goroutine to watch for cancellation.
+        //
+        // (Even if the command was created by CommandContext, a helper library may
+        // have explicitly set its Cancel field back to nil, indicating that it should
+        // be allowed to continue running after cancellation after all.)
+        if ((c.Cancel != default! || c.WaitDelay != 0) && c.ctx != default! && c.ctx.Done() != default!) {
+            var resultc = new channel<ctxResult>(0);
+            c.ctxResult = resultc;
+            goǃ(Ꮡc.watchCtx, resultc);
+        }
+        return default!;
     }
-    // Allow the goroutines' closures to be GC'd when they complete.
-    // If we have anything to do when the command's Context expires,
-    // start a goroutine to watch for cancellation.
-    //
-    // (Even if the command was created by CommandContext, a helper library may
-    // have explicitly set its Cancel field back to nil, indicating that it should
-    // be allowed to continue running after cancellation after all.)
-    if ((c.Cancel != default! || c.WaitDelay != 0) && c.ctx != default! && c.ctx.Done() != default!) {
-        var resultc = new channel<ctxResult>(0);
-        c.ctxResult = resultc;
-        goǃ(Ꮡc.watchCtx, resultc);
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // watchCtx watches c.ctx until it is able to send a result to resultc.
 //
@@ -966,50 +976,55 @@ public static error Wait(this ж<Cmd> Ꮡc) {
 // forcibly closes their pipes and returns ErrWaitDelay.
 //
 // If timer is non-nil, it must send to timer.C at the end of c.WaitDelay.
-internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer) => func<error>((defer, recover) => {
+internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var timer = ref Ꮡtimer.DerefOrNull();
 
-    defer(() => {
-        if (Ꮡtimer != nil) {
-            Ꮡtimer.Stop();
+        defer(() => {
+            if (Ꮡtimer != nil) {
+                Ꮡtimer.Stop();
+            }
+            Ꮡc.Value.goroutineErr = default!;
+        }, ref ᒐ);
+        if (c.goroutineErr == default!) {
+            return default!;
         }
-        Ꮡc.Value.goroutineErr = default!;
-    });
-    if (c.goroutineErr == default!) {
+        // No running goroutines to await.
+        if (Ꮡtimer == nil) {
+            if (c.WaitDelay == 0) {
+                return ᐸꟷ(c.goroutineErr);
+            }
+            var selᴛ7 = c.goroutineErr;
+            switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+            case 0 when selᴛ7.ꟷᐳ(out var err): {
+                return err;
+            }
+            default: {
+                break;
+            }}
+            // Avoid the overhead of starting a timer.
+            // No existing timer was started: either there is no Context associated with
+            // the command, or c.Process.Wait completed before the Context was done.
+            Ꮡtimer = time.NewTimer(c.WaitDelay); timer = ref Ꮡtimer.DerefOrNull();
+        }
+        var selᴛ8 = timer.C;
+        var selᴛ9 = c.goroutineErr;
+        switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+        case 0 when selᴛ8.ꟷᐳ(out _): {
+            closeDescriptors(c.parentIOPipes);
+            _ = ᐸꟷ(c.goroutineErr);
+            return ErrWaitDelay;
+        }
+        case 1 when selᴛ9.ꟷᐳ(out var err): {
+            return err;
+        }}
         return default!;
     }
-    // No running goroutines to await.
-    if (Ꮡtimer == nil) {
-        if (c.WaitDelay == 0) {
-            return ᐸꟷ(c.goroutineErr);
-        }
-        var selᴛ7 = c.goroutineErr;
-        switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
-        case 0 when selᴛ7.ꟷᐳ(out var err): {
-            return err;
-        }
-        default: {
-            break;
-        }}
-        // Avoid the overhead of starting a timer.
-        // No existing timer was started: either there is no Context associated with
-        // the command, or c.Process.Wait completed before the Context was done.
-        Ꮡtimer = time.NewTimer(c.WaitDelay); timer = ref Ꮡtimer.DerefOrNull();
-    }
-    var selᴛ8 = timer.C;
-    var selᴛ9 = c.goroutineErr;
-    switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
-    case 0 when selᴛ8.ꟷᐳ(out _): {
-        closeDescriptors(c.parentIOPipes);
-        _ = ᐸꟷ(c.goroutineErr);
-        return ErrWaitDelay;
-    }
-    case 1 when selᴛ9.ꟷᐳ(out var err): {
-        return err;
-    }}
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already set"u8;

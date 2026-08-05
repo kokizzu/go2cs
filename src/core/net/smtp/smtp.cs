@@ -124,19 +124,24 @@ public static error Hello(this ж<Client> Ꮡc, @string localName) {
 }
 
 // cmd is a convenience function that sends a command and returns the response
-internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) => func<ꓸꓸꓸany, (nint, @string, error)>(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
+internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) {
+    GoFrame ᒐ = default;
+    try {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.DerefOrNull();
-    var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);
-    if (err != default!) {
-        return (0, "", err);
+        var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);
+        if (err != default!) {
+            return (0, "", err);
+        }
+        c.Text.of(textproto.Conn.ᏑPipeline).StartResponse(id);
+        defer(Ꮡc.Value.Text.of(textproto.Conn.ᏑPipeline).EndResponse, id, ref ᒐ);
+        (var code, var msg, err) = c.Text.of(textproto.Conn.ᏑReader).ReadResponse(expectCode);
+        return (code, msg, err);
     }
-    c.Text.of(textproto.Conn.ᏑPipeline).StartResponse(id);
-    deferǃ(Ꮡc.Value.Text.of(textproto.Conn.ᏑPipeline).EndResponse, id, defer);
-    (var code, var msg, err) = c.Text.of(textproto.Conn.ᏑReader).ReadResponse(expectCode);
-    return (code, msg, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string heloSˢ = "HELO %s"u8;
@@ -407,81 +412,86 @@ internal static readonly @string smtpServerDoesnTSupportˢ = "smtp: server doesn
 // attachments (see the mime/multipart package), or other mail
 // functionality. Higher-level packages exist outside of the standard
 // library.
-public static error SendMail(@string addr, ΔAuth a, @string from, slice<@string> to, slice<byte> msg) => func((defer, recover) => {
-    {
-        var errΔ1 = validateLine(from); if (errΔ1 != default!) {
-            return errΔ1;
-        }
-    }
-    foreach (var (_, recp) in to) {
+public static error SendMail(@string addr, ΔAuth a, @string from, slice<@string> to, slice<byte> msg) {
+    GoFrame ᒐ = default;
+    try {
         {
-            var errΔ2 = validateLine(recp); if (errΔ2 != default!) {
-                return errΔ2;
+            var errΔ1 = validateLine(from); if (errΔ1 != default!) {
+                return errΔ1;
             }
         }
-    }
-    var (c, err) = Dial(addr);
-    if (err != default!) {
-        return err;
-    }
-    var cʗ1 = c;
-    defer(() => cʗ1.Close());
-    {
-        err = c.hello(); if (err != default!) {
+        foreach (var (_, recp) in to) {
+            {
+                var errΔ2 = validateLine(recp); if (errΔ2 != default!) {
+                    return errΔ2;
+                }
+            }
+        }
+        var (c, err) = Dial(addr);
+        if (err != default!) {
             return err;
         }
-    }
-    {
-        var (ok, _) = c.Extension(starttlsˢ); if (ok) {
-            var config = Ꮡ(new tls.Config(ServerName: (~c).serverName));
-            if (testHookStartTLS != default!) {
-                testHookStartTLS(config);
+        var cʗ1 = c;
+        defer(() => cʗ1.Close(), ref ᒐ);
+        {
+            err = c.hello(); if (err != default!) {
+                return err;
+            }
+        }
+        {
+            var (ok, _) = c.Extension(starttlsˢ); if (ok) {
+                var config = Ꮡ(new tls.Config(ServerName: (~c).serverName));
+                if (testHookStartTLS != default!) {
+                    testHookStartTLS(config);
+                }
+                {
+                    err = c.StartTLS(config); if (err != default!) {
+                        return err;
+                    }
+                }
+            }
+        }
+        if (a != default! && (~c).ext != default!) {
+            {
+                var (_, ok) = (~c).ext[authˢ, ꟷ]; if (!ok) {
+                    return errors.New(smtpServerDoesnTSupportˢ);
+                }
             }
             {
-                err = c.StartTLS(config); if (err != default!) {
+                err = c.Auth(a); if (err != default!) {
                     return err;
                 }
             }
         }
-    }
-    if (a != default! && (~c).ext != default!) {
         {
-            var (_, ok) = (~c).ext[authˢ, ꟷ]; if (!ok) {
-                return errors.New(smtpServerDoesnTSupportˢ);
-            }
-        }
-        {
-            err = c.Auth(a); if (err != default!) {
+            err = c.Mail(from); if (err != default!) {
                 return err;
             }
         }
-    }
-    {
-        err = c.Mail(from); if (err != default!) {
+        foreach (var (_, addrΔ1) in to) {
+            {
+                err = c.Rcpt(addrΔ1); if (err != default!) {
+                    return err;
+                }
+            }
+        }
+        (var w, err) = c.Data();
+        if (err != default!) {
             return err;
         }
-    }
-    foreach (var (_, addrΔ1) in to) {
-        {
-            err = c.Rcpt(addrΔ1); if (err != default!) {
-                return err;
-            }
+        (_, err) = w.Write(msg);
+        if (err != default!) {
+            return err;
         }
+        err = w.Close();
+        if (err != default!) {
+            return err;
+        }
+        return c.Quit();
     }
-    (var w, err) = c.Data();
-    if (err != default!) {
-        return err;
-    }
-    (_, err) = w.Write(msg);
-    if (err != default!) {
-        return err;
-    }
-    err = w.Close();
-    if (err != default!) {
-        return err;
-    }
-    return c.Quit();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Extension reports whether an extension is support by the server.
 // The extension name is case-insensitive. If the extension is supported,

@@ -80,12 +80,13 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
     io.ReadSeeker reader = default!;
     io.Closer closer = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var err = ref Ꮡerr.ValueSlot;
 
         (var f, err) = os.Open(fpath);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         closer = new os_FileжCloser(f);
         var fʗ1 = f;
@@ -93,21 +94,21 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
             if (Ꮡerr.ValueSlot != default! && closer != default!) {
                 fʗ1.Close();
             }
-        });
+        }, ref ᒐ);
         array<byte> magic = new(4);
         (_, err) = f.ReadAt(magic[..], 0);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         io.ReaderAt objreader = default!;
         var exprᴛ1 = ((sstring)(magic[..]));
         if (exprᴛ1 == gccgov1Magic || exprᴛ1 == gccgov2Magic || exprᴛ1 == gccgov3Magic || exprᴛ1 == goimporterMagic) {
             reader = new os_FileжReadSeeker(f);
-            return;
+            goto ᒐdone;
         }
         if (exprᴛ1 == archiveMagic || exprᴛ1 == aixbigafMagic) {
             (reader, err) = arExportData(new os_FileжReadSeeker(f));
-            return;
+            goto ᒐdone;
         }
         { /* default: */
             objreader = new os_FileжReaderAt(f);
@@ -119,24 +120,26 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
             var sec = ef.Section(goExportˢ);
             if (sec == nil) {
                 err = fmt.Errorf("%s: .go_export section not found"u8, fpath);
-                return;
+                goto ᒐdone;
             }
             reader = sec.Open();
-            return;
+            goto ᒐdone;
         }
         (var xf, err) = xcoff.NewFile(objreader);
         if (err == default!) {
             var sdat = xf.CSect(goExportˢ);
             if (sdat == default!) {
                 err = fmt.Errorf("%s: .go_export section not found"u8, fpath);
-                return;
+                goto ᒐdone;
             }
             reader = new bytes_ReaderжReadSeeker(bytes.NewReader(sdat));
-            return;
+            goto ᒐdone;
         }
         err = fmt.Errorf("%s: unrecognized file format"u8, fpath);
-    });
-    return (reader, closer, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (reader, closer, Ꮡerr.ValueSlot);
 }
 
 // type Importer is a methodless func type — rendered inline as its base delegate
@@ -151,13 +154,14 @@ public static Func<map<@string, ж<types.Package>>, @string, @string, Func<@stri
     return (map<@string, ж<types.Package>> imports, @string pkgpath, @string srcDir, Func<@string, (io.ReadCloser, error)> lookup) => {
         ж<types.Package> pkg = default!;
         error err = default!;
-        func((defer, recover) => {
+        GoFrame ᒐ = default;
+        try {
             // TODO(gri): Use srcDir.
             // Or not. It's possible that srcDir will fade in importance as
             // the go command and other tools provide a translation table
             // for relative imports (like ./foo or vendored imports).
             if (pkgpath == "unsafe"u8) {
-                (pkg, err) = (types.Unsafe, default!); return;
+                (pkg, err) = (types.Unsafe, default!); goto ᒐdone;
             }
             io.ReadSeeker reader = default!;
             @string fpath = default!;
@@ -165,20 +169,20 @@ public static Func<map<@string, ж<types.Package>>, @string, @string, Func<@stri
             if (lookup != default!) {
                 {
                     var p = imports[pkgpath]; if (p != nil && p.Complete()) {
-                        (pkg, err) = (p, default!); return;
+                        (pkg, err) = (p, default!); goto ᒐdone;
                     }
                 }
                 (rc, err) = lookup(pkgpath);
                 if (err != default!) {
-                    (pkg, err) = (default!, err); return;
+                    (pkg, err) = (default!, err); goto ᒐdone;
                 }
             }
             if (rc != default!){
                 var rcʗ1 = rc;
-                defer(() => rcʗ1.Close());
+                defer(() => rcʗ1.Close(), ref ᒐ);
                 var (rs, ok) = rc._<io.ReadSeeker>(ᐧ);
                 if (!ok) {
-                    (pkg, err) = (default!, fmt.Errorf("gccgo importer requires lookup to return an io.ReadSeeker, have %T"u8, rc)); return;
+                    (pkg, err) = (default!, fmt.Errorf("gccgo importer requires lookup to return an io.ReadSeeker, have %T"u8, rc)); goto ᒐdone;
                 }
                 reader = rs;
                 fpath = "<lookup "u8 + pkgpath + ">"u8;
@@ -191,31 +195,31 @@ public static Func<map<@string, ж<types.Package>>, @string, @string, Func<@stri
             } else {
                 (fpath, err) = findExportFile(searchpathsʗ1, pkgpath);
                 if (err != default!) {
-                    (pkg, err) = (default!, err); return;
+                    (pkg, err) = (default!, err); goto ᒐdone;
                 }
                 var (r, closer, errΔ1) = openExportFile(fpath);
                 if (errΔ1 != default!) {
-                    (pkg, err) = (default!, errΔ1); return;
+                    (pkg, err) = (default!, errΔ1); goto ᒐdone;
                 }
                 if (closer != default!) {
                     var closerʗ1 = closer;
-                    defer(() => closerʗ1.Close());
+                    defer(() => closerʗ1.Close(), ref ᒐ);
                 }
                 reader = r;
             }
             @string magics = default!;
             (magics, err) = readMagic(reader);
             if (err != default!) {
-                return;
+                goto ᒐdone;
             }
             if (magics == archiveMagic || magics == aixbigafMagic) {
                 (reader, err) = arExportData(reader);
                 if (err != default!) {
-                    return;
+                    goto ᒐdone;
                 }
                 (magics, err) = readMagic(reader);
                 if (err != default!) {
-                    return;
+                    goto ᒐdone;
                 }
             }
             var exprᴛ1 = magics;
@@ -250,9 +254,11 @@ public static Func<map<@string, ж<types.Package>>, @string, @string, Func<@stri
  magics);
             }
 
-            return;
-        });
-        return (pkg, err);
+            goto ᒐdone;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        ᒐdone: return (pkg, err);
     };
 }
 

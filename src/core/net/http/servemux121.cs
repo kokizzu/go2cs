@@ -48,34 +48,39 @@ internal static bool use121;
 }
 
 // Formerly ServeMux.Handle.
-internal static void handle(this ж<serveMux121> Ꮡmux, @string pattern, ΔHandler handler) => func((defer, recover) => {
+internal static void handle(this ж<serveMux121> Ꮡmux, @string pattern, ΔHandler handler) {
+    GoFrame ᒐ = default;
+    try {
     ref var mux = ref Ꮡmux.DerefOrNull();
 
-    Ꮡmux.of(serveMux121.Ꮡmu).Lock();
-    defer(Ꮡmux.of(serveMux121.Ꮡmu).Unlock);
-    if (pattern == ""u8) {
-        throw panic("http: invalid pattern");
-    }
-    if (handler == default!) {
-        throw panic("http: nil handler");
-    }
-    {
-        var (_, exist) = mux.m[pattern, ꟷ]; if (exist) {
-            throw panic("http: multiple registrations for " + pattern);
+        Ꮡmux.of(serveMux121.Ꮡmu).Lock();
+        defer(Ꮡmux.of(serveMux121.Ꮡmu).Unlock, ref ᒐ);
+        if (pattern == ""u8) {
+            throw panic("http: invalid pattern");
+        }
+        if (handler == default!) {
+            throw panic("http: nil handler");
+        }
+        {
+            var (_, exist) = mux.m[pattern, ꟷ]; if (exist) {
+                throw panic("http: multiple registrations for " + pattern);
+            }
+        }
+        if (mux.m == default!) {
+            mux.m = new map<@string, muxEntry>();
+        }
+        var e = new muxEntry(h: handler, pattern: pattern);
+        mux.m[pattern] = e;
+        if (pattern[builtin.len(pattern) - 1] == (rune)'/') {
+            mux.es = appendSorted(mux.es, e);
+        }
+        if (pattern[0] != (rune)'/') {
+            mux.hosts = true;
         }
     }
-    if (mux.m == default!) {
-        mux.m = new map<@string, muxEntry>();
-    }
-    var e = new muxEntry(h: handler, pattern: pattern);
-    mux.m[pattern] = e;
-    if (pattern[builtin.len(pattern) - 1] == (rune)'/') {
-        mux.es = appendSorted(mux.es, e);
-    }
-    if (pattern[0] != (rune)'/') {
-        mux.hosts = true;
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<muxEntry> appendSorted(slice<muxEntry> es, muxEntry e) {
     nint n = builtin.len(es);
@@ -145,11 +150,12 @@ internal static (ΔHandler h, @string pattern) findHandler(this ж<serveMux121> 
 internal static (ΔHandler h, @string pattern) handler(this ж<serveMux121> Ꮡmux, @string host, @string path) {
     ΔHandler h = default!;
     @string pattern = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var mux = ref Ꮡmux.DerefOrNull();
 
         Ꮡmux.of(serveMux121.Ꮡmu).RLock();
-        defer(Ꮡmux.of(serveMux121.Ꮡmu).RUnlock);
+        defer(Ꮡmux.of(serveMux121.Ꮡmu).RUnlock, ref ᒐ);
         // Host-specific pattern takes precedence over generic ones
         if (mux.hosts) {
             (h, pattern) = mux.match(host + path);
@@ -160,7 +166,9 @@ internal static (ΔHandler h, @string pattern) handler(this ж<serveMux121> Ꮡm
         if (h == default!) {
             (h, pattern) = (NotFoundHandler(), "");
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (h, pattern);
 }
 

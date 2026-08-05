@@ -570,7 +570,8 @@ internal static readonly @string netHttpCanTWriteControlˢ = "net/http: can't wr
 // always closes body
 internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usingProxy, ΔHeader extraHeaders, Func<bool> waitForContinue) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var r = ref Ꮡr.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
@@ -581,7 +582,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
                 (~traceʗ1).WroteRequest(new httptrace.WroteRequestInfo(
                     Err: Ꮡerr.ValueSlot
                 ));
-            });
+            }, ref ᒐ);
         }
         var closed = false;
         defer(() => {
@@ -593,7 +594,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
                     Ꮡerr.ValueSlot = closeErr;
                 }
             }
-        });
+        }, ref ᒐ);
         // Find the target host. Prefer the Host: header, but if that
         // is not given, use the host from the request URL.
         //
@@ -601,13 +602,13 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
         @string host = r.Host;
         if (host == ""u8) {
             if (r.URL == nil) {
-                err = errMissingHost; return;
+                err = errMissingHost; goto ᒐdone;
             }
             host = r.URL.Value.Host;
         }
         (host, err) = httpguts.PunycodeHostPort(host);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         // Validate that the Host header is a valid header in general,
         // but don't validate the host itself. This is sufficient to avoid
@@ -630,7 +631,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             if (!usingProxy){
                 host = ""u8;
             } else {
-                err = errors.New(httpInvalidHostHeaderˢ); return;
+                err = errors.New(httpInvalidHostHeaderˢ); goto ᒐdone;
             }
         }
         // According to RFC 6874, an HTTP client, proxy, or other
@@ -649,7 +650,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             }
         }
         if (stringContainsCTLByte(ruri)) {
-            err = errors.New(netHttpCanTWriteControlˢ); return;
+            err = errors.New(netHttpCanTWriteControlˢ); goto ᒐdone;
         }
         // TODO: validate r.Method too? At least it's less likely to
         // come from an attacker (more likely to be a constant in
@@ -667,12 +668,12 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
         }
         (_, err) = fmt.Fprintf(w, "%s %s HTTP/1.1\r\n"u8, valueOrDefault(r.Method, getˢ), ruri);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         // Header lines
         (_, err) = fmt.Fprintf(w, "Host: %s\r\n"u8, host);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         if (trace != nil && (~trace).WroteHeaderField != default!) {
             (~trace).WroteHeaderField(hostˢ, new @string[]{host}.slice());
@@ -688,7 +689,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             userAgent = textproto.TrimString(userAgent);
             (_, err) = fmt.Fprintf(w, "User-Agent: %s\r\n"u8, userAgent);
             if (err != default!) {
-                return;
+                goto ᒐdone;
             }
             if (trace != nil && (~trace).WroteHeaderField != default!) {
                 (~trace).WroteHeaderField(userAgentˢ2, new @string[]{userAgent}.slice());
@@ -697,25 +698,25 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
         // Process Body,ContentLength,Close,Trailer
         (var tw, err) = newTransferWriter(Ꮡr.OrTypedNil());
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         err = tw.writeHeader(w, trace);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         err = r.Header.writeSubset(w, reqWriteExcludeHeader, trace);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         if (extraHeaders != default!) {
             err = extraHeaders.write(w, trace);
             if (err != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         (_, err) = io.WriteString(w, "\r\n"u8);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         if (trace != nil && (~trace).WroteHeaders != default!) {
             (~trace).WroteHeaders();
@@ -726,7 +727,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
                 var (bwΔ1, ok) = w._<ж<bufio.Writer>>(ᐧ); if (ok) {
                     err = bwΔ1.Flush();
                     if (err != default!) {
-                        return;
+                        goto ᒐdone;
                     }
                 }
             }
@@ -736,14 +737,14 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             if (!waitForContinue()) {
                 closed = true;
                 r.closeBody();
-                err = default!; return;
+                err = default!; goto ᒐdone;
             }
         }
         {
             var (bwΔ2, ok) = w._<ж<bufio.Writer>>(ᐧ); if (ok && (~tw).FlushHeaders) {
                 {
                     var errΔ1 = bwΔ2.Flush(); if (errΔ1 != default!) {
-                        err = errΔ1; return;
+                        err = errΔ1; goto ᒐdone;
                     }
                 }
             }
@@ -755,14 +756,16 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             if (AreEqual((~tw).bodyReadError, err)) {
                 err = new requestBodyReadError(err);
             }
-            return;
+            goto ᒐdone;
         }
         if (bw != nil) {
-            err = bw.Flush(); return;
+            err = bw.Flush(); goto ᒐdone;
         }
         err = default!;
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 // requestBodyReadError wraps an error from (*Request).write to indicate
@@ -1121,36 +1124,37 @@ internal static readonly @string malformedHttpVersionˢ = "malformed HTTP versio
 internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) {
     ж<Request> req = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var err = ref Ꮡerr.ValueSlot;
 
         var tp = newTextprotoReader(Ꮡb);
-        deferǃ(putTextprotoReader, tp, defer);
+        defer(putTextprotoReader, tp, ref ᒐ);
         req = @new<Request>();
         // First line: GET /index.html HTTP/1.0
         @string s = default!;
         {
             (s, err) = tp.ReadLine(); if (err != default!) {
-                (req, err) = (default!, err); return;
+                (req, err) = (default!, err); goto ᒐdone;
             }
         }
         defer(() => {
             if (AreEqual(Ꮡerr.ValueSlot, io.EOF)) {
                 Ꮡerr.ValueSlot = io.ErrUnexpectedEOF;
             }
-        });
+        }, ref ᒐ);
         bool ok = default!;
         (req.Value.Method, req.Value.RequestURI, req.Value.Proto, ok) = parseRequestLine(s);
         if (!ok) {
-            (req, err) = (default!, badStringError(malformedHttpRequestˢ, s)); return;
+            (req, err) = (default!, badStringError(malformedHttpRequestˢ, s)); goto ᒐdone;
         }
         if (!validMethod((~req).Method)) {
-            (req, err) = (default!, badStringError(invalidMethodˢ, (~req).Method)); return;
+            (req, err) = (default!, badStringError(invalidMethodˢ, (~req).Method)); goto ᒐdone;
         }
         @string rawurl = req.Value.RequestURI;
         {
             (req.Value.ProtoMajor, req.Value.ProtoMinor, ok) = ParseHTTPVersion((~req).Proto); if (!ok) {
-                (req, err) = (default!, badStringError(malformedHttpVersionˢ, (~req).Proto)); return;
+                (req, err) = (default!, badStringError(malformedHttpVersionˢ, (~req).Proto)); goto ᒐdone;
             }
         }
         // CONNECT requests are used two different ways, and neither uses a full URL:
@@ -1168,7 +1172,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         }
         {
             (req.Value.URL, err) = url.ParseRequestURI(rawurl); if (err != default!) {
-                (req, err) = (default!, err); return;
+                (req, err) = (default!, err); goto ᒐdone;
             }
         }
         if (justAuthority) {
@@ -1178,11 +1182,11 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         // Subsequent lines: Key: value.
         (var mimeHeader, err) = tp.ReadMIMEHeader();
         if (err != default!) {
-            (req, err) = (default!, err); return;
+            (req, err) = (default!, err); goto ᒐdone;
         }
         req.Value.Header = ((ΔHeader)(map<@string, slice<@string>>)mimeHeader);
         if (builtin.len((~req).Header[hostˢ]) > 1) {
-            (req, err) = (default!, fmt.Errorf("too many Host headers"u8)); return;
+            (req, err) = (default!, fmt.Errorf("too many Host headers"u8)); goto ᒐdone;
         }
         // RFC 7230, section 5.3: Must treat
         //	GET /index.html HTTP/1.1
@@ -1199,7 +1203,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         req.Value.Close = shouldClose((~req).ProtoMajor, (~req).ProtoMinor, (~req).Header, false);
         err = readTransfer(req.OrTypedNil(), Ꮡb);
         if (err != default!) {
-            (req, err) = (default!, err); return;
+            (req, err) = (default!, err); goto ᒐdone;
         }
         if (req.isH2Upgrade()) {
             // Because it's neither chunked, nor declared:
@@ -1211,8 +1215,10 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
             req.Value.Close = true;
         }
         (req, err) = (req, default!);
-    });
-    return (req, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (req, Ꮡerr.ValueSlot);
 }
 
 // MaxBytesReader is similar to [io.LimitReader] but is intended for

@@ -86,6 +86,24 @@ func (v *Visitor) lambdaConstReturnCastType(targetType types.Type, expr ast.Expr
 //   - only when the declared result is a NAMED func type, whose emitted C# delegate name is exactly
 //     what a cast needs. An UNNAMED `func() bool` result has no corpus site today; it would need the
 //     synthesized `Func<…>`/`Action` spelling and is deliberately left until one appears.
+// resultRendersAsBareLambda reports whether a return result renders as a C# lambda with no natural
+// type — a Go function literal, through any number of parentheses. It lived beside the retired
+// execution-context inference rules (a lambda contributed nothing to the wrapper's `T`); the frame
+// form returns against the method's own declared result type, so the only remaining consumer is the
+// named-func-type return cast below.
+func resultRendersAsBareLambda(expr ast.Expr) bool {
+	for {
+		switch e := expr.(type) {
+		case *ast.ParenExpr:
+			expr = e.X
+		case *ast.FuncLit:
+			return true
+		default:
+			return false
+		}
+	}
+}
+
 func (v *Visitor) lambdaFuncLitReturnCastType(targetType types.Type, expr ast.Expr) string {
 	if v.lambdaCapture == nil || !v.lambdaCapture.conversionInLambda || targetType == nil {
 		return ""

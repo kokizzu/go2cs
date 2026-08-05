@@ -55,7 +55,7 @@ internal static void Main() {
         GoFrame ᒐ = default;
         try {
             var oʗ2 = o;
-            deferǃ(() => {
+            defer(() => {
                 oʗ2.ᐸꟷ(11);
             }, ref ᒐ);
             retErr = default!; goto ᒐdone;

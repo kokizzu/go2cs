@@ -243,45 +243,50 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
     ref var racer = ref heap(new nint(), out var Ꮡracer);
     ref var panicValue = ref heap<any>(out var ᏑpanicValue);
     bool seqDone = default!;      // to detect Goexit
-    var c = newcoro((ж<coro> cΔ1) => func((defer, recover) => {
-        race.Acquire(new @unsafe.Pointer(Ꮡracer));
-        if (done) {
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-            return;
-        }
-        var yield = (V v1) => {
-            if (done) {
-                return false;
-            }
-            if (!yieldNext) {
-                throw panic("iter.Pull: yield called again before next");
-            }
-            yieldNext = false;
-            (Ꮡv.ValueSlot, ok) = (v1, true);
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-            coroswitch(cΔ1);
+    var c = newcoro((ж<coro> cΔ1) => {
+        GoFrame ᒐ = default;
+        try {
             race.Acquire(new @unsafe.Pointer(Ꮡracer));
-            return !done;
-        };
-        // Recover and propagate panics from seq.
-        defer(() => {
-            {
-                var p = recover(); if (p != default!){
-                    ᏑpanicValue.ValueSlot = p;
-                } else 
-                if (!seqDone) {
-                    ᏑpanicValue.ValueSlot = goexitPanicValue;
-                }
+            if (done) {
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+                return;
             }
-            done = true;
-            // Invalidate iterator
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-        });
-        seq(yield);
-        V v0 = default!;
-        (Ꮡv.ValueSlot, ok) = (v0, false);
-        seqDone = true;
-    }));
+            var yield = (V v1) => {
+                if (done) {
+                    return false;
+                }
+                if (!yieldNext) {
+                    throw panic("iter.Pull: yield called again before next");
+                }
+                yieldNext = false;
+                (Ꮡv.ValueSlot, ok) = (v1, true);
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+                coroswitch(cΔ1);
+                race.Acquire(new @unsafe.Pointer(Ꮡracer));
+                return !done;
+            };
+            // Recover and propagate panics from seq.
+            defer(() => {
+                {
+                    var p = recover(); if (p != default!){
+                        ᏑpanicValue.ValueSlot = p;
+                    } else 
+                    if (!seqDone) {
+                        ᏑpanicValue.ValueSlot = goexitPanicValue;
+                    }
+                }
+                done = true;
+                // Invalidate iterator
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+            }, ref ᒐ);
+            seq(yield);
+            V v0 = default!;
+            (Ꮡv.ValueSlot, ok) = (v0, false);
+            seqDone = true;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     var cʗ1 = c;
     next = () => {
         V v1 = default!;
@@ -366,46 +371,51 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
     ref var racer = ref heap(new nint(), out var Ꮡracer);
     ref var panicValue = ref heap<any>(out var ᏑpanicValue);
     bool seqDone = default!;
-    var c = newcoro((ж<coro> cΔ1) => func((defer, recover) => {
-        race.Acquire(new @unsafe.Pointer(Ꮡracer));
-        if (done) {
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-            return;
-        }
-        var yield = (K k1, V v1) => {
-            if (done) {
-                return false;
-            }
-            if (!yieldNext) {
-                throw panic("iter.Pull2: yield called again before next");
-            }
-            yieldNext = false;
-            (Ꮡk.ValueSlot, Ꮡv.ValueSlot, ok) = (k1, v1, true);
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-            coroswitch(cΔ1);
+    var c = newcoro((ж<coro> cΔ1) => {
+        GoFrame ᒐ = default;
+        try {
             race.Acquire(new @unsafe.Pointer(Ꮡracer));
-            return !done;
-        };
-        // Recover and propagate panics from seq.
-        defer(() => {
-            {
-                var p = recover(); if (p != default!){
-                    ᏑpanicValue.ValueSlot = p;
-                } else 
-                if (!seqDone) {
-                    ᏑpanicValue.ValueSlot = goexitPanicValue;
-                }
+            if (done) {
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+                return;
             }
-            done = true;
-            // Invalidate iterator.
-            race.Release(new @unsafe.Pointer(Ꮡracer));
-        });
-        seq(yield);
-        K k0 = default!;
-        V v0 = default!;
-        (Ꮡk.ValueSlot, Ꮡv.ValueSlot, ok) = (k0, v0, false);
-        seqDone = true;
-    }));
+            var yield = (K k1, V v1) => {
+                if (done) {
+                    return false;
+                }
+                if (!yieldNext) {
+                    throw panic("iter.Pull2: yield called again before next");
+                }
+                yieldNext = false;
+                (Ꮡk.ValueSlot, Ꮡv.ValueSlot, ok) = (k1, v1, true);
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+                coroswitch(cΔ1);
+                race.Acquire(new @unsafe.Pointer(Ꮡracer));
+                return !done;
+            };
+            // Recover and propagate panics from seq.
+            defer(() => {
+                {
+                    var p = recover(); if (p != default!){
+                        ᏑpanicValue.ValueSlot = p;
+                    } else 
+                    if (!seqDone) {
+                        ᏑpanicValue.ValueSlot = goexitPanicValue;
+                    }
+                }
+                done = true;
+                // Invalidate iterator.
+                race.Release(new @unsafe.Pointer(Ꮡracer));
+            }, ref ᒐ);
+            seq(yield);
+            K k0 = default!;
+            V v0 = default!;
+            (Ꮡk.ValueSlot, Ꮡv.ValueSlot, ok) = (k0, v0, false);
+            seqDone = true;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     var cʗ1 = c;
     next = () => {
         K k1 = default!;

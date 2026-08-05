@@ -206,21 +206,22 @@ internal static ref ipv6ZoneCache zoneCache => ref ᏑzoneCache.Value;
 // cache was updated.
 internal static bool /*updated*/ update(this ж<ipv6ZoneCache> Ꮡzc, slice<Interface> ift, bool force) {
     bool updated = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var zc = ref Ꮡzc.DerefOrNull();
 
         Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Lock();
-        defer(Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Unlock);
+        defer(Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Unlock, ref ᒐ);
         var now = time.Now();
         if (!force && zc.lastFetched.After(now.Add((time.Duration)(-60000000000L)))) {
-            updated = false; return;
+            updated = false; goto ᒐdone;
         }
         zc.lastFetched = now;
         if (len(ift) == 0) {
             error err = default!;
             {
                 (ift, err) = interfaceTable(0); if (err != default!) {
-                    updated = false; return;
+                    updated = false; goto ᒐdone;
                 }
             }
         }
@@ -235,8 +236,10 @@ internal static bool /*updated*/ update(this ж<ipv6ZoneCache> Ꮡzc, slice<Inte
             }
         }
         updated = true;
-    });
-    return updated;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return updated;
 }
 
 [GoRecv] internal static @string name(this ref ipv6ZoneCache zc, nint index) {

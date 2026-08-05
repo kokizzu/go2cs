@@ -83,75 +83,80 @@ internal static readonly @string asrConfigˢ = "ASR_CONFIG"u8;
 
 // initConfVal initializes confVal based on the environment
 // that will not change during program execution.
-internal static void initConfVal() => func((defer, recover) => {
-    var (dnsMode, debugLevel) = goDebugNetDNS();
-    confVal.Value.netGo = netGoBuildTag || dnsMode == "go"u8;
-    confVal.Value.netCgo = netCgoBuildTag || dnsMode == "cgo"u8;
-    confVal.Value.dnsDebugLevel = debugLevel;
-    if ((~confVal).dnsDebugLevel > 0) {
-        defer(() => {
-            if ((~confVal).dnsDebugLevel > 1) {
-                println((@string)"go package net: confVal.netCgo ="u8, (~confVal).netCgo, (@string)" netGo ="u8, (~confVal).netGo);
-            }
-            switch (ᐧ) {
-            case {} when (~confVal).netGo: {
-                if (netGoBuildTag){
-                    println((@string)"go package net: built with netgo build tag; using Go's DNS resolver"u8);
-                } else {
-                    println((@string)"go package net: GODEBUG setting forcing use of Go's resolver"u8);
+internal static void initConfVal() {
+    GoFrame ᒐ = default;
+    try {
+        var (dnsMode, debugLevel) = goDebugNetDNS();
+        confVal.Value.netGo = netGoBuildTag || dnsMode == "go"u8;
+        confVal.Value.netCgo = netCgoBuildTag || dnsMode == "cgo"u8;
+        confVal.Value.dnsDebugLevel = debugLevel;
+        if ((~confVal).dnsDebugLevel > 0) {
+            defer(() => {
+                if ((~confVal).dnsDebugLevel > 1) {
+                    println((@string)"go package net: confVal.netCgo ="u8, (~confVal).netCgo, (@string)" netGo ="u8, (~confVal).netGo);
                 }
-                break;
-            }
-            case {} when !cgoAvailable: {
-                println((@string)"go package net: cgo resolver not supported; using Go's DNS resolver"u8);
-                break;
-            }
-            case {} when (~confVal).netCgo || (~confVal).preferCgo: {
-                println((@string)"go package net: using cgo DNS resolver"u8);
-                break;
-            }
-            default: {
-                println((@string)"go package net: dynamic selection of DNS resolver"u8);
-                break;
-            }}
+                switch (ᐧ) {
+                case {} when (~confVal).netGo: {
+                    if (netGoBuildTag){
+                        println((@string)"go package net: built with netgo build tag; using Go's DNS resolver"u8);
+                    } else {
+                        println((@string)"go package net: GODEBUG setting forcing use of Go's resolver"u8);
+                    }
+                    break;
+                }
+                case {} when !cgoAvailable: {
+                    println((@string)"go package net: cgo resolver not supported; using Go's DNS resolver"u8);
+                    break;
+                }
+                case {} when (~confVal).netCgo || (~confVal).preferCgo: {
+                    println((@string)"go package net: using cgo DNS resolver"u8);
+                    break;
+                }
+                default: {
+                    println((@string)"go package net: dynamic selection of DNS resolver"u8);
+                    break;
+                }}
 
-        });
-    }
-    // The remainder of this function sets preferCgo based on
-    // conditions that will not change during program execution.
-    // By default, prefer the go resolver.
-    confVal.Value.preferCgo = false;
-    // If the cgo resolver is not available, we can't prefer it.
-    if (!cgoAvailable) {
-        return;
-    }
-    // Some operating systems always prefer the cgo resolver.
-    if (goosPrefersCgo()) {
-        confVal.Value.preferCgo = true;
-        return;
-    }
-    // The remaining checks are specific to Unix systems.
-    var exprᴛ1 = Δruntime.GOOS;
-    if (exprᴛ1 == "plan9"u8 || exprᴛ1 == "windows"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
-        return;
-    }
+            }, ref ᒐ);
+        }
+        // The remainder of this function sets preferCgo based on
+        // conditions that will not change during program execution.
+        // By default, prefer the go resolver.
+        confVal.Value.preferCgo = false;
+        // If the cgo resolver is not available, we can't prefer it.
+        if (!cgoAvailable) {
+            return;
+        }
+        // Some operating systems always prefer the cgo resolver.
+        if (goosPrefersCgo()) {
+            confVal.Value.preferCgo = true;
+            return;
+        }
+        // The remaining checks are specific to Unix systems.
+        var exprᴛ1 = Δruntime.GOOS;
+        if (exprᴛ1 == "plan9"u8 || exprᴛ1 == "windows"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
+            return;
+        }
 
-    // If any environment-specified resolver options are specified,
-    // prefer the cgo resolver.
-    // Note that LOCALDOMAIN can change behavior merely by being
-    // specified with the empty string.
-    var (_, localDomainDefined) = syscall.Getenv(localdomainˢ);
-    if (localDomainDefined || os.Getenv(resOptionsˢ) != ""u8 || os.Getenv(hostaliasesˢ) != ""u8) {
-        confVal.Value.preferCgo = true;
-        return;
+        // If any environment-specified resolver options are specified,
+        // prefer the cgo resolver.
+        // Note that LOCALDOMAIN can change behavior merely by being
+        // specified with the empty string.
+        var (_, localDomainDefined) = syscall.Getenv(localdomainˢ);
+        if (localDomainDefined || os.Getenv(resOptionsˢ) != ""u8 || os.Getenv(hostaliasesˢ) != ""u8) {
+            confVal.Value.preferCgo = true;
+            return;
+        }
+        // OpenBSD apparently lets you override the location of resolv.conf
+        // with ASR_CONFIG. If we notice that, defer to libc.
+        if (Δruntime.GOOS == "openbsd"u8 && os.Getenv(asrConfigˢ) != ""u8) {
+            confVal.Value.preferCgo = true;
+            return;
+        }
     }
-    // OpenBSD apparently lets you override the location of resolv.conf
-    // with ASR_CONFIG. If we notice that, defer to libc.
-    if (Δruntime.GOOS == "openbsd"u8 && os.Getenv(asrConfigˢ) != ""u8) {
-        confVal.Value.preferCgo = true;
-        return;
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // goosPrefersCgo reports whether the GOOS value passed in prefers
 // the cgo resolver.
@@ -213,16 +218,19 @@ internal static bool goosPrefersCgo() {
 internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) addrLookupOrder(this ж<conf> Ꮡc, ж<Resolver> Ꮡr, @string addr) {
     ΔhostLookupOrder ret = default!;
     ж<dnsConfig> dnsConf = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
                 print((@string)"go package net: addrLookupOrder("u8, addr, (@string)") = "u8, ret.String(), (@string)"\n"u8);
-            });
+            }, ref ᒐ);
         }
         (ret, dnsConf) = c.lookupOrder(Ꮡr, ""u8);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (ret, dnsConf);
 }
 
@@ -232,16 +240,19 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) addrLookupOrder(t
 internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(this ж<conf> Ꮡc, ж<Resolver> Ꮡr, @string hostname) {
     ΔhostLookupOrder ret = default!;
     ж<dnsConfig> dnsConf = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
                 print((@string)"go package net: hostLookupOrder("u8, hostname, (@string)") = "u8, ret.String(), (@string)"\n"u8);
-            });
+            }, ref ᒐ);
         }
         (ret, dnsConf) = c.lookupOrder(Ꮡr, hostname);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (ret, dnsConf);
 }
 

@@ -30,64 +30,69 @@ partial class net_package {
 // the IPv6 interface. That simplifies our code and is most
 // general. Unfortunately, we need to run on kernels built without
 // IPv6 support too. So probe the kernel to figure it out.
-internal static void probe(this ж<ipStackCapabilities> Ꮡp) => func((defer, recover) => {
+internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    var exprᴛ1 = Δruntime.GOOS;
-    if (exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
-        p.ipv4Enabled = true;
-        p.ipv6Enabled = true;
-        p.ipv4MappedIPv6Enabled = true;
-        return;
-    }
+        var exprᴛ1 = Δruntime.GOOS;
+        if (exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
+            p.ipv4Enabled = true;
+            p.ipv6Enabled = true;
+            p.ipv4MappedIPv6Enabled = true;
+            return;
+        }
 
-    // Both ipv4 and ipv6 are faked; see net_fake.go.
-    var (s, err) = sysSocket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP);
-    var exprᴛ2 = err;
-    if (AreEqual(exprᴛ2, syscall.EAFNOSUPPORT) || AreEqual(exprᴛ2, syscall.EPROTONOSUPPORT)) {
-    }
-    else if (AreEqual(exprᴛ2, default!)) {
-        poll.CloseFunc(s);
-        p.ipv4Enabled = true;
-    }
+        // Both ipv4 and ipv6 are faked; see net_fake.go.
+        var (s, err) = sysSocket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP);
+        var exprᴛ2 = err;
+        if (AreEqual(exprᴛ2, syscall.EAFNOSUPPORT) || AreEqual(exprᴛ2, syscall.EPROTONOSUPPORT)) {
+        }
+        else if (AreEqual(exprᴛ2, default!)) {
+            poll.CloseFunc(s);
+            p.ipv4Enabled = true;
+        }
 
 // IPv6 communication capability
 // IPv4-mapped IPv6 address communication capability
-    slice<probe_type> probes = new probe_type[]{
-        new(laddr: new TCPAddr(IP: ParseIP("::1"u8)), value: 1),
-        new(laddr: new TCPAddr(IP: IPv4(127, 0, 0, 1)), value: 0)
-    }.slice();
-    var exprᴛ3 = Δruntime.GOOS;
-    if (exprᴛ3 == "dragonfly"u8 || exprᴛ3 == "openbsd"u8) {
-        probes = probes[..1];
-    }
+        slice<probe_type> probes = new probe_type[]{
+            new(laddr: new TCPAddr(IP: ParseIP("::1"u8)), value: 1),
+            new(laddr: new TCPAddr(IP: IPv4(127, 0, 0, 1)), value: 0)
+        }.slice();
+        var exprᴛ3 = Δruntime.GOOS;
+        if (exprᴛ3 == "dragonfly"u8 || exprᴛ3 == "openbsd"u8) {
+            probes = probes[..1];
+        }
 
-    // The latest DragonFly BSD and OpenBSD kernels don't
-    // support IPV6_V6ONLY=0. They always return an error
-    // and we don't need to probe the capability.
-    foreach (var (i, _) in probes) {
-        var (sΔ1, errΔ1) = sysSocket(syscall.AF_INET6, syscall.SOCK_STREAM, syscall.IPPROTO_TCP);
-        if (errΔ1 != default!) {
-            continue;
-        }
-        deferǃ(poll.CloseFunc, sΔ1, defer);
-        syscall.SetsockoptInt(sΔ1, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, probes[i].value);
-        (var sa, errΔ1) = Ꮡ(probes[i]).of(probe_type.Ꮡladdr).sockaddr(syscall.AF_INET6);
-        if (errΔ1 != default!) {
-            continue;
-        }
-        {
-            var errΔ2 = syscall.Bind(sΔ1, sa); if (errΔ2 != default!) {
+        // The latest DragonFly BSD and OpenBSD kernels don't
+        // support IPV6_V6ONLY=0. They always return an error
+        // and we don't need to probe the capability.
+        foreach (var (i, _) in probes) {
+            var (sΔ1, errΔ1) = sysSocket(syscall.AF_INET6, syscall.SOCK_STREAM, syscall.IPPROTO_TCP);
+            if (errΔ1 != default!) {
                 continue;
             }
-        }
-        if (i == 0){
-            p.ipv6Enabled = true;
-        } else {
-            p.ipv4MappedIPv6Enabled = true;
+            defer(poll.CloseFunc, sΔ1, ref ᒐ);
+            syscall.SetsockoptInt(sΔ1, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, probes[i].value);
+            (var sa, errΔ1) = Ꮡ(probes[i]).of(probe_type.Ꮡladdr).sockaddr(syscall.AF_INET6);
+            if (errΔ1 != default!) {
+                continue;
+            }
+            {
+                var errΔ2 = syscall.Bind(sΔ1, sa); if (errΔ2 != default!) {
+                    continue;
+                }
+            }
+            if (i == 0){
+                p.ipv6Enabled = true;
+            } else {
+                p.ipv4MappedIPv6Enabled = true;
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // favoriteAddrFamily returns the appropriate address family for the
 // given network, laddr, raddr and mode.

@@ -26,7 +26,7 @@ private static readonly object findDoneˢ = (@string)"find done"u8;
 internal static (ж<item>, error) find(slice<item> xs, nint want) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), findDoneˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), findDoneˢ, ref ᒐ);
         foreach (var (i, _) in xs) {
             if (xs[i].n == want) {
                 return (Ꮡ(xs, i), default!);
@@ -62,7 +62,7 @@ internal static uint32 width() {
 internal static (uint32, error) mixedRet(bool ok) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(closeIt, (ж<nint>)(nil), (nint)(4), ref ᒐ);
+        defer(closeIt, (ж<nint>)(nil), (nint)(4), ref ᒐ);
         if (!ok) {
             return (0, fmt.Errorf("nope"u8));
         }
@@ -75,11 +75,11 @@ internal static (uint32, error) mixedRet(bool ok) {
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(closeIt, (ж<nint>)(nil), (nint)(3), ref ᒐ);
+        defer(closeIt, (ж<nint>)(nil), (nint)(3), ref ᒐ);
         ref var h = ref heap<res>(out var Ꮡh);
         h = new res(id: 4);
         var hʗ1 = h;
-        deferǃ(() => hʗ1.close(), ref ᒐ);
+        defer(() => hʗ1.close(), ref ᒐ);
         var (w, werr) = mixedRet(true);
         fmt.Println(w, werr == default!);
         var (_, werr2) = mixedRet(false);

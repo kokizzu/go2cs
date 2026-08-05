@@ -32,27 +32,27 @@ private static readonly object mainFunctionˢ = (@string)"Main function"u8;
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ, ref ᒐ);
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), secondˢ, ref ᒐ);
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), firstˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), secondˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, ref ᒐ);
         var f1 = fmt.Println;
         var f1ʗ1 = f1;
-        deferǃ(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, ref ᒐ);
+        defer(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, ref ᒐ);
         var msgs = new channel<@string>(2);
         var cancel = makeStop(stoppedˢ, msgs);
         var cancelʗ1 = cancel;
-        deferǃ(() => cancelʗ1(), ref ᒐ);
+        defer(() => cancelʗ1(), ref ᒐ);
         var msgsʗ1 = msgs;
         goǃ(() => makeStop(goStoppedˢ, msgsʗ1)());
         fmt.Println(ᐸꟷ(msgs));
         var drained = new channel<nint>(1);
         var drainedʗ1 = drained;
-        deferǃ(() => {
+        defer(() => {
             var (v, open) = ᐸꟷ(drainedʗ1, ꟷ);
             fmt.Println(afterCloseˢ, v, open);
         }, ref ᒐ);
-        deferǃ(ᴛ1 => close(ᴛ1), drained, ref ᒐ);
-        deferǃ(GetPrintLn(), fifthˢ, ref ᒐ);
+        defer(ᴛ1 => close(ᴛ1), drained, ref ᒐ);
+        defer(GetPrintLn(), fifthˢ, ref ᒐ);
         var c = Ꮡ(new acc(nil));
         var (s1, e1) = c.add(5);
         fmt.Println(s1, e1);
@@ -100,8 +100,8 @@ internal static void watchAndSend(ж<sema> Ꮡs) {
         s.held = true;
         goǃ(Ꮡs.send, (nint)(7));
         fmt.Println(sentFirstˢ, ᐸꟷ(s.@out));
-        deferǃ(Ꮡs.send, (nint)(9), ref ᒐ);
-        deferǃ(Ꮡs.release, ref ᒐ);
+        defer(Ꮡs.send, (nint)(9), ref ᒐ);
+        defer(Ꮡs.release, ref ᒐ);
         fmt.Println(watchingHeldˢ, s.held);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -117,7 +117,7 @@ internal static void acquireAndWork(ж<sema> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
         s.held = true;
-        deferǃ(Ꮡs.release, ref ᒐ);
+        defer(Ꮡs.release, ref ᒐ);
         fmt.Println(workingHeldˢ, s.held);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -132,7 +132,7 @@ internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) {
     try {
     var vals = valsʗp.sslice();
 
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, ref ᒐ);
         nint total = 0;
         foreach (var (_, v) in vals) {
             total += v;
@@ -154,7 +154,7 @@ internal static (nint sum, error err) add(this ж<acc> Ꮡa, nint n) {
     try {
     ref var a = ref Ꮡa.DerefOrNull();
 
-        deferǃ(() => {
+        defer(() => {
             {
                 var e = recover(); if (e != default!) {
                     err = fmt.Errorf("boom"u8);

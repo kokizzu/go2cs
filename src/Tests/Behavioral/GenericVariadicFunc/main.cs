@@ -21,7 +21,7 @@ public static nint DeferredCount<T>(params Span<T> valsʗp) {
     try {
     var vals = valsʗp.sslice();
 
-        deferǃ(() => {
+        defer(() => {
         }, ref ᒐ);
         return len(vals);
     }

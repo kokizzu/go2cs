@@ -27,7 +27,7 @@ public static nint Area(this Square s) {
 internal static Shape pick(nint kind) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             _ = recover();
         }, ref ᒐ);
         if (kind == 0) {
@@ -42,7 +42,7 @@ internal static Shape pick(nint kind) {
 internal static (Shape, bool) classify(nint kind) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             _ = recover();
         }, ref ᒐ);
         if (kind == 0) {

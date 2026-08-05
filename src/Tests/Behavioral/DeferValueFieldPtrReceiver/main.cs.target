@@ -28,7 +28,7 @@ internal static void run(this ж<builder> Ꮡb) {
     try {
     ref var b = ref Ꮡb.DerefOrNull();
 
-        deferǃ(Ꮡb.of(builder.Ꮡc).reset, ref ᒐ);
+        defer(Ꮡb.of(builder.Ꮡc).reset, ref ᒐ);
         b.c.inc();
         b.c.inc();
         fmt.Println(insideˢ, b.c.n);
@@ -52,7 +52,7 @@ internal static void Main() {
         GoFrame ᒐ = default;
         try {
             var xʗ2 = xʗ1;
-            deferǃ(xʗ2.of(builder.Ꮡc).reset, ref ᒐ);
+            defer(xʗ2.of(builder.Ꮡc).reset, ref ᒐ);
             xʗ1.of(builder.Ꮡc).inc();
             fmt.Println(inside2ˢ, (~xʗ1).c.n);
         }

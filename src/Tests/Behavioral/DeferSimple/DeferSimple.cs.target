@@ -13,7 +13,7 @@ internal static void Main() {
     GoFrame ᒐ = default;
     try {
         fmt.Println(openFileˢ);
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), closeFileˢ, ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), closeFileˢ, ref ᒐ);
         fmt.Println(writeDataToFileˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

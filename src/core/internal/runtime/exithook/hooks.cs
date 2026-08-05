@@ -56,32 +56,37 @@ private static readonly @string exitHookInvokedPanicˢ = "exit hook invoked pani
 // If an exit hook panics, Run will throw with the panic on the stack.
 // If an exit hook invokes exit in the same goroutine, the goroutine will throw.
 // If an exit hook invokes exit in another goroutine, that exit will block.
-public static void Run(nint code) => func((defer, recover) => {
-    while (!Ꮡlocked.CompareAndSwap(0, 1)) {
-        if (Goid() == ᏑrunGoid.Load()) {
-            Throw(exitHookInvokedExitˢ);
-        }
-        Gosched();
-    }
-    deferǃ(Ꮡlocked.Store, (int32)(0), defer);
-    ᏑrunGoid.Store(Goid());
-    deferǃ(ᏑrunGoid.Store, (uint64)(0), defer);
-    defer(() => {
-        {
-            var e = recover(); if (e != default!) {
-                Throw(exitHookInvokedPanicˢ);
+public static void Run(nint code) {
+    GoFrame ᒐ = default;
+    try {
+        while (!Ꮡlocked.CompareAndSwap(0, 1)) {
+            if (Goid() == ᏑrunGoid.Load()) {
+                Throw(exitHookInvokedExitˢ);
             }
+            Gosched();
         }
-    });
-    while (len(hooks) > 0) {
-        var h = hooks[len(hooks) - 1];
-        hooks = hooks[..(int)(len(hooks) - 1)];
-        if (code != 0 && !h.RunOnFailure) {
-            continue;
+        defer(Ꮡlocked.Store, (int32)(0), ref ᒐ);
+        ᏑrunGoid.Store(Goid());
+        defer(ᏑrunGoid.Store, (uint64)(0), ref ᒐ);
+        defer(() => {
+            {
+                var e = recover(); if (e != default!) {
+                    Throw(exitHookInvokedPanicˢ);
+                }
+            }
+        }, ref ᒐ);
+        while (len(hooks) > 0) {
+            var h = hooks[len(hooks) - 1];
+            hooks = hooks[..(int)(len(hooks) - 1)];
+            if (code != 0 && !h.RunOnFailure) {
+                continue;
+            }
+            h.F();
         }
-        h.F();
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType("@string")] partial struct exitError;
 

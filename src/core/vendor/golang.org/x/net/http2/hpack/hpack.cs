@@ -216,30 +216,35 @@ public static error ErrStringLength = errors.New("hpack: string too long"u8);
 //
 // TODO: remove this method and make it incremental later? This is
 // easier for debugging now.
-public static (slice<HeaderField>, error) DecodeFull(this ж<Decoder> Ꮡd, slice<byte> p) => func<(slice<HeaderField>, error)>((defer, recover) => {
+public static (slice<HeaderField>, error) DecodeFull(this ж<Decoder> Ꮡd, slice<byte> p) {
+    GoFrame ᒐ = default;
+    try {
     ref var d = ref Ꮡd.DerefOrNull();
 
-    ref var hf = ref heap<slice<HeaderField>>(out var Ꮡhf);
-    var saveFunc = d.emit;
-    var saveFuncʗ1 = saveFunc;
-    defer(() => {
-        Ꮡd.Value.emit = saveFuncʗ1;
-    });
-    d.emit = (HeaderField f) => {
-        Ꮡhf.ValueSlot = append(Ꮡhf.ValueSlot, f);
-    };
-    {
-        var (_, err) = d.Write(p); if (err != default!) {
-            return (default!, err);
+        ref var hf = ref heap<slice<HeaderField>>(out var Ꮡhf);
+        var saveFunc = d.emit;
+        var saveFuncʗ1 = saveFunc;
+        defer(() => {
+            Ꮡd.Value.emit = saveFuncʗ1;
+        }, ref ᒐ);
+        d.emit = (HeaderField f) => {
+            Ꮡhf.ValueSlot = append(Ꮡhf.ValueSlot, f);
+        };
+        {
+            var (_, err) = d.Write(p); if (err != default!) {
+                return (default!, err);
+            }
         }
-    }
-    {
-        var err = d.Close(); if (err != default!) {
-            return (default!, err);
+        {
+            var err = d.Close(); if (err != default!) {
+                return (default!, err);
+            }
         }
+        return (hf, default!);
     }
-    return (hf, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string truncatedHeadersˢ = "truncated headers"u8;

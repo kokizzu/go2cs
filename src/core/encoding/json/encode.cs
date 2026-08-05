@@ -160,16 +160,21 @@ partial class json_package {
 // JSON cannot represent cyclic data structures and Marshal does not
 // handle them. Passing cyclic structures to Marshal will result in
 // an error.
-public static (slice<byte>, error) Marshal(any v) => func<(slice<byte>, error)>((defer, recover) => {
-    var e = newEncodeState();
-    deferǃ(ᏑencodeStatePool.Put, e.OrTypedNil(), defer);
-    var err = e.marshal(v, new encOpts(escapeHTML: true));
-    if (err != default!) {
-        return (default!, err);
+public static (slice<byte>, error) Marshal(any v) {
+    GoFrame ᒐ = default;
+    try {
+        var e = newEncodeState();
+        defer(ᏑencodeStatePool.Put, e.OrTypedNil(), ref ᒐ);
+        var err = e.marshal(v, new encOpts(escapeHTML: true));
+        if (err != default!) {
+            return (default!, err);
+        }
+        var buf = append(slice<byte>(default!), e.of(encodeState.ᏑBuffer).Bytes().ꓸꓸꓸ);
+        return (buf, default!);
     }
-    var buf = append(slice<byte>(default!), e.of(encodeState.ᏑBuffer).Bytes().ꓸꓸꓸ);
-    return (buf, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // MarshalIndent is like [Marshal] but applies [Indent] to format the output.
 // Each JSON element in the output will begin on a new line beginning with prefix
@@ -295,7 +300,8 @@ internal static ж<encodeState> newEncodeState() {
 
 internal static error /*err*/ marshal(this ж<encodeState> Ꮡe, any v, encOpts opts) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
@@ -309,10 +315,12 @@ internal static error /*err*/ marshal(this ж<encodeState> Ꮡe, any v, encOpts 
                     }
                 }
             }
-        });
+        }, ref ᒐ);
         Ꮡe.reflectValue(reflect.ValueOf(v), opts);
         err = default!;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return err;
 }
 
@@ -765,54 +773,59 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newStructEncod
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> elemEnc;
 }
 
-internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
+internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
+    GoFrame ᒐ = default;
+    try {
     ref var e = ref Ꮡe.DerefOrNull();
 
-    if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
-        return;
-    }
-    {
-        e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
-            // We're a large number of nested ptrEncoder.encode calls deep;
-            // start checking if we've run into a pointer cycle.
-            @unsafe.Pointer ptr = (uintptr)v.UnsafePointer();
+        if (v.IsNil()) {
+            Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
+            return;
+        }
+        {
+            e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
+                // We're a large number of nested ptrEncoder.encode calls deep;
+                // start checking if we've run into a pointer cycle.
+                @unsafe.Pointer ptr = (uintptr)v.UnsafePointer();
+                {
+                    var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
+                        e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
+                    }
+                }
+                e.ptrSeen[ptr] = new EmptyStruct();
+                defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, ref ᒐ);
+            }
+        }
+        Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'{');
+        // Extract and sort the keys.
+        slice<reflectWithString> sv = new slice<reflectWithString>(v.Len(), () => new());
+        
+        ж<reflect.MapIter> mi = v.MapRange();
+        
+        error err = default!;
+        for (nint i = 0; mi.Next(); i++) {
             {
-                var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
-                    e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
+                (sv[i].ks, err) = resolveKeyName(mi.Key()); if (err != default!) {
+                    e.error(fmt.Errorf("json: encoding error for type %q: %q"u8, v.Type().String(), err.Error()));
                 }
             }
-            e.ptrSeen[ptr] = new EmptyStruct();
-            deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, defer);
+            sv[i].v = mi.Value();
         }
-    }
-    Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'{');
-    // Extract and sort the keys.
-    slice<reflectWithString> sv = new slice<reflectWithString>(v.Len(), () => new());
-    
-    ж<reflect.MapIter> mi = v.MapRange();
-    
-    error err = default!;
-    for (nint i = 0; mi.Next(); i++) {
-        {
-            (sv[i].ks, err) = resolveKeyName(mi.Key()); if (err != default!) {
-                e.error(fmt.Errorf("json: encoding error for type %q: %q"u8, v.Type().String(), err.Error()));
+        slices.SortFunc(sv, (reflectWithString i, reflectWithString j) => strings.Compare(i.ks, j.ks));
+        foreach (var (i, kv) in sv) {
+            if (i > 0) {
+                Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)',');
             }
+            Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), kv.ks, opts.escapeHTML));
+            Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)':');
+            me.elemEnc(Ꮡe, kv.v, opts);
         }
-        sv[i].v = mi.Value();
+        Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'}');
+        e.ptrLevel--;
     }
-    slices.SortFunc(sv, (reflectWithString i, reflectWithString j) => strings.Compare(i.ks, j.ks));
-    foreach (var (i, kv) in sv) {
-        if (i > 0) {
-            Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)',');
-        }
-        Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), kv.ks, opts.escapeHTML));
-        Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)':');
-        me.elemEnc(Ꮡe, kv.v, opts);
-    }
-    Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'}');
-    e.ptrLevel--;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newMapEncoder(reflectꓸType t) {
     var exprᴛ1 = t.Key().Kind();
@@ -851,33 +864,38 @@ internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, en
     internal nint len;
 }
 
-internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
+internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
+    GoFrame ᒐ = default;
+    try {
     ref var e = ref Ꮡe.DerefOrNull();
 
-    if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
-        return;
-    }
-    {
-        e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
-            // We're a large number of nested ptrEncoder.encode calls deep;
-            // start checking if we've run into a pointer cycle.
-            // Here we use a struct to memorize the pointer to the first element of the slice
-            // and its length.
-            ref var ptr = ref heap<encode_ptr>(out var Ꮡptr);
-            ptr = new encode_ptr((uintptr)v.UnsafePointer(), v.Len());
-            {
-                var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
-                    e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
-                }
-            }
-            e.ptrSeen[ptr] = new EmptyStruct();
-            deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, defer);
+        if (v.IsNil()) {
+            Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
+            return;
         }
+        {
+            e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
+                // We're a large number of nested ptrEncoder.encode calls deep;
+                // start checking if we've run into a pointer cycle.
+                // Here we use a struct to memorize the pointer to the first element of the slice
+                // and its length.
+                ref var ptr = ref heap<encode_ptr>(out var Ꮡptr);
+                ptr = new encode_ptr((uintptr)v.UnsafePointer(), v.Len());
+                {
+                    var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
+                        e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
+                    }
+                }
+                e.ptrSeen[ptr] = new EmptyStruct();
+                defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, ref ᒐ);
+            }
+        }
+        se.arrayEnc(Ꮡe, v, opts);
+        e.ptrLevel--;
     }
-    se.arrayEnc(Ꮡe, v, opts);
-    e.ptrLevel--;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newSliceEncoder(reflectꓸType t) {
     // Byte slices get special treatment; arrays don't.
@@ -916,30 +934,35 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newArrayEncode
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> elemEnc;
 }
 
-internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) => func((defer, recover) => {
+internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
+    GoFrame ᒐ = default;
+    try {
     ref var e = ref Ꮡe.DerefOrNull();
 
-    if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
-        return;
-    }
-    {
-        e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
-            // We're a large number of nested ptrEncoder.encode calls deep;
-            // start checking if we've run into a pointer cycle.
-            var ptr = v.Interface();
-            {
-                var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
-                    e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
-                }
-            }
-            e.ptrSeen[ptr] = new EmptyStruct();
-            deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, defer);
+        if (v.IsNil()) {
+            Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
+            return;
         }
+        {
+            e.ptrLevel++; if (e.ptrLevel > startDetectingCyclesAfter) {
+                // We're a large number of nested ptrEncoder.encode calls deep;
+                // start checking if we've run into a pointer cycle.
+                var ptr = v.Interface();
+                {
+                    var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
+                        e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
+                    }
+                }
+                e.ptrSeen[ptr] = new EmptyStruct();
+                defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, ref ᒐ);
+            }
+        }
+        pe.elemEnc(Ꮡe, v.Elem(), opts);
+        e.ptrLevel--;
     }
-    pe.elemEnc(Ꮡe, v.Elem(), opts);
-    e.ptrLevel--;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newPtrEncoder(reflectꓸType t) {
     var enc = new ptrEncoder(typeEncoder(t.Elem()));

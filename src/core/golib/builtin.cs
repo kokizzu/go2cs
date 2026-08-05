@@ -251,7 +251,7 @@ public static partial class builtin
     /// (<see cref="GoFrame.Capture"/>), so it resolves STATICALLY from wherever it is called —
     /// which is what lets a deferred closure recover without holding a handle on the frame that
     /// registered it. It replaces the <c>Recover</c> delegate the retired
-    /// <c>func((defer, recover) =&gt; …)</c> execution context passed into the body; that
+    /// <c>func((defer, recover) =&gt; ...)</c> execution context passed into the body; that
     /// delegate's <c>HandleRecover</c> did exactly this, against exactly this slot.
     /// </remarks>
     public static object? recover()

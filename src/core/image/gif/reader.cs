@@ -391,120 +391,125 @@ internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
 
-internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) => func<error>((defer, recover) => {
+internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) {
+    GoFrame ᒐ = default;
+    try {
     ref var d = ref Ꮡd.DerefOrNull();
 
-    var (m, err) = d.newImageFromDescriptor();
-    if (err != default!) {
-        return err;
-    }
-    var useLocalColorTable = (byte)(d.imageFields & (byte)fColorTable) != 0;
-    if (useLocalColorTable){
-        (m.Value.Palette, err) = d.readColorTable(d.imageFields);
+        var (m, err) = d.newImageFromDescriptor();
         if (err != default!) {
             return err;
         }
-    } else {
-        if (d.globalColorTable == default!) {
-            return errors.New(gifNoColorTableˢ);
+        var useLocalColorTable = (byte)(d.imageFields & (byte)fColorTable) != 0;
+        if (useLocalColorTable){
+            (m.Value.Palette, err) = d.readColorTable(d.imageFields);
+            if (err != default!) {
+                return err;
+            }
+        } else {
+            if (d.globalColorTable == default!) {
+                return errors.New(gifNoColorTableˢ);
+            }
+            m.Value.Palette = d.globalColorTable;
         }
-        m.Value.Palette = d.globalColorTable;
-    }
-    if (d.hasTransparentIndex) {
-        if (!useLocalColorTable) {
-            // Clone the global color table.
-            m.Value.Palette = append(((Δcolor.Palette)default!), d.globalColorTable.ꓸꓸꓸ);
-        }
-        {
-            nint ti = (nint)d.transparentIndex; if (ti < len((~m).Palette)){
-                m.Value.Palette[ti] = new colorꓸRGBA(nil);
-            } else {
-                // The transparentIndex is out of range, which is an error
-                // according to the spec, but Firefox and Google Chrome
-                // seem OK with this, so we enlarge the palette with
-                // transparent colors. See golang.org/issue/15059.
-                var p = new Δcolor.Palette(ti + 1);
-                copy(p, (~m).Palette);
-                for (nint i = len((~m).Palette); i < len(p); i++) {
-                    p[i] = new colorꓸRGBA(nil);
+        if (d.hasTransparentIndex) {
+            if (!useLocalColorTable) {
+                // Clone the global color table.
+                m.Value.Palette = append(((Δcolor.Palette)default!), d.globalColorTable.ꓸꓸꓸ);
+            }
+            {
+                nint ti = (nint)d.transparentIndex; if (ti < len((~m).Palette)){
+                    m.Value.Palette[ti] = new colorꓸRGBA(nil);
+                } else {
+                    // The transparentIndex is out of range, which is an error
+                    // according to the spec, but Firefox and Google Chrome
+                    // seem OK with this, so we enlarge the palette with
+                    // transparent colors. See golang.org/issue/15059.
+                    var p = new Δcolor.Palette(ti + 1);
+                    copy(p, (~m).Palette);
+                    for (nint i = len((~m).Palette); i < len(p); i++) {
+                        p[i] = new colorꓸRGBA(nil);
+                    }
+                    m.Value.Palette = p;
                 }
-                m.Value.Palette = p;
             }
         }
-    }
-    (var litWidth, err) = readByte(d.r);
-    if (err != default!) {
-        return fmt.Errorf("gif: reading image data: %v"u8, err);
-    }
-    if (litWidth < 2 || litWidth > 8) {
-        return fmt.Errorf("gif: pixel size in decode out of range: %d"u8, litWidth);
-    }
-    // A wonderfully Go-like piece of magic.
-    var br = Ꮡ(new blockReader(d: Ꮡd));
-    var lzwr = lzw.NewReader(new blockReaderжReader(br), lzw.LSB, (nint)litWidth);
-    var lzwrʗ1 = lzwr;
-    defer(() => lzwrʗ1.Close());
-    {
-        err = readFull(lzwr, (~m).Pix); if (err != default!) {
-            if (!AreEqual(err, io.ErrUnexpectedEOF)) {
-                return fmt.Errorf("gif: reading image data: %v"u8, err);
-            }
-            return errNotEnough;
+        (var litWidth, err) = readByte(d.r);
+        if (err != default!) {
+            return fmt.Errorf("gif: reading image data: %v"u8, err);
         }
-    }
-    // In theory, both lzwr and br should be exhausted. Reading from them
-    // should yield (0, io.EOF).
-    //
-    // The spec (Appendix F - Compression), says that "An End of
-    // Information code... must be the last code output by the encoder
-    // for an image". In practice, though, giflib (a widely used C
-    // library) does not enforce this, so we also accept lzwr returning
-    // io.ErrUnexpectedEOF (meaning that the encoded stream hit io.EOF
-    // before the LZW decoder saw an explicit end code), provided that
-    // the io.ReadFull call above successfully read len(m.Pix) bytes.
-    // See https://golang.org/issue/9856 for an example GIF.
-    {
-        var (n, errΔ1) = lzwr.Read(d.tmp[256..257]); if (n != 0 || (!AreEqual(errΔ1, io.EOF) && !AreEqual(errΔ1, io.ErrUnexpectedEOF))) {
-            if (errΔ1 != default!) {
-                return fmt.Errorf("gif: reading image data: %v"u8, errΔ1);
-            }
-            return errTooMuch;
+        if (litWidth < 2 || litWidth > 8) {
+            return fmt.Errorf("gif: pixel size in decode out of range: %d"u8, litWidth);
         }
-    }
-    // In practice, some GIFs have an extra byte in the data sub-block
-    // stream, which we ignore. See https://golang.org/issue/16146.
-    {
-        var errΔ2 = br.close(); if (AreEqual(errΔ2, errTooMuch)){
-            return errTooMuch;
-        } else 
-        if (errΔ2 != default!) {
-            return fmt.Errorf("gif: reading image data: %v"u8, errΔ2);
-        }
-    }
-    // Check that the color indexes are inside the palette.
-    if (len((~m).Palette) < 256) {
-        foreach (var (_, pixel) in (~m).Pix) {
-            if ((nint)pixel >= len((~m).Palette)) {
-                return errBadPixel;
+        // A wonderfully Go-like piece of magic.
+        var br = Ꮡ(new blockReader(d: Ꮡd));
+        var lzwr = lzw.NewReader(new blockReaderжReader(br), lzw.LSB, (nint)litWidth);
+        var lzwrʗ1 = lzwr;
+        defer(() => lzwrʗ1.Close(), ref ᒐ);
+        {
+            err = readFull(lzwr, (~m).Pix); if (err != default!) {
+                if (!AreEqual(err, io.ErrUnexpectedEOF)) {
+                    return fmt.Errorf("gif: reading image data: %v"u8, err);
+                }
+                return errNotEnough;
             }
         }
+        // In theory, both lzwr and br should be exhausted. Reading from them
+        // should yield (0, io.EOF).
+        //
+        // The spec (Appendix F - Compression), says that "An End of
+        // Information code... must be the last code output by the encoder
+        // for an image". In practice, though, giflib (a widely used C
+        // library) does not enforce this, so we also accept lzwr returning
+        // io.ErrUnexpectedEOF (meaning that the encoded stream hit io.EOF
+        // before the LZW decoder saw an explicit end code), provided that
+        // the io.ReadFull call above successfully read len(m.Pix) bytes.
+        // See https://golang.org/issue/9856 for an example GIF.
+        {
+            var (n, errΔ1) = lzwr.Read(d.tmp[256..257]); if (n != 0 || (!AreEqual(errΔ1, io.EOF) && !AreEqual(errΔ1, io.ErrUnexpectedEOF))) {
+                if (errΔ1 != default!) {
+                    return fmt.Errorf("gif: reading image data: %v"u8, errΔ1);
+                }
+                return errTooMuch;
+            }
+        }
+        // In practice, some GIFs have an extra byte in the data sub-block
+        // stream, which we ignore. See https://golang.org/issue/16146.
+        {
+            var errΔ2 = br.close(); if (AreEqual(errΔ2, errTooMuch)){
+                return errTooMuch;
+            } else 
+            if (errΔ2 != default!) {
+                return fmt.Errorf("gif: reading image data: %v"u8, errΔ2);
+            }
+        }
+        // Check that the color indexes are inside the palette.
+        if (len((~m).Palette) < 256) {
+            foreach (var (_, pixel) in (~m).Pix) {
+                if ((nint)pixel >= len((~m).Palette)) {
+                    return errBadPixel;
+                }
+            }
+        }
+        // Undo the interlacing if necessary.
+        if ((byte)(d.imageFields & (byte)fInterlace) != 0) {
+            uninterlace(m);
+        }
+        if (keepAllFrames || len(d.image) == 0) {
+            d.image = append(d.image, m);
+            d.delay = append(d.delay, d.delayTime);
+            d.disposal = append(d.disposal, d.disposalMethod);
+        }
+        // The GIF89a spec, Section 23 (Graphic Control Extension) says:
+        // "The scope of this extension is the first graphic rendering block
+        // to follow." We therefore reset the GCE fields to zero.
+        d.delayTime = 0;
+        d.hasTransparentIndex = false;
+        return default!;
     }
-    // Undo the interlacing if necessary.
-    if ((byte)(d.imageFields & (byte)fInterlace) != 0) {
-        uninterlace(m);
-    }
-    if (keepAllFrames || len(d.image) == 0) {
-        d.image = append(d.image, m);
-        d.delay = append(d.delay, d.delayTime);
-        d.disposal = append(d.disposal, d.disposalMethod);
-    }
-    // The GIF89a spec, Section 23 (Graphic Control Extension) says:
-    // "The scope of this extension is the first graphic rendering block
-    // to follow." We therefore reset the GCE fields to zero.
-    d.delayTime = 0;
-    d.hasTransparentIndex = false;
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string gifFrameBoundsLargerThanˢ = "gif: frame bounds larger than image bounds"u8;

@@ -73,43 +73,48 @@ public static (Key, error) OpenKey(Key k, @string path, uint32 access) {
 }
 
 // ReadSubKeyNames returns the names of subkeys of key k.
-public static (slice<@string>, error) ReadSubKeyNames(this Key k) => func<(slice<@string>, error)>((defer, recover) => {
-    // RegEnumKeyEx must be called repeatedly and to completion.
-    // During this time, this goroutine cannot migrate away from
-    // its current thread. See #49320.
-    runtime.LockOSThread();
-    defer(runtime.UnlockOSThread);
-    var names = new slice<@string>(0);
-    // Registry key size limit is 255 bytes and described there:
-    // https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-element-size-limits
-    var buf = new slice<uint16>(256);
-    //plus extra room for terminating zero byte
+public static (slice<@string>, error) ReadSubKeyNames(this Key k) {
+    GoFrame ᒐ = default;
+    try {
+        // RegEnumKeyEx must be called repeatedly and to completion.
+        // During this time, this goroutine cannot migrate away from
+        // its current thread. See #49320.
+        runtime.LockOSThread();
+        defer(runtime.UnlockOSThread, ref ᒐ);
+        var names = new slice<@string>(0);
+        // Registry key size limit is 255 bytes and described there:
+        // https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-element-size-limits
+        var buf = new slice<uint16>(256);
+        //plus extra room for terminating zero byte
 loopItems:
-    for (var i = (uint32)0; ᐧ ; i++) {
-        ref var l = ref heap<uint32>(out var Ꮡl);
-        l = (uint32)len(buf);
-        while (ᐧ) {
-            var err = syscall.RegEnumKeyEx(((syscallꓸHandle)k), i, Ꮡ(buf, 0), Ꮡl, nil, nil, nil, nil);
-            if (err == default!) {
-                break;
+        for (var i = (uint32)0; ᐧ ; i++) {
+            ref var l = ref heap<uint32>(out var Ꮡl);
+            l = (uint32)len(buf);
+            while (ᐧ) {
+                var err = syscall.RegEnumKeyEx(((syscallꓸHandle)k), i, Ꮡ(buf, 0), Ꮡl, nil, nil, nil, nil);
+                if (err == default!) {
+                    break;
+                }
+                if (AreEqual(err, syscall.ERROR_MORE_DATA)) {
+                    // Double buffer size and try again.
+                    l = (uint32)(2 * len(buf));
+                    buf = new slice<uint16>((nint)(l));
+                    continue;
+                }
+                if (AreEqual(err, _ERROR_NO_MORE_ITEMS)) {
+                    goto break_loopItems;
+                }
+                return (names, err);
             }
-            if (AreEqual(err, syscall.ERROR_MORE_DATA)) {
-                // Double buffer size and try again.
-                l = (uint32)(2 * len(buf));
-                buf = new slice<uint16>((nint)(l));
-                continue;
-            }
-            if (AreEqual(err, _ERROR_NO_MORE_ITEMS)) {
-                goto break_loopItems;
-            }
-            return (names, err);
-        }
-        names = append(names, syscall.UTF16ToString(buf[..(int)(l)]));
+            names = append(names, syscall.UTF16ToString(buf[..(int)(l)]));
 continue_loopItems:;
-    }
+        }
 break_loopItems:;
-    return (names, default!);
-});
+        return (names, default!);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // CreateKey creates a key named path under open key k.
 // CreateKey returns the new key and a boolean flag that reports

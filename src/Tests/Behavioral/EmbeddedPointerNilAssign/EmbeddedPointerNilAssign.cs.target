@@ -40,7 +40,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 fmt.Println(recoveredˢ, recover());
             }, ref ᒐ);
             fmt.Println((~sʗ1).name);

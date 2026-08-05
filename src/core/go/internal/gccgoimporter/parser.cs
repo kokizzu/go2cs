@@ -1101,36 +1101,41 @@ internal static readonly @string inlˢ = "inl"u8;
 
 // InlineBody = "<inl:NN>" .{NN}
 // Reports whether a body was skipped.
-internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recover) => {
+internal static void skipInlineBody(this ж<parser> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    // We may or may not have seen the '<' already, depending on
-    // whether the function had a result type or not.
-    if (p.tok == (rune)'<'){
-        p.next();
-        p.expectKeyword(inlˢ);
-    } else 
-    if (p.tok != scanner.Ident || p.lit != "inl"u8){
-        return;
-    } else {
-        p.next();
-    }
-    p.expect((rune)':');
-    nint want = p.parseInt();
-    p.expect((rune)'>');
-    deferǃ((uint64 w) => {
-        Ꮡp.Value.scanner.Value.Whitespace = w;
-    }, (~Ꮡp.Value.scanner).Whitespace, defer);
-    p.scanner.Value.Whitespace = 0;
-    nint got = 0;
-    while (got < want) {
-        var r = p.scanner.Next();
-        if (r == scanner.EOF) {
-            p.error(unexpectedEofˢ);
+        // We may or may not have seen the '<' already, depending on
+        // whether the function had a result type or not.
+        if (p.tok == (rune)'<'){
+            p.next();
+            p.expectKeyword(inlˢ);
+        } else 
+        if (p.tok != scanner.Ident || p.lit != "inl"u8){
+            return;
+        } else {
+            p.next();
         }
-        got += utf8.RuneLen(r);
+        p.expect((rune)':');
+        nint want = p.parseInt();
+        p.expect((rune)'>');
+        defer((uint64 w) => {
+            Ꮡp.Value.scanner.Value.Whitespace = w;
+        }, (~Ꮡp.Value.scanner).Whitespace, ref ᒐ);
+        p.scanner.Value.Whitespace = 0;
+        nint got = 0;
+        while (got < want) {
+            var r = p.scanner.Next();
+            if (r == scanner.EOF) {
+                p.error(unexpectedEofˢ);
+            }
+            got += utf8.RuneLen(r);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoLocalName("typeOffset")] [GoType("dyn")] partial struct parseTypes_typeOffset {
     internal nint offset;
@@ -1138,71 +1143,81 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recove
 }
 
 // Types = "types" maxp1 exportedp1 (offset length)* .
-internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) => func((defer, recover) => {
+internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    nint maxp1 = p.parseInt();
-    nint exportedp1 = p.parseInt();
-    p.typeList = new slice<typesꓸType>(maxp1, maxp1);
-    slice<parseTypes_typeOffset> typeOffsets = default!;
-    nint total = 0;
-    for (nint i = 1; i < maxp1; i++) {
-        nint len = p.parseInt();
-        typeOffsets = append(typeOffsets, new parseTypes_typeOffset(total, len));
-        total += len;
-    }
-    deferǃ((uint64 w) => {
-        Ꮡp.Value.scanner.Value.Whitespace = w;
-    }, (~Ꮡp.Value.scanner).Whitespace, defer);
-    p.scanner.Value.Whitespace = 0;
-    // We should now have p.tok pointing to the final newline.
-    // The next runes from the scanner should be the type data.
-    ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
-    while (sb.Len() < total) {
-        var r = p.scanner.Next();
-        if (r == scanner.EOF) {
-            p.error(unexpectedEofˢ);
+        nint maxp1 = p.parseInt();
+        nint exportedp1 = p.parseInt();
+        p.typeList = new slice<typesꓸType>(maxp1, maxp1);
+        slice<parseTypes_typeOffset> typeOffsets = default!;
+        nint total = 0;
+        for (nint i = 1; i < maxp1; i++) {
+            nint len = p.parseInt();
+            typeOffsets = append(typeOffsets, new parseTypes_typeOffset(total, len));
+            total += len;
         }
-        Ꮡsb.WriteRune(r);
+        defer((uint64 w) => {
+            Ꮡp.Value.scanner.Value.Whitespace = w;
+        }, (~Ꮡp.Value.scanner).Whitespace, ref ᒐ);
+        p.scanner.Value.Whitespace = 0;
+        // We should now have p.tok pointing to the final newline.
+        // The next runes from the scanner should be the type data.
+        ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
+        while (sb.Len() < total) {
+            var r = p.scanner.Next();
+            if (r == scanner.EOF) {
+                p.error(unexpectedEofˢ);
+            }
+            Ꮡsb.WriteRune(r);
+        }
+        @string allTypeData = sb.String();
+        p.typeData = new @string[]{""u8}.slice();
+        // type 0, unused
+        foreach (var (_, to) in typeOffsets) {
+            p.typeData = append(p.typeData, allTypeData[(int)(to.offset)..(int)(to.offset + to.length)]);
+        }
+        for (nint i = 1; i < exportedp1; i++) {
+            Ꮡp.parseSavedType(Ꮡpkg, i, default!);
+        }
     }
-    @string allTypeData = sb.String();
-    p.typeData = new @string[]{""u8}.slice();
-    // type 0, unused
-    foreach (var (_, to) in typeOffsets) {
-        p.typeData = append(p.typeData, allTypeData[(int)(to.offset)..(int)(to.offset + to.length)]);
-    }
-    for (nint i = 1; i < exportedp1; i++) {
-        Ꮡp.parseSavedType(Ꮡpkg, i, default!);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // parseSavedType parses one saved type definition.
-internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, nint i, slice<any> nlist) => func((defer, recover) => {
+internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, nint i, slice<any> nlist) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    deferǃ((ж<scanner.Scanner> s, rune tok, @string lit) => {
-        Ꮡp.Value.scanner = s;
-        Ꮡp.Value.tok = tok;
-        Ꮡp.Value.lit = lit;
-    }, Ꮡp.Value.scanner, Ꮡp.Value.tok, Ꮡp.Value.lit, defer);
-    p.scanner = @new<scanner.Scanner>();
-    Ꮡp.initScanner((~p.scanner).Filename, new strings_ReaderжReader(strings.NewReader(p.typeData[i])));
-    p.expectKeyword(typeˢ);
-    nint id = p.parseInt();
-    if (id != i) {
-        p.errorf("type ID mismatch: got %d, want %d"u8, id, i);
+        defer((ж<scanner.Scanner> s, rune tok, @string lit) => {
+            Ꮡp.Value.scanner = s;
+            Ꮡp.Value.tok = tok;
+            Ꮡp.Value.lit = lit;
+        }, Ꮡp.Value.scanner, Ꮡp.Value.tok, Ꮡp.Value.lit, ref ᒐ);
+        p.scanner = @new<scanner.Scanner>();
+        Ꮡp.initScanner((~p.scanner).Filename, new strings_ReaderжReader(strings.NewReader(p.typeData[i])));
+        p.expectKeyword(typeˢ);
+        nint id = p.parseInt();
+        if (id != i) {
+            p.errorf("type ID mismatch: got %d, want %d"u8, id, i);
+        }
+        if (AreEqual(p.typeList[i], reserved)) {
+            p.errorf("internal error: %d already reserved in parseSavedType"u8, i);
+        }
+        if (p.typeList[i] == default!) {
+            p.reserve(i);
+            Ꮡp.parseTypeSpec(Ꮡpkg, append(nlist, (any)(i)));
+        }
+        if (p.typeList[i] == default! || AreEqual(p.typeList[i], reserved)) {
+            p.errorf("internal error: parseSavedType(%d,%v) reserved/nil"u8, i, nlist);
+        }
     }
-    if (AreEqual(p.typeList[i], reserved)) {
-        p.errorf("internal error: %d already reserved in parseSavedType"u8, i);
-    }
-    if (p.typeList[i] == default!) {
-        p.reserve(i);
-        Ꮡp.parseTypeSpec(Ꮡpkg, append(nlist, (any)(i)));
-    }
-    if (p.typeList[i] == default! || AreEqual(p.typeList[i], reserved)) {
-        p.errorf("internal error: parseSavedType(%d,%v) reserved/nil"u8, i, nlist);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // PackageInit = unquotedString unquotedString int .
 [GoRecv] internal static PackageInit parsePackageInit(this ref parser p) {
@@ -1227,55 +1242,60 @@ internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡp
 //	"priority" int ";" |
 //	"init" { PackageInit } ";" |
 //	"checksum" unquotedString ";" .
-internal static void parseInitDataDirective(this ж<parser> Ꮡp) => func((defer, recover) => {
+internal static void parseInitDataDirective(this ж<parser> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    if (p.tok != scanner.Ident) {
-        // unexpected token kind; panic
-        p.expect(scanner.Ident);
-    }
-    var exprᴛ1 = p.lit;
-    if (exprᴛ1 == "v1"u8 || exprᴛ1 == "v2"u8 || exprᴛ1 == "v3"u8) {
-        p.version = p.lit;
-        p.next();
-        p.expect((rune)';');
-        p.expect((rune)'\n');
-    }
-    else if (exprᴛ1 == "priority"u8) {
-        p.next();
-        p.initdata.Priority = p.parseInt();
-        p.expectEOL();
-    }
-    else if (exprᴛ1 == "init"u8) {
-        p.next();
-        while (p.tok != (rune)'\n' && p.tok != (rune)';' && p.tok != scanner.EOF) {
-            p.initdata.Inits = append(p.initdata.Inits, p.parsePackageInit());
+        if (p.tok != scanner.Ident) {
+            // unexpected token kind; panic
+            p.expect(scanner.Ident);
         }
-        p.expectEOL();
-    }
-    else if (exprᴛ1 == "init_graph"u8) {
-        p.next();
-        while (p.tok != (rune)'\n' && p.tok != (rune)';' && p.tok != scanner.EOF) {
-            // The graph data is thrown away for now.
-            p.parseInt64();
-            p.parseInt64();
+        var exprᴛ1 = p.lit;
+        if (exprᴛ1 == "v1"u8 || exprᴛ1 == "v2"u8 || exprᴛ1 == "v3"u8) {
+            p.version = p.lit;
+            p.next();
+            p.expect((rune)';');
+            p.expect((rune)'\n');
         }
-        p.expectEOL();
-    }
-    else if (exprᴛ1 == "checksum"u8) {
-        deferǃ((nuint mode) => {
-            Ꮡp.Value.scanner.Value.Mode = mode;
-        }, (~Ꮡp.Value.scanner).Mode, defer);
-        p.scanner.Value.Mode &= unchecked((nuint)~(nuint)((nuint)((nuint)scanner.ScanInts | (nuint)scanner.ScanFloats)));
-        p.next();
-        p.parseUnquotedString();
-        p.expectEOL();
-    }
-    else { /* default: */
-        p.errorf("unexpected identifier: %q"u8, p.lit);
-    }
+        else if (exprᴛ1 == "priority"u8) {
+            p.next();
+            p.initdata.Priority = p.parseInt();
+            p.expectEOL();
+        }
+        else if (exprᴛ1 == "init"u8) {
+            p.next();
+            while (p.tok != (rune)'\n' && p.tok != (rune)';' && p.tok != scanner.EOF) {
+                p.initdata.Inits = append(p.initdata.Inits, p.parsePackageInit());
+            }
+            p.expectEOL();
+        }
+        else if (exprᴛ1 == "init_graph"u8) {
+            p.next();
+            while (p.tok != (rune)'\n' && p.tok != (rune)';' && p.tok != scanner.EOF) {
+                // The graph data is thrown away for now.
+                p.parseInt64();
+                p.parseInt64();
+            }
+            p.expectEOL();
+        }
+        else if (exprᴛ1 == "checksum"u8) {
+            defer((nuint mode) => {
+                Ꮡp.Value.scanner.Value.Mode = mode;
+            }, (~Ꮡp.Value.scanner).Mode, ref ᒐ);
+            p.scanner.Value.Mode &= unchecked((nuint)~(nuint)((nuint)((nuint)scanner.ScanInts | (nuint)scanner.ScanFloats)));
+            p.next();
+            p.parseUnquotedString();
+            p.expectEOL();
+        }
+        else { /* default: */
+            p.errorf("unexpected identifier: %q"u8, p.lit);
+        }
 
-});
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Directive = InitDataDirective |
 //

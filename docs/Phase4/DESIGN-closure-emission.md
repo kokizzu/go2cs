@@ -368,7 +368,13 @@ not to have traded allocation for wall time.
 emitted shape differs from the sketch, what the design did not anticipate, and what is deliberately
 not in the arc.
 
-**The measured numbers, which are not the ones §2 predicted.** Every row is
+**The end-to-end number.** `os.File.WriteString` — the row r39-osalloc decomposed and the reason the
+440 B term was ever named — measures **2,736 → 2,368 B/call** across the arc (−368 B), with the same
+368 B coming off `os.File.Write` and off the `Write − syscall.Write` wrapper band that contains
+`internal/poll.FD.Write`'s two defers. That is the design's whole predicted share arriving in the
+real path, minus the per-defer closures §4.5 would still remove.
+
+**The unit numbers, which are not the ones §2 predicted.** Every row is
 `GC.GetAllocatedBytesForCurrentThread` over 5,000 Release calls, with the probe's own 24 B result
 boxing subtracted:
 

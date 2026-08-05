@@ -24,7 +24,7 @@ internal static bool isNil(this ж<node> Ꮡn) {
 internal static void @catch(@string what, Action f) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!){
                     fmt.Printf("%s recovered: %v\n"u8, what, r);

@@ -94,7 +94,7 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 	// temp-param lambda form so convCallExpr renders `(ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2)`, which
 	// converts to a discarding Action — exactly Go's fire-and-forget goroutine semantics. This
 	// mirrors the defer arm's result handling; the defer PARAM case needs no equivalent only
-	// because deferǃ additionally has Func<...> overloads, while goǃ does not. A VALUE-receiver
+	// because defer additionally has Func<...> overloads, while goǃ does not. A VALUE-receiver
 	// method group forces the same lambda form for its CS1113 wall (above).
 	if (hasResults || valueRecvMethodGroup) && paramCount > 0 {
 		renderLambdaParams = true

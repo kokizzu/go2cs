@@ -565,39 +565,44 @@ internal static readonly @string zipCannotAddNonRegularˢ = "zip: cannot add non
 // It walks the directory tree starting at the root of the filesystem
 // adding each file to the zip using deflate while maintaining the directory structure.
 public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
-    return fs.WalkDir(fsys, "."u8, error (@string name, fs.DirEntry d, error err) => func<error>((defer, recover) => {
-        if (err != default!) {
+    return fs.WalkDir(fsys, "."u8, error (@string name, fs.DirEntry d, error err) => {
+        GoFrame ᒐ = default;
+        try {
+            if (err != default!) {
+                return err;
+            }
+            if (d.IsDir()) {
+                return default!;
+            }
+            (var info, err) = d.Info();
+            if (err != default!) {
+                return err;
+            }
+            if (!info.Mode().IsRegular()) {
+                return errors.New(zipCannotAddNonRegularˢ);
+            }
+            (var h, err) = FileInfoHeader(info);
+            if (err != default!) {
+                return err;
+            }
+            h.Value.Name = name;
+            h.Value.Method = Deflate;
+            (var fw, err) = Ꮡw.Value.CreateHeader(h);
+            if (err != default!) {
+                return err;
+            }
+            (var f, err) = fsys.Open(name);
+            if (err != default!) {
+                return err;
+            }
+            var fʗ1 = f;
+            defer(() => fʗ1.Close(), ref ᒐ);
+            (_, err) = io.Copy(fw, new fs_FileᴠReader(f));
             return err;
         }
-        if (d.IsDir()) {
-            return default!;
-        }
-        (var info, err) = d.Info();
-        if (err != default!) {
-            return err;
-        }
-        if (!info.Mode().IsRegular()) {
-            return errors.New(zipCannotAddNonRegularˢ);
-        }
-        (var h, err) = FileInfoHeader(info);
-        if (err != default!) {
-            return err;
-        }
-        h.Value.Name = name;
-        h.Value.Method = Deflate;
-        (var fw, err) = Ꮡw.Value.CreateHeader(h);
-        if (err != default!) {
-            return err;
-        }
-        (var f, err) = fsys.Open(name);
-        if (err != default!) {
-            return err;
-        }
-        var fʗ1 = f;
-        defer(() => fʗ1.Close());
-        (_, err) = io.Copy(fw, new fs_FileᴠReader(f));
-        return err;
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+        finally { ᒐ.Run(); }
+    });
 }
 
 [GoRecv] internal static Func<io.Writer, (io.WriteCloser, error)> compressor(this ref Writer w, uint16 method) {

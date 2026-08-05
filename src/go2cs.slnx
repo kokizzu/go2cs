@@ -699,7 +699,6 @@
   </Folder>
   <Folder Name="/utilities/">
     <File Path="set-version.ps1" />
-    <Project Path="Utilities/GenGoFuncRefInstances/GenGoFuncRefInstances.csproj" />
     <Project Path="Utilities/QuickTest/QuickTest.csproj" />
     <Project Path="Utilities/UpdateTestTargets/UpdateTestTargets.csproj" />
   </Folder>

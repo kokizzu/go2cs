@@ -31,174 +31,179 @@ internal static readonly @string validTypeSNestVPathVˢ = "validType(%s) nest %v
 // of) F in S, leading to the nest S->F. If a type appears in its own nest
 // (say S->F->S) we have an invalid recursive type. The path list is the full
 // path of named types in a cycle, it is only needed for error reporting.
-internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType typ, slice<ж<Named>> nest, slice<ж<Named>> path) => func<bool>((defer, recover) => {
+internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType typ, slice<ж<Named>> nest, slice<ж<Named>> path) {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
-    typ = Unalias(typ);
-    if ((~check.conf)._Trace) {
-        {
-            var (t, _) = typ._<ж<Named>>(ᐧ); if (t != nil && (~t).obj != nil) {
-                /* obj should always exist but be conservative */
-                pos = t.Value.obj.Value.pos;
-            }
-        }
-        check.indent++;
-        Ꮡcheck.trace(pos, validTypeSNestVPathVˢ, typ, pathString(makeObjList(nest)), pathString(makeObjList(path)));
-        defer(() => {
-            Ꮡcheck.Value.indent--;
-        });
-    }
-    switch (typ.type()) {
-    case null: {
-        if (debug) {
-            // We should never see a nil type but be conservative and panic
-            // only in debug mode.
-            throw panic("validType0(nil)");
-        }
-        break;
-    }
-    case ж<Array> t: {
-        return Ꮡcheck.validType0(pos, (~t).elem, nest, path);
-    }
-    case ж<Struct> t: {
-        foreach (var (_, f) in (~t).fields) {
-            if (!Ꮡcheck.validType0(pos, (~f).typ, nest, path)) {
-                return false;
-            }
-        }
-        break;
-    }
-    case ж<Union> t: {
-        foreach (var (_, tΔ1) in (~t).terms) {
-            if (!Ꮡcheck.validType0(pos, (~tΔ1).typ, nest, path)) {
-                return false;
-            }
-        }
-        break;
-    }
-    case ж<Interface> t: {
-        foreach (var (_, etyp) in (~t).embeddeds) {
-            if (!Ꮡcheck.validType0(pos, etyp, nest, path)) {
-                return false;
-            }
-        }
-        break;
-    }
-    case ж<Named> t: {
-        if (!isValid(t.Underlying())) {
-            // TODO(gri) The optimization below is incorrect (see go.dev/issue/65711):
-            //           in that issue `type A[P any] [1]P` is a valid type on its own
-            //           and the (uninstantiated) A is recorded in check.valids. As a
-            //           consequence, when checking the remaining declarations, which
-            //           are not valid, the validity check ends prematurely because A
-            //           is considered valid, even though its validity depends on the
-            //           type argument provided to it.
-            //
-            //           A correct optimization is important for pathological cases.
-            //           Keep code around for reference until we found an optimization.
-            //
-            // // Exit early if we already know t is valid.
-            // // This is purely an optimization but it prevents excessive computation
-            // // times in pathological cases such as testdata/fixedbugs/issue6977.go.
-            // // (Note: The valids map could also be allocated locally, once for each
-            // // validType call.)
-            // if check.valids.lookup(t) != nil {
-            // 	break
-            // }
-            // Don't report a 2nd error if we already know the type is invalid
-            // (e.g., if a cycle was detected earlier, via under).
-            // Note: ensure that t.orig is fully resolved by calling Underlying().
-            return false;
-        }
-        foreach (var (_, e) in nest) {
-            // If the current type t is also found in nest, (the memory of) t is
-            // embedded in itself, indicating an invalid recursive type.
-            if (Identical(new NamedжΔType(e), new NamedжΔType(t))) {
-                // We have a cycle. If t != t.Origin() then t is an instance of
-                // the generic type t.Origin(). Because t is in the nest, t must
-                // occur within the definition (RHS) of the generic type t.Origin(),
-                // directly or indirectly, after expansion of the RHS.
-                // Therefore t.Origin() must be invalid, no matter how it is
-                // instantiated since the instantiation t of t.Origin() happens
-                // inside t.Origin()'s RHS and thus is always the same and always
-                // present.
-                // Therefore we can mark the underlying of both t and t.Origin()
-                // as invalid. If t is not an instance of a generic type, t and
-                // t.Origin() are the same.
-                // Furthermore, because we check all types in a package for validity
-                // before type checking is complete, any exported type that is invalid
-                // will have an invalid underlying type and we can't reach here with
-                // such a type (invalid types are excluded above).
-                // Thus, if we reach here with a type t, both t and t.Origin() (if
-                // different in the first place) must be from the current package;
-                // they cannot have been imported.
-                // Therefore it is safe to change their underlying types; there is
-                // no chance for a race condition (the types of the current package
-                // are not yet available to other goroutines).
-                assert((~(~t).obj).pkg == check.pkg);
-                assert((~(~t.Origin()).obj).pkg == check.pkg);
-                t.Value.underlying = new BasicжΔType(Typ[Invalid]);
-                t.Origin().Value.underlying = new BasicжΔType(Typ[Invalid]);
-                // Find the starting point of the cycle and report it.
-                // Because each type in nest must also appear in path (see invariant below),
-                // type t must be in path since it was found in nest. But not every type in path
-                // is in nest. Specifically t may appear in path with an earlier index than the
-                // index of t in nest. Search again.
-                foreach (var (start, p) in path) {
-                    if (Identical(new NamedжΔType(p), new NamedжΔType(t))) {
-                        Ꮡcheck.cycleError(makeObjList(path[(int)(start)..]), 0);
-                        return false;
-                    }
+        typ = Unalias(typ);
+        if ((~check.conf)._Trace) {
+            {
+                var (t, _) = typ._<ж<Named>>(ᐧ); if (t != nil && (~t).obj != nil) {
+                    /* obj should always exist but be conservative */
+                    pos = t.Value.obj.Value.pos;
                 }
-                throw panic("cycle start not found");
             }
+            check.indent++;
+            Ꮡcheck.trace(pos, validTypeSNestVPathVˢ, typ, pathString(makeObjList(nest)), pathString(makeObjList(path)));
+            defer(() => {
+                Ꮡcheck.Value.indent--;
+            }, ref ᒐ);
         }
-        if (!Ꮡcheck.validType0(pos, // No cycle was found. Check the RHS of t.
+        switch (typ.type()) {
+        case null: {
+            if (debug) {
+                // We should never see a nil type but be conservative and panic
+                // only in debug mode.
+                throw panic("validType0(nil)");
+            }
+            break;
+        }
+        case ж<Array> t: {
+            return Ꮡcheck.validType0(pos, (~t).elem, nest, path);
+        }
+        case ж<Struct> t: {
+            foreach (var (_, f) in (~t).fields) {
+                if (!Ꮡcheck.validType0(pos, (~f).typ, nest, path)) {
+                    return false;
+                }
+            }
+            break;
+        }
+        case ж<Union> t: {
+            foreach (var (_, tΔ1) in (~t).terms) {
+                if (!Ꮡcheck.validType0(pos, (~tΔ1).typ, nest, path)) {
+                    return false;
+                }
+            }
+            break;
+        }
+        case ж<Interface> t: {
+            foreach (var (_, etyp) in (~t).embeddeds) {
+                if (!Ꮡcheck.validType0(pos, etyp, nest, path)) {
+                    return false;
+                }
+            }
+            break;
+        }
+        case ж<Named> t: {
+            if (!isValid(t.Underlying())) {
+                // TODO(gri) The optimization below is incorrect (see go.dev/issue/65711):
+                //           in that issue `type A[P any] [1]P` is a valid type on its own
+                //           and the (uninstantiated) A is recorded in check.valids. As a
+                //           consequence, when checking the remaining declarations, which
+                //           are not valid, the validity check ends prematurely because A
+                //           is considered valid, even though its validity depends on the
+                //           type argument provided to it.
+                //
+                //           A correct optimization is important for pathological cases.
+                //           Keep code around for reference until we found an optimization.
+                //
+                // // Exit early if we already know t is valid.
+                // // This is purely an optimization but it prevents excessive computation
+                // // times in pathological cases such as testdata/fixedbugs/issue6977.go.
+                // // (Note: The valids map could also be allocated locally, once for each
+                // // validType call.)
+                // if check.valids.lookup(t) != nil {
+                // 	break
+                // }
+                // Don't report a 2nd error if we already know the type is invalid
+                // (e.g., if a cycle was detected earlier, via under).
+                // Note: ensure that t.orig is fully resolved by calling Underlying().
+                return false;
+            }
+            foreach (var (_, e) in nest) {
+                // If the current type t is also found in nest, (the memory of) t is
+                // embedded in itself, indicating an invalid recursive type.
+                if (Identical(new NamedжΔType(e), new NamedжΔType(t))) {
+                    // We have a cycle. If t != t.Origin() then t is an instance of
+                    // the generic type t.Origin(). Because t is in the nest, t must
+                    // occur within the definition (RHS) of the generic type t.Origin(),
+                    // directly or indirectly, after expansion of the RHS.
+                    // Therefore t.Origin() must be invalid, no matter how it is
+                    // instantiated since the instantiation t of t.Origin() happens
+                    // inside t.Origin()'s RHS and thus is always the same and always
+                    // present.
+                    // Therefore we can mark the underlying of both t and t.Origin()
+                    // as invalid. If t is not an instance of a generic type, t and
+                    // t.Origin() are the same.
+                    // Furthermore, because we check all types in a package for validity
+                    // before type checking is complete, any exported type that is invalid
+                    // will have an invalid underlying type and we can't reach here with
+                    // such a type (invalid types are excluded above).
+                    // Thus, if we reach here with a type t, both t and t.Origin() (if
+                    // different in the first place) must be from the current package;
+                    // they cannot have been imported.
+                    // Therefore it is safe to change their underlying types; there is
+                    // no chance for a race condition (the types of the current package
+                    // are not yet available to other goroutines).
+                    assert((~(~t).obj).pkg == check.pkg);
+                    assert((~(~t.Origin()).obj).pkg == check.pkg);
+                    t.Value.underlying = new BasicжΔType(Typ[Invalid]);
+                    t.Origin().Value.underlying = new BasicжΔType(Typ[Invalid]);
+                    // Find the starting point of the cycle and report it.
+                    // Because each type in nest must also appear in path (see invariant below),
+                    // type t must be in path since it was found in nest. But not every type in path
+                    // is in nest. Specifically t may appear in path with an earlier index than the
+                    // index of t in nest. Search again.
+                    foreach (var (start, p) in path) {
+                        if (Identical(new NamedжΔType(p), new NamedжΔType(t))) {
+                            Ꮡcheck.cycleError(makeObjList(path[(int)(start)..]), 0);
+                            return false;
+                        }
+                    }
+                    throw panic("cycle start not found");
+                }
+            }
+            if (!Ꮡcheck.validType0(pos, // No cycle was found. Check the RHS of t.
  // Every type added to nest is also added to path; thus every type that is in nest
  // must also be in path (invariant). But not every type in path is in nest, since
  // nest may be pruned (see below, *TypeParam case).
  (~t.Origin()).fromRHS, append(nest, t), append(path, t))) {
-            return false;
+                return false;
+            }
+            break;
         }
-        break;
-    }
-    case ж<TypeParam> t: {
-        {
-            nint d = len(nest) - 1; if (d >= 0) {
-                // see TODO above
-                // check.valids.add(t) // t is valid
-                // A type parameter stands for the type (argument) it was instantiated with.
-                // Check the corresponding type argument for validity if we are in an
-                // instantiated type.
-                var inst = nest[d];
-                // the type instance
-                // Find the corresponding type argument for the type parameter
-                // and proceed with checking that type argument.
-                foreach (var (i, tparam) in inst.TypeParams().list()) {
-                    // The type parameter and type argument lists should
-                    // match in length but be careful in case of errors.
-                    if (t == tparam && i < inst.TypeArgs().Len()) {
-                        var targ = inst.TypeArgs().At(i);
-                        // The type argument must be valid in the enclosing
-                        // type (where inst was instantiated), hence we must
-                        // check targ's validity in the type nest excluding
-                        // the current (instantiated) type (see the example
-                        // at the end of this file).
-                        // For error reporting we keep the full path.
-                        var res = Ꮡcheck.validType0(pos, targ, nest[..(int)(d)], path);
-                        // The check.validType0 call with nest[:d] may have
-                        // overwritten the entry at the current depth d.
-                        // Restore the entry (was issue go.dev/issue/66323).
-                        nest[d] = inst;
-                        return res;
+        case ж<TypeParam> t: {
+            {
+                nint d = len(nest) - 1; if (d >= 0) {
+                    // see TODO above
+                    // check.valids.add(t) // t is valid
+                    // A type parameter stands for the type (argument) it was instantiated with.
+                    // Check the corresponding type argument for validity if we are in an
+                    // instantiated type.
+                    var inst = nest[d];
+                    // the type instance
+                    // Find the corresponding type argument for the type parameter
+                    // and proceed with checking that type argument.
+                    foreach (var (i, tparam) in inst.TypeParams().list()) {
+                        // The type parameter and type argument lists should
+                        // match in length but be careful in case of errors.
+                        if (t == tparam && i < inst.TypeArgs().Len()) {
+                            var targ = inst.TypeArgs().At(i);
+                            // The type argument must be valid in the enclosing
+                            // type (where inst was instantiated), hence we must
+                            // check targ's validity in the type nest excluding
+                            // the current (instantiated) type (see the example
+                            // at the end of this file).
+                            // For error reporting we keep the full path.
+                            var res = Ꮡcheck.validType0(pos, targ, nest[..(int)(d)], path);
+                            // The check.validType0 call with nest[:d] may have
+                            // overwritten the entry at the current depth d.
+                            // Restore the entry (was issue go.dev/issue/66323).
+                            nest[d] = inst;
+                            return res;
+                        }
                     }
                 }
             }
-        }
-        break;
-    }}
-    return true;
-});
+            break;
+        }}
+        return true;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // makeObjList returns the list of type name objects for the given
 // list of named types.

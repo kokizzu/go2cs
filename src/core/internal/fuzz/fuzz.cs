@@ -85,12 +85,13 @@ partial class fuzz_package {
 // about the crash, which can be reported to the user.
 public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuzzingOpts opts) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var err = ref Ꮡerr.ValueSlot;
 
         {
             var errΔ1 = ctx.Err(); if (errΔ1 != default!) {
-                err = errΔ1; return;
+                err = errΔ1; goto ᒐdone;
             }
         }
         if (opts.Log == default!) {
@@ -105,18 +106,18 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         }
         (var c, err) = newCoordinator(opts);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         if (opts.Timeout > 0) {
             Action cancel = default!;
             (ctx, cancel) = context.WithTimeout(ctx, opts.Timeout);
             var cancelʗ1 = cancel;
-            defer(cancelʗ1);
+            defer(cancelʗ1, ref ᒐ);
         }
         // fuzzCtx is used to stop workers, for example, after finding a crasher.
         var (fuzzCtx, cancelWorkers) = context.WithCancel(ctx);
         var cancelWorkersʗ1 = cancelWorkers;
-        defer(() => cancelWorkersʗ1());
+        defer(() => cancelWorkersʗ1(), ref ᒐ);
         ref var doneC = ref heap</*<-*/channel<EmptyStruct>>(out var ᏑdoneC);
         doneC = ctx.Done();
         // stop is called when a worker encounters a fatal error.
@@ -170,7 +171,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
                     err: errors.New((~(~cʗ2).crashMinimizing).crasherMsg)
                 )));
             }
-        });
+        }, ref ᒐ);
         // Start workers.
         // TODO(jayconrod): do we want to support fuzzing different binaries?
         @string dir = ""u8;
@@ -185,7 +186,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
             error errΔ3 = default!;
             (workers[i], errΔ3) = newWorker(c, dir, binPath, args, env);
             if (errΔ3 != default!) {
-                err = errΔ3; return;
+                err = errΔ3; goto ᒐdone;
             }
         }
         foreach (var (i, _) in workers) {
@@ -211,9 +212,9 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         nint activeWorkers = len(workers);
         var statTicker = time.NewTicker((time.Duration)(3000000000L));
         var statTickerʗ1 = statTicker;
-        defer(statTickerʗ1.Stop);
+        defer(statTickerʗ1.Stop, ref ᒐ);
         var cʗ3 = c;
-        defer(cʗ3.logStats);
+        defer(cʗ3.logStats, ref ᒐ);
         c.logStats();
         while (ᐧ) {
             // If there is an execution limit, and we've reached it, stop.
@@ -248,7 +249,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
                     // Interrupted, canceled, or timed out.
                     // stop sets doneC to nil, so we don't busy wait here.
                     // A worker terminated, possibly after encountering a fatal error.
-                    err = fuzzErr; return;
+                    err = fuzzErr; goto ᒐdone;
                 }
                 break;
             }
@@ -411,8 +412,10 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
                 break;
             }}
         }
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 // Sent the next input to a worker.

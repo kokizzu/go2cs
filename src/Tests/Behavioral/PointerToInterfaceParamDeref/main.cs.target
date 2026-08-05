@@ -29,7 +29,7 @@ internal static error /*err*/ doit() {
     try {
     ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(handle, doitˢ, Ꮡerr, ref ᒐ);
+        defer(handle, doitˢ, Ꮡerr, ref ᒐ);
         throw panic("boom");
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -40,7 +40,7 @@ internal static error /*err*/ doit() {
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var e = recover(); if (e != default!) {
                     fmt.Println(e);

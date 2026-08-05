@@ -54,7 +54,7 @@ internal static nint deferredLen(params ꓸꓸꓸжbox bsʗp) {
     try {
     var bs = bsʗp.sslice();
 
-        deferǃ(() => {
+        defer(() => {
         }, ref ᒐ);
         return len(bs);
     }
@@ -67,7 +67,7 @@ internal static void deferredReplaceFirst(params ꓸꓸꓸжbox bsʗp) {
     try {
     var bs = bsʗp.sslice();
 
-        deferǃ(() => {
+        defer(() => {
         }, ref ᒐ);
         bs[0] = Ꮡ(new box(v: 45));
     }
@@ -81,7 +81,7 @@ internal static nint /*n*/ deferredNamedLen(params ꓸꓸꓸжbox bsʗp) {
     try {
     var bs = bsʗp.sslice();
 
-        deferǃ(() => {
+        defer(() => {
             n++;
         }, ref ᒐ);
         n = len(bs);

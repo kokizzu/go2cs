@@ -667,23 +667,26 @@ public static (@string name, error err) ComputerName() {
 
 public static error /*err*/ Ftruncate(ΔHandle fd, int64 length) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var (curoffset, e) = Seek(fd, 0, 1);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
-        deferǃ(Seek, fd, curoffset, (nint)(0), defer);
+        defer(Seek, fd, curoffset, (nint)(0), ref ᒐ);
         (_, e) = Seek(fd, length, 0);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
         e = SetEndOfFile(fd);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
         err = default!;
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
@@ -715,21 +718,22 @@ public static error /*err*/ Pipe(slice<ΔHandle> p) {
 
 public static error /*err*/ Utimes(@string path, slice<Timeval> tv) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         if (len(tv) != 2) {
-            err = EINVAL; return;
+            err = EINVAL; goto ᒐdone;
         }
         var (pathp, e) = UTF16PtrFromString(path);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
         (var h, e) = CreateFile(pathp,
             FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, nil,
             OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
-        deferǃ(Close, h, defer);
+        defer(Close, h, ref ᒐ);
         ref var a = ref heap<Filetime>(out var Ꮡa);
         a = new Filetime(nil);
         ref var w = ref heap<Filetime>(out var Ꮡw);
@@ -741,8 +745,10 @@ public static error /*err*/ Utimes(@string path, slice<Timeval> tv) {
             w = NsecToFiletime(tv[1].Nanoseconds());
         }
         err = SetFileTime(h, nil, Ꮡa, Ꮡw);
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // This matches the value in os/file_windows.go.
@@ -750,21 +756,22 @@ internal static UntypedInt _UTIME_OMIT => -1;
 
 public static error /*err*/ UtimesNano(@string path, slice<Timespec> ts) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         if (len(ts) != 2) {
-            err = EINVAL; return;
+            err = EINVAL; goto ᒐdone;
         }
         var (pathp, e) = UTF16PtrFromString(path);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
         (var h, e) = CreateFile(pathp,
             FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, nil,
             OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
         if (e != default!) {
-            err = e; return;
+            err = e; goto ᒐdone;
         }
-        deferǃ(Close, h, defer);
+        defer(Close, h, ref ᒐ);
         ref var a = ref heap<Filetime>(out var Ꮡa);
         a = new Filetime(nil);
         ref var w = ref heap<Filetime>(out var Ꮡw);
@@ -776,8 +783,10 @@ public static error /*err*/ UtimesNano(@string path, slice<Timespec> ts) {
             w = NsecToFiletime(TimespecToNsec(ts[1]));
         }
         err = SetFileTime(h, nil, Ꮡa, Ꮡw);
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 public static error /*err*/ Fsync(ΔHandle fd) {
@@ -1163,22 +1172,27 @@ internal static ж<connectExFuncᴛ1> ᏑconnectExFunc = new(default(connectExFu
 internal static ref connectExFuncᴛ1 connectExFunc => ref ᏑconnectExFunc.Value;
 
 public static error LoadConnectEx() {
-    ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡonce).Do(() => func((defer, recover) => {
-        ΔHandle s = default!;
-        (s, connectExFunc.err) = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (connectExFunc.err != default!) {
-            return;
+    ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡonce).Do(() => {
+        GoFrame ᒐ = default;
+        try {
+            ΔHandle s = default!;
+            (s, connectExFunc.err) = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            if (connectExFunc.err != default!) {
+                return;
+            }
+            defer(CloseHandle, s, ref ᒐ);
+            ref var n = ref heap(new uint32(), out var Ꮡn);
+            connectExFunc.err = WSAIoctl(s,
+                SIO_GET_EXTENSION_FUNCTION_POINTER,
+                ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>(),
+                (uint32)/* unsafe.Sizeof(WSAID_CONNECTEX) */ (uintptr)16,
+                ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>(),
+                (uint32)/* unsafe.Sizeof(connectExFunc.addr) */ (uintptr)8,
+                Ꮡn, nil, 0);
         }
-        deferǃ(CloseHandle, s, defer);
-        ref var n = ref heap(new uint32(), out var Ꮡn);
-        connectExFunc.err = WSAIoctl(s,
-            SIO_GET_EXTENSION_FUNCTION_POINTER,
-            ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>(),
-            (uint32)/* unsafe.Sizeof(WSAID_CONNECTEX) */ (uintptr)16,
-            ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>(),
-            (uint32)/* unsafe.Sizeof(connectExFunc.addr) */ (uintptr)8,
-            Ꮡn, nil, 0);
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     return connectExFunc.err;
 }
 
@@ -1404,29 +1418,34 @@ public static error /*err*/ FindNextFile(ΔHandle handle, ж<Win32finddata> Ꮡd
     return err;
 }
 
-internal static (ж<ProcessEntry32>, error) getProcessEntry(nint pid) => func<(ж<ProcessEntry32>, error)>((defer, recover) => {
-    var (snapshot, err) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(CloseHandle, snapshot, defer);
-    ref var procEntry = ref heap(new ProcessEntry32(), out var ᏑprocEntry);
-    procEntry.Size = (uint32)/* unsafe.Sizeof(procEntry) */ (uintptr)568;
-    {
-        err = Process32First(snapshot, ᏑprocEntry); if (err != default!) {
-            return (default!, err);
-        }
-    }
-    while (ᐧ) {
-        if (procEntry.ProcessID == (uint32)pid) {
-            return (ᏑprocEntry, default!);
-        }
-        err = Process32Next(snapshot, ᏑprocEntry);
+internal static (ж<ProcessEntry32>, error) getProcessEntry(nint pid) {
+    GoFrame ᒐ = default;
+    try {
+        var (snapshot, err) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (err != default!) {
             return (default!, err);
         }
+        defer(CloseHandle, snapshot, ref ᒐ);
+        ref var procEntry = ref heap(new ProcessEntry32(), out var ᏑprocEntry);
+        procEntry.Size = (uint32)/* unsafe.Sizeof(procEntry) */ (uintptr)568;
+        {
+            err = Process32First(snapshot, ᏑprocEntry); if (err != default!) {
+                return (default!, err);
+            }
+        }
+        while (ᐧ) {
+            if (procEntry.ProcessID == (uint32)pid) {
+                return (ᏑprocEntry, default!);
+            }
+            err = Process32Next(snapshot, ᏑprocEntry);
+            if (err != default!) {
+                return (default!, err);
+            }
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 public static nint /*ppid*/ Getppid() {
     nint ppid = default!;
@@ -1569,18 +1588,19 @@ public static error LoadCreateSymbolicLink() {
 public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         (var fd, err) = CreateFile(StringToUTF16Ptr(path), GENERIC_READ, 0, nil, OPEN_EXISTING,
             (uint32)((uint32)FILE_FLAG_OPEN_REPARSE_POINT | (uint32)FILE_FLAG_BACKUP_SEMANTICS), 0);
         if (err != default!) {
-            (n, err) = (-1, err); return;
+            (n, err) = (-1, err); goto ᒐdone;
         }
-        deferǃ(CloseHandle, fd, defer);
+        defer(CloseHandle, fd, ref ᒐ);
         var rdbbuf = new slice<byte>(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
         ref var bytesReturned = ref heap(new uint32(), out var ᏑbytesReturned);
         err = DeviceIoControl(fd, FSCTL_GET_REPARSE_POINT, nil, 0, Ꮡ(rdbbuf, 0), (uint32)len(rdbbuf), ᏑbytesReturned, nil);
         if (err != default!) {
-            (n, err) = (-1, err); return;
+            (n, err) = (-1, err); goto ᒐdone;
         }
         var rdb = Ꮡ(rdbbuf, 0).Reinterpret<byte, reparseDataBuffer>();
         @string s = default!;
@@ -1624,7 +1644,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
             }
         }
         else { /* default: */
-            (n, err) = (-1, ENOENT); return;
+            (n, err) = (-1, ENOENT); goto ᒐdone;
         }
 
         // unexpected; do nothing
@@ -1632,8 +1652,10 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
         // point
         n = copy(buf, slice<byte>(s));
         (n, err) = (n, default!);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 // Deprecated: CreateIoCompletionPort has the wrong function signature. Use x/sys/windows.CreateIoCompletionPort.

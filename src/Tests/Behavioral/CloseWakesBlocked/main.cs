@@ -7,7 +7,7 @@ partial class main_package {
 internal static void expectPanic(@string name, Action f) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             fmt.Println(name, (@string)"->"u8, recover());
         }, ref ᒐ);
         f();
@@ -49,7 +49,7 @@ internal static void Main() {
         GoFrame ᒐ = default;
         try {
             var res2ʗ2 = res2ʗ1;
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         res2ʗ2.ᐸꟷ(fmt.Sprintf("sender panicked: %v"u8, r));
@@ -95,7 +95,7 @@ internal static void Main() {
         GoFrame ᒐ = default;
         try {
             var res4ʗ2 = res4ʗ1;
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         res4ʗ2.ᐸꟷ(fmt.Sprintf("select send panicked: %v"u8, r));

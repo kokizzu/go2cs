@@ -68,7 +68,7 @@ internal static (nint r, bool ok) namedDefer(nint n) {
     bool ok = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             if (recover() != default!) {
                 (r, ok) = (-1, false);
             }

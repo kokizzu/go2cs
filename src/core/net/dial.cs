@@ -474,76 +474,81 @@ internal static readonly @string dialˢ = "dial"u8;
 //
 // See func [Dial] for a description of the network and address
 // parameters.
-public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ctx, @string network, @string address) => func<(Conn, error)>((defer, recover) => {
+public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ctx, @string network, @string address) {
+    GoFrame ᒐ = default;
+    try {
     ref var d = ref Ꮡd.DerefOrNull();
 
-    if (ctx == default!) {
-        throw panic("nil context");
-    }
-    var deadline = d.deadline(ctx, time.Now());
-    if (!deadline.IsZero()) {
-        testHookStepTime();
+        if (ctx == default!) {
+            throw panic("nil context");
+        }
+        var deadline = d.deadline(ctx, time.Now());
+        if (!deadline.IsZero()) {
+            testHookStepTime();
+            {
+                var (dΔ1, ok) = ctx.Deadline(); if (!ok || deadline.Before(dΔ1)) {
+                    var (subCtx, cancel) = context.WithDeadline(ctx, deadline);
+                    var cancelʗ1 = cancel;
+                    defer(() => cancelʗ1(), ref ᒐ);
+                    ctx = subCtx;
+                }
+            }
+        }
         {
-            var (dΔ1, ok) = ctx.Deadline(); if (!ok || deadline.Before(dΔ1)) {
-                var (subCtx, cancel) = context.WithDeadline(ctx, deadline);
-                var cancelʗ1 = cancel;
-                defer(() => cancelʗ1());
+            var oldCancel = d.Cancel; if (oldCancel != default!) {
+                var (subCtx, cancel) = context.WithCancel(ctx);
+                var cancelʗ2 = cancel;
+                defer(() => cancelʗ2(), ref ᒐ);
+                var cancelʗ3 = cancel;
+                var oldCancelʗ1 = oldCancel;
+                var subCtxʗ1 = subCtx;
+                goǃ(() => {
+                    var selᴛ1 = oldCancelʗ1;
+                    var selᴛ2 = subCtxʗ1.Done();
+                    switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+                    case 0 when selᴛ1.ꟷᐳ(out _): {
+                        cancelʗ3();
+                        break;
+                    }
+                    case 1 when selᴛ2.ꟷᐳ(out _): {
+                        break;
+                    }}
+                });
                 ctx = subCtx;
             }
         }
-    }
-    {
-        var oldCancel = d.Cancel; if (oldCancel != default!) {
-            var (subCtx, cancel) = context.WithCancel(ctx);
-            var cancelʗ2 = cancel;
-            defer(() => cancelʗ2());
-            var cancelʗ3 = cancel;
-            var oldCancelʗ1 = oldCancel;
-            var subCtxʗ1 = subCtx;
-            goǃ(() => {
-                var selᴛ1 = oldCancelʗ1;
-                var selᴛ2 = subCtxʗ1.Done();
-                switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-                case 0 when selᴛ1.ꟷᐳ(out _): {
-                    cancelʗ3();
-                    break;
-                }
-                case 1 when selᴛ2.ꟷᐳ(out _): {
-                    break;
-                }}
-            });
-            ctx = subCtx;
+        // Shadow the nettrace (if any) during resolve so Connect events don't fire for DNS lookups.
+        var resolveCtx = ctx;
+        {
+            var (trace, _) = ctx.Value(new nettrace.TraceKey(nil))._<ж<nettrace.Trace>>(ᐧ); if (trace != nil) {
+                ref var shadow = ref heap<nettrace.Trace>(out var Ꮡshadow);
+                shadow = trace.Value;
+                shadow.ConnectStart = default!;
+                shadow.ConnectDone = default!;
+                resolveCtx = context.WithValue(resolveCtx, new nettrace.TraceKey(nil), Ꮡshadow);
+            }
         }
-    }
-    // Shadow the nettrace (if any) during resolve so Connect events don't fire for DNS lookups.
-    var resolveCtx = ctx;
-    {
-        var (trace, _) = ctx.Value(new nettrace.TraceKey(nil))._<ж<nettrace.Trace>>(ᐧ); if (trace != nil) {
-            ref var shadow = ref heap<nettrace.Trace>(out var Ꮡshadow);
-            shadow = trace.Value;
-            shadow.ConnectStart = default!;
-            shadow.ConnectDone = default!;
-            resolveCtx = context.WithValue(resolveCtx, new nettrace.TraceKey(nil), Ꮡshadow);
+        var (addrs, err) = d.resolver().resolveAddrList(resolveCtx, dialˢ, network, address, d.LocalAddr);
+        if (err != default!) {
+            return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: network, Source: default!, Addr: default!, Err: err))));
         }
+        var sd = Ꮡ(new sysDialer(
+            Dialer: d,
+            network: network,
+            address: address
+        ));
+        addrList primaries = default!;
+        addrList fallbacks = default!;
+        if (d.dualStack() && network == "tcp"u8){
+            (primaries, fallbacks) = addrs.partition(isIPv4);
+        } else {
+            primaries = addrs;
+        }
+        return sd.dialParallel(ctx, primaries, fallbacks);
     }
-    var (addrs, err) = d.resolver().resolveAddrList(resolveCtx, dialˢ, network, address, d.LocalAddr);
-    if (err != default!) {
-        return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: network, Source: default!, Addr: default!, Err: err))));
-    }
-    var sd = Ꮡ(new sysDialer(
-        Dialer: d,
-        network: network,
-        address: address
-    ));
-    addrList primaries = default!;
-    addrList fallbacks = default!;
-    if (d.dualStack() && network == "tcp"u8){
-        (primaries, fallbacks) = addrs.partition(isIPv4);
-    } else {
-        primaries = addrs;
-    }
-    return sd.dialParallel(ctx, primaries, fallbacks);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoLocalName("dialResult")] [GoType("dyn")] partial struct dialParallel_dialResult {
     public Conn Conn;
@@ -556,139 +561,150 @@ public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ct
 // head start. It returns the first established connection and
 // closes the others. Otherwise it returns an error from the first
 // primary address.
-internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList primaries, addrList fallbacks) => func<(Conn, error)>((defer, recover) => {
-    if (len(fallbacks) == 0) {
-        return Ꮡsd.dialSerial(ctx, primaries);
-    }
-    var returned = new channel<EmptyStruct>(0);
-    deferǃ(ᴛ1 => builtin.close(ᴛ1), returned, defer);
-    var results = new channel<dialParallel_dialResult>(0);
-    // unbuffered
-    var fallbacksʗ1 = fallbacks;
-    var primariesʗ1 = primaries;
-    var resultsʗ1 = results;
-    var returnedʗ1 = returned;
-    void startRacer(context.Context ctxΔ1, bool primaryΔ1) {
-        var ras = primariesʗ1;
-        if (!primaryΔ1) {
-            ras = fallbacksʗ1;
+internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList primaries, addrList fallbacks) {
+    GoFrame ᒐ = default;
+    try {
+        if (len(fallbacks) == 0) {
+            return Ꮡsd.dialSerial(ctx, primaries);
         }
-        var (c, err) = Ꮡsd.dialSerial(ctxΔ1, ras);
-        var selᴛ3 = resultsʗ1.ᐸꟷ(new dialParallel_dialResult(Conn: c, error: err, primary: primaryΔ1, done: true), ꓸꓸꓸ);
-        var selᴛ4 = returnedʗ1;
-        switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-        case 0: {
-            break;
+        var returned = new channel<EmptyStruct>(0);
+        defer(ᴛ1 => builtin.close(ᴛ1), returned, ref ᒐ);
+        var results = new channel<dialParallel_dialResult>(0);
+        // unbuffered
+        var fallbacksʗ1 = fallbacks;
+        var primariesʗ1 = primaries;
+        var resultsʗ1 = results;
+        var returnedʗ1 = returned;
+        void startRacer(context.Context ctxΔ1, bool primaryΔ1) {
+            var ras = primariesʗ1;
+            if (!primaryΔ1) {
+                ras = fallbacksʗ1;
+            }
+            var (c, err) = Ꮡsd.dialSerial(ctxΔ1, ras);
+            var selᴛ3 = resultsʗ1.ᐸꟷ(new dialParallel_dialResult(Conn: c, error: err, primary: primaryΔ1, done: true), ꓸꓸꓸ);
+            var selᴛ4 = returnedʗ1;
+            switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+            case 0: {
+                break;
+            }
+            case 1 when selᴛ4.ꟷᐳ(out _): {
+                if (c != default!) {
+                    c.Close();
+                }
+                break;
+            }}
         }
-        case 1 when selᴛ4.ꟷᐳ(out _): {
-            if (c != default!) {
-                c.Close();
+        dialParallel_dialResult primary = default!;
+        dialParallel_dialResult fallback = default!;
+        // Start the main racer.
+        var (primaryCtx, primaryCancel) = context.WithCancel(ctx);
+        var primaryCancelʗ1 = primaryCancel;
+        defer(() => primaryCancelʗ1(), ref ᒐ);
+        var startRacerʗ1 = startRacer;
+        goǃ(startRacerʗ1, primaryCtx, (bool)true);
+        // Start the timer for the fallback racer.
+        var fallbackTimer = time.NewTimer(Ꮡsd.of(sysDialer.ᏑDialer).fallbackDelay());
+        var fallbackTimerʗ1 = fallbackTimer;
+        defer(() => fallbackTimerʗ1.Stop(), ref ᒐ);
+        while (ᐧ) {
+            var selᴛ5 = (~fallbackTimer).C;
+            var selᴛ6 = results;
+            switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+            case 0 when selᴛ5.ꟷᐳ(out _): {
+                var (fallbackCtx, fallbackCancel) = context.WithCancel(ctx);
+                var fallbackCancelʗ1 = fallbackCancel;
+                defer(() => fallbackCancelʗ1(), ref ᒐ);
+                var startRacerʗ2 = startRacer;
+                goǃ(startRacerʗ2, fallbackCtx, (bool)false);
+                break;
             }
-            break;
-        }}
-    }
-    dialParallel_dialResult primary = default!;
-    dialParallel_dialResult fallback = default!;
-    // Start the main racer.
-    var (primaryCtx, primaryCancel) = context.WithCancel(ctx);
-    var primaryCancelʗ1 = primaryCancel;
-    defer(() => primaryCancelʗ1());
-    var startRacerʗ1 = startRacer;
-    goǃ(startRacerʗ1, primaryCtx, (bool)true);
-    // Start the timer for the fallback racer.
-    var fallbackTimer = time.NewTimer(Ꮡsd.of(sysDialer.ᏑDialer).fallbackDelay());
-    var fallbackTimerʗ1 = fallbackTimer;
-    defer(() => fallbackTimerʗ1.Stop());
-    while (ᐧ) {
-        var selᴛ5 = (~fallbackTimer).C;
-        var selᴛ6 = results;
-        switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-        case 0 when selᴛ5.ꟷᐳ(out _): {
-            var (fallbackCtx, fallbackCancel) = context.WithCancel(ctx);
-            var fallbackCancelʗ1 = fallbackCancel;
-            defer(() => fallbackCancelʗ1());
-            var startRacerʗ2 = startRacer;
-            goǃ(startRacerʗ2, fallbackCtx, (bool)false);
-            break;
+            case 1 when selᴛ6.ꟷᐳ(out var res): {
+                if (res.error == default!) {
+                    return (res.Conn, default!);
+                }
+                if (res.primary){
+                    primary = res;
+                } else {
+                    fallback = res;
+                }
+                if (primary.done && fallback.done) {
+                    return (default!, primary.error);
+                }
+                if (res.primary && fallbackTimer.Stop()) {
+                    // If we were able to stop the timer, that means it
+                    // was running (hadn't yet started the fallback), but
+                    // we just got an error on the primary path, so start
+                    // the fallback immediately (in 0 nanoseconds).
+                    fallbackTimer.Reset(0);
+                }
+                break;
+            }}
         }
-        case 1 when selᴛ6.ꟷᐳ(out var res): {
-            if (res.error == default!) {
-                return (res.Conn, default!);
-            }
-            if (res.primary){
-                primary = res;
-            } else {
-                fallback = res;
-            }
-            if (primary.done && fallback.done) {
-                return (default!, primary.error);
-            }
-            if (res.primary && fallbackTimer.Stop()) {
-                // If we were able to stop the timer, that means it
-                // was running (hadn't yet started the fallback), but
-                // we just got an error on the primary path, so start
-                // the fallback immediately (in 0 nanoseconds).
-                fallbackTimer.Reset(0);
-            }
-            break;
-        }}
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // dialSerial connects to a list of addresses in sequence, returning
 // either the first successful connection, or the first error.
-internal static (Conn, error) dialSerial(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList ras) => func<(Conn, error)>((defer, recover) => {
+internal static (Conn, error) dialSerial(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList ras) {
+    GoFrame ᒐ = default;
+    try {
     ref var sd = ref Ꮡsd.DerefOrNull();
 
-    error firstErr = default!;    // The error from the first address is most relevant.
-    foreach (var (i, ra) in ras) {
-        var selᴛ7 = ctx.Done();
-        switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
-        case 0 when selᴛ7.ꟷᐳ(out _): {
-            return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: sd.LocalAddr, Addr: ra, Err: mapErr(ctx.Err())))));
-        }
-        default: {
-            break;
-        }}
-        var dialCtx = ctx;
-        {
-            var (deadline, hasDeadline) = ctx.Deadline(); if (hasDeadline) {
-                var (partialDeadlineΔ1, errΔ1) = partialDeadline(time.Now(), deadline, len(ras) - i);
-                if (errΔ1 != default!) {
-                    // Ran out of time.
-                    if (firstErr == default!) {
-                        firstErr = new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: sd.LocalAddr, Addr: ra, Err: errΔ1)));
+        error firstErr = default!;    // The error from the first address is most relevant.
+        foreach (var (i, ra) in ras) {
+            var selᴛ7 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+            case 0 when selᴛ7.ꟷᐳ(out _): {
+                return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: sd.LocalAddr, Addr: ra, Err: mapErr(ctx.Err())))));
+            }
+            default: {
+                break;
+            }}
+            var dialCtx = ctx;
+            {
+                var (deadline, hasDeadline) = ctx.Deadline(); if (hasDeadline) {
+                    var (partialDeadlineΔ1, errΔ1) = partialDeadline(time.Now(), deadline, len(ras) - i);
+                    if (errΔ1 != default!) {
+                        // Ran out of time.
+                        if (firstErr == default!) {
+                            firstErr = new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: sd.LocalAddr, Addr: ra, Err: errΔ1)));
+                        }
+                        break;
                     }
-                    break;
-                }
-                if (partialDeadlineΔ1.Before(deadline)) {
-                    Action cancel = default!;
-                    (dialCtx, cancel) = context.WithDeadline(ctx, partialDeadlineΔ1);
-                    var cancelʗ1 = cancel;
-                    defer(() => cancelʗ1());
+                    if (partialDeadlineΔ1.Before(deadline)) {
+                        Action cancel = default!;
+                        (dialCtx, cancel) = context.WithDeadline(ctx, partialDeadlineΔ1);
+                        var cancelʗ1 = cancel;
+                        defer(() => cancelʗ1(), ref ᒐ);
+                    }
                 }
             }
-        }
-        var (c, err) = Ꮡsd.dialSingle(dialCtx, ra);
-        if (err == default!) {
-            return (c, default!);
+            var (c, err) = Ꮡsd.dialSingle(dialCtx, ra);
+            if (err == default!) {
+                return (c, default!);
+            }
+            if (firstErr == default!) {
+                firstErr = err;
+            }
         }
         if (firstErr == default!) {
-            firstErr = err;
+            firstErr = new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: default!, Addr: default!, Err: errMissingAddress)));
         }
+        return (default!, firstErr);
     }
-    if (firstErr == default!) {
-        firstErr = new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: default!, Addr: default!, Err: errMissingAddress)));
-    }
-    return (default!, firstErr);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // dialSingle attempts to establish and returns a single connection to
 // the destination address.
 internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context.Context ctx, ΔAddr ra) {
     Conn c = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var sd = ref Ꮡsd.DerefOrNull();
 
         var (trace, _) = ctx.Value(new nettrace.TraceKey(nil))._<ж<nettrace.Trace>>(ᐧ);
@@ -701,7 +717,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
                 var traceʗ1 = trace;
                 defer(() => {
                     (~traceʗ1).ConnectDone(Ꮡsd.Value.network, raStr, err);
-                });
+                }, ref ᒐ);
             }
         }
         var la = sd.LocalAddr;
@@ -737,15 +753,17 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
         }
         default: {
             var raΔ1 = ra;
-            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: raΔ1, Err: new AddrErrorжerror(Ꮡ(new AddrError(Err: "unexpected address type"u8, Addr: sd.address))))))); return;
+            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: raΔ1, Err: new AddrErrorжerror(Ꮡ(new AddrError(Err: "unexpected address type"u8, Addr: sd.address))))))); goto ᒐdone;
         }}
         if (err != default!) {
-            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: ra, Err: err)))); return;
+            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: ra, Err: err)))); goto ᒐdone;
         }
         // c is non-nil interface containing nil pointer
         (c, err) = (c, default!);
-    });
-    return (c, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (c, err);
 }
 
 // ListenConfig contains options for listening to an address.

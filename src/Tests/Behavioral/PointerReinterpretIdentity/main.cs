@@ -54,7 +54,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 {
                     var r = recover(); if (r != default!) {
                         fmt.Println(caughtˢ, r);

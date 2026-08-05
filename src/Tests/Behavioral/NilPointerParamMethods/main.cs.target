@@ -103,7 +103,7 @@ internal static ж<node> orDefault(ж<node> Ꮡp) {
 internal static void @try(@string label, Action fn) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     fmt.Printf("%s -> panic: %v\n"u8, label, r);

@@ -43,24 +43,29 @@ internal static bool supportTCPKeepAliveCount;
 
 // Fallback to checking the Windows version.
 internal static Action initTCPKeepAlive;
-internal static void initᴛinitTCPKeepAlive() { initTCPKeepAlive = sync.OnceFunc(() => func((defer, recover) => {
-    var (s, err) = WSASocket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP, nil, 0, WSA_FLAG_NO_HANDLE_INHERIT);
-    if (err != default!) {
-        var (major, _, build) = version();
-        supportTCPKeepAliveIdle = major >= 10 && build >= 16299;
-        supportTCPKeepAliveInterval = major >= 10 && build >= 16299;
-        supportTCPKeepAliveCount = major >= 10 && build >= 15063;
-        return;
+internal static void initᴛinitTCPKeepAlive() { initTCPKeepAlive = sync.OnceFunc(() => {
+    GoFrame ᒐ = default;
+    try {
+        var (s, err) = WSASocket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP, nil, 0, WSA_FLAG_NO_HANDLE_INHERIT);
+        if (err != default!) {
+            var (major, _, build) = version();
+            supportTCPKeepAliveIdle = major >= 10 && build >= 16299;
+            supportTCPKeepAliveInterval = major >= 10 && build >= 16299;
+            supportTCPKeepAliveCount = major >= 10 && build >= 15063;
+            return;
+        }
+        defer(syscall.Closesocket, s, ref ᒐ);
+        Func<nint, bool> optSupported = (nint opt) => {
+            var errΔ1 = syscall.SetsockoptInt(s, syscall.IPPROTO_TCP, opt, 1);
+            return !errors.Is(errΔ1, syscall.WSAENOPROTOOPT);
+        };
+        supportTCPKeepAliveIdle = optSupported(TCP_KEEPIDLE);
+        supportTCPKeepAliveInterval = optSupported(TCP_KEEPINTVL);
+        supportTCPKeepAliveCount = optSupported(TCP_KEEPCNT);
     }
-    deferǃ(syscall.Closesocket, s, defer);
-    Func<nint, bool> optSupported = (nint opt) => {
-        var errΔ1 = syscall.SetsockoptInt(s, syscall.IPPROTO_TCP, opt, 1);
-        return !errors.Is(errΔ1, syscall.WSAENOPROTOOPT);
-    };
-    supportTCPKeepAliveIdle = optSupported(TCP_KEEPIDLE);
-    supportTCPKeepAliveInterval = optSupported(TCP_KEEPINTVL);
-    supportTCPKeepAliveCount = optSupported(TCP_KEEPCNT);
-})); }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}); }
 
 // SupportTCPKeepAliveInterval indicates whether TCP_KEEPIDLE is supported.
 // The minimal requirement is Windows 10.0.16299.

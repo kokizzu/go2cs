@@ -15,7 +15,7 @@ private static readonly object immediateNˢ = (@string)"Immediate n:"u8;
 internal static void printSquare(nint n) {
     GoFrame ᒐ = default;
     try {
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredSquareˢ, n * n, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredSquareˢ, n * n, ref ᒐ);
         n++;
         fmt.Println(immediateNˢ, n);
     }

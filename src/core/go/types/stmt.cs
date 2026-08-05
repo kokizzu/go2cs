@@ -22,41 +22,46 @@ partial class types_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string missingReturnˢ = "missing return"u8;
 
-internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) => func((defer, recover) => {
+internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var sig = ref Ꮡsig.DerefOrNull();
     ref var body = ref Ꮡbody.DerefOrNull();
 
-    if ((~check.conf).IgnoreFuncBodies) {
-        throw panic("function body not ignored");
+        if ((~check.conf).IgnoreFuncBodies) {
+            throw panic("function body not ignored");
+        }
+        if ((~check.conf)._Trace) {
+            Ꮡcheck.trace(body.Pos(), "-- %s: %s"u8, name, Ꮡsig.OrTypedNil());
+        }
+        // save/restore current environment and set up function environment
+        // (and use 0 indentation at function start)
+        defer((environment env, nint indent) => {
+            Ꮡcheck.Value.environment = env;
+            Ꮡcheck.Value.indent = indent;
+        }, Ꮡcheck.Value.environment, Ꮡcheck.Value.indent, ref ᒐ);
+        check.environment = new environment(
+            decl: Ꮡdecl,
+            scope: sig.scope,
+            iota: iota,
+            sig: Ꮡsig
+        );
+        check.indent = 0;
+        Ꮡcheck.stmtList(0, body.List);
+        if (check.hasLabel) {
+            Ꮡcheck.labels(Ꮡbody);
+        }
+        if (sig.results.Len() > 0 && !check.isTerminating(new ast_BlockStmtжStmt(Ꮡbody), ""u8)) {
+            Ꮡcheck.error(((atPos)body.Rbrace), MissingReturn, missingReturnˢ);
+        }
+        // spec: "Implementation restriction: A compiler may make it illegal to
+        // declare a variable inside a function body if the variable is never used."
+        Ꮡcheck.usage(sig.scope);
     }
-    if ((~check.conf)._Trace) {
-        Ꮡcheck.trace(body.Pos(), "-- %s: %s"u8, name, Ꮡsig.OrTypedNil());
-    }
-    // save/restore current environment and set up function environment
-    // (and use 0 indentation at function start)
-    deferǃ((environment env, nint indent) => {
-        Ꮡcheck.Value.environment = env;
-        Ꮡcheck.Value.indent = indent;
-    }, Ꮡcheck.Value.environment, Ꮡcheck.Value.indent, defer);
-    check.environment = new environment(
-        decl: Ꮡdecl,
-        scope: sig.scope,
-        iota: iota,
-        sig: Ꮡsig
-    );
-    check.indent = 0;
-    Ꮡcheck.stmtList(0, body.List);
-    if (check.hasLabel) {
-        Ꮡcheck.labels(Ꮡbody);
-    }
-    if (sig.results.Len() > 0 && !check.isTerminating(new ast_BlockStmtжStmt(Ꮡbody), ""u8)) {
-        Ꮡcheck.error(((atPos)body.Rbrace), MissingReturn, missingReturnˢ);
-    }
-    // spec: "Implementation restriction: A compiler may make it illegal to
-    // declare a variable inside a function body if the variable is never used."
-    Ꮡcheck.usage(sig.scope);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void usage(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope) {
     ref var scope = ref Ꮡscope.DerefOrNull();
@@ -438,704 +443,714 @@ internal static readonly @string invalidStatementˢ = "invalid statement"u8;
 // }
 
 // stmt typechecks statement s.
-internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt s) => func((defer, recover) => {
+internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt s) {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
-    // statements must end with the same top scope as they started with
-    if (debug) {
-        deferǃ((ж<ΔScope> scope) => {
-            {
-                var p = recover(); if (p != default!) {
-                    throw panic(p);
+        // statements must end with the same top scope as they started with
+        if (debug) {
+            defer((ж<ΔScope> scope) => {
+                {
+                    var p = recover(); if (p != default!) {
+                        throw panic(p);
+                    }
                 }
-            }
-            assert(scope == Ꮡcheck.Value.scope);
-        }, Ꮡcheck.Value.scope, defer);
-    }
-    // process collected function literals before scope changes
-    deferǃ(Ꮡcheck.processDelayed, len(Ꮡcheck.Value.delayed), defer);
-    // reset context for statements of inner blocks
-    stmtContext inner = (stmtContext)(ctxt & ~((stmtContext)((stmtContext)(fallthroughOk | finalSwitchCase) | inTypeSwitch)));
-    switch (s.type()) {
-    case ж<ast.BadStmt> _:
-    case ж<ast.EmptyStmt> _: {
-        var sΔ1 = s;
-        break;
-    }
-    case ж<ast.DeclStmt> sΔ1: {
-        Ꮡcheck.declStmt((~sΔ1).Decl);
-        break;
-    }
-    case ж<ast.LabeledStmt> sΔ1: {
-        check.hasLabel = true;
-        Ꮡcheck.stmt(ctxt, // ignore
+                assert(scope == Ꮡcheck.Value.scope);
+            }, Ꮡcheck.Value.scope, ref ᒐ);
+        }
+        // process collected function literals before scope changes
+        defer(Ꮡcheck.processDelayed, len(Ꮡcheck.Value.delayed), ref ᒐ);
+        // reset context for statements of inner blocks
+        stmtContext inner = (stmtContext)(ctxt & ~((stmtContext)((stmtContext)(fallthroughOk | finalSwitchCase) | inTypeSwitch)));
+        switch (s.type()) {
+        case ж<ast.BadStmt> _:
+        case ж<ast.EmptyStmt> _: {
+            var sΔ1 = s;
+            break;
+        }
+        case ж<ast.DeclStmt> sΔ1: {
+            Ꮡcheck.declStmt((~sΔ1).Decl);
+            break;
+        }
+        case ж<ast.LabeledStmt> sΔ1: {
+            check.hasLabel = true;
+            Ꮡcheck.stmt(ctxt, // ignore
  (~sΔ1).Stmt);
-        break;
-    }
-    case ж<ast.ExprStmt> sΔ1: {
-        // spec: "With the exception of specific built-in functions,
-        // function and method calls and receive operations can appear
-        // in statement context. Such statements may be parenthesized."
-        ref var x = ref heap(new operand(), out var Ꮡx);
-        exprKind kind = Ꮡcheck.rawExpr(nil, Ꮡx, (~sΔ1).X, default!, false);
-        @string msg = default!;
-        errors.Code code = default!;
-        var exprᴛ1 = x.mode;
-        if (exprᴛ1 == Δbuiltinᴛ) {
-            msg = mustBeCalledˢ;
-            code = UncalledBuiltin;
+            break;
         }
-        else if (exprᴛ1 == typexpr) {
-            msg = isNotAnExpressionˢ;
-            code = NotAnExpr;
-        }
-        else { /* default: */
-            if (kind == statement) {
-                return;
-            }
-            msg = isNotUsedˢ;
-            code = UnusedExpr;
-        }
-
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "%s %s"u8, Ꮡx, msg);
-        break;
-    }
-    case ж<ast.SendStmt> sΔ1: {
-        ref var ch = ref heap(new operand(), out var Ꮡch);
-        ref var val = ref heap(new operand(), out var Ꮡval);
-        Ꮡcheck.expr(nil, Ꮡch, (~sΔ1).Chan);
-        Ꮡcheck.expr(nil, Ꮡval, (~sΔ1).Value);
-        if (ch.mode == invalid || val.mode == invalid) {
-            return;
-        }
-        var u = coreType(ch.typ);
-        if (u == default!) {
-            Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to %s: no core type", Ꮡch);
-            return;
-        }
-        var (uch, _) = u._<ж<Chan>>(ᐧ);
-        if (uch == nil) {
-            Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to non-channel %s", Ꮡch);
-            return;
-        }
-        if ((~uch).dir == RecvOnly) {
-            Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to receive-only channel %s", Ꮡch);
-            return;
-        }
-        Ꮡcheck.assignment(Ꮡval, (~uch).elem, sendˢ);
-        break;
-    }
-    case ж<ast.IncDecStmt> sΔ1: {
-        token.Token op = default!;
-        var exprᴛ2 = (~sΔ1).Tok;
-        if (exprᴛ2 == token.INC) {
-            op = token.ADD;
-        }
-        else if (exprᴛ2 == token.DEC) {
-            op = token.SUB;
-        }
-        else { /* default: */
-            Ꮡcheck.errorf(inNode(new ast_IncDecStmtжNode(sΔ1), (~sΔ1).TokPos), InvalidSyntaxTree, "unknown inc/dec operation %s"u8, (~sΔ1).Tok);
-            return;
-        }
-
-        ref var x = ref heap(new operand(), out var Ꮡx);
-        Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).X);
-        if (x.mode == invalid) {
-            return;
-        }
-        if (!allNumeric(x.typ)) {
-            Ꮡcheck.errorf(new ast_Exprᴠpositioner((~sΔ1).X), NonNumericIncDec, invalidOp + "%s%s (non-numeric type %s)", (~sΔ1).X, (~sΔ1).Tok, x.typ);
-            return;
-        }
-        var Y = Ꮡ(new ast.BasicLit(ValuePos: (~sΔ1).X.Pos(), Kind: token.INT, Value: "1"u8));
-        Ꮡcheck.binary(Ꮡx, // use x's position
- default!, (~sΔ1).X, new ast_BasicLitжExpr(Y), op, (~sΔ1).TokPos);
-        if (x.mode == invalid) {
-            return;
-        }
-        Ꮡcheck.assignVar((~sΔ1).X, default!, Ꮡx, assignmentˢ);
-        break;
-    }
-    case ж<ast.AssignStmt> sΔ1: {
-        var exprᴛ3 = (~sΔ1).Tok;
-        if (exprᴛ3 == token.ASSIGN || exprᴛ3 == token.DEFINE) {
-            if (len((~sΔ1).Lhs) == 0) {
-                Ꮡcheck.error(new ast_AssignStmtжpositioner(sΔ1), InvalidSyntaxTree, missingLhsInAssignmentˢ);
-                return;
-            }
-            if ((~sΔ1).Tok == token.DEFINE){
-                Ꮡcheck.shortVarDecl(inNode(new ast_AssignStmtжNode(sΔ1), (~sΔ1).TokPos), (~sΔ1).Lhs, (~sΔ1).Rhs);
-            } else {
-                // regular assignment
-                Ꮡcheck.assignVars((~sΔ1).Lhs, (~sΔ1).Rhs);
-            }
-        }
-        else { /* default: */
-            if (len((~sΔ1).Lhs) != 1 || len((~sΔ1).Rhs) != 1) {
-                // assignment operations
-                Ꮡcheck.errorf(inNode(new ast_AssignStmtжNode(sΔ1), (~sΔ1).TokPos), MultiValAssignOp, "assignment operation %s requires single-valued expressions"u8, (~sΔ1).Tok);
-                return;
-            }
-            token.Token op = assignOp((~sΔ1).Tok);
-            if (op == token.ILLEGAL) {
-                Ꮡcheck.errorf(((atPos)(~sΔ1).TokPos), InvalidSyntaxTree, "unknown assignment operation %s"u8, (~sΔ1).Tok);
-                return;
-            }
+        case ж<ast.ExprStmt> sΔ1: {
+            // spec: "With the exception of specific built-in functions,
+            // function and method calls and receive operations can appear
+            // in statement context. Such statements may be parenthesized."
             ref var x = ref heap(new operand(), out var Ꮡx);
-            Ꮡcheck.binary(Ꮡx, default!, (~sΔ1).Lhs[0], (~sΔ1).Rhs[0], op, (~sΔ1).TokPos);
+            exprKind kind = Ꮡcheck.rawExpr(nil, Ꮡx, (~sΔ1).X, default!, false);
+            @string msg = default!;
+            errors.Code code = default!;
+            var exprᴛ1 = x.mode;
+            if (exprᴛ1 == Δbuiltinᴛ) {
+                msg = mustBeCalledˢ;
+                code = UncalledBuiltin;
+            }
+            else if (exprᴛ1 == typexpr) {
+                msg = isNotAnExpressionˢ;
+                code = NotAnExpr;
+            }
+            else { /* default: */
+                if (kind == statement) {
+                    return;
+                }
+                msg = isNotUsedˢ;
+                code = UnusedExpr;
+            }
+
+            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "%s %s"u8, Ꮡx, msg);
+            break;
+        }
+        case ж<ast.SendStmt> sΔ1: {
+            ref var ch = ref heap(new operand(), out var Ꮡch);
+            ref var val = ref heap(new operand(), out var Ꮡval);
+            Ꮡcheck.expr(nil, Ꮡch, (~sΔ1).Chan);
+            Ꮡcheck.expr(nil, Ꮡval, (~sΔ1).Value);
+            if (ch.mode == invalid || val.mode == invalid) {
+                return;
+            }
+            var u = coreType(ch.typ);
+            if (u == default!) {
+                Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to %s: no core type", Ꮡch);
+                return;
+            }
+            var (uch, _) = u._<ж<Chan>>(ᐧ);
+            if (uch == nil) {
+                Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to non-channel %s", Ꮡch);
+                return;
+            }
+            if ((~uch).dir == RecvOnly) {
+                Ꮡcheck.errorf(inNode(new ast_SendStmtжNode(sΔ1), (~sΔ1).Arrow), InvalidSend, invalidOp + "cannot send to receive-only channel %s", Ꮡch);
+                return;
+            }
+            Ꮡcheck.assignment(Ꮡval, (~uch).elem, sendˢ);
+            break;
+        }
+        case ж<ast.IncDecStmt> sΔ1: {
+            token.Token op = default!;
+            var exprᴛ2 = (~sΔ1).Tok;
+            if (exprᴛ2 == token.INC) {
+                op = token.ADD;
+            }
+            else if (exprᴛ2 == token.DEC) {
+                op = token.SUB;
+            }
+            else { /* default: */
+                Ꮡcheck.errorf(inNode(new ast_IncDecStmtжNode(sΔ1), (~sΔ1).TokPos), InvalidSyntaxTree, "unknown inc/dec operation %s"u8, (~sΔ1).Tok);
+                return;
+            }
+
+            ref var x = ref heap(new operand(), out var Ꮡx);
+            Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).X);
             if (x.mode == invalid) {
                 return;
             }
-            Ꮡcheck.assignVar((~sΔ1).Lhs[0], default!, Ꮡx, assignmentˢ);
-        }
-
-        break;
-    }
-    case ж<ast.GoStmt> sΔ1: {
-        Ꮡcheck.suspendedCall("go"u8, (~sΔ1).Call);
-        break;
-    }
-    case ж<ast.DeferStmt> sΔ1: {
-        Ꮡcheck.suspendedCall(deferˢ, (~sΔ1).Call);
-        break;
-    }
-    case ж<ast.ReturnStmt> sΔ1: {
-        var res = check.sig.Value.results;
-        if (len((~sΔ1).Results) == 0 && res.Len() > 0 && (~(~res).vars[0]).name != ""u8){
-            // Return with implicit results allowed for function with named results.
-            // (If one is named, all are named.)
-            // spec: "Implementation restriction: A compiler may disallow an empty expression
-            // list in a "return" statement if a different entity (constant, type, or variable)
-            // with the same name as a result parameter is in scope at the place of the return."
-            foreach (var (_, obj) in (~res).vars) {
-                {
-                    var alt = Ꮡcheck.of(Checker.Ꮡenvironment).lookup((~obj).name); if (alt != default! && !AreEqual(alt, obj)) {
-                        var err = Ꮡcheck.newError(OutOfScopeResult);
-                        err.addf(new ast_ReturnStmtжpositioner(sΔ1), "result parameter %s not in scope at return"u8, (~obj).name);
-                        err.addf(new Objectᴠpositioner(alt), "inner declaration of %s"u8, obj.OrTypedNil());
-                        err.report();
-                    }
-                }
-            }
-        } else {
-            // ok to continue
-            slice<ж<Var>> lhs = default!;
-            if (res.Len() > 0) {
-                lhs = res.Value.vars;
-            }
-            Ꮡcheck.initVars(lhs, (~sΔ1).Results, new ast_ReturnStmtжStmt(sΔ1));
-        }
-        break;
-    }
-    case ж<ast.BranchStmt> sΔ1: {
-        if ((~sΔ1).Label != nil) {
-            check.hasLabel = true;
-            return;
-        }
-        var exprᴛ4 = (~sΔ1).Tok;
-        if (exprᴛ4 == token.BREAK) {
-            if ((stmtContext)(ctxt & breakOk) == 0) {
-                // checked in 2nd pass (check.labels)
-                Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedBreak, breakNotInForSwitchOrˢ);
-            }
-        }
-        else if (exprᴛ4 == token.CONTINUE) {
-            if ((stmtContext)(ctxt & continueOk) == 0) {
-                Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedContinue, continueNotInForˢ);
-            }
-        }
-        else if (exprᴛ4 == token.FALLTHROUGH) {
-            if ((stmtContext)(ctxt & fallthroughOk) == 0) {
-                @string msg = default!;
-                switch (ᐧ) {
-                case {} when (stmtContext)(ctxt & finalSwitchCase) != 0: {
-                    msg = cannotFallthroughFinalˢ;
-                    break;
-                }
-                case {} when (stmtContext)(ctxt & inTypeSwitch) != 0: {
-                    msg = cannotFallthroughInTypeˢ;
-                    break;
-                }
-                default: {
-                    msg = fallthroughStatementOutˢ;
-                    break;
-                }}
-
-                Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedFallthrough, msg);
-            }
-        }
-        else { /* default: */
-            Ꮡcheck.errorf(new ast_BranchStmtжpositioner(sΔ1), InvalidSyntaxTree, "branch statement: %s"u8, (~sΔ1).Tok);
-        }
-
-        break;
-    }
-    case ж<ast.BlockStmt> sΔ1: {
-        check.openScope(new ast.BlockStmtжNode(sΔ1), blockˢ);
-        defer(Ꮡcheck.closeScope);
-        Ꮡcheck.stmtList(inner, (~sΔ1).List);
-        break;
-    }
-    case ж<ast.IfStmt> sΔ1: {
-        check.openScope(new ast_IfStmtжNode(sΔ1), "if"u8);
-        defer(Ꮡcheck.closeScope);
-        Ꮡcheck.simpleStmt((~sΔ1).Init);
-        ref var x = ref heap(new operand(), out var Ꮡx);
-        Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).Cond);
-        if (x.mode != invalid && !allBoolean(x.typ)) {
-            Ꮡcheck.error(new ast_Exprᴠpositioner((~sΔ1).Cond), InvalidCond, nonBooleanConditionInIfˢ);
-        }
-        Ꮡcheck.stmt(inner, new ast_BlockStmtжStmt((~sΔ1).Body));
-        switch ((~sΔ1).Else.type()) {
-        case null:
-        case ж<ast.BadStmt> _: {
-            break;
-        }
-        case ж<ast.IfStmt> _:
-        case ж<ast.BlockStmt> _: {
-            Ꮡcheck.stmt(inner, // The parser produces a correct AST but if it was modified
- // elsewhere the else branch may be invalid. Check again.
- // valid or error already reported
- (~sΔ1).Else);
-            break;
-        }
-        default: {
-            Ꮡcheck.error(new ast_Stmtᴠpositioner((~sΔ1).Else), InvalidSyntaxTree, invalidElseBranchInIfˢ);
-            break;
-        }}
-
-        break;
-    }
-    case ж<ast.SwitchStmt> sΔ1: {
-        inner |= (stmtContext)(breakOk);
-        check.openScope(new ast_SwitchStmtжNode(sΔ1), switchˢ);
-        defer(Ꮡcheck.closeScope);
-        Ꮡcheck.simpleStmt((~sΔ1).Init);
-        ref var x = ref heap(new operand(), out var Ꮡx);
-        if ((~sΔ1).Tag != default!){
-            Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).Tag);
-            // By checking assignment of x to an invisible temporary
-            // (as a compiler would), we get all the relevant checks.
-            Ꮡcheck.assignment(Ꮡx, default!, switchExpressionˢ);
-            if (x.mode != invalid && !Comparable(x.typ) && !hasNil(x.typ)) {
-                Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidExprSwitch, "cannot switch on %s (%s is not comparable)"u8, Ꮡx, x.typ);
-                x.mode = invalid;
-            }
-        } else {
-            // spec: "A missing switch expression is
-            // equivalent to the boolean value true."
-            x.mode = constant_;
-            x.typ = new BasicжΔType(Typ[Bool]);
-            x.val = constant.MakeBool(true);
-            x.expr = new ast_IdentжExpr(Ꮡ(new ast.Ident(NamePos: (~(~sΔ1).Body).Lbrace, Name: "true"u8)));
-        }
-        Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
-        var seen = new valueMap(0);
-        foreach (var (i, c) in (~(~sΔ1).Body).List) {
-            // map of seen case values to positions and types
-            var (clause, _) = c._<ж<ast.CaseClause>>(ᐧ);
-            if (clause == nil) {
-                Ꮡcheck.error(new ast_Stmtᴠpositioner(c), InvalidSyntaxTree, incorrectExpressionˢ);
-                continue;
-            }
-            Ꮡcheck.caseValues(Ꮡx, (~clause).List, seen);
-            check.openScope(new ast_CaseClauseжNode(clause), caseˢ);
-            stmtContext innerΔ1 = inner;
-            if (i + 1 < len((~(~sΔ1).Body).List)){
-                innerΔ1 |= (stmtContext)(fallthroughOk);
-            } else {
-                innerΔ1 |= (stmtContext)(finalSwitchCase);
-            }
-            Ꮡcheck.stmtList(innerΔ1, (~clause).Body);
-            check.closeScope();
-        }
-        break;
-    }
-    case ж<ast.TypeSwitchStmt> sΔ1: {
-        inner |= (stmtContext)((stmtContext)(breakOk | inTypeSwitch));
-        check.openScope(new ast_TypeSwitchStmtжNode(sΔ1), typeSwitchˢ);
-        defer(Ꮡcheck.closeScope);
-        Ꮡcheck.simpleStmt((~sΔ1).Init);
-        // A type switch guard must be of the form:
-        //
-        //     TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
-        //
-        // The parser is checking syntactic correctness;
-        // remaining syntactic errors are considered AST errors here.
-        // TODO(gri) better factoring of error handling (invalid ASTs)
-        //
-        ж<ast.Ident> lhs = default!;                   // lhs identifier or nil
-        ast.Expr rhs = default!;
-        switch ((~sΔ1).Assign.type()) {
-        case ж<ast.ExprStmt> guard: {
-            rhs = guard.Value.X;
-            break;
-        }
-        case ж<ast.AssignStmt> guard: {
-            if (len((~guard).Lhs) != 1 || (~guard).Tok != token.DEFINE || len((~guard).Rhs) != 1) {
-                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
+            if (!allNumeric(x.typ)) {
+                Ꮡcheck.errorf(new ast_Exprᴠpositioner((~sΔ1).X), NonNumericIncDec, invalidOp + "%s%s (non-numeric type %s)", (~sΔ1).X, (~sΔ1).Tok, x.typ);
                 return;
             }
-            (lhs, _) = (~guard).Lhs[0]._<ж<ast.Ident>>(ᐧ);
-            if (lhs == nil) {
-                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
+            var Y = Ꮡ(new ast.BasicLit(ValuePos: (~sΔ1).X.Pos(), Kind: token.INT, Value: "1"u8));
+            Ꮡcheck.binary(Ꮡx, // use x's position
+ default!, (~sΔ1).X, new ast_BasicLitжExpr(Y), op, (~sΔ1).TokPos);
+            if (x.mode == invalid) {
                 return;
             }
-            if ((~lhs).Name == "_"u8){
-                // _ := x.(type) is an invalid short variable declaration
-                Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), NoNewVar, "no new variable on left side of :="u8);
-                lhs = default!;
-            } else {
-                // avoid declared and not used error below
-                check.recordDef(lhs, default!);
-            }
-            rhs = (~guard).Rhs[0];
+            Ꮡcheck.assignVar((~sΔ1).X, default!, Ꮡx, assignmentˢ);
             break;
         }
-        default: {
-            var guard = (~sΔ1).Assign;
-            Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), // lhs variable is implicitly declared in each cause clause
- InvalidSyntaxTree, incorrectFormOfTypeˢ);
-            return;
-        }}
-        var (expr, _) = rhs._<ж<ast.TypeAssertExpr>>(ᐧ);
-        if (expr == nil || (~expr).Type != default!) {
-            // rhs must be of the form: expr.(type) and expr must be an ordinary interface
-            Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
-            return;
-        }
-        ж<operand> sx = default!;                // switch expression against which cases are compared against; nil if invalid
-        {
-            ref var x = ref heap(new operand(), out var Ꮡx);
-            Ꮡcheck.expr(nil, Ꮡx, (~expr).X);
-            if (x.mode != invalid) {
-                if (isTypeParam(x.typ)){
-                    Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidTypeSwitch, "cannot use type switch on type parameter value %s"u8, Ꮡx);
-                } else 
-                if (IsInterface(x.typ)){
-                    sx = Ꮡx;
+        case ж<ast.AssignStmt> sΔ1: {
+            var exprᴛ3 = (~sΔ1).Tok;
+            if (exprᴛ3 == token.ASSIGN || exprᴛ3 == token.DEFINE) {
+                if (len((~sΔ1).Lhs) == 0) {
+                    Ꮡcheck.error(new ast_AssignStmtжpositioner(sΔ1), InvalidSyntaxTree, missingLhsInAssignmentˢ);
+                    return;
+                }
+                if ((~sΔ1).Tok == token.DEFINE){
+                    Ꮡcheck.shortVarDecl(inNode(new ast_AssignStmtжNode(sΔ1), (~sΔ1).TokPos), (~sΔ1).Lhs, (~sΔ1).Rhs);
                 } else {
-                    Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidTypeSwitch, "%s is not an interface"u8, Ꮡx);
+                    // regular assignment
+                    Ꮡcheck.assignVars((~sΔ1).Lhs, (~sΔ1).Rhs);
                 }
             }
-        }
-        Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
-        slice<ж<Var>> lhsVars = default!;                    // list of implicitly declared lhs variables
-        var seen = new map<ΔType, ast.Expr>();
-        foreach (var (_, sΔ2) in (~(~sΔ1).Body).List) {
-            // map of seen types to positions
-            var (clause, _) = sΔ2._<ж<ast.CaseClause>>(ᐧ);
-            if (clause == nil) {
-                Ꮡcheck.error(new ast_Stmtᴠpositioner(sΔ2), InvalidSyntaxTree, incorrectTypeSwitchCaseˢ);
-                continue;
+            else { /* default: */
+                if (len((~sΔ1).Lhs) != 1 || len((~sΔ1).Rhs) != 1) {
+                    // assignment operations
+                    Ꮡcheck.errorf(inNode(new ast_AssignStmtжNode(sΔ1), (~sΔ1).TokPos), MultiValAssignOp, "assignment operation %s requires single-valued expressions"u8, (~sΔ1).Tok);
+                    return;
+                }
+                token.Token op = assignOp((~sΔ1).Tok);
+                if (op == token.ILLEGAL) {
+                    Ꮡcheck.errorf(((atPos)(~sΔ1).TokPos), InvalidSyntaxTree, "unknown assignment operation %s"u8, (~sΔ1).Tok);
+                    return;
+                }
+                ref var x = ref heap(new operand(), out var Ꮡx);
+                Ꮡcheck.binary(Ꮡx, default!, (~sΔ1).Lhs[0], (~sΔ1).Rhs[0], op, (~sΔ1).TokPos);
+                if (x.mode == invalid) {
+                    return;
+                }
+                Ꮡcheck.assignVar((~sΔ1).Lhs[0], default!, Ꮡx, assignmentˢ);
             }
-            // Check each type in this type switch case.
-            var T = Ꮡcheck.caseTypes(sx, (~clause).List, seen);
-            check.openScope(new ast_CaseClauseжNode(clause), caseˢ);
-            // If lhs exists, declare a corresponding variable in the case-local scope.
-            if (lhs != nil) {
-                // spec: "The TypeSwitchGuard may include a short variable declaration.
-                // When that form is used, the variable is declared at the beginning of
-                // the implicit block in each clause. In clauses with a case listing
-                // exactly one type, the variable has that type; otherwise, the variable
-                // has the type of the expression in the TypeSwitchGuard."
-                if (len((~clause).List) != 1 || T == default!) {
-                    T = new BasicжΔType(Typ[Invalid]);
-                    if (sx != nil) {
-                        T = sx.Value.typ;
+
+            break;
+        }
+        case ж<ast.GoStmt> sΔ1: {
+            Ꮡcheck.suspendedCall("go"u8, (~sΔ1).Call);
+            break;
+        }
+        case ж<ast.DeferStmt> sΔ1: {
+            Ꮡcheck.suspendedCall(deferˢ, (~sΔ1).Call);
+            break;
+        }
+        case ж<ast.ReturnStmt> sΔ1: {
+            var res = check.sig.Value.results;
+            if (len((~sΔ1).Results) == 0 && res.Len() > 0 && (~(~res).vars[0]).name != ""u8){
+                // Return with implicit results allowed for function with named results.
+                // (If one is named, all are named.)
+                // spec: "Implementation restriction: A compiler may disallow an empty expression
+                // list in a "return" statement if a different entity (constant, type, or variable)
+                // with the same name as a result parameter is in scope at the place of the return."
+                foreach (var (_, obj) in (~res).vars) {
+                    {
+                        var alt = Ꮡcheck.of(Checker.Ꮡenvironment).lookup((~obj).name); if (alt != default! && !AreEqual(alt, obj)) {
+                            var err = Ꮡcheck.newError(OutOfScopeResult);
+                            err.addf(new ast_ReturnStmtжpositioner(sΔ1), "result parameter %s not in scope at return"u8, (~obj).name);
+                            err.addf(new Objectᴠpositioner(alt), "inner declaration of %s"u8, obj.OrTypedNil());
+                            err.report();
+                        }
                     }
                 }
-                var obj = NewVar(lhs.Pos(), check.pkg, (~lhs).Name, T);
-                tokenꓸPos scopePos = clause.Pos() + ((tokenꓸPos)len("default"));
-                // for default clause (len(List) == 0)
-                {
-                    nint n = len((~clause).List); if (n > 0) {
-                        scopePos = (~clause).List[n - 1].End();
+            } else {
+                // ok to continue
+                slice<ж<Var>> lhs = default!;
+                if (res.Len() > 0) {
+                    lhs = res.Value.vars;
+                }
+                Ꮡcheck.initVars(lhs, (~sΔ1).Results, new ast_ReturnStmtжStmt(sΔ1));
+            }
+            break;
+        }
+        case ж<ast.BranchStmt> sΔ1: {
+            if ((~sΔ1).Label != nil) {
+                check.hasLabel = true;
+                return;
+            }
+            var exprᴛ4 = (~sΔ1).Tok;
+            if (exprᴛ4 == token.BREAK) {
+                if ((stmtContext)(ctxt & breakOk) == 0) {
+                    // checked in 2nd pass (check.labels)
+                    Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedBreak, breakNotInForSwitchOrˢ);
+                }
+            }
+            else if (exprᴛ4 == token.CONTINUE) {
+                if ((stmtContext)(ctxt & continueOk) == 0) {
+                    Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedContinue, continueNotInForˢ);
+                }
+            }
+            else if (exprᴛ4 == token.FALLTHROUGH) {
+                if ((stmtContext)(ctxt & fallthroughOk) == 0) {
+                    @string msg = default!;
+                    switch (ᐧ) {
+                    case {} when (stmtContext)(ctxt & finalSwitchCase) != 0: {
+                        msg = cannotFallthroughFinalˢ;
+                        break;
                     }
-                }
-                Ꮡcheck.declare(check.scope, nil, new VarжObject(obj), scopePos);
-                check.recordImplicit(new ast_CaseClauseжNode(clause), new VarжObject(obj));
-                // For the "declared and not used" error, all lhs variables act as
-                // one; i.e., if any one of them is 'used', all of them are 'used'.
-                // Collect them for later analysis.
-                lhsVars = append(lhsVars, obj);
-            }
-            Ꮡcheck.stmtList(inner, (~clause).Body);
-            check.closeScope();
-        }
-        if (lhs != nil) {
-            // If lhs exists, we must have at least one lhs variable that was used.
-            bool used = default!;
-            foreach (var (_, v) in lhsVars) {
-                if ((~v).used) {
-                    used = true;
-                }
-                v.Value.used = true;
-            }
-            // avoid usage error when checking entire function
-            if (!used) {
-                Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), UnusedVar, "%s declared and not used"u8, (~lhs).Name);
-            }
-        }
-        break;
-    }
-    case ж<ast.SelectStmt> sΔ1: {
-        inner |= (stmtContext)(breakOk);
-        Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
-        foreach (var (_, sΔ3) in (~(~sΔ1).Body).List) {
-            var (clause, _) = sΔ3._<ж<ast.CommClause>>(ᐧ);
-            if (clause == nil) {
-                continue;
-            }
-            // error reported before
-            // clause.Comm must be a SendStmt, RecvStmt, or default case
-            var valid = false;
-            ast.Expr rhs = default!;               // rhs of RecvStmt, or nil
-            switch ((~clause).Comm.type()) {
-            case null:
-            case ж<ast.SendStmt> _: {
-                var sΔ4 = (~clause).Comm;
-                valid = true;
-                break;
-            }
-            case ж<ast.AssignStmt> sΔ4: {
-                if (len((~sΔ4).Rhs) == 1) {
-                    rhs = (~sΔ4).Rhs[0];
-                }
-                break;
-            }
-            case ж<ast.ExprStmt> sΔ4: {
-                rhs = sΔ4.Value.X;
-                break;
-            }}
-            // if present, rhs must be a receive operation
-            if (rhs != default!) {
-                {
-                    var (x, _) = ast.Unparen(rhs)._<ж<ast.UnaryExpr>>(ᐧ); if (x != nil && (~x).Op == token.ARROW) {
-                        valid = true;
+                    case {} when (stmtContext)(ctxt & inTypeSwitch) != 0: {
+                        msg = cannotFallthroughInTypeˢ;
+                        break;
                     }
+                    default: {
+                        msg = fallthroughStatementOutˢ;
+                        break;
+                    }}
+
+                    Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedFallthrough, msg);
                 }
             }
-            if (!valid) {
-                Ꮡcheck.error(new ast_Stmtᴠpositioner((~clause).Comm), InvalidSelectCase, selectCaseMustBeSendOrˢ);
-                continue;
+            else { /* default: */
+                Ꮡcheck.errorf(new ast_BranchStmtжpositioner(sΔ1), InvalidSyntaxTree, "branch statement: %s"u8, (~sΔ1).Tok);
             }
-            check.openScope(sΔ3, caseˢ);
-            if ((~clause).Comm != default!) {
-                Ꮡcheck.stmt(inner, (~clause).Comm);
-            }
-            Ꮡcheck.stmtList(inner, (~clause).Body);
-            check.closeScope();
+
+            break;
         }
-        break;
-    }
-    case ж<ast.ForStmt> sΔ1: {
-        inner |= (stmtContext)((stmtContext)(breakOk | continueOk));
-        check.openScope(new ast_ForStmtжNode(sΔ1), forˢ);
-        defer(Ꮡcheck.closeScope);
-        Ꮡcheck.simpleStmt((~sΔ1).Init);
-        if ((~sΔ1).Cond != default!) {
+        case ж<ast.BlockStmt> sΔ1: {
+            check.openScope(new ast.BlockStmtжNode(sΔ1), blockˢ);
+            defer(Ꮡcheck.closeScope, ref ᒐ);
+            Ꮡcheck.stmtList(inner, (~sΔ1).List);
+            break;
+        }
+        case ж<ast.IfStmt> sΔ1: {
+            check.openScope(new ast_IfStmtжNode(sΔ1), "if"u8);
+            defer(Ꮡcheck.closeScope, ref ᒐ);
+            Ꮡcheck.simpleStmt((~sΔ1).Init);
             ref var x = ref heap(new operand(), out var Ꮡx);
             Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).Cond);
             if (x.mode != invalid && !allBoolean(x.typ)) {
-                Ꮡcheck.error(new ast_Exprᴠpositioner((~sΔ1).Cond), InvalidCond, nonBooleanConditionInForˢ);
+                Ꮡcheck.error(new ast_Exprᴠpositioner((~sΔ1).Cond), InvalidCond, nonBooleanConditionInIfˢ);
             }
-        }
-        Ꮡcheck.simpleStmt((~sΔ1).Post);
-        {
-            var (sΔ5, _) = (~sΔ1).Post._<ж<ast.AssignStmt>>(ᐧ); if (sΔ5 != nil && (~sΔ5).Tok == token.DEFINE) {
-                // spec: "The init statement may be a short variable
-                // declaration, but the post statement must not."
-                Ꮡcheck.softErrorf(new ast_AssignStmtжpositioner(sΔ5), InvalidPostDecl, "cannot declare in post statement"u8);
-                // Don't call useLHS here because we want to use the lhs in
-                // this erroneous statement so that we don't get errors about
-                // these lhs variables being declared and not used.
-                Ꮡcheck.use((~sΔ5).Lhs.ꓸꓸꓸ);
+            Ꮡcheck.stmt(inner, new ast_BlockStmtжStmt((~sΔ1).Body));
+            switch ((~sΔ1).Else.type()) {
+            case null:
+            case ж<ast.BadStmt> _: {
+                break;
             }
+            case ж<ast.IfStmt> _:
+            case ж<ast.BlockStmt> _: {
+                Ꮡcheck.stmt(inner, // The parser produces a correct AST but if it was modified
+ // elsewhere the else branch may be invalid. Check again.
+ // valid or error already reported
+ (~sΔ1).Else);
+                break;
+            }
+            default: {
+                Ꮡcheck.error(new ast_Stmtᴠpositioner((~sΔ1).Else), InvalidSyntaxTree, invalidElseBranchInIfˢ);
+                break;
+            }}
+
+            break;
         }
-        Ꮡcheck.stmt(inner, // avoid follow-up errors
+        case ж<ast.SwitchStmt> sΔ1: {
+            inner |= (stmtContext)(breakOk);
+            check.openScope(new ast_SwitchStmtжNode(sΔ1), switchˢ);
+            defer(Ꮡcheck.closeScope, ref ᒐ);
+            Ꮡcheck.simpleStmt((~sΔ1).Init);
+            ref var x = ref heap(new operand(), out var Ꮡx);
+            if ((~sΔ1).Tag != default!){
+                Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).Tag);
+                // By checking assignment of x to an invisible temporary
+                // (as a compiler would), we get all the relevant checks.
+                Ꮡcheck.assignment(Ꮡx, default!, switchExpressionˢ);
+                if (x.mode != invalid && !Comparable(x.typ) && !hasNil(x.typ)) {
+                    Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidExprSwitch, "cannot switch on %s (%s is not comparable)"u8, Ꮡx, x.typ);
+                    x.mode = invalid;
+                }
+            } else {
+                // spec: "A missing switch expression is
+                // equivalent to the boolean value true."
+                x.mode = constant_;
+                x.typ = new BasicжΔType(Typ[Bool]);
+                x.val = constant.MakeBool(true);
+                x.expr = new ast_IdentжExpr(Ꮡ(new ast.Ident(NamePos: (~(~sΔ1).Body).Lbrace, Name: "true"u8)));
+            }
+            Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
+            var seen = new valueMap(0);
+            foreach (var (i, c) in (~(~sΔ1).Body).List) {
+                // map of seen case values to positions and types
+                var (clause, _) = c._<ж<ast.CaseClause>>(ᐧ);
+                if (clause == nil) {
+                    Ꮡcheck.error(new ast_Stmtᴠpositioner(c), InvalidSyntaxTree, incorrectExpressionˢ);
+                    continue;
+                }
+                Ꮡcheck.caseValues(Ꮡx, (~clause).List, seen);
+                check.openScope(new ast_CaseClauseжNode(clause), caseˢ);
+                stmtContext innerΔ1 = inner;
+                if (i + 1 < len((~(~sΔ1).Body).List)){
+                    innerΔ1 |= (stmtContext)(fallthroughOk);
+                } else {
+                    innerΔ1 |= (stmtContext)(finalSwitchCase);
+                }
+                Ꮡcheck.stmtList(innerΔ1, (~clause).Body);
+                check.closeScope();
+            }
+            break;
+        }
+        case ж<ast.TypeSwitchStmt> sΔ1: {
+            inner |= (stmtContext)((stmtContext)(breakOk | inTypeSwitch));
+            check.openScope(new ast_TypeSwitchStmtжNode(sΔ1), typeSwitchˢ);
+            defer(Ꮡcheck.closeScope, ref ᒐ);
+            Ꮡcheck.simpleStmt((~sΔ1).Init);
+            // A type switch guard must be of the form:
+            //
+            //     TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
+            //
+            // The parser is checking syntactic correctness;
+            // remaining syntactic errors are considered AST errors here.
+            // TODO(gri) better factoring of error handling (invalid ASTs)
+            //
+            ж<ast.Ident> lhs = default!;                   // lhs identifier or nil
+            ast.Expr rhs = default!;
+            switch ((~sΔ1).Assign.type()) {
+            case ж<ast.ExprStmt> guard: {
+                rhs = guard.Value.X;
+                break;
+            }
+            case ж<ast.AssignStmt> guard: {
+                if (len((~guard).Lhs) != 1 || (~guard).Tok != token.DEFINE || len((~guard).Rhs) != 1) {
+                    Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
+                    return;
+                }
+                (lhs, _) = (~guard).Lhs[0]._<ж<ast.Ident>>(ᐧ);
+                if (lhs == nil) {
+                    Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
+                    return;
+                }
+                if ((~lhs).Name == "_"u8){
+                    // _ := x.(type) is an invalid short variable declaration
+                    Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), NoNewVar, "no new variable on left side of :="u8);
+                    lhs = default!;
+                } else {
+                    // avoid declared and not used error below
+                    check.recordDef(lhs, default!);
+                }
+                rhs = (~guard).Rhs[0];
+                break;
+            }
+            default: {
+                var guard = (~sΔ1).Assign;
+                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), // lhs variable is implicitly declared in each cause clause
+ InvalidSyntaxTree, incorrectFormOfTypeˢ);
+                return;
+            }}
+            var (expr, _) = rhs._<ж<ast.TypeAssertExpr>>(ᐧ);
+            if (expr == nil || (~expr).Type != default!) {
+                // rhs must be of the form: expr.(type) and expr must be an ordinary interface
+                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
+                return;
+            }
+            ж<operand> sx = default!;                // switch expression against which cases are compared against; nil if invalid
+            {
+                ref var x = ref heap(new operand(), out var Ꮡx);
+                Ꮡcheck.expr(nil, Ꮡx, (~expr).X);
+                if (x.mode != invalid) {
+                    if (isTypeParam(x.typ)){
+                        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidTypeSwitch, "cannot use type switch on type parameter value %s"u8, Ꮡx);
+                    } else 
+                    if (IsInterface(x.typ)){
+                        sx = Ꮡx;
+                    } else {
+                        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidTypeSwitch, "%s is not an interface"u8, Ꮡx);
+                    }
+                }
+            }
+            Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
+            slice<ж<Var>> lhsVars = default!;                    // list of implicitly declared lhs variables
+            var seen = new map<ΔType, ast.Expr>();
+            foreach (var (_, sΔ2) in (~(~sΔ1).Body).List) {
+                // map of seen types to positions
+                var (clause, _) = sΔ2._<ж<ast.CaseClause>>(ᐧ);
+                if (clause == nil) {
+                    Ꮡcheck.error(new ast_Stmtᴠpositioner(sΔ2), InvalidSyntaxTree, incorrectTypeSwitchCaseˢ);
+                    continue;
+                }
+                // Check each type in this type switch case.
+                var T = Ꮡcheck.caseTypes(sx, (~clause).List, seen);
+                check.openScope(new ast_CaseClauseжNode(clause), caseˢ);
+                // If lhs exists, declare a corresponding variable in the case-local scope.
+                if (lhs != nil) {
+                    // spec: "The TypeSwitchGuard may include a short variable declaration.
+                    // When that form is used, the variable is declared at the beginning of
+                    // the implicit block in each clause. In clauses with a case listing
+                    // exactly one type, the variable has that type; otherwise, the variable
+                    // has the type of the expression in the TypeSwitchGuard."
+                    if (len((~clause).List) != 1 || T == default!) {
+                        T = new BasicжΔType(Typ[Invalid]);
+                        if (sx != nil) {
+                            T = sx.Value.typ;
+                        }
+                    }
+                    var obj = NewVar(lhs.Pos(), check.pkg, (~lhs).Name, T);
+                    tokenꓸPos scopePos = clause.Pos() + ((tokenꓸPos)len("default"));
+                    // for default clause (len(List) == 0)
+                    {
+                        nint n = len((~clause).List); if (n > 0) {
+                            scopePos = (~clause).List[n - 1].End();
+                        }
+                    }
+                    Ꮡcheck.declare(check.scope, nil, new VarжObject(obj), scopePos);
+                    check.recordImplicit(new ast_CaseClauseжNode(clause), new VarжObject(obj));
+                    // For the "declared and not used" error, all lhs variables act as
+                    // one; i.e., if any one of them is 'used', all of them are 'used'.
+                    // Collect them for later analysis.
+                    lhsVars = append(lhsVars, obj);
+                }
+                Ꮡcheck.stmtList(inner, (~clause).Body);
+                check.closeScope();
+            }
+            if (lhs != nil) {
+                // If lhs exists, we must have at least one lhs variable that was used.
+                bool used = default!;
+                foreach (var (_, v) in lhsVars) {
+                    if ((~v).used) {
+                        used = true;
+                    }
+                    v.Value.used = true;
+                }
+                // avoid usage error when checking entire function
+                if (!used) {
+                    Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), UnusedVar, "%s declared and not used"u8, (~lhs).Name);
+                }
+            }
+            break;
+        }
+        case ж<ast.SelectStmt> sΔ1: {
+            inner |= (stmtContext)(breakOk);
+            Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
+            foreach (var (_, sΔ3) in (~(~sΔ1).Body).List) {
+                var (clause, _) = sΔ3._<ж<ast.CommClause>>(ᐧ);
+                if (clause == nil) {
+                    continue;
+                }
+                // error reported before
+                // clause.Comm must be a SendStmt, RecvStmt, or default case
+                var valid = false;
+                ast.Expr rhs = default!;               // rhs of RecvStmt, or nil
+                switch ((~clause).Comm.type()) {
+                case null:
+                case ж<ast.SendStmt> _: {
+                    var sΔ4 = (~clause).Comm;
+                    valid = true;
+                    break;
+                }
+                case ж<ast.AssignStmt> sΔ4: {
+                    if (len((~sΔ4).Rhs) == 1) {
+                        rhs = (~sΔ4).Rhs[0];
+                    }
+                    break;
+                }
+                case ж<ast.ExprStmt> sΔ4: {
+                    rhs = sΔ4.Value.X;
+                    break;
+                }}
+                // if present, rhs must be a receive operation
+                if (rhs != default!) {
+                    {
+                        var (x, _) = ast.Unparen(rhs)._<ж<ast.UnaryExpr>>(ᐧ); if (x != nil && (~x).Op == token.ARROW) {
+                            valid = true;
+                        }
+                    }
+                }
+                if (!valid) {
+                    Ꮡcheck.error(new ast_Stmtᴠpositioner((~clause).Comm), InvalidSelectCase, selectCaseMustBeSendOrˢ);
+                    continue;
+                }
+                check.openScope(sΔ3, caseˢ);
+                if ((~clause).Comm != default!) {
+                    Ꮡcheck.stmt(inner, (~clause).Comm);
+                }
+                Ꮡcheck.stmtList(inner, (~clause).Body);
+                check.closeScope();
+            }
+            break;
+        }
+        case ж<ast.ForStmt> sΔ1: {
+            inner |= (stmtContext)((stmtContext)(breakOk | continueOk));
+            check.openScope(new ast_ForStmtжNode(sΔ1), forˢ);
+            defer(Ꮡcheck.closeScope, ref ᒐ);
+            Ꮡcheck.simpleStmt((~sΔ1).Init);
+            if ((~sΔ1).Cond != default!) {
+                ref var x = ref heap(new operand(), out var Ꮡx);
+                Ꮡcheck.expr(nil, Ꮡx, (~sΔ1).Cond);
+                if (x.mode != invalid && !allBoolean(x.typ)) {
+                    Ꮡcheck.error(new ast_Exprᴠpositioner((~sΔ1).Cond), InvalidCond, nonBooleanConditionInForˢ);
+                }
+            }
+            Ꮡcheck.simpleStmt((~sΔ1).Post);
+            {
+                var (sΔ5, _) = (~sΔ1).Post._<ж<ast.AssignStmt>>(ᐧ); if (sΔ5 != nil && (~sΔ5).Tok == token.DEFINE) {
+                    // spec: "The init statement may be a short variable
+                    // declaration, but the post statement must not."
+                    Ꮡcheck.softErrorf(new ast_AssignStmtжpositioner(sΔ5), InvalidPostDecl, "cannot declare in post statement"u8);
+                    // Don't call useLHS here because we want to use the lhs in
+                    // this erroneous statement so that we don't get errors about
+                    // these lhs variables being declared and not used.
+                    Ꮡcheck.use((~sΔ5).Lhs.ꓸꓸꓸ);
+                }
+            }
+            Ꮡcheck.stmt(inner, // avoid follow-up errors
  new ast_BlockStmtжStmt((~sΔ1).Body));
-        break;
+            break;
+        }
+        case ж<ast.RangeStmt> sΔ1: {
+            inner |= (stmtContext)((stmtContext)(breakOk | continueOk));
+            Ꮡcheck.rangeStmt(inner, sΔ1);
+            break;
+        }
+        default: {
+            var sΔ1 = s;
+            Ꮡcheck.error(new ast_Stmtᴠpositioner(sΔ1), InvalidSyntaxTree, invalidStatementˢ);
+            break;
+        }}
     }
-    case ж<ast.RangeStmt> sΔ1: {
-        inner |= (stmtContext)((stmtContext)(breakOk | continueOk));
-        Ꮡcheck.rangeStmt(inner, sΔ1);
-        break;
-    }
-    default: {
-        var sΔ1 = s;
-        Ꮡcheck.error(new ast_Stmtᴠpositioner(sΔ1), InvalidSyntaxTree, invalidStatementˢ);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string rangeˢ = "range"u8;
 internal static readonly @string rangeClauseˢ = "range clause"u8;
 internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
 
-internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) => func((defer, recover) => {
+internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var s = ref Ꮡs.DerefOrNull();
 
-    @string identName(ж<identType> n) => (~n).Name;
-    var (sKey, sValue) = (s.Key, s.Value);
-    ast.Expr sExtra = default!;         // (used only in types2 fork)
-    var isDef = s.Tok == token.DEFINE;
-    var rangeVar = s.X;
-    var noNewVarPos = inNode(new ast_RangeStmtжNode(Ꮡs), s.TokPos);
-    // Everything from here on is shared between cmd/compile/internal/types2 and go/types.
-    // check expression to iterate over
-    ref var x = ref heap(new operand(), out var Ꮡx);
-    Ꮡcheck.expr(nil, Ꮡx, rangeVar);
-    // determine key/value types
-    ΔType key = default!;
-    ΔType val = default!;
-    if (x.mode != invalid) {
-        // Ranging over a type parameter is permitted if it has a core type.
-        var (k, v, cause, ok) = rangeKeyVal(x.typ, (goVersion vΔ1) => Ꮡcheck.allowVersion(new ast_Exprᴠpositioner(Ꮡx.Value.expr), vΔ1));
-        switch (ᐧ) {
-        case {} when !ok && cause != ""u8: {
-            Ꮡcheck.softErrorf(new operandжpositioner(Ꮡx), InvalidRangeExpr, "cannot range over %s: %s"u8, Ꮡx, cause);
-            break;
-        }
-        case {} when !ok: {
-            Ꮡcheck.softErrorf(new operandжpositioner(Ꮡx), InvalidRangeExpr, "cannot range over %s"u8, Ꮡx);
-            break;
-        }
-        case {} when k == default! && sKey != default!: {
-            Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sKey), InvalidIterVar, "range over %s permits no iteration variables"u8, Ꮡx);
-            break;
-        }
-        case {} when v == default! && sValue != default!: {
-            Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sValue), InvalidIterVar, "range over %s permits only one iteration variable"u8, Ꮡx);
-            break;
-        }
-        case {} when sExtra != default!: {
-            Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sExtra), InvalidIterVar, "range clause permits at most two iteration variables"u8);
-            break;
-        }}
-
-        (key, val) = (k, v);
-    }
-    // Open the for-statement block scope now, after the range clause.
-    // Iteration variables declared with := need to go in this scope (was go.dev/issue/51437).
-    check.openScope(new ast_RangeStmtжNode(Ꮡs), rangeˢ);
-    defer(Ꮡcheck.closeScope);
-    // check assignment to/declaration of iteration variables
-    // (irregular assignment, cannot easily map to existing assignment checks)
-    // lhs expressions and initialization value (rhs) types
-    var lhs = new Expr[]{sKey, sValue}.array();
-    // sKey, sValue may be nil
-    var rhs = new ΔType[]{key, val}.array();
-    // key, val may be nil
-    var rangeOverInt = isInteger(x.typ);
-    if (isDef){
-        // short variable declaration
-        slice<ж<Var>> vars = default!;
-        foreach (var (i, lhsΔ1) in lhs) {
-            if (lhsΔ1 == default!) {
-                continue;
+        @string identName(ж<identType> n) => (~n).Name;
+        var (sKey, sValue) = (s.Key, s.Value);
+        ast.Expr sExtra = default!;         // (used only in types2 fork)
+        var isDef = s.Tok == token.DEFINE;
+        var rangeVar = s.X;
+        var noNewVarPos = inNode(new ast_RangeStmtжNode(Ꮡs), s.TokPos);
+        // Everything from here on is shared between cmd/compile/internal/types2 and go/types.
+        // check expression to iterate over
+        ref var x = ref heap(new operand(), out var Ꮡx);
+        Ꮡcheck.expr(nil, Ꮡx, rangeVar);
+        // determine key/value types
+        ΔType key = default!;
+        ΔType val = default!;
+        if (x.mode != invalid) {
+            // Ranging over a type parameter is permitted if it has a core type.
+            var (k, v, cause, ok) = rangeKeyVal(x.typ, (goVersion vΔ1) => Ꮡcheck.allowVersion(new ast_Exprᴠpositioner(Ꮡx.Value.expr), vΔ1));
+            switch (ᐧ) {
+            case {} when !ok && cause != ""u8: {
+                Ꮡcheck.softErrorf(new operandжpositioner(Ꮡx), InvalidRangeExpr, "cannot range over %s: %s"u8, Ꮡx, cause);
+                break;
             }
-            // determine lhs variable
-            ж<Var> obj = default!;
-            {
-                var (ident, _) = lhsΔ1._<ж<identType>>(ᐧ); if (ident != nil){
-                    // declare new variable
-                    @string name = identName(ident);
-                    obj = NewVar(ident.Pos(), check.pkg, name, default!);
-                    check.recordDef(ident, new VarжObject(obj));
-                    // _ variables don't count as new variables
-                    if (name != "_"u8) {
-                        vars = append(vars, obj);
+            case {} when !ok: {
+                Ꮡcheck.softErrorf(new operandжpositioner(Ꮡx), InvalidRangeExpr, "cannot range over %s"u8, Ꮡx);
+                break;
+            }
+            case {} when k == default! && sKey != default!: {
+                Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sKey), InvalidIterVar, "range over %s permits no iteration variables"u8, Ꮡx);
+                break;
+            }
+            case {} when v == default! && sValue != default!: {
+                Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sValue), InvalidIterVar, "range over %s permits only one iteration variable"u8, Ꮡx);
+                break;
+            }
+            case {} when sExtra != default!: {
+                Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(sExtra), InvalidIterVar, "range clause permits at most two iteration variables"u8);
+                break;
+            }}
+
+            (key, val) = (k, v);
+        }
+        // Open the for-statement block scope now, after the range clause.
+        // Iteration variables declared with := need to go in this scope (was go.dev/issue/51437).
+        check.openScope(new ast_RangeStmtжNode(Ꮡs), rangeˢ);
+        defer(Ꮡcheck.closeScope, ref ᒐ);
+        // check assignment to/declaration of iteration variables
+        // (irregular assignment, cannot easily map to existing assignment checks)
+        // lhs expressions and initialization value (rhs) types
+        var lhs = new Expr[]{sKey, sValue}.array();
+        // sKey, sValue may be nil
+        var rhs = new ΔType[]{key, val}.array();
+        // key, val may be nil
+        var rangeOverInt = isInteger(x.typ);
+        if (isDef){
+            // short variable declaration
+            slice<ж<Var>> vars = default!;
+            foreach (var (i, lhsΔ1) in lhs) {
+                if (lhsΔ1 == default!) {
+                    continue;
+                }
+                // determine lhs variable
+                ж<Var> obj = default!;
+                {
+                    var (ident, _) = lhsΔ1._<ж<identType>>(ᐧ); if (ident != nil){
+                        // declare new variable
+                        @string name = identName(ident);
+                        obj = NewVar(ident.Pos(), check.pkg, name, default!);
+                        check.recordDef(ident, new VarжObject(obj));
+                        // _ variables don't count as new variables
+                        if (name != "_"u8) {
+                            vars = append(vars, obj);
+                        }
+                    } else {
+                        Ꮡcheck.errorf(new ast_Exprᴠpositioner(lhsΔ1), InvalidSyntaxTree, "cannot declare %s"u8, lhsΔ1);
+                        obj = NewVar(lhsΔ1.Pos(), check.pkg, "_"u8, default!);
+                    }
+                }
+                // dummy variable
+                assert((~obj).typ == default!);
+                // initialize lhs iteration variable, if any
+                var typ = rhs[i];
+                if (typ == default! || AreEqual(typ, Typ[Invalid])) {
+                    // typ == Typ[Invalid] can happen if allowVersion fails.
+                    obj.Value.typ = new BasicжΔType(Typ[Invalid]);
+                    obj.Value.used = true;
+                    // don't complain about unused variable
+                    continue;
+                }
+                if (rangeOverInt){
+                    assert(i == 0);
+                    // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
+                    Ꮡcheck.initVar(obj, Ꮡx, rangeClauseˢ);
+                } else {
+                    ref var y = ref heap(new operand(), out var Ꮡy);
+                    y.mode = value;
+                    y.expr = lhsΔ1;
+                    // we don't have a better rhs expression to use here
+                    y.typ = typ;
+                    Ꮡcheck.initVar(obj, Ꮡy, assignmentˢ);
+                }
+                // error is on variable, use "assignment" not "range clause"
+                assert((~obj).typ != default!);
+            }
+            // declare variables
+            if (len(vars) > 0){
+                tokenꓸPos scopePos = s.Body.Pos();
+                foreach (var (_, obj) in vars) {
+                    Ꮡcheck.declare(check.scope, nil, /* recordDef already called */
+ new VarжObject(obj), scopePos);
+                }
+            } else {
+                Ꮡcheck.error(noNewVarPos, NoNewVar, noNewVariablesOnLeftSideˢ);
+            }
+        } else 
+        if (sKey != default!){
+            /* lhs[0] != nil */
+            // ordinary assignment
+            foreach (var (i, lhsΔ2) in lhs) {
+                if (lhsΔ2 == default!) {
+                    continue;
+                }
+                // assign to lhs iteration variable, if any
+                var typ = rhs[i];
+                if (typ == default! || AreEqual(typ, Typ[Invalid])) {
+                    continue;
+                }
+                if (rangeOverInt){
+                    assert(i == 0);
+                    // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
+                    Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡx, rangeClauseˢ);
+                    // If the assignment succeeded, if x was untyped before, it now
+                    // has a type inferred via the assignment. It must be an integer.
+                    // (go.dev/issues/67027)
+                    if (x.mode != invalid && !isInteger(x.typ)) {
+                        Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(lhsΔ2), InvalidRangeExpr, "cannot use iteration variable of type %s"u8, x.typ);
                     }
                 } else {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(lhsΔ1), InvalidSyntaxTree, "cannot declare %s"u8, lhsΔ1);
-                    obj = NewVar(lhsΔ1.Pos(), check.pkg, "_"u8, default!);
+                    ref var y = ref heap(new operand(), out var Ꮡy);
+                    y.mode = value;
+                    y.expr = lhsΔ2;
+                    // we don't have a better rhs expression to use here
+                    y.typ = typ;
+                    Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡy, assignmentˢ);
                 }
             }
-            // dummy variable
-            assert((~obj).typ == default!);
-            // initialize lhs iteration variable, if any
-            var typ = rhs[i];
-            if (typ == default! || AreEqual(typ, Typ[Invalid])) {
-                // typ == Typ[Invalid] can happen if allowVersion fails.
-                obj.Value.typ = new BasicжΔType(Typ[Invalid]);
-                obj.Value.used = true;
-                // don't complain about unused variable
-                continue;
-            }
-            if (rangeOverInt){
-                assert(i == 0);
-                // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
-                Ꮡcheck.initVar(obj, Ꮡx, rangeClauseˢ);
-            } else {
-                ref var y = ref heap(new operand(), out var Ꮡy);
-                y.mode = value;
-                y.expr = lhsΔ1;
-                // we don't have a better rhs expression to use here
-                y.typ = typ;
-                Ꮡcheck.initVar(obj, Ꮡy, assignmentˢ);
-            }
+        } else 
+        if (rangeOverInt) {
             // error is on variable, use "assignment" not "range clause"
-            assert((~obj).typ != default!);
+            // If we don't have any iteration variables, we still need to
+            // check that a (possibly untyped) integer range expression x
+            // is valid.
+            // We do this by checking the assignment _ = x. This ensures
+            // that an untyped x can be converted to a value of its default
+            // type (rune or int).
+            Ꮡcheck.assignment(Ꮡx, default!, rangeClauseˢ);
         }
-        // declare variables
-        if (len(vars) > 0){
-            tokenꓸPos scopePos = s.Body.Pos();
-            foreach (var (_, obj) in vars) {
-                Ꮡcheck.declare(check.scope, nil, /* recordDef already called */
- new VarжObject(obj), scopePos);
-            }
-        } else {
-            Ꮡcheck.error(noNewVarPos, NoNewVar, noNewVariablesOnLeftSideˢ);
-        }
-    } else 
-    if (sKey != default!){
-        /* lhs[0] != nil */
-        // ordinary assignment
-        foreach (var (i, lhsΔ2) in lhs) {
-            if (lhsΔ2 == default!) {
-                continue;
-            }
-            // assign to lhs iteration variable, if any
-            var typ = rhs[i];
-            if (typ == default! || AreEqual(typ, Typ[Invalid])) {
-                continue;
-            }
-            if (rangeOverInt){
-                assert(i == 0);
-                // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
-                Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡx, rangeClauseˢ);
-                // If the assignment succeeded, if x was untyped before, it now
-                // has a type inferred via the assignment. It must be an integer.
-                // (go.dev/issues/67027)
-                if (x.mode != invalid && !isInteger(x.typ)) {
-                    Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(lhsΔ2), InvalidRangeExpr, "cannot use iteration variable of type %s"u8, x.typ);
-                }
-            } else {
-                ref var y = ref heap(new operand(), out var Ꮡy);
-                y.mode = value;
-                y.expr = lhsΔ2;
-                // we don't have a better rhs expression to use here
-                y.typ = typ;
-                Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡy, assignmentˢ);
-            }
-        }
-    } else 
-    if (rangeOverInt) {
-        // error is on variable, use "assignment" not "range clause"
-        // If we don't have any iteration variables, we still need to
-        // check that a (possibly untyped) integer range expression x
-        // is valid.
-        // We do this by checking the assignment _ = x. This ensures
-        // that an untyped x can be converted to a value of its default
-        // type (rune or int).
-        Ꮡcheck.assignment(Ꮡx, default!, rangeClauseˢ);
+        Ꮡcheck.stmt(inner, new ast_BlockStmtжStmt(s.Body));
     }
-    Ꮡcheck.stmt(inner, new ast_BlockStmtжStmt(s.Body));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string noCoreTypeˢ = "no core type"u8;

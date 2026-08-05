@@ -78,29 +78,34 @@ public static void TestConn(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn, Action
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object testTimedOutTerminatingˢ = (@string)"test timed out; terminating pipe"u8;
 
-internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn, Action, error)> mp, Action<ж<testing.T>, net.Conn, net.Conn> f) => func((defer, recover) => {
-    Ꮡt.Helper();
-    var (c1, c2, stop, err) = mp();
-    if (err != default!) {
-        Ꮡt.Fatalf("unable to make pipe: %v"u8, err);
-    }
-    ref var once = ref heap(new sync.Once(), out var Ꮡonce);
-    var stopʗ1 = stop;
-    deferǃ(Ꮡonce.Do, () => {
-        stopʗ1();
-    }, defer);
-    var stopʗ3 = stop;
-    var timer = time.AfterFunc(time.ΔMinute, () => {
-        var stopʗ4 = stopʗ3;
-        Ꮡonce.Do(() => {
-            Ꮡt.Error(testTimedOutTerminatingˢ);
-            stopʗ4();
+internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn, Action, error)> mp, Action<ж<testing.T>, net.Conn, net.Conn> f) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡt.Helper();
+        var (c1, c2, stop, err) = mp();
+        if (err != default!) {
+            Ꮡt.Fatalf("unable to make pipe: %v"u8, err);
+        }
+        ref var once = ref heap(new sync.Once(), out var Ꮡonce);
+        var stopʗ1 = stop;
+        defer(Ꮡonce.Do, () => {
+            stopʗ1();
+        }, ref ᒐ);
+        var stopʗ3 = stop;
+        var timer = time.AfterFunc(time.ΔMinute, () => {
+            var stopʗ4 = stopʗ3;
+            Ꮡonce.Do(() => {
+                Ꮡt.Error(testTimedOutTerminatingˢ);
+                stopʗ4();
+            });
         });
-    });
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    f(Ꮡt, c1, c2);
-});
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        f(Ꮡt, c1, c2);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object transmittedDataDiffersˢ = (@string)"transmitted data differs"u8;
@@ -148,108 +153,138 @@ internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
 
 // testPingPong tests that the two endpoints can synchronously send data to
 // each other in a typical request-response pattern.
-internal static void testPingPong(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    var pingPonger = (net.Conn c) => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        var buf = new slice<byte>(8);
-        uint64 prev = default!;
-        while (ᐧ) {
-            {
-                var (_, err) = io.ReadFull(new net_ConnᴠReader(c), buf); if (err != default!) {
-                    if (AreEqual(err, io.EOF)) {
+internal static void testPingPong(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
+    GoFrame ᒐ = default;
+    try {
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        void pingPonger(net.Conn c) {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                var buf = new slice<byte>(8);
+                uint64 prev = default!;
+                while (ᐧ) {
+                    {
+                        var (_, err) = io.ReadFull(new net_ConnᴠReader(c), buf); if (err != default!) {
+                            if (AreEqual(err, io.EOF)) {
+                                break;
+                            }
+                            Ꮡt.Errorf("unexpected Read error: %v"u8, err);
+                        }
+                    }
+                    var v = binary.LittleEndian.Uint64(buf);
+                    binary.LittleEndian.PutUint64(buf, v + 1);
+                    if (prev != 0 && prev + 2 != v) {
+                        Ꮡt.Errorf("mismatching value: got %d, want %d"u8, v, prev + 2);
+                    }
+                    prev = v;
+                    if (v == 1000) {
                         break;
                     }
-                    Ꮡt.Errorf("unexpected Read error: %v"u8, err);
+                    {
+                        var (_, err) = c.Write(buf); if (err != default!) {
+                            Ꮡt.Errorf("unexpected Write error: %v"u8, err);
+                            break;
+                        }
+                    }
+                }
+                {
+                    var err = c.Close(); if (err != default!) {
+                        Ꮡt.Errorf("unexpected Close error: %v"u8, err);
+                    }
                 }
             }
-            var v = binary.LittleEndian.Uint64(buf);
-            binary.LittleEndian.PutUint64(buf, v + 1);
-            if (prev != 0 && prev + 2 != v) {
-                Ꮡt.Errorf("mismatching value: got %d, want %d"u8, v, prev + 2);
-            }
-            prev = v;
-            if (v == 1000) {
-                break;
-            }
-            {
-                var (_, err) = c.Write(buf); if (err != default!) {
-                    Ꮡt.Errorf("unexpected Write error: %v"u8, err);
-                    break;
-                }
-            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
         }
+        Ꮡwg.Add(2);
+        var pingPongerʗ1 = pingPonger;
+        goǃ(pingPongerʗ1, c1);
+        var pingPongerʗ2 = pingPonger;
+        goǃ(pingPongerʗ2, c2);
+        // Start off the chain reaction.
         {
-            var err = c.Close(); if (err != default!) {
-                Ꮡt.Errorf("unexpected Close error: %v"u8, err);
+            var (_, err) = c1.Write(new slice<byte>(8)); if (err != default!) {
+                Ꮡt.Errorf("unexpected c1.Write error: %v"u8, err);
             }
-        }
-    });
-    Ꮡwg.Add(2);
-    var pingPongerʗ1 = pingPonger;
-    goǃ(pingPongerʗ1, c1);
-    var pingPongerʗ2 = pingPonger;
-    goǃ(pingPongerʗ2, c2);
-    // Start off the chain reaction.
-    {
-        var (_, err) = c1.Write(new slice<byte>(8)); if (err != default!) {
-            Ꮡt.Errorf("unexpected c1.Write error: %v"u8, err);
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // testRacyRead tests that it is safe to mutate the input Read buffer
 // immediately after cancelation has occurred.
-internal static void testRacyRead(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
-    goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new rand_RandжReader(rand.New(rand.NewSource(0))));
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    c1.SetReadDeadline(time.Now().Add(time.Millisecond));
-    for (nint i = 0; i < 10; i++) {
-        Ꮡwg.Add(1);
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var b1 = new slice<byte>(1024);
-            var b2 = new slice<byte>(1024);
-            for (nint j = 0; j < 100; j++) {
-                var (_, err) = c1.Read(b1);
-                copy(b1, b2);
-                // Mutate b1 to trigger potential race
-                if (err != default!) {
-                    checkForTimeoutError(Ꮡt, err);
-                    c1.SetReadDeadline(time.Now().Add(time.Millisecond));
+internal static void testRacyRead(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
+    GoFrame ᒐ = default;
+    try {
+        goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new rand_RandжReader(rand.New(rand.NewSource(0))));
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        c1.SetReadDeadline(time.Now().Add(time.Millisecond));
+        for (nint i = 0; i < 10; i++) {
+            Ꮡwg.Add(1);
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    var b1 = new slice<byte>(1024);
+                    var b2 = new slice<byte>(1024);
+                    for (nint j = 0; j < 100; j++) {
+                        var (_, err) = c1.Read(b1);
+                        copy(b1, b2);
+                        // Mutate b1 to trigger potential race
+                        if (err != default!) {
+                            checkForTimeoutError(Ꮡt, err);
+                            c1.SetReadDeadline(time.Now().Add(time.Millisecond));
+                        }
+                    }
                 }
-            }
-        }));
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            });
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // testRacyWrite tests that it is safe to mutate the input Write buffer
 // immediately after cancelation has occurred.
-internal static void testRacyWrite(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
-    goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), io.Discard, new net_ConnᴠReader(c2));
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    c1.SetWriteDeadline(time.Now().Add(time.Millisecond));
-    for (nint i = 0; i < 10; i++) {
-        Ꮡwg.Add(1);
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var b1 = new slice<byte>(1024);
-            var b2 = new slice<byte>(1024);
-            for (nint j = 0; j < 100; j++) {
-                var (_, err) = c1.Write(b1);
-                copy(b1, b2);
-                // Mutate b1 to trigger potential race
-                if (err != default!) {
-                    checkForTimeoutError(Ꮡt, err);
-                    c1.SetWriteDeadline(time.Now().Add(time.Millisecond));
+internal static void testRacyWrite(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
+    GoFrame ᒐ = default;
+    try {
+        goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), io.Discard, new net_ConnᴠReader(c2));
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        c1.SetWriteDeadline(time.Now().Add(time.Millisecond));
+        for (nint i = 0; i < 10; i++) {
+            Ꮡwg.Add(1);
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    var b1 = new slice<byte>(1024);
+                    var b2 = new slice<byte>(1024);
+                    for (nint j = 0; j < 100; j++) {
+                        var (_, err) = c1.Write(b1);
+                        copy(b1, b2);
+                        // Mutate b1 to trigger potential race
+                        if (err != default!) {
+                            checkForTimeoutError(Ꮡt, err);
+                            c1.SetWriteDeadline(time.Now().Add(time.Millisecond));
+                        }
+                    }
                 }
-            }
-        }));
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            });
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // testReadTimeout tests that Read timeouts do not affect Write.
 internal static void testReadTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
@@ -302,44 +337,64 @@ private static readonly object writeTimedOutBeforeˢ = (@string)"Write timed out
 
 // testPresentTimeout tests that a past deadline set while there are pending
 // Read and Write operations immediately times out those operations.
-internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    Ꮡwg.Add(3);
-    var deadlineSet = new channel<bool>(1);
-    var deadlineSetʗ1 = deadlineSet;
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        time.Sleep(100 * time.Millisecond);
-        deadlineSetʗ1.ᐸꟷ(true);
-        c1.SetReadDeadline(aLongTimeAgo);
-        c1.SetWriteDeadline(aLongTimeAgo);
-    }));
-    var deadlineSetʗ2 = deadlineSet;
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        var (n, err) = c1.Read(new slice<byte>(1024));
-        if (n != 0) {
-            Ꮡt.Errorf("unexpected Read count: got %d, want 0"u8, n);
-        }
-        checkForTimeoutError(Ꮡt, err);
-        if (len(deadlineSetʗ2) == 0) {
-            Ꮡt.Error(readTimedOutBeforeˢ);
-        }
-    }));
-    var deadlineSetʗ3 = deadlineSet;
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        error err = default!;
-        while (err == default!) {
-            (_, err) = c1.Write(new slice<byte>(1024));
-        }
-        checkForTimeoutError(Ꮡt, err);
-        if (len(deadlineSetʗ3) == 0) {
-            Ꮡt.Error(writeTimedOutBeforeˢ);
-        }
-    }));
-});
+internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
+    GoFrame ᒐ = default;
+    try {
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        Ꮡwg.Add(3);
+        var deadlineSet = new channel<bool>(1);
+        var deadlineSetʗ1 = deadlineSet;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                time.Sleep(100 * time.Millisecond);
+                deadlineSetʗ1.ᐸꟷ(true);
+                c1.SetReadDeadline(aLongTimeAgo);
+                c1.SetWriteDeadline(aLongTimeAgo);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        var deadlineSetʗ2 = deadlineSet;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                var (n, err) = c1.Read(new slice<byte>(1024));
+                if (n != 0) {
+                    Ꮡt.Errorf("unexpected Read count: got %d, want 0"u8, n);
+                }
+                checkForTimeoutError(Ꮡt, err);
+                if (len(deadlineSetʗ2) == 0) {
+                    Ꮡt.Error(readTimedOutBeforeˢ);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        var deadlineSetʗ3 = deadlineSet;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                error err = default!;
+                while (err == default!) {
+                    (_, err) = c1.Write(new slice<byte>(1024));
+                }
+                checkForTimeoutError(Ꮡt, err);
+                if (len(deadlineSetʗ3) == 0) {
+                    Ꮡt.Error(writeTimedOutBeforeˢ);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // testFutureTimeout tests that a future deadline will eventually time out
 // Read and Write operations.
@@ -347,19 +402,29 @@ internal static void testFutureTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn
     ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
     Ꮡwg.Add(2);
     c1.SetDeadline(time.Now().Add(100 * time.Millisecond));
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        var (_, err) = c1.Read(new slice<byte>(1024));
-        checkForTimeoutError(Ꮡt, err);
-    }));
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        error err = default!;
-        while (err == default!) {
-            (_, err) = c1.Write(new slice<byte>(1024));
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(Ꮡwg.Done, ref ᒐ);
+            var (_, err) = c1.Read(new slice<byte>(1024));
+            checkForTimeoutError(Ꮡt, err);
         }
-        checkForTimeoutError(Ꮡt, err);
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(Ꮡwg.Done, ref ᒐ);
+            error err = default!;
+            while (err == default!) {
+                (_, err) = c1.Write(new slice<byte>(1024));
+            }
+            checkForTimeoutError(Ꮡt, err);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     Ꮡwg.Wait();
     goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
     resyncConn(Ꮡt, c1);
@@ -368,35 +433,55 @@ internal static void testFutureTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn
 
 // testCloseTimeout tests that calling Close immediately times out pending
 // Read and Write operations.
-internal static void testCloseTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
-    goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    Ꮡwg.Add(3);
-    // Test for cancelation upon connection closure.
-    c1.SetDeadline(neverTimeout);
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        time.Sleep(100 * time.Millisecond);
-        c1.Close();
-    }));
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        error err = default!;
-        var buf = new slice<byte>(1024);
-        while (err == default!) {
-            (_, err) = c1.Read(buf);
-        }
-    }));
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        error err = default!;
-        var buf = new slice<byte>(1024);
-        while (err == default!) {
-            (_, err) = c1.Write(buf);
-        }
-    }));
-});
+internal static void testCloseTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
+    GoFrame ᒐ = default;
+    try {
+        goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        Ꮡwg.Add(3);
+        // Test for cancelation upon connection closure.
+        c1.SetDeadline(neverTimeout);
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                time.Sleep(100 * time.Millisecond);
+                c1.Close();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                error err = default!;
+                var buf = new slice<byte>(1024);
+                while (err == default!) {
+                    (_, err) = c1.Read(buf);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                error err = default!;
+                var buf = new slice<byte>(1024);
+                while (err == default!) {
+                    (_, err) = c1.Write(buf);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object skippingOnPlan9SeeHttpsˢ = (@string)"skipping on plan9; see https://golang.org/issue/20489"u8;
@@ -413,34 +498,69 @@ internal static void testConcurrentMethods(ж<testing.T> Ꮡt, net.Conn c1, net.
     ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
     for (nint i = 0; i < 100; i++) {
         Ꮡwg.Add(7);
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.Read(new slice<byte>(1024));
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.Write(new slice<byte>(1024));
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.SetDeadline(time.Now().Add(10 * time.Millisecond));
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.SetReadDeadline(aLongTimeAgo);
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.SetWriteDeadline(aLongTimeAgo);
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.LocalAddr();
-        }));
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            c1.RemoteAddr();
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.Read(new slice<byte>(1024));
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.Write(new slice<byte>(1024));
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.SetDeadline(time.Now().Add(10 * time.Millisecond));
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.SetReadDeadline(aLongTimeAgo);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.SetWriteDeadline(aLongTimeAgo);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.LocalAddr();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                c1.RemoteAddr();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
     Ꮡwg.Wait();
     // At worst, the deadline is set 10ms into the future

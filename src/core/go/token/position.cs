@@ -132,25 +132,30 @@ public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
 // the newline character at the end of the line with a space (to not change the
 // remaining offsets). To obtain the line number, consult e.g. [Position.Line].
 // MergeLine will panic if given an invalid line number.
-public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) => func((defer, recover) => {
+public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
+    GoFrame ᒐ = default;
+    try {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    if (line < 1) {
-        throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
+        if (line < 1) {
+            throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
+        }
+        Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+        defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
+        if (line >= len(f.lines)) {
+            throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
+        }
+        // To merge the line numbered <line> with the line numbered <line+1>,
+        // we need to remove the entry in lines corresponding to the line
+        // numbered <line+1>. The entry in lines corresponding to the line
+        // numbered <line+1> is located at index <line>, since indices in lines
+        // are 0-based and line numbers are 1-based.
+        copy(f.lines[(int)(line)..], f.lines[(int)(line + 1)..]);
+        f.lines = f.lines[..(int)(len(f.lines) - 1)];
     }
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
-    defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock);
-    if (line >= len(f.lines)) {
-        throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
-    }
-    // To merge the line numbered <line> with the line numbered <line+1>,
-    // we need to remove the entry in lines corresponding to the line
-    // numbered <line+1>. The entry in lines corresponding to the line
-    // numbered <line+1> is located at index <line>, since indices in lines
-    // are 0-based and line numbers are 1-based.
-    copy(f.lines[(int)(line)..], f.lines[(int)(line + 1)..]);
-    f.lines = f.lines[..(int)(len(f.lines) - 1)];
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Lines returns the effective line offset table of the form described by [File.SetLines].
 // Callers must not mutate the result.
@@ -213,19 +218,24 @@ public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content)
 // LineStart returns the [Pos] value of the start of the specified line.
 // It ignores any alternative positions set using [File.AddLineColumnInfo].
 // LineStart panics if the 1-based line number is invalid.
-public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) => func((defer, recover) => {
+public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) {
+    GoFrame ᒐ = default;
+    try {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    if (line < 1) {
-        throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
+        if (line < 1) {
+            throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
+        }
+        Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+        defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
+        if (line > len(f.lines)) {
+            throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
+        }
+        return ((ΔPos)(f.@base + f.lines[line - 1]));
     }
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
-    defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock);
-    if (line > len(f.lines)) {
-        throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
-    }
-    return ((ΔPos)(f.@base + f.lines[line - 1]));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // A lineInfo object describes alternative file, line, and column
 // number information (such as provided via a //line directive)
@@ -485,35 +495,40 @@ public static nint Base(this ж<FileSet> Ꮡs) {
 // with offs in the range [0, size] and thus p in the range [base, base+size].
 // For convenience, [File.Pos] may be used to create file-specific position
 // values from a file offset.
-public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @base, nint size) => func((defer, recover) => {
+public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @base, nint size) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    // Allocate f outside the critical section.
-    var f = Ꮡ(new ΔFile(name: filename, size: size, lines: new nint[]{0}.slice()));
-    Ꮡs.of(FileSet.Ꮡmutex).Lock();
-    defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock);
-    if (@base < 0) {
-        @base = s.@base;
+        // Allocate f outside the critical section.
+        var f = Ꮡ(new ΔFile(name: filename, size: size, lines: new nint[]{0}.slice()));
+        Ꮡs.of(FileSet.Ꮡmutex).Lock();
+        defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        if (@base < 0) {
+            @base = s.@base;
+        }
+        if (@base < s.@base) {
+            throw panic(fmt.Sprintf("invalid base %d (should be >= %d)"u8, @base, s.@base));
+        }
+        f.Value.@base = @base;
+        if (size < 0) {
+            throw panic(fmt.Sprintf("invalid size %d (should be >= 0)"u8, size));
+        }
+        // base >= s.base && size >= 0
+        @base += size + 1;
+        // +1 because EOF also has a position
+        if (@base < 0) {
+            throw panic("token.Pos offset overflow (> 2G of source code in file set)");
+        }
+        // add the file to the file set
+        s.@base = @base;
+        s.files = append(s.files, f);
+        Ꮡs.of(FileSet.Ꮡlast).Store(f);
+        return f;
     }
-    if (@base < s.@base) {
-        throw panic(fmt.Sprintf("invalid base %d (should be >= %d)"u8, @base, s.@base));
-    }
-    f.Value.@base = @base;
-    if (size < 0) {
-        throw panic(fmt.Sprintf("invalid size %d (should be >= 0)"u8, size));
-    }
-    // base >= s.base && size >= 0
-    @base += size + 1;
-    // +1 because EOF also has a position
-    if (@base < 0) {
-        throw panic("token.Pos offset overflow (> 2G of source code in file set)");
-    }
-    // add the file to the file set
-    s.@base = @base;
-    s.files = append(s.files, f);
-    Ꮡs.of(FileSet.Ꮡlast).Store(f);
-    return f;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // RemoveFile removes a file from the [FileSet] so that subsequent
 // queries for its [Pos] interval yield a negative result.
@@ -521,22 +536,27 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
 // encounters an unbounded stream of files.
 //
 // Removing a file that does not belong to the set has no effect.
-public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) => func((defer, recover) => {
+public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
     ref var @file = ref Ꮡfile.DerefOrNull();
 
-    Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil);
-    // clear last file cache
-    Ꮡs.of(FileSet.Ꮡmutex).Lock();
-    defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock);
-    {
-        nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
-            var last = Ꮡ(s.files, len(s.files) - 1);
-            s.files = append(s.files[..(int)(i)], s.files[(int)(i + 1)..].ꓸꓸꓸ);
-            last.ValueSlot = default!;
+        Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil);
+        // clear last file cache
+        Ꮡs.of(FileSet.Ꮡmutex).Lock();
+        defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        {
+            nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
+                var last = Ꮡ(s.files, len(s.files) - 1);
+                s.files = append(s.files[..(int)(i)], s.files[(int)(i + 1)..].ꓸꓸꓸ);
+                last.ValueSlot = default!;
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // don't prolong lifetime when popping last element
 
@@ -568,32 +588,37 @@ internal static nint searchFiles(slice<ж<ΔFile>> a, nint x) {
     return i;
 }
 
-internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) => func<ж<ΔFile>>((defer, recover) => {
+internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    // common case: p is in last file.
-    {
-        var f = Ꮡs.of(FileSet.Ꮡlast).Load(); if (f != nil && (~f).@base <= (nint)p && (nint)p <= (~f).@base + (~f).size) {
-            return f;
-        }
-    }
-    Ꮡs.of(FileSet.Ꮡmutex).RLock();
-    defer(Ꮡs.of(FileSet.Ꮡmutex).RUnlock);
-    // p is not in last file - search all files
-    {
-        nint i = searchFiles(s.files, (nint)p); if (i >= 0) {
-            var f = s.files[i];
-            // f.base <= int(p) by definition of searchFiles
-            if ((nint)p <= (~f).@base + (~f).size) {
-                // Update cache of last file. A race is ok,
-                // but an exclusive lock causes heavy contention.
-                Ꮡs.of(FileSet.Ꮡlast).Store(f);
+        // common case: p is in last file.
+        {
+            var f = Ꮡs.of(FileSet.Ꮡlast).Load(); if (f != nil && (~f).@base <= (nint)p && (nint)p <= (~f).@base + (~f).size) {
                 return f;
             }
         }
+        Ꮡs.of(FileSet.Ꮡmutex).RLock();
+        defer(Ꮡs.of(FileSet.Ꮡmutex).RUnlock, ref ᒐ);
+        // p is not in last file - search all files
+        {
+            nint i = searchFiles(s.files, (nint)p); if (i >= 0) {
+                var f = s.files[i];
+                // f.base <= int(p) by definition of searchFiles
+                if ((nint)p <= (~f).@base + (~f).size) {
+                    // Update cache of last file. A race is ok,
+                    // but an exclusive lock causes heavy contention.
+                    Ꮡs.of(FileSet.Ꮡlast).Store(f);
+                    return f;
+                }
+            }
+        }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // File returns the file that contains the position p.
 // If no such file is found (for instance for p == [NoPos]),

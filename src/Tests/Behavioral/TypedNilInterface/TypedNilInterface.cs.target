@@ -149,7 +149,7 @@ internal static @string /*msg*/ panicked() {
     @string msg = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             var r = recover();
             {
                 var (q, ok) = r._<ж<AErr>>(ᐧ); if (ok){

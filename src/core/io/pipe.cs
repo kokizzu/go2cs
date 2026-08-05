@@ -16,24 +16,34 @@ partial class io_package {
     internal error err;
 }
 
-internal static void Store(this ж<onceError> Ꮡa, error err) => func((defer, recover) => {
+internal static void Store(this ж<onceError> Ꮡa, error err) {
+    GoFrame ᒐ = default;
+    try {
     ref var a = ref Ꮡa.DerefOrNull();
 
-    Ꮡa.of(onceError.ᏑMutex).Lock();
-    defer(Ꮡa.of(onceError.ᏑMutex).Unlock);
-    if (a.err != default!) {
-        return;
+        Ꮡa.of(onceError.ᏑMutex).Lock();
+        defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
+        if (a.err != default!) {
+            return;
+        }
+        a.err = err;
     }
-    a.err = err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static error Load(this ж<onceError> Ꮡa) => func((defer, recover) => {
+internal static error Load(this ж<onceError> Ꮡa) {
+    GoFrame ᒐ = default;
+    try {
     ref var a = ref Ꮡa.DerefOrNull();
 
-    Ꮡa.of(onceError.ᏑMutex).Lock();
-    defer(Ꮡa.of(onceError.ᏑMutex).Unlock);
-    return a.err;
-});
+        Ꮡa.of(onceError.ᏑMutex).Lock();
+        defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
+        return a.err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ErrClosedPipe is the error used for read or write operations on a closed pipe.
 public static error ErrClosedPipe = errors.New("io: read/write on closed pipe"u8);
@@ -90,17 +100,18 @@ internal static error closeRead(this ж<pipe> Ꮡp, error err) {
 internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
         var selᴛ4 = p.done;
         switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
         case 0 when selᴛ4.ꟷᐳ(out _): {
-            (n, err) = (0, Ꮡp.writeCloseError()); return;
+            (n, err) = (0, Ꮡp.writeCloseError()); goto ᒐdone;
         }
         default: {
             Ꮡp.of(pipe.ᏑwrMu).Lock();
-            defer(Ꮡp.of(pipe.ᏑwrMu).Unlock);
+            defer(Ꮡp.of(pipe.ᏑwrMu).Unlock, ref ᒐ);
             break;
         }}
         for (var once = true; once || len(b) > 0; once = false) {
@@ -114,12 +125,14 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
                 break;
             }
             case 1 when selᴛ6.ꟷᐳ(out _): {
-                (n, err) = (n, Ꮡp.writeCloseError()); return;
+                (n, err) = (n, Ꮡp.writeCloseError()); goto ᒐdone;
             }}
         }
         (n, err) = (n, default!);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 internal static error closeWrite(this ж<pipe> Ꮡp, error err) {

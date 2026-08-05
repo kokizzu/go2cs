@@ -10,7 +10,7 @@ internal static void tryWrite(map<@string, nint> m) {
     GoFrame ᒐ = default;
     try {
         writePanicked = false;
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     writePanicked = true;

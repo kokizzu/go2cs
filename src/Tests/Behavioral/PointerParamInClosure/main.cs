@@ -7,7 +7,7 @@ partial class main_package {
 internal static void setViaDefer(ж<nint> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             Ꮡp.Value = 42;
         }, ref ᒐ);
     }
@@ -29,7 +29,7 @@ internal static void mixed(ж<nint> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
 
         p = 5;
-        deferǃ(() => {
+        defer(() => {
             Ꮡp.Value = Ꮡp.Value * 10;
         }, ref ᒐ);
     }

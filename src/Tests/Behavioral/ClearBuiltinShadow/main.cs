@@ -41,7 +41,7 @@ internal static void recover(this ж<guard> Ꮡg) {
 internal static void run(this ж<guard> Ꮡg) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(Ꮡg.recover, ref ᒐ);
+        defer(Ꮡg.recover, ref ᒐ);
         throw panic("boom");
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

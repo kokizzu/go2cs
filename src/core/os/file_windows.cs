@@ -185,19 +185,24 @@ internal static (int64 ret, error err) seek(this ж<File> Ꮡf, int64 offset, ni
 
 // Truncate changes the size of the named file.
 // If the file is a symbolic link, it changes the size of the link's target.
-public static error Truncate(@string name, int64 size) => func<error>((defer, recover) => {
-    var (f, e) = OpenFile(name, O_WRONLY, 438);
-    if (e != default!) {
-        return e;
+public static error Truncate(@string name, int64 size) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, e) = OpenFile(name, O_WRONLY, 438);
+        if (e != default!) {
+            return e;
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        var e1 = f.Truncate(size);
+        if (e1 != default!) {
+            return e1;
+        }
+        return default!;
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    var e1 = f.Truncate(size);
-    if (e1 != default!) {
-        return e1;
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Remove removes the named file or directory.
 // If there is an error, it will be of type *PathError.
@@ -406,55 +411,60 @@ internal static ж<godebug.Setting> winreadlinkvolume = godebug.New("winreadlink
 //	\??\C:\foo\bar into C:\foo\bar
 //	\??\UNC\foo\bar into \\foo\bar
 //	\??\Volume{abc}\ into \\?\Volume{abc}\
-internal static (@string, error) normaliseLinkPath(@string path) => func<(@string, error)>((defer, recover) => {
-    if (len(path) < 4 || path[..4] != @"\??\") {
-        // unexpected path, return it as is
-        return (path, default!);
-    }
-    // we have path that start with \??\
-    @string s = path[4..];
-    switch (ᐧ) {
-    case {} when len(s) >= 2 && s[1] == (rune)':': {
-        return (s, default!);
-    }
-    case {} when len(s) >= 4 && s[..4] == @"UNC\": {
-        return (@"\\" + s[4..], default!);
-    }}
+internal static (@string, error) normaliseLinkPath(@string path) {
+    GoFrame ᒐ = default;
+    try {
+        if (len(path) < 4 || path[..4] != @"\??\") {
+            // unexpected path, return it as is
+            return (path, default!);
+        }
+        // we have path that start with \??\
+        @string s = path[4..];
+        switch (ᐧ) {
+        case {} when len(s) >= 2 && s[1] == (rune)':': {
+            return (s, default!);
+        }
+        case {} when len(s) >= 4 && s[..4] == @"UNC\": {
+            return (@"\\" + s[4..], default!);
+        }}
 
-    // \??\C:\foo\bar
-    // \??\UNC\foo\bar
-    // \??\Volume{abc}\
-    if (winreadlinkvolume.Value() != "0"u8) {
-        return (@"\\?\" + path[4..], default!);
-    }
-    winreadlinkvolume.IncNonDefault();
-    var (h, err) = openSymlink(path);
-    if (err != default!) {
-        return ("", err);
-    }
-    deferǃ(syscall.CloseHandle, h, defer);
-    var buf = new slice<uint16>(100);
-    while (ᐧ) {
-        var (n, errΔ1) = windows.GetFinalPathNameByHandle(h, Ꮡ(buf, 0), (uint32)len(buf), windows.VOLUME_NAME_DOS);
-        if (errΔ1 != default!) {
-            return ("", errΔ1);
+        // \??\C:\foo\bar
+        // \??\UNC\foo\bar
+        // \??\Volume{abc}\
+        if (winreadlinkvolume.Value() != "0"u8) {
+            return (@"\\?\" + path[4..], default!);
         }
-        if (n < (uint32)len(buf)) {
-            break;
+        winreadlinkvolume.IncNonDefault();
+        var (h, err) = openSymlink(path);
+        if (err != default!) {
+            return ("", err);
         }
-        buf = new slice<uint16>((nint)(n));
-    }
-    s = syscall.UTF16ToString(buf);
-    if (len(s) > 4 && s[..4] == @"\\?\") {
-        s = s[4..];
-        if (len(s) > 3 && s[..3] == @"UNC") {
-            // return path like \\server\share\...
-            return (@"\" + s[3..], default!);
+        defer(syscall.CloseHandle, h, ref ᒐ);
+        var buf = new slice<uint16>(100);
+        while (ᐧ) {
+            var (n, errΔ1) = windows.GetFinalPathNameByHandle(h, Ꮡ(buf, 0), (uint32)len(buf), windows.VOLUME_NAME_DOS);
+            if (errΔ1 != default!) {
+                return ("", errΔ1);
+            }
+            if (n < (uint32)len(buf)) {
+                break;
+            }
+            buf = new slice<uint16>((nint)(n));
         }
-        return (s, default!);
+        s = syscall.UTF16ToString(buf);
+        if (len(s) > 4 && s[..4] == @"\\?\") {
+            s = s[4..];
+            if (len(s) > 3 && s[..3] == @"UNC") {
+                // return path like \\server\share\...
+                return (@"\" + s[3..], default!);
+            }
+            return (s, default!);
+        }
+        return ("", errors.New("GetFinalPathNameByHandle returned unexpected path: "u8 + s));
     }
-    return ("", errors.New("GetFinalPathNameByHandle returned unexpected path: "u8 + s));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // go2cs generated this placeholder — func readReparseLink is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

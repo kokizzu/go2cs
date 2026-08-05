@@ -65,39 +65,44 @@ public static error ErrShutdown = errors.New("connection is shut down"u8);
     error ReadResponseBody(any _);
 }
 
-internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) => func((defer, recover) => {
+internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
+    GoFrame ᒐ = default;
+    try {
     ref var client = ref Ꮡclient.DerefOrNull();
     ref var call = ref Ꮡcall.DerefOrNull();
 
-    Ꮡclient.of(Client.ᏑreqMutex).Lock();
-    defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock);
-    // Register this call.
-    Ꮡclient.of(Client.Ꮡmutex).Lock();
-    if (client.shutdown || client.closing) {
-        Ꮡclient.of(Client.Ꮡmutex).Unlock();
-        call.Error = ErrShutdown;
-        Ꮡcall.done();
-        return;
-    }
-    var seq = client.seq;
-    client.seq++;
-    client.pending[seq] = Ꮡcall;
-    Ꮡclient.of(Client.Ꮡmutex).Unlock();
-    // Encode and send the request.
-    client.request.Seq = seq;
-    client.request.ServiceMethod = call.ServiceMethod;
-    var err = client.codec.WriteRequest(Ꮡclient.of(Client.Ꮡrequest), call.Args);
-    if (err != default!) {
+        Ꮡclient.of(Client.ᏑreqMutex).Lock();
+        defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock, ref ᒐ);
+        // Register this call.
         Ꮡclient.of(Client.Ꮡmutex).Lock();
-        Ꮡcall = client.pending[seq]; call = ref Ꮡcall.DerefOrNull();
-        delete(client.pending, seq);
-        Ꮡclient.of(Client.Ꮡmutex).Unlock();
-        if (Ꮡcall != nil) {
-            call.Error = err;
+        if (client.shutdown || client.closing) {
+            Ꮡclient.of(Client.Ꮡmutex).Unlock();
+            call.Error = ErrShutdown;
             Ꮡcall.done();
+            return;
+        }
+        var seq = client.seq;
+        client.seq++;
+        client.pending[seq] = Ꮡcall;
+        Ꮡclient.of(Client.Ꮡmutex).Unlock();
+        // Encode and send the request.
+        client.request.Seq = seq;
+        client.request.ServiceMethod = call.ServiceMethod;
+        var err = client.codec.WriteRequest(Ꮡclient.of(Client.Ꮡrequest), call.Args);
+        if (err != default!) {
+            Ꮡclient.of(Client.Ꮡmutex).Lock();
+            Ꮡcall = client.pending[seq]; call = ref Ꮡcall.DerefOrNull();
+            delete(client.pending, seq);
+            Ꮡclient.of(Client.Ꮡmutex).Unlock();
+            if (Ꮡcall != nil) {
+                call.Error = err;
+                Ꮡcall.done();
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object rpcClientProtocolErrorˢ = (@string)"rpc: client protocol error:"u8;

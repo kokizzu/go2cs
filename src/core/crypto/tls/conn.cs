@@ -888,11 +888,16 @@ internal static error sendAlertLocked(this ж<Conn> Ꮡc, alert err) {
 }
 
 // sendAlert sends a TLS alert message.
-internal static error sendAlert(this ж<Conn> Ꮡc, alert err) => func((defer, recover) => {
-    Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-    return Ꮡc.sendAlertLocked(err);
-});
+internal static error sendAlert(this ж<Conn> Ꮡc, alert err) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        return Ꮡc.sendAlertLocked(err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static UntypedInt tcpMSSEstimate => 1208;
 internal static UntypedInt recordSizeBoostThreshold => /* 128 * 1024 */ 131072;
@@ -998,108 +1003,123 @@ internal static readonly @string tlsInternalErrorSendingˢ = "tls: internal erro
 
 // writeRecordLocked writes a TLS record with the given type and payload to the
 // connection and updates the record layer state.
-internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType typ, slice<byte> data) => func<(nint, error)>((defer, recover) => {
+internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType typ, slice<byte> data) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    if (c.quic != nil) {
-        if (typ != recordTypeHandshake) {
-            return (0, errors.New(tlsInternalErrorSendingˢ));
+        if (c.quic != nil) {
+            if (typ != recordTypeHandshake) {
+                return (0, errors.New(tlsInternalErrorSendingˢ));
+            }
+            c.quicWriteCryptoData(c.@out.level, data);
+            if (!c.buffering) {
+                {
+                    var (_, err) = c.flush(); if (err != default!) {
+                        return (0, err);
+                    }
+                }
+            }
+            return (len(data), default!);
         }
-        c.quicWriteCryptoData(c.@out.level, data);
-        if (!c.buffering) {
+        var outBufPtr = ᏑoutBufPool.Get()._<ж<slice<byte>>>();
+        ref var outBuf = ref heap<slice<byte>>(out var ᏑoutBuf);
+        outBuf = outBufPtr.ValueSlot;
+        var outBufPtrʗ1 = outBufPtr;
+        defer(() => {
+            // You might be tempted to simplify this by just passing &outBuf to Put,
+            // but that would make the local copy of the outBuf slice header escape
+            // to the heap, causing an allocation. Instead, we keep around the
+            // pointer to the slice header returned by Get, which is already on the
+            // heap, and overwrite and return that.
+            outBufPtrʗ1.ValueSlot = ᏑoutBuf.ValueSlot;
+            ᏑoutBufPool.Put(outBufPtrʗ1.OrTypedNil());
+        }, ref ᒐ);
+        nint n = default!;
+        while (len(data) > 0) {
+            nint m = len(data);
             {
-                var (_, err) = c.flush(); if (err != default!) {
-                    return (0, err);
+                nint maxPayload = c.maxPayloadSizeForWrite(typ); if (m > maxPayload) {
+                    m = maxPayload;
+                }
+            }
+            (_, outBuf) = sliceForAppend(outBuf[..0], recordHeaderLen);
+            outBuf[0] = (byte)typ;
+            var vers = c.vers;
+            if (vers == 0){
+                // Some TLS servers fail if the record version is
+                // greater than TLS 1.0 for the initial ClientHello.
+                vers = VersionTLS10;
+            } else 
+            if (vers == VersionTLS13) {
+                // TLS 1.3 froze the record layer version to 1.2.
+                // See RFC 8446, Section 5.1.
+                vers = VersionTLS12;
+            }
+            outBuf[1] = (byte)((vers >> (int)(8)));
+            outBuf[2] = (byte)vers;
+            outBuf[3] = (byte)((m >> (int)(8)));
+            outBuf[4] = (byte)m;
+            error err = default!;
+            (outBuf, err) = c.@out.encrypt(outBuf, data[..(int)(m)], c.config.rand());
+            if (err != default!) {
+                return (n, err);
+            }
+            {
+                var (_, errΔ1) = c.write(outBuf); if (errΔ1 != default!) {
+                    return (n, errΔ1);
+                }
+            }
+            n += m;
+            data = data[(int)(m)..];
+        }
+        if (typ == recordTypeChangeCipherSpec && c.vers != VersionTLS13) {
+            {
+                var err = c.@out.changeCipherSpec(); if (err != default!) {
+                    return (n, Ꮡc.sendAlertLocked(err._<alert>()));
                 }
             }
         }
-        return (len(data), default!);
+        return (n, default!);
     }
-    var outBufPtr = ᏑoutBufPool.Get()._<ж<slice<byte>>>();
-    ref var outBuf = ref heap<slice<byte>>(out var ᏑoutBuf);
-    outBuf = outBufPtr.ValueSlot;
-    var outBufPtrʗ1 = outBufPtr;
-    defer(() => {
-        // You might be tempted to simplify this by just passing &outBuf to Put,
-        // but that would make the local copy of the outBuf slice header escape
-        // to the heap, causing an allocation. Instead, we keep around the
-        // pointer to the slice header returned by Get, which is already on the
-        // heap, and overwrite and return that.
-        outBufPtrʗ1.ValueSlot = ᏑoutBuf.ValueSlot;
-        ᏑoutBufPool.Put(outBufPtrʗ1.OrTypedNil());
-    });
-    nint n = default!;
-    while (len(data) > 0) {
-        nint m = len(data);
-        {
-            nint maxPayload = c.maxPayloadSizeForWrite(typ); if (m > maxPayload) {
-                m = maxPayload;
-            }
-        }
-        (_, outBuf) = sliceForAppend(outBuf[..0], recordHeaderLen);
-        outBuf[0] = (byte)typ;
-        var vers = c.vers;
-        if (vers == 0){
-            // Some TLS servers fail if the record version is
-            // greater than TLS 1.0 for the initial ClientHello.
-            vers = VersionTLS10;
-        } else 
-        if (vers == VersionTLS13) {
-            // TLS 1.3 froze the record layer version to 1.2.
-            // See RFC 8446, Section 5.1.
-            vers = VersionTLS12;
-        }
-        outBuf[1] = (byte)((vers >> (int)(8)));
-        outBuf[2] = (byte)vers;
-        outBuf[3] = (byte)((m >> (int)(8)));
-        outBuf[4] = (byte)m;
-        error err = default!;
-        (outBuf, err) = c.@out.encrypt(outBuf, data[..(int)(m)], c.config.rand());
-        if (err != default!) {
-            return (n, err);
-        }
-        {
-            var (_, errΔ1) = c.write(outBuf); if (errΔ1 != default!) {
-                return (n, errΔ1);
-            }
-        }
-        n += m;
-        data = data[(int)(m)..];
-    }
-    if (typ == recordTypeChangeCipherSpec && c.vers != VersionTLS13) {
-        {
-            var err = c.@out.changeCipherSpec(); if (err != default!) {
-                return (n, Ꮡc.sendAlertLocked(err._<alert>()));
-            }
-        }
-    }
-    return (n, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // writeHandshakeRecord writes a handshake message to the connection and updates
 // the record layer state. If transcript is non-nil the marshaled message is
 // written to it.
-internal static (nint, error) writeHandshakeRecord(this ж<Conn> Ꮡc, handshakeMessage msg, transcriptHash transcript) => func<(nint, error)>((defer, recover) => {
-    Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-    var (data, err) = msg.marshal();
-    if (err != default!) {
-        return (0, err);
+internal static (nint, error) writeHandshakeRecord(this ж<Conn> Ꮡc, handshakeMessage msg, transcriptHash transcript) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        var (data, err) = msg.marshal();
+        if (err != default!) {
+            return (0, err);
+        }
+        if (transcript != default!) {
+            transcript.Write(data);
+        }
+        return Ꮡc.writeRecordLocked(recordTypeHandshake, data);
     }
-    if (transcript != default!) {
-        transcript.Write(data);
-    }
-    return Ꮡc.writeRecordLocked(recordTypeHandshake, data);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // writeChangeCipherRecord writes a ChangeCipherSpec message to the connection and
 // updates the record layer state.
-internal static error writeChangeCipherRecord(this ж<Conn> Ꮡc) => func((defer, recover) => {
-    Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-    var (_, err) = Ꮡc.writeRecordLocked(recordTypeChangeCipherSpec, new byte[]{1}.slice());
-    return err;
-});
+internal static error writeChangeCipherRecord(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        var (_, err) = Ꮡc.writeRecordLocked(recordTypeChangeCipherSpec, new byte[]{1}.slice());
+        return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // readHandshakeBytes reads handshake data until c.hand contains at least n bytes.
 internal static error readHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
@@ -1260,112 +1280,122 @@ internal static error errShutdown = errors.New("tls: protocol is shutdown"u8);
 // must be set for both [Conn.Read] and Write before Write is called when the handshake
 // has not yet completed. See [Conn.SetDeadline], [Conn.SetReadDeadline], and
 // [Conn.SetWriteDeadline].
-public static (nint, error) Write(this ж<Conn> Ꮡc, slice<byte> b) => func<(nint, error)>((defer, recover) => {
+public static (nint, error) Write(this ж<Conn> Ꮡc, slice<byte> b) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    // interlock with Close below
-    while (ᐧ) {
-        var x = Ꮡc.of(Conn.ᏑactiveCall).Load();
-        if ((int32)(x & 1) != 0) {
-            return (0, net.ErrClosed);
-        }
-        if (Ꮡc.of(Conn.ᏑactiveCall).CompareAndSwap(x, x + 2)) {
-            break;
-        }
-    }
-    deferǃ(Ꮡc.of(Conn.ᏑactiveCall).Add, (int32)(-2), defer);
-    {
-        var errΔ1 = Ꮡc.Handshake(); if (errΔ1 != default!) {
-            return (0, errΔ1);
-        }
-    }
-    Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-    {
-        var errΔ2 = c.@out.err; if (errΔ2 != default!) {
-            return (0, errΔ2);
-        }
-    }
-    if (!Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-        return (0, alertInternalError);
-    }
-    if (c.closeNotifySent) {
-        return (0, errShutdown);
-    }
-    // TLS 1.0 is susceptible to a chosen-plaintext
-    // attack when using block mode ciphers due to predictable IVs.
-    // This can be prevented by splitting each Application Data
-    // record into two records, effectively randomizing the IV.
-    //
-    // https://www.openssl.org/~bodo/tls-cbc.txt
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=665814
-    // https://www.imperialviolet.org/2012/01/15/beastfollowup.html
-    nint m = default!;
-    if (len(b) > 1 && c.vers == VersionTLS10) {
-        {
-            var (_, ok) = c.@out.cipher._<cipher.BlockMode>(ᐧ); if (ok) {
-                var (nΔ1, errΔ3) = Ꮡc.writeRecordLocked(recordTypeApplicationData, b[..1]);
-                if (errΔ3 != default!) {
-                    return (nΔ1, c.@out.setErrorLocked(errΔ3));
-                }
-                (m, b) = (1, b[1..]);
+        // interlock with Close below
+        while (ᐧ) {
+            var x = Ꮡc.of(Conn.ᏑactiveCall).Load();
+            if ((int32)(x & 1) != 0) {
+                return (0, net.ErrClosed);
+            }
+            if (Ꮡc.of(Conn.ᏑactiveCall).CompareAndSwap(x, x + 2)) {
+                break;
             }
         }
+        defer(Ꮡc.of(Conn.ᏑactiveCall).Add, (int32)(-2), ref ᒐ);
+        {
+            var errΔ1 = Ꮡc.Handshake(); if (errΔ1 != default!) {
+                return (0, errΔ1);
+            }
+        }
+        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        {
+            var errΔ2 = c.@out.err; if (errΔ2 != default!) {
+                return (0, errΔ2);
+            }
+        }
+        if (!Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
+            return (0, alertInternalError);
+        }
+        if (c.closeNotifySent) {
+            return (0, errShutdown);
+        }
+        // TLS 1.0 is susceptible to a chosen-plaintext
+        // attack when using block mode ciphers due to predictable IVs.
+        // This can be prevented by splitting each Application Data
+        // record into two records, effectively randomizing the IV.
+        //
+        // https://www.openssl.org/~bodo/tls-cbc.txt
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=665814
+        // https://www.imperialviolet.org/2012/01/15/beastfollowup.html
+        nint m = default!;
+        if (len(b) > 1 && c.vers == VersionTLS10) {
+            {
+                var (_, ok) = c.@out.cipher._<cipher.BlockMode>(ᐧ); if (ok) {
+                    var (nΔ1, errΔ3) = Ꮡc.writeRecordLocked(recordTypeApplicationData, b[..1]);
+                    if (errΔ3 != default!) {
+                        return (nΔ1, c.@out.setErrorLocked(errΔ3));
+                    }
+                    (m, b) = (1, b[1..]);
+                }
+            }
+        }
+        var (n, err) = Ꮡc.writeRecordLocked(recordTypeApplicationData, b);
+        return (n + m, c.@out.setErrorLocked(err));
     }
-    var (n, err) = Ꮡc.writeRecordLocked(recordTypeApplicationData, b);
-    return (n + m, c.@out.setErrorLocked(err));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsInternalErrorˢ3 = "tls: internal error: unexpected renegotiation"u8;
 internal static readonly @string tlsUnknownRenegotiationˢ = "tls: unknown Renegotiation value"u8;
 
 // handleRenegotiation processes a HelloRequest handshake message.
-internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, recover) => {
+internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    if (c.vers == VersionTLS13) {
-        return errors.New(tlsInternalErrorˢ3);
-    }
-    var (msg, err) = Ꮡc.readHandshake(default!);
-    if (err != default!) {
-        return err;
-    }
-    var (helloReq, ok) = msg._<ж<helloRequestMsg>>(ᐧ);
-    if (!ok) {
-        Ꮡc.sendAlert(alertUnexpectedMessage);
-        return unexpectedMessageError(helloReq.OrTypedNil(), msg);
-    }
-    if (!c.isClient) {
-        return Ꮡc.sendAlert(alertNoRenegotiation);
-    }
-    var exprᴛ1 = (~c.config).Renegotiation;
-    if (exprᴛ1 == RenegotiateNever) {
-        return Ꮡc.sendAlert(alertNoRenegotiation);
-    }
-    if (exprᴛ1 == RenegotiateOnceAsClient) {
-        if (c.handshakes > 1) {
+        if (c.vers == VersionTLS13) {
+            return errors.New(tlsInternalErrorˢ3);
+        }
+        var (msg, err) = Ꮡc.readHandshake(default!);
+        if (err != default!) {
+            return err;
+        }
+        var (helloReq, ok) = msg._<ж<helloRequestMsg>>(ᐧ);
+        if (!ok) {
+            Ꮡc.sendAlert(alertUnexpectedMessage);
+            return unexpectedMessageError(helloReq.OrTypedNil(), msg);
+        }
+        if (!c.isClient) {
             return Ꮡc.sendAlert(alertNoRenegotiation);
         }
-    }
-    else if (exprᴛ1 == RenegotiateFreelyAsClient) {
-    }
-    else { /* default: */
-        Ꮡc.sendAlert(alertInternalError);
-        return errors.New(tlsUnknownRenegotiationˢ);
-    }
-
-    // Ok.
-    Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
-    defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
-    Ꮡc.of(Conn.ᏑisHandshakeComplete).Store(false);
-    {
-        c.handshakeErr = Ꮡc.clientHandshake(context.Background()); if (c.handshakeErr == default!) {
-            c.handshakes++;
+        var exprᴛ1 = (~c.config).Renegotiation;
+        if (exprᴛ1 == RenegotiateNever) {
+            return Ꮡc.sendAlert(alertNoRenegotiation);
         }
+        if (exprᴛ1 == RenegotiateOnceAsClient) {
+            if (c.handshakes > 1) {
+                return Ꮡc.sendAlert(alertNoRenegotiation);
+            }
+        }
+        else if (exprᴛ1 == RenegotiateFreelyAsClient) {
+        }
+        else { /* default: */
+            Ꮡc.sendAlert(alertInternalError);
+            return errors.New(tlsUnknownRenegotiationˢ);
+        }
+
+        // Ok.
+        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        Ꮡc.of(Conn.ᏑisHandshakeComplete).Store(false);
+        {
+            c.handshakeErr = Ꮡc.clientHandshake(context.Background()); if (c.handshakeErr == default!) {
+                c.handshakes++;
+            }
+        }
+        return c.handshakeErr;
     }
-    return c.handshakeErr;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsTooManyNonAdvancingˢ = "tls: too many non-advancing records"u8;
@@ -1405,39 +1435,44 @@ internal static error handlePostHandshakeMessage(this ж<Conn> Ꮡc) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsReceivedUnexpectedKeyˢ = "tls: received unexpected key update message"u8;
 
-internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) => func<error>((defer, recover) => {
+internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var keyUpdate = ref ᏑkeyUpdate.DerefOrNull();
 
-    if (c.quic != nil) {
-        Ꮡc.sendAlert(alertUnexpectedMessage);
-        return c.@in.setErrorLocked(errors.New(tlsReceivedUnexpectedKeyˢ));
-    }
-    var cipherSuite = cipherSuiteTLS13ByID(c.cipherSuite);
-    if (cipherSuite == nil) {
-        return c.@in.setErrorLocked(Ꮡc.sendAlert(alertInternalError));
-    }
-    var newSecret = cipherSuite.nextTrafficSecret(c.@in.trafficSecret);
-    c.@in.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecret);
-    if (keyUpdate.updateRequested) {
-        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-        var msg = Ꮡ(new keyUpdateMsg(nil));
-        var (msgBytes, err) = msg.marshal();
-        if (err != default!) {
-            return err;
+        if (c.quic != nil) {
+            Ꮡc.sendAlert(alertUnexpectedMessage);
+            return c.@in.setErrorLocked(errors.New(tlsReceivedUnexpectedKeyˢ));
         }
-        (_, err) = Ꮡc.writeRecordLocked(recordTypeHandshake, msgBytes);
-        if (err != default!) {
-            // Surface the error at the next write.
-            c.@out.setErrorLocked(err);
-            return default!;
+        var cipherSuite = cipherSuiteTLS13ByID(c.cipherSuite);
+        if (cipherSuite == nil) {
+            return c.@in.setErrorLocked(Ꮡc.sendAlert(alertInternalError));
         }
-        var newSecretΔ1 = cipherSuite.nextTrafficSecret(c.@out.trafficSecret);
-        c.@out.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecretΔ1);
+        var newSecret = cipherSuite.nextTrafficSecret(c.@in.trafficSecret);
+        c.@in.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecret);
+        if (keyUpdate.updateRequested) {
+            Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+            defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+            var msg = Ꮡ(new keyUpdateMsg(nil));
+            var (msgBytes, err) = msg.marshal();
+            if (err != default!) {
+                return err;
+            }
+            (_, err) = Ꮡc.writeRecordLocked(recordTypeHandshake, msgBytes);
+            if (err != default!) {
+                // Surface the error at the next write.
+                c.@out.setErrorLocked(err);
+                return default!;
+            }
+            var newSecretΔ1 = cipherSuite.nextTrafficSecret(c.@out.trafficSecret);
+            c.@out.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecretΔ1);
+        }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Read reads data from the connection.
 //
@@ -1445,53 +1480,58 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
 // must be set for both Read and [Conn.Write] before Read is called when the handshake
 // has not yet completed. See [Conn.SetDeadline], [Conn.SetReadDeadline], and
 // [Conn.SetWriteDeadline].
-public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) => func<(nint, error)>((defer, recover) => {
+public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    {
-        var err = Ꮡc.Handshake(); if (err != default!) {
-            return (0, err);
-        }
-    }
-    if (len(b) == 0) {
-        // Put this after Handshake, in case people were calling
-        // Read(nil) for the side effect of the Handshake.
-        return (0, default!);
-    }
-    Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock);
-    while (c.input.Len() == 0) {
         {
-            var err = Ꮡc.readRecord(); if (err != default!) {
+            var err = Ꮡc.Handshake(); if (err != default!) {
                 return (0, err);
             }
         }
-        while (c.hand.Len() > 0) {
+        if (len(b) == 0) {
+            // Put this after Handshake, in case people were calling
+            // Read(nil) for the side effect of the Handshake.
+            return (0, default!);
+        }
+        Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        while (c.input.Len() == 0) {
             {
-                var err = Ꮡc.handlePostHandshakeMessage(); if (err != default!) {
+                var err = Ꮡc.readRecord(); if (err != default!) {
                     return (0, err);
                 }
             }
-        }
-    }
-    var (n, _) = c.input.Read(b);
-    // If a close-notify alert is waiting, read it so that we can return (n,
-    // EOF) instead of (n, nil), to signal to the HTTP response reading
-    // goroutine that the connection is now closed. This eliminates a race
-    // where the HTTP response reading goroutine would otherwise not observe
-    // the EOF until its next read, by which time a client goroutine might
-    // have already tried to reuse the HTTP connection for a new request.
-    // See https://golang.org/cl/76400046 and https://golang.org/issue/3514
-    if (n != 0 && c.input.Len() == 0 && c.rawInput.Len() > 0 && ((recordType)c.rawInput.Bytes()[0]) == recordTypeAlert) {
-        {
-            var err = Ꮡc.readRecord(); if (err != default!) {
-                return (n, err);
+            while (c.hand.Len() > 0) {
+                {
+                    var err = Ꮡc.handlePostHandshakeMessage(); if (err != default!) {
+                        return (0, err);
+                    }
+                }
             }
         }
+        var (n, _) = c.input.Read(b);
+        // If a close-notify alert is waiting, read it so that we can return (n,
+        // EOF) instead of (n, nil), to signal to the HTTP response reading
+        // goroutine that the connection is now closed. This eliminates a race
+        // where the HTTP response reading goroutine would otherwise not observe
+        // the EOF until its next read, by which time a client goroutine might
+        // have already tried to reuse the HTTP connection for a new request.
+        // See https://golang.org/cl/76400046 and https://golang.org/issue/3514
+        if (n != 0 && c.input.Len() == 0 && c.rawInput.Len() > 0 && ((recordType)c.rawInput.Bytes()[0]) == recordTypeAlert) {
+            {
+                var err = Ꮡc.readRecord(); if (err != default!) {
+                    return (n, err);
+                }
+            }
+        }
+        // will be io.EOF on closeNotify
+        return (n, default!);
     }
-    // will be io.EOF on closeNotify
-    return (n, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Close closes the connection.
 public static error Close(this ж<Conn> Ꮡc) {
@@ -1545,21 +1585,26 @@ public static error CloseWrite(this ж<Conn> Ꮡc) {
     return Ꮡc.closeNotify();
 }
 
-internal static error closeNotify(this ж<Conn> Ꮡc) => func((defer, recover) => {
+internal static error closeNotify(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-    defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock);
-    if (!c.closeNotifySent) {
-        // Set a Write Deadline to prevent possibly blocking forever.
-        c.SetWriteDeadline(time_package.Now().Add((time.Duration)(5000000000L)));
-        c.closeNotifyErr = Ꮡc.sendAlertLocked(alertCloseNotify);
-        c.closeNotifySent = true;
-        // Any subsequent writes will fail.
-        c.SetWriteDeadline(time_package.Now());
+        Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
+        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        if (!c.closeNotifySent) {
+            // Set a Write Deadline to prevent possibly blocking forever.
+            c.SetWriteDeadline(time_package.Now().Add((time.Duration)(5000000000L)));
+            c.closeNotifyErr = Ꮡc.sendAlertLocked(alertCloseNotify);
+            c.closeNotifySent = true;
+            // Any subsequent writes will fail.
+            c.SetWriteDeadline(time_package.Now());
+        }
+        return c.closeNotifyErr;
     }
-    return c.closeNotifyErr;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Handshake runs the client or server handshake
 // protocol if it has not yet been run.
@@ -1599,21 +1644,22 @@ internal static readonly @string tlsInternalErrorˢ4 = "tls: internal error: han
 
 internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Context ctx) {
     error ret = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
         // Fast sync/atomic-based exit if there is no handshake in flight and the
         // last one succeeded without an error. Avoids the expensive context setup
         // and mutex for most Read and Write calls.
         if (Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-            ret = default!; return;
+            ret = default!; goto ᒐdone;
         }
         var (handshakeCtx, cancel) = context.WithCancel(ctx);
         // Note: defer this before starting the "interrupter" goroutine
         // so that we can tell the difference between the input being canceled and
         // this cancellation. In the former case, we need to close the connection.
         var cancelʗ1 = cancel;
-        defer(() => cancelʗ1());
+        defer(() => cancelʗ1(), ref ᒐ);
         if (c.quic != nil){
             c.quic.Value.cancelc = handshakeCtx.Done();
             c.quic.Value.cancel = cancel;
@@ -1636,7 +1682,7 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
                         ret = ctxErr;
                     }
                 }
-            });
+            }, ref ᒐ);
             var doneʗ2 = done;
             var handshakeCtxʗ1 = handshakeCtx;
             var interruptResʗ2 = interruptRes;
@@ -1657,17 +1703,17 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
         }
         // Close the connection, discarding the error
         Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         {
             var err = c.handshakeErr; if (err != default!) {
-                ret = err; return;
+                ret = err; goto ᒐdone;
             }
         }
         if (Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-            ret = default!; return;
+            ret = default!; goto ᒐdone;
         }
         Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock);
+        defer(Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
         c.handshakeErr = c.handshakeFn(handshakeCtx);
         if (c.handshakeErr == default!){
             c.handshakes++;
@@ -1706,16 +1752,23 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
             close((~c.quic).signalc);
         }
         ret = c.handshakeErr;
-    });
-    return ret;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return ret;
 }
 
 // ConnectionState returns basic TLS details about the connection.
-public static ΔConnectionState ConnectionState(this ж<Conn> Ꮡc) => func((defer, recover) => {
-    Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
-    defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
-    return Ꮡc.connectionStateLocked();
-});
+public static ΔConnectionState ConnectionState(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        return Ꮡc.connectionStateLocked();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<godebug.Setting> tlsunsafeekm = godebug.New("tlsunsafeekm"u8);
 
@@ -1764,13 +1817,18 @@ internal static ΔConnectionState connectionStateLocked(this ж<Conn> Ꮡc) {
 
 // OCSPResponse returns the stapled OCSP response from the TLS server, if
 // any. (Only valid for client connections.)
-public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) => func((defer, recover) => {
+public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
-    defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
-    return c.ocspResponse;
-});
+        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        return c.ocspResponse;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsVerifyHostnameCalledˢ = "tls: VerifyHostname called on TLS server connection"u8;
@@ -1780,21 +1838,26 @@ internal static readonly @string tlsHandshakeDidNotVerifyˢ = "tls: handshake di
 // VerifyHostname checks that the peer certificate chain is valid for
 // connecting to host. If so, it returns nil; if not, it returns an error
 // describing the problem.
-public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) => func((defer, recover) => {
+public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
-    defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
-    if (!c.isClient) {
-        return errors.New(tlsVerifyHostnameCalledˢ);
+        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        if (!c.isClient) {
+            return errors.New(tlsVerifyHostnameCalledˢ);
+        }
+        if (!Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
+            return errors.New(tlsHandshakeHasNotYetˢ);
+        }
+        if (len(c.verifiedChains) == 0) {
+            return errors.New(tlsHandshakeDidNotVerifyˢ);
+        }
+        return c.peerCertificates[0].VerifyHostname(host);
     }
-    if (!Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-        return errors.New(tlsHandshakeHasNotYetˢ);
-    }
-    if (len(c.verifiedChains) == 0) {
-        return errors.New(tlsHandshakeDidNotVerifyˢ);
-    }
-    return c.peerCertificates[0].VerifyHostname(host);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end tls_package

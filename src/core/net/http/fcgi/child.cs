@@ -178,25 +178,30 @@ internal static ж<child> newChild(io.ReadWriteCloser rwc, httpꓸHandler handle
     ));
 }
 
-internal static void serve(this ж<child> Ꮡc) => func((defer, recover) => {
+internal static void serve(this ж<child> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    defer(() => Ꮡc.Value.conn.Close());
-    defer(Ꮡc.cleanUp);
-    ref var rec = ref heap(new record(), out var Ꮡrec);
-    while (ᐧ) {
-        {
-            var err = Ꮡrec.read((~c.conn).rwc); if (err != default!) {
-                return;
+        defer(() => Ꮡc.Value.conn.Close(), ref ᒐ);
+        defer(Ꮡc.cleanUp, ref ᒐ);
+        ref var rec = ref heap(new record(), out var Ꮡrec);
+        while (ᐧ) {
+            {
+                var err = Ꮡrec.read((~c.conn).rwc); if (err != default!) {
+                    return;
+                }
             }
-        }
-        {
-            var err = Ꮡc.handleRecord(Ꮡrec); if (err != default!) {
-                return;
+            {
+                var err = Ꮡc.handleRecord(Ꮡrec); if (err != default!) {
+                    return;
+                }
             }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static error errCloseConn = errors.New("fcgi: connection should be closed"u8);
 
@@ -371,28 +376,33 @@ internal static void serveRequest(this ж<child> Ꮡc, ж<request> Ꮡreq, io.Re
 // to reply to them.
 // If l is nil, Serve accepts connections from os.Stdin.
 // If handler is nil, [http.DefaultServeMux] is used.
-public static error Serve(net.Listener l, httpꓸHandler handler) => func((defer, recover) => {
-    if (l == default!) {
-        error err = default!;
-        (l, err) = net.FileListener(os.Stdin);
-        if (err != default!) {
-            return err;
+public static error Serve(net.Listener l, httpꓸHandler handler) {
+    GoFrame ᒐ = default;
+    try {
+        if (l == default!) {
+            error err = default!;
+            (l, err) = net.FileListener(os.Stdin);
+            if (err != default!) {
+                return err;
+            }
+            defer(() => l.Close(), ref ᒐ);
         }
-        defer(() => l.Close());
-    }
-    if (handler == default!) {
-        handler = new http.ServeMuxжΔHandler(http.DefaultServeMux);
-    }
-    while (ᐧ) {
-        var (rw, err) = l.Accept();
-        if (err != default!) {
-            return err;
+        if (handler == default!) {
+            handler = new http.ServeMuxжΔHandler(http.DefaultServeMux);
         }
-        var c = newChild(new net_ConnᴠReadWriteCloser(rw), handler);
-        var cʗ1 = c;
-        goǃ(cʗ1.serve);
+        while (ᐧ) {
+            var (rw, err) = l.Accept();
+            if (err != default!) {
+                return err;
+            }
+            var c = newChild(new net_ConnᴠReadWriteCloser(rw), handler);
+            var cʗ1 = c;
+            goǃ(cʗ1.serve);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ProcessEnv returns FastCGI environment variables associated with the request r
 // for which no effort was made to be included in the request itself - the data

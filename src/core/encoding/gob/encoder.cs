@@ -261,41 +261,46 @@ internal static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode
 // EncodeValue transmits the data item represented by the reflection value,
 // guaranteeing that all necessary type information has been transmitted first.
 // Passing a nil pointer to EncodeValue will panic, as they cannot be transmitted by gob.
-public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) => func((defer, recover) => {
+public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) {
+    GoFrame ᒐ = default;
+    try {
     ref var enc = ref Ꮡenc.DerefOrNull();
 
-    if (value.Kind() == reflect.Invalid) {
-        return errors.New(gobCannotEncodeNilValueˢ);
-    }
-    if (value.Kind() == reflect.ΔPointer && value.IsNil()) {
-        throw panic("gob: cannot encode nil pointer of type " + value.Type().String());
-    }
-    // Make sure we're single-threaded through here, so multiple
-    // goroutines can share an encoder.
-    Ꮡenc.of(Encoder.Ꮡmutex).Lock();
-    defer(Ꮡenc.of(Encoder.Ꮡmutex).Unlock);
-    // Remove any nested writers remaining due to previous errors.
-    enc.w = enc.w[0..1];
-    var (ut, err) = validUserType(value.Type());
-    if (err != default!) {
-        return err;
-    }
-    enc.err = default!;
-    enc.byteBuf.Reset();
-    enc.byteBuf.Write(spaceForLength);
-    var state = Ꮡenc.newEncoderState(Ꮡenc.of(Encoder.ᏑbyteBuf));
-    Ꮡenc.sendTypeDescriptor(enc.writer(), state, ut);
-    enc.sendTypeId(state, ut);
-    if (enc.err != default!) {
+        if (value.Kind() == reflect.Invalid) {
+            return errors.New(gobCannotEncodeNilValueˢ);
+        }
+        if (value.Kind() == reflect.ΔPointer && value.IsNil()) {
+            throw panic("gob: cannot encode nil pointer of type " + value.Type().String());
+        }
+        // Make sure we're single-threaded through here, so multiple
+        // goroutines can share an encoder.
+        Ꮡenc.of(Encoder.Ꮡmutex).Lock();
+        defer(Ꮡenc.of(Encoder.Ꮡmutex).Unlock, ref ᒐ);
+        // Remove any nested writers remaining due to previous errors.
+        enc.w = enc.w[0..1];
+        var (ut, err) = validUserType(value.Type());
+        if (err != default!) {
+            return err;
+        }
+        enc.err = default!;
+        enc.byteBuf.Reset();
+        enc.byteBuf.Write(spaceForLength);
+        var state = Ꮡenc.newEncoderState(Ꮡenc.of(Encoder.ᏑbyteBuf));
+        Ꮡenc.sendTypeDescriptor(enc.writer(), state, ut);
+        enc.sendTypeId(state, ut);
+        if (enc.err != default!) {
+            return enc.err;
+        }
+        // Encode the object.
+        Ꮡenc.encode((~state).b, value, ut);
+        if (enc.err == default!) {
+            enc.writeMessage(enc.writer(), (~state).b);
+        }
+        enc.freeEncoderState(state);
         return enc.err;
     }
-    // Encode the object.
-    Ꮡenc.encode((~state).b, value, ut);
-    if (enc.err == default!) {
-        enc.writeMessage(enc.writer(), (~state).b);
-    }
-    enc.freeEncoderState(state);
-    return enc.err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end gob_package

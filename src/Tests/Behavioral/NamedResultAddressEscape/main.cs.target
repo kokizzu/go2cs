@@ -37,7 +37,7 @@ internal static error /*err*/ errResult(bool fail) {
     try {
     ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(setErr, Ꮡerr, ref ᒐ);
+        defer(setErr, Ꮡerr, ref ᒐ);
         if (fail) {
             err = fmt.Errorf("original"u8); goto ᒐdone;
         }
@@ -54,7 +54,7 @@ internal static nint /*n*/ intResult() {
     try {
     ref var n = ref Ꮡn.Value;
 
-        deferǃ(addOne, Ꮡn, ref ᒐ);
+        defer(addOne, Ꮡn, ref ᒐ);
         n = 5;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -68,7 +68,7 @@ internal static error /*err*/ recoverResult() {
     try {
     ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(handlePanic, Ꮡerr, ref ᒐ);
+        defer(handlePanic, Ꮡerr, ref ᒐ);
         throw panic("boom");
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

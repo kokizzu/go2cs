@@ -118,7 +118,7 @@ private static readonly object closedChannelNotReachedˢ = (@string)"closed chan
 internal static void closedChannel() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     fmt.Println(closedChannelRecoveredˢ, r);

@@ -150,63 +150,68 @@ public static ж<Named> NewNamed(ж<TypeName> Ꮡobj, ΔType underlying, slice<�
 // After resolution, the type parameters, methods, and underlying type of n are
 // accessible; but if n is an instantiated type, its methods may still be
 // unexpanded.
-internal static ж<Named> resolve(this ж<Named> Ꮡn) => func((defer, recover) => {
+internal static ж<Named> resolve(this ж<Named> Ꮡn) {
+    GoFrame ᒐ = default;
+    try {
     ref var n = ref Ꮡn.DerefOrNull();
 
-    if (Ꮡn.state() >= resolved) {
-        // avoid locking below
-        return Ꮡn;
-    }
-    // TODO(rfindley): if n.check is non-nil we can avoid locking here, since
-    // type-checking is not concurrent. Evaluate if this is worth doing.
-    Ꮡn.of(Named.Ꮡmu).Lock();
-    defer(Ꮡn.of(Named.Ꮡmu).Unlock);
-    if (Ꮡn.state() >= resolved) {
-        return Ꮡn;
-    }
-    if (n.inst != nil) {
-        assert(n.underlying == default!);
-        // n is an unresolved instance
-        assert(n.loader == default!);
-        // instances are created by instantiation, in which case n.loader is nil
-        var orig = n.inst.Value.orig;
-        orig.resolve();
-        var underlying = Ꮡn.expandUnderlying();
-        n.tparams = orig.Value.tparams;
-        n.underlying = underlying;
-        n.fromRHS = orig.Value.fromRHS;
-        // for cycle detection
-        if (len((~orig).methods) == 0){
-            Ꮡn.setState(complete);
-            // nothing further to do
-            n.inst.Value.ctxt = default!;
-        } else {
-            Ꮡn.setState(resolved);
+        if (Ꮡn.state() >= resolved) {
+            // avoid locking below
+            return Ꮡn;
         }
+        // TODO(rfindley): if n.check is non-nil we can avoid locking here, since
+        // type-checking is not concurrent. Evaluate if this is worth doing.
+        Ꮡn.of(Named.Ꮡmu).Lock();
+        defer(Ꮡn.of(Named.Ꮡmu).Unlock, ref ᒐ);
+        if (Ꮡn.state() >= resolved) {
+            return Ꮡn;
+        }
+        if (n.inst != nil) {
+            assert(n.underlying == default!);
+            // n is an unresolved instance
+            assert(n.loader == default!);
+            // instances are created by instantiation, in which case n.loader is nil
+            var orig = n.inst.Value.orig;
+            orig.resolve();
+            var underlying = Ꮡn.expandUnderlying();
+            n.tparams = orig.Value.tparams;
+            n.underlying = underlying;
+            n.fromRHS = orig.Value.fromRHS;
+            // for cycle detection
+            if (len((~orig).methods) == 0){
+                Ꮡn.setState(complete);
+                // nothing further to do
+                n.inst.Value.ctxt = default!;
+            } else {
+                Ꮡn.setState(resolved);
+            }
+            return Ꮡn;
+        }
+        // TODO(mdempsky): Since we're passing n to the loader anyway
+        // (necessary because types2 expects the receiver type for methods
+        // on defined interface types to be the Named rather than the
+        // underlying Interface), maybe it should just handle calling
+        // SetTypeParams, SetUnderlying, and AddMethod instead?  Those
+        // methods would need to support reentrant calls though. It would
+        // also make the API more future-proof towards further extensions.
+        if (n.loader != default!) {
+            assert(n.underlying == default!);
+            assert(n.TypeArgs().Len() == 0);
+            // instances are created by instantiation, in which case n.loader is nil
+            var (tparams, underlying, methods) = n.loader(Ꮡn);
+            n.tparams = bindTParams(tparams);
+            n.underlying = underlying;
+            n.fromRHS = underlying;
+            // for cycle detection
+            n.methods = methods;
+            n.loader = default!;
+        }
+        Ꮡn.setState(complete);
         return Ꮡn;
     }
-    // TODO(mdempsky): Since we're passing n to the loader anyway
-    // (necessary because types2 expects the receiver type for methods
-    // on defined interface types to be the Named rather than the
-    // underlying Interface), maybe it should just handle calling
-    // SetTypeParams, SetUnderlying, and AddMethod instead?  Those
-    // methods would need to support reentrant calls though. It would
-    // also make the API more future-proof towards further extensions.
-    if (n.loader != default!) {
-        assert(n.underlying == default!);
-        assert(n.TypeArgs().Len() == 0);
-        // instances are created by instantiation, in which case n.loader is nil
-        var (tparams, underlying, methods) = n.loader(Ꮡn);
-        n.tparams = bindTParams(tparams);
-        n.underlying = underlying;
-        n.fromRHS = underlying;
-        // for cycle detection
-        n.methods = methods;
-        n.loader = default!;
-    }
-    Ꮡn.setState(complete);
-    return Ꮡn;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // state atomically accesses the current state of the receiver.
 internal static namedState state(this ж<Named> Ꮡn) {
@@ -354,37 +359,42 @@ public static nint NumMethods(this ж<Named> Ꮡt) {
 // calls, the mapping from method index to corresponding method remains the same.
 // But the specific ordering is not specified and must not be relied on as it may
 // change in the future.
-public static ж<Func> Method(this ж<Named> Ꮡt, nint i) => func((defer, recover) => {
+public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    Ꮡt.resolve();
-    if (Ꮡt.state() >= complete) {
+        Ꮡt.resolve();
+        if (Ꮡt.state() >= complete) {
+            return t.methods[i];
+        }
+        assert(t.inst != nil);
+        // only instances should have incomplete methods
+        var orig = t.inst.Value.orig;
+        Ꮡt.of(Named.Ꮡmu).Lock();
+        defer(Ꮡt.of(Named.Ꮡmu).Unlock, ref ᒐ);
+        if (len(t.methods) != len((~orig).methods)) {
+            assert(len(t.methods) == 0);
+            t.methods = new slice<ж<Func>>(len((~orig).methods));
+        }
+        if (t.methods[i] == nil) {
+            assert((~t.inst).ctxt != nil);
+            // we should still have a context remaining from the resolution phase
+            t.methods[i] = Ꮡt.expandMethod(i);
+            t.inst.Value.expandedMethods++;
+            // Check if we've created all methods at this point. If we have, mark the
+            // type as fully expanded.
+            if ((~t.inst).expandedMethods == len((~orig).methods)) {
+                Ꮡt.setState(complete);
+                t.inst.Value.ctxt = default!;
+            }
+        }
+        // no need for a context anymore
         return t.methods[i];
     }
-    assert(t.inst != nil);
-    // only instances should have incomplete methods
-    var orig = t.inst.Value.orig;
-    Ꮡt.of(Named.Ꮡmu).Lock();
-    defer(Ꮡt.of(Named.Ꮡmu).Unlock);
-    if (len(t.methods) != len((~orig).methods)) {
-        assert(len(t.methods) == 0);
-        t.methods = new slice<ж<Func>>(len((~orig).methods));
-    }
-    if (t.methods[i] == nil) {
-        assert((~t.inst).ctxt != nil);
-        // we should still have a context remaining from the resolution phase
-        t.methods[i] = Ꮡt.expandMethod(i);
-        t.inst.Value.expandedMethods++;
-        // Check if we've created all methods at this point. If we have, mark the
-        // type as fully expanded.
-        if ((~t.inst).expandedMethods == len((~orig).methods)) {
-            Ꮡt.setState(complete);
-            t.inst.Value.ctxt = default!;
-        }
-    }
-    // no need for a context anymore
-    return t.methods[i];
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // expandMethod substitutes type arguments in the i'th method for an
 // instantiated receiver.
@@ -651,80 +661,85 @@ internal static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under
 
 // expandUnderlying substitutes type arguments in the underlying type n.orig,
 // returning the result. Returns Typ[Invalid] if there was an error.
-internal static ΔType expandUnderlying(this ж<Named> Ꮡn) => func((defer, recover) => {
+internal static ΔType expandUnderlying(this ж<Named> Ꮡn) {
+    GoFrame ᒐ = default;
+    try {
     ref var n = ref Ꮡn.DerefOrNull();
 
-    var check = n.check;
-    if (check != nil && (~(~check).conf)._Trace) {
-        check.trace((~n.obj).pos, namedExpandUnderlyingSˢ, Ꮡn.OrTypedNil());
-        check.Value.indent++;
-        var checkʗ1 = check;
-        defer(() => {
-            checkʗ1.Value.indent--;
-            checkʗ1.trace((~Ꮡn.Value.obj).pos, sTparamsSUnderSˢ, Ꮡn.OrTypedNil(), Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
-        });
-    }
-    assert((~(~n.inst).orig).underlying != default!);
-    if ((~n.inst).ctxt == nil) {
-        n.inst.Value.ctxt = NewContext();
-    }
-    var orig = n.inst.Value.orig;
-    var targs = n.inst.Value.targs;
-    if (asNamed((~orig).underlying) != nil) {
-        // We should only get a Named underlying type here during type checking
-        // (for example, in recursive type declarations).
-        assert(check != nil);
-    }
-    if ((~orig).tparams.Len() != targs.Len()) {
-        // Mismatching arg and tparam length may be checked elsewhere.
-        return new BasicжΔType(Typ[Invalid]);
-    }
-    // Ensure that an instance is recorded before substituting, so that we
-    // resolve n for any recursive references.
-    @string h = (~n.inst).ctxt.instanceHash(new NamedжΔType(orig), targs.list());
-    var n2 = (~n.inst).ctxt.update(h, new NamedжΔType(orig), n.TypeArgs().list(), new NamedжΔType(Ꮡn));
-    assert(AreEqual(Ꮡn, n2));
-    var smap = makeSubstMap((~orig).tparams.list(), targs.list());
-    ж<Context> ctxt = default!;
-    if (check != nil) {
-        ctxt = check.context();
-    }
-    var underlying = n.check.subst((~n.obj).pos, (~orig).underlying, smap, Ꮡn, ctxt);
-    // If the underlying type of n is an interface, we need to set the receiver of
-    // its methods accurately -- we set the receiver of interface methods on
-    // the RHS of a type declaration to the defined type.
-    {
-        var (iface, _) = underlying._<ж<Interface>>(ᐧ); if (iface != nil) {
-            {
-                var (methods, copied) = replaceRecvType((~iface).methods, new NamedжΔType(orig), new NamedжΔType(Ꮡn)); if (copied) {
-                    // If the underlying type doesn't actually use type parameters, it's
-                    // possible that it wasn't substituted. In this case we need to create
-                    // a new *Interface before modifying receivers.
-                    if (AreEqual(iface, (~orig).underlying)) {
-                        var old = iface;
-                        iface = check.newInterface();
-                        iface.Value.embeddeds = old.Value.embeddeds;
-                        assert((~old).complete);
-                        // otherwise we are copying incomplete data
-                        iface.Value.complete = old.Value.complete;
-                        iface.Value.@implicit = old.Value.@implicit;
-                        // should be false but be conservative
-                        underlying = new InterfaceжΔType(iface);
-                    }
-                    iface.Value.methods = methods;
-                    iface.Value.tset = default!;
-                    // recompute type set with new methods
-                    // If check != nil, check.newInterface will have saved the interface for later completion.
-                    if (check == nil) {
-                        // golang/go#61561: all newly created interfaces must be fully evaluated
-                        iface.typeSet();
+        var check = n.check;
+        if (check != nil && (~(~check).conf)._Trace) {
+            check.trace((~n.obj).pos, namedExpandUnderlyingSˢ, Ꮡn.OrTypedNil());
+            check.Value.indent++;
+            var checkʗ1 = check;
+            defer(() => {
+                checkʗ1.Value.indent--;
+                checkʗ1.trace((~Ꮡn.Value.obj).pos, sTparamsSUnderSˢ, Ꮡn.OrTypedNil(), Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
+            }, ref ᒐ);
+        }
+        assert((~(~n.inst).orig).underlying != default!);
+        if ((~n.inst).ctxt == nil) {
+            n.inst.Value.ctxt = NewContext();
+        }
+        var orig = n.inst.Value.orig;
+        var targs = n.inst.Value.targs;
+        if (asNamed((~orig).underlying) != nil) {
+            // We should only get a Named underlying type here during type checking
+            // (for example, in recursive type declarations).
+            assert(check != nil);
+        }
+        if ((~orig).tparams.Len() != targs.Len()) {
+            // Mismatching arg and tparam length may be checked elsewhere.
+            return new BasicжΔType(Typ[Invalid]);
+        }
+        // Ensure that an instance is recorded before substituting, so that we
+        // resolve n for any recursive references.
+        @string h = (~n.inst).ctxt.instanceHash(new NamedжΔType(orig), targs.list());
+        var n2 = (~n.inst).ctxt.update(h, new NamedжΔType(orig), n.TypeArgs().list(), new NamedжΔType(Ꮡn));
+        assert(AreEqual(Ꮡn, n2));
+        var smap = makeSubstMap((~orig).tparams.list(), targs.list());
+        ж<Context> ctxt = default!;
+        if (check != nil) {
+            ctxt = check.context();
+        }
+        var underlying = n.check.subst((~n.obj).pos, (~orig).underlying, smap, Ꮡn, ctxt);
+        // If the underlying type of n is an interface, we need to set the receiver of
+        // its methods accurately -- we set the receiver of interface methods on
+        // the RHS of a type declaration to the defined type.
+        {
+            var (iface, _) = underlying._<ж<Interface>>(ᐧ); if (iface != nil) {
+                {
+                    var (methods, copied) = replaceRecvType((~iface).methods, new NamedжΔType(orig), new NamedжΔType(Ꮡn)); if (copied) {
+                        // If the underlying type doesn't actually use type parameters, it's
+                        // possible that it wasn't substituted. In this case we need to create
+                        // a new *Interface before modifying receivers.
+                        if (AreEqual(iface, (~orig).underlying)) {
+                            var old = iface;
+                            iface = check.newInterface();
+                            iface.Value.embeddeds = old.Value.embeddeds;
+                            assert((~old).complete);
+                            // otherwise we are copying incomplete data
+                            iface.Value.complete = old.Value.complete;
+                            iface.Value.@implicit = old.Value.@implicit;
+                            // should be false but be conservative
+                            underlying = new InterfaceжΔType(iface);
+                        }
+                        iface.Value.methods = methods;
+                        iface.Value.tset = default!;
+                        // recompute type set with new methods
+                        // If check != nil, check.newInterface will have saved the interface for later completion.
+                        if (check == nil) {
+                            // golang/go#61561: all newly created interfaces must be fully evaluated
+                            iface.typeSet();
+                        }
                     }
                 }
             }
         }
+        return underlying;
     }
-    return underlying;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // safeUnderlying returns the underlying type of typ without expanding
 // instances, to avoid infinite recursion.

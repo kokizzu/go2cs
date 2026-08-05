@@ -112,279 +112,284 @@ internal static readonly @string unknownChannelDirectionˢ = "unknown channel di
 internal static readonly @string unnamedTypeParameterˢ = "unnamed type parameter"u8;
 internal static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
 
-internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, recover) => {
+internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
+    GoFrame ᒐ = default;
+    try {
     ref var w = ref Ꮡw.DerefOrNull();
 
-    if (w.seen[typ]) {
-        w.error("cycle to "u8 + goTypeName(typ));
-        return;
-    }
-    w.seen[typ] = true;
-    deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡw.Value.seen, typ, defer);
-    switch (typ.type()) {
-    case null: {
-        w.error(nilˢ2);
-        break;
-    }
-    case ж<Basic> t: {
-        if (isExported((~t).name)) {
-            // exported basic types go into package unsafe
-            // (currently this is just unsafe.Pointer)
-            {
-                var (obj, _) = (~Unsafe).scope.Lookup((~t).name)._<ж<TypeName>>(ᐧ); if (obj != nil) {
-                    w.typeName(obj);
-                    break;
-                }
-            }
+        if (w.seen[typ]) {
+            w.error("cycle to "u8 + goTypeName(typ));
+            return;
         }
-        w.@string((~t).name);
-        break;
-    }
-    case ж<Array> t: {
-        w.@byte((rune)'[');
-        w.@string(strconv.FormatInt((~t).len, 10));
-        w.@byte((rune)']');
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Slice> t: {
-        w.@string("[]"u8);
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Struct> t: {
-        w.@string(structˢ2);
-        foreach (var (i, f) in (~t).fields) {
-            if (i > 0) {
-                w.@byte((rune)';');
-            }
-            // If disambiguating one struct for another, look for the first unexported field.
-            // Do this first in case of nested structs; tag the first-outermost field.
-            var pkgAnnotate = false;
-            if (w.qf == default! && w.pkgInfo && !isExported((~f).name)) {
-                // note for embedded types, type name is field name, and "string" etc are lower case hence unexported.
-                pkgAnnotate = true;
-                w.pkgInfo = false;
-            }
-            // only tag once
-            // This doesn't do the right thing for embedded type
-            // aliases where we should print the alias name, not
-            // the aliased type (see go.dev/issue/44410).
-            if (!(~f).embedded) {
-                w.@string((~f).name);
-                w.@byte((rune)' ');
-            }
-            Ꮡw.typ((~f).typ);
-            if (pkgAnnotate) {
-                w.@string(packageˢ);
-                w.@string((~f).pkg.Path());
-                w.@string(" */ "u8);
-            }
-            {
-                @string tag = t.Tag(i); if (tag != ""u8) {
-                    w.@byte((rune)' ');
-                    // TODO(gri) If tag contains blanks, replacing them with '#'
-                    //           in Context.TypeHash may produce another tag
-                    //           accidentally.
-                    w.@string(strconv.Quote(tag));
-                }
-            }
-        }
-        w.@byte((rune)'}');
-        break;
-    }
-    case ж<Pointer> t: {
-        w.@byte((rune)'*');
-        Ꮡw.typ((~t).@base);
-        break;
-    }
-    case ж<Tuple> t: {
-        Ꮡw.tuple(t, false);
-        break;
-    }
-    case ж<ΔSignature> t: {
-        w.@string(funcˢ);
-        Ꮡw.signature(t);
-        break;
-    }
-    case ж<Union> t: {
-        if (t.Len() == 0) {
-            // Unions only appear as (syntactic) embedded elements
-            // in interfaces and syntactically cannot be empty.
-            w.error(emptyUnionˢ);
+        w.seen[typ] = true;
+        defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡw.Value.seen, typ, ref ᒐ);
+        switch (typ.type()) {
+        case null: {
+            w.error(nilˢ2);
             break;
         }
-        foreach (var (i, tΔ1) in (~t).terms) {
-            if (i > 0) {
-                w.@string(termSep);
-            }
-            if ((~tΔ1).tilde) {
-                w.@byte((rune)'~');
-            }
-            Ꮡw.typ((~tΔ1).typ);
-        }
-        break;
-    }
-    case ж<Interface> t: {
-        if (w.ctxt == nil) {
-            if (AreEqual(t, universeAnyAlias.of(TypeName.Ꮡobject).Type().Underlying())) {
-                // When not hashing, we can try to improve type strings by writing "any"
-                // for a type that is pointer-identical to universeAny.
-                // TODO(rfindley): this logic should not be necessary with
-                // gotypesalias=1. Remove once that is always the case.
-                w.@string(anyˢ);
-                break;
-            }
-            if (AreEqual(t, (~asNamed(universeComparable.Type())).underlying)) {
-                w.@string(interfaceComparableˢ);
-                break;
-            }
-        }
-        if ((~t).@implicit) {
-            if (len((~t).methods) == 0 && len((~t).embeddeds) == 1) {
-                Ꮡw.typ((~t).embeddeds[0]);
-                break;
-            }
-            // Something's wrong with the implicit interface.
-            // Print it as such and continue.
-            w.@string(implicitˢ);
-        }
-        w.@string(interfaceˢ2);
-        var first = true;
-        if (w.ctxt != nil){
-            Ꮡw.typeSet(t.typeSet());
-        } else {
-            foreach (var (_, m) in (~t).methods) {
-                if (!first) {
-                    w.@byte((rune)';');
-                }
-                first = false;
-                w.@string((~m).name);
-                Ꮡw.signature((~m).typ._<ж<ΔSignature>>());
-            }
-            foreach (var (_, typΔ1) in (~t).embeddeds) {
-                if (!first) {
-                    w.@byte((rune)';');
-                }
-                first = false;
-                Ꮡw.typ(typΔ1);
-            }
-        }
-        w.@byte((rune)'}');
-        break;
-    }
-    case ж<Map> t: {
-        w.@string(mapˢ2);
-        Ꮡw.typ((~t).key);
-        w.@byte((rune)']');
-        Ꮡw.typ((~t).elem);
-        break;
-    }
-    case ж<Chan> t: {
-        @string s = default!;
-        bool parens = default!;
-        var exprᴛ1 = (~t).dir;
-        if (exprᴛ1 == SendRecv) {
-            s = chanˢ4;
-            {
-                var (c, _) = (~t).elem._<ж<Chan>>(ᐧ); if (c != nil && (~c).dir == RecvOnly) {
-                    // chan (<-chan T) requires parentheses
-                    parens = true;
-                }
-            }
-        }
-        else if (exprᴛ1 == SendOnly) {
-            s = chanˢ2;
-        }
-        else if (exprᴛ1 == RecvOnly) {
-            s = chanˢ3;
-        }
-        else { /* default: */
-            w.error(unknownChannelDirectionˢ);
-        }
-
-        w.@string(s);
-        if (parens) {
-            w.@byte((rune)'(');
-        }
-        Ꮡw.typ((~t).elem);
-        if (parens) {
-            w.@byte((rune)')');
-        }
-        break;
-    }
-    case ж<Named> t: {
-        if (w.ctxt != nil) {
-            // If hashing, write a unique prefix for t to represent its identity, since
-            // named type identity is pointer identity.
-            w.@string(strconv.Itoa(w.ctxt.getID(new NamedжΔType(t))));
-        }
-        w.typeName((~t).obj);
-        if ((~t).inst != nil){
-            // when hashing written for readability of the hash only
-            // instantiated type
-            Ꮡw.typeList((~(~t).inst).targs.list());
-        } else 
-        if (w.ctxt == nil && t.TypeParams().Len() != 0) {
-            // For type hashing, don't need to format the TypeParams
-            // parameterized type
-            Ꮡw.tParamList(t.TypeParams().list());
-        }
-        break;
-    }
-    case ж<TypeParam> t: {
-        if ((~t).obj == nil) {
-            w.error(unnamedTypeParameterˢ);
-            break;
-        }
-        {
-            nint i = tparamIndex(w.tparams.list(), t); if (i >= 0){
-                // The names of type parameters that are declared by the type being
-                // hashed are not part of the type identity. Replace them with a
-                // placeholder indicating their index.
-                w.@string(fmt.Sprintf("$%d"u8, i));
-            } else {
-                w.@string((~(~t).obj).name);
-                if (w.tpSubscripts || w.ctxt != nil) {
-                    w.@string(subscript((~t).id));
-                }
-                // If the type parameter name is the same as a predeclared object
-                // (say int), point out where it is declared to avoid confusing
-                // error messages. This doesn't need to be super-elegant; we just
-                // need a clear indication that this is not a predeclared name.
-                if (w.ctxt == nil && Universe.Lookup((~(~t).obj).name) != default!) {
-                    if (isTypes2){
-                        w.@string(fmt.Sprintf(" /* with %s declared at %v */"u8, (~(~t).obj).name, (~t).obj.of(TypeName.Ꮡobject).Pos()));
-                    } else {
-                        // Can't print position information because
-                        // we don't have a token.FileSet accessible.
-                        w.@string(typeParameterˢ2);
+        case ж<Basic> t: {
+            if (isExported((~t).name)) {
+                // exported basic types go into package unsafe
+                // (currently this is just unsafe.Pointer)
+                {
+                    var (obj, _) = (~Unsafe).scope.Lookup((~t).name)._<ж<TypeName>>(ᐧ); if (obj != nil) {
+                        w.typeName(obj);
+                        break;
                     }
                 }
             }
+            w.@string((~t).name);
+            break;
         }
-        break;
-    }
-    case ж<Alias> t: {
-        w.typeName((~t).obj);
-        {
-            var list = (~t).targs.list(); if (len(list) != 0) {
-                // instantiated type
-                Ꮡw.typeList(list);
+        case ж<Array> t: {
+            w.@byte((rune)'[');
+            w.@string(strconv.FormatInt((~t).len, 10));
+            w.@byte((rune)']');
+            Ꮡw.typ((~t).elem);
+            break;
+        }
+        case ж<Slice> t: {
+            w.@string("[]"u8);
+            Ꮡw.typ((~t).elem);
+            break;
+        }
+        case ж<Struct> t: {
+            w.@string(structˢ2);
+            foreach (var (i, f) in (~t).fields) {
+                if (i > 0) {
+                    w.@byte((rune)';');
+                }
+                // If disambiguating one struct for another, look for the first unexported field.
+                // Do this first in case of nested structs; tag the first-outermost field.
+                var pkgAnnotate = false;
+                if (w.qf == default! && w.pkgInfo && !isExported((~f).name)) {
+                    // note for embedded types, type name is field name, and "string" etc are lower case hence unexported.
+                    pkgAnnotate = true;
+                    w.pkgInfo = false;
+                }
+                // only tag once
+                // This doesn't do the right thing for embedded type
+                // aliases where we should print the alias name, not
+                // the aliased type (see go.dev/issue/44410).
+                if (!(~f).embedded) {
+                    w.@string((~f).name);
+                    w.@byte((rune)' ');
+                }
+                Ꮡw.typ((~f).typ);
+                if (pkgAnnotate) {
+                    w.@string(packageˢ);
+                    w.@string((~f).pkg.Path());
+                    w.@string(" */ "u8);
+                }
+                {
+                    @string tag = t.Tag(i); if (tag != ""u8) {
+                        w.@byte((rune)' ');
+                        // TODO(gri) If tag contains blanks, replacing them with '#'
+                        //           in Context.TypeHash may produce another tag
+                        //           accidentally.
+                        w.@string(strconv.Quote(tag));
+                    }
+                }
             }
+            w.@byte((rune)'}');
+            break;
         }
-        if (w.ctxt != nil) {
-            // TODO(gri) do we need to print the alias type name, too?
-            Ꮡw.typ(Unalias((~(~t).obj).typ));
+        case ж<Pointer> t: {
+            w.@byte((rune)'*');
+            Ꮡw.typ((~t).@base);
+            break;
         }
-        break;
+        case ж<Tuple> t: {
+            Ꮡw.tuple(t, false);
+            break;
+        }
+        case ж<ΔSignature> t: {
+            w.@string(funcˢ);
+            Ꮡw.signature(t);
+            break;
+        }
+        case ж<Union> t: {
+            if (t.Len() == 0) {
+                // Unions only appear as (syntactic) embedded elements
+                // in interfaces and syntactically cannot be empty.
+                w.error(emptyUnionˢ);
+                break;
+            }
+            foreach (var (i, tΔ1) in (~t).terms) {
+                if (i > 0) {
+                    w.@string(termSep);
+                }
+                if ((~tΔ1).tilde) {
+                    w.@byte((rune)'~');
+                }
+                Ꮡw.typ((~tΔ1).typ);
+            }
+            break;
+        }
+        case ж<Interface> t: {
+            if (w.ctxt == nil) {
+                if (AreEqual(t, universeAnyAlias.of(TypeName.Ꮡobject).Type().Underlying())) {
+                    // When not hashing, we can try to improve type strings by writing "any"
+                    // for a type that is pointer-identical to universeAny.
+                    // TODO(rfindley): this logic should not be necessary with
+                    // gotypesalias=1. Remove once that is always the case.
+                    w.@string(anyˢ);
+                    break;
+                }
+                if (AreEqual(t, (~asNamed(universeComparable.Type())).underlying)) {
+                    w.@string(interfaceComparableˢ);
+                    break;
+                }
+            }
+            if ((~t).@implicit) {
+                if (len((~t).methods) == 0 && len((~t).embeddeds) == 1) {
+                    Ꮡw.typ((~t).embeddeds[0]);
+                    break;
+                }
+                // Something's wrong with the implicit interface.
+                // Print it as such and continue.
+                w.@string(implicitˢ);
+            }
+            w.@string(interfaceˢ2);
+            var first = true;
+            if (w.ctxt != nil){
+                Ꮡw.typeSet(t.typeSet());
+            } else {
+                foreach (var (_, m) in (~t).methods) {
+                    if (!first) {
+                        w.@byte((rune)';');
+                    }
+                    first = false;
+                    w.@string((~m).name);
+                    Ꮡw.signature((~m).typ._<ж<ΔSignature>>());
+                }
+                foreach (var (_, typΔ1) in (~t).embeddeds) {
+                    if (!first) {
+                        w.@byte((rune)';');
+                    }
+                    first = false;
+                    Ꮡw.typ(typΔ1);
+                }
+            }
+            w.@byte((rune)'}');
+            break;
+        }
+        case ж<Map> t: {
+            w.@string(mapˢ2);
+            Ꮡw.typ((~t).key);
+            w.@byte((rune)']');
+            Ꮡw.typ((~t).elem);
+            break;
+        }
+        case ж<Chan> t: {
+            @string s = default!;
+            bool parens = default!;
+            var exprᴛ1 = (~t).dir;
+            if (exprᴛ1 == SendRecv) {
+                s = chanˢ4;
+                {
+                    var (c, _) = (~t).elem._<ж<Chan>>(ᐧ); if (c != nil && (~c).dir == RecvOnly) {
+                        // chan (<-chan T) requires parentheses
+                        parens = true;
+                    }
+                }
+            }
+            else if (exprᴛ1 == SendOnly) {
+                s = chanˢ2;
+            }
+            else if (exprᴛ1 == RecvOnly) {
+                s = chanˢ3;
+            }
+            else { /* default: */
+                w.error(unknownChannelDirectionˢ);
+            }
+
+            w.@string(s);
+            if (parens) {
+                w.@byte((rune)'(');
+            }
+            Ꮡw.typ((~t).elem);
+            if (parens) {
+                w.@byte((rune)')');
+            }
+            break;
+        }
+        case ж<Named> t: {
+            if (w.ctxt != nil) {
+                // If hashing, write a unique prefix for t to represent its identity, since
+                // named type identity is pointer identity.
+                w.@string(strconv.Itoa(w.ctxt.getID(new NamedжΔType(t))));
+            }
+            w.typeName((~t).obj);
+            if ((~t).inst != nil){
+                // when hashing written for readability of the hash only
+                // instantiated type
+                Ꮡw.typeList((~(~t).inst).targs.list());
+            } else 
+            if (w.ctxt == nil && t.TypeParams().Len() != 0) {
+                // For type hashing, don't need to format the TypeParams
+                // parameterized type
+                Ꮡw.tParamList(t.TypeParams().list());
+            }
+            break;
+        }
+        case ж<TypeParam> t: {
+            if ((~t).obj == nil) {
+                w.error(unnamedTypeParameterˢ);
+                break;
+            }
+            {
+                nint i = tparamIndex(w.tparams.list(), t); if (i >= 0){
+                    // The names of type parameters that are declared by the type being
+                    // hashed are not part of the type identity. Replace them with a
+                    // placeholder indicating their index.
+                    w.@string(fmt.Sprintf("$%d"u8, i));
+                } else {
+                    w.@string((~(~t).obj).name);
+                    if (w.tpSubscripts || w.ctxt != nil) {
+                        w.@string(subscript((~t).id));
+                    }
+                    // If the type parameter name is the same as a predeclared object
+                    // (say int), point out where it is declared to avoid confusing
+                    // error messages. This doesn't need to be super-elegant; we just
+                    // need a clear indication that this is not a predeclared name.
+                    if (w.ctxt == nil && Universe.Lookup((~(~t).obj).name) != default!) {
+                        if (isTypes2){
+                            w.@string(fmt.Sprintf(" /* with %s declared at %v */"u8, (~(~t).obj).name, (~t).obj.of(TypeName.Ꮡobject).Pos()));
+                        } else {
+                            // Can't print position information because
+                            // we don't have a token.FileSet accessible.
+                            w.@string(typeParameterˢ2);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case ж<Alias> t: {
+            w.typeName((~t).obj);
+            {
+                var list = (~t).targs.list(); if (len(list) != 0) {
+                    // instantiated type
+                    Ꮡw.typeList(list);
+                }
+            }
+            if (w.ctxt != nil) {
+                // TODO(gri) do we need to print the alias type name, too?
+                Ꮡw.typ(Unalias((~(~t).obj).typ));
+            }
+            break;
+        }
+        default: {
+            var t = typ;
+            w.@string(t.String());
+            break;
+        }}
     }
-    default: {
-        var t = typ;
-        w.@string(t.String());
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // For externally defined implementations of Type.
 // Note: In this case cycles won't be caught.
@@ -533,35 +538,40 @@ internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool vari
     w.@byte((rune)')');
 }
 
-internal static void signature(this ж<typeWriter> Ꮡw, ж<ΔSignature> Ꮡsig) => func((defer, recover) => {
+internal static void signature(this ж<typeWriter> Ꮡw, ж<ΔSignature> Ꮡsig) {
+    GoFrame ᒐ = default;
+    try {
     ref var w = ref Ꮡw.DerefOrNull();
     ref var sig = ref Ꮡsig.DerefOrNull();
 
-    if (sig.TypeParams().Len() != 0) {
-        if (w.ctxt != nil) {
-            assert(w.tparams == nil);
-            w.tparams = sig.TypeParams();
-            defer(() => {
-                Ꮡw.Value.tparams = default!;
-            });
+        if (sig.TypeParams().Len() != 0) {
+            if (w.ctxt != nil) {
+                assert(w.tparams == nil);
+                w.tparams = sig.TypeParams();
+                defer(() => {
+                    Ꮡw.Value.tparams = default!;
+                }, ref ᒐ);
+            }
+            Ꮡw.tParamList(sig.TypeParams().list());
         }
-        Ꮡw.tParamList(sig.TypeParams().list());
+        Ꮡw.tuple(sig.@params, sig.variadic);
+        nint n = sig.results.Len();
+        if (n == 0) {
+            // no result
+            return;
+        }
+        w.@byte((rune)' ');
+        if (n == 1 && (w.ctxt != nil || (~(~sig.results).vars[0]).name == ""u8)) {
+            // single unnamed result (if type hashing, name must be ignored)
+            Ꮡw.typ((~(~sig.results).vars[0]).typ);
+            return;
+        }
+        // multiple or named result(s)
+        Ꮡw.tuple(sig.results, false);
     }
-    Ꮡw.tuple(sig.@params, sig.variadic);
-    nint n = sig.results.Len();
-    if (n == 0) {
-        // no result
-        return;
-    }
-    w.@byte((rune)' ');
-    if (n == 1 && (w.ctxt != nil || (~(~sig.results).vars[0]).name == ""u8)) {
-        // single unnamed result (if type hashing, name must be ignored)
-        Ꮡw.typ((~(~sig.results).vars[0]).typ);
-        return;
-    }
-    // multiple or named result(s)
-    Ꮡw.tuple(sig.results, false);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // subscript returns the decimal (utf8) representation of x using subscript digits.
 internal static @string subscript(uint64 x) {

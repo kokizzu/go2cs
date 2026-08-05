@@ -24,11 +24,17 @@
    predicted: no emission site selects the accessor any more, so the silent-`default(T)` hole is
    closed by construction. The golib method itself is retained (public surface, covered by
    `GolibTests.PointerNilPredicateTests`) but is no longer reachable from converted code.
-4. **Remove GoFunc's 17 now-idempotent `panic.CaptureThrowSite(ex)` calls** — subsumed by
-   `TryAsPanic`'s adoption-point snapshot (r36-time-tail). ⚠ PAIRED with the
-   `GenGoFuncRefInstances` template repair: the template has drifted from the live 16-rung ladder
-   (still emits bare `catch (PanicException ex)`), so regeneration without the repair silently
-   reverts panic behavior. Do both together or neither.
+4. ~~**Remove GoFunc's 17 now-idempotent `panic.CaptureThrowSite(ex)` calls**~~ — **DISSOLVED
+   2026-08-05 (r41-goframe).** Both halves of this item, and the pairing warning between them, went
+   with the code they described: the GoFrame emission deleted `GoFunc<T>`, the whole
+   `GoFunc<TRef1…TRef16>` ladder and the `builtin.func` overloads, so there are no 17 calls left to
+   remove — the frame's single `catch` body sets the panic slot and nothing else, `TryAsPanic` having
+   already taken the origin snapshot at the adoption point. The `GenGoFuncRefInstances` utility whose
+   drifted template was the paired hazard is deleted with them. Original text, for the record:
+   *"Remove GoFunc's 17 now-idempotent `panic.CaptureThrowSite(ex)` calls — subsumed by `TryAsPanic`'s
+   adoption-point snapshot (r36-time-tail). ⚠ PAIRED with the `GenGoFuncRefInstances` template repair:
+   the template has drifted from the live 16-rung ladder (still emits bare `catch (PanicException ex)`),
+   so regeneration without the repair silently reverts panic behavior. Do both together or neither."*
 5. **`channel.cs` beautification — UNBLOCKED.** The dead-code campaign fenced it "until the
    channels arc"; ground-truthing showed wave3 landed 2026-07-24/25, so the fence guarded nothing.
    Ordinary delicate-shared-machinery rules apply.
@@ -182,6 +188,23 @@
     `sync/{mutex,pool,poolqueue,rwmutex,waitgroup}`, `syscall/{dll_windows,exec_windows}`,
     `time/tick`.
 
+19. **`bodyWrappedInDeferContext` no longer HAS to force the direct-`ж` receiver.** A method that
+    defers at function level and references its receiver takes `this ж<T> Ꮡx` rather than
+    `this ref T`, because a `ref T` receiver could not be referenced from inside the execution-context
+    lambda (CS1628). The GoFrame emission (r41) puts the body inline in the method, so that constraint
+    is gone and `this ref T` compiles. The rule was KEPT deliberately — the direct-`ж` form is also the
+    alloc-free, race-free one, and switching receiver shapes is a corpus-wide change with its own blast
+    radius, not a side effect of the frame. Whether to take it is a real question with a real answer on
+    both sides; it wants its own measurement (how many methods, what the emitted diff looks like, what
+    it costs or saves) rather than a reflex.
+20. **A `-stdlib` reconvert PANICS on two auto-sibling visits.** `internal/godebug/godebug.go` and
+    `internal/concurrent/hashtriemap.go` report `visit file error: … invalid memory address or nil
+    pointer dereference` and their `.cs.auto` REVIEW siblings are skipped. Production emission and
+    package-wide state are unaffected — the auto-sibling pass is a separate re-visit whose only
+    output is the review file — so this shows up as two of item 18's stale siblings rather than as
+    corpus damage. A/B'd at r41 against the master converter: identical, so it is pre-existing and
+    was not introduced by the frame arc. Worth rooting when item 18 is levelled, since `hashtriemap`
+    has never had a `.cs.auto` at all and `godebug`'s is frozen at whenever the panic started.
 ## Recorded residuals (no work owed unless the surrounding facts change)
 
 14. **The `.ValueSlot` entry-alias residual is now empty — but the arm still exists elsewhere.**

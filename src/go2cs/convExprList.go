@@ -103,7 +103,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			// BasicLitContext.spanTargetUnsupported.
 			basicLitContext.spanTargetUnsupported = !callContext.u8StringArgOK[i] || callContext.useGoStringArg[i] || callArgs != nil
 
-			// A DEFERRED call's args feed generic deferǃ type parameters: a u8 span cannot be
+			// A DEFERRED call's args feed generic defer type parameters: a u8 span cannot be
 			// a generic type argument (u8StringOK forced off above), so a Go-string literal arg
 			// takes the explicit (@string) cast instead — otherwise the parameter infers as C#
 			// string and the method-group-to-Action conversion fails (fmt's
@@ -363,7 +363,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			result.WriteString(arg.String())
 		} else {
 			// A deferred-call argument that is an UNTYPED-constant REFERENCE (`io.SeekStart`,
-			// a `static readonly UntypedInt`) poisons deferǃ's delegate inference — the type
+			// a `static readonly UntypedInt`) poisons defer's delegate inference — the type
 			// parameter resolves to the wrapper where the deferred method group takes the
 			// default type (CS0123 ×2, poll fd_windows' deferred Seek). Cast it to the
 			// constant's DEFAULT Go type; a literal is already a typed C# constant. An arg
@@ -392,7 +392,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 				if constIdent, ok := constExpr.(*ast.Ident); ok {
 					if constObj, ok := v.info.ObjectOf(constIdent).(*types.Const); ok {
 						// A TIGHTENED local const is declared at its concrete type, which
-						// deferǃ's inference unifies directly — and the DEFAULT-type cast
+						// defer's inference unifies directly — and the DEFAULT-type cast
 						// could even mistype it where the tightened type differs from the
 						// default (see performUntypedConstAnalysis).
 						if _, tightened := v.tightenedConsts[constObj]; !tightened {

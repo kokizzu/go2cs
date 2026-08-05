@@ -21,22 +21,27 @@ private static readonly @string symtestˢ = "symtest"u8;
 private static readonly @string targetˢ = "target"u8;
 private static readonly @string symlinkˢ = "symlink"u8;
 
-internal static void initWinHasSymlink() => func((defer, recover) => {
-    var (tmpdir, err) = os.MkdirTemp(""u8, symtestˢ);
-    if (err != default!) {
-        throw panic("failed to create temp directory: " + err.Error());
-    }
-    deferǃ(os.RemoveAll, tmpdir, defer);
-    err = os.Symlink(targetˢ, filepath.Join(tmpdir, symlinkˢ));
-    if (err != default!) {
-        err = err._<ж<os.LinkError>>().Value.Err;
-        var exprᴛ1 = err;
-        if (AreEqual(exprᴛ1, Δsyscall.EWINDOWS) || AreEqual(exprᴛ1, Δsyscall.ERROR_PRIVILEGE_NOT_HELD)) {
-            winSymlinkErr = err;
+internal static void initWinHasSymlink() {
+    GoFrame ᒐ = default;
+    try {
+        var (tmpdir, err) = os.MkdirTemp(""u8, symtestˢ);
+        if (err != default!) {
+            throw panic("failed to create temp directory: " + err.Error());
         }
+        defer(os.RemoveAll, tmpdir, ref ᒐ);
+        err = os.Symlink(targetˢ, filepath.Join(tmpdir, symlinkˢ));
+        if (err != default!) {
+            err = err._<ж<os.LinkError>>().Value.Err;
+            var exprᴛ1 = err;
+            if (AreEqual(exprᴛ1, Δsyscall.EWINDOWS) || AreEqual(exprᴛ1, Δsyscall.ERROR_PRIVILEGE_NOT_HELD)) {
+                winSymlinkErr = err;
+            }
 
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string symlinksAreNotSupportedˢ = ": symlinks are not supported on your version of Windows"u8;

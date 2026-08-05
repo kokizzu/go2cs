@@ -285,87 +285,89 @@ internal static readonly @string contentLengthˢ = "Content-Length"u8;
 // if modtime.IsZero(), modtime is unknown.
 // content must be seeked to the beginning of the file.
 // The sizeFunc is called at most once. Its error, if any, is sent in the HTTP response.
-internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) => func((defer, recover) => {
+internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) {
+    GoFrame ᒐ = default;
+    try {
     ref var r = ref Ꮡr.DerefOrNull();
 
-    setLastModified(w, modtime);
-    var (done, rangeReq) = checkPreconditions(w, Ꮡr, modtime);
-    if (done) {
-        return;
-    }
-    nint code = StatusOK;
-    // If Content-Type isn't set, use the file's extension to find it, but
-    // if the Content-Type is unset explicitly, do not sniff the type.
-    var (ctypes, haveType) = w.Header()[contentTypeˢ, ꟷ];
-    @string ctype = default!;
-    if (!haveType){
-        ctype = mime.TypeByExtension(filepath.Ext(name));
-        if (ctype == ""u8) {
-            // read a chunk to decide between utf-8 text and binary
-            array<byte> buf = new(512); /* sniffLen */
-            var (n, _) = io.ReadFull(content, buf[..]);
-            ctype = DetectContentType(buf[..(int)(n)]);
-            var (_, errΔ1) = content.Seek(0, io.SeekStart);
-            // rewind to output whole file
-            if (errΔ1 != default!) {
-                serveError(w, seekerCanTSeekˢ, StatusInternalServerError);
-                return;
-            }
+        setLastModified(w, modtime);
+        var (done, rangeReq) = checkPreconditions(w, Ꮡr, modtime);
+        if (done) {
+            return;
         }
-        w.Header().Set(contentTypeˢ, ctype);
-    } else 
-    if (builtin.len(ctypes) > 0) {
-        ctype = ctypes[0];
-    }
-    var (size, err) = sizeFunc();
-    if (err != default!) {
-        serveError(w, err.Error(), StatusInternalServerError);
-        return;
-    }
-    if (size < 0) {
-        // Should never happen but just to be sure
-        serveError(w, negativeContentSizeˢ, StatusInternalServerError);
-        return;
-    }
-    // handle Content-Range header.
-    var sendSize = size;
-    io.Reader sendContent = content;
-    (var ranges, err) = parseRange(rangeReq, size);
-    var exprᴛ1 = err;
-    var matchᴛ1 = false;
-    if (AreEqual(exprᴛ1, default!)) { matchᴛ1 = true;
-    }
-    else if (AreEqual(exprᴛ1, errNoOverlap)) { matchᴛ1 = true;
-        do {
-            if (size == 0) {
-                // Some clients add a Range header to all requests to
-                // limit the size of the response. If the file is empty,
-                // ignore the range header and respond with a 200 rather
-                // than a 416.
-                ranges = default!;
-                break;
+        nint code = StatusOK;
+        // If Content-Type isn't set, use the file's extension to find it, but
+        // if the Content-Type is unset explicitly, do not sniff the type.
+        var (ctypes, haveType) = w.Header()[contentTypeˢ, ꟷ];
+        @string ctype = default!;
+        if (!haveType){
+            ctype = mime.TypeByExtension(filepath.Ext(name));
+            if (ctype == ""u8) {
+                // read a chunk to decide between utf-8 text and binary
+                array<byte> buf = new(512); /* sniffLen */
+                var (n, _) = io.ReadFull(content, buf[..]);
+                ctype = DetectContentType(buf[..(int)(n)]);
+                var (_, errΔ1) = content.Seek(0, io.SeekStart);
+                // rewind to output whole file
+                if (errΔ1 != default!) {
+                    serveError(w, seekerCanTSeekˢ, StatusInternalServerError);
+                    return;
+                }
             }
-            w.Header().Set(contentRangeˢ, fmt.Sprintf("bytes */%d"u8, size));
-            fallthrough = true;
-        } while (false);
-    }
-    if (fallthrough || !matchᴛ1) { /* default: */
-        serveError(w, err.Error(), StatusRequestedRangeNotSatisfiable);
-        return;
-    }
+            w.Header().Set(contentTypeˢ, ctype);
+        } else 
+        if (builtin.len(ctypes) > 0) {
+            ctype = ctypes[0];
+        }
+        var (size, err) = sizeFunc();
+        if (err != default!) {
+            serveError(w, err.Error(), StatusInternalServerError);
+            return;
+        }
+        if (size < 0) {
+            // Should never happen but just to be sure
+            serveError(w, negativeContentSizeˢ, StatusInternalServerError);
+            return;
+        }
+        // handle Content-Range header.
+        var sendSize = size;
+        io.Reader sendContent = content;
+        (var ranges, err) = parseRange(rangeReq, size);
+        var exprᴛ1 = err;
+        var matchᴛ1 = false;
+        if (AreEqual(exprᴛ1, default!)) { matchᴛ1 = true;
+        }
+        else if (AreEqual(exprᴛ1, errNoOverlap)) { matchᴛ1 = true;
+            do {
+                if (size == 0) {
+                    // Some clients add a Range header to all requests to
+                    // limit the size of the response. If the file is empty,
+                    // ignore the range header and respond with a 200 rather
+                    // than a 416.
+                    ranges = default!;
+                    break;
+                }
+                w.Header().Set(contentRangeˢ, fmt.Sprintf("bytes */%d"u8, size));
+                fallthrough = true;
+            } while (false);
+        }
+        if (fallthrough || !matchᴛ1) { /* default: */
+            serveError(w, err.Error(), StatusRequestedRangeNotSatisfiable);
+            return;
+        }
 
-    if (sumRangesSize(ranges) > size) {
-        // The total number of bytes in all the ranges
-        // is larger than the size of the file by
-        // itself, so this is probably an attack, or a
-        // dumb client. Ignore the range request.
-        ranges = default!;
-    }
-    switch (ᐧ) {
-    case {} when builtin.len(ranges) is 1: {
-        var ra = ranges[0];
-        {
-            var (_, errΔ6) = content.Seek(ra.start, // RFC 7233, Section 4.1:
+        if (sumRangesSize(ranges) > size) {
+            // The total number of bytes in all the ranges
+            // is larger than the size of the file by
+            // itself, so this is probably an attack, or a
+            // dumb client. Ignore the range request.
+            ranges = default!;
+        }
+        switch (ᐧ) {
+        case {} when builtin.len(ranges) is 1: {
+            var ra = ranges[0];
+            {
+                var (_, errΔ6) = content.Seek(ra.start, // RFC 7233, Section 4.1:
  // "If a single part is being transferred, the server
  // generating the 206 response MUST generate a
  // Content-Range header field, describing what range
@@ -377,91 +379,94 @@ internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string na
  // does not request multiple parts might not support
  // multipart responses."
  io.SeekStart); if (errΔ6 != default!) {
-                serveError(w, errΔ6.Error(), StatusRequestedRangeNotSatisfiable);
-                return;
-            }
-        }
-        sendSize = ra.length;
-        code = StatusPartialContent;
-        w.Header().Set(contentRangeˢ, ra.contentRange(size));
-        break;
-    }
-    case {} when builtin.len(ranges) is > 1: {
-        sendSize = rangesMIMESize(ranges, ctype, size);
-        code = StatusPartialContent;
-        var (pr, pw) = io.Pipe();
-        var mw = multipart.NewWriter(new io_PipeWriterжWriter(pw));
-        w.Header().Set(contentTypeˢ, "multipart/byteranges; boundary="u8 + mw.Boundary());
-        sendContent = new io_PipeReaderжReader(pr);
-        var prʗ1 = pr;
-        defer(() => prʗ1.Close());
-        var mwʗ1 = mw;
-        var pwʗ1 = pw;
-        var rangesʗ1 = ranges;
-        goǃ(() => {
-            // cause writing goroutine to fail and exit if CopyN doesn't finish.
-            foreach (var (_, vᴛ1) in rangesʗ1) {
-                ref var ra = ref heap(new httpRange(), out var Ꮡra);
-                ra = vᴛ1;
-
-                var (part, errΔ7) = mwʗ1.CreatePart(ra.mimeHeader(ctype, size));
-                if (errΔ7 != default!) {
-                    pwʗ1.CloseWithError(errΔ7);
+                    serveError(w, errΔ6.Error(), StatusRequestedRangeNotSatisfiable);
                     return;
                 }
-                {
-                    var (_, errΔ8) = content.Seek(ra.start, io.SeekStart); if (errΔ8 != default!) {
-                        pwʗ1.CloseWithError(errΔ8);
-                        return;
-                    }
-                }
-                {
-                    var (_, errΔ9) = io.CopyN(part, content, ra.length); if (errΔ9 != default!) {
-                        pwʗ1.CloseWithError(errΔ9);
-                        return;
-                    }
-                }
             }
-            mwʗ1.Close();
-            pwʗ1.Close();
-        });
-        break;
-    }}
+            sendSize = ra.length;
+            code = StatusPartialContent;
+            w.Header().Set(contentRangeˢ, ra.contentRange(size));
+            break;
+        }
+        case {} when builtin.len(ranges) is > 1: {
+            sendSize = rangesMIMESize(ranges, ctype, size);
+            code = StatusPartialContent;
+            var (pr, pw) = io.Pipe();
+            var mw = multipart.NewWriter(new io_PipeWriterжWriter(pw));
+            w.Header().Set(contentTypeˢ, "multipart/byteranges; boundary="u8 + mw.Boundary());
+            sendContent = new io_PipeReaderжReader(pr);
+            var prʗ1 = pr;
+            defer(() => prʗ1.Close(), ref ᒐ);
+            var mwʗ1 = mw;
+            var pwʗ1 = pw;
+            var rangesʗ1 = ranges;
+            goǃ(() => {
+                // cause writing goroutine to fail and exit if CopyN doesn't finish.
+                foreach (var (_, vᴛ1) in rangesʗ1) {
+                    ref var ra = ref heap(new httpRange(), out var Ꮡra);
+                    ra = vᴛ1;
 
-    w.Header().Set(acceptRangesˢ, bytesˢ);
-    // We should be able to unconditionally set the Content-Length here.
-    //
-    // However, there is a pattern observed in the wild that this breaks:
-    // The user wraps the ResponseWriter in one which gzips data written to it,
-    // and sets "Content-Encoding: gzip".
-    //
-    // The user shouldn't be doing this; the serveContent path here depends
-    // on serving seekable data with a known length. If you want to compress
-    // on the fly, then you shouldn't be using ServeFile/ServeContent, or
-    // you should compress the entire file up-front and provide a seekable
-    // view of the compressed data.
-    //
-    // However, since we've observed this pattern in the wild, and since
-    // setting Content-Length here breaks code that mostly-works today,
-    // skip setting Content-Length if the user set Content-Encoding.
-    //
-    // If this is a range request, always set Content-Length.
-    // If the user isn't changing the bytes sent in the ResponseWrite,
-    // the Content-Length will be correct.
-    // If the user is changing the bytes sent, then the range request wasn't
-    // going to work properly anyway and we aren't worse off.
-    //
-    // A possible future improvement on this might be to look at the type
-    // of the ResponseWriter, and always set Content-Length if it's one
-    // that we recognize.
-    if (builtin.len(ranges) > 0 || w.Header().Get(contentEncodingˢ) == ""u8) {
-        w.Header().Set(contentLengthˢ, strconv.FormatInt(sendSize, 10));
+                    var (part, errΔ7) = mwʗ1.CreatePart(ra.mimeHeader(ctype, size));
+                    if (errΔ7 != default!) {
+                        pwʗ1.CloseWithError(errΔ7);
+                        return;
+                    }
+                    {
+                        var (_, errΔ8) = content.Seek(ra.start, io.SeekStart); if (errΔ8 != default!) {
+                            pwʗ1.CloseWithError(errΔ8);
+                            return;
+                        }
+                    }
+                    {
+                        var (_, errΔ9) = io.CopyN(part, content, ra.length); if (errΔ9 != default!) {
+                            pwʗ1.CloseWithError(errΔ9);
+                            return;
+                        }
+                    }
+                }
+                mwʗ1.Close();
+                pwʗ1.Close();
+            });
+            break;
+        }}
+
+        w.Header().Set(acceptRangesˢ, bytesˢ);
+        // We should be able to unconditionally set the Content-Length here.
+        //
+        // However, there is a pattern observed in the wild that this breaks:
+        // The user wraps the ResponseWriter in one which gzips data written to it,
+        // and sets "Content-Encoding: gzip".
+        //
+        // The user shouldn't be doing this; the serveContent path here depends
+        // on serving seekable data with a known length. If you want to compress
+        // on the fly, then you shouldn't be using ServeFile/ServeContent, or
+        // you should compress the entire file up-front and provide a seekable
+        // view of the compressed data.
+        //
+        // However, since we've observed this pattern in the wild, and since
+        // setting Content-Length here breaks code that mostly-works today,
+        // skip setting Content-Length if the user set Content-Encoding.
+        //
+        // If this is a range request, always set Content-Length.
+        // If the user isn't changing the bytes sent in the ResponseWrite,
+        // the Content-Length will be correct.
+        // If the user is changing the bytes sent, then the range request wasn't
+        // going to work properly anyway and we aren't worse off.
+        //
+        // A possible future improvement on this might be to look at the type
+        // of the ResponseWriter, and always set Content-Length if it's one
+        // that we recognize.
+        if (builtin.len(ranges) > 0 || w.Header().Get(contentEncodingˢ) == ""u8) {
+            w.Header().Set(contentLengthˢ, strconv.FormatInt(sendSize, 10));
+        }
+        w.WriteHeader(code);
+        if (r.Method != "HEAD"u8) {
+            io.CopyN(new ResponseWriterᴠWriter(w), sendContent, sendSize);
+        }
     }
-    w.WriteHeader(code);
-    if (r.Method != "HEAD"u8) {
-        io.CopyN(new ResponseWriterᴠWriter(w), sendContent, sendSize);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // scanETag determines if a syntactically valid ETag is present at s. If so,
 // the ETag and remaining text after consuming ETag is returned. Otherwise,
@@ -754,88 +759,93 @@ internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWrit
 internal static readonly @string httpAttemptingToTraverseˢ = "http: attempting to traverse a non-directory"u8;
 
 // name is '/'-separated, not filepath.Separator.
-internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) => func((defer, recover) => {
+internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) {
+    GoFrame ᒐ = default;
+    try {
     ref var r = ref Ꮡr.DerefOrNull();
 
-    @string indexPage = "/index.html"u8;
-    // redirect .../index.html to .../
-    // can't use Redirect() because that would make the path absolute,
-    // which would be a problem running under StripPrefix
-    if (strings.HasSuffix((~r.URL).Path, indexPage)) {
-        localRedirect(w, Ꮡr, "./"u8);
-        return;
-    }
-    var (f, err) = fs.Open(name);
-    if (err != default!) {
-        var (msg, code) = toHTTPError(err);
-        serveError(w, msg, code);
-        return;
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    (var d, err) = f.Stat();
-    if (err != default!) {
-        var (msg, code) = toHTTPError(err);
-        serveError(w, msg, code);
-        return;
-    }
-    if (redirect) {
-        // redirect to canonical path: / at end of directory url
-        // r.URL.Path always begins with /
-        @string url = r.URL.Value.Path;
-        if (d.IsDir()){
-            if (url[builtin.len(url) - 1] != (rune)'/') {
+        @string indexPage = "/index.html"u8;
+        // redirect .../index.html to .../
+        // can't use Redirect() because that would make the path absolute,
+        // which would be a problem running under StripPrefix
+        if (strings.HasSuffix((~r.URL).Path, indexPage)) {
+            localRedirect(w, Ꮡr, "./"u8);
+            return;
+        }
+        var (f, err) = fs.Open(name);
+        if (err != default!) {
+            var (msg, code) = toHTTPError(err);
+            serveError(w, msg, code);
+            return;
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var d, err) = f.Stat();
+        if (err != default!) {
+            var (msg, code) = toHTTPError(err);
+            serveError(w, msg, code);
+            return;
+        }
+        if (redirect) {
+            // redirect to canonical path: / at end of directory url
+            // r.URL.Path always begins with /
+            @string url = r.URL.Value.Path;
+            if (d.IsDir()){
+                if (url[builtin.len(url) - 1] != (rune)'/') {
+                    localRedirect(w, Ꮡr, path.Base(url) + "/"u8);
+                    return;
+                }
+            } else 
+            if (url[builtin.len(url) - 1] == (rune)'/') {
+                @string @base = path.Base(url);
+                if (@base == "/"u8 || @base == "."u8) {
+                    // The FileSystem maps a path like "/" or "/./" to a file instead of a directory.
+                    @string msg = httpAttemptingToTraverseˢ;
+                    serveError(w, msg, StatusInternalServerError);
+                    return;
+                }
+                localRedirect(w, Ꮡr, "../"u8 + @base);
+                return;
+            }
+        }
+        if (d.IsDir()) {
+            @string url = r.URL.Value.Path;
+            // redirect if the directory name doesn't end in a slash
+            if (url == ""u8 || url[builtin.len(url) - 1] != (rune)'/') {
                 localRedirect(w, Ꮡr, path.Base(url) + "/"u8);
                 return;
             }
-        } else 
-        if (url[builtin.len(url) - 1] == (rune)'/') {
-            @string @base = path.Base(url);
-            if (@base == "/"u8 || @base == "."u8) {
-                // The FileSystem maps a path like "/" or "/./" to a file instead of a directory.
-                @string msg = httpAttemptingToTraverseˢ;
-                serveError(w, msg, StatusInternalServerError);
+            // use contents of index.html for directory, if present
+            @string index = strings.TrimSuffix(name, "/"u8) + indexPage;
+            var (ff, errΔ1) = fs.Open(index);
+            if (errΔ1 == default!) {
+                var ffʗ1 = ff;
+                defer(() => ffʗ1.Close(), ref ᒐ);
+                var (dd, errΔ2) = ff.Stat();
+                if (errΔ2 == default!) {
+                    d = dd;
+                    f = ff;
+                }
+            }
+        }
+        // Still a directory? (we didn't find an index.html file)
+        if (d.IsDir()) {
+            if (checkIfModifiedSince(Ꮡr, d.ModTime()) == condFalse) {
+                writeNotModified(w);
                 return;
             }
-            localRedirect(w, Ꮡr, "../"u8 + @base);
+            setLastModified(w, d.ModTime());
+            dirList(w, Ꮡr, f);
             return;
         }
+        // serveContent will check modification time
+        var dʗ1 = d;
+        var sizeFunc = (int64, error) () => (dʗ1.Size(), default!);
+        serveContent(w, Ꮡr, d.Name(), d.ModTime(), sizeFunc, new FileᴠReadSeeker(f));
     }
-    if (d.IsDir()) {
-        @string url = r.URL.Value.Path;
-        // redirect if the directory name doesn't end in a slash
-        if (url == ""u8 || url[builtin.len(url) - 1] != (rune)'/') {
-            localRedirect(w, Ꮡr, path.Base(url) + "/"u8);
-            return;
-        }
-        // use contents of index.html for directory, if present
-        @string index = strings.TrimSuffix(name, "/"u8) + indexPage;
-        var (ff, errΔ1) = fs.Open(index);
-        if (errΔ1 == default!) {
-            var ffʗ1 = ff;
-            defer(() => ffʗ1.Close());
-            var (dd, errΔ2) = ff.Stat();
-            if (errΔ2 == default!) {
-                d = dd;
-                f = ff;
-            }
-        }
-    }
-    // Still a directory? (we didn't find an index.html file)
-    if (d.IsDir()) {
-        if (checkIfModifiedSince(Ꮡr, d.ModTime()) == condFalse) {
-            writeNotModified(w);
-            return;
-        }
-        setLastModified(w, d.ModTime());
-        dirList(w, Ꮡr, f);
-        return;
-    }
-    // serveContent will check modification time
-    var dʗ1 = d;
-    var sizeFunc = (int64, error) () => (dʗ1.Size(), default!);
-    serveContent(w, Ꮡr, d.Name(), d.ModTime(), sizeFunc, new FileᴠReadSeeker(f));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string pageNotFoundˢ = "404 page not found"u8;

@@ -1112,9 +1112,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					v.indentLevel--
 				}
 
-				// A deferred/go call routes its args through deferǃ/goǃ, where the callee's parameter
+				// A deferred/go call routes its args through defer/goǃ, where the callee's parameter
 				// type must equal the C# type the arg renders as. In the METHOD-VALUE form
-				// (deferǃ(Action<T>, T arg, …)) T unifies from BOTH the method parameter and the
+				// (defer(Action<T>, T arg, …)) T unifies from BOTH the method parameter and the
 				// argument; in the LAMBDA form (goǃ(ᴛ1 => f(ᴛ1), arg)) the arg's C# type drives ᴛ1's
 				// inference and the lambda body then calls f(ᴛ1) — so ᴛ1 must be f's parameter type.
 				// An untyped numeric constant (e.g. `0`, or crc32's untyped `Castagnoli` feeding
@@ -1146,7 +1146,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					}
 
 					// An untyped-nil argument renders as golib `nil` (NilType), which unifies the
-					// deferǃ/goǃ type parameter as NilType and breaks the method-group match
+					// defer/goǃ type parameter as NilType and breaks the method-group match
 					// (CS0123 — exec_windows DuplicateHandle). Cast it to the parameter's C# type:
 					// ж<T>/interface/slice/map/channel all carry an implicit NilType conversion,
 					// so `(ж<ΔHandle>)(nil)` binds and keeps the visible `nil`. Method-value form

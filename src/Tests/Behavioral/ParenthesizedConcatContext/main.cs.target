@@ -71,7 +71,7 @@ private static readonly object recoveredˢ = (@string)"recovered:"u8;
 internal static void @catch(Action f) {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             fmt.Println(recoveredˢ, recover());
         }, ref ᒐ);
         f();

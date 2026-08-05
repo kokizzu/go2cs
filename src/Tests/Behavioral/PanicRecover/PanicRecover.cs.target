@@ -21,7 +21,7 @@ private static readonly object returnedNormallyFromGˢ = (@string)"Returned norm
 internal static void f() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     fmt.Println(recoveredInFˢ, r);
@@ -48,7 +48,7 @@ internal static void g(nint i) {
             fmt.Println(panickingˢ);
             throw panic(fmt.Sprintf("%v"u8, i));
         }
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, ref ᒐ);
         fmt.Println(printingInGˢ, i);
         g(i + 1);
     }
@@ -65,7 +65,7 @@ internal static @string panicValueKind(Action f) {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 var p = recover();
                 switch (p.type()) {
                 case null: {

@@ -684,43 +684,53 @@ internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPo
     p.keys[Ꮡcc] = append(p.keys[Ꮡcc], key);
 }
 
-internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock);
-    foreach (var (_, key) in p.keys[Ꮡcc]) {
-        var (vv, ok) = p.conns[key, ꟷ];
-        if (!ok) {
-            continue;
+        Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
+        foreach (var (_, key) in p.keys[Ꮡcc]) {
+            var (vv, ok) = p.conns[key, ꟷ];
+            if (!ok) {
+                continue;
+            }
+            var newList = http2filterOutClientConn(vv, Ꮡcc);
+            if (builtin.len(newList) > 0){
+                p.conns[key] = newList;
+            } else {
+                delete(p.conns, key);
+            }
         }
-        var newList = http2filterOutClientConn(vv, Ꮡcc);
-        if (builtin.len(newList) > 0){
-            p.conns[key] = newList;
-        } else {
-            delete(p.conns, key);
-        }
+        delete(p.keys, Ꮡcc);
     }
-    delete(p.keys, Ꮡcc);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) => func((defer, recover) => {
+internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock);
-    // TODO: don't close a cc if it was just added to the pool
-    // milliseconds ago and has never been used. There's currently
-    // a small race window with the HTTP/1 Transport's integration
-    // where it can add an idle conn just before using it, and
-    // somebody else can concurrently call CloseIdleConns and
-    // break some caller's RoundTrip.
-    foreach (var (_, vv) in p.conns) {
-        foreach (var (_, cc) in vv) {
-            cc.closeIfIdle();
+        Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
+        // TODO: don't close a cc if it was just added to the pool
+        // milliseconds ago and has never been used. There's currently
+        // a small race window with the HTTP/1 Transport's integration
+        // where it can add an idle conn just before using it, and
+        // somebody else can concurrently call CloseIdleConns and
+        // break some caller's RoundTrip.
+        foreach (var (_, vv) in p.conns) {
+            foreach (var (_, cc) in vv) {
+                cc.closeIfIdle();
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<ж<http2ClientConn>> http2filterOutClientConn(slice<ж<http2ClientConn>> @in, ж<http2ClientConn> Ꮡexclude) {
     var @out = @in[..0];
@@ -1390,11 +1400,16 @@ internal static ref sync.Pool http2fhBytes => ref Ꮡhttp2fhBytes.Value;
 
 // ReadFrameHeader reads 9 bytes from r and returns a FrameHeader.
 // Most users should use Framer.ReadFrame instead.
-internal static (http2FrameHeader, error) http2ReadFrameHeader(io.Reader r) => func((defer, recover) => {
-    var bufp = Ꮡhttp2fhBytes.Get()._<ж<slice<byte>>>();
-    deferǃ(Ꮡhttp2fhBytes.Put, bufp.OrTypedNil(), defer);
-    return http2readFrameHeader(bufp.ValueSlot, r);
-});
+internal static (http2FrameHeader, error) http2ReadFrameHeader(io.Reader r) {
+    GoFrame ᒐ = default;
+    try {
+        var bufp = Ꮡhttp2fhBytes.Get()._<ж<slice<byte>>>();
+        defer(Ꮡhttp2fhBytes.Put, bufp.OrTypedNil(), ref ᒐ);
+        return http2readFrameHeader(bufp.ValueSlot, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (http2FrameHeader, error) http2readFrameHeader(slice<byte> buf, io.Reader r) {
     var (_, err) = io.ReadFull(r, buf[..(int)(http2frameHeaderLen)]);
@@ -2799,132 +2814,137 @@ internal static readonly @string illegalUseOfˢ = "illegal use of AllowIllegalRe
 // readMetaFrame returns 0 or more CONTINUATION frames from fr and
 // merge them into the provided hf and returns a MetaHeadersFrame
 // with the decoded hpack values.
-internal static (http2Frame, error) readMetaFrame(this ж<http2Framer> Ꮡfr, ж<http2HeadersFrame> Ꮡhf) => func<(http2Frame, error)>((defer, recover) => {
+internal static (http2Frame, error) readMetaFrame(this ж<http2Framer> Ꮡfr, ж<http2HeadersFrame> Ꮡhf) {
+    GoFrame ᒐ = default;
+    try {
     ref var fr = ref Ꮡfr.DerefOrNull();
 
-    if (fr.AllowIllegalReads) {
-        return (default!, errors.New(illegalUseOfˢ));
-    }
-    var mh = Ꮡ(new http2MetaHeadersFrame(
-        http2HeadersFrame: Ꮡhf
-    ));
-    uint32 remainSize = fr.maxHeaderListSize();
-    bool sawRegular = default!;
-    ref var invalid = ref heap<error>(out var Ꮡinvalid);     // pseudo header field errors
-    var hdec = fr.ReadMetaHeaders;
-    hdec.SetEmitEnabled(true);
-    hdec.SetMaxStringLength(fr.maxHeaderStringLen());
-    var hdecʗ1 = hdec;
-    var mhʗ1 = mh;
-    hdec.SetEmitFunc((hpack.HeaderField hfΔ1) => {
-        if (http2VerboseLogs && Ꮡfr.Value.logReads) {
-            Ꮡfr.Value.debugReadLoggerf("http2: decoded hpack field %+v"u8, hfΔ1);
+        if (fr.AllowIllegalReads) {
+            return (default!, errors.New(illegalUseOfˢ));
         }
-        if (!httpguts.ValidHeaderFieldValue(hfΔ1.Value)) {
-            // Don't include the value in the error, because it may be sensitive.
-            Ꮡinvalid.ValueSlot = ((http2headerFieldValueError)hfΔ1.Name);
-        }
-        var isPseudo = strings.HasPrefix(hfΔ1.Name, ":"u8);
-        if (isPseudo){
-            if (sawRegular) {
-                Ꮡinvalid.ValueSlot = http2errPseudoAfterRegular;
+        var mh = Ꮡ(new http2MetaHeadersFrame(
+            http2HeadersFrame: Ꮡhf
+        ));
+        uint32 remainSize = fr.maxHeaderListSize();
+        bool sawRegular = default!;
+        ref var invalid = ref heap<error>(out var Ꮡinvalid);     // pseudo header field errors
+        var hdec = fr.ReadMetaHeaders;
+        hdec.SetEmitEnabled(true);
+        hdec.SetMaxStringLength(fr.maxHeaderStringLen());
+        var hdecʗ1 = hdec;
+        var mhʗ1 = mh;
+        hdec.SetEmitFunc((hpack.HeaderField hfΔ1) => {
+            if (http2VerboseLogs && Ꮡfr.Value.logReads) {
+                Ꮡfr.Value.debugReadLoggerf("http2: decoded hpack field %+v"u8, hfΔ1);
             }
-        } else {
-            sawRegular = true;
-            if (!http2validWireHeaderFieldName(hfΔ1.Name)) {
-                Ꮡinvalid.ValueSlot = ((http2headerFieldNameError)hfΔ1.Name);
+            if (!httpguts.ValidHeaderFieldValue(hfΔ1.Value)) {
+                // Don't include the value in the error, because it may be sensitive.
+                Ꮡinvalid.ValueSlot = ((http2headerFieldValueError)hfΔ1.Name);
+            }
+            var isPseudo = strings.HasPrefix(hfΔ1.Name, ":"u8);
+            if (isPseudo){
+                if (sawRegular) {
+                    Ꮡinvalid.ValueSlot = http2errPseudoAfterRegular;
+                }
+            } else {
+                sawRegular = true;
+                if (!http2validWireHeaderFieldName(hfΔ1.Name)) {
+                    Ꮡinvalid.ValueSlot = ((http2headerFieldNameError)hfΔ1.Name);
+                }
+            }
+            if (Ꮡinvalid.ValueSlot != default!) {
+                hdecʗ1.SetEmitEnabled(false);
+                return;
+            }
+            var size = hfΔ1.Size();
+            if (size > remainSize) {
+                hdecʗ1.SetEmitEnabled(false);
+                mhʗ1.Value.Truncated = true;
+                remainSize = 0;
+                return;
+            }
+            remainSize -= size;
+            mhʗ1.Value.Fields = append((~mhʗ1).Fields, hfΔ1);
+        });
+        // Lose reference to MetaHeadersFrame:
+        var hdecʗ3 = hdec;
+        defer(hdecʗ3.SetEmitFunc, (hpack.HeaderField hfΔ2) => {
+        }, ref ᒐ);
+        http2headersOrContinuation hc = new http2HeadersFrameжhttp2headersOrContinuation(Ꮡhf);
+        while (ᐧ) {
+            var frag = hc.HeaderBlockFragment();
+            // Avoid parsing large amounts of headers that we will then discard.
+            // If the sender exceeds the max header list size by too much,
+            // skip parsing the fragment and close the connection.
+            //
+            // "Too much" is either any CONTINUATION frame after we've already
+            // exceeded the max header list size (in which case remainSize is 0),
+            // or a frame whose encoded size is more than twice the remaining
+            // header list bytes we're willing to accept.
+            if ((int64)builtin.len(frag) > (int64)(2 * remainSize)) {
+                if (http2VerboseLogs) {
+                    log.Printf("http2: header list too large"u8);
+                }
+                // It would be nice to send a RST_STREAM before sending the GOAWAY,
+                // but the structure of the server's frame writer makes this difficult.
+                return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeProtocol));
+            }
+            // Also close the connection after any CONTINUATION frame following an
+            // invalid header, since we stop tracking the size of the headers after
+            // an invalid one.
+            if (invalid != default!) {
+                if (http2VerboseLogs) {
+                    log.Printf("http2: invalid header: %v"u8, invalid);
+                }
+                // It would be nice to send a RST_STREAM before sending the GOAWAY,
+                // but the structure of the server's frame writer makes this difficult.
+                return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeProtocol));
+            }
+            {
+                var (_, err) = hdec.Write(frag); if (err != default!) {
+                    return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeCompression));
+                }
+            }
+            if (hc.HeadersEnded()) {
+                break;
+            }
+            {
+                var (f, err) = Ꮡfr.ReadFrame(); if (err != default!){
+                    return (default!, err);
+                } else {
+                    hc = new http2ContinuationFrameжhttp2headersOrContinuation(f._<ж<http2ContinuationFrame>>());
+                }
             }
         }
-        if (Ꮡinvalid.ValueSlot != default!) {
-            hdecʗ1.SetEmitEnabled(false);
-            return;
-        }
-        var size = hfΔ1.Size();
-        if (size > remainSize) {
-            hdecʗ1.SetEmitEnabled(false);
-            mhʗ1.Value.Truncated = true;
-            remainSize = 0;
-            return;
-        }
-        remainSize -= size;
-        mhʗ1.Value.Fields = append((~mhʗ1).Fields, hfΔ1);
-    });
-    // Lose reference to MetaHeadersFrame:
-    var hdecʗ3 = hdec;
-    deferǃ(hdecʗ3.SetEmitFunc, (hpack.HeaderField hfΔ2) => {
-    }, defer);
-    http2headersOrContinuation hc = new http2HeadersFrameжhttp2headersOrContinuation(Ꮡhf);
-    while (ᐧ) {
-        var frag = hc.HeaderBlockFragment();
-        // Avoid parsing large amounts of headers that we will then discard.
-        // If the sender exceeds the max header list size by too much,
-        // skip parsing the fragment and close the connection.
-        //
-        // "Too much" is either any CONTINUATION frame after we've already
-        // exceeded the max header list size (in which case remainSize is 0),
-        // or a frame whose encoded size is more than twice the remaining
-        // header list bytes we're willing to accept.
-        if ((int64)builtin.len(frag) > (int64)(2 * remainSize)) {
-            if (http2VerboseLogs) {
-                log.Printf("http2: header list too large"u8);
-            }
-            // It would be nice to send a RST_STREAM before sending the GOAWAY,
-            // but the structure of the server's frame writer makes this difficult.
-            return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeProtocol));
-        }
-        // Also close the connection after any CONTINUATION frame following an
-        // invalid header, since we stop tracking the size of the headers after
-        // an invalid one.
-        if (invalid != default!) {
-            if (http2VerboseLogs) {
-                log.Printf("http2: invalid header: %v"u8, invalid);
-            }
-            // It would be nice to send a RST_STREAM before sending the GOAWAY,
-            // but the structure of the server's frame writer makes this difficult.
-            return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeProtocol));
-        }
+        // guaranteed by checkFrameOrder
+        mh.Value.http2HeadersFrame.Value.headerFragBuf = default!;
+        (~mh).http2HeadersFrame.of(http2HeadersFrame.Ꮡhttp2FrameHeader).invalidate();
         {
-            var (_, err) = hdec.Write(frag); if (err != default!) {
+            var err = hdec.Close(); if (err != default!) {
                 return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeCompression));
             }
         }
-        if (hc.HeadersEnded()) {
-            break;
+        if (invalid != default!) {
+            fr.errDetail = invalid;
+            if (http2VerboseLogs) {
+                log.Printf("http2: invalid header: %v"u8, invalid);
+            }
+            return (default!, new http2StreamError((~mh).StreamID, http2ErrCodeProtocol, invalid));
         }
         {
-            var (f, err) = Ꮡfr.ReadFrame(); if (err != default!){
-                return (default!, err);
-            } else {
-                hc = new http2ContinuationFrameжhttp2headersOrContinuation(f._<ж<http2ContinuationFrame>>());
+            var err = mh.checkPseudos(); if (err != default!) {
+                fr.errDetail = err;
+                if (http2VerboseLogs) {
+                    log.Printf("http2: invalid pseudo headers: %v"u8, err);
+                }
+                return (default!, new http2StreamError((~mh).StreamID, http2ErrCodeProtocol, err));
             }
         }
+        return (new http2MetaHeadersFrameжhttp2Frame(mh), default!);
     }
-    // guaranteed by checkFrameOrder
-    mh.Value.http2HeadersFrame.Value.headerFragBuf = default!;
-    (~mh).http2HeadersFrame.of(http2HeadersFrame.Ꮡhttp2FrameHeader).invalidate();
-    {
-        var err = hdec.Close(); if (err != default!) {
-            return (new http2MetaHeadersFrameжhttp2Frame(mh), ((http2ConnectionError)(uint32)http2ErrCodeCompression));
-        }
-    }
-    if (invalid != default!) {
-        fr.errDetail = invalid;
-        if (http2VerboseLogs) {
-            log.Printf("http2: invalid header: %v"u8, invalid);
-        }
-        return (default!, new http2StreamError((~mh).StreamID, http2ErrCodeProtocol, invalid));
-    }
-    {
-        var err = mh.checkPseudos(); if (err != default!) {
-            fr.errDetail = err;
-            if (http2VerboseLogs) {
-                log.Printf("http2: invalid pseudo headers: %v"u8, err);
-            }
-            return (default!, new http2StreamError((~mh).StreamID, http2ErrCodeProtocol, err));
-        }
-    }
-    return (new http2MetaHeadersFrameжhttp2Frame(mh), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string settingsˢ = ", settings:"u8;
@@ -3016,24 +3036,29 @@ internal static void checkNotOn(this http2goroutineLock g) {
 
 internal static slice<byte> http2goroutineSpace = slice<byte>("goroutine "u8);
 
-internal static uint64 http2curGoroutineID() => func((defer, recover) => {
-    var bp = Ꮡhttp2littleBuf.Get()._<ж<slice<byte>>>();
-    deferǃ(Ꮡhttp2littleBuf.Put, bp.OrTypedNil(), defer);
-    var b = bp.ValueSlot;
-    b = b[..(int)(runtime.Stack(b, false))];
-    // Parse the 4707 out of "goroutine 4707 ["
-    b = bytes.TrimPrefix(b, http2goroutineSpace);
-    nint i = bytes.IndexByte(b, (rune)' ');
-    if (i < 0) {
-        throw panic(fmt.Sprintf("No space found in %q"u8, b));
+internal static uint64 http2curGoroutineID() {
+    GoFrame ᒐ = default;
+    try {
+        var bp = Ꮡhttp2littleBuf.Get()._<ж<slice<byte>>>();
+        defer(Ꮡhttp2littleBuf.Put, bp.OrTypedNil(), ref ᒐ);
+        var b = bp.ValueSlot;
+        b = b[..(int)(runtime.Stack(b, false))];
+        // Parse the 4707 out of "goroutine 4707 ["
+        b = bytes.TrimPrefix(b, http2goroutineSpace);
+        nint i = bytes.IndexByte(b, (rune)' ');
+        if (i < 0) {
+            throw panic(fmt.Sprintf("No space found in %q"u8, b));
+        }
+        b = b[..(int)(i)];
+        var (n, err) = http2parseUintBytes(b, 10, 64);
+        if (err != default!) {
+            throw panic(fmt.Sprintf("Failed to parse goroutine ID out of %q: %v"u8, b, err));
+        }
+        return n;
     }
-    b = b[..(int)(i)];
-    var (n, err) = http2parseUintBytes(b, 10, 64);
-    if (err != default!) {
-        throw panic(fmt.Sprintf("Failed to parse goroutine ID out of %q: %v"u8, b, err));
-    }
-    return n;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<sync.Pool> Ꮡhttp2littleBuf = new(new sync.Pool(
     New: () => {
@@ -3645,47 +3670,58 @@ internal static bool http2validPseudoPath(@string v) {
 
 // setBuffer initializes the pipe buffer.
 // It has no effect if the pipe is already closed.
-internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) => func((defer, recover) => {
+internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2pipe.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
-    if (p.err != default! || p.breakErr != default!) {
-        return;
+        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        if (p.err != default! || p.breakErr != default!) {
+            return;
+        }
+        p.b = b;
     }
-    p.b = b;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static nint Len(this ж<http2pipe> Ꮡp) => func((defer, recover) => {
+internal static nint Len(this ж<http2pipe> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2pipe.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
-    if (p.b == default!) {
-        return p.unread;
+        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        if (p.b == default!) {
+            return p.unread;
+        }
+        return p.b.Len();
     }
-    return p.b.Len();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Read waits until data is available and copies bytes
 // from the buffer into p.
 internal static (nint n, error err) Read(this ж<http2pipe> Ꮡp, slice<byte> d) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
             p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
         while (ᐧ) {
             if (p.breakErr != default!) {
-                (n, err) = (0, p.breakErr); return;
+                (n, err) = (0, p.breakErr); goto ᒐdone;
             }
             if (p.b != default! && p.b.Len() > 0) {
-                (n, err) = p.b.Read(d); return;
+                (n, err) = p.b.Read(d); goto ᒐdone;
             }
             if (p.err != default!) {
                 if (p.readFn != default!) {
@@ -3695,12 +3731,14 @@ internal static (nint n, error err) Read(this ж<http2pipe> Ꮡp, slice<byte> d)
                 }
                 // not sticky like p.err
                 p.b = default!;
-                (n, err) = (0, p.err); return;
+                (n, err) = (0, p.err); goto ᒐdone;
             }
             Ꮡp.of(http2pipe.Ꮡc).Wait();
         }
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 internal static error http2errClosedPipeWrite = errors.New("write on closed buffer"u8);
@@ -3711,27 +3749,30 @@ internal static error http2errUninitializedPipeWrite = errors.New("write on unin
 internal static (nint n, error err) Write(this ж<http2pipe> Ꮡp, slice<byte> d) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
             p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
-        defer(Ꮡp.of(http2pipe.Ꮡc).Signal);
+        defer(Ꮡp.of(http2pipe.Ꮡc).Signal, ref ᒐ);
         if (p.err != default! || p.breakErr != default!) {
-            (n, err) = (0, http2errClosedPipeWrite); return;
+            (n, err) = (0, http2errClosedPipeWrite); goto ᒐdone;
         }
         // pipe.setBuffer is never invoked, leaving the buffer uninitialized.
         // We shouldn't try to write to an uninitialized pipe,
         // but returning an error is better than panicking.
         if (p.b == default!) {
-            (n, err) = (0, http2errUninitializedPipeWrite); return;
+            (n, err) = (0, http2errUninitializedPipeWrite); goto ᒐdone;
         }
         (n, err) = p.b.Write(d);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 // CloseWithError causes the next Read (waking up a current blocked
@@ -3756,33 +3797,38 @@ internal static void closeWithErrorAndCode(this ж<http2pipe> Ꮡp, error err, A
     Ꮡp.closeWithError(Ꮡp.of(http2pipe.Ꮡerr), err, fn);
 }
 
-internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, error err, Action fn) => func((defer, recover) => {
+internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, error err, Action fn) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
     ref var dst = ref Ꮡdst.DerefOrNull();
 
-    if (err == default!) {
-        throw panic("err must be non-nil");
-    }
-    Ꮡp.of(http2pipe.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
-    if (p.c.L == default!) {
-        p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
-    }
-    defer(Ꮡp.of(http2pipe.Ꮡc).Signal);
-    if (dst != default!) {
-        // Already been done.
-        return;
-    }
-    p.readFn = fn;
-    if (Ꮡdst == Ꮡp.of(http2pipe.ᏑbreakErr)) {
-        if (p.b != default!) {
-            p.unread += p.b.Len();
+        if (err == default!) {
+            throw panic("err must be non-nil");
         }
-        p.b = default!;
+        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        if (p.c.L == default!) {
+            p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
+        }
+        defer(Ꮡp.of(http2pipe.Ꮡc).Signal, ref ᒐ);
+        if (dst != default!) {
+            // Already been done.
+            return;
+        }
+        p.readFn = fn;
+        if (Ꮡdst == Ꮡp.of(http2pipe.ᏑbreakErr)) {
+            if (p.b != default!) {
+                p.unread += p.b.Len();
+            }
+            p.b = default!;
+        }
+        dst = err;
+        p.closeDoneLocked();
     }
-    dst = err;
-    p.closeDoneLocked();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // requires p.mu be held.
 [GoRecv] internal static void closeDoneLocked(this ref http2pipe p) {
@@ -3803,33 +3849,43 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
 }
 
 // Err returns the error (if any) first set by BreakWithError or CloseWithError.
-internal static error Err(this ж<http2pipe> Ꮡp) => func((defer, recover) => {
+internal static error Err(this ж<http2pipe> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2pipe.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
-    if (p.breakErr != default!) {
-        return p.breakErr;
+        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        if (p.breakErr != default!) {
+            return p.breakErr;
+        }
+        return p.err;
     }
-    return p.err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Done returns a channel which is closed if and when this pipe is closed
 // with CloseWithError.
-internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) => func((defer, recover) => {
+internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2pipe.Ꮡmu).Lock();
-    defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
-    if (p.donec == default!) {
-        p.donec = new channel<EmptyStruct>(0);
-        if (p.err != default! || p.breakErr != default!) {
-            // Already hit an error.
-            p.closeDoneLocked();
+        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        if (p.donec == default!) {
+            p.donec = new channel<EmptyStruct>(0);
+            if (p.err != default! || p.breakErr != default!) {
+                // Already hit an error.
+                p.closeDoneLocked();
+            }
         }
+        return p.donec;
     }
-    return p.donec;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static time.Duration http2prefaceTimeout => /* 10 * time.Second */ 10000000000;
 internal static time.Duration http2firstSettingsTimeout => /* 2 * time.Second */ 2000000000; // should be in-flight with preface anyway
@@ -4232,141 +4288,146 @@ internal static void ServeConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2Se
 internal static readonly @string tlsVersionTooLowˢ = "TLS version too low"u8;
 internal static readonly @string invalidSettingsˢ = "invalid settings"u8;
 
-internal static void serveConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2ServeConnOpts> Ꮡopts, Action<ж<http2serverConn>> newf) => func((defer, recover) => {
+internal static void serveConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2ServeConnOpts> Ꮡopts, Action<ж<http2serverConn>> newf) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
     ref var opts = ref Ꮡopts.DerefOrNull();
 
-    var (baseCtx, cancel) = http2serverConnBaseContext(c, Ꮡopts);
-    var cancelʗ1 = cancel;
-    defer(cancelʗ1);
-    var sc = Ꮡ(new http2serverConn(
-        srv: Ꮡs,
-        hs: Ꮡopts.baseConfig(),
-        conn: c,
-        baseCtx: baseCtx,
-        remoteAddrStr: c.RemoteAddr().String(),
-        bw: http2newBufferedWriter(new net_ConnᴠWriter(c)),
-        handler: Ꮡopts.handler(),
-        streams: new map<uint32, ж<http2stream>>(),
-        readFrameCh: new channel<http2readFrameResult>(0),
-        wantWriteFrameCh: new channel<http2FrameWriteRequest>(8),
-        serveMsgCh: new channel<any>(8),
-        wroteFrameCh: new channel<http2frameWriteResult>(1), // buffered; one send in writeFrameAsync
+        var (baseCtx, cancel) = http2serverConnBaseContext(c, Ꮡopts);
+        var cancelʗ1 = cancel;
+        defer(cancelʗ1, ref ᒐ);
+        var sc = Ꮡ(new http2serverConn(
+            srv: Ꮡs,
+            hs: Ꮡopts.baseConfig(),
+            conn: c,
+            baseCtx: baseCtx,
+            remoteAddrStr: c.RemoteAddr().String(),
+            bw: http2newBufferedWriter(new net_ConnᴠWriter(c)),
+            handler: Ꮡopts.handler(),
+            streams: new map<uint32, ж<http2stream>>(),
+            readFrameCh: new channel<http2readFrameResult>(0),
+            wantWriteFrameCh: new channel<http2FrameWriteRequest>(8),
+            serveMsgCh: new channel<any>(8),
+            wroteFrameCh: new channel<http2frameWriteResult>(1), // buffered; one send in writeFrameAsync
 
-        bodyReadCh: new channel<http2bodyReadMsg>(0), // buffering doesn't matter either way
+            bodyReadCh: new channel<http2bodyReadMsg>(0), // buffering doesn't matter either way
 
-        doneServing: new channel<EmptyStruct>(0),
-        clientMaxStreams: math.MaxUint32, // Section 6.5.2: "Initially, there is no limit to this value"
+            doneServing: new channel<EmptyStruct>(0),
+            clientMaxStreams: math.MaxUint32, // Section 6.5.2: "Initially, there is no limit to this value"
 
-        advMaxStreams: s.maxConcurrentStreams(),
-        initialStreamSendWindowSize: http2initialWindowSize,
-        maxFrameSize: http2initialMaxFrameSize,
-        serveG: http2newGoroutineLock(),
-        pushEnabled: true,
-        sawClientPreface: opts.SawClientPreface
-    ));
-    if (newf != default!) {
-        newf(sc);
-    }
-    s.state.registerConn(sc);
-    deferǃ(Ꮡs.Value.state.unregisterConn, sc, defer);
-    // The net/http package sets the write deadline from the
-    // http.Server.WriteTimeout during the TLS handshake, but then
-    // passes the connection off to us with the deadline already set.
-    // Write deadlines are set per stream in serverConn.newStream.
-    // Disarm the net.Conn write deadline here.
-    if ((~(~sc).hs).WriteTimeout > 0) {
-        (~sc).conn.SetWriteDeadline(new time.Time(nil));
-    }
-    if (s.NewWriteScheduler != default!){
-        sc.Value.writeSched = s.NewWriteScheduler();
-    } else {
-        sc.Value.writeSched = http2newRoundRobinWriteScheduler();
-    }
-    // These start at the RFC-specified defaults. If there is a higher
-    // configured value for inflow, that will be updated when we send a
-    // WINDOW_UPDATE shortly after sending SETTINGS.
-    sc.of(http2serverConn.Ꮡflow).add(http2initialWindowSize);
-    sc.of(http2serverConn.Ꮡinflow).init(http2initialWindowSize);
-    sc.Value.hpackEncoder = hpack.NewEncoder(new bytes_BufferжWriter(sc.of(http2serverConn.ᏑheaderWriteBuf)));
-    (~sc).hpackEncoder.SetMaxDynamicTableSizeLimit(s.maxEncoderHeaderTableSize());
-    var fr = http2NewFramer(new http2bufferedWriterжWriter((~sc).bw), new net_ConnᴠReader(c));
-    if (s.CountError != default!) {
-        fr.Value.countError = s.CountError;
-    }
-    fr.Value.ReadMetaHeaders = hpack.NewDecoder(s.maxDecoderHeaderTableSize(), default!);
-    fr.Value.MaxHeaderListSize = sc.maxHeaderListSize();
-    fr.SetMaxReadFrameSize(s.maxReadFrameSize());
-    sc.Value.framer = fr;
-    {
-        var (tc, ok) = c._<http2connectionStater>(ᐧ); if (ok) {
-            sc.Value.tlsState = @new<tlsꓸConnectionState>();
-            (~sc).tlsState.Value = tc.ConnectionState();
-            // 9.2 Use of TLS Features
-            // An implementation of HTTP/2 over TLS MUST use TLS
-            // 1.2 or higher with the restrictions on feature set
-            // and cipher suite described in this section. Due to
-            // implementation limitations, it might not be
-            // possible to fail TLS negotiation. An endpoint MUST
-            // immediately terminate an HTTP/2 connection that
-            // does not meet the TLS requirements described in
-            // this section with a connection error (Section
-            // 5.4.1) of type INADEQUATE_SECURITY.
-            if ((~(~sc).tlsState).Version < tls.VersionTLS12) {
-                sc.rejectConn(http2ErrCodeInadequateSecurity, tlsVersionTooLowˢ);
-                return;
-            }
-            if ((~(~sc).tlsState).ServerName == ""u8) {
-            }
-            // Client must use SNI, but we don't enforce that anymore,
-            // since it was causing problems when connecting to bare IP
-            // addresses during development.
-            //
-            // TODO: optionally enforce? Or enforce at the time we receive
-            // a new request, and verify the ServerName matches the :authority?
-            // But that precludes proxy situations, perhaps.
-            //
-            // So for now, do nothing here again.
-            if (!s.PermitProhibitedCipherSuites && http2isBadCipher((~(~sc).tlsState).CipherSuite)) {
-                // "Endpoints MAY choose to generate a connection error
-                // (Section 5.4.1) of type INADEQUATE_SECURITY if one of
-                // the prohibited cipher suites are negotiated."
-                //
-                // We choose that. In my opinion, the spec is weak
-                // here. It also says both parties must support at least
-                // TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 so there's no
-                // excuses here. If we really must, we could allow an
-                // "AllowInsecureWeakCiphers" option on the server later.
-                // Let's see how it plays out first.
-                sc.rejectConn(http2ErrCodeInadequateSecurity, fmt.Sprintf("Prohibited TLS 1.2 Cipher Suite: %x"u8, (~(~sc).tlsState).CipherSuite));
-                return;
-            }
-        }
-    }
-    if (opts.Settings != default!) {
-        var frΔ1 = Ꮡ(new http2SettingsFrame(
-            http2FrameHeader: new http2FrameHeader(valid: true),
-            p: opts.Settings
+            advMaxStreams: s.maxConcurrentStreams(),
+            initialStreamSendWindowSize: http2initialWindowSize,
+            maxFrameSize: http2initialMaxFrameSize,
+            serveG: http2newGoroutineLock(),
+            pushEnabled: true,
+            sawClientPreface: opts.SawClientPreface
         ));
+        if (newf != default!) {
+            newf(sc);
+        }
+        s.state.registerConn(sc);
+        defer(Ꮡs.Value.state.unregisterConn, sc, ref ᒐ);
+        // The net/http package sets the write deadline from the
+        // http.Server.WriteTimeout during the TLS handshake, but then
+        // passes the connection off to us with the deadline already set.
+        // Write deadlines are set per stream in serverConn.newStream.
+        // Disarm the net.Conn write deadline here.
+        if ((~(~sc).hs).WriteTimeout > 0) {
+            (~sc).conn.SetWriteDeadline(new time.Time(nil));
+        }
+        if (s.NewWriteScheduler != default!){
+            sc.Value.writeSched = s.NewWriteScheduler();
+        } else {
+            sc.Value.writeSched = http2newRoundRobinWriteScheduler();
+        }
+        // These start at the RFC-specified defaults. If there is a higher
+        // configured value for inflow, that will be updated when we send a
+        // WINDOW_UPDATE shortly after sending SETTINGS.
+        sc.of(http2serverConn.Ꮡflow).add(http2initialWindowSize);
+        sc.of(http2serverConn.Ꮡinflow).init(http2initialWindowSize);
+        sc.Value.hpackEncoder = hpack.NewEncoder(new bytes_BufferжWriter(sc.of(http2serverConn.ᏑheaderWriteBuf)));
+        (~sc).hpackEncoder.SetMaxDynamicTableSizeLimit(s.maxEncoderHeaderTableSize());
+        var fr = http2NewFramer(new http2bufferedWriterжWriter((~sc).bw), new net_ConnᴠReader(c));
+        if (s.CountError != default!) {
+            fr.Value.countError = s.CountError;
+        }
+        fr.Value.ReadMetaHeaders = hpack.NewDecoder(s.maxDecoderHeaderTableSize(), default!);
+        fr.Value.MaxHeaderListSize = sc.maxHeaderListSize();
+        fr.SetMaxReadFrameSize(s.maxReadFrameSize());
+        sc.Value.framer = fr;
         {
-            var err = frΔ1.ForeachSetting(sc.processSetting); if (err != default!) {
-                sc.rejectConn(http2ErrCodeProtocol, invalidSettingsˢ);
-                return;
+            var (tc, ok) = c._<http2connectionStater>(ᐧ); if (ok) {
+                sc.Value.tlsState = @new<tlsꓸConnectionState>();
+                (~sc).tlsState.Value = tc.ConnectionState();
+                // 9.2 Use of TLS Features
+                // An implementation of HTTP/2 over TLS MUST use TLS
+                // 1.2 or higher with the restrictions on feature set
+                // and cipher suite described in this section. Due to
+                // implementation limitations, it might not be
+                // possible to fail TLS negotiation. An endpoint MUST
+                // immediately terminate an HTTP/2 connection that
+                // does not meet the TLS requirements described in
+                // this section with a connection error (Section
+                // 5.4.1) of type INADEQUATE_SECURITY.
+                if ((~(~sc).tlsState).Version < tls.VersionTLS12) {
+                    sc.rejectConn(http2ErrCodeInadequateSecurity, tlsVersionTooLowˢ);
+                    return;
+                }
+                if ((~(~sc).tlsState).ServerName == ""u8) {
+                }
+                // Client must use SNI, but we don't enforce that anymore,
+                // since it was causing problems when connecting to bare IP
+                // addresses during development.
+                //
+                // TODO: optionally enforce? Or enforce at the time we receive
+                // a new request, and verify the ServerName matches the :authority?
+                // But that precludes proxy situations, perhaps.
+                //
+                // So for now, do nothing here again.
+                if (!s.PermitProhibitedCipherSuites && http2isBadCipher((~(~sc).tlsState).CipherSuite)) {
+                    // "Endpoints MAY choose to generate a connection error
+                    // (Section 5.4.1) of type INADEQUATE_SECURITY if one of
+                    // the prohibited cipher suites are negotiated."
+                    //
+                    // We choose that. In my opinion, the spec is weak
+                    // here. It also says both parties must support at least
+                    // TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 so there's no
+                    // excuses here. If we really must, we could allow an
+                    // "AllowInsecureWeakCiphers" option on the server later.
+                    // Let's see how it plays out first.
+                    sc.rejectConn(http2ErrCodeInadequateSecurity, fmt.Sprintf("Prohibited TLS 1.2 Cipher Suite: %x"u8, (~(~sc).tlsState).CipherSuite));
+                    return;
+                }
             }
         }
-        opts.Settings = default!;
-    }
-    {
-        var hook = http2testHookGetServerConn; if (hook != default!) {
-            hook(sc);
+        if (opts.Settings != default!) {
+            var frΔ1 = Ꮡ(new http2SettingsFrame(
+                http2FrameHeader: new http2FrameHeader(valid: true),
+                p: opts.Settings
+            ));
+            {
+                var err = frΔ1.ForeachSetting(sc.processSetting); if (err != default!) {
+                    sc.rejectConn(http2ErrCodeProtocol, invalidSettingsˢ);
+                    return;
+                }
+            }
+            opts.Settings = default!;
         }
+        {
+            var hook = http2testHookGetServerConn; if (hook != default!) {
+                hook(sc);
+            }
+        }
+        if (opts.UpgradeRequest != nil) {
+            sc.upgradeRequest(opts.UpgradeRequest);
+            opts.UpgradeRequest = default!;
+        }
+        sc.serve();
     }
-    if (opts.UpgradeRequest != nil) {
-        sc.upgradeRequest(opts.UpgradeRequest);
-        opts.UpgradeRequest = default!;
-    }
-    sc.serve();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static (context.Context ctx, Action cancel) http2serverConnBaseContext(net.Conn c, ж<http2ServeConnOpts> Ꮡopts) {
     context.Context ctx = default!;
@@ -4748,190 +4809,200 @@ internal static void closeAllStreamsOnConnClose(this ж<http2serverConn> Ꮡsc) 
     }
 }
 
-internal static void notePanic(this ж<http2serverConn> Ꮡsc) => func((defer, recover) => {
-    // Note: this is for serverConn.serve panicking, not http.Handler code.
-    if (http2testHookOnPanicMu != nil) {
-        http2testHookOnPanicMu.Lock();
-        defer(http2testHookOnPanicMu.Unlock);
-    }
-    if (http2testHookOnPanic != default!) {
-        {
-            var e = recover(); if (e != default!) {
-                if (http2testHookOnPanic(Ꮡsc, e)) {
-                    throw panic(e);
+internal static void notePanic(this ж<http2serverConn> Ꮡsc) {
+    GoFrame ᒐ = default;
+    try {
+        // Note: this is for serverConn.serve panicking, not http.Handler code.
+        if (http2testHookOnPanicMu != nil) {
+            http2testHookOnPanicMu.Lock();
+            defer(http2testHookOnPanicMu.Unlock, ref ᒐ);
+        }
+        if (http2testHookOnPanic != default!) {
+            {
+                var e = recover(); if (e != default!) {
+                    if (http2testHookOnPanic(Ꮡsc, e)) {
+                        throw panic(e);
+                    }
                 }
             }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void serve(this ж<http2serverConn> Ꮡsc) => func((defer, recover) => {
+internal static void serve(this ж<http2serverConn> Ꮡsc) {
+    GoFrame ᒐ = default;
+    try {
     ref var sc = ref Ꮡsc.DerefOrNull();
 
-    sc.serveG.check();
-    defer(Ꮡsc.notePanic);
-    defer(() => Ꮡsc.Value.conn.Close());
-    defer(Ꮡsc.closeAllStreamsOnConnClose);
-    defer(Ꮡsc.stopShutdownTimer);
-    deferǃ(ᴛ1 => builtin.close(ᴛ1), Ꮡsc.Value.doneServing, defer);
-    // unblocks handlers trying to send
-    if (http2VerboseLogs) {
-        sc.vlogf("http2: server connection from %v on %p"u8, sc.conn.RemoteAddr(), sc.hs.OrTypedNil());
-    }
-    Ꮡsc.writeFrame(new http2FrameWriteRequest(
-        write: new http2writeSettings(new http2Setting[]{
-            new(http2SettingMaxFrameSize, sc.srv.maxReadFrameSize()),
-            new(http2SettingMaxConcurrentStreams, sc.advMaxStreams),
-            new(http2SettingMaxHeaderListSize, sc.maxHeaderListSize()),
-            new(http2SettingHeaderTableSize, sc.srv.maxDecoderHeaderTableSize()),
-            new(http2SettingInitialWindowSize, (uint32)sc.srv.initialStreamRecvWindowSize())
-        }.slice())
-    ));
-    sc.unackedSettings++;
-    // Each connection starts with initialWindowSize inflow tokens.
-    // If a higher value is configured, we add more tokens.
-    {
-        var diff = sc.srv.initialConnRecvWindowSize() - (int32)http2initialWindowSize; if (diff > 0) {
-            Ꮡsc.sendWindowUpdate(nil, (nint)diff);
+        sc.serveG.check();
+        defer(Ꮡsc.notePanic, ref ᒐ);
+        defer(() => Ꮡsc.Value.conn.Close(), ref ᒐ);
+        defer(Ꮡsc.closeAllStreamsOnConnClose, ref ᒐ);
+        defer(Ꮡsc.stopShutdownTimer, ref ᒐ);
+        defer(ᴛ1 => builtin.close(ᴛ1), Ꮡsc.Value.doneServing, ref ᒐ);
+        // unblocks handlers trying to send
+        if (http2VerboseLogs) {
+            sc.vlogf("http2: server connection from %v on %p"u8, sc.conn.RemoteAddr(), sc.hs.OrTypedNil());
         }
-    }
-    {
-        var err = Ꮡsc.readPreface(); if (err != default!) {
-            sc.condlogf(err, "http2: server: error reading preface from client %v: %v"u8, sc.conn.RemoteAddr(), err);
-            return;
+        Ꮡsc.writeFrame(new http2FrameWriteRequest(
+            write: new http2writeSettings(new http2Setting[]{
+                new(http2SettingMaxFrameSize, sc.srv.maxReadFrameSize()),
+                new(http2SettingMaxConcurrentStreams, sc.advMaxStreams),
+                new(http2SettingMaxHeaderListSize, sc.maxHeaderListSize()),
+                new(http2SettingHeaderTableSize, sc.srv.maxDecoderHeaderTableSize()),
+                new(http2SettingInitialWindowSize, (uint32)sc.srv.initialStreamRecvWindowSize())
+            }.slice())
+        ));
+        sc.unackedSettings++;
+        // Each connection starts with initialWindowSize inflow tokens.
+        // If a higher value is configured, we add more tokens.
+        {
+            var diff = sc.srv.initialConnRecvWindowSize() - (int32)http2initialWindowSize; if (diff > 0) {
+                Ꮡsc.sendWindowUpdate(nil, (nint)diff);
+            }
         }
-    }
-    // Now that we've got the preface, get us out of the
-    // "StateNew" state. We can't go directly to idle, though.
-    // Active means we read some data and anticipate a request. We'll
-    // do another Active when we get a HEADERS frame.
-    sc.setConnState(StateActive);
-    sc.setConnState(StateIdle);
-    if ((~sc.srv).IdleTimeout > 0) {
-        sc.idleTimer = sc.srv.afterFunc((~sc.srv).IdleTimeout, Ꮡsc.onIdleTimer);
-        defer(() => Ꮡsc.Value.idleTimer.Stop());
-    }
-    goǃ(Ꮡsc.readFrames);
-    // closed by defer sc.conn.Close above
-    var settingsTimer = sc.srv.afterFunc(http2firstSettingsTimeout, Ꮡsc.onSettingsTimer);
-    var settingsTimerʗ1 = settingsTimer;
-    defer(() => settingsTimerʗ1.Stop());
-    nint loopNum = 0;
-    while (ᐧ) {
-        loopNum++;
-        var selᴛ9 = sc.wantWriteFrameCh;
-        var selᴛ10 = sc.wroteFrameCh;
-        var selᴛ11 = sc.readFrameCh;
-        var selᴛ12 = sc.bodyReadCh;
-        var selᴛ13 = sc.serveMsgCh;
-        switch (select(ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ), ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ), ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
-        case 0 when selᴛ9.ꟷᐳ(out var wr): {
-            {
-                var (se, ok) = wr.write._<http2StreamError>(ᐧ); if (ok) {
-                    Ꮡsc.resetStream(se);
+        {
+            var err = Ꮡsc.readPreface(); if (err != default!) {
+                sc.condlogf(err, "http2: server: error reading preface from client %v: %v"u8, sc.conn.RemoteAddr(), err);
+                return;
+            }
+        }
+        // Now that we've got the preface, get us out of the
+        // "StateNew" state. We can't go directly to idle, though.
+        // Active means we read some data and anticipate a request. We'll
+        // do another Active when we get a HEADERS frame.
+        sc.setConnState(StateActive);
+        sc.setConnState(StateIdle);
+        if ((~sc.srv).IdleTimeout > 0) {
+            sc.idleTimer = sc.srv.afterFunc((~sc.srv).IdleTimeout, Ꮡsc.onIdleTimer);
+            defer(() => Ꮡsc.Value.idleTimer.Stop(), ref ᒐ);
+        }
+        goǃ(Ꮡsc.readFrames);
+        // closed by defer sc.conn.Close above
+        var settingsTimer = sc.srv.afterFunc(http2firstSettingsTimeout, Ꮡsc.onSettingsTimer);
+        var settingsTimerʗ1 = settingsTimer;
+        defer(() => settingsTimerʗ1.Stop(), ref ᒐ);
+        nint loopNum = 0;
+        while (ᐧ) {
+            loopNum++;
+            var selᴛ9 = sc.wantWriteFrameCh;
+            var selᴛ10 = sc.wroteFrameCh;
+            var selᴛ11 = sc.readFrameCh;
+            var selᴛ12 = sc.bodyReadCh;
+            var selᴛ13 = sc.serveMsgCh;
+            switch (select(ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ), ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ), ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
+            case 0 when selᴛ9.ꟷᐳ(out var wr): {
+                {
+                    var (se, ok) = wr.write._<http2StreamError>(ᐧ); if (ok) {
+                        Ꮡsc.resetStream(se);
+                        break;
+                    }
+                }
+                Ꮡsc.writeFrame(wr);
+                break;
+            }
+            case 1 when selᴛ10.ꟷᐳ(out var res): {
+                Ꮡsc.wroteFrame(res);
+                break;
+            }
+            case 2 when selᴛ11.ꟷᐳ(out var res): {
+                if (sc.writingFrameAsync) {
+                    // Process any written frames before reading new frames from the client since a
+                    // written frame could have triggered a new stream to be started.
+                    var selᴛ14 = sc.wroteFrameCh;
+                    switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+                    case 0 when selᴛ14.ꟷᐳ(out var wroteRes): {
+                        Ꮡsc.wroteFrame(wroteRes);
+                        break;
+                    }
+                    default: {
+                        break;
+                    }}
+                }
+                if (!Ꮡsc.processFrameFromReader(res)) {
+                    return;
+                }
+                res.readMore();
+                if (settingsTimer != default!) {
+                    settingsTimer.Stop();
+                    settingsTimer = default!;
+                }
+                break;
+            }
+            case 3 when selᴛ12.ꟷᐳ(out var m): {
+                Ꮡsc.noteBodyRead(m.st, m.n);
+                break;
+            }
+            case 4 when selᴛ13.ꟷᐳ(out var msg): {
+                switch (msg.type()) {
+                case Action<nint> v: {
+                    v(loopNum);
                     break;
                 }
-            }
-            Ꮡsc.writeFrame(wr);
-            break;
-        }
-        case 1 when selᴛ10.ꟷᐳ(out var res): {
-            Ꮡsc.wroteFrame(res);
-            break;
-        }
-        case 2 when selᴛ11.ꟷᐳ(out var res): {
-            if (sc.writingFrameAsync) {
-                // Process any written frames before reading new frames from the client since a
-                // written frame could have triggered a new stream to be started.
-                var selᴛ14 = sc.wroteFrameCh;
-                switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
-                case 0 when selᴛ14.ꟷᐳ(out var wroteRes): {
-                    Ꮡsc.wroteFrame(wroteRes);
+                case ж<http2serverMessage> v: {
+                    var exprᴛ1 = v;
+                    if (exprᴛ1 == http2settingsTimerMsg) {
+                        sc.logf("timeout waiting for SETTINGS frames from %v"u8, // for testing
+ sc.conn.RemoteAddr());
+                        return;
+                    }
+                    if (exprᴛ1 == http2idleTimerMsg) {
+                        sc.vlogf("connection is idle"u8);
+                        Ꮡsc.goAway(http2ErrCodeNo);
+                    }
+                    else if (exprᴛ1 == http2shutdownTimerMsg) {
+                        sc.vlogf("GOAWAY close timer fired; closing conn from %v"u8, sc.conn.RemoteAddr());
+                        return;
+                    }
+                    else if (exprᴛ1 == http2gracefulShutdownMsg) {
+                        Ꮡsc.startGracefulShutdownInternal();
+                    }
+                    else if (exprᴛ1 == http2handlerDoneMsg) {
+                        Ꮡsc.handlerDone();
+                    }
+                    else { /* default: */
+                        throw panic("unknown timer");
+                    }
+
+                    break;
+                }
+                case ж<http2startPushRequest> v: {
+                    Ꮡsc.startPush(v);
+                    break;
+                }
+                case Action<ж<http2serverConn>> v: {
+                    v(Ꮡsc);
                     break;
                 }
                 default: {
+                    var v = msg;
+                    throw panic(fmt.Sprintf("unexpected type %T"u8, v));
                     break;
                 }}
-            }
-            if (!Ꮡsc.processFrameFromReader(res)) {
-                return;
-            }
-            res.readMore();
-            if (settingsTimer != default!) {
-                settingsTimer.Stop();
-                settingsTimer = default!;
-            }
-            break;
-        }
-        case 3 when selᴛ12.ꟷᐳ(out var m): {
-            Ꮡsc.noteBodyRead(m.st, m.n);
-            break;
-        }
-        case 4 when selᴛ13.ꟷᐳ(out var msg): {
-            switch (msg.type()) {
-            case Action<nint> v: {
-                v(loopNum);
-                break;
-            }
-            case ж<http2serverMessage> v: {
-                var exprᴛ1 = v;
-                if (exprᴛ1 == http2settingsTimerMsg) {
-                    sc.logf("timeout waiting for SETTINGS frames from %v"u8, // for testing
- sc.conn.RemoteAddr());
-                    return;
-                }
-                if (exprᴛ1 == http2idleTimerMsg) {
-                    sc.vlogf("connection is idle"u8);
-                    Ꮡsc.goAway(http2ErrCodeNo);
-                }
-                else if (exprᴛ1 == http2shutdownTimerMsg) {
-                    sc.vlogf("GOAWAY close timer fired; closing conn from %v"u8, sc.conn.RemoteAddr());
-                    return;
-                }
-                else if (exprᴛ1 == http2gracefulShutdownMsg) {
-                    Ꮡsc.startGracefulShutdownInternal();
-                }
-                else if (exprᴛ1 == http2handlerDoneMsg) {
-                    Ꮡsc.handlerDone();
-                }
-                else { /* default: */
-                    throw panic("unknown timer");
-                }
-
-                break;
-            }
-            case ж<http2startPushRequest> v: {
-                Ꮡsc.startPush(v);
-                break;
-            }
-            case Action<ж<http2serverConn>> v: {
-                v(Ꮡsc);
-                break;
-            }
-            default: {
-                var v = msg;
-                throw panic(fmt.Sprintf("unexpected type %T"u8, v));
                 break;
             }}
-            break;
-        }}
-        // If the peer is causing us to generate a lot of control frames,
-        // but not reading them from us, assume they are trying to make us
-        // run out of memory.
-        if (sc.queuedControlFrames > sc.srv.maxQueuedControlFrames()) {
-            sc.vlogf("http2: too many control frames in send queue, closing connection"u8);
-            return;
-        }
-        // Start the shutdown timer after sending a GOAWAY. When sending GOAWAY
-        // with no error code (graceful shutdown), don't start the timer until
-        // all open streams have been completed.
-        var sentGoAway = sc.inGoAway && !sc.needToSendGoAway && !sc.writingFrame;
-        var gracefulShutdownComplete = sc.goAwayCode == http2ErrCodeNo && sc.curOpenStreams() == 0;
-        if (sentGoAway && sc.shutdownTimer == default! && (sc.goAwayCode != http2ErrCodeNo || gracefulShutdownComplete)) {
-            Ꮡsc.shutDownIn(http2goAwayTimeout);
+            // If the peer is causing us to generate a lot of control frames,
+            // but not reading them from us, assume they are trying to make us
+            // run out of memory.
+            if (sc.queuedControlFrames > sc.srv.maxQueuedControlFrames()) {
+                sc.vlogf("http2: too many control frames in send queue, closing connection"u8);
+                return;
+            }
+            // Start the shutdown timer after sending a GOAWAY. When sending GOAWAY
+            // with no error code (graceful shutdown), don't start the timer until
+            // all open streams have been completed.
+            var sentGoAway = sc.inGoAway && !sc.needToSendGoAway && !sc.writingFrame;
+            var gracefulShutdownComplete = sc.goAwayCode == http2ErrCodeNo && sc.curOpenStreams() == 0;
+            if (sentGoAway && sc.shutdownTimer == default! && (sc.goAwayCode != http2ErrCodeNo || gracefulShutdownComplete)) {
+                Ꮡsc.shutDownIn(http2goAwayTimeout);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType("num:nint")] partial struct http2serverMessage;
 
@@ -4977,48 +5048,53 @@ internal static error http2errPrefaceTimeout = errors.New("timeout waiting for c
 // readPreface reads the ClientPreface greeting from the peer or
 // returns errPrefaceTimeout on timeout, or an error if the greeting
 // is invalid.
-internal static error readPreface(this ж<http2serverConn> Ꮡsc) => func<error>((defer, recover) => {
+internal static error readPreface(this ж<http2serverConn> Ꮡsc) {
+    GoFrame ᒐ = default;
+    try {
     ref var sc = ref Ꮡsc.DerefOrNull();
 
-    if (sc.sawClientPreface) {
+        if (sc.sawClientPreface) {
+            return default!;
+        }
+        var errc = new channel<error>(1);
+        var errcʗ1 = errc;
+        goǃ(() => {
+            // Read the client preface
+            var buf = new slice<byte>(builtin.len(http2ClientPreface));
+            {
+                var (_, err) = io.ReadFull(new net_ConnᴠReader(Ꮡsc.Value.conn), buf); if (err != default!){
+                    errcʗ1.ᐸꟷ(err);
+                } else 
+                if (!bytes.Equal(buf, http2clientPreface)){
+                    errcʗ1.ᐸꟷ(fmt.Errorf("bogus greeting %q"u8, buf));
+                } else {
+                    errcʗ1.ᐸꟷ(default!);
+                }
+            }
+        });
+        var timer = sc.srv.newTimer(http2prefaceTimeout);
+        // TODO: configurable on *Server?
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        var selᴛ17 = timer.C();
+        var selᴛ18 = errc;
+        switch (select(ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+        case 0 when selᴛ17.ꟷᐳ(out _): {
+            return http2errPrefaceTimeout;
+        }
+        case 1 when selᴛ18.ꟷᐳ(out var err): {
+            if (err == default!) {
+                if (http2VerboseLogs) {
+                    sc.vlogf("http2: server: client %v said hello"u8, sc.conn.RemoteAddr());
+                }
+            }
+            return err;
+        }}
         return default!;
     }
-    var errc = new channel<error>(1);
-    var errcʗ1 = errc;
-    goǃ(() => {
-        // Read the client preface
-        var buf = new slice<byte>(builtin.len(http2ClientPreface));
-        {
-            var (_, err) = io.ReadFull(new net_ConnᴠReader(Ꮡsc.Value.conn), buf); if (err != default!){
-                errcʗ1.ᐸꟷ(err);
-            } else 
-            if (!bytes.Equal(buf, http2clientPreface)){
-                errcʗ1.ᐸꟷ(fmt.Errorf("bogus greeting %q"u8, buf));
-            } else {
-                errcʗ1.ᐸꟷ(default!);
-            }
-        }
-    });
-    var timer = sc.srv.newTimer(http2prefaceTimeout);
-    // TODO: configurable on *Server?
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    var selᴛ17 = timer.C();
-    var selᴛ18 = errc;
-    switch (select(ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
-    case 0 when selᴛ17.ꟷᐳ(out _): {
-        return http2errPrefaceTimeout;
-    }
-    case 1 when selᴛ18.ꟷᐳ(out var err): {
-        if (err == default!) {
-            if (http2VerboseLogs) {
-                sc.vlogf("http2: server: client %v said hello"u8, sc.conn.RemoteAddr());
-            }
-        }
-        return err;
-    }}
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<sync.Pool> Ꮡhttp2errChanPool = new(new sync.Pool(
     New: () => new channel<error>(1)
@@ -6507,37 +6583,42 @@ internal static void handlerDone(this ж<http2serverConn> Ꮡsc) {
 }
 
 // Run on its own goroutine.
-internal static void runHandler(this ж<http2serverConn> Ꮡsc, ж<http2responseWriter> Ꮡrw, ж<Request> Ꮡreq, Action<ResponseWriter, ж<Request>> handler) => func((defer, recover) => {
+internal static void runHandler(this ж<http2serverConn> Ꮡsc, ж<http2responseWriter> Ꮡrw, ж<Request> Ꮡreq, Action<ResponseWriter, ж<Request>> handler) {
+    GoFrame ᒐ = default;
+    try {
     ref var sc = ref Ꮡsc.DerefOrNull();
 
-    sc.srv.markNewGoroutine();
-    deferǃ(Ꮡsc.sendServeMsg, http2handlerDoneMsg.OrTypedNil(), defer);
-    var didPanic = true;
-    defer(() => {
-        (~(~Ꮡrw.Value.rws).stream).cancelCtx();
-        if (Ꮡreq.Value.MultipartForm != nil) {
-            Ꮡreq.Value.MultipartForm.RemoveAll();
-        }
-        if (didPanic) {
-            var e = recover();
-            Ꮡsc.Value.writeFrameFromHandler(new http2FrameWriteRequest(
-                write: new http2handlerPanicRST((~(~Ꮡrw.Value.rws).stream).id),
-                stream: (~Ꮡrw.Value.rws).stream
-            ));
-            // Same as net/http:
-            if (e != default! && !AreEqual(e, ErrAbortHandler)) {
-                const nint size = /* 64 << 10 */ 65536;
-                var buf = new slice<byte>(size);
-                buf = buf[..(int)(runtime.Stack(buf, false))];
-                Ꮡsc.Value.logf("http2: panic serving %v: %v\n%s"u8, Ꮡsc.Value.conn.RemoteAddr(), e, buf);
+        sc.srv.markNewGoroutine();
+        defer(Ꮡsc.sendServeMsg, http2handlerDoneMsg.OrTypedNil(), ref ᒐ);
+        var didPanic = true;
+        defer(() => {
+            (~(~Ꮡrw.Value.rws).stream).cancelCtx();
+            if (Ꮡreq.Value.MultipartForm != nil) {
+                Ꮡreq.Value.MultipartForm.RemoveAll();
             }
-            return;
-        }
-        Ꮡrw.Value.handlerDone();
-    });
-    handler(new http2responseWriterжResponseWriter(Ꮡrw), Ꮡreq);
-    didPanic = false;
-});
+            if (didPanic) {
+                var e = recover();
+                Ꮡsc.Value.writeFrameFromHandler(new http2FrameWriteRequest(
+                    write: new http2handlerPanicRST((~(~Ꮡrw.Value.rws).stream).id),
+                    stream: (~Ꮡrw.Value.rws).stream
+                ));
+                // Same as net/http:
+                if (e != default! && !AreEqual(e, ErrAbortHandler)) {
+                    const nint size = /* 64 << 10 */ 65536;
+                    var buf = new slice<byte>(size);
+                    buf = buf[..(int)(runtime.Stack(buf, false))];
+                    Ꮡsc.Value.logf("http2: panic serving %v: %v\n%s"u8, Ꮡsc.Value.conn.RemoteAddr(), e, buf);
+                }
+                return;
+            }
+            Ꮡrw.Value.handlerDone();
+        }, ref ᒐ);
+        handler(new http2responseWriterжResponseWriter(Ꮡrw), Ꮡreq);
+        didPanic = false;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string h1HttpError431H1PRequestˢ = "<h1>HTTP Error 431</h1><p>Request Header Field(s) Too Large</p>"u8;
@@ -7953,13 +8034,18 @@ internal static Func<nint, textproto.MIMEHeader, error> http2got1xxFuncForTests;
     return http2traceGot1xxResponseFunc(cs.trace);
 }
 
-internal static void abortStream(this ж<http2clientStream> Ꮡcs, error err) => func((defer, recover) => {
+internal static void abortStream(this ж<http2clientStream> Ꮡcs, error err) {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
 
-    cs.cc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcs.Value.cc.of(http2ClientConn.Ꮡmu).Unlock);
-    Ꮡcs.abortStreamLocked(err);
-});
+        cs.cc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcs.Value.cc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        Ꮡcs.abortStreamLocked(err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void abortStreamLocked(this ж<http2clientStream> Ꮡcs, error err) {
     ref var cs = ref Ꮡcs.DerefOrNull();
@@ -7978,18 +8064,23 @@ internal static void abortStreamLocked(this ж<http2clientStream> Ꮡcs, error e
     }
 }
 
-internal static void abortRequestBodyWrite(this ж<http2clientStream> Ꮡcs) => func((defer, recover) => {
+internal static void abortRequestBodyWrite(this ж<http2clientStream> Ꮡcs) {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
 
-    var cc = cs.cc;
-    cc.of(http2ClientConn.Ꮡmu).Lock();
-    var ccʗ1 = cc;
-    defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock);
-    if (cs.reqBody != default! && cs.reqBodyClosed == default!) {
-        Ꮡcs.closeReqBodyLocked();
-        (~cc).cond.Broadcast();
+        var cc = cs.cc;
+        cc.of(http2ClientConn.Ꮡmu).Lock();
+        var ccʗ1 = cc;
+        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        if (cs.reqBody != default! && cs.reqBodyClosed == default!) {
+            Ꮡcs.closeReqBodyLocked();
+            (~cc).cond.Broadcast();
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void closeReqBodyLocked(this ж<http2clientStream> Ꮡcs) {
     ref var cs = ref Ꮡcs.DerefOrNull();
@@ -8437,99 +8528,124 @@ internal static (ж<http2ClientConn>, error) newClientConn(this ж<http2Transpor
     return (cc, default!);
 }
 
-internal static void healthCheck(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static void healthCheck(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    var pingTimeout = cc.t.pingTimeout();
-    // We don't need to periodically ping in the health check, because the readLoop of ClientConn will
-    // trigger the healthCheck again if there is no frame received.
-    var (ctx, cancel) = cc.t.contextWithTimeout(context_package.Background(), pingTimeout);
-    var cancelʗ1 = cancel;
-    defer(() => cancelʗ1());
-    cc.vlogf("http2: Transport sending health check"u8);
-    var err = Ꮡcc.Ping(ctx);
-    if (err != default!){
-        cc.vlogf("http2: Transport health check failure: %v"u8, err);
-        Ꮡcc.closeForLostPing();
-    } else {
-        cc.vlogf("http2: Transport health check success"u8);
+        var pingTimeout = cc.t.pingTimeout();
+        // We don't need to periodically ping in the health check, because the readLoop of ClientConn will
+        // trigger the healthCheck again if there is no frame received.
+        var (ctx, cancel) = cc.t.contextWithTimeout(context_package.Background(), pingTimeout);
+        var cancelʗ1 = cancel;
+        defer(() => cancelʗ1(), ref ᒐ);
+        cc.vlogf("http2: Transport sending health check"u8);
+        var err = Ꮡcc.Ping(ctx);
+        if (err != default!){
+            cc.vlogf("http2: Transport health check failure: %v"u8, err);
+            Ꮡcc.closeForLostPing();
+        } else {
+            cc.vlogf("http2: Transport health check success"u8);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // SetDoNotReuse marks cc as not reusable for future HTTP requests.
-public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    cc.doNotReuse = true;
-});
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        cc.doNotReuse = true;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFrame> Ꮡf) => func((defer, recover) => {
+internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFrame> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
     ref var f = ref Ꮡf.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    var old = cc.goAway;
-    cc.goAway = Ꮡf;
-    // Merge the previous and current GoAway error frames.
-    if (cc.goAwayDebug == ""u8) {
-        cc.goAwayDebug = ((@string)f.DebugData());
-    }
-    if (old != nil && (~old).ErrCode != http2ErrCodeNo) {
-        cc.goAway.Value.ErrCode = old.Value.ErrCode;
-    }
-    var last = f.LastStreamID;
-    foreach (var (streamID, cs) in cc.streams) {
-        if (streamID <= last) {
-            // The server's GOAWAY indicates that it received this stream.
-            // It will either finish processing it, or close the connection
-            // without doing so. Either way, leave the stream alone for now.
-            continue;
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        var old = cc.goAway;
+        cc.goAway = Ꮡf;
+        // Merge the previous and current GoAway error frames.
+        if (cc.goAwayDebug == ""u8) {
+            cc.goAwayDebug = ((@string)f.DebugData());
         }
-        if (streamID == 1 && (~cc.goAway).ErrCode != http2ErrCodeNo){
-            // Don't retry the first stream on a connection if we get a non-NO error.
-            // If the server is sending an error on a new connection,
-            // retrying the request on a new one probably isn't going to work.
-            cs.abortStreamLocked(fmt.Errorf("http2: Transport received GOAWAY from server ErrCode:%v"u8, (~cc.goAway).ErrCode));
-        } else {
-            // Aborting the stream with errClentConnGotGoAway indicates that
-            // the request should be retried on a new connection.
-            cs.abortStreamLocked(http2errClientConnGotGoAway);
+        if (old != nil && (~old).ErrCode != http2ErrCodeNo) {
+            cc.goAway.Value.ErrCode = old.Value.ErrCode;
+        }
+        var last = f.LastStreamID;
+        foreach (var (streamID, cs) in cc.streams) {
+            if (streamID <= last) {
+                // The server's GOAWAY indicates that it received this stream.
+                // It will either finish processing it, or close the connection
+                // without doing so. Either way, leave the stream alone for now.
+                continue;
+            }
+            if (streamID == 1 && (~cc.goAway).ErrCode != http2ErrCodeNo){
+                // Don't retry the first stream on a connection if we get a non-NO error.
+                // If the server is sending an error on a new connection,
+                // retrying the request on a new one probably isn't going to work.
+                cs.abortStreamLocked(fmt.Errorf("http2: Transport received GOAWAY from server ErrCode:%v"u8, (~cc.goAway).ErrCode));
+            } else {
+                // Aborting the stream with errClentConnGotGoAway indicates that
+                // the request should be retried on a new connection.
+                cs.abortStreamLocked(http2errClientConnGotGoAway);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // CanTakeNewRequest reports whether the connection can take a new request,
 // meaning it has not been closed or received or sent a GOAWAY.
 //
 // If the caller is going to immediately make a new request on this
 // connection, use ReserveNewRequest instead.
-public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    return cc.canTakeNewRequestLocked();
-});
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        return cc.canTakeNewRequestLocked();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ReserveNewRequest is like CanTakeNewRequest but also reserves a
 // concurrent stream in cc. The reservation is decremented on the
 // next call to RoundTrip.
-public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) => func<bool>((defer, recover) => {
+public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    {
-        var st = cc.idleStateLocked(); if (!st.canTakeNewRequest) {
-            return false;
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        {
+            var st = cc.idleStateLocked(); if (!st.canTakeNewRequest) {
+                return false;
+            }
         }
+        cc.streamsReserved++;
+        return true;
     }
-    cc.streamsReserved++;
-    return true;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ClientConnState describes the state of a ClientConn.
 [GoType] public partial struct http2ClientConnState {
@@ -8559,27 +8675,32 @@ public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) => func<boo
 }
 
 // State returns a snapshot of cc's state.
-public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
-    var maxConcurrent = cc.maxConcurrentStreams;
-    if (!cc.seenSettings) {
-        maxConcurrent = 0;
+        Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+        var maxConcurrent = cc.maxConcurrentStreams;
+        if (!cc.seenSettings) {
+            maxConcurrent = 0;
+        }
+        Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        return new http2ClientConnState(
+            Closed: cc.closed,
+            Closing: cc.closing || cc.singleUse || cc.doNotReuse || cc.goAway != nil,
+            StreamsActive: builtin.len(cc.streams),
+            StreamsReserved: cc.streamsReserved,
+            StreamsPending: cc.pendingRequests,
+            LastIdle: cc.lastIdle,
+            MaxConcurrentStreams: maxConcurrent
+        );
     }
-    Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    return new http2ClientConnState(
-        Closed: cc.closed,
-        Closing: cc.closing || cc.singleUse || cc.doNotReuse || cc.goAway != nil,
-        StreamsActive: builtin.len(cc.streams),
-        StreamsReserved: cc.streamsReserved,
-        StreamsPending: cc.pendingRequests,
-        LastIdle: cc.lastIdle,
-        MaxConcurrentStreams: maxConcurrent
-    );
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // clientConnIdleState describes the suitability of a client
 // connection to initiate a new RoundTrip request.
@@ -8587,13 +8708,18 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) => func
     internal bool canTakeNewRequest;
 }
 
-internal static http2clientConnIdleState idleState(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static http2clientConnIdleState idleState(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    return cc.idleStateLocked();
-});
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        return cc.idleStateLocked();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static http2clientConnIdleState /*st*/ idleStateLocked(this ref http2ClientConn cc) {
     http2clientConnIdleState st = default!;
@@ -8640,14 +8766,19 @@ internal static void onIdleTimeout(this ж<http2ClientConn> Ꮡcc) {
     Ꮡcc.closeIfIdle();
 }
 
-internal static void closeConn(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static void closeConn(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    var t = time.AfterFunc(250 * time.Millisecond, Ꮡcc.forceCloseConn);
-    var tʗ1 = t;
-    defer(() => tʗ1.Stop());
-    cc.tconn.Close();
-});
+        var t = time.AfterFunc(250 * time.Millisecond, Ꮡcc.forceCloseConn);
+        var tʗ1 = t;
+        defer(() => tʗ1.Stop(), ref ᒐ);
+        cc.tconn.Close();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // A tls.Conn.Close can hang for a long time if the peer is unresponsive.
 // Try to shut it down more aggressively.
@@ -8681,13 +8812,18 @@ internal static void closeIfIdle(this ж<http2ClientConn> Ꮡcc) {
     Ꮡcc.closeConn();
 }
 
-internal static bool isDoNotReuseAndIdle(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static bool isDoNotReuseAndIdle(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    return cc.doNotReuse && builtin.len(cc.streams) == 0;
-});
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        return cc.doNotReuse && builtin.len(cc.streams) == 0;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static Action http2shutdownEnterWaitStateHook = () => {
 };
@@ -8706,22 +8842,27 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
     var cancelled = false;
     // guarded by cc.mu
     var doneʗ1 = done;
-    goǃ(() => func((defer, recover) => {
-        Ꮡcc.Value.t.markNewGoroutine();
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-        while (ᐧ) {
-            if (builtin.len(Ꮡcc.Value.streams) == 0 || Ꮡcc.Value.closed) {
-                Ꮡcc.Value.closed = true;
-                builtin.close(doneʗ1);
-                break;
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            Ꮡcc.Value.t.markNewGoroutine();
+            Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+            defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+            while (ᐧ) {
+                if (builtin.len(Ꮡcc.Value.streams) == 0 || Ꮡcc.Value.closed) {
+                    Ꮡcc.Value.closed = true;
+                    builtin.close(doneʗ1);
+                    break;
+                }
+                if (cancelled) {
+                    break;
+                }
+                Ꮡcc.Value.cond.Wait();
             }
-            if (cancelled) {
-                break;
-            }
-            Ꮡcc.Value.cond.Wait();
         }
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     http2shutdownEnterWaitStateHook();
     var selᴛ39 = done;
     var selᴛ40 = ctx.Done();
@@ -8741,34 +8882,39 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
 }
 
 // Free the goroutine above
-internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) => func<error>((defer, recover) => {
+internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    var closing = cc.closing;
-    cc.closing = true;
-    var maxStreamID = cc.nextStreamID;
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
-    if (closing) {
-        // GOAWAY sent already
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        var closing = cc.closing;
+        cc.closing = true;
+        var maxStreamID = cc.nextStreamID;
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        if (closing) {
+            // GOAWAY sent already
+            return default!;
+        }
+        Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
+        // Send a graceful shutdown frame to server
+        {
+            var err = cc.fr.WriteGoAway(maxStreamID, http2ErrCodeNo, default!); if (err != default!) {
+                return err;
+            }
+        }
+        {
+            var err = cc.bw.Flush(); if (err != default!) {
+                return err;
+            }
+        }
+        // Prevent new requests
         return default!;
     }
-    Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock);
-    // Send a graceful shutdown frame to server
-    {
-        var err = cc.fr.WriteGoAway(maxStreamID, http2ErrCodeNo, default!); if (err != default!) {
-            return err;
-        }
-    }
-    {
-        var err = cc.bw.Flush(); if (err != default!) {
-            return err;
-        }
-    }
-    // Prevent new requests
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // closes the client connection immediately. In-flight requests are interrupted.
 // err is sent to streams.
@@ -8895,13 +9041,18 @@ internal static int64 http2actualContentLength(ж<Request> Ꮡreq) {
     return -1;
 }
 
-internal static void decrStreamReservations(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static void decrStreamReservations(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock);
-    cc.decrStreamReservationsLocked();
-});
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        cc.decrStreamReservationsLocked();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void decrStreamReservationsLocked(this ref http2ClientConn cc) {
     if (cc.streamsReserved > 0) {
@@ -9079,7 +9230,8 @@ internal static void doRequest(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡ
 // If the returned error is StreamError, the error Code may be used in resetting the stream.
 internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡreq, Action<ж<http2clientStream>> streamf) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
     ref var req = ref Ꮡreq.DerefOrNull();
 
@@ -9087,7 +9239,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
         var ctx = cs.ctx;
         {
             var errΔ1 = http2checkConnHeaders(Ꮡreq); if (errΔ1 != default!) {
-                err = errΔ1; return;
+                err = errΔ1; goto ᒐdone;
             }
         }
         // Acquire the new-request lock by writing to reqHeaderMu.
@@ -9105,10 +9257,10 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             break;
         }
         case 1 when selᴛ50.ꟷᐳ(out _): {
-            err = http2errRequestCanceled; return;
+            err = http2errRequestCanceled; goto ᒐdone;
         }
         case 2 when selᴛ51.ꟷᐳ(out _): {
-            err = ctx.Err(); return;
+            err = ctx.Err(); goto ᒐdone;
         }}
         cc.of(http2ClientConn.Ꮡmu).Lock();
         if ((~cc).idleTimer != default!) {
@@ -9119,7 +9271,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             var errΔ2 = cc.awaitOpenSlotForStreamLocked(Ꮡcs); if (errΔ2 != default!) {
                 cc.of(http2ClientConn.Ꮡmu).Unlock();
                 ᐸꟷ((~cc).reqHeaderMu);
-                err = errΔ2; return;
+                err = errΔ2; goto ᒐdone;
             }
         }
         cc.addStreamLocked(Ꮡcs);
@@ -9146,7 +9298,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
         err = Ꮡcs.encodeAndWriteHeaders(Ꮡreq);
         ᐸꟷ((~cc).reqHeaderMu);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         var hasBody = cs.reqBodyContentLength != 0;
         if (!hasBody){
@@ -9184,14 +9336,14 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
                 timer.Stop();
                 if (err != default!) {
                     http2traceWroteRequest(cs.trace, err);
-                    return;
+                    goto ᒐdone;
                 }
             }
             {
                 err = Ꮡcs.writeRequestBody(Ꮡreq); if (err != default!){
                     if (!AreEqual(err, http2errStopReqBodyWrite)) {
                         http2traceWroteRequest(cs.trace, err);
-                        return;
+                        goto ᒐdone;
                     }
                 } else {
                     cs.sentEndStream = true;
@@ -9205,7 +9357,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             var d = cc.responseHeaderTimeout(); if (d != 0) {
                 var timer = (~cc).t.newTimer(d);
                 var timerʗ1 = timer;
-                defer(() => timerʗ1.Stop());
+                defer(() => timerʗ1.Stop(), ref ᒐ);
                 respHeaderTimer = timer.C();
                 respHeaderRecv = cs.respHeaderRecv;
             }
@@ -9222,10 +9374,10 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             var selᴛ62 = cs.reqCancel;
             switch (select(ᐸꟷ(selᴛ57, ꓸꓸꓸ), ᐸꟷ(selᴛ58, ꓸꓸꓸ), ᐸꟷ(selᴛ59, ꓸꓸꓸ), ᐸꟷ(selᴛ60, ꓸꓸꓸ), ᐸꟷ(selᴛ61, ꓸꓸꓸ), ᐸꟷ(selᴛ62, ꓸꓸꓸ))) {
             case 0 when selᴛ57.ꟷᐳ(out _): {
-                err = default!; return;
+                err = default!; goto ᒐdone;
             }
             case 1 when selᴛ58.ꟷᐳ(out _): {
-                err = http2errTimeout; return;
+                err = http2errTimeout; goto ᒐdone;
             }
             case 2 when selᴛ59.ꟷᐳ(out _): {
                 respHeaderRecv = default!;
@@ -9233,68 +9385,75 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
                 break;
             }
             case 3 when selᴛ60.ꟷᐳ(out _): {
-                err = cs.abortErr; return;
+                err = cs.abortErr; goto ᒐdone;
             }
             case 4 when selᴛ61.ꟷᐳ(out _): {
-                err = ctx.Err(); return;
+                err = ctx.Err(); goto ᒐdone;
             }
             case 5 when selᴛ62.ꟷᐳ(out _): {
-                err = http2errRequestCanceled; return;
+                err = http2errRequestCanceled; goto ᒐdone;
             }}
         }
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // keep waiting for END_STREAM
-internal static error encodeAndWriteHeaders(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡreq) => func((defer, recover) => {
+internal static error encodeAndWriteHeaders(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡreq) {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
 
-    var cc = cs.cc;
-    var ctx = cs.ctx;
-    cc.of(http2ClientConn.Ꮡwmu).Lock();
-    var ccʗ1 = cc;
-    defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock);
-    // If the request was canceled while waiting for cc.mu, just quit.
-    var selᴛ63 = cs.abort;
-    var selᴛ64 = ctx.Done();
-    var selᴛ65 = cs.reqCancel;
-    switch (trySelect(ᐸꟷ(selᴛ63, ꓸꓸꓸ), ᐸꟷ(selᴛ64, ꓸꓸꓸ), ᐸꟷ(selᴛ65, ꓸꓸꓸ))) {
-    case 0 when selᴛ63.ꟷᐳ(out _): {
-        return cs.abortErr;
-    }
-    case 1 when selᴛ64.ꟷᐳ(out _): {
-        return ctx.Err();
-    }
-    case 2 when selᴛ65.ꟷᐳ(out _): {
-        return http2errRequestCanceled;
-    }
-    default: {
-        break;
-    }}
-    // Encode headers.
-    //
-    // we send: HEADERS{1}, CONTINUATION{0,} + DATA{0,} (DATA is
-    // sent by writeRequestBody below, along with any Trailers,
-    // again in form HEADERS{1}, CONTINUATION{0,})
-    var (trailers, err) = http2commaSeparatedTrailers(Ꮡreq);
-    if (err != default!) {
+        var cc = cs.cc;
+        var ctx = cs.ctx;
+        cc.of(http2ClientConn.Ꮡwmu).Lock();
+        var ccʗ1 = cc;
+        defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
+        // If the request was canceled while waiting for cc.mu, just quit.
+        var selᴛ63 = cs.abort;
+        var selᴛ64 = ctx.Done();
+        var selᴛ65 = cs.reqCancel;
+        switch (trySelect(ᐸꟷ(selᴛ63, ꓸꓸꓸ), ᐸꟷ(selᴛ64, ꓸꓸꓸ), ᐸꟷ(selᴛ65, ꓸꓸꓸ))) {
+        case 0 when selᴛ63.ꟷᐳ(out _): {
+            return cs.abortErr;
+        }
+        case 1 when selᴛ64.ꟷᐳ(out _): {
+            return ctx.Err();
+        }
+        case 2 when selᴛ65.ꟷᐳ(out _): {
+            return http2errRequestCanceled;
+        }
+        default: {
+            break;
+        }}
+        // Encode headers.
+        //
+        // we send: HEADERS{1}, CONTINUATION{0,} + DATA{0,} (DATA is
+        // sent by writeRequestBody below, along with any Trailers,
+        // again in form HEADERS{1}, CONTINUATION{0,})
+        var (trailers, err) = http2commaSeparatedTrailers(Ꮡreq);
+        if (err != default!) {
+            return err;
+        }
+        var hasTrailers = trailers != ""u8;
+        var contentLen = http2actualContentLength(Ꮡreq);
+        var hasBody = contentLen != 0;
+        (var hdrs, err) = cc.encodeHeaders(Ꮡreq, cs.requestedGzip, trailers, contentLen);
+        if (err != default!) {
+            return err;
+        }
+        // Write the request.
+        var endStream = !hasBody && !hasTrailers;
+        cs.sentHeaders = true;
+        err = cc.writeHeaders(cs.ID, endStream, (nint)(~cc).maxFrameSize, hdrs);
+        http2traceWroteHeaders(cs.trace);
         return err;
     }
-    var hasTrailers = trailers != ""u8;
-    var contentLen = http2actualContentLength(Ꮡreq);
-    var hasBody = contentLen != 0;
-    (var hdrs, err) = cc.encodeHeaders(Ꮡreq, cs.requestedGzip, trailers, contentLen);
-    if (err != default!) {
-        return err;
-    }
-    // Write the request.
-    var endStream = !hasBody && !hasTrailers;
-    cs.sentHeaders = true;
-    err = cc.writeHeaders(cs.ID, endStream, (nint)(~cc).maxFrameSize, hdrs);
-    http2traceWroteHeaders(cs.trace);
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // cleanupWriteRequest performs post-request tasks.
 //
@@ -9491,7 +9650,8 @@ internal static nint http2bufPoolIndex(nint size) {
 
 internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡreq) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
     ref var req = ref Ꮡreq.DerefOrNull();
 
@@ -9511,11 +9671,11 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
         nint index = http2bufPoolIndex(scratchLen);
         {
             var (bp, ok) = Ꮡhttp2bufPools.at<sync.Pool>(index).Get()._<ж<slice<byte>>>(ᐧ); if (ok && builtin.len(bp.ValueSlot) >= scratchLen){
-                deferǃ(Ꮡhttp2bufPools.at<sync.Pool>(index).Put, bp.OrTypedNil(), defer);
+                defer(Ꮡhttp2bufPools.at<sync.Pool>(index).Put, bp.OrTypedNil(), ref ᒐ);
                 buf = bp.ValueSlot;
             } else {
                 buf = new slice<byte>(scratchLen);
-                deferǃ(Ꮡhttp2bufPools.at<sync.Pool>(index).Put, Ꮡbuf, defer);
+                defer(Ꮡhttp2bufPools.at<sync.Pool>(index).Put, Ꮡbuf, ref ᒐ);
             }
         }
         bool sawEOF = default!;
@@ -9538,7 +9698,7 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                 }
                 if (remainLen < 0) {
                     errΔ1 = http2errReqBodyTooLong;
-                    err = errΔ1; return;
+                    err = errΔ1; goto ᒐdone;
                 }
             }
             if (errΔ1 != default!) {
@@ -9547,7 +9707,7 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                 cc.of(http2ClientConn.Ꮡmu).Unlock();
                 switch (ᐧ) {
                 case {} when bodyClosed: {
-                    err = http2errStopReqBodyWrite; return;
+                    err = http2errStopReqBodyWrite; goto ᒐdone;
                 }
                 case {} when AreEqual(errΔ1, io.EOF): {
                     sawEOF = true;
@@ -9555,7 +9715,7 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                     break;
                 }
                 default: {
-                    err = errΔ1; return;
+                    err = errΔ1; goto ᒐdone;
                 }}
 
             }
@@ -9564,7 +9724,7 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                 int32 allowed = default!;
                 (allowed, errΔ1) = Ꮡcs.awaitFlowControl(builtin.len(remain));
                 if (errΔ1 != default!) {
-                    err = errΔ1; return;
+                    err = errΔ1; goto ᒐdone;
                 }
                 cc.of(http2ClientConn.Ꮡwmu).Lock();
                 var data = remain[..(int)(allowed)];
@@ -9583,14 +9743,14 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                 cc.of(http2ClientConn.Ꮡwmu).Unlock();
             }
             if (errΔ1 != default!) {
-                err = errΔ1; return;
+                err = errΔ1; goto ᒐdone;
             }
         }
         if (sentEnd) {
             // Already sent END_STREAM (which implies we have no
             // trailers) and flushed, because currently all
             // WriteData frames above get a flush. So we're done.
-            err = default!; return;
+            err = default!; goto ᒐdone;
         }
         // Since the RoundTrip contract permits the caller to "mutate or reuse"
         // a request after the Response's Body is closed, verify that this hasn't
@@ -9600,16 +9760,16 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
         err = cs.abortErr;
         cc.of(http2ClientConn.Ꮡmu).Unlock();
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         cc.of(http2ClientConn.Ꮡwmu).Lock();
         var ccʗ1 = cc;
-        defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock);
+        defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
         slice<byte> trls = default!;
         if (builtin.len(trailer) > 0) {
             (trls, err) = cc.encodeTrailers(trailer);
             if (err != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         // Two ways to send END_STREAM: either with trailers, or
@@ -9624,8 +9784,10 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
                 err = ferr;
             }
         }
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // awaitFlowControl waits for [1, min(maxBytes, cc.cs.maxFrameSize)] flow
@@ -9635,33 +9797,34 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
 internal static (int32 taken, error err) awaitFlowControl(this ж<http2clientStream> Ꮡcs, nint maxBytes) {
     int32 taken = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var cs = ref Ꮡcs.DerefOrNull();
 
         var cc = cs.cc;
         var ctx = cs.ctx;
         cc.of(http2ClientConn.Ꮡmu).Lock();
         var ccʗ1 = cc;
-        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock);
+        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         while (ᐧ) {
             if ((~cc).closed) {
-                (taken, err) = (0, http2errClientConnClosed); return;
+                (taken, err) = (0, http2errClientConnClosed); goto ᒐdone;
             }
             if (cs.reqBodyClosed != default!) {
-                (taken, err) = (0, http2errStopReqBodyWrite); return;
+                (taken, err) = (0, http2errStopReqBodyWrite); goto ᒐdone;
             }
             var selᴛ68 = cs.abort;
             var selᴛ69 = ctx.Done();
             var selᴛ70 = cs.reqCancel;
             switch (trySelect(ᐸꟷ(selᴛ68, ꓸꓸꓸ), ᐸꟷ(selᴛ69, ꓸꓸꓸ), ᐸꟷ(selᴛ70, ꓸꓸꓸ))) {
             case 0 when selᴛ68.ꟷᐳ(out _): {
-                (taken, err) = (0, cs.abortErr); return;
+                (taken, err) = (0, cs.abortErr); goto ᒐdone;
             }
             case 1 when selᴛ69.ꟷᐳ(out _): {
-                (taken, err) = (0, ctx.Err()); return;
+                (taken, err) = (0, ctx.Err()); goto ᒐdone;
             }
             case 2 when selᴛ70.ꟷᐳ(out _): {
-                (taken, err) = (0, http2errRequestCanceled); return;
+                (taken, err) = (0, http2errRequestCanceled); goto ᒐdone;
             }
             default: {
                 break;
@@ -9677,13 +9840,15 @@ internal static (int32 taken, error err) awaitFlowControl(this ж<http2clientStr
                         take = (int32)(~cc).maxFrameSize;
                     }
                     cs.flow.take(take);
-                    (taken, err) = (take, default!); return;
+                    (taken, err) = (take, default!); goto ᒐdone;
                 }
             }
             (~cc).cond.Wait();
         }
-    });
-    return (taken, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (taken, err);
 }
 
 internal static @string http2validateHeaders(ΔHeader hdrs) {
@@ -9969,33 +10134,38 @@ internal static void addStreamLocked(this ж<http2ClientConn> Ꮡcc, ж<http2cli
     }
 }
 
-internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) => func((defer, recover) => {
+internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
-    nint slen = builtin.len(cc.streams);
-    delete(cc.streams, id);
-    if (builtin.len(cc.streams) != slen - 1) {
-        throw panic("forgetting unknown stream id");
-    }
-    cc.lastActive = time.Now();
-    if (builtin.len(cc.streams) == 0 && cc.idleTimer != default!) {
-        cc.idleTimer.Reset(cc.idleTimeout);
-        cc.lastIdle = time.Now();
-    }
-    // Wake up writeRequestBody via clientStream.awaitFlowControl and
-    // wake up RoundTrip if there is a pending request.
-    cc.cond.Broadcast();
-    var closeOnIdle = cc.singleUse || cc.doNotReuse || cc.t.disableKeepAlives() || cc.goAway != nil;
-    if (closeOnIdle && cc.streamsReserved == 0 && builtin.len(cc.streams) == 0) {
-        if (http2VerboseLogs) {
-            cc.vlogf("http2: Transport closing idle conn %p (forSingleUse=%v, maxStream=%v)"u8, Ꮡcc.OrTypedNil(), cc.singleUse, cc.nextStreamID - 2);
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        nint slen = builtin.len(cc.streams);
+        delete(cc.streams, id);
+        if (builtin.len(cc.streams) != slen - 1) {
+            throw panic("forgetting unknown stream id");
         }
-        cc.closed = true;
-        defer(Ꮡcc.closeConn);
+        cc.lastActive = time.Now();
+        if (builtin.len(cc.streams) == 0 && cc.idleTimer != default!) {
+            cc.idleTimer.Reset(cc.idleTimeout);
+            cc.lastIdle = time.Now();
+        }
+        // Wake up writeRequestBody via clientStream.awaitFlowControl and
+        // wake up RoundTrip if there is a pending request.
+        cc.cond.Broadcast();
+        var closeOnIdle = cc.singleUse || cc.doNotReuse || cc.t.disableKeepAlives() || cc.goAway != nil;
+        if (closeOnIdle && cc.streamsReserved == 0 && builtin.len(cc.streams) == 0) {
+            if (http2VerboseLogs) {
+                cc.vlogf("http2: Transport closing idle conn %p (forSingleUse=%v, maxStream=%v)"u8, Ꮡcc.OrTypedNil(), cc.singleUse, cc.nextStreamID - 2);
+            }
+            cc.closed = true;
+            defer(Ꮡcc.closeConn, ref ᒐ);
+        }
+        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
     }
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // clientConnReadLoop is the state owned by the clientConn's frame-reading readLoop.
 [GoType] partial struct http2clientConnReadLoop {
@@ -10004,22 +10174,27 @@ internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) =
 }
 
 // readLoop runs in its own goroutine and reads and dispatches frames.
-internal static void readLoop(this ж<http2ClientConn> Ꮡcc) => func((defer, recover) => {
+internal static void readLoop(this ж<http2ClientConn> Ꮡcc) {
+    GoFrame ᒐ = default;
+    try {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    cc.t.markNewGoroutine();
-    var rl = Ꮡ(new http2clientConnReadLoop(cc: Ꮡcc));
-    var rlʗ1 = rl;
-    defer(rlʗ1.cleanup);
-    cc.readerErr = rl.run();
-    {
-        var (ce, ok) = cc.readerErr._<http2ConnectionError>(ᐧ); if (ok) {
-            Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
-            cc.fr.WriteGoAway(0, ((http2ErrCode)(uint32)ce), default!);
-            Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
+        cc.t.markNewGoroutine();
+        var rl = Ꮡ(new http2clientConnReadLoop(cc: Ꮡcc));
+        var rlʗ1 = rl;
+        defer(rlʗ1.cleanup, ref ᒐ);
+        cc.readerErr = rl.run();
+        {
+            var (ce, ok) = cc.readerErr._<http2ConnectionError>(ᐧ); if (ok) {
+                Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+                cc.fr.WriteGoAway(0, ((http2ErrCode)(uint32)ce), default!);
+                Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // GoAwayError is returned by the Transport when the server closes the
 // TCP connection after sending a GOAWAY frame.
@@ -10042,49 +10217,54 @@ internal static bool http2isEOFOrNetReadError(error err) {
     return ok && (~ne).Op == "read"u8;
 }
 
-internal static void cleanup(this ж<http2clientConnReadLoop> Ꮡrl) => func((defer, recover) => {
+internal static void cleanup(this ж<http2clientConnReadLoop> Ꮡrl) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
 
-    var cc = rl.cc;
-    (~cc).t.connPool().MarkDead(cc);
-    var ccʗ1 = cc;
-    defer(ccʗ1.closeConn);
-    deferǃ(ᴛ1 => builtin.close(ᴛ1), (~cc).readerDone, defer);
-    if ((~cc).idleTimer != default!) {
-        (~cc).idleTimer.Stop();
-    }
-    // Close any response bodies if the server closes prematurely.
-    // TODO: also do this if we've written the headers but not
-    // gotten a response yet.
-    var err = cc.Value.readerErr;
-    cc.of(http2ClientConn.Ꮡmu).Lock();
-    if ((~cc).goAway != nil && http2isEOFOrNetReadError(err)){
-        err = new http2GoAwayError(
-            LastStreamID: (~(~cc).goAway).LastStreamID,
-            ErrCode: (~(~cc).goAway).ErrCode,
-            DebugData: (~cc).goAwayDebug
-        );
-    } else 
-    if (AreEqual(err, io.EOF)) {
-        err = io.ErrUnexpectedEOF;
-    }
-    cc.Value.closed = true;
-    foreach (var (_, cs) in (~cc).streams) {
-        var selᴛ71 = (~cs).peerClosed;
-        switch (trySelect(ᐸꟷ(selᴛ71, ꓸꓸꓸ))) {
-        case 0 when selᴛ71.ꟷᐳ(out _): {
-            break;
+        var cc = rl.cc;
+        (~cc).t.connPool().MarkDead(cc);
+        var ccʗ1 = cc;
+        defer(ccʗ1.closeConn, ref ᒐ);
+        defer(ᴛ1 => builtin.close(ᴛ1), (~cc).readerDone, ref ᒐ);
+        if ((~cc).idleTimer != default!) {
+            (~cc).idleTimer.Stop();
         }
-        default: {
-            cs.abortStreamLocked(err);
-            break;
-        }}
+        // Close any response bodies if the server closes prematurely.
+        // TODO: also do this if we've written the headers but not
+        // gotten a response yet.
+        var err = cc.Value.readerErr;
+        cc.of(http2ClientConn.Ꮡmu).Lock();
+        if ((~cc).goAway != nil && http2isEOFOrNetReadError(err)){
+            err = new http2GoAwayError(
+                LastStreamID: (~(~cc).goAway).LastStreamID,
+                ErrCode: (~(~cc).goAway).ErrCode,
+                DebugData: (~cc).goAwayDebug
+            );
+        } else 
+        if (AreEqual(err, io.EOF)) {
+            err = io.ErrUnexpectedEOF;
+        }
+        cc.Value.closed = true;
+        foreach (var (_, cs) in (~cc).streams) {
+            var selᴛ71 = (~cs).peerClosed;
+            switch (trySelect(ᐸꟷ(selᴛ71, ꓸꓸꓸ))) {
+            case 0 when selᴛ71.ꟷᐳ(out _): {
+                break;
+            }
+            default: {
+                cs.abortStreamLocked(err);
+                break;
+            }}
+        }
+        // The server closed the stream before closing the conn,
+        // so no need to interrupt it.
+        (~cc).cond.Broadcast();
+        cc.of(http2ClientConn.Ꮡmu).Unlock();
     }
-    // The server closed the stream before closing the conn,
-    // so no need to interrupt it.
-    (~cc).cond.Broadcast();
-    cc.of(http2ClientConn.Ꮡmu).Unlock();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string readFrameEofˢ = "read_frame_eof"u8;
@@ -10466,11 +10646,12 @@ internal static readonly @string netHttpServerRepliedWithˢ = "net/http: server 
 internal static (nint n, error err) Read(this http2transportResponseBody b, slice<byte> p) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var cs = b.cs;
         var cc = cs.Value.cc;
         if ((~cs).readErr != default!) {
-            (n, err) = (0, (~cs).readErr); return;
+            (n, err) = (0, (~cs).readErr); goto ᒐdone;
         }
         (n, err) = b.cs.of(http2clientStream.ᏑbufPipe).Read(p);
         if ((~cs).bytesRemain != -1) {
@@ -10481,18 +10662,18 @@ internal static (nint n, error err) Read(this http2transportResponseBody b, slic
                     cs.abortStream(err);
                 }
                 cs.Value.readErr = err;
-                (n, err) = ((nint)(~cs).bytesRemain, err); return;
+                (n, err) = ((nint)(~cs).bytesRemain, err); goto ᒐdone;
             }
             cs.Value.bytesRemain -= (int64)n;
             if (AreEqual(err, io.EOF) && (~cs).bytesRemain > 0) {
                 err = io.ErrUnexpectedEOF;
                 cs.Value.readErr = err;
-                return;
+                goto ᒐdone;
             }
         }
         if (n == 0) {
             // No flow control tokens to send back.
-            return;
+            goto ᒐdone;
         }
         cc.of(http2ClientConn.Ꮡmu).Lock();
         var connAdd = cc.of(http2ClientConn.Ꮡinflow).add(n);
@@ -10505,7 +10686,7 @@ internal static (nint n, error err) Read(this http2transportResponseBody b, slic
         if (connAdd != 0 || streamAdd != 0) {
             cc.of(http2ClientConn.Ꮡwmu).Lock();
             var ccʗ1 = cc;
-            defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock);
+            defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
             if (connAdd != 0) {
                 (~cc).fr.WriteWindowUpdate(0, http2mustUint31(connAdd));
             }
@@ -10514,8 +10695,10 @@ internal static (nint n, error err) Read(this http2transportResponseBody b, slic
             }
             (~cc).bw.Flush();
         }
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 internal static error http2errClosedResponseBody = errors.New("http2: response body closed"u8);
@@ -10677,24 +10860,29 @@ internal static error processData(this ж<http2clientConnReadLoop> Ꮡrl, ж<htt
     return default!;
 }
 
-internal static void endStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2clientStream> Ꮡcs) => func((defer, recover) => {
+internal static void endStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2clientStream> Ꮡcs) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
     ref var cs = ref Ꮡcs.DerefOrNull();
 
-    // TODO: check that any declared content-length matches, like
-    // server.go's (*stream).endStream method.
-    if (!cs.readClosed) {
-        cs.readClosed = true;
-        // Close cs.bufPipe and cs.peerClosed with cc.mu held to avoid a
-        // race condition: The caller can read io.EOF from Response.Body
-        // and close the body before we close cs.peerClosed, causing
-        // cleanupWriteRequest to send a RST_STREAM.
-        rl.cc.of(http2ClientConn.Ꮡmu).Lock();
-        defer(Ꮡrl.Value.cc.of(http2ClientConn.Ꮡmu).Unlock);
-        Ꮡcs.of(http2clientStream.ᏑbufPipe).closeWithErrorAndCode(io.EOF, Ꮡcs.copyTrailers);
-        builtin.close(cs.peerClosed);
+        // TODO: check that any declared content-length matches, like
+        // server.go's (*stream).endStream method.
+        if (!cs.readClosed) {
+            cs.readClosed = true;
+            // Close cs.bufPipe and cs.peerClosed with cc.mu held to avoid a
+            // race condition: The caller can read io.EOF from Response.Body
+            // and close the body before we close cs.peerClosed, causing
+            // cleanupWriteRequest to send a RST_STREAM.
+            rl.cc.of(http2ClientConn.Ꮡmu).Lock();
+            defer(Ꮡrl.Value.cc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+            Ꮡcs.of(http2clientStream.ᏑbufPipe).closeWithErrorAndCode(io.EOF, Ꮡcs.copyTrailers);
+            builtin.close(cs.peerClosed);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void endStreamError(this ref http2clientConnReadLoop rl, ж<http2clientStream> Ꮡcs, error err) {
     ref var cs = ref Ꮡcs.DerefOrNull();
@@ -10703,17 +10891,22 @@ internal static void endStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2c
     Ꮡcs.abortStream(err);
 }
 
-internal static ж<http2clientStream> streamByID(this ж<http2clientConnReadLoop> Ꮡrl, uint32 id) => func<ж<http2clientStream>>((defer, recover) => {
+internal static ж<http2clientStream> streamByID(this ж<http2clientConnReadLoop> Ꮡrl, uint32 id) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
 
-    rl.cc.of(http2ClientConn.Ꮡmu).Lock();
-    defer(Ꮡrl.Value.cc.of(http2ClientConn.Ꮡmu).Unlock);
-    var cs = (~rl.cc).streams[id];
-    if (cs != nil && !(~cs).readAborted) {
-        return cs;
+        rl.cc.of(http2ClientConn.Ꮡmu).Lock();
+        defer(Ꮡrl.Value.cc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        var cs = (~rl.cc).streams[id];
+        if (cs != nil && !(~cs).readAborted) {
+            return cs;
+        }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void copyTrailers(this ref http2clientStream cs) {
     foreach (var (k, vv) in cs.trailer) {
@@ -10743,131 +10936,146 @@ internal static ж<http2clientStream> streamByID(this ж<http2clientConnReadLoop
     return default!;
 }
 
-internal static error processSettings(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) => func<error>((defer, recover) => {
+internal static error processSettings(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
     ref var f = ref Ꮡf.DerefOrNull();
 
-    var cc = rl.cc;
-    // Locking both mu and wmu here allows frame encoding to read settings with only wmu held.
-    // Acquiring wmu when f.IsAck() is unnecessary, but convenient and mostly harmless.
-    cc.of(http2ClientConn.Ꮡwmu).Lock();
-    var ccʗ1 = cc;
-    defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock);
-    {
-        var err = Ꮡrl.processSettingsNoWrite(Ꮡf); if (err != default!) {
+        var cc = rl.cc;
+        // Locking both mu and wmu here allows frame encoding to read settings with only wmu held.
+        // Acquiring wmu when f.IsAck() is unnecessary, but convenient and mostly harmless.
+        cc.of(http2ClientConn.Ꮡwmu).Lock();
+        var ccʗ1 = cc;
+        defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
+        {
+            var err = Ꮡrl.processSettingsNoWrite(Ꮡf); if (err != default!) {
+                return err;
+            }
+        }
+        if (!f.IsAck()) {
+            (~cc).fr.WriteSettingsAck();
+            (~cc).bw.Flush();
+        }
+        return default!;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
+internal static error processSettingsNoWrite(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
+    ref var rl = ref Ꮡrl.DerefOrNull();
+    ref var f = ref Ꮡf.DerefOrNull();
+
+        var cc = rl.cc;
+        cc.of(http2ClientConn.Ꮡmu).Lock();
+        var ccʗ1 = cc;
+        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        if (f.IsAck()) {
+            if ((~cc).wantSettingsAck) {
+                cc.Value.wantSettingsAck = false;
+                return default!;
+            }
+            return ((http2ConnectionError)(uint32)http2ErrCodeProtocol);
+        }
+        bool seenMaxConcurrentStreams = default!;
+        var ccʗ2 = cc;
+        var err = f.ForeachSetting(error (http2Setting s) => {
+            var exprᴛ1 = s.ID;
+            if (exprᴛ1 == http2SettingMaxFrameSize) {
+                ccʗ2.Value.maxFrameSize = s.Val;
+            }
+            else if (exprᴛ1 == http2SettingMaxConcurrentStreams) {
+                ccʗ2.Value.maxConcurrentStreams = s.Val;
+                seenMaxConcurrentStreams = true;
+            }
+            else if (exprᴛ1 == http2SettingMaxHeaderListSize) {
+                ccʗ2.Value.peerMaxHeaderListSize = (uint64)s.Val;
+            }
+            else if (exprᴛ1 == http2SettingInitialWindowSize) {
+                if (s.Val > math.MaxInt32) {
+                    // Values above the maximum flow-control
+                    // window size of 2^31-1 MUST be treated as a
+                    // connection error (Section 5.4.1) of type
+                    // FLOW_CONTROL_ERROR.
+                    return ((http2ConnectionError)(uint32)http2ErrCodeFlowControl);
+                }
+                var delta = (int32)s.Val - (int32)(~ccʗ2).initialWindowSize;
+                foreach (var (_, cs) in (~ccʗ2).streams) {
+                    // Adjust flow control of currently-open
+                    // frames by the difference of the old initial
+                    // window size and this one.
+                    cs.of(http2clientStream.Ꮡflow).add(delta);
+                }
+                (~ccʗ2).cond.Broadcast();
+                ccʗ2.Value.initialWindowSize = s.Val;
+            }
+            else if (exprᴛ1 == http2SettingHeaderTableSize) {
+                (~ccʗ2).henc.SetMaxDynamicTableSize(s.Val);
+                ccʗ2.Value.peerMaxHeaderTableSize = s.Val;
+            }
+            else { /* default: */
+                ccʗ2.vlogf("Unhandled Setting: %v"u8, s);
+            }
+
+            return default!;
+        });
+        if (err != default!) {
             return err;
         }
+        if (!(~cc).seenSettings) {
+            if (!seenMaxConcurrentStreams) {
+                // This was the servers initial SETTINGS frame and it
+                // didn't contain a MAX_CONCURRENT_STREAMS field so
+                // increase the number of concurrent streams this
+                // connection can establish to our default.
+                cc.Value.maxConcurrentStreams = http2defaultMaxConcurrentStreams;
+            }
+            cc.Value.seenSettings = true;
+        }
+        return default!;
     }
-    if (!f.IsAck()) {
-        (~cc).fr.WriteSettingsAck();
-        (~cc).bw.Flush();
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static error processSettingsNoWrite(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) => func<error>((defer, recover) => {
+internal static error processWindowUpdate(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2WindowUpdateFrame> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
     ref var f = ref Ꮡf.DerefOrNull();
 
-    var cc = rl.cc;
-    cc.of(http2ClientConn.Ꮡmu).Lock();
-    var ccʗ1 = cc;
-    defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock);
-    if (f.IsAck()) {
-        if ((~cc).wantSettingsAck) {
-            cc.Value.wantSettingsAck = false;
+        var cc = rl.cc;
+        var cs = Ꮡrl.streamByID(f.StreamID);
+        if (f.StreamID != 0 && cs == nil) {
             return default!;
         }
-        return ((http2ConnectionError)(uint32)http2ErrCodeProtocol);
-    }
-    bool seenMaxConcurrentStreams = default!;
-    var ccʗ2 = cc;
-    var err = f.ForeachSetting(error (http2Setting s) => {
-        var exprᴛ1 = s.ID;
-        if (exprᴛ1 == http2SettingMaxFrameSize) {
-            ccʗ2.Value.maxFrameSize = s.Val;
-        }
-        else if (exprᴛ1 == http2SettingMaxConcurrentStreams) {
-            ccʗ2.Value.maxConcurrentStreams = s.Val;
-            seenMaxConcurrentStreams = true;
-        }
-        else if (exprᴛ1 == http2SettingMaxHeaderListSize) {
-            ccʗ2.Value.peerMaxHeaderListSize = (uint64)s.Val;
-        }
-        else if (exprᴛ1 == http2SettingInitialWindowSize) {
-            if (s.Val > math.MaxInt32) {
-                // Values above the maximum flow-control
-                // window size of 2^31-1 MUST be treated as a
-                // connection error (Section 5.4.1) of type
-                // FLOW_CONTROL_ERROR.
-                return ((http2ConnectionError)(uint32)http2ErrCodeFlowControl);
-            }
-            var delta = (int32)s.Val - (int32)(~ccʗ2).initialWindowSize;
-            foreach (var (_, cs) in (~ccʗ2).streams) {
-                // Adjust flow control of currently-open
-                // frames by the difference of the old initial
-                // window size and this one.
-                cs.of(http2clientStream.Ꮡflow).add(delta);
-            }
-            (~ccʗ2).cond.Broadcast();
-            ccʗ2.Value.initialWindowSize = s.Val;
-        }
-        else if (exprᴛ1 == http2SettingHeaderTableSize) {
-            (~ccʗ2).henc.SetMaxDynamicTableSize(s.Val);
-            ccʗ2.Value.peerMaxHeaderTableSize = s.Val;
-        }
-        else { /* default: */
-            ccʗ2.vlogf("Unhandled Setting: %v"u8, s);
-        }
-
-        return default!;
-    });
-    if (err != default!) {
-        return err;
-    }
-    if (!(~cc).seenSettings) {
-        if (!seenMaxConcurrentStreams) {
-            // This was the servers initial SETTINGS frame and it
-            // didn't contain a MAX_CONCURRENT_STREAMS field so
-            // increase the number of concurrent streams this
-            // connection can establish to our default.
-            cc.Value.maxConcurrentStreams = http2defaultMaxConcurrentStreams;
-        }
-        cc.Value.seenSettings = true;
-    }
-    return default!;
-});
-
-internal static error processWindowUpdate(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2WindowUpdateFrame> Ꮡf) => func<error>((defer, recover) => {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
-
-    var cc = rl.cc;
-    var cs = Ꮡrl.streamByID(f.StreamID);
-    if (f.StreamID != 0 && cs == nil) {
-        return default!;
-    }
-    cc.of(http2ClientConn.Ꮡmu).Lock();
-    var ccʗ1 = cc;
-    defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock);
-    var fl = cc.of(http2ClientConn.Ꮡflow);
-    if (cs != nil) {
-        fl = cs.of(http2clientStream.Ꮡflow);
-    }
-    if (!fl.add((int32)f.Increment)) {
-        // For stream, the sender sends RST_STREAM with an error code of FLOW_CONTROL_ERROR
+        cc.of(http2ClientConn.Ꮡmu).Lock();
+        var ccʗ1 = cc;
+        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        var fl = cc.of(http2ClientConn.Ꮡflow);
         if (cs != nil) {
-            rl.endStreamError(cs, new http2StreamError(
-                StreamID: f.StreamID,
-                Code: http2ErrCodeFlowControl
-            ));
-            return default!;
+            fl = cs.of(http2clientStream.Ꮡflow);
         }
-        return ((http2ConnectionError)(uint32)http2ErrCodeFlowControl);
+        if (!fl.add((int32)f.Increment)) {
+            // For stream, the sender sends RST_STREAM with an error code of FLOW_CONTROL_ERROR
+            if (cs != nil) {
+                rl.endStreamError(cs, new http2StreamError(
+                    StreamID: f.StreamID,
+                    Code: http2ErrCodeFlowControl
+                ));
+                return default!;
+            }
+            return ((http2ConnectionError)(uint32)http2ErrCodeFlowControl);
+        }
+        (~cc).cond.Broadcast();
+        return default!;
     }
-    (~cc).cond.Broadcast();
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static error processResetStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2RSTStreamFrame> Ꮡf) {
     ref var rl = ref Ꮡrl.DerefOrNull();
@@ -10921,23 +11129,28 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
     var errc = new channel<EmptyStruct>(0);
     var errcʗ1 = errc;
     var pʗ1 = p;
-    goǃ(() => func((defer, recover) => {
-        Ꮡcc.Value.t.markNewGoroutine();
-        Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock);
-        {
-            ᏑpingError.ValueSlot = Ꮡcc.Value.fr.WritePing(false, pʗ1); if (ᏑpingError.ValueSlot != default!) {
-                builtin.close(errcʗ1);
-                return;
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            Ꮡcc.Value.t.markNewGoroutine();
+            Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+            defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
+            {
+                ᏑpingError.ValueSlot = Ꮡcc.Value.fr.WritePing(false, pʗ1); if (ᏑpingError.ValueSlot != default!) {
+                    builtin.close(errcʗ1);
+                    return;
+                }
+            }
+            {
+                ᏑpingError.ValueSlot = Ꮡcc.Value.bw.Flush(); if (ᏑpingError.ValueSlot != default!) {
+                    builtin.close(errcʗ1);
+                    return;
+                }
             }
         }
-        {
-            ᏑpingError.ValueSlot = Ꮡcc.Value.bw.Flush(); if (ᏑpingError.ValueSlot != default!) {
-                builtin.close(errcʗ1);
-                return;
-            }
-        }
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     var selᴛ76 = c;
     var selᴛ77 = errc;
     var selᴛ78 = ctx.Done();
@@ -10959,35 +11172,40 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
 }
 
 // connection closed
-internal static error processPing(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2PingFrame> Ꮡf) => func<error>((defer, recover) => {
+internal static error processPing(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2PingFrame> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
     ref var rl = ref Ꮡrl.DerefOrNull();
     ref var f = ref Ꮡf.DerefOrNull();
 
-    if (f.IsAck()) {
-        var ccΔ1 = rl.cc;
-        ccΔ1.of(http2ClientConn.Ꮡmu).Lock();
-        var ccʗ1 = ccΔ1;
-        defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock);
-        // If ack, notify listener if any
+        if (f.IsAck()) {
+            var ccΔ1 = rl.cc;
+            ccΔ1.of(http2ClientConn.Ꮡmu).Lock();
+            var ccʗ1 = ccΔ1;
+            defer(ccʗ1.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+            // If ack, notify listener if any
+            {
+                var (c, ok) = (~ccΔ1).pings[f.Data, ꟷ]; if (ok) {
+                    builtin.close(c);
+                    delete((~ccΔ1).pings, f.Data);
+                }
+            }
+            return default!;
+        }
+        var cc = rl.cc;
+        cc.of(http2ClientConn.Ꮡwmu).Lock();
+        var ccʗ2 = cc;
+        defer(ccʗ2.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
         {
-            var (c, ok) = (~ccΔ1).pings[f.Data, ꟷ]; if (ok) {
-                builtin.close(c);
-                delete((~ccΔ1).pings, f.Data);
+            var err = (~cc).fr.WritePing(true, f.Data); if (err != default!) {
+                return err;
             }
         }
-        return default!;
+        return (~cc).bw.Flush();
     }
-    var cc = rl.cc;
-    cc.of(http2ClientConn.Ꮡwmu).Lock();
-    var ccʗ2 = cc;
-    defer(ccʗ2.of(http2ClientConn.Ꮡwmu).Unlock);
-    {
-        var err = (~cc).fr.WritePing(true, f.Data); if (err != default!) {
-            return err;
-        }
-    }
-    return (~cc).bw.Flush();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static error processPushPromise(this ref http2clientConnReadLoop rl, ж<http2PushPromiseFrame> Ꮡf) {
     // We told the peer we don't want them.
@@ -11143,17 +11361,20 @@ internal static bool http2isConnectionCloseRequest(ж<Request> Ꮡreq) {
 // converting panics into errors.
 internal static error /*err*/ http2registerHTTPSProtocol(ж<Transport> Ꮡt, http2noDialH2RoundTripper rt) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var e = recover(); if (e != default!) {
                     err = fmt.Errorf("%v"u8, e);
                 }
             }
-        });
+        }, ref ᒐ);
         Ꮡt.RegisterProtocol(httpsˢ, rt);
         err = default!;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return err;
 }
 
@@ -11629,44 +11850,49 @@ internal static error writeFrame(this http2writeWindowUpdate wu, http2writeConte
 
 // encodeHeaders encodes an http.Header. If keys is not nil, then (k, h[k])
 // is encoded only if k is in keys.
-internal static void http2encodeHeaders(ж<hpack.Encoder> Ꮡenc, ΔHeader h, slice<@string> keys) => func((defer, recover) => {
-    if (keys == default!) {
-        var sorter = Ꮡhttp2sorterPool.Get()._<ж<http2sorter>>();
-        // Using defer here, since the returned keys from the
-        // sorter.Keys method is only valid until the sorter
-        // is returned:
-        deferǃ(Ꮡhttp2sorterPool.Put, sorter.OrTypedNil(), defer);
-        keys = sorter.Keys(h);
-    }
-    foreach (var (_, k) in keys) {
-        var vv = h[k];
-        var (kΔ1, ascii) = http2lowerHeader(k);
-        if (!ascii) {
-            // Skip writing invalid headers. Per RFC 7540, Section 8.1.2, header
-            // field names have to be ASCII characters (just as in HTTP/1.x).
-            continue;
+internal static void http2encodeHeaders(ж<hpack.Encoder> Ꮡenc, ΔHeader h, slice<@string> keys) {
+    GoFrame ᒐ = default;
+    try {
+        if (keys == default!) {
+            var sorter = Ꮡhttp2sorterPool.Get()._<ж<http2sorter>>();
+            // Using defer here, since the returned keys from the
+            // sorter.Keys method is only valid until the sorter
+            // is returned:
+            defer(Ꮡhttp2sorterPool.Put, sorter.OrTypedNil(), ref ᒐ);
+            keys = sorter.Keys(h);
         }
-        if (!http2validWireHeaderFieldName(kΔ1)) {
-            // Skip it as backup paranoia. Per
-            // golang.org/issue/14048, these should
-            // already be rejected at a higher level.
-            continue;
-        }
-        var isTE = kΔ1 == "transfer-encoding"u8;
-        foreach (var (_, v) in vv) {
-            if (!httpguts.ValidHeaderFieldValue(v)) {
-                // TODO: return an error? golang.org/issue/14048
-                // For now just omit it.
+        foreach (var (_, k) in keys) {
+            var vv = h[k];
+            var (kΔ1, ascii) = http2lowerHeader(k);
+            if (!ascii) {
+                // Skip writing invalid headers. Per RFC 7540, Section 8.1.2, header
+                // field names have to be ASCII characters (just as in HTTP/1.x).
                 continue;
             }
-            // TODO: more of "8.1.2.2 Connection-Specific Header Fields"
-            if (isTE && v != "trailers"u8) {
+            if (!http2validWireHeaderFieldName(kΔ1)) {
+                // Skip it as backup paranoia. Per
+                // golang.org/issue/14048, these should
+                // already be rejected at a higher level.
                 continue;
             }
-            http2encKV(Ꮡenc, kΔ1, v);
+            var isTE = kΔ1 == "transfer-encoding"u8;
+            foreach (var (_, v) in vv) {
+                if (!httpguts.ValidHeaderFieldValue(v)) {
+                    // TODO: return an error? golang.org/issue/14048
+                    // For now just omit it.
+                    continue;
+                }
+                // TODO: more of "8.1.2.2 Connection-Specific Header Fields"
+                if (isTE && v != "trailers"u8) {
+                    continue;
+                }
+                http2encKV(Ꮡenc, kΔ1, v);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // WriteScheduler is the interface implemented by HTTP/2 write schedulers.
 // Methods are never called concurrently.

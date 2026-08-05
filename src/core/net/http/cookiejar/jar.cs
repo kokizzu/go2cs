@@ -165,23 +165,24 @@ public static slice<ж<httpꓸCookie>> /*cookies*/ Cookies(this ж<Jar> Ꮡj, ж
 // cookies is like Cookies but takes the current time as a parameter.
 internal static slice<ж<httpꓸCookie>> /*cookies*/ cookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, time.Time now) {
     slice<ж<httpꓸCookie>> cookies = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var j = ref Ꮡj.DerefOrNull();
     ref var u = ref Ꮡu.DerefOrNull();
 
         if (u.Scheme != "http"u8 && u.Scheme != "https"u8) {
-            return;
+            goto ᒐdone;
         }
         var (host, err) = canonicalHost(u.Host);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         @string key = jarKey(host, j.psList);
         Ꮡj.of(Jar.Ꮡmu).Lock();
-        defer(Ꮡj.of(Jar.Ꮡmu).Unlock);
+        defer(Ꮡj.of(Jar.Ꮡmu).Unlock, ref ᒐ);
         var submap = j.entries[key];
         if (submap == default!) {
-            return;
+            goto ᒐdone;
         }
         var https = u.Scheme == "https"u8;
         @string path = u.Path;
@@ -231,8 +232,10 @@ internal static slice<ж<httpꓸCookie>> /*cookies*/ cookies(this ж<Jar> Ꮡj, 
         foreach (var (_, e) in selected) {
             cookies = append(cookies, Ꮡ(new httpꓸCookie(Name: e.Name, Value: e.Value, Quoted: e.Quoted)));
         }
-    });
-    return cookies;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return cookies;
 }
 
 // SetCookies implements the SetCookies method of the [http.CookieJar] interface.
@@ -243,68 +246,73 @@ public static void SetCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<http
 }
 
 // setCookies is like SetCookies but takes the current time as parameter.
-internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies, time.Time now) => func((defer, recover) => {
+internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies, time.Time now) {
+    GoFrame ᒐ = default;
+    try {
     ref var j = ref Ꮡj.DerefOrNull();
     ref var u = ref Ꮡu.DerefOrNull();
 
-    if (len(cookies) == 0) {
-        return;
-    }
-    if (u.Scheme != "http"u8 && u.Scheme != "https"u8) {
-        return;
-    }
-    var (host, err) = canonicalHost(u.Host);
-    if (err != default!) {
-        return;
-    }
-    @string key = jarKey(host, j.psList);
-    @string defPath = defaultPath(u.Path);
-    Ꮡj.of(Jar.Ꮡmu).Lock();
-    defer(Ꮡj.of(Jar.Ꮡmu).Unlock);
-    var submap = j.entries[key];
-    var modified = false;
-    foreach (var (_, cookie) in cookies) {
-        var (e, remove, errΔ1) = j.newEntry(cookie, now, defPath, host);
-        if (errΔ1 != default!) {
-            continue;
+        if (len(cookies) == 0) {
+            return;
         }
-        @string id = e.id();
-        if (remove) {
-            if (submap != default!) {
-                {
-                    var (_, ok) = submap[id, ꟷ]; if (ok) {
-                        delete(submap, id);
-                        modified = true;
+        if (u.Scheme != "http"u8 && u.Scheme != "https"u8) {
+            return;
+        }
+        var (host, err) = canonicalHost(u.Host);
+        if (err != default!) {
+            return;
+        }
+        @string key = jarKey(host, j.psList);
+        @string defPath = defaultPath(u.Path);
+        Ꮡj.of(Jar.Ꮡmu).Lock();
+        defer(Ꮡj.of(Jar.Ꮡmu).Unlock, ref ᒐ);
+        var submap = j.entries[key];
+        var modified = false;
+        foreach (var (_, cookie) in cookies) {
+            var (e, remove, errΔ1) = j.newEntry(cookie, now, defPath, host);
+            if (errΔ1 != default!) {
+                continue;
+            }
+            @string id = e.id();
+            if (remove) {
+                if (submap != default!) {
+                    {
+                        var (_, ok) = submap[id, ꟷ]; if (ok) {
+                            delete(submap, id);
+                            modified = true;
+                        }
                     }
                 }
+                continue;
             }
-            continue;
+            if (submap == default!) {
+                submap = new map<@string, entry>();
+            }
+            {
+                var (old, ok) = submap[id, ꟷ]; if (ok){
+                    e.Creation = old.Creation;
+                    e.seqNum = old.seqNum;
+                } else {
+                    e.Creation = now;
+                    e.seqNum = j.nextSeqNum;
+                    j.nextSeqNum++;
+                }
+            }
+            e.LastAccess = now;
+            submap[id] = e;
+            modified = true;
         }
-        if (submap == default!) {
-            submap = new map<@string, entry>();
-        }
-        {
-            var (old, ok) = submap[id, ꟷ]; if (ok){
-                e.Creation = old.Creation;
-                e.seqNum = old.seqNum;
+        if (modified) {
+            if (len(submap) == 0){
+                delete(j.entries, key);
             } else {
-                e.Creation = now;
-                e.seqNum = j.nextSeqNum;
-                j.nextSeqNum++;
+                j.entries[key] = submap;
             }
         }
-        e.LastAccess = now;
-        submap[id] = e;
-        modified = true;
     }
-    if (modified) {
-        if (len(submap) == 0){
-            delete(j.entries, key);
-        } else {
-            j.entries[key] = submap;
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // canonicalHost strips port from host if present and returns the canonicalized
 // host name.

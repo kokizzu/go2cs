@@ -126,14 +126,15 @@ internal static readonly @string unknownNameˢ = "unknown name"u8;
 
 internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var l = ref Ꮡl.DerefOrNull();
 
         defer(() => {
             if (err != default!) {
                 err = fmt.Errorf("slog: level string %q: %w"u8, s, err);
             }
-        });
+        }, ref ᒐ);
         @string name = s;
         nint offset = 0;
         {
@@ -141,7 +142,7 @@ internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
                 name = s[..(int)(i)];
                 (offset, err) = strconv.Atoi(s[(int)(i)..]);
                 if (err != default!) {
-                    return;
+                    goto ᒐdone;
                 }
             }
         }
@@ -159,13 +160,15 @@ internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
             l = LevelError;
         }
         else { /* default: */
-            err = errors.New(unknownNameˢ); return;
+            err = errors.New(unknownNameˢ); goto ᒐdone;
         }
 
         l += ((ΔLevel)offset);
         err = default!;
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // Level returns the receiver.

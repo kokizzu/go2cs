@@ -15,7 +15,7 @@ public static void Add(this ж<Tally> Ꮡt, nint n) {
     try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-        deferǃ(() => {
+        defer(() => {
             Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
         }, ref ᒐ);
         t.total += n;
@@ -30,7 +30,7 @@ private static readonly object deferredˢ = (@string)"deferred:"u8;
 internal static void runDeferred(Tally @base) {
     GoFrame ᒐ = default;
     try {
-        deferǃ((Tally tʗp) => {
+        defer((Tally tʗp) => {
             ref var t = ref heap(tʗp, out var Ꮡt);
             Ꮡt.Add(4);
             fmt.Println(deferredˢ, t.total, t.log);

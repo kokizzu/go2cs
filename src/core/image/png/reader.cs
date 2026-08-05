@@ -442,54 +442,59 @@ internal static readonly @string idatChunkLengthOverflowˢ = "IDAT chunk length 
 internal static readonly @string tooMuchPixelDataˢ = "too much pixel data"u8;
 
 // decode decodes the IDAT data into an image.
-internal static (image.Image, error) decode(this ж<decoder> Ꮡd) => func<(image.Image, error)>((defer, recover) => {
+internal static (image.Image, error) decode(this ж<decoder> Ꮡd) {
+    GoFrame ᒐ = default;
+    try {
     ref var d = ref Ꮡd.DerefOrNull();
 
-    var (r, err) = zlib.NewReader(new decoderжReader(Ꮡd));
-    if (err != default!) {
-        return (default!, err);
-    }
-    var rʗ1 = r;
-    defer(() => rʗ1.Close());
-    image.Image img = default!;
-    if (d.interlace == itNone){
-        (img, err) = d.readImagePass(r, 0, false);
+        var (r, err) = zlib.NewReader(new decoderжReader(Ꮡd));
         if (err != default!) {
             return (default!, err);
         }
-    } else 
-    if (d.interlace == itAdam7) {
-        // Allocate a blank image of the full size.
-        (img, err) = d.readImagePass(default!, 0, true);
-        if (err != default!) {
-            return (default!, err);
-        }
-        for (nint pass = 0; pass < 7; pass++) {
-            var (imagePass, errΔ1) = d.readImagePass(r, pass, false);
-            if (errΔ1 != default!) {
-                return (default!, errΔ1);
+        var rʗ1 = r;
+        defer(() => rʗ1.Close(), ref ᒐ);
+        image.Image img = default!;
+        if (d.interlace == itNone){
+            (img, err) = d.readImagePass(r, 0, false);
+            if (err != default!) {
+                return (default!, err);
             }
-            if (imagePass != default!) {
-                d.mergePassInto(img, imagePass, pass);
+        } else 
+        if (d.interlace == itAdam7) {
+            // Allocate a blank image of the full size.
+            (img, err) = d.readImagePass(default!, 0, true);
+            if (err != default!) {
+                return (default!, err);
+            }
+            for (nint pass = 0; pass < 7; pass++) {
+                var (imagePass, errΔ1) = d.readImagePass(r, pass, false);
+                if (errΔ1 != default!) {
+                    return (default!, errΔ1);
+                }
+                if (imagePass != default!) {
+                    d.mergePassInto(img, imagePass, pass);
+                }
             }
         }
-    }
-    // Check for EOF, to verify the zlib checksum.
-    nint n = 0;
-    for (nint i = 0; n == 0 && err == default!; i++) {
-        if (i == 100) {
-            return (default!, io.ErrNoProgress);
+        // Check for EOF, to verify the zlib checksum.
+        nint n = 0;
+        for (nint i = 0; n == 0 && err == default!; i++) {
+            if (i == 100) {
+                return (default!, io.ErrNoProgress);
+            }
+            (n, err) = r.Read(d.tmp[..1]);
         }
-        (n, err) = r.Read(d.tmp[..1]);
+        if (err != default! && !AreEqual(err, io.EOF)) {
+            return (default!, ((FormatError)err.Error()));
+        }
+        if (n != 0 || d.idatLength != 0) {
+            return (default!, ((FormatError)(@string)tooMuchPixelDataˢ));
+        }
+        return (img, default!);
     }
-    if (err != default! && !AreEqual(err, io.EOF)) {
-        return (default!, ((FormatError)err.Error()));
-    }
-    if (n != 0 || d.idatLength != 0) {
-        return (default!, ((FormatError)(@string)tooMuchPixelDataˢ));
-    }
-    return (img, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string badFilterTypeˢ = "bad filter type"u8;

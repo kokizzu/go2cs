@@ -112,7 +112,7 @@ private static readonly object usingˢ = (@string)"using"u8;
 internal static void useAndRelease() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(release, errAgain, ref ᒐ);
+        defer(release, errAgain, ref ᒐ);
         fmt.Println(usingˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

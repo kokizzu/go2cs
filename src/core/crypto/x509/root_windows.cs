@@ -23,44 +23,49 @@ internal static (ж<CertPool>, error) loadSystemRoots() {
 // A pointer to the in-memory store is available in the returned CertContext's Store field.
 // The store is automatically freed when the CertContext is freed using
 // syscall.CertFreeCertificateContext.
-internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ж<VerifyOptions> Ꮡopts) => func<(ж<syscall.CertContext>, error)>((defer, recover) => {
+internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ж<VerifyOptions> Ꮡopts) {
+    GoFrame ᒐ = default;
+    try {
     ref var leaf = ref Ꮡleaf.DerefOrNull();
     ref var opts = ref Ꮡopts.DerefOrNull();
 
-    ref var storeCtx = ref heap<ж<syscall.CertContext>>(out var ᏑstoreCtx);
-    var (leafCtx, err) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ(leaf.Raw, 0), (uint32)builtin.len(leaf.Raw));
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(syscall.CertFreeCertificateContext, leafCtx, defer);
-    (var handle, err) = syscall.CertOpenStore(syscall.CERT_STORE_PROV_MEMORY, 0, 0, syscall.CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG, 0);
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(syscall.CertCloseStore, handle, (uint32)(0), defer);
-    err = syscall.CertAddCertificateContextToStore(handle, leafCtx, syscall.CERT_STORE_ADD_ALWAYS, ᏑstoreCtx);
-    if (err != default!) {
-        return (default!, err);
-    }
-    if (opts.Intermediates != nil) {
-        for (nint i = 0; i < opts.Intermediates.len(); i++) {
-            var (intermediate, _, errΔ1) = opts.Intermediates.cert(i);
-            if (errΔ1 != default!) {
-                return (default!, errΔ1);
-            }
-            (var ctx, errΔ1) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ((~intermediate).Raw, 0), (uint32)builtin.len((~intermediate).Raw));
-            if (errΔ1 != default!) {
-                return (default!, errΔ1);
-            }
-            errΔ1 = syscall.CertAddCertificateContextToStore(handle, ctx, syscall.CERT_STORE_ADD_ALWAYS, nil);
-            syscall.CertFreeCertificateContext(ctx);
-            if (errΔ1 != default!) {
-                return (default!, errΔ1);
+        ref var storeCtx = ref heap<ж<syscall.CertContext>>(out var ᏑstoreCtx);
+        var (leafCtx, err) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ(leaf.Raw, 0), (uint32)builtin.len(leaf.Raw));
+        if (err != default!) {
+            return (default!, err);
+        }
+        defer(syscall.CertFreeCertificateContext, leafCtx, ref ᒐ);
+        (var handle, err) = syscall.CertOpenStore(syscall.CERT_STORE_PROV_MEMORY, 0, 0, syscall.CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG, 0);
+        if (err != default!) {
+            return (default!, err);
+        }
+        defer(syscall.CertCloseStore, handle, (uint32)(0), ref ᒐ);
+        err = syscall.CertAddCertificateContextToStore(handle, leafCtx, syscall.CERT_STORE_ADD_ALWAYS, ᏑstoreCtx);
+        if (err != default!) {
+            return (default!, err);
+        }
+        if (opts.Intermediates != nil) {
+            for (nint i = 0; i < opts.Intermediates.len(); i++) {
+                var (intermediate, _, errΔ1) = opts.Intermediates.cert(i);
+                if (errΔ1 != default!) {
+                    return (default!, errΔ1);
+                }
+                (var ctx, errΔ1) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ((~intermediate).Raw, 0), (uint32)builtin.len((~intermediate).Raw));
+                if (errΔ1 != default!) {
+                    return (default!, errΔ1);
+                }
+                errΔ1 = syscall.CertAddCertificateContextToStore(handle, ctx, syscall.CERT_STORE_ADD_ALWAYS, nil);
+                syscall.CertFreeCertificateContext(ctx);
+                if (errΔ1 != default!) {
+                    return (default!, errΔ1);
+                }
             }
         }
+        return (storeCtx, default!);
     }
-    return (storeCtx, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string x509InvalidSimpleChainˢ = "x509: invalid simple chain"u8;
@@ -221,14 +226,15 @@ internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certifi
 internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(this ж<Certificate> Ꮡc, ж<VerifyOptions> Ꮡopts) {
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var opts = ref Ꮡopts.DerefOrNull();
 
         (var storeCtx, err) = createStoreContext(Ꮡc, Ꮡopts);
         if (err != default!) {
-            (chains, err) = (default!, err); return;
+            (chains, err) = (default!, err); goto ᒐdone;
         }
-        deferǃ(syscall.CertFreeCertificateContext, storeCtx, defer);
+        defer(syscall.CertFreeCertificateContext, storeCtx, ref ᒐ);
         var para = @new<syscall.CertChainPara>();
         para.Value.Size = (uint32)/* unsafe.Sizeof(*para) */ (uintptr)80;
         var keyUsages = opts.KeyUsages;
@@ -270,9 +276,9 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
         ref var topCtx = ref heap<ж<syscall.CertChainContext>>(out var ᏑtopCtx);
         err = syscall.CertGetCertificateChain(((syscallꓸHandle)0), storeCtx, verifyTime, (~storeCtx).Store, para, CERT_CHAIN_RETURN_LOWER_QUALITY_CONTEXTS, 0, ᏑtopCtx);
         if (err != default!) {
-            (chains, err) = (default!, err); return;
+            (chains, err) = (default!, err); goto ᒐdone;
         }
-        deferǃ(syscall.CertFreeCertificateChain, topCtx, defer);
+        defer(syscall.CertFreeCertificateChain, topCtx, ref ᒐ);
         var (chain, topErr) = verifyChain(Ꮡc, topCtx, Ꮡopts);
         if (topErr == default!) {
             chains = append(chains, chain);
@@ -290,11 +296,13 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
         }
         if (builtin.len(chains) == 0) {
             // Return the error from the highest quality context.
-            (chains, err) = (default!, topErr); return;
+            (chains, err) = (default!, topErr); goto ᒐdone;
         }
         (chains, err) = (chains, default!);
-    });
-    return (chains, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (chains, err);
 }
 
 } // end x509_package

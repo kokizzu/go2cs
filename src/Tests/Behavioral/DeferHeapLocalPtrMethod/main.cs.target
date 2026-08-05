@@ -22,7 +22,7 @@ internal static void run() {
     try {
         ref var st = ref heap<state>(out var Ꮡst);
         st = new state(n: 0, label: "run"u8);
-        deferǃ(Ꮡst.free, ref ᒐ);
+        defer(Ꮡst.free, ref ᒐ);
         st.add(5);
         st.add(10);
         fmt.Printf("during run: n=%d\n"u8, st.n);
@@ -36,7 +36,7 @@ internal static void twice() {
     try {
         ref var st = ref heap<state>(out var Ꮡst);
         st = new state(n: 100, label: "twice"u8);
-        deferǃ(Ꮡst.free, ref ᒐ);
+        defer(Ꮡst.free, ref ᒐ);
         st.add(1);
         fmt.Printf("during twice: n=%d\n"u8, st.n);
     }

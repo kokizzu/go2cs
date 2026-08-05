@@ -1055,24 +1055,29 @@ internal static readonly @string exprSˢ = "-- expr %s"u8;
 // If hint != nil, it is the type of a composite literal element.
 // If allowGeneric is set, the operand type may be an uninstantiated
 // parameterized type or function value.
-internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<operand> Ꮡx, ast.Expr e, ΔType hint, bool allowGeneric) => func((defer, recover) => {
+internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<operand> Ꮡx, ast.Expr e, ΔType hint, bool allowGeneric) {
+    GoFrame ᒐ = default;
+    try {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
-    if ((~check.conf)._Trace) {
-        Ꮡcheck.trace(e.Pos(), exprSˢ, e);
-        check.indent++;
-        defer(() => {
-            Ꮡcheck.Value.indent--;
-            Ꮡcheck.trace(e.Pos(), "=> %s"u8, Ꮡx.OrTypedNil());
-        });
+        if ((~check.conf)._Trace) {
+            Ꮡcheck.trace(e.Pos(), exprSˢ, e);
+            check.indent++;
+            defer(() => {
+                Ꮡcheck.Value.indent--;
+                Ꮡcheck.trace(e.Pos(), "=> %s"u8, Ꮡx.OrTypedNil());
+            }, ref ᒐ);
+        }
+        exprKind kind = Ꮡcheck.exprInternal(ᏑT, Ꮡx, e, hint);
+        if (!allowGeneric) {
+            Ꮡcheck.nonGeneric(ᏑT, Ꮡx);
+        }
+        check.record(Ꮡx);
+        return kind;
     }
-    exprKind kind = Ꮡcheck.exprInternal(ᏑT, Ꮡx, e, hint);
-    if (!allowGeneric) {
-        Ꮡcheck.nonGeneric(ᏑT, Ꮡx);
-    }
-    check.record(Ꮡx);
-    return kind;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string typeˢ = "type"u8;

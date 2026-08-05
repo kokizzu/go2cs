@@ -146,22 +146,27 @@ internal static pmode noExtraLinebreak => 2;     // disables extra line break af
 
 // commentSizeBefore returns the estimated size of the
 // comments on the same line before the next position.
-internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition next) => func((defer, recover) => {
+internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition next) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    // save/restore current p.commentInfo (p.nextComment() modifies it)
-    deferǃ((commentInfo info) => {
-        Ꮡp.Value.commentInfo = info;
-    }, Ꮡp.Value.commentInfo, defer);
-    nint size = 0;
-    while (p.commentBefore(next)) {
-        foreach (var (_, c) in (~p.comment).List) {
-            size += len((~c).Text);
+        // save/restore current p.commentInfo (p.nextComment() modifies it)
+        defer((commentInfo info) => {
+            Ꮡp.Value.commentInfo = info;
+        }, Ꮡp.Value.commentInfo, ref ᒐ);
+        nint size = 0;
+        while (p.commentBefore(next)) {
+            foreach (var (_, c) in (~p.comment).List) {
+                size += len((~c).Text);
+            }
+            p.nextComment();
         }
-        p.nextComment();
+        return size;
     }
-    return size;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // recordLine records the output line number for the next non-whitespace
 // token in *linePtr. It is used to compute an accurate line number for a
@@ -631,59 +636,64 @@ internal static void stripCommonPrefix(slice<@string> lines) {
     }
 }
 
-internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomment) => func((defer, recover) => {
+internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomment) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
     ref var comment = ref Ꮡcomment.DerefOrNull();
 
-    @string text = comment.Text;
-    var pos = p.posFor(comment.Pos());
-    @string linePrefix = "//line "u8;
-    if (strings.HasPrefix(text, linePrefix) && (!pos.IsValid() || pos.Column == 1)) {
-        // Possibly a //-style line directive.
-        // Suspend indentation temporarily to keep line directive valid.
-        deferǃ((nint indent) => {
-            Ꮡp.Value.indent = indent;
-        }, Ꮡp.Value.indent, defer);
-        p.indent = 0;
-    }
-    // shortcut common case of //-style comments
-    if (text[1] == (rune)'/') {
-        if (constraint.IsGoBuild(text)){
-            p.goBuild = append(p.goBuild, len(p.output));
-        } else 
-        if (constraint.IsPlusBuild(text)) {
-            p.plusBuild = append(p.plusBuild, len(p.output));
+        @string text = comment.Text;
+        var pos = p.posFor(comment.Pos());
+        @string linePrefix = "//line "u8;
+        if (strings.HasPrefix(text, linePrefix) && (!pos.IsValid() || pos.Column == 1)) {
+            // Possibly a //-style line directive.
+            // Suspend indentation temporarily to keep line directive valid.
+            defer((nint indent) => {
+                Ꮡp.Value.indent = indent;
+            }, Ꮡp.Value.indent, ref ᒐ);
+            p.indent = 0;
         }
-        p.writeString(pos, trimRight(text), true);
-        return;
-    }
-    // for /*-style comments, print line by line and let the
-    // write function take care of the proper indentation
-    var lines = strings.Split(text, "\n"u8);
-    // The comment started in the first column but is going
-    // to be indented. For an idempotent result, add indentation
-    // to all lines such that they look like they were indented
-    // before - this will make sure the common prefix computation
-    // is the same independent of how many times formatting is
-    // applied (was issue 1835).
-    if (pos.IsValid() && pos.Column == 1 && p.indent > 0) {
-        foreach (var (i, line) in lines[1..]) {
-            lines[1 + i] = "   "u8 + line;
+        // shortcut common case of //-style comments
+        if (text[1] == (rune)'/') {
+            if (constraint.IsGoBuild(text)){
+                p.goBuild = append(p.goBuild, len(p.output));
+            } else 
+            if (constraint.IsPlusBuild(text)) {
+                p.plusBuild = append(p.plusBuild, len(p.output));
+            }
+            p.writeString(pos, trimRight(text), true);
+            return;
+        }
+        // for /*-style comments, print line by line and let the
+        // write function take care of the proper indentation
+        var lines = strings.Split(text, "\n"u8);
+        // The comment started in the first column but is going
+        // to be indented. For an idempotent result, add indentation
+        // to all lines such that they look like they were indented
+        // before - this will make sure the common prefix computation
+        // is the same independent of how many times formatting is
+        // applied (was issue 1835).
+        if (pos.IsValid() && pos.Column == 1 && p.indent > 0) {
+            foreach (var (i, line) in lines[1..]) {
+                lines[1 + i] = "   "u8 + line;
+            }
+        }
+        stripCommonPrefix(lines);
+        // write comment lines, separated by formfeed,
+        // without a line break after the last line
+        foreach (var (i, line) in lines) {
+            if (i > 0) {
+                p.writeByte((rune)'\f', 1);
+                pos = p.pos;
+            }
+            if (len(line) > 0) {
+                p.writeString(pos, trimRight(line), true);
+            }
         }
     }
-    stripCommonPrefix(lines);
-    // write comment lines, separated by formfeed,
-    // without a line break after the last line
-    foreach (var (i, line) in lines) {
-        if (i > 0) {
-            p.writeByte((rune)'\f', 1);
-            pos = p.pos;
-        }
-        if (len(line) > 0) {
-            p.writeString(pos, trimRight(line), true);
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // writeCommentSuffix writes a line break after a comment if indicated
 // and processes any leftover indentation information. If a line break
@@ -1457,16 +1467,17 @@ internal static void free(this ж<printer> Ꮡp) {
 // fprint implements Fprint and takes a nodesSizes map for setting up the printer state.
 internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, ж<token.FileSet> Ꮡfset, any node, map<ast.Node, nint> nodeSizes) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         // print node
         var p = newPrinter(Ꮡcfg, Ꮡfset, nodeSizes);
         var pʗ1 = p;
-        defer(pʗ1.free);
+        defer(pʗ1.free, ref ᒐ);
         {
             err = p.printNode(node); if (err != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         // print outstanding comments
@@ -1498,7 +1509,7 @@ internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, �
         // write printer result via tabwriter/trimmer to output
         {
             (_, err) = output.Write((~p).output); if (err != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         // flush tabwriter, if any
@@ -1507,8 +1518,10 @@ internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, �
                 err = tw.Flush();
             }
         }
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // A CommentedNode bundles an AST node and corresponding comments.

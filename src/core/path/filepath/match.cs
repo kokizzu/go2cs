@@ -391,37 +391,40 @@ internal static (nint prefixLen, @string cleaned) cleanGlobPathWindows(@string p
 internal static (slice<@string> m, error e) glob(@string dir, @string pattern, slice<@string> matches) {
     slice<@string> m = default!;
     error e = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         m = matches;
         var (fi, err) = os.Stat(dir);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         // ignore I/O error
         if (!fi.IsDir()) {
-            return;
+            goto ᒐdone;
         }
         // ignore I/O error
         (var d, err) = os.Open(dir);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         // ignore I/O error
         var dʗ1 = d;
-        defer(() => dʗ1.Close());
+        defer(() => dʗ1.Close(), ref ᒐ);
         var (names, _) = d.Readdirnames(-1);
         slices.Sort<slice<@string>, @string>(names);
         foreach (var (_, n) in names) {
             var (matched, errΔ1) = Match(pattern, n);
             if (errΔ1 != default!) {
-                (m, e) = (m, errΔ1); return;
+                (m, e) = (m, errΔ1); goto ᒐdone;
             }
             if (matched) {
                 m = append(m, Join(dir, n));
             }
         }
-    });
-    return (m, e);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (m, e);
 }
 
 // hasMeta reports whether path contains any of the magic characters

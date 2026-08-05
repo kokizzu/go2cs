@@ -47,7 +47,7 @@ internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var t = ref Ꮡt.DerefOrNull();
 
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, ref ᒐ);
         {
             var (_, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
                 delete(t.m, Ꮡc);

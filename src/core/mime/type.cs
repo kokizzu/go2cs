@@ -22,32 +22,37 @@ internal static ж<Δsync.Map> Ꮡextensions = new(default(Δsync.Map));
 internal static ref Δsync.Map extensions => ref Ꮡextensions.Value; // map[string][]string; slice values are append-only.
 
 // setMimeTypes is used by initMime's non-test path, and by tests.
-internal static void setMimeTypes(map<@string, @string> lowerExt, map<@string, @string> mixExt) => func((defer, recover) => {
-    ᏑmimeTypes.Clear();
-    ᏑmimeTypesLower.Clear();
-    Ꮡextensions.Clear();
-    foreach (var (k, v) in lowerExt) {
-        ᏑmimeTypesLower.Store(k, v);
-    }
-    foreach (var (k, v) in mixExt) {
-        ᏑmimeTypes.Store(k, v);
-    }
-    ᏑextensionsMu.Lock();
-    defer(ᏑextensionsMu.Unlock);
-    foreach (var (k, v) in lowerExt) {
-        var (justType, _, err) = ParseMediaType(v);
-        if (err != default!) {
-            throw panic(err);
+internal static void setMimeTypes(map<@string, @string> lowerExt, map<@string, @string> mixExt) {
+    GoFrame ᒐ = default;
+    try {
+        ᏑmimeTypes.Clear();
+        ᏑmimeTypesLower.Clear();
+        Ꮡextensions.Clear();
+        foreach (var (k, v) in lowerExt) {
+            ᏑmimeTypesLower.Store(k, v);
         }
-        slice<@string> exts = default!;
-        {
-            var (ei, ok) = Ꮡextensions.Load(justType); if (ok) {
-                exts = ei._<slice<@string>>();
+        foreach (var (k, v) in mixExt) {
+            ᏑmimeTypes.Store(k, v);
+        }
+        ᏑextensionsMu.Lock();
+        defer(ᏑextensionsMu.Unlock, ref ᒐ);
+        foreach (var (k, v) in lowerExt) {
+            var (justType, _, err) = ParseMediaType(v);
+            if (err != default!) {
+                throw panic(err);
             }
+            slice<@string> exts = default!;
+            {
+                var (ei, ok) = Ꮡextensions.Load(justType); if (ok) {
+                    exts = ei._<slice<@string>>();
+                }
+            }
+            Ꮡextensions.Store(justType, append(exts, k));
         }
-        Ꮡextensions.Store(justType, append(exts, k));
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static map<@string, @string> builtinTypesLower = new map<@string, @string>{
     [".avif"u8] = "image/avif"u8,
@@ -171,33 +176,38 @@ public static error AddExtensionType(@string ext, @string typ) {
 internal static readonly @string textˢ = "text/"u8;
 internal static readonly @string charsetˢ = "charset"u8;
 
-internal static error setExtensionType(@string extension, @string mimeType) => func<error>((defer, recover) => {
-    var (justType, param, err) = ParseMediaType(mimeType);
-    if (err != default!) {
-        return err;
-    }
-    if (strings.HasPrefix(mimeType, textˢ) && param[charsetˢ] == "") {
-        param[charsetˢ] = utf8ˢ2;
-        mimeType = FormatMediaType(mimeType, param);
-    }
-    @string extLower = strings.ToLower(extension);
-    ᏑmimeTypes.Store(extension, mimeType);
-    ᏑmimeTypesLower.Store(extLower, mimeType);
-    ᏑextensionsMu.Lock();
-    defer(ᏑextensionsMu.Unlock);
-    slice<@string> exts = default!;
-    {
-        var (ei, ok) = Ꮡextensions.Load(justType); if (ok) {
-            exts = ei._<slice<@string>>();
+internal static error setExtensionType(@string extension, @string mimeType) {
+    GoFrame ᒐ = default;
+    try {
+        var (justType, param, err) = ParseMediaType(mimeType);
+        if (err != default!) {
+            return err;
         }
-    }
-    foreach (var (_, v) in exts) {
-        if (v == extLower) {
-            return default!;
+        if (strings.HasPrefix(mimeType, textˢ) && param[charsetˢ] == "") {
+            param[charsetˢ] = utf8ˢ2;
+            mimeType = FormatMediaType(mimeType, param);
         }
+        @string extLower = strings.ToLower(extension);
+        ᏑmimeTypes.Store(extension, mimeType);
+        ᏑmimeTypesLower.Store(extLower, mimeType);
+        ᏑextensionsMu.Lock();
+        defer(ᏑextensionsMu.Unlock, ref ᒐ);
+        slice<@string> exts = default!;
+        {
+            var (ei, ok) = Ꮡextensions.Load(justType); if (ok) {
+                exts = ei._<slice<@string>>();
+            }
+        }
+        foreach (var (_, v) in exts) {
+            if (v == extLower) {
+                return default!;
+            }
+        }
+        Ꮡextensions.Store(justType, append(exts, extLower));
+        return default!;
     }
-    Ꮡextensions.Store(justType, append(exts, extLower));
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end mime_package

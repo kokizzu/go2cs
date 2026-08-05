@@ -38,7 +38,7 @@ internal static void run() {
         ref var p = ref heap<parser>(out var Ꮡp);
         p = new parser(name: "p1"u8);
         seed(Ꮡp);
-        deferǃ(Ꮡp.of(parser.Ꮡtrk).flush, ref ᒐ);
+        defer(Ꮡp.of(parser.Ꮡtrk).flush, ref ᒐ);
         p.trk.lines = append(p.trk.lines, "after-defer"u8);
         p.trk.lines = append(p.trk.lines, "final"u8);
         fmt.Println(runDoneˢ, p.name);

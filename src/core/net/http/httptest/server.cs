@@ -208,110 +208,125 @@ public static ж<Server> NewTLSServer(httpꓸHandler handler) {
 
 // Close shuts down the server and blocks until all outstanding
 // requests on this server have completed.
-public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
+public static void Close(this ж<Server> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    if (!s.closed) {
-        s.closed = true;
-        s.Listener.Close();
-        s.Config.SetKeepAlivesEnabled(false);
-        foreach (var (c, st) in s.conns) {
-            // Force-close any idle connections (those between
-            // requests) and new connections (those which connected
-            // but never sent a request). StateNew connections are
-            // super rare and have only been seen (in
-            // previously-flaky tests) in the case of
-            // socket-late-binding races from the http Client
-            // dialing this server and then getting an idle
-            // connection before the dial completed. There is thus
-            // a connected connection in StateNew with no
-            // associated Request. We only close StateIdle and
-            // StateNew because they're not doing anything. It's
-            // possible StateNew is about to do something in a few
-            // milliseconds, but a previous CL to check again in a
-            // few milliseconds wasn't liked (early versions of
-            // https://golang.org/cl/15151) so now we just
-            // forcefully close StateNew. The docs for Server.Close say
-            // we wait for "outstanding requests", so we don't close things
-            // in StateActive.
-            if (st == http.StateIdle || st == http.StateNew) {
-                s.closeConn(c);
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        if (!s.closed) {
+            s.closed = true;
+            s.Listener.Close();
+            s.Config.SetKeepAlivesEnabled(false);
+            foreach (var (c, st) in s.conns) {
+                // Force-close any idle connections (those between
+                // requests) and new connections (those which connected
+                // but never sent a request). StateNew connections are
+                // super rare and have only been seen (in
+                // previously-flaky tests) in the case of
+                // socket-late-binding races from the http Client
+                // dialing this server and then getting an idle
+                // connection before the dial completed. There is thus
+                // a connected connection in StateNew with no
+                // associated Request. We only close StateIdle and
+                // StateNew because they're not doing anything. It's
+                // possible StateNew is about to do something in a few
+                // milliseconds, but a previous CL to check again in a
+                // few milliseconds wasn't liked (early versions of
+                // https://golang.org/cl/15151) so now we just
+                // forcefully close StateNew. The docs for Server.Close say
+                // we wait for "outstanding requests", so we don't close things
+                // in StateActive.
+                if (st == http.StateIdle || st == http.StateNew) {
+                    s.closeConn(c);
+                }
             }
+            // If this server doesn't shut down in 5 seconds, tell the user why.
+            var t = time.AfterFunc((time.Duration)(5000000000L), Ꮡs.logCloseHangDebugInfo);
+            var tʗ1 = t;
+            defer(() => tʗ1.Stop(), ref ᒐ);
         }
-        // If this server doesn't shut down in 5 seconds, tell the user why.
-        var t = time.AfterFunc((time.Duration)(5000000000L), Ꮡs.logCloseHangDebugInfo);
-        var tʗ1 = t;
-        defer(() => tʗ1.Stop());
-    }
-    Ꮡs.of(Server.Ꮡmu).Unlock();
-    // Not part of httptest.Server's correctness, but assume most
-    // users of httptest.Server will be using the standard
-    // transport, so help them out and close any idle connections for them.
-    {
-        var (t, ok) = http.DefaultTransport._<closeIdleTransport>(ᐧ); if (ok) {
-            t.CloseIdleConnections();
-        }
-    }
-    // Also close the client idle connections.
-    if (s.client != nil) {
+        Ꮡs.of(Server.Ꮡmu).Unlock();
+        // Not part of httptest.Server's correctness, but assume most
+        // users of httptest.Server will be using the standard
+        // transport, so help them out and close any idle connections for them.
         {
-            var (t, ok) = (~s.client).Transport._<closeIdleTransport>(ᐧ); if (ok) {
+            var (t, ok) = http.DefaultTransport._<closeIdleTransport>(ᐧ); if (ok) {
                 t.CloseIdleConnections();
             }
         }
+        // Also close the client idle connections.
+        if (s.client != nil) {
+            {
+                var (t, ok) = (~s.client).Transport._<closeIdleTransport>(ᐧ); if (ok) {
+                    t.CloseIdleConnections();
+                }
+            }
+        }
+        Ꮡs.of(Server.Ꮡwg).Wait();
     }
-    Ꮡs.of(Server.Ꮡwg).Wait();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httptestServerBlockedInˢ = "httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8;
 
-internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) => func((defer, recover) => {
+internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    defer(Ꮡs.of(Server.Ꮡmu).Unlock);
-    ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    Ꮡbuf.WriteString(httptestServerBlockedInˢ);
-    foreach (var (c, st) in s.conns) {
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "  %T %p %v in state %v\n"u8, c, c, c.RemoteAddr(), st);
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
+        Ꮡbuf.WriteString(httptestServerBlockedInˢ);
+        foreach (var (c, st) in s.conns) {
+            fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "  %T %p %v in state %v\n"u8, c, c, c.RemoteAddr(), st);
+        }
+        log.Print(buf.String());
     }
-    log.Print(buf.String());
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // CloseClientConnections closes any open HTTP connections to the test Server.
-public static void CloseClientConnections(this ж<Server> Ꮡs) => func((defer, recover) => {
+public static void CloseClientConnections(this ж<Server> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    nint nconn = len(s.conns);
-    var ch = new channel<EmptyStruct>(nconn);
-    foreach (var (c, _) in s.conns) {
-        goǃ(Ꮡs.closeConnChan, c, ch);
-    }
-    Ꮡs.of(Server.Ꮡmu).Unlock();
-    // Wait for outstanding closes to finish.
-    //
-    // Out of paranoia for making a late change in Go 1.6, we
-    // bound how long this can wait, since golang.org/issue/14291
-    // isn't fully understood yet. At least this should only be used
-    // in tests.
-    var timer = time.NewTimer((time.Duration)(5000000000L));
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    for (nint i = 0; i < nconn; i++) {
-        var selᴛ1 = ch;
-        var selᴛ2 = (~timer).C;
-        switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-        case 0 when selᴛ1.ꟷᐳ(out _): {
-            break;
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        nint nconn = len(s.conns);
+        var ch = new channel<EmptyStruct>(nconn);
+        foreach (var (c, _) in s.conns) {
+            goǃ(Ꮡs.closeConnChan, c, ch);
         }
-        case 1 when selᴛ2.ꟷᐳ(out _): {
-            return;
-        }}
+        Ꮡs.of(Server.Ꮡmu).Unlock();
+        // Wait for outstanding closes to finish.
+        //
+        // Out of paranoia for making a late change in Go 1.6, we
+        // bound how long this can wait, since golang.org/issue/14291
+        // isn't fully understood yet. At least this should only be used
+        // in tests.
+        var timer = time.NewTimer((time.Duration)(5000000000L));
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        for (nint i = 0; i < nconn; i++) {
+            var selᴛ1 = ch;
+            var selᴛ2 = (~timer).C;
+            switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+            case 0 when selᴛ1.ꟷᐳ(out _): {
+                break;
+            }
+            case 1 when selᴛ2.ꟷᐳ(out _): {
+                return;
+            }}
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Too slow. Give up.
 
@@ -331,10 +346,15 @@ public static void CloseClientConnections(this ж<Server> Ꮡs) => func((defer, 
 
 internal static void goServe(this ж<Server> Ꮡs) {
     Ꮡs.of(Server.Ꮡwg).Add(1);
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡs.of(Server.Ꮡwg).Done);
-        Ꮡs.Value.Config.Serve(Ꮡs.Value.Listener);
-    }));
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(Ꮡs.of(Server.Ꮡwg).Done, ref ᒐ);
+            Ꮡs.Value.Config.Serve(Ꮡs.Value.Listener);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
 }
 
 // wrap installs the connection state-tracking hook to know which
@@ -344,71 +364,76 @@ internal static void wrap(this ж<Server> Ꮡs) {
 
     var oldHook = s.Config.Value.ConnState;
     var oldHookʗ1 = oldHook;
-    s.Config.Value.ConnState = (net.Conn c, http.ConnState cs) => func((defer, recover) => {
-        Ꮡs.of(Server.Ꮡmu).Lock();
-        defer(Ꮡs.of(Server.Ꮡmu).Unlock);
-        var exprᴛ1 = cs;
-        if (exprᴛ1 == http.StateNew) {
-            {
-                var (_, exists) = Ꮡs.Value.conns[c, ꟷ]; if (exists) {
-                    throw panic("invalid state transition");
-                }
-            }
-            if (Ꮡs.Value.conns == default!) {
-                Ꮡs.Value.conns = new map<net.Conn, http.ConnState>();
-            }
-            Ꮡs.of(Server.Ꮡwg).Add(1);
-            Ꮡs.Value.conns[c] = cs;
-            if (Ꮡs.Value.closed) {
-                // Add c to the set of tracked conns and increment it to the
-                // waitgroup.
-                // Probably just a socket-late-binding dial from
-                // the default transport that lost the race (and
-                // thus this connection is now idle and will
-                // never be used).
-                Ꮡs.Value.closeConn(c);
-            }
-        }
-        else if (exprᴛ1 == http.StateActive) {
-            {
-                var (oldState, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
-                    if (oldState != http.StateNew && oldState != http.StateIdle) {
+    s.Config.Value.ConnState = (net.Conn c, http.ConnState cs) => {
+        GoFrame ᒐ = default;
+        try {
+            Ꮡs.of(Server.Ꮡmu).Lock();
+            defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+            var exprᴛ1 = cs;
+            if (exprᴛ1 == http.StateNew) {
+                {
+                    var (_, exists) = Ꮡs.Value.conns[c, ꟷ]; if (exists) {
                         throw panic("invalid state transition");
                     }
-                    Ꮡs.Value.conns[c] = cs;
+                }
+                if (Ꮡs.Value.conns == default!) {
+                    Ꮡs.Value.conns = new map<net.Conn, http.ConnState>();
+                }
+                Ꮡs.of(Server.Ꮡwg).Add(1);
+                Ꮡs.Value.conns[c] = cs;
+                if (Ꮡs.Value.closed) {
+                    // Add c to the set of tracked conns and increment it to the
+                    // waitgroup.
+                    // Probably just a socket-late-binding dial from
+                    // the default transport that lost the race (and
+                    // thus this connection is now idle and will
+                    // never be used).
+                    Ꮡs.Value.closeConn(c);
                 }
             }
-        }
-        else if (exprᴛ1 == http.StateIdle) {
-            {
-                var (oldState, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
-                    if (oldState != http.StateActive) {
-                        throw panic("invalid state transition");
+            else if (exprᴛ1 == http.StateActive) {
+                {
+                    var (oldState, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
+                        if (oldState != http.StateNew && oldState != http.StateIdle) {
+                            throw panic("invalid state transition");
+                        }
+                        Ꮡs.Value.conns[c] = cs;
                     }
-                    Ꮡs.Value.conns[c] = cs;
                 }
             }
-            if (Ꮡs.Value.closed) {
-                Ꮡs.Value.closeConn(c);
-            }
-        }
-        else if (exprᴛ1 == http.StateHijacked || exprᴛ1 == http.StateClosed) {
-            {
-                var (_, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
-                    // Remove c from the set of tracked conns and decrement it from the
-                    // waitgroup, unless it was previously removed.
-                    delete(Ꮡs.Value.conns, c);
-                    // Keep Close from returning until the user's ConnState hook
-                    // (if any) finishes.
-                    defer(Ꮡs.of(Server.Ꮡwg).Done);
+            else if (exprᴛ1 == http.StateIdle) {
+                {
+                    var (oldState, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
+                        if (oldState != http.StateActive) {
+                            throw panic("invalid state transition");
+                        }
+                        Ꮡs.Value.conns[c] = cs;
+                    }
+                }
+                if (Ꮡs.Value.closed) {
+                    Ꮡs.Value.closeConn(c);
                 }
             }
-        }
+            else if (exprᴛ1 == http.StateHijacked || exprᴛ1 == http.StateClosed) {
+                {
+                    var (_, ok) = Ꮡs.Value.conns[c, ꟷ]; if (ok) {
+                        // Remove c from the set of tracked conns and decrement it from the
+                        // waitgroup, unless it was previously removed.
+                        delete(Ꮡs.Value.conns, c);
+                        // Keep Close from returning until the user's ConnState hook
+                        // (if any) finishes.
+                        defer(Ꮡs.of(Server.Ꮡwg).Done, ref ᒐ);
+                    }
+                }
+            }
 
-        if (oldHookʗ1 != default!) {
-            oldHookʗ1(c, cs);
+            if (oldHookʗ1 != default!) {
+                oldHookʗ1(c, cs);
+            }
         }
-    });
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    };
 }
 
 // closeConn closes c.

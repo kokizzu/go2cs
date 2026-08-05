@@ -151,156 +151,161 @@ internal static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-
 
 // checkDir checks the directory dir, which is expected to exist
 // (it is either the root or was found in a directory listing with IsDir true).
-internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defer, recover) => {
+internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    // Read entire directory.
-    t.dirs = append(t.dirs, dir);
-    var d = t.openDir(dir);
-    if (d == default!) {
-        return;
-    }
-    var (list, err) = d.ReadDir(-1);
-    if (err != default!) {
-        d.Close();
-        t.errorf("%s: ReadDir(-1): %w"u8, dir, err);
-        return;
-    }
-    // Check all children.
-    @string prefix = default!;
-    if (dir == "."u8){
-        prefix = ""u8;
-    } else {
-        prefix = dir + "/"u8;
-    }
-    foreach (var (_, info) in list) {
-        @string name = info.Name();
-        switch (ᐧ) {
-        case {} when (name == "."u8) || (name == ".."u8) || (name == ""u8): {
-            t.errorf("%s: ReadDir: child has invalid name: %#q"u8, dir, name);
-            continue;
-            break;
+        // Read entire directory.
+        t.dirs = append(t.dirs, dir);
+        var d = t.openDir(dir);
+        if (d == default!) {
+            return;
         }
-        case {} when strings.Contains(name, "/"u8): {
-            t.errorf("%s: ReadDir: child name contains slash: %#q"u8, dir, name);
-            continue;
-            break;
+        var (list, err) = d.ReadDir(-1);
+        if (err != default!) {
+            d.Close();
+            t.errorf("%s: ReadDir(-1): %w"u8, dir, err);
+            return;
         }
-        case {} when strings.Contains(name, @"\"u8): {
-            t.errorf("%s: ReadDir: child name contains backslash: %#q"u8, dir, name);
-            continue;
-            break;
-        }}
-
-        @string path = prefix + name;
-        t.checkStat(path, info);
-        Ꮡt.checkOpen(path);
-        if (info.IsDir()){
-            Ꮡt.checkDir(path);
+        // Check all children.
+        @string prefix = default!;
+        if (dir == "."u8){
+            prefix = ""u8;
         } else {
-            Ꮡt.checkFile(path);
+            prefix = dir + "/"u8;
         }
-    }
-    // Check ReadDir(-1) at EOF.
-    (var list2, err) = d.ReadDir(-1);
-    if (len(list2) > 0 || err != default!) {
+        foreach (var (_, info) in list) {
+            @string name = info.Name();
+            switch (ᐧ) {
+            case {} when (name == "."u8) || (name == ".."u8) || (name == ""u8): {
+                t.errorf("%s: ReadDir: child has invalid name: %#q"u8, dir, name);
+                continue;
+                break;
+            }
+            case {} when strings.Contains(name, "/"u8): {
+                t.errorf("%s: ReadDir: child name contains slash: %#q"u8, dir, name);
+                continue;
+                break;
+            }
+            case {} when strings.Contains(name, @"\"u8): {
+                t.errorf("%s: ReadDir: child name contains backslash: %#q"u8, dir, name);
+                continue;
+                break;
+            }}
+
+            @string path = prefix + name;
+            t.checkStat(path, info);
+            Ꮡt.checkOpen(path);
+            if (info.IsDir()){
+                Ꮡt.checkDir(path);
+            } else {
+                Ꮡt.checkFile(path);
+            }
+        }
+        // Check ReadDir(-1) at EOF.
+        (var list2, err) = d.ReadDir(-1);
+        if (len(list2) > 0 || err != default!) {
+            d.Close();
+            t.errorf("%s: ReadDir(-1) at EOF = %d entries, %w, wanted 0 entries, nil"u8, dir, len(list2), err);
+            return;
+        }
+        // Check ReadDir(1) at EOF (different results).
+        (list2, err) = d.ReadDir(1);
+        if (len(list2) > 0 || !AreEqual(err, io.EOF)) {
+            d.Close();
+            t.errorf("%s: ReadDir(1) at EOF = %d entries, %w, wanted 0 entries, EOF"u8, dir, len(list2), err);
+            return;
+        }
+        // Check that close does not report an error.
+        {
+            var errΔ1 = d.Close(); if (errΔ1 != default!) {
+                t.errorf("%s: Close: %w"u8, dir, errΔ1);
+            }
+        }
+        // Check that closing twice doesn't crash.
+        // The return value doesn't matter.
         d.Close();
-        t.errorf("%s: ReadDir(-1) at EOF = %d entries, %w, wanted 0 entries, nil"u8, dir, len(list2), err);
-        return;
-    }
-    // Check ReadDir(1) at EOF (different results).
-    (list2, err) = d.ReadDir(1);
-    if (len(list2) > 0 || !AreEqual(err, io.EOF)) {
-        d.Close();
-        t.errorf("%s: ReadDir(1) at EOF = %d entries, %w, wanted 0 entries, EOF"u8, dir, len(list2), err);
-        return;
-    }
-    // Check that close does not report an error.
-    {
-        var errΔ1 = d.Close(); if (errΔ1 != default!) {
-            t.errorf("%s: Close: %w"u8, dir, errΔ1);
-        }
-    }
-    // Check that closing twice doesn't crash.
-    // The return value doesn't matter.
-    d.Close();
-    // Reopen directory, read a second time, make sure contents match.
-    {
-        d = t.openDir(dir); if (d == default!) {
-            return;
-        }
-    }
-    var dʗ1 = d;
-    defer(() => dʗ1.Close());
-    (list2, err) = d.ReadDir(-1);
-    if (err != default!) {
-        t.errorf("%s: second Open+ReadDir(-1): %w"u8, dir, err);
-        return;
-    }
-    Ꮡt.checkDirList(dir, firstOpenReadDir1Vsˢ, list, list2);
-    // Reopen directory, read a third time in pieces, make sure contents match.
-    {
-        d = t.openDir(dir); if (d == default!) {
-            return;
-        }
-    }
-    var dʗ2 = d;
-    defer(() => dʗ2.Close());
-    list2 = default!;
-    while (ᐧ) {
-        nint n = 1;
-        if (len(list2) > 0) {
-            n = 2;
-        }
-        var (frag, errΔ2) = d.ReadDir(n);
-        if (len(frag) > n) {
-            t.errorf("%s: third Open: ReadDir(%d) after %d: %d entries (too many)"u8, dir, n, len(list2), len(frag));
-            return;
-        }
-        list2 = append(list2, frag.ꓸꓸꓸ);
-        if (AreEqual(errΔ2, io.EOF)) {
-            break;
-        }
-        if (errΔ2 != default!) {
-            t.errorf("%s: third Open: ReadDir(%d) after %d: %w"u8, dir, n, len(list2), errΔ2);
-            return;
-        }
-        if (n == 0) {
-            t.errorf("%s: third Open: ReadDir(%d) after %d: 0 entries but nil error"u8, dir, n, len(list2));
-            return;
-        }
-    }
-    Ꮡt.checkDirList(dir, firstOpenReadDir1VsThirdˢ, list, list2);
-    // If fsys has ReadDir, check that it matches and is sorted.
-    {
-        var (fsys, ok) = t.fsys._<fs.ReadDirFS>(ᐧ); if (ok) {
-            var (list2Δ1, errΔ3) = fsys.ReadDir(dir);
-            if (errΔ3 != default!) {
-                t.errorf("%s: fsys.ReadDir: %w"u8, dir, errΔ3);
+        // Reopen directory, read a second time, make sure contents match.
+        {
+            d = t.openDir(dir); if (d == default!) {
                 return;
             }
-            Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsysˢ, list, list2Δ1);
-            for (nint i = 0; i + 1 < len(list2Δ1); i++) {
-                if (list2Δ1[i].Name() >= list2Δ1[i + 1].Name()) {
-                    t.errorf("%s: fsys.ReadDir: list not sorted: %s before %s"u8, dir, list2Δ1[i].Name(), list2Δ1[i + 1].Name());
+        }
+        var dʗ1 = d;
+        defer(() => dʗ1.Close(), ref ᒐ);
+        (list2, err) = d.ReadDir(-1);
+        if (err != default!) {
+            t.errorf("%s: second Open+ReadDir(-1): %w"u8, dir, err);
+            return;
+        }
+        Ꮡt.checkDirList(dir, firstOpenReadDir1Vsˢ, list, list2);
+        // Reopen directory, read a third time in pieces, make sure contents match.
+        {
+            d = t.openDir(dir); if (d == default!) {
+                return;
+            }
+        }
+        var dʗ2 = d;
+        defer(() => dʗ2.Close(), ref ᒐ);
+        list2 = default!;
+        while (ᐧ) {
+            nint n = 1;
+            if (len(list2) > 0) {
+                n = 2;
+            }
+            var (frag, errΔ2) = d.ReadDir(n);
+            if (len(frag) > n) {
+                t.errorf("%s: third Open: ReadDir(%d) after %d: %d entries (too many)"u8, dir, n, len(list2), len(frag));
+                return;
+            }
+            list2 = append(list2, frag.ꓸꓸꓸ);
+            if (AreEqual(errΔ2, io.EOF)) {
+                break;
+            }
+            if (errΔ2 != default!) {
+                t.errorf("%s: third Open: ReadDir(%d) after %d: %w"u8, dir, n, len(list2), errΔ2);
+                return;
+            }
+            if (n == 0) {
+                t.errorf("%s: third Open: ReadDir(%d) after %d: 0 entries but nil error"u8, dir, n, len(list2));
+                return;
+            }
+        }
+        Ꮡt.checkDirList(dir, firstOpenReadDir1VsThirdˢ, list, list2);
+        // If fsys has ReadDir, check that it matches and is sorted.
+        {
+            var (fsys, ok) = t.fsys._<fs.ReadDirFS>(ᐧ); if (ok) {
+                var (list2Δ1, errΔ3) = fsys.ReadDir(dir);
+                if (errΔ3 != default!) {
+                    t.errorf("%s: fsys.ReadDir: %w"u8, dir, errΔ3);
+                    return;
+                }
+                Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsysˢ, list, list2Δ1);
+                for (nint i = 0; i + 1 < len(list2Δ1); i++) {
+                    if (list2Δ1[i].Name() >= list2Δ1[i + 1].Name()) {
+                        t.errorf("%s: fsys.ReadDir: list not sorted: %s before %s"u8, dir, list2Δ1[i].Name(), list2Δ1[i + 1].Name());
+                    }
                 }
             }
         }
-    }
-    // Check fs.ReadDir as well.
-    (list2, err) = fs.ReadDir(t.fsys, dir);
-    if (err != default!) {
-        t.errorf("%s: fs.ReadDir: %w"u8, dir, err);
-        return;
-    }
-    Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsˢ, list, list2);
-    for (nint i = 0; i + 1 < len(list2); i++) {
-        if (list2[i].Name() >= list2[i + 1].Name()) {
-            t.errorf("%s: fs.ReadDir: list not sorted: %s before %s"u8, dir, list2[i].Name(), list2[i + 1].Name());
+        // Check fs.ReadDir as well.
+        (list2, err) = fs.ReadDir(t.fsys, dir);
+        if (err != default!) {
+            t.errorf("%s: fs.ReadDir: %w"u8, dir, err);
+            return;
         }
+        Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsˢ, list, list2);
+        for (nint i = 0; i + 1 < len(list2); i++) {
+            if (list2[i].Name() >= list2[i + 1].Name()) {
+                t.errorf("%s: fs.ReadDir: list not sorted: %s before %s"u8, dir, list2[i].Name(), list2[i + 1].Name());
+            }
+        }
+        t.checkGlob(dir, list2);
     }
-    t.checkGlob(dir, list2);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // formatEntry formats an fs.DirEntry into a string for error messages and comparison.
 internal static @string formatEntry(fs.DirEntry entry) {
@@ -546,79 +551,84 @@ internal static readonly @string readFileˢ = "ReadFile"u8;
 internal static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile"u8;
 
 // checkFile checks that basic file reading works correctly.
-internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((defer, recover) => {
+internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    t.files = append(t.files, @file);
-    // Read entire file.
-    var (f, err) = t.fsys.Open(@file);
-    if (err != default!) {
-        t.errorf("%s: Open: %w"u8, @file, err);
-        return;
-    }
-    (var data, err) = io.ReadAll(new fs_FileᴠReader(f));
-    if (err != default!) {
+        t.files = append(t.files, @file);
+        // Read entire file.
+        var (f, err) = t.fsys.Open(@file);
+        if (err != default!) {
+            t.errorf("%s: Open: %w"u8, @file, err);
+            return;
+        }
+        (var data, err) = io.ReadAll(new fs_FileᴠReader(f));
+        if (err != default!) {
+            f.Close();
+            t.errorf("%s: Open+ReadAll: %w"u8, @file, err);
+            return;
+        }
+        {
+            var errΔ1 = f.Close(); if (errΔ1 != default!) {
+                t.errorf("%s: Close: %w"u8, @file, errΔ1);
+            }
+        }
+        // Check that closing twice doesn't crash.
+        // The return value doesn't matter.
         f.Close();
-        t.errorf("%s: Open+ReadAll: %w"u8, @file, err);
-        return;
-    }
-    {
-        var errΔ1 = f.Close(); if (errΔ1 != default!) {
-            t.errorf("%s: Close: %w"u8, @file, errΔ1);
+        // Check that ReadFile works if present.
+        {
+            var (fsys, ok) = t.fsys._<fs.ReadFileFS>(ᐧ); if (ok) {
+                var (data2Δ1, errΔ2) = fsys.ReadFile(@file);
+                if (errΔ2 != default!) {
+                    t.errorf("%s: fsys.ReadFile: %w"u8, @file, errΔ2);
+                    return;
+                }
+                t.checkFileRead(@file, readAllVsFsysReadFileˢ, data, data2Δ1);
+                // Modify the data and check it again. Modifying the
+                // returned byte slice should not affect the next call.
+                foreach (var (i, _) in data2Δ1) {
+                    data2Δ1[i]++;
+                }
+                (data2Δ1, errΔ2) = fsys.ReadFile(@file);
+                if (errΔ2 != default!) {
+                    t.errorf("%s: second call to fsys.ReadFile: %w"u8, @file, errΔ2);
+                    return;
+                }
+                t.checkFileRead(@file, readallVsSecondFsysˢ, data, data2Δ1);
+                    var fsysʗ1 = fsys;
+                t.checkBadPath(@file, readFileˢ,
+                    (@string name) => {
+                        var (_, errΔ3) = fsysʗ1.ReadFile(name);
+                        return errΔ3;
+                    });
+            }
+        }
+        // Check that fs.ReadFile works with t.fsys.
+        (var data2, err) = fs.ReadFile(t.fsys, @file);
+        if (err != default!) {
+            t.errorf("%s: fs.ReadFile: %w"u8, @file, err);
+            return;
+        }
+        t.checkFileRead(@file, readAllVsFsReadFileˢ, data, data2);
+        // Use iotest.TestReader to check small reads, Seek, ReadAt.
+        (f, err) = t.fsys.Open(@file);
+        if (err != default!) {
+            t.errorf("%s: second Open: %w"u8, @file, err);
+            return;
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        {
+            var errΔ4 = iotest.TestReader(new fs_FileᴠReader(f), data); if (errΔ4 != default!) {
+                t.errorf("%s: failed TestReader:\n\t%s"u8, @file, strings.ReplaceAll(errΔ4.Error(), "\n"u8, "\n\t"u8));
+            }
         }
     }
-    // Check that closing twice doesn't crash.
-    // The return value doesn't matter.
-    f.Close();
-    // Check that ReadFile works if present.
-    {
-        var (fsys, ok) = t.fsys._<fs.ReadFileFS>(ᐧ); if (ok) {
-            var (data2Δ1, errΔ2) = fsys.ReadFile(@file);
-            if (errΔ2 != default!) {
-                t.errorf("%s: fsys.ReadFile: %w"u8, @file, errΔ2);
-                return;
-            }
-            t.checkFileRead(@file, readAllVsFsysReadFileˢ, data, data2Δ1);
-            // Modify the data and check it again. Modifying the
-            // returned byte slice should not affect the next call.
-            foreach (var (i, _) in data2Δ1) {
-                data2Δ1[i]++;
-            }
-            (data2Δ1, errΔ2) = fsys.ReadFile(@file);
-            if (errΔ2 != default!) {
-                t.errorf("%s: second call to fsys.ReadFile: %w"u8, @file, errΔ2);
-                return;
-            }
-            t.checkFileRead(@file, readallVsSecondFsysˢ, data, data2Δ1);
-                var fsysʗ1 = fsys;
-            t.checkBadPath(@file, readFileˢ,
-                (@string name) => {
-                    var (_, errΔ3) = fsysʗ1.ReadFile(name);
-                    return errΔ3;
-                });
-        }
-    }
-    // Check that fs.ReadFile works with t.fsys.
-    (var data2, err) = fs.ReadFile(t.fsys, @file);
-    if (err != default!) {
-        t.errorf("%s: fs.ReadFile: %w"u8, @file, err);
-        return;
-    }
-    t.checkFileRead(@file, readAllVsFsReadFileˢ, data, data2);
-    // Use iotest.TestReader to check small reads, Seek, ReadAt.
-    (f, err) = t.fsys.Open(@file);
-    if (err != default!) {
-        t.errorf("%s: second Open: %w"u8, @file, err);
-        return;
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    {
-        var errΔ4 = iotest.TestReader(new fs_FileᴠReader(f), data); if (errΔ4 != default!) {
-            t.errorf("%s: failed TestReader:\n\t%s"u8, @file, strings.ReplaceAll(errΔ4.Error(), "\n"u8, "\n\t"u8));
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void checkFileRead(this ref fsTester t, @string @file, @string desc, slice<byte> data1, slice<byte> data2) {
     if (((sstring)data1) != ((sstring)data2)) {

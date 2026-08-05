@@ -38,7 +38,7 @@ internal static @string /*result*/ recovered(any v) {
     @string result = default!;
     GoFrame ᒐ = default;
     try {
-        deferǃ(() => {
+        defer(() => {
             var switchᴛ2 = recover();
             switch (switchᴛ2.type()) {
             case @string _:

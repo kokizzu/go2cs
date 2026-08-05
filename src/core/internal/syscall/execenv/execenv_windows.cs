@@ -22,18 +22,19 @@ partial class execenv_package {
 public static (slice<@string> env, error err) Default(ж<syscall.SysProcAttr> Ꮡsys) {
     slice<@string> env = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var sys = ref Ꮡsys.DerefOrNull();
 
         if (Ꮡsys == nil || sys.Token == 0) {
-            (env, err) = (syscall.Environ(), default!); return;
+            (env, err) = (syscall.Environ(), default!); goto ᒐdone;
         }
         ref var blockp = ref heap<ж<uint16>>(out var Ꮡblockp);
         err = Δwindows.CreateEnvironmentBlock(Ꮡblockp, sys.Token, false);
         if (err != default!) {
-            (env, err) = (default!, err); return;
+            (env, err) = (default!, err); goto ᒐdone;
         }
-        deferǃ(Δwindows.DestroyEnvironmentBlock, blockp, defer);
+        defer(Δwindows.DestroyEnvironmentBlock, blockp, ref ᒐ);
         uintptr size = /* unsafe.Sizeof(*blockp) */ 2;
         while (blockp.Value != 0) {
             // environment block ends with empty string
@@ -46,8 +47,10 @@ public static (slice<@string> env, error err) Default(ж<syscall.SysProcAttr> �
             env = append(env, syscall.UTF16ToString(entry));
             blockp = (ж<uint16>)(uintptr)(@unsafe.Add(end, size));
         }
-    });
-    return (env, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (env, err);
 }
 
 } // end execenv_package

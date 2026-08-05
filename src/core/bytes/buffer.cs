@@ -256,31 +256,36 @@ public static UntypedInt MinRead => 512;
 
 // growSlice grows b by n, preserving the original content of b.
 // If the allocation fails, it panics with ErrTooLarge.
-internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, recover) => {
-    defer(() => {
-        if (recover() != default!) {
-            throw panic(ErrTooLarge);
+internal static slice<byte> growSlice(slice<byte> b, nint n) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            if (recover() != default!) {
+                throw panic(ErrTooLarge);
+            }
+        }, ref ᒐ);
+        // TODO(http://golang.org/issue/51462): We should rely on the append-make
+        // pattern so that the compiler can call runtime.growslice. For example:
+        //	return append(b, make([]byte, n)...)
+        // This avoids unnecessary zero-ing of the first len(b) bytes of the
+        // allocated slice, but this pattern causes b to escape onto the heap.
+        //
+        // Instead use the append-make pattern with a nil slice to ensure that
+        // we allocate buffers rounded up to the closest size class.
+        nint c = len(b) + n;
+        // ensure enough space for n elements
+        if (c < 2 * cap(b)) {
+            // The growth rate has historically always been 2x. In the future,
+            // we could rely purely on append to determine the growth rate.
+            c = 2 * cap(b);
         }
-    });
-    // TODO(http://golang.org/issue/51462): We should rely on the append-make
-    // pattern so that the compiler can call runtime.growslice. For example:
-    //	return append(b, make([]byte, n)...)
-    // This avoids unnecessary zero-ing of the first len(b) bytes of the
-    // allocated slice, but this pattern causes b to escape onto the heap.
-    //
-    // Instead use the append-make pattern with a nil slice to ensure that
-    // we allocate buffers rounded up to the closest size class.
-    nint c = len(b) + n;
-    // ensure enough space for n elements
-    if (c < 2 * cap(b)) {
-        // The growth rate has historically always been 2x. In the future,
-        // we could rely purely on append to determine the growth rate.
-        c = 2 * cap(b);
+        var b2 = append(slice<byte>(default!), new slice<byte>(c).ꓸꓸꓸ);
+        copy(b2, b);
+        return b2[..(int)(len(b))];
     }
-    var b2 = append(slice<byte>(default!), new slice<byte>(c).ꓸꓸꓸ);
-    copy(b2, b);
-    return b2[..(int)(len(b))];
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // WriteTo writes data to w until the buffer is drained or an error occurs.
 // The return value n is the number of bytes written; it always fits into an

@@ -174,77 +174,82 @@ public static (Trace, error) Parse(io.Reader r, version.Version vers) {
 internal static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8;
 
 // parse parses, post-processes and verifies the trace.
-internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error)>((defer, recover) => {
+internal static (Trace, error) parse(this ж<parser> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    defer(() => {
-        Ꮡp.Value.data = default!;
-    });
-    // We parse a trace by running the following steps in order:
-    //
-    // 1. In the initial pass we collect information about batches (their
-    //    locations and sizes.) We also parse CPU profiling samples in this
-    //    step, simply to reduce the number of full passes that we need.
-    //
-    // 2. In the second pass we parse batches and merge them into a globally
-    //    ordered event stream. This uses the batch information from the first
-    //    pass to quickly find batches.
-    //
-    // 3. After all events have been parsed we convert their timestamps from CPU
-    //    ticks to wall time. Furthermore we move timers and syscalls to
-    //    dedicated, fake Ps.
-    //
-    // 4. Finally, we validate the trace.
-    p.strings = new map<uint64, @string>();
-    p.batchOffsets = new map<int32, slice<batchOffset>>();
-    p.lastGs = new map<int32, uint64>();
-    p.stacks = new map<uint32, slice<uint64>>();
-    p.pcs = new map<uint64, Frame>();
-    p.inlineStringsMapping = new map<@string, nint>();
-    {
-        var errΔ1 = p.collectBatchesAndCPUSamples(); if (errΔ1 != default!) {
-            return (new Trace(nil), errΔ1);
-        }
-    }
-    var (events, err) = p.parseEventBatches();
-    if (err != default!) {
-        return (new Trace(nil), err);
-    }
-    if (p.ticksPerSec == 0) {
-        return (new Trace(nil), errors.New(noEvFrequencyEventˢ));
-    }
-    if (events.Len() > 0) {
-        // Translate cpu ticks to real time.
-        var minTs = events.Ptr(0).Value.Ts;
-        // Use floating point to avoid integer overflows.
-        var freq = 1e9D / (float64)p.ticksPerSec;
-        for (nint i = 0; i < events.Len(); i++) {
-            var ev = events.Ptr(i);
-            ev.Value.Ts = ((Timestamp)(int64)((float64)(int64)((~ev).Ts - minTs) * freq));
-            // Move timers and syscalls to separate fake Ps.
-            if (p.timerGoids[(~ev).G] && (~ev).Type == EvGoUnblock) {
-                ev.Value.P = TimerP;
-            }
-            if ((~ev).Type == EvGoSysExit) {
-                ev.Value.P = SyscallP;
+        defer(() => {
+            Ꮡp.Value.data = default!;
+        }, ref ᒐ);
+        // We parse a trace by running the following steps in order:
+        //
+        // 1. In the initial pass we collect information about batches (their
+        //    locations and sizes.) We also parse CPU profiling samples in this
+        //    step, simply to reduce the number of full passes that we need.
+        //
+        // 2. In the second pass we parse batches and merge them into a globally
+        //    ordered event stream. This uses the batch information from the first
+        //    pass to quickly find batches.
+        //
+        // 3. After all events have been parsed we convert their timestamps from CPU
+        //    ticks to wall time. Furthermore we move timers and syscalls to
+        //    dedicated, fake Ps.
+        //
+        // 4. Finally, we validate the trace.
+        p.strings = new map<uint64, @string>();
+        p.batchOffsets = new map<int32, slice<batchOffset>>();
+        p.lastGs = new map<int32, uint64>();
+        p.stacks = new map<uint32, slice<uint64>>();
+        p.pcs = new map<uint64, Frame>();
+        p.inlineStringsMapping = new map<@string, nint>();
+        {
+            var errΔ1 = p.collectBatchesAndCPUSamples(); if (errΔ1 != default!) {
+                return (new Trace(nil), errΔ1);
             }
         }
-    }
-    {
-        var errΔ2 = Ꮡp.postProcessTrace(events); if (errΔ2 != default!) {
-            return (new Trace(nil), errΔ2);
+        var (events, err) = p.parseEventBatches();
+        if (err != default!) {
+            return (new Trace(nil), err);
         }
+        if (p.ticksPerSec == 0) {
+            return (new Trace(nil), errors.New(noEvFrequencyEventˢ));
+        }
+        if (events.Len() > 0) {
+            // Translate cpu ticks to real time.
+            var minTs = events.Ptr(0).Value.Ts;
+            // Use floating point to avoid integer overflows.
+            var freq = 1e9D / (float64)p.ticksPerSec;
+            for (nint i = 0; i < events.Len(); i++) {
+                var ev = events.Ptr(i);
+                ev.Value.Ts = ((Timestamp)(int64)((float64)(int64)((~ev).Ts - minTs) * freq));
+                // Move timers and syscalls to separate fake Ps.
+                if (p.timerGoids[(~ev).G] && (~ev).Type == EvGoUnblock) {
+                    ev.Value.P = TimerP;
+                }
+                if ((~ev).Type == EvGoSysExit) {
+                    ev.Value.P = SyscallP;
+                }
+            }
+        }
+        {
+            var errΔ2 = Ꮡp.postProcessTrace(events); if (errΔ2 != default!) {
+                return (new Trace(nil), errΔ2);
+            }
+        }
+        var res = new Trace(
+            Version: p.ver,
+            Events: events,
+            Stacks: p.stacks,
+            Strings: p.strings,
+            InlineStrings: p.inlineStrings,
+            PCs: p.pcs
+        );
+        return (res, default!);
     }
-    var res = new Trace(
-        Version: p.ver,
-        Events: events,
-        Stacks: p.stacks,
-        Strings: p.strings,
-        InlineStrings: p.inlineStrings,
-        PCs: p.pcs
-    );
-    return (res, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // rawEvent is a helper type used during parsing.
 [GoType] partial struct rawEvent {

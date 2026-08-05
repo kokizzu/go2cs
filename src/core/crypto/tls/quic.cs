@@ -224,47 +224,52 @@ internal static readonly @string tlsHandshakeDataReceivedˢ = "tls: handshake da
 
 // HandleData handles handshake bytes received from the peer.
 // It may produce connection events, which may be read with [QUICConn.NextEvent].
-public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level, slice<byte> data) => func<error>((defer, recover) => {
+public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level, slice<byte> data) {
+    GoFrame ᒐ = default;
+    try {
     ref var q = ref Ꮡq.DerefOrNull();
 
-    var c = q.conn;
-    if ((~c).@in.level != level) {
-        return quicError(c.of(Conn.Ꮡin).setErrorLocked(errors.New(tlsHandshakeDataReceivedˢ)));
-    }
-    c.Value.quic.Value.readbuf = data;
-    ᐸꟷ((~(~c).quic).signalc);
-    var (_, ok) = ᐸꟷ((~(~c).quic).blockedc, ꟷ);
-    if (ok) {
-        // The handshake goroutine is waiting for more data.
-        return default!;
-    }
-    // The handshake goroutine has exited.
-    c.of(Conn.ᏑhandshakeMutex).Lock();
-    var cʗ1 = c;
-    defer(cʗ1.of(Conn.ᏑhandshakeMutex).Unlock);
-    c.of(Conn.Ꮡhand).Write((~(~c).quic).readbuf);
-    c.Value.quic.Value.readbuf = default!;
-    while (q.conn.of(Conn.Ꮡhand).Len() >= 4 && (~q.conn).handshakeErr == default!) {
-        var b = q.conn.of(Conn.Ꮡhand).Bytes();
-        nint n = (nint)((nint)(((nint)b[1] << (int)(16)) | ((nint)b[2] << (int)(8))) | (nint)b[3]);
-        if (n > maxHandshake) {
-            q.conn.Value.handshakeErr = fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes"u8, n, (nint)(maxHandshake));
-            break;
+        var c = q.conn;
+        if ((~c).@in.level != level) {
+            return quicError(c.of(Conn.Ꮡin).setErrorLocked(errors.New(tlsHandshakeDataReceivedˢ)));
         }
-        if (len(b) < 4 + n) {
+        c.Value.quic.Value.readbuf = data;
+        ᐸꟷ((~(~c).quic).signalc);
+        var (_, ok) = ᐸꟷ((~(~c).quic).blockedc, ꟷ);
+        if (ok) {
+            // The handshake goroutine is waiting for more data.
             return default!;
         }
-        {
-            var err = q.conn.handlePostHandshakeMessage(); if (err != default!) {
-                q.conn.Value.handshakeErr = err;
+        // The handshake goroutine has exited.
+        c.of(Conn.ᏑhandshakeMutex).Lock();
+        var cʗ1 = c;
+        defer(cʗ1.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        c.of(Conn.Ꮡhand).Write((~(~c).quic).readbuf);
+        c.Value.quic.Value.readbuf = default!;
+        while (q.conn.of(Conn.Ꮡhand).Len() >= 4 && (~q.conn).handshakeErr == default!) {
+            var b = q.conn.of(Conn.Ꮡhand).Bytes();
+            nint n = (nint)((nint)(((nint)b[1] << (int)(16)) | ((nint)b[2] << (int)(8))) | (nint)b[3]);
+            if (n > maxHandshake) {
+                q.conn.Value.handshakeErr = fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes"u8, n, (nint)(maxHandshake));
+                break;
+            }
+            if (len(b) < 4 + n) {
+                return default!;
+            }
+            {
+                var err = q.conn.handlePostHandshakeMessage(); if (err != default!) {
+                    q.conn.Value.handshakeErr = err;
+                }
             }
         }
+        if ((~q.conn).handshakeErr != default!) {
+            return quicError((~q.conn).handshakeErr);
+        }
+        return default!;
     }
-    if ((~q.conn).handshakeErr != default!) {
-        return quicError((~q.conn).handshakeErr);
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct QUICSessionTicketOptions {
     // EarlyData specifies whether the ticket may be used for 0-RTT.
@@ -468,40 +473,45 @@ internal static (slice<byte>, error) quicGetTransportParameters(this ж<Conn> �
 //
 // The handshake may become blocked waiting for handshake bytes
 // or for the user to provide transport parameters.
-internal static error quicWaitForSignal(this ж<Conn> Ꮡc) => func<error>((defer, recover) => {
+internal static error quicWaitForSignal(this ж<Conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    // Drop the handshake mutex while blocked to allow the user
-    // to call ConnectionState before the handshake completes.
-    Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock();
-    defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Lock);
-    // Send on blockedc to notify the QUICConn that the handshake is blocked.
-    // Exported methods of QUICConn wait for the handshake to become blocked
-    // before returning to the user.
-    var selᴛ3 = (~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
-    var selᴛ4 = (~c.quic).cancelc;
-    switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-    case 0: {
-        break;
+        // Drop the handshake mutex while blocked to allow the user
+        // to call ConnectionState before the handshake completes.
+        Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock();
+        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Lock, ref ᒐ);
+        // Send on blockedc to notify the QUICConn that the handshake is blocked.
+        // Exported methods of QUICConn wait for the handshake to become blocked
+        // before returning to the user.
+        var selᴛ3 = (~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        var selᴛ4 = (~c.quic).cancelc;
+        switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+        case 0: {
+            break;
+        }
+        case 1 when selᴛ4.ꟷᐳ(out _): {
+            return Ꮡc.sendAlertLocked(alertCloseNotify);
+        }}
+        // The QUICConn reads from signalc to notify us that the handshake may
+        // be able to proceed. (The QUICConn reads, because we close signalc to
+        // indicate that the handshake has completed.)
+        var selᴛ5 = (~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        var selᴛ6 = (~c.quic).cancelc;
+        switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+        case 0: {
+            c.hand.Write((~c.quic).readbuf);
+            c.quic.Value.readbuf = default!;
+            break;
+        }
+        case 1 when selᴛ6.ꟷᐳ(out _): {
+            return Ꮡc.sendAlertLocked(alertCloseNotify);
+        }}
+        return default!;
     }
-    case 1 when selᴛ4.ꟷᐳ(out _): {
-        return Ꮡc.sendAlertLocked(alertCloseNotify);
-    }}
-    // The QUICConn reads from signalc to notify us that the handshake may
-    // be able to proceed. (The QUICConn reads, because we close signalc to
-    // indicate that the handshake has completed.)
-    var selᴛ5 = (~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
-    var selᴛ6 = (~c.quic).cancelc;
-    switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-    case 0: {
-        c.hand.Write((~c.quic).readbuf);
-        c.quic.Value.readbuf = default!;
-        break;
-    }
-    case 1 when selᴛ6.ꟷᐳ(out _): {
-        return Ꮡc.sendAlertLocked(alertCloseNotify);
-    }}
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end tls_package

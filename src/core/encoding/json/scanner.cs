@@ -17,11 +17,16 @@ using sync = sync_package;
 partial class json_package {
 
 // Valid reports whether data is a valid JSON encoding.
-public static bool Valid(slice<byte> data) => func((defer, recover) => {
-    var scan = newScanner();
-    deferǃ(freeScanner, scan, defer);
-    return checkValid(data, scan) == default!;
-});
+public static bool Valid(slice<byte> data) {
+    GoFrame ᒐ = default;
+    try {
+        var scan = newScanner();
+        defer(freeScanner, scan, ref ᒐ);
+        return checkValid(data, scan) == default!;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // checkValid verifies that data is valid JSON-encoded data.
 // scan is passed in for use by checkValid to avoid an allocation.

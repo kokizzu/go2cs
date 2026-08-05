@@ -197,7 +197,7 @@ private static readonly object talliesScoreˢ = (@string)"tallies score:"u8;
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        deferǃ(note, (nint)(CrossPkgLib.Precision), ref ᒐ);
+        defer(note, (nint)(CrossPkgLib.Precision), ref ᒐ);
         var b = CrossPkgLib.Boiling();
         var r = b.Add(10D);
         fmt.Println((float64)b);

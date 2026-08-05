@@ -74,7 +74,7 @@ internal static void tightenGuards() {
             fmt.Println(lineCount + infinity);
         }
         const nint localDefer = 42;
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), (nint)(localDefer), ref ᒐ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), (nint)(localDefer), ref ᒐ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

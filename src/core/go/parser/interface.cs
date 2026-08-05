@@ -87,7 +87,8 @@ public static Mode AllErrors => /* SpuriousErrors */ 32;                  // rep
 public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @string filename, any src, Mode mode) {
     ж<ast.File> f = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var fset = ref Ꮡfset.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
@@ -97,7 +98,7 @@ public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @
         // get source
         (var text, err) = readSource(filename, src);
         if (err != default!) {
-            (f, err) = (default!, err); return;
+            (f, err) = (default!, err); goto ᒐdone;
         }
         ref var p = ref heap(new parser(), out var Ꮡp);
         defer(() => {
@@ -126,12 +127,14 @@ public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @
             }
             Ꮡp.Value.errors.Sort();
             Ꮡerr.ValueSlot = Ꮡp.Value.errors.Err();
-        });
+        }, ref ᒐ);
         // parse source
         Ꮡp.init(Ꮡfset, filename, text, mode);
         f = Ꮡp.parseFile();
-    });
-    return (f, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (f, Ꮡerr.ValueSlot);
 }
 
 // ParseDir calls [ParseFile] for all files with names ending in ".go" in the
@@ -204,7 +207,8 @@ public static (map<@string, ж<ast.Package>> pkgs, error first) ParseDir(ж<toke
 public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset, @string filename, any src, Mode mode) {
     ast.Expr expr = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var fset = ref Ꮡfset.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
@@ -214,7 +218,7 @@ public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset
         // get source
         (var text, err) = readSource(filename, src);
         if (err != default!) {
-            (expr, err) = (default!, err); return;
+            (expr, err) = (default!, err); goto ᒐdone;
         }
         ref var p = ref heap(new parser(), out var Ꮡp);
         defer(() => {
@@ -233,7 +237,7 @@ public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset
             }
             Ꮡp.Value.errors.Sort();
             Ꮡerr.ValueSlot = Ꮡp.Value.errors.Err();
-        });
+        }, ref ᒐ);
         // parse expr
         Ꮡp.init(Ꮡfset, filename, text, mode);
         expr = Ꮡp.parseRhs();
@@ -243,8 +247,10 @@ public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset
             p.next();
         }
         Ꮡp.expect(token.EOF);
-    });
-    return (expr, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (expr, Ꮡerr.ValueSlot);
 }
 
 // ParseExpr is a convenience function for obtaining the AST of an expression x.

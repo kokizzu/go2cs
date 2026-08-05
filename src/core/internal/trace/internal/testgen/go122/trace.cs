@@ -25,25 +25,30 @@ using ꓸꓸꓸuint64 = Span<uint64>;
 
 partial class testkit_package {
 
-public static void ΔMain(Action<ж<Trace>> f) => func((defer, recover) => {
-    // Create an output file.
-    var (@out, err) = os.Create(os.Args[1]);
-    if (err != default!) {
-        throw panic(err.Error());
-    }
-    var outʗ1 = @out;
-    defer(() => outʗ1.Close());
-    // Create a new trace.
-    var trace = NewTrace();
-    // Call the generator.
-    f(trace);
-    // Write out the generator's state.
-    {
-        var (_, errΔ1) = @out.Write(trace.Generate()); if (errΔ1 != default!) {
-            throw panic(errΔ1.Error());
+public static void ΔMain(Action<ж<Trace>> f) {
+    GoFrame ᒐ = default;
+    try {
+        // Create an output file.
+        var (@out, err) = os.Create(os.Args[1]);
+        if (err != default!) {
+            throw panic(err.Error());
+        }
+        var outʗ1 = @out;
+        defer(() => outʗ1.Close(), ref ᒐ);
+        // Create a new trace.
+        var trace = NewTrace();
+        // Call the generator.
+        f(trace);
+        // Write out the generator's state.
+        {
+            var (_, errΔ1) = @out.Write(trace.Generate()); if (errΔ1 != default!) {
+                throw panic(errΔ1.Error());
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Trace represents an execution trace for testing.
 //

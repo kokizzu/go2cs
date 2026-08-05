@@ -74,7 +74,7 @@ internal static void Main() {
     ((Action)(() => {
         GoFrame ᒐ = default;
         try {
-            deferǃ(() => {
+            defer(() => {
                 fmt.Println(recoveredˢ, describe(recover()));
             }, ref ᒐ);
             panicOnceʗ1();

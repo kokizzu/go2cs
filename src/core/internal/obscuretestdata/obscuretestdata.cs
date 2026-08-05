@@ -42,44 +42,52 @@ private static readonly @string obscuretestdataDecodedˢ = "obscuretestdata-deco
 public static (@string path, error err) DecodeToTempFile(@string name) {
     @string path = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         (var f, err) = os.Open(name);
         if (err != default!) {
-            (path, err) = ("", err); return;
+            (path, err) = ("", err); goto ᒐdone;
         }
         var fʗ1 = f;
-        defer(() => fʗ1.Close());
+        defer(() => fʗ1.Close(), ref ᒐ);
         (var tmp, err) = os.CreateTemp(""u8, obscuretestdataDecodedˢ);
         if (err != default!) {
-            (path, err) = ("", err); return;
+            (path, err) = ("", err); goto ᒐdone;
         }
         {
             var (_, errΔ1) = io.Copy(new os.FileжWriter(tmp), base64.NewDecoder(base64.StdEncoding, new os_FileжReader(f))); if (errΔ1 != default!) {
                 tmp.Close();
                 os.Remove(tmp.Name());
-                (path, err) = ("", errΔ1); return;
+                (path, err) = ("", errΔ1); goto ᒐdone;
             }
         }
         {
             var errΔ2 = tmp.Close(); if (errΔ2 != default!) {
                 os.Remove(tmp.Name());
-                (path, err) = ("", errΔ2); return;
+                (path, err) = ("", errΔ2); goto ᒐdone;
             }
         }
         (path, err) = (tmp.Name(), default!);
-    });
-    return (path, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (path, err);
 }
 
 // ReadFile reads the named file and returns its decoded contents.
-public static (slice<byte>, error) ReadFile(@string name) => func<(slice<byte>, error)>((defer, recover) => {
-    var (f, err) = os.Open(name);
-    if (err != default!) {
-        return (default!, err);
+public static (slice<byte>, error) ReadFile(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        return io.ReadAll(base64.NewDecoder(base64.StdEncoding, new os_FileжReader(f)));
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    return io.ReadAll(base64.NewDecoder(base64.StdEncoding, new os_FileжReader(f)));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end obscuretestdata_package

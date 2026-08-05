@@ -21,7 +21,7 @@ internal static (int64 written, error err) send(nint n) {
     try {
     ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(() => {
+        defer(() => {
             fmt.Println(hookˢ, written, Ꮡerr.ValueSlot, written > 0);
         }, ref ᒐ);
         (var v, err) = pair(n);
@@ -57,7 +57,7 @@ internal static (int64, error) lit(nint n) {
         GoFrame ᒐ = default;
         try {
             ref var e = ref Ꮡe.ValueSlot;
-            deferǃ(() => {
+            defer(() => {
                 fmt.Println(litHookˢ, w, Ꮡe.ValueSlot);
             }, ref ᒐ);
             (var v, Ꮡe.ValueSlot) = pair(n);

@@ -93,19 +93,24 @@ public static UntypedInt SidTypeLabel => 10;
 
 // StringToSid converts a string-format security identifier
 // sid into a valid, functional sid.
-public static (ж<SID>, error) StringToSid(@string s) => func<(ж<SID>, error)>((defer, recover) => {
-    ref var sid = ref heap<ж<SID>>(out var Ꮡsid);
-    var (p, e) = UTF16PtrFromString(s);
-    if (e != default!) {
-        return (default!, e);
+public static (ж<SID>, error) StringToSid(@string s) {
+    GoFrame ᒐ = default;
+    try {
+        ref var sid = ref heap<ж<SID>>(out var Ꮡsid);
+        var (p, e) = UTF16PtrFromString(s);
+        if (e != default!) {
+            return (default!, e);
+        }
+        e = ConvertStringSidToSid(p, Ꮡsid);
+        if (e != default!) {
+            return (default!, e);
+        }
+        defer(LocalFree, ((ΔHandle)(uintptr)sid), ref ᒐ);
+        return sid.Copy();
     }
-    e = ConvertStringSidToSid(p, Ꮡsid);
-    if (e != default!) {
-        return (default!, e);
-    }
-    deferǃ(LocalFree, ((ΔHandle)(uintptr)sid), defer);
-    return sid.Copy();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // LookupSID retrieves a security identifier sid for the account
 // and the name of the domain on which the account was found.
@@ -153,15 +158,20 @@ public static (ж<SID> sid, @string domain, uint32 accType, error err) LookupSID
 
 // String converts sid to a string format
 // suitable for display, storage, or transmission.
-public static (@string, error) String(this ж<SID> Ꮡsid) => func<(@string, error)>((defer, recover) => {
-    ref var s = ref heap<ж<uint16>>(out var Ꮡs);
-    var e = ConvertSidToStringSid(Ꮡsid, Ꮡs);
-    if (e != default!) {
-        return ("", e);
+public static (@string, error) String(this ж<SID> Ꮡsid) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref heap<ж<uint16>>(out var Ꮡs);
+        var e = ConvertSidToStringSid(Ꮡsid, Ꮡs);
+        if (e != default!) {
+            return ("", e);
+        }
+        defer(LocalFree, ((ΔHandle)(uintptr)s), ref ᒐ);
+        return (utf16PtrToString(s), default!);
     }
-    deferǃ(LocalFree, ((ΔHandle)(uintptr)s), defer);
-    return (utf16PtrToString(s), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Len returns the length, in bytes, of a valid security identifier sid.
 public static nint Len(this ж<SID> Ꮡsid) {

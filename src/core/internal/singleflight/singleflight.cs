@@ -118,20 +118,25 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
 // will call the function rather than waiting for an earlier call to complete.
 // Returns whether the key was forgotten or unknown--that is, whether no
 // other goroutines are waiting for the result.
-public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) => func<bool>((defer, recover) => {
+public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) {
+    GoFrame ᒐ = default;
+    try {
     ref var g = ref Ꮡg.DerefOrNull();
 
-    Ꮡg.of(Group.Ꮡmu).Lock();
-    defer(Ꮡg.of(Group.Ꮡmu).Unlock);
-    var (c, ok) = g.m[key, ꟷ];
-    if (!ok) {
-        return true;
+        Ꮡg.of(Group.Ꮡmu).Lock();
+        defer(Ꮡg.of(Group.Ꮡmu).Unlock, ref ᒐ);
+        var (c, ok) = g.m[key, ꟷ];
+        if (!ok) {
+            return true;
+        }
+        if ((~c).dups == 0) {
+            delete(g.m, key);
+            return true;
+        }
+        return false;
     }
-    if ((~c).dups == 0) {
-        delete(g.m, key);
-        return true;
-    }
-    return false;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end singleflight_package

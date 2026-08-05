@@ -96,9 +96,10 @@ internal static readonly @string emptyWildcardˢ = "empty wildcard"u8;
 internal static (ж<pattern>, error err) parsePattern(@string s) {
     ж<pattern> _ᴛ1 = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         if (builtin.len(s) == 0) {
-            (_ᴛ1, err) = (default!, errors.New(emptyPatternˢ)); return;
+            (_ᴛ1, err) = (default!, errors.New(emptyPatternˢ)); goto ᒐdone;
         }
         nint off = 0;
         // offset into string
@@ -106,7 +107,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
             if (err != default!) {
                 err = fmt.Errorf("at offset %d: %w"u8, off, err);
             }
-        });
+        }, ref ᒐ);
         ref var method = ref heap<@string>(out var Ꮡmethod);
         method = s;
         @string rest = ""u8;
@@ -121,7 +122,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
             method = ""u8;
         }
         if (method != ""u8 && !validMethod(method)) {
-            (_ᴛ1, err) = (default!, fmt.Errorf("invalid method %q"u8, method)); return;
+            (_ᴛ1, err) = (default!, fmt.Errorf("invalid method %q"u8, method)); goto ᒐdone;
         }
         var p = Ꮡ(new pattern(str: s, method: method));
         if (found) {
@@ -129,14 +130,14 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
         }
         nint i = strings.IndexByte(rest, (rune)'/');
         if (i < 0) {
-            (_ᴛ1, err) = (default!, errors.New(hostPathMissingˢ)); return;
+            (_ᴛ1, err) = (default!, errors.New(hostPathMissingˢ)); goto ᒐdone;
         }
         p.Value.host = rest[..(int)(i)];
         rest = rest[(int)(i)..];
         {
             nint j = strings.IndexByte((~p).host, (rune)'{'); if (j >= 0) {
                 off += j;
-                (_ᴛ1, err) = (default!, errors.New(hostContainsMissingˢ)); return;
+                (_ᴛ1, err) = (default!, errors.New(hostContainsMissingˢ)); goto ᒐdone;
             }
         }
         // At this point, rest is the path.
@@ -144,7 +145,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
         // An unclean path with a method that is not CONNECT can never match,
         // because paths are cleaned before matching.
         if (method != ""u8 && method != "CONNECT"u8 && rest != cleanPath(rest)) {
-            (_ᴛ1, err) = (default!, errors.New(nonConnectPatternWithˢ)); return;
+            (_ᴛ1, err) = (default!, errors.New(nonConnectPatternWithˢ)); goto ᒐdone;
         }
         var seenNames = new map<@string, bool>{};
         // remember wildcard names to catch dups
@@ -171,31 +172,31 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
                 } else {
                     // Wildcard.
                     if (iΔ3 != 0) {
-                        (_ᴛ1, err) = (default!, errors.New(badWildcardSegmentMustˢ)); return;
+                        (_ᴛ1, err) = (default!, errors.New(badWildcardSegmentMustˢ)); goto ᒐdone;
                     }
                     if (seg[builtin.len(seg) - 1] != (rune)'}') {
-                        (_ᴛ1, err) = (default!, errors.New(badWildcardSegmentMustˢ2)); return;
+                        (_ᴛ1, err) = (default!, errors.New(badWildcardSegmentMustˢ2)); goto ᒐdone;
                     }
                     @string name = seg[1..(int)(builtin.len(seg) - 1)];
                     if (name == "$"u8) {
                         if (builtin.len(rest) != 0) {
-                            (_ᴛ1, err) = (default!, errors.New(notAtEndˢ)); return;
+                            (_ᴛ1, err) = (default!, errors.New(notAtEndˢ)); goto ᒐdone;
                         }
                         p.Value.segments = append((~p).segments, new segment(s: "/"u8));
                         break;
                     }
                     (name, var multi) = strings.CutSuffix(name, "..."u8);
                     if (multi && builtin.len(rest) != 0) {
-                        (_ᴛ1, err) = (default!, errors.New(wildcardNotAtEndˢ)); return;
+                        (_ᴛ1, err) = (default!, errors.New(wildcardNotAtEndˢ)); goto ᒐdone;
                     }
                     if (name == ""u8) {
-                        (_ᴛ1, err) = (default!, errors.New(emptyWildcardˢ)); return;
+                        (_ᴛ1, err) = (default!, errors.New(emptyWildcardˢ)); goto ᒐdone;
                     }
                     if (!isValidWildcardName(name)) {
-                        (_ᴛ1, err) = (default!, fmt.Errorf("bad wildcard name %q"u8, name)); return;
+                        (_ᴛ1, err) = (default!, fmt.Errorf("bad wildcard name %q"u8, name)); goto ᒐdone;
                     }
                     if (seenNames[name]) {
-                        (_ᴛ1, err) = (default!, fmt.Errorf("duplicate wildcard name %q"u8, name)); return;
+                        (_ᴛ1, err) = (default!, fmt.Errorf("duplicate wildcard name %q"u8, name)); goto ᒐdone;
                     }
                     seenNames[name] = true;
                     p.Value.segments = append((~p).segments, new segment(s: name, wild: true, multi: multi));
@@ -203,8 +204,10 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
             }
         }
         (_ᴛ1, err) = (p, default!);
-    });
-    return (_ᴛ1, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (_ᴛ1, err);
 }
 
 internal static bool isValidWildcardName(@string s) {

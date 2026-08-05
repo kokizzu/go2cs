@@ -14,7 +14,7 @@ public static void Add(this ж<Tally> Ꮡt, nint n) {
     try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-        deferǃ(() => {
+        defer(() => {
             Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
         }, ref ᒐ);
         t.total += n;
@@ -52,7 +52,7 @@ internal static (nint result, @string log) deferClosure(Tally tʗp, nint n) {
     try {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-        deferǃ(() => {
+        defer(() => {
             (result, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
         }, ref ᒐ);
         Ꮡt.Add(n);
@@ -71,10 +71,10 @@ internal static (nint total, @string log) deferMethodValue(Tally tʗp, nint n) {
     try {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-        deferǃ(() => {
+        defer(() => {
             (total, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
         }, ref ᒐ);
-        deferǃ(Ꮡt.Add, n, ref ᒐ);
+        defer(Ꮡt.Add, n, ref ᒐ);
         t.total++;
         (total, log) = (0, "");
     }

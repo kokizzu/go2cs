@@ -221,23 +221,28 @@ internal static readonly @string actionˢ = " action"u8;
 }
 
 // recover is the handler that turns panics into returns from the top level of Parse.
-internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((defer, recover) => {
+internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
     ref var errp = ref Ꮡerrp.DerefOrNull();
 
-    var e = recover();
-    if (e != default!) {
-        {
-            var (_, ok) = e._<runtimeꓸError>(ᐧ); if (ok) {
-                throw panic(e);
+        var e = builtin.recover();
+        if (e != default!) {
+            {
+                var (_, ok) = e._<runtimeꓸError>(ᐧ); if (ok) {
+                    throw panic(e);
+                }
             }
+            if (Ꮡt != nil) {
+                t.stopParse();
+            }
+            errp = e._<error>();
         }
-        if (Ꮡt != nil) {
-            t.stopParse();
-        }
-        errp = e._<error>();
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string breakˢ2 = "break"u8;
@@ -274,12 +279,13 @@ internal static readonly @string continueˢ2 = "continue"u8;
 public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text, @string leftDelim, @string rightDelim, map<@string, ж<Tree>> treeSet, params Span<map<@string, any>> funcsʗp) {
     ж<Tree> tree = default!;
     heap<error>(out var Ꮡerr);
-    func(ref funcsʗp, (ref Span<map<@string, any>> funcsʗp, Defer defer, Recover recover) => {
+    GoFrame ᒐ = default;
+    try {
     var funcs = funcsʗp.slice();
 
     ref var t = ref Ꮡt.DerefOrNull();
     ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(Ꮡt.recover, Ꮡerr, defer);
+        defer(Ꮡt.recover, Ꮡerr, ref ᒐ);
         t.ParseName = t.Name;
         var lexer = lex(t.Name, text, leftDelim, rightDelim);
         t.startParse(funcs, lexer, treeSet);
@@ -288,7 +294,9 @@ public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text,
         Ꮡt.add();
         t.stopParse();
         (tree, err) = (Ꮡt, default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (tree, Ꮡerr.ValueSlot);
 }
 
@@ -441,30 +449,35 @@ internal static readonly @string inputˢ = "input"u8;
 // textOrAction:
 //
 //	text | comment | action
-internal static Node textOrAction(this ж<Tree> Ꮡt) => func<Node>((defer, recover) => {
+internal static Node textOrAction(this ж<Tree> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    {
-        var token = t.nextNonSpace();
-        var exprᴛ1 = token.typ;
-        if (exprᴛ1 == itemText) {
-            return new TextNodeжNode(Ꮡt.newText(token.pos, token.val));
+        {
+            var token = t.nextNonSpace();
+            var exprᴛ1 = token.typ;
+            if (exprᴛ1 == itemText) {
+                return new TextNodeжNode(Ꮡt.newText(token.pos, token.val));
+            }
+            if (exprᴛ1 == itemLeftDelim) {
+                t.actionLine = token.line;
+                defer(Ꮡt.clearActionLine, ref ᒐ);
+                return Ꮡt.action();
+            }
+            if (exprᴛ1 == itemComment) {
+                return new CommentNodeжNode(Ꮡt.newComment(token.pos, token.val));
+            }
+            { /* default: */
+                t.unexpected(token, inputˢ);
+            }
         }
-        if (exprᴛ1 == itemLeftDelim) {
-            t.actionLine = token.line;
-            defer(Ꮡt.clearActionLine);
-            return Ꮡt.action();
-        }
-        if (exprᴛ1 == itemComment) {
-            return new CommentNodeжNode(Ꮡt.newComment(token.pos, token.val));
-        }
-        { /* default: */
-            t.unexpected(token, inputˢ);
-        }
-    }
 
-    return default!;
-});
+        return default!;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void clearActionLine(this ref Tree t) {
     t.actionLine = 0;
@@ -662,10 +675,11 @@ internal static (Pos pos, nint line, ж<PipeNode> pipe, ж<ListNode> list, ж<Li
     ж<PipeNode> pipe = default!;
     ж<ListNode> list = default!;
     ж<ListNode> elseList = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var t = ref Ꮡt.DerefOrNull();
 
-        deferǃ(Ꮡt.popVars, len(Ꮡt.Value.vars), defer);
+        defer(Ꮡt.popVars, len(Ꮡt.Value.vars), ref ᒐ);
         pipe = Ꮡt.pipeline(context, itemRightDelim);
         if (context == "range"u8) {
             t.rangeDepth++;
@@ -709,7 +723,9 @@ internal static (Pos pos, nint line, ж<PipeNode> pipe, ж<ListNode> list, ж<Li
         }
 
         (pos, line, pipe, list, elseList) = (pipe.Position(), (~pipe).Line, pipe, list, elseList);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (pos, line, pipe, list, elseList);
 }
 

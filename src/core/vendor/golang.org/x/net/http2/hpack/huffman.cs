@@ -18,30 +18,40 @@ internal static ref sync.Pool bufPool => ref ᏑbufPool.Value;
 // HuffmanDecode decodes the string in v and writes the expanded
 // result to w, returning the number of bytes written to w and the
 // Write call's return value. At most one Write call is made.
-public static (nint, error) HuffmanDecode(io.Writer w, slice<byte> v) => func<(nint, error)>((defer, recover) => {
-    var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
-    buf.Reset();
-    deferǃ(ᏑbufPool.Put, buf.OrTypedNil(), defer);
-    {
-        var err = huffmanDecode(buf, 0, v); if (err != default!) {
-            return (0, err);
+public static (nint, error) HuffmanDecode(io.Writer w, slice<byte> v) {
+    GoFrame ᒐ = default;
+    try {
+        var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
+        buf.Reset();
+        defer(ᏑbufPool.Put, buf.OrTypedNil(), ref ᒐ);
+        {
+            var err = huffmanDecode(buf, 0, v); if (err != default!) {
+                return (0, err);
+            }
         }
+        return w.Write(buf.Bytes());
     }
-    return w.Write(buf.Bytes());
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // HuffmanDecodeToString decodes the string in v.
-public static (@string, error) HuffmanDecodeToString(slice<byte> v) => func<(@string, error)>((defer, recover) => {
-    var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
-    buf.Reset();
-    deferǃ(ᏑbufPool.Put, buf.OrTypedNil(), defer);
-    {
-        var err = huffmanDecode(buf, 0, v); if (err != default!) {
-            return ("", err);
+public static (@string, error) HuffmanDecodeToString(slice<byte> v) {
+    GoFrame ᒐ = default;
+    try {
+        var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
+        buf.Reset();
+        defer(ᏑbufPool.Put, buf.OrTypedNil(), ref ᒐ);
+        {
+            var err = huffmanDecode(buf, 0, v); if (err != default!) {
+                return ("", err);
+            }
         }
+        return (buf.String(), default!);
     }
-    return (buf.String(), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ErrInvalidHuffman is returned for errors found decoding
 // Huffman-encoded strings.

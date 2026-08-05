@@ -144,7 +144,7 @@ internal static slice<entry> enumerate(@string dir) {
         if (err != default!) {
             fatal(findFirstFileˢ, err);
         }
-        deferǃ(syscall.FindClose, h, ref ᒐ);
+        defer(syscall.FindClose, h, ref ᒐ);
         slice<entry> @out = default!;
         while (ᐧ) {
             {

@@ -83,63 +83,78 @@ internal static @string instanceHash(this ж<Context> Ꮡctxt, ΔType orig, slic
 
 // lookup returns an existing instantiation of orig with targs, if it exists.
 // Otherwise, it returns nil.
-internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs) => func<ΔType>((defer, recover) => {
+internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs) {
+    GoFrame ᒐ = default;
+    try {
     ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
-    Ꮡctxt.of(Context.Ꮡmu).Lock();
-    defer(Ꮡctxt.of(Context.Ꮡmu).Unlock);
-    foreach (var (_, e) in ctxt.typeMap[h]) {
-        if (identicalInstance(orig, targs, e.orig, e.targs)) {
-            return e.instance;
+        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        foreach (var (_, e) in ctxt.typeMap[h]) {
+            if (identicalInstance(orig, targs, e.orig, e.targs)) {
+                return e.instance;
+            }
+            if (debug) {
+                // Panic during development to surface any imperfections in our hash.
+                throw panic(fmt.Sprintf("non-identical instances: (orig: %s, targs: %v) and %s"u8, orig, targs, e.instance));
+            }
         }
-        if (debug) {
-            // Panic during development to surface any imperfections in our hash.
-            throw panic(fmt.Sprintf("non-identical instances: (orig: %s, targs: %v) and %s"u8, orig, targs, e.instance));
-        }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // update de-duplicates n against previously seen types with the hash h.  If an
 // identical type is found with the type hash h, the previously seen type is
 // returned. Otherwise, n is returned, and recorded in the Context for the hash
 // h.
-internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) => func((defer, recover) => {
+internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) {
+    GoFrame ᒐ = default;
+    try {
     ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
-    assert(inst != default!);
-    Ꮡctxt.of(Context.Ꮡmu).Lock();
-    defer(Ꮡctxt.of(Context.Ꮡmu).Unlock);
-    foreach (var (_, e) in ctxt.typeMap[h]) {
-        if (inst == default! || Identical(inst, e.instance)) {
-            return e.instance;
+        assert(inst != default!);
+        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        foreach (var (_, e) in ctxt.typeMap[h]) {
+            if (inst == default! || Identical(inst, e.instance)) {
+                return e.instance;
+            }
+            if (debug) {
+                // Panic during development to surface any imperfections in our hash.
+                throw panic(fmt.Sprintf("%s and %s are not identical"u8, inst, e.instance));
+            }
         }
-        if (debug) {
-            // Panic during development to surface any imperfections in our hash.
-            throw panic(fmt.Sprintf("%s and %s are not identical"u8, inst, e.instance));
-        }
+        ctxt.typeMap[h] = append(ctxt.typeMap[h], new ctxtEntry(
+            orig: orig,
+            targs: targs,
+            instance: inst
+        ));
+        return inst;
     }
-    ctxt.typeMap[h] = append(ctxt.typeMap[h], new ctxtEntry(
-        orig: orig,
-        targs: targs,
-        instance: inst
-    ));
-    return inst;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // getID returns a unique ID for the type t.
-internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) => func((defer, recover) => {
+internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) {
+    GoFrame ᒐ = default;
+    try {
     ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
-    Ꮡctxt.of(Context.Ꮡmu).Lock();
-    defer(Ꮡctxt.of(Context.Ꮡmu).Unlock);
-    var (id, ok) = ctxt.originIDs[t, ꟷ];
-    if (!ok) {
-        id = ctxt.nextID;
-        ctxt.originIDs[t] = id;
-        ctxt.nextID++;
+        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        var (id, ok) = ctxt.originIDs[t, ꟷ];
+        if (!ok) {
+            id = ctxt.nextID;
+            ctxt.originIDs[t] = id;
+            ctxt.nextID++;
+        }
+        return id;
     }
-    return id;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end types_package

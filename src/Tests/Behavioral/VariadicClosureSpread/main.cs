@@ -33,7 +33,7 @@ internal static void Main() {
         GoFrame ᒐ = default;
         try {
         var nums = numsʗp.sslice();
-            deferǃ(() => {
+            defer(() => {
             }, ref ᒐ);
             nums[0] = 40;
         }

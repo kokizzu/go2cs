@@ -960,10 +960,13 @@ sibling, named and generic func-type conversions.
 
 ## Defer / Panic / Recover
 
-`defer`, `panic`, and `recover` are supplied by wrapping the function body in
-`func((defer, recover) => { … })`, which brings `defer` and `recover` into scope. A bare deferred call is a
-method group `defer(fn)`; one that must capture arguments at defer-time uses `deferǃ(fn, args, defer)`.
-`panic(x)` lowers to `throw panic(x)`:
+A Go function that defers or recovers keeps its body exactly where Go put it: the statements are
+emitted **inline** in the method, inside `try`/`catch`/`finally`, beside a `GoFrame` local that holds
+this call's defer list. The `catch` parks a panic where `recover()` can read it; the `finally` drains
+the deferred calls, which is Go's guarantee that they run on every exit path; and the frame is a
+`ref struct`, so it lives in the stack frame and allocates nothing. A deferred call registers with
+`defer(fn, args…, ref ᒐ)` — the arguments are captured there because Go evaluates them at the `defer`
+statement. `panic(x)` lowers to `throw panic(x)`:
 
 ```go
 func withLock(lk sync.Locker, fn func()) {   // database/sql/sql.go
@@ -973,18 +976,31 @@ func withLock(lk sync.Locker, fn func()) {   // database/sql/sql.go
 }
 ```
 ```csharp
-internal static void withLock(sync.Locker lk, Action fn) => func((defer, recover) => {  // database/sql/sql.cs
-    lk.Lock();
-    defer(lk.Unlock);
-    // in case fn panics
-    fn();
-});
+internal static void withLock(sync.Locker lk, Action fn) {   // database/sql/sql.cs
+    GoFrame ᒐ = default;
+    try {
+        lk.Lock();
+        defer(lk.Unlock, ref ᒐ);
+        // in case fn panics
+        fn();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 ```
+
+A function with **named results** that deferred code mutates declares them ahead of the `try` and
+returns them after the `finally`, because Go runs the deferred calls after the results are assigned
+and before the caller sees them — which a `finally` cannot do to a value a `return` has already
+evaluated. Every exit inside the `try` therefore leaves through a `goto`, which runs the `finally`
+exactly as a return would.
 
 An unrecovered panic — even in a goroutine — crashes the process exactly as in Go: golib's
 `AppDomain.UnhandledException` backstop writes the `panic: …` report to stderr and exits with code 2.
 
-`recover()` is the same wrapper's parameter; a re-`panic` is `throw panic(err)`:
+`recover()` is a static call reading the one thread-local slot the emitted `catch` parked the panic
+in — which is what lets a deferred closure recover without holding any handle on the frame that
+registered it. A re-`panic` is `throw panic(err)`:
 
 ```go
 if err := recover(); err != nil {   // fmt/print.go
@@ -1007,8 +1023,10 @@ re-`panic` inherits it, which is what keeps the origin visible through Go's
 and tests read by package-qualified name.
 
 **Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference.md#defer--panic--recover) —
-unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees, value-returning goroutine
-wrapping, func-literal argument capture hoisting, and box-bound deferred pointer-receiver methods; plus
+the frame's emitted forms and why the body is not a lambda, the named-result `goto` exit, the
+registration ladder, unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees,
+value-returning goroutine wrapping, func-literal argument capture hoisting, and box-bound deferred
+pointer-receiver methods; plus
 [Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
 
 ---

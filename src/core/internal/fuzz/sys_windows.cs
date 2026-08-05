@@ -21,14 +21,15 @@ partial class fuzz_package {
 internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf, nint size, bool removeOnClose) {
     ж<sharedMem> mem = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             if (Ꮡerr.ValueSlot != default!) {
                 Ꮡerr.ValueSlot = fmt.Errorf("mapping temporary file %s: %w"u8, Ꮡf.Value.Name(), Ꮡerr.ValueSlot);
             }
-        });
+        }, ref ᒐ);
         // Create a file mapping object. The object itself is not shared.
         (var mapObj, err) = Δsyscall.CreateFileMapping(
             ((syscallꓸHandle)Ꮡf.Fd()), // fhandle
@@ -44,7 +45,7 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
             nil);
         // name
         if (err != default!) {
-            (mem, err) = (default!, err); return;
+            (mem, err) = (default!, err); goto ᒐdone;
         }
         // Create a view from the file mapping object.
         var access = (uint32)((uint32)((uint32)Δsyscall.FILE_MAP_READ | (uint32)Δsyscall.FILE_MAP_WRITE));
@@ -61,7 +62,7 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
         // length
         if (err != default!) {
             Δsyscall.CloseHandle(mapObj);
-            (mem, err) = (default!, err); return;
+            (mem, err) = (default!, err); goto ᒐdone;
         }
         var region = @unsafe.Slice((ж<byte>)(uintptr)((@unsafe.Pointer)addr), size);
         (mem, err) = (Ꮡ(new sharedMem(
@@ -70,8 +71,10 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
             removeOnClose: removeOnClose,
             sys: new sharedMemSys(mapObj: mapObj)
         )), default!);
-    });
-    return (mem, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (mem, Ꮡerr.ValueSlot);
 }
 
 // Close unmaps the shared memory and closes the temporary file. If this

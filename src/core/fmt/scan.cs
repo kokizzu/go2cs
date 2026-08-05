@@ -299,7 +299,8 @@ internal static readonly @string scanStateSReadShouldNotˢ = "ScanState's Read s
 internal static (slice<byte> tok, error err) Token(this ж<ss> Ꮡs, bool skipSpace, Func<rune, bool> f) {
     slice<byte> tok = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
@@ -315,13 +316,15 @@ internal static (slice<byte> tok, error err) Token(this ж<ss> Ꮡs, bool skipSp
                     }
                 }
             }
-        });
+        }, ref ᒐ);
         if (f == default!) {
             f = notSpace;
         }
         s.buf = s.buf[..0];
         tok = s.token(skipSpace, f);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (tok, err);
 }
 
@@ -1287,28 +1290,33 @@ internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
 }
 
 // errorHandler turns local panics into error returns.
-internal static void errorHandler(ж<error> Ꮡerrp) => func((defer, recover) => {
+internal static void errorHandler(ж<error> Ꮡerrp) {
+    GoFrame ᒐ = default;
+    try {
     ref var errp = ref Ꮡerrp.DerefOrNull();
 
-    {
-        var e = recover(); if (e != default!) {
-            {
-                var (se, ok) = e._<scanError>(ᐧ); if (ok){
-                    // catch local error
-                    errp = se.err;
-                } else 
+        {
+            var e = recover(); if (e != default!) {
                 {
-                    var (eof, okΔ1) = e._<error>(ᐧ); if (okΔ1 && AreEqual(eof, Δio.EOF)){
-                        // out of input
-                        errp = eof;
-                    } else {
-                        throw panic(e);
+                    var (se, ok) = e._<scanError>(ᐧ); if (ok){
+                        // catch local error
+                        errp = se.err;
+                    } else 
+                    {
+                        var (eof, okΔ1) = e._<error>(ᐧ); if (okΔ1 && AreEqual(eof, Δio.EOF)){
+                            // out of input
+                            errp = eof;
+                        } else {
+                            throw panic(e);
+                        }
                     }
                 }
             }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string expectedNewlineˢ = "expected newline"u8;
@@ -1317,11 +1325,12 @@ internal static readonly @string expectedNewlineˢ = "expected newline"u8;
 internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<any> a) {
     nint numProcessed = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(errorHandler, Ꮡerr, defer);
+        defer(errorHandler, Ꮡerr, ref ᒐ);
         foreach (var (_, arg) in a) {
             Ꮡs.scanOne((rune)'v', arg);
             numProcessed++;
@@ -1339,7 +1348,9 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
                 }
             }
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (numProcessed, Ꮡerr.ValueSlot);
 }
 
@@ -1446,11 +1457,12 @@ internal static readonly @string tooManyOperandsˢ = "too many operands"u8;
 internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string format, slice<any> a) {
     nint numProcessed = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
     ref var s = ref Ꮡs.DerefOrNull();
 
     ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(errorHandler, Ꮡerr, defer);
+        defer(errorHandler, Ꮡerr, ref ᒐ);
         nint end = len(format) - 1;
         // We process one item per non-trivial format
         for (nint i = 0; i <= end; ) {
@@ -1505,7 +1517,9 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
         if (numProcessed < len(a)) {
             s.errorString(tooManyOperandsˢ);
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (numProcessed, Ꮡerr.ValueSlot);
 }
 

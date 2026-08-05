@@ -60,27 +60,32 @@ internal static (nint, error) lookupProtocol(context.Context ctx, @string name) 
     var ch = new channel<lookupProtocol_result>(0);
     // unbuffered
     var chʗ1 = ch;
-    goǃ(() => func((defer, recover) => {
-        {
-            var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
-                chʗ1.ᐸꟷ(new lookupProtocol_result(err: mapErr(errΔ1)));
-                return;
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            {
+                var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
+                    chʗ1.ᐸꟷ(new lookupProtocol_result(err: mapErr(errΔ1)));
+                    return;
+                }
             }
+            defer(releaseThread, ref ᒐ);
+            Δruntime.LockOSThread();
+            defer(Δruntime.UnlockOSThread, ref ᒐ);
+            var (proto, err) = getprotobyname(name);
+            var selᴛ13 = chʗ1.ᐸꟷ(new lookupProtocol_result(proto: proto, err: err), ꓸꓸꓸ);
+            var selᴛ14 = ctx.Done();
+            switch (select(selᴛ13, ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+            case 0: {
+                break;
+            }
+            case 1 when selᴛ14.ꟷᐳ(out _): {
+                break;
+            }}
         }
-        defer(releaseThread);
-        Δruntime.LockOSThread();
-        defer(Δruntime.UnlockOSThread);
-        var (proto, err) = getprotobyname(name);
-        var selᴛ13 = chʗ1.ᐸꟷ(new lookupProtocol_result(proto: proto, err: err), ꓸꓸꓸ);
-        var selᴛ14 = ctx.Done();
-        switch (select(selᴛ13, ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
-        case 0: {
-            break;
-        }
-        case 1 when selᴛ14.ꟷᐳ(out _): {
-            break;
-        }}
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     var selᴛ15 = ch;
     var selᴛ16 = ctx.Done();
     switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
@@ -142,61 +147,66 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
         break;
     }}
 
-    var getaddr = (slice<IPAddr>, error) () => func<(slice<IPAddr>, error)>((defer, recover) => {
-        {
-            var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
-                return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                    Name: name,
-                    Err: mapErr(errΔ1).Error(),
-                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-                ))));
+    (slice<IPAddr>, error) getaddr() {
+        GoFrame ᒐ = default;
+        try {
+            {
+                var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
+                    return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                        Name: name,
+                        Err: mapErr(errΔ1).Error(),
+                        IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                    ))));
+                }
             }
-        }
-        defer(releaseThread);
-        ref var hints = ref heap<syscall.AddrinfoW>(out var Ꮡhints);
-        hints = new syscall.AddrinfoW(
-            Family: family,
-            Socktype: syscall.SOCK_STREAM,
-            Protocol: syscall.IPPROTO_IP
-        );
-        ref var result = ref heap<ж<syscall.AddrinfoW>>(out var Ꮡresult);
-        var (name16p, err) = syscall.UTF16PtrFromString(name);
-        if (err != default!) {
-            return (default!, new DNSErrorжerror(newDNSError(err, name, ""u8)));
-        }
-        var dnsConf = getSystemDNSConfig();
-        var start = time.Now();
-        error e = default!;
-        for (nint i = 0; i < (~dnsConf).attempts; i++) {
-            e = syscall.GetAddrInfoW(name16p, nil, Ꮡhints, Ꮡresult);
-            if (e == default! || !AreEqual(e, _WSATRY_AGAIN) || time.Since(start) > (~dnsConf).timeout) {
-                break;
+            defer(releaseThread, ref ᒐ);
+            ref var hints = ref heap<syscall.AddrinfoW>(out var Ꮡhints);
+            hints = new syscall.AddrinfoW(
+                Family: family,
+                Socktype: syscall.SOCK_STREAM,
+                Protocol: syscall.IPPROTO_IP
+            );
+            ref var result = ref heap<ж<syscall.AddrinfoW>>(out var Ꮡresult);
+            var (name16p, err) = syscall.UTF16PtrFromString(name);
+            if (err != default!) {
+                return (default!, new DNSErrorжerror(newDNSError(err, name, ""u8)));
             }
-        }
-        if (e != default!) {
-            return (default!, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), name, ""u8)));
-        }
-        deferǃ(syscall.FreeAddrInfoW, result, defer);
-        var addrs = new slice<IPAddr>(0, 5);
-        for (; result != nil; result = result.Value.Next) {
-            @unsafe.Pointer addr = ((@unsafe.Pointer)(uintptr)((~result).Addr));
-            var exprᴛ1 = (~result).Family;
-            if (exprᴛ1 == syscall.AF_INET) {
-                var a = ((ж<syscall.RawSockaddrInet4>)(uintptr)(addr)).Value.Addr.Clone();
-                addrs = append(addrs, new IPAddr(IP: copyIP(a[..])));
+            var dnsConf = getSystemDNSConfig();
+            var start = time.Now();
+            error e = default!;
+            for (nint i = 0; i < (~dnsConf).attempts; i++) {
+                e = syscall.GetAddrInfoW(name16p, nil, Ꮡhints, Ꮡresult);
+                if (e == default! || !AreEqual(e, _WSATRY_AGAIN) || time.Since(start) > (~dnsConf).timeout) {
+                    break;
+                }
             }
-            else if (exprᴛ1 == syscall.AF_INET6) {
-                var a = ((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Addr.Clone();
-                @string zone = zoneCache.name((nint)((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Scope_id);
-                addrs = append(addrs, new IPAddr(IP: copyIP(a[..]), Zone: zone));
+            if (e != default!) {
+                return (default!, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), name, ""u8)));
             }
-            else { /* default: */
-                return (default!, new DNSErrorжerror(newDNSError(syscall.EWINDOWS, name, ""u8)));
-            }
+            defer(syscall.FreeAddrInfoW, result, ref ᒐ);
+            var addrs = new slice<IPAddr>(0, 5);
+            for (; result != nil; result = result.Value.Next) {
+                @unsafe.Pointer addr = ((@unsafe.Pointer)(uintptr)((~result).Addr));
+                var exprᴛ1 = (~result).Family;
+                if (exprᴛ1 == syscall.AF_INET) {
+                    var a = ((ж<syscall.RawSockaddrInet4>)(uintptr)(addr)).Value.Addr.Clone();
+                    addrs = append(addrs, new IPAddr(IP: copyIP(a[..])));
+                }
+                else if (exprᴛ1 == syscall.AF_INET6) {
+                    var a = ((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Addr.Clone();
+                    @string zone = zoneCache.name((nint)((ж<syscall.RawSockaddrInet6>)(uintptr)(addr)).Value.Scope_id);
+                    addrs = append(addrs, new IPAddr(IP: copyIP(a[..]), Zone: zone));
+                }
+                else { /* default: */
+                    return (default!, new DNSErrorжerror(newDNSError(syscall.EWINDOWS, name, ""u8)));
+                }
 
+            }
+            return (addrs, default!);
         }
-        return (addrs, default!);
-    });
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+        finally { ᒐ.Run(); }
+    }
     channel<lookupIP_ret> ch = default!;
     if (ctx.Err() == default!) {
         ch = new channel<lookupIP_ret>(1);
@@ -227,283 +237,318 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
     return default!;
 }
 
-internal static (nint, error) lookupPort(this ж<Resolver> Ꮡr, context.Context ctx, @string network, @string service) => func<(nint, error)>((defer, recover) => {
-    if (systemConf().mustUseGoResolver(Ꮡr)) {
-        return lookupPortMap(network, service);
-    }
-    // TODO(bradfitz): finish ctx plumbing
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return (0, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: network + "/"u8 + service,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+internal static (nint, error) lookupPort(this ж<Resolver> Ꮡr, context.Context ctx, @string network, @string service) {
+    GoFrame ᒐ = default;
+    try {
+        if (systemConf().mustUseGoResolver(Ꮡr)) {
+            return lookupPortMap(network, service);
         }
-    }
-    defer(releaseThread);
-    ref var hints = ref heap(new syscall.AddrinfoW(), out var Ꮡhints);
-    var exprᴛ1 = network;
-    if (exprᴛ1 == "ip"u8) {
-    }
-    else if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp4"u8 || exprᴛ1 == "tcp6"u8) {
-        hints.Socktype = syscall.SOCK_STREAM;
-        hints.Protocol = syscall.IPPROTO_TCP;
-    }
-    else if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {
-        hints.Socktype = syscall.SOCK_DGRAM;
-        hints.Protocol = syscall.IPPROTO_UDP;
-    }
-    else { /* default: */
-        return (0, new DNSErrorжerror(Ꮡ(new DNSError( // no hints
-Err: "unknown network"u8, Name: network + "/"u8 + service))));
-    }
-
-    switch (ipVersion(network)) {
-    case (rune)'4': {
-        hints.Family = syscall.AF_INET;
-        break;
-    }
-    case (rune)'6': {
-        hints.Family = syscall.AF_INET6;
-        break;
-    }}
-
-    ref var result = ref heap<ж<syscall.AddrinfoW>>(out var Ꮡresult);
-    var e = syscall.GetAddrInfoW(nil, syscall.StringToUTF16Ptr(service), Ꮡhints, Ꮡresult);
-    if (e != default!) {
+        // TODO(bradfitz): finish ctx plumbing
         {
-            var (port, err) = lookupPortMap(network, service); if (err == default!) {
-                return (port, default!);
+            var err = acquireThread(ctx); if (err != default!) {
+                return (0, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: network + "/"u8 + service,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
             }
         }
-        // The _WSATYPE_NOT_FOUND error is returned by GetAddrInfoW
-        // when the service name is unknown. We are also checking
-        // for _WSAHOST_NOT_FOUND here to match the cgo (unix) version
-        // cgo_unix.go (cgoLookupServicePort).
-        if (AreEqual(e, _WSATYPE_NOT_FOUND) || AreEqual(e, _WSAHOST_NOT_FOUND)) {
-            return (0, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errUnknownPort), network + "/"u8 + service, ""u8)));
+        defer(releaseThread, ref ᒐ);
+        ref var hints = ref heap(new syscall.AddrinfoW(), out var Ꮡhints);
+        var exprᴛ1 = network;
+        if (exprᴛ1 == "ip"u8) {
         }
-        return (0, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), network + "/"u8 + service, ""u8)));
-    }
-    deferǃ(syscall.FreeAddrInfoW, result, defer);
-    if (result == nil) {
+        else if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp4"u8 || exprᴛ1 == "tcp6"u8) {
+            hints.Socktype = syscall.SOCK_STREAM;
+            hints.Protocol = syscall.IPPROTO_TCP;
+        }
+        else if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {
+            hints.Socktype = syscall.SOCK_DGRAM;
+            hints.Protocol = syscall.IPPROTO_UDP;
+        }
+        else { /* default: */
+            return (0, new DNSErrorжerror(Ꮡ(new DNSError( // no hints
+Err: "unknown network"u8, Name: network + "/"u8 + service))));
+        }
+
+        switch (ipVersion(network)) {
+        case (rune)'4': {
+            hints.Family = syscall.AF_INET;
+            break;
+        }
+        case (rune)'6': {
+            hints.Family = syscall.AF_INET6;
+            break;
+        }}
+
+        ref var result = ref heap<ж<syscall.AddrinfoW>>(out var Ꮡresult);
+        var e = syscall.GetAddrInfoW(nil, syscall.StringToUTF16Ptr(service), Ꮡhints, Ꮡresult);
+        if (e != default!) {
+            {
+                var (port, err) = lookupPortMap(network, service); if (err == default!) {
+                    return (port, default!);
+                }
+            }
+            // The _WSATYPE_NOT_FOUND error is returned by GetAddrInfoW
+            // when the service name is unknown. We are also checking
+            // for _WSAHOST_NOT_FOUND here to match the cgo (unix) version
+            // cgo_unix.go (cgoLookupServicePort).
+            if (AreEqual(e, _WSATYPE_NOT_FOUND) || AreEqual(e, _WSAHOST_NOT_FOUND)) {
+                return (0, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errUnknownPort), network + "/"u8 + service, ""u8)));
+            }
+            return (0, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), network + "/"u8 + service, ""u8)));
+        }
+        defer(syscall.FreeAddrInfoW, result, ref ᒐ);
+        if (result == nil) {
+            return (0, new DNSErrorжerror(newDNSError(syscall.EINVAL, network + "/"u8 + service, ""u8)));
+        }
+        @unsafe.Pointer addr = ((@unsafe.Pointer)(uintptr)((~result).Addr));
+        var exprᴛ2 = (~result).Family;
+        if (exprᴛ2 == syscall.AF_INET) {
+            var a = (ж<syscall.RawSockaddrInet4>)(uintptr)(addr);
+            return ((nint)syscall.Ntohs((~a).Port), default!);
+        }
+        if (exprᴛ2 == syscall.AF_INET6) {
+            var a = (ж<syscall.RawSockaddrInet6>)(uintptr)(addr);
+            return ((nint)syscall.Ntohs((~a).Port), default!);
+        }
+
         return (0, new DNSErrorжerror(newDNSError(syscall.EINVAL, network + "/"u8 + service, ""u8)));
     }
-    @unsafe.Pointer addr = ((@unsafe.Pointer)(uintptr)((~result).Addr));
-    var exprᴛ2 = (~result).Family;
-    if (exprᴛ2 == syscall.AF_INET) {
-        var a = (ж<syscall.RawSockaddrInet4>)(uintptr)(addr);
-        return ((nint)syscall.Ntohs((~a).Port), default!);
-    }
-    if (exprᴛ2 == syscall.AF_INET6) {
-        var a = (ж<syscall.RawSockaddrInet6>)(uintptr)(addr);
-        return ((nint)syscall.Ntohs((~a).Port), default!);
-    }
-
-    return (0, new DNSErrorжerror(newDNSError(syscall.EINVAL, network + "/"u8 + service, ""u8)));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string dnsqueryˢ = "dnsquery"u8;
 
-internal static (@string, error) lookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(@string, error)>((defer, recover) => {
-    {
-        var (order, conf) = systemConf().hostLookupOrder(Ꮡr, name); if (order != hostLookupCgo) {
-            return Ꮡr.goLookupCNAME(ctx, name, order, conf);
+internal static (@string, error) lookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (order, conf) = systemConf().hostLookupOrder(Ꮡr, name); if (order != hostLookupCgo) {
+                return Ꮡr.goLookupCNAME(ctx, name, order, conf);
+            }
         }
-    }
-    // TODO(bradfitz): finish ctx plumbing
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return ("", new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: name,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+        // TODO(bradfitz): finish ctx plumbing
+        {
+            var err = acquireThread(ctx); if (err != default!) {
+                return ("", new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: name,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
         }
-    }
-    defer(releaseThread);
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(name, syscall.DNS_TYPE_CNAME, 0, nil, Ꮡrec, nil);
-    // windows returns DNS_INFO_NO_RECORDS if there are no CNAME-s
-    {
-        var (errno, ok) = e._<syscall.Errno>(ᐧ); if (ok && errno == syscall.DNS_INFO_NO_RECORDS) {
-            // if there are no aliases, the canonical name is the input name
-            return (absDomainName(name), default!);
+        defer(releaseThread, ref ᒐ);
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(name, syscall.DNS_TYPE_CNAME, 0, nil, Ꮡrec, nil);
+        // windows returns DNS_INFO_NO_RECORDS if there are no CNAME-s
+        {
+            var (errno, ok) = e._<syscall.Errno>(ᐧ); if (ok && errno == syscall.DNS_INFO_NO_RECORDS) {
+                // if there are no aliases, the canonical name is the input name
+                return (absDomainName(name), default!);
+            }
         }
+        if (e != default!) {
+            return ("", new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var resolved = resolveCNAME(syscall.StringToUTF16Ptr(name), rec);
+        @string cname = windows.UTF16PtrToString(resolved);
+        return (absDomainName(cname), default!);
     }
-    if (e != default!) {
-        return ("", new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var resolved = resolveCNAME(syscall.StringToUTF16Ptr(name), rec);
-    @string cname = windows.UTF16PtrToString(resolved);
-    return (absDomainName(cname), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡr, context.Context ctx, @string service, @string proto, @string name) => func<(@string, slice<ж<SRV>>, error)>((defer, recover) => {
-    if (systemConf().mustUseGoResolver(Ꮡr)) {
-        return Ꮡr.goLookupSRV(ctx, service, proto, name);
-    }
-    // TODO(bradfitz): finish ctx plumbing
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return ("", default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: name,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡr, context.Context ctx, @string service, @string proto, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        if (systemConf().mustUseGoResolver(Ꮡr)) {
+            return Ꮡr.goLookupSRV(ctx, service, proto, name);
         }
+        // TODO(bradfitz): finish ctx plumbing
+        {
+            var err = acquireThread(ctx); if (err != default!) {
+                return ("", default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: name,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
+        }
+        defer(releaseThread, ref ᒐ);
+        @string target = default!;
+        if (service == ""u8 && proto == ""u8){
+            target = name;
+        } else {
+            target = "_"u8 + service + "._"u8 + proto + "."u8 + name;
+        }
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(target, syscall.DNS_TYPE_SRV, 0, nil, Ꮡrec, nil);
+        if (e != default!) {
+            return ("", default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var srvs = new slice<ж<SRV>>(0, 10);
+        foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_SRV, target)) {
+            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>();
+            srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Target, 256))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
+        }
+        ((byPriorityWeight)srvs).sort();
+        return (absDomainName(target), srvs, default!);
     }
-    defer(releaseThread);
-    @string target = default!;
-    if (service == ""u8 && proto == ""u8){
-        target = name;
-    } else {
-        target = "_"u8 + service + "._"u8 + proto + "."u8 + name;
-    }
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(target, syscall.DNS_TYPE_SRV, 0, nil, Ꮡrec, nil);
-    if (e != default!) {
-        return ("", default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var srvs = new slice<ж<SRV>>(0, 10);
-    foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_SRV, target)) {
-        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>();
-        srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Target, 256))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
-    }
-    ((byPriorityWeight)srvs).sort();
-    return (absDomainName(target), srvs, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (slice<ж<MX>>, error) lookupMX(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(slice<ж<MX>>, error)>((defer, recover) => {
-    if (systemConf().mustUseGoResolver(Ꮡr)) {
-        return Ꮡr.goLookupMX(ctx, name);
-    }
-    // TODO(bradfitz): finish ctx plumbing.
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: name,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+internal static (slice<ж<MX>>, error) lookupMX(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        if (systemConf().mustUseGoResolver(Ꮡr)) {
+            return Ꮡr.goLookupMX(ctx, name);
         }
+        // TODO(bradfitz): finish ctx plumbing.
+        {
+            var err = acquireThread(ctx); if (err != default!) {
+                return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: name,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
+        }
+        defer(releaseThread, ref ᒐ);
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(name, syscall.DNS_TYPE_MX, 0, nil, Ꮡrec, nil);
+        if (e != default!) {
+            return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var mxs = new slice<ж<MX>>(0, 10);
+        foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_MX, name)) {
+            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSMXData>();
+            mxs = append(mxs, Ꮡ(new MX(absDomainName(windows.UTF16PtrToString((~v).NameExchange)), (~v).Preference)));
+        }
+        ((byPref)mxs).sort();
+        return (mxs, default!);
     }
-    defer(releaseThread);
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(name, syscall.DNS_TYPE_MX, 0, nil, Ꮡrec, nil);
-    if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var mxs = new slice<ж<MX>>(0, 10);
-    foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_MX, name)) {
-        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSMXData>();
-        mxs = append(mxs, Ꮡ(new MX(absDomainName(windows.UTF16PtrToString((~v).NameExchange)), (~v).Preference)));
-    }
-    ((byPref)mxs).sort();
-    return (mxs, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(slice<ж<NS>>, error)>((defer, recover) => {
-    if (systemConf().mustUseGoResolver(Ꮡr)) {
-        return Ꮡr.goLookupNS(ctx, name);
-    }
-    // TODO(bradfitz): finish ctx plumbing.
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: name,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        if (systemConf().mustUseGoResolver(Ꮡr)) {
+            return Ꮡr.goLookupNS(ctx, name);
         }
+        // TODO(bradfitz): finish ctx plumbing.
+        {
+            var err = acquireThread(ctx); if (err != default!) {
+                return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: name,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
+        }
+        defer(releaseThread, ref ᒐ);
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(name, syscall.DNS_TYPE_NS, 0, nil, Ꮡrec, nil);
+        if (e != default!) {
+            return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var nss = new slice<ж<NS>>(0, 10);
+        foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_NS, name)) {
+            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
+            nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Host, 256))[..])))));
+        }
+        return (nss, default!);
     }
-    defer(releaseThread);
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(name, syscall.DNS_TYPE_NS, 0, nil, Ꮡrec, nil);
-    if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var nss = new slice<ж<NS>>(0, 10);
-    foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_NS, name)) {
-        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
-        nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Host, 256))[..])))));
-    }
-    return (nss, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(slice<@string>, error)>((defer, recover) => {
-    if (systemConf().mustUseGoResolver(Ꮡr)) {
-        return Ꮡr.goLookupTXT(ctx, name);
-    }
-    // TODO(bradfitz): finish ctx plumbing.
-    {
-        var err = acquireThread(ctx); if (err != default!) {
-            return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: name,
-                Err: mapErr(err).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+internal static (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        if (systemConf().mustUseGoResolver(Ꮡr)) {
+            return Ꮡr.goLookupTXT(ctx, name);
         }
-    }
-    defer(releaseThread);
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(name, syscall.DNS_TYPE_TEXT, 0, nil, Ꮡrec, nil);
-    if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var txts = new slice<@string>(0, 10);
-    foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_TEXT, name)) {
-        var d = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSTXTData>();
-        @string s = ""u8;
-        foreach (var (_, v) in (~array<ж<uint16>>.AliasPointer(Ꮡ(((~d).StringArray[0])), 1024)).slice(-1, (~d).StringCount, (~d).StringCount)) {
-            s += windows.UTF16PtrToString(v);
+        // TODO(bradfitz): finish ctx plumbing.
+        {
+            var err = acquireThread(ctx); if (err != default!) {
+                return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: name,
+                    Err: mapErr(err).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
         }
-        txts = append(txts, s);
+        defer(releaseThread, ref ᒐ);
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(name, syscall.DNS_TYPE_TEXT, 0, nil, Ꮡrec, nil);
+        if (e != default!) {
+            return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var txts = new slice<@string>(0, 10);
+        foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_TEXT, name)) {
+            var d = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSTXTData>();
+            @string s = ""u8;
+            foreach (var (_, v) in (~array<ж<uint16>>.AliasPointer(Ꮡ(((~d).StringArray[0])), 1024)).slice(-1, (~d).StringCount, (~d).StringCount)) {
+                s += windows.UTF16PtrToString(v);
+            }
+            txts = append(txts, s);
+        }
+        return (txts, default!);
     }
-    return (txts, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, context.Context ctx, @string addr) => func<(slice<@string>, error)>((defer, recover) => {
-    {
-        var (order, conf) = systemConf().addrLookupOrder(Ꮡr, addr); if (order != hostLookupCgo) {
-            return Ꮡr.goLookupPTR(ctx, addr, order, conf);
+internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, context.Context ctx, @string addr) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (order, conf) = systemConf().addrLookupOrder(Ꮡr, addr); if (order != hostLookupCgo) {
+                return Ꮡr.goLookupPTR(ctx, addr, order, conf);
+            }
         }
-    }
-    // TODO(bradfitz): finish ctx plumbing.
-    {
-        var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
-            return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
-                Name: addr,
-                Err: mapErr(errΔ1).Error(),
-                IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
-            ))));
+        // TODO(bradfitz): finish ctx plumbing.
+        {
+            var errΔ1 = acquireThread(ctx); if (errΔ1 != default!) {
+                return (default!, new DNSErrorжerror(Ꮡ(new DNSError(
+                    Name: addr,
+                    Err: mapErr(errΔ1).Error(),
+                    IsTimeout: AreEqual(ctx.Err(), context.DeadlineExceeded)
+                ))));
+            }
         }
+        defer(releaseThread, ref ᒐ);
+        var (arpa, err) = reverseaddr(addr);
+        if (err != default!) {
+            return (default!, err);
+        }
+        ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
+        var e = syscall.DnsQuery(arpa, syscall.DNS_TYPE_PTR, 0, nil, Ꮡrec, nil);
+        if (e != default!) {
+            return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), addr, ""u8)));
+        }
+        defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
+        var ptrs = new slice<@string>(0, 10);
+        foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_PTR, arpa)) {
+            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
+            ptrs = append(ptrs, absDomainName(windows.UTF16PtrToString((~v).Host)));
+        }
+        return (ptrs, default!);
     }
-    defer(releaseThread);
-    var (arpa, err) = reverseaddr(addr);
-    if (err != default!) {
-        return (default!, err);
-    }
-    ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
-    var e = syscall.DnsQuery(arpa, syscall.DNS_TYPE_PTR, 0, nil, Ꮡrec, nil);
-    if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), addr, ""u8)));
-    }
-    deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
-    var ptrs = new slice<@string>(0, 10);
-    foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_PTR, arpa)) {
-        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
-        ptrs = append(ptrs, absDomainName(windows.UTF16PtrToString((~v).Host)));
-    }
-    return (ptrs, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static UntypedInt dnsSectionMask => 0x0003;
 
