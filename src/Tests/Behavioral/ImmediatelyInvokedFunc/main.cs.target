@@ -19,16 +19,21 @@ internal static void Main() {
         return 6 * 7;
     }))();
     fmt.Println(x);
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(recoveredˢ, r);
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(recoveredˢ, r);
+                    }
                 }
-            }
-        });
-        throw panic("boom");
-    })))();
+            }, ref ᒐ);
+            throw panic("boom");
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     fmt.Println(afterRecoverˢ);
     nint total = 10 + ((Func<nint>)(() => {
         nint sum = 0;
@@ -57,16 +62,21 @@ internal static void Main() {
         }))(k);
     }
     fmt.Println();
-    ((Action<@string>)(label => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(label, recoveredˢ, r);
+    ((Action<@string>)(label => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(label, recoveredˢ, r);
+                    }
                 }
-            }
-        });
-        throw panic("argboom");
-    })))(scopeˢ);
+            }, ref ᒐ);
+            throw panic("argboom");
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))(scopeˢ);
     fmt.Println(afterArgRecoverˢ);
     nint calls = 0;
     nint bump() {

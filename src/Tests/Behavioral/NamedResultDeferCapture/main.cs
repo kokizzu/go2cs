@@ -51,23 +51,26 @@ internal static nint /*x*/ addrv() {
 private static readonly object litHookˢ = (@string)"lit hook:"u8;
 
 internal static (int64, error) lit(nint n) {
-    var f = () => {
+    (int64 w, error e) f() {
         int64 w = default!;
         heap<error>(out var Ꮡe);
-        func((defer, recover) => {
+        GoFrame ᒐ = default;
+        try {
             ref var e = ref Ꮡe.ValueSlot;
-            defer(() => {
+            deferǃ(() => {
                 fmt.Println(litHookˢ, w, Ꮡe.ValueSlot);
-            });
+            }, ref ᒐ);
             (var v, Ꮡe.ValueSlot) = pair(n);
             if (Ꮡe.ValueSlot != default!) {
-                return;
+                goto ᒐdone;
             }
             w = (int64)v;
-            return;
-        });
-        return (w, Ꮡe.ValueSlot);
-    };
+            goto ᒐdone;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        ᒐdone: return (w, Ꮡe.ValueSlot);
+    }
     return f();
 }
 

@@ -40,15 +40,25 @@ internal static void Main() {
     ref var @base = ref heap<Tally>(out var Ꮡbase);
     @base = new Tally(total: 2, log: "d"u8);
     var baseʗ1 = @base;
-    ((Action)(() => func((defer, recover) => {
-        deferǃ((Tally t) => {
-            report(deferredˢ, t, 4);
-        }, baseʗ1, defer);
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ((Tally t) => {
+                report(deferredˢ, t, 4);
+            }, baseʗ1, ref ᒐ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     var baseʗ2 = @base;
-    ((Action)(() => func((defer, recover) => {
-        deferǃ(report, namedˢ, baseʗ2, (nint)(5), defer);
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(report, namedˢ, baseʗ2, (nint)(5), ref ᒐ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     var done = new channel<bool>(0);
     var baseʗ3 = @base;
     var doneʗ1 = done;

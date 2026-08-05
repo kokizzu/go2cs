@@ -285,6 +285,13 @@ type Visitor struct {
 	// defer scope, and a ref struct cannot be captured by a lambda in any case. convFuncLit saves
 	// and restores it for exactly that reason.
 	inGoFrame bool
+	// openGoFrames counts the GoFrame scopes currently open around the emission point — the
+	// enclosing function's, plus one per nested function literal that carries its own. The frame
+	// LOCALS need no numbering: a C# lambda or local function may shadow an enclosing method local,
+	// so every frame in every emitted function reads under the same name. The named-result exit
+	// LABEL does need it, because labels do NOT shadow — repeating one from the enclosing method
+	// inside a lambda is CS0158. Zero when no frame is open.
+	openGoFrames int
 	// goFrameNamedExit records that the body emitted at least one `goto ᒐdone;` — the named-result
 	// form's early exit (§4.4). The label is emitted only when something targets it, so a function
 	// whose body simply falls off the end carries no unreferenced label.

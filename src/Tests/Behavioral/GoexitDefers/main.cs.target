@@ -39,24 +39,29 @@ internal static void Main() {
     var done = new channel<EmptyStruct>(0);
     var doneʗ1 = done;
     var logʗ1 = log;
-    goǃ(() => func((defer, recover) => {
-        deferǃ(ᴛ1 => close(ᴛ1), doneʗ1, defer);
-        var logʗ2 = logʗ1;
-        defer(() => {
-            logʗ2.ᐸꟷ(goroutineDefer2Ranˢ);
-        });
-        var logʗ3 = logʗ1;
-        defer(() => {
-            if (recover() == default!){
-                logʗ3.ᐸꟷ(recoverDuringGoexitˢ);
-            } else {
-                logʗ3.ᐸꟷ(recoverDuringGoexitˢ2);
-            }
-            logʗ3.ᐸꟷ(goroutineDefer1Ranˢ);
-        });
-        exitFromHelper(logʗ1);
-        logʗ1.ᐸꟷ(goroutineResumedˢ);
-    }));
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(ᴛ1 => close(ᴛ1), doneʗ1, ref ᒐ);
+            var logʗ2 = logʗ1;
+            deferǃ(() => {
+                logʗ2.ᐸꟷ(goroutineDefer2Ranˢ);
+            }, ref ᒐ);
+            var logʗ3 = logʗ1;
+            deferǃ(() => {
+                if (recover() == default!){
+                    logʗ3.ᐸꟷ(recoverDuringGoexitˢ);
+                } else {
+                    logʗ3.ᐸꟷ(recoverDuringGoexitˢ2);
+                }
+                logʗ3.ᐸꟷ(goroutineDefer1Ranˢ);
+            }, ref ᒐ);
+            exitFromHelper(logʗ1);
+            logʗ1.ᐸꟷ(goroutineResumedˢ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     ᐸꟷ(done);
     close(log);
     foreach (var line in log) {

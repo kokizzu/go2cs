@@ -351,6 +351,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	useGoFrame := v.goFrameEligible(funcDecl, signature)
 	v.inGoFrame = useGoFrame
 	v.goFrameNamedExit = false
+	v.openGoFrames = 0
+
+	if useGoFrame {
+		v.openGoFrames = 1
+	}
 
 	// Collect parameter names from the function declaration
 	if v.paramNames == nil {
@@ -1139,7 +1144,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			exitLabel := ""
 
 			if v.goFrameNamedExit {
-				exitLabel = goFrameExitLabel() + ": "
+				exitLabel = v.goFrameExitLabel() + ": "
 			}
 
 			v.writeOutputLn("%s%s%s%sreturn %s;%s%s}", v.goFrameTail(savedIndent, catchReturn), v.newline, v.indent(savedIndent+1), exitLabel, returnExpr, v.newline, v.indent(savedIndent))
@@ -1187,6 +1192,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	v.inFunction = false
 	v.inGoFrame = false
+	v.openGoFrames = 0
 }
 
 // allExecWrapperReturnsAreTypeless reports whether no top-level return statement in the function

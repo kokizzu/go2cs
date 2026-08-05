@@ -129,11 +129,12 @@ func (v *Visitor) constExprContainsUntypedNamedConstRef(expr ast.Expr) bool {
 // every other reference must be the callee of a call. That also subsumes reassignment (`f = …` is a
 // non-call use) and address-taking, so the emitted name can never need to be a first-class value.
 //
-// Deliberately EXCLUDED: a literal that uses defer or recover. Its body is emitted inside a
-// `func((defer, recover) => …)` execution context whose GoFunc frame, display class and per-defer
-// delegates dominate the cost this change removes; converting the outer binding alone would churn
-// the goldens for no measurable win. Making that shape allocation-free is the ref-struct frame
-// design (docs/Phase4/DESIGN-closure-emission.md), not this rule.
+// A literal that uses defer or recover was excluded while its body was emitted inside a
+// `func((defer, recover) => …)` execution context, whose GoFunc object, display class and per-defer
+// delegates dominated the cost this rule removes — converting the outer binding alone would have
+// churned goldens for no measurable win. The ref-struct frame (docs/Phase4/DESIGN-closure-emission.md
+// §4) made that shape free, so the exclusion is gone: such a literal is a local function whose body
+// declares its own `GoFrame`, which is an ordinary local of one.
 func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format FormattingContext) (*ast.Ident, *ast.FuncLit, bool) {
 	// A local function is a DECLARATION statement: it is only legal in a statement list, never in
 	// the init/post clause of a `for`, or an `if`/`switch` init, which is what !useNewLine marks.
@@ -158,10 +159,6 @@ func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format Formatt
 	obj, ok := v.info.Defs[ident].(*types.Var)
 
 	if !ok || obj == nil {
-		return nil, nil, false
-	}
-
-	if hasDefer, hasRecover := v.funcBodyDeferRecover(funcLit.Body); hasDefer || hasRecover {
 		return nil, nil, false
 	}
 
@@ -264,7 +261,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// function), and a ref struct is a perfectly ordinary local of one — it is only CAPTURE that is
 	// forbidden, and an inline body captures nothing. So the same frame the enclosing function gets
 	// works here verbatim, which is also what lifts §3.1's local-function exclusion.
-	useLitFrame := v.litGoFrameEligible(litSig, litHasDefer, litHasRecover, litNamedDefer, funcLit)
+	useLitFrame := v.litGoFrameEligible(litSig, litHasDefer, litHasRecover, funcLit)
 
 	// A function literal with NAMED results needs their declarations at the top of its block —
 	// Go zero-initializes them and a bare `return` returns them. iter.Pull's
@@ -299,15 +296,22 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	savedInFunction := v.inFunction
 	v.inFunction = true
 
-	// A literal's body is NOT inside the enclosing function's GoFrame, whatever the enclosing
-	// function emits as: a `defer` written here belongs to this literal, and a ref struct cannot be
-	// captured by a lambda in any case. So the frame flag drops for the body conversion and is
-	// restored after — the same save/restore, and for the same reason, as the named-result mode
-	// above (see visitorState's inGoFrame).
+	// A literal's body is NOT inside the ENCLOSING function's GoFrame, whatever that function emits
+	// as: a `defer` written here belongs to this literal, and a ref struct cannot be captured by a
+	// lambda in any case. It gets a frame of its OWN when it defers or recovers, and that frame is a
+	// nested one — so its names take a depth suffix that keeps them out of the enclosing declaration
+	// space (CS0136). Both the body conversion and the composition of `inner` below name the frame,
+	// so the depth is held across both and restored after — the same save/restore, and for the same
+	// reason, as the named-result mode above (see visitorState's inGoFrame).
 	savedInGoFrame := v.inGoFrame
 	savedGoFrameNamedExit := v.goFrameNamedExit
+	savedOpenGoFrames := v.openGoFrames
 	v.inGoFrame = useLitFrame
 	v.goFrameNamedExit = false
+
+	if useLitFrame {
+		v.openGoFrames++
+	}
 
 	defer func() {
 		v.namedReturnDeferMode = savedNamedReturnDeferMode
@@ -316,6 +320,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.inFunction = savedInFunction
 		v.inGoFrame = savedInGoFrame
 		v.goFrameNamedExit = savedGoFrameNamedExit
+		v.openGoFrames = savedOpenGoFrames
 	}()
 
 	if v.lambdaCapture == nil {
@@ -645,7 +650,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			exitLabel := ""
 
 			if v.goFrameNamedExit {
-				exitLabel = goFrameExitLabel() + ": "
+				exitLabel = v.goFrameExitLabel() + ": "
 			}
 
 			if aliases := v.namedResultBoxAliasLines(litSig, v.indentLevel+2); aliases != "" && strings.HasPrefix(body, "{") {
@@ -657,7 +662,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 
 		inner = fmt.Sprintf("{%s%s%sGoFrame %s = default;%s%stry %s%s%s",
 			namedDecls,
-			v.newline, v.indent(v.indentLevel+1), goFrameName(),
+			v.newline, v.indent(v.indentLevel+1), v.goFrameName(),
 			v.newline, v.indent(v.indentLevel+1), body,
 			v.goFrameTail(v.indentLevel, catchReturn), exitAndClose)
 	case litNamedDefer:

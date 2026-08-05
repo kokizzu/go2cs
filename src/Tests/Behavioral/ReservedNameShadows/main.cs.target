@@ -36,6 +36,24 @@ partial class main_package {
     internal nint a;
 }
 
+[GoType] partial struct ΔGoFrame {
+    internal nint k;
+}
+
+internal static nint deferInShadowedPackage() {
+    GoFrame ᒐ = default;
+    try {
+        ref var f = ref heap<ΔGoFrame>(out var Ꮡf);
+        f = new ΔGoFrame(k: 1);
+        deferǃ(() => {
+            Ꮡf.Value.k++;
+        }, ref ᒐ);
+        return f.k;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
 [GoType] partial struct box {
     internal slice<nint> items;
 }
@@ -99,7 +117,7 @@ internal static void Main() {
     var bx = new box(items: new nint[]{4, 5}.slice());
     fmt.Println(a.x, builtin.len(vals), vals[1], (nint)c, r.r, n.d, bi.z, sv.n, rq.c, sc.b, rc.a);
     var (pd, es) = predeclLocals();
-    fmt.Println(freeLen(), bx.len(), nilShadow(), keywordLocals(), pd, es, viewLen(slice<byte>("xyz"u8)));
+    fmt.Println(freeLen(), bx.len(), nilShadow(), keywordLocals(), pd, es, viewLen(slice<byte>("xyz"u8)), deferInShadowedPackage());
 }
 
 } // end main_package

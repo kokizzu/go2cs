@@ -52,14 +52,17 @@ internal static void Main() {
     fmt.Println(emitˢ, ᐸꟷ(@out));
     goǃ((channel<nint> o) => {
         error retErr = default!;
-        func((defer, recover) => {
+        GoFrame ᒐ = default;
+        try {
             var oʗ2 = o;
-            defer(() => {
+            deferǃ(() => {
                 oʗ2.ᐸꟷ(11);
-            });
-            retErr = default!; return;
-        });
-        return retErr;
+            }, ref ᒐ);
+            retErr = default!; goto ᒐdone;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        ᒐdone: return retErr;
     }, @out);
     fmt.Println(litvalˢ, ᐸꟷ(@out));
     goǃ(error (channel<nint> o, nint n) => {

@@ -62,38 +62,43 @@ private static readonly @string otherNotAPlainStringˢ = "other (not a plain str
 
 internal static @string panicValueKind(Action f) {
     @string @out = default!;
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            var p = recover();
-            switch (p.type()) {
-            case null: {
-                @out = noPanicˢ;
-                break;
-            }
-            case @string v: {
-                @out = fmt.Sprintf("string(%s) eq-x=%v"u8, v, v == "x"u8);
-                break;
-            }
-            case {} Δv when Δv._<error>(out var v): {
-                @out = "error("u8 + v.Error() + ")"u8;
-                break;
-            }
-            case nint v: {
-                @out = fmt.Sprintf("int(%d)"u8, v);
-                break;
-            }
-            case int32 v: {
-                @out = fmt.Sprintf("int(%d)"u8, v);
-                break;
-            }
-            default: {
-                var v = p;
-                @out = otherNotAPlainStringˢ;
-                break;
-            }}
-        });
-        f();
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                var p = recover();
+                switch (p.type()) {
+                case null: {
+                    @out = noPanicˢ;
+                    break;
+                }
+                case @string v: {
+                    @out = fmt.Sprintf("string(%s) eq-x=%v"u8, v, v == "x"u8);
+                    break;
+                }
+                case {} Δv when Δv._<error>(out var v): {
+                    @out = "error("u8 + v.Error() + ")"u8;
+                    break;
+                }
+                case nint v: {
+                    @out = fmt.Sprintf("int(%d)"u8, v);
+                    break;
+                }
+                case int32 v: {
+                    @out = fmt.Sprintf("int(%d)"u8, v);
+                    break;
+                }
+                default: {
+                    var v = p;
+                    @out = otherNotAPlainStringˢ;
+                    break;
+                }}
+            }, ref ᒐ);
+            f();
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     return @out;
 }
 

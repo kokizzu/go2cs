@@ -102,7 +102,7 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 
 	if v.inGoFrame {
 		deferRegistrar = "deferǃ("
-		deferTarget = fmt.Sprintf(", ref %s);", goFrameName())
+		deferTarget = fmt.Sprintf(", ref %s);", v.goFrameName())
 	}
 
 	if paramCount == 0 {

@@ -65,17 +65,22 @@ internal static void Main() {
             fmt.Println(valMissOkˢ);
         }
     }
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(recoveredˢ);
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(recoveredˢ);
+                    }
                 }
-            }
-        });
-        _ = pointerSourced()._<valErr>();
-        fmt.Println(unreachableˢ);
-    })))();
+            }, ref ᒐ);
+            _ = pointerSourced()._<valErr>();
+            fmt.Println(unreachableˢ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     {
         var (s, ok) = pointerSourced()._<main_type>(ᐧ); if (ok){
             fmt.Println(ifaceAssertˢ, s.Error());

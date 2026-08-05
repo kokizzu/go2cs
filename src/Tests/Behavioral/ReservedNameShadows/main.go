@@ -7,9 +7,10 @@
 //     package-scoped Δ-renamed via emitterSpelledTypeNames — it must never be globally
 //     `reserved` (that corrupts legitimate spellings in every other package) nor
 //     '@'-escaped ('@' does not rename).
-//   - `builtin`, `sstring` as USER TYPES: golib names in the `reserved` set — the
-//     qualified `builtin.len(...)` emission (a method named `len` shadows the built-in)
-//     and the string([]byte) elision's `sstring` views must keep resolving.
+//   - `builtin`, `sstring`, `GoFrame` as USER TYPES: golib names in the `reserved` set —
+//     the qualified `builtin.len(...)` emission (a method named `len` shadows the built-in),
+//     the string([]byte) elision's `sstring` views, and the `GoFrame` local every deferring
+//     function declares must all keep resolving.
 //   - `required`, `scoped` as USER TYPES: C# contextual keywords banned as type names
 //     (CS9029/CS9062) — escaped `@required`/`@scoped` like `file`; `record` compiles
 //     unescaped (control).
@@ -36,6 +37,18 @@ type required struct{ c int }
 type scoped struct{ b int }
 
 type record struct{ a int }
+
+// A user type named after the emitter-spelled `GoFrame` — the golib ref struct every deferring
+// function declares a local of. Declared inside the package class it would SHADOW that type, so it
+// is in the `reserved` set and Δ-renamed, exactly like `builtin` and `sstring` above. The deferring
+// function below is what proves the emitted `GoFrame` still resolves in this package.
+type GoFrame struct{ k int }
+
+func deferInShadowedPackage() int {
+	f := GoFrame{k: 1}
+	defer func() { f.k++ }()
+	return f.k
+}
 
 type box struct{ items []int }
 
@@ -99,5 +112,5 @@ func main() {
 	bx := box{items: []int{4, 5}}
 	fmt.Println(a.x, len(vals), vals[1], int(c), r.r, n.d, bi.z, sv.n, rq.c, sc.b, rc.a)
 	pd, es := predeclLocals()
-	fmt.Println(freeLen(), bx.len(), nilShadow(), keywordLocals(), pd, es, viewLen([]byte("xyz")))
+	fmt.Println(freeLen(), bx.len(), nilShadow(), keywordLocals(), pd, es, viewLen([]byte("xyz")), deferInShadowedPackage())
 }

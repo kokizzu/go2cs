@@ -60,6 +60,7 @@ public static partial class main_package
     internal partial struct @scoped {}
     internal partial struct box {}
     internal partial struct record {}
+    public partial struct ΔGoFrame {}
     public partial struct Δany {}
     public partial struct Δbuiltin {}
     public partial struct Δnint {}

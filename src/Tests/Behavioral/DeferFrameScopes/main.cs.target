@@ -86,15 +86,25 @@ private static readonly object closureBodyˢ = (@string)"  closure body"u8;
 private static readonly object outerDefer2ˢ = (@string)"outer defer 2"u8;
 private static readonly object nestedBodyˢ = (@string)"nested body"u8;
 
-internal static void nestedDeferScopes() => func((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer1ˢ, defer);
-    defer(() => func((defer, recover) => {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), innerDeferˢ, defer);
-        fmt.Println(closureBodyˢ);
-    }));
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer2ˢ, defer);
-    fmt.Println(nestedBodyˢ);
-});
+internal static void nestedDeferScopes() {
+    GoFrame ᒐ = default;
+    try {
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer1ˢ, ref ᒐ);
+        deferǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                deferǃ(ᴛ1 => fmt.Println(ᴛ1), innerDeferˢ, ref ᒐ);
+                fmt.Println(closureBodyˢ);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, ref ᒐ);
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), outerDefer2ˢ, ref ᒐ);
+        fmt.Println(nestedBodyˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object mixedDeferTotalˢ = (@string)"mixed defer, total ="u8;
@@ -112,12 +122,17 @@ internal static nint mixedScopes() {
         }
         bump();
         bump();
-        ((Action)(() => func((defer, recover) => {
-            defer(() => {
-                total += 1;
-            });
-            total += 10;
-        })))();
+        ((Action)(() => {
+            GoFrame ᒐ = default;
+            try {
+                deferǃ(() => {
+                    total += 1;
+                }, ref ᒐ);
+                total += 10;
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }))();
         fmt.Println(mixedBodyTotalˢ, total);
         return total;
     }

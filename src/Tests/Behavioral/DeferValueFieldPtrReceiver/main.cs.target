@@ -48,12 +48,17 @@ internal static void Main() {
     fmt.Println(afterˢ, (~b).c.n);
     var x = Ꮡ(new builder(nil));
     var xʗ1 = x;
-    ((Action)(() => func((defer, recover) => {
-        var xʗ2 = xʗ1;
-        defer(xʗ2.of(builder.Ꮡc).reset);
-        xʗ1.of(builder.Ꮡc).inc();
-        fmt.Println(inside2ˢ, (~xʗ1).c.n);
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            var xʗ2 = xʗ1;
+            deferǃ(xʗ2.of(builder.Ꮡc).reset, ref ᒐ);
+            xʗ1.of(builder.Ꮡc).inc();
+            fmt.Println(inside2ˢ, (~xʗ1).c.n);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     fmt.Println(after2ˢ, (~x).c.n);
 }
 

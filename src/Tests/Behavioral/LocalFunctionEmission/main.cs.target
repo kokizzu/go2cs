@@ -80,23 +80,26 @@ internal static void p5() {
 }
 
 internal static void p6() {
-    var guard = (nint n) => {
+    nint /*r*/ guard(nint n) {
         nint r = default!;
-        func((defer, recover) => {
-            defer(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
                 {
                     var e = recover(); if (e != default!) {
                         r = -1;
                     }
                 }
-            });
+            }, ref ᒐ);
             if (n < 0) {
                 throw panic("negative");
             }
-            r = n * 2; return;
-        });
-        return r;
-    };
+            r = n * 2; goto ᒐdone;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        ᒐdone: return r;
+    }
     fmt.Println((@string)"P6:"u8, guard(3), guard(-1));
 }
 

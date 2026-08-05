@@ -71,16 +71,21 @@ internal static void Main() {
     fmt.Println((~real).name);
     fmt.Println(real.firstUseReads());
     var nilLocʗ1 = nilLoc;
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(recoveredˢ);
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(recoveredˢ);
+                    }
                 }
-            }
-        });
-        fmt.Println(nilLocʗ1.firstUseReads());
-    })))();
+            }, ref ᒐ);
+            fmt.Println(nilLocʗ1.firstUseReads());
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
 }
 
 } // end main_package

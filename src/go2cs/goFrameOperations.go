@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"strconv"
 )
 
 // A Go function that defers or recovers is emitted with its body INLINE inside try/catch/finally,
@@ -40,34 +41,42 @@ import (
 //
 // Full design, including the staged migration this predicate walks: docs/Phase4/DESIGN-closure-emission.md §4.
 
-// goFrameLiteralStage is the §4.8 stage-3c dial. Function LITERALS keep the execution context until
-// the declaration form has landed and been gated, so the corpus is never a mixture of forms in
-// flight — the one shape that would genuinely break is a frame-form scope nested inside a
-// lambda-form one, and staging declarations first makes that unreachable. Deleted with its use when
-// the stage lands.
-var goFrameLiteralStage = false
-
 // goFrameName is the emitted GoFrame local; the rest of the frame vocabulary composes from it, so
 // the whole shape moves with the one symbol.
-func goFrameName() string {
+//
+// A nested defer scope — a function literal that defers inside a function that also does — declares
+// its OWN frame under the SAME name, which is legal: a C# lambda or local function may shadow an
+// enclosing method local (verified empirically; the pre-C#-8 CS0136 rule no longer fires here), and
+// the inner declaration precedes every inner use. Keeping one name is deliberate rather than
+// incidental — every frame in every emitted function reads identically.
+func (v *Visitor) goFrameName() string {
 	return GoFrameVar
 }
 
 // goFrameExceptionName is the emitted catch clause's exception variable.
-func goFrameExceptionName() string {
+func (v *Visitor) goFrameExceptionName() string {
 	return GoFrameVar + "ex"
 }
 
 // goFramePanicName is the emitted catch filter's adopted-panic out variable.
-func goFramePanicName() string {
+func (v *Visitor) goFramePanicName() string {
 	return GoFrameVar + "p"
 }
 
 // goFrameExitLabel is the label a named-result function's early `return` jumps to (§4.4): the
 // results are declared before the try and returned after the finally, so an exit from inside the
 // try has to leave through a goto, which runs the finally exactly as a return would.
-func goFrameExitLabel() string {
-	return GoFrameVar + "done"
+//
+// This is the ONE name in the frame vocabulary that must be depth-numbered. LABELS do not shadow the
+// way locals do: a label inside a lambda that repeats one from the enclosing method is CS0158 ("the
+// label shadows another label by the same name in a contained scope"), which locals were checked
+// against and are exempt from. So the nesting depth is appended, and only here.
+func (v *Visitor) goFrameExitLabel() string {
+	if v.openGoFrames < 2 {
+		return GoFrameVar + "done"
+	}
+
+	return GoFrameVar + "done" + strconv.Itoa(v.openGoFrames-1)
 }
 
 // goFrameEligible reports whether this function's defer/recover scope is emitted as a GoFrame
@@ -84,96 +93,20 @@ func (v *Visitor) goFrameEligible(funcDecl *ast.FuncDecl, signature *types.Signa
 		return false
 	}
 
-	// A DEFERRED function literal that contains a `defer` of its OWN. Go scopes that inner defer
-	// to the literal, but the literal is a deferred-call target, so convFuncLit deliberately gives
-	// it no defer scope (its recover() belongs to the enclosing function, which is the case that
-	// rule exists for) — and the inner registration therefore lands in the ENCLOSING function's
-	// scope, silently running at the wrong time. Under the frame form it cannot even do that: the
-	// frame is a ref struct, which a lambda cannot capture, so the same shape is a compile error
-	// instead of a wrong answer. Neither is acceptable, so the shape keeps the lambda form until
-	// the literal can carry its own frame (§4.8 stage 3c). Measured across the whole converted
-	// corpus (4,951 emitted files) the shape occurs ZERO times, so this costs nothing today and
-	// exists to protect a converted end-user program during the migration window.
-	if deferredLiteralHasOwnDefer(funcDecl.Body) {
-		return false
-	}
-
 	return true
 }
 
 // litGoFrameEligible is goFrameEligible for a function LITERAL. A literal's frame lives in the
 // lambda (or local function) the literal emits as, which is an ordinary scope for a ref-struct
-// LOCAL — only capturing one is forbidden, and an inline body captures nothing. The migration gates
-// mirror the declaration's, so a literal never runs ahead of the stage that landed its rule.
-func (v *Visitor) litGoFrameEligible(litSig *types.Signature, hasDefer, hasRecover, namedDefer bool, funcLit *ast.FuncLit) bool {
-	// MIGRATION GATE (§4.8 stage 3c) — see goFrameLiteralStage.
-	if !goFrameLiteralStage {
-		return false
-	}
-
+// LOCAL - only CAPTURING one is forbidden, and an inline body captures nothing. Nested frames are
+// declared under the SAME name (a C# lambda or local function may shadow an enclosing method local);
+// only the named-result exit LABEL is depth-numbered, because labels do not shadow (CS0158).
+func (v *Visitor) litGoFrameEligible(litSig *types.Signature, hasDefer, hasRecover bool, funcLit *ast.FuncLit) bool {
 	if litSig == nil || funcLit == nil || funcLit.Body == nil {
 		return false
 	}
 
-	if !(hasDefer || hasRecover) {
-		return false
-	}
-
-	// See goFrameEligible: held back until a deferred literal can carry its own frame.
-	if deferredLiteralHasOwnDefer(funcLit.Body) {
-		return false
-	}
-
-	_ = namedDefer
-
-	return true
-}
-
-// deferredLiteralHasOwnDefer reports whether the body contains `defer func(){ … defer … }()` — a
-// deferred function literal that itself defers. See goFrameEligible for why that shape is held
-// back.
-func deferredLiteralHasOwnDefer(body *ast.BlockStmt) bool {
-	found := false
-
-	ast.Inspect(body, func(n ast.Node) bool {
-		if found {
-			return false
-		}
-
-		deferStmt, ok := n.(*ast.DeferStmt)
-
-		if !ok {
-			return true
-		}
-
-		funcLit, ok := deferStmt.Call.Fun.(*ast.FuncLit)
-
-		if !ok {
-			return true
-		}
-
-		ast.Inspect(funcLit.Body, func(inner ast.Node) bool {
-			if found {
-				return false
-			}
-
-			// A literal nested INSIDE this one owns its own defers, so stop at it.
-			if _, isLit := inner.(*ast.FuncLit); isLit {
-				return false
-			}
-
-			if _, isDefer := inner.(*ast.DeferStmt); isDefer {
-				found = true
-				return false
-			}
-
-			return true
-		})
-
-		return true
-	})
-
-	return found
+	return hasDefer || hasRecover
 }
 
 // goFrameHead renders the text that replaces the execution-context marker — everything between the
@@ -184,7 +117,7 @@ func deferredLiteralHasOwnDefer(body *ast.BlockStmt) bool {
 func (v *Visitor) goFrameHead(indentLevel int, namedResultDecls string) string {
 	return fmt.Sprintf(" {%s%s%sGoFrame %s = default;%s%stry",
 		namedResultDecls,
-		v.newline, v.indent(indentLevel+1), goFrameName(),
+		v.newline, v.indent(indentLevel+1), v.goFrameName(),
 		v.newline, v.indent(indentLevel+1))
 }
 
@@ -200,6 +133,6 @@ func (v *Visitor) goFrameTail(indentLevel int, catchReturn string) string {
 
 	return fmt.Sprintf("%s%scatch (Exception %s) when (GoFrame.IsPanic(%s, out PanicException? %s)) { GoFrame.Capture(%s);%s }%s%sfinally { %s.Run(); }",
 		v.newline, v.indent(indentLevel+1),
-		goFrameExceptionName(), goFrameExceptionName(), goFramePanicName(), goFramePanicName(), catchReturn,
-		v.newline, v.indent(indentLevel+1), goFrameName())
+		v.goFrameExceptionName(), v.goFrameExceptionName(), v.goFramePanicName(), v.goFramePanicName(), catchReturn,
+		v.newline, v.indent(indentLevel+1), v.goFrameName())
 }

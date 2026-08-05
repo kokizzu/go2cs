@@ -6057,10 +6057,168 @@ A `:=` from a method group whose signature matches no package named func type ke
 
 ## Defer / Panic / Recover
 
+### A function that defers or recovers emits its body INLINE, inside a frame
+
+A Go function is a stack frame: it registers `defer` records in its own frame and runs them on the
+way out, whatever the way out is. The converted C# says the same thing with statements — the body is
+emitted **inline** in the method, wrapped in `try`/`catch`/`finally`, beside a `GoFrame` local that
+holds this call's defer list and nothing else:
+
+```csharp
+internal static void Main() {
+    GoFrame ᒐ = default;
+    try {
+        fmt.Println(openFileˢ);
+        defer(ᴛ1 => fmt.Println(ᴛ1), closeFileˢ, ref ᒐ);
+        fmt.Println(writeDataToFileˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+```
+
+Each part does one of the three things Go's runtime does for free:
+
+- the **`catch`** parks a panic — an explicit `panic()` or a .NET exception that maps to a Go runtime
+  panic — where `recover()` can read it. The filter is the single adoption point that also snapshots
+  the panic's origin, so a non-panic exception (and `GoexitException`, deliberately) fails it and
+  propagates unchanged;
+- the **`finally`** drains the deferred calls, which is Go's guarantee that they run on *every* exit
+  path — normal return, panic, `runtime.Goexit`, or a mapped runtime fault. They run **after** the
+  panic has been parked, which is exactly what lets a deferred call recover the panic raised by the
+  body it was registered in;
+- the **frame** is the defer list. It is a `ref struct`, so it lives in the method's own stack frame,
+  the JIT can enregister its four inline slots, and the machinery allocates **nothing**.
+
+`GoFrame.Run()` is the whole of the ordering contract: LIFO drain, the `HandledPanic` save/restore
+that keeps a traceback honest for the length of the deferred sequence, the re-panic origin
+inheritance behind Go's `defer func(){ panic(recover()) }()` idiom, and the final re-throw of a panic
+no deferred call recovered.
+
+Guards: `DeferSimple`, `DeferCallOrder`, `DeferClosure`, `PanicRecover`, `GoexitDefers`,
+`DeferFrameScopes`, and golib's `GoFrameTests` (which A/B every scenario against the machinery this
+replaced).
+
+### Why the body is not a lambda
+
+The same three things used to be modelled as an *object* that owned the body —
+`func<T>((defer, recover) => …)`, a `GoFunc<T>` whose `Execute` supplied a catch, a finally and a
+`Stack<Action>`. Owning the body forces the body to be a delegate; a delegate forces a display class
+for everything the body touches; and a display class forces a `GoFunc<TRef1…TRef16>` ladder for
+everything a delegate *cannot* capture (a `ref` local, a `Span`). The frame form needs none of it,
+and removes two things beyond the machinery:
+
+- **a capture-semantics divergence class, by construction.** The lambda closed over variables the Go
+  original never closed over; an inline body closes over nothing at all, and only the deferred
+  closures capture — exactly as Go's deferred closures do.
+- **the ref-parameter ladder.** A variadic deferring function used to thread its `params Span`
+  through `func(ref valsʗp, (ref Span<T> valsʗp, Defer defer, Recover recover) => …)` because a
+  lambda cannot capture it. An inline body has no parameters to thread, so it simply uses the one it
+  has (`GenericVariadicFunc`, `VariadicPointerParam`).
+
+Measured with `GC.GetAllocatedBytesForCurrentThread` over 5,000 Release calls: the execution context
+cost **160 B** with no defers, **248 B** with one or two whose targets are cached static method
+groups, and **440 B** for the two-capturing-defer shape of `internal/poll.FD.Write`. The frame costs
+**0 B**, **0 B**, and **192 B** for the same three — the residue being the display class and delegate
+of each defer that genuinely closes over something.
+
+### The named-result form: results outside the try, exits through a label
+
+`func f() (r int) { defer func(){ r++ }(); return 1 }` returns **2** in Go: the deferred call runs
+after the result parameter is assigned and before the caller sees it. A C# `finally` cannot change a
+value the `return` has already evaluated, so the results are declared **before** the `try` and read
+back **after** the `finally`, and every exit inside the `try` leaves through a `goto` — which runs the
+`finally` exactly as a `return` would, without freezing a result the deferred calls may still change:
+
+```csharp
+internal static (nint @out, @string label) compute(nint x) {
+    nint @out = default!;
+    @string label = default!;
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            @out += 1000;
+        }, ref ᒐ);
+        if (x < 0) {
+            (@out, label) = (-1, negˢ);
+            goto ᒐdone;
+        }
+        (@out, label) = (@double(x), fmt.Sprintf("v=%d"u8, x));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (@out, label);
+}
+```
+
+The label is emitted only when something jumps to it — a body that simply falls off the end of the
+`try` reaches the return anyway. A heap-box-backed named result keeps the split it already had: the
+box is declared outside the `try` and the value alias re-derived inside it, because the deferred
+closures are still lambdas and a lambda cannot capture a `ref` local.
+
+Guards: `NamedReturnDefer`, `NamedResultDeferCapture`, `DeferFrameScopes` (which exits from inside a
+loop, a switch arm and an `if`).
+
+### The catch arm returns Go's zero results
+
+For a value-returning function whose results are unnamed, the catch arm ends with `return default!;`.
+A panic a deferred call **recovered** leaves the function returning the zero results, which is Go's
+rule; one **no** deferred call recovered never reaches that return at all, because `Run()` re-throws
+it from the `finally` and a throw from a `finally` overrides a pending return. It is also what keeps
+the method's endpoint unreachable, so nothing is needed after the `try` statement.
+
+### `recover()` is a static call, not a parameter
+
+`recover()` resolves to `builtin.recover()`, which reads the one thread-local slot the emitted
+`catch` parked the panic in (`GoFrame.Capture`). That it resolves **statically** is not an
+optimization — it is the load-bearing fact of the whole design: a deferred closure can therefore
+recover without holding any handle on the frame that registered it, which is what allows the frame to
+be a `ref struct` in the first place.
+
+One consequence: `recover` is a Go *predeclared identifier*, not a keyword, so a package may declare
+its own — `text/template/parse` has `func (t *Tree) recover(errp *error)`. Inside that package's
+class the extension method wins over the `using static go.builtin` import, so such a package emits
+its built-in calls qualified as `builtin.recover()`, exactly like every other shadowed built-in.
+
+### `defer` registration: the arity ladder, and no bang
+
+Go evaluates a deferred call's ARGUMENTS at the `defer` statement and runs the call later, so every
+argument is captured at registration. `defer` is an arity ladder of generic rungs (`Action` and a
+result-discarding `Func` twin per arity, 1 through 16, plus a nullary rung) whose last parameter is
+`ref GoFrame` — the frame to register into:
+
+```csharp
+defer(Ꮡfd.writeUnlock, ref ᒐ);                      //  Go: defer fd.writeUnlock()
+defer(ᴛ1 => fmt.Println(ᴛ1), closeFileˢ, ref ᒐ);    //  Go: defer fmt.Println("Close file")
+```
+
+The rungs are generic rather than `params object[]` so a value argument is captured without boxing on
+a path that runs on function exit throughout the corpus.
+
+The name used to be `deferǃ` (U+01C3, a legal C# identifier character where `!` is not) purely to
+disambiguate from the `defer`-named delegate parameter the execution-context lambda passed in. The
+frame retires that parameter, and `defer` is a Go **keyword** — so no Go identifier can ever be
+spelled that way, no C# keyword collides, and the bang is gone. Its siblings keep theirs for reasons
+of their own: `goǃ` cannot be `go`, which is the root namespace every converted file sits in, and
+`makeǃ` cannot be `make`, which is a predeclared Go identifier a package may shadow.
+
+### A nested defer scope gets a frame of its own
+
+A `ref struct` cannot be captured by a lambda, and it does not need to be: a function literal that
+defers carries its own frame inside the lambda (or local function) it emits as, and nested frames are
+numbered by depth (`ᒐ`, `ᒐ1`, …) so an inner one does not collide with the enclosing declaration.
+
+That is also what makes a **deferred literal that defers on its own account** expressible.
+`defer func(){ defer cleanup(); … }()` scopes the inner `defer` to the literal in Go; the literal is
+a deferred-call target, so it gets no *recover* scope of its own (its `recover()` recovers the
+enclosing function — the whole point of the idiom), but it does get a frame for its own defers. Under
+the old lambda form the inner registration landed in the enclosing function's scope instead. Guarded
+by `DeferFrameScopes`.
+
 ### An unrecovered panic crashes the process Go-style: report on stderr, exit code 2
-`throw panic(x)` unwinds until some enclosing `func((defer, recover) => …)` recovers it. When nothing
-does — including in a **goroutine**, since `goǃ` queues the body on the bare thread pool with no wrapper
-catch and GoFunc's exception filter only captures panic-convertible exceptions — the exception reaches
+`throw panic(x)` unwinds until some enclosing frame's deferred sequence recovers it. When nothing
+does — including in a **goroutine**, since `goǃ` queues the body on the bare thread pool with no frame
+around it and a frame's exception filter only adopts panic-convertible exceptions — the exception reaches
 golib's `AppDomain.UnhandledException` backstop (registered in `builtin.InitializeGoLib`). The backstop
 matches Go: it writes the report to **stderr** (`panic: <message>`, first mapping runtime-error
 exceptions through `RuntimeErrorPanic.TryAsPanic` so e.g. an integer divide by zero reports Go's
@@ -6412,61 +6570,12 @@ a nested hoist can only reach a position inside the body. The literal's own capt
 they are flushed before the body is converted, while the enclosing buffer is still installed. (Guarded
 by `FuncLitArgCapture` case 15.)
 
-Handling Go `defer` / `panic` / `recover` requires that the converted function run inside a [Go function execution context](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFunc.cs). The context provides the [`defer`](https://golang.org/ref/spec#Defer_statements) call stack and the [`recover`](https://golang.org/pkg/builtin/#recover) handling; `panic` is the global [`panic`](https://golang.org/pkg/builtin/#panic) built-in (a `using static go.builtin`). The body is emitted as a lambda taking two parameters, `defer` and `recover`:
+Handling Go `defer` / `panic` / `recover` is what the FRAME above is for: the body is emitted inline in `try`/`catch`/`finally` beside a [`GoFrame`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFrame.cs) local that holds this call's defer list. `panic` is the global [`panic`](https://golang.org/pkg/builtin/#panic) built-in and `recover` the global [`recover`](https://golang.org/pkg/builtin/#recover) (both a `using static go.builtin`). A function that neither directly nor indirectly (through a deferred lambda) uses `defer`/`recover` gets no frame at all -- the scope is per function, so a `main` that merely calls `f()` is emitted as a plain method body.
 
-```go
-func f() {
-    defer func() {
-        if r := recover(); r != nil {
-            fmt.Println("Recovered in f", r)
-        }
-    }()
-    fmt.Println("Calling g.")
-    g(0)
-}
-
-func g(i int) {
-    if i > 3 {
-        panic(fmt.Sprintf("%v", i))
-    }
-    defer fmt.Println("Defer in g", i)
-    g(i + 1)
-}
-```
-
-converts to:
-
-```csharp
-internal static void f() => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover();
-            if (r != nil) {
-                fmt.Println("Recovered in f", r);
-            }
-        }
-    });
-    fmt.Println("Calling g.");
-    g(0);
-});
-
-internal static void g(nint i) => func((defer, recover) => {
-    if (i > 3) {
-        throw panic(fmt.Sprintf("%v"u8, i));
-    }
-    defer(() => fmt.Println("Defer in g", i));
-    g(i + 1);
-});
-```
-
-A function that neither directly nor indirectly (through a deferred lambda) uses `defer`/`panic`/`recover` skips the wrapper entirely — the converter scopes the wrapper per function, so e.g. a `main` that just calls `f()` is emitted as a plain method body. A value-returning function returns from inside the wrapper (`=> func((defer, recover) => { …; return x; })`). Two refinements worth noting:
-
-* **Named results + defer.** When a function has named return values *and* uses defer/recover, the named results are declared *outside* the wrapper (closure-captured), the wrapper runs as a `void` action, and the function returns the named results afterward — so the deferred "recover sets the result" idiom is observed.
-* **IIFEs.** An immediately-invoked function literal that itself uses defer/recover gets its own wrapper, rendered as a delegate-cast invocation (e.g. `((Func<int>)(() => func((defer, recover) => { … })))()`), so its `recover` scopes to the IIFE and not the enclosing function.
-* **A `return` emits against ITS OWN function's results, not the enclosing function's.** A bare `return` in a function with named results emits `return (n, ok);` (the named results). A *nested function literal* must be converted against its **own** signature — otherwise a bare `return` inside a **void** closure would inherit the enclosing function's named results and emit `return (n, ok);` into a `void` lambda (CS8030, "anonymous function converted to a void-returning delegate cannot return a value"). Runtime `mprof.goroutineProfileWithLabelsSync` (named `(n, ok)`) passes `forEachGRace(func(gp1 *g) { …; return; … })` — the void closure's bare returns must stay `return;`. The return signature is tracked separately from `currentFuncSignature` (which stays the *enclosing* function's, so the receiver/parameter detection still resolves a **captured** pointer parameter — an outer parameter — correctly): `convFuncLit` sets a dedicated return-signature to the literal's own signature with save/restore, and `visitReturnStmt` emits results against it. (Guarded by the `ClosureBareReturnNamedResults` behavioral test — a void closure with bare returns nested in a named-results function, output verified vs Go; cleared runtime's 4 CS8030.)
-* **All-typeless returns need the explicit wrapper type argument.** C# infers the value-returning wrapper's `T` (`func<T>((defer, recover) => …)`) from the lambda's return statements, and a tuple literal has a natural type only when *all* its elements do — Go `nil` renders as a typeless `default!`. When **every** return in the body contains a nil (`return nil, err` / `return &x, nil` — syscall's `getProcessEntry`, unnamed `(*ProcessEntry32, error)` results), no return contributes a type, inference fails, and overload resolution silently binds the *void* `GoAction` wrapper (CS8030 at each value return). The converter detects that shape and emits the result type explicitly: `=> func<(ж<ProcessEntry32>, error)>((defer, recover) => …)`. Any function with one fully-typed return keeps the inferred form (zero churn). (Guarded by `DeferTypelessReturns`' `find` — unnamed results, a defer, and both returns carrying nil.)
-
-* **Heterogeneous typed returns also need the explicit wrapper type argument.** The same `func<T>` inference fails when a value-returning defer/recover function `return`s expressions of two *unrelated concrete types* that share only the declared interface — go/parser's `parseTypeName` returns `&ast.SelectorExpr{…}` beside a plain `*ast.Ident`, both only `ast.Expr`. Every return is fully typed (so the all-typeless test above does not fire), but C#'s best-common-type of `{ast_SelectorExprжExpr, ast_IdentжExpr}` has no single member the others convert to, so `T` cannot be inferred and overload resolution again binds the void `GoAction` wrapper (CS8030 — 13× in go/parser: parseTypeName, tryIdentOrType, parseSimpleStmt, parseGoStmt, …). `execWrapperReturnsLackCommonType` walks the top-level returns and, at each result position, tests whether *some* return type is identical-to-or-assignable-to by every other; when none is (genuine heterogeneity), the explicit result type is emitted — `=> func<ast.Expr>((defer, recover) => …)`. A single return, or returns that DO share a best-common-type (a concrete beside its own interface — C# infers the interface), keep the inferred form, so the full-stdlib A/B touches only the genuinely-heterogeneous funcs (go/parser, plus one `context.WithDeadlineCause`) and the behavioral corpus stays byte-identical. (Guarded by `DeferInterfaceReturn` — a defer/recover func returning `Shape` via `Circle` vs `Square`, plus a `(Shape, bool)` heterogeneous tuple return, values vs Go.)
+* **Named results + defer.** See *The named-result form* above: the results are declared before the `try` and read back after the `finally`, and every exit inside leaves through a `goto`.
+* **IIFEs.** An immediately-invoked function literal that itself uses defer/recover carries its own frame inside its own delegate-cast invocation (`((Action)(() => { GoFrame ... }))()`), so its defers are its own -- while its `recover()`, being a static call, still reads the one panic slot.
+* **A `return` emits against ITS OWN function's results, not the enclosing function's.** A bare `return` in a function with named results emits `return (n, ok);` (the named results). A *nested function literal* must be converted against its **own** signature -- otherwise a bare `return` inside a **void** closure would inherit the enclosing function's named results and emit `return (n, ok);` into a `void` lambda (CS8030, "anonymous function converted to a void-returning delegate cannot return a value"). Runtime `mprof.goroutineProfileWithLabelsSync` (named `(n, ok)`) passes `forEachGRace(func(gp1 *g) { ...; return; ... })` -- the void closure's bare returns must stay `return;`. The return signature is tracked separately from `currentFuncSignature` (which stays the *enclosing* function's, so the receiver/parameter detection still resolves a **captured** pointer parameter -- an outer parameter -- correctly): `convFuncLit` sets a dedicated return-signature to the literal's own signature with save/restore, and `visitReturnStmt` emits results against it. (Guarded by the `ClosureBareReturnNamedResults` behavioral test -- a void closure with bare returns nested in a named-results function, output verified vs Go; cleared runtime's 4 CS8030.)
+* **Return-type INFERENCE is no longer a concern, and two rules retired with it.** While the body was a lambda, C# had to infer the wrapper's `T` from the return statements, and two shapes defeated it: every return carrying an untyped `default!` (Go `nil` -- syscall's `getProcessEntry`), and returns of two unrelated concrete types sharing only the declared interface (go/parser's `parseTypeName` returning `&ast.SelectorExpr{...}` beside a plain `*ast.Ident`). Both bound the *void* overload and produced CS8030 at every value return, and both were fixed by emitting an explicit `func<T>` type argument. An inline body returns against the METHOD's declared result type, so neither shape can arise and both detectors are gone. Their guards remain, now pinning that the frame form needs no such help: `DeferTypelessReturns` (unnamed results, a defer, and every return carrying nil) and `DeferInterfaceReturn` (a defer/recover func returning `Shape` via `Circle` vs `Square`, plus a heterogeneous `(Shape, bool)` tuple return).
 
 ### A BLANK result mixed with a named one still needs the named-return-defer handling
 

@@ -217,7 +217,7 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 		// returned after the finally, so an exit from inside it leaves through a goto — which runs
 		// the finally exactly as a return would, and unlike a return does not freeze a result value
 		// the deferred calls are still entitled to change.
-		result.WriteString("goto " + goFrameExitLabel())
+		result.WriteString("goto " + v.goFrameExitLabel())
 		v.goFrameNamedExit = true
 	} else {
 		result.WriteString("return")
@@ -547,7 +547,7 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 	// just `return;`.
 	if namedDeferAssign && !isTerminalReturn {
 		if v.inGoFrame {
-			result.WriteString(" goto " + goFrameExitLabel() + ";")
+			result.WriteString(" goto " + v.goFrameExitLabel() + ";")
 			v.goFrameNamedExit = true
 		} else {
 			result.WriteString(" return;")

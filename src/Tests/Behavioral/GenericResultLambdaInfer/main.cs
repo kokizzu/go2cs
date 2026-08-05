@@ -71,12 +71,17 @@ internal static void Main() {
         throw panic("boom");
     });
     var panicOnceʗ1 = panicOnce;
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            fmt.Println(recoveredˢ, describe(recover()));
-        });
-        panicOnceʗ1();
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            deferǃ(() => {
+                fmt.Println(recoveredˢ, describe(recover()));
+            }, ref ᒐ);
+            panicOnceʗ1();
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     var pairOnce = Once2((any, any) () => (default!, default!));
     var (p, q) = pairOnce();
     fmt.Println(describe(p), describe(q));

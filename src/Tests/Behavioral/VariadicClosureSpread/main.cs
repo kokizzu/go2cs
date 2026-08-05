@@ -29,12 +29,17 @@ internal static void Main() {
     }
     fmt.Println(forward(10, 20, 30));
     var values = new nint[]{1, 2, 3}.slice();
-    var mutate = (params ꓸꓸꓸnint numsʗp) => func(ref numsʗp, (ref ꓸꓸꓸnint numsʗp, Defer defer, Recover recover) => {
+    void mutate(params ꓸꓸꓸnint numsʗp) {
+        GoFrame ᒐ = default;
+        try {
         var nums = numsʗp.sslice();
-        defer(() => {
-        });
-        nums[0] = 40;
-    });
+            deferǃ(() => {
+            }, ref ᒐ);
+            nums[0] = 40;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }
     mutate(values.ꓸꓸꓸ);
     fmt.Println(values[0]);
 }
