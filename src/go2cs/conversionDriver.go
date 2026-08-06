@@ -107,9 +107,15 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		pkgs, err = packages.Load(cfg, inputFilePath)
 	}
 
+	// A package that loads WITH errors still converts, best-effort — but say so, and name it. Every
+	// expression downstream of one of these errors is left untyped by go/types, so the emitted C# for
+	// that region cannot compile no matter how the converter behaves; the surrounding declarations
+	// convert normally. Under -recurse this line is the only account of WHY a package's output is
+	// degraded, and it scrolls past among hundreds of packages, so it has to identify itself rather
+	// than print a bare "Errors:" (issue #33).
 	for _, pkg := range pkgs {
 		if len(pkg.Errors) > 0 {
-			log.Printf("Errors: %v", pkg.Errors)
+			log.Printf("WARNING: %s did not fully type-check; converting best-effort — code depending on the following is emitted untyped: %v", pkg.PkgPath, pkg.Errors)
 		}
 	}
 

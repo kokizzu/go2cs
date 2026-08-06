@@ -553,7 +553,11 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			// `split SplitFunc` field — whose TypeOf is the *types.Named, not the signature;
 			// the bare assertion missed it and the 3-tuple deconstruction SHATTERED into one
 			// full call per LHS element (triple side effects, CS0029/CS1503 x4).
-			if signature, ok := funType.Underlying().(*types.Signature); ok && !funIsType {
+			//
+			// funType is nil when the callee's operand went invalid — a package that did not fully
+			// type-check (issue #33); with no signature there is no tuple to deconstruct, which is
+			// the same answer the non-signature case gives.
+			if signature, ok := underlyingOf(funType).(*types.Signature); ok && !funIsType {
 				results := signature.Results()
 
 				if results != nil {

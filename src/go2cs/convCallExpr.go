@@ -2520,6 +2520,17 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 	expr := v.convExpr(arg, nil)
 	argType := v.getType(arg, false)
 
+	// The callee of a call whose operand went INVALID has no recorded type at all (go/types drops
+	// invalid operands rather than recording them), so getType returned nil for it — a package that
+	// did not fully type-check reaches here with one (issue #33). There is no target type to convert
+	// TO, so emit the argument as written; the recorded implicit conversions are an optimization of
+	// the emitted form, never a correctness requirement. Without this the nil deref below faulted the
+	// whole FILE out of the conversion (the per-file recover in processConversion catches it), losing
+	// every other declaration in it over one undefined symbol.
+	if funcType == nil {
+		return expr
+	}
+
 	var targetTypeIsPointer bool
 
 	// Check if function type is a signature, i.e., an anonymous struct

@@ -12,6 +12,7 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 )
@@ -35,11 +36,39 @@ import (
 func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Package, info *types.Info) {
 	var concurrentTasks sync.WaitGroup
 
+	// A panic raised on THIS side of the `go` statement below cannot be recovered by the caller:
+	// Go unwinds only the panicking goroutine's own stack, so it takes down the whole process. Both
+	// batch drivers already wrap each package in a recover precisely so ONE unconvertible package
+	// fails alone (ModuleConverter.convertAll records it in `failed` and converts the rest;
+	// StdLibConverter.convertPackage turns it into an error) — and this pass silently defeated both
+	// of them. Issue #33 is exactly that: a -recurse run over 1,726 packages died at [736/1726],
+	// discarding ~1,000 packages of queued work over a single-package fault. So each worker
+	// captures its own panic and the first one is re-raised on the caller's goroutine, where the
+	// per-package recovers can see it.
+	var (
+		firstPanic     any
+		firstStack     []byte
+		firstPanicOnce sync.Once
+	)
+
 	for _, fileEntry := range files {
 		concurrentTasks.Add(1)
 
 		go func(fileEntry FileEntry) {
 			defer concurrentTasks.Done()
+
+			defer func() {
+				if r := recover(); r != nil {
+					// Captured before unwinding leaves this goroutine, so the recorded stack is
+					// still the FAULTING one — re-panicking on the caller would otherwise report
+					// only the re-raise site, which names no converter code at all.
+					stack := debug.Stack()
+
+					firstPanicOnce.Do(func() {
+						firstPanic, firstStack = r, stack
+					})
+				}
+			}()
 
 			visitor := &Visitor{
 				fset:             fset,
@@ -120,6 +149,10 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 	}
 
 	concurrentTasks.Wait()
+
+	if firstPanic != nil {
+		panic(fmt.Sprintf("escape analysis: %v\n\n%s", firstPanic, firstStack))
+	}
 }
 
 // analyzeBodyDeclaredVars runs escape analysis over every variable DECLARED inside body — `:=`
@@ -736,6 +769,22 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 				if argRootIsIdent(arg, identObj, v.info) {
 					// Get the function type
 					funType := v.info.TypeOf(n.Fun)
+
+					// An expression whose operand went INVALID is never recorded at all —
+					// go/types' Checker.record returns early for `mode == invalid` — so TypeOf
+					// hands back a nil interface and any method call on it is a hard crash. That
+					// is not a hypothetical: a -recurse run converts whatever app and third-party
+					// packages it is given, and some of those legitimately do not type-check on
+					// the host (a symbol behind a build tag, a cgo-only file, a dependency whose
+					// own import failed). The package loads with errors, the converter reports
+					// them and converts best-effort — and hit this line (issue #33, on both a
+					// third-party `could not import … (invalid package name: "")` and, under
+					// -recurse=module, the app's own `undefined: …`). An untyped callee simply
+					// tells us nothing about whether the argument escapes, so move on.
+					if funType == nil {
+						continue
+					}
+
 					sig, ok := funType.Underlying().(*types.Signature)
 
 					if !ok {

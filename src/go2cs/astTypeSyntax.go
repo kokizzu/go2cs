@@ -197,6 +197,26 @@ func (v *Visitor) getType(expr ast.Expr, underlying bool) types.Type {
 	return exprType
 }
 
+// underlyingOf is types.Type.Underlying with a nil receiver tolerated, returning nil rather than
+// faulting. A package that did not fully type-check has expressions with NO recorded type at all —
+// go/types' Checker.record returns early for an operand in `invalid` mode, so types.Info.TypeOf
+// hands back a nil INTERFACE, and a method call on that is a hard nil dereference rather than a
+// no-op (issue #33). Such packages reach the converter routinely under -recurse: an app package
+// naming a symbol behind a build tag, a third-party package whose own import failed. The nil
+// result flows on harmlessly — every `underlyingOf(t).(*types.X)` assertion simply reports not-ok,
+// which is the same answer an unrecognized type gives, so the caller's fallback path runs.
+//
+// Use this wherever the type comes from TypeOf/getType on an arbitrary source expression. A type
+// obtained from the type SYSTEM (a signature's parameter, a named type's RHS) is never nil and
+// needs no wrapper.
+func underlyingOf(t types.Type) types.Type {
+	if t == nil {
+		return nil
+	}
+
+	return t.Underlying()
+}
+
 func getParameterType(sig *types.Signature, i int) (types.Type, bool) {
 	var paramType types.Type
 	params := sig.Params()
