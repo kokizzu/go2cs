@@ -61,7 +61,46 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
-## OWED — the issue-#32 go.work fix is authored in a container, unmeasured on Windows (2026-08-06)
+## ~~OWED~~ DISCHARGED — the issue-#32 go.work fix is measured on Windows (2026-08-06, same day)
+
+**Every owed gate ran; the change is clean, and its emission-neutrality is proved against the converter
+that predates it rather than argued from the diff.**
+
+1. **CNR — the gate could not use the committed corpus as its reference, so it was run in a stronger
+   form.** A plain CNR reported drift under *both* candidate roots, in opposite directions and on
+   disjoint file sets (4 files vs 12) — a **pre-existing** condition of the committed
+   `package_info.cs` corpus that has nothing to do with this change; it gets its own entry below. The
+   gate's actual question was therefore answered **converter-vs-converter**: every one of the **569**
+   behavioral packages transpiled twice in one environment, once with `master`'s converter and once
+   with a converter built from `c57f1a878` (the commit before this arc), hashing all **1,176** generated
+   `.cs`. Manifests **byte-identical** (`A8E0B75B…C15EC80` both sides), **0 transpile failures**. The
+   change is emission-neutral across the whole corpus, which is what "expect byte-identical" was for.
+2. **Full behavioral suite: 544/544** Transpile+Compile+Target, **514/514** output comparisons, 0
+   failed, 30 skipped (2,124.3s). ⚠ The FIRST attempt was a **false green by documented route #2** and
+   is recorded because the trap is easy to re-enter: restoring the tree with `git checkout` refreshes
+   every `.cs` mtime, so `UpToDate`'s `csTime <= exe` guard sees fresh output, **Transpile is skipped
+   for all 544**, and the suite validates the committed `.cs` instead of the converter's. The guard is
+   sound — a *checkout* defeats it, not a converter rebuild. Re-running `go build -o bin\go2cs.exe`
+   before the suite makes the exe newest again and forces the real pass; confirm it ran by checking that
+   the transpile left the tree dirty.
+3. **The recurse guards' first Windows run: all 7 PASS** (14.7s) — `TestModuleCachePoisonedGoWorkLoad`
+   0.65s, `TestRecurseModuleOnly`, `TestRecurseSyntheticModule`, `TestRecurseNuGetReferences`,
+   `TestRecurseNuGetResolvesForeignImplements`, `TestRecurseLinknameForwarder`, `TestRecurseModeFlag`.
+   Full `go test ./...` is **`ok`, exit 0** — the container's 7 "failures" were Linux-path artifacts, as
+   it predicted. *Additionally measured*, because the committed guard pins `goModCache` directly and so
+   never exercises the real Windows resolution: `goModCacheDir()` resolves through `go env` to
+   `C:\Users\rcarroll\go\pkg\mod` (the `GOMODCACHE` env var is unset here, so the second fallback is the
+   live path), and `isPathUnder` classifies correctly against a real cache path — case-insensitive in
+   both directions, separator-agnostic, root-inclusive, and **not** fooled by the sibling-prefix trap
+   `…\pkg\mod-notthecache`. The gate fires on Windows.
+4. **Sweep waived by this entry's own condition.** Items 1–3 surfaced nothing attributable to the
+   change, and byte-identical emission leaves no path into the banked suites. The corpus finding below
+   is confined to behavioral `package_info.cs` files and touches neither `src/core` nor any banked suite.
+5. **The `eol=crlf` pin is invisible on this clone, positively.** `git check-attr eol` reports `crlf`
+   for all three templates, all three are fully CRLF on disk, and `git status` stayed clean across the
+   pull — the expected outcome, verified rather than assumed.
+
+The container's original record follows, kept for its diagnosis.
 
 For the next **local (Windows)** session: `master` carries the **second** issue-#32 arc — commit
 `121c61d` (the `GOWORK=off` fix + its guard) and `0267629` (the template `eol=crlf` pin), the diagnosis
@@ -98,6 +137,60 @@ Owed, in order (budgets from the CLAUDE.md table) — the d00cac5 pattern verbat
 5. ⚠ The `eol=crlf` pin takes effect on **checkout** — existing Windows clones already have CRLF working
    trees via autocrlf, so expect no visible change there; a `git status` after pulling the attribute
    commit should stay clean for the three templates. If it does not, that is a finding.
+
+## Open — CNR's verdict depends on an AMBIENT environment variable, and the `package_info.cs` corpus is already split (found 2026-08-06)
+
+**CNR is not deterministic across machines**, and the non-determinism is silent: it changes which files
+the gate reports, never whether it errors. Found while discharging the entry above, where it presented
+as a plausible converter regression that took an A/B against a rebuilt converter to clear.
+
+The mechanism. `getImportPackageInfo` maps a stdlib import to `$(go2csPath)core\<pkg>` and substitutes
+**`options.go2csPath`** — the converter's `-go2cspath`, default `~/go2cs` (env `GO2CSPATH`), which is
+*not* the MSBuild `$(go2csPath)`. The imported package's `package_info.cs` is read from there to mint the
+`<ImportedTypeAliases>` block. If that root is missing, stale, or partial, the aliases are **silently
+omitted** — no warning, no error, exit 0. Three things let it persist unnoticed:
+
+- **CNR and both behavioral runners invoke `go2cs.exe` with no `-go2cspath`**, so every run inherits
+  whatever `GO2CSPATH` the shell happens to carry.
+- **`deploy-core.ps1` stages to `%GOPATH%\src\go2cs`, while the converter defaults to `~/go2cs`** —
+  different roots, so running the documented deploy does not populate the root the converter reads.
+- **`main.go`'s `isGo2CSRoot` / `findGo2CSRootAbove` self-location is gated on `options.convertTests`**,
+  so the recovery that would catch exactly this protects `-tests` runs only.
+
+Measured on this box, where `~/go2cs` is a **March–May 2025 stub-era deploy** (15 packages, `errors-old`
+still in it, no `reflect`):
+
+| resolved root | CNR reports | direction |
+|:--|:--|:--|
+| `GO2CSPATH` unset → `~/go2cs` (stale stub) | **4** files | **lose** 16 `reflect` aliases (DeepEqual, ReflectMapRangeNilKey, ReflectMethodTableWalk, ReflectZeroAndGrow) |
+| `GO2CSPATH=<repo>\src` (converted stdlib) | **12** files | **gain** 46 `time`/`syscall`/`encoding/json`/`io` aliases (ExprSwitch, ForVariants, GoCallVariations, GoexitDefers, SelectSendDefault, SyncTimerChannel, UnsafeStringEmpty, StructPromotionWithInterface, StructPointerPromotionWithInterface, JsonUnmarshalerDispatch, FindFirstFileData, PipeCloseUnblocksRead) |
+
+The two sets are **disjoint**, so **no single root reproduces the committed corpus** — it was written by
+sessions with differing environments and is already split: 565 of 569 files match the stale root, 557
+match the repo root. Nothing catches it, because **`package_info.cs` has no `.cs.target` golden** (0 of
+580), so `TargetComparison` structurally cannot see it and CNR's `git status` is the only instrument —
+the one whose answer moves with the ambient variable.
+
+**Not a live defect.** Every alias in both directions is an *unused declaration*; both configurations
+compile and run, proved by a full 544/544 + 514/514 suite over freshly transpiled root=`<repo>\src`
+output. So this is drift and a gate-integrity problem, not breakage.
+
+**Which root is canonical is not a judgement call**: the behavioral `.csproj`s bind
+`$(go2csPath)core\<pkg>` with MSBuild `$(go2csPath)` → `$(SolutionDir)` → `src\`, so at compile time the
+tests link `src/core`. The emitted aliases must describe *those* assemblies ⟹ **`<repo>\src` is
+canonical and the 12 files are stale**, left over from before the trees unified.
+
+The durable fix is three small pieces, and the order matters — make the gate deterministic *first*, or
+the normalization just re-splits:
+
+1. **Make the root explicit at the seam** — CNR, `BehavioralRunner` and `BehavioralTestBase` pass
+   `-go2cspath <repoRoot>\src` rather than inheriting the ambient variable.
+2. **Make an unusable root loud** — the converter should refuse, or at minimum warn, when the resolved
+   `go2csPath` is not a go2cs root (no `core\golib`), instead of emitting a quietly alias-free
+   `package_info.cs`. Extending the `-tests` self-location to every conversion whose output lands inside
+   a go2cs source tree would fix the default outright and help anyone running `go2cs.exe` by hand.
+3. **Then normalize the 12** in one commit, and consider whether `package_info.cs` should carry a golden
+   so `TargetComparison` can hold the line afterwards.
 
 ## ~~OWED~~ DISCHARGED — the issue-#32 `-recurse` change is now measured on Windows (2026-08-05, same day)
 
