@@ -485,6 +485,32 @@ is emitted anyway), `TestModuleConverterPartitionScope` (both scopes over one cl
 extended `TestRecurseModeFlag` (value composition in either order, `false` clearing the list, an invalid
 value inside a valid list still an error).
 
+### Module-cache loads and the vestigial `go.work` (issue #32 follow-up, 2026-08-06)
+
+The error log the issue-#32 reporter pasted back (the Renart project, 1,979-package closure) diagnosed the
+abort their original report described — and it was neither a conversion defect nor a load-graph problem, but
+an **environment poisoning of the per-package reload**. `processConversion` re-loads each convert-set package
+with `packages.Config.Dir` set to the package's own source directory, which for a dependency is its
+**read-only module-cache** extraction (`…\pkg\mod\cloud.google.com\go@v0.123.0\civil`). A module zip includes
+whatever sits at the module root, and the `cloud.google.com/go` monorepo keeps its development `go.work`
+there — listing ~200 sibling modules (`../accessapproval`, `../bigquery`, …) that are **never** in the cache,
+because each is its own module with its own zip. The go command, walking up from the working directory,
+finds that file, enters workspace mode, and fails the load with a wall of
+`cannot load module ../<sibling> listed in go.work file` — so every package of the monorepo's *root* module
+was lost while its *nested* modules (`auth`, `bigquery`, whose zips do not contain the repo-root `go.work`)
+converted fine. The reporter's run died entirely because their binary predated the non-fatal load path
+(backlog item 6 above); on current code the run survives but still loses those packages.
+
+The fix (`conversionDriver.go`): when the reload's input directory is under the module cache
+(`GOMODCACHE`, resolved once — env, then `go env`, then the documented `<GOPATH>/pkg/mod` default), the
+load runs with **`GOWORK=off`**. A `go.work` inside the module cache is unpacked zip content, never an
+authoritative workspace, so disabling workspace mode there is categorically safe — and the gate is
+deliberately **that narrow**: loads anywhere else keep the ambient `GOWORK` behavior, because an end-user
+module may legitimately resolve its own packages through a real workspace. Guarded by
+`TestModuleCachePoisonedGoWorkLoad` (integration, network-free: one poisoned fixture asserted from both
+sides — outside the test-pinned cache root the load still fails through the `go.work`, under it the package
+converts).
+
 ### Operational stdlib — native sync primitives (2026-07-11, Phase-4 start)
 
 Running (not just compiling) the `fatih/color` sample exposed the Phase-3 → Phase-4 boundary: the full

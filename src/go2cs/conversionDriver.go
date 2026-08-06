@@ -27,6 +27,32 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// goModCache memoizes goModCacheDir's resolution (conversions run sequentially); tests pin it
+// directly to point the module-cache classification at a fixture root.
+var goModCache string
+
+// goModCacheDir returns the Go module cache root (GOMODCACHE), resolved once: the environment
+// override first, then `go env`, falling back to the documented default <GOPATH>/pkg/mod
+// (main() has normalized the GOPATH environment variable by the time any conversion runs).
+func goModCacheDir() string {
+	if goModCache != "" {
+		return goModCache
+	}
+
+	if goModCache = os.Getenv("GOMODCACHE"); goModCache != "" {
+		return goModCache
+	}
+
+	if dir, err := getGoEnv("GOMODCACHE"); err == nil && dir != "" {
+		goModCache = dir
+		return goModCache
+	}
+
+	goModCache = filepath.Join(os.Getenv("GOPATH"), "pkg", "mod")
+
+	return goModCache
+}
+
 // processConversion converts ONE resolved input — a single .go file or a package directory — into
 // C# at outputFilePath. It returns an error only for a PACKAGE LOAD failure, which is the one
 // failure mode that belongs to the input rather than to the environment: a batch driver
@@ -55,6 +81,18 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	// filter used the requested platform, silently dropping BOTH platforms' constrained
 	// files from a cross-platform conversion.
 	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]))
+
+	// A package in the read-only module cache can carry a vestigial go.work file unpacked from its
+	// module zip — the cloud.google.com/go monorepo ships one listing ~200 sibling modules that are
+	// not in the cache — and the go command, walking up from cfg.Dir, would enter workspace mode
+	// and fail this load with "cannot load module ../<sibling> listed in go.work file", losing the
+	// package from a -recurse run (issue #32). A go.work inside the module cache is never an
+	// authoritative workspace, so disable workspace mode for these loads; loads anywhere else keep
+	// the ambient GOWORK behavior (an end-user module may legitimately resolve its own packages
+	// through a real workspace).
+	if isPathUnder(inputFilePath, goModCacheDir()) {
+		cfg.Env = append(cfg.Env, "GOWORK=off")
+	}
 
 	var pkgs []*packages.Package
 

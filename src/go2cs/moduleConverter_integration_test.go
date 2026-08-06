@@ -387,6 +387,83 @@ func TestRecurseModuleOnly(t *testing.T) {
 	}
 }
 
+// TestModuleCachePoisonedGoWorkLoad guards the issue-#32 module-cache load fix: a dependency
+// module's zip can ship its repository's go.work file (the cloud.google.com/go monorepo lists
+// ~200 sibling modules that are never in the cache), and processConversion's per-package load —
+// running the go command with the module-cache directory as its working directory — would enter
+// workspace mode and fail with "cannot load module ../<sibling> listed in go.work file". The fix
+// disables workspace mode (GOWORK=off) for loads whose input dir is under the module cache, and
+// ONLY there, so an end-user module resolving its own packages through a real workspace keeps the
+// ambient behavior. Both sides are asserted here against the same poisoned fixture: outside the
+// (test-pinned) cache root the go.work still aborts the load, under it the package converts.
+// Deterministic and network-free.
+func TestModuleCachePoisonedGoWorkLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the fixture package via go/packages")
+	}
+
+	root := t.TempDir()
+
+	// A fake module-cache entry: a self-contained module whose go.work names a sibling module
+	// that does not exist beside it — exactly the vestigial state an unpacked module zip leaves.
+	depDir := filepath.Join(root, "modcache", "example.com", "dep@v1.0.0")
+
+	writeModuleFile(t, filepath.Join(depDir, "go.mod"), "module example.com/dep\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(depDir, "go.work"), "go 1.23\n\nuse (\n\t.\n\t../missing\n)\n")
+	writeModuleFile(t, filepath.Join(depDir, "value.go"),
+		"package dep\n\nfunc Value() string {\n\treturn \"dep\"\n}\n")
+
+	goRoot := build.Default.GOROOT
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	outDir := filepath.Join(options.recurseOutputRoot, "pkg", "example.com", "dep")
+
+	// Control: with the fixture NOT under the module cache, the ambient workspace behavior stands,
+	// the go command finds the poisoned go.work, and the load fails. If this side ever passes, the
+	// go toolchain's own behavior changed and the GOWORK gate below is no longer proving anything.
+	savedModCache := goModCache
+	goModCache = filepath.Join(root, "elsewhere")
+
+	defer func() { goModCache = savedModCache }()
+
+	if err := processConversion(depDir, true, outDir, options); err == nil {
+		t.Fatalf("control conversion unexpectedly succeeded with ambient GOWORK against a poisoned go.work")
+	} else if !strings.Contains(err.Error(), "go.work") {
+		t.Fatalf("control conversion failed, but not through the poisoned go.work: %v", err)
+	}
+
+	// The fix: with the fixture under the module-cache root, the load runs with GOWORK=off, the
+	// vestigial go.work is ignored, and the package converts.
+	goModCache = filepath.Join(root, "modcache")
+
+	if err := processConversion(depDir, true, outDir, options); err != nil {
+		t.Fatalf("conversion under the module cache still failed — GOWORK=off not applied: %v", err)
+	}
+
+	valueCs := readGenerated(t, filepath.Join(outDir, "value.cs"))
+
+	if !strings.Contains(valueCs, "Value") {
+		t.Errorf("converted value.cs missing func Value:\n%s", valueCs)
+	}
+}
+
 func writeModuleFile(t *testing.T, path, content string) {
 	t.Helper()
 
