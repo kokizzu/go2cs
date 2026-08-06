@@ -132,20 +132,65 @@ are the CRLF-template tests. All nine are unchanged with the #33 arc removed. Re
 *count* of Linux failures moved for a benign reason, and the next Linux session should not read it as drift.
 F5 remains Arc 2 of [`PLAN-linux-operation.md`](../PLAN-linux-operation.md), untouched.
 
-**(b) UNREPRODUCED, and worth a session — the reporter's `invalid package name: ""`.** The package that
-crashed was not merely untyped by accident: its load reported `could not import go.opentelemetry.io/otel/trace
-(invalid package name: "")`. That message comes from `go/types` when the importer hands back a
-`*types.Package` whose name is empty — a dependency that was never actually loaded. `otel/trace` is a
-**separate module** from `otel`, and `processConversion` re-loads each third-party package **standalone**,
-with `Dir` set to its own directory in the read-only module cache. That puts the go command in the
-*dependency's* module context, where MVS version selection and the app's `replace` directives no longer
-apply — the hypothesis being that the closure `ModuleConverter.loadClosure` already type-checked correctly
-in the **main module's** context is then thrown away and re-derived per package, 1,726 times, in a weaker
-context. Two things to weigh if this is picked up: it is also 1,726 separate `packages.Load` invocations
-(the dominant cost of a recurse run), and `-recurse=module` deliberately skips the full-closure type-check,
-so any reuse has to respect that mode. **Not speculatively changed here** — the failure needs a
-reproduction against the reporter's module first, and the panic fix means it now costs one degraded package
+**(b) ROOTED and REPRODUCED — the reporter's `invalid package name: ""` is the issue-#32 family, one
+directive over.** Reproduced end-to-end the same session against the reporter's own dependency
+(`go.opentelemetry.io/otel@v1.44.0`), so this is measured, not argued. The hypothesis first written here —
+"the standalone module-cache load is a weaker context" — is **confirmed in mechanism and wrong in detail**:
+it has nothing to do with MVS version selection or the app's own `replace` directives.
+
+**The mechanism.** `otel@v1.44.0/go.mod` carries the monorepo's own relative replaces:
+
+```
+replace go.opentelemetry.io/otel/trace  => ./trace
+replace go.opentelemetry.io/otel/metric => ./metric
+```
+
+Valid in the otel *source repo*, where those are sibling directories. The published module **zip excludes
+them** — `trace` and `metric` are separate modules — so in the cache `./trace` does not exist. A `replace` is
+honored **only in the main module**, and `processConversion` loading a package with `Dir` inside the cache is
+exactly what promotes that dependency's `go.mod` to main-module status. The go command then says
+`replacement directory ./trace does not exist`, `otel/trace` never loads, its `types.Package` stays
+empty-named, and `go/types` reports `could not import go.opentelemetry.io/otel/trace (invalid package
+name: "")` at every use site. Same root as issue #32 — **a module-cache directory is not a main module** —
+and `GOWORK=off` cannot reach it, because `replace` is not a workspace feature.
+
+**The three-way probe** (`packages.Load`, `LoadAllSyntax`, run under go1.25 so the language-version noise
+below is out of the picture):
+
+| Load shape | Result |
+|:--|:--|
+| **A** — `Dir` = the cache dir, pattern = that dir (**what `processConversion` does**) | `could not import go.opentelemetry.io/otel/trace (invalid package name: "")` — the reporter's error verbatim |
+| **B** — `Dir` = the **app module**, pattern = the **import path** | **0 errors.** The dependency's replaces are ignored, as a non-main module's must be |
+| **C** — `Dir` = `otel/trace@v1.44.0`'s own cache dir | 3 further failures from *its* vestigial `replace go.opentelemetry.io/otel => ../` |
+
+**Blast radius, measured:** **189 of the 244** packages in the otel module zip import `otel/trace` or
+`otel/metric`, so all 189 lose their types under load shape A. This is not an otel quirk — it is every
+monorepo-layout module that carries relative replaces, which is the common shape for a multi-module Go repo.
+
+**The remedy is validated, not sketched:** for a package under `GOMODCACHE`, load it from the **main
+module's** directory by **import path** (shape B) instead of standalone by directory. That also makes the
+issue-#32 `GOWORK=off` gate redundant for third-party packages — the go command never enters the
+dependency's directory, so a vestigial `go.work` is not read either — though the gate should stay for the
+non-recurse paths. `ModuleConverter` has both inputs already (`pkgPath` and the main module dir);
+`processConversion` takes a directory, so the import path needs plumbing through. Worth weighing at the same
+time: this is also 1,726 separate `packages.Load` invocations, the dominant cost of a recurse run, against a
+closure `loadClosure` already type-checked correctly in one pass.
+
+**Not implemented here.** It changes the load path for every third-party package in a recurse run and the
+Windows gates cannot run in this container — the maintainer's call, but it is now a rooted, reproduced,
+ready item rather than a hypothesis. Consequence today: with the panic fix in, it costs one degraded package
 instead of the run.
+
+**(c) A second, independent finding from the same reproduction — the converter cannot type-check a module
+whose `go` directive exceeds the Go release go2cs was BUILT with.** `otel@v1.44.0` declares `go 1.25.0`; a
+go2cs built with go1.24 reports `package requires newer Go version go1.25 (application built with go1.24)`
+and every downstream expression goes untyped. The go *command* switches toolchains automatically
+(`GOTOOLCHAIN=auto`), but the type checker go2cs links in is whatever release compiled it, and no toolchain
+switch reaches that. This is invisible until a dependency adopts a new language version, then it silently
+degrades whole packages. Two things follow: build go2cs with a toolchain at least as new as the newest `go`
+directive in any closure it is asked to convert, and consider making the converter **say so by name** rather
+than letting it read as an ordinary type error. Independent of (b) — it reproduced on both load shapes and
+disappeared on both when the probe was re-run under go1.25.
 
 ## ~~OWED~~ DISCHARGED — the issue-#32 go.work fix is measured on Windows (2026-08-06, same day)
 

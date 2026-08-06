@@ -511,6 +511,48 @@ module may legitimately resolve its own packages through a real workspace. Guard
 sides — outside the test-pinned cache root the load still fails through the `go.work`, under it the package
 converts).
 
+### The same seam, one directive over: monorepo `replace` (issue #33 follow-up, 2026-08-06)
+
+The `GOWORK=off` gate above closes the *workspace* flavor of "a module-cache directory is not a main module".
+Investigating issue #33 turned up the **`replace` flavor**, which that gate cannot reach — and this one is
+measured against the reporter's own dependency rather than a fixture.
+
+`go.opentelemetry.io/otel@v1.44.0/go.mod` carries the monorepo's own relative replaces:
+
+```
+replace go.opentelemetry.io/otel/trace  => ./trace
+replace go.opentelemetry.io/otel/metric => ./metric
+```
+
+Correct in the otel source repo, where those are sibling directories. The published module **zip excludes
+them** (both are separate modules), so `./trace` does not exist in the cache. A `replace` is honored **only in
+the main module** — and loading a package with `Dir` inside the cache is precisely what promotes that
+dependency's `go.mod` to main-module status. The go command reports `replacement directory ./trace does not
+exist`, `go.opentelemetry.io/otel/trace` never loads, its `types.Package` stays empty-named, and `go/types`
+then reports `could not import go.opentelemetry.io/otel/trace (invalid package name: "")` at every use site.
+**189 of the 244** packages in the otel zip import `trace` or `metric`, so all 189 lose their types. This is
+the common shape for a multi-module Go repository, not an otel quirk.
+
+`GOWORK=off` does not help: `replace` is not a workspace feature. The remedy that *does*, validated by a
+three-way `packages.Load` probe (A = cache dir standalone → the reporter's error; B = **app module dir,
+pattern = import path** → **0 errors**; C = `otel/trace`'s own cache dir → 3 further failures from its own
+vestigial `replace … => ../`), is to load a `GOMODCACHE` package from the **main module's** directory by
+**import path**. In that shape the go command never enters the dependency's directory, so the vestigial
+`go.work` is not read either and the `GOWORK=off` gate becomes redundant for third-party packages — it should
+stay for the non-recurse paths, which have no main module to load from.
+
+Not implemented: it changes the load path for every third-party package in a recurse run, and it is worth
+weighing against the fact that this is also 1,726 separate `packages.Load` invocations — the dominant cost of
+a recurse run — over a closure `loadClosure` already type-checked correctly in one pass. Tracked on the
+Phase-4 board under the issue-#33 entry, rooted and ready.
+
+A second, independent finding from the same reproduction: the converter cannot type-check a module whose `go`
+directive exceeds the Go release **go2cs itself was built with** (`otel@v1.44.0` declares `go 1.25.0`; a
+go2cs built with go1.24 reports `package requires newer Go version go1.25` and everything downstream goes
+untyped). The go *command* switches toolchains automatically; the `go/types` go2cs links in is whatever
+release compiled it, and no toolchain switch reaches that. Build the converter with a toolchain at least as
+new as the newest `go` directive in any closure it will be asked to convert.
+
 ### Operational stdlib — native sync primitives (2026-07-11, Phase-4 start)
 
 Running (not just compiling) the `fatih/color` sample exposed the Phase-3 → Phase-4 boundary: the full
