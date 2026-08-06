@@ -20,3 +20,13 @@ src/core/**/testdata/*.base64 -text
 # Marking the whole testdata tree also stops a validated-package sweep from
 # reporting these fixtures as modified on every run.
 src/core/**/testdata/** -text
+
+# The converter EMBEDS these templates at compile time (embeddedTemplates.go) and
+# assumes CRLF: writePackageInfoFile splits the package_info skeleton on "\r\n", so
+# a converter built from an LF checkout (Linux/macOS, or Windows with autocrlf=false)
+# never finds the section end-markers and log.Fatals on EVERY package conversion —
+# and the emitted .csproj/package_info.cs bytes must not vary with the build host's
+# checkout. Pin them to CRLF in every working tree.
+src/go2cs/csproj-template.xml      eol=crlf
+src/go2cs/test-csproj-template.xml eol=crlf
+src/go2cs/package_info-template.txt eol=crlf
