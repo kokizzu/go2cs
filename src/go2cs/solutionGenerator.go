@@ -7,6 +7,17 @@
 // This file emits a Visual Studio .slnx solution for a whole-standard-library (-stdlib)
 // conversion, so the freshly converted stdlib is openable / buildable as a single unit
 // right after a run instead of relying on a hand-maintained solution that drifts.
+//
+// ⚠ KNOWN VS BEHAVIOR — the generated solution prompts "save?" on every open/close, and
+// saving changes NOTHING (bisected 2026-08-06; see CLAUDE.md). Any solution holding a
+// project that imports a .projitems shared-items file (here: golib and go2cs-gen both
+// import core/go2cs/go2cs.projitems, the Symbols shared project) is marked dirty by VS's
+// shared-project bookkeeping — classic .sln serialized it as a SharedMSBuildProjectFiles
+// section, .slnx has no element for it, so the model always differs from the parsed file
+// while every save (even Save-As) writes byte-identical content (hash-verified against
+// SolutionPersistence 1.0.52, the version VS itself ships). The emitted bytes ARE
+// VS-canonical; do not chase this as a generator formatting defect, and do not
+// restructure the Symbols import to silence a cosmetic dialog.
 package main
 
 import (
