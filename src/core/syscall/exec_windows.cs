@@ -16,7 +16,7 @@
 //   "cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed."
 //   The same applies to _PROC_THREAD_ATTRIBUTE_LIST, whose converted form wraps an `array<byte>`
 //   class reference. This is the memory-layout / raw-metal case documented in
-//   src/Archived/Baseline-vs-FullConversion.md: a faithful conversion is impossible, so the declaration is
+//   src/archived/Baseline-vs-FullConversion.md: a faithful conversion is impossible, so the declaration is
 //   hand-owned.
 //
 // The implementation below is a straight transcription of exec_windows.go's StartProcess against

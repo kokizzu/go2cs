@@ -10,11 +10,11 @@
 > the **process** vocabulary — plus a short [**.NET and tooling terms**](#net-and-tooling-terms) section at
 > the end for the general .NET/toolchain acronyms the conversion docs assume (BCL, Roslyn, CRTP, …).
 > Companion docs: [`CLAUDE.md`](../CLAUDE.md) (authoritative workflow),
-> [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md).
+> [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md).
 
 ## Gates (the checks a change must pass before it lands)
 
-<a id="cnr"></a>**CNR — check-no-regression** (`src/Tests/Behavioral/check-no-regression.ps1`).
+<a id="cnr"></a>**CNR — check-no-regression** (`src/tests/Behavioral/check-no-regression.ps1`).
 Force-rebuilds `go2cs.exe` from current source, re-transpiles **every** behavioral test project,
 and reports any generated `.cs` that differs from the committed tree. The pass verdict is
 **"byte-identical"**: the converter change produced exactly the committed output everywhere it
@@ -38,7 +38,7 @@ How the A/B base exe is built when the fix is uncommitted or freshly committed:
 restore → build the fixed `bin/go2cs.exe`. The temporary base exe is deleted afterward so a stale
 binary can't produce false results later.
 
-**Full behavioral suite** (`src/Tests/Behavioral/run-behavioral.ps1`, standalone runner).
+**Full behavioral suite** (`src/tests/Behavioral/run-behavioral.ps1`, standalone runner).
 All behavioral projects through four phases: **Transpile** (converter runs), **Target** (golden
 byte-compare, line-ending-insensitive), **Compile** (C# and Go), **Output** (run both, compare
 stdout; only projects marked `[GoTestMatchingConsoleOutput]`). Required — in addition to CNR —

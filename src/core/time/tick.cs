@@ -22,7 +22,7 @@
 // whatever now occupies that address. Worse, `Ticker` holds a `channel<Time>`, i.e. a MANAGED
 // reference, so the storage cannot be pinned either (`GCHandle.Alloc(…, Pinned)` rejects a type
 // containing references) — the raw-address model has no sound form here. See
-// docs/Phase4/FINDING-managed-box-uintptr-lifetime.md, which characterizes this hazard corpus-wide;
+// docs/phase4/FINDING-managed-box-uintptr-lifetime.md, which characterizes this hazard corpus-wide;
 // NewTicker is its worst case, because the derived pointer is RETAINED for the ticker's lifetime
 // rather than consumed immediately.
 //

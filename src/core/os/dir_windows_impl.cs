@@ -21,7 +21,7 @@ using go;
 // after ShortName sit at the wrong offsets, and merely COPYING the reinterpreted struct hands the
 // GC a fabricated object reference. No converter or golib change can rescue this: a managed array
 // reference can never be laid out like an inline OS array. This is the "raw metal on non-native
-// types" arm of the conversion fork (see src/Archived/Baseline-vs-FullConversion.md).
+// types" arm of the conversion fork (see src/archived/Baseline-vs-FullConversion.md).
 //
 // So readdir is hand-owned: it decodes the two directory-entry layouts straight out of the byte
 // slice at their documented offsets and never materializes a managed struct over OS memory. Every

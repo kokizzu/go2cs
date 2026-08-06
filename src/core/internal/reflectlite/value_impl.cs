@@ -46,7 +46,7 @@ partial class reflectlite_package
     // Phase-1 synthetic abi.Type and the flag takes the Kind bits, so Kind()/IsValid() keep
     // working from value.cs unchanged. The converter skips the auto forms via the
     // manualConversionFuncs registry (go2cs/manualTypeOperations.go). See
-    // docs/Phase4/DESIGN-reflection-bridge.md.
+    // docs/phase4/DESIGN-reflection-bridge.md.
 
     // The managed backing for a Value: the boxed managed value this Value represents (null for
     // the zero Value), plus, when ADDRESSABLE (flagAddr), the ж<T> box it ALIASES — reads go

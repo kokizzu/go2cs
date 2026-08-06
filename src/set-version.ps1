@@ -10,7 +10,7 @@ $version = "0.1.4"
 $fullVersion = "$version.0"
 
 # Update version in exe resource file
-.\Utilities\ReplaceInFiles\ReplaceInFiles.exe -x -e:UTF8 .\go2cs\winres\winres.json "version\`"\: \`"((\*~!~\d+)\.)+(\*~!~\d+)\`" "version\`": \`"$fullVersion\`"
+.\utilities\ReplaceInFiles\ReplaceInFiles.exe -x -e:UTF8 .\go2cs\winres\winres.json "version\`"\: \`"((\*~!~\d+)\.)+(\*~!~\d+)\`" "version\`": \`"$fullVersion\`"
 
 # Rebuild resource file
 cd go2cs

@@ -79,7 +79,7 @@ func TestCsprojTemplateWithValidationPackEmitsWellFormedXml(t *testing.T) {
 // Behavioral-test and -recurse output is byte-compared against goldens, so "no block" is not enough
 // — the surrounding bytes have to be unchanged too.
 func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
-	if block := validationPackBlock(`C:\out\src\Tests\Behavioral\Arrays\Arrays.csproj`, Options{}); block != "" {
+	if block := validationPackBlock(`C:\out\src\tests\Behavioral\Arrays\Arrays.csproj`, Options{}); block != "" {
 		t.Fatalf("a non-stdlib conversion emitted a validation pack block: %q", block)
 	}
 
@@ -105,7 +105,7 @@ func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
 		t.Fatalf("a -tests rewrite of a core package's production .csproj lost the validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(`H:\Projects\go2cs\src\Tests\PackageTests\ConvertedTestHarness\value.csproj`, testsOverCore); block != "" {
+	if block := validationPackBlock(`H:\Projects\go2cs\src\tests\PackageTests\ConvertedTestHarness\value.csproj`, testsOverCore); block != "" {
 		t.Fatalf("a -tests conversion outside the core tree emitted a validation pack block: %q", block)
 	}
 

@@ -1,4 +1,4 @@
-<!-- AUTO-COPIED from src/Tests/Performance/README.md by run-performance.ps1 -- edit that file, not this one. -->
+<!-- AUTO-COPIED from src/tests/Performance/README.md by run-performance.ps1 -- edit that file, not this one. -->
 
 # Go vs transpiled C# — runtime performance comparison
 
@@ -7,7 +7,7 @@ C# compared to the original Go?** — startup time and memory, on both the norma
 **Native AOT** (self-contained, the closest deployment analog to a Go binary).
 
 Each benchmark is a tiny Go program (same shape as the
-[behavioral tests](https://github.com/ritchiecarroll/go2cs/tree/master/src/Tests/Behavioral)),
+[behavioral tests](https://github.com/ritchiecarroll/go2cs/tree/master/src/tests/Behavioral)),
 chosen to exercise one Go construct with a real C# cost model — slices, strings, maps, channels,
 interface dispatch — plus raw compute loops where the two runtimes should be close. This is not an
 exhaustive benchmark game; it gives the common expected range of differences.
@@ -51,7 +51,7 @@ separately by the Startup row.
 ## Running it
 
 ```powershell
-cd src/Tests/Performance
+cd src/tests/Performance
 ./run-performance.ps1                    # full run: transpile, build (incl. AOT), verify, measure
 ./run-performance.ps1 --no-aot           # skip AOT publishes, faster while iterating
 ./run-performance.ps1 --filter Map       # one benchmark
@@ -133,12 +133,12 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   The converter hoists one `sstring` view per call rather than re-materializing it per comparison,
   since the JIT won't lift a `ref struct` view out of a loop on its own. Closer to Go than String, and
   the number to watch as the eligibility surface widens — arc detail in
-  [DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-string-literal-allocation.md).
+  [DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-string-literal-allocation.md).
 - **StringMatch (JIT ~9.2×, AOT ~9.1×):** literal-heavy hot paths — switch-on-string dispatch,
   `strings.HasPrefix` against a literal prefix, literal returns, literal map-key counters. The
   instrument for the same literal-comparison optimizations StringView exercises (span operators,
   `u8` casts, hoisted literals); arc detail in
-  [DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-string-literal-allocation.md).
+  [DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-string-literal-allocation.md).
 - **Map:** transpiled C# is *faster than Go* — `map<K,V>` rides .NET's heavily-optimized
   `Dictionary`, and the AOT build is ~3× faster than Go on this insert/lookup/delete churn.
 - **Sort (~3.8×):** the runtime's `sort.Interface` shim (`Interface<T>`) binds `Len`/`Less`/`Swap` via
@@ -156,7 +156,7 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   marked OPEN; both figures turned out to measure two `golib` defects — an uncached attribute lookup
   and redundant type-tests on the assertion-miss path — rather than the cost of the construct. Both
   are fixed; full root-cause writeup in
-  [DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-iface-shell-caching.md).
+  [DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-iface-shell-caching.md).
 - **IfaceShell (JIT ~40×, AOT ~45×) — the one operation C# has no native answer for:** satisfying an
   interface **structurally at run time**. Go resolves this with a cached itab lookup — two machine
   words, a nanosecond hash probe. C# has no two-word interface value, so go2cs constructs a wrapper
@@ -165,7 +165,7 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   can resolve at compile time (the Iface row above) skips this path via a generated adapter instead.
   AOT is *slower* here, unlike Startup: its generic shell tier can degrade to the reflective object
   shell, and AOT's reflective invokers can't emit IL stubs. Optimization directions:
-  [DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-iface-shell-caching.md).
+  [DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-iface-shell-caching.md).
 
 ### History
 
@@ -175,7 +175,7 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 **Captured 2026-07-26 — pre-fix baseline for the `Iface` root-cause arc**, same toolchain as the
 current table. `Iface` at **158.24× (JIT) / 660.42× (AOT)** is the published-OPEN figure the fix in
-[DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-iface-shell-caching.md) explains; every
+[DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-iface-shell-caching.md) explains; every
 other row here is within run-to-run variance of the current table:
 
 **Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-07-26
@@ -217,7 +217,7 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 | IfaceShell | 5.3 | 44.0 | 31.6 |
 
 **Captured 2026-07-25 — pre-arc baseline for the `@string` literal-allocation arc**
-([DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/Phase4/DESIGN-string-literal-allocation.md),
+([DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-string-literal-allocation.md),
 Tiers A/A′/B/C). `StringMatch` is the instrument; `StringView`/`String`/`Map` are the non-regression
 oracles:
 

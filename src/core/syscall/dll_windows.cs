@@ -14,7 +14,7 @@
 //  2. LazyDLL.Load / LazyProc.Find use Go's non-racy pattern of atomically reading a pointer
 //     FIELD through a raw address — atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&d.dll)))
 //     — a managed-referent uintptr round-trip that cannot alias a C# object-reference field
-//     (see src/Archived/Baseline-vs-FullConversion.md, the S1 fork). Here the lazy init is a plain
+//     (see src/archived/Baseline-vs-FullConversion.md, the S1 fork). Here the lazy init is a plain
 //     double-checked lock; CLR reference assignment is atomic, so readers never see a torn value.
 //
 // Soundness note (inherited, documented): argument uintptrs captured by the converted zsyscall

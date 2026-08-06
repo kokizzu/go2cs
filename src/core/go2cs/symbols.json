@@ -111,7 +111,7 @@
       "csComment": [
         "Suffixes the name of a hoisted string-literal field (`true\u02e2`) - the one-per-package",
         "`static readonly` @string a Go RODATA literal is materialized into (see Tier C of",
-        "docs/Phase4/DESIGN-string-literal-allocation.md)."
+        "docs/phase4/DESIGN-string-literal-allocation.md)."
       ],
       "note": "U+02E2 - hoisted string-literal field-name suffix."
     },

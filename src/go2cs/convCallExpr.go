@@ -1651,7 +1651,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// every MIXED call ambiguous, and completing all four pairings does not rescue it either,
 		// because UntypedFloat converts implicitly in BOTH directions with float32 and float64 —
 		// for an operand that is neither, no candidate is strictly better and the ambiguity simply
-		// moves (docs/Phase4/BOARD-next-validation-candidates.md, gob root 7).
+		// moves (docs/phase4/BOARD-next-validation-candidates.md, gob root 7).
 		if ident.Name == "complex" && len(callExpr.Args) == 2 {
 			if elementType := v.complexCallElementType(callExpr); elementType != nil &&
 				(v.containsUntypedNamedConstRef(callExpr.Args[0]) || v.containsUntypedNamedConstRef(callExpr.Args[1])) {
@@ -3278,7 +3278,7 @@ func (v *Visitor) pointerReinterpretIdentitySource(callExpr *ast.CallExpr, arg a
 // `Reinterpret<U>()` instead aliases the same managed storage, which is Go's own semantics: a
 // pointer obtained through `unsafe.Pointer` is a real reference the collector tracks. (A `uintptr`
 // source keeps the address route — matching Go's rule that a uintptr is a NUMBER which does not
-// keep its referent alive. See docs/Phase4/FINDING-managed-box-uintptr-lifetime.md.)
+// keep its referent alive. See docs/phase4/FINDING-managed-box-uintptr-lifetime.md.)
 //
 // Whether the derived pointer may ALIAS the source's storage or must fall back to the address route
 // is decided at RUNTIME by golib, not here: it turns on the C# layout of the two surrogates, which a

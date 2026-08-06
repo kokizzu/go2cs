@@ -17,7 +17,7 @@
 // `slice<uintptr>`; the word loop then XORed the snapshot and dropped it. For every length that is a
 // multiple of 8 `XORBytes` therefore wrote NOTHING (TestXORBytes compared dst against its untouched
 // 0xdd fill), and for other lengths only the trailing `n % 8` bytes landed. This is the raw-metal /
-// memory-layout fork documented in src/Archived/Baseline-vs-FullConversion.md — the reinterpret is not
+// memory-layout fork documented in src/archived/Baseline-vs-FullConversion.md — the reinterpret is not
 // convertible, so the declaration is hand-owned.
 //
 // xorWords below does the same reinterpret the managed way: MemoryMarshal.Cast over the slices' own

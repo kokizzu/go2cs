@@ -23,7 +23,7 @@ import (
 // so the literal costs at most one allocation per program run — Go's own cost model.
 //
 // It is a whole-package PRE-pass, not an emission-time decision, for three reasons the design
-// (docs/Phase4/DESIGN-string-literal-allocation.md §4) pins:
+// (docs/phase4/DESIGN-string-literal-allocation.md §4) pins:
 //
 //  1. A literal is emitted PRE-BOXED (`static readonly object`) only when EVERY use in the
 //     package is an `any` target — a property no forward-only emission walk can know.

@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
 // DeepEqual itself stays auto (it only uses the bridged ValueOf/Type/AreEqual); the converter skips
 // only deepValueEqual via the manualConversionFuncs registry (go2cs/manualTypeOperations.go); this
 // module marker also makes go2cs skip re-converting this file.
-// See docs/Phase4/DESIGN-reflection-bridge.md.
+// See docs/phase4/DESIGN-reflection-bridge.md.
 
 [module: GoManualConversion]
 

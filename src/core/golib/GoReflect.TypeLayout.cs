@@ -36,7 +36,7 @@ namespace go;
 //
 //   Recorded divergence, not a bug to fix in passing: `unsafe.Sizeof` currently answers through a
 //   SEPARATE rule (`Marshal.SizeOf`). Unifying the two onto this one is deferred pending a named
-//   consumer (I2.R R-14, docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md).
+//   consumer (I2.R R-14, docs/phase4/DESIGN-reflection-bridge-phase3-plan.md).
 //
 // WHY DIMENSIONS ARE RECOVERED FROM A VALUE AND NOT READ FROM THE TYPE
 //   `array<T>` carries its element type and not its LENGTH, so the managed type alone cannot tell

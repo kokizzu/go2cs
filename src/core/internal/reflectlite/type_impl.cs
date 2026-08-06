@@ -25,7 +25,7 @@ partial class reflectlite_package
     // Phase-1 synthetic abi.Type never populates — Elem panicked "Elem of invalid type" and
     // implements() reinterpreted the descriptor as an eface. Bridged over the abi.Type's carried
     // System.Type and the SAME golib method-set machinery emitted asserts use (GoReflect), so
-    // reflection and direct asserts can never disagree. See docs/Phase4/DESIGN-reflection-bridge.md.
+    // reflection and direct asserts can never disagree. See docs/phase4/DESIGN-reflection-bridge.md.
 
     // Elem returns the element type of a pointer/slice/array/map/chan type.
     internal static ΔType Elem(this rtype t)

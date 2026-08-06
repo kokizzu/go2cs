@@ -43,7 +43,7 @@
 //     numbers.
 //   - Goexit is exact for the GOROUTINE case (defers run, recover() sees nil, no other goroutine is
 //     affected) and GATED for the main goroutine, whose "main ends but the program keeps running"
-//     shape has no managed counterpart yet — docs/Phase4/DESIGN-goexit.md option C.
+//     shape has no managed counterpart yet — docs/phase4/DESIGN-goexit.md option C.
 //   - LockOSThread/UnlockOSThread are no-ops BY CONSTRUCTION, not by omission: go2cs runs each
 //     goroutine on its own managed thread, so the guarantee they exist to provide — "this
 //     goroutine will not be migrated to another OS thread" — already holds unconditionally.
@@ -142,7 +142,7 @@ partial class runtime_package
         {
             throw new NotSupportedException(
                 "runtime.Goexit from the main goroutine is not supported: main-goroutine Goexit " +
-                "must leave the other goroutines running (see docs/Phase4/DESIGN-goexit.md). " +
+                "must leave the other goroutines running (see docs/phase4/DESIGN-goexit.md). " +
                 "Goexit from a goroutine is fully supported.");
         }
 

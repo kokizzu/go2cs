@@ -1961,7 +1961,7 @@ public static partial class builtin
     /// The reflection bridge's <c>Value.Set</c> into an interface-typed destination only knows the
     /// destination interface as a <see cref="Type"/> — this routes it through the same assert
     /// machinery emitted <c>_&lt;T&gt;</c> sites use, so reflection and direct asserts can never
-    /// disagree about a method set. See docs/Phase4/DESIGN-reflection-bridge.md.
+    /// disagree about a method set. See docs/phase4/DESIGN-reflection-bridge.md.
     /// </remarks>
     public static bool TryTypeAssert(object? target, Type type, [NotNullWhen(true)] out object? value)
     {

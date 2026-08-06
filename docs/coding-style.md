@@ -5,7 +5,7 @@ Hand-authored C# in this repo follows Visual Studio defaults, adapted from
 
 **Scope.** These rules govern hand-authored code: `src/core/golib`, `src/gen/go2cs-gen`,
 `src/core/testing`, `*_impl.cs` companions and other `[module: GoManualConversion]` whole-file
-hand-owns, and the utility/runner projects under `src/Tests` and `src/Utilities`. They do **not**
+hand-owns, and the utility/runner projects under `src/tests` and `src/utilities`. They do **not**
 govern `src/core/<pkg>` — the converter-generated standard library — which follows the converter's
 own emission rules, not hand-authoring style.
 

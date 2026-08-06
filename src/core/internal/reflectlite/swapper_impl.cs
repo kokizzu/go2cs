@@ -10,7 +10,7 @@ using System;
 // indexer applies the slice window offset, so swaps land on the shared backing store exactly
 // like Go's. The converter skips the auto form via the manualConversionFuncs registry
 // (go2cs/manualTypeOperations.go); this module marker also keeps go2cs from re-converting
-// this file wholesale. See docs/Phase4/DESIGN-reflection-bridge.md.
+// this file wholesale. See docs/phase4/DESIGN-reflection-bridge.md.
 
 [module: go.GoManualConversion]
 

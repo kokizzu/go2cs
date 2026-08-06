@@ -68,7 +68,7 @@ namespace go;
 // THE HISTORY POINTER
 //   The construction/conversion/size/func-shape/field-projection work landed together as the
 //   reflection bridge's Phase-3 increment 2; its design and adversarial-review ledger is
-//   docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R). The other halves of that increment
+//   docs/phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R). The other halves of that increment
 //   now live in GoReflect.TypeLayout.cs and GoReflect.FieldAccess.cs.
 // ---------------------------------------------------------------------------------------------
 public static partial class GoReflect
@@ -218,7 +218,7 @@ public static partial class GoReflect
     // The other half of this file. Everything above CONVERTS a value that already exists; everything
     // from here down MAKES one, and reaches the same named-wrapper constructors to do it. Both halves
     // came from the reflection bridge's Phase-3 increment 2, whose design and adversarial-review
-    // ledger is docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R); the size/dims and
+    // ledger is docs/phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R); the size/dims and
     // field-projection halves of that increment live in the TypeLayout and FieldAccess siblings.
 
     // -------- zero construction (reflect.Zero / reflect.New / SetZero share ONE rule) --------

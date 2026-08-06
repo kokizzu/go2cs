@@ -23,7 +23,7 @@ what the behavioral suite builds: cold ~48 s, warm ~4 s.*
 ## Phase 0 — Documentation ✅ done
 
 Orientation docs so any task starts informed: [`/CLAUDE.md`](../CLAUDE.md),
-[`Architecture.md`](Architecture.md), [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md),
+[`Architecture.md`](Architecture.md), [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md),
 this file; plus a refresh of `README.md`.
 
 ## Phase 1 — Restore the separation (repo surgery) ✅ done
@@ -67,7 +67,7 @@ more). So "green the loop" means **green `fmt`'s closure**, bottom-up.
    it compiles. Crib from the `go2cs-stub-ref` worktree when a hand-finished prior approach helps.
 3. **Lock it in with a regression test.** Each greened package gets a behavioral/compile test so it stays
    green (mirrors the "raw code vs target file" comparison mode noted in `src/go2cs/ToDo.md`).
-4. **Exit criterion.** Baseline `src/core` builds clean **and** all 59 `src/Tests/Behavioral` projects pass.
+4. **Exit criterion.** Baseline `src/core` builds clean **and** all 59 `src/tests/Behavioral` projects pass.
    The converter-improvement loop is restored.
 
 ### Phase 2 findings (measured 2026-06-25)
@@ -133,7 +133,7 @@ The original Phase-3 plan:
    (Phase 4)** and may not be needed at all. Compiling ≠ operating; a clean compile is NOT a promotion
    trigger. `core` stays the bootstrap **stub**. The hand-owned `[module: GoManualConversion]` / `*_impl.cs`
    files live in `core` and are copied **back** into `go-src-converted` (the real final state). See
-   [`Baseline-vs-FullConversion.md`](../src/Archived/Baseline-vs-FullConversion.md) *The corrected end-state* and its
+   [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md) *The corrected end-state* and its
    contract rules 4–5. `golib`'s hand-written core stays shared and never auto-overwritten.
 
 ### Phase 3 iteration 1 — converter fixes landed (2026-06-25)
@@ -533,7 +533,7 @@ at each step). This is the minimum Phase-4 operational bar. In order:
 
 1. **Native `sync` primitives** (`e36dea3aa`) — Go's runtime sleeping semaphore cannot be emulated;
    `Mutex`/`RWMutex`/`WaitGroup` are hand-owned native rewrites on .NET primitives (see
-   [DESIGN → Operational stdlib](Phase3/DESIGN-recursive-enduser-conversion.md#operational-stdlib--native-sync-primitives-2026-07-11-phase-4-start)).
+   [DESIGN → Operational stdlib](phase3/DESIGN-recursive-enduser-conversion.md#operational-stdlib--native-sync-primitives-2026-07-11-phase-4-start)).
 2. **Package-level var initialization order** (`e39855770`) — relocate initializers whose Go dependency
    order (`types.Info.InitOrder`, resolved transitively through package function bodies) C#'s static-field
    order cannot reproduce, into a generated `package_init.cs` static ctor. First crash of any `os` import.

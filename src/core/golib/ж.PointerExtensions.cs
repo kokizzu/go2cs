@@ -48,7 +48,7 @@ namespace go;
 //   may already have moved or reused. An ALIASING pointer holds the referent, so it stays valid
 //   exactly as Go's does. `Reinterpret` prefers the alias and falls back to the address only where
 //   the managed model cannot represent the alias — see its remarks, and
-//   docs/Phase4/FINDING-managed-box-uintptr-lifetime.md for the failure the alias route fixed
+//   docs/phase4/FINDING-managed-box-uintptr-lifetime.md for the failure the alias route fixed
 //   (reflect cached an address for process lifetime, and `TypeOf(x).Kind()` began reporting
 //   Invalid once that address was recycled).
 //
@@ -115,7 +115,7 @@ public static class PointerExtensions
     /// allocation churn to recycle it. <c>reflect</c> caches exactly such a pointer for process
     /// lifetime (<c>toRType</c> → <c>canonType</c>), and once the address was recycled
     /// <c>TypeOf(x).Kind()</c> began reporting <c>Invalid</c> mid-process. See
-    /// <c>docs/Phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
+    /// <c>docs/phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
     /// </para>
     /// <para>
     /// A <c>null</c> reference and a nil box are the same Go nil pointer, and both reinterpret to the
@@ -200,7 +200,7 @@ public static class PointerExtensions
     /// larger allocation is really there; in the managed model a <c>ж&lt;abi.Type&gt;</c> holds only
     /// an <c>abi.Type</c>, so there is nothing behind it to downcast to. Those sites keep the address
     /// route and remain the raw-metal class recorded in
-    /// <c>docs/Phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
+    /// <c>docs/phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
     /// </para>
     /// </remarks>
     internal static class ReinterpretAliasesStorage<T, TDst>

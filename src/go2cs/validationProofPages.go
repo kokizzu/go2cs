@@ -7,7 +7,7 @@
 // This file turns the compare oracle's per-test differential — the record that today lives only in
 // the gitignored go2cs_test_comparison.json — into a committed, human-readable PROOF PAGE per
 // validated package (docs/validation/current/<dot-id>.md) plus a generated roster index.
-// Design: docs/Phase4/DESIGN-validation-proof-pages.md.
+// Design: docs/phase4/DESIGN-validation-proof-pages.md.
 //
 // Two properties are load-bearing:
 //

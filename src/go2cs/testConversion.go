@@ -38,7 +38,7 @@ import (
 // differential oracle. Ported from the codex/testing-infrastructure branch (097c94d70) onto the
 // shared per-package helpers in packageStateOperations.go and the shared writePackageInfoFile —
 // the branch's private copies of that machinery are gone by design (they drifted; see the port
-// review in docs/Phase4/BranchReview-codex-testing-infrastructure.md).
+// review in docs/phase4/BranchReview-codex-testing-infrastructure.md).
 
 const (
 	testPackageInfoFileName = "package_test_info.cs"
@@ -2287,7 +2287,7 @@ func supportedTestCapabilities() []string {
 //
 // runtime.Goexit, the map's first and for a while only entry, graduated when the managed shape landed
 // — an unwinding golib GoexitException that the defer machinery runs defers for, recover() cannot
-// see, and the goroutine root swallows (docs/Phase4/DESIGN-goexit.md, §2 + option C). Goexit from the
+// see, and the goroutine root swallows (docs/phase4/DESIGN-goexit.md, §2 + option C). Goexit from the
 // MAIN goroutine is still unimplemented, but that case cannot be distinguished statically — a
 // function's call graph says nothing about which goroutine will run it — so it is gated where the
 // distinction actually exists, at runtime, by runtime/managed_impl.cs (a loud NotSupportedException,

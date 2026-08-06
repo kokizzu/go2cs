@@ -19,7 +19,7 @@ using @unsafe = go.unsafe_package;
 // these declarations via the manualConversionFuncs registry
 // (go2cs/manualTypeOperations.go); this module marker also makes go2cs skip re-converting this file.
 // INCREMENT 1: scalars, slices, arrays, pointers. Struct Field/NumField + map MapRange land next.
-// See docs/Phase4/DESIGN-reflection-bridge.md.
+// See docs/phase4/DESIGN-reflection-bridge.md.
 
 [module: GoManualConversion]
 
@@ -925,7 +925,7 @@ internal static @string methodName() {
 // Types describing the same Go type never compared equal — compare() always returned -1 and the stable
 // sort REVERSED the map keys (map[b:2 a:1] instead of map[a:1 b:2]). Intern the ΔType wrapper by the
 // underlying System.Type so identity-equality matches Go. The cache is process-lifetime (type
-// descriptors are permanent, exactly like Go's). See docs/Phase4/DESIGN-reflection-bridge.md.
+// descriptors are permanent, exactly like Go's). See docs/phase4/DESIGN-reflection-bridge.md.
 private static readonly System.Collections.Concurrent.ConcurrentDictionary<(System.Type, string), ΔType> s_canonTypeCache = new();
 
 // (toRType stays AUTO: the ruled managed-box reinterpret model — FINDING-managed-box-uintptr-

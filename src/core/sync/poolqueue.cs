@@ -17,7 +17,7 @@
 // from a stored value of that type, so pushHead and popTail disagree about who owns a slot and the
 // ring corrupts or wedges. TestPoolChain/TestPoolDequeue crashed the test host on it.
 //
-// The fork follows the ruled precedent (sync's Mutex/notifyList; src/Archived/Baseline-vs-FullConversion.md,
+// The fork follows the ruled precedent (sync's Mutex/notifyList; src/archived/Baseline-vs-FullConversion.md,
 // "Hand-owning a package to make it OPERATIONAL"): reimplement the SEMANTIC on managed primitives,
 // never emulate the mechanism. A slot becomes one managed reference — which is exactly what an `any`
 // is here — and null is the empty-slot sentinel, a state no stored value can forge. That also

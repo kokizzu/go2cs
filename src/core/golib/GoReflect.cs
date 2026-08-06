@@ -22,7 +22,7 @@ namespace go;
 /// descriptor that has no managed form; this helper reconstructs the Go <c>reflect.Kind</c> of a value
 /// from its managed <see cref="Type"/>, and provides a descriptor↔<see cref="Type"/> side table so the
 /// hand-owned <c>abi.TypeOf</c> entry point can carry the real managed type on the (otherwise synthetic)
-/// <c>abi.Type</c> box. See <c>docs/Phase4/DESIGN-reflection-bridge.md</c>.
+/// <c>abi.Type</c> box. See <c>docs/phase4/DESIGN-reflection-bridge.md</c>.
 /// </summary>
 /// <remarks>
 /// <para>

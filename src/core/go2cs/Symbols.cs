@@ -30,7 +30,7 @@ public static class Symbols
     public const string TempVarMarker = "ᴛ";
     // Suffixes the name of a hoisted string-literal field (`trueˢ`) - the one-per-package
     // `static readonly` @string a Go RODATA literal is materialized into (see Tier C of
-    // docs/Phase4/DESIGN-string-literal-allocation.md).
+    // docs/phase4/DESIGN-string-literal-allocation.md).
     public const string HoistedLiteralMarker = "ˢ";
     // Composes VALUE-form foreign interface adapter class names ({Struct}ᴠ{Iface}) - the
     // value sibling of the ж-composed pointer adapters (wraps a COPY, Go value semantics).

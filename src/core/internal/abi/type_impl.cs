@@ -14,7 +14,7 @@ using go;
 // reflect Type/Value methods can recover Go type info from it. The converter skips the auto form of
 // TypeOf via the manualConversionFuncs registry (go2cs/manualTypeOperations.go); this module marker
 // also makes go2cs skip re-converting this file wholesale, and the overlay restores it over auto
-// output on every reconversion. See docs/Phase4/DESIGN-reflection-bridge.md.
+// output on every reconversion. See docs/phase4/DESIGN-reflection-bridge.md.
 
 [module: GoManualConversion]
 

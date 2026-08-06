@@ -81,7 +81,7 @@ var keywords = NewHashSet([]string{
 // string-based sanitizers (`slice<rune>(...)` corpus-wide would corrupt to `slice<Δrune>`;
 // re-fed delegate compositions corrupt `Func<..., nint, nint>` to `Δnint`), so a user TYPE
 // named one of those is instead renamed package-scoped via performNameCollisionAnalysis
-// (emitterSpelledTypeNames). Guarded by Tests/Behavioral/ReservedNameShadows.
+// (emitterSpelledTypeNames). Guarded by tests/Behavioral/ReservedNameShadows.
 var reserved = NewHashSet([]string{
 	"AreEqual", "array", "builtin", "channel", "defer\u01C3", "EmptyStruct", "Equals", "Finalize", "GetGoTypeName",
 	"GetHashCode", "GetType", "GoFunc", "GoFuncRoot", "GoImplement", "GoImplementAttribute", "GoImplicitConv",

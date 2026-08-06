@@ -71,7 +71,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// own _panic record and stack unwinder (p.start(getcallerpc(), getcallersp()) → nextDefer →
 		// goexit1), all of it assembly. The managed shape unwinds the calling goroutine with a
 		// golib GoexitException, which the defer machinery and the goroutine root already handle —
-		// see managed_impl.cs and docs/Phase4/DESIGN-goexit.md.
+		// see managed_impl.cs and docs/phase4/DESIGN-goexit.md.
 		"Goexit":         true,
 		"Stack":          true,
 		"ReadMemStats":   true,
@@ -104,7 +104,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs
 	// synthesizes an abi.Type whose Kind_ is classified from the value's managed System.Type. See
-	// docs/Phase4/DESIGN-reflection-bridge.md.
+	// docs/phase4/DESIGN-reflection-bridge.md.
 	"internal/abi": {
 		"TypeOf": true,
 	},
@@ -171,7 +171,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// equal types — internal/fmtsort.compare relies on `aType != bType`). The auto Value.Type()
 		// and toType() mint a fresh wrapper per call over a fresh abi.Type box, so identity-equality
 		// never matched → map-key sorting reversed. The hand-owned forms in value_impl.cs intern the
-		// ΔType wrapper by the underlying System.Type (canonType). See docs/Phase4/DESIGN-reflection-bridge.md.
+		// ΔType wrapper by the underlying System.Type (canonType). See docs/phase4/DESIGN-reflection-bridge.md.
 		"Value.Type": true,
 		"toType":     true,
 		// deepValueEqual keys its cycle-detection visited map on the values' internal data words
@@ -195,7 +195,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// MakeSlice/MakeMap construct golib containers/boxes (named wrappers included, via
 		// ISupportMake); Slice windows the shared backing; the rtype func-introspection methods
 		// derive from the delegate Invoke signature; Key/Len read GoReflect/descriptor cargo.
-		// See docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (INCREMENT 2).
+		// See docs/phase4/DESIGN-reflection-bridge-phase3-plan.md (INCREMENT 2).
 		"Value.Call":        true,
 		"Value.CallSlice":   true,
 		"Value.Slice":       true,
@@ -269,7 +269,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// nil ж<abi.Type>. value_impl.cs carries the boxed managed value on a companion
 	// `partial struct Value { object boxed }` field (typ_/flag set from the Phase-1
 	// synthetic abi.Type, so Kind()/IsValid() work from value.cs unchanged); swapper_impl.cs
-	// swaps through golib's non-generic ISlice indexer. See docs/Phase4/DESIGN-reflection-bridge.md.
+	// swaps through golib's non-generic ISlice indexer. See docs/phase4/DESIGN-reflection-bridge.md.
 	"internal/reflectlite": {
 		"ValueOf":     true,
 		"unpackEface": true,

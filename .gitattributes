@@ -4,14 +4,14 @@
 # legitimately contain mixed CRLF/LF. With core.autocrlf=true git would rewrite
 # those LFs to CRLF on checkout and break the byte comparison. Mark the affected
 # projects' transpiled output and goldens as binary so their exact bytes survive.
-src/Tests/Behavioral/Solitaire/*.cs            -text
-src/Tests/Behavioral/Solitaire/*.cs.target     -text
-src/Tests/Behavioral/SortArrayType/*.cs        -text
-src/Tests/Behavioral/SortArrayType/*.cs.target -text
-src/Tests/Behavioral/StdLibInternalAbi/*.cs        -text
-src/Tests/Behavioral/StdLibInternalAbi/*.cs.target -text
-src/Tests/Behavioral/UntypedConstWideMask/main.cs -text
-src/Tests/Behavioral/UntypedConstWideMask/main.cs.target -text
+src/tests/Behavioral/Solitaire/*.cs            -text
+src/tests/Behavioral/Solitaire/*.cs.target     -text
+src/tests/Behavioral/SortArrayType/*.cs        -text
+src/tests/Behavioral/SortArrayType/*.cs.target -text
+src/tests/Behavioral/StdLibInternalAbi/*.cs        -text
+src/tests/Behavioral/StdLibInternalAbi/*.cs.target -text
+src/tests/Behavioral/UntypedConstWideMask/main.cs -text
+src/tests/Behavioral/UntypedConstWideMask/main.cs.target -text
 
 # Phase-4 test DATA staged from GOROOT and read byte-for-byte by a converted test
 # suite. Go ships these with LF; autocrlf would smudge them on checkout and change

@@ -1212,7 +1212,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// crash surfaces later, somewhere else. `os`'s <c>createMountPoint</c> is the corpus's clearest
     /// instance of the shape — four <c>uint16</c> field stores through
     /// <c>(*windows.MountPointReparseBuffer)(unsafe.Pointer(&amp;b[0]))</c>. Guarded by
-    /// <c>Tests/Behavioral/ReinterpretPinLifetime</c>, which reproduces the loss deterministically —
+    /// <c>tests/Behavioral/ReinterpretPinLifetime</c>, which reproduces the loss deterministically —
     /// 5 of 5 runs before the pin, 8 of 8 matching Go after it.
     /// </para>
     /// <para>

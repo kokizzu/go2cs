@@ -1,0 +1,2076 @@
+# Phase 3 Handoff — Drive the full standard-library conversion to compile
+
+> ✅ **PHASE 3 COMPLETE (2026-07-10, commit `51ba5d9cf`, tag `stdlib-green-2026-07-10`) — all 302 packages of
+> `src/go-src-converted` compile clean.** This handoff is **retained as historical process record**; the live
+> queue and per-iteration numbers below are frozen at their last-worked state. Next is Phase 4 (operational —
+> running Go's own tests); see [`Roadmap.md`](Roadmap.md).
+
+> **The milestone:** the entire auto-converted Go standard library in
+> `src/go-src-converted/` (~305 packages, `src/go-src-converted.sln`) compiles in C# with
+> **zero errors**. This is the headline goal of the whole `go2cs` project. Read
+> [`CLAUDE.md`](../CLAUDE.md) first; this doc is the focused Phase-3 playbook.
+>
+> **⚠ Strategy correction (2026-07-01) — the milestone is a clean COMPILE, not operational.** Operational
+> correctness is Phase 4 (Go unit tests). The CS0030/S1 "architectural wall" is a **FORK to SORT**, not a
+> stop: native-type ops → convert; managed-referent (`ж<T>` model) → model; raw-metal dragons →
+> `[module: GoManualConversion]` stub. Do NOT promote `go-src-converted → core` on a clean compile
+> (deferred to post-Go-test, maybe never); copy the hand-owned manual/`*_impl.cs` files BACK into
+> `go-src-converted` religiously. See [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md)
+> *The corrected end-state* and [`Phase3-AutonomousLoop.md`](Phase3-AutonomousLoop.md) *S1 is a FORK*.
+
+## Where things stand (2026-07-04 night, ~120 commits)
+
+- **WAVE: 146/303 packages compile, 41 leaf-failing** (deeper packages now REACHABLE and
+  surfacing own errors — progress even where the leaf count grew). **ZERO CLUB 41**: +flag
+  (named func types → value adapters d4a30f6ec/2bac754e3), +compress/flate (ref-receiver box
+  gates e4b476dac + func-field signatures a31e1dfab + UntypedInt bridge 15b98d3c8 +
+  package-alias shadows 950c0ae7e), +encoding/binary (blank-discard synthesis ef9715e23 +
+  defined-over-named-struct composite wrap b944e334c), +regexp/syntax (labeled-switch break
+  targets ea0cc8d76 + short-decl named cast b7311d89b + empty-interface AreEqual c7a16f89f).
+  **Fresh census (top):** debug/plan9obj 141 (likely 1-2 roots — the html pattern),
+  internal/zstd 31, x/crypto/chacha20 27, debug/dwarf 27, go/doc/comment 13, archive/zip 12,
+  poly1305 10, context 10, gzip 10, socktest 8, math/big 8, lzw 7, gob 6, zlib 6,
+  runtime/debug 5, ascii85 5, cpu 4, base64 4, quick/regexp/dag 3, ~14 tails.
+  **NEXT: plan9obj 141 (check the one-root hypothesis first) → zstd/chacha20/dwarf → context
+  (chokepoint) → tails.**
+
+## Previous entry (2026-07-04 evening, ~107 commits)
+
+- **WAVE (recon150): 141/303 packages compile, 172 errors across ~28 leaf projects** (prior:
+  137/303, 406 errors). **ZERO CLUB 37+**: +html (astral rune literals f6abbcacd — one root,
+  133 errors), +go/build/constraint (GlobalQualify b59c7b78d + type-switch default-arm binding
+  6bbed4b8f), +archive/tar (the lifted-anon-interface-embed batch: io stub Writer+Copy+nint
+  62a2920b2; gen adapter fidelity 7a30c7a1b — pair dedup/Range indexer/ref kinds/IFormattable;
+  converter 20815c4f5 — SEL-embed interface check, render-time interface routing, arg-position
+  delegate wrap, receiver-into-interface-field direct-ж), +go/token (cleared by the shared
+  families). **Fresh census:** flag 23, compress/flate 20, encoding/binary 17, regexp/syntax
+  15, go/doc/comment 13, context 10, socktest 8, math/big 8, hash/fnv 8, compress/lzw 7,
+  x/text/transform 5, runtime/debug 5, ascii85 5, x/sys/cpu 4, dag 3, hpack/template-parse/
+  xml/embed 2 each, ~8 singles. NEXT: flag 23 → compress/flate 20 → encoding/binary 17
+  (binary unblocks the largest dependent swath).
+
+## Previous entry (2026-07-04 late, ~99 commits)
+
+- **WAVE (recon149, honest full-tree): 137 of 303 packages compile** (previous measured wave:
+  63) — 35 leaf-failing projects carrying 406 own-errors, ~131 packages blocked as dependents.
+  **ZERO CLUB 35**: +bufio (cross-embed ambiguity 768469444 + named-func-type tuple 774bf81e9),
+  +internal/concurrent (generic embeds emit f1fff3fed + generic accessors eb3c85caf +
+  named-delegate wrap 358ac0c5d), +unique (generic member naming e2f905c72 + box-local X.Value
+  hop d62e51736), +net/netip (+crypto/internal/edwards25519) (slice→array copy ctor 07f77d4aa +
+  direct-ж value-chain boxing 031a65b05), weak restored (pointer-instantiated type-param box
+  form de38255f4), /vN import naming e182aa15b, unbound-type-param record skip fa5a5c636.
+  **Leaf-failure census (top, by own-errors):** html 133, go/build/constraint 63, archive/tar
+  29, flag 23, compress/flate 20, encoding/binary 17, regexp/syntax 15, go/doc/comment 13,
+  go/token 10, context 10, socktest 8, math/big 8, hash/fnv 8, compress/lzw 7, x/text/transform
+  5, runtime/debug 5, ascii85 5, x/sys/cpu 4, dag 3, + ~16 small tails.
+  **NEXT CAMPAIGN (leverage-ordered): the dependency chokepoints** — encoding/binary (17),
+  context (10), go/token (10), math/big (8), regexp/syntax (15), compress/flate (20),
+  x/text/transform (5): clearing these releases most of the ~131 blocked dependents. html's 133
+  is likely one or two roots repeated (entity tables?) — check early, may be cheap.
+
+## Previous entry (2026-07-04, ~90 commits)
+
+- **ZERO CLUB 31.** New zeros this stretch: **os** (unalias-hop 785372b5d + gen hop-split
+  1c7b07e43 + STRUCTURAL INTERFACE INHERITANCE a5f3b4e18/bacaec9bf + tuple-forward deconstruct
+  ee3ec0eca), **fmt 36→0** (8 roots: star-deref-LHS-never-declares 350bc79fe; stale
+  print_Stringer.cs removed from the tree 99e532c1b — dead baseline-only support; deferred/go
+  string args (@string) cast e1977e005; if/switch-init RHS shadow walk 5f3a2f56e; type-switch
+  clause scope binds the guard ac6cfe2c3; basic→named pointer reinterpret 9c3309b4e; LOCAL
+  adapter for a foreign pointer pair 2d9b34736 — fmt records GoImplement<os.File, io.Reader>
+  (Pointer=true) itself and the generator binds forwarding from METADATA), **dnsmessage /
+  strconv / path** (measured zero on recon148 — cleared by the session's cross-cutting roots),
+  **bufio** (cross-embed AMBIGUITY rule 768469444 — Go drops names promoted from 2+ embeds; +
+  named func-type callee tuple detection 774bf81e9 — SplitFunc field call had SHATTERED into
+  one call per LHS), **internal/weak restored** (pointer-instantiated type-param args take the
+  box form de38255f4 — a type param reads as an interface via its constraint and dodged the
+  box treatment; `ptr = abi.Escape(ptr)`).
+  **Major strategy landed: structural interface satisfaction emits C# inheritance**
+  (`File : io.ReadCloser`, minimal covering set, strict-subset guard, shared-member re-declare
+  for non-subsuming bases, alias-form rendering) — see ConversionStrategies. Iface→iface
+  GoImplement records are now suppressed (one interface-typed record killed a package's whole
+  generator run).
+  **NEXT ROOT: internal/concurrent 12 — generic embedded-struct promotion accessors**
+  (`Δentry<K,V>` lacks `Ꮡnode`, CS0117 ×12; surfaced after clearing its two declaration-phase
+  families: /vN import class naming e182aa15b + unbound-type-param implicit-conv records
+  fa5a5c636). Then netip 6 (own-errors after deps cleared). Then the FULL
+  go-src-converted.sln packages-compiling measure. BANKED: edwards 1 (Go 1.17 slice→
+  array-pointer conversion `(*[32]byte)(x)` — golib view/copy design needed).
+
+- **OS AT ~5 (2026-07-04 ~6am, ~64 commits).** Landed since the last entry: ctor-priority
+  e8e09bfb6 (OverloadResolutionPriority(-1) on the public-subset ctor, CS0121 x3); wrapper
+  operator ~ 420686563 (integer-gated, keeps the wrapper type - CS1503 x2 + rawConn/FileMode
+  cascades); declared-type-over-value-type 90bda6fa5 (os `var Kill Signal = syscall.SIGKILL`
+  emitted the concrete type; explicit specs keep the DECLARED type + interface-wrap constant
+  initializers).
+  **NEXT ROOT (designed, unimplemented): VALUE-form foreign interface implementation.** The
+  os.Signal interface is DOWNSTREAM of the concrete syscall.Signal, so neither assembly can
+  partial the other: syscall cannot know os.Signal; os cannot add a partial to syscall's
+  ΔSignal struct. The pointer form solved this with an ADAPTER CLASS in the interface's
+  assembly; the VALUE form needs the same - the ImplementGenerator should emit a VALUE
+  adapter (wrapping a COPY, Go value semantics) when a GoImplement record names a FOREIGN
+  struct + local interface, and the converter's recordable gate (isLocalImplType) must
+  permit recording when the INTERFACE is local even if the target is foreign. Sites:
+  exec_posix.cs:78 p.Signal(ΔKill) CS1503; the reverted CrossPkgUser guard (lab2 =
+  CrossPkgLib.GA - re-add with the fix: Grade implements Labeled by value, const GA).
+  Also remaining in os: fs.File->io.Reader CS1503 (dir.cs:186 - foreign-iface to
+  foreign-iface, may be the same value-adapter family with iface source), File Read/Write
+  CS1929 x2 (g.cs:24 - impl forwarding binds this.Read() where Read is an EXTENSION on
+  ж<File>), rawConn CS0266 + FileMode CS0030 (recheck post-~operator on next recon).
+
+- **OS AT 11 (2026-07-04 ~5am) - ~57 commits this session. The adapter trilogy landed:
+  foreign-adapter reference (parseExportedPointerImplements + pointer-unwrap, CS0029 x38);
+  file-local alias qualifier a6049e014 (user-ruled `fs.PathErrorжerror` style, ALSO fixed the
+  bare-alias-name CS0246 x40); adapter scope symbol-OR-name both sides 8b20ca680 (CS0122 x40;
+  v1 interface-symbol-only broke same-assembly interfaces - full suite caught it). Plus
+  64b9a1e64 FuncLit params share the body scope (CS0841/CS0128 x5; caveat banked: emission
+  may shadow-rename the reused param (err->errΔ1) consistently - diverges from Go ONLY if a
+  defer captures the parameter). Emission dedup 33c2e8026 + the phase-gating discovery
+  (declaration errors hide body errors - os "8" was fiction, true 77).
+  **OS RESIDUE 11:** fileStat ctor CS0121 x3 (types_windows 87/124/140 - ambiguous generated
+  ctor overloads); File Read/Write CS1929 x2 (g.cs twins vs io interfaces); CS1503 x4
+  (int->ΔHandle x2 exec_windows:78; syscall.ΔSignal->os.ΔSignal exec_posix:78 SAME-NAME
+  cross-package named types; fs.File->io.Reader dir.cs:186); CS0266 rawConn tuple file.cs:749;
+  CS0030 nint->FileMode removeall_noat:124. fmt = os leak. Then netip 6 / concurrent 5 /
+  bufio 8 / edwards 1 -> FULL go-src-converted.sln measure.
+
+- **OS CAMPAIGN DEEP-DIVE (2026-07-04 ~4am) - THE "os=8" WAS ROSLYN PHASE-GATING, os TRUE
+  RESIDUE = 77.** The dirEntry double-implementation (CS8646/CS0111, declaration-phase)
+  SUPPRESSED all method-body binding diagnostics; fixing the duplication (33c2e8026, emission-
+  time alias/qualified dedup - ALIAS record wins; record-key normalization was twice wrong:
+  qualified attr names break generator resolution AND the alias-locality gate) revealed 69
+  body errors. Empirically verified: both-attrs=8, either-alone=77, twin g.cs outputs byte-
+  identical. LESSON: declaration-phase errors HIDE body errors - a package is not measured
+  until its declaration errors are zero.
+  **NEXT ROOT (analyzed, unimplemented): CS0029 x38 - `err = &PathError{...}` emits BARE
+  `new PathError(...)`: the pointer-to-interface ADAPTER wrap in convertToInterfaceType is
+  gated on isLocalImplType (main.go ~2138 recordable), so a CROSS-PACKAGE pointer target
+  (os assigning fs.PathError, whose PathErrorжerror adapter IS generated in io/fs from its
+  own GoImplement<PathError, error>(Pointer = true) record, line 44 of io/fs package_info,
+  and is PUBLIC since PathError is exported) falls through to the bare value. FIX: the
+  adapter-ctor emission must reference the FOREIGN adapter class - qualify adapterTypeRef
+  with the foreign package (fs_package.PathErrorжerror) when the target type is not local;
+  assignment path = visitAssignStmt convertExprToInterfaceType -> convertToInterfaceType
+  (the arg/return positions 448473009/convExprList presumably share the gate - fix at the
+  convertToInterfaceType layer once). os residue after: CS8716 x18 (no target type for
+  default literal - likely same-family cascade), CS1662 x5, CS0128/CS0841 err x5, CS0121
+  fileStat ctor x3, CS1929 File Read/Write x2, CS1503 x4.**
+
+- **POLL CAMPAIGN (2026-07-04, cont) - 34 commits. CS0052 publicize root bf5dcdcb7 (exported
+  vars/consts/func sigs publicize their unexported types; CrossPkgLib snapshot guard) +
+  CS0030 named-over-pointer hop 297e84e5b (((Pointer)(zh<EmptyStruct>)(uintptr)(x));
+  PointerCastSliceRange opaque guard). PROBE-SKEW LESSON HARDENED: recon125 "poll=1" was
+  pair-probe FICTION (probe content differed from full-recon content by ZERO bytes for
+  fd_windows yet the probe BUILD saw different errors via its own skewed DEPS) - measure
+  only on full-recon overlays. POLL RESIDUE = 8, four banked families (fd_windows):
+  (1) CS8030 x2 @1103/1107 - GetFileType expression-bodied `=> func((defer, recover) => ...)`
+  wrapper chose the VOID GoFunc overload for a value-returning function (tuple result);
+  (2) CS0103 sz x2 @1231-2 - type-switch sibling cases each declare `sz :=` but later cases
+  dropped `var` (per-case bodies ARE braced scopes; the variable analysis flat-map saw the
+  name as declared - sibling case scopes need independent declarations);
+  (3) CS0123 Seek x2 @558/800 - `deferǃ(Δsyscall.Seek, Sysfd, curoffset, io.SeekStart, defer)`
+  method group does not match the inferred Func delegate (inspect full error - likely the
+  result-tuple shape or an alias-vs-raw param type mismatch);
+  (4) CS0426 x2 @1263/1420 - conversion TARGETS still render raw `Δsyscall.Handle`/
+  `.Sockaddr` (the conversion-target naming path bypasses getCSTypeName - route it through
+  the same alias check as 8b5bf94c6/60bd5957d).
+  After poll: os/fmt own residue (~1 each), io/fs 1, filepathlite 1, netip 6, concurrent 5,
+  bufio 8, edwards 1.
+
+- **TIME AT ZERO + POLL AT ONE (2026-07-04 early) - CLUB = 22, THIRTY-ONE commits this session.**
+  Post-census wave, in order: e3263718e union sub-slice cast (time 15->9); b0b7b6e32 opaque
+  `ᐧᐧ` marker for leading constant-true cases (CS8120; the const `ᐧ` foldability is LOAD-BEARING
+  - case-label patterns + infinite-for reachability - first cut broke both); a6f9ad5a6
+  user-flagged `(T part)` lambda params; chips a126f25f1 (keyword-embed unescape) + 46ab7cc0f
+  (promoted-embed zero-value ctors) + 2adfad1dc regolden - conflict resolution COMBINED both
+  (AppendPromotedBoxInitializers applies GetUnsanitizedIdentifier); 080fafbb7 CS9135 wrapper
+  screen (any named-numeric, not just uintptr); db75e3210 defer lambda for value-returning
+  callees; 69489ade2 function-local grouped-var tuple deconstruction (SILENT-wrongness);
+  eb618739a string(untyped-const-ref) default-type hop (TIME -> 0); b5e4928ee nil-map fresh
+  varNames for the synthetic global-func-literal analysis (RECOVERED-PANIC SILENT-DROP #2 -
+  dropped the rest of the file INCLUDING csproj references); 872f5a02c + 8b5bf94c6 + 60bd5957d
+  foreign-rename ꓸ-alias routing (delegates -> getCSTypeName -> getDisplayTypeName; the
+  getTypeName-layer first cut REGRESSED reflect CS8799 - Go-shaped names feed MEMBER naming);
+  7c6c312b1 conversion-using qualifier match (CS0246 x4).
+  **Frontier (recon125 + poll probe): internal/poll 1, os/fmt 6 (5 = poll leak), io/fs 1,
+  filepathlite 1, netip 6, concurrent 5, bufio 8, edwards 1.**
+  **NEXT ROOT - poll CS0052 (design analysis banked):** `var ErrNetClosing = errNetClosing{}`
+  - an EXPORTED var of an UNEXPORTED type. Go consumers legally call its exported methods
+  cross-package, so the faithful C# is to PROMOTE the type to public when an exported
+  package-level var (later: exported func results) exposes it. DANGER: the TypeGenerator
+  derives partial-member scope from the type NAME - a converter-side `public partial struct`
+  with generator-side internal companions is CS8799/CS0261; the generator must read the
+  DECLARED modifier from syntax (it has it) or the promotion set must reach both sides.
+  Same mechanism will later serve exported-func-returns-unexported-type (CS0050 family).
+  **Lessons (memorized): behavioral zero-churn does NOT clear corpus regressions - corpus
+  reflect/abi spot-builds are a REQUIRED gate for type-NAMING changes; measurement needs
+  full-recon consistency (pair probes only for the exact packages measured, syscall must
+  accompany its dependents); transpiling CrossPkg* regenerates csprojs - a converter panic
+  mid-file silently DROPS the sibling ProjectReference. NEXT-SESSION IDEA: full transpile
+  with the per-file recover DISABLED = corpus-wide latent-panic sweep (two silent-drop
+  instances found by accident so far).**
+
+- **REFLECT AT ZERO (2026-07-03) - THE CENSUS CAMPAIGN IS COMPLETE (154 -> 0), CLUB = 21.**
+  Eleven roots this session, in commit order: F5 `d2ab3ff76` (@string wrapper surface, gen);
+  F4 `6f7c3f82b` (getTypeName structural slice/array recursion - also killed SILENT wrong-type
+  asserts); F6 `d7b1cf75f` (explicit generic args from info.Instances); golib-uintptr `3ce524fd1`
+  (generic-math interfaces + >>> + ConvertToType fast paths + TypeParamCaster Value-FIELD probe);
+  F7 `00284b358` (multi-hop value-embed promoted pointer-method descent); F8 `219bdb459`
+  (interface-slice append element cast); F10 `15955155b` (static-readonly const switch tag ->
+  if-else, `is` pattern disabled); F11 `c8d023ada` (raw box name at heap-boxed &field arm);
+  F13 `e64879847` (nested deref paren-wrap); F14 `ec7ce4ad9` (explicit lambda return type for
+  unsafe.Pointer literals); F12 `f7e52b44a` (IIncrement/IDecrement lift into the Arithmetic set
+  in BOTH constraintOperations.go and InterfaceTypeTemplate.cs + golib uintptr declarations).
+  Every root has a behavioral guard; all census entries are documented in ConversionStrategies.md
+  (same-day batch). recon118 (301 csprojs, full) is fresh - overlay + frontier remeasure is the
+  next step: expect a BIG fmt drop (its 74 was mostly reflect leak); time Duration-CS9135 x2 is
+  possibly F10-cleared; then os 15 / time 15 / netip 6 / concurrent 5 / bufio 8 / edwards 1.
+  **Banked latents:** (1) F15-latent: generated [GoType("num:*")] wrappers do NOT declare
+  generic-math interfaces - a NAMED numeric wrapper as a union-generic type arg would CS0315
+  (no corpus site yet; fix = mirror the golib uintptr interface list into the num template).
+  (2) Phase-4 GC-hazard audit: F4-family sites route managed pointers through nuint round-trips
+  (compiles, but the guintptr-class hazard stands). **Measurement lessons reconfirmed:** trust
+  the "N Error(s)" SUMMARY line, never `grep -c "error CS"` (an MSBuild race made a 5-error build
+  count as 0 - PHANTOM-ZERO); the behavioral runner builds RELEASE (a `dotnet run -c Debug` runs
+  STALE binaries - false silent-truncation diagnosis); powershell -File needs cd to
+  src/tests/Behavioral first.
+
+- **REFLECT CENSUS COMPLETE (9-agent workflow) — 154 errors → 14 mechanism families, ZERO
+  raw-metal (all fixable emission bugs with named existing machinery). Full census:
+  [docs/Reflect-Census.md](Reflect-Census.md). Attack order: Wave A = StructTypeTemplate triple
+  (F2 promoted-accessor scope from MEMBER name → F1 metadata fallback yields ref-PROPERTIES too
+  → F9 promoted-shim receiver kind), −69; then F3 sparseArrayKey Uint gate widen −27 (one line);
+  F5 @string wrapper indexer/Range/span surface −16 (gen); F4 getTypeName composite-star
+  structural recursion −17 (also fixes SILENT wrong-type asserts); F6 generic args from
+  Instances −11; tail sweep −13; F12 (inc/dec operators, golden churn) last −1. One Phase-4
+  flag: F4 sites route managed ж<abi.Type> through nuint round-trips — compiles post-fix but
+  is a GC-hazard audit item (guintptr class). fmt remeasure after Wave A (its 178 is the leak).
+  ALSO IN FLIGHT: time IByteSeq root (golib slice(IByteSeq<T>) ctor + builtin overload + lambda
+  params of union type-params render IByteSeq<byte>) — suite gate running.
+
+- **recon116 WAVE — bytes AND strings AT ZERO (club = 20). GPG-BLOCKED: the reflect gen pair
+  (CS0057 relocation + nuint hop; CS0102/0111 promotion shadow-skip) is VERIFIED (suite 220/220,
+  reflect generated files at zero) and STAGED but uncommitted — pinentry needs the user
+  passphrase; NEVER kill gpg-agent (clearing the cache caused this); never bypass signing.**
+  Frontier (recon116, sequential absolute-path): bytes 0, strings 0, edwards 1, internal/
+  concurrent 5, netip 6, bufio 8, time 24, os 24, fmt 178. fmt = reflect tail LEAK (identical
+  CS1061 x54 / CS0030 x28 distribution) + own ~28 — the remaining big census is REFLECT (~150:
+  CS1061 54, CS0030 28, CS1503 16, CS0021 14, CS0117 13, CS9135, CS8917). time 24 = NEW small
+  families: IByteSeq<byte>→`bytes` type-param CS1503 x8 (format_rfc3339 — union-constraint call
+  sites passing the IByteSeq where the CONSTRAINED param is expected — sibling of the union-order
+  fix: the PARAMETER type renders as the type param `bytes` but the ARG renders interface-typed);
+  CS8120 unreachable-switch x3; method-group→Action CS1503 x2 (zoneinfo_windows); Duration-const
+  pattern CS9135 x2. os 24 probably time+fmt leak. NEXT after GPG unblocks: commit gen pair →
+  ConversionStrategies batch docs → time IByteSeq family → reflect census.
+
+- **TWENTY-ONE roots (recon115 overlaid) — registry AND fiat AT ZERO (club = 18).** Latest:
+  2e7c172a7 Key cross-base const hop (registry 8→0); 4d6dbab4b fiat alias-target reinterprets
+  (20→0, one types.Unalias in the namedToArray gate); 971ab01a7 string|[]byte union check hoisted
+  ahead of the slice-prefix branch (the REVERSED order `[]byte | string` starts with "[]" and took
+  the ISlice branch with the raw union as element — time/format.cs CS1003 x16); 5a1f5dbde
+  value-receiver method values in ARGUMENT position take the param-carrying lambda form (bytes
+  ToUpperSpecial CS1113 x3 — extension on a value type cannot delegate-bind; interface receivers
+  excluded; measures in recon116). NEW FAMILIES FOUND (recon115): (A) time 8 = a FUNC-TYPED
+  package-level var (`var loadTzinfoFromTzdata func(string, string) ([]byte, error)`,
+  zoneinfo_read.cs:521) renders its slice result as `Func<@string, @string, (<>byte, error)>` —
+  the `[]byte` inside the signature rendering came through the RAW intermediate form (`<>byte`,
+  missing the slice< > projection) — visitValueSpec no-value branch getTypeName(Signature) →
+  convertToCSTypeName path; syntax cascade, likely also in os 8/fmt 11 residue. (B) netip 36 = 33
+  CS0246 leaking from internal/concurrent (Go 1.24 HashTrieMap[K,V]): RecvGenerator emits ж-twins
+  with MANGLED generic receiver names (`indirect<,>`, `entry<,>` — the g.cs filenames show
+  underscore-mangled type args `indirect_K, V_`) — generic RECEIVER types need their type
+  parameters carried into the twin emission; + CS8337/CS0234/CS0029 singles. NEXT: (1) family A
+  (time/os/fmt func-typed global signatures); (2) family B (RecvGenerator generics);
+  (3) bytes residual (reader long→int CS1503 x2 + CS8716) after recon116; (4) strings 5 / bufio 11
+  buckets; (5) reflect 3 gen bugs (CS0057 conv accessibility, CS0102/0111 makeFuncImpl embed
+  collision); (6) edwards 1.
+
+- **SEVENTEEN roots + both chip cherry-picks (e36e9b7d6 alias-array, e58f274b9 fmt flags) —
+  math/rand/v2 AND internal/syscall/windows AT ZERO (club = 16). recon113 overlaid.** 07cd23364:
+  PartialStubGenerator emits using aliases AFTER the file-scoped namespace (a FILE-level alias
+  loses simple-name lookup to an enclosing namespace SEGMENT — go.@internal.syscall shadowed the
+  syscall alias; windows 10→0, unmasking os 18→8 / fmt 21→11 / time 8). WAVE (recon113):
+  registry 8 = ONE family: Key is named-over-CROSS-PACKAGE-named ([GoType("syscall_package.
+  ΔHandle")] — wrapper has ONLY Key↔ΔHandle ops, NO numeric bridge), so (a) beyond-int32 const
+   is CS0030 x5 (visitValueSpec unchecked path must chain through the
+  written base: unchecked((Key)(syscall_package.ΔHandle)2147483648) — one user conv per cast) and
+  (b)  with Key result is CS0029 x3 (untyped const in return position — same chain,
+  or generator grows an UntypedInt bridge THROUGH the base for named-over-named-numeric wrappers —
+  the all-ships option, needs the converter to mark the base numeric in the GoType tag). time 8 /
+  os 8 / fmt 11 = registry leak + own residue (remeasure after registry). bytes 6 / strings 5 /
+  bufio 11 / fiat 20 (alias-array REINTERPRETS — writtenRHS map skips aliases) / reflect 3 (gen) /
+  netip 36 (JUMPED from 3 — census needed) / edwards 1. Zero-club spot-checks all 0 post-gen-change;
+  full suite 220/220 green twice (fmt cherry-pick gate + stub gate).
+
+- **FIFTEEN roots landed (recon112 pending) — dnsmessage AT ZERO (club = 14).** Post-batch roots:
+  b447795c4 func literals in PACKAGE-LEVEL var initializers get function scope (inFunction save/
+  restore in convFuncLit + synthetic-FuncDecl performVariableAnalysis in visitValueSpec — the
+  sync.OnceValue lambda emitted locals as package fields, CS1002 cascade gating os/fmt via
+  internal/syscall/windows); 32d65a263 integer TYPE-PARAMETER conversions route through NEW golib
+  ConvertToType<T>/ConvertToUInt64<T> (rand/v2 E(100): Int(x)/uint64(n)/n<=0; SHIFT counts excluded
+  — the full suite caught the overreach); e2bbe490a conversions to/from a CROSS-PACKAGE written
+  base take the ONE-STEP wrapper operator (registry Key/syscall.Handle 25 errors; same-package
+  chains keep the underlying hop — [GoType num:] has no named-base operator); also the Key
+  GoImplicitConv dedup (prev commit). MEASUREMENT GOTCHAS burned this session: csproj basenames in
+  go-src-converted are DOTTED (internal.syscall.windows.registry.csproj — hardcoding registry.csproj
+  gives MSB1009 which greps as ZERO errors = phantom-clean); cwd drift does the same — ALWAYS
+  absolute paths + verify a build actually ran; concurrent suite+corpus MSBuild races produce
+  transient phantom errors — measure sequentially. NEXT: (1) internal/syscall/windows DLL-stub
+  family (~10 CS0234: stub.g.cs qualifies syscall types as go.@internal.syscall.WSABuf — wrong
+  namespace — plus partial-method signature mismatch ж<WSABuf> vs ж<syscall_package.WSABuf>);
+  (2) remeasure time/os/fmt on recon112 (their residuals were behind registry/windows); (3) fiat 20
+  alias-array reinterprets; (4) reflect 3 + time CS0557-class generator bugs; (5) bytes 6 (CS1113
+  SpecialCase method values x3 + reader long-to-int CS1503 x2 + CS8716); strings 5; bufio 11;
+  netip 3; edwards 1.
+
+- **TEN-ROOT BATCH LANDED (recon109 wave) — strconv, syscall, io, weak ALL AT ZERO; zero club = 13.**
+  The batch (in commit order): `5e739e712` FuncType-in-expression-position — reflect/type.go was
+  being SILENTLY DROPPED (per-file recover() ate the convExpr panic as a warning; 218 CS0246
+  downstream) + conversion-to-func-type misread as tuple call in `:=` (declaration dropped);
+  `3eefe8e7c` lifted Integer shift constraint → BCL `IShiftOperators<T, int, T>` (strconv bsearch
+  CS0315); `2176706c6` syscall 5-fix family (all-typeless-return exec wrapper gets explicit
+  `func<T>` type arg CS8030; deferred untyped-nil arg casts to param type CS0123; named-uintptr
+  beyond-int32 const unchecked cast CS0266; named-uintptr untyped-const cast targets the NAMED
+  type CS0034; array-param element address boxes a storage-sharing copy CS0103) + nil-safe entry
+  alias widened to ANY nil-compared pointer param; `b1e862a8f` golib channel RUNTIME bug —
+  non-blocking receive returned true on an OPEN empty channel (every default-select poll took the
+  receive case; SelectStatement poll probe caught it); `1806c5b5f` io family (GoImplement
+  inheritance-prune mutated the DERIVED set in place, emptying it — intersect on a copy; index-LHS
+  interface-element recording; empty select clause `break;`; terminating blocking select
+  `return default!;`); `1cf2cd541` array-backed defined-type reinterprets share storage via
+  `Ꮡ((box).Value.Value)` + NEW writtenUnderlyingOperations.go pre-pass (TypeSpec written-RHS map;
+  Named.Underlying() loses it); `f8e6a5783` variadic `...*T` box fan-out to ALL trailing args;
+  `8ca1a8fad` package-level `var a, b = f()` → ValueTuple component reads (once-evaluated temp for
+  multi-non-blank); `f4f1b986b` global-using alias RHS renders csproj-alias numerics as C# keywords
+  (`go.array<ulong>`, fiat CS0246); `05af43b83` range-var ref-bound by pointer-receiver method →
+  mutable-copy (dnsmessage CS1657, measures NEXT wave).
+  **WAVE (recon109 overlay, per-package Rebuild):** io 0, strconv 0, syscall 0, weak 0,
+  reflectlite 0, metrics 0, path 0, plugin 0 — plus the established club (runtime, iter, sync,
+  slices, maps, godebug, math/rand, sort). **NEW FRONTIER (mostly fresh unmasks):**
+  bytes 21 + strings 21 + bufio 42 + os 34 + fmt 37 — dominated by ONE family: **escaped-rune
+  composite KEYS render `'\t'` as `'\'`** (bytes.cs:413 asciiSpace `[256]uint8{'\t': 1, …}` —
+  CS1012 syntax cascade; the sparse-array key path loses the escape — NEXT ROOT, likely -100+);
+  fiat 20 (ALIAS-to-array reinterprets — `(*p224UntypedFieldElement)(&tmp)` where the target is an
+  alias; the writtenRHS map deliberately skips aliases, sibling family of the edwards fix);
+  edwards25519 1 residual; dnsmessage 5 (fix committed, unmeasured); reflect 3 (GENERATOR:
+  CS0057 implicit-conv accessibility ΔKind/flag + CS0102/CS0111 makeFuncImpl embedded-field name
+  collision); time 1 (GENERATOR CS0557 duplicate conversion, `type Key syscall.Handle` named-over-
+  named-uintptr); netip 3; rand/v2 2 (spec FIX 4 E(100) + REFLECT-c convCallExpr Instances-sourced
+  type args — still unapplied). **Latent gaps flagged (chips/tasks):** alias-to-array emission
+  family — range over an alias-array SILENTLY EMITS AS A COMMENT, composite literal takes
+  Add-form, `var` decl misses allocation (task_82a09b18); golib fmt `% 4d` space-flag renders
+  literally (task_76e1e42f); named-uintptr const conversion at expression position elides
+  (`handle(0)` → bare `0`); `handle(expr).method()` drops parens; in-function `var x, y = f()`
+  tuple decl still broken (no corpus hit).
+
+- **value→box argument family CLEARED (`4745bfc0d`) — WAVE-18 = 70 / 13.** Sixth direct-ж
+  promotion trigger: receiver passed as a pointer ARGUMENT (`trim(a)` in `func (a *decimal)`);
+  the cross-package embed hop adapts to direct-ж targets (binds the box, no `.Value` —
+  abi.Type.Uncommon). strconv 21→13, syscall 12→8. Ref form remains the default (see the
+  commit for the design rationale). NEXT: strconv 13 (CS9135 pattern non-const labels ×5,
+  CS0315 bsearch ushort constraint ×4, parse ×2, foreach ×1 + 1), path 7, edwards 13 + fiat 4,
+  dnsmessage tail 9, syscall 8, io 5, singles.
+
+- **@-escape accessibility CLEARED (`deee110d1`) — WAVE-17 = 82 / 13 (strconv unmasked 7→21).**
+  getAccess strips the leading '@' (keyword escapes are always-lowercase Go names). Guard:
+  HeapKeywordVar extension. strconv's 21: **value→box args CS1503 ×8 — the RECURRING family
+  (syscall SID ×3 too, total 11+): a value passed where ж<T> param expected — probably the
+  &-arg/isPointer context missing at ordinary call sites for addressable locals — NEXT ROOT,
+  spans packages**; pattern-match non-const labels CS9135 ×5; ushort-vs-IShiftOperators
+  constraint CS0315 ×4 (golib bsearch S,E constraint too tight for uint16 — check emitted
+  where-clause vs golib op interfaces); parse ×2; foreach-var ×1. Then path 7, edwards 13 +
+  fiat 4, dnsmessage tail 9, syscall next-layer 12, io 5, singles.
+
+- **Value-returning defers + interface-tag switches CLEARED (`a6f163022`) — WAVE-16 = 68 / 13.**
+  golib deferǃ gained Func<…,TResult> result-discarding twins (T1..T16); switch equality on a
+  non-empty interface tag routes each case through AreEqual. Guard: InterfaceImplementation
+  extension (switch on error + deferred release(), run-verified). syscall residual 12 (next
+  layer: deferred LAMBDA returning value into void delegate CS8030 ×4, nil-arg delegate
+  inference NilType CS0123, SID value→box args CS1503 ×3, singles). Priority resume: strconv 7
+  (getAccess @ escape), path 7 (variadic alias @), edwards25519 13 + fiat 4, dnsmessage tail 9,
+  io 5, then singles.
+
+- **iface-vs-concrete compares CLEARED (`661359348`) — WAVE-15 = 77 / 13.** The ==/!=
+  arm routes one-sided interface-vs-concrete operands through AreEqual (no public operator can
+  exist for internal-scope pairs; AreEqual reproduces Go's dynamic type+value equality). Guard:
+  InterfaceImplementation errno extension, run-verified. syscall residual 21 (DLL-import
+  'wrong return type' ×8 + misc — triage next), then strconv 7 / path 7 / edwards25519 13 +
+  fiat 4 / dnsmessage tail 9 / io 5 / singles 11.
+
+- **The 131-error Errno family is CLEARED (`9e5fe0990`) — WAVE-14 = 86 errors / 13 packages.**
+  Two coupled sparse-array defects: composite CONSTANT keys now fold to their integer value
+  (mixed named/underlying operand operators were ambiguous, CS0034; symbolic ident keys keep
+  their form — zero churn), uintptr-backed ident keys split the two-user-defined-conversion
+  cast; and golib SparseArray was enumerating with gaps SKIPPED where Go's sparse composite is
+  DENSE (max-index+1, zero-valued holes) — Count/CopyTo/GetEnumerator now gap-fill (a RUNTIME
+  correctness bug: mis-positioned elements + short slices, caught by the new behavioral shape's
+  output comparison). Guard: SparseArrayNamedIntKey extension (errno-over-uintptr, run-verified).
+  syscall residual 30: error-vs-Errno ==/!= CS0019 ×12 (NEXT — Errno implements error via
+  GoImplement; compare emits raw operator, needs the AreEqual route like iface-vs-iface),
+  DLL-import method-group 'wrong return type' ×8, + misc. Then strconv 7 / path 7 /
+  edwards25519 13 + fiat 4 / dnsmessage tail 9 / io 5 / singles.
+
+- **Δ-alias qualifier doubling CLEARED (`a73da0c3c`) — and it was MASKING: WAVE-13 = 217 errors,
+  most of it syscall's newly-visible latent surface.** getTypeName now strips the plain package
+  qualifier before prepending a Δ-renamed alias (`ж<Δsync.sync.Pool>` → `ж<Δsync.Pool>`; io 12 +
+  syscall 10 CS0426 gone; transform/bidi/dnsmessage dependents unblocked). The CS0426s were
+  suppressing downstream diagnostics: **syscall 10 → 161 own-errors, ALL pre-existing latent**
+  (emission byte-identical across recons): `(int)E2BIG` CS0030 ×131 — a SparseArray-index cast
+  of a named-numeric (num:uintptr) Errno needs the two-step underlying route
+  (`(int)((uintptr)E2BIG)`, the documented named-numeric conversion rule — likely sparseArrayKey
+  emits the one-step cast); + error-vs-Errno ==/!= operators ×12; + DLL-import method-group
+  return-type mismatches ×8. io 12 → 5: value→interface conv CS0029 ×3 (`nopCloser` →
+  `ReadCloser` — probably the value-form GoImplement pair not recorded/emitted for these
+  return shapes) + pipe.cs switch-fallthrough CS8070/CS0161 ×2. NEXT ROOT: **syscall Errno
+  SparseArray cast family (131 — one mechanical fix, biggest single family ever)**, then
+  strconv 7 / path 7 / edwards25519 13 / dnsmessage tail 9 / io 5 / singles.
+
+- **bidirule 25 -> 0 (`7d1fa9b8e`): the vendor-namespace family is CLEARED — WAVE-12 = 73
+  errors / 13 packages.** GOROOT-vendored import paths now resolve to their on-disk form
+  (resolveGorootVendoredPath: dotted-domain pre-filter + GOROOT/src/vendor stat) inside
+  convertImportPathToNamespace — the single point all using/namespace text flows through —
+  plus visitImportSpec currentImportPath (queue/alias loader, gated on importing file under
+  GOROOT) and visitFile's canonical-alias dedup checking both key forms (CS1537). No
+  behavioral test possible (corpus can't place packages under GOROOT/src/vendor; byte-identical
+  transpile proves zero behavioral surface). NEXT per census: io 12 + syscall 10 (Δ-alias
+  qualifier DOUBLING — `sync_package.sync` CS0426; getTypeName de-dup guard misses Δ-renamed
+  aliases; ONE family, unblocks transform/bidi/dnsmessage dependents), then strconv 7, path 7,
+  edwards25519 13 + fiat 4, dnsmessage tail 9, singles.
+
+- **dnsmessage 42 -> 9 (`b2db75239`): the biggest census family (addressof-to-interface-LHS 33)
+  is CLEARED — WAVE-11 = 98 errors / 14 packages.** The &-RHS pointer-box assign trigger in
+  visitAssignStmt is now gated on the LHS not being an interface (the adapter IS the interface
+  value; the box form referenced a nonexistent `Ꮡr` + ref-realiased a non-ref local). Guard:
+  InterfaceCasting pick() switch. Campaign continues per the census order below: NEXT bidirule 25
+  (vendor-namespace), then io 12 + syscall 10 (Δ-alias qualifier doubling — one family),
+  strconv 7 (@-escape in getAccess), path 7 (variadic alias @ mid-identifier), edwards25519 13 +
+  fiat 4, dnsmessage tail 9, then singles (reflect 3, plugin 2, rand/v2 2, buffer 2, weak 1,
+  metrics 1).
+
+- **SORT IS AT ZERO (`c2670bac9` stale-file removal + `450834c38` promoted-pointer-adapter) —
+  ZERO CLUB IS NINE. THE WAVE-10 FAMILY CENSUS IS DONE** (15-agent workflow, all 159 errors
+  root-caused; full detail in the workflow output at
+  `%TEMP%/claude/.../tasks/w5of0yct9.output` and the family list below). Two lessons landed:
+  tracked strays from prior converter eras mask real error surfaces (sort 27 were 2), and the
+  Pointer/Promoted GoImplement flags arrive on SEPARATE attribute instances (pre-index pairs).
+
+  **THE FAMILY CENSUS (count, family, codes, packages) — remaining after sort/io strays:**
+```
+ 33  addressof-to-interface-lhs-emits-pointer-box-reassign  [CS0103,CS8373]  (dnsmessage:33)
+ 25  vendored-import-namespace-missing-vendor-prefix  [CS0234]  (bidirule:25)
+ 20  stale-antlr-companion-struct-files-duplicate-typegen-members  [CS0111,CS0262,CS0557,CS0579]  (sort:20)
+ 12  renamed-import-alias-double-qualified-type-name  [CS0426]  (io:12)
+ 10  delta-aliased-import-type-qualifier-doubling  [CS0426]  (syscall:10)
+  7  stale-conversion-of-upstream-deleted-go-file-duplicate-funcs  [CS0111]  (sort:7)
+  7  keyword-escape-prefix-defeats-receiver-access-clamp  [CS0051]  (strconv:7)
+  7  variadic-alias-keyword-escape-mid-identifier  [CS0116,CS1001,CS1002,CS1003,CS1022]  (path:7)
+  6  named-array-pointer-reinterpret-cast  [CS0030]  (edwards25519:6)
+  5  range-value-var-passed-as-ref-receiver  [CS1657]  (dnsmessage:5)
+  4  global-using-alias-rhs-uses-golib-numeric-alias  [CS0246]  (fiat:4)
+  3  composite-literal-untyped-rune-element-loses-contextual-byte-type  [CS0266]  (dnsmessage:3)
+  3  pkg-level-multi-value-var-tuple-not-deconstructed  [CS0029]  (edwards25519:3)
+  3  variadic-pointer-args-after-first-lose-address-name  [CS1503]  (edwards25519:3)
+  2  expr-lambda-composite-literal-brace-truncation  [CS1513]  (reflect:2)
+  2  gotype-any-underlying-emits-object-conversion-operators  [CS0553]  (plugin:2)
+  1  typegen-false-embed-name-equals-type-nested-method-promotion  [CS1929]  (dnsmessage:1)
+  1  stale-legacy-duck-typing-shim-signature-drift  [CS0535]  (io:1)
+  1  slice-to-array-pointer-conversion-as-cast  [CS0030]  (edwards25519:1)
+  1  for-init-heap-escaped-tuple-decl-inline  [CS1003]  (reflect:1)
+  1  type-param-untyped-const-comparison  [CS0019]  (v2:1)
+  1  type-param-numeric-conversion-cast  [CS0030]  (v2:1)
+  1  named-slice-pointer-conversion-cast-between-zh-boxes  [CS0030]  (buffer:1)
+  1  named-slice-to-string-conversion-needs-underlying-unwrap  [CS0030]  (buffer:1)
+  1  uninstantiated-generic-signature-drops-pointer-arg-box  [CS0029]  (weak:1)
+  1  relative-using-alias-captured-by-sibling-child-namespace  [CS0234]  (metrics:1)
+  0  generic-call-type-args-from-result-named-type  [CS0305-latent (masked by CS1513 parse abort; 0 reported this wave)]  (reflect:0)
+```
+  **Priority order by leverage:**
+  1. **dnsmessage 33 — `addressof-to-interface-lhs` (CS0103/CS8373)**: `r = &rb` where r is an
+     INTERFACE local — RHS correctly wraps in the pointer adapter, but visitAssignStmt's &-RHS
+     trigger (lines ~590-597) unconditionally sets the LHS pointer-box context, emitting
+     `Ꮡr = new ΔAResourceᴵResourceBody(Ꮡrb); r = ref Ꮡr.Value;` against a plain interface local
+     (no box exists). FIX: suppress the &-RHS isPointer trigger when the LHS type is an
+     interface — plain `r = new …(Ꮡrb);`. NEXT ROOT.
+  2. **bidirule 25 — `vendored-import-namespace-missing-vendor-prefix` (CS0234)**: consumer
+     namespace text derives from the UNRESOLVED import path (`golang.org/x/text/transform`)
+     instead of the vendor-resolved path — emits `go.golang.org…` refs that live nowhere.
+  3. **io 12 + syscall 10 — Δ-aliased import qualifier DOUBLING (CS0426)**: getTypeName's
+     de-dup guard `!strings.HasPrefix(typeName, pkgPrefix)` misses when the alias was
+     Δ-renamed (computeImportAliasRenames) → `Δio.Δio.Writer`-style doubles. ONE family.
+  4. strconv 7 — getAccess doesn't strip the `@` keyword escape → CS0051 accessibility clamp
+     misjudged. 5. path 7 — variadic Span alias with mid-identifier `@` (`ꓸꓸꓸ@string` parse
+     errors). 6. edwards25519 10 (three pointer/tuple families) + fiat 4 (global-using alias
+     rendering golib numeric aliases). 7. dnsmessage tail: range-var ref-receiver CS1657 ×5
+     (extend rangeVarReassignedInBody to ref-receiver calls), rune-const contextual type ×3,
+     TypeGenerator false-embed (name==type heuristic on NAMED fields — Header's `RCode RCode`)
+     ×1. 8. reflect 3, plugin 2 (GoType-any conversion operators CS0553), math/rand/v2 2
+     (type-param const/conversion), buffer 2, weak 1, metrics 1 (carryovers).
+
+- **internal/reflectlite IS AT ZERO (`43144d186`) — ZERO CLUB IS EIGHT: runtime, iter, sync,
+  slices, maps, internal/godebug, math/rand, internal/reflectlite. MASSIVE UNMASK — WAVE-10 =
+  159 errors / 15 packages as the middle-stdlib tier builds for the FIRST time** (previously
+  skipped dependents of reflectlite): vendor/x/net/dnsmessage 42, sort 27, vendor/x/text/
+  bidirule 25, io 13, crypto/edwards25519 13, syscall 10, strconv 7, path 7, nistec/fiat 4,
+  reflect 3, plugin 2, math/rand/v2 2 + the old buffer 2 / weak 1 / metrics 1. Codes: CS0234 26,
+  CS0426 22, CS0103 22, CS0111 21 (!dup members — likely a generator/case-twin family), CS8373
+  11, CS0030 10. NEXT: census the wave FIRST (families likely span packages — CS0111 smells like
+  one root; CS0234/CS0426 may be the namespace/rename families) — census-first campaign like the
+  generic-constraint one; pick the biggest family as the next root.
+  The reflectlite closer (3 pieces, one commit): (a) embedded-pointer hop names the FIELD
+  (struct-scoped, structFieldBoxName — `t.ΔType` CS1061); (b) generated interface impls forward
+  promoted members through the hop (`this.Type.Value.Size()` — CS1929; adapter parity too);
+  (c) core's old-stub reflectlite files unmarked (GoManualConversion removed + provenance note)
+  so the overlay stops shadowing the auto output — core baseline unchanged and still green;
+  wholesale core modernization banked. Guarded by CrossPkgUser Phase-5 (Δ-collision embed field
+  + promotion-only interface satisfaction + aliasing, vs Go).
+
+- **math/rand IS AT ZERO (`e88be09ff`) — zero club: runtime, iter, sync, slices, maps,
+  internal/godebug, math/rand. WAVE-9: 14 errors / 4 packages = the ENTIRE stdlib frontier:**
+  1. **internal/reflectlite 10 -> 4 real — NEXT** (stale old-stub hand files
+     `src/core/internal/reflectlite/{type,value,swapper}.cs` shadow good auto output via overlay
+     — delete/modernize, move the `*_impl.cs` halves from committed go-src-converted into core as
+     hand-owned canon, reconcile the csproj Compile-Removes; then 4 real = embedded-`*abi.Type`
+     promotion: `rtype.ΔType` CS1061 x2 + `Size`/`Kind` CS1929).
+  2. log/slog/internal/buffer 2 (named-slice-wrapper convs: `(*Buffer)(&b)` reinterpret +
+     `string(*b)` — route through underlying slice).
+  3. internal/weak 1 (`abi.Escape(ptr)` T=*T arg must render box `Ꮡptr`).
+  4. runtime/metrics 1 (CS0234 `go.runtime.@internal.godebugs_package` relocation).
+
+  The math/rand closer: an untyped constant shift NESTED in a larger constant expr stays untyped
+  (go/types converts at the outermost node), so no width-cast reaches it and C# computes it in
+  int32 — `int64((1<<63) - 1 - (1<<63)%uint64(n))` (Int63n CS0220) now folds the constant subtree
+  to `9223372036854775807UL`. Trigger deliberately narrow (untyped OPERATOR subtree beyond int64,
+  plain-uint64 target): the first broader cut regressed runtime hash64/mranges by stealing
+  already-working shapes (named-const Untyped* wrappers; signed-fold-on-recursion) — the narrow
+  trigger is load-bearing, see ConversionStrategies. NOTE: the signed-fold base
+  (`overflowingConstLiteral`) arrived from the USER in a parallel edit this session.
+
+- **THE POINTER-INTERFACE ADAPTER MODEL LANDED (`2a44886b1`, 18 files, all three ships) — math/rand
+  28 → 1, WAVE-8 = 15 errors / 5 packages.** A Go interface value created from a pointer now emits
+  a generated `IжAdapter` class wrapping the receiver box (`[assembly: GoImplement<T, Iface>
+  (Pointer = true)]` → `sealed class TᴵIface(ж<T> box) : Iface, IжAdapter`): exact Go aliasing
+  (interface calls mutate the original), direct-ж members bind (`m_box.M()`), `s.(*T)` unwraps to
+  the same box (golib `_<T>` + AreEqual unwrap `IжAdapter.Box`), equality is box identity.
+  Cast-site coverage: call args (convExprList), keyed composite fields (convKeyValueExpr), var
+  decls (visitValueSpec) — pointer operands render as the box via isPointer ident context;
+  `iface == ptr` emits `AreEqual(box…)` (was `~p` copy-compare); interface-inheritance de-dup
+  exempts pointer pairs (Source vs Source64 CS0246). Value-sourced casts keep the partial-struct
+  form (Go copies there). KNOWN LIMITS (fine for corpus, revisit if surfaced): cross-package
+  pointer casts keep deref-copy (adapter only exists in impl assembly); adapter-to-OTHER-interface
+  assert not unwrapped. OPEN ITEM SPOTTED: a Go method named `Value` on a pointer type collides
+  with `ж<T>.Value` property at box call sites (`c.Value()` binds the property, CS1955) —
+  the val→Value rename made this reachable; needs a collision Δ-rename or emission guard.
+  Guards: InterfaceCasting extension (aliasing both directions, assert-back, `back == c`,
+  run-verified vs Go), InterfaceImplementation output comparison. Suite 217/217; churn exactly 2
+  projects, re-goldened.
+
+  **WAVE-8 (recon92 full sln warm double): 15 errors / 5 packages:**
+  1. internal/reflectlite 10 → 4 real (stale hand files, see wave-7 triage below — unchanged).
+  2. log/slog/internal/buffer 2 (named-slice-wrapper convs — unchanged).
+  3. internal/weak 1 (abi.Escape box arg — unchanged).
+  4. runtime/metrics 1 (godebugs ns — unchanged).
+  5. math/rand 1 — **CS0220 rand.cs:89 + CS8778 rng.cs — int64-range consts typed nint** (NEXT:
+     mechanical; the untyped-const context defaults to nint where the Go type is int64 —
+     rngCooked array literal + `1<<63` shift site).
+
+- **math/rand 28 → 6 (`118a38a3e`): Roslyn hintNames are case-INSENSITIVE — Go's exported/
+  unexported case-twins (`Int31n`/`int31n` on `*Rand`) crashed RecvGenerator (CS8785), which
+  suppressed EVERY ж-overload in the package (26 CS1929 cascade).** Both RecvGenerator and
+  ImplementGenerator now route hintNames through `GetUniqueHintName` (TypeGenerator/
+  ImplicitConvGenerator already did). Guarded by ReceiverFieldMethodCall's `Add`/`add` case-twin.
+  Suite 217/217; zero club re-verified (runtime/iter/sync/slices/maps/godebug all 0).
+  **math/rand's remaining 6 = three roots:**
+  1. **Direct-ж interface members (.g.cs CS1929 ×2) — DESIGN ITEM, likely design-WITH-user.**
+     `lockedSource`'s `Int63`/`Seed` are direct-ж (`this ж<lockedSource>` — Lock on a Mutex
+     field), so InterfaceImplTemplate's `this.Int63()` can't bind, and NO ref twin can exist
+     (a ref twin would box a copy of the Mutex — liveness bugs). Options analyzed:
+     (a) **C#-interface-box model**: emit the struct VALUE at `*T → iface` cast sites (C#'s
+     boxing makes the interface box THE object; mutations through interface calls persist) —
+     but the interface box and any ж<T> box are then DISTINCT objects (aliasing divergence when
+     Go uses both paths), and direct-ж members still can't be called from `this`.
+     (b) **Generated adapter class**: `sealed class lockedSourceᴵSource(ж<lockedSource> box) :
+     Source { long Source.Int63() => box.Int63(); }` — EXACT Go aliasing (interface holds the
+     shared box), but type asserts (`src._<ж<rngSource>>(ᐧ)`) must learn to unwrap adapters.
+     (c) golib `ж<T>` implementing interfaces — impossible cross-assembly.
+  2. **Interface casts in composite-literal fields (CS1503 ×2 + CS0023)**: `new Rand(src:
+     Ꮡ(new runtimeSource(nil)), …)` — Go `&Rand{src: &runtimeSource{}}` stores `*runtimeSource`
+     into a `Source` field; the direct-call-arg path already emits the value form
+     (`New(new lockedSource())` line 355 compiles — C# boxes into the interface) but
+     composite-literal FIELD values keep the `Ꮡ(...)` box (CS1503); plus a `~` deref applied to
+     a runtimeSource value (CS0023, nearby). Mechanical-ish converter fix; NOTE it commits to
+     model (a) semantics for stateless sources — fine here, but see root 1 design.
+  3. **nint const overflow (CS0220 rand.cs:141 + CS8778 warnings rng.cs:21)**: int64-range
+     constants (`4181792142133755926`) typed as nint in emission — likely an untyped-const
+     context defaulting to nint where the Go type is int64. Separate mechanical root.
+
+- **internal/godebug IS AT ZERO (8 → 0, two roots, `75cb9fdd8` + `6cb858e2d`) — the os/time/net
+  gate is OPEN.** Root 1: `packageQualifiedNameRegex` didn't carry the `@` keyword escape, so the
+  root-qualifier spliced `go.` INSIDE `@internal.bisect_package.Writer` → `@go.internal…` (a parse
+  error; syntax errors MASKED the real count — 8 were 2). Root 2: **pointer-receiver METHOD VALUES
+  in value contexts** (`s.nonDefaultOnce.Do(s.register)`, `registerMetric(…, s.nonDefault.Load)`)
+  emitted bare selectors — C# can't form a delegate from a value-type-receiver extension
+  (CS1113/CS1061). Now emitted as **box-bound method groups** (`Ꮡs.register`,
+  `Ꮡs.of(Setting.ᏑnonDefault).Load` — Go's bind-once address semantics exactly), with a new
+  capture-mode detector (`bodyHasPointerMethodValueOnReceiver`) promoting the enclosing method to
+  direct-ж so the box exists. Guarded by the `ReceiverFieldMethodCall` extension. Zero club intact
+  (runtime, iter, sync, slices, maps re-verified 0 on recon91).
+
+  **WAVE-7 (recon91 full sln, warm double): 36 errors / 6 packages.** math/rand (28) is an
+  UNMASK, not a regression — it was a silently-SKIPPED dependent of failing godebug in wave-6
+  (emission byte-identical recon90↔recon91):
+  1. **math/rand 28 (26 CS1929 + 2 CS1503 + CS0220) — NEXT, biggest + generator-level.**
+     `ImplementGenerator` maps interface members to `this.M()`, but `lockedSource`'s methods are
+     **direct-ж** (`this ж<lockedSource>` receivers) → `this.Int63()` doesn't bind (CS1929 ×26
+     cascade). Design needed: explicit interface impls on a direct-ж method — a struct's `this`
+     has no box; options: RecvGenerator ref-receiver twin for interface mapping, or the impl
+     routes `new ж<T>(this)`-style (semantics! interface calls on a COPY vs Go's *T receiver —
+     think before coding; Go passes the *lockedSource INTERFACE value, so the runtime object IS
+     already a box — maybe GoImplement should target `ж<lockedSource>` instead of the struct).
+     Plus CS1503 ×2: `ж<runtimeSource>` → `Source`/`Source64` param (interface conv through box)
+     and rand.cs:141 CS0220 checked-mode constant overflow.
+  2. **internal/reflectlite 4** (was 10). The 10 came from STALE hand files —
+     `src/core/internal/reflectlite/{type,value,swapper}.cs` are old-stub-era, with the
+     `rtype`/`flag` declarations and defining partials INSIDE `/*…*/` blocks; overlay restores
+     them over good auto output. Composing recon91 auto + committed `*_impl.cs` halves = 4 real
+     errors: CS1061 ×2 `rtype.ΔType` + CS1929 `.Size`/`.Kind` — embedded-`*abi.Type` method
+     promotion through `rtype`'s embedded pointer field. Root: delete/modernize the three stale
+     hand files (keep impl halves — they live ONLY in committed go-src-converted, reconcile with
+     "manual is hand-owned in core"), fix the embedded-pointer promotion. NOTE: the COMMITTED
+     reflectlite csproj `<Compile Remove>`s the impl files + comments out unsafeheader/runtime
+     refs; the recon csproj includes them — reconcile intentionally.
+  3. **log/slog/internal/buffer 2** — named-slice-wrapper conversions: `(*Buffer)(&b)` box
+     reinterpret `ж<slice<byte>>`→`ж<Buffer>` (CS0030) and `string(*b)` Buffer→@string (CS0030
+     — route through the underlying slice).
+  4. **runtime/metrics 1** — CS0234 `go.runtime.@internal.godebugs_package` (Go
+     runtime/internal vs internal/runtime layout relocation; check importSpec emission/csproj ref).
+  5. **internal/weak 1** — pointer.cs:61 CS0029: `Ꮡptr = abi.Escape(ptr)` — generic arg where
+     T instantiates to `*T` must render the BOX (`abi.Escape(Ꮡptr)`); instantiated-signature
+     pointer context missing on the argument.
+
+- **THE RUNTIME MILESTONE IS REACHED (2026-07-02): `src/go-src-converted/runtime` builds with
+  ZERO errors — 952 → 0.** The bottom of the dependency graph, the hardest package in the Go
+  standard library, compiles as C#. The final root (`3bb2ea000`) was the shared block-tracker
+  `processing` flag being cleared by a nested block's exit while the enclosing block was still
+  mid-visit, so a declaration FOLLOWING a closed nested block skipped the enclosing-scope shadow
+  check (procresize's `Δtrace` CS0136). **THE GENERIC-CONSTRAINT CAMPAIGN IS COMPLETE (`a7c8165a8`) — slices AND maps at ZERO** (87
+  errors at wave-4 → 0 across 9 roots). ZERO CLUB: runtime, iter, sync, slices, maps.
+  **WAVE-6 (recon89): 22 errors, five packages — the ENTIRE remaining frontier:**
+  1. internal/reflectlite 10 — CS0759 ×7 (manual *_impl.cs implementing halves vs auto defining
+     halves — triage signature/merge mismatch) + CS0246 rtype/flag ×3 in package_info.
+  2. internal/godebug 8 — GATES os/time/net (highest unmask leverage — DO FIRST).
+  3. log/slog/internal/buffer 2.
+  4. runtime/metrics 1 — CS0234 go.runtime.@internal.godebugs_package namespace/ref.
+  5. internal/weak 1 — pointer.cs:61 CS0029 T→ж<T>.
+
+  **CAMPAIGN PROGRESS 7: range-over-func LANDED (`186a67112`) — SLICES AT ZERO (74 → 0),
+  maps at 2.** Named/generic Seq detection (Underlying unwrap + pre-unwrap named flag), method-
+  group `.Invoke` emission with explicit `range<T>` args (C# can't infer from group params),
+  golib two-value `range<T1,T2>` overload; result-TypeArgs gate refined (conversions + generic
+  callees only — countdown<nint>(5) was CS0308, NewOption(42) needs <nint>). ZERO CLUB: runtime,
+  iter, sync, SLICES. **THE GENERIC CAMPAIGN'S LAST TWO ERRORS (maps): (1) maps.cs:68 CS8761
+  `m == nil` on constrained M — read Go maps.go:68 for the actual check, likely emit
+  AreEqual(m, default(M)) or an IMap-IsNil route; (2) maps.cs:95 delete inference — golib
+  `delete<K, V>(IMap<K, V>, K)` overload (K,V infer from IMap ref conversion).** At campaign
+  ZERO: full sln warm double → bucket unmasked (cmp users, internal/godebug tier next).
+
+  **CAMPAIGN PROGRESS 6: named-map + comma-ok-through-constraint LANDED (`9e87f265f`) — maps
+  13 → 5.** Four coupled gaps: typeParamMapCore detection (assign gate + convIndexExpr),
+  named-map composite wraps concrete literal in ctor, visitMapType COMPLETED (was a stub ToDo —
+  defined map types were never declared), and IMapTypeTemplate CREATED (the generator's Map
+  template was a commented-out line with no file). REMAINING GENERIC CAMPAIGN (6 total):
+  range-over-func on generic Seq/Seq2 (slices 1 + maps 3 — THE next root), nil-compare on
+  constrained M (CS8761, maps.cs:68 `m == nil` — emit via IsNull/Length? design), one delete
+  inference (maps.cs:95 — golib delete IMap overload). Then untyped-const→E. Then FULL SLN
+  warm double for the next unmask (cmp users etc).
+
+  **CAMPAIGN PROGRESS 5: `comparable` erasure LANDED (`2cb0e7804`, delegated decision)** — Go
+  comparable emits NO C# constraint beyond new() (`where K : /* comparable */ new()`); golib
+  comparable<T> kept for separate removal. maps' comparable/delete failures cleared, exposing the
+  next layer (count holds 13, all-new shapes): **comma-ok on constrained maps** (`v, ok := m[k]`
+  where M is IMap<K,V>-constrained — needs an IMap comma-ok surface matching what concrete
+  map<K,V> emits, golib+possibly converter) ×~9, and **range-over-func on generic Seq/Seq2**
+  (slices' survivor too — `for v := range seq` / `for k, v := range seq2` on iter delegates;
+  find visitRangeStmt's yieldFunc arm and why generic/cross-pkg delegates miss it) ×~4.
+
+  **CAMPAIGN PROGRESS 4: S-where-[]E materialization LANDED (`fad2e3a36`) — slices 22 → 1.**
+  Per-arg wrapArgWithNew hook emits `new slice<E>(arg)` (SHARING ctor — fixed to unbox the
+  full-window interface sub-slice; `Source` is a detached copy, caught by the PassSlice
+  write-through gate); Span-twin append kills the CS9244 betterness trap; subslice3 covers the
+  3-index form. **slices' SURVIVOR (1): range-over-func on generic iter.Seq[E]** (`for v :=
+  range seq` — iter.cs:57 `range(seq)` binds nint overloads; needs the range-over-func emission:
+  `seq((v) => { body; return true; })` shape — converter feature, next root candidate).
+  maps 13 = delete builtin inference + comparable<T> decision (emit NO C# constraint for Go
+  comparable + AreEqual routing — delegated). Untyped-const→E still recorded.
+
+  **CAMPAIGN PROGRESS 3: S-preserving sub-slice/append LANDED (`845fc37c5`) — slices 31 → 22.**
+  ISliceWrap<TSelf,T> static-abstract factory + sharing slice<T>(ISlice<T>) ctor + golib
+  subslice<S,E>/append<S,T> + ~[]E where-clause carries ISliceWrap + convSliceExpr type-param arm
+  (core type via constraint type-set — a TypeParam's Underlying() is its constraint INTERFACE).
+  BONUS latent fix: named-slice wrapper template sub-slices routed ToSpan() = DETACHED COPIES
+  (silent Go-aliasing divergence for all named slice types) — now share via m_value. Remaining
+  slices 22: S-where-[]E-expected assignability (rotateRight family), untyped-const→E, Span
+  singles. **USER-REPORTED GoImplicitConv root LANDED (`e346ffd10`)**: attribute-safe names
+  (named form / visitor lifted name / registry / deferred marker resolved post-barrier; drop
+  unresolvable + self-pairs — CS0555). Corpus: zero raw struct text or unresolved markers in all
+  305 package_info files; behavioral corpus byte-identical.
+
+  **CAMPAIGN PROGRESS 2: golib interface-typed builtin overloads LANDED (`92ffc80d8`) — slices
+  68 → 31** (copy(ISlice,ISlice)+string form, clear(ISlice), 2-arg min/max on
+  IComparisonOperators; write-through via the constraint box's shared backing; exact overloads
+  keep concrete calls unchanged — golib-only root, no reconvert). REMAINING slices 31: CS0266 ×9
+  + CS0411 ×4 + CS1503 ×9 = the S-PRESERVING SUB-SLICE design family (s[i:j] on constrained S
+  yields ISlice<E>, pdqsort recursion — candidate: ISupportMake<S> reconstruction, converter- or
+  golib-side); CS9244 ×8 = append-through-constraint (append(S, S...) → Span-as-type-arg;
+  candidate golib append<S,T>(S, params ReadOnlySpan<T>) where S : ISlice<T>, ISupportMake<S>);
+  CS0029 ×1. Plus the untyped-const→E conversion gap (`E(100)` emits `(E)100` CS0030 — A-bucket).
+  maps 13 = delete inference + comparable<T> decision.
+
+  **CAMPAIGN PROGRESS: explicit-type-args root LANDED (`3694611d0`) — slices 74 → 68, all 14
+  CS0411 cleared** (constraint-only type params render resolved instantiations from
+  info.Instances; partial Go instantiations replaced via balanced strip — the `Grow<S><S, E>`
+  parse error had been masking slices' semantic count). Remaining 68 = the B-bucket golib
+  generic-overload family (copy/append CS1503+CS9244, ISlice<E>→S CS0266 subslice family) —
+  NEXT ROOT. maps 13 unchanged (delete inference + comparable).
+
+  **WAVE-5 (2026-07-02 night, recon77, sync+iter at ZERO): 109 errors.** sync's clearing
+  (`7b8f56075` defined-pointer-type root) unmasked **internal/godebug (8)** — which itself gates
+  the os/time/net tier — and log/slog/internal/buffer (2). Buckets: slices 74 + maps 13 (the
+  generic-constraint campaign below), reflectlite 10, godebug 8, slog/buffer 2, metrics 1, weak 1.
+
+  **GENERIC-CONSTRAINT CAMPAIGN MAP (census, 4 agents, 2026-07-02 late).** The `S ~[]E` machinery
+  EXISTS and is sound: `where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, new()` (main.go:2557-2604),
+  `~map[K]V` → `IMap<K,V>, ISupportMake<M>` (ZERO test coverage + a naive `]`-split parse hazard at
+  main.go:2569), `string|[]byte` → `IByteSeq<byte>`, `cmp.Ordered` → lifted operator interfaces
+  only. Element access/len/range work through the golib interfaces with no conversions. 13 error
+  shapes, 87 lines, three buckets, NO manual-stub candidates:
+  - **B golib-surface (~44, DO FIRST)**: `copy` with ISlice dst ×30, generic `append`+Span overload
+    ×8, IMap `delete` overload, min/max via IComparisonOperators ×2, ISlice 3-index slice ext,
+    Seq2 range overload.
+  - **A converter (~21)**: explicit type args where C# can't infer constraint-only params (Go
+    infers via core types — `Sort<S,E>(S)` CS0411), materializer insertions, comma-ok indexer on
+    IMap, `range seq.Invoke`, CS9244 = converter emits Span<E> as a generic type ARGUMENT (golib
+    has no ref-struct issue — slice<T> is a readonly struct).
+  - **C design (~11)**: S-preserving sub-slice (slicing S returns ISlice<E>, loses S — candidate:
+    ISupportMake<S> reconstruction) + nil-comparison for constrained params.
+  - **`comparable<T>` is BROKEN by design**: a CRTP interface NOTHING implements (golib TODO says
+    delete) — every real instantiation fails (blocks maps.Keys). Likely fix: emit NO C# constraint
+    for `comparable` (Go already validated; equality routes through AreEqual) — decision needed.
+
+  **WAVE-4 MEASURED (2026-07-02 late, recon76, after iter cleared): 100 own-errors** —
+  the iter unmasking worked: **slices (74) + maps (13)** are the new frontier, the
+  GENERIC-CONSTRAINT family (`S ~[]E`/`M ~map[K]V` type params vs golib `slice<E>`/`map<K,V>`:
+  CS1503 ×40 constrained-S vs concrete-slice seams, CS0411 ×14 inference failures, CS9244 ×8
+  `Span<E>` as type argument in generics, CS0266/CS8130/CS8129 mixed). This is a DESIGN-LEVEL
+  campaign in constraintOperations.go + golib's ISlice/slice surface — open it census-first.
+  Remaining singles: internal/reflectlite 10 (CS0759/CS0246 seams), internal/weak 1 (CS0029),
+  runtime/metrics 1 (CS0234 godebugs), sync 1 (CS1585 stray line — clearing it unmasks the
+  os/time/net tier). iter: ZERO (`80c62fe41` func-literal named results was its last root).
+
+  **WAVE-1 MEASURED (2026-07-02, recon71): 19 own-errors in FIVE leaf packages gate the whole
+  solution** (dependents skipped; everything else green or masked):
+  1. **internal/reflectlite (9)** — CS0759 ×7: manual `*_impl.cs` implementing halves vs auto
+     defining halves (both exist — suspect signature/merge mismatch, possibly downstream of the
+     CS0246 ×3 `rtype`/`flag` missing in package_info.cs); triage the auto-emitted type names first.
+  2. **iter — generics root LANDED (`779b13a26`)** (generic delegates + IndexListExpr conversion
+     peel) and **the CS0576 namespace/alias collision family LANDED (`c45818a09`)**: golib's
+     support namespace renamed `go.runtime` → `go.golib` (never `go.<Go pkg name>`), and the
+     general parent/child form (runtime.csproj → runtime/internal/*, sync → sync/atomic) fixed by
+     Δ-renaming captured import aliases (`using Δruntime = runtime_package;`) via a transitive-
+     closure pre-pass (importAliasOperations.go). iter's remaining errors: CS0103 ×5 — `v1`/`ok1`/
+     `k1` are NAMED RESULT PARAMETERS of the `next`/`stop` func literals (`func() (v1 V, ok1 bool)`)
+     that the lambda emission never declares; a bare `return` emits `return (v1, ok1);` with
+     nothing in scope. Root: func-literal named results need local decls + returns (visitFuncLit /
+     the named-results machinery that visitFuncDecl already has).
+  3. **internal/weak (2)** — pointer.cs CS0029 `T` → `ж<T>` (line 61) + CS0576 namespace/alias
+     `runtime` conflict (line 66).
+  4. **runtime/metrics (1)** — CS0234 `go.runtime.@internal.godebugs_package` missing: stale
+     namespace/csproj ref for the Go 1.23 runtime/internal → internal/runtime godebugs relocation.
+  5. **sync (1)** — poolqueue.cs:59 CS1585: a stray bare `ж<EmptyStruct>` line emitted between
+     declarations (mangled decl emission).
+  Known deeper-wave item (masked for now): `database/sql/convert.cs` invalid `var d.Value = …`
+  (deref-assign into a var decl, pre-existing).
+- **2026-07-02 (latest three roots):** (1) **escape-hoist grouping** (`bd45b5bd7`, 4→2): one
+  hoisted loop-var box per name per container; typesEqual CS0128 pair cleared; retired 42 corpus
+  files' spurious old-pass renames. (2) **val → Value rename** (`5912ba9fd`, user-directed):
+  ж<T>.val + IPointer<T>.val + generated-wrapper val → `Value` across golib/generators/converter/
+  hand-owned core/Examples/goldens/docs (263 files; suite 217/217; slnx 0 errors; corpus parity
+  held; three adversarial verify agents, findings fixed pre-commit). DerefOrNil KEPT — census
+  proved it guards the nil BOX (null ж<T> receiver, extension-method-only) and returns a throwaway
+  slot, complementary to ValueSlot's real-slot no-check read; NOT subsumed. (3) **storage-root
+  escape analysis** (`fda9a52f5`, user-spotted, 2→1): a pointer arg escapes only its peeled
+  storage root — loop indexes inside args (`typesEqual(tin[i],…)`, `&xs[i+1]`) no longer
+  heap-box; 63 corpus files shed spurious boxes (22 runtime); trace.cs CS8175 DISSOLVED with its
+  spurious `gen` box; typesEqual emits plain `for (nint i…)` loops.
+- **2026-07-02 (latest): the &GLOBAL/double-pointer family landed (`f454a7106`; runtime 8 → 4).**
+  Pointer-typed addressed globals (`var head *node` → `ж<ж<node>>`) now support the faithful
+  runtime walk (`for pp := &head; *pp != nil; pp = &(*pp).next { *pp = n }`): one star = ONE deref
+  (removed the depth>1 extra-`.Value` arm — mheap specialsIter CS0029); a deref whose RESULT is
+  reference-like reads golib **`ValueSlot`** (real slot, no nil check — Go reads nil held pointers
+  freely, only *deref* panics; writes persist), value-producing derefs keep strict `.Value`;
+  `&global` = identity box `Ꮡallm` never a copy; `&(*pprev).field` peels into
+  `pprev.Value.of(m.Ꮡalllink)` (proc allm CS1061, iface itabTable CS1929). New `GlobalPointerWalk`
+  behavioral test (insert/remove/method through global `**node`, output parity); six goldens
+  re-baselined to ValueSlot; suite 217/217. ConversionStrategies *Pointer-typed globals* section.
+  Earlier this cadence: `Value` field rename (`a89b2772f`), named-over-array family
+  (`47ddd5a50`, 19→8, incl. the golib `ж.at` lazy-backing materializer caught by output gate).
+  Noted in passing (wave, not runtime): `database/sql/convert.cs` emits invalid `var d.Value = …`
+  (pre-existing, deref-assign into a `var` decl — bucket when the 237-package wave starts).
+- **2026-07-02 (latest): the distinct golib `uintptr` struct LANDED (`a2f52f726`; user green-lit;
+  runtime EXACTLY 19 — error-neutral by design, the root buys identity fidelity).** uint and
+  uintptr are distinct C# types again: type switches carry their original `case uintptr:` labels
+  (the CS8120 merge is dormant for the pair — error.cs/fmt/bisect/slog all restored), `%T` is
+  truthful (`System.UIntPtr`→"uint", `go.uintptr`→"uintptr"), `map[any]` keys are distinct, and
+  the TypeSwitch test now compiles uint/uintptr cases with DIFFERENT bodies (impossible under the
+  alias) with output parity vs Go. Six-cycle 305-package tail convergence (4→99→3→1→81→33→19);
+  hard-won C# conversion-design rules recorded in ConversionStrategies + memory (encompassing is
+  standard-conversions-only so user ops never chain; partial outbound operator sets are unstable —
+  none or the FULL exact matrix; struct consts → static readonly with ==/if-else pattern
+  fallbacks; Interlocked needs the inner public m_value; IBinaryInteger generics need non-generic
+  overloads). Empirical adversarial review (probe-compiled against live golib) — matrix held
+  against every legal-Go shape; its 4 findings applied pre-commit (straggler csproj, dead-code
+  revert, inbound floats, the Equals nuint arm that asymmetrically re-erased identity). Bonus
+  review catch, fixed separately (`054e13f9a`): sync/atomic OrUint32/OrInt64/OrUint64 called
+  Interlocked.AND — a pre-existing silent atomic bug.
+- **(superseded same day) the distinct golib `uintptr` struct — SIZED AND DEFERRED with analysis
+  (iteration 8; no commit — deliberate stop, not a failure).** The census found the seams run
+  deeper than the morning sketch: (1) the alias is an **MSBuild `<Using Include="System.UIntPtr"
+  Alias="uintptr"/>` item baked into EVERY csproj** (converter template + committed
+  go-src-converted csprojs + golib/unsafe/core + ~180 behavioral csprojs + Examples +
+  `core/GlobalUsings.cs`) — the swap is a repo-wide csproj/template change, and duplicate-alias
+  rules mean the old items must be REMOVED, not overridden; (2) golib's unsafe seams do raw
+  memory math on the alias (`ж.cs` `explicit operator ж<T>(uintptr)` reads `*(T*)value`;
+  `Pointer : ж<uintptr>` with implicit both ways; builtin.cs ×8) — rewritable to `.m_value` but
+  delicate; (3) the `[GoType("num:uintptr")]` generator template's named↔underlying operators
+  need a chain audit (two user-defined conversions won't chain); (4) the manual Interlocked
+  files (lock_sema_impl, sync/atomic) must target the inner field (`ref l.key.m_value` —
+  `Interlocked` cannot take a ref to the struct). The GOOD news: emitted **text** barely changes
+  (`uintptr` still spells `uintptr` — resolution changes, not spelling), so corpus/golden churn
+  ≈ 0 and the risk is concentrated in compile errors across the 305-package build with an
+  unknown iteration tail. **Recommendation: a dedicated block (side-session worktree like the
+  benchmarks branch, or the next overnight run) with its own adversarial review — not a mid-day
+  squeeze.** Quality-of-life root; nothing in the compile milestone depends on it.
+- **2026-07-02: iteration 6 — the managed lock/note model (`0b37c61e7`; count unchanged
+  at 19; the reviewer-mandated Phase-4 artifact).** lock_sema's six protocol functions hand-owned:
+  mutex = `{0, locked}` Interlocked test-test-and-set spinlock on the real key storage with
+  SpinWait escalation; note = signaled/clear latch (loud diagnostics preserved). Adversarial
+  review: ZERO confirmed defects (mutual exclusion airtight, nuint Interlocked shapes
+  compile-verified on net9, protocol compatibility proven); recommendations applied
+  (Volatile.Read polls, corrupt-key throws, platform-coupling comment). **The mutex path is LIVE
+  today** (lock/unlock → lock2/unlock2 with no getg in the route). **⭐ KEYSTONE FUTURE ROOT: a
+  `[ThreadStatic]` g/m model realizing `getg()`** — the compiler intrinsic is a throwing stub
+  that poisons the note wrappers and all m.locks/preempt bookkeeping; landing it is what turns
+  "compiles" into "runtime-operational" for scheduler-adjacent code.
+- **2026-07-02: iterations 4+5 — the last CS0030 and CS0019 are EXTINCT (`3c507c3cd`
+  21→20, `c87702e8b` 20→19).** Same family, two arms: (4) a COMPUTED untyped-const operand in
+  concrete arithmetic (`arg0 + 4*goarch.PtrSize`, stkframe) types the whole expression UntypedInt —
+  breaking conversions AND silently mistyping `var` inference (zip's nsecs inferred double; fixed
+  by the class); the arithmetic cast arm now fires on computed const operands CONTAINING a named
+  untyped ref (Go-conversion operands excluded after a double-cast wart; 56-file uniform audit).
+  (5) the same shape under a NAMED-numeric BITWISE result (`tp & (1<<taggedPointerBits - 1)`,
+  tagptr) casts to the UNDERLYING basic — narrowed to arithmetic-SHAPED masks after a 24-file
+  over-fire (bitwise-shaped consts are already recursively wrapped; final audit 10 files uniform).
+  **taggedPointer re-triaged as a NUMBER** (its Windows identity rides an OS completion key through
+  netpoll; netpoll+lfstack are superseded metal) — the manual-type label was wrong, the triage rule
+  held. ALSO: `08718b3c6` numeric literal formatting preservation (user request: hex/binary/`_`
+  survive; 246-file mechanically-verified audit; goldens re-baselined). Tests: NativeIntConstMask +
+  NamedTypeBitwiseConst extensions (output parity). Suites 216/216 at every gate.
+- **2026-07-02 (latest): Option C iterations 2+3 — the gclinkptr PIVOT and two general
+  conversion-hop arms (`639c704e2` 26→22, `d07772473` 22→21).** gclinkptr was queued as a
+  managed-slot manual type, but every Go constructor is raw span-address arithmetic
+  (`gclinkptr(s.base()+i)`) — there is never a box to hold, so the faithful model is the NUMBER
+  it already is. **Triage rule extracted: re-check every "manual type" label against the type's
+  actual Go constructors — referent-holding types (the trio pattern) get manual slots;
+  address-arithmetic types stay `[GoType num]` and get general converter arms.** The two arms
+  (both durable general capability, funded by the end-goal test): (1) named-uintptr →
+  unsafe.Pointer hops through the underlying (`((@unsafe.Pointer)(uintptr)v)`; 3-file surgical
+  audit, zero churn by construction); (2) named→named numeric with an IDENTICAL underlying also
+  hops (`((Δhex)(uint64)work.full)` — the skip trusting the exact [GoType] operator is right only
+  for BASIC operands; 27-file audit, every line the same class, idna verified zero own-errors).
+  Tests: UnsafePointerReinterpret linkaddr round-trip; NamedNumericPointerReinterpret named→named
+  (output parity). CS0030 is down to 1 (stkframe UntypedInt). Suites 216/216 at both gates.
+- **⚖ RULINGS (2026-07-02 morning, user):** end-goal lens = the two use cases (library: "use Go
+  code in my C# project"; application: "extend a Go app in C#"); **NOTHING-THROWAWAY** — if an
+  implementation would be manually replaced in Phase 4 anyway, build the manual replacement NOW.
+  **Decision A → Option C** (hand-owned managed-slot types, not converter-machinery A nor
+  copy-box B); distinct golib `uintptr` struct approved as its own root; Decision B
+  (named-over-array) + &GLOBAL family = durable general converter work, design WITH the user.
+- **2026-07-02 (latest): Option C iteration 1 — manual type-level conversion + managed-slot
+  guintptr family (`abf928c3d`; CS0030 −3 + CS1503 −1 + CS1929 −1, 29 → 26).** New
+  `manualTypeOperations.go` registry: converter skips listed type decls, their methods, listed
+  adjacent funcs (g.guintptr, setG/MNoWB), and GoImplicitConv attrs (both plain and Δ-renamed
+  forms — the Δguintptr miss was caught by the first measurement); call sites cooperate via the
+  referent-preserving ctor arm (`new Δguintptr(newg)`, convCallExpr) and the box-receiver arm
+  (`Ꮡgp.guintptr()`, convSelectorExpr). `core/runtime/runtime2_impl.cs`: the trio holds ж<T>
+  DIRECTLY; cas = real Interlocked (the asm-stub Casuintptr now WORKS); numeric escapes loud
+  (panic on non-zero int in; identity token out). 4-file uniform audit; corpus byte-identical;
+  suite 216/216. **Adversarial review: manual surface CONFIRMED faithful (cas null/ABA, operator
+  resolution, slot writes); boundary latents: lock_sema.go tagged-pointer arithmetic → loud panic
+  on contended unlock (NEXT MANDATORY manual conversion, Windows mutex waiter list);
+  runqempty/persistentChunks slot-reinterpret loads compile but silently read reference bits as
+  numbers (Phase-4; converter-rule candidate: atomic load of a manual-type slot → m_ref read);
+  stale Generated/ snapshots (cosmetic); hash-token prints unstable vs Go addresses (Phase-4
+  cosmetic).** Queue next: gclinkptr (4×CS0030), lfstack (Δhex print), stkframe UntypedInt,
+  taggedPointer (CS0019) — then lock_sema.
+- **2026-07-02 (latest): duplicate-mapped type-switch case merged on an identical body
+  (`b0bb8b5a1`; CS8120 −1, 30 → 29 — the LAST autonomous root; the queue is DRY).** Go `uint` and
+  `uintptr` are distinct types but both map to C# `nuint`, so printpanicval's later `case uintptr:`
+  was unreachable. Merge ONLY on a byte-identical Go body (marker comment replaces the label);
+  differing bodies keep both — a compile error beats a silent mis-route. Keys on the resolved C#
+  type (uintptr→nuint, rune→int32, byte→uint8) per switch; synthetics register too. 4-site uniform
+  stdlib diff (the same latent cleared in fmt print.cs, internal/bisect, log/slog value.cs — fmt
+  confirmed zero own-errors). Test: TypeSwitch extension (merge shape, output vs Go). ALSO
+  `5c5f14a0c`: StringZeroValueConcat golden re-baselined — 19686fbec's concat suppression missed it
+  (bisect-proven stale since that commit; caught by check-no-regression's forced fresh-exe build).
+- **2026-07-02: own-initializer func shadow renames (`2b7752648`; CS0149 −1, 34 → 33).**
+  `signame := signame(gp.sig)` — the function-shadow detection's position guard excluded the
+  own-initializer case; object resolution alone is the correct test. 5-file stdlib diff, all the
+  class (flate lengthCode, edwards25519 basepointTable, big three, net partialDeadline). The 4th
+  stale triage label dissolved (this CS0149 was labeled "mprof raw-metal"). Fresh-read pass also
+  confirmed tracetime CS0029 cleared (blank-import fix) and reclassified proc:1901 CS1061 alllink
+  into the &GLOBAL/double-pointer family. Test: BuiltinShadowLocal extension.
+- **2026-07-02 (latest): concat-under-u8-suppression renders plain strings (`19686fbec`; CS1503 −1,
+  35 → 34).** stack.go's `print(…, "
+"+"	m=", …)` — the vararg u8 suppression never reached the
+  BinaryExpr operands; spans can't box/concat. **Audit-driven narrowing:** a first cut honoring the
+  suppression for ALL binary kinds churned 212 files (comparisons would re-bind operators); the
+  token.ADD gate trims it to 68, all concat-only, fmt zero own-errors. The time.cs method-group
+  single = S6 METHOD-EXPRESSION family (logged). Test: StringConvPostfix extension. ALSO: a
+  cwd-drift incident built a TEST binary as go2cs.exe and ran a fake "reconvert" — caught by the
+  audit sanity (always verify "Successfully converted: 305" in the log, not just EXIT=0).
+- **2026-07-02 (latest): index-on-cast wraps (`7cdb7d010`; CS0021 −2, 37 → 35).** malloc's
+  `(*[2]uint64)(x)[0] = 0` — the auto-deref `.Value` + index re-bound onto the cast's inner operand;
+  5th cast-precedence instance. 2-file diff (malloc + sync/pool latent). CS0021 re-triage: the
+  other 5 are ALL the ΔcgoCallers named-over-array family (proc ×3 + traceback ×2) — that model
+  now owns 10 runtime sites (CS0021 5 + CS1503 1 + CS1929 4). Test: UnsafePointerReinterpret
+  extension (indexed reinterpret).
+- **2026-07-02 (latest): cross-package pointer-embed promoted method hop (`d5ba6b44e`; CS1929 −1,
+  38 → 37).** `t.Uncommon()` on Δrtype → explicit `t.Type.Value.Uncommon()` (no generated forwarder
+  for metadata embeds). 9-file stdlib diff, all the class (reflectlite rtype, bufio.ReadWriter's
+  *Writer in fcgi/httputil/chunked, exec *ProcessState, template *Tree, unique *HashTrieMap).
+  CS1929 triage RECLASSIFIED the rest: mprof ×4 = the parked named-over-array family (NOT
+  extension-shadowing — a value element can't bind atomic's ж-extension); iface.cs:79 = double-box
+  (&GLOBAL pointer-global family). Value-receiver promoted calls (p.Hot()) remain a documented gap.
+  Test: CrossPkgUser Phase-4b extension (cross-assembly write-through).
+- **2026-07-02 (latest): a blank import emits NO using (`082b05f1b`; CS0118+CS0029 −2, 40 → 38).**
+  `import _ "unsafe"` emitted `using _ = unsafe_package;` — hijacking C#'s `_` DISCARD file-wide;
+  tracetime's `(w, _) = w.ensure(…)` bound the namespace alias (two errors, one line). Blank imports
+  are side-effects-only → comment emission; exported-alias loading + the inferred-type canonical
+  using machinery unchanged. 67-file stdlib diff, uniformly the mechanical swap. Also confirmed
+  proc.cs:5393 Range→nint is ENTANGLED with the parked ΔcgoCallers named-over-array family (the
+  Range is on the wrapper, not stk). Test: UnsafePointerInferredNoImport extension (discards in a
+  blank-import file).
+- **2026-07-02 (latest): receiver-in-pointer-composite promotion trigger (`6c26a726a`; CS1503 −1,
+  41 → 40).** `return funcInfo{f, mod}` in `(f *_func).funcInfo()` needed the receiver's box in the
+  ж<_func> field — a boxless ref receiver has none; placing the receiver whole into a POINTER-typed
+  composite field is now a direct-ж trigger (field type resolved positionally/by-key; INTERFACE
+  fields deliberately out of scope — compiles today, identity question logged FOR THE MORNING).
+  68-file stdlib audit, uniformly the promotion family (go/types Checker, textproto dotReader, zstd
+  readers…); suite Target zero-churn proves the promotion machinery byte-stable on all corpus
+  shapes; fmt zero own-errors. Test: DirectBoxReceiverPassedWhole extension (composite identity
+  write-through).
+- **2026-07-02 (latest): wide index on a string base → (int) cast (`e20a840f4`; CS1503 −1,
+  42 → 41).** `"0123456789abcdef"[pc&15]` (heapdump, pc uintptr) — a string literal renders as
+  ReadOnlySpan<byte> (int indexer). 12-file stdlib diff, all string-base wide-index sites (Go's
+  lookup-table-as-string idiom: pop8tab/len8tab/smallsString/udigits/strings.Reader…); verified
+  fmt builds with zero own-errors post-widening. Test: ArrayWideIndexAddress extension.
+- **2026-07-02 (latest): untyped-const argument to min/max (`db6445f7c`; CS1503 −2, 44 → 42).**
+  A named untyped const renders as its UntypedInt static, which the `params ReadOnlySpan<T>`
+  min/max overloads reject; cast to the call's Go-resolved type (`min(n, (uintptr)(maxObletBytes))`),
+  plus constant-valued siblings once one is cast. 6-file stdlib diff (targets + zip/bufio/
+  go-printer/regexp latents). Test: MinMaxBuiltin extension. **CS1503 triage ledger (6 left):
+  heapdump u8-literal wide index (contained single — next candidate); proc ж<ΔcgoCallers>→IArray
+  (named-over-array, parked); proc Range→nint (uncharacterized); stack u8-literal into print
+  vararg; symtab _func value→box routing; time method-group into vararg (S6-ish).** Suite 215/215.
+- **2026-07-02 (latest): deref-of-cast wraps before `.Value` (`d9dbc9839`; CS0029 −1 + CS0149 −1,
+  46 → 44).** The default deref appended a naked `.Value`; on a type-CONVERSION operand (a C# cast)
+  postfix re-binds onto the cast's INNER operand — panic.go's `return *(*func())(add(…)), true`
+  read the @unsafe.Pointer's uintptr (CS0029), and proc.cs's `f := *(*func())(…); f()` made f a
+  nuint (CS0149 — one of the two "raw-metal delegate" errors was never raw-metal, just this paren
+  bug). Func-type starred inners miss the ident-gated cast-deref branch. 4-file stdlib diff, all
+  the class (panic, proc, reflect+reflectlite lifted-anon-type latents). 4th extra-paren-family
+  instance. Test: UnsafePointerReinterpret extension. Suite 215/215.
+- **2026-07-02 (latest): empty named-collection composite = zero value (`2c352ff49`; CS0029 −1,
+  47 → 46).** The named-composite `nil` filler (struct zero-ctor arg) landed INSIDE a
+  named-over-array/slice composite's element literal — `tmpBuf{}` → `new tmpBuf(new
+  byte[]{nil}.array())` (CS0029 NilType→byte). Empty ARRAY composite now = zeroed FIXED-LENGTH
+  backing (`new byte[32]` — Go's [N]T{} is full-length); empty SLICE composite = empty non-nil
+  backing. 10-file stdlib diff, all this class (tar block[512], nistec p256Element[4], jpeg
+  block[64], reflect IntArgRegBitmap[2]×2, strings byteReplacer[256], testing, mprof
+  buckhashArray[179999], …). Test: NamedArrayWrapper extension (incl. `*buf = tb{}` zeroing
+  through a pointer). NEW LATENT LOGGED: golib slice nil-compare conflates nil with
+  empty-but-allocated (`pm{} == nil` → true; Go says false) — a model question for the user's
+  Phase-4 list. Suite 215/215.
+- **2026-07-02 (latest): tuple-reassigned pointer param repoints its box (`cc39fd0e6`; CS0029 −3,
+  50 → 47).** `(left, x, idx) = binarySearchTree(…)` (mgcstack) / `pp, _ = pidleget(0)` (proc)
+  assigned the ж<T> tuple component into the deref'd value alias — the box-reassignment triggers
+  matched the RHS element-wise and never saw a deconstruction (element 0 additionally hid behind the
+  whole-*types.Tuple expression type). Per-element RHS type now comes from the call's result tuple;
+  emitted form = the single-assign form verbatim incl. nil-safe (`pp = ref Ꮡpp.DerefOrNil()`).
+  **Gated to REASSIGNED elements — the whole-stdlib audit caught the first cut firing on `:=`-declared
+  elements shadowing a param's name (x509/routing_tree, re-alias of an undeclared name); a declared
+  pointer local IS the box.** Corrected audit: exactly 4 files (targets + math/big + net/udpsock
+  latents pre-cleared). CS0029 remaining 5: mheap ×2 = double-pointer **special (parked family),
+  panic ×1 = reinterpret-deref paren in a tuple return, string ×1 = empty named-array composite
+  `tmpBuf{}` → `new byte[]{nil}` (the pm{} family), tracetime ×1 = CS0118-entangled same line.
+  Test: PointerParamNilWalk extension. Suite 215/215.
+- **2026-07-02 (latest): CS0103 IS EXTINCT — element address of any slice-typed base (`b28495a5d`;
+  −1, 51 → 50).** The slice element-address arm was ident-gated, so a base without a bare identifier
+  (a method-CALL result `&b.stk()[0]` mprof, syscall's `&StringByteSlice(s)[0]`, reflect's
+  `unsafe.Slice(…)` result, math/big's slice-expression base) fell into the ARRAY branch (slice type
+  names also start with `[`) whose naive fallback textually prefixed `Ꮡ` onto the postfix chain —
+  `(Ꮡb).stk()…`, a nonexistent box. Now fires on the base TYPE alone: `Ꮡ(b.stk(), 0)` — the element
+  address of the returned slice VIEW (write-through per the new aliasing golib). Whole-stdlib diff:
+  exactly 7 files, all this class (incl. an os/dir_windows copy-box lost-write latent fixed). Test:
+  NestedFieldElementAddr extension. Suite 215/215.
+- **2026-07-02: promoted embed call on a [GoRecv] ref receiver (`308debde7`; CS0103 −2,
+  53 → 51) + the benchmarks-session merge (`8ea5253e5` + `02470cc93`).**
+  1. *Converter root:* a pointer-receiver method promoted through a VALUE embed, called on the
+     enclosing method's OWN non-direct-ж receiver (`sc.setEmpty()` in `(*scavChunkData).alloc/free`),
+     emitted the box descent `Ꮡsc.of(…)` — but a `this ref` receiver has NO box (CS0103). Fix: the
+     embedded field of a ref receiver is addressable, so emit the explicit field call
+     `sc.scavChunkFlags.setEmpty()` (binds the `[GoRecv] ref` overload, write-through). Includes the
+     rendered==raw hardening in convUnaryExpr's `&recv.field` arm (a pointer LOCAL shadowing the
+     receiver name emitted `Ꮡ`+raw — nonexistent box, or the WRONG target inside a direct-ж method).
+     Whole-stdlib reconvert diff: exactly 5 files — the fix also pre-cleared the same latent CS0103 in
+     archive/zip, gcimporter, go/types, image. Test: EmbeddedValuePointerMethod extended (ref-receiver
+     form + shadow control, output vs Go). **CS0103 remnant: 1 (mprof.cs:1119 `Ꮡb.stk().at<uintptr>(0)`
+     — a spurious Ꮡ on a pointer LOCAL root in `&b.stk()[0]` element-address; b IS the box → should be
+     `b.stk().at<uintptr>(0)`. NEXT.)**
+  2. *Benchmarks merge:* the "Go/C# runtime performance benchmarks" session landed
+     `src/tests/Performance/` (PerfSort/PerfStartup/PerfString + PerformanceRunner + run-performance.ps1,
+     Go vs C# JIT + Native AOT) plus golib perf: allocation-free append span path (span overload is the
+     implementation; single-element fast path) and byte-wise `@string` CompareTo/GetHashCode/operators
+     (Go byte order — also MORE correct than UTF-16 ordinal for supplementary chars) + a REAL sort.cs
+     bug fix (the `Sort(this IntSlice)` convenience overloads were infinitely self-recursive; cast to
+     `Interface<T>` disambiguates) + time.UnixNano. **The append optimization was reconciled by hand
+     with the slice-aliasing rewrite** (branch predated `86566b9ef`): fast-path/span writes + the
+     4-arg shared-view return within cap, m_low-relative copy + detached 0-based view beyond cap.
+     Gates: SliceAliasing 4-phase green; full suite 215/215 (Output 195); runtime count unchanged (51).
+- **2026-07-02: CS0121 ELIMINATED — the `uintptr → ж<T>` reinterpret operator is now
+  EXPLICIT (`d0a935138`; 59 → 53).** The free `add(unsafe.Pointer, uintptr)` vs `(*notInHeap).add`
+  static-overload pair was ambiguous at every free-call site passing a boxless-receiver pin
+  (`(uintptr)@unsafe.Pointer.FromRef(ref b)` — map.go keys/overflow/setoverflow, mprof.go walkers ×6)
+  because the raw-address reinterpret operator was IMPLICIT, so a `uintptr` argument converted to
+  both first params. Explicit is right independent of the fix: a silent deref-an-arbitrary-address
+  copy-box should never happen implicitly, and all emitted reinterprets already use explicit cast
+  syntax `(ж<T>)(uintptr)(p)`. Box→address stays implicit; numeric `uintptr ↔ Pointer` untouched.
+  Golib-only (no reconvert); A/B: every other bucket byte-identical; suite 215/215 green. Test:
+  `FuncVsMethodOverload` (output vs Go — the overload pair + the ambiguous pin shape + both
+  method-call forms). Doc: ConversionStrategies *Converting a Go pointer to unsafe.Pointer* —
+  explicit-by-design paragraph.
+- **2026-07-02: golib slice ALIASING landed (`86566b9ef`, cherry-picked from the spun-off
+  session's `89398c93f`) — reslicing SHARES the backing array.** `slice<T>` now stores `m_capacity`
+  (relative to `m_low`); every reslice (range indexer, `.slice(low,high,max)`, `Slice()`) is a
+  bounds-checked shared view (`Reslice`, Go-style `SliceBoundsOutOfRange` panics); append writes the
+  shared backing in place within capacity and detaches beyond it. Kills the range-sub-slice-detach
+  latent AND two more (offset-view beyond-cap append copied from index 0; IReadOnlyList indexer
+  double-offset). The `.slice()` extension's bounds are now RELATIVE to the view (were absolute into
+  the backing array — consistent only because everything used to detach to low=0). Zero emission
+  change (golib-only): corpus byte-identical 214/214; full suite green with output comparisons
+  (Output 194 — the new `SliceAliasing` test covers copy-into-offset-view write-through, compound
+  reslices, capped 3-index views, in-place vs detaching append). Doc: ConversionStrategies *Slices
+  and Arrays* addendum (came with the branch).
+- **2026-07-01: CONVERTER OUTPUT IS NOW BYTE-DETERMINISTIC (`32fd49a45`) — the campaign's
+  ±10 jitter is DEAD.** Two consecutive full-stdlib reconverts now `diff -rq` to **ZERO files across
+  all 305 packages** (previously dozens flipped), and the error count is stable at 59 both runs (3
+  CS0019 were phantom errors manufactured by the converter's own race). The "abi.ΔString flips with
+  map order" characterization from iteration 29 led to THREE order-dependent mechanisms, all fixed:
+  1. **Per-file goroutines (main.go)** — files converted CONCURRENTLY over shared package globals
+     (`-parallel` gates packages, which is forced to 1; per-FILE concurrency was unconditional):
+     `initFuncCounter` claimed initΔN in completion order; `getGlobalTempVarName` was an
+     UNSYNCHRONIZED map (real data race); and `loadImportedTypeAliases` marked an imported
+     package_info "parsed" BEFORE parsing finished, so a racing file skipped the wait and emitted the
+     imported renamed const BARE (`abi.String` → CS0019 ×3, present or absent by scheduling luck).
+     Files now convert sequentially in sorted order — for FREE: 3m42s concurrent vs 3m39s sequential
+     (the cost is go/packages loading, not emission).
+  2. **The stdlib queue (stdLibConverter.go)** — DFS roots iterated a map (queue order flipped
+     run-to-run), and GOROOT-VENDORED dependency edges were silently DROPPED (`golang.org/x/…`
+     import vs `vendor/golang.org/x/…` key; isStdLib's dot-check rejected it), so bidirule could
+     convert BEFORE bidi and emit `bidi.Direction` bare (bidi's package_info didn't exist yet).
+     Sorted roots + vendored-key resolution + set-membership gate; queue order now
+     bidi → bidirule → norm → idna (dependency-correct every run).
+  3. **Multi-box re-alias order (visitAssignStmt.go)** — `(Ꮡx, Ꮡy) = (Ꮡy, Ꮡx)` emitted its
+     `n = ref Ꮡn.Value` refreshers in map order (math/big int.cs flipped). Sorted.
+  Verification: recon23-vs-recon24 zero-diff; corpus byte-identical 213/213 (no golden churn — the
+  strongest over-fire proof class); suite green. **Downstream effects: (a) reconverts are now
+  RE-USABLE as goldens — measurement noise is gone; (b) `initΔN`/`_ᴛN` indices settled to canonical
+  file order (one-time churn absorbed in the committed corpus, which was already byte-identical);
+  (c) x/net + x/text vendor packages now convert AFTER their deps, so their imported-alias emissions
+  (`bidiꓸClass` etc.) are complete and correct.** ConversionStrategies has a new *Deterministic
+  Output* section recording the guarantee.
+- **2026-07-01: unsafe.Pointer param returned whole is a plain value return (`ecfc7dbbf`;
+  CS0103 −4).** The return-path pointer-param boxing (`return p` → `Ꮡp`) fired on the UnsafePointer
+  BASIC, but such a param renders as a plain VALUE with no box → CS0103 `Ꮡzero`/`Ꮡv`/`Ꮡfd` (map.go
+  mapaccess1/2_fat, mem_windows, panic readvarintUnsafe tuple). Gate: the returned param's own type must
+  be a genuine `*types.Pointer`. Test: UnsafePointerParamPin extension (whole/tuple/genuine-*T control).
+  Suite green (213). CS0103's remaining 3 = different sub-shapes (a value-receiver box miss
+  mgcscavenge ×2, a receiver materialization mprof ×1).
+- **2026-07-01: string-literal spread wrapped as @string (`c5c446110`; CS1061 −1, 64 → 63) +
+  an HONEST REVERT.** (1) `append(b, "runtime error: "...)` (error.go) rendered the literal `"…"u8`
+  (ReadOnlySpan — no spread property); the spread emission now wraps a direct string-literal source as
+  `((@string)"…"u8).ꓸꓸꓸ` — the same wrap `string(r)...` uses. Test: StringConvPostfix extension.
+  (2) **The double-pointer single (proc.cs `&(*pprev).alllink`) was attempted and REVERTED**: the
+  of-chain advance emission was correct, but the walk WRITES `*pprev = …` through `&allm` — the
+  pre-existing &GLOBAL COPY-BOX latent — so the C# walk cannot be output-faithful until that model
+  lands. RECLASSIFIED: entangled with the copy-box latent family (rides with the &global model, not a
+  standalone fix). (3) Repaired NestedFieldElementAddr's sed-mangled package_info.cs (the documented
+  sed gotcha — the corpus check flagged it twice before the pattern was recognized). Suite green (213).
+- **2026-07-01: resolve cross-package embedded types via the semantic model (`38212b635`;
+  CS1061 −4, runtime 68 → 64).** Field promotion resolved the embedded type's SYNTAX only — in a real
+  MSBuild build project references are METADATA references (never CompilationReference), so cross-package
+  embed promotion had plausibly NEVER worked: `type rtype struct { *abi.Type }` generated an EMPTY
+  promoted-accessors section (t.TFlag/t.Str/t.Kind_ all CS1061). Fix (StructTypeTemplate): fall back to
+  the type's metadata symbol (`GetTypeByMetadataName` on the normalized nested name
+  `go.internal.abi_package+Type`), enumerate public instance fields; accessors unchanged in form — TRUE
+  REFS through the embed (`ref Type.Value.TFlag`), write-through reaches the target (no copy syntactically
+  possible). Guarded by the CrossPkgUser Phase-4 extension (pointer-embed + value-embed across a real
+  assembly boundary, write-through vs Go, 10 lines). **KNOWN RESIDUAL: promoted METHOD calls through a
+  cross-package embed (also syntax-resolved; zero runtime sites) — call through the embed explicitly.**
+  Suite green (213).
+- **2026-07-01: route nested-field element addresses through the of-chain (`a342d25e7`;
+  CS1061 −3, runtime 71 → 68).** The `&field[i]` routing gated on the IMMEDIATE base only; a chain rooted
+  at a pointer through NESTED value fields (`&pp.wbBuf.buf[0]` mwbbuf.go, `&mp.trace.buf[gen%2]` trace.go)
+  and a NESTED-INDEX 2-D base (`&cache.entries[ck][i]` symtab.go — an IndexExpr the selector gate never
+  saw) fell to the naive `Ꮡ` prefix (CS1061). Fix: walk intermediate selectors to the chain ROOT + a new
+  inner-index arm; the proven recursive &-machinery renders the multi-hop chains
+  (`pp.of(pstate.ᏑwbBuf).at(wbBuf.Ꮡbuf, 0)`, `cache.at(…Ꮡentries, ck).at<nint>(i)`). Bonus: a heap-boxed
+  value-root 2-D index also fixed (was CS1061). Corpus byte-diff IDENTICAL (212); skeptic
+  CONFIRMED-PARITY on 6 chain variants (incl. aliasing identity + 3-deep chains); in the newly-gated
+  territory every old emission was a COMPILE ERROR — silent divergence impossible. Test
+  `NestedFieldElementAddr` (write-through vs Go); suite green (213). **Latents logged: a ZERO-VALUED
+  struct's array-field backing is null (any zero-value struct array-field access NREs — significant for
+  Phase 4); the intermediate-IndexExpr chain `&ptr.items[i].buf[j]` keeps its pre-existing CS1061.**
+- **2026-07-01: precise already-dereferenced test for a selector base (`ccfb952b0`; CS1061
+  −3, runtime 74 → 71).** The selector auto-deref skip was a whole-subtree scan for ANY StarExpr — a
+  conversion star buried in a call ARGUMENT (`stringStructOf((*string)(unsafe.Pointer(p))).n`, arena.go)
+  falsely counted as an already-deref'd base → `.n` on the ж box (CS1061); an EXTRA-PAREN conversion base
+  (`((*specialWeakHandle)(…)).handle`, mheap.go) missed the conversion branch through the parens — the
+  THIRD instance of the extra-paren blind-spot pattern. Fix: inspect only the base's own outermost shape
+  (paren-unwrapped); the branch dispatch also unwraps parens. **Verification (disclosed): the corpus
+  byte-diff was IDENTICAL across all 211 prior projects — no previously-compiling emission changed —
+  plus output-verified reads.** A WRITE through a conversion base hits the copy box (documented
+  reinterpret-seam contract; probed: Go 11 vs C# 3, excluded+documented; runtime sites are reads). Test
+  `PointerSelectorDeref`; suite green (212). **DISCOVERED pre-existing latent: `&s` on a string LOCAL
+  misses escape-boxing (`s := "hello"; f(&s)` references Ꮡs without the heap<> decl) — unrelated pass,
+  logged.**
+- **2026-07-01: the pallocBits/pMask named-collection family LANDED (`adc8546cc`; CS1503 −9 +
+  CS0021 −3 cascade, runtime 86 → 74).** Two coupled roots: (1) GENERATOR `IArrayViewTypeTemplate` —
+  a defined-over-array-backed-defined type (`type pallocBits pageBits`) now implements IArray<elem> as a
+  view; every member AND the wrapper's `Value` (the converter emits `b.Value[i] = v` in pointer-receiver
+  methods) routes through an ensuring `view` accessor (materialize the lazy backing on the wrapper's OWN
+  mutable m_value, return a copy sharing the heap T[]). Corpus-surgical: exactly ONE recipient
+  (pallocBits) across all 669 [GoType] structs. (2) GOLIB `copy<T1,T2>(in slice<T1>, ISlice<T2>)` — a
+  named-slice source now binds; same-type copies via window-span CopyTo (memmove, Go-overlap-safe).
+  **TWO SKEPTICS EACH FOUND A REAL VALUE BUG in the first cut (the family's lost-writes history earned
+  its verifier budget): the copy overload double-offset window-relative indexers with +Low (panic on any
+  nonzero-Low operand), and the virgin-wrapper pointer-receiver fill loop silently dropped every write
+  (lazy backing on a by-value temp). Both fixed + output-pinned.** Test `NamedArrayWrapper` (8 output
+  lines vs Go incl. nonzero-Low src+dst copies and an overlapping memmove copy). Suite green (211), zero
+  churn (structural). **Scope notes:** Go-legal named-DST copy (`copy(pmDst, …)`) still doesn't bind —
+  ZERO corpus occurrences, report-only; virgin-reinterpret-write remains the documented lazy-backing
+  edge; pre-existing latents found by the skeptics (range sub-slice DETACHES on nonzero low —
+  slice.this[Range] copies, a skeptic filed a task chip; array/wrapper assignment shares backing vs Go
+  value-copy; empty named-slice composite `pm{}` → CS0029) logged for future iterations.
+- **2026-07-01: forward field-box accessors on a struct-inherited wrapper as TRUE REFS
+  (`02a610466`; CS0117 −3 — bucket ELIMINATED, runtime 89 → 86; FIRST GENERATOR-side root of the
+  campaign).** `&p.x` on a `*pinnerBits` (`type pinnerBits gcBits`, runtime pinner.go) emits
+  `Δp.of(pinnerBits.Ꮡx)` — the accessor names the WRAPPER, but the `Ꮡx` static existed only on the
+  underlying `gcBits` → CS0117. Fix (`InheritedTypeTemplate`): alongside the forwarded get/set
+  properties, emit each forwarded FIELD's box accessor as a true ref THROUGH `m_value` —
+  `public static ref uint8 Ꮡx(ref pinnerBits instance) => ref instance.m_value.x;` — a genuine no-copy
+  ref chain (the copy trap sank the earlier pallocBits forwarding). Write-through output-proven twice
+  (repro `15 3`; `NamedTypeOverStruct` extension `bump(&c.a)` → the ORIGINAL observes `17 37` vs Go).
+  Suite green (210); zero golden churn is STRUCTURAL (the generator runs at C# build time — the
+  transpiled .cs is unchanged). **⚠ IMPLICATION for the pallocBits→IArray family: this validates the
+  true-ref-through-m_value pattern — the IArray forwarding for an array-inherited wrapper could follow
+  the same play (forward the interface members as refs/views over `m_value`, never a copy), keeping the
+  `[GoType("pageBits")]` conversion intact. The family may be more approachable than "fraught" now.**
+- **2026-07-01: qualify a box-accessor type shadowed by its variable's lambda CAPTURE
+  (`d133c769b`; CS1061 −2, runtime 91 → 89).** `boxAccessorType`'s collision check compared the owning
+  type name to the `.of()` RECEIVER only; inside a closure the captured variable renames to `mʗ1`, so
+  rwmutex `lockSlow`'s `systemstack(func(){ notesleep(&m.park) })` emitted `mʗ1.of(m.Ꮡpark)` — the bare
+  `m` bound the still-visible ENCLOSING `ж<m>` local → CS1061. Fix: also qualify when the receiver is
+  `typeName + ʗ…` (the capture marker) → `mʗ1.of(runtime_package.m.Ꮡpark)`. Qualification is
+  name-resolution only (same static accessor), so mis-resolution would fail to COMPILE, not run wrong —
+  the corpus byte-diff (210 projects, only the intended test changed) + stdlib bucket A/B (exactly the 2
+  target sites, no new codes) stood as the adversarial evidence (verifier round dialed to zero for this
+  one-comparison extension, disclosed to the user live). Guarded by a further `CollisionFieldBoxAccessor`
+  extension (`capturedLocalNamedAfterType`, write-through vs Go); suite green (210). Landed interactively
+  with the user (reduced loop cadence); ALSO this iteration instituted the reconvert timeout discipline
+  (`212f70904`) after the user flagged zombie 2-hour pollers.
+- **2026-07-01: pin a deref-aliased pointer param/receiver by its ref-local, not a phantom
+  `.Value` (`016ce07ef`; CS1061 −2 + CS0206 −1, runtime 94 → 91).** `unsafe.Pointer(ptr)` emits the pin
+  helper `@unsafe.Pointer.FromRef` whose ref target was unconditionally `(expr).Value` — right for a genuine
+  box, wrong for a DEREF-ALIASED pointer (param/receiver rendered as the value alias `ref var p = ref
+  Ꮡp.Value`): a `*uintptr` param's alias is a plain nuint → CS1061 (select.go `unsafe.Pointer(pc0)`,
+  heapdump.go `unsafe.Pointer(pstk)`), and a `[GoType num]` receiver's `.Value` resolves to the generated
+  get-only `Value` PROPERTY → CS0206 as a ref arg (runtime2.go `guintptr.cas`). Fix (`convCallExpr.go`):
+  when `exprIsDerefAliasedPointer(arg)`, take the alias's ref directly — `FromRef(ref p)`; a genuine box
+  keeps `(box).Value`; inside a lambda the alias renders through the box (`FromRef(ref Ꮡp.Value)`, valid).
+  **HARDENING (`captureModeOperations.go`): a hung verifier's final probe surfaced a REAL silent-wrong —**
+  the helper's receiver arm matched by NAME, so an inner pointer local SHADOWING the receiver mis-took the
+  gate (`FromRef(ref rΔ1)` pins the box reference slot: compiles, reads garbage; repro'd — Go 111 vs C#
+  garbage). The receiver arm now also requires rendered==raw (the shadow pass Δ-renames every inner
+  same-named binding; the param arm was already object-accurate via `identIsParameter`). The CS0206
+  cascade is legitimate per the copy-box precedent (`Casuintptr` is a THROWING partial asm stub — loud,
+  not silent; the faithful guintptr ж<T>-model remains queued). Hardening is a corpus no-op (all ~107
+  bare-form emissions are genuine receivers/params — verifier audit). Test `UnsafePointerParamPin`
+  (**output** — param, receiver, SHADOWED-receiver, field-address-control, values vs Go); suite green
+  (210), zero churn. Verifier-2 CONFIRMED SAFE (91 exact, buckets exact, cascade mechanism explained);
+  verifier-1 hung mid-probe but its dying breath flagged the shadow edge that became the hardening.
+- **2026-07-01: cast a wide-integer 3-index slice bound to int (`cc1255754`; CS1503 −2,
+  runtime 96 → 94).** A 3-index full slice `s[low:high:max]` lowers to the golib `.slice(nint low, nint high,
+  nint max)` method; the bounds were emitted with a bare convExpr, so a wide-integer bound
+  (uintptr/uint/uint32/uint64/int64) had no implicit conversion to the nint param → CS1503 (runtime/mprof
+  `stk[:b.nstk:b.nstk]`, b.nstk uintptr). Fix (`convSliceExpr.go`): route the 3-index bounds through the
+  existing wide-integer narrowing helper (renamed `castElemAddrIndex → castWideIntegerToInt`, now shared by
+  element-address indices and slice bounds; caller in convUnaryExpr.go updated). Casts (int) only for
+  uint/uint32/uint64/uintptr/int64; int/small-int/untyped left uncast. Go bounds are int so the narrowing
+  matches Go; the runtime bound is guarded (`b.nstk ≤ 1024`). Test `Slice3IndexWideBound` (**output**);
+  suite green (209), zero churn. **BOTH verifiers CONFIRMED SAFE** (diff exactly 6 lines, no over-fire,
+  rename a no-op on the element-address + 2-index paths).
+  - **⚠ pallocBits → IArray (5) was investigated and DEFERRED — it is ENTANGLED, not a clean root.**
+    `pallocBits` = `[GoType("pageBits")]` (an InheritedTypeTemplate wrapper of `pageBits`, a named `[8]uint64`
+    array that DOES implement IArray). The wrapper doesn't forward IArray → `len(b)`/`b[i]` fail (5). BUT the
+    non-test runtime also has 7 `(*pageBits)(b)` pointer-reinterprets (mpallocbits.go:344-377) that currently
+    COMPILE precisely BECAUSE the `[GoType("pageBits")]` wrapper provides the pallocBits→pageBits conversion.
+    Option (a) — emit pallocBits's [GoType] as the array form `[8]uint64` (so it implements IArray) — would
+    LOSE the pallocBits→pageBits conversion and break those 7 (net worse). Option (b) — generator: make
+    InheritedTypeTemplate forward IArray for an array-inherited type (keeping the wrapper) — is the RIGHT fix
+    but needs cross-symbol work (detect pageBits is array-backed) OR delegating IArray to the inner `m_value`.
+    Same family: `pMask → @string` copy (4) — pMask=`[GoType("[]uint32")]` (Slice template, implements
+    ISlice<uint32> not slice<uint32>), so `copy(slice<uint32>, pMask)` doesn't bind `copy<T>(slice<T>,slice<T>)`
+    (fix: generator ISliceTypeTemplate implicit→slice<T>, OR a golib copy(slice, ISlice) overload). Both are
+    the InheritedTypeTemplate collection-interface family — a dedicated generator effort.
+- **2026-07-01: cast a `make()` length/capacity/hint of a non-int integer type to nint
+  (`438d633a0`; CS1503 −5, runtime 101 → 96).** The golib `slice<T>(nint,nint)` / `map<K,V>(nint)` /
+  `channel<T>(nint)` ctors take nint; C# has no implicit `uintptr`/`uint`/`uint32`/`uint64`/`int64` → nint
+  conversion, so `make([]byte, n/goarch.PtrSize)` (uintptr length, runtime/mbitmap ×4 + a []uint64 variant)
+  left `new slice<byte>(n/…)` with no applicable ctor → overload resolution fell onto `slice<T>(T[])`
+  (CS1503 `nuint`→`byte[]`). Fix (`convCallExpr.go` make handler): for a slice/map/chan target, cast each
+  length/cap/hint arg whose Go type is a non-nint-implicit integer to nint (`makeLenArgs` +
+  `makeLenArgNeedsNintCast`); plain int / untyped / widening int8/int16/uint8/uint16 left uncast (no churn).
+  The map/chan arms extend the same root the runtime cluster (slices) exposed. Cleared all 5, zero new error
+  codes, every other bucket unchanged. Test `MakeSliceUintptrLen` (**output** — slice/map/chan uintptr
+  lengths+hints + int/untyped controls, vs Go); suite green (208), zero corpus churn. **Verifier-1 CONFIRMED
+  SAFE** (no over-fire, only previously-CS1503 lines change); verifier-2 hung on reconvert mechanics (map/
+  chan arms self-verified: compile+run+output match Go).
+- **2026-07-01: reinterpret a named-numeric pointer to its underlying basic —
+  `(*uint64)(*lfstack)` (`f19153a9e`; CS0030 −13, runtime 114 → 101; second S1-FORK "convert native"
+  win).** The runtime's atomic-on-a-named-integer pattern — `atomic.Load64((*uint64)(head))` /
+  `atomic.Cas64((*uint64)(head), …)` where head is `*lfstack` (`type lfstack uint64`; also sweepClass
+  uint32 / profAtomic uint64 / sysMemStat uint64) — reinterprets `*NamedNumeric` → `*underlying-basic`.
+  `ж<lfstack> → ж<uint64>` has no C# conversion (distinct instantiations) → CS0030. Fix (`convCallExpr.go`):
+  GENERALIZE the existing `(*Base)(defPtr)` reinterpret block (which boxed a COPY of the [GoType] value
+  conversion for Named↔Named, `(*pinnerBits)(*gcBits)`) to also fire when the RESULT elem is a BASIC whose
+  underlying equals a NAMED arg elem's (new `namedToBasic` branch) → `Ꮡ((uint64)(head))`. Named↔Named path
+  byte-for-byte preserved (pure refactor); reverse `(*Named)(*basic)` and both-basic excluded. Copy-box →
+  a READ is faithful (Load64 reads the copy — verified vs Go), a WRITE hits the copy but the runtime's
+  Store64/Cas64/Xadd64 on these types are asm-STUB (`partial`) atomics and there's no direct non-atomic
+  write, so no faithful write-through is lost. Cleared all 13 named-numeric→ж CS0030, zero new error codes,
+  every other bucket unchanged. Test `NamedNumericPointerReinterpret` (**output** comparison — read path
+  across uint64/uint32, values vs Go); suite green (207), zero corpus churn. **Verifier-1 CONFIRMED SAFE**
+  (old-vs-new diff exactly 3 lines, no over-fire, Named↔Named byte-identical); verifier-2 hung on reconvert
+  mechanics (its scope — read-correct / write-hazard / compile-101 — independently confirmed).
+- **2026-07-01: route a raw-address pointer reinterpret `(*T)(p)` through uintptr
+  (`9e30a1c5b`; CS0030 −23, runtime 137 → 114 — the BIGGEST single-root drop of the campaign; first
+  S1-FORK "convert native" win).** A Go pointer-type conversion whose SOURCE is a raw address —
+  `(*unsafe.Pointer)(p)` where p is an unsafe.Pointer — reinterprets it as `*T` (`ж<T>`). Because
+  unsafe.Pointer is golib `Pointer : ж<uintptr>`, a direct `(ж<T>)p` needs the two chained user-defined
+  conversions Pointer→uintptr→ж<T> that C# rejects in one cast (CS0030). The converter ALREADY routed
+  through uintptr — `(ж<T>)(uintptr)(p)` — when the deref set `isPointerCast` (`*(*int)(p)`); two shapes
+  never set it: a bare call ARGUMENT `atomicwb((*unsafe.Pointer)(ptr), new)` (atomic_pointer.go) and an
+  extra-paren deref `*((*unsafe.Pointer)(k))` (map.go indirect key — convStarExpr's deref branch sees a
+  ParenExpr, not the CallExpr). Fix (`convCallExpr.go`, new `isRawAddressPointerConversion`): route ANY
+  pointer-RESULT conversion whose ARGUMENT is a raw address (Basic UnsafePointer/Uintptr) through uintptr.
+  The pointer-to-NAMED-type value conversion `(*Base)(defPtr)` is handled+returned earlier (arg is a
+  *types.Pointer), so it's unaffected. Raw-memory code (golib's map<K,V> is what runs) → **Compile+Target**
+  test `UnsafePointerReinterpret` (both shapes), values not the contract. Cleared ALL 21
+  `unsafe.Pointer→ж<unsafe.Pointer>` + 2 cascade, zero new error codes, every non-CS0030 bucket unchanged;
+  suite green (206), zero corpus churn. **Both adversarial verifiers confirmed SAFE** (verifier-1: the gate
+  is mutually exclusive with the named-type path — the only line it changes was previously CS0030, no
+  over-fire; verifier-2: measured 114 + exact buckets + 0 target-class before its baseline step hung).
+- **2026-07-01: cast a constant integer-literal return to the lambda's unsigned result type
+  (`0ec8bac1c`; CS8917 −1, runtime 138 → 137 — the LAST CS8917).** A Go closure assigned to a local whose
+  result is unsigned/pointer-sized, mixing `return 0` with `return slice[i]` — runtime `select.go`
+  `casePC := func(casi int) uintptr { if pcs == nil { return 0 }; return pcs[casi] }` — emits `var casePC =
+  (nint casi) => {…}`, whose delegate type C# infers from the return-expression TYPES. `0` is `int`,
+  `pcs[casi]` is `nuint`; the best-common-type algorithm uses expression types (not constant
+  convertibility) and `int` has no common type with `nuint`/`uint`/`ulong` → CS8917. Fix
+  (`visitReturnStmt.go`, new `lambdaConstReturnCastType`): cast the literal to the result type →
+  `return (uintptr)(0)`, so both returns share it. Gated tightly: only inside a lambda body
+  (`conversionInLambda`; a NAMED func's `return 0` to nuint compiles as a constant conversion), only a bare
+  INTEGER literal (the sole int-vs-unsigned inference-gap shape — byte/uint16 widen to int, signed/nint/long
+  share a common type with int), only a BASIC uint/uint32/uint64/uintptr result (a NAMED unsigned type is
+  left alone — `(gclinkptr)0` could introduce a new error). Provably disjoint from the narrow-arith return
+  cast. Test `ClosureMixedReturnUnsigned` (uintptr/uint64/uint32/uint + signed control, vs Go); full suite
+  green (205), zero golden churn across the corpus, **both adversarial verifiers CONFIRMED-CORRECT** (tuple
+  `return ((uint64)(0), …)`, IIFE, named-defer, expression-body collapse `() => (uint64)(0)`, char-literal
+  `(rune)'?'` NOT cast — all compile+match Go). **Residual pre-existing (non-regression, out of scope):**
+  same CS8917 class remains for a rune/char literal, a NAMED-unsigned result, and a constant-`BinaryExpr`
+  (`return 1+2`) to unsigned inside a lambda — none at the runtime site; a follow-up could extend the helper
+  to constant-folded BinaryExpr + named types if they surface upstream.
+- **2026-07-01: emit an unreachable trailing `return default!;` after an exhaustive
+  fallthrough-default switch (`a99d32f81`; CS0161 −1, runtime 139 → 138).** A Go `switch` lowered to an
+  if-chain whose `default:` is reached via `fallthrough` emits the default as a guarded `if (fallthrough
+  || !match){…}`; C# can't prove the guard always runs, so a value-returning func ending in it fails
+  CS0161 even though the Go `default` is exhaustive (runtime `startpanic_m`). Fix (`visitSwitchStmt.go`):
+  emit `return default!;` after the if-chain — GATED to be provably safe: every case is a genuine Go
+  TERMINATING statement (new `isTerminatingStmt`/`isTerminatingStmtList`, spec §Terminating, CONSERVATIVE)
+  or falls through, none can `break` out, the func returns a value, and NOT namedReturnDefer mode (void
+  wrapper → CS8030). **Two adversarial rounds earned their keep: a shallow "last-line-was-return" gate
+  false-positived on `if{return}`-without-`else` (falls out → the trailing return SILENTLY returned the
+  zero value); fixed with real terminality analysis. A second round found the namedReturnDefer CS8030
+  gap.** A whole-stdlib diff confirmed the fix's ONLY effect is the one `return` in `startpanic_m`. Test
+  `SwitchFallthroughDefaultReturn` (terminal + break-out + if-without-else + namedReturnDefer shapes vs
+  Go); suite green (204), zero churn. **This came from TRIAGING the runtime error tail: the singletons
+  hid 7 CONTAINED converter roots (not just the architectural bulk) — CS0161 was #1; 6 remain (see the
+  Session-queue triage note).**
+- **2026-07-01: emit a `return` against its OWN function literal's results, not the enclosing
+  func's (`a59e760b7`; CS8030 −4, runtime 143 → 139).** A bare `return` in a named-results function emits
+  `return (n, ok);`. `visitReturnStmt` built this from `currentFuncSignature`, but a NESTED function
+  literal kept the ENCLOSING function's signature — so a bare `return` inside a VOID closure got the outer
+  named results. Runtime mprof `goroutineProfileWithLabelsSync (n int, ok bool)` passes `forEachGRace(
+  func(gp1 *g){ …; return; … })`; the void closure's bare returns emitted `return (n, ok);` into a `void`
+  lambda → CS8030 ("void-returning delegate cannot return a value"). Fix (`convFuncLit`/`main.go`/
+  `visitFuncDecl`/`visitReturnStmt`): a SEPARATE `currentReturnSignature` field — set to the func signature
+  in `visitFuncDecl`, to the literal's own signature (save/restore) in `convFuncLit` — consumed by
+  `visitReturnStmt`. `currentFuncSignature` MUST stay the enclosing func's (receiver/param detection needs
+  it to resolve a CAPTURED pointer param — an earlier attempt that swapped it wholesale regressed
+  captured-param `.Value`→`.ValueSlot`, caught by check-no-regression). Test `ClosureBareReturnNamedResults`
+  (10 true vs Go); full suite green (203), zero churn, adversarially verified (value/nested/doubly-nested/
+  defer-recover/IIFE/sibling closures). **This came from triaging the UNKNOWN class CS8030 — a clean
+  contained root. The other unknown, CS0021 (10), is ARCHITECTURAL (malloc `(*[2]uint64)(x)[i]` S1
+  unsafe-pointer reinterpret + mgcscavenge/proc/traceback named-over-array indexing `m.scavenged[i]`/
+  `mp.cgoCallers[0]`) — SKIP.** *(DISCOVERED pre-existing gap, out of scope: a named-result CLOSURE
+  `func() (a, b int){…}` never emits its own `a`/`b` local decls — only `visitFuncDecl` does — so it
+  drops/mis-returns results. Verify it's in the runtime bucket before pursuing; a follow-up would emit
+  named-result locals for function literals too.)*
+- **2026-07-01: qualify a same-package GLOBAL reference shadowed by a same-named LOCAL
+  (`99ba29ef0`; CS0841 −1, runtime 144 → 143 — the LAST CS0841; ALL CS0841 now cleared).** Go allows a
+  local to shadow a package-level global; a read of the global BEFORE the local's decl refers to the
+  global (Go block scoping). C# locals are function-scoped, so the bare global name binds to the
+  not-yet-declared local → CS0841 (CS0844 "hides the field" for the plain-global variant — same family).
+  Runtime `traceallocfree.traceSnapshotMemory` reads global `trace.minPageHeapAddr` then declares
+  `trace := traceAcquire()` (both collision-renamed `Δtrace`). Fix (NOT the declined rename-the-local
+  path — that's fragile w/ collision renames × shadow counter): qualify the GLOBAL reference. `convIdent`
+  now emits `runtime_package.Δtrace.minPageHeapAddr` when a use resolves to a package-level var of THIS
+  package (`ObjectOf(ident).Parent() == v.pkg.Scope()`) AND a same-named function-level local is declared
+  (new Visitor field `funcLevelDecls`, set per-function in `performVariableAnalysis`). Gated so an
+  ordinary global and the local's OWN uses (resolve to the local, not pkg scope) keep their bare form.
+  Test `GlobalShadowedByLocal` (collision + plain global, 49/205/42 100 vs Go); full suite green (202),
+  BYTE-IDENTICAL corpus (zero churn), adversarially verified (write-through, cross-package excluded,
+  no local-use leak, nested-block-shadow correctly a non-issue). **This was traceallocfree `Δtrace` —
+  flagged DECLINED-KIN, but (like malloc `Δp` and mgcsweep `sʗ3`) it had a CLEAN surgical angle
+  (qualify the REFERENCE, not rename the local). THREE consecutive declined/subtle-flagged CS0841 all
+  yielded clean fixes — the "investigate before assuming undoable" heuristic paid off every time.**
+  *(Known pre-existing gap, out of scope: a package-level CONST shadowed by a same-named local still
+  fails CS0844 — this fix is `*types.Var`-only; a clean follow-up would mirror it onto `*types.Const`.)*
+- **2026-07-01: resolve the lambda-capture rename by OBJECT, not name — closure self-shadow
+  (`7baab09cb`; CS0841 −1, runtime 145 → 144).** A closure that captures an outer `s` snapshots
+  `var sʗ1 = s;` and rewrites captured uses inside the lambda to `sʗN`. The rewrite map
+  (`currentLambdaVars`) was keyed by NAME, so a self-shadowing initializer inside the closure — runtime
+  mgcsweep `systemstack(func(){ s := spanOf(uintptr(unsafe.Pointer(s.largeType))); … })` — mapped BOTH
+  the captured RHS use and the DISTINCT inner `s` binding to the same `sʗ3`; the inner decl emitted
+  `var sʗ3 = …(~sʗ3)…`, its RHS binding to the not-yet-initialized inner var → CS0841. Fix
+  (`main.go` + `variableAnalysisOperations.go`): new parallel map `currentLambdaVarObjs` records the
+  captured var's `types.Object` per name; in `getIdentName` the capture name is applied ONLY when
+  `v.info.ObjectOf(ident) == capturedObj`; a distinct inner binding falls through to its own
+  shadow-renamed name (`var sΔ1 = spanOf(…(~sʗ3)…)`). The object check passes for every non-shadowing
+  capture, so nothing outside this self-shadow case changes. Test `ClosureSelfShadowCapture` (211 vs Go);
+  full suite green (201), **byte-identical corpus (zero churn)**, adversarially verified (8 self-shadow
+  shapes — value/pointer/param captures, multi-use inner, write-through, nested/multiple closures — plus
+  ordinary-capture no-regression). **This was the mgcsweep `sʗ3` root — the explorer's #2, flagged
+  SUBTLE/medium-high-blast-radius, but (like malloc `Δp` before it) it had a CLEAN surgical angle: the
+  object-check is inert for all non-shadow captures. Two consecutive "subtle-flagged" CS0841 both yielded
+  clean fixes — investigate before declaring undoable.**
+- **2026-07-01: qualify a collision-renamed owning type in a box-field accessor
+  (`04a5322f7`; CS0841 −1 + CS1061 −2, runtime 148 → 145 — 3 errors, one root).** A box accessor
+  `receiver.of(TYPE.Ꮡfield)` was qualified with the package static class only when TYPE equaled the
+  `.of()` RECEIVER variable. But a Go local named after its type is renamed to the SAME `Δ`-name, so
+  such a local ANYWHERE in the function shadows a bare `Δp.Ꮡfield` (C# locals are function-scoped).
+  Runtime malloc `persistentalloc1` does `persistent = &mp.p.ptr().palloc` then declares a local `p`
+  (→`Δp`) below; the accessor `(~mp).p.ptr().of(Δp.Ꮡpalloc)` bound its bare `Δp` to that later local
+  (CS0841; two mheap `Δp.Ꮡgcw` sites were CS1061 — a local `Δp` of type `unsafe.Pointer`). The receiver
+  isn't the colliding local, so the receiver-name check missed it. Fix (`convUnaryExpr.go`
+  `boxAccessorType`): qualify whenever the type name is `Δ`-prefixed (a type is never shadow-renamed, so
+  a `Δ`-prefixed accessor type is always a collision rename) → `(~mp).p.ptr().of(runtime_package.Δp.Ꮡpalloc)`.
+  Value-identical to the bare form when nothing shadows. Extends the `CollisionFieldBoxAccessor` test
+  (`localShadowsCollisionType`); full suite green (200), only that test's golden churns (benign
+  re-baseline), adversarially verified (write-through, multi-level, no wrong-package/CS0426, all 196
+  qualified sites compile). **The malloc `Δp` CS0841 was the cleanest of the 3 remaining CS0841 — the
+  explorer's ranked #1, correctly (its `Δp` type-rename alternative had far more blast radius). The
+  surgical box-accessor route avoided renaming the core processor `p` type entirely.**
+- **2026-07-01: cast a native-int const-ARITHMETIC RHS whose folded value overflows int32
+  (`aa0c36b6e`; CS0266 −1, runtime 149 → 148 — the LAST CS0266 cleared).** mbitmap's
+  `pattern = 1<<maxBits - 1` (uintptr, maxBits=57) folds `1<<maxBits` to a SIGNED C# `long` literal
+  (`144115188075855872L`, > int32), so the whole RHS is `long` — no implicit conversion to the native
+  uintptr/nuint/nint target (CS0266); a `UL`/`(nuint)` suffix would not help (ulong→nuint is also
+  explicit). Fix (`visitAssignStmt.go` new `nativeIntConstCastType`, wired into the simple-variable `=`
+  path as the fallback when the narrow-cast is empty): wrap the whole RHS in the native target's cast.
+  **Gated to the provably-64-bit case only** — the target is a PLAIN `*types.Basic` native-width int
+  (uintptr/uint/int; a NAMED type is excluded via `.(*types.Basic)` not `.Underlying()`, since a
+  `[GoType]` cast rejects a `long` → CS0030), the whole value fits int64 but overflows int32, AND at
+  least ONE operand itself folds to a signed `long` (`overflowingConstLiteral != ""`) so the emitted
+  arithmetic runs in 64-bit width. Test `NativeIntWideConstAssign` (uintptr/uint/int, values vs Go);
+  full suite green (200), goldens byte-identical, **two adversarial verifiers** (the first mis-flagged a
+  silent-wrong bare-shift as introduced; HEAD-diff PROVED it pre-existing → tightened the operand-fold
+  gate + named exclusion; second verifier CONFIRMED all four claims). ⚠ **DISCOVERED pre-existing latent
+  (separate future root, NOT introduced here):** a BARE const shift to a native int — `var p uintptr =
+  1 << 40` / `q = 1 << 40` — is emitted as a 32-bit `(uintptr)(1 << (int)(40))` that MASKS the count
+  (`40 & 31`) → prints 256 not 1099511627776 (SILENT wrong at HEAD). Fix belongs in the shift-emission
+  path (widen the left operand `((nuint)1) << k` for a native/unsigned target, cf. `isWideShiftType`);
+  a `NativeIntBareShiftAssign` guard would FAIL today, so don't add it until that path is fixed.
+- **2026-07-01: rename a shadowed var used as a method-call receiver in an assignment target
+  (`cd86426ce`; CS0841 −1, runtime 150 → 149).** Extends the iteration-5 assignment-target descent: the `=`
+  case renames shadowed idents in the LHS base chain (index/key/selector/star/paren), but had NO case for a
+  METHOD CALL in the chain — `x.ptr().Value.next = …` (runtime stackpoolalloc, loop `x` renamed `xΔ1` because a
+  func-body `x` is declared AFTER the loop) buried the `x` inside `x.ptr()`, so the use kept raw `x`, read
+  before its later decl → CS0841. Fix (`variableAnalysisOperations.go`): add `case *ast.CallExpr:
+  visitNode(cur)` — visits the whole call so receiver + args get the rename (visitNode keys on
+  info.Uses→*types.Var, so a method name/global/field of the same name is left alone). Test
+  `ShadowedVarMethodCallLHS` (write-through via a pointer-receiver method, C# 30 vs Go); full suite green
+  (199), goldens byte-identical, adversarially verified (control: all 8 shapes fail CS0841 without the fix).
+  **Remaining CS0841 = 3, all DISTINCT roots:** malloc.cs `Δp` (collision-rename ordering), mgcsweep.cs `sʗ3`
+  (closure-capture box name), traceallocfree.cs `Δtrace` (collision-rename ordering — kin to the declined
+  proc `Δtrace` CS0136). *(NB: the commit initially failed on a gpg-agent signing TIMEOUT; landed after the
+  user unlocked the key — never bypass signing.)*
+- **2026-06-30: narrow-int arithmetic cast on the RETURN path (`a351c3cc6`; CS0266 −1, runtime
+  151 → 150).** Sibling of the assignment-path fix below: `func lowerASCII(c byte) byte { return c +
+  ('a'-'A') }` (runtime env_posix) emits `return c + ((rune)'a' - (rune)'A')` = byte+int = int → CS0266.
+  The narrow cast was applied on the assignment/value-spec paths but not the return path. Fix
+  (`visitReturnStmt.go`): reuse `narrowArithmeticCastTypeFor` against each result-position type, emitting
+  `(type)(expr)` — gated to a binary/unary arith expr whose Go type matches the narrow result type
+  (a bare ident / call / already-narrowed / non-narrow return is untouched; the receiver-return branch,
+  checked first, is unaffected). Test `NarrowByteArithReturn` (97 122 97 / 145 wrap vs Go); full suite
+  green (198), goldens byte-identical, adversarially verified (multi-value, named-return-defer,
+  interface/pointer, over-application gate, wrap across all 4 narrow kinds). **CS0266 is now fully
+  cleared** (the mbitmap `long→nuint` root landed 2026-07-01, `aa0c36b6e` — see the latest bullet above).
+- **2026-06-30: narrow-int arithmetic cast when only the FIRST operand is a conversion
+  (`de2e80bd4`; CS0266 −3, runtime 154 → 151).** Go byte arithmetic wraps at byte width; C# promotes to
+  `int`, so a narrow-typed assignment needs the result cast back (CS0266). `narrowArithmeticCastTypeFor`'s
+  redundant-cast guard skipped the cast whenever the converted RHS merely STARTED with `(byte)(` — but
+  `buf[i] = byte(e/100) + '0'` emits `(byte)(e/100) + (rune)'0'`, where that prefix casts only the FIRST
+  operand and the binary result is still `int` (runtime print.go exponent-format ×3). Fix
+  (`visitAssignStmt.go`): the guard now skips only when the WHOLE RHS is `(byte)(…)` — a paren-balance walk
+  (`wholeExprIsCastOfType`) requiring the cast-paren's matching close at the very end, skipping `(`/`)`
+  inside char/string literals. Adversarially verified (miscounts are false-NEGATIVE only = harmless
+  redundant cast; wrap semantics confirmed vs Go across all 4 narrow kinds). Test
+  `NarrowByteArithFirstOperandCast`; full suite green (197), goldens byte-identical. **The narrow cast on a
+  RETURN of such arithmetic (env_posix.lowerASCII, CS0266) is a SEPARATE still-open gap** (the return path
+  doesn't call narrowArithmeticCastType).
+- **⚠ Δtrace CS0136 — INVESTIGATED & DECLINED this session (do not blindly re-attempt).** proc `procresize`
+  has three `trace := traceAcquire()` (one func-body, two in nested if/else); `trace` collision-renames to
+  `Δtrace` (it's both a package VAR and a method name). The func-body one and one nested one both emit
+  `Δtrace` (the OTHER nested one correctly gets `traceΔ1`). The asymmetry — one nested `trace` renames, its
+  sibling doesn't — was NOT reproducible in isolation (a plain collision + nested if/else renames BOTH
+  siblings correctly) and NOT fully understood; it's a subtle interaction between the collision-rename, the
+  shadow-rename counter, and the specific scope nesting (the un-renamed one is a DIRECT statement in the
+  outer `else` block, after an inner `if`, not a sibling if/else). Declined rather than gamble a
+  poorly-understood fix in the delicate shadow pass. Needs a focused deep-dive on `declareVar`'s
+  funcLevelVar-branch needsShadowing logic (why it fires for one nested position but not another). 1 error.
+- **2026-06-30: completed shadow-renaming for escaped sibling loop vars + LHS index/key uses
+  (`f0c1c946e`; CS0136 −2 + CS0841 −1, runtime 157 → 154).** TWO ENTANGLED fixes the runtime
+  `runqputslow` shape needs together (`variableAnalysisOperations.go`): **(A)** an escaping
+  function-body `for i := …` loop var is emitted as a func-scope `ref var i = ref heap<…>(out var Ꮡi)`
+  decl, so sibling `for i := …` loops reusing the name collide (CS0136) — collect the escaped loop var
+  as function-level so the siblings rename `iΔ1`/`iΔ2` (gated to escaped + func-body-level +
+  name-not-already-a-real-func-level-decl, preserving the ForVarMasks invariant); **(B)** a shadow-renamed
+  var used as an LHS INDEX/MAP KEY (`a[i]=…`, `m[ns]=…`, `(*p)[i]=…`) was never rewritten — the `=` case
+  only handled the ROOT ident — a SILENT wrong-value bug (`m[ns]=nsΔ1*100` wrote the wrong key, no compile
+  error) and CS0136/CS0165 once the loop var renames. Descend the target's index/selector/deref chain;
+  runs even for a PAREN-rooted target `(*p)[i]` (getIdentifier→nil, ~36× in stdlib — a defect the verifier
+  caught and I fixed before commit). Entangled: A alone renames loop headers to `iΔ1` but leaves `batch[i]`
+  as `i`. Test `EscapedLoopVarSiblingIndex` (C# [10 20 0 30 40]/2002/9 vs Go; array won't compile / map
+  returns 30001 / paren OOB without the fixes); full suite green (196), goldens byte-identical,
+  adversarially verified. **Remaining CS0136 = 1: proc `Δtrace` (5687)** — a collision-rename
+  (`trace`→`Δtrace`) that ALSO shadows an outer `trace`(→`Δtrace`); a rename-INTERACTION (both get the same
+  collision name), a DISTINCT root.
+- **2026-06-30: block `const` that shadows an enclosing param/var is now shadow-renamed
+  (`a09f7826b`; CS0136 −1, runtime 158 → 157).** C# forbids block shadowing (CS0136); the shadow-rename
+  pass renamed shadowing *variables* but IGNORED consts (a const's object is `*types.Const`, not the
+  `*types.Var` the scope stack tracks), so runtime lock_sema `notetsleep_internal`'s `const ns = 10e6`
+  collided with its param `ns`. Fix (converter-only, `variableAnalysisOperations.go`): a `constShadowNames`
+  map records a shadowing block const (detected by the same by-name check the var path uses) and renames
+  its declaration + every use to `nsΔ1`, leaving the enclosing `ns`; non-shadowing consts are unchanged.
+  Test `ConstShadowsParam` (10/14 vs Go); full suite green (195), goldens byte-identical, adversarially
+  verified across iota/multi-name/typed/nested/counter-collision/const-shadows-const vectors. **The other 3
+  CS0136 in proc are DISTINCT roots** (proc `Δtrace` = collision-rename `trace`→`Δtrace` shadowing;
+  proc `i`×2 = a heap-ESCAPED loop var hoisted to func scope `ref var i = ref heap(…)` colliding with two
+  sibling `for(var i…)` loops that reuse the name — an emission-hoisting/scope interaction). **⚠ NEW
+  PRE-EXISTING BUG discovered by the verifier (silent data corruption, NOT a compile error): a shadowed
+  name used as an LHS index / map-key / selector-base in a plain `=` assignment is NOT renamed** — the
+  `=` AssignStmt case (`variableAnalysisOperations.go` ~714–734) only processes `getIdentifier(lhs)` (the
+  root, e.g. `m` in `m[ns]`) and `visitNode`s the RHS, never descending into LHS sub-expressions, so
+  `m[ns] = ns*100` (inner shadow `ns`) emits `m[ns] = nsΔ1*100` — LHS key stays the param, C# returns the
+  wrong value with NO compile error. Reproduces with a VAR shadow too (shared with the var path); needs the
+  `=` case to walk LHS index/key/selector sub-exprs. Queued as S6b below.
+- **2026-06-30: pointer-receiver method promoted through a VALUE embed routes to the embedded
+  box (`0abc66e2d`; CS1929 −3, runtime 159 → 158).** `timeTimer` embeds `timer` BY VALUE; a promoted
+  `t.modify(…)`/`Ꮡt.stop()`/`Ꮡt.reset(…)` on a `*timeTimer` emitted the whole `ж<timeTimer>` box, but
+  the promoted method's ж/[GoRecv]-ref overload binds `ж<timer>` (CS1929) — the TypeGenerator emits NO
+  forwarder for this shape (a value-copy forwarder would lose the write). Go auto-takes `&t.timer`, so
+  the converter now routes through the embedded field's box exactly as the explicit `t.timer.modify(…)`
+  already renders: `t.of(timeTimer.Ꮡtimer).modify(…)` / `Ꮡt.of(timeTimer.Ꮡtimer).stop()`, via
+  convUnaryExpr's `&receiver.field` &-machinery. Detection: `Selection.Index() == [embeddedField,
+  method]` (single embed hop). GATED to a VALUE embed — a POINTER embed already yields the box as its
+  field value and is left to the generated forwarder; taking its address would double-box to `ж<ж<T>>`
+  (this gate fixed an initial over-boxing regression in the trace* writers — `traceWriter` embeds
+  `traceBufPtr` — caught and corrected before commit). Write-through is genuine (a value-embedded field
+  is a SHARED heap box `ж<inner>`, so `.of(…)` aliases the real storage — verified 108/108/108/7/0 vs Go).
+  Test `EmbeddedValuePointerMethod`; full suite green (194), goldens byte-identical, adversarially
+  verified. Known limitation (NOT a regression, cannot occur in converted code): embedding a hand-written
+  baseline type whose pointer methods lack a `[GoRecv]` ж-overload would not bind — the converted stdlib
+  always has the RecvGenerator overload. See ConversionStrategies.md "A pointer-receiver method promoted
+  through a VALUE embed…". *(Two prior commits this session: `6fd2df8d5` committed InferredForeignTypeNoImport's
+  generated .cs, missed in a1d6db87e; `a1d6db87e`/`af541a4e4` generalized the alias fix — below.)*
+- **2026-06-30: GENERALIZED cross-package type-reference alias emission (`a1d6db87e`,
+  subsuming the unsafe-specific `08946c23d`; CS0246 2 → 0, runtime 161 → 159).** A cross-package type
+  renders in short-alias form — `pkg.Type` (`time.Duration`, `abi.Kind`) for a named type,
+  `@unsafe.Pointer` for the unsafe.Pointer basic — which resolves only via a file-local alias
+  (`using time = time_package;`, `using @unsafe = unsafe_package;`). That alias was emitted solely from a
+  CANONICAL (unaliased) import, so a file reaching a foreign type without one — via type INFERENCE (a
+  same-package function returns the foreign type, so the caller never writes `pkg.` and need not import
+  it: `preempt.go` `fd := funcdata()`→unsafe.Pointer), a BLANK import (`_ "pkg"`, alias `_`:
+  `symtabinl.go`), or a non-canonical ALIAS — failed CS0246. *The user flagged that my first fix was
+  unsafe-specific and asked to generalize it — confirmed generic via a `time.Duration` repro.* Fix
+  (converter-only, 3 files): `collectTypePackages` (walked from `getTypeName`) records the import path of
+  every foreign named type it emits — recursing pointer/slice/array/map/chan/generic-args/func-signature
+  so composite elements register — plus pseudo-path `"unsafe"` for the unsafe.Pointer basic;
+  `visitImportSpec` records (in `canonicalAliasImported`) paths whose canonical alias an import already
+  emitted (`packageUsingAlias` factors the derivation); `visitFile` supplies the alias for the difference
+  (idempotent — no duplicate; a non-canonical alias coexists). This is the type-reference analog of the
+  method-call `addMethodPackageNamespaceUsing`. Full suite green (193), existing goldens byte-identical;
+  adversarially verified head-to-head (no duplicate aliases across 219 stdlib files; unsafe goldens
+  byte-identical). Tests `UnsafePointerInferredNoImport` (Basic arm: scalar/composite/blank) +
+  `InferredForeignTypeNoImport` (generic named arm: inferred `*strings.Reader` in an `fmt`-only consumer).
+  See ConversionStrategies.md "A cross-package type reference emits its `using`…". **Known-inert
+  side-effect (optional future cleanup):** `collectTypePackages` runs on every `getTypeName` call incl.
+  non-emitting reasoning, so regenerable stdlib output gains a few UNUSED `using alias = …;` directives —
+  compile-inert (not even CS8019, which fires only for unused *namespace* usings) and zero golden churn;
+  could later be gated to emission paths only. (CS0118 tracetime `unsafe_package is a type used like a
+  variable` is a DISTINCT root — not the alias issue — left untouched.)
+- **2026-06-30: S2 `~`-deref-rooted receiver materialization landed (`716de3a64`; CS1510
+  9 → 0, runtime 169 → 161).** A pointer-receiver method on a value field reached through a pointer
+  RVALUE — a call `getg().schedlink.set(…)`, a method-call chain `q.tail.ptr().schedlink.set(…)`, or a
+  pointer-element index `batch[i].schedlink.set(…)` — emitted `(~rvalue).field.method(…)`, an rvalue the
+  generated `ref` couldn't bind. Fix (converter-only): new predicate `exprIsValueFieldOfPointerRvalue` +
+  a pointer-receiver routing branch in convSelectorExpr, and convUnaryExpr's `&base.field` box-field
+  branch now accepts a pointer-returning CALL / pointer-ELEMENT index base — materializing
+  `root.of(T.Ꮡfield).method(…)`. A type-CONVERSION CallExpr `(*T)(p)` is EXCLUDED (renders as a C# cast;
+  `.of(…)` would mis-bind by precedence → kept its `Ꮡ(…)` form, no StdLibInternalAbi churn). Test
+  `PointerRvalueFieldReceiver`; full suite green (191). Also re-baselined 3 cast-paren goldens stale
+  since `4261cd21a` (`ccca54886` — MethodSelector/RangeVarReassign/UnsafePointerArgPassing, missed by the
+  `42e1fa600` rebaseline; the stale-go2cs.exe false-green hid them).
+- **Behavioral-suite hygiene note (2026-06-30):** the "reduce redundant cast parentheses" beautify
+  (`4261cd21a`) had over-stripped the outer parens of `string()` conversions, leaving the suite RED
+  (UnsafeOperations failed to compile — a variadic-spread `.ꓸꓸꓸ` rebound to the cast's inner operand,
+  CS1061). Fixed in `61ce1157a` (a `string` target keeps the wrap; `@string` is member-accessible —
+  see ConversionStrategies "Basic-target conversions"). The full behavioral suite is green again (190
+  projects); if a future "suite was green" claim conflicts with a fresh run, re-run it — beautify
+  commits have twice now landed without a full-suite re-run.
+- **Manual conversions live in `src/core` and must be restored over the auto output for measurement.**
+  The user hand-finishes certain stdlib files in `src/core` marked `[module: GoManualConversion]` (the
+  converter skips re-converting them) or named `*_impl.cs`. A fresh reconvert into an empty scratchpad
+  dir does NOT trigger the skip (it checks the destination file), so the overlay must re-copy them —
+  `overlay.sh` now does this after the cs/csproj copy. Better: SEED the scratch dir with the marked
+  hand-owned `.cs` files BEFORE reconverting — the marker gate then engages (skips them) and the converter
+  emits refreshed `<name>.cs.auto` review siblings beside them (non-compiled auto-conversion reference for
+  upgrade-time diffing, committed in `src/go-src-converted`; 2026-07-16). The overlay copy must include
+  `*.cs.auto` — a bare `*.cs` glob misses them. **The canonical unsafe.Pointer model is here:**
+  `core/sync/atomic/type.cs` stores `atomic.Pointer<T>` as a managed `ж<T>` (Volatile/Interlocked +
+  `nilCanon`), NOT a `nuint` round-trip; `reflectlite/value.cs` uses `object? m_target`. *Where Go
+  stores a managed pointer via `unsafe.Pointer`, the C# model holds the `ж<T>`/`object` DIRECTLY* — the
+  guiding principle for all S1 work (see the `go2cs-manual-conversions` memory).
+- **"runtime is the only failing package" is misleading.** `dotnet build` **skips the dependents of
+  a failed project** rather than erroring them. So while `runtime` fails, the entire upper stdlib
+  (`bufio`, `bytes`, `strings`, `os`, the full `fmt`, `reflect`, …) is *not being compile-checked at
+  all*. The true remaining work is "the whole library"; expect the count to grow (un-skipping
+  dependents surfaces their own latent defects) once `runtime` greens — **that is progress** (the
+  metric is packages-compiling, not raw error count).
+- **The era of cheap contained converter one-offs is essentially over.** The campaign cleared a long
+  tail of isolated converter bugs (escape/box-naming, shadow-renames, collision-renames, narrow/native
+  numeric casts, labeled loops, type-switch dedup, range-var reassignment, blank discards, constant
+  overflow, shift-count casts, bitwise-operand casts, named-numeric `++`/`--`, named-numeric↔basic/named
+  conversion through the underlying, cross-ASSEMBLY named-numeric implicit-conversion operators through
+  the underlying…). The `git log` + the `go2cs-phase3-progress`
+  memory have the full per-defect history. **What remains in `runtime` is dominated by a handful of
+  ARCHITECTURAL features** (see *Current frontier*), not one-line emit fixes.
+- The `Δslice` "2 errors" blocker from older handoffs is **solved** and was a measurement artifact —
+  see the short historical note below; do not chase it.
+
+## Core principle — ALL SHIPS RISE TOGETHER
+
+The goal is **correct, idiomatic conversion**, not "make the C# compile by any means." Three
+components must work in tandem and each is first-class:
+
+1. **`go2cs`** (the converter, `src/go2cs/*.go`) — emits the C#.
+2. **`golib`** (the runtime library, `src/core/golib/`) — hand-written Go semantics.
+3. **`go2cs-gen`** (the Roslyn source generators, `src/gen/go2cs-gen/`) — compile-time Go semantics.
+
+**Do NOT hack or work around `golib` or the generators just to make converted output compile.** When
+a package fails, find the *root cause* and fix it in whichever component is actually wrong:
+- If the converter emits wrong/uncompilable C# → fix the converter.
+- If `golib` is missing a method, has wrong semantics, or a wrong constraint → fix `golib` properly
+  (so the emitted Go-idiomatic call is *correct*, not merely compiling).
+- If a generator computes the wrong name/shape/accessibility → fix the generator.
+
+The converter producing correct C# is the *ultimate* goal, but `golib` and the generators are not
+scaffolding to be bent around — they are the target runtime and must be made genuinely correct. A
+"fix" that makes `go2cs` output compile while leaving `golib` behaviorally wrong is a regression in
+disguise. **All three rise together to the finish.**
+
+## Workflow (per defect — non-negotiable)
+
+1. **Measure** with the loop (below); bucket errors by frequency; pick the highest-impact *root* defect.
+2. **Fix** it in the correct component (converter / golib / generator).
+3. **Add a behavioral test** that exercises the construct — extend an existing `src/tests/Behavioral/*`
+   project if one fits, else add a new one. Follow the CLAUDE.md *"Adding a regression test"* steps
+   (scaffold + `go.mod` + `.csproj` + register in `src/go2cs.slnx` + `UpdateTestTargets --createTargetFiles`).
+4. **Validate no regression** — full behavioral suite green AND zero golden churn (re-transpile all
+   behavioral dirs; byte-identical `.cs` ⟹ no regression). Re-baseline goldens only for *intended*
+   output changes.
+5. **Record the conversion decision** if it's a new/changed emitted form (per CLAUDE.md): deep detail in
+   [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), plus a summary example in
+   [`ConversionStrategies.md`](../ConversionStrategies.md) if the headline mapping changed.
+6. **Commit** (directly to `master` — solo project). One focused commit per root fix.
+7. Rinse and repeat until the full library compiles.
+
+## The measurement loop (foundation-up)
+
+Because dependents are skipped, work **bottom-up**: get the lowest packages green first so the next
+layer becomes measurable. Concretely:
+
+```bash
+# 1. Reconvert the whole stdlib (ALWAYS -comments; license headers are required). Build the converter
+#    first if any src/go2cs/*.go changed: (cd src/go2cs && go build -o bin/go2cs.exe .)
+#    Conversion is sequential and byte-deterministic (~3.5 min; per-file work is sub-second, the
+#    cost is the type graph load).
+#    FIRST seed the marked hand-owned files into the scratch output so the GoManualConversion gate
+#    engages (it probes the DESTINATION .cs) and the <name>.cs.auto review siblings get regenerated:
+grep -rlE '\[\s*module\s*:\s*(go\.)?GoManualConversion' src/go-src-converted --include='*.cs' |
+  while read f; do rel="${f#src/go-src-converted/}"; mkdir -p "scratchpad/recon/core/$(dirname "$rel")"; cp "$f" "scratchpad/recon/core/$rel"; done
+bin/go2cs.exe -stdlib -comments -go2cspath scratchpad/recon   # writes scratchpad/recon/core/<pkg>
+
+# 2. Overlay fresh .cs + .cs.auto + regenerated .csproj onto src/go-src-converted (keeps golib shared
+#    in core; the .cs.auto siblings are COMMITTED — refresh them, don't drop them).
+bash scratchpad/overlay.sh scratchpad/recon/core      # recreate overlay.sh from the measurement-loop memory
+
+# 3. Build a package (deps build first; a failed dep's dependents are SKIPPED). RUN FROM THE REPO ROOT
+#    — go-src-converted/Directory.Build.props auto-resolves $(go2csPath); no -p flag needed:
+dotnet build src/go-src-converted/runtime/runtime.csproj -c Debug -clp:ErrorsOnly | tee scratchpad/build.log
+#    or the whole solution: dotnet build src/go-src-converted.sln -c Debug -clp:ErrorsOnly
+
+# 4. Bucket by error code, then by message/file, to find the highest-frequency ROOT defect:
+grep -oE 'error CS[0-9]+' scratchpad/build.log | sort | uniq -c | sort -rn
+# Verify the errors are actually IN runtime (full path), not a skipped dependent:
+grep -ciE 'go-src-converted[\\/]runtime[\\/]' scratchpad/build.log
+```
+
+**Metric = packages-compiling, not raw error count.** Fixing a file-inclusion or a foundational
+defect often *raises* the count by un-skipping dependents that then surface their own latent bugs —
+that is progress.
+
+**⚠ The converter is NONDETERMINISTIC across reconverts** (Go map-iteration order) — raw counts
+fluctuate ±10 between two reconverts of the same source (init-func renumbering, alias-resolution
+order). **To attribute a delta to your fix, do NOT trust the raw count: cross-reference each error's
+`file:line` against the lines your change actually emits** (e.g. confirm zero errors land on the lines
+you touched). A clean fix can show a net +1 from noise while genuinely clearing −2.
+
+## Historical: the `Δslice` blocker is SOLVED (don't chase it)
+
+Older handoffs said runtime was "at 2 errors" (the `Δslice` CS0102). That was a **measurement
+artifact**: a duplicate `Δslice` declaration in the single `partial class runtime_package` made
+Roslyn *suppress member-body analysis for the whole class*, masking ~1960 real latent errors. Fix
+(commit `1d7ecaf41`): the type-side collision-avoidance appends the `ᴛ` marker so the TYPE is
+`Δsliceᴛ` while the METHOD stays `Δslice` (converter + generators stay in sync). **Lesson that still
+applies:** when a foundational fix *raises* the count, sample the "new" errors — if they're genuine
+converter defects unrelated to your change, they were **masked, not caused** (unmasking = progress).
+The old "renaming slice causes a CS8785 generator-desync cascade" theory was simply wrong.
+
+## Session model — one architectural issue per session
+
+The remaining `runtime` work is **a small number of independent ARCHITECTURAL features**, each a
+self-contained, session-sized effort (golib/generator design + converter wiring + behavioral
+validation). **Take ONE per session, with a fresh context window** — each is large enough to deserve a
+dedicated session, and greening one often un-skips dependents and re-shapes the picture. Work the
+**Session queue** below top-to-bottom (ordered by impact / how much each gates).
+
+**Every session ends with a closing ritual (non-negotiable):**
+
+1. Land the fix(es) per the per-defect **Workflow** above (root fix + behavioral test + zero golden
+   churn + `ConversionStrategies-Reference.md` (+ summary `ConversionStrategies.md` if the headline
+   mapping changed) + commit).
+2. **Update THIS doc:** check off the completed queue item (`[x]`) with a one-line result note (commits,
+   error delta), and refresh the count + date in *Where things stand*.
+3. **Rewrite the *Next session prompt* block** (bottom of this doc) into a ready-to-paste kickoff for the
+   *next* unchecked item — its goal, characterization, and first concrete step. Commit the doc update.
+4. If `runtime` reached **0**, the frontier moves UP the dependency graph — re-measure the now-visible
+   upper stdlib (`bufio`/`bytes`/`strings`/`os`/`fmt`/`reflect`/…) and append new queue items for it (S7+).
+
+A green compile is **necessary but NOT sufficient** for these items: the memory documents several fixes
+that compiled with zero churn yet were behaviorally wrong (S4 nil-NRE, S5 dead box, the `pallocBits`
+forwarding lost-writes) and were correctly reverted. The behavioral test **and its runtime output** is
+the real gate. Validate with `run-behavioral.ps1` / `check-no-regression.ps1` (see *Gotchas*).
+
+## Session queue (ordered; full per-defect detail in the `go2cs-phase3-progress` memory)
+
+Re-bucket a fresh reconvert at the start of each session — counts drift ±10 (nondeterminism) and shift
+as items land. As of 2026-07-01 latest (`runtime` = ~63; string-literal spread cleared 1, 64 → 63):
+CS0030 9, CS1503 8, CS0029 8, CS0103 7, CS0021 7, CS1929 6, CS0121 6, CS1061 1,
+then a SINGLETON tail (CS0128 2, CS0149 2, CS8175/CS8120/CS1593/CS0136/CS0119/CS0118/CS0019 ×1 —
+CS0206 + CS0117 GONE).
+**CS1061's last entry (the proc.cs double-pointer walk) is RECLASSIFIED entangled** — its writes go
+through the &GLOBAL COPY-BOX latent; it rides with the &global model, not a standalone fix. **The
+contained converter/generator queue is now EMPTY — what remains: the managed-referent ж<T>-model
+(9 CS0030, THE architectural centerpiece — DESIGN DECISION PENDING WITH THE USER: Option A faithful
+managed-slot model now vs Option B copy-box compile-milestone precedent now + model at Phase 4), the
+S3-S6 buckets (CS1503 8 / CS0029 8 / CS0103 7 / CS0021 7 / CS1929 6 / CS0121 6 — UNTRIAGED for
+precedent-class roots), the raw-metal GoManualConversion stub pass (CS0149 + kin), and the entangled
+singles.**
+**Landed: CS0161 (`a99d32f81`), CS8917 (`0ec8bac1c`), TWO S1-fork convert-native reinterpret wins
+(`9e30a1c5b` −23, `f19153a9e` −13), make-len-cast (`438d633a0`, −5), 3-index slice-bound cast (`cc1255754`,
+−2), FromRef deref-alias pin (`016ce07ef`, −3), capture-collision qualify (`d133c769b`, −2), wrapper
+field-box accessors (`02a610466`, −3, FIRST generator root), pallocBits/pMask IArray-view + ISlice-copy
+(`adc8546cc`, −12, generator+golib). ⚠ The characterized contained/approachable roots are now DRY except
+Δrtype.TFlag — what remains is dominated by the architectural S-families.**
+- **NEXT — the characterized frontier at 51 (determinism DONE `32fd49a45`; slice aliasing DONE
+  `86566b9ef`; CS0121 DONE `d0a935138`; embed-receiver CS0103 DONE `308debde7`; benchmarks merged),
+  roughly cleanest-first:**
+  1. **CS0103 last remnant (1): mprof.cs:1119** — `&b.stk()[0]` emits `Ꮡb.stk().at<uintptr>(0)` where
+     `b` is a pointer LOCAL (`var b = head` loop var): b IS the box, the `Ꮡ` prefix is spurious →
+     should be `b.stk().at<uintptr>(0)`. The element-address machinery's root-boxing mis-fires on a
+     method-CALL-result slice rooted at a pointer local. Small contained gate (convUnaryExpr
+     element-address arm).
+  2. **CS0030 managed-referent (9, ж<T>-model): gclinkptr(4)/Δguintptr/puintptr/muintptr(3) →
+     unsafe.Pointer + 2 singletons (`lfstack → Δhex`, `UntypedInt → unsafe.Pointer`).** MODEL holding
+     `ж<T>` directly per the user's model (like `core/sync/atomic` atomic.Pointer<T> / `reflectlite`
+     `object? m_target`), NOT a raw round-trip. The architectural S1 centerpiece — a dedicated iteration;
+     **the A/B decision is PENDING WITH THE USER** (A faithful managed-slot now / B copy-box compile-
+     milestone now + faithful as the first Phase-4 ticket; stated lean B).
+  3. **CS0029 box↔value family (8):** linked-list assignment shapes (`x = *y` / `*x = y` box-vs-value
+     mismatches) — needs per-site shape triage; may share a gate with the pointer-walk machinery.
+  4. **Singles:** double-pointer selector (proc.cs `&(*pprev).alllink` — ENTANGLED with the &GLOBAL
+     copy-box latent, rides with that model); CS1929 extension-shadowing (4, mprof UnsafePointer
+     Load/StoreNoWB). *(CS0149 (2) = raw-memory delegate → GoManualConversion stub candidate, SKIP for a
+     dedicated stub pass.)*
+- **DONE this campaign (S1-fork convert-native + the earlier families):** named-numeric reinterpret
+  `(*uint64)(*lfstack)` (`f19153a9e`, −13); unsafe.Pointer reinterpret `(*T)(p)` (`9e30a1c5b`, −23); CS8917
+  lambda-const-return (`0ec8bac1c`); CS0161 switch-default (`a99d32f81`). (CS8917 residual pre-existing, out
+  of scope: rune/char literals, named-unsigned results, constant-`BinaryExpr` returns inside lambdas.)
+- **CS0128 (type.cs:414, `i`/`Ꮡi` dup) — ESCAPE-ANALYSIS RABBIT HOLE, not "easiest".** Both sibling
+  `for i:=…` loops in `typesEqual`'s `abi.Func` case are escape-hoisted (`ref var i = ref heap<nint>`) → dup.
+  A minimal repro of two sibling index loops does NOT escape `i` — the escape is CONTEXT-SPECIFIC to
+  `typesEqual` (recursion/unsafe/abi), likely a SPURIOUS over-escape. Needs escape-analysis investigation,
+  not a quick sibling-rename. Deprioritize.
+- **CS0206 (runtime2.cs:177) — ARCHITECTURAL (S1), explorer MIS-classified.** `atomic.Casuintptr(…ref
+  (gp).Value…)` where `gp` is `Δguintptr` — `.Value` is the managed-referent underlying-value; this is the S1
+  guintptr/managed-pointer model. SKIP.
+- **CS1593 (metrics.cs:494) — S6 method-VALUE, not delegate-arity.** `d.compute = read.compute` (a bound
+  method value) emitted as a 0-arg `() => read.compute()` wrapper; the field wants a 2-arg delegate. Method
+  values are S6 (architectural-ish). SKIP unless a clean method-value→delegate emission is found.
+- **CS8120 (error.cs:273) — DONE (`b0bb8b5a1`, 2026-07-02).** Landed exactly as designed: merge only
+  on a byte-identical Go body (marker comment), differing bodies keep both labels (compile error over
+  silent mis-route). 4-site uniform stdlib class; TypeSwitch behavioral extension with output parity.
+- **CS0118 (tracetime.cs:80) — UNCLEAR.** Error points at the `_` discard of a `(w, _) = w.ensure(…)`
+  deconstruction; not the `traceBytesPerNumber` const (that's a plain `const=10`, fine). Needs investigation.
+- Architectural (SKIP): CS0119/CS0149 (S6 method-expression), CS0019 (S6 named-numeric bitwise), CS8175 (S5
+  ref-local-in-lambda), CS0136 (declined proc-`Δtrace`), CS0103 7 (S5 unsafe.Pointer-param-as-box), plus the
+  CS0030/CS1503/CS1061/CS0021/CS0029/CS0121/CS1929 bulk = the architectural wall.
+- **⚠ BOTTOM LINE — SUPERSEDED (2026-07-01, user strategy correction).** Iteration 15 concluded "clean
+  contained roots exhausted → STOP" because it treated the ~132 CS0030/CS1503/… bulk as an impassable
+  "architectural wall." **The user reframed it: that wall is a FORK, not a wall, and the milestone is a
+  clean COMPILE (not operational — that's Phase 4).** So the loop no longer stops here; it **SORTS** the
+  S1/CS0030 family three ways and keeps going:
+  1. **Native-type unsafe/pointer op → CONVERT** faithfully in the converter/`golib` (both are GC langs
+     with pinning; native memory ops are identical — the hand-converted `unsafe`/`atomic` proves it).
+  2. **Managed-referent (`guintptr`/`muintptr`/… hiding a managed pointer in a `uintptr`) → MODEL** it
+     holding `ж<T>`/`object` directly (Volatile/Interlocked + `nilCanon`), like `core/sync/atomic`
+     `atomic.Pointer<T>`. Per-site, approachable — CS0206 runtime2.cs `Δguintptr.Value` is exactly this.
+  3. **Raw-metal on NON-native types (layout math, type-descriptor walking, `*.asm`) → STUB** with
+     `[module: GoManualConversion]` (a compiling hand/throwing stub that won't exist in the final build is
+     an acceptable milestone solution; file a review note). Copy such stubs BACK into `go-src-converted`.
+
+  Still-tractable pure-converter contained roots (do these too, interleaved): **CS8917** (select.cs:151
+  mixed-return closure delegate type, +~6-golden churn) and **CS0118** (tracetime.cs:80, unclear — needs
+  investigation). Escalate to the user ONLY a specific site you cannot sort into convert/model/stub, or a
+  ж<T> model that needs a design decision. Full rationale:
+  [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md) *The corrected end-state* +
+  [`Phase3-AutonomousLoop.md`](Phase3-AutonomousLoop.md) *S1 is a FORK to SORT*.
+
+- [x] **Empty `struct{}` lift poisoning a `map[K]struct{}` parameter** *(landed 2026-06-30, `ccab3e458`;
+  cleared the type.cs `typesEqual` cluster — CS8130 ×2 + CS0021 ×2 + CS1503 — 175 → 169).* The handoff's
+  "anonymous-map-param lifting / implement `visitMapType`" diagnosis was **WRONG** — `visitMapType` is
+  still a stub and was never the issue. Real root: `convStructType` lifted EVERY `struct{}` composite to
+  a `[GoType("dyn")]` named type, including the EMPTY one. For `seen[k] = struct{}{}` the enclosing
+  assignment passes the LHS ident (`seen`) into the conversion context to name the lift — so the empty
+  struct was lifted to `typesEqual_seen` AND registered under `seen`'s OWN type, the map
+  `map[_typePair]struct{}`, in the lifted-type registry. That poisoned every later reference to the map
+  type: the parameter rendered as the phantom struct (not `map<_typePair, EmptyStruct>`), so comma-ok
+  deconstruction (CS8130) and the two-arg indexer (CS0021) vanished and real-map call sites mismatched
+  (CS1503). **Fix (converter-only, `convStructType.go`, +12 lines):** an empty struct short-circuits to
+  golib `EmptyStruct` before any lift, mirroring the `!isEmptyStruct` guard `extractStructType` already
+  applies everywhere else. Behavioral test `EmptyStructMapSet`; zero golden churn; full suite green. See
+  ConversionStrategies.md "...empty struct `struct{}` is never lifted...".
+- [x] **Cross-assembly named-numeric implicit-conversion operators** *(landed 2026-06-30, `93bbf6ce5`).*
+  A `GoImplicitConv` numeric operator whose body constructs a named-numeric declared in ANOTHER assembly
+  was doubly broken: `(NameOff)src.Value` (`ulong`→foreign `int32`-named) has no cross-assembly route C#
+  selects (CS0030 — the same cast to a LOCAL named type compiles), and where the foreign type would host
+  the operator (`partial struct NameOff`, reached via a local alias like runtime's `global using nameOff =
+  abi.NameOff` so the cross-package dot is hidden and it records `Inverted`) it declared a phantom empty
+  local type (CS1729). **Fix (`ImplicitConvGenerator` + template, contained):** when the `new`-constructed
+  side (LH type: source when `Inverted`, else target) is foreign, construct through its underlying basic —
+  `new global::go.@internal.abi_package.NameOff((int)src.Value)` — and relocate the host into the LOCAL type
+  when the source side is foreign. Gated to the foreign-constructed case; same-assembly operators emit
+  byte-identically (muintptr↔Δhex unchanged). Cleared 3×CS0030 + 3×CS1729 in runtime (`nameOff`/`typeOff`/
+  `textOff` ↔ `Δhex`); 199→181. **No behavioral test** — the trigger is inherently cross-assembly and the
+  single-assembly behavioral harness cannot host a foreign named numeric (`internal/*` types are
+  un-importable from a test module; baseline stubs expose none; a two-module test hits an unrelated
+  converter namespace-mapping gap — `go.<pkgname>_package` vs the consumer's `go2cs.<seg>_package`). Guard
+  is the runtime build; full suite stayed green (186/186). See ConversionStrategies.md "Generated
+  conversion operators between named numerics of different assemblies".
+- [~] **S1 — `unsafe.Pointer` / pointer-conversion modeling** *(re-characterized 2026-06-30; one contained
+  fix landed, the bulk is multi-session architectural).* **What landed:** `ef279eab3` — the
+  `(*Base)(p)` identical-underlying pointer reinterpret now derefs a genuine box arg before the value
+  conversion (runtime/pinner `(*pinnerBits)(newMarkBits(…))`); CS0030 59→58, runtime 262→261, zero churn,
+  test `NamedPointerReinterpret`. **CORRECTED CHARACTERIZATION (the original "~80, CS0030 59 + CS0021 12 +
+  CS1510 9" estimate over-counted S1):**
+  - **CS1510 ×9 is NOT S1 — it is S2** (ref-receiver method on a value-deref rvalue: `(~…).wbBuf.get2()`,
+    `(~getg()).schedlink.set(…)`). The `unsafe.Pointer.FromRef(ref X.Value)` lines actually **compile** (a
+    minimal repro confirms `ref (rvalue).Value` on a ref-returning property is legal). Moved to S2.
+  - **CS0021 splits:** only `malloc.cs` ×2 is the genuine S1 cast-then-index `(*[2]uint64)(x)[i]` (and it
+    compiles-but-CRASHES — `(ж<array<E>>)(uintptr)` does an immediate raw `*(array*)addr` deref of a
+    managed type; not runtime-testable). The rest (mgcscavenge/type/proc/traceback) is named-type-over-
+    array/map **indexer forwarding** = the S6/`pallocBits`/`winlibcall` family, not S1.
+  - **CS0030 bulk (~50: map ×16, iface, lfstack ×5, mstats/profbuf/mgcsweep, runtime2 guintptr/muintptr/
+    puintptr, gclinkptr) is the project's explicitly-accepted "memory-layout-dependent, will not work as
+    expected" runtime-unsafe code** (CLAUDE.md). These store a *managed pointer as a `uintptr`/`unsafe.Pointer`*,
+    which a raw round-trip cannot recover. The goal for them is **COMPILE-ONLY** (unblock dependents); a
+    correct runtime test is impossible by design. **The correct model is the user's managed-referent
+    approach** (hold `ж<T>` directly — see *Where things stand* + `go2cs-manual-conversions` memory): the
+    runtime `guintptr/muintptr/puintptr/gclinkptr/lfstack` types must be **hand-rewritten to hold managed
+    refs** (the same play as the promoted `atomic.Pointer<T>`), each a per-type effort. **This is genuinely
+    multi-session** and should be done WITH the user's model, NOT via a raw-uintptr round-trip (which
+    compiles-but-crashes — exactly the reverted-fix trap). Resume S1 as a dedicated managed-referent
+    redesign session once the cheaper S2/S3 buckets are cleared.
+- [~] **S2 — pointer-deref-chain receivers** *(main root landed 2026-06-30; sub-roots remain).* **What
+  landed:** `7f0075d4f` — a DIRECT-ж method on a value field-chain rooted at a deref-aliased pointer
+  PARAMETER or (direct-ж) RECEIVER now routes through the real nested box `Ꮡp.of(T.Ꮡf1).of(…Ꮡf2)`
+  (`Δp.scav.index.find()`, `mp.trace.seqlock.Load()`, `h.userArena.readyList.remove(s)`). Two coordinated
+  fixes: convUnaryExpr's `&`-machinery recurses through such a chain (+ uses the RAW box name `Ꮡp` not the
+  shadow-renamed `ᏑΔp`); convSelectorExpr routes via a new `exprIsValueFieldOfDerefdPointerRoot` GATED to
+  direct-ж (a `[GoRecv]` ref method binds directly — no churn). Runtime CS1929 32→16, total 261→243 (−18),
+  zero churn, full suite green. Test `FieldChainBoxReceiver` (write-through verified). **REMAINING S2
+  sub-roots (11 CS1929 + 9 CS1510 — each distinct, pick one per session):**
+  - [x] **Transitive direct-ж promotion via MULTI-LEVEL receiver field-chain** *(landed 2026-06-30,
+    `f7392e778`; cleared the `scavengeIndex.free`×5 cluster, CS1929 16→11, runtime 181→175).* The
+    capture-mode pre-pass's `bodyCallsCaptureModeMethodOnReceiverField` only matched a ONE-level field
+    (`recvName.field.method`), so `func (p *pageAlloc) free(){ p.scav.index.free(…) }` (a TWO-level value
+    field-chain) was never promoted to direct-ж — its `[GoRecv] ref` receiver has no box `Ꮡp` for the
+    routing. Fix (contained, converter-only): generalized the detection to walk the FULL value field-chain
+    `recvName.f1.…fn.method` (new `selectorRootsAtReceiverValueFieldChain`, value fields only — a pointer
+    hop stops the walk). The existing routing (`exprIsValueFieldOfDerefdPointerRoot`, already multi-level)
+    then binds `Ꮡp.of(pageAlloc.Ꮡscav).of(…Ꮡindex).free(…)`; the transitive fixpoint cascades the
+    promotion up to the caller (`mheap.freeSpanLocked` → `h.pages.free(…)`). Zero behavioral churn, full
+    suite green (186). Test `FieldChainBoxReceiver` extended with `deep.bumpDeep` (`d.mid.c.inc()`, no
+    other direct-ж trigger). The `limiterEvent.start`/`timers.take` cases originally grouped here are NOT
+    this shape — they are `(~ptrCall).field.method(…)` (deref-of-call root, the CS1510 receiver-
+    materialization family), still open.
+  - [x] **CS1510 ×9 — `[GoRecv] ref` method on a `~`-value-deref RVALUE receiver** *(landed 2026-06-30,
+    `716de3a64`; CS1510 9 → 0, runtime 169 → 161).* `(~getg()).schedlink.set(…)`, `(~batch[i]).schedlink.set(…)`,
+    `(~q.tail.ptr()).schedlink.set(…)`, `(~Δp.chunkOf(ci)).scavenged.setRange(…)`, `(~getg().m.p.ptr()).wbBuf.get2()`.
+    The receiver root is a pointer-returning CALL or a pointer-ELEMENT index — an rvalue that ALREADY is the
+    `ж<T>` box, so it materializes straight through it: `getg().of(g.Ꮡschedlink).set(…)`. Fix (converter-only):
+    new `exprIsValueFieldOfPointerRvalue` (value field rooted at a NON-ident, NON-selector pointer-to-struct
+    expr) + a pointer-receiver routing branch (convSelectorExpr), and convUnaryExpr's `&base.field` box-field
+    branch extended to CALL/INDEX bases — EXCLUDING type-conversion CallExprs (`(*T)(p)` renders as a C# cast;
+    `.of(…)` mis-binds by precedence, so S1 reinterprets keep their `Ꮡ(…)` form). Test
+    `PointerRvalueFieldReceiver`; zero churn; full suite green (191). See ConversionStrategies.md "The base
+    may also be a pointer rvalue…".
+  - **Indexed-element atomic (CS1929 ×4: `mprof` `bh.Value[i].Load()`/`.StoreNoWB()`).** Array element of
+    atomic `UnsafePointer` via a pointer — the `daca4f3a1`/`exprIsIndexedValueElement` area; check why it
+    isn't firing for `UnsafePointer`.
+  - [x] **`time` `timeTimer.modify/stop/reset` value-embed promotion** *(landed 2026-06-30, `0abc66e2d`;
+    CS1929 −3, 159 → 158).* Pointer-receiver method promoted through the VALUE embed `timeTimer.timer`;
+    converter routes `t.of(timeTimer.Ꮡtimer).modify(…)` (single-hop, value-embed-gated). Write-through
+    verified. Test `EmbeddedValuePointerMethod`. **REMAINING embedding CS1929:** `type` `Δrtype.Uncommon`
+    (`Δrtype` embeds CROSS-PACKAGE `abi.Type`) — that is the S3 metadata-only case below, NOT this
+    same-package fix.
+  - **iface `ж<ж<itabTableType>>.find` ×1** — double-box (a pointer field already a box, over-boxed).
+- [~] **S3 — named-type/embedding member forwarding** *(CS1061 26→19; named-over-STRUCT done; remainder
+  characterized).* **What landed:** `e59b5865a` — a defined type over a STRUCT (`type winlibcall libcall`)
+  now forwards the underlying struct's fields as get/set properties over a MUTABLE `m_value`
+  (`TypeGenerator`+`InheritedTypeTemplate`), cleared the 7 `winlibcall` `fn/n/args/r1/r2/err` CS1061. PAIRED
+  golib fix: `ж<T>.operator ~` now returns `value.Value` not `value.m_val` — `(~c).field` on a field-ref box
+  was reading a zero-valued copy (compiles-but-wrong; the winlibcall reads `(~c).n` returned 0). Runtime
+  243→236, full suite green, zero converter churn. Test `NamedTypeOverStruct`. **NOTE: 2-level struct
+  EMBEDDING promotion already works** (`stackWorkBuf`→`stackWorkBufHdr`→`workbufhdr.nobj`, transitive — see
+  ConversionStrategies "type embedding"). **REMAINING CS1061 (~19) — distinct roots:**
+  - **`Δrtype` (reflect) embeds CROSS-PACKAGE `abi.Type`** (`.Str`/`.TFlag`/`.Kind_`/`.Size_`, ~4). The
+    promotion uses `Context.GetStructDeclaration` (SYNTAX-based — same-package or source-referenced), which
+    does NOT resolve a METADATA-only referenced assembly (`internal/abi` built as a DLL). Needs
+    metadata-based member resolution (`INamedTypeSymbol.GetMembers()`) — a meatier generator extension.
+  - **field-on-box deref-missing (~7: arena/mbitmap/mheap/proc/symtab/trace/mwbbuf `box.field`)** — several
+    are S1-tied (`(ж<T>)(uintptr)(new @unsafe.Pointer(…)).field`) or `Ꮡ(~x).field` precedence; heterogeneous.
+  - **named-over-ARRAY/MAP member forwarding** = kin to the struct case just done, but the ARRAY case
+    (`pallocBits`→IArray, CS1503 ×5 + CS0021 indexer) was **tried & REVERTED** (lazy array allocates on a
+    throwaway copy → lost writes; needs EAGER shared backing). The MAP comma-ok case (`type.cs seen[tp,ꟷ]`,
+    CS0021/CS8130) may be easier (maps are reference types). Also the range/deconstruct CS8130 10 + CS8183 5
+    overlap here (`for i := range namedSliceOrSpan` / comma-ok over a named map).
+- [ ] **S4 — pointer-reassign nil-safe re-alias model** *(CS0029 ~11).* `gp = getg()` where `gp` is a
+  deref-aliased `*g` param (`ref var gp = ref Ꮡgp.Value`) can't take a `ж<g>`. A box-reassign-then-realias
+  (`Ꮡgp = …; gp = ref Ꮡgp.Value`) was implemented (−32!) but **REVERTED — it eagerly derefs the box, so a
+  nil reassignment NREs** (the behavioral test caught it; compile+churn looked clean). The fix is a
+  nil-safe re-alias model (golib `ж<T>.Value` nil handling, or a deferred/conditional re-alias). Canonical
+  repro documented in memory.
+- [ ] **S5 — closure-captured-pointer box + pointer-to-pointer aliasing** *(CS0103 ~6 + part of CS1503).*
+  `ᏑmToFlush` in `traceAdvance` (a `*m` whose `&local` is taken inside `systemstack(func(){…})` —
+  `convertToHeapTypeDecl` short-circuits boxing for inherently-heap pointer types); also
+  `unsafe.Pointer`-param-treated-as-box (`return Ꮡzero` for a `zero unsafe.Pointer` param). The
+  decl-side-only fix was tried + REVERTED (dead box: plain `&pointerVar` uses the `Ꮡ(copy)` copy-box, not
+  the declared box) — needs a COORDINATED decl+usage fix = the pointer-to-pointer aliasing feature (make
+  `&pointerVar` use the declared box when the local is boxed).
+- [ ] **S6 — contained sweep** *(the residue; do LAST, or first as a warm-up).* CS0121 `add` overload
+  collision (free func vs `RecvGenerator` companion both static `add` in `runtime_package`); CS0119 method
+  expression `(*timers).run` → `(ж<timers>).run` (delegate/method-group feature); CS0266 `*byte`
+  pointer-walk mis-typing + named-numeric; CS0019 `taggedPointer` named-numeric bitwise; the two
+  large-literal latents (>int32 literal as a `uintptr` CALL ARG → CS1503, and as a VAR INIT → CS0266);
+  CS0128 `type.cs` escape-hoisted-for-var over-boxing; the CS0841/CS0411/CS0136/CS0117/CS0149 tail. Each
+  has a SPECIFIC trap — read memory first; several touch the named-numeric operator-ambiguity area.
+- [ ] **S7+ — upper stdlib** *(unlocks only after `runtime` = 0).* Re-measure `bufio`/`bytes`/`strings`/
+  `os`/`fmt`/`reflect`/… (currently skipped) and append their queue items here.
+
+## Gotchas (these cost real time — see CLAUDE.md + memory for more)
+
+- **Validate with the standalone behavioral runner, not testhost (2026-06-30).** `src/tests/Behavioral/
+  run-behavioral.ps1 [--filter <Name>] [--phase transpile,compile,target,output] [--update-targets]`
+  runs the four phases over all **180** behavioral projects **outside testhost** — the old
+  `testhost`/`vstest.console` self-lock (`MSB3027`, 0-byte hangs) is structurally gone. Cold ≈2 min /
+  warm ≈80s, all 180 green. For a pure converter no-regression check with no compile/run, use
+  **`check-no-regression.ps1`** (re-transpiles every behavioral dir, `git status`es the `.cs`;
+  byte-identical ⟹ no regression). These supersede the old `dotnet test --filter` / kill-stale-testhost
+  dance — prefer them. (The MSTest `BehavioralTests` runner still exists and works; it's just slower and
+  lock-prone.)
+- **Run `dotnet build <pkg>.csproj` from the REPO ROOT.** A leftover `cd src/go2cs` (from building the
+  converter) makes the relative project path resolve wrong → `MSB1009 "project does not exist"` and a
+  **false 0-errors** reading. The working dir persists between Bash calls; many slips this session.
+- **The standalone runner sidesteps the `*Tests.cs` rebuild.** `run-behavioral.ps1 --filter <Name>`
+  builds and runs the project directly (no MSTest assembly), so a NEW project just works — no
+  `-p:go2csPath` build dance. *(Only if you fall back to the MSTest path:* `UpdateTestTargets
+  --createTargetFiles` adds a `Check<Name>()` to the four `*Tests.cs` for a NEW project, staling
+  `--no-build`; build once with `dotnet build …/BehavioralTests.csproj -c Debug
+  -p:go2csPath=H:/Projects/go2cs/src/` — FORWARD slashes — then `dotnet test --no-build --filter`.)*
+- **`replace_all` on a func def does not touch its call sites** — rename both, or `go run` errors
+  "undefined: oldName".
+- **Reboots/compactions are survivable.** Converter edits and `scratchpad/recon` persist; just rebuild
+  `go2cs.exe` and re-overlay. `overlay.sh` itself dies with the session — recreate it from the
+  `go2cs-measurement-loop` memory.
+- **`getSanitizedFunctionName` / converter↔generator name agreement is the invariant** — any
+  name-shape change can cascade through the generators. Treat it as radioactive.
+- **Don't commit `go-src-converted` regens.** It's regenerable; the unit of work is the converter/golib/
+  generator fix. Restore with `git checkout HEAD -- src/go-src-converted && git clean -fdq -- src/go-src-converted`.
+
+## Next session prompt
+
+> Paste this block to start the next session. **Each session rewrites this block for its successor** as
+> the final step of the closing ritual (point to the next unchecked queue item).
+
+```
+Continue Phase 3 of go2cs. Read docs/Phase3-Handoff.md and CLAUDE.md first — they have the goal, the
+ALL-SHIPS-RISE principle, the per-defect Workflow, the measurement loop, and the session queue.
+
+# ======== THE MORNING SUMMARY (2026-07-02 overnight run) ========
+
+**Trajectory: 51 -> 29 — FIFTEEN roots, zero reverts, suite green at every gate (216/216 at the
+final one), output byte-deterministic, every count exact. The autonomous queue is now DRY — every
+remaining error waits on one of your two model decisions (or their adjacents).** One-line ledger
+(git log has full detail):
+`b28495a5d` CS0103 extinct (slice element-address on base TYPE) · `cc39fd0e6` tuple-reassigned
+pointer param repoints its box · `2c352ff49` empty named-collection composite = zero value ·
+`d9dbc9839` deref-of-cast paren wrap (dissolved a "raw-metal" CS0149) · `db6445f7c` min/max
+untyped-const cast · `e20a840f4` string-base wide index · `6c26a726a` receiver-in-pointer-composite
+direct-ж trigger · `082b05f1b` blank-import `using _` discard hijack · `d5ba6b44e` cross-package
+pointer-embed method hop · `7cdb7d010` index-on-cast wrap · `19686fbec` concat-under-u8-suppression
+(audit-narrowed 212->68) · `2b7752648` own-initializer func shadow · `9f8ae9f90` method-expression delegate cast (14-file class diff: flate/lzw function tables, the go122 trace event-handler TABLE, zstd FSE builders, slog) · `1195eb9c3` bound-method-value arity + named-func delegate creation (23 files: http.HandlerFunc everywhere, tls handshakeFn, json encoderFunc, parser dispatch, flag, ast.Walk) · `b0bb8b5a1` CS8120 duplicate-mapped
+type-switch case merged on an identical body (uint+uintptr both -> nuint; 4-site uniform class diff —
+the same latent also cleared in fmt print.cs, internal/bisect, log/slog). Plus BOTH side-session merges
+landed and validated earlier in the night (slice-aliasing 86566b9ef, benchmarks 8ea5253e5+02470cc93),
+plus `5c5f14a0c` — a stale-golden catch-up: 19686fbec's concat suppression had missed re-baselining
+StringZeroValueConcat (bisect-proven; the harness had compared the committed .cs instead of a
+fresh-exe transpile — check-no-regression with its forced go build caught it).
+
+**THE REMAINING 29 — every error classified; two DECISIONS own 20 of them; NO autonomous
+candidates remain:**
+
+1. **DECISION A — managed-referent ж<T> model (CS0030 ×9).** gclinkptr ×4 (malloc/mcache/stack),
+   guintptr/puintptr/muintptr ×3 (runtime2), lfstack->Δhex (mgc), UntypedInt->Pointer (stkframe).
+   Option A: faithful managed-slot model now (like core/sync/atomic Pointer<T>) — multi-iteration,
+   golib types + converter routing. Option B: copy-box/uintptr compile-milestone precedent now
+   (~1-2 iterations — the reinterpret seams already exist), faithful model as the first Phase-4
+   ticket. MY LEAN: B (the milestone is compile; the faithful model is better designed against
+   Go-test failures in Phase 4).
+2. **DECISION B — named-over-array eager-shared-backing model (11 sites).** ΔcgoCallers (proc
+   CS0021 ×3 + CS1503 ×2, traceback CS0021 ×2) + mprof buckhashArray CS1929 ×4 ([179999]
+   atomic.UnsafePointer elements cannot bind atomic's ж-extensions). Needs the generator to give a
+   named-over-array wrapper REAL element boxes (eager shared backing or at()-routing through the
+   wrapper) — the pallocBits IArray-view precedent (adc8546cc) is the design seed, but ELEMENT
+   ADDRESSES (not just views) are needed here. Wants your model input like pallocBits did.
+3. **&GLOBAL/double-pointer family (4):** mheap CS0029 ×2 (`*i.pprev` over-deref), iface CS1929
+   double-box (ж<ж<itabTableType>>), proc:1901 CS1061 (&allm walk `alllink`). One model: globals
+   holding pointers + **T derefs.
+4. **S6 family: CLEARED** (`9f8ae9f90` method expressions + `1195eb9c3` bound values/named-func
+   conversions — both halves landed).
+5. **Escape-hoist CS0128 ×2** (typesEqual sibling `for i` loops both hoisted — spurious
+   over-escape, needs an escape-analysis dive).
+6. **Misc singles (3):** tagptr CS0019 (named-numeric `&` on taggedPointer — S6 bitwise), trace
+   CS8175 (ref-local `gen` captured in lambda — S5), proc CS0136 Δtrace (previously investigated +
+   declined as a deep collision×shadow interaction). CS8120 dup-case: **DONE** (`b0bb8b5a1`).
+   Exact 29 bucket profile: CS0030 9 · CS0021 5 · CS1929 5 · CS0128 2 · CS1503 2 · CS0029 2 ·
+   CS8175 1 · CS1061 1 · CS0136 1 · CS0019 1.
+
+**LATENTS (compile fine, Phase-4 significance):** golib slice nil-vs-empty conflation
+(`pm{} == nil` -> true; needs a data-pointer distinction); receiver-into-INTERFACE-field composite
+identity (~70 sites pass the value alias — pointer identity lost; promoting = wide re-route);
+&GLOBAL copy-box writes; &LOCAL copy-box lost-write (mgcscavenge.cs:1101 zeroing); zero-valued
+struct array-field NULL backing; bare-const-shift 32-bit truncation (`1 << 40` silently wrong);
+named-result closure decls missing; promoted VALUE-receiver calls through metadata embeds.
+
+**Suggested morning agenda:** (1) rule on Decision A (B = fastest to milestone); (2) sketch the
+named-over-array model with me (Decision B — biggest single cluster); (3) the &GLOBAL/double-pointer
+family design session unlocks 4 more. (S6 and CS8120 both landed overnight — nothing autonomous is
+left; the loop is idling at a slow cadence until you weigh in.)
+
+Standing cautions:
+- FORCE `cd src/go2cs && go build -o bin/go2cs.exe .` before any "suite green" claim (stale-exe
+  false-green). After any emitted-form change: `run-behavioral.ps1 --update-targets` post fresh build.
+- Reconvert with the HARD TIMEOUT pattern (timeout -k 30 600, marker INTO the log, retry once on 124).
+  Overlay = bash scratchpad/overlay.sh <recon>/core (it also restores the src/core manual files).
+- gpg-agent may TIMEOUT on the signed commit — `gpgconf --launch gpg-agent`; if it still needs a
+  passphrase, STOP and ask (never bypass signing). Commits LOCAL only until the milestone workflow.
+- NEVER sed package_info.cs (Edit only); paren-unwrap before AST shape-matching; name-gates must respect
+  Δ-shadow/ʗ-capture renames; MSBuild project refs are METADATA (cross-package = semantic model).
+- mprof indexed-element atomic (CS1929 ×4) is S1/named-over-array ENTANGLED — park it. proc.cs
+  double-pointer walk rides the &GLOBAL copy-box model. CS0128 (2) escape-hoist = rabbit hole.
+- Logged latents (do not trip over them): bare const shift to native int is SILENT-wrong (`1 << 40`
+  masks to 32-bit — fix in shift emission, widen the left operand); zero-valued struct array-field
+  backing is NULL (NRE, Phase-4-significant); string-local `&s` escape miss; range sub-slice detach
+  (task chip spawned); named-result CLOSURE decls missing; cross-pkg promoted METHOD calls.
+
+First steps:
+1. go build fresh; reconvert + overlay + build runtime -clp:ErrorsOnly; re-bucket (expect exactly 29;
+   any drift is now REAL signal, not noise).
+2. The autonomous queue is DRY — every remaining error rides Decision A (managed-referent ж<T>,
+   CS0030 ×9, lean B copy-box), Decision B (named-over-array element boxes, 10 sites), the
+   &GLOBAL/double-pointer family (4), or the parked singles. Take the user's rulings from THE
+   MORNING SUMMARY agenda, then resume one-root iterations against the chosen model.
+
+Closing ritual (REQUIRED): update docs/Phase3-Handoff.md — check off the item with a result note, refresh
+the runtime count/date — then rewrite this "Next session prompt" block for the next unchecked item.
+Commit the doc update. Then stop and hand me that prompt.
+```
+
+## Definition of done
+
+`dotnet build src/go-src-converted.sln -c Debug` reports **0 errors** across all ~305 packages, with
+the green baseline (`src/go2cs.slnx`) and the full behavioral suite still passing. Promote packages
+into the baseline (`src/core/<pkg>`) as they go green and stabilize (see CLAUDE.md). Then stop and
+stand by — this is THE milestone.

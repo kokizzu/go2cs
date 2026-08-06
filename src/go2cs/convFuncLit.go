@@ -133,7 +133,7 @@ func (v *Visitor) constExprContainsUntypedNamedConstRef(expr ast.Expr) bool {
 // `func((defer, recover) => …)` execution context whose GoFunc frame, display class and per-defer
 // delegates dominate the cost this change removes; converting the outer binding alone would churn
 // the goldens for no measurable win. Making that shape allocation-free is the ref-struct frame
-// design (docs/Phase4/DESIGN-closure-emission.md), not this rule.
+// design (docs/phase4/DESIGN-closure-emission.md), not this rule.
 func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format FormattingContext) (*ast.Ident, *ast.FuncLit, bool) {
 	// A local function is a DECLARATION statement: it is only legal in a statement list, never in
 	// the init/post clause of a `for`, or an `if`/`switch` init, which is what !useNewLine marks.

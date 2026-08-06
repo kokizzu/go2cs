@@ -76,7 +76,7 @@
    escape-analysis change and charter §7 puts it behind a reviewed design.
    Neither half alone flips the assert (216 -> 128 still fails `want 0`). Full write-up and the
    ruling options: the r39 entry under `time` in
-   [`docs/Phase4/BOARD-next-validation-candidates.md`](Phase4/BOARD-next-validation-candidates.md).
+   [`docs/phase4/BOARD-next-validation-candidates.md`](phase4/BOARD-next-validation-candidates.md).
    **Successor item:** the converter still wraps every union sub-slice in `((bytes)(…))`, which is now
    an identity conversion emitting no IL. It is pure noise in the rendering and `s = s[19..]` would
    match the Go exactly; removing it means restructuring the `typeParamIsStringByteUnion` branch in
@@ -101,7 +101,7 @@
     fixtures and end-user modules keep their historical bytes). Guarded by
     `TestValidationPackBlockSurvivesTestsRewriteOfCorePackage`; the end-to-end proof is the next
     sweep's aftermath, which should no longer contain the `0 8` csproj family at all.
-11. **`Tests/PackageTests/ConvertedTestHarness` does not build — the end-to-end `-tests` fixture is
+11. **`tests/PackageTests/ConvertedTestHarness` does not build — the end-to-end `-tests` fixture is
     dead** (found r37-time-os-fin, 2026-08-02; PRE-EXISTING, A/B'd on `fa87dd349` with a
     master-converter binary and reproduced from a clean slate). Its production `value.cs` emits
     `namespace go;` + `convertedtestharness_package`, while the external variant's `external_test.cs`
