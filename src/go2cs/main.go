@@ -239,6 +239,11 @@ Examples:
 	}
 
 	if convertStdLib {
+		// No go2csPath resolution here, deliberately: under -stdlib the root is the OUTPUT root this
+		// run populates (core\<pkg> is written into it and each package reads its already-converted
+		// dependencies back from the same place), so an absent core\golib is the normal state of a
+		// first conversion into a fresh root — neither a thing to relocate nor a thing to warn about.
+
 		// Initialize standard library converter
 		converter := NewStdLibConverter(options)
 
@@ -305,6 +310,11 @@ Examples:
 				}
 			}
 
+			// Warn on an unusable runtime root, but do NOT self-locate one: without a second
+			// positional the runtime root IS the recurse output root assigned just above, so
+			// relocating it here would move the whole generated tree out from under the caller.
+			resolveGo2CSPath(&options, "", false)
+
 			converter := NewModuleConverter(options)
 
 			if err := converter.ConvertModule(inputFilePath); err != nil {
@@ -329,20 +339,19 @@ Examples:
 				if abs, absErr := filepath.Abs(outputFilePath); absErr == nil {
 					outputFilePath = abs
 				}
-
-				// Self-locate the project-reference root when the configured go2csPath is not
-				// itself a valid root (no core\golib — e.g. the ~/go2cs default on a bare clone
-				// with no deploy-core staging) and the OUTPUT lands inside a go2cs source tree.
-				// Mutated HERE, before conversion AND the test actions, so the manifest's digest
-				// (which folds the options) is written and validated with the same root — the
-				// documented two-argument validation command then works from a clone with no
-				// flags or environment setup. An explicitly configured WORKING root wins.
-				if !isGo2CSRoot(options.go2csPath) {
-					if root := findGo2CSRootAbove(outputFilePath); root != "" {
-						options.go2csPath = root
-					}
-				}
 			}
+
+			// Self-locate the project-reference root when the configured go2csPath is not itself a
+			// valid root (no core\golib — e.g. the ~/go2cs default on a bare clone with no
+			// deploy-core staging) and the OUTPUT lands inside a go2cs source tree; warn once when
+			// none is found. Applies to EVERY single-package conversion, not just -tests: the
+			// imported-type-alias metadata a bare `go2cs <pkg-dir>` reads comes from this root, so
+			// leaving it ambient made the emitted package_info.cs vary with the shell's GO2CSPATH.
+			// Mutated HERE, before conversion AND the -tests actions, so the manifest's digest
+			// (which folds the options) is written and validated with the same root — the documented
+			// two-argument validation command then works from a clone with no flags or environment
+			// setup. An explicitly configured WORKING root wins.
+			resolveGo2CSPath(&options, outputFilePath, true)
 
 			// -tests: convert-and-hook runs for the convert/all actions (processConversion ends
 			// by converting the package's tests); build/run/compare act on EXISTING artifacts

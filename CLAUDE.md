@@ -130,7 +130,23 @@ ONE stdlib in a build; there is now only one on disk.
     ~15 min in C# vs 7.6 s in Go — a performance gap, not a correctness one).
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
-    while `$(go2csPath)` references continue to resolve against this runtime root.
+    while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
+    converter reads each imported package's `package_info.cs` from** to mint the emitted
+    `<ImportedTypeAliases>` block, so a stale/missing root used to emit a silently EMPTY block — no warning,
+    exit 0 — and the OUTPUT varied with the shell's ambient `GO2CSPATH` (found 2026-08-06). Two protections
+    since: **self-location** — any single-package or `-tests` conversion whose configured root is not a go2cs
+    root (no `core\golib\golib.csproj`) walks its OUTPUT path's ancestors for one, so a bare
+    `go2cs <pkg-dir>` inside a clone resolves against that clone with no flag or env; and a **loud
+    once-per-run stderr warning** naming the resolved path and the consequence when none is found
+    (deliberately NOT fatal — converting standalone code with no deployed root is legitimate). An explicitly
+    configured *working* root always wins. `-recurse` warns but never self-locates (without a second
+    positional its root doubles as the output root, so moving it would move the generated tree);
+    `-recurse=nuget` does neither (published package refs need no local root); `-stdlib` does neither (its
+    root IS the output root the run itself populates, so an absent `golib` is the normal first-conversion
+    state). Every harness that invokes the converter — `check-no-regression.ps1`, `BehavioralRunner`,
+    `BehavioralTestBase`, `PerformanceRunner`, `run-validated-sweep.ps1` — now passes an EXPLICIT
+    `-go2cspath <repo>\src` computed from its own location, so no gate's verdict can move with the ambient
+    variable again.
   - `-goroot` / `-gopath`, `-platforms os/arch`, `-indent 4`, `-var` (default on),
     `-uco` (channel operators, default on), `-comments`, `-cgo`, `-tree`, `-csproj <tmpl>`, `-debug`.
   - Single project/file: `go2cs package_dir` or `go2cs example.go [out.cs]`.

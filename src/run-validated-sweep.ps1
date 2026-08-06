@@ -94,7 +94,13 @@ foreach ($row in $rows) {
     $label = '{0,-34}' -f $pkg
     $pkgTimeout = if ($longTimeouts.ContainsKey($pkg)) { $longTimeouts[$pkg] } else { $TestTimeout }
 
-    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout $goDir $outDir 2>&1
+    # -go2cspath is pinned to $src (this script's own directory) rather than inherited from the
+    # ambient GO2CSPATH. A -tests run already self-locates the root from its output path, which lands
+    # under src\core, so on a healthy box this is the same value -- but only when the ambient root is
+    # INVALID does that recovery run: a GO2CSPATH pointing at some other real go2cs tree (a
+    # deploy-core staging root, say) would be honored instead, and the suite would be built against
+    # one tree's metadata while compiling the other's sources.
+    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout -go2cspath $src $goDir $outDir 2>&1
     $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
 
     if ($verdict) {

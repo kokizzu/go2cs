@@ -35,6 +35,16 @@ public abstract class BehavioralTestBase
 
     protected static string go2cs { get; private set; } = null!;
 
+    // The converter's -go2cspath: the root it reads an imported package's package_info.cs from when it
+    // mints the emitted <ImportedTypeAliases> block. NOT the MSBuild $(go2csPath) property of the same
+    // name (that one is set in CompileCSProject). Its default is ~/go2cs, so leaving it ambient made the
+    // transpiled output -- and with it the golden comparison's verdict -- depend on whatever GO2CSPATH the
+    // shell carried (BOARD-next-validation-candidates.md, 2026-08-06). Pinned here to the src root derived
+    // from this assembly's own location: the behavioral .csproj files bind $(go2csPath)core\<pkg> with
+    // MSBuild $(go2csPath) -> $(SolutionDir) -> src\, so src\core is what they compile against and src\ is
+    // the only root whose metadata describes those assemblies.
+    protected static string Go2csRoot { get; private set; } = null!;
+
     protected static string PublishProfile { get; private set; } = "win-x64";
 
     protected static string TargetConfig { get; private set; } = "Release";
@@ -71,6 +81,11 @@ public abstract class BehavioralTestBase
         string execPath = Directory.GetCurrentDirectory();
         string go2csSrc = Path.GetFullPath($@"{execPath}{RootPath}go2cs\");
         string go2csBin = Path.Combine(go2csSrc, @"bin\");
+
+        // Resolved before the up-to-date early return below, so every path through Init sets it. The
+        // trailing separator must go: a Windows command line ends the quoted argument on the closing
+        // quote, and a backslash immediately before it escapes that quote instead.
+        Go2csRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath($@"{execPath}{RootPath}"));
 
         int projectNameIndex = execPath.IndexOf(nameof(BehavioralTests), StringComparison.OrdinalIgnoreCase);
 
@@ -242,7 +257,7 @@ public abstract class BehavioralTestBase
             int exitCode;
 
             foreach (string pkgPath in GoPackageDirs(projPath))
-                Assert.AreEqual(0, exitCode = Exec(go2cs, pkgPath), $"go2cs transpile for \"{targetProject}\" package \"{Path.GetFileName(pkgPath)}\" failed with exit code {exitCode:N0}");
+                Assert.AreEqual(0, exitCode = Exec(go2cs, $"-go2cspath \"{Go2csRoot}\" \"{pkgPath}\""), $"go2cs transpile for \"{targetProject}\" package \"{Path.GetFileName(pkgPath)}\" failed with exit code {exitCode:N0}");
         }
     }
 

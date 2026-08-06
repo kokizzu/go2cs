@@ -32,6 +32,17 @@ $converterSrc = Join-Path $repoRoot "src\go2cs"
 $go2csExe     = Join-Path $converterSrc "bin\go2cs.exe"
 $behavioral   = $PSScriptRoot
 
+# The converter's -go2cspath (env GO2CSPATH, default ~/go2cs) is the root it reads an imported
+# package's package_info.cs from to mint the emitted <ImportedTypeAliases> block -- NOT the MSBuild
+# $(go2csPath) property of the same name. Left ambient, this gate's VERDICT moved with whatever the
+# shell happened to carry: a stale ~/go2cs stub deploy drops the reflect aliases from four projects
+# while the repository tree adds time/syscall/encoding-json/io aliases to twelve others, and the two
+# sets are disjoint (BOARD-next-validation-candidates.md, 2026-08-06). Pin it, from THIS script's own
+# location, to the tree the behavioral .csproj files actually compile against: MSBuild $(go2csPath)
+# resolves to $(SolutionDir) = src\, so src\core is what the tests link and src\ is the only root
+# whose metadata describes those assemblies.
+$go2csRoot    = Join-Path $repoRoot "src"
+
 # 0. Solution-integrity preflight (fast, static, <1s): every behavioral test project on disk must be
 #    registered in go2cs.slnx. A missing registration builds fine here (the harness builds each .csproj
 #    by path) but breaks the go2cs.slnx build in Visual Studio, so the transpile no-regression loop
@@ -78,7 +89,7 @@ $savedEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
     foreach ($proj in $projects) {
-        & $go2csExe $proj.FullName 2>&1 | Out-Null
+        & $go2csExe -go2cspath $go2csRoot $proj.FullName 2>&1 | Out-Null
         # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
         # sub-libraries (three of them are called "inner", two "latelib").
         if ($LASTEXITCODE -ne 0) {

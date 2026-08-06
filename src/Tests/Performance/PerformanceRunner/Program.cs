@@ -268,6 +268,14 @@ namespace PerformanceRunner
             return true;
         }
 
+        // As in BehavioralRunner: the converter gets an EXPLICIT -go2cspath (s_srcRoot, derived from this
+        // runner's own location) instead of inheriting the ambient GO2CSPATH. That flag -- not the MSBuild
+        // $(go2csPath) property of the same name -- is the root the converter reads an imported package's
+        // package_info.cs from when it mints the emitted <ImportedTypeAliases> block, and its default
+        // (~/go2cs) is absent or stale on most boxes, so an inherited value makes the transpiled C# vary
+        // with the launching shell (BOARD-next-validation-candidates.md, 2026-08-06). The benchmark
+        // projects compile against src\core through MSBuild $(go2csPath) -> $(SolutionDir), so src\ is the
+        // root whose metadata describes what they link.
         private static void RunTranspile(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Transpile] {projects.Count} project(s)... ");
@@ -280,7 +288,7 @@ namespace PerformanceRunner
                 if (UpToDate(projPath))
                     continue;
 
-                ProcResult r = Exec(s_go2csExe, $"\"{projPath}\"", projPath, TranspileTimeoutMs);
+                ProcResult r = Exec(s_go2csExe, $"-go2cspath \"{s_srcRoot}\" \"{projPath}\"", projPath, TranspileTimeoutMs);
 
                 if (r.ExitCode != 0)
                 {

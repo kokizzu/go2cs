@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -214,6 +215,76 @@ func parseBuildTags(value string) []string {
 	}
 
 	return tags
+}
+
+// go2csRootWarned pins the unusable-root warning to ONCE per run (a conversion resolves dozens of
+// imports and every one of them would otherwise repeat the same advice). Package-level and
+// test-pinnable in the goModCache manner: a test saves it, resets it, and restores it on cleanup.
+var go2csRootWarned bool
+
+// resolveGo2CSPath settles the runtime/stdlib root a conversion resolves its references AND its
+// imported-type-alias metadata against — the converter's -go2cspath (env GO2CSPATH, default
+// ~/go2cs), which is NOT the MSBuild $(go2csPath) property of the same name.
+//
+// Why this exists. getImportPackageInfo maps a stdlib import to $(go2csPath)core\<pkg> and
+// substitutes THIS path to find the imported package's package_info.cs, from which the emitted
+// <ImportedTypeAliases> block is minted. When the root is missing, stale or partial the aliases are
+// simply omitted — no warning, no error, exit 0 — so the conversion's OUTPUT silently varies with an
+// ambient environment variable. That is how the behavioral corpus ended up split across two roots
+// (BOARD-next-validation-candidates.md, 2026-08-06): 12 package_info.cs matched a stale ~/go2cs
+// stub deploy while the rest matched the repository's own src\ tree.
+//
+// Two recoveries, in order:
+//
+//	Self-location — when the configured root is not a go2cs root (no core\golib\golib.csproj) the
+//	ancestor chain of the conversion's OUTPUT is walked for one. The output, not the input, is the
+//	anchor: the emitted package_info.cs/.csproj and their $(go2csPath)core references live THERE, so
+//	the tree that must satisfy them is the tree the output is written into. For a bare
+//	`go2cs <pkg-dir>` the two are the same directory, which is what makes an unconfigured run inside
+//	a go2cs clone resolve against that clone. An explicitly configured WORKING root always wins.
+//
+//	A loud failure — when no root is found the run still proceeds (converting standalone code with
+//	no deployed runtime is legitimate) but says so once, naming the resolved path and the
+//	consequence, instead of emitting quietly alias-free metadata.
+//
+// Callers pass selfLocate=false where the root cannot be relocated safely: under -recurse the
+// runtime root doubles as the output root when no second positional was given, so redirecting it
+// would move the generated tree. -stdlib calls neither side — there the root IS the output root the
+// run itself populates (core\<pkg> is written into it), so having no golib under it is the normal
+// state of a first conversion, not a fault.
+func resolveGo2CSPath(options *Options, outputAnchor string, selfLocate bool) {
+	if isGo2CSRoot(options.go2csPath) {
+		return
+	}
+
+	if selfLocate && outputAnchor != "" {
+		anchor := outputAnchor
+
+		if abs, err := filepath.Abs(anchor); err == nil {
+			anchor = abs
+		}
+
+		if root := findGo2CSRootAbove(anchor); root != "" {
+			options.go2csPath = root
+			return
+		}
+	}
+
+	// -recurse=nuget references the PUBLISHED go2cs packages (go.<pkg>/go.lib/go.gen) instead of
+	// local project references, and reads its stdlib metadata from the converter's own embedded
+	// records — so it needs no local root at all and must not be nagged about one.
+	if options.nugetRefs || go2csRootWarned {
+		return
+	}
+
+	go2csRootWarned = true
+
+	// %s, not %q: on Windows %q escapes every separator in the path it is telling the reader to fix.
+	showWarning("go2cs runtime root \"%s\" is not a converted go2cs tree — no %s under it.\n"+
+		"         Imported-type-alias metadata cannot be read from it, so emitted package_info.cs\n"+
+		"         <ImportedTypeAliases> blocks will be empty and $(go2csPath)core project references\n"+
+		"         may not resolve. Pass -go2cspath <root>, set GO2CSPATH, or stage a root with deploy-core.",
+		options.go2csPath, filepath.Join("core", "golib", "golib.csproj"))
 }
 
 // loaderBuildFlags renders the go/packages BuildFlags for the configured build tags. It returns nil

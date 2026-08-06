@@ -197,6 +197,15 @@ namespace BehavioralRunner
             return true;
         }
 
+        // The converter is invoked with an EXPLICIT -go2cspath (s_srcRoot, derived from this runner's own
+        // location) rather than inheriting the ambient GO2CSPATH. That flag -- not the MSBuild
+        // $(go2csPath) property of the same name -- is the root the converter reads an imported package's
+        // package_info.cs from to mint the emitted <ImportedTypeAliases> block, and its default is
+        // ~/go2cs, which on most boxes is either absent or a stale deploy. Inherited, it made the
+        // transpiled output (and so the Target phase's verdict) depend on the shell that launched the run
+        // (BOARD-next-validation-candidates.md, 2026-08-06). src\ is the canonical root here because the
+        // behavioral .csproj files bind $(go2csPath)core\<pkg> with MSBuild $(go2csPath) -> $(SolutionDir)
+        // -> src\, so src\core is exactly what these tests compile and link against.
         private static void RunTranspile(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Transpile] {projects.Count} project(s)... ");
@@ -216,7 +225,7 @@ namespace BehavioralRunner
 
                 foreach (string pkgPath in GoPackageDirs(projPath))
                 {
-                    ProcResult r = Exec(s_go2csExe, $"\"{pkgPath}\"", pkgPath, TranspileTimeoutMs);
+                    ProcResult r = Exec(s_go2csExe, $"-go2cspath \"{s_srcRoot}\" \"{pkgPath}\"", pkgPath, TranspileTimeoutMs);
 
                     if (r.ExitCode == 0)
                         continue;
