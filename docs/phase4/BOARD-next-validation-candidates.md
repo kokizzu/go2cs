@@ -61,6 +61,92 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## OWED — the issue-#33 panic fix needs its Windows gates (2026-08-06, same day)
+
+For the next **local (Windows)** session: `master` carries the issue-#33 arc — commits `fe9bec0` (the
+`package_info.cs` EOL-agnostic read-back, Linux finding F3) and `6ca9565` (the panic fix itself), posted
+directly to master under the same standing ruling as the issue-#32 entry below, and for the same reason:
+a remote Linux container where the .NET/PowerShell gates cannot run, so the change ships with
+converter-level evidence only.
+
+**What the reporter hit.** A `-recurse` conversion of [renart](https://github.com/renart-data/renart) died
+at `[736/1726]` on a nil dereference at `escapeAnalysisOperations.go:739`, discarding ~1,000 packages of
+queued work; reported again under `-recurse=module`, where it lands at `[33/44]` on the app's own packages.
+
+**Root cause, two independent halves — the second is the one that mattered.**
+
+1. **The dereference.** `go/types` records **no type at all** for an expression whose operand went invalid
+   (`Checker.record` returns early for `mode == invalid`), so `types.Info.TypeOf` returns a nil
+   **interface** — not `Typ[Invalid]`. The reported crash is `TypeOf(call.Fun).Underlying()` for an
+   address-taken argument of a call to an undefined function. The `addr=0x20` in the pasted trace is the
+   itab's `fun[1]` slot, which is what distinguishes nil-interface from typed-nil. Reproduced in six lines
+   of Go, same file, same line, same fault address.
+2. **The containment hole.** `ModuleConverter.convertAll` and `StdLibConverter.convertPackage` each already
+   wrap a conversion in `recover` so one unconvertible package fails alone — and `performEscapeAnalysis`
+   runs its files in **goroutines**, where a panic unwinds only its own stack. Every fault raised on that
+   side of the `go` statement was unrecoverable by anyone. That is what turned a one-package defect into a
+   dead run. Workers now capture the first panic **with `debug.Stack()`** (before the frame is lost, so the
+   report still names the faulting converter line rather than the re-raise site) and re-panic after `Wait`.
+
+**Rule this establishes, and it generalizes past this bug:** any pass that spawns goroutines must re-raise a
+worker panic on the caller's goroutine, or the per-package containment both batch drivers depend on is
+silently void. Written up under *Packages That Do Not Type-Check* in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), with the `underlyingOf()`
+convention for any type reached through `TypeOf`/`getType` on an arbitrary source expression.
+
+**What the container DID establish.** All 569 behavioral packages re-transpiled twice — once with the
+converter that predates the arc, once with the fix — and the output is **byte-identical everywhere except
+two Windows-only packages**, `UnsafeStringEmpty` and `FindFirstFileData`, which do not type-check on Linux
+(`syscall.UTF16ToString`). Those are the in-repo proof rather than an exception: the old converter dropped
+`UnsafeStringEmpty/main.go` **entirely** through the per-file recover, and the fixed converter emits a
+`main.cs` matching the committed **Windows** golden byte-for-byte modulo CRLF. The converter's own
+`go test ./...` failure set is **identical with and without** the arc (isolated by re-running with only the
+F3 commit applied) — nine failures, all pre-existing Linux path-separator/CRLF findings, none in these paths.
+
+Owed, in order (budgets from the CLAUDE.md table):
+
+1. `./src/tests/Behavioral/check-no-regression.ps1` — timeout 700s. **Expect byte-identical.** Both commits
+   are no-ops on Windows by construction: F3's read path only differs on an LF file (autocrlf gives CRLF
+   working trees), and the #33 guards only fire on a package that does not type-check — the behavioral
+   corpus has none on Windows. ⚠ Re-run `go build -o bin\go2cs.exe` first: a `git checkout` restore refreshes
+   every `.cs` mtime and re-arms false-green route #2, exactly as the issue-#32 entry records.
+2. `./src/tests/Behavioral/run-behavioral.ps1` (full) — timeout 2100s. Expect 544/544 + 514/514.
+3. `go test ./...` from `src/go2cs` — expect `ok`, exit 0, including the two new guards
+   (`TestUntypedPackageConvertsWithoutPanic`, `TestEscapeAnalysisPanicReachesCaller`) and the seven
+   pre-existing recurse tests that the Linux container cannot pass.
+4. `./src/run-validated-sweep.ps1` only if 1–3 surface anything — byte-identical emission leaves no path
+   into the banked suites otherwise.
+5. **One Windows-specific risk worth a look, not a gate:** F3 now splits a read-back `package_info.cs`
+   on normalized `\n`. A file containing a **bare LF** inside a line was previously kept as part of that
+   line and is now a line boundary. Converter-written files are CRLF throughout and autocrlf normalizes on
+   checkout, so this should be unreachable — CNR clean in step 1 confirms it across all 569.
+
+### Findings for follow-up, neither owned by this arc
+
+**(a) F3 was masking the Linux F5 failures.** With the read-back seam fixed, the converter's `go test ./...`
+on Linux runs to completion for the first time and surfaces **nine** failures. That is not a regression: the
+old binary `log.Fatal`ed inside the first `processConversion` and **ended the whole test binary**, so most
+of the suite never ran and the truncated output read as two failures. Seven of the nine are F5 (Linux
+`filepath.Join` does not normalize the `\` the code injects — `$(go2csPath)core\fmt/\fmt.csproj`) and two
+are the CRLF-template tests. All nine are unchanged with the #33 arc removed. Recorded here because the
+*count* of Linux failures moved for a benign reason, and the next Linux session should not read it as drift.
+F5 remains Arc 2 of [`PLAN-linux-operation.md`](../PLAN-linux-operation.md), untouched.
+
+**(b) UNREPRODUCED, and worth a session — the reporter's `invalid package name: ""`.** The package that
+crashed was not merely untyped by accident: its load reported `could not import go.opentelemetry.io/otel/trace
+(invalid package name: "")`. That message comes from `go/types` when the importer hands back a
+`*types.Package` whose name is empty — a dependency that was never actually loaded. `otel/trace` is a
+**separate module** from `otel`, and `processConversion` re-loads each third-party package **standalone**,
+with `Dir` set to its own directory in the read-only module cache. That puts the go command in the
+*dependency's* module context, where MVS version selection and the app's `replace` directives no longer
+apply — the hypothesis being that the closure `ModuleConverter.loadClosure` already type-checked correctly
+in the **main module's** context is then thrown away and re-derived per package, 1,726 times, in a weaker
+context. Two things to weigh if this is picked up: it is also 1,726 separate `packages.Load` invocations
+(the dominant cost of a recurse run), and `-recurse=module` deliberately skips the full-closure type-check,
+so any reuse has to respect that mode. **Not speculatively changed here** — the failure needs a
+reproduction against the reporter's module first, and the panic fix means it now costs one degraded package
+instead of the run.
+
 ## ~~OWED~~ DISCHARGED — the issue-#32 go.work fix is measured on Windows (2026-08-06, same day)
 
 **Every owed gate ran; the change is clean, and its emission-neutrality is proved against the converter
