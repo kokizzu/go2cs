@@ -1,4 +1,4 @@
-# PLAN — dual-platform operation (Linux alongside Windows)
+# PLAN — cross-platform operation (the big three: Windows, Linux, macOS)
 
 > **Status:** plan only. Nothing in this document has been implemented. It is written to stand alone for a
 > session with no memory of the survey that produced it.
@@ -55,12 +55,24 @@ Arc 3  Harness      ── one portability pass over scripts + runners + utiliti
         ↓  at this point: `go2cs` builds and runs on Linux, the corpus is
            byte-clean on a fresh Linux clone, and CNR is a truthful instrument.
 Arc 4  Measure      ── produce a GOOS=linux corpus into a scratch root; bucket   (F1, measurement only)
-Arc 5+ Build the Linux stdlib lane — option 2 + N2 (ruled 2026-08-06, §A2.4)     (F1, F8, F9)
+Arc 5+ Build the Linux, then darwin, stdlib lanes — option 2 + N2 (ruled, §A2.4) (F1, F8, F9)
 ```
 
 Arcs 1–3 are worth doing **on their own merit even if the Linux stdlib is never built**: they are
 determinism and hygiene fixes that make the Windows lane more honest too (F2/F3 in particular remove a
 whole class of "why is my tree dirty" investigation).
+
+**Scope addendum — the big three (user ruling, 2026-08-06).** The target set for this plan is
+**Windows + Linux + macOS, and no further** — Go's GOOS matrix is far wider than .NET meaningfully
+deploys, and chasing it would dilute the plan. The macOS cost is small and lands where it is noted:
+arcs 1–3 are OS-agnostic and serve macOS unchanged; Arc 4's measurement gains an optional
+`darwin/arm64` scratch conversion at the same one-run price; the option-2 emission generalizes **by
+value** (`$(GoTargetOS)` ∈ windows / linux / darwin) rather than by mechanism; and N2's packaging
+needs one real design note for a third flavor (§A4). Two macOS-specific facts to carry: default APFS
+is **case-insensitive** like Windows, so **Linux remains the only filesystem that proves casing
+correctness**; and a `GOOS=darwin` corpus's syscall layer bottoms out in `libSystem.dylib` calls
+rather than `kernel32.dll` — the same P/Invoke shape and the same blittability discipline, against a
+different library.
 
 ---
 
@@ -387,7 +399,10 @@ layout is still not designed before that number exists), and an option-1-style s
 the measurement instrument — but option 1 is a stepping stone, never a shipped state. No second solution
 file, no second package set, no re-lived two-tree era lands on `master`; the lane is done when the option-2
 emission (both platforms' files in one `src/core/<pkg>`, conditioned item groups, per-platform
-`package_info`/`package_init` variants) and the N2 packaging exist.
+`package_info`/`package_init` variants) and the N2 packaging exist. Scope is the **big three**
+(Windows/Linux/macOS — same ruling): the conditioned-emission mechanism carries `GOOS=darwin` as a third
+file-set by value, not by new machinery, with Linux the lead lane and darwin following once it is proven.
+No wider GOOS target is in scope.
 
 #### A2.5 — The behavioral corpus's Go side
 
@@ -509,6 +524,16 @@ converted Go release). The validation-pack block needs a per-TFM proof page or a
 point of the proof is that it describes the binary being shipped, and the two binaries validate differently.
 That also means `docs/validation/current/` gains a platform dimension — plan for it in the same change rather
 than retrofitting.
+
+**Third flavor (macOS — ruled into scope 2026-08-06).** The TFM trick covers only Windows-vs-neutral: there
+is no `net9.0-linux`, and `net9.0-macos` is the Catalyst/AppKit workload TFM, not a console-library target.
+A three-flavor `go.os` therefore ships the linux and darwin flavors as **RID-specific runtime assets**
+(`runtimes/linux-x64/lib/net9.0/`, `runtimes/osx-arm64/lib/net9.0/`, `runtimes/osx-x64/…`) under the neutral
+`net9.0`, with `lib/net9.0` as the compile-time asset. That reopens the compile-surface question the
+two-flavor design dodged: `syscall`'s **public surface differs between linux and darwin**, and one neutral
+compile assembly cannot truthfully carry both. The executing session must design this seam — candidates: a
+unix-intersection reference assembly; per-GOOS packages for `go.syscall` alone (the only package where the
+sprawl is honest); or API-unifying shims. Flagged, not solved, per the do-not-get-carried-away ruling.
 
 ---
 
@@ -879,6 +904,9 @@ transpiles them, and reports NO REGRESSION; `pwsh ./run-behavioral.ps1 --phase t
     entries will not exist for a Linux target).
 13. Build the generated solution; bucket by `error CS####`; report **packages-compiling**, not error count.
 14. Write the number into `docs/Roadmap.md`. **Do not design the tree layout before this number exists.**
+14a. Optionally repeat 12–14 with `-platforms darwin/arm64` in a second scratch root — same one-run cost —
+    so the option-2 design in Arc 5 is shaped by **both** non-Windows numbers rather than retrofitted for
+    the third flavor (big-three scope ruling, §1).
 
 ### Arc 5+ — The Linux stdlib lane (3–6 arcs, scoped by Arc 4's number)
 
@@ -890,7 +918,11 @@ transpiles them, and reports NO REGRESSION; `pwsh ./run-behavioral.ps1 --phase t
     counterparts they imply.
 18. Stand up a Linux validation roster (`docs/ValidatedTestPackages.md` gains a platform dimension) and its
     own per-package disclosure manifests (§A6.2).
-19. NuGet **N2** multi-TFM packaging (§A4), with per-TFM proof pages.
+19. NuGet **N2** packaging (§A4) — `net9.0-windows` TFM + RID-split linux/darwin assets, with per-flavor
+    proof pages; the `go.syscall` compile-surface seam designed here (§A4, third-flavor note).
+20. The darwin lane follows once Linux is proven: `GOOS=darwin` as a third `$(GoTargetOS)` value through
+    the SAME option-2 mechanism — no new machinery, per the big-three scope ruling. `osx-arm64` first
+    (Apple silicon), `osx-x64` behind it.
 
 ### Interleaved, unblocked by the above
 
