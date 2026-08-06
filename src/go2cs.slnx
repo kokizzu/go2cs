@@ -10,66 +10,189 @@
     <File Path="graphs/package_dependencies.png" />
     <File Path="reports/conversion_report.html" />
     <File Path="stdlib_conversion_progress.txt" />
-    <Project Path="core/cmp/cmp.csproj" />
-    <Project Path="core/errors/errors.csproj" />
-    <Project Path="core/fmt/fmt.csproj" />
     <Project Path="core/go2cs/go2cs.shproj" />
     <Project Path="core/golib/golib.csproj" />
+  </Folder>
+  <Folder Name="/core/cmp/">
+    <Project Path="core/cmp/cmp.csproj" />
+  </Folder>
+  <Folder Name="/core/errors/">
+    <Project Path="core/errors/errors.csproj" />
+  </Folder>
+  <Folder Name="/core/fmt/">
+    <Project Path="core/fmt/fmt.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/" />
+  <Folder Name="/core/internal/abi/">
     <Project Path="core/internal/abi/internal.abi.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/asan/">
     <Project Path="core/internal/asan/internal.asan.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/bisect/">
     <Project Path="core/internal/bisect/internal.bisect.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/bytealg/">
     <Project Path="core/internal/bytealg/internal.bytealg.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/byteorder/">
     <Project Path="core/internal/byteorder/internal.byteorder.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/chacha8rand/">
     <Project Path="core/internal/chacha8rand/internal.chacha8rand.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/coverage/" />
+  <Folder Name="/core/internal/coverage/rtcov/">
     <Project Path="core/internal/coverage/rtcov/internal.coverage.rtcov.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/cpu/">
     <Project Path="core/internal/cpu/internal.cpu.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/filepathlite/">
     <Project Path="core/internal/filepathlite/internal.filepathlite.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/fmtsort/">
     <Project Path="core/internal/fmtsort/internal.fmtsort.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/goarch/">
     <Project Path="core/internal/goarch/internal.goarch.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/godebug/">
     <Project Path="core/internal/godebug/internal.godebug.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/godebugs/">
     <Project Path="core/internal/godebugs/internal.godebugs.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/goexperiment/">
     <Project Path="core/internal/goexperiment/internal.goexperiment.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/goos/">
     <Project Path="core/internal/goos/internal.goos.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/itoa/">
     <Project Path="core/internal/itoa/internal.itoa.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/msan/">
     <Project Path="core/internal/msan/internal.msan.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/oserror/">
     <Project Path="core/internal/oserror/internal.oserror.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/poll/">
     <Project Path="core/internal/poll/internal.poll.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/profilerecord/">
     <Project Path="core/internal/profilerecord/internal.profilerecord.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/race/">
     <Project Path="core/internal/race/internal.race.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/reflectlite/">
     <Project Path="core/internal/reflectlite/internal.reflectlite.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/runtime/" />
+  <Folder Name="/core/internal/runtime/atomic/">
     <Project Path="core/internal/runtime/atomic/internal.runtime.atomic.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/runtime/exithook/">
     <Project Path="core/internal/runtime/exithook/internal.runtime.exithook.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/stringslite/">
     <Project Path="core/internal/stringslite/internal.stringslite.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/syscall/" />
+  <Folder Name="/core/internal/syscall/execenv/">
     <Project Path="core/internal/syscall/execenv/internal.syscall.execenv.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/syscall/windows/">
     <Project Path="core/internal/syscall/windows/internal.syscall.windows.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/syscall/windows/registry/">
     <Project Path="core/internal/syscall/windows/registry/internal.syscall.windows.registry.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/syscall/windows/sysdll/">
     <Project Path="core/internal/syscall/windows/sysdll/internal.syscall.windows.sysdll.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/testlog/">
     <Project Path="core/internal/testlog/internal.testlog.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/unsafeheader/">
     <Project Path="core/internal/unsafeheader/internal.unsafeheader.csproj" />
-    <Project Path="core/io/io.csproj" />
+  </Folder>
+  <Folder Name="/core/io/fs/">
     <Project Path="core/io/fs/io.fs.csproj" />
+  </Folder>
+  <Folder Name="/core/io/">
+    <Project Path="core/io/io.csproj" />
+  </Folder>
+  <Folder Name="/core/iter/">
     <Project Path="core/iter/iter.csproj" />
-    <Project Path="core/math/math.csproj" />
+  </Folder>
+  <Folder Name="/core/math/bits/">
     <Project Path="core/math/bits/math.bits.csproj" />
+  </Folder>
+  <Folder Name="/core/math/">
+    <Project Path="core/math/math.csproj" />
+  </Folder>
+  <Folder Name="/core/math/rand/">
     <Project Path="core/math/rand/math.rand.csproj" />
+  </Folder>
+  <Folder Name="/core/os/">
     <Project Path="core/os/os.csproj" />
+  </Folder>
+  <Folder Name="/core/path/">
     <Project Path="core/path/path.csproj" />
+  </Folder>
+  <Folder Name="/core/reflect/">
     <Project Path="core/reflect/reflect.csproj" />
-    <Project Path="core/runtime/runtime.csproj" />
+  </Folder>
+  <Folder Name="/core/runtime/internal/" />
+  <Folder Name="/core/runtime/internal/math/">
     <Project Path="core/runtime/internal/math/runtime.internal.math.csproj" />
+  </Folder>
+  <Folder Name="/core/runtime/internal/sys/">
     <Project Path="core/runtime/internal/sys/runtime.internal.sys.csproj" />
+  </Folder>
+  <Folder Name="/core/runtime/">
+    <Project Path="core/runtime/runtime.csproj" />
+  </Folder>
+  <Folder Name="/core/slices/">
     <Project Path="core/slices/slices.csproj" />
+  </Folder>
+  <Folder Name="/core/sort/">
     <Project Path="core/sort/sort.csproj" />
+  </Folder>
+  <Folder Name="/core/strconv/">
     <Project Path="core/strconv/strconv.csproj" />
+  </Folder>
+  <Folder Name="/core/strings/">
     <Project Path="core/strings/strings.csproj" />
-    <Project Path="core/sync/sync.csproj" />
+  </Folder>
+  <Folder Name="/core/sync/atomic/">
     <Project Path="core/sync/atomic/sync.atomic.csproj" />
+  </Folder>
+  <Folder Name="/core/sync/">
+    <Project Path="core/sync/sync.csproj" />
+  </Folder>
+  <Folder Name="/core/syscall/">
     <Project Path="core/syscall/syscall.csproj" />
+  </Folder>
+  <Folder Name="/core/testing/">
     <Project Path="core/testing/testing.csproj" />
+  </Folder>
+  <Folder Name="/core/time/">
     <Project Path="core/time/time.csproj" />
+  </Folder>
+  <Folder Name="/core/unicode/">
     <Project Path="core/unicode/unicode.csproj" />
+  </Folder>
+  <Folder Name="/core/unicode/utf16/">
     <Project Path="core/unicode/utf16/unicode.utf16.csproj" />
+  </Folder>
+  <Folder Name="/core/unicode/utf8/">
     <Project Path="core/unicode/utf8/unicode.utf8.csproj" />
+  </Folder>
+  <Folder Name="/core/unsafe/">
     <Project Path="core/unsafe/unsafe.csproj" />
   </Folder>
   <Folder Name="/docs/">
@@ -91,9 +214,11 @@
     <File Path="../LICENSE" />
     <File Path="../NOTICE" />
   </Folder>
-  <Folder Name="/go2cs/">
+  <Folder Name="/gen/">
     <Project Path="gen/go2cs-gen/go2cs-gen.csproj" />
-    <Project Path="go2cs-src.shproj" />
+  </Folder>
+  <Folder Name="/go2cs/">
+    <Project Path="go2cs/go2cs-src.shproj" />
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/behavioral/">
