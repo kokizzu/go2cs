@@ -6,10 +6,6 @@
   </Configurations>
   <Folder Name="/core/">
     <File Path="deploy-core.bat" />
-    <File Path="graphs/package_dependencies.dot" />
-    <File Path="graphs/package_dependencies.png" />
-    <File Path="reports/conversion_report.html" />
-    <File Path="stdlib_conversion_progress.txt" />
     <Project Path="core/go2cs/go2cs.shproj" />
     <Project Path="core/golib/golib.csproj" />
   </Folder>
