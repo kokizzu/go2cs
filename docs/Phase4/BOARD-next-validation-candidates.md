@@ -138,59 +138,73 @@ Owed, in order (budgets from the CLAUDE.md table) — the d00cac5 pattern verbat
    trees via autocrlf, so expect no visible change there; a `git status` after pulling the attribute
    commit should stay clean for the three templates. If it does not, that is a finding.
 
-## Open — CNR's verdict depends on an AMBIENT environment variable, and the `package_info.cs` corpus is already split (found 2026-08-06)
+## ~~Open~~ CLOSED — CNR's verdict no longer moves with an ambient variable, and the split `package_info.cs` corpus is normalized (2026-08-06, same day)
 
-**CNR is not deterministic across machines**, and the non-determinism is silent: it changes which files
-the gate reports, never whether it errors. Found while discharging the entry above, where it presented
-as a plausible converter regression that took an A/B against a rebuilt converter to clear.
+**All three steps landed, in the order this entry insisted on** — pin the root, make an unusable one
+loud, *then* normalize — because normalizing against a root no gate enforces would only have re-split the
+corpus on the next machine. Commits `826b7e486` (the mechanism) and `9859dd993` (the data), kept apart so
+each is reviewable on its own.
 
-The mechanism. `getImportPackageInfo` maps a stdlib import to `$(go2csPath)core\<pkg>` and substitutes
-**`options.go2csPath`** — the converter's `-go2cspath`, default `~/go2cs` (env `GO2CSPATH`), which is
-*not* the MSBuild `$(go2csPath)`. The imported package's `package_info.cs` is read from there to mint the
-`<ImportedTypeAliases>` block. If that root is missing, stale, or partial, the aliases are **silently
-omitted** — no warning, no error, exit 0. Three things let it persist unnoticed:
+1. **Every seam names its root, computed from its own location.** Five invocation sites, from a
+   tree-wide sweep for `go2cs.exe`: `check-no-regression.ps1` (a `$PSScriptRoot` walk),
+   `BehavioralRunner` and `PerformanceRunner` (an `AppContext.BaseDirectory` walk, `s_srcRoot`), MSTest
+   `BehavioralTestBase` (a new `Go2csRoot`, resolved in `Init` **before** its up-to-date early return and
+   with the trailing separator trimmed — a backslash before a closing quote escapes it on a Windows
+   command line), and `run-validated-sweep.ps1`. The sweep was **not** on the list above and is pinned
+   deliberately: a `-tests` run self-locates only when the ambient root is **invalid**, so a `GO2CSPATH`
+   aimed at some *other* real go2cs tree — a `deploy-core` staging root — would still have been honored,
+   building a suite against one tree's metadata while compiling the other's sources. Confirmed first
+   that `-go2cspath` cannot move WHERE single-package output is written (it feeds only
+   `getImportPackageInfo`'s `TargetDir` substitution; `outputFilePath` is untouched): `DeepEqual`
+   transpiled **with** the flag lands in place and leaves the tree clean, **without** it the same command
+   drops its five `reflect` aliases.
+2. **The converter recovers, and says so when it cannot.** `resolveGo2CSPath`
+   (`commandLineOptions.go`) now runs for **every** single-package conversion, not just `-tests`: when
+   the configured root is not a go2cs root (no `core\golib\golib.csproj`) it walks the ancestors of the
+   conversion's **OUTPUT** path for one. Output, not input, is the anchor — the emitted
+   `package_info.cs`/`.csproj` and their `$(go2csPath)core` references live there, so the tree that must
+   satisfy them is the tree the output is written into; where the two differ (converting GOROOT sources
+   into a repository tree) the input walks the wrong chain entirely, and where they are the same
+   directory — the bare `go2cs <pkg-dir>` — it is exactly what makes an unconfigured run inside a clone
+   resolve against that clone. An explicitly configured *working* root still wins. Found nothing, the run
+   proceeds (standalone conversion with no deployed runtime is legitimate) but emits ONE prominent stderr
+   warning naming the resolved path and both consequences. `-recurse` warns but never self-locates (its
+   root doubles as the output root without a second positional, so moving it would move the generated
+   tree); `-recurse=nuget` does neither; `-stdlib` does neither, because there the root **is** the output
+   root the run itself populates and an absent `golib` is the normal state of a first conversion. Guarded
+   by `TestResolveGo2CSPathSelfLocation` / `TestResolveGo2CSPathUnusableRootWarns` — network-free, both
+   sides, the real stderr captured through an `os.Stderr` swap rather than a stand-in, with the
+   precedence rule and both suppressions pinned; the once-per-run warning latch is package-level and
+   test-pinnable in the `goModCache` manner.
+3. **Exactly the twelve, exactly the predicted direction.** The now-deterministic CNR reported precisely
+   the twelve files this entry named, all **pure additions — 46 lines, 0 removals**: 28 `time`, 10 `os`
+   (the `io/fs` re-exports `FileInfo`/`FileMode`/`DirEntry`/`PathError` plus `os.Signal`), 5 `syscall`,
+   2 `encoding/json`, 1 `runtime`. Banked alone in `9859dd993`.
 
-- **CNR and both behavioral runners invoke `go2cs.exe` with no `-go2cspath`**, so every run inherits
-  whatever `GO2CSPATH` the shell happens to carry.
-- **`deploy-core.ps1` stages to `%GOPATH%\src\go2cs`, while the converter defaults to `~/go2cs`** —
-  different roots, so running the documented deploy does not populate the root the converter reads.
-- **`main.go`'s `isGo2CSRoot` / `findGo2CSRootAbove` self-location is gated on `options.convertTests`**,
-  so the recovery that would catch exactly this protects `-tests` runs only.
+**Gates, all green.** `go test ./...` from `src/go2cs`: **ok, exit 0** (103.3s cold), including the two
+new guards. `check-no-regression` **after** the normalization commit: **NO REGRESSION — byte-identical
+across all 569** behavioral packages, exit 0 (917.5s; the pre-normalization run was 864.2s and reported
+the twelve). Full behavioral suite: **544/544** Transpile, Compile and Target, **514/514** output
+comparisons, 0 failed, 30 skipped — **PASS in 2,453.3s**. Both long runs sat above the CLAUDE.md budgets
+because a sibling worktree was active; forward progress was confirmed by watching the transpile advance
+alphabetically, not assumed. The MSTest seam was spot-checked separately (`--filter DeepEqual`, 4/4).
 
-Measured on this box, where `~/go2cs` is a **March–May 2025 stub-era deploy** (15 packages, `errors-old`
-still in it, no `reflect`):
+⚠ **The false-green trap was avoided by construction, and the avoidance was measured.** CNR's own
+transpile leaves every `.cs` newer than `go2cs.exe`, which is precisely the state that makes
+`UpToDate`'s `csTime <= exe` guard skip Transpile for all 544. `go2cs.exe` was rebuilt immediately before
+the suite and the skip was disproved with mtimes, not assumed: `DeepEqual/main.cs` moved 15:14:26Z →
+15:27:19Z, strictly newer than the exe at 15:24:43Z. **A clean tree after a CONFIRMED transpile is the
+pass condition**, and that is what this run produced.
 
-| resolved root | CNR reports | direction |
-|:--|:--|:--|
-| `GO2CSPATH` unset → `~/go2cs` (stale stub) | **4** files | **lose** 16 `reflect` aliases (DeepEqual, ReflectMapRangeNilKey, ReflectMethodTableWalk, ReflectZeroAndGrow) |
-| `GO2CSPATH=<repo>\src` (converted stdlib) | **12** files | **gain** 46 `time`/`syscall`/`encoding/json`/`io` aliases (ExprSwitch, ForVariants, GoCallVariations, GoexitDefers, SelectSendDefault, SyncTimerChannel, UnsafeStringEmpty, StructPromotionWithInterface, StructPointerPromotionWithInterface, JsonUnmarshalerDispatch, FindFirstFileData, PipeCloseUnblocksRead) |
+**DECISION (the coordinator's, recorded and not relitigated): `package_info.cs` gets NO `.cs.target`
+golden.** CNR is deterministic now and is the standing converter gate; 569 new golden files is
+disproportionate footprint for a line CNR already holds.
 
-The two sets are **disjoint**, so **no single root reproduces the committed corpus** — it was written by
-sessions with differing environments and is already split: 565 of 569 files match the stale root, 557
-match the repo root. Nothing catches it, because **`package_info.cs` has no `.cs.target` golden** (0 of
-580), so `TargetComparison` structurally cannot see it and CNR's `git status` is the only instrument —
-the one whose answer moves with the ambient variable.
-
-**Not a live defect.** Every alias in both directions is an *unused declaration*; both configurations
-compile and run, proved by a full 544/544 + 514/514 suite over freshly transpiled root=`<repo>\src`
-output. So this is drift and a gate-integrity problem, not breakage.
-
-**Which root is canonical is not a judgement call**: the behavioral `.csproj`s bind
-`$(go2csPath)core\<pkg>` with MSBuild `$(go2csPath)` → `$(SolutionDir)` → `src\`, so at compile time the
-tests link `src/core`. The emitted aliases must describe *those* assemblies ⟹ **`<repo>\src` is
-canonical and the 12 files are stale**, left over from before the trees unified.
-
-The durable fix is three small pieces, and the order matters — make the gate deterministic *first*, or
-the normalization just re-splits:
-
-1. **Make the root explicit at the seam** — CNR, `BehavioralRunner` and `BehavioralTestBase` pass
-   `-go2cspath <repoRoot>\src` rather than inheriting the ambient variable.
-2. **Make an unusable root loud** — the converter should refuse, or at minimum warn, when the resolved
-   `go2csPath` is not a go2cs root (no `core\golib`), instead of emitting a quietly alias-free
-   `package_info.cs`. Extending the `-tests` self-location to every conversion whose output lands inside
-   a go2cs source tree would fix the default outright and help anyone running `go2cs.exe` by hand.
-3. **Then normalize the 12** in one commit, and consider whether `package_info.cs` should carry a golden
-   so `TargetComparison` can hold the line afterwards.
+**Left alone, recorded rather than fixed:** `deploy-core.ps1` still stages to `%GOPATH%\src\go2cs` while
+the converter's `-go2cspath` defaults to `~/go2cs`, so running the documented deploy does not populate
+the root a flagless converter run reads. That divergence no longer costs anything — every gate names its
+root, and a bare run self-locates or says why it cannot — so the two roots stay as they are rather than
+being unified in this arc.
 
 ## ~~OWED~~ DISCHARGED — the issue-#32 `-recurse` change is now measured on Windows (2026-08-05, same day)
 
