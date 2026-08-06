@@ -36,7 +36,7 @@ can be planned against:
 |:--|:--|:--|
 | **F1** | `src/core` is a `GOOS=windows/amd64` conversion. A converted `fmt.Println` program throws `DllNotFoundException("kernel32.dll")` on Linux. `go test` cannot even produce the reference baseline for a windows-target package on a Linux host, so the Phase-4 pipeline is structurally unavailable there. A Linux lane needs a **second, GOOS=linux corpus** — not a fix. | **S1** |
 | **F2** | Committed `.cs` blobs are stored **LF** (`git ls-files --eol` → `i/lf`), while the converter deterministically emits **CRLF**. A fresh Linux clone (`core.autocrlf=false` by default) therefore materializes LF and every single converted file reports as modified. `check-no-regression.ps1` is 100 % false-positive on Linux before the first line of converter work. | **S1** |
-| **F3** | `packageInfoWriter.go:52` splits a **read-back** `package_info.cs` on `"\r\n"`. The `.gitattributes` `eol=crlf` pins (commit `026762932`) cover the three *embedded templates* only — they do **not** cover this seam. On an LF checkout the section markers are never found and the converter `log.Fatal`s on the first package. Consequence of F2, but a separate remedy. | **S1** |
+| **F3** ✅ | `packageInfoWriter.go:52` splits a **read-back** `package_info.cs` on `"\r\n"`. The `.gitattributes` `eol=crlf` pins (commit `026762932`) cover the three *embedded templates* only — they do **not** cover this seam. On an LF checkout the section markers are never found and the converter `log.Fatal`s on the first package. Consequence of F2, but a separate remedy. | **S1** |<br>**FIXED** (landed early, as a blocker of the issue-#33 regression test — that test calls `processConversion`, and a `log.Fatal` ends the whole `go test` binary). Both splits are now EOL-agnostic, the template one too: the `eol=crlf` pin governs a *checkout*, so a tree materialized before the pin landed embeds an LF template and a **fresh** `package_info.cs` was fatal as well. Measured on Linux: 0/569 behavioral packages converted before, 569/569 after, and **42** `.cs` files that had been emitting an unresolved `«ADAPTER:…»` marker (the records live in the `package_info.cs` the converter could not read) now match their committed Windows goldens byte-for-byte modulo CRLF — the fix moves Linux output TOWARD the canonical corpus and no file away from it. |
 | **F4** | Every harness instrument breaks on Linux at line 30-ish: `Join-Path $root "src\go2cs"`, `bin\go2cs.exe`, `-notmatch '\\(bin\|obj)'`, `($_.FullName -split '\\').Count`, `Path.Combine(base, @"..\..\..\..")`, `PublishProfile = "win-x64"`, `BinOutput.Split(@"\")`. The depth-sort and bin/obj filters fail **silently**, which reverts the deepest-first invariant that closed FALSE-GREEN route #3. | **S1** |
 | **F5** | Hosted on Linux, the converter emits `$(go2csPath)core\fmt/\fmt.csproj` — `filepath.Join` on Unix does not normalize the `\` the code injects two lines earlier (`importOperations.go:263`, `:324`). Every emitted `ProjectReference` to a stdlib package is malformed. | **S1** |
 | **F6** | `pathReplace` (`importOperations.go:458`) gates case-insensitivity on `runtime.GOOS == "windows"`. On Linux the exact-match replace **silently no-ops** when the resolved `GOROOT` spelling differs from `go/build`'s (symlinked toolchains), leaving a machine-specific absolute path in the emitted csproj with no diagnostic. | **S2** |
@@ -82,7 +82,7 @@ different library.
 |:--|:--|:--|:--|
 | F1 | Converted stdlib platform identity | S1 | 3–6 arcs |
 | F2 | Line endings / `.gitattributes` determinism | S1 | 0.5 arc |
-| F3 | `packageInfoWriter` `\r\n` read-back seam | S1 | 1 session |
+| F3 ✅ | `packageInfoWriter` `\r\n` read-back seam | S1 | ~~1 session~~ **done** |
 | F4 | Harness scripts + runners + utilities | S1 | 1 arc |
 | F5 | Converter path emission on a Linux host | S1 | 1 session |
 | F6 | `pathReplace` silent no-match | S2 | 0.5 session |
@@ -211,7 +211,17 @@ The same class applies to `isPathUnder` (`importOperations.go:449`), whose doc c
 
 **Effort.** 0.5 session. No golden impact on Windows (the replace already matches there).
 
-#### A1.3 — The `\r\n` census (F3, S1)
+#### A1.3 — The `\r\n` census (F3, S1) — **LANDED**
+
+> **Status.** Both `packageInfoWriter.go` splits are now EOL-agnostic. The census below stands as written
+> with one correction the fix had to make: the **template split** classified "Yes, given the `eol=crlf` pin"
+> is only safe on a tree materialized AFTER the pin. `eol=crlf` is a *checkout* attribute — adding it does
+> not rewrite files already in a working tree — so a clone predating `026762932` embeds an LF template, and
+> a package with no existing `package_info.cs` took the same `log.Fatal` as one with an LF copy. Both are
+> normalized; the write path is untouched, so emitted bytes are the writer's CRLF either way.
+>
+> The rest of the census (write-only sites, the already-EOL-agnostic read-backs, the
+> `testConversion.go:1583` substring-insert) is unchanged and still open where marked.
 
 The `.gitattributes` pin added in `026762932`:
 

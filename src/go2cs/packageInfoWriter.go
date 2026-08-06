@@ -49,12 +49,22 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 			log.Fatalf("Failed to read existing package info file \"%s\": %s\n", packageInfoFileName, err)
 		}
 
-		packageInfoLines = strings.Split(string(packageInfoBytes), "\r\n")
+		// EOL-agnostic: this file is READ BACK off disk, so its line endings are the checkout's, not
+		// the converter's. Splitting on "\r\n" alone returns ONE element for an LF copy — every
+		// marker scan below then fails and log.Fatals, so a clone that materializes LF (any
+		// non-Windows checkout, or core.autocrlf=false) cannot convert a single package that already
+		// has a committed package_info.cs (F3 in docs/PLAN-linux-operation.md). The WRITE path is
+		// unchanged — each line is still emitted with "\r\n" — so output stays byte-identical.
+		packageInfoLines = strings.Split(strings.ReplaceAll(string(packageInfoBytes), "\r\n", "\n"), "\n")
 	} else {
-		// Generate new package info file from template
+		// Generate new package info file from template. The template is pinned CRLF at CHECKOUT
+		// (.gitattributes) and embedded at COMPILE time, so its endings are a property of the tree
+		// the converter was built from — an attribute added after a clone was materialized does not
+		// rewrite it. Split the same EOL-agnostic way so the emitted bytes are the writer's CRLF
+		// either way, rather than a fresh package_info.cs being fatal on a tree that predates the pin.
 		packageClassName := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
 		templateFile := fmt.Sprintf(string(packageInfoTemplate), packageNamespace+"."+packageClassName, packageNamespace, packageName, packageClassName)
-		packageInfoLines = strings.Split(templateFile, "\r\n")
+		packageInfoLines = strings.Split(strings.ReplaceAll(templateFile, "\r\n", "\n"), "\n")
 	}
 
 	// Handle imported type aliases
