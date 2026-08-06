@@ -61,6 +61,44 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## OWED — the issue-#32 go.work fix is authored in a container, unmeasured on Windows (2026-08-06)
+
+For the next **local (Windows)** session: `master` carries the **second** issue-#32 arc — commit
+`121c61d` (the `GOWORK=off` fix + its guard) and `0267629` (the template `eol=crlf` pin), the diagnosis
+of the reporter's pasted `-recurse` failure log (the Renart project) and its fix, posted directly to
+master per user ruling 2026-08-06. Same posture as the d00cac5 entry below, same reason: a remote Linux
+container where the standing gates cannot run, so the change ships with unit-level evidence only.
+
+What was found (full write-up: [`DESIGN-recursive-enduser-conversion.md`](../Phase3/DESIGN-recursive-enduser-conversion.md),
+*Module-cache loads and the vestigial `go.work`*): the reporter's abort was their **pre-d00cac5 binary**
+(the fatal load path this board's discharged entry below already measured), but underneath it sits a real,
+still-current loss — `cloud.google.com/go`'s module zip ships the monorepo's `go.work`, and
+`processConversion`'s reload, running the go command from inside the module cache, enters workspace mode
+and fails every package of that root module ("cannot load module ../accessapproval listed in go.work
+file"). The fix appends `GOWORK=off` to the loader env **only when the input dir is under `GOMODCACHE`**;
+ambient workspace behavior is preserved everywhere else. A second commit pins the three embedded converter
+templates `eol=crlf` in `.gitattributes` — the checkout-level discharge of the CRLF seam the entry below
+recorded as recorded-not-owed (an LF checkout's converter `log.Fatal`ed on every conversion; the
+`"\r\n"`-splitting code seam itself is unchanged).
+
+What the container DID establish: `TestModuleCachePoisonedGoWorkLoad` (new, network-free, both sides of
+the gate) passes; the full `go test ./...` failure set is **identical to baseline** (the same 7
+pre-existing Windows-path tests, nothing new — measured with-fix vs. master on the same box); an
+end-to-end repro (a module importing `cloud.google.com/go/civil@v0.123.0`) goes from `1/2 converted
+(civil failed)` to `2/2 converted` with the emitted `civil.cs`/csproj/slnx spot-checked.
+
+Owed, in order (budgets from the CLAUDE.md table) — the d00cac5 pattern verbatim:
+
+1. `./src/Tests/Behavioral/check-no-regression.ps1` — timeout 700s. **Expect byte-identical**: the change
+   is an env-var gate on a `-recurse`-only load path plus a checkout attribute; no emission logic moved.
+2. `./src/Tests/Behavioral/run-behavioral.ps1` (full) — timeout 2100s. Expect 544/544 + 514/514.
+3. `go test -run 'TestRecurse|TestModuleCachePoisonedGoWorkLoad' ./` from `src/go2cs` — the new guard's
+   first Windows run.
+4. `./src/run-validated-sweep.ps1` only if 1–3 surface anything (no path into the banked suites otherwise).
+5. ⚠ The `eol=crlf` pin takes effect on **checkout** — existing Windows clones already have CRLF working
+   trees via autocrlf, so expect no visible change there; a `git status` after pulling the attribute
+   commit should stay clean for the three templates. If it does not, that is a finding.
+
 ## ~~OWED~~ DISCHARGED — the issue-#32 `-recurse` change is now measured on Windows (2026-08-05, same day)
 
 **All four gates ran or were legitimately waived; the change is clean.** (1) `check-no-regression`:
