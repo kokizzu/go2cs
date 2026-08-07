@@ -138,18 +138,20 @@ $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 
 if ($drift) {
-    # Fifteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
+    # Nineteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
     # converts the package in its TEST closure, which imports more than the production closure, and
     # a wider closure legitimately changes three things in the production emission:
     #
     #   Delta-io alias      `using io = io_package;` becomes a shadow-renamed alias, because the
     #                       test closure pulls in a `go.io` CHILD namespace that `io` would collide
-    #                       with (bufio, bytes, strings, regexp).
+    #                       with (bufio, bytes, strings, regexp, crypto, hash, image).
     #   root qualification  `@internal.x` / `go.math` become root-qualified, because the test
     #                       closure imports a package whose own namespace shadows the root
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
-    #                       variant's relocated initializers implement (unicode, internal/zstd).
+    #                       variant's relocated initializers implement (unicode, internal/zstd,
+    #                       internal/buildcfg -- whose test half implements nothing, so the hook is
+    #                       erased again and the committed file stays hookless).
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -163,8 +165,12 @@ if ($drift) {
         'src/core/bufio/scan.cs'
         'src/core/bytes/buffer.cs'
         'src/core/bytes/reader.cs'
+        'src/core/crypto/crypto.cs'
         'src/core/crypto/md5/md5.cs'
         'src/core/crypto/md5/md5block.cs'
+        'src/core/hash/hash.cs'
+        'src/core/image/format.cs'
+        'src/core/internal/buildcfg/package_init.cs'
         'src/core/internal/zstd/package_init.cs'
         'src/core/math/rand/v2/pcg.cs'
         'src/core/math/rand/v2/rand.cs'
