@@ -39,6 +39,10 @@ import (
 )
 
 func main() {
+	// No-op unless GO2CS_PPROF is set; see diagnosticProfiling.go. First thing in main so a run that
+	// stalls during option resolution or package loading is still reachable by a profiler.
+	startDiagnosticProfiling()
+
 	var goRoot, goPath, go2csPath string
 	var err error
 

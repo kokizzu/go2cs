@@ -379,11 +379,24 @@ func (m *ModuleConverter) convertAll() {
 
 	var failed []string
 
+	// Wall time per package, for the slowest-packages summary at the end of the run. A recurse
+	// conversion prints one line per package over hundreds or thousands of them, so a single
+	// pathological package is invisible in the scroll: issue #33's bsoncodec was identified only
+	// because the run never got PAST it. This makes an outlier legible afterwards even when the run
+	// completes — which is how a superlinearity gets caught while it is still merely slow.
+	durations := make([]packageDuration, 0, total)
+
 	for i, pkgPath := range m.graph.sortedQueue {
 		pkg := m.graph.packages[pkgPath]
 		outputDir := m.outputDirFor(pkgPath)
 
+		// Printed BEFORE the conversion and terminated immediately: when a package does not finish,
+		// this line is the only record of which one, and it is what the issue-#33 reporter read the
+		// failing package off. Do not defer it to append a duration — a dangling line interleaves
+		// with the stderr warnings a conversion emits whenever the two streams are merged.
 		fmt.Printf("[%d/%d] Converting %s\n", i+1, total, pkgPath)
+
+		start := time.Now()
 
 		err := func() (err error) {
 			defer func() {
@@ -399,6 +412,10 @@ func (m *ModuleConverter) convertAll() {
 
 			return processConversion(pkg.Dir, true, outputDir, packageOptions)
 		}()
+
+		// Recorded for FAILED packages too: one that burns minutes before failing is exactly the row
+		// worth seeing, and the error path below skips the rest of this iteration.
+		durations = append(durations, packageDuration{path: pkgPath, elapsed: time.Since(start)})
 
 		if err != nil {
 			log.Printf("WARNING: %v", err)
@@ -422,6 +439,47 @@ func (m *ModuleConverter) convertAll() {
 	}
 
 	fmt.Println()
+
+	reportSlowestPackages(durations)
+}
+
+// packageDuration pairs a package's import path with its wall-clock conversion time.
+type packageDuration struct {
+	path    string
+	elapsed time.Duration
+}
+
+// slowestPackageCount is how many rows reportSlowestPackages prints. Enough to show a cluster rather
+// than a single outlier — a whole SHAPE of package being slow reads differently from one bad one.
+const slowestPackageCount = 10
+
+// reportSlowestPackages prints the longest per-package conversions of the run, slowest first.
+//
+// It answers two standing questions with a number instead of an assertion. First, whether any single
+// package is anomalous: conversion averages well under a second per package for the standard library
+// and a few seconds under -recurse, so a package an order of magnitude off that is worth a look
+// before it becomes an issue report. Second, where a recurse run actually spends its time — every
+// third-party package is re-loaded through go/packages individually, which is suspected to dominate;
+// this is the measurement that would settle it.
+func reportSlowestPackages(durations []packageDuration) {
+	if len(durations) < 2 {
+		return
+	}
+
+	slowest := make([]packageDuration, len(durations))
+	copy(slowest, durations)
+
+	sort.SliceStable(slowest, func(i, j int) bool {
+		return slowest[i].elapsed > slowest[j].elapsed
+	})
+
+	count := min(slowestPackageCount, len(slowest))
+
+	fmt.Printf("\nSlowest %d of %d packages:\n", count, len(slowest))
+
+	for _, entry := range slowest[:count] {
+		fmt.Printf("  %8s  %s\n", formatDuration(entry.elapsed), entry.path)
+	}
 }
 
 // transitiveConvertedDeps returns the import paths of pkgPath's transitive dependencies within the

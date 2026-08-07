@@ -54,6 +54,7 @@
     <None Include="$(MSBuildThisFileDirectory)dependencyGraph.go" />
     <None Include="$(MSBuildThisFileDirectory)dependencyGraph_test.go" />
     <None Include="$(MSBuildThisFileDirectory)diagnosticOutput.go" />
+    <None Include="$(MSBuildThisFileDirectory)diagnosticProfiling.go" />
     <None Include="$(MSBuildThisFileDirectory)directiveOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)disclosedParentAggregation_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicStructOperations.go" />

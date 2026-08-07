@@ -132,6 +132,45 @@ func main() {
 }
 ```
 
+### How to profile the converter — the recipe, and three traps that cost the sibling arc an hour
+
+The chained-call arc was diagnosed by profiling a live, still-spinning converter. That is now a
+one-liner, and this section exists so the next session does not rebuild it:
+
+```
+GO2CS_PPROF=localhost:6060 go2cs -recurse ./app ./out       # off unless the var is set
+go tool pprof -top -nodecount=35 http://localhost:6060/debug/pprof/profile?seconds=20
+curl http://localhost:6060/debug/pprof/goroutine?debug=2    # every goroutine's stack
+```
+
+The endpoint is loopback-only by design (it serves goroutine stacks and heap contents); a bare
+`:6060` is read as localhost and an explicitly non-loopback host is refused. See
+[`diagnosticProfiling.go`](../../src/go2cs/diagnosticProfiling.go).
+
+**Trap 1 — a `-cpuprofile`-style flag cannot see this class of bug at all.** Those write on exit, and
+the failure mode is a run that never exits. Same blind spot for `-memprofile`. The live endpoint (or a
+stack dump on a timer) is the only thing that observes it.
+
+**Trap 2 — `dlv attach` KILLS its target.** On a non-terminal stdin it exits with
+`Stdin is not a terminal, use '-r' …` and takes the process down with it, destroying a reproduction
+that took minutes to reach. If a debugger is genuinely wanted, pass
+`--allow-non-terminal-interactive=true` or run headless (`--headless --listen`) and connect
+separately — but the pprof endpoint above is the cheaper answer.
+
+**Trap 3 — Ctrl+Break does NOT dump goroutines on Windows.** The Go runtime's `ctrlHandler` maps
+`CTRL_BREAK_EVENT` to SIGINT and calls `exit(2)` when nothing is handling it; there is no SIGQUIT-style
+traceback the way there is on Unix. Do not plan a diagnosis around it.
+
+**Read the process before the source.** The single most useful step in the sibling arc took seconds and
+no tooling: sample CPU and working set. **CPU pegged + heap flat** ⇒ exhaustive re-work (this family).
+**0% CPU** ⇒ deadlock. **Heap climbing** ⇒ runaway allocation/recursion. Stack depth *stable* while CPU
+burns is the signature of re-walking a bounded tree, which is what separates an exponential from
+runaway recursion — and it rules out most of the field before a profiler is even attached.
+
+Per-package wall time is now printed at the end of every `-recurse` run (`Slowest N of M packages`), so
+a superlinearity that has not yet become fatal is visible as an outlier rather than needing a
+reproduction to find.
+
 ## CLOSED — the issue-#33 follow-up: the bsoncodec "hang" is an EXPONENTIAL, and it is fixed (2026-08-07)
 
 **The reporter re-ran with the three fixes in, cleared the crash, and hit a different wall: a `-recurse`
