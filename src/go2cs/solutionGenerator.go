@@ -17,7 +17,8 @@
 // while every save (even Save-As) writes byte-identical content (hash-verified against
 // SolutionPersistence 1.0.52, the version VS itself ships). The emitted bytes ARE
 // VS-canonical; do not chase this as a generator formatting defect, and do not
-// restructure the Symbols import to silence a cosmetic dialog.
+// restructure the Symbols import to silence a cosmetic dialog. Tracked upstream:
+// https://github.com/microsoft/vs-solutionpersistence/issues/156
 package main
 
 import (

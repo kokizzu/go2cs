@@ -282,8 +282,10 @@ ONE stdlib in a build; there is now only one on disk.
   Save-As — writes **byte-identical** content (hash-verified; SolutionPersistence 1.0.52 round-trips
   both solutions exactly, and that is the version VS ships). Accept or dismiss the prompt, nothing
   changes on disk either way. Do NOT re-diagnose this as file drift, a generator formatting defect,
-  or a reason to restructure the Symbols import. (Upstream: microsoft/vs-solutionpersistence has no
-  shared-items element as of 1.0.52.)
+  or a reason to restructure the Symbols import. (Upstream: filed as
+  [vs-solutionpersistence#156](https://github.com/microsoft/vs-solutionpersistence/issues/156) —
+  the format has no shared-items element as of 1.0.52; if it gains one, or VS stops dirtying
+  non-serializable state, this caveat retires.)
 - **When iterating on regression work, use FILTERED + `--no-build` tests — don't run the full suite each
   time.** The full `dotnet test go2cs.slnx` rebuilds all **502** registered projects first and can take
   10+ min or hang under Visual Studio lock contention. Instead, from `src/tests/Behavioral/BehavioralTests`, run
