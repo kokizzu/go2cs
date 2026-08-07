@@ -47,8 +47,8 @@
 //   - LockOSThread/UnlockOSThread are no-ops BY CONSTRUCTION, not by omission: go2cs runs each
 //     goroutine on its own managed thread, so the guarantee they exist to provide — "this
 //     goroutine will not be migrated to another OS thread" — already holds unconditionally.
-//   - Callers()/Frames.Next() walk the MANAGED stack projected to GO-LOGICAL frames: only
-//     converted Go declarations and function literals count — adapter shells (IGoAdapter) and
+//   - Callers()/callers()/Frames.Next() walk the MANAGED stack projected to GO-LOGICAL frames:
+//     only converted Go declarations and function literals count — adapter shells (IGoAdapter) and
 //     go2cs-gen forwarders are dispatch plumbing Go has no frame for, and golib/the BCL/the test
 //     host are not Go code. RELATIVE depths between two Callers calls on one goroutine therefore
 //     match Go's logical model (io's multiReader flatten tests assert exactly this); ABSOLUTE
@@ -58,6 +58,13 @@
 //     and Frame.Func stay unimplemented/nil — a *Func has no managed referent. getcallersp
 //     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
 //     chain is severed HERE, at the API boundary that does (the methodName precedent).
+//     runtime.Caller stays AUTO-converted and works through the same walk, because the funnel it
+//     calls — the lower-case `callers` — is hand-owned here too. Its `file`/`line` are therefore
+//     the converted `.cs` position, NOT the .go one: the running program's source is C#, and no
+//     Go-position map is emitted today. A caller that only needs "where am I" (log's file:line
+//     prefix, slogtest's source labels) is fully served; a test asserting the Go file's own line
+//     numbers (log's TestAll pins `(63|65)` in log_test.go) is asserting a property of the Go
+//     source tree that the converted program does not carry.
 //
 // Hand-owned: there is no managed_impl.go, so a -stdlib reconvert never regenerates this file.
 
@@ -317,7 +324,7 @@ partial class runtime_package
     {
     }
 
-    // ---------------- The traceback surface: Callers / Frames.Next ----------------
+    // ------- The traceback surface: Callers / callers (Caller's funnel) / Frames.Next -------
 
     // One converted-Go call site observed on the managed stack, resolved at intern time so a
     // later Frames walk needs no live StackFrame. Tokens are process-lifetime, like Go's program
@@ -337,14 +344,7 @@ partial class runtime_package
     // stack, skipping `skip` frames (0 identifies the frame for Callers itself, 1 its caller).
     // The auto body enters the raw-metal unwinder on its first step (callers → getcallersp, an
     // assembly stub); the CLR answers the API CONTRACT natively — walk the managed stack and
-    // project it to GO-LOGICAL frames. What counts as a frame is what Go's unwinder reports:
-    // functions the GO SOURCE declares. Converted declarations count — free functions and
-    // [GoRecv] receivers on the package class, methods on the structs nested in it, and function
-    // literals (compiler display classes nested in the same scope). go2cs dispatch machinery does
-    // not: an interface adapter shell or a generated forwarder has no Go frame, exactly as Go's
-    // interface dispatch adds none. Depth DELTAS between two Callers calls on one goroutine
-    // therefore match Go's logical model — the property io's flatten tests assert
-    // (readDepth == myDepth+2) — while ABSOLUTE depth reflects the managed host (see the header).
+    // project it to GO-LOGICAL frames (captureCallers below).
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static nint Callers(nint skip, slice<uintptr> pc)
     {
@@ -353,6 +353,42 @@ partial class runtime_package
         if (len(pc) == 0)
             return 0;
 
+        // +1 drops captureCallers' own frame, so Go's skip==0 lands on THIS frame — which is
+        // exactly what "0 identifies the frame for Callers itself" means.
+        return captureCallers(skip + 1, pc);
+    }
+
+    // callers is the runtime-internal funnel every other traceback entry point goes through
+    // (Caller, mprof's profile recorders, proc's createstack, tracestack) and the only one that
+    // actually reaches getcallersp — Go's own body opens with `sp := getcallersp()`. It is
+    // "almost identical to Callers" (Go's comment on the declaration) with one difference that
+    // matters here: it starts from its CALLER's pc/sp, so skip==0 identifies the frame that
+    // called it, not its own. Severing the chain at this boundary rather than at each public
+    // entry point is what leaves runtime.Caller auto-converted and Go-shaped while still working.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static nint callers(nint skip, slice<uintptr> pcbuf)
+    {
+        // +2 drops captureCallers' frame and this one, so Go's skip==0 lands on the caller.
+        return captureCallers(skip + 2, pcbuf);
+    }
+
+    // The walk itself. What counts as a frame is what Go's unwinder reports: functions the GO
+    // SOURCE declares. Converted declarations count — free functions and [GoRecv] receivers on
+    // the package class, methods on the structs nested in it, and function literals (compiler
+    // display classes nested in the same scope). go2cs dispatch machinery does not: an interface
+    // adapter shell or a generated forwarder has no Go frame, exactly as Go's interface dispatch
+    // adds none. Depth DELTAS between two Callers calls on one goroutine therefore match Go's
+    // logical model — the property io's flatten tests assert (readDepth == myDepth+2) — while
+    // ABSOLUTE depth reflects the managed host (see the header).
+    //
+    // ⚠ This method IS itself a Go-source frame by that test (it is declared on runtime_package),
+    // as is every entry point above it, so each caller adds its own frame to `skip`. Keep them
+    // and this one NoInlining: the CLR's StackTrace does not report inlined frames, and Go's
+    // unwinder does (through the compiler's inline trees), so an inlined hop would silently
+    // shift every answer by one.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static nint captureCallers(nint skip, slice<uintptr> pc)
+    {
         StackTrace stack = new(skipFrames: 0, fNeedFileInfo: true);
         nint remainingSkip = skip;
         nint count = 0;

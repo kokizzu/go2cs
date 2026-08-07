@@ -1022,6 +1022,12 @@ re-`panic` inherits it, which is what keeps the origin visible through Go's
 `at go.sync_test_package.onceFuncPanic(…)`, because a traceback is observable output that programs
 and tests read by package-qualified name.
 
+The **programmatic** traceback — `runtime.Caller`, `runtime.Callers`, `Frames.Next` — walks the same
+managed stack, filtered to the frames the *Go source* declares, so relative depths and `skip`
+counting behave as in Go (go2cs's own adapter shells and generated forwarders are invisible, exactly
+as Go's interface dispatch adds no frame). The one honest difference is `file`/`line`: they name the
+**converted `.cs`** position, because that is the source the running program actually has.
+
 **Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference.md#defer--panic--recover) —
 the frame's emitted forms and why the body is not a lambda, the named-result `goto` exit, the
 registration ladder, unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees,
