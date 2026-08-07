@@ -45,7 +45,7 @@ partial class gcimporter_package {
 internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) {
     GoFrame ᒐ = default;
     try {
-    input = input.ΔClone();
+        input = input.ΔClone();
 
         ref var pr = ref heap<pkgReader>(out var Ꮡpr);
         pr = new pkgReader(

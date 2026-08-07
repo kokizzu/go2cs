@@ -264,7 +264,7 @@ internal static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode
 public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var enc = ref Ꮡenc.DerefOrNull();
+        ref var enc = ref Ꮡenc.DerefOrNull();
 
         if (value.Kind() == reflect.Invalid) {
             return errors.New(gobCannotEncodeNilValueˢ);

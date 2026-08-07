@@ -301,7 +301,7 @@ internal static (slice<byte> tok, error err) Token(this ж<ss> Ꮡs, bool skipSp
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             {
@@ -1293,7 +1293,7 @@ internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
 internal static void errorHandler(ж<error> Ꮡerrp) {
     GoFrame ᒐ = default;
     try {
-    ref var errp = ref Ꮡerrp.DerefOrNull();
+        ref var errp = ref Ꮡerrp.DerefOrNull();
 
         {
             var e = recover(); if (e != default!) {
@@ -1327,9 +1327,9 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(errorHandler, Ꮡerr, ref ᒐ);
         foreach (var (_, arg) in a) {
             Ꮡs.scanOne((rune)'v', arg);
@@ -1459,9 +1459,9 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(errorHandler, Ꮡerr, ref ᒐ);
         nint end = len(format) - 1;
         // We process one item per non-trivial format

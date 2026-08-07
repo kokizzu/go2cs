@@ -43,9 +43,9 @@ internal static readonly @string msgˢ = "msg="u8;
 internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) {
     GoFrame ᒐ = default;
     try {
-    r = r.ΔClone();
+        r = r.ΔClone();
 
-    ref var h = ref Ꮡh.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
         var buf = buffer.New();
         var bufʗ1 = buf;
         defer(bufʗ1.Free, ref ᒐ);

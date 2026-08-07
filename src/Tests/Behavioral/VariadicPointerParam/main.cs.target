@@ -52,7 +52,7 @@ internal static nint countCap(params ꓸꓸꓸжbox bsʗp) {
 internal static nint deferredLen(params ꓸꓸꓸжbox bsʗp) {
     GoFrame ᒐ = default;
     try {
-    var bs = bsʗp.sslice();
+        var bs = bsʗp.sslice();
 
         defer(() => {
         }, ref ᒐ);
@@ -65,7 +65,7 @@ internal static nint deferredLen(params ꓸꓸꓸжbox bsʗp) {
 internal static void deferredReplaceFirst(params ꓸꓸꓸжbox bsʗp) {
     GoFrame ᒐ = default;
     try {
-    var bs = bsʗp.sslice();
+        var bs = bsʗp.sslice();
 
         defer(() => {
         }, ref ᒐ);
@@ -79,7 +79,7 @@ internal static nint /*n*/ deferredNamedLen(params ꓸꓸꓸжbox bsʗp) {
     nint n = default!;
     GoFrame ᒐ = default;
     try {
-    var bs = bsʗp.sslice();
+        var bs = bsʗp.sslice();
 
         defer(() => {
             n++;

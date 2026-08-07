@@ -687,7 +687,7 @@ internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPo
 internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
         defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
@@ -712,7 +712,7 @@ internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientC
 internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
         defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
@@ -2817,7 +2817,7 @@ internal static readonly @string illegalUseOfˢ = "illegal use of AllowIllegalRe
 internal static (http2Frame, error) readMetaFrame(this ж<http2Framer> Ꮡfr, ж<http2HeadersFrame> Ꮡhf) {
     GoFrame ᒐ = default;
     try {
-    ref var fr = ref Ꮡfr.DerefOrNull();
+        ref var fr = ref Ꮡfr.DerefOrNull();
 
         if (fr.AllowIllegalReads) {
             return (default!, errors.New(illegalUseOfˢ));
@@ -3673,7 +3673,7 @@ internal static bool http2validPseudoPath(@string v) {
 internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -3689,7 +3689,7 @@ internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) {
 internal static nint Len(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -3709,7 +3709,7 @@ internal static (nint n, error err) Read(this ж<http2pipe> Ꮡp, slice<byte> d)
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -3751,7 +3751,7 @@ internal static (nint n, error err) Write(this ж<http2pipe> Ꮡp, slice<byte> d
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -3800,8 +3800,8 @@ internal static void closeWithErrorAndCode(this ж<http2pipe> Ꮡp, error err, A
 internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, error err, Action fn) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var dst = ref Ꮡdst.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var dst = ref Ꮡdst.DerefOrNull();
 
         if (err == default!) {
             throw panic("err must be non-nil");
@@ -3852,7 +3852,7 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
 internal static error Err(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -3870,7 +3870,7 @@ internal static error Err(this ж<http2pipe> Ꮡp) {
 internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
@@ -4291,8 +4291,8 @@ internal static readonly @string invalidSettingsˢ = "invalid settings"u8;
 internal static void serveConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2ServeConnOpts> Ꮡopts, Action<ж<http2serverConn>> newf) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
-    ref var opts = ref Ꮡopts.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
+        ref var opts = ref Ꮡopts.DerefOrNull();
 
         var (baseCtx, cancel) = http2serverConnBaseContext(c, Ꮡopts);
         var cancelʗ1 = cancel;
@@ -4834,7 +4834,7 @@ internal static void notePanic(this ж<http2serverConn> Ꮡsc) {
 internal static void serve(this ж<http2serverConn> Ꮡsc) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         sc.serveG.check();
         defer(Ꮡsc.notePanic, ref ᒐ);
@@ -5051,7 +5051,7 @@ internal static error http2errPrefaceTimeout = errors.New("timeout waiting for c
 internal static error readPreface(this ж<http2serverConn> Ꮡsc) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         if (sc.sawClientPreface) {
             return default!;
@@ -6586,7 +6586,7 @@ internal static void handlerDone(this ж<http2serverConn> Ꮡsc) {
 internal static void runHandler(this ж<http2serverConn> Ꮡsc, ж<http2responseWriter> Ꮡrw, ж<Request> Ꮡreq, Action<ResponseWriter, ж<Request>> handler) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         sc.srv.markNewGoroutine();
         defer(Ꮡsc.sendServeMsg, http2handlerDoneMsg.OrTypedNil(), ref ᒐ);
@@ -8037,7 +8037,7 @@ internal static Func<nint, textproto.MIMEHeader, error> http2got1xxFuncForTests;
 internal static void abortStream(this ж<http2clientStream> Ꮡcs, error err) {
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
 
         cs.cc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcs.Value.cc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8067,7 +8067,7 @@ internal static void abortStreamLocked(this ж<http2clientStream> Ꮡcs, error e
 internal static void abortRequestBodyWrite(this ж<http2clientStream> Ꮡcs) {
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
 
         var cc = cs.cc;
         cc.of(http2ClientConn.Ꮡmu).Lock();
@@ -8531,7 +8531,7 @@ internal static (ж<http2ClientConn>, error) newClientConn(this ж<http2Transpor
 internal static void healthCheck(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         var pingTimeout = cc.t.pingTimeout();
         // We don't need to periodically ping in the health check, because the readLoop of ClientConn will
@@ -8556,7 +8556,7 @@ internal static void healthCheck(this ж<http2ClientConn> Ꮡcc) {
 public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8569,8 +8569,8 @@ public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) {
 internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFrame> Ꮡf) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8615,7 +8615,7 @@ internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFra
 public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8631,7 +8631,7 @@ public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
 public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8678,7 +8678,7 @@ public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
 public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
         var maxConcurrent = cc.maxConcurrentStreams;
@@ -8711,7 +8711,7 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
 internal static http2clientConnIdleState idleState(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8769,7 +8769,7 @@ internal static void onIdleTimeout(this ж<http2ClientConn> Ꮡcc) {
 internal static void closeConn(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         var t = time.AfterFunc(250 * time.Millisecond, Ꮡcc.forceCloseConn);
         var tʗ1 = t;
@@ -8815,7 +8815,7 @@ internal static void closeIfIdle(this ж<http2ClientConn> Ꮡcc) {
 internal static bool isDoNotReuseAndIdle(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -8885,7 +8885,7 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
 internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         var closing = cc.closing;
@@ -9044,7 +9044,7 @@ internal static int64 http2actualContentLength(ж<Request> Ꮡreq) {
 internal static void decrStreamReservations(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -9232,8 +9232,8 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         var cc = cs.cc;
         var ctx = cs.ctx;
@@ -9404,7 +9404,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
 internal static error encodeAndWriteHeaders(this ж<http2clientStream> Ꮡcs, ж<Request> Ꮡreq) {
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
 
         var cc = cs.cc;
         var ctx = cs.ctx;
@@ -9652,8 +9652,8 @@ internal static error /*err*/ writeRequestBody(this ж<http2clientStream> Ꮡcs,
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         var cc = cs.cc;
         var body = cs.reqBody;
@@ -9799,7 +9799,7 @@ internal static (int32 taken, error err) awaitFlowControl(this ж<http2clientStr
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
 
         var cc = cs.cc;
         var ctx = cs.ctx;
@@ -10137,7 +10137,7 @@ internal static void addStreamLocked(this ж<http2ClientConn> Ꮡcc, ж<http2cli
 internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         nint slen = builtin.len(cc.streams);
@@ -10177,7 +10177,7 @@ internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
 internal static void readLoop(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.t.markNewGoroutine();
         var rl = Ꮡ(new http2clientConnReadLoop(cc: Ꮡcc));
@@ -10220,7 +10220,7 @@ internal static bool http2isEOFOrNetReadError(error err) {
 internal static void cleanup(this ж<http2clientConnReadLoop> Ꮡrl) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
 
         var cc = rl.cc;
         (~cc).t.connPool().MarkDead(cc);
@@ -10863,8 +10863,8 @@ internal static error processData(this ж<http2clientConnReadLoop> Ꮡrl, ж<htt
 internal static void endStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2clientStream> Ꮡcs) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var cs = ref Ꮡcs.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var cs = ref Ꮡcs.DerefOrNull();
 
         // TODO: check that any declared content-length matches, like
         // server.go's (*stream).endStream method.
@@ -10894,7 +10894,7 @@ internal static void endStream(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2c
 internal static ж<http2clientStream> streamByID(this ж<http2clientConnReadLoop> Ꮡrl, uint32 id) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
 
         rl.cc.of(http2ClientConn.Ꮡmu).Lock();
         defer(Ꮡrl.Value.cc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -10939,8 +10939,8 @@ internal static ж<http2clientStream> streamByID(this ж<http2clientConnReadLoop
 internal static error processSettings(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         var cc = rl.cc;
         // Locking both mu and wmu here allows frame encoding to read settings with only wmu held.
@@ -10966,8 +10966,8 @@ internal static error processSettings(this ж<http2clientConnReadLoop> Ꮡrl, ж
 internal static error processSettingsNoWrite(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2SettingsFrame> Ꮡf) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         var cc = rl.cc;
         cc.of(http2ClientConn.Ꮡmu).Lock();
@@ -11044,8 +11044,8 @@ internal static error processSettingsNoWrite(this ж<http2clientConnReadLoop> �
 internal static error processWindowUpdate(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2WindowUpdateFrame> Ꮡf) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         var cc = rl.cc;
         var cs = Ꮡrl.streamByID(f.StreamID);
@@ -11175,8 +11175,8 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
 internal static error processPing(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2PingFrame> Ꮡf) {
     GoFrame ᒐ = default;
     try {
-    ref var rl = ref Ꮡrl.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var rl = ref Ꮡrl.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         if (f.IsAck()) {
             var ccΔ1 = rl.cc;

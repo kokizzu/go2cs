@@ -211,7 +211,7 @@ public static ж<Server> NewTLSServer(httpꓸHandler handler) {
 public static void Close(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         if (!s.closed) {
@@ -275,7 +275,7 @@ internal static readonly @string httptestServerBlockedInˢ = "httptest.Server bl
 internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
@@ -294,7 +294,7 @@ internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
 public static void CloseClientConnections(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         nint nconn = len(s.conns);

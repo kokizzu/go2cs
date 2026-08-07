@@ -167,7 +167,7 @@ internal static (ж<Profile>, error) parseUncompressed(slice<byte> data) {
 public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         p.preEncode();
         var b = marshal(new Profileжmessage(Ꮡp));

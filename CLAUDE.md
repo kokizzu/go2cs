@@ -414,6 +414,17 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
      loading the whole type graph, so **batch** — don't invoke per package).
+  1c. **⚠ NEVER convert twice into the same temp root, and never let two conversions overlap in one
+     (found r41, 2026-08-05).** A `-stdlib` run whose PowerShell wrapper aborted on the converter's
+     stderr WARNINGs — `$ErrorActionPreference = 'Stop'` turns a native-stderr line into a terminating
+     NativeCommandError, so wrap the converter call in `'Continue'` or do not pipe its stderr at all —
+     left a `go2cs.exe` alive; a re-run into the same root raced it, and the result was ONE corrupted
+     file: `runtime/arena.cs` with nine unresolved `«DYNTYPE:…:DYNTYPE»` anonymous-struct lift markers,
+     which fails the corpus build with CS1056/CS1003 and reads exactly like a converter regression. It
+     is not one — a clean-room reconvert (fresh root, seeded, single run) emits zero DYNTYPE markers
+     anywhere in the corpus, and so does a single-package run. The rule is therefore mechanical rather
+     than diagnostic: **delete the temp root and re-seed for every reconvert**, and confirm no
+     `go2cs.exe` is alive before starting one.
   2. Overlay the fresh `.cs`, **`.csproj` and `README.md`** onto `src/core/<pkg>`. Since the trees
      unified (2026-08-01) the reconvert's paths ARE the repository's paths — a straight copy, no
      rewriting, no exceptions. A seeded reconvert of the whole stdlib is byte-identical to the

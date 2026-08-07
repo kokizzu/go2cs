@@ -14,9 +14,9 @@ public static (int64 written, error err) SendFile(ж<FD> Ꮡfd, syscallꓸHandle
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(() => {
             TestHookDidSendFile(Ꮡfd, 0, written, Ꮡerr.ValueSlot, written > 0);
         }, ref ᒐ);

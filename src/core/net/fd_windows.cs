@@ -73,7 +73,7 @@ internal static readonly @string setsockoptˢ = "setsockopt"u8;
 internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, context.Context ctx, syscallꓸSockaddr la, syscallꓸSockaddr ra) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         // Do not need to call fd.writeLock here,
         // because fd is not yet accessible to user,

@@ -596,7 +596,7 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var flag = ref Ꮡflag.DerefOrNull();
+        ref var flag = ref Ꮡflag.DerefOrNull();
 
         // Build a zero value of the flag's Value type, and see if the
         // result of calling its String method equals the value passed in.

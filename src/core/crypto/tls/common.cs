@@ -767,7 +767,7 @@ internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour 
 public static ж<Config> Clone(this ж<Config> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (Ꮡc == nil) {
             return default!;
@@ -822,7 +822,7 @@ internal static slice<byte> deprecatedSessionTicketKey = slice<byte>("DEPRECATED
 internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         // Don't write if SessionTicketKey is already defined as our deprecated string,
         // or if it is defined by the user but sessionTicketKeys is already set.
@@ -866,8 +866,8 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
 internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> ᏑconfigForClient) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var configForClient = ref ᏑconfigForClient.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var configForClient = ref ᏑconfigForClient.DerefOrNull();
 
         // If the ConfigForClient callback returned a Config with explicitly set
         // keys, use those, otherwise just use the original Config.
@@ -1508,7 +1508,7 @@ public static ClientSessionCache NewLRUClientSessionCache(nint capacity) {
 internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<ClientSessionState> Ꮡcs) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
         defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);
@@ -1547,7 +1547,7 @@ internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<C
 internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc, @string sessionKey) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
         defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);

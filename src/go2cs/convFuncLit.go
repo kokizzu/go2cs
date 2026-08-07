@@ -447,6 +447,16 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.indentLevel--
 	}
 
+	// The prologues below (boxed value params, the variadic slice binding, plain named-result
+	// declarations) are composed AFTER the body visit restored the indent, so under a frame they
+	// need the extra level the frame's 	ry block added — same correction visitFuncDecl applies to
+	// its own block prefix (reindentGoFrameBlock).
+	bodyIndent := v.indentLevel + 1
+
+	if useLitFrame {
+		bodyIndent++
+	}
+
 	// A boxed VALUE parameter (see funcLitHeapBoxParamIdents) arrives under the `ʗp` name; the
 	// literal's first statements re-declare the Go name as the boxed ref alias — the exact
 	// parameter-preamble form of a declaration's boxed param (see paramNeedsHeapBox) — so body
@@ -474,10 +484,10 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				}
 
 				if v.options.preferVarDecl {
-					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
 				} else {
 					csTypeName := v.getCSharpTypeName(v.getIdentType(ident))
-					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(bodyIndent), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
 				}
 			}
 
@@ -544,9 +554,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			}
 
 			if v.options.preferVarDecl {
-				prologue = fmt.Sprintf("%s%svar %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+				prologue = fmt.Sprintf("%s%svar %s = %s.%s();", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			} else {
-				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(bodyIndent), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			}
 
 			body = "{" + prologue + strings.TrimPrefix(trimmedBody, "{")
@@ -595,7 +605,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// Declare plain named results at the top of the literal's block (the litNamedDefer arm
 	// below declares its own, outside the func() wrapper).
 	if litHasNamedResults && !litNamedDefer && strings.HasPrefix(body, "{") {
-		body = "{" + v.namedReturnDeclLines(litSig, v.indentLevel+1, false) + strings.TrimPrefix(body, "{")
+		body = "{" + v.namedReturnDeclLines(litSig, bodyIndent, false) + strings.TrimPrefix(body, "{")
 	}
 
 	// Build the lambda body (what follows `=>`). A function literal that uses defer/recover gets

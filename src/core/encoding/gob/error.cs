@@ -38,7 +38,7 @@ internal static void error_(error err) {
 internal static void catchError(ж<error> Ꮡerr) {
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         {
             var e = recover(); if (e != default!) {

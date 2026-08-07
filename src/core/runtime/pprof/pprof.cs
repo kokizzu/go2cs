@@ -319,7 +319,7 @@ public static slice<ж<Profile>> Profiles() {
 public static nint Count(this ж<Profile> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(Profile.Ꮡmu).Lock();
         defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
@@ -352,7 +352,7 @@ public static nint Count(this ж<Profile> Ꮡp) {
 public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.name == ""u8) {
             throw panic("pprof: use of uninitialized Profile");
@@ -383,7 +383,7 @@ public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
 public static void Remove(this ж<Profile> Ꮡp, any value) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         Ꮡp.of(Profile.Ꮡmu).Lock();
         defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);

@@ -30,7 +30,7 @@ internal static pipeDeadline makePipeDeadline() {
 internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
         defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
@@ -72,7 +72,7 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
 internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
         defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
@@ -220,7 +220,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         switch (ᐧ) {
         case {} when isClosedChan(p.localDone): {

@@ -394,7 +394,7 @@ internal static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
 internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         var (m, err) = d.newImageFromDescriptor();
         if (err != default!) {

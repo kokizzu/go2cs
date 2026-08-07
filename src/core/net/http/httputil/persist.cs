@@ -60,7 +60,7 @@ public static ж<ServerConn> NewServerConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
 public static (net.Conn, ж<bufio.Reader>) Hijack(this ж<ServerConn> Ꮡsc) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         Ꮡsc.of(ServerConn.Ꮡmu).Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
@@ -90,7 +90,7 @@ public static error Close(this ж<ServerConn> Ꮡsc) {
 public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         ref var req = ref heap<ж<http.Request>>(out var Ꮡreq);
         error err = default!;
@@ -173,7 +173,7 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
 public static nint Pending(this ж<ServerConn> Ꮡsc) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
 
         Ꮡsc.of(ServerConn.Ꮡmu).Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
@@ -192,8 +192,8 @@ internal static readonly @string persistServerPipeCountˢ = "persist server pipe
 public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡresp) {
     GoFrame ᒐ = default;
     try {
-    ref var sc = ref Ꮡsc.DerefOrNull();
-    ref var resp = ref Ꮡresp.DerefOrNull();
+        ref var sc = ref Ꮡsc.DerefOrNull();
+        ref var resp = ref Ꮡresp.DerefOrNull();
 
         // Retrieve the pipeline ID of this request/response pair
         Ꮡsc.of(ServerConn.Ꮡmu).Lock();
@@ -299,7 +299,7 @@ public static (net.Conn c, ж<bufio.Reader> r) Hijack(this ж<ClientConn> Ꮡcc)
     ж<bufio.Reader> r = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -330,8 +330,8 @@ public static error Close(this ж<ClientConn> Ꮡcc) {
 public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         ref var err = ref heap<error>(out var Ꮡerr);
         // Ensure ordered execution of Writes
@@ -390,7 +390,7 @@ public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) {
 public static nint Pending(this ж<ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         Ꮡcc.of(ClientConn.Ꮡmu).Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -409,7 +409,7 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cc = ref Ꮡcc.DerefOrNull();
+        ref var cc = ref Ꮡcc.DerefOrNull();
 
         // Retrieve the pipeline ID of this request/response pair
         Ꮡcc.of(ClientConn.Ꮡmu).Lock();

@@ -532,8 +532,8 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         Ꮡt.of(Transport.ᏑnextProtoOnce).Do(Ꮡt.onceSetNextProtoDefaults);
         var ctx = req.Context();
@@ -1067,8 +1067,8 @@ internal static void putOrCloseIdleConn(this ж<Transport> Ꮡt, ж<persistConn>
 internal static error tryPutIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡpconn) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var pconn = ref Ꮡpconn.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var pconn = ref Ꮡpconn.DerefOrNull();
 
         if (t.DisableKeepAlives || t.MaxIdleConnsPerHost < 0) {
             return errKeepAlivesDisabled;
@@ -1169,8 +1169,8 @@ internal static bool /*delivered*/ queueForIdleConn(this ж<Transport> Ꮡt, ж<
     bool delivered = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if (t.DisableKeepAlives) {
             delivered = false; goto ᒐdone;
@@ -1261,7 +1261,7 @@ internal static bool /*delivered*/ queueForIdleConn(this ж<Transport> Ꮡt, ж<
 internal static bool removeIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡpconn) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         Ꮡt.of(Transport.ᏑidleMu).Lock();
         defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
@@ -1368,7 +1368,7 @@ internal static readonly @string netHttpTransportDialHookˢ = "net/http: Transpo
 internal static bool waiting(this ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(wantConn.Ꮡmu).Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
@@ -1382,7 +1382,7 @@ internal static bool waiting(this ж<wantConn> Ꮡw) {
 internal static context.Context getCtxForDial(this ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(wantConn.Ꮡmu).Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
@@ -1396,7 +1396,7 @@ internal static context.Context getCtxForDial(this ж<wantConn> Ꮡw) {
 internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, error err, time.Time idleAt) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(wantConn.Ꮡmu).Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
@@ -1557,7 +1557,7 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var treq = ref Ꮡtreq.DerefOrNull();
+        ref var treq = ref Ꮡtreq.DerefOrNull();
 
         var req = treq.Request;
         var trace = treq.trace;
@@ -1648,8 +1648,8 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
 internal static void queueForDial(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         w.beforeDial();
         Ꮡt.of(Transport.ᏑconnsPerHostMu).Lock();
@@ -1706,7 +1706,7 @@ internal static void startDialConnForLocked(this ж<Transport> Ꮡt, ж<wantConn
 internal static void dialConnFor(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         defer(Ꮡw.Value.afterDial, ref ᒐ);
         var ctx = Ꮡw.getCtxForDial();
@@ -1735,7 +1735,7 @@ internal static void dialConnFor(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
 internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey key) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (t.MaxConnsPerHost <= 0) {
             return;
@@ -1866,7 +1866,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         pconn = Ꮡ(new persistConn(
             t: Ꮡt,
@@ -2307,7 +2307,7 @@ internal static bool isBroken(this ж<persistConn> Ꮡpc) {
 internal static error canceled(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         Ꮡpc.of(persistConn.Ꮡmu).Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
@@ -2330,7 +2330,7 @@ internal static bool isReused(this ж<persistConn> Ꮡpc) {
 internal static void cancelRequest(this ж<persistConn> Ꮡpc, error err) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         Ꮡpc.of(persistConn.Ꮡmu).Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
@@ -2347,7 +2347,7 @@ internal static void cancelRequest(this ж<persistConn> Ꮡpc, error err) {
 internal static void closeConnIfStillIdle(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         var t = pc.t;
         t.of(Transport.ᏑidleMu).Lock();
@@ -2434,7 +2434,7 @@ internal static error errCallerOwnsConn = errors.New("read loop ending; caller o
 internal static void readLoop(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         ref var closeErr = ref heap<error>(out var ᏑcloseErr);
         closeErr = errReadLoopExiting;
@@ -2828,7 +2828,7 @@ internal static error Unwrap(this nothingWrittenError nwe) {
 internal static void writeLoop(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         defer(ᴛ1 => builtin.close(ᴛ1), Ꮡpc.Value.writeLoopDone, ref ᒐ);
         while (ᐧ) {
@@ -2892,7 +2892,7 @@ internal static ref time.Duration maxWriteWaitBeforeConnReuse => ref ᏑmaxWrite
 internal static bool wroteRequest(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         var selᴛ112 = pc.writeErrCh;
         switch (trySelect(ᐸꟷ(selᴛ112, ꓸꓸꓸ))) {
@@ -3030,8 +3030,8 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         testHookEnterRoundTrip();
         Ꮡpc.of(persistConn.Ꮡmu).Lock();
@@ -3214,7 +3214,7 @@ internal static void markReused(this ж<persistConn> Ꮡpc) {
 internal static void close(this ж<persistConn> Ꮡpc, error err) {
     GoFrame ᒐ = default;
     try {
-    ref var pc = ref Ꮡpc.DerefOrNull();
+        ref var pc = ref Ꮡpc.DerefOrNull();
 
         Ꮡpc.of(persistConn.Ꮡmu).Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
@@ -3301,7 +3301,7 @@ internal static (nint n, error err) Read(this ж<bodyEOFSignal> Ꮡes, slice<byt
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var es = ref Ꮡes.DerefOrNull();
+        ref var es = ref Ꮡes.DerefOrNull();
 
         Ꮡes.of(bodyEOFSignal.Ꮡmu).Lock();
         var (closed, rerr) = (es.closed, es.rerr);
@@ -3330,7 +3330,7 @@ internal static (nint n, error err) Read(this ж<bodyEOFSignal> Ꮡes, slice<byt
 internal static error Close(this ж<bodyEOFSignal> Ꮡes) {
     GoFrame ᒐ = default;
     try {
-    ref var es = ref Ꮡes.DerefOrNull();
+        ref var es = ref Ꮡes.DerefOrNull();
 
         Ꮡes.of(bodyEOFSignal.Ꮡmu).Lock();
         defer(Ꮡes.of(bodyEOFSignal.Ꮡmu).Unlock, ref ᒐ);

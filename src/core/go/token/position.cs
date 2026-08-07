@@ -135,7 +135,7 @@ public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
 public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
     GoFrame ᒐ = default;
     try {
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         if (line < 1) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
@@ -221,7 +221,7 @@ public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content)
 public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) {
     GoFrame ᒐ = default;
     try {
-    ref var f = ref Ꮡf.DerefOrNull();
+        ref var f = ref Ꮡf.DerefOrNull();
 
         if (line < 1) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
@@ -498,7 +498,7 @@ public static nint Base(this ж<FileSet> Ꮡs) {
 public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @base, nint size) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         // Allocate f outside the critical section.
         var f = Ꮡ(new ΔFile(name: filename, size: size, lines: new nint[]{0}.slice()));
@@ -539,8 +539,8 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
 public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
-    ref var @file = ref Ꮡfile.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
+        ref var @file = ref Ꮡfile.DerefOrNull();
 
         Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil);
         // clear last file cache
@@ -591,7 +591,7 @@ internal static nint searchFiles(slice<ж<ΔFile>> a, nint x) {
 internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         // common case: p is in last file.
         {

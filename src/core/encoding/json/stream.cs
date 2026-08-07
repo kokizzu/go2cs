@@ -203,7 +203,7 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 public static error Encode(this ж<Encoder> Ꮡenc, any v) {
     GoFrame ᒐ = default;
     try {
-    ref var enc = ref Ꮡenc.DerefOrNull();
+        ref var enc = ref Ꮡenc.DerefOrNull();
 
         if (enc.err != default!) {
             return enc.err;

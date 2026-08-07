@@ -74,7 +74,7 @@ public static (ж<types.Package>, error) Import(this ж<Importer> Ꮡp, @string 
 public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @string path, @string srcDir, types.ImportMode mode) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (mode != 0) {
             throw panic("non-zero import mode");
@@ -233,8 +233,8 @@ internal static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
 internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var bp = ref Ꮡbp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var bp = ref Ꮡbp.DerefOrNull();
 
         var (tmpdir, err) = os.MkdirTemp(""u8, srcimporterˢ);
         if (err != default!) {

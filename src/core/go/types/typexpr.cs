@@ -278,7 +278,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
     ΔType T = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(e0.Pos(), typeSˢ, e0);
@@ -514,8 +514,8 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
     ΔType res = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var ix = ref Ꮡix.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var ix = ref Ꮡix.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.X, ix.Indices);

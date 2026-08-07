@@ -509,7 +509,7 @@ internal static void ignoreUint8Array(ж<decInstr> Ꮡi, ж<decoderState> Ꮡsta
 internal static void decodeSingle(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengine, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         var state = Ꮡdec.newDecoderState(Ꮡdec.of(Decoder.Ꮡbuf));
         defer(Ꮡdec.freeDecoderState, state, ref ᒐ);
@@ -532,7 +532,7 @@ internal static void decodeSingle(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengi
 internal static void decodeStruct(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengine, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         var state = Ꮡdec.newDecoderState(Ꮡdec.of(Decoder.Ꮡbuf));
         defer(Ꮡdec.freeDecoderState, state, ref ᒐ);
@@ -574,7 +574,7 @@ internal static reflectꓸValue noValue = new(nil);
 internal static void ignoreStruct(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengine) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         var state = Ꮡdec.newDecoderState(Ꮡdec.of(Decoder.Ꮡbuf));
         defer(Ꮡdec.freeDecoderState, state, ref ᒐ);
@@ -606,7 +606,7 @@ internal static void ignoreStruct(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengi
 internal static void ignoreSingle(this ж<Decoder> Ꮡdec, ж<decEngine> Ꮡengine) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         var state = Ꮡdec.newDecoderState(Ꮡdec.of(Decoder.Ꮡbuf));
         defer(Ꮡdec.freeDecoderState, state, ref ᒐ);
@@ -1066,7 +1066,7 @@ internal static readonly @string invalidNestingDepthˢ = "invalid nesting depth"
 internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decIgnoreOpFor(this ж<Decoder> Ꮡdec, typeId wireId, map<typeId, ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>>> inProgress) {
     GoFrame ᒐ = default;
     try {
-    ref var dec = ref Ꮡdec.DerefOrNull();
+        ref var dec = ref Ꮡdec.DerefOrNull();
 
         // Track how deep we've recursed trying to skip nested ignored fields.
         dec.ignoreDepth++;
@@ -1286,7 +1286,7 @@ internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decI
 internal static @string typeString(this ж<Decoder> Ꮡdec, typeId remoteId) {
     GoFrame ᒐ = default;
     try {
-    ref var dec = ref Ꮡdec.DerefOrNull();
+        ref var dec = ref Ꮡdec.DerefOrNull();
 
         ᏑtypeLock.Lock();
         defer(ᏑtypeLock.Unlock, ref ᒐ);
@@ -1350,10 +1350,10 @@ internal static (ж<decEngine> engine, error err) compileDec(this ж<Decoder> �
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var dec = ref Ꮡdec.DerefOrNull();
-    ref var ut = ref Ꮡut.DerefOrNull();
+        ref var dec = ref Ꮡdec.DerefOrNull();
+        ref var ut = ref Ꮡut.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(catchError, Ꮡerr, ref ᒐ);
         var rt = ut.@base;
         var srt = rt;
@@ -1471,7 +1471,7 @@ internal static (ж<ж<decEngine>> enginePtr, error err) getIgnoreEnginePtr(this
 internal static void decodeValue(this ж<Decoder> Ꮡdec, typeId wireId, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var dec = ref Ꮡdec.DerefOrNull();
+        ref var dec = ref Ꮡdec.DerefOrNull();
 
         defer(catchError, Ꮡdec.of(Decoder.Ꮡerr), ref ᒐ);
         // If the value is nil, it means we should just ignore this item.

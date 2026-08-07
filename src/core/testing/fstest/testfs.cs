@@ -154,7 +154,7 @@ internal static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-
 internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         // Read entire directory.
         t.dirs = append(t.dirs, dir);
@@ -554,7 +554,7 @@ internal static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile
 internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.files = append(t.files, @file);
         // Read entire file.

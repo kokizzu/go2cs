@@ -178,7 +178,7 @@ internal static slice<byte> appendJSONMayExpand(this ж<Map> Ꮡv, slice<byte> b
 public static ж<Map> Init(this ж<Map> Ꮡv) {
     GoFrame ᒐ = default;
     try {
-    ref var v = ref Ꮡv.DerefOrNull();
+        ref var v = ref Ꮡv.DerefOrNull();
 
         Ꮡv.of(Map.ᏑkeysMu).Lock();
         defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
@@ -194,7 +194,7 @@ public static ж<Map> Init(this ж<Map> Ꮡv) {
 internal static void addKey(this ж<Map> Ꮡv, @string key) {
     GoFrame ᒐ = default;
     try {
-    ref var v = ref Ꮡv.DerefOrNull();
+        ref var v = ref Ꮡv.DerefOrNull();
 
         Ꮡv.of(Map.ᏑkeysMu).Lock();
         defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
@@ -272,7 +272,7 @@ public static void AddFloat(this ж<Map> Ꮡv, @string key, float64 delta) {
 public static void Delete(this ж<Map> Ꮡv, @string key) {
     GoFrame ᒐ = default;
     try {
-    ref var v = ref Ꮡv.DerefOrNull();
+        ref var v = ref Ꮡv.DerefOrNull();
 
         Ꮡv.of(Map.ᏑkeysMu).Lock();
         defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
@@ -292,7 +292,7 @@ public static void Delete(this ж<Map> Ꮡv, @string key) {
 public static void Do(this ж<Map> Ꮡv, Action<KeyValue> f) {
     GoFrame ᒐ = default;
     try {
-    ref var v = ref Ꮡv.DerefOrNull();
+        ref var v = ref Ꮡv.DerefOrNull();
 
         Ꮡv.of(Map.ᏑkeysMu).RLock();
         defer(Ꮡv.of(Map.ᏑkeysMu).RUnlock, ref ᒐ);

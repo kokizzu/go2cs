@@ -1104,7 +1104,7 @@ internal static readonly @string inlˢ = "inl"u8;
 internal static void skipInlineBody(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         // We may or may not have seen the '<' already, depending on
         // whether the function had a result type or not.
@@ -1146,7 +1146,7 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) {
 internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         nint maxp1 = p.parseInt();
         nint exportedp1 = p.parseInt();
@@ -1190,7 +1190,7 @@ internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) 
 internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, nint i, slice<any> nlist) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer((ж<scanner.Scanner> s, rune tok, @string lit) => {
             Ꮡp.Value.scanner = s;
@@ -1245,7 +1245,7 @@ internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡp
 internal static void parseInitDataDirective(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.tok != scanner.Ident) {
             // unexpected token kind; panic

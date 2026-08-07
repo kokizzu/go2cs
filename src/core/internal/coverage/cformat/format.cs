@@ -296,7 +296,7 @@ private static readonly object statementsˢ = (@string)"(statements)"u8;
 public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) {
     GoFrame ᒐ = default;
     try {
-    ref var fm = ref Ꮡfm.DerefOrNull();
+        ref var fm = ref Ꮡfm.DerefOrNull();
 
         if (fm.cm == coverage.CtrModeInvalid) {
             throw panic("internal error, counter mode unset");

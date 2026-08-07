@@ -60,7 +60,7 @@ internal static readonly @string vSShouldHaveBeenDeclaredˢ = "%v: %s should hav
 internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName> Ꮡdef) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if ((~check.conf)._Trace && obj.Type() == default!) {
             if (check.indent == 0) {
@@ -246,7 +246,7 @@ internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj)
     bool valid = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         // The object map contains the package scope objects and the non-interface methods.
         if (debug) {
@@ -551,8 +551,8 @@ internal static void walkDecl(this ж<Checker> Ꮡcheck, ast.Decl d, Action<decl
 internal static void constDecl(this ж<Checker> Ꮡcheck, ж<Const> Ꮡobj, ast.Expr typ, ast.Expr init, bool inherited) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var obj = ref Ꮡobj.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var obj = ref Ꮡobj.DerefOrNull();
 
         assert(obj.typ == default!);
         // use the correct value of iota
@@ -677,9 +677,9 @@ internal static readonly @string cannotUseATypeParameterˢ = "cannot use a type 
 internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж<ast.TypeSpec> Ꮡtdecl, ж<TypeName> Ꮡdef) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var obj = ref Ꮡobj.DerefOrNull();
-    ref var tdecl = ref Ꮡtdecl.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var obj = ref Ꮡobj.DerefOrNull();
+        ref var tdecl = ref Ꮡtdecl.DerefOrNull();
 
         assert(obj.typ == default!);
         // Only report a version error if we have not reported one already.
@@ -791,9 +791,9 @@ internal static readonly @string cannotUseATypeParameterˢ2 = "cannot use a type
 internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypeParamList>> Ꮡdst, ж<ast.FieldList> Ꮡlist) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var list = ref Ꮡlist.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var dst = ref Ꮡdst.DerefOrNull();
+        ref var list = ref Ꮡlist.DerefOrNull();
 
         slice<ж<TypeParam>> tparams = default!;
         // Declare type parameters up-front, with empty interface as type bound.

@@ -572,9 +572,9 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         var trace = httptrace.ContextClientTrace(r.Context());
         if (trace != nil && (~trace).WroteRequest != default!) {
             var traceʗ1 = trace;
@@ -1126,7 +1126,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         var tp = newTextprotoReader(Ꮡb);
         defer(putTextprotoReader, tp, ref ᒐ);

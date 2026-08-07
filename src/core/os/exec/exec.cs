@@ -641,7 +641,7 @@ internal static readonly @string execCommandWithANonNilˢ = "exec: command with 
 public static error Start(this ж<Cmd> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         // Check for doubled Start calls before we defer failure cleanup. If the prior
         // call to Start succeeded, we don't want to spuriously close its pipes.
@@ -979,8 +979,8 @@ public static error Wait(this ж<Cmd> Ꮡc) {
 internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var timer = ref Ꮡtimer.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var timer = ref Ꮡtimer.DerefOrNull();
 
         defer(() => {
             if (Ꮡtimer != nil) {

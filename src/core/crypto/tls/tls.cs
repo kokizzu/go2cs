@@ -147,8 +147,8 @@ public static (ж<Conn>, error) DialWithDialer(ж<net.Dialer> Ꮡdialer, @string
 internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> ᏑnetDialer, @string network, @string addr, ж<Config> Ꮡconfig) {
     GoFrame ᒐ = default;
     try {
-    ref var netDialer = ref ᏑnetDialer.DerefOrNull();
-    ref var config = ref Ꮡconfig.DerefOrNull();
+        ref var netDialer = ref ᏑnetDialer.DerefOrNull();
+        ref var config = ref Ꮡconfig.DerefOrNull();
 
         if (netDialer.Timeout != 0) {
             Action cancel = default!;

@@ -19,7 +19,7 @@ partial class io_package {
 internal static void Store(this ж<onceError> Ꮡa, error err) {
     GoFrame ᒐ = default;
     try {
-    ref var a = ref Ꮡa.DerefOrNull();
+        ref var a = ref Ꮡa.DerefOrNull();
 
         Ꮡa.of(onceError.ᏑMutex).Lock();
         defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
@@ -35,7 +35,7 @@ internal static void Store(this ж<onceError> Ꮡa, error err) {
 internal static error Load(this ж<onceError> Ꮡa) {
     GoFrame ᒐ = default;
     try {
-    ref var a = ref Ꮡa.DerefOrNull();
+        ref var a = ref Ꮡa.DerefOrNull();
 
         Ꮡa.of(onceError.ᏑMutex).Lock();
         defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
@@ -102,7 +102,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         var selᴛ4 = p.done;
         switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {

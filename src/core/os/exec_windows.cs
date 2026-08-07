@@ -25,7 +25,7 @@ internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         var (handle, status) = Ꮡp.handleTransientAcquire();
         var exprᴛ1 = status;

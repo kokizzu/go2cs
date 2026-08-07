@@ -658,7 +658,7 @@ internal static readonly @string panicWhilePrintingPanicˢ = "panic while printi
 internal static void preprintpanics(ж<_panic> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var Δp = ref Ꮡp.DerefOrNull();
+        ref var Δp = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             @string text = panicWhilePrintingPanicˢ;

@@ -220,7 +220,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) addrLookupOrder(t
     ж<dnsConfig> dnsConf = default!;
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
@@ -242,7 +242,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
     ж<dnsConfig> dnsConf = default!;
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {

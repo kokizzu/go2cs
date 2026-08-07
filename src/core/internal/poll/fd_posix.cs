@@ -22,7 +22,7 @@ partial class poll_package {
 public static error Shutdown(this ж<FD> Ꮡfd, nint how) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -73,7 +73,7 @@ public static error Ftruncate(this ж<FD> Ꮡfd, int64 size) {
 public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {

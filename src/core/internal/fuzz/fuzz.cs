@@ -87,7 +87,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         {
             var errΔ1 = ctx.Err(); if (errΔ1 != default!) {

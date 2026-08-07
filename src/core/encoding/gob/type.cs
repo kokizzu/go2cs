@@ -517,7 +517,7 @@ internal static ж<structType> newStructType(@string name) {
 internal static (ΔgobType, error) newTypeObject(@string name, ж<userTypeInfo> Ꮡut, reflectꓸType rt) {
     GoFrame ᒐ = default;
     try {
-    ref var ut = ref Ꮡut.DerefOrNull();
+        ref var ut = ref Ꮡut.DerefOrNull();
 
         // Does this type implement GobEncoder?
         if (ut.externalEnc != 0) {
@@ -824,7 +824,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(ж<userTypeInfo> Ꮡut) {
 internal static (ж<typeInfo>, error) buildTypeInfo(ж<userTypeInfo> Ꮡut, reflectꓸType rt) {
     GoFrame ᒐ = default;
     try {
-    ref var ut = ref Ꮡut.DerefOrNull();
+        ref var ut = ref Ꮡut.DerefOrNull();
 
         ᏑtypeLock.Lock();
         defer(ᏑtypeLock.Unlock, ref ᒐ);

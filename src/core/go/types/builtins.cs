@@ -35,9 +35,9 @@ internal static readonly @string vTraceWithoutArgumentsˢ = "%v: trace() without
 internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.CallExpr> Ꮡcall, builtinId id) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var x = ref Ꮡx.DerefOrNull();
-    ref var call = ref Ꮡcall.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var x = ref Ꮡx.DerefOrNull();
+        ref var call = ref Ꮡcall.DerefOrNull();
 
         var argList = call.Args;
         // append is the only built-in that permits the use of ... for the last argument

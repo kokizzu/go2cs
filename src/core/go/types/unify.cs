@@ -293,11 +293,11 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
     bool result = default!;
     GoFrame ᒐ = default;
     try {
-    ref var u = ref Ꮡu.DerefOrNull();
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var u = ref Ꮡu.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    ref var x = ref heap(xʗp, out var Ꮡx);
-    ref var y = ref heap(yʗp, out var Ꮡy);
+        ref var x = ref heap(xʗp, out var Ꮡx);
+        ref var y = ref heap(yʗp, out var Ꮡy);
         u.depth++;
         if (traceInference) {
             u.tracef("%s ≡ %s\t// %s"u8, x, y, mode);

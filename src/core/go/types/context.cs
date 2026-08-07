@@ -86,7 +86,7 @@ internal static @string instanceHash(this ж<Context> Ꮡctxt, ΔType orig, slic
 internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs) {
     GoFrame ᒐ = default;
     try {
-    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+        ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         Ꮡctxt.of(Context.Ꮡmu).Lock();
         defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
@@ -112,7 +112,7 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
 internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) {
     GoFrame ᒐ = default;
     try {
-    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+        ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         assert(inst != default!);
         Ꮡctxt.of(Context.Ꮡmu).Lock();
@@ -141,7 +141,7 @@ internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
 internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) {
     GoFrame ᒐ = default;
     try {
-    ref var ctxt = ref Ꮡctxt.DerefOrNull();
+        ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         Ꮡctxt.of(Context.Ꮡmu).Lock();
         defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);

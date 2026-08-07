@@ -406,6 +406,16 @@ enclosing panic slot. The shape occurs **zero** times across the corpus's 4,951 
 this closed a latent hole rather than fixing a live defect; it is guarded by
 `Tests/Behavioral/DeferFrameScopes`.
 
+**Two C# scoping facts the design assumed the wrong way round, both settled by compiling rather than
+reasoning.** A nested defer scope — a literal that defers inside a function that also does — declares a
+second frame. (1) The frame LOCAL needs no numbering: a C# lambda or local function MAY declare a local
+spelled like one in the enclosing method, so the pre-C#-8 CS0136 rule does not fire and every frame in
+every emitted function reads under the same name. (2) A LABEL may NOT: repeating one from the enclosing
+method inside a lambda is CS0158, *"the label shadows another label by the same name in a contained
+scope"*. So the named-result exit label alone carries a nesting-depth suffix, and nothing else does. The
+first assumption would have cost gratuitous name churn corpus-wide; the second would have been a
+compile error found only at the corpus build.
+
 **`bodyWrappedInDeferContext` is now optional, and is kept anyway.** A method that defers and
 references its receiver was forced onto the direct-`ж` receiver because a `ref T` receiver cannot be
 referenced from inside a lambda (CS1628). An inline body removes that constraint entirely — `this ref

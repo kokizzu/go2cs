@@ -253,7 +253,7 @@ public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-add
 internal static bool hijacked(this ж<conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(conn.Ꮡmu).Lock();
         defer(Ꮡc.of(conn.Ꮡmu).Unlock, ref ᒐ);
@@ -536,7 +536,7 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         var buf = getCopyBuf();
         defer(putCopyBuf, buf, ref ᒐ);
@@ -635,7 +635,7 @@ internal static void unlock(this ж<connReader> Ꮡcr) {
 internal static void startBackgroundRead(this ж<connReader> Ꮡcr) {
     GoFrame ᒐ = default;
     try {
-    ref var cr = ref Ꮡcr.DerefOrNull();
+        ref var cr = ref Ꮡcr.DerefOrNull();
 
         Ꮡcr.@lock();
         defer(Ꮡcr.unlock, ref ᒐ);
@@ -701,7 +701,7 @@ internal static void backgroundRead(this ж<connReader> Ꮡcr) {
 internal static void abortPendingRead(this ж<connReader> Ꮡcr) {
     GoFrame ᒐ = default;
     try {
-    ref var cr = ref Ꮡcr.DerefOrNull();
+        ref var cr = ref Ꮡcr.DerefOrNull();
 
         Ꮡcr.@lock();
         defer(Ꮡcr.unlock, ref ᒐ);
@@ -1038,7 +1038,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (Ꮡc.hijacked()) {
             (w, err) = (default!, ErrHijacked); goto ᒐdone;
@@ -2003,7 +2003,7 @@ internal static readonly @string clientSentAnHttpRequestˢ = "client sent an HTT
 internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         {
             var ra = c.rwc.RemoteAddr(); if (ra != default!) {
@@ -2242,7 +2242,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if (Ꮡw.of(response.ᏑhandlerDone).Load()) {
             throw panic("net/http: Hijack called after ServeHTTP finished");
@@ -2773,7 +2773,7 @@ internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirec
     ж<urlpkg.URL> redirectTo = default!;
     GoFrame ᒐ = default;
     try {
-    ref var u = ref Ꮡu.DerefOrNull();
+        ref var u = ref Ꮡu.DerefOrNull();
 
         Ꮡmux.of(ServeMux.Ꮡmu).RLock();
         defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock, ref ᒐ);
@@ -2948,7 +2948,7 @@ internal static readonly @string unknownLocationˢ = "unknown location"u8;
 internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) {
     GoFrame ᒐ = default;
     try {
-    ref var mux = ref Ꮡmux.DerefOrNull();
+        ref var mux = ref Ꮡmux.DerefOrNull();
 
         if (patstr == ""u8) {
             return errors.New(httpInvalidPatternˢ);
@@ -3138,7 +3138,7 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
 public static error Close(this ж<Server> Ꮡsrv) {
     GoFrame ᒐ = default;
     try {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
         Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
         Ꮡsrv.of(Server.Ꮡmu).Lock();
@@ -3193,7 +3193,7 @@ internal static time.Duration shutdownPollIntervalMax => /* 500 * time.Milliseco
 public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
         Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
         Ꮡsrv.of(Server.Ꮡmu).Lock();
@@ -3256,7 +3256,7 @@ public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
 internal static bool closeIdleConns(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
@@ -3439,9 +3439,9 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
     GoFrame ᒐ = default;
     try {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    ref var l = ref heap(lʗp, out var Ꮡl);
+        ref var l = ref heap(lʗp, out var Ꮡl);
         {
             var fn = testHookServerServe; if (fn != default!) {
                 fn(Ꮡsrv, l);
@@ -3569,7 +3569,7 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
 internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln, bool add) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
@@ -3595,7 +3595,7 @@ internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln,
 internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(Server.Ꮡmu).Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
@@ -3717,7 +3717,7 @@ internal static readonly @string httpsˢ2 = ":https"u8;
 public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, @string keyFile) {
     GoFrame ᒐ = default;
     try {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
         if (Ꮡsrv.shuttingDown()) {
             return ErrServerClosed;
@@ -3839,8 +3839,8 @@ internal static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Ti
 internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, ж<Request> Ꮡr) {
     GoFrame ᒐ = default;
     try {
-    ref var h = ref Ꮡh.DerefOrNull();
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         var ctx = h.testContext;
         if (ctx == default!) {
@@ -3955,7 +3955,7 @@ internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher(((ж<timeoutWriter>)
 internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p) {
     GoFrame ᒐ = default;
     try {
-    ref var tw = ref Ꮡtw.DerefOrNull();
+        ref var tw = ref Ꮡtw.DerefOrNull();
 
         Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
         defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -3995,7 +3995,7 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
 internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) {
     GoFrame ᒐ = default;
     try {
-    ref var tw = ref Ꮡtw.DerefOrNull();
+        ref var tw = ref Ꮡtw.DerefOrNull();
 
         Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
         defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);

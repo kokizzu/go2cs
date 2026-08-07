@@ -37,9 +37,9 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
     slice<ΔType> inferred = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var @params = ref Ꮡparams.DerefOrNull();
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var @params = ref Ꮡparams.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         // Don't verify result conditions if there's no error handler installed:
         // in that case, an error leads to an exit panic and the result value may
@@ -562,7 +562,7 @@ internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ)
     bool res = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         // detect cycles
         {
@@ -725,7 +725,7 @@ internal static void killCycles(slice<ж<TypeParam>> tparams, slice<ΔType> infe
 internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         typ = Unalias(typ);
         if (w.seen[typ]) {

@@ -19,7 +19,7 @@ internal static (int64 written, error err) send(nint n) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             fmt.Println(hookˢ, written, Ꮡerr.ValueSlot, written > 0);

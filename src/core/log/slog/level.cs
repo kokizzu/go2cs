@@ -128,7 +128,7 @@ internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var l = ref Ꮡl.DerefOrNull();
+        ref var l = ref Ꮡl.DerefOrNull();
 
         defer(() => {
             if (err != default!) {

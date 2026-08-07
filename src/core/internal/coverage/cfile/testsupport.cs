@@ -152,7 +152,7 @@ public static error ProcessCoverTestDir(@string dir, @string cfile, @string cm, 
 internal static error processPod(this ж<tstate> Ꮡts, pods.Pod p, map<@string, EmptyStruct> importpaths) {
     GoFrame ᒐ = default;
     try {
-    ref var ts = ref Ꮡts.DerefOrNull();
+        ref var ts = ref Ꮡts.DerefOrNull();
 
         // Open meta-data file
         var (f, err) = os.Open(p.MetaFile);

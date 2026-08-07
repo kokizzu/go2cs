@@ -19,7 +19,7 @@ public static nint Count<T>(params Span<T> valsʗp) {
 public static nint DeferredCount<T>(params Span<T> valsʗp) {
     GoFrame ᒐ = default;
     try {
-    var vals = valsʗp.sslice();
+        var vals = valsʗp.sslice();
 
         defer(() => {
         }, ref ᒐ);

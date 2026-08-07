@@ -362,8 +362,8 @@ internal static readonly @string trailerˢ = "Trailer"u8;
 public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         var transport = p.Transport;
         if (transport == default!) {
@@ -665,7 +665,7 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
 internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter dst, io.Reader src, time.Duration flushInterval) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         io.Writer w = new http_ResponseWriterᴠWriter(dst);
         if (flushInterval != 0) {
@@ -750,7 +750,7 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -777,7 +777,7 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
 internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -795,7 +795,7 @@ internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
 internal static void stop(this ж<maxLatencyWriter> Ꮡm) {
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -818,8 +818,8 @@ internal static @string upgradeType(httpꓸHeader h) {
 internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡres) {
     GoFrame ᒐ = default;
     try {
-    ref var req = ref Ꮡreq.DerefOrNull();
-    ref var res = ref Ꮡres.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
+        ref var res = ref Ꮡres.DerefOrNull();
 
         @string reqUpType = upgradeType(req.Header);
         @string resUpType = upgradeType(res.Header);

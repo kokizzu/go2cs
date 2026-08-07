@@ -2065,8 +2065,8 @@ internal static nint bodySize(this ж<printer> Ꮡp, ж<ast.BlockStmt> Ꮡb, nin
 internal static void funcBody(this ж<printer> Ꮡp, nint headerSize, whiteSpace sep, ж<ast.BlockStmt> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         if (Ꮡb == nil) {
             return;

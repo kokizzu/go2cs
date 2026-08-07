@@ -26,8 +26,8 @@ internal static (ж<CertPool>, error) loadSystemRoots() {
 internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ж<VerifyOptions> Ꮡopts) {
     GoFrame ᒐ = default;
     try {
-    ref var leaf = ref Ꮡleaf.DerefOrNull();
-    ref var opts = ref Ꮡopts.DerefOrNull();
+        ref var leaf = ref Ꮡleaf.DerefOrNull();
+        ref var opts = ref Ꮡopts.DerefOrNull();
 
         ref var storeCtx = ref heap<ж<syscall.CertContext>>(out var ᏑstoreCtx);
         var (leafCtx, err) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ(leaf.Raw, 0), (uint32)builtin.len(leaf.Raw));
@@ -228,7 +228,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var opts = ref Ꮡopts.DerefOrNull();
+        ref var opts = ref Ꮡopts.DerefOrNull();
 
         (var storeCtx, err) = createStoreContext(Ꮡc, Ꮡopts);
         if (err != default!) {

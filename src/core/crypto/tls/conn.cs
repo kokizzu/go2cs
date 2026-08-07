@@ -1006,7 +1006,7 @@ internal static readonly @string tlsInternalErrorSendingˢ = "tls: internal erro
 internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType typ, slice<byte> data) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.quic != nil) {
             if (typ != recordTypeHandshake) {
@@ -1283,7 +1283,7 @@ internal static error errShutdown = errors.New("tls: protocol is shutdown"u8);
 public static (nint, error) Write(this ж<Conn> Ꮡc, slice<byte> b) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         // interlock with Close below
         while (ᐧ) {
@@ -1349,7 +1349,7 @@ internal static readonly @string tlsUnknownRenegotiationˢ = "tls: unknown Reneg
 internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (c.vers == VersionTLS13) {
             return errors.New(tlsInternalErrorˢ3);
@@ -1438,8 +1438,8 @@ internal static readonly @string tlsReceivedUnexpectedKeyˢ = "tls: received une
 internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var keyUpdate = ref ᏑkeyUpdate.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var keyUpdate = ref ᏑkeyUpdate.DerefOrNull();
 
         if (c.quic != nil) {
             Ꮡc.sendAlert(alertUnexpectedMessage);
@@ -1483,7 +1483,7 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
 public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         {
             var err = Ꮡc.Handshake(); if (err != default!) {
@@ -1588,7 +1588,7 @@ public static error CloseWrite(this ж<Conn> Ꮡc) {
 internal static error closeNotify(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
         defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
@@ -1646,7 +1646,7 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
     error ret = default!;
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         // Fast sync/atomic-based exit if there is no handshake in flight and the
         // last one succeeded without an error. Avoids the expensive context setup
@@ -1820,7 +1820,7 @@ internal static ΔConnectionState connectionStateLocked(this ж<Conn> Ꮡc) {
 public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
@@ -1841,7 +1841,7 @@ internal static readonly @string tlsHandshakeDidNotVerifyˢ = "tls: handshake di
 public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);

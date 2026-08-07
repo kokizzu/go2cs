@@ -416,8 +416,8 @@ internal static goVersion versionMax(goVersion a, goVersion b) {
 internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         var switchᴛ6 = recover();
         switch (switchᴛ6.type()) {
@@ -445,9 +445,9 @@ public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>>
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         if (check.pkg == Unsafe) {
             // Defensive handling for Unsafe, which cannot be type checked, and must
             // not be mutated. See https://go.dev/issue/61212 for an example of where
@@ -482,7 +482,7 @@ internal static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
 internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         // Ensure that _EnableAlias is consistent among concurrent type checking
         // operations. See the documentation of [_aliasAny] for details.

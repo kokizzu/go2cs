@@ -11,7 +11,7 @@ partial class poll_package {
 public static error Fsync(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {

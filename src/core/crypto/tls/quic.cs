@@ -227,7 +227,7 @@ internal static readonly @string tlsHandshakeDataReceivedˢ = "tls: handshake da
 public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level, slice<byte> data) {
     GoFrame ᒐ = default;
     try {
-    ref var q = ref Ꮡq.DerefOrNull();
+        ref var q = ref Ꮡq.DerefOrNull();
 
         var c = q.conn;
         if ((~c).@in.level != level) {
@@ -476,7 +476,7 @@ internal static (slice<byte>, error) quicGetTransportParameters(this ж<Conn> �
 internal static error quicWaitForSignal(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         // Drop the handshake mutex while blocked to allow the user
         // to call ConnectionState before the handshake completes.

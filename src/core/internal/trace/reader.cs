@@ -77,7 +77,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         if (r.go121Events != nil) {
             var (evΔ1, errΔ1) = r.go121Events.next();

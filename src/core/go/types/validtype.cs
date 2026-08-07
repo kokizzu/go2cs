@@ -34,7 +34,7 @@ internal static readonly @string validTypeSNestVPathVˢ = "validType(%s) nest %v
 internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType typ, slice<ж<Named>> nest, slice<ж<Named>> path) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         typ = Unalias(typ);
         if ((~check.conf)._Trace) {

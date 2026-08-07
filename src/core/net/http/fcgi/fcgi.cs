@@ -109,7 +109,7 @@ internal static ж<conn> newConn(io.ReadWriteCloser rwc) {
 internal static error Close(this ж<conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(conn.Ꮡmutex).Lock();
         defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
@@ -160,7 +160,7 @@ internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
 internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 reqId, slice<byte> b) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(conn.Ꮡmutex).Lock();
         defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);

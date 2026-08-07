@@ -19,7 +19,7 @@ internal static void addOne(ж<nint> Ꮡn) {
 internal static void handlePanic(ж<error> Ꮡerr) {
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         {
             var e = recover(); if (e != default!) {
@@ -35,7 +35,7 @@ internal static error /*err*/ errResult(bool fail) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(setErr, Ꮡerr, ref ᒐ);
         if (fail) {
@@ -52,7 +52,7 @@ internal static nint /*n*/ intResult() {
     heap<nint>(out var Ꮡn);
     GoFrame ᒐ = default;
     try {
-    ref var n = ref Ꮡn.Value;
+        ref var n = ref Ꮡn.Value;
 
         defer(addOne, Ꮡn, ref ᒐ);
         n = 5;
@@ -66,7 +66,7 @@ internal static error /*err*/ recoverResult() {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(handlePanic, Ꮡerr, ref ᒐ);
         throw panic("boom");

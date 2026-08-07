@@ -381,8 +381,8 @@ public static nuint /*n*/ NumCalls(this ж<methodType> Ꮡm) {
 internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<sync.WaitGroup> Ꮡwg, ж<methodType> Ꮡmtype, ж<Request> Ꮡreq, reflectꓸValue argv, reflectꓸValue replyv, ServerCodec codec) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
-    ref var mtype = ref Ꮡmtype.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
+        ref var mtype = ref Ꮡmtype.DerefOrNull();
 
         if (Ꮡwg != nil) {
             defer(Ꮡwg.Done, ref ᒐ);

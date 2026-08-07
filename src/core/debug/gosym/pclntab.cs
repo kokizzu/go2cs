@@ -204,7 +204,7 @@ internal static UntypedInt go120magic => 0xfffffff1;
 internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         Ꮡt.of(LineTable.Ꮡmu).Lock();
         defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
@@ -330,7 +330,7 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
 internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         // Assume it is malformed and return nil on error.
         if (!disableRecover) {
@@ -644,7 +644,7 @@ internal static nint /*line*/ go12PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
     nint line = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -669,7 +669,7 @@ internal static @string /*file*/ go12PCToFile(this ж<LineTable> Ꮡt, uint64 pc
     @string @file = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -712,7 +712,7 @@ internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @fil
     uint64 pc = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
@@ -756,7 +756,7 @@ internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @fil
 internal static void initFileMap(this ж<LineTable> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         Ꮡt.of(LineTable.Ꮡmu).Lock();
         defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
@@ -789,7 +789,7 @@ internal static void initFileMap(this ж<LineTable> Ꮡt) {
 internal static void go12MapFiles(this ж<LineTable> Ꮡt, map<@string, ж<Obj>> m, ж<Obj> Ꮡobj) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (!disableRecover) {
             defer(() => {

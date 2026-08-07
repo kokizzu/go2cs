@@ -219,7 +219,7 @@ public static error ErrStringLength = errors.New("hpack: string too long"u8);
 public static (slice<HeaderField>, error) DecodeFull(this ж<Decoder> Ꮡd, slice<byte> p) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         ref var hf = ref heap<slice<HeaderField>>(out var Ꮡhf);
         var saveFunc = d.emit;

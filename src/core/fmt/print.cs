@@ -761,7 +761,7 @@ internal static readonly @string methodˢ = " method: "u8;
 internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         {
             var err = recover(); if (err != default!) {
@@ -810,7 +810,7 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     bool handled = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.erroring) {
             goto ᒐdone;

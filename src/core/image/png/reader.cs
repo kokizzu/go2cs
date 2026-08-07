@@ -445,7 +445,7 @@ internal static readonly @string tooMuchPixelDataˢ = "too much pixel data"u8;
 internal static (image.Image, error) decode(this ж<decoder> Ꮡd) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         var (r, err) = zlib.NewReader(new decoderжReader(Ꮡd));
         if (err != default!) {

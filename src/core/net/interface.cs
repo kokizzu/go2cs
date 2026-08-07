@@ -208,7 +208,7 @@ internal static bool /*updated*/ update(this ж<ipv6ZoneCache> Ꮡzc, slice<Inte
     bool updated = default!;
     GoFrame ᒐ = default;
     try {
-    ref var zc = ref Ꮡzc.DerefOrNull();
+        ref var zc = ref Ꮡzc.DerefOrNull();
 
         Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Lock();
         defer(Ꮡzc.of(ipv6ZoneCache.ᏑRWMutex).Unlock, ref ᒐ);

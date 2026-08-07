@@ -15,7 +15,7 @@ public static (syscallꓸHandle s, error err) WSASocket(this ж<Switch> Ꮡsw, i
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         Ꮡsw.of(Switch.Ꮡonce).Do(Ꮡsw.init);
         var so = Ꮡ(new Status(Cookie: cookie((nint)family, (nint)sotype, (nint)proto)));
@@ -55,7 +55,7 @@ public static error /*err*/ Closesocket(this ж<Switch> Ꮡsw, syscallꓸHandle 
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         var so = Ꮡsw.sockso(s);
         if (so == nil) {
@@ -94,7 +94,7 @@ public static error /*err*/ Connect(this ж<Switch> Ꮡsw, syscallꓸHandle s, s
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         var so = Ꮡsw.sockso(s);
         if (so == nil) {
@@ -132,7 +132,7 @@ public static error /*err*/ ConnectEx(this ж<Switch> Ꮡsw, syscallꓸHandle s,
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         var so = Ꮡsw.sockso(s);
         if (so == nil) {
@@ -170,7 +170,7 @@ public static error /*err*/ Listen(this ж<Switch> Ꮡsw, syscallꓸHandle s, ni
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         var so = Ꮡsw.sockso(s);
         if (so == nil) {
@@ -207,7 +207,7 @@ public static error /*err*/ Listen(this ж<Switch> Ꮡsw, syscallꓸHandle s, ni
 public static error AcceptEx(this ж<Switch> Ꮡsw, syscallꓸHandle ls, syscallꓸHandle @as, ж<byte> Ꮡb, uint32 rxdatalen, uint32 laddrlen, uint32 raddrlen, ж<uint32> Ꮡrcvd, ж<syscall.Overlapped> Ꮡoverlapped) {
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         var so = Ꮡsw.sockso(ls);
         if (so == nil) {

@@ -585,7 +585,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         if (len(b.deck.pcs) == 0) {
             return 0;

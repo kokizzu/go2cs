@@ -163,7 +163,7 @@ public static error SetWriteDeadline(this ж<FD> Ꮡfd, time.Time t) {
 internal static error setDeadlineImpl(ж<FD> Ꮡfd, time.Time t, nint mode) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         int64 d = default!;
         if (!t.IsZero()) {

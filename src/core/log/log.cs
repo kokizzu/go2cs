@@ -87,7 +87,7 @@ public static ж<Logger> New(Δio.Writer @out, @string prefix, nint flag) {
 public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) {
     GoFrame ᒐ = default;
     try {
-    ref var l = ref Ꮡl.DerefOrNull();
+        ref var l = ref Ꮡl.DerefOrNull();
 
         Ꮡl.of(Logger.ᏑoutMu).Lock();
         defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
@@ -224,7 +224,7 @@ public static error Output(this ж<Logger> Ꮡl, nint calldepth, @string s) {
 internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, Func<slice<byte>, slice<byte>> appendOutput) {
     GoFrame ᒐ = default;
     try {
-    ref var l = ref Ꮡl.DerefOrNull();
+        ref var l = ref Ꮡl.DerefOrNull();
 
         if (Ꮡl.of(Logger.ᏑisDiscard).Load()) {
             return default!;
@@ -389,7 +389,7 @@ public static void SetPrefix(this ж<Logger> Ꮡl, @string prefixʗp) {
 public static Δio.Writer Writer(this ж<Logger> Ꮡl) {
     GoFrame ᒐ = default;
     try {
-    ref var l = ref Ꮡl.DerefOrNull();
+        ref var l = ref Ꮡl.DerefOrNull();
 
         Ꮡl.of(Logger.ᏑoutMu).Lock();
         defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);

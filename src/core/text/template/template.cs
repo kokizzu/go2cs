@@ -86,7 +86,7 @@ public static ж<Template> New(@string name) {
 public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         var nt = t.copy(nil);
         nt.init();
@@ -136,7 +136,7 @@ public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
 public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.init();
         Ꮡt.of(Template.ᏑmuTmpl).Lock();
@@ -159,7 +159,7 @@ public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string
 public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (t.common == nil) {
             return default!;
@@ -200,7 +200,7 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.init();
         Ꮡt.of(Template.ᏑmuFuncs).Lock();
@@ -218,7 +218,7 @@ public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) {
 public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (t.common == nil) {
             return default!;

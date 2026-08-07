@@ -238,7 +238,7 @@ internal static (fuzzResult min, error err) minimize(this ж<worker> Ꮡw, conte
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if ((~w.coordinator).opts.MinimizeTimeout != 0) {
             Action cancel = default!;
@@ -350,7 +350,7 @@ internal static error /*err*/ start(this ж<worker> Ꮡw) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if (w.isRunning()) {
             throw panic("worker already started");
@@ -745,7 +745,7 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
     fuzzResponse resp = default!;
     GoFrame ᒐ = default;
     try {
-    ref var ws = ref Ꮡws.DerefOrNull();
+        ref var ws = ref Ꮡws.DerefOrNull();
 
         if (args.CoverageData != default!) {
             if (ws.coverageMask != default! && len(args.CoverageData) != len(ws.coverageMask)) {
@@ -858,7 +858,7 @@ internal static minimizeResponse /*resp*/ minimize(this ж<workerServer> Ꮡws, 
     minimizeResponse resp = default!;
     GoFrame ᒐ = default;
     try {
-    ref var ws = ref Ꮡws.DerefOrNull();
+        ref var ws = ref Ꮡws.DerefOrNull();
 
         ref var start = ref heap<time.Time>(out var Ꮡstart);
         start = time.Now();
@@ -1048,7 +1048,7 @@ internal static ж<workerClient> newWorkerClient(workerComm comm, ж<mutator> �
 internal static error Close(this ж<workerClient> Ꮡwc) {
     GoFrame ᒐ = default;
     try {
-    ref var wc = ref Ꮡwc.DerefOrNull();
+        ref var wc = ref Ꮡwc.DerefOrNull();
 
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
@@ -1091,10 +1091,10 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
     error retErr = default!;
     GoFrame ᒐ = default;
     try {
-    ref var wc = ref Ꮡwc.DerefOrNull();
+        ref var wc = ref Ꮡwc.DerefOrNull();
 
-    ref var args = ref heap(argsʗp, out var Ꮡargs);
-    ref var resp = ref Ꮡresp.Value;
+        ref var args = ref heap(argsʗp, out var Ꮡargs);
+        ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         ref var mem = ref heap<ж<sharedMem>>(out var Ꮡmem);
@@ -1197,10 +1197,10 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var wc = ref Ꮡwc.DerefOrNull();
+        ref var wc = ref Ꮡwc.DerefOrNull();
 
-    ref var args = ref heap(argsʗp, out var Ꮡargs);
-    ref var resp = ref Ꮡresp.Value;
+        ref var args = ref heap(argsʗp, out var Ꮡargs);
+        ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         var (mem, ok) = ᐸꟷ(wc.memMu, ꟷ);
@@ -1272,7 +1272,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
 internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-    ref var wc = ref Ꮡwc.DerefOrNull();
+        ref var wc = ref Ꮡwc.DerefOrNull();
 
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);

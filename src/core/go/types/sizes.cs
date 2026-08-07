@@ -51,7 +51,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
     int64 result = default!;
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             assert(result >= 1);

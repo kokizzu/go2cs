@@ -15,7 +15,7 @@ partial class pprof_package {
 internal static void readMapping(this ж<profileBuilder> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         var (snap, err) = createModuleSnapshot();
         if (err != default!) {

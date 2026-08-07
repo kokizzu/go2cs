@@ -115,7 +115,7 @@ internal static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
 internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if (w.seen[typ]) {
             w.error("cycle to "u8 + goTypeName(typ));
@@ -541,8 +541,8 @@ internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool vari
 internal static void signature(this ж<typeWriter> Ꮡw, ж<ΔSignature> Ꮡsig) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
-    ref var sig = ref Ꮡsig.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
+        ref var sig = ref Ꮡsig.DerefOrNull();
 
         if (sig.TypeParams().Len() != 0) {
             if (w.ctxt != nil) {

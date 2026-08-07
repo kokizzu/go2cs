@@ -134,8 +134,8 @@ internal static readonly @string locationˢ = "Location"u8;
 public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<http.Request> Ꮡreq) {
     GoFrame ᒐ = default;
     try {
-    ref var h = ref Ꮡh.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         if (len(req.TransferEncoding) > 0 && req.TransferEncoding[0] == "chunked") {
             rw.WriteHeader(http.StatusBadRequest);

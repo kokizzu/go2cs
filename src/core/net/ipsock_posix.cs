@@ -33,7 +33,7 @@ partial class net_package {
 internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         var exprᴛ1 = Δruntime.GOOS;
         if (exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {

@@ -477,7 +477,7 @@ internal static readonly @string dialˢ = "dial"u8;
 public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ctx, @string network, @string address) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         if (ctx == default!) {
             throw panic("nil context");
@@ -650,7 +650,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
 internal static (Conn, error) dialSerial(this ж<sysDialer> Ꮡsd, context.Context ctx, addrList ras) {
     GoFrame ᒐ = default;
     try {
-    ref var sd = ref Ꮡsd.DerefOrNull();
+        ref var sd = ref Ꮡsd.DerefOrNull();
 
         error firstErr = default!;    // The error from the first address is most relevant.
         foreach (var (i, ra) in ras) {
@@ -705,7 +705,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var sd = ref Ꮡsd.DerefOrNull();
+        ref var sd = ref Ꮡsd.DerefOrNull();
 
         var (trace, _) = ctx.Value(new nettrace.TraceKey(nil))._<ж<nettrace.Trace>>(ᐧ);
         if (trace != nil) {

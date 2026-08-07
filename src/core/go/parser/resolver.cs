@@ -312,7 +312,7 @@ internal static readonly @string nodeTVˢ = "node %T@%v"u8;
 internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         if (debugResolve && node != default!) {
             r.trace(nodeTVˢ, node, node.Pos());
@@ -719,8 +719,8 @@ internal static void walkTParams(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡli
 internal static void walkBody(this ж<resolver> Ꮡr, ж<ast.BlockStmt> Ꮡbody) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
-    ref var body = ref Ꮡbody.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
+        ref var body = ref Ꮡbody.DerefOrNull();
 
         if (Ꮡbody == nil) {
             return;

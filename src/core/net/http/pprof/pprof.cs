@@ -314,7 +314,7 @@ internal static readonly @string failedToComputeDeltaˢ = "failed to compute del
 internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         var (sec, err) = strconv.ParseInt(secStr, 10, 64);
         if (err != default! || sec <= 0) {

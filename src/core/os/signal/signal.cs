@@ -122,7 +122,7 @@ internal static Action watchSignalLoop;
 public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSignal sigʗp) {
     GoFrame ᒐ = default;
     try {
-    var sig = sigʗp.sslice();
+        var sig = sigʗp.sslice();
 
         if (c == default!) {
             throw panic("os/signal: Notify using nil channel");

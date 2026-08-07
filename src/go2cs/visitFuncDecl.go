@@ -1041,6 +1041,10 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	}
 
 	v.replaceMarker(functionExecContextMarker, funcExecutionContext)
+	if useGoFrame {
+		blockPrefix = v.reindentGoFrameBlock(blockPrefix)
+	}
+
 	v.replaceMarker(functionBlockPrefixMarker, blockPrefix)
 
 	if v.currentFuncPrefix.Len() > 0 {

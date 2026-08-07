@@ -32,7 +32,7 @@ internal static void Main() {
     void mutate(params ꓸꓸꓸnint numsʗp) {
         GoFrame ᒐ = default;
         try {
-        var nums = numsʗp.sslice();
+            var nums = numsʗp.sslice();
             defer(() => {
             }, ref ᒐ);
             nums[0] = 40;

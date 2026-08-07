@@ -238,7 +238,7 @@ internal static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unass
 public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
     GoFrame ᒐ = default;
     try {
-    ref var dec = ref Ꮡdec.DerefOrNull();
+        ref var dec = ref Ꮡdec.DerefOrNull();
 
         if (v.IsValid()) {
             if (v.Kind() == reflect.ΔPointer && !v.IsNil()){

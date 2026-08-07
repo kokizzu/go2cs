@@ -306,8 +306,8 @@ internal static void initᴛbyteSliceMutators() { byteSliceMutators = new Func<�
 internal static void mutateBytes(this ж<mutator> Ꮡm, ж<slice<byte>> ᏑptrB) {
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
-    ref var ptrB = ref ᏑptrB.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
+        ref var ptrB = ref ᏑptrB.DerefOrNull();
 
         ref var b = ref heap<slice<byte>>(out var Ꮡb);
         b = ptrB;

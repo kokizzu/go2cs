@@ -44,8 +44,8 @@ private static readonly object closedˢ = (@string)"closed"u8;
 internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, ref ᒐ);
         {

@@ -142,8 +142,8 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
     ж<ΔSignature> res = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var typ = ref Ꮡtyp.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var typ = ref Ꮡtyp.DerefOrNull();
 
         assert(Ꮡcheck != nil);
         assert(len(targs) == typ.TypeParams().Len());
@@ -402,7 +402,7 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
     slice<slice<ast.Expr>> xlistList = default!;
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if (debug) {
             defer(() => {

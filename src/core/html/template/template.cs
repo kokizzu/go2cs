@@ -52,7 +52,7 @@ internal static error escapeOK = fmt.Errorf("template escaped correctly"u8);
 public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         var ns = t.nameSpace;
         ns.of(nameSpace.Ꮡmu).Lock();
@@ -100,7 +100,7 @@ public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring
 internal static error checkCanParse(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (Ꮡt == nil) {
             return default!;
@@ -120,7 +120,7 @@ internal static error checkCanParse(this ж<Template> Ꮡt) {
 internal static error escape(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
@@ -185,7 +185,7 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
@@ -233,7 +233,7 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
 public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         {
             var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
@@ -271,7 +271,7 @@ public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) 
 public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         {
             var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
@@ -308,7 +308,7 @@ public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string
 public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
@@ -373,7 +373,7 @@ public static ж<Template> New(@string name) {
 public static ж<Template> New(this ж<Template> Ꮡt, @string name) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
@@ -435,7 +435,7 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
         defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);

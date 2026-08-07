@@ -68,7 +68,7 @@ public static (ж<BuildInfo> info, error err) ReadFile(@string name) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             {

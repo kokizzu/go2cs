@@ -619,7 +619,7 @@ internal static void releaseConn(this ж<driverConn> Ꮡdc, error err) {
 internal static void removeOpenStmt(this ж<driverConn> Ꮡdc, ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
     try {
-    ref var dc = ref Ꮡdc.DerefOrNull();
+        ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
         defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
@@ -641,7 +641,7 @@ internal static void removeOpenStmt(this ж<driverConn> Ꮡdc, ж<driverStmt> �
 internal static error resetSession(this ж<driverConn> Ꮡdc, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-    ref var dc = ref Ꮡdc.DerefOrNull();
+        ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
         defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
@@ -664,7 +664,7 @@ internal static error resetSession(this ж<driverConn> Ꮡdc, context.Context ct
 internal static bool validateConnection(this ж<driverConn> Ꮡdc, bool needsReset) {
     GoFrame ᒐ = default;
     try {
-    ref var dc = ref Ꮡdc.DerefOrNull();
+        ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
         defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
@@ -714,7 +714,7 @@ internal static readonly @string sqlDuplicateDriverConnˢ = "sql: duplicate driv
 internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) {
     GoFrame ᒐ = default;
     try {
-    ref var dc = ref Ꮡdc.DerefOrNull();
+        ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
         defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
@@ -792,7 +792,7 @@ internal static error finalClose(this ж<driverConn> Ꮡdc) {
 internal static error Close(this ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
     try {
-    ref var ds = ref Ꮡds.DerefOrNull();
+        ref var ds = ref Ꮡds.DerefOrNull();
 
         ds.Locker.Lock();
         defer(Ꮡds.Value.Locker.Unlock, ref ᒐ);
@@ -822,7 +822,7 @@ internal static error Close(this ж<driverStmt> Ꮡds) {
 internal static void addDep(this ж<DB> Ꮡdb, finalCloser x, any dep) {
     GoFrame ᒐ = default;
     try {
-    ref var db = ref Ꮡdb.DerefOrNull();
+        ref var db = ref Ꮡdb.DerefOrNull();
 
         Ꮡdb.of(DB.Ꮡmu).Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
@@ -1180,7 +1180,7 @@ public static void SetConnMaxLifetime(this ж<DB> Ꮡdb, time.Duration d) {
 public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) {
     GoFrame ᒐ = default;
     try {
-    ref var db = ref Ꮡdb.DerefOrNull();
+        ref var db = ref Ꮡdb.DerefOrNull();
 
         if (d < 0) {
             d = 0;
@@ -1342,7 +1342,7 @@ internal static void connectionCleaner(this ж<DB> Ꮡdb, time.Duration d) {
 public static DBStats Stats(this ж<DB> Ꮡdb) {
     GoFrame ᒐ = default;
     try {
-    ref var db = ref Ꮡdb.DerefOrNull();
+        ref var db = ref Ꮡdb.DerefOrNull();
 
         var wait = Ꮡdb.of(DB.ᏑwaitDuration).Load();
         Ꮡdb.of(DB.Ꮡmu).Lock();
@@ -1408,7 +1408,7 @@ internal static void connectionOpener(this ж<DB> Ꮡdb, context.Context ctx) {
 internal static void openNewConnection(this ж<DB> Ꮡdb, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-    ref var db = ref Ꮡdb.DerefOrNull();
+        ref var db = ref Ꮡdb.DerefOrNull();
 
         // maybeOpenNewConnections has already executed db.numOpen++ before it sent
         // on db.openerCh. This function must execute db.numOpen-- if the
@@ -1610,7 +1610,7 @@ internal static Action<ж<DB>, ж<driverConn>> putConnHook;
 internal static void noteUnusedDriverStatement(this ж<DB> Ꮡdb, ж<driverConn> Ꮡc, ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡdb.of(DB.Ꮡmu).Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
@@ -1873,7 +1873,7 @@ internal static (Result, error) exec(this ж<DB> Ꮡdb, context.Context ctx, @st
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var dc = ref Ꮡdc.DerefOrNull();
+        ref var dc = ref Ꮡdc.DerefOrNull();
 
         defer(() => {
             release(err);
@@ -2353,7 +2353,7 @@ internal static void closemuRUnlockCondReleaseConn(this ж<ΔConn> Ꮡc, error e
 internal static error close(this ж<ΔConn> Ꮡc, error err) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (!Ꮡc.of(sql_package.ΔConn.Ꮡdone).CompareAndSwap(false, true)) {
             return ErrConnDone;
@@ -2505,7 +2505,7 @@ internal static void closemuRUnlockRelease(this ж<Tx> Ꮡtx, error _) {
 internal static void closePrepared(this ж<Tx> Ꮡtx) {
     GoFrame ᒐ = default;
     try {
-    ref var tx = ref Ꮡtx.DerefOrNull();
+        ref var tx = ref Ꮡtx.DerefOrNull();
 
         Ꮡtx.of(Tx.Ꮡstmts).of(Tx_stmts.ᏑMutex).Lock();
         defer(Ꮡtx.of(Tx.Ꮡstmts).of(Tx_stmts.ᏑMutex).Unlock, ref ᒐ);
@@ -2657,8 +2657,8 @@ internal static readonly @string sqlTxStmtStatementFromˢ = "sql: Tx.Stmt: state
 public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<ΔStmt> Ꮡstmt) {
     GoFrame ᒐ = default;
     try {
-    ref var tx = ref Ꮡtx.DerefOrNull();
-    ref var stmt = ref Ꮡstmt.DerefOrNull();
+        ref var tx = ref Ꮡtx.DerefOrNull();
+        ref var stmt = ref Ꮡstmt.DerefOrNull();
 
         ref var err = ref heap<error>(out var Ꮡerr);
         (var dc, var release, err) = Ꮡtx.grabConn(ctx);
@@ -2895,9 +2895,9 @@ internal static stmtConnGrabber _ᴛ3ʗ = new ΔConnжstmtConnGrabber(Ꮡ(new Δ
 public static (Result, error) ExecContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
     try {
-    var args = argsʗp.slice();
+        var args = argsʗp.slice();
 
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
         defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock, ref ᒐ);
         ref var res = ref heap<Result>(out var Ꮡres);
@@ -2931,9 +2931,9 @@ public static (Result, error) Exec(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany arg
 internal static (Result, error) resultFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
     try {
-    var args = argsʗp.slice();
+        var args = argsʗp.slice();
 
-    ref var ds = ref Ꮡds.DerefOrNull();
+        ref var ds = ref Ꮡds.DerefOrNull();
         ds.Locker.Lock();
         defer(Ꮡds.Value.Locker.Unlock, ref ᒐ);
         var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
@@ -3058,9 +3058,9 @@ internal static (ж<driverStmt>, error) prepareOnConnLocked(this ж<ΔStmt> Ꮡs
 public static (ж<Rows>, error) QueryContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
     try {
-    var args = argsʗp.slice();
+        var args = argsʗp.slice();
 
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
         defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock, ref ᒐ);
         ref var rowsi = ref heap<driver.Rows>(out var Ꮡrowsi);
@@ -3120,9 +3120,9 @@ public static (ж<Rows>, error) Query(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany 
 internal static (driver.Rows, error) rowsiFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
     try {
-    var args = argsʗp.slice();
+        var args = argsʗp.slice();
 
-    ref var ds = ref Ꮡds.DerefOrNull();
+        ref var ds = ref Ꮡds.DerefOrNull();
         ds.Locker.Lock();
         defer(Ꮡds.Value.Locker.Unlock, ref ᒐ);
         var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
@@ -3175,7 +3175,7 @@ public static ж<Row> QueryRow(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany argsʗp
 public static error Close(this ж<ΔStmt> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).Lock();
         defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).Unlock, ref ᒐ);
@@ -3208,7 +3208,7 @@ public static error Close(this ж<ΔStmt> Ꮡs) {
 internal static error finalClose(this ж<ΔStmt> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
         defer(Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock, ref ᒐ);
@@ -3364,7 +3364,7 @@ internal static (bool doClose, bool ok) nextLocked(this ж<Rows> Ꮡrs) {
     bool ok = default!;
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
         if (rs.closed) {
             (doClose, ok) = (false, false); goto ᒐdone;
@@ -3412,7 +3412,7 @@ internal static (bool doClose, bool ok) nextLocked(this ж<Rows> Ꮡrs) {
 public static bool NextResultSet(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
         // If the user's calling NextResultSet, they're done with their previous
         // row's Scan results (any RawBytes memory), so we can release the read lock
@@ -3455,7 +3455,7 @@ public static bool NextResultSet(this ж<Rows> Ꮡrs) {
 public static error Err(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
         // Return any context error that might've happened during row iteration,
         // but only if we haven't reported the final Next() = false after rows
@@ -3515,7 +3515,7 @@ internal static error errNoRows = errors.New("sql: no Rows available"u8);
 public static (slice<@string>, error) Columns(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
         Ꮡrs.of(Rows.Ꮡclosemu).RLock();
         defer(Ꮡrs.of(Rows.Ꮡclosemu).RUnlock, ref ᒐ);
@@ -3538,7 +3538,7 @@ public static (slice<@string>, error) Columns(this ж<Rows> Ꮡrs) {
 public static (slice<ж<ColumnType>>, error) ColumnTypes(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
         Ꮡrs.of(Rows.Ꮡclosemu).RLock();
         defer(Ꮡrs.of(Rows.Ꮡclosemu).RUnlock, ref ᒐ);
@@ -3809,9 +3809,9 @@ public static error Close(this ж<Rows> Ꮡrs) {
 internal static error close(this ж<Rows> Ꮡrs, error errʗp) {
     GoFrame ᒐ = default;
     try {
-    ref var rs = ref Ꮡrs.DerefOrNull();
+        ref var rs = ref Ꮡrs.DerefOrNull();
 
-    ref var err = ref heap(errʗp, out var Ꮡerr);
+        ref var err = ref heap(errʗp, out var Ꮡerr);
         Ꮡrs.of(Rows.Ꮡclosemu).Lock();
         defer(Ꮡrs.of(Rows.Ꮡclosemu).Unlock, ref ᒐ);
         if (rs.closed) {
@@ -3861,9 +3861,9 @@ internal static readonly @string sqlRawBytesIsnTAllowedOnˢ = "sql: RawBytes isn
 public static error Scan(this ж<Row> Ꮡr, params ꓸꓸꓸany destʗp) {
     GoFrame ᒐ = default;
     try {
-    var dest = destʗp.slice();
+        var dest = destʗp.slice();
 
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
         if (r.err != default!) {
             return r.err;
         }

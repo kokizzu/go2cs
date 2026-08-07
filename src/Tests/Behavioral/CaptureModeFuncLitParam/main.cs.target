@@ -13,7 +13,7 @@ partial class main_package {
 public static void Add(this ж<Tally> Ꮡt, nint n) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);

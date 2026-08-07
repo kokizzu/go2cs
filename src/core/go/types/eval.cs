@@ -61,10 +61,10 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var fset = ref Ꮡfset.DerefOrNull();
-    ref var pkg = ref Ꮡpkg.DerefOrNull();
+        ref var fset = ref Ꮡfset.DerefOrNull();
+        ref var pkg = ref Ꮡpkg.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         // determine scope
         ж<ΔScope> scope = default!;
         if (Ꮡpkg == nil){

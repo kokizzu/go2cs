@@ -179,8 +179,8 @@ internal static readonly @string typeSetForSˢ = "-- type set for %s"u8;
 internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var ityp = ref Ꮡityp.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var ityp = ref Ꮡityp.DerefOrNull();
 
         if (ityp.tset != nil) {
             return ityp.tset;

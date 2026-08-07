@@ -317,7 +317,7 @@ internal static bool valid(reflectꓸValue v) {
 internal static void encodeSingle(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         var state = Ꮡenc.newEncoderState(Ꮡb);
         defer(Ꮡenc.freeEncoderState, state, ref ᒐ);
@@ -341,7 +341,7 @@ internal static void encodeSingle(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, �
 internal static void encodeStruct(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) {
     GoFrame ᒐ = default;
     try {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
         if (!valid(value)) {
             return;
@@ -744,7 +744,7 @@ internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ж<userTypeIn
 internal static void encode(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflectꓸValue value, ж<userTypeInfo> Ꮡut) {
     GoFrame ᒐ = default;
     try {
-    ref var ut = ref Ꮡut.DerefOrNull();
+        ref var ut = ref Ꮡut.DerefOrNull();
 
         defer(catchError, Ꮡenc.of(Encoder.Ꮡerr), ref ᒐ);
         var engine = getEncEngine(Ꮡut, default!);

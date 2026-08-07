@@ -31,7 +31,7 @@ internal static @string /*result*/ declDeferObserver(fmt.Stringer xʗp, fmt.Stri
     @string result = default!;
     GoFrame ᒐ = default;
     try {
-    ref var x = ref heap(xʗp, out var Ꮡx);
+        ref var x = ref heap(xʗp, out var Ꮡx);
 
         defer(() => {
             result = "final:"u8 + Ꮡx.ValueSlot.String() + "/"u8 + y.String();

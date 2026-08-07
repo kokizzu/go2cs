@@ -381,7 +381,7 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         int64 ncopy = default!;
         var closed = false;
@@ -471,7 +471,7 @@ internal static (int64 n, error err) doBodyCopy(this ж<transferWriter> Ꮡt, io
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         var buf = getCopyBuf();
         defer(putCopyBuf, buf, ref ᒐ);
@@ -915,7 +915,7 @@ internal static (nint n, error err) Read(this ж<body> Ꮡb, slice<byte> p) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
@@ -1078,7 +1078,7 @@ internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
 internal static error Close(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
@@ -1136,7 +1136,7 @@ internal static error Close(this ж<body> Ꮡb) {
 internal static bool didEarlyClose(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
@@ -1151,7 +1151,7 @@ internal static bool didEarlyClose(this ж<body> Ꮡb) {
 internal static bool bodyRemains(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
@@ -1164,7 +1164,7 @@ internal static bool bodyRemains(this ж<body> Ꮡb) {
 internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);

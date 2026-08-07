@@ -12,7 +12,7 @@ partial class poll_package {
 public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint arg) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -30,9 +30,9 @@ public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint
 public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name, array<byte> arg) {
     GoFrame ᒐ = default;
     try {
-    arg = arg.Clone();
+        arg = arg.Clone();
 
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;
@@ -49,7 +49,7 @@ public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name
 public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.Linger> Ꮡl) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -67,7 +67,7 @@ public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, �
 public static (nint, error) GetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {

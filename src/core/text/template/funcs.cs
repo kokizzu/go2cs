@@ -157,7 +157,7 @@ internal static (reflectꓸValue v, bool isBuiltin, bool ok) findFunction(@strin
     bool ok = default!;
     GoFrame ᒐ = default;
     try {
-    ref var tmpl = ref Ꮡtmpl.DerefOrNull();
+        ref var tmpl = ref Ꮡtmpl.DerefOrNull();
 
         if (Ꮡtmpl != nil && tmpl.common != nil) {
             Ꮡtmpl.of(Template.ᏑmuFuncs).RLock();

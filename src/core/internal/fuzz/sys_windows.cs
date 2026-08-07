@@ -23,7 +23,7 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             if (Ꮡerr.ValueSlot != default!) {

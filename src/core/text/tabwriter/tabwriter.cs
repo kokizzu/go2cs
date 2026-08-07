@@ -471,8 +471,8 @@ public static UntypedInt Escape => /* '\xff' */ 255;
 internal static void handlePanic(this ж<Writer> Ꮡb, ж<error> Ꮡerr, @string op) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         {
             var e = recover(); if (e != default!) {
@@ -511,9 +511,9 @@ internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(Ꮡb.handlePanic, Ꮡerr, flushˢ, ref ᒐ);
         b.flushNoDefers();
         err = default!;
@@ -553,9 +553,9 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(Ꮡb.handlePanic, Ꮡerr, writeˢ, ref ᒐ);
         // split text into cells
         n = 0;

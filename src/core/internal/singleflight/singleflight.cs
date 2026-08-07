@@ -121,7 +121,7 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
 public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) {
     GoFrame ᒐ = default;
     try {
-    ref var g = ref Ꮡg.DerefOrNull();
+        ref var g = ref Ꮡg.DerefOrNull();
 
         Ꮡg.of(Group.Ꮡmu).Lock();
         defer(Ꮡg.of(Group.Ꮡmu).Unlock, ref ᒐ);

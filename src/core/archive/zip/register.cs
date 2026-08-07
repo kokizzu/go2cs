@@ -41,7 +41,7 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -58,7 +58,7 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
 internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
     GoFrame ᒐ = default;
     try {
-    ref var w = ref Ꮡw.DerefOrNull();
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
@@ -100,7 +100,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
@@ -117,7 +117,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
 internal static error Close(this ж<pooledFlateReader> Ꮡr) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);

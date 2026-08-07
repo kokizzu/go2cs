@@ -94,7 +94,7 @@ private static readonly object watchingHeldˢ = (@string)"watching, held:"u8;
 internal static void watchAndSend(ж<sema> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         s.@out = new channel<nint>(2);
         s.held = true;
@@ -114,7 +114,7 @@ private static readonly object workingHeldˢ = (@string)"working, held:"u8;
 internal static void acquireAndWork(ж<sema> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         s.held = true;
         defer(Ꮡs.release, ref ᒐ);
@@ -130,7 +130,7 @@ private static readonly object notifiedˢ = (@string)"notified"u8;
 internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) {
     GoFrame ᒐ = default;
     try {
-    var vals = valsʗp.sslice();
+        var vals = valsʗp.sslice();
 
         defer(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, ref ᒐ);
         nint total = 0;
@@ -152,7 +152,7 @@ internal static (nint sum, error err) add(this ж<acc> Ꮡa, nint n) {
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var a = ref Ꮡa.DerefOrNull();
+        ref var a = ref Ꮡa.DerefOrNull();
 
         defer(() => {
             {

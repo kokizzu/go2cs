@@ -269,9 +269,9 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         if (c.config == nil) {
             c.config = defaultConfig();
         }

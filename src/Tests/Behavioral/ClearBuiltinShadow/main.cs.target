@@ -26,7 +26,7 @@ partial class main_package {
 internal static void recover(this ж<guard> Ꮡg) {
     GoFrame ᒐ = default;
     try {
-    ref var g = ref Ꮡg.DerefOrNull();
+        ref var g = ref Ꮡg.DerefOrNull();
 
         {
             var e = builtin.recover(); if (e != default!) {

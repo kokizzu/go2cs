@@ -304,7 +304,7 @@ internal static ж<godebug.Setting> winsymlink = godebug.New("winsymlink"u8);
 internal static error loadFileId(this ж<fileStat> Ꮡfs) {
     GoFrame ᒐ = default;
     try {
-    ref var fs = ref Ꮡfs.DerefOrNull();
+        ref var fs = ref Ꮡfs.DerefOrNull();
 
         Ꮡfs.of(fileStat.ᏑMutex).Lock();
         defer(Ꮡfs.of(fileStat.ᏑMutex).Unlock, ref ᒐ);

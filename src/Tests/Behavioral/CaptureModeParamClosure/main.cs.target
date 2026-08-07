@@ -12,7 +12,7 @@ partial class main_package {
 public static void Add(this ж<Tally> Ꮡt, nint n) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
@@ -50,7 +50,7 @@ internal static (nint result, @string log) deferClosure(Tally tʗp, nint n) {
     @string log = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref heap(tʗp, out var Ꮡt);
+        ref var t = ref heap(tʗp, out var Ꮡt);
 
         defer(() => {
             (result, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
@@ -69,7 +69,7 @@ internal static (nint total, @string log) deferMethodValue(Tally tʗp, nint n) {
     @string log = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref heap(tʗp, out var Ꮡt);
+        ref var t = ref heap(tʗp, out var Ꮡt);
 
         defer(() => {
             (total, log) = (Ꮡt.Value.total, Ꮡt.Value.log);

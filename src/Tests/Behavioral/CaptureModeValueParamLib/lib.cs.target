@@ -14,7 +14,7 @@ internal static (@string @out, error err) fprint(this ж<Config> Ꮡcfg, @string
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cfg = ref Ꮡcfg.DerefOrNull();
+        ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         defer(() => {
             {

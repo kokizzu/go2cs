@@ -167,8 +167,8 @@ internal static slice<ж<httpꓸCookie>> /*cookies*/ cookies(this ж<Jar> Ꮡj, 
     slice<ж<httpꓸCookie>> cookies = default!;
     GoFrame ᒐ = default;
     try {
-    ref var j = ref Ꮡj.DerefOrNull();
-    ref var u = ref Ꮡu.DerefOrNull();
+        ref var j = ref Ꮡj.DerefOrNull();
+        ref var u = ref Ꮡu.DerefOrNull();
 
         if (u.Scheme != "http"u8 && u.Scheme != "https"u8) {
             goto ᒐdone;
@@ -249,8 +249,8 @@ public static void SetCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<http
 internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies, time.Time now) {
     GoFrame ᒐ = default;
     try {
-    ref var j = ref Ꮡj.DerefOrNull();
-    ref var u = ref Ꮡu.DerefOrNull();
+        ref var j = ref Ꮡj.DerefOrNull();
+        ref var u = ref Ꮡu.DerefOrNull();
 
         if (len(cookies) == 0) {
             return;

@@ -177,7 +177,7 @@ internal static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8
 internal static (Trace, error) parse(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             Ꮡp.Value.data = default!;

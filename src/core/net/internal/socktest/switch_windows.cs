@@ -12,7 +12,7 @@ partial class socktest_package {
 internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) {
     GoFrame ᒐ = default;
     try {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
         Ꮡsw.of(Switch.Ꮡsmu).RLock();
         defer(Ꮡsw.of(Switch.Ꮡsmu).RUnlock, ref ᒐ);

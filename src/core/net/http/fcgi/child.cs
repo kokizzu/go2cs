@@ -181,7 +181,7 @@ internal static ж<child> newChild(io.ReadWriteCloser rwc, httpꓸHandler handle
 internal static void serve(this ж<child> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
 
         defer(() => Ꮡc.Value.conn.Close(), ref ᒐ);
         defer(Ꮡc.cleanUp, ref ᒐ);

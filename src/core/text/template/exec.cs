@@ -170,7 +170,7 @@ public static error Unwrap(this ExecError e) {
 internal static void errRecover(ж<error> Ꮡerrp) {
     GoFrame ᒐ = default;
     try {
-    ref var errp = ref Ꮡerrp.DerefOrNull();
+        ref var errp = ref Ꮡerrp.DerefOrNull();
 
         var e = recover();
         if (e != default!) {
@@ -236,9 +236,9 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(errRecover, Ꮡerr, ref ᒐ);
         var (value, ok) = data._<reflectꓸValue>(ᐧ);
         if (!ok) {
@@ -269,7 +269,7 @@ internal static readonly @string definedTemplatesAreˢ = "; defined templates ar
 public static @string DefinedTemplates(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         if (t.common == nil) {
             return ""u8;
@@ -368,7 +368,7 @@ internal static void walk(this ж<state> Ꮡs, reflectꓸValue dot, parse.Node n
 internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, reflectꓸValue dot, ж<parse.PipeNode> Ꮡpipe, ж<parse.ListNode> Ꮡlist, ж<parse.ListNode> ᏑelseList) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         defer(Ꮡs.pop, Ꮡs.Value.mark(), ref ᒐ);
         var val = s.evalPipeline(dot, Ꮡpipe);
@@ -445,8 +445,8 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
 internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<parse.RangeNode> Ꮡr) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         s.at(new parse.RangeNodeжNode(Ꮡr));
         defer(() => {

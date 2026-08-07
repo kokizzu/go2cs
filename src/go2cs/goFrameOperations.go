@@ -11,6 +11,7 @@ import (
 	"go/ast"
 	"go/types"
 	"strconv"
+	"strings"
 )
 
 // A Go function that defers or recovers is emitted with its body INLINE inside try/catch/finally,
@@ -107,6 +108,31 @@ func (v *Visitor) litGoFrameEligible(litSig *types.Signature, hasDefer, hasRecov
 	}
 
 	return hasDefer || hasRecover
+}
+
+// reindentGoFrameBlock shifts an already-rendered block-prefix fragment one indent level deeper.
+//
+// The function preamble — parameter deref aliases, array clones, implicit pointers, entry-time heap
+// boxes, named-result aliases — is composed BEFORE the body is visited, at the level the body would
+// have had with no frame around it. The frame nests the body one level further (it is the `try`
+// block inside the method's own block), so the preamble has to follow it, or the first statements of
+// nearly every deferring method with a pointer receiver sit a level out from the rest of the body.
+// Each fragment is a run of newline-led lines, so the shift is one insertion per line with content.
+func (v *Visitor) reindentGoFrameBlock(block string) string {
+	if block == "" {
+		return block
+	}
+
+	lines := strings.Split(block, v.newline)
+	indent := v.indent(1)
+
+	for i, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			lines[i] = indent + line
+		}
+	}
+
+	return strings.Join(lines, v.newline)
 }
 
 // goFrameHead renders the text that replaces the execution-context marker — everything between the

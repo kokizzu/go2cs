@@ -153,7 +153,7 @@ public static ж<Named> NewNamed(ж<TypeName> Ꮡobj, ΔType underlying, slice<�
 internal static ж<Named> resolve(this ж<Named> Ꮡn) {
     GoFrame ᒐ = default;
     try {
-    ref var n = ref Ꮡn.DerefOrNull();
+        ref var n = ref Ꮡn.DerefOrNull();
 
         if (Ꮡn.state() >= resolved) {
             // avoid locking below
@@ -362,7 +362,7 @@ public static nint NumMethods(this ж<Named> Ꮡt) {
 public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         Ꮡt.resolve();
         if (Ꮡt.state() >= complete) {
@@ -664,7 +664,7 @@ internal static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under
 internal static ΔType expandUnderlying(this ж<Named> Ꮡn) {
     GoFrame ᒐ = default;
     try {
-    ref var n = ref Ꮡn.DerefOrNull();
+        ref var n = ref Ꮡn.DerefOrNull();
 
         var check = n.check;
         if (check != nil && (~(~check).conf)._Trace) {

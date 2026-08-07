@@ -170,7 +170,7 @@ public static void Store(this ж<Map> Ꮡm, any key, any value) {
 public static void Clear(this ж<Map> Ꮡm) {
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
 
         var read = Ꮡm.loadReadOnly();
         if (len(read.m) == 0 && !read.amended) {
@@ -450,7 +450,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any ol
     bool swapped = default!;
     GoFrame ᒐ = default;
     try {
-    ref var m = ref Ꮡm.DerefOrNull();
+        ref var m = ref Ꮡm.DerefOrNull();
 
         var read = Ꮡm.loadReadOnly();
         {

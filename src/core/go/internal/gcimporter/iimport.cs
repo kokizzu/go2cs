@@ -91,9 +91,9 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var fset = ref Ꮡfset.DerefOrNull();
+        ref var fset = ref Ꮡfset.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         const int64 currentVersion = /* iexportVersionCurrent */ 2;
         var version = (int64)(-1);
         defer(() => {

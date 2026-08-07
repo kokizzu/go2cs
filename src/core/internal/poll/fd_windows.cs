@@ -420,7 +420,7 @@ internal static UntypedInt maxRW => /* 1 << 30 */ 1073741824; // 1GB is large en
 public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var errΔ1 = Ꮡfd.readLock(); if (errΔ1 != default!) {
@@ -546,7 +546,7 @@ public static Func<syscallꓸHandle, ж<uint16>, uint32, ж<uint32>, ж<byte>, e
 public static (nint, error) Pread(this ж<FD> Ꮡfd, slice<byte> b, int64 off) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (fd.kind == kindPipe) {
             // Pread does not work with pipes
@@ -596,7 +596,7 @@ public static (nint, error) Pread(this ж<FD> Ꮡfd, slice<byte> b, int64 off) {
 public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(buf) == 0) {
             return (0, default!, default!);
@@ -634,7 +634,7 @@ public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slic
 public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(buf) == 0) {
             return (0, default!);
@@ -672,7 +672,7 @@ public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж
 public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(buf) == 0) {
             return (0, default!);
@@ -710,7 +710,7 @@ public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж
 public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.writeLock(); if (err != default!) {
@@ -814,7 +814,7 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
 public static (nint, error) Pwrite(this ж<FD> Ꮡfd, slice<byte> buf, int64 off) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (fd.kind == kindPipe) {
             // Pwrite does not work with pipes
@@ -865,8 +865,8 @@ public static (nint, error) Pwrite(this ж<FD> Ꮡfd, slice<byte> buf, int64 off
 public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> Ꮡbuf) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
-    ref var buf = ref Ꮡbuf.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var buf = ref Ꮡbuf.DerefOrNull();
 
         if (len(buf) == 0) {
             return (0, default!);
@@ -896,7 +896,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
 public static (nint, error) WriteTo(this ж<FD> Ꮡfd, slice<byte> buf, syscallꓸSockaddr sa) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.writeLock(); if (err != default!) {
@@ -938,7 +938,7 @@ public static (nint, error) WriteTo(this ж<FD> Ꮡfd, slice<byte> buf, syscall�
 public static (nint, error) WriteToInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.writeLock(); if (err != default!) {
@@ -978,7 +978,7 @@ public static (nint, error) WriteToInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<
 public static (nint, error) WriteToInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.writeLock(); if (err != default!) {
@@ -1102,7 +1102,7 @@ public static (syscallꓸHandle, slice<Δsyscall.RawSockaddrAny>, uint32, @strin
 public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (fd.kind == kindPipe) {
             return (0, Δsyscall.ESPIPE);
@@ -1125,7 +1125,7 @@ public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) 
 public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -1160,7 +1160,7 @@ public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
 public static error Fchdir(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -1178,7 +1178,7 @@ public static error Fchdir(this ж<FD> Ꮡfd) {
 public static (uint32, error) GetFileType(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -1196,7 +1196,7 @@ public static (uint32, error) GetFileType(this ж<FD> Ꮡfd) {
 public static error GetFileInformationByHandle(this ж<FD> Ꮡfd, ж<Δsyscall.ByHandleFileInformation> Ꮡdata) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -1214,7 +1214,7 @@ public static error GetFileInformationByHandle(this ж<FD> Ꮡfd, ж<Δsyscall.B
 public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.readLock(); if (err != default!) {
@@ -1250,7 +1250,7 @@ public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
 public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.writeLock(); if (err != default!) {
@@ -1336,7 +1336,7 @@ internal static (int32, error) sockaddrToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa
 public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var errΔ1 = Ꮡfd.readLock(); if (errΔ1 != default!) {
@@ -1371,7 +1371,7 @@ public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> 
 public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var errΔ1 = Ꮡfd.readLock(); if (errΔ1 != default!) {
@@ -1405,7 +1405,7 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
 public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var errΔ1 = Ꮡfd.readLock(); if (errΔ1 != default!) {
@@ -1442,7 +1442,7 @@ internal static readonly @string packetIsTooLargeOnly1gbˢ = "packet is too larg
 public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, syscallꓸSockaddr sa) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(p) > maxRW) {
             return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));
@@ -1477,7 +1477,7 @@ public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, sli
 public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(p) > maxRW) {
             return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));
@@ -1507,7 +1507,7 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
 public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         if (len(p) > maxRW) {
             return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));

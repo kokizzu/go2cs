@@ -288,7 +288,7 @@ internal static readonly @string contentLengthˢ = "Content-Length"u8;
 internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         setLastModified(w, modtime);
         var (done, rangeReq) = checkPreconditions(w, Ꮡr, modtime);
@@ -762,7 +762,7 @@ internal static readonly @string httpAttemptingToTraverseˢ = "http: attempting 
 internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) {
     GoFrame ᒐ = default;
     try {
-    ref var r = ref Ꮡr.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
         @string indexPage = "/index.html"u8;
         // redirect .../index.html to .../

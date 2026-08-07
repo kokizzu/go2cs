@@ -32,7 +32,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
     error ctxErr = default!;
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
 
         var (host, port, err) = sockssplitHostPort(address);
         if (err != default!) {

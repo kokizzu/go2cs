@@ -12,7 +12,7 @@ partial class poll_package {
 public static error SetsockoptIPMreq(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.IPMreq> Ꮡmreq) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {
@@ -30,7 +30,7 @@ public static error SetsockoptIPMreq(this ж<FD> Ꮡfd, nint level, nint name, �
 public static error SetsockoptIPv6Mreq(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.IPv6Mreq> Ꮡmreq) {
     GoFrame ᒐ = default;
     try {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
         {
             var err = Ꮡfd.incref(); if (err != default!) {

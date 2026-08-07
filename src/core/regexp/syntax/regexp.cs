@@ -240,8 +240,8 @@ internal static readonly @string x00X10ffffˢ2 = @"^\x00-\x{10FFFF}"u8;
 internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, printFlags f, map<ж<Regexp>, printFlags> flags) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
-    ref var re = ref Ꮡre.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
+        ref var re = ref Ꮡre.DerefOrNull();
 
         f |= (printFlags)(flags[Ꮡre]);
         if ((printFlags)(f & flagPrec) != 0 && (printFlags)(f & ~((printFlags)(flagOff | flagPrec))) != 0 && (printFlags)(f & flagOff) != 0) {

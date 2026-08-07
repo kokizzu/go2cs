@@ -315,7 +315,7 @@ internal static readonly @string missingCloseParenˢ = "missing close paren"u8;
 internal static Expr atom(this ж<exprParser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         // first token already in p.tok
         if (p.tok == "("u8) {

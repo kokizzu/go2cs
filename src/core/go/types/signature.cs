@@ -136,10 +136,10 @@ internal static readonly @string pointerOrInterfaceTypeˢ = "pointer or interfac
 internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig, ж<ast.FieldList> ᏑrecvPar, ж<ast.FuncType> Ꮡftyp) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var sig = ref Ꮡsig.DerefOrNull();
-    ref var recvPar = ref ᏑrecvPar.DerefOrNull();
-    ref var ftyp = ref Ꮡftyp.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var sig = ref Ꮡsig.DerefOrNull();
+        ref var recvPar = ref ᏑrecvPar.DerefOrNull();
+        ref var ftyp = ref Ꮡftyp.DerefOrNull();
 
         check.openScope(new ast.FuncTypeжNode(Ꮡftyp), functionˢ);
         check.scope.Value.isFunc = true;

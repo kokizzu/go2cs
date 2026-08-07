@@ -106,9 +106,9 @@ internal static ж<defaultHandler> newDefaultHandler(Func<uintptr, slice<byte>, 
 internal static error Handle(this ж<defaultHandler> Ꮡh, context.Context ctx, Record r) {
     GoFrame ᒐ = default;
     try {
-    r = r.ΔClone();
+        r = r.ΔClone();
 
-    ref var h = ref Ꮡh.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
         var buf = buffer.New();
         buf.WriteString(r.Level.String());
         buf.WriteByte((rune)' ');
@@ -224,7 +224,7 @@ public static readonly @string SourceKey = "source"u8;
 internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<Attr> @as) {
     GoFrame ᒐ = default;
     try {
-    ref var h = ref Ꮡh.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
 
         // We are going to ignore empty groups, so if the entire slice consists of
         // them, there is nothing to do.
@@ -274,9 +274,9 @@ internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<A
 internal static error handle(this ж<commonHandler> Ꮡh, Record r) {
     GoFrame ᒐ = default;
     try {
-    r = r.ΔClone();
+        r = r.ΔClone();
 
-    ref var h = ref Ꮡh.DerefOrNull();
+        ref var h = ref Ꮡh.DerefOrNull();
         ref var state = ref heap<handleState>(out var Ꮡstate);
         state = Ꮡh.newHandleState(buffer.New(), true, ""u8);
         defer(Ꮡstate.free, ref ᒐ);
@@ -599,7 +599,7 @@ internal static readonly @string nilˢ = "<nil>"u8;
 internal static void appendValue(this ж<handleState> Ꮡs, Value v) {
     GoFrame ᒐ = default;
     try {
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         var vʗ1 = v;
         defer(() => {

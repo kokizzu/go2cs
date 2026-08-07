@@ -149,7 +149,7 @@ internal static pmode noExtraLinebreak => 2;     // disables extra line break af
 internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition next) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         // save/restore current p.commentInfo (p.nextComment() modifies it)
         defer((commentInfo info) => {
@@ -639,8 +639,8 @@ internal static void stripCommonPrefix(slice<@string> lines) {
 internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomment) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var comment = ref Ꮡcomment.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var comment = ref Ꮡcomment.DerefOrNull();
 
         @string text = comment.Text;
         var pos = p.posFor(comment.Pos());
@@ -1469,7 +1469,7 @@ internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, �
     error err = default!;
     GoFrame ᒐ = default;
     try {
-    ref var cfg = ref Ꮡcfg.DerefOrNull();
+        ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         // print node
         var p = newPrinter(Ꮡcfg, Ꮡfset, nodeSizes);

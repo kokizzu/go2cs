@@ -1,5 +1,5 @@
 ﻿// builtin.DeferRegistrations.cs - Gbtc
-// Copyright Â© 2026 The go2cs Authors. All rights reserved.
+// Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
@@ -11,38 +11,38 @@ using System;
 namespace go;
 
 // ---------------------------------------------------------------------------------------------
-// DEFER REGISTRATIONS â€” every `defer` overload, i.e. the C# spelling of Go's `defer f(a, b, â€¦)`.
+// DEFER REGISTRATIONS — every `defer` overload, i.e. the C# spelling of Go's `defer f(a, b, …)`.
 //
 // WHAT LIVES HERE
-//   An ARITY LADDER of `defer<T1â€¦Tn>(Action<T1â€¦Tn>, T1 arg1, â€¦, ref GoFrame frame)` rungs from 1
-//   to 16 parameters, each with a `Func<â€¦, TResult>` twin that discards the result, plus a
+//   An ARITY LADDER of `defer<T1…Tn>(Action<T1…Tn>, T1 arg1, …, ref GoFrame frame)` rungs from 1
+//   to 16 parameters, each with a `Func<…, TResult>` twin that discards the result, plus a
 //   nullary rung. Every rung has the same one-line body: push a closure onto the frame.
 //
 // WHY THE TRAILING `ref GoFrame` PARAMETER
 //   Go's `defer` is scoped to the ENCLOSING FUNCTION, so something has to name which function is
-//   registering. That something is the function's own GoFrame local â€” the ref struct holding this
+//   registering. That something is the function's own GoFrame local — the ref struct holding this
 //   call's defer list, declared beside an inline body inside try/catch/finally (see GoFrame.cs).
 //   It is passed by reference because a ref struct cannot be captured and must not be copied.
 //
 // WHY A LADDER AND NOT ONE VARIADIC METHOD
 //   Same reason as the goroutine ladder: Go evaluates a deferred call's arguments AT THE `defer`
 //   STATEMENT and runs the call later, so every argument must be captured at registration time. A
-//   `params object[]` form would do it while boxing every value argument â€” on a path that runs on
+//   `params object[]` form would do it while boxing every value argument — on a path that runs on
 //   function exit throughout the corpus. The generic rungs capture without boxing and let the JIT
 //   see the concrete delegate, so the ladder is a deliberate performance shape, not clutter.
 //
-// WHY THE NAME IS PLAIN `defer` AND NOT `deferÇƒ`
-//   It was `deferÇƒ` (U+01C3, a legal C# identifier character where `!` is not) for exactly one
+// WHY THE NAME IS PLAIN `defer` AND NOT `deferǃ`
+//   It was `deferǃ` (U+01C3, a legal C# identifier character where `!` is not) for exactly one
 //   reason: the retired execution-context lambda took a `defer`-named DELEGATE PARAMETER, and the
 //   two could not share a name in one scope. There is no such parameter now, `defer` is a Go
-//   KEYWORD so no Go identifier is ever spelled that way, and `defer` is not a C# keyword â€” so the
-//   bang bought nothing and is gone. Its siblings keep theirs: `goÇƒ` cannot be `go`, the root
-//   namespace of every converted file, and `makeÇƒ` cannot be `make`, a predeclared Go identifier
+//   KEYWORD so no Go identifier is ever spelled that way, and `defer` is not a C# keyword — so the
+//   bang bought nothing and is gone. Its siblings keep theirs: `goǃ` cannot be `go`, the root
+//   namespace of every converted file, and `makeǃ` cannot be `make`, a predeclared Go identifier
 //   a package may shadow.
 //
 // EXTENDING IT
-//   Add a rung only when a corpus package actually needs that arity, and add BOTH forms â€” the
-//   `Action` rung and the result-discarding `Func` twin â€” or a value-returning method group will
+//   Add a rung only when a corpus package actually needs that arity, and add BOTH forms — the
+//   `Action` rung and the result-discarding `Func` twin — or a value-returning method group will
 //   fail to bind at exactly that arity (CS0407). Keep the bodies mechanical.
 // ---------------------------------------------------------------------------------------------
 public static partial class builtin

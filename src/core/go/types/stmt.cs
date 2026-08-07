@@ -25,9 +25,9 @@ internal static readonly @string missingReturnˢ = "missing return"u8;
 internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var sig = ref Ꮡsig.DerefOrNull();
-    ref var body = ref Ꮡbody.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var sig = ref Ꮡsig.DerefOrNull();
+        ref var body = ref Ꮡbody.DerefOrNull();
 
         if ((~check.conf).IgnoreFuncBodies) {
             throw panic("function body not ignored");
@@ -446,7 +446,7 @@ internal static readonly @string invalidStatementˢ = "invalid statement"u8;
 internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt s) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         // statements must end with the same top scope as they started with
         if (debug) {
@@ -988,8 +988,8 @@ internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables 
 internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var s = ref Ꮡs.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         @string identName(ж<identType> n) => (~n).Name;
         var (sKey, sValue) = (s.Key, s.Value);

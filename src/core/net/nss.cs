@@ -51,7 +51,7 @@ internal static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
 internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) {
     GoFrame ᒐ = default;
     try {
-    ref var conf = ref Ꮡconf.DerefOrNull();
+        ref var conf = ref Ꮡconf.DerefOrNull();
 
         Ꮡconf.of(nsswitchConfig.ᏑinitOnce).Do(Ꮡconf.init);
         // Ensure only one update at a time checks nsswitch.conf

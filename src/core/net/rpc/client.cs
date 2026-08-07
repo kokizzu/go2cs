@@ -68,8 +68,8 @@ public static error ErrShutdown = errors.New("connection is shut down"u8);
 internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
     GoFrame ᒐ = default;
     try {
-    ref var client = ref Ꮡclient.DerefOrNull();
-    ref var call = ref Ꮡcall.DerefOrNull();
+        ref var client = ref Ꮡclient.DerefOrNull();
+        ref var call = ref Ꮡcall.DerefOrNull();
 
         Ꮡclient.of(Client.ᏑreqMutex).Lock();
         defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock, ref ᒐ);

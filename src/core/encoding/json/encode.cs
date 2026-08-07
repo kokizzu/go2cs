@@ -776,7 +776,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newStructEncod
 internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
     GoFrame ᒐ = default;
     try {
-    ref var e = ref Ꮡe.DerefOrNull();
+        ref var e = ref Ꮡe.DerefOrNull();
 
         if (v.IsNil()) {
             Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -867,7 +867,7 @@ internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, en
 internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
     GoFrame ᒐ = default;
     try {
-    ref var e = ref Ꮡe.DerefOrNull();
+        ref var e = ref Ꮡe.DerefOrNull();
 
         if (v.IsNil()) {
             Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
@@ -937,7 +937,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newArrayEncode
 internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
     GoFrame ᒐ = default;
     try {
-    ref var e = ref Ꮡe.DerefOrNull();
+        ref var e = ref Ꮡe.DerefOrNull();
 
         if (v.IsNil()) {
             Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);

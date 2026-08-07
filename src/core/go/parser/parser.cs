@@ -282,7 +282,7 @@ internal static readonly @string goBuildˢ = "//go:build"u8;
 internal static void error(this ж<parser> Ꮡp, tokenꓸPos pos, @string msg) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, "error: "u8 + msg), ref ᒐ);
@@ -513,7 +513,7 @@ internal static tokenꓸPos /*res*/ safePos(this ж<parser> Ꮡp, tokenꓸPos po
     tokenꓸPos res = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             if (recover() != default!) {
@@ -556,7 +556,7 @@ internal static slice<ж<ast.Ident>> /*list*/ parseIdentList(this ж<parser> Ꮡ
     slice<ж<ast.Ident>> list = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, identListˢ), ref ᒐ);
@@ -583,7 +583,7 @@ internal static slice<ast.Expr> /*list*/ parseExprList(this ж<parser> Ꮡp) {
     slice<ast.Expr> list = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, expressionListˢ), ref ᒐ);
@@ -618,7 +618,7 @@ internal static readonly @string typeˢ2 = "type"u8;
 internal static ast.Expr parseType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, typeˢ), ref ᒐ);
@@ -643,7 +643,7 @@ internal static readonly @string qualifiedIdentˢ = "QualifiedIdent"u8;
 internal static ast.Expr parseQualifiedIdent(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, qualifiedIdentˢ), ref ᒐ);
@@ -665,8 +665,8 @@ internal static readonly @string typeNameˢ = "TypeName"u8;
 internal static ast.Expr parseTypeName(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var ident = ref Ꮡident.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var ident = ref Ꮡident.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, typeNameˢ), ref ᒐ);
@@ -695,7 +695,7 @@ internal static readonly @string unexpectedCommaExpectingˢ = "unexpected comma;
 internal static ж<ast.ArrayType> parseArrayType(this ж<parser> Ꮡp, tokenꓸPos lbrack, ast.Expr len) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, arrayTypeˢ), ref ᒐ);
@@ -733,8 +733,8 @@ internal static readonly @string arrayFieldOrTypeInstanceˢ = "ArrayFieldOrTypeI
 internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡx) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var x = ref Ꮡx.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var x = ref Ꮡx.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, arrayFieldOrTypeInstanceˢ), ref ᒐ);
@@ -791,7 +791,7 @@ internal static readonly @string fieldNameOrEmbeddedTypeˢ = "field name or embe
 internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, fieldDeclˢ), ref ᒐ);
@@ -892,7 +892,7 @@ internal static readonly @string structTypeˢ = "StructType"u8;
 internal static ж<ast.StructType> parseStructType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, structTypeˢ), ref ᒐ);
@@ -929,7 +929,7 @@ internal static readonly @string pointerTypeˢ = "PointerType"u8;
 internal static ж<ast.StarExpr> parsePointerType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, pointerTypeˢ), ref ᒐ);
@@ -949,7 +949,7 @@ internal static readonly @string dotsTypeˢ = "DotsType"u8;
 internal static ж<ast.Ellipsis> parseDotsType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, dotsTypeˢ), ref ᒐ);
@@ -975,8 +975,8 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
     field f = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var name = ref Ꮡname.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var name = ref Ꮡname.DerefOrNull();
 
         // TODO(rFindley) refactor to be more similar to paramDeclOrNil in the syntax
         // package
@@ -1078,8 +1078,8 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
     slice<ж<ast.Field>> @params = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var name0 = ref Ꮡname0.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var name0 = ref Ꮡname0.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, parameterListˢ), ref ᒐ);
@@ -1264,7 +1264,7 @@ internal static (ж<ast.FieldList> tparams, ж<ast.FieldList> @params) parsePara
     ж<ast.FieldList> @params = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, parametersˢ), ref ᒐ);
@@ -1306,7 +1306,7 @@ internal static readonly @string resultˢ = "Result"u8;
 internal static ж<ast.FieldList> parseResult(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, resultˢ), ref ᒐ);
@@ -1334,7 +1334,7 @@ internal static readonly @string functionTypeMustHaveNoˢ = "function type must 
 internal static ж<ast.FuncType> parseFuncType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, funcTypeˢ), ref ᒐ);
@@ -1360,7 +1360,7 @@ internal static readonly @string typeArgumentListˢ = "type argument list"u8;
 internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, methodSpecˢ), ref ᒐ);
@@ -1459,7 +1459,7 @@ internal static readonly @string embeddedElemˢ = "EmbeddedElem"u8;
 internal static ast.Expr embeddedElem(this ж<parser> Ꮡp, ast.Expr x) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, embeddedElemˢ), ref ᒐ);
@@ -1489,7 +1489,7 @@ internal static readonly @string termOrTypeˢ = "~ term or type"u8;
 internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, embeddedTermˢ), ref ᒐ);
@@ -1522,7 +1522,7 @@ internal static readonly @string interfaceTypeˢ = "InterfaceType"u8;
 internal static ж<ast.InterfaceType> parseInterfaceType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, interfaceTypeˢ), ref ᒐ);
@@ -1589,7 +1589,7 @@ internal static readonly @string mapTypeˢ = "MapType"u8;
 internal static ж<ast.MapType> parseMapType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, mapTypeˢ), ref ᒐ);
@@ -1612,7 +1612,7 @@ internal static readonly @string chanTypeˢ = "ChanType"u8;
 internal static ж<ast.ChanType> parseChanType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, chanTypeˢ), ref ᒐ);
@@ -1647,7 +1647,7 @@ internal static readonly @string typeInstanceˢ = "TypeInstance"u8;
 internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, typeInstanceˢ), ref ᒐ);
@@ -1684,7 +1684,7 @@ internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) {
 internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
         var exprᴛ1 = p.tok;
@@ -1743,7 +1743,7 @@ internal static slice<ast.Stmt> /*list*/ parseStmtList(this ж<parser> Ꮡp) {
     slice<ast.Stmt> list = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, statementListˢ), ref ᒐ);
@@ -1763,7 +1763,7 @@ internal static readonly @string bodyˢ = "Body"u8;
 internal static ж<ast.BlockStmt> parseBody(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, bodyˢ), ref ᒐ);
@@ -1785,7 +1785,7 @@ internal static readonly @string blockStmtˢ = "BlockStmt"u8;
 internal static ж<ast.BlockStmt> parseBlockStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, blockStmtˢ), ref ᒐ);
@@ -1809,7 +1809,7 @@ internal static readonly @string funcTypeOrLitˢ = "FuncTypeOrLit"u8;
 internal static ast.Expr parseFuncTypeOrLit(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, funcTypeOrLitˢ), ref ᒐ);
@@ -1838,7 +1838,7 @@ internal static readonly @string operandˢ2 = "operand"u8;
 internal static ast.Expr parseOperand(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, operandˢ), ref ᒐ);
@@ -1895,7 +1895,7 @@ internal static readonly @string selectorˢ = "Selector"u8;
 internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, selectorˢ), ref ᒐ);
@@ -1913,7 +1913,7 @@ internal static readonly @string typeAssertionˢ = "TypeAssertion"u8;
 internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, typeAssertionˢ), ref ᒐ);
@@ -1943,7 +1943,7 @@ internal static readonly @string finalIndexRequiredIn3ˢ = "final index required
 internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.Expr x) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, parseIndexOrSliceOrInstanceˢ), ref ᒐ);
@@ -2038,7 +2038,7 @@ internal static readonly @string argumentListˢ = "argument list"u8;
 internal static ж<ast.CallExpr> parseCallOrConversion(this ж<parser> Ꮡp, ast.Expr fun) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, callOrConversionˢ), ref ᒐ);
@@ -2075,7 +2075,7 @@ internal static readonly @string elementˢ = "Element"u8;
 internal static ast.Expr parseValue(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, elementˢ), ref ᒐ);
@@ -2093,7 +2093,7 @@ internal static ast.Expr parseValue(this ж<parser> Ꮡp) {
 internal static ast.Expr parseElement(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, elementˢ), ref ᒐ);
@@ -2119,7 +2119,7 @@ internal static slice<ast.Expr> /*list*/ parseElementList(this ж<parser> Ꮡp) 
     slice<ast.Expr> list = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, elementListˢ), ref ᒐ);
@@ -2143,7 +2143,7 @@ internal static readonly @string literalValueˢ = "LiteralValue"u8;
 internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
@@ -2173,7 +2173,7 @@ internal static readonly @string cannotParenthesizeTypeInˢ = "cannot parenthesi
 internal static ast.Expr parsePrimaryExpr(this ж<parser> Ꮡp, ast.Expr x) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, primaryExprˢ), ref ᒐ);
@@ -2281,7 +2281,7 @@ internal static readonly @string channelTypeˢ = "channel type"u8;
 internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
@@ -2373,7 +2373,7 @@ internal static readonly @string binaryExprˢ = "BinaryExpr"u8;
 internal static ast.Expr parseBinaryExpr(this ж<parser> Ꮡp, ast.Expr x, nint prec1) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, binaryExprˢ), ref ᒐ);
@@ -2412,7 +2412,7 @@ internal static readonly @string expressionˢ = "Expression"u8;
 internal static ast.Expr parseExpr(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, expressionˢ), ref ᒐ);
@@ -2455,7 +2455,7 @@ internal static readonly @string illegalLabelDeclarationˢ = "illegal label decl
 internal static (ast.Stmt, bool) parseSimpleStmt(this ж<parser> Ꮡp, nint mode) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, simpleStmtˢ), ref ᒐ);
@@ -2562,7 +2562,7 @@ internal static readonly @string goStmtˢ = "GoStmt"u8;
 internal static ast.Stmt parseGoStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, goStmtˢ), ref ᒐ);
@@ -2588,7 +2588,7 @@ internal static readonly @string deferˢ = "defer"u8;
 internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, deferStmtˢ), ref ᒐ);
@@ -2613,7 +2613,7 @@ internal static readonly @string returnStmtˢ = "ReturnStmt"u8;
 internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, returnStmtˢ), ref ᒐ);
@@ -2638,7 +2638,7 @@ internal static readonly @string branchStmtˢ = "BranchStmt"u8;
 internal static ж<ast.BranchStmt> parseBranchStmt(this ж<parser> Ꮡp, token.Token tok) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, branchStmtˢ), ref ᒐ);
@@ -2756,7 +2756,7 @@ internal static readonly @string ifStatementOrBlockˢ = "if statement or block"u
 internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
@@ -2797,7 +2797,7 @@ internal static readonly @string caseClauseˢ = "CaseClause"u8;
 internal static ж<ast.CaseClause> parseCaseClause(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, caseClauseˢ), ref ᒐ);
@@ -2861,7 +2861,7 @@ internal static readonly @string switchExpressionˢ = "switch expression"u8;
 internal static ast.Stmt parseSwitchStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, switchStmtˢ), ref ᒐ);
@@ -2925,7 +2925,7 @@ internal static readonly @string or2Expressionsˢ = "1 or 2 expressions"u8;
 internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, commClauseˢ), ref ᒐ);
@@ -2991,7 +2991,7 @@ internal static readonly @string selectStmtˢ = "SelectStmt"u8;
 internal static ж<ast.SelectStmt> parseSelectStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, selectStmtˢ), ref ᒐ);
@@ -3022,7 +3022,7 @@ internal static readonly @string booleanOrRangeExpressionˢ = "boolean or range 
 internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, forStmtˢ), ref ᒐ);
@@ -3123,7 +3123,7 @@ internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
     ast.Stmt s = default!;
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
@@ -3214,7 +3214,7 @@ internal static readonly @string missingImportPathˢ = "missing import path"u8;
 internal static ast.Spec parseImportSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token _Δp2, nint _Δp3) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, importSpecˢ), ref ᒐ);
@@ -3261,7 +3261,7 @@ internal static ast.Spec parseImportSpec(this ж<parser> Ꮡp, ж<ast.CommentGro
 internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token keyword, nint iota) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, keyword.String() + "Spec"u8), ref ᒐ);
@@ -3313,8 +3313,8 @@ internal static readonly @string parseGenericTypeˢ = "parseGenericType"u8;
 internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡspec, tokenꓸPos openPos, ж<ast.Ident> Ꮡname0, ast.Expr typ0) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var spec = ref Ꮡspec.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var spec = ref Ꮡspec.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, parseGenericTypeˢ), ref ᒐ);
@@ -3342,7 +3342,7 @@ internal static readonly @string typeSpecˢ = "TypeSpec"u8;
 internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token _Δp2, nint _Δp3) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, typeSpecˢ), ref ᒐ);
@@ -3509,7 +3509,7 @@ internal static bool isTypeElem(ast.Expr x) {
 internal static ж<ast.GenDecl> parseGenDecl(this ж<parser> Ꮡp, token.Token keyword, Func<ж<ast.CommentGroup>, token.Token, nint, ast.Spec> f) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, "GenDecl("u8 + keyword.String() + ")"u8), ref ᒐ);
@@ -3552,7 +3552,7 @@ internal static readonly @string unexpectedSemicolonOrˢ = "unexpected semicolon
 internal static ж<ast.FuncDecl> parseFuncDecl(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, functionDeclˢ), ref ᒐ);
@@ -3617,7 +3617,7 @@ internal static readonly @string declarationˢ2 = "declaration"u8;
 internal static ast.Decl parseDecl(this ж<parser> Ꮡp, map<token.Token, bool> sync) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, declarationˢ), ref ᒐ);
@@ -3660,7 +3660,7 @@ internal static readonly @string importsMustAppearBeforeˢ = "imports must appea
 internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
             defer(un, trace(Ꮡp, fileˢ), ref ᒐ);

@@ -316,7 +316,7 @@ internal static nint filter(ж<array<slice<byte>>> Ꮡcr, slice<byte> pr, nint b
 internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image m, nint cb, nint level) {
     GoFrame ᒐ = default;
     try {
-    ref var e = ref Ꮡe.DerefOrNull();
+        ref var e = ref Ꮡe.DerefOrNull();
 
         if (e.zw == nil || e.zwLevel != level){
             var (zw, err) = zlib.NewWriterLevel(w, level);
@@ -641,7 +641,7 @@ public static error Encode(io.Writer w, image.Image m) {
 public static error Encode(this ж<Encoder> Ꮡenc, io.Writer w, image.Image m) {
     GoFrame ᒐ = default;
     try {
-    ref var enc = ref Ꮡenc.DerefOrNull();
+        ref var enc = ref Ꮡenc.DerefOrNull();
 
         // Obviously, negative widths and heights are invalid. Furthermore, the PNG
         // spec section 11.2.2 says that zero is invalid. Excessively large images are

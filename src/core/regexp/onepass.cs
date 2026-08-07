@@ -168,8 +168,8 @@ internal static slice<uint32> noNext = new uint32[]{mergeFailed}.slice();
 internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> ᏑleftRunes, ж<slice<rune>> ᏑrightRunes, uint32 leftPC, uint32 rightPC) {
     GoFrame ᒐ = default;
     try {
-    ref var leftRunes = ref ᏑleftRunes.DerefOrNull();
-    ref var rightRunes = ref ᏑrightRunes.DerefOrNull();
+        ref var leftRunes = ref ᏑleftRunes.DerefOrNull();
+        ref var rightRunes = ref ᏑrightRunes.DerefOrNull();
 
         nint leftLen = len(leftRunes);
         nint rightLen = len(rightRunes);

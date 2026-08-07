@@ -142,7 +142,7 @@ public static void AddUint32LengthPrefixed(this ж<Builder> Ꮡb, Action<ж<Buil
 internal static void callContinuation(this ж<Builder> Ꮡb, Action<ж<Builder>> f, ж<Builder> Ꮡarg) {
     GoFrame ᒐ = default;
     try {
-    ref var b = ref Ꮡb.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
         if (!b.inContinuation.Value) {
             b.inContinuation.Value = true;

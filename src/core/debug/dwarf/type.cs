@@ -457,8 +457,8 @@ internal static readonly @string volatileˢ = "volatile"u8;
 internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeReader r, Offset off, map<Offset, ΔType> typeCache, ж<typeFixer> Ꮡfixups) {
     GoFrame ᒐ = default;
     try {
-    ref var d = ref Ꮡd.DerefOrNull();
-    ref var fixups = ref Ꮡfixups.DerefOrNull();
+        ref var d = ref Ꮡd.DerefOrNull();
+        ref var fixups = ref Ꮡfixups.DerefOrNull();
 
         {
             var (t, ok) = typeCache[off, ꟷ]; if (ok) {

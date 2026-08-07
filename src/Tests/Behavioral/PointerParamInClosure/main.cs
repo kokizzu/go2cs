@@ -26,7 +26,7 @@ internal static void bumpInClosure(ж<nint> Ꮡp) {
 internal static void mixed(ж<nint> Ꮡp) {
     GoFrame ᒐ = default;
     try {
-    ref var p = ref Ꮡp.DerefOrNull();
+        ref var p = ref Ꮡp.DerefOrNull();
 
         p = 5;
         defer(() => {

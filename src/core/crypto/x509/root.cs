@@ -75,7 +75,7 @@ internal static ж<godebug.Setting> x509usefallbackroots = godebug.New("x509usef
 public static void SetFallbackRoots(ж<CertPool> Ꮡroots) {
     GoFrame ᒐ = default;
     try {
-    ref var roots = ref Ꮡroots.DerefOrNull();
+        ref var roots = ref Ꮡroots.DerefOrNull();
 
         if (Ꮡroots == nil) {
             throw panic("roots must be non-nil");

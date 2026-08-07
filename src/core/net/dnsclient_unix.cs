@@ -183,7 +183,7 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsStreamRoundTrip
 internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<Resolver> Ꮡr, context.Context ctx, @string server, dnsmessageꓸQuestion q, time.Duration timeout, bool useTCP, bool ad) {
     GoFrame ᒐ = default;
     try {
-    q = q.ΔClone();
+        q = q.ΔClone();
 
         q.Class = dnsmessage.ClassINET;
         var (id, udpReq, tcpReq, err) = newRequest(q, ad);
@@ -424,7 +424,7 @@ internal static void init(this ж<resolverConfig> Ꮡconf) {
 internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
     GoFrame ᒐ = default;
     try {
-    ref var conf = ref Ꮡconf.DerefOrNull();
+        ref var conf = ref Ꮡconf.DerefOrNull();
 
         Ꮡconf.of(resolverConfig.ᏑinitOnce).Do(Ꮡconf.init);
         if ((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).noReload) {

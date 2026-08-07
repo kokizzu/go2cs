@@ -1058,7 +1058,7 @@ internal static readonly @string exprSˢ = "-- expr %s"u8;
 internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<operand> Ꮡx, ast.Expr e, ΔType hint, bool allowGeneric) {
     GoFrame ᒐ = default;
     try {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(e.Pos(), exprSˢ, e);

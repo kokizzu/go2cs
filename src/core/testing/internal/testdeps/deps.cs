@@ -113,7 +113,7 @@ internal static void Chdir(this ж<testLog> Ꮡl, @string name) {
 internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
     GoFrame ᒐ = default;
     try {
-    ref var l = ref Ꮡl.DerefOrNull();
+        ref var l = ref Ꮡl.DerefOrNull();
 
         if (strings.Contains(name, "\n"u8) || name == ""u8) {
             return;

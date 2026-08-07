@@ -668,8 +668,8 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
     error reterr = default!;
     GoFrame ᒐ = default;
     try {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         if (testHookClientDoResult != default!) {
             defer(() => {

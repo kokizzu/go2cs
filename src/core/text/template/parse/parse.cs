@@ -224,8 +224,8 @@ internal static readonly @string actionˢ = " action"u8;
 internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var errp = ref Ꮡerrp.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var errp = ref Ꮡerrp.DerefOrNull();
 
         var e = builtin.recover();
         if (e != default!) {
@@ -281,10 +281,10 @@ public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text,
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    var funcs = funcsʗp.slice();
+        var funcs = funcsʗp.slice();
 
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var err = ref Ꮡerr.ValueSlot;
         defer(Ꮡt.recover, Ꮡerr, ref ᒐ);
         t.ParseName = t.Name;
         var lexer = lex(t.Name, text, leftDelim, rightDelim);
@@ -452,7 +452,7 @@ internal static readonly @string inputˢ = "input"u8;
 internal static Node textOrAction(this ж<Tree> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         {
             var token = t.nextNonSpace();
@@ -677,7 +677,7 @@ internal static (Pos pos, nint line, ж<PipeNode> pipe, ж<ListNode> list, ж<Li
     ж<ListNode> elseList = default!;
     GoFrame ᒐ = default;
     try {
-    ref var t = ref Ꮡt.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(Ꮡt.popVars, len(Ꮡt.Value.vars), ref ᒐ);
         pipe = Ꮡt.pipeline(context, itemRightDelim);

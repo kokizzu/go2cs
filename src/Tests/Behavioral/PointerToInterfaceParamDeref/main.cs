@@ -7,7 +7,7 @@ partial class main_package {
 internal static void handle(@string label, ж<error> Ꮡerr) {
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
         {
             var e = recover(); if (e != default!) {
@@ -27,7 +27,7 @@ internal static error /*err*/ doit() {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(handle, doitˢ, Ꮡerr, ref ᒐ);
         throw panic("boom");
