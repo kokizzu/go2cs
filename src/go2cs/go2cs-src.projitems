@@ -19,6 +19,7 @@
     <None Include="$(MSBuildThisFileDirectory)blankImportInit_test.go" />
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)chainedCallScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)commandLineOptions.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)convArrayType.go" />

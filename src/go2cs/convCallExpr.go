@@ -79,6 +79,24 @@ func (v *Visitor) callFunIsUniverseBuiltin(callExpr *ast.CallExpr) bool {
 	return ok && v.identIsUniverseBuiltin(ident)
 }
 
+// callFunIsUniversePrint reports whether a call is to the universe built-in `print` or `println`,
+// whose variadic parameter the argument classifier treats as `interface{}`.
+//
+// The name is read from the AST, never from the CONVERTED callee text. Converting callExpr.Fun just
+// to ask "is this spelled print?" re-walked the callee's ENTIRE subtree, and that test sits inside
+// the per-parameter loop — so a call with p parameters converted its callee p+1 times. On a CHAINED
+// method call each link's callee IS the rest of the chain, which compounds: the cost is (p+1)^N in
+// the chain length N. go.mongodb.org/mongo-driver/bson/bsoncodec registers its default codecs as a
+// 42-link `rb.RegisterTypeEncoder(…).RegisterTypeEncoder(…)…` fluent chain over a 2-parameter
+// method, so its conversion needed 3^42 callee walks and never finished (issue #33). The callee is
+// converted once, later, in Phase 7 — this predicate is O(1) and answers the same question, because
+// an unshadowed universe built-in is a bare identifier whose name IS the built-in's name.
+func (v *Visitor) callFunIsUniversePrint(callExpr *ast.CallExpr) bool {
+	ident, ok := callExpr.Fun.(*ast.Ident)
+
+	return ok && (ident.Name == "print" || ident.Name == "println") && v.identIsUniverseBuiltin(ident)
+}
+
 // convCallExpr converts any Go call expression to C#. Every function call, method call, built-in
 // call and type conversion in the corpus routes through here, which is why it is the largest
 // function in the converter.
@@ -1163,12 +1181,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 
 			callExprContext.u8StringArgOK[i] = true
-			funcName := v.convExpr(callExpr.Fun, nil)
 
 			// Handle builtin functions that take `...Type` parameters, treat as `interface{}`
 			var ok bool
 
-			if (funcName == "print" || funcName == "println") && v.callFunIsUniverseBuiltin(callExpr) {
+			if v.callFunIsUniversePrint(callExpr) {
 				paramType = types.NewInterfaceType(nil, nil)
 			} else if paramType, ok = getParameterType(funcSignature, i); !ok {
 				continue

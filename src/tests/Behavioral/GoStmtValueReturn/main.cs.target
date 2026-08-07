@@ -53,9 +53,9 @@ internal static void Main() {
     goǃ((channel<nint> o) => {
         error retErr = default!;
         func((defer, recover) => {
-            var oʗ2 = o;
+            var oʗ1 = o;
             defer(() => {
-                oʗ2.ᐸꟷ(11);
+                oʗ1.ᐸꟷ(11);
             });
             retErr = default!; return;
         });

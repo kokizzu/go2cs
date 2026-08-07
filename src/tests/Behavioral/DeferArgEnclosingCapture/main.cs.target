@@ -48,10 +48,10 @@ internal static void Main() {
     var baseʗ3 = @base;
     var doneʗ1 = done;
     ((Action)(() => {
-        var doneʗ3 = doneʗ1;
+        var doneʗ2 = doneʗ1;
         goǃ((Tally t) => {
             report(goroutineˢ, t, 7);
-            doneʗ3.ᐸꟷ(true);
+            doneʗ2.ᐸꟷ(true);
         }, baseʗ3);
     }))();
     ᐸꟷ(done);

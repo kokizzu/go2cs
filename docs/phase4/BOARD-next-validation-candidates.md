@@ -61,6 +61,87 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## CLOSED — the issue-#33 follow-up: the bsoncodec "hang" is an EXPONENTIAL, and it is fixed (2026-08-07)
+
+**The reporter re-ran with the three fixes in, cleared the crash, and hit a different wall: a `-recurse`
+run "hanging indefinitely" at `[1440/1726] Converting go.mongodb.org/mongo-driver/bson/bsoncodec`, over
+half an hour on one package. It is not a hang. It is `(p+1)^N` work, and the whole arc is measured.**
+
+**Diagnosed from the process, not from the source.** Reproduced locally in a 7-package closure (a scratch
+module importing `bson/bsoncodec` from `go.mongodb.org/mongo-driver@v1.17.9`): the other six packages
+convert in seconds, bsoncodec never finishes. The process is **CPU-bound at ~1.5 cores with a FLAT 345 MB
+working set** — which is what rules the field down to one answer before any code is read: not a deadlock
+(that is 0% CPU), not a leak (that grows). A CPU profile puts `convCallExpr`/`convExpr` at **66%
+cumulative, mutually recursive**, the balance being GC of what they allocate; goroutine dumps show a
+**stable ~40-deep** `convCallExpr → convExpr → convSelectorExpr → convExpr` cycle that does **not** grow.
+Bounded depth with unbounded work is re-walking, not runaway recursion.
+
+**Root cause.** A fluent chain nests LEFT, so each link's callee IS the rest of the chain.
+`convCallExpr`'s argument classifier ran `funcName := v.convExpr(callExpr.Fun, nil)` **inside**
+`for i := range params.Len()` — a full conversion of the entire callee subtree on every iteration — purely
+to test whether the callee TEXT spelled `print`/`println`, and Phase 7 then converted it once more for
+real. A call with p parameters walked its callee **p+1** times, which on a chain compounds to **(p+1)^N**.
+`bsoncodec` registers its default codecs as **42-link** (encoders) and **63-link** (decoders)
+`rb.RegisterTypeEncoder(t, codec).…` chains over a **2-parameter** method: 3^42 ≈ 1.2e19 callee walks for
+one function.
+
+**The fix is to stop asking the question in text.** `callFunIsUniversePrint` reads the name from the AST
+and is O(1). It agrees with the old form by construction: `identIsUniverseBuiltin`
+(`ObjectOf(ident).(*types.Builtin)`) already required a bare identifier resolving to Universe, and such an
+identifier's name IS the built-in's name — a shadowing declaration makes both forms false.
+
+**Rule this establishes, and it generalizes past this bug:** never derive a predicate from CONVERTED TEXT
+when the AST or the type system answers it. Conversion is not a pure function of a node — it is a full
+subtree walk with side effects — so a text probe inside a loop is a hidden complexity multiplier, and on
+any LEFT-NESTING construct it is exponential rather than merely quadratic.
+
+Paired A/B, idle machine, single-package conversion of a synthetic chain over a 2-parameter method (the
+bsoncodec shape); `after` is flat at the go/packages load floor:
+
+| links | before | after |
+|---|---|---|
+| 12 | 4,375ms | 1,902ms |
+| 16 | **>120s (killed)** | 2,014ms |
+| 20 | **>120s (killed)** | 2,342ms |
+| 24 | **>120s (killed)** | 1,912ms |
+| 42 | **>120s (killed)** | 1,974ms |
+
+And the reporter's real shape: the `bsoncodec` closure converts **7/7 in 36.7s**, the package's 42-link
+chain emitted faithfully (all links, interface adapters and `ж<T>` boxes intact).
+
+**Gates — all green, and the arc is NOT emission-neutral, which CNR caught rather than argued.**
+
+1. **CNR: 2 of 569 changed** — `DeferArgEnclosingCapture/main.cs` and `GoStmtValueReturn/main.cs`, both a
+   pure capture-variable RENUMBERING (`doneʗ3`→`doneʗ2`, `oʗ2`→`oʗ1`), declaration and uses renamed
+   together. The discarded callee conversion had been **bumping the capture counter as a side effect**, so
+   removing it closes a gap in the sequence. Verified collision-free (every `…ʗN` occurs exactly twice,
+   properly nested) and then verified where it counts: both projects **Compile pass** and **Output pass**
+   against `go run`. Goldens re-baselined with `UpdateTestTargets --createTargetFiles`; only those two
+   `.cs.target` moved, no test-method churn.
+2. **Full behavioral suite: 544/544** Transpile+Compile+Target, **514/514** Output, 0 failed (1,792.5s).
+3. **`go test ./...`: ok**, exit 0 (106s), including the new guard and the sibling lane's projitems gate
+   (the new source file is registered in `go2cs-src.projitems`, BOM and CRLF preserved).
+
+**Guard:** `TestChainedCallConversionIsNotExponential` (`chainedCallScaling_test.go`) converts a 40-link
+chain over a 2-parameter method under a 90s budget **in a CHILD PROCESS** — the conversion cannot be
+cancelled, so a regression would otherwise leave a goroutine spinning and keep `go test` alive until the
+harness killed it minutes later — then asserts every link survived into the emitted C#, so it cannot pass
+by dropping the chain. Negative control against the pre-fix source: **FAIL at 90.05s**; with the fix,
+**PASS at 1.6s**.
+
+### Finding handed on — a SECOND exponential of the same class, on the ARGUMENT path
+
+Not owned by this arc and not what the reporter hit. After rendering a call, `convCallExpr` re-walks every
+argument through `checkForImplicitConversion` — its own comment says it "re-converts each arg purely for
+its side-effects (recording implicit conversions); the result is discarded" — which is a second full
+conversion of each argument subtree, compounding to **2^depth** on NESTED calls (`f(f(f(…)))`). Measured
+with the callee fix already in: nesting depth 18 → 3.4s, depth 22 → 24.9s. It did not block the reporter
+(argument nesting that deep is rare where 42-link fluent chains are not), and the recording is
+**entirely type-driven** — `expr` flows only to the return value — so the durable fix is to split the
+recording from the rendering and let the discard-the-result call site skip `convExpr` entirely.
+Deliberately NOT folded in here: it is an independent change with its own emission-regression surface (this
+arc already moved two goldens), and entangling it with a one-line fix would cost the clean A/B.
+
 ## ~~OWED~~ DISCHARGED — the issue-#33 arc is measured on Windows (2026-08-06, same day)
 
 **Every owed gate ran green, the 3a probe validated findings (b) and (c) end to end, and the probe paid
