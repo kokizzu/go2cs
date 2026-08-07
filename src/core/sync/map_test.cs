@@ -186,27 +186,27 @@ public static void TestConcurrentRange(ж<Δtesting.T> Ꮡt) {
         for (var g = (int64)Δruntime.GOMAXPROCS(0); g > 0; g--) {
             var r = rand.New(rand.NewSource(g));
             Ꮡwg.Add(1);
-            var doneʗ3 = done;
-            var mʗ2 = m;
-            var rʗ2 = r;
+            var doneʗ2 = done;
+            var mʗ1 = m;
+            var rʗ1 = r;
             goǃ((int64 gΔ1) => {
                 GoFrame ᒐ = default;
                 try {
                     defer(Ꮡwg.Done, ref ᒐ);
                     for (var i = (int64)0; ᐧ ; i++) {
-                        var selᴛ6 = doneʗ3;
-                        switch (trySelect(ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-                        case 0 when selᴛ6.ꟷᐳ(out _): {
+                        var selᴛ5 = doneʗ2;
+                        switch (trySelect(ᐸꟷ(selᴛ5, ꓸꓸꓸ))) {
+                        case 0 when selᴛ5.ꟷᐳ(out _): {
                             return;
                         }
                         default: {
                             break;
                         }}
                         for (var n = (int64)1; n < mapSize; n++) {
-                            if (rʗ2.Int63n(mapSize) == 0){
-                                mʗ2.Store(n, n * i * gΔ1);
+                            if (rʗ1.Int63n(mapSize) == 0){
+                                mʗ1.Store(n, n * i * gΔ1);
                             } else {
-                                mʗ2.Load(n);
+                                mʗ1.Load(n);
                             }
                         }
                     }

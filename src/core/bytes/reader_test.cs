@@ -115,13 +115,13 @@ public static void TestReaderAtConcurrent(ж<testing.T> Ꮡt) {
     ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
     for (nint i = 0; i < 5; i++) {
         Ꮡwg.Add(1);
-        var rʗ2 = r;
+        var rʗ1 = r;
         goǃ((nint iΔ1) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
                 ref var buf = ref heap(new array<byte>(1), out var Ꮡbuf);
-                rʗ2.ReadAt(buf[..], (int64)iΔ1);
+                rʗ1.ReadAt(buf[..], (int64)iΔ1);
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }

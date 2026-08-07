@@ -206,7 +206,7 @@ internal static void benchmark(ж<Δtesting.B> Ꮡb, Action<ж<Δtesting.PB>> be
     var garbageAll = new slice<slice<ж<Δtime.Timer>>>(Δruntime.GOMAXPROCS(0));
     foreach (var (i, _) in garbageAll) {
         Ꮡwg.Add(1);
-        var garbageAllʗ2 = garbageAll;
+        var garbageAllʗ1 = garbageAll;
         goǃ((nint iΔ1) => {
             GoFrame ᒐ = default;
             try {
@@ -215,7 +215,7 @@ internal static void benchmark(ж<Δtesting.B> Ꮡb, Action<ж<Δtesting.PB>> be
                 foreach (var (j, _) in garbage) {
                     garbage[j] = AfterFunc(ΔHour, default!);
                 }
-                garbageAllʗ2[iΔ1] = garbage;
+                garbageAllʗ1[iΔ1] = garbage;
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
@@ -1052,7 +1052,7 @@ public static void BenchmarkStaggeredTickerLatency(ж<Δtesting.B> Ꮡb) {
                         ref var expectedWakeup = ref heap<Δtime.Time>(out var ᏑexpectedWakeup);
                         ᏑexpectedWakeup.Value = Now().Add(delay);
                         var ticker = NewTicker(delay);
-                        var statsʗ4 = stats;
+                        var statsʗ1 = stats;
                         goǃ((nint c, ж<Δtime.Ticker> tickerΔ1, Δtime.Time firstWake) => {
                             GoFrame ᒐ = default;
                             try {
@@ -1063,10 +1063,10 @@ public static void BenchmarkStaggeredTickerLatency(ж<Δtesting.B> Ꮡb) {
                                     if (late < 0) {
                                         late = 0;
                                     }
-                                    statsʗ4[jΔ1].count++;
-                                    statsʗ4[jΔ1].sum += (float64)late.Nanoseconds();
-                                    if (late > statsʗ4[jΔ1].max) {
-                                        statsʗ4[jΔ1].max = late;
+                                    statsʗ1[jΔ1].count++;
+                                    statsʗ1[jΔ1].sum += (float64)late.Nanoseconds();
+                                    if (late > statsʗ1[jΔ1].max) {
+                                        statsʗ1[jΔ1].max = late;
                                     }
                                     ᏑexpectedWakeup.Value = ᏑexpectedWakeup.Value.Add(delay);
                                     doWork(dur);
