@@ -431,15 +431,21 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      overlaying — PATH-PRECISE, not a count:** for every `[module: GoManualConversion]`-marked
      committed file, the temp root must NOT contain a freshly-EMITTED plain `.cs` at that path
      (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
-     differ — **40 marked files (re-measured r40, 2026-08-04) but only 16 produce `.cs.auto`**; the
-     other 24 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
+     differ — **39 marked files (re-measured r43g, 2026-08-07) but only 16 produce `.cs.auto`**; the
+     other 23 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
      that path, so they need no protection. A same-count assertion is wrong in both directions.
      **The marker scan must be LINE-ANCHORED (`^\s*\[module:\s*(go\.)?GoManualConversion\]`)** —
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` reports **63**
-     against the real 40 and turns the gate into a false clobber alarm. (The census grows — 32 at
-     r14, 39 before `internal/concurrent`'s `hashtriemap.cs` joined in r39d — so re-measure it,
-     never assert last session's number.) ⚠ The `.cs.auto` siblings are **tracked in git but are
+     against the real 39 and turns the gate into a false clobber alarm. (The census moves in BOTH
+     directions — 32 at r14, 39 before `internal/concurrent`'s `hashtriemap.cs` joined in r39d, 40
+     at r40, and back to **39** because the r41 train's regen retired `math/unsafe.cs`'s hand-own
+     without saying so: the BitConverter bit casts went back to the auto
+     `Ꮡf.Reinterpret<float32, uint32>()`, which is correct now that `Reinterpret` genuinely aliases
+     managed storage, and `math`'s banked **76/76** re-proves it every sweep. Benign, but it is a
+     hand-own that disappeared under an overlay while that commit reported its marker gate as
+     "40/0" — so re-measure the census, never assert last session's number, and treat a SHRINK as
+     something to explain rather than to copy forward.) ⚠ The `.cs.auto` siblings are **tracked in git but are
      NOT refreshed by the overlay**: the same exclusion that protects the hand-owned `.cs` beside
      them also freezes them, so they go stale on their own schedule (11 of 16 were stale at r40 —
      CleanupBacklog item 18).

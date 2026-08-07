@@ -12985,7 +12985,10 @@ silently shift every answer by one. Guarded by the `RuntimeCallerFrames` behavio
 asserts *relations* between frames rather than absolute positions — chiefly that `callerLine()` and
 `wrapGrand()` invoked **on one source line** must report the same line, an equality that breaks
 under an off-by-one in either direction (positive control: `skip + 1` in `callers` flips three of
-its eleven output lines). `io`'s banked flatten asserts re-validate at 59/59 across the refactor.
+its eleven output lines). The suite builds Debug, where nothing is inlined, so the guard was also
+run against a **Release** build of the same program — identical output, so the pins hold under the
+optimizing JIT and not merely under the one that could not have broken them. `io`'s banked flatten
+asserts re-validate at 59/59 across the refactor.
 
 **What `Caller` can and cannot honor.** `pc` is the same opaque interned token `Callers` mints, and
 `ok` is exact — including the past-the-stack case, which returns Go's zero values with `ok == false`
