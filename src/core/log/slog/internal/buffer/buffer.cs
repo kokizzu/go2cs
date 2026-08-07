@@ -15,7 +15,7 @@ partial class buffer_package {
 internal static ж<sync.Pool> ᏑbufPool = new(new sync.Pool(
     New: () => {
         var b = new slice<byte>(0, 1024);
-        return Ꮡ(new Buffer(b));
+        return Ꮡ(b).Reinterpret<slice<byte>, Buffer>();
     }
 ));
 internal static ref sync.Pool bufPool => ref ᏑbufPool.Value;

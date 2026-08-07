@@ -1588,6 +1588,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckUnsafePointerReinterpret() => CheckTarget("UnsafePointerReinterpret");
 
     [TestMethod]
+    public void CheckUnsafeSliceDataAliasing() => CheckTarget("UnsafeSliceDataAliasing");
+
+    [TestMethod]
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]

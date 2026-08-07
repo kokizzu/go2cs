@@ -58,27 +58,24 @@ internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
 // []byte instead of a cryptobyte.String.
 internal static bool readUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
     ref var s = ref Ꮡs.DerefOrNull();
-    ref var @out = ref Ꮡout.DerefOrNull();
 
-    return s.ReadUint8LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
+    return s.ReadUint8LengthPrefixed(Ꮡout.Reinterpret<slice<byte>, cryptobyte.String>());
 }
 
 // readUint16LengthPrefixed acts like s.ReadUint16LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint16LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
     ref var s = ref Ꮡs.DerefOrNull();
-    ref var @out = ref Ꮡout.DerefOrNull();
 
-    return s.ReadUint16LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
+    return s.ReadUint16LengthPrefixed(Ꮡout.Reinterpret<slice<byte>, cryptobyte.String>());
 }
 
 // readUint24LengthPrefixed acts like s.ReadUint24LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint24LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
     ref var s = ref Ꮡs.DerefOrNull();
-    ref var @out = ref Ꮡout.DerefOrNull();
 
-    return s.ReadUint24LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
+    return s.ReadUint24LengthPrefixed(Ꮡout.Reinterpret<slice<byte>, cryptobyte.String>());
 }
 
 [GoType] partial struct clientHelloMsg {

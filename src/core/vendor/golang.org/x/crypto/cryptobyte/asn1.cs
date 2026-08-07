@@ -623,9 +623,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // tag and length bytes) into out, and advances. The element must match the
 // given tag. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1Bytes(this ref String s, ж<slice<byte>> Ꮡout, asn1.Tag tag) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-
-    return s.ReadASN1(Ꮡ(new String(@out)), tag);
+    return s.ReadASN1(Ꮡout.Reinterpret<slice<byte>, String>(), tag);
 }
 
 // ReadASN1 reads the contents of a DER-encoded ASN.1 element (not including

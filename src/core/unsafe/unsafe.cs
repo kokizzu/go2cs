@@ -622,8 +622,31 @@ public static ж<T> SliceData<T>(slice<T> slice) {
     if (slice == nil)
         return new ж<T>();
 
-    PinnedBuffer buffer = slice.buffer;
-    return new ж<T>(buffer, 0);
+    // Go DEFINES this as `&slice[:1][0]` — an INTERIOR POINTER into the slice's own backing store —
+    // so the faithful model is the array-element reference `Ꮡ(s, 0)`, which is exactly what the
+    // converter emits for `&s[0]`. Three things follow that the previous pinned-buffer box got wrong:
+    //
+    //   1. It PINNED. `slice.buffer` runs GCHandle.Alloc(…, Pinned), which throws `ArgumentException:
+    //      Object contains references` for any element type carrying a managed reference. Pinning was
+    //      never what SliceData means — an address is only needed when the pointer is CONVERTED to
+    //      uintptr/void*, and ж already pins on demand there (EnsureStableAddress), gracefully
+    //      declining for storage that cannot be held still. log/slog's GroupValue is the witness:
+    //      `groupptr(unsafe.SliceData(as))` over `[]Attr` is pure interior-pointer identity — the
+    //      pointer plus len(as) IS the group's two-word representation, rebuilt by `unsafe.Slice`
+    //      in Value.group() — and it took down every grouping path in the package.
+    //   2. It ignored the slice's LOW bound. The pin was over the whole backing array from index 0,
+    //      so `SliceData(s[2:])` addressed element 0 rather than element 2. CanonicalElement resolves
+    //      an element reference through the header (backing + Low + index), so the derived pointer now
+    //      names the element Go's does — and compares equal to `&s[0]`, as Go's pointer identity requires.
+    //   3. It was undereferenceable for any element type but byte. PinnedBuffer implements
+    //      IArray<byte> alone, so ж<T>.Value's `array is IArray<T>` test failed for every other T and
+    //      threw InvalidOperationException instead of reading the element.
+    //
+    // The element reference also makes the round trip ALIAS rather than snapshot: unsafe.Slice's
+    // TryGetElementWindow arm rebuilds a window over the original backing, so a write through the
+    // rebuilt slice reaches the source — Go's semantics. Guarded by the UnsafeStringEmpty and
+    // UnsafeSliceDataAliasing behavioral tests.
+    return Ꮡ(slice, 0);
 }
 
 // String returns a string value whose underlying bytes

@@ -234,7 +234,7 @@ internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<A
         var h2 = h.clone();
         // Pre-format the attributes as an optimization.
         ref var state = ref heap<handleState>(out var Ꮡstate);
-        state = h2.newHandleState(Ꮡ(new buffer.Buffer((~h2).preformattedAttrs)), false, ""u8);
+        state = h2.newHandleState(h2.of(commonHandler.ᏑpreformattedAttrs).Reinterpret<slice<byte>, buffer.Buffer>(), false, ""u8);
         defer(Ꮡstate.free, ref ᒐ);
         state.prefix.WriteString(h.groupPrefix);
         {

@@ -74,7 +74,7 @@ internal static (slice<echConfig>, error) parseECHConfigList(slice<byte> data) {
         if (!s.ReadUint16(Ꮡec.of(echConfig.ᏑKemID))) {
             return (default!, errMalformedECHConfig);
         }
-        if (!s.ReadUint16LengthPrefixed(Ꮡ(new cryptobyte.String(ec.PublicKey)))) {
+        if (!s.ReadUint16LengthPrefixed(Ꮡec.of(echConfig.ᏑPublicKey).Reinterpret<slice<byte>, cryptobyte.String>())) {
             return (default!, errMalformedECHConfig);
         }
         ref var ΔcipherSuites = ref heap<cryptobyte.String>(out var ᏑcipherSuites);
@@ -108,7 +108,7 @@ internal static (slice<echConfig>, error) parseECHConfigList(slice<byte> data) {
             if (!extensions.ReadUint16(Ꮡe.of(echExtension.ᏑType))) {
                 return (default!, errMalformedECHConfig);
             }
-            if (!extensions.ReadUint16LengthPrefixed(Ꮡ(new cryptobyte.String(e.Data)))) {
+            if (!extensions.ReadUint16LengthPrefixed(Ꮡe.of(echExtension.ᏑData).Reinterpret<slice<byte>, cryptobyte.String>())) {
                 return (default!, errMalformedECHConfig);
             }
             ec.Extensions = append(ec.Extensions, e);

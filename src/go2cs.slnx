@@ -770,6 +770,7 @@
     <Project Path="tests/Behavioral/UnsafePointerPrint/UnsafePointerPrint.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerReinterpret/UnsafePointerReinterpret.csproj" />
     <Project Path="tests/Behavioral/UnsafeStringEmpty/UnsafeStringEmpty.csproj" />
+    <Project Path="tests/Behavioral/UnsafeSliceDataAliasing/UnsafeSliceDataAliasing.csproj" />
     <Project Path="tests/Behavioral/UnsignedNamedNumeric/UnsignedNamedNumeric.csproj" />
     <Project Path="tests/Behavioral/UntypedConstArithmetic/UntypedConstArithmetic.csproj" />
     <Project Path="tests/Behavioral/UntypedConstDefine/UntypedConstDefine.csproj" />

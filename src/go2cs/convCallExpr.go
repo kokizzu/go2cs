@@ -780,32 +780,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// log/slog/internal/buffer's `(*Buffer)(&b)` with `type Buffer []byte` and a local
 		// `b []byte`. A named-wrapper box CONTAINS the underlying (the forward arm above projects
 		// it out via `.of(Named.Ꮡm_value)`), but a bare-slice box does NOT contain a wrapper, so
-		// the reverse cannot project — it must CONSTRUCT a wrapper box over the addressed slice:
-		// `Ꮡ(new Buffer(b))`. A bare `(ж<Buffer>)(Ꮡ(b))` cast is CS0030 (unrelated ж
-		// instantiations). Aliasing with the original `b` is not preserved — `Ꮡ(value)` already
-		// copies — but the reinterpret is used through the returned pointer, which is the pattern.
+		// the reverse cannot project. A bare `(ж<Buffer>)(Ꮡ(b))` cast is CS0030 (unrelated ж
+		// instantiations), so this went through golib's STORAGE reinterpret instead:
+		// `Ꮡb.Reinterpret<slice<byte>, Buffer>()` re-views the SAME slot as the wrapper — the
+		// wrapper is a single-field struct over the slice header, which is exactly the layout
+		// correspondence ReinterpretAliasesStorage recognizes, so the managed alias arm engages
+		// and every write through the derived pointer lands on the addressed slice.
+		//
+		// It previously CONSTRUCTED a wrapper box over a COPY (`Ꮡ(new Buffer(b))`), on the stated
+		// assumption that "the reinterpret is used through the returned pointer". That assumption is
+		// false for the corpus's most important instance of the shape: log/slog's `commonHandler.
+		// withAttrs` takes `(*buffer.Buffer)(&h2.preformattedAttrs)` precisely so the pre-formatted
+		// attribute bytes it appends land in h2's own field. Against a copy they landed nowhere —
+		// `WithAttrs` silently dropped every attribute, and the handler still advanced groupPrefix /
+		// nOpenGroups, so the JSON it emitted afterward was unbalanced. It is the root behind four
+		// testing/slogtest rows (WithAttrs, multi-With, empty-group-record, resolve-WithAttrs).
 		if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
 			if targetNamed, ok := types.Unalias(targetPtr.Elem()).(*types.Named); ok {
 				if _, targetIsSlice := targetNamed.Underlying().(*types.Slice); targetIsSlice {
 					if argPtr, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Pointer); ok {
 						if _, argElemIsNamed := types.Unalias(argPtr.Elem()).(*types.Named); !argElemIsNamed {
 							if argSlice, ok := argPtr.Elem().Underlying().(*types.Slice); ok && types.Identical(argSlice, targetNamed.Underlying()) {
-								namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed, false))
-
-								var inner string
-
-								if u, ok := arg.(*ast.UnaryExpr); ok && u.Op == token.AND {
-									inner = v.convExpr(u.X, nil)
-								} else {
-									// The arg is an existing POINTER expression (not `&x`) — cryptobyte's
-									// `(*String)(out)` with `out *[]byte`. Render its POINTEE slice via the
-									// deref: a pointer PARAMETER yields its deref-aliased slice (`@out`), a
-									// box yields `Ꮡx.Value`. The prior `(expr).Value` wrongly added `.Value`
-									// to the already-deref'd `@out` (a `slice<byte>` has no `.Value` — CS1061).
-									inner = v.convExpr(&ast.StarExpr{Star: arg.Pos(), X: arg}, nil)
+								// The same emission the raw-address route uses for a managed-pointer
+								// source (see pointerReinterpretManagedSource); it renders the arg in
+								// its BOX form, which is what an `&x` / pointer-parameter source needs.
+								if emission, ok := v.reinterpretManagedEmission(callExpr, arg); ok {
+									return emission
 								}
-
-								return fmt.Sprintf("%s(new %s(%s))", AddressPrefix, namedCS, inner)
 							}
 						}
 					}

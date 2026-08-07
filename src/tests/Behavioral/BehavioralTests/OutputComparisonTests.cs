@@ -1511,6 +1511,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUnsafePointerPrint() => CheckTarget("UnsafePointerPrint");
 
     [TestMethod]
+    public void CheckUnsafeSliceDataAliasing() => CheckTarget("UnsafeSliceDataAliasing");
+
+    [TestMethod]
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]

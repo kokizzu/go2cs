@@ -1,4 +1,4 @@
-// go2cs code converter defines `global using` statements here for imported type
+﻿// go2cs code converter defines `global using` statements here for imported type
 // aliases as package references are encountered via `import' statements. Exported
 // type aliases that need a `global using` declaration will be loaded from the
 // referenced package by parsing its 'package_info.cs' source file and reading its
@@ -45,8 +45,8 @@ using static go.main_package;
 
 namespace go;
 
-[GoTestMatchingConsoleOutput]
 [GoPackage("main")]
+[GoTestMatchingConsoleOutput]
 public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
@@ -56,7 +56,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct handler {}
-    public partial struct Buf {}
+    internal partial struct group {}
+    internal partial struct item {}
     // </TypeAccessibility>
 }
