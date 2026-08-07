@@ -23,6 +23,10 @@ internal class StructTypeTemplate : TemplateBase
     public required string FullyQualifiedStructType;
     public required List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> StructMembers;
     public required bool HasEqualityOperators;
+    // Non-null exactly when HasEqualityOperators is false: the members whose type cannot use ==
+    // (see GetEqualityFallbackMembers). May be empty — a generic struct with no type-parameter-
+    // dependent members compares every member with == despite failing the whole-struct gate.
+    public HashSet<string>? EqualityFallbackMembers;
     public string[] ValueCloneFields = [];
 
     private string? m_nonGenericStructName;
@@ -1224,15 +1228,24 @@ internal class StructTypeTemplate : TemplateBase
         return item.isReferenceType ? $"{item.memberName}?.ToString() ?? \"<nil>\"" : $"{item.memberName}.ToString()";
     }
 
-    private string CompareFields => HasEqualityOperators && StructMembers.Count > 0 ? 
-        string.Join(" &&\r\n            ", CompareList) :
-        StructMembers.Count > 0 ? "false /* missing equality constraints */" : "true /* empty */";
+    private string CompareFields => StructMembers.Count == 0 ? "true /* empty */" :
+        HasEqualityOperators || EqualityFallbackMembers is not null ?
+            string.Join(" &&\r\n            ", CompareList) :
+            "false /* missing equality constraints */";
 
     // Qualify the left operand with `this.` so a field whose name collides with the `Equals`
     // parameter (`other`) compares the field-to-field, not parameter-to-field. e.g. a struct with
     // a field literally named `other` would otherwise emit `other == other.other` — binding the
     // left `other` to the parameter (CS0019). `this.other == other.other` is unambiguous.
-    private IEnumerable<string> CompareList => StructMembers.Select(member => $"this.{member.memberName} == other.{member.memberName}");
+    // A member in EqualityFallbackMembers has no legal == for its type (it depends on an
+    // unconstrained type parameter), so it compares via golib's AreEqual — the same routing the
+    // converter emits for Go == on any type-parameter operand: EqualityComparer speed on value
+    // types but IEEE semantics on floats (EqualityComparer alone reports NaN equal to itself,
+    // inverting Go) and typed-null/runtime-type semantics on reference and interface arguments.
+    private IEnumerable<string> CompareList => StructMembers.Select(member =>
+        EqualityFallbackMembers?.Contains(member.memberName) == true ?
+            $"global::go.builtin.AreEqual(this.{member.memberName}, other.{member.memberName})" :
+            $"this.{member.memberName} == other.{member.memberName}");
 
     public string HashCode => StructMembers.Count == 0 ? "base.GetHashCode()" :
         $"""

@@ -114,6 +114,12 @@ public class TypeGenerator : ISourceGenerator
                             FullyQualifiedStructType = fullyQualifiedIdentifier,
                             StructMembers = structDeclaration.GetStructMembers(context.Compilation, true),
                             HasEqualityOperators = hasEqualityOperators,
+                            // A generic struct that failed the whole-struct constraint gate still
+                            // gets a real memberwise Equals: each member whose type supports ==
+                            // independent of the unconstrained type parameters compares with ==,
+                            // and only the rest fall back to golib's AreEqual (never a blanket
+                            // `false`, which broke ==-independent structs like unique.Handle<T>).
+                            EqualityFallbackMembers = hasEqualityOperators ? null : structDeclaration.GetEqualityFallbackMembers(context.Compilation),
                             ValueCloneFields = valueCloneFields,
                             UsingStatements = usingStatements
                         }

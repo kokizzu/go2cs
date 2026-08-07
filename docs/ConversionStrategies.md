@@ -862,7 +862,12 @@ the nil map key's dedicated slot, named map/channel types, constrained map acces
 A Go generic constraint becomes a C# `where` clause. Type-set constraints lift to the matching golib/.NET
 interface (`[]T`→`ISlice<T>`, `[N]E`→`IArray<E>`, `map[K]V`→`IMap<K,V>`, `chan T`→`IChannel<T>`), and an
 operator-bearing type set additionally lifts the `System.Numerics` operator interfaces so the body's
-`+`/`<`/`==` compile. `comparable` maps to golib's `comparable<T>`.
+`+`/`<`/`==` compile. `comparable` emits no C# constraint beyond `new()` (no C# interface can admit
+Go's full `==`-able set): Go's checker already validated every instantiation, and emitted equality on
+a type-parameter operand routes through golib's `AreEqual`. A generic struct's own generated `Equals`
+follows the same rule **per field** — fields whose type carries its own `==` (a `ж<T>` pointer, a
+golib wrapper, another `[GoType]` struct) compare with `==`, and only genuine type-parameter fields
+route through `AreEqual`.
 
 ```go
 type Ordered interface {                  // cmp/cmp.go
@@ -886,8 +891,8 @@ public static bool Less<T>(T x, T y)
 
 **Full detail:** [Reference → Generic Constraints](ConversionStrategies-Reference.md#generic-constraints) —
 array-core `~[N]E` lifting, single-term pointer constraints (`[P *T]` → `ж<T>`), method-set interface
-constraints and self-referential proxies, `comparable`, unions (`string | []byte`), and explicit
-type-argument handling.
+constraints and self-referential proxies, `comparable`, per-field generic-struct equality, unions
+(`string | []byte`), and explicit type-argument handling.
 
 ---
 

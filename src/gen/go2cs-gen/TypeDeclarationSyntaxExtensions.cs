@@ -43,7 +43,7 @@ public static class TypeDeclarationSyntaxExtensions
         return true;
     }
 
-    private static bool ImplementsInterface(ITypeSymbol typeSymbol, INamedTypeSymbol interfaceSymbol)
+    internal static bool ImplementsInterface(ITypeSymbol typeSymbol, INamedTypeSymbol interfaceSymbol)
     {
         // Check if the type is the interface itself
         if (typeSymbol is INamedTypeSymbol namedTypeSymbol && SymbolEqualityComparer.Default.Equals(namedTypeSymbol.OriginalDefinition, interfaceSymbol))
