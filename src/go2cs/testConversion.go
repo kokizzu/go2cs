@@ -487,9 +487,14 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// to the DECLARING package's import graph, so no test import and no alias `using` names them
 	// (CS0012). Both models feed the same walk; the already-referenced set it subtracts carries the
 	// production package's own path so an edge landing there never becomes a self-reference.
+	//
+	// The package's OWN package_info.cs — written moments ago by the production half of this same
+	// run — supplies the fourth edge's gate: the VALUE-form `[assembly: GoImplement<T, I>]` records
+	// go2cs-gen realizes as base lists on the production types the test half binds members on.
 	referenceImports = append(referenceImports, declarationClosureImports(
 		[]*packages.Package{production, internal, external}, compileExcluded,
-		append([]string{production.PkgPath}, referenceImports...))...)
+		append([]string{production.PkgPath}, referenceImports...),
+		packageImplementBases(filepath.Join(outputPath, PackageInfoFileName)))...)
 
 	testProjectName := projectName + ".tests.csproj"
 	if err := writeTestProject(filepath.Join(outputPath, testProjectName), projectName, projectNamespace, model, productionFiles, outputFiles, fixtures, referenceImports, options); err != nil {
@@ -2707,14 +2712,14 @@ func aliasReferenceImports(infoFiles []string, productionPkgPath string, directD
 					//                                    bareTokens path below never covers a multi-segment tail.
 					//                                    Anchored on the leading "." so `os.exec_package` cannot
 					//                                    match an unrelated `go.xos.exec_package`.
-					if strings.Contains(target, token+".") || strings.HasSuffix(target, token) || strings.HasSuffix(token, "."+target) {
+					if rootedQualifierMatch(target, token) {
 						sort.Strings(paths)
 						found.Add(paths[0])
 					}
 				}
 
 				for token, paths := range bareTokens {
-					if target == token || strings.HasPrefix(target, token+".") {
+					if bareQualifierMatch(target, token) {
 						sort.Strings(paths)
 						found.Add(paths[0])
 					}
@@ -2727,6 +2732,87 @@ func aliasReferenceImports(infoFiles []string, productionPkgPath string, directD
 	sort.Strings(result)
 
 	return result
+}
+
+// rootedQualifierMatch reports whether a rendered qualifier TARGET names the package class spelled
+// by a fully-ROOTED token (`go.os.exec_package`). Three shapes, all of them observed in emitted
+// output — see the call site in aliasReferenceImports for which emission produces each.
+func rootedQualifierMatch(target, token string) bool {
+	return strings.Contains(target, token+".") || strings.HasSuffix(target, token) || strings.HasSuffix(token, "."+target)
+}
+
+// bareQualifierMatch is the same test for a SINGLE-SEGMENT package, whose alias is emitted
+// UNROOTED (`using hash = hash_package;`) and found by C#'s outward lookup. Matched on a segment
+// boundary so `hash_package` cannot match `go.hash.maphash_package`.
+func bareQualifierMatch(target, token string) bool {
+	return target == token || strings.HasPrefix(target, token+".")
+}
+
+// qualifierTargetNamesPackage reports whether a rendered qualifier TARGET names importPath's
+// package class, in either spelling. The inverse direction of aliasReferenceImports' index: there
+// the target is matched against every known import path, here against ONE already in hand (the
+// closure walk knows its candidate interface's package and only asks whether a record named it).
+func qualifierTargetNamesPackage(target, importPath string) bool {
+	namespace := convertImportPathToNamespace(importPath, PackageSuffix)
+
+	if rootedQualifierMatch(target, RootNamespace+"."+namespace) {
+		return true
+	}
+
+	return !strings.Contains(namespace, ".") && bareQualifierMatch(target, namespace)
+}
+
+// packageImplementBases returns, per declared TYPE, the package-class qualifiers of the interfaces
+// that package's VALUE-form `[assembly: GoImplement<T, I>]` records name — the base list go2cs-gen
+// realizes on the type inside its own assembly, and therefore what binding a member on it must
+// resolve (see declarationClosureImports' implementEdge).
+//
+// POINTER-form records are excluded by the parser: they generate an adapter CLASS (`FileжWriter`)
+// rather than a base on the type, so they place no demand on a member binding — os records `File`
+// as io/fs.File and io.Writer that way, and thirteen banked projects bind `os.File` members with
+// neither reference.
+//
+// A record naming an interface the recording package DECLARES ITSELF (`error`, `FileInfo`) carries
+// no `<pkg>_package` qualifier, so it contributes nothing and needs nothing: a same-package base
+// is in the assembly already being referenced.
+func packageImplementBases(packageInfoFile string) map[string][]string {
+	lines, err := readPackageInfoLines(packageInfoFile)
+
+	if err != nil {
+		return nil
+	}
+
+	bases := map[string][]string{}
+
+	for _, pair := range parseExportedValueImplementLines(lines) {
+		qualifier := packageQualifierPattern.FindStringSubmatch(pair[1])
+
+		if qualifier == nil {
+			continue
+		}
+
+		bases[recordTypeGoName(pair[0])] = append(bases[recordTypeGoName(pair[0])], qualifier[1])
+	}
+
+	return bases
+}
+
+// recordTypeGoName recovers the Go type name a record's IMPLEMENTATION side was emitted from, by
+// undoing the spellings identifierNaming adds: the `@` keyword escape, the `Δ` reserved/collision
+// prefix and its `ᴛ` type marker, and a generic instantiation's argument list
+// (`nistCurve<Point>` → `nistCurve`). Two Go types in one package cannot normalize to one name —
+// the markers exist to separate a type from a METHOD, never from another type — so the recovery is
+// unambiguous where it is used, and an unrecovered name can only cost the edge a reference the
+// build then demands loudly.
+func recordTypeGoName(recorded string) string {
+	if open := strings.Index(recorded, "<"); open >= 0 {
+		recorded = recorded[:open]
+	}
+
+	recorded = removeLeadingSanitizationMarker(recorded)
+	recorded = strings.TrimSuffix(strings.TrimPrefix(recorded, ShadowVarMarker), TempVarMarker)
+
+	return recorded
 }
 
 // conversionRecordPrefixes are the emitted assembly-attribute line prefixes whose GENERIC ARGUMENT
@@ -2810,7 +2896,8 @@ func referenceScanTargets(line string) []string {
 // and those names belong to the DECLARING package's import graph, so they appear in NO test-file
 // import and NO alias `using`. The import-derived + alias-scan set (B2c) misses them,
 // `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and the test
-// compile fails CS0012. Three edges carry it — two on a TYPE's declaration, one on an ACCESS:
+// compile fails CS0012. Four edges carry it — two on a TYPE's declaration, two on an ACCESS (the
+// second of which reads the declaration of the type the access lands on):
 //
 //   - INTERFACE BASES. Go interfaces satisfy structurally and compose by embedding; C# interfaces
 //     are nominal, so the converter carries both shapes as C# inheritance at the declaration site
@@ -2828,13 +2915,25 @@ func referenceScanTargets(line string) []string {
 //     a `Rand *rand.Rand`, so image/draw's `quick.CheckEqual(…, &quick.Config{MaxCountScale: 10})`
 //     fails `CS0012 … 'rand_package.Rand' … assembly that is not referenced` at the
 //     `new quick.Config(MaxCountScale: 10D)` expression, with math/rand in no import list on either
-//     side. No interface closure can reach it — `Rand` is a STRUCT.
+//     side. No interface closure can reach it — `Rand` is a STRUCT. A ZERO-VALUE DECLARATION is the
+//     same constructor call by another route: `var l Logger` names no literal at all, yet renders as
+//     `heap(new Logger(), out var Ꮡl)`, and log's white-box TestNonNewLogger failed
+//     `CS0012 … 'atomic_package.Pointer<>'` resolving against the accessible fieldwise overload.
 //
 //   - THE RECEIVER OF A MEMBER ACCESS. Resolving `x.M` requires binding x's TYPE, and when x is
 //     declared in another package that type is spelled nowhere here. `unique`'s white-box suite calls
 //     `cleanupMu.Lock()` on the production package's `var cleanupMu sync.Mutex`; the test project
 //     referenced no `sync` and the compile died `CS0012 … 'sync_package.Mutex'` twice, so the package
 //     never linked a host and had never been measured. See the seed's own minimality note below.
+//
+//   - THE INTERFACES THAT RECEIVER'S DECLARATION IMPLEMENTS — what binding the member costs ON TOP
+//     of binding the type. A converted CONCRETE type names no interface in its own emitted
+//     declaration (`[GoType("[]ж<ΔError>")] partial struct ErrorList;`): its bases arrive as the
+//     VALUE-form `[assembly: GoImplement<T, I>]` records its package emits, which go2cs-gen realizes
+//     as `partial struct ErrorList : sort_package.Interface` INSIDE THE DECLARING ASSEMBLY. The
+//     metadata type therefore declares that base, and binding any member on it resolves the list:
+//     go/scanner's `list.Sort()`, `len(list)` and the generated `error` adapter's own
+//     `m_value.Equals(…)` all failed `CS0012 … 'sort_package.Interface'`, ×13.
 //
 // Neither scan covers these because the named type itself DOES bind: its package IS referenced.
 // What is missing is a package named inside that type's own C# declaration — or, for the third edge,
@@ -2883,7 +2982,7 @@ func referenceScanTargets(line string) []string {
 // Only the declaring package's own IMPORTS are scanned, so a same-package base contributes nothing
 // new and needs no separate visit: an interface implements its base's bases too, so those candidates
 // are found directly. Output is a sorted set, so the map-ordered walk stays deterministic.
-func declarationClosureImports(roots []*packages.Package, compileExcluded map[string]bool, referenced []string) []string {
+func declarationClosureImports(roots []*packages.Package, compileExcluded map[string]bool, referenced []string, recordedBases map[string][]string) []string {
 	found := HashSet[string]{}
 	seen := NewHashSet(referenced)
 	visited := map[*types.Named]bool{}
@@ -2967,6 +3066,65 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 		}
 	}
 
+	// The IMPLEMENTED-INTERFACE edge, the CONCRETE counterpart of the interface-base walk. A
+	// converted struct or named type carries its interfaces NOT in its own emitted declaration
+	// (`[GoType("[]ж<ΔError>")] partial struct ErrorList;` names none) but in the VALUE-form
+	// `[assembly: GoImplement<T, I>]` records its package emits, which go2cs-gen realizes as
+	// `partial struct ErrorList : global::go.sort_package.Interface` INSIDE THE DECLARING
+	// ASSEMBLY. So the type's metadata declares that base, and binding ANY member on it — Go's
+	// `len(list)`, `list.Sort()`, and the generated value adapter's own `m_value.Equals(…)` —
+	// makes the compiler resolve the base list. go/scanner's white-box suite failed
+	// `CS0012 … 'sort_package.Interface'` ×13 that way, `sort` being in no test import and no
+	// alias `using`. Interfaces are excluded here because the base walk already covers them.
+	//
+	// The RECORDS, not go/types satisfaction, are the gate, and that is measured rather than
+	// argued: a record exists only where the converter converted a CAST, so Go satisfaction wildly
+	// over-approximates the emitted base list. Gating on satisfaction alone drifts 16 of the 96
+	// banked projects — `os.File` satisfies `syscall.Conn` and hands syscall to thirteen (os
+	// records `File` only as io/fs.File and io.Writer, and both POINTER-form, which generate an
+	// adapter CLASS rather than a base); `bytes.Buffer` satisfies most of io and hands io to sort
+	// and unicode/utf8 though bytes records nothing at all; `internal/buildcfg`'s Stringer hands
+	// it fmt from an empty record set. All 96 compile clean today with none of it. Pointer-form
+	// records are therefore excluded here too — only the value form lands a base on the type.
+	implementEdge := func(named *types.Named) {
+		object := named.Obj()
+
+		if _, isInterface := named.Underlying().(*types.Interface); isInterface || !closureWalkable(named) {
+			return
+		}
+
+		// Scoped to the package UNDER TEST, which is where the records are read from: a foreign
+		// type's base list is its own package's record set, in its own package_info.cs, and no
+		// measured case has ever demanded one (widening is this same lookup pointed at that file).
+		// The path check is what keeps a same-named production type from answering for it.
+		if object == nil || object.Pkg() == nil || !rootPaths.Contains(object.Pkg().Path()) {
+			return
+		}
+
+		targets := recordedBases[object.Name()]
+
+		if len(targets) == 0 {
+			return
+		}
+
+		for _, candidate := range implementedInterfaceCandidates(named) {
+			candidateObject := candidate.Obj()
+
+			if candidateObject == nil || candidateObject.Pkg() == nil {
+				continue
+			}
+
+			for _, target := range targets {
+				if qualifierTargetNamesPackage(target, candidateObject.Pkg().Path()) {
+					reach(candidate)
+					enqueue(candidate)
+
+					break
+				}
+			}
+		}
+	}
+
 	for _, root := range roots {
 		seeds := referencedTypeSeeds(root, compileExcluded)
 
@@ -3001,6 +3159,7 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 		for _, named := range seeds.memberBases {
 			reach(named)
 			enqueue(named)
+			implementEdge(named)
 		}
 
 		// The EMPTY-literal form of the same edge, scoped to the ROOT packages. `T{}` converts to
@@ -3206,6 +3365,31 @@ func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool)
 						seeds.constructed = append(seeds.constructed, named)
 					}
 				}
+			case *ast.ValueSpec:
+				// The ZERO-VALUE DECLARATION form of the same construction. `var l Logger` names no
+				// composite literal anywhere, yet the converter renders Go's zero value as a
+				// CONSTRUCTOR CALL — `ref var l = ref heap(new Logger(), out var Ꮡl)` for the
+				// address-taken shape, `new Logger()` otherwise — so it makes exactly the demand
+				// `Logger{}` does and reaches it by a route no CompositeLit walk can see. `log`'s
+				// white-box suite declares `var l Logger` in TestNonNewLogger and the compile died
+				// `CS0012 … 'atomic_package.Pointer<>'`. Scoped to `_test.go` for the member-access
+				// edge's reason: under the reference model the production files are not in this
+				// compilation, and under the recompile model that model already references every
+				// production import wholesale. The ROOT/accessibility gate is the caller's, shared
+				// with the empty-literal form.
+				if isTestFile && len(typed.Values) == 0 {
+					for _, name := range typed.Names {
+						variable, isVar := pkg.TypesInfo.Defs[name].(*types.Var)
+
+						if !isVar {
+							continue
+						}
+
+						if named, ok := types.Unalias(variable.Type()).(*types.Named); ok {
+							seeds.constructedEmpty = append(seeds.constructedEmpty, named)
+						}
+					}
+				}
 			}
 
 			if expression, ok := node.(ast.Expr); ok {
@@ -3260,6 +3444,62 @@ func interfaceBaseCandidates(named *types.Named) []*types.Named {
 			}
 
 			if types.Implements(named, candidateInterface) {
+				result = append(result, candidate)
+			}
+		}
+	}
+
+	return result
+}
+
+// implementedInterfaceCandidates returns the exported interfaces from the DECLARING package's
+// imports that a CONCRETE named type can carry as a C# base — the counterpart of
+// interfaceBaseCandidates for a type whose interfaces reach its declaration through the package's
+// emitted `[assembly: GoImplement<T, I>]` records rather than through the Go declaration itself.
+// Same candidate gates (exported, non-alias, non-generic, real method set), and both receiver
+// forms are tested: a record is written for whichever of T or *T satisfies the interface, and a
+// pointer-form record realizes a base on the value type all the same.
+//
+// This supplies only the CANDIDATE UNIVERSE — the interfaces a record for this type could possibly
+// name, resolved to go/types objects the walk can carry on with. It is a wild over-approximation of
+// the emitted base list on its own (a record exists only where a CAST was converted, so `os.File`
+// satisfies syscall.Conn while os records no such base), which is why the caller gates every
+// candidate on the declaring package's actual records rather than on satisfaction — see
+// declarationClosureImports' implementEdge for that measurement.
+func implementedInterfaceCandidates(named *types.Named) []*types.Named {
+	pkg := named.Obj().Pkg()
+
+	if pkg == nil {
+		return nil
+	}
+
+	pointer := types.NewPointer(named)
+
+	var result []*types.Named
+
+	for _, imported := range pkg.Imports() {
+		scope := imported.Scope()
+
+		for _, name := range scope.Names() {
+			typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+			if !ok || !typeName.Exported() || typeName.IsAlias() {
+				continue
+			}
+
+			candidate, ok := typeName.Type().(*types.Named)
+
+			if !ok || candidate.TypeParams().Len() > 0 {
+				continue
+			}
+
+			candidateInterface, ok := candidate.Underlying().(*types.Interface)
+
+			if !ok || candidateInterface.NumMethods() == 0 || !candidateInterface.IsMethodSet() {
+				continue
+			}
+
+			if types.Implements(named, candidateInterface) || types.Implements(pointer, candidateInterface) {
 				result = append(result, candidate)
 			}
 		}

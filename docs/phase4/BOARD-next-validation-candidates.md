@@ -3426,7 +3426,7 @@ keeps classifying them rather than reporting them as content drift.
 
 | Package | First diagnostic | Root, as far as it was taken |
 |:--|:--|:--|
-| `log`, `go/scanner` | CS0012 | **A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.** |
+| ~~`log`, `go/scanner`~~ | ~~CS0012~~ | **CLOSED 2026-08-07 (r43f-closure-edge): both edges landed, `go/scanner` BANKED 11/11, `log` does NOT bank — two roots stand behind the closure one. Full account in the last section of this file.** The rooting below called both mechanisms correctly and was wrong about two details worth carrying: `log`'s literal is not `log.Logger{}` but `var l Logger` (a zero-value DECLARATION, in the INTERNAL white-box half — no composite literal exists, which is exactly why no literal walk could see it), and the implemented-interface gate is not `types.Implements` but the package's own emitted VALUE-form `GoImplement` RECORDS: satisfaction alone drifts 16 of the 96 banked projects. Original rooting: ~~**A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.**~~ |
 | `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
 | `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
 | `archive/zip` | CS1929 | The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser` — the pointer/value receiver split on an interface realized through an *embedded* field. |
@@ -3497,3 +3497,65 @@ enough space on the disk` for `crypto/sha1/sha1.cs` and friends, i.e. it **trunc
 files**, which then read as corpus corruption. `git checkout -- src/core` restores all of it, but the
 lesson is to check free space before a full sweep and to prune `bin`/`obj` between chunks on a
 contended box.
+
+## The fourth and fifth closure edges — CLOSED; `go/scanner` banks 11/11, `log` has two roots behind it (2026-08-07, r43f-closure-edge)
+
+The r43c rooting above named `log` and `go/scanner` "the cheapest two banks left on this list."
+One of them was. Both build blockers are fixed by two new edges on `declarationClosureImports` —
+the same family the 2026-07-27 arc closed for interface bases and struct fields and r38 extended to
+member-access receivers — but only `go/scanner` banks. Full technical account, with both edges'
+gates and their guards, in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *The fourth and fifth
+closure edges*.
+
+**Edge 4 — a ZERO-VALUE DECLARATION is a constructor call.** r43c read `log`'s blocker as
+`log.Logger{}` in the external half. It is `var l Logger` in the INTERNAL (white-box) half, and the
+difference is the whole point: there is no composite literal in the package's test sources at all,
+so no `*ast.CompositeLit` walk could ever have found it. The converter renders Go's zero value of a
+struct as a **constructor call** (`ref var l = ref heap(new Logger(), out var Ꮡl)` when the address
+is taken, `new Logger()` otherwise), C# overload resolution materializes every accessible
+constructor's signature before choosing one, and the white-box `InternalsVisibleTo` grant makes the
+`internal` fieldwise overload accessible — `CS0012 … 'atomic_package.Pointer<>' … 'sync.atomic'`.
+It is the existing root-scoped empty-literal edge's exact demand by another route, so it feeds the
+same seed under the same gate.
+
+**Edge 5 — a concrete type's bases live in its package's RECORDS, not in its declaration.**
+`[GoType("[]ж<ΔError>")] partial struct ErrorList;` names no interface. `sort.Interface` reaches it
+as a VALUE-form `[assembly: GoImplement<ErrorList, sort_package.Interface>]` record that go2cs-gen
+realizes as `partial struct ErrorList : global::go.sort_package.Interface` **inside go.scanner.dll**
+— so the metadata type declares the base and binding *any* member on it must resolve it. Thirteen
+sites failed: `list.Sort()`, `len(list)`, `Ꮡlist.RemoveMultiples()`, and the generated
+`ErrorList`→`error` value adapter's own `m_value.Equals(…)`.
+
+⚠ **The correction worth carrying: the gate is the RECORDS, not `types.Implements`.** The natural
+`go/types` statement of edge 5 — "the interfaces the receiver's type implements, from the declaring
+package's imports", mirroring `interfaceBaseCandidates` one type-kind over — passes every unit test,
+fixes `go/scanner`, and **drifts 16 of the 96 banked projects**. A record exists only where the
+converter converted a CAST, so Go satisfaction wildly over-approximates the emitted base list:
+`os.File` satisfies `syscall.Conn` and hands `syscall` to thirteen projects, though os records
+`File` only against `io/fs.File` and `io.Writer` and both in **POINTER form**, which generates an
+adapter CLASS rather than a base and demands nothing of a member binding; `bytes.Buffer` satisfies
+most of `io` and hands `io` to `sort` and `unicode/utf8` though `bytes` emits **no records at all**;
+`internal/buildcfg`'s `Stringer` hands it `fmt` from an equally empty set. All sixteen compile clean
+today with none of it. Gating on the package's own value-form records — keyed **per type**, because
+os's one genuine `syscall` record is for `rawConn` and not `File` — is **zero-drift** across all 96.
+Two lessons generalize: (1) *satisfying an interface in Go is not carrying it as a base in C#*, and
+the emitted `package_info.cs` is the authority on which is which; (2) this family's instrument keeps
+earning its keep — it has now rejected **six** rules that a reading of C#'s binding rules justifies,
+and this one was the most convincing of them.
+
+**`go/scanner` — BANKED, 11 of 11**, roster 96 → 97 (45.1%), 13,081 matching verdicts. Whole token
+and literal matrix, semicolon insertion, `//line` directives, `ErrorList` sort + one-per-line dedup,
+CR stripping. No production `.cs` drift and no closure-family restore — the package contributes
+nothing to `$closureFiles`.
+
+**`log` — builds and RUNS for the first time, and does NOT bank.** Seven of its nine test functions
+agree with `go test`; two roots stand behind the closure one, neither of them this family's:
+
+| Test | Verdict | Root |
+|:--|:--|:--|
+| `TestAll` | `infrastructure-error` | `runtime.Caller` → `runtime.callers` → **`getcallersp`, an unimplemented `PartialStubGenerator` stub**. `log.output` calls `runtime.Caller(calldepth)` whenever the logger carries `Lshortfile`/`Llongfile`, and `TestAll` sweeps every flag combination. **This is the SAME `getcallersp` row `testing/slogtest` carries and the reflection arc tracks** — not a log defect, and the one root standing between log and a bank. A real `runtime.Caller` (managed `StackTrace`, or a hand-owned `extern.cs`) would likely bank log and slogtest together, and is worth its own arc. |
+| `TestDiscard` | `fail` | `got 424 allocs, want at most 1` — an exact allocation-count assert, the established **`alloc-profile`** class. A legitimate disclosure candidate *once `TestAll` clears*; disclosing it alone banks nothing, so nothing was disclosed and no `log` artifact is committed. |
+
+Both were reachable only after the closure fix, so the edge paid for itself twice over even where it
+did not bank: `log`'s suite had never linked a host and had never been measured.
