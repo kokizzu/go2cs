@@ -61,7 +61,50 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
-## OWED — the issue-#33 panic fix needs its Windows gates (2026-08-06, same day)
+## ~~OWED~~ DISCHARGED — the issue-#33 arc is measured on Windows (2026-08-06, same day)
+
+**Every owed gate ran green, the 3a probe validated findings (b) and (c) end to end, and the probe paid
+for itself with a new finding — (d), below.**
+
+1. **CNR: NO REGRESSION — byte-identical across all 569**, exit 0 (1,088s). `go2cs.exe` was rebuilt
+   immediately before the run per this entry's own route-#2 warning. This also discharges item 5
+   corpus-wide: no bare-LF line boundary surfaced anywhere under F3's normalized split.
+2. **Full behavioral suite: 544/544** Transpile+Compile+Target, **514/514** Output, 0 failed
+   (3,508.5s under machine load). Honesty proven, not assumed: the exe was rebuilt after CNR's
+   transpile (20:17:47 > every CNR-refreshed `.cs` at 20:02:56), the suite re-transpiled all 544
+   (`DeepEqual/main.cs` → 20:21:13), and the tree was CLEAN after — emission unchanged, in agreement
+   with CNR.
+3. **`go test ./...`: ok, exit 0** (84.3s). The three new guards' first Windows run: 3/3 PASS —
+   `TestModuleCacheVestigialReplaceLoad` (1.17s, both sides of its fixture, so the control still
+   reproduces on Windows), `TestUntypedPackageConvertsWithoutPanic` (1.73s),
+   `TestEscapeAnalysisPanicReachesCaller`. The container's nine Linux failures are absent here, as
+   predicted.
+3a. **The otel probe ran, with finding (c) honored first:** this box's native toolchain is go1.23.2 —
+   *below* (c)'s floor — so the probe converter was built with `GOTOOLCHAIN=go1.25.0` into a scratch
+   location (the repo's binary stays the native build the gates measured). A module importing
+   `go.opentelemetry.io/otel@v1.44.0` (vestigial `./trace`/`./metric` replaces confirmed present in
+   the cached `go.mod`): closure 209 discovered, **25/25 converted** (1 app + 24 third-party, 48.2s),
+   **zero** `invalid package name`, **zero** `newer Go version` — (b)'s remedy and (c)'s guidance both
+   hold on Windows, where the reporter hit them.
+4. **Sweep waived by this entry's own condition** — 1–3 clean and byte-identical emission leaves no
+   path into the banked suites.
+
+The stray remote branch `claude/recurse-option-diagnosis-cb1ins` (fully contained in `master`) is
+deleted. The container's original record follows.
+
+**(d) NEW, from the 3a probe — the build-constraint evaluator cannot parse `go1.N` release tags.**
+Five `github.com/go-logr/logr@v1.4.3` files gated `//go:build go1.21` each warned `failed to parse
+build constraint: 1:4: expected 'EOF', found .21` and were included by the ERROR fallback
+(conversionDriver.go:231 warns and falls through; only a clean non-match excludes) — the right
+outcome by the wrong path. Mechanism: `EvaluateConstraint` (directiveOperations.go:216-228) feeds the
+expression to `parser.ParseExpr`, for which `go1.21` is an illegal selector — while the evaluator
+pre-seeds `go1.%d` tags (directiveOperations.go:195) expecting to satisfy them. Unexplained residue:
+the paired `context_noslog.go` (`!go1.21`, same dual-line header style) was silently and CORRECTLY
+excluded, so the two forms take different paths the probe did not chase. Filed as a task chip with
+full evidence; the durable fix is the stdlib `go/build/constraint` package (Parse + PlusBuildLines +
+`Expr.Eval` over the existing tag map) replacing the hand-rolled parse/eval — not a dot-case patch.
+Pre-existing, not owned by this arc: the same warnings are visible in the container's earlier
+"13 best-effort warnings" run.
 
 For the next **local (Windows)** session: `master` carries the issue-#33 arc in three commits — `fe9bec0`
 (the `package_info.cs` EOL-agnostic read-back, Linux finding F3), `6ca9565` (the panic fix itself), and the
