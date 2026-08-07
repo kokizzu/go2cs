@@ -395,6 +395,21 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
    fail: CS0246/CS0234). That is exactly how `nsshadow` slipped through (added in `96eff53cd`, unregistered
    until `53dd2497e`). If Visual Studio has the `.slnx` open it can rewrite/reformat the file and silently drop
    an external edit — re-add and re-verify if so.
+   **⚠ Windows CASE trap when you `git add` the new folder (found 2026-08-07).** `git add .` / `git add -A`
+   — and any add run from a cwd *inside* the tree — records the path git gets from **readdir, i.e. the
+   ON-DISK casing**, whereas an explicit lowercase pathspec (`git add src/tests/Behavioral/<Name>`) is
+   canonicalized to the casing already in the index. Under `core.ignorecase=true` the difference is
+   invisible locally, so a clone whose `src\tests` had drifted to a capital `src\Tests` on disk banked
+   `DeferFrameScopes` at `src/Tests/Behavioral/…` while the other 4,240 files stayed `src/tests/…` — ONE
+   directory on Windows, TWO on any case-sensitive filesystem (Linux clone, container CI, case-sensitive
+   macOS volume), where the `.slnx`'s lowercase `tests/Behavioral/…` registration then fails to resolve.
+   `check-solution-integrity.ps1` now asserts case-sensitively that every tracked path under the behavioral
+   tree is exactly `src/tests/Behavioral/…`, so this cannot recur silently. If it fires: `git mv` will NOT
+   do a case-only rename on Windows — rewrite the INDEX with plumbing (`git update-index --force-remove
+   <wrong-cased-path>`, then `git update-index --add --cacheinfo 100644,<sha>,<lowercase-path>` reusing the
+   SHAs from `git ls-tree -r HEAD`, which keeps the blobs byte-identical) — **and fix the on-disk directory
+   casing too** (rename through a temp name, `Tests` → `__tmp__` → `tests`), or the next `git add -A`
+   re-creates the wrong path. Both are working-tree-invisible: `git status` stays clean throughout.
 4. **Transpile once** (`go2cs.exe src/tests/Behavioral/<Name>`, no `-comments` — behavioral goldens omit
    them) to generate the `.cs` + `package_info.cs`. For output comparison, add `[GoTestMatchingConsoleOutput]`
    to the generated `package_info.cs` class (a hand-added attribute the converter preserves).
