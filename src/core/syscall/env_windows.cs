@@ -73,27 +73,32 @@ public static void Clearenv() {
     }
 }
 
-public static slice<@string> Environ() => func<slice<@string>>((defer, recover) => {
-    var (envp, e) = GetEnvironmentStrings();
-    if (e != default!) {
-        return default!;
-    }
-    deferǃ(FreeEnvironmentStrings, envp, defer);
-    var r = new slice<@string>(0, 50);
-    // Empty with room to grow.
-    uintptr size = /* unsafe.Sizeof(*envp) */ 2;
-    while (envp.Value != 0) {
-        // environment block ends with empty string
-        // find NUL terminator
-        @unsafe.Pointer end = new @unsafe.Pointer(envp);
-        while (~(ж<uint16>)(uintptr)(end) != 0) {
-            end = (uintptr)@unsafe.Add(end, size);
+public static slice<@string> Environ() {
+    GoFrame ᒐ = default;
+    try {
+        var (envp, e) = GetEnvironmentStrings();
+        if (e != default!) {
+            return default!;
         }
-        var entry = @unsafe.Slice(envp, ((uintptr)end - (uintptr)envp) / size);
-        r = append(r, UTF16ToString(entry));
-        envp = (ж<uint16>)(uintptr)(@unsafe.Add(end, size));
+        defer(FreeEnvironmentStrings, envp, ref ᒐ);
+        var r = new slice<@string>(0, 50);
+        // Empty with room to grow.
+        uintptr size = /* unsafe.Sizeof(*envp) */ 2;
+        while (envp.Value != 0) {
+            // environment block ends with empty string
+            // find NUL terminator
+            @unsafe.Pointer end = new @unsafe.Pointer(envp);
+            while (~(ж<uint16>)(uintptr)(end) != 0) {
+                end = (uintptr)@unsafe.Add(end, size);
+            }
+            var entry = @unsafe.Slice(envp, ((uintptr)end - (uintptr)envp) / size);
+            r = append(r, UTF16ToString(entry));
+            envp = (ж<uint16>)(uintptr)(@unsafe.Add(end, size));
+        }
+        return r;
     }
-    return r;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end syscall_package

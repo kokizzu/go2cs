@@ -321,6 +321,7 @@
     <Project Path="tests/Behavioral/DeferClosure/DeferClosure.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParam/DeferEvalParam.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParamFunc/DeferEvalParamFunc.csproj" />
+    <Project Path="tests/Behavioral/DeferFrameScopes/DeferFrameScopes.csproj" />
     <Project Path="tests/Behavioral/DeferHeapFieldPtrMethod/DeferHeapFieldPtrMethod.csproj" />
     <Project Path="tests/Behavioral/DeferHeapLocalPtrMethod/DeferHeapLocalPtrMethod.csproj" />
     <Project Path="tests/Behavioral/DeferInterfaceReturn/DeferInterfaceReturn.csproj" />
@@ -819,7 +820,6 @@
   </Folder>
   <Folder Name="/utilities/">
     <File Path="set-version.ps1" />
-    <Project Path="utilities/GenGoFuncRefInstances/GenGoFuncRefInstances.csproj" />
     <Project Path="utilities/QuickTest/QuickTest.csproj" />
     <Project Path="utilities/UpdateTestTargets/UpdateTestTargets.csproj" />
   </Folder>

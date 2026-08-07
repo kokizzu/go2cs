@@ -29,24 +29,29 @@ internal static (@string, error) lookupFullNameDomain(@string domainAndUser) {
         syscall.NameSamCompatible, syscall.NameDisplay, 50);
 }
 
-internal static (@string, error) lookupFullNameServer(@string servername, @string username) => func<(@string, error)>((defer, recover) => {
-    var (s, e) = syscall.UTF16PtrFromString(servername);
-    if (e != default!) {
-        return ("", e);
+internal static (@string, error) lookupFullNameServer(@string servername, @string username) {
+    GoFrame ᒐ = default;
+    try {
+        var (s, e) = syscall.UTF16PtrFromString(servername);
+        if (e != default!) {
+            return ("", e);
+        }
+        (var u, e) = syscall.UTF16PtrFromString(username);
+        if (e != default!) {
+            return ("", e);
+        }
+        ref var p = ref heap<ж<byte>>(out var Ꮡp);
+        e = syscall.NetUserGetInfo(s, u, 10, Ꮡp);
+        if (e != default!) {
+            return ("", e);
+        }
+        defer(syscall.NetApiBufferFree, p, ref ᒐ);
+        var i = p.Reinterpret<byte, syscall.UserInfo10>();
+        return (windows.UTF16PtrToString((~i).FullName), default!);
     }
-    (var u, e) = syscall.UTF16PtrFromString(username);
-    if (e != default!) {
-        return ("", e);
-    }
-    ref var p = ref heap<ж<byte>>(out var Ꮡp);
-    e = syscall.NetUserGetInfo(s, u, 10, Ꮡp);
-    if (e != default!) {
-        return ("", e);
-    }
-    deferǃ(syscall.NetApiBufferFree, p, defer);
-    var i = p.Reinterpret<byte, syscall.UserInfo10>();
-    return (windows.UTF16PtrToString((~i).FullName), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (@string, error) lookupFullName(@string domain, @string username, @string domainAndUser) {
     var (joined, err) = isDomainJoined();
@@ -109,19 +114,22 @@ internal static readonly @string profileImagePathˢ = "ProfileImagePath"u8;
 internal static (@string dir, error e) findHomeDirInRegistry(@string uid) {
     @string dir = default!;
     error e = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         (var k, e) = registry.OpenKey(registry.LOCAL_MACHINE, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\"u8 + uid, registry.QUERY_VALUE);
         if (e != default!) {
-            (dir, e) = ("", e); return;
+            (dir, e) = ("", e); goto ᒐdone;
         }
-        defer(() => k.Close());
+        defer(() => k.Close(), ref ᒐ);
         (dir, _, e) = k.GetStringValue(profileImagePathˢ);
         if (e != default!) {
-            (dir, e) = ("", e); return;
+            (dir, e) = ("", e); goto ᒐdone;
         }
         (dir, e) = (dir, default!);
-    });
-    return (dir, e);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (dir, e);
 }
 
 // lookupGroupName accepts the name of a group and retrieves the group SID.
@@ -144,52 +152,57 @@ internal static (@string, error) lookupGroupName(@string groupname) {
 
 // listGroupsForUsernameAndDomain accepts username and domain and retrieves
 // a SID list of the local groups where this user is a member.
-internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) => func<(slice<@string>, error)>((defer, recover) => {
-    // Check if both the domain name and user should be used.
-    @string query = default!;
-    var (joined, err) = isDomainJoined();
-    if (err == default! && joined && len(domain) != 0){
-        query = domain + @"\"u8 + username;
-    } else {
-        query = username;
-    }
-    (var q, err) = syscall.UTF16PtrFromString(query);
-    if (err != default!) {
-        return (default!, err);
-    }
-    ref var p0 = ref heap<ж<byte>>(out var Ꮡp0);
-    ref var entriesRead = ref heap(new uint32(), out var ᏑentriesRead);
-    ref var totalEntries = ref heap(new uint32(), out var ᏑtotalEntries);
-    // https://learn.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netusergetlocalgroups
-    // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
-    // elements which hold the names of local groups where the user participates.
-    // The list does not follow any sorting order.
-    //
-    // If no groups can be found for this user, NetUserGetLocalGroups() should
-    // always return the SID of a single group called "None", which
-    // also happens to be the primary group for the local user.
-    err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(syscall.NetApiBufferFree, p0, defer);
-    if (entriesRead == 0) {
-        return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
-    }
-    var entries = new slice<windows.LocalGroupUserInfo0>(new ReadOnlySpan<windows.LocalGroupUserInfo0>((windows.LocalGroupUserInfo0*)(uintptr)(new @unsafe.Pointer(p0)), (int)(entriesRead)));
-    slice<@string> sids = default!;
-    foreach (var (_, entry) in entries) {
-        if (entry.Name == nil) {
-            continue;
+internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) {
+    GoFrame ᒐ = default;
+    try {
+        // Check if both the domain name and user should be used.
+        @string query = default!;
+        var (joined, err) = isDomainJoined();
+        if (err == default! && joined && len(domain) != 0){
+            query = domain + @"\"u8 + username;
+        } else {
+            query = username;
         }
-        var (sid, errΔ1) = lookupGroupName(windows.UTF16PtrToString(entry.Name));
-        if (errΔ1 != default!) {
-            return (default!, errΔ1);
+        (var q, err) = syscall.UTF16PtrFromString(query);
+        if (err != default!) {
+            return (default!, err);
         }
-        sids = append(sids, sid);
+        ref var p0 = ref heap<ж<byte>>(out var Ꮡp0);
+        ref var entriesRead = ref heap(new uint32(), out var ᏑentriesRead);
+        ref var totalEntries = ref heap(new uint32(), out var ᏑtotalEntries);
+        // https://learn.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netusergetlocalgroups
+        // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
+        // elements which hold the names of local groups where the user participates.
+        // The list does not follow any sorting order.
+        //
+        // If no groups can be found for this user, NetUserGetLocalGroups() should
+        // always return the SID of a single group called "None", which
+        // also happens to be the primary group for the local user.
+        err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
+        if (err != default!) {
+            return (default!, err);
+        }
+        defer(syscall.NetApiBufferFree, p0, ref ᒐ);
+        if (entriesRead == 0) {
+            return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
+        }
+        var entries = new slice<windows.LocalGroupUserInfo0>(new ReadOnlySpan<windows.LocalGroupUserInfo0>((windows.LocalGroupUserInfo0*)(uintptr)(new @unsafe.Pointer(p0)), (int)(entriesRead)));
+        slice<@string> sids = default!;
+        foreach (var (_, entry) in entries) {
+            if (entry.Name == nil) {
+                continue;
+            }
+            var (sid, errΔ1) = lookupGroupName(windows.UTF16PtrToString(entry.Name));
+            if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
+            sids = append(sids, sid);
+        }
+        return (sids, default!);
     }
-    return (sids, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (ж<User>, error) newUser(@string uid, @string gid, @string dir, @string username, @string domain) {
     ref var domainAndUser = ref heap<@string>(out var ᏑdomainAndUser);
@@ -212,95 +225,105 @@ internal static (ж<User>, error) newUser(@string uid, @string gid, @string dir,
 internal static nint userBuffer = 0;
 internal static nint groupBuffer = 0;
 
-internal static (ж<User>, error) current() => func<(ж<User>, error)>((defer, recover) => {
-    var (t, e) = syscall.OpenCurrentProcessToken();
-    if (e != default!) {
-        return (default!, e);
+internal static (ж<User>, error) current() {
+    GoFrame ᒐ = default;
+    try {
+        var (t, e) = syscall.OpenCurrentProcessToken();
+        if (e != default!) {
+            return (default!, e);
+        }
+        defer(() => t.Close(), ref ᒐ);
+        (var u, e) = t.GetTokenUser();
+        if (e != default!) {
+            return (default!, e);
+        }
+        (var pg, e) = t.GetTokenPrimaryGroup();
+        if (e != default!) {
+            return (default!, e);
+        }
+        (var uid, e) = (~u).User.Sid.String();
+        if (e != default!) {
+            return (default!, e);
+        }
+        (var gid, e) = (~pg).PrimaryGroup.String();
+        if (e != default!) {
+            return (default!, e);
+        }
+        (var dir, e) = t.GetUserProfileDirectory();
+        if (e != default!) {
+            return (default!, e);
+        }
+        (var username, var domain, e) = lookupUsernameAndDomain((~u).User.Sid);
+        if (e != default!) {
+            return (default!, e);
+        }
+        return newUser(uid, gid, dir, username, domain);
     }
-    defer(() => t.Close());
-    (var u, e) = t.GetTokenUser();
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var pg, e) = t.GetTokenPrimaryGroup();
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var uid, e) = (~u).User.Sid.String();
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var gid, e) = (~pg).PrimaryGroup.String();
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var dir, e) = t.GetUserProfileDirectory();
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var username, var domain, e) = lookupUsernameAndDomain((~u).User.Sid);
-    if (e != default!) {
-        return (default!, e);
-    }
-    return newUser(uid, gid, dir, username, domain);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // lookupUserPrimaryGroup obtains the primary group SID for a user using this method:
 // https://support.microsoft.com/en-us/help/297951/how-to-use-the-primarygroupid-attribute-to-find-the-primary-group-for
 // The method follows this formula: domainRID + "-" + primaryGroupRID
-internal static (@string, error) lookupUserPrimaryGroup(@string username, @string domain) => func<(@string, error)>((defer, recover) => {
-    // get the domain RID
-    var (sid, _, t, e) = syscall.LookupSID(""u8, domain);
-    if (e != default!) {
-        return ("", e);
+internal static (@string, error) lookupUserPrimaryGroup(@string username, @string domain) {
+    GoFrame ᒐ = default;
+    try {
+        // get the domain RID
+        var (sid, _, t, e) = syscall.LookupSID(""u8, domain);
+        if (e != default!) {
+            return ("", e);
+        }
+        if (t != syscall.SidTypeDomain) {
+            return ("", fmt.Errorf("lookupUserPrimaryGroup: should be domain account type, not %d"u8, t));
+        }
+        (var domainRID, e) = sid.String();
+        if (e != default!) {
+            return ("", e);
+        }
+        // If the user has joined a domain use the RID of the default primary group
+        // called "Domain Users":
+        // https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems
+        // SID: S-1-5-21domain-513
+        //
+        // The correct way to obtain the primary group of a domain user is
+        // probing the user primaryGroupID attribute in the server Active Directory:
+        // https://learn.microsoft.com/en-us/windows/win32/adschema/a-primarygroupid
+        //
+        // Note that the primary group of domain users should not be modified
+        // on Windows for performance reasons, even if it's possible to do that.
+        // The .NET Developer's Guide to Directory Services Programming - Page 409
+        // https://books.google.bg/books?id=kGApqjobEfsC&lpg=PA410&ots=p7oo-eOQL7&dq=primary%20group%20RID&hl=bg&pg=PA409#v=onepage&q&f=false
+        var (joined, err) = isDomainJoined();
+        if (err == default! && joined) {
+            return (domainRID + "-513", default!);
+        }
+        // For non-domain users call NetUserGetInfo() with level 4, which
+        // in this case would not have any network overhead.
+        // The primary group should not change from RID 513 here either
+        // but the group will be called "None" instead:
+        // https://www.adampalmer.me/iodigitalsec/2013/08/10/windows-null-session-enumeration/
+        // "Group 'None' (RID: 513)"
+        (var u, e) = syscall.UTF16PtrFromString(username);
+        if (e != default!) {
+            return ("", e);
+        }
+        (var d, e) = syscall.UTF16PtrFromString(domain);
+        if (e != default!) {
+            return ("", e);
+        }
+        ref var p = ref heap<ж<byte>>(out var Ꮡp);
+        e = syscall.NetUserGetInfo(d, u, 4, Ꮡp);
+        if (e != default!) {
+            return ("", e);
+        }
+        defer(syscall.NetApiBufferFree, p, ref ᒐ);
+        var i = p.Reinterpret<byte, windows.UserInfo4>();
+        return (fmt.Sprintf("%s-%d"u8, domainRID, (~i).PrimaryGroupID), default!);
     }
-    if (t != syscall.SidTypeDomain) {
-        return ("", fmt.Errorf("lookupUserPrimaryGroup: should be domain account type, not %d"u8, t));
-    }
-    (var domainRID, e) = sid.String();
-    if (e != default!) {
-        return ("", e);
-    }
-    // If the user has joined a domain use the RID of the default primary group
-    // called "Domain Users":
-    // https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems
-    // SID: S-1-5-21domain-513
-    //
-    // The correct way to obtain the primary group of a domain user is
-    // probing the user primaryGroupID attribute in the server Active Directory:
-    // https://learn.microsoft.com/en-us/windows/win32/adschema/a-primarygroupid
-    //
-    // Note that the primary group of domain users should not be modified
-    // on Windows for performance reasons, even if it's possible to do that.
-    // The .NET Developer's Guide to Directory Services Programming - Page 409
-    // https://books.google.bg/books?id=kGApqjobEfsC&lpg=PA410&ots=p7oo-eOQL7&dq=primary%20group%20RID&hl=bg&pg=PA409#v=onepage&q&f=false
-    var (joined, err) = isDomainJoined();
-    if (err == default! && joined) {
-        return (domainRID + "-513", default!);
-    }
-    // For non-domain users call NetUserGetInfo() with level 4, which
-    // in this case would not have any network overhead.
-    // The primary group should not change from RID 513 here either
-    // but the group will be called "None" instead:
-    // https://www.adampalmer.me/iodigitalsec/2013/08/10/windows-null-session-enumeration/
-    // "Group 'None' (RID: 513)"
-    (var u, e) = syscall.UTF16PtrFromString(username);
-    if (e != default!) {
-        return ("", e);
-    }
-    (var d, e) = syscall.UTF16PtrFromString(domain);
-    if (e != default!) {
-        return ("", e);
-    }
-    ref var p = ref heap<ж<byte>>(out var Ꮡp);
-    e = syscall.NetUserGetInfo(d, u, 4, Ꮡp);
-    if (e != default!) {
-        return ("", e);
-    }
-    deferǃ(syscall.NetApiBufferFree, p, defer);
-    var i = p.Reinterpret<byte, windows.UserInfo4>();
-    return (fmt.Sprintf("%s-%d"u8, domainRID, (~i).PrimaryGroupID), default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (ж<User>, error) newUserFromSid(ж<syscall.SID> Ꮡusid) {
     var (username, domain, e) = lookupUsernameAndDomain(Ꮡusid);

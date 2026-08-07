@@ -70,15 +70,20 @@ internal static slice<@string> filenamesShort = new @string[]{
     "basn6a16"u8
 }.slice();
 
-internal static (image.Image, error) readPNG(@string filename) => func<(image.Image, error)>((defer, recover) => {
-    var (f, err) = os.Open(filename);
-    if (err != default!) {
-        return (default!, err);
+internal static (image.Image, error) readPNG(@string filename) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(filename);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        return Decode(new png_test_package.os_FileжReader(f));
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    return Decode(new png_test_package.os_FileжReader(f));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // fakebKGDs maps from filenames to fake bKGD chunks for our approximation to
 // the sng command-line tool. Package png doesn't keep that metadata when
@@ -136,349 +141,359 @@ internal static readonly @string tRNSˢ2 = "tRNS {\n"u8;
 internal static readonly @string imagePixelsHexˢ = "IMAGE {\n    pixels hex\n"u8;
 
 // An approximation of the sng command-line tool.
-internal static void sng(io.WriteCloser w, @string filename, image.Image png) => func((defer, recover) => {
-    defer(() => w.Close());
-    var bounds = png.Bounds();
-    var cm = png.ColorModel();
-    nint bitdepth = default!;
-    var exprᴛ1 = cm;
-    if (AreEqual(exprᴛ1, color.RGBAModel) || AreEqual(exprᴛ1, color.NRGBAModel) || AreEqual(exprᴛ1, color.AlphaModel) || AreEqual(exprᴛ1, color.GrayModel)) {
-        bitdepth = 8;
-    }
-    else { /* default: */
-        bitdepth = 16;
-    }
-
-    var (cpm, _) = cm._<color.Palette>(ᐧ);
-    ж<image.Paletted> paletted = default!;
-    if (cpm != default!) {
-        switch (ᐧ) {
-        case {} when len(cpm) is <= 2: {
-            bitdepth = 1;
-            break;
-        }
-        case {} when len(cpm) is <= 4: {
-            bitdepth = 2;
-            break;
-        }
-        case {} when len(cpm) is <= 16: {
-            bitdepth = 4;
-            break;
-        }
-        default: {
+internal static void sng(io.WriteCloser w, @string filename, image.Image png) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => w.Close(), ref ᒐ);
+        var bounds = png.Bounds();
+        var cm = png.ColorModel();
+        nint bitdepth = default!;
+        var exprᴛ1 = cm;
+        if (AreEqual(exprᴛ1, color.RGBAModel) || AreEqual(exprᴛ1, color.NRGBAModel) || AreEqual(exprᴛ1, color.AlphaModel) || AreEqual(exprᴛ1, color.GrayModel)) {
             bitdepth = 8;
-            break;
-        }}
+        }
+        else { /* default: */
+            bitdepth = 16;
+        }
 
-        paletted = png._<ж<image.Paletted>>();
-    }
-    // Write the filename and IHDR.
-    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "#SNG: from "u8 + filename + ".png\nIHDR {\n"u8);
-    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    width: %d; height: %d; bitdepth: %d;\n"u8, bounds.Dx(), bounds.Dy(), bitdepth);
-    {
-        var (s, ok) = fakeIHDRUsings[filename, ꟷ]; if (ok){
-            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
-        } else {
+        var (cpm, _) = cm._<color.Palette>(ᐧ);
+        ж<image.Paletted> paletted = default!;
+        if (cpm != default!) {
             switch (ᐧ) {
-            case {} when (AreEqual(cm, color.RGBAModel)) || (AreEqual(cm, color.RGBA64Model)): {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorˢ);
+            case {} when len(cpm) is <= 2: {
+                bitdepth = 1;
                 break;
             }
-            case {} when (AreEqual(cm, color.NRGBAModel)) || (AreEqual(cm, color.NRGBA64Model)): {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorAlphaˢ);
+            case {} when len(cpm) is <= 4: {
+                bitdepth = 2;
                 break;
             }
-            case {} when (AreEqual(cm, color.GrayModel)) || (AreEqual(cm, color.Gray16Model)): {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingGrayscaleˢ);
+            case {} when len(cpm) is <= 16: {
+                bitdepth = 4;
+                break;
+            }
+            default: {
+                bitdepth = 8;
+                break;
+            }}
+
+            paletted = png._<ж<image.Paletted>>();
+        }
+        // Write the filename and IHDR.
+        io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "#SNG: from "u8 + filename + ".png\nIHDR {\n"u8);
+        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    width: %d; height: %d; bitdepth: %d;\n"u8, bounds.Dx(), bounds.Dy(), bitdepth);
+        {
+            var (s, ok) = fakeIHDRUsings[filename, ꟷ]; if (ok){
+                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
+            } else {
+                switch (ᐧ) {
+                case {} when (AreEqual(cm, color.RGBAModel)) || (AreEqual(cm, color.RGBA64Model)): {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorˢ);
+                    break;
+                }
+                case {} when (AreEqual(cm, color.NRGBAModel)) || (AreEqual(cm, color.NRGBA64Model)): {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorAlphaˢ);
+                    break;
+                }
+                case {} when (AreEqual(cm, color.GrayModel)) || (AreEqual(cm, color.Gray16Model)): {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingGrayscaleˢ);
+                    break;
+                }
+                case {} when cpm != default!: {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorPaletteˢ);
+                    break;
+                }
+                default: {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), unknownPngDecoderColorˢ);
+                    break;
+                }}
+
+            }
+        }
+        io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
+        // We fake a gAMA chunk. The test files have a gAMA chunk but the go PNG
+        // parser ignores it (the PNG spec section 11.3 says "Ancillary chunks may
+        // be ignored by a decoder").
+        {
+            var (s, ok) = fakegAMAs[filename, ꟷ]; if (ok){
+                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
+            } else {
+                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), gAMA10000ˢ);
+            }
+        }
+        // Write the PLTE and tRNS (if applicable).
+        var useTransparent = false;
+        if (cpm != default!){
+            nint lastAlpha = -1;
+            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), plteˢ2);
+            foreach (var (i, c) in cpm) {
+                uint8 r = default!;
+                uint8 g = default!;
+                uint8 b = default!;
+                uint8 a = default!;
+                switch (c.type()) {
+                case colorꓸRGBA cΔ1: {
+                    (r, g, b, a) = (cΔ1.R, cΔ1.G, cΔ1.B, 0xff);
+                    break;
+                }
+                case color.NRGBA cΔ1: {
+                    (r, g, b, a) = (cΔ1.R, cΔ1.G, cΔ1.B, cΔ1.A);
+                    break;
+                }
+                default: {
+                    var cΔ1 = c;
+                    throw panic("unknown palette color type");
+                    break;
+                }}
+                if (a != 0xff) {
+                    lastAlpha = i;
+                }
+                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    (%3d,%3d,%3d)     # rgb = (0x%02x,0x%02x,0x%02x)\n"u8, r, g, b, r, g, b);
+            }
+            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
+            {
+                var (s, ok) = fakebKGDs[filename, ꟷ]; if (ok) {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
+                }
+            }
+            if (lastAlpha != -1) {
+                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
+                for (nint i = 0; i <= lastAlpha; i++) {
+                    var (_, _, _, a) = cpm[i].RGBA();
+                    a >>= (int)(8);
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), " %d"u8, a);
+                }
+                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
+            }
+        } else 
+        if (strings.HasPrefix(filename, "ft"u8)) {
+            {
+                var (s, ok) = fakebKGDs[filename, ꟷ]; if (ok) {
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
+                }
+            }
+            // We fake a tRNS chunk. The test files' grayscale and truecolor
+            // transparent images all have their top left corner transparent.
+            switch (png.At(0, 0).type()) {
+            case color.NRGBA c: {
+                if (c.A == 0) {
+                    useTransparent = true;
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
+                    var exprᴛ2 = filename;
+                    if (exprᴛ2 == "ftbbn0g01"u8 || exprᴛ2 == "ftbbn0g02"u8 || exprᴛ2 == "ftbbn0g04"u8) {
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), // The standard image package doesn't have a "gray with
+ // alpha" type. Instead, we use an image.NRGBA.
+ "    gray: %d;\n"u8, c.R);
+                    }
+                    else { /* default: */
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    red: %d; green: %d; blue: %d;\n"u8, c.R, c.G, c.B);
+                    }
+
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
+                }
+                break;
+            }
+            case color.NRGBA64 c: {
+                if (c.A == 0) {
+                    useTransparent = true;
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
+                    var exprᴛ3 = filename;
+                    if (exprᴛ3 == "ftbwn0g16"u8) {
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), // The standard image package doesn't have a "gray16 with
+ // alpha" type. Instead, we use an image.NRGBA64.
+ "    gray: %d;\n"u8, c.R);
+                    }
+                    else { /* default: */
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    red: %d; green: %d; blue: %d;\n"u8, c.R, c.G, c.B);
+                    }
+
+                    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
+                }
+                break;
+            }}
+        }
+        // Write the IMAGE.
+        io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), imagePixelsHexˢ);
+        for (nint y = bounds.Min.Y; y < bounds.Max.Y; y++) {
+            switch (ᐧ) {
+            case {} when AreEqual(cm, color.GrayModel): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var gray = png.At(x, y)._<color.Gray>();
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, gray.Y);
+                }
+                break;
+            }
+            case {} when AreEqual(cm, color.Gray16Model): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var gray16 = png.At(x, y)._<color.Gray16>();
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x "u8, gray16.Y);
+                }
+                break;
+            }
+            case {} when AreEqual(cm, color.RGBAModel): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var rgba = png.At(x, y)._<colorꓸRGBA>();
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x "u8, rgba.R, rgba.G, rgba.B);
+                }
+                break;
+            }
+            case {} when AreEqual(cm, color.RGBA64Model): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var rgba64 = png.At(x, y)._<color.RGBA64>();
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x "u8, rgba64.R, rgba64.G, rgba64.B);
+                }
+                break;
+            }
+            case {} when AreEqual(cm, color.NRGBAModel): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var nrgba = png.At(x, y)._<color.NRGBA>();
+                    var exprᴛ4 = filename;
+                    if (exprᴛ4 == "ftbbn0g01"u8 || exprᴛ4 == "ftbbn0g02"u8 || exprᴛ4 == "ftbbn0g04"u8) {
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, nrgba.R);
+                    }
+                    else { /* default: */
+                        if (useTransparent){
+                            fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x "u8, nrgba.R, nrgba.G, nrgba.B);
+                        } else {
+                            fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x%02x "u8, nrgba.R, nrgba.G, nrgba.B, nrgba.A);
+                        }
+                    }
+
+                }
+                break;
+            }
+            case {} when AreEqual(cm, color.NRGBA64Model): {
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    var nrgba64 = png.At(x, y)._<color.NRGBA64>();
+                    var exprᴛ5 = filename;
+                    if (exprᴛ5 == "ftbwn0g16"u8) {
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x "u8, nrgba64.R);
+                    }
+                    else { /* default: */
+                        if (useTransparent){
+                            fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x "u8, nrgba64.R, nrgba64.G, nrgba64.B);
+                        } else {
+                            fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x%04x "u8, nrgba64.R, nrgba64.G, nrgba64.B, nrgba64.A);
+                        }
+                    }
+
+                }
                 break;
             }
             case {} when cpm != default!: {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), usingColorPaletteˢ);
-                break;
-            }
-            default: {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), unknownPngDecoderColorˢ);
+                nint b = default!;
+                nint c = default!;
+                for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
+                    b = (nint)(b.Lsh((nuint)bitdepth) | (nint)paletted.ColorIndexAt(x, y));
+                    c++;
+                    if (c == 8 / bitdepth) {
+                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, b);
+                        b = 0;
+                        c = 0;
+                    }
+                }
+                if (c != 0) {
+                    while (c != 8 / bitdepth) {
+                        b = b.Lsh((nuint)bitdepth);
+                        c++;
+                    }
+                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, b);
+                }
                 break;
             }}
 
-        }
-    }
-    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-    // We fake a gAMA chunk. The test files have a gAMA chunk but the go PNG
-    // parser ignores it (the PNG spec section 11.3 says "Ancillary chunks may
-    // be ignored by a decoder").
-    {
-        var (s, ok) = fakegAMAs[filename, ꟷ]; if (ok){
-            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
-        } else {
-            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), gAMA10000ˢ);
-        }
-    }
-    // Write the PLTE and tRNS (if applicable).
-    var useTransparent = false;
-    if (cpm != default!){
-        nint lastAlpha = -1;
-        io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), plteˢ2);
-        foreach (var (i, c) in cpm) {
-            uint8 r = default!;
-            uint8 g = default!;
-            uint8 b = default!;
-            uint8 a = default!;
-            switch (c.type()) {
-            case colorꓸRGBA cΔ1: {
-                (r, g, b, a) = (cΔ1.R, cΔ1.G, cΔ1.B, 0xff);
-                break;
-            }
-            case color.NRGBA cΔ1: {
-                (r, g, b, a) = (cΔ1.R, cΔ1.G, cΔ1.B, cΔ1.A);
-                break;
-            }
-            default: {
-                var cΔ1 = c;
-                throw panic("unknown palette color type");
-                break;
-            }}
-            if (a != 0xff) {
-                lastAlpha = i;
-            }
-            fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    (%3d,%3d,%3d)     # rgb = (0x%02x,0x%02x,0x%02x)\n"u8, r, g, b, r, g, b);
+            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "\n"u8);
         }
         io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-        {
-            var (s, ok) = fakebKGDs[filename, ꟷ]; if (ok) {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
-            }
-        }
-        if (lastAlpha != -1) {
-            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
-            for (nint i = 0; i <= lastAlpha; i++) {
-                var (_, _, _, a) = cpm[i].RGBA();
-                a >>= (int)(8);
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), " %d"u8, a);
-            }
-            io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-        }
-    } else 
-    if (strings.HasPrefix(filename, "ft"u8)) {
-        {
-            var (s, ok) = fakebKGDs[filename, ꟷ]; if (ok) {
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), s);
-            }
-        }
-        // We fake a tRNS chunk. The test files' grayscale and truecolor
-        // transparent images all have their top left corner transparent.
-        switch (png.At(0, 0).type()) {
-        case color.NRGBA c: {
-            if (c.A == 0) {
-                useTransparent = true;
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
-                var exprᴛ2 = filename;
-                if (exprᴛ2 == "ftbbn0g01"u8 || exprᴛ2 == "ftbbn0g02"u8 || exprᴛ2 == "ftbbn0g04"u8) {
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), // The standard image package doesn't have a "gray with
- // alpha" type. Instead, we use an image.NRGBA.
- "    gray: %d;\n"u8, c.R);
-                }
-                else { /* default: */
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    red: %d; green: %d; blue: %d;\n"u8, c.R, c.G, c.B);
-                }
-
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-            }
-            break;
-        }
-        case color.NRGBA64 c: {
-            if (c.A == 0) {
-                useTransparent = true;
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), tRNSˢ2);
-                var exprᴛ3 = filename;
-                if (exprᴛ3 == "ftbwn0g16"u8) {
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), // The standard image package doesn't have a "gray16 with
- // alpha" type. Instead, we use an image.NRGBA64.
- "    gray: %d;\n"u8, c.R);
-                }
-                else { /* default: */
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "    red: %d; green: %d; blue: %d;\n"u8, c.R, c.G, c.B);
-                }
-
-                io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-            }
-            break;
-        }}
     }
-    // Write the IMAGE.
-    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), imagePixelsHexˢ);
-    for (nint y = bounds.Min.Y; y < bounds.Max.Y; y++) {
-        switch (ᐧ) {
-        case {} when AreEqual(cm, color.GrayModel): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var gray = png.At(x, y)._<color.Gray>();
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, gray.Y);
-            }
-            break;
-        }
-        case {} when AreEqual(cm, color.Gray16Model): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var gray16 = png.At(x, y)._<color.Gray16>();
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x "u8, gray16.Y);
-            }
-            break;
-        }
-        case {} when AreEqual(cm, color.RGBAModel): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var rgba = png.At(x, y)._<colorꓸRGBA>();
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x "u8, rgba.R, rgba.G, rgba.B);
-            }
-            break;
-        }
-        case {} when AreEqual(cm, color.RGBA64Model): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var rgba64 = png.At(x, y)._<color.RGBA64>();
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x "u8, rgba64.R, rgba64.G, rgba64.B);
-            }
-            break;
-        }
-        case {} when AreEqual(cm, color.NRGBAModel): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var nrgba = png.At(x, y)._<color.NRGBA>();
-                var exprᴛ4 = filename;
-                if (exprᴛ4 == "ftbbn0g01"u8 || exprᴛ4 == "ftbbn0g02"u8 || exprᴛ4 == "ftbbn0g04"u8) {
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, nrgba.R);
-                }
-                else { /* default: */
-                    if (useTransparent){
-                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x "u8, nrgba.R, nrgba.G, nrgba.B);
-                    } else {
-                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x%02x%02x%02x "u8, nrgba.R, nrgba.G, nrgba.B, nrgba.A);
-                    }
-                }
-
-            }
-            break;
-        }
-        case {} when AreEqual(cm, color.NRGBA64Model): {
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                var nrgba64 = png.At(x, y)._<color.NRGBA64>();
-                var exprᴛ5 = filename;
-                if (exprᴛ5 == "ftbwn0g16"u8) {
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x "u8, nrgba64.R);
-                }
-                else { /* default: */
-                    if (useTransparent){
-                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x "u8, nrgba64.R, nrgba64.G, nrgba64.B);
-                    } else {
-                        fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%04x%04x%04x%04x "u8, nrgba64.R, nrgba64.G, nrgba64.B, nrgba64.A);
-                    }
-                }
-
-            }
-            break;
-        }
-        case {} when cpm != default!: {
-            nint b = default!;
-            nint c = default!;
-            for (nint x = bounds.Min.X; x < bounds.Max.X; x++) {
-                b = (nint)(b.Lsh((nuint)bitdepth) | (nint)paletted.ColorIndexAt(x, y));
-                c++;
-                if (c == 8 / bitdepth) {
-                    fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, b);
-                    b = 0;
-                    c = 0;
-                }
-            }
-            if (c != 0) {
-                while (c != 8 / bitdepth) {
-                    b = b.Lsh((nuint)bitdepth);
-                    c++;
-                }
-                fmt.Fprintf(new png_test_package.io_WriteCloserᴠWriter(w), "%02x"u8, b);
-            }
-            break;
-        }}
-
-        io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "\n"u8);
-    }
-    io.WriteString(new png_test_package.io_WriteCloserᴠWriter(w), "}\n"u8);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string rgbˢ = "# rgb = ("u8;
 
-public static void TestReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var names = filenames;
-    if (testing.Short()) {
-        names = filenamesShort;
-    }
-    foreach (var (_, fn) in names) {
-        // Read the .png file.
-        var (img, err) = readPNG("testdata/pngsuite/"u8 + fn + ".png"u8);
-        if (err != default!) {
-            Ꮡt.Error(fn, err);
-            continue;
+public static void TestReader(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var names = filenames;
+        if (testing.Short()) {
+            names = filenamesShort;
         }
-        if (fn == "basn4a16"u8) {
-            // basn4a16.sng is gray + alpha but sng() will produce true color + alpha
-            // so we just check a single random pixel.
-            var c = img.At(2, 1)._<color.NRGBA64>();
-            if (c.R != 0x11a7 || c.G != 0x11a7 || c.B != 0x11a7 || c.A != 0x1085) {
-                Ꮡt.Error(fn, fmt.Errorf("wrong pixel value at (2, 1): %x"u8, c));
+        foreach (var (_, fn) in names) {
+            // Read the .png file.
+            var (img, err) = readPNG("testdata/pngsuite/"u8 + fn + ".png"u8);
+            if (err != default!) {
+                Ꮡt.Error(fn, err);
+                continue;
             }
-            continue;
-        }
-        var (piper, pipew) = io.Pipe();
-        var pb = bufio.NewScanner(new png_test_package.io_PipeReaderжReader(piper));
-        goǃ(sng, new png_test_package.io_PipeWriterжWriteCloser(pipew), fn, img);
-        var piperʗ1 = piper;
-        defer(() => piperʗ1.Close());
-        // Read the .sng file.
-        (var sf, err) = os.Open("testdata/pngsuite/"u8 + fn + ".sng"u8);
-        if (err != default!) {
-            Ꮡt.Error(fn, err);
-            continue;
-        }
-        var sfʗ1 = sf;
-        defer(() => sfʗ1.Close());
-        var sb = bufio.NewScanner(new png_test_package.os_FileжReader(sf));
-        // Compare the two, in SNG format, line by line.
-        while (ᐧ) {
-            var pdone = !pb.Scan();
-            var sdone = !sb.Scan();
-            if (pdone && sdone) {
-                break;
+            if (fn == "basn4a16"u8) {
+                // basn4a16.sng is gray + alpha but sng() will produce true color + alpha
+                // so we just check a single random pixel.
+                var c = img.At(2, 1)._<color.NRGBA64>();
+                if (c.R != 0x11a7 || c.G != 0x11a7 || c.B != 0x11a7 || c.A != 0x1085) {
+                    Ꮡt.Error(fn, fmt.Errorf("wrong pixel value at (2, 1): %x"u8, c));
+                }
+                continue;
             }
-            if (pdone || sdone) {
-                Ꮡt.Errorf("%s: Different sizes"u8, fn);
-                break;
+            var (piper, pipew) = io.Pipe();
+            var pb = bufio.NewScanner(new png_test_package.io_PipeReaderжReader(piper));
+            goǃ(sng, new png_test_package.io_PipeWriterжWriteCloser(pipew), fn, img);
+            var piperʗ1 = piper;
+            defer(() => piperʗ1.Close(), ref ᒐ);
+            // Read the .sng file.
+            (var sf, err) = os.Open("testdata/pngsuite/"u8 + fn + ".sng"u8);
+            if (err != default!) {
+                Ꮡt.Error(fn, err);
+                continue;
             }
-            @string ps = pb.Text();
-            @string ss = sb.Text();
-            // Newer versions of the sng command line tool append an optional
-            // color name to the RGB tuple. For example:
-            //	# rgb = (0xff,0xff,0xff) grey100
-            //	# rgb = (0x00,0x00,0xff) blue1
-            // instead of the older version's plainer:
-            //	# rgb = (0xff,0xff,0xff)
-            //	# rgb = (0x00,0x00,0xff)
-            // We strip any such name.
-            if (strings.Contains(ss, rgbˢ) && !strings.HasSuffix(ss, ")"u8)) {
-                {
-                    nint i = strings.LastIndex(ss, ") "u8); if (i >= 0) {
-                        ss = ss[..(int)(i + 1)];
+            var sfʗ1 = sf;
+            defer(() => sfʗ1.Close(), ref ᒐ);
+            var sb = bufio.NewScanner(new png_test_package.os_FileжReader(sf));
+            // Compare the two, in SNG format, line by line.
+            while (ᐧ) {
+                var pdone = !pb.Scan();
+                var sdone = !sb.Scan();
+                if (pdone && sdone) {
+                    break;
+                }
+                if (pdone || sdone) {
+                    Ꮡt.Errorf("%s: Different sizes"u8, fn);
+                    break;
+                }
+                @string ps = pb.Text();
+                @string ss = sb.Text();
+                // Newer versions of the sng command line tool append an optional
+                // color name to the RGB tuple. For example:
+                //	# rgb = (0xff,0xff,0xff) grey100
+                //	# rgb = (0x00,0x00,0xff) blue1
+                // instead of the older version's plainer:
+                //	# rgb = (0xff,0xff,0xff)
+                //	# rgb = (0x00,0x00,0xff)
+                // We strip any such name.
+                if (strings.Contains(ss, rgbˢ) && !strings.HasSuffix(ss, ")"u8)) {
+                    {
+                        nint i = strings.LastIndex(ss, ") "u8); if (i >= 0) {
+                            ss = ss[..(int)(i + 1)];
+                        }
                     }
                 }
+                if (ps != ss) {
+                    Ꮡt.Errorf("%s: Mismatch\n%s\nversus\n%s\n"u8, fn, ps, ss);
+                    break;
+                }
             }
-            if (ps != ss) {
-                Ꮡt.Errorf("%s: Mismatch\n%s\nversus\n%s\n"u8, fn, ps, ss);
-                break;
+            if (pb.Err() != default!) {
+                Ꮡt.Error(fn, pb.Err());
             }
-        }
-        if (pb.Err() != default!) {
-            Ꮡt.Error(fn, pb.Err());
-        }
-        if (sb.Err() != default!) {
-            Ꮡt.Error(fn, sb.Err());
+            if (sb.Err() != default!) {
+                Ꮡt.Error(fn, sb.Err());
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 
 [GoType("dyn")] partial struct readerErrorsᴛ1 {
@@ -508,31 +523,36 @@ public static void TestReaderError(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestPalettedDecodeConfig(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    foreach (var (_, fn) in filenamesPaletted) {
-        var (f, err) = os.Open("testdata/pngsuite/"u8 + fn + ".png"u8);
-        if (err != default!) {
-            Ꮡt.Errorf("%s: open failed: %v"u8, fn, err);
-            continue;
-        }
-        var fʗ1 = f;
-        defer(() => fʗ1.Close());
-        (var cfg, err) = DecodeConfig(new png_test_package.os_FileжReader(f));
-        if (err != default!) {
-            Ꮡt.Errorf("%s: %v"u8, fn, err);
-            continue;
-        }
-        var (pal, ok) = cfg.ColorModel._<color.Palette>(ᐧ);
-        if (!ok) {
-            Ꮡt.Errorf("%s: expected paletted color model"u8, fn);
-            continue;
-        }
-        if (pal == default!) {
-            Ꮡt.Errorf("%s: palette not initialized"u8, fn);
-            continue;
+public static void TestPalettedDecodeConfig(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        foreach (var (_, fn) in filenamesPaletted) {
+            var (f, err) = os.Open("testdata/pngsuite/"u8 + fn + ".png"u8);
+            if (err != default!) {
+                Ꮡt.Errorf("%s: open failed: %v"u8, fn, err);
+                continue;
+            }
+            var fʗ1 = f;
+            defer(() => fʗ1.Close(), ref ᒐ);
+            (var cfg, err) = DecodeConfig(new png_test_package.os_FileжReader(f));
+            if (err != default!) {
+                Ꮡt.Errorf("%s: %v"u8, fn, err);
+                continue;
+            }
+            var (pal, ok) = cfg.ColorModel._<color.Palette>(ᐧ);
+            if (!ok) {
+                Ꮡt.Errorf("%s: expected paletted color model"u8, fn);
+                continue;
+            }
+            if (pal == default!) {
+                Ꮡt.Errorf("%s: palette not initialized"u8, fn);
+                continue;
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataGrayGradientPngˢ = "testdata/gray-gradient.png"u8;

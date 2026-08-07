@@ -16,7 +16,8 @@ import "fmt"
 // pins the emitted FORM (revert the fix and TargetComparison diverges); the OUTPUT comparison pins
 // the capture semantics (get sharing wrong and it diverges too).
 //
-// P4–P8 are the negative controls — shapes that must STAY lambdas, one per disqualifying reason.
+// P4, P5, P7 and P8 are the negative controls — shapes that must STAY lambdas, one per disqualifying
+// reason. P6 was one too, and is not any more: see its comment.
 
 type tally struct {
 	n   int
@@ -92,9 +93,13 @@ func p5() {
 	fmt.Println("P5b:", step(1))
 }
 
-// P6 control — the literal DEFERS and RECOVERS, so its body is emitted inside a
-// `func((defer, recover) => …)` execution context whose frame dominates the cost this rule removes;
-// localFunctionDefine excludes it deliberately.
+// P6 — NO LONGER A CONTROL. The literal DEFERS and RECOVERS, and it was excluded because its body
+// was emitted inside a `func((defer, recover) => …)` execution context whose cost dominated the 88
+// bytes this rule removes. The ref-struct frame made that shape free — the body is an inline
+// try/catch/finally beside a `GoFrame` local, which is an ordinary local of a local function — so
+// the exclusion is gone and this probe now pins the POSITIVE case: a deferring, recovering,
+// named-result literal that is only ever called emits as a local function carrying its own frame,
+// with Go's recover-sets-the-named-result semantics intact (which is what the values check).
 func p6() {
 	guard := func(n int) (r int) {
 		defer func() {

@@ -160,29 +160,34 @@ public static error SetWriteDeadline(this ж<FD> Ꮡfd, time.Time t) {
     return setDeadlineImpl(Ꮡfd, t, (rune)'w');
 }
 
-internal static error setDeadlineImpl(ж<FD> Ꮡfd, time.Time t, nint mode) => func<error>((defer, recover) => {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+internal static error setDeadlineImpl(ж<FD> Ꮡfd, time.Time t, nint mode) {
+    GoFrame ᒐ = default;
+    try {
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
-    int64 d = default!;
-    if (!t.IsZero()) {
-        d = (int64)time.Until(t);
-        if (d == 0) {
-            d = -1;
+        int64 d = default!;
+        if (!t.IsZero()) {
+            d = (int64)time.Until(t);
+            if (d == 0) {
+                d = -1;
+            }
         }
-    }
-    // don't confuse deadline right now with no deadline
-    {
-        var err = Ꮡfd.incref(); if (err != default!) {
-            return err;
+        // don't confuse deadline right now with no deadline
+        {
+            var err = Ꮡfd.incref(); if (err != default!) {
+                return err;
+            }
         }
+        defer(() => Ꮡfd.decref(), ref ᒐ);
+        if (fd.pd.runtimeCtx == 0) {
+            return ErrNoDeadline;
+        }
+        runtime_pollSetDeadline(fd.pd.runtimeCtx, d, mode);
+        return default!;
     }
-    defer(() => Ꮡfd.decref());
-    if (fd.pd.runtimeCtx == 0) {
-        return ErrNoDeadline;
-    }
-    runtime_pollSetDeadline(fd.pd.runtimeCtx, d, mode);
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // IsPollDescriptor reports whether fd is the descriptor being used by the poller.
 // This is only used for testing.

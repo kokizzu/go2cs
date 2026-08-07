@@ -12,10 +12,15 @@ internal static void Main() {
 private static readonly object deferredSquareˢ = (@string)"Deferred square:"u8;
 private static readonly object immediateNˢ = (@string)"Immediate n:"u8;
 
-internal static void printSquare(nint n) => func((defer, recover) => {
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredSquareˢ, n * n, defer);
-    n++;
-    fmt.Println(immediateNˢ, n);
-});
+internal static void printSquare(nint n) {
+    GoFrame ᒐ = default;
+    try {
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferredSquareˢ, n * n, ref ᒐ);
+        n++;
+        fmt.Println(immediateNˢ, n);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end main_package

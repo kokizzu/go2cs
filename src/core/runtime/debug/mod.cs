@@ -156,13 +156,14 @@ private static readonly @string buildˢ = "build\t"u8;
 public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
     ж<BuildInfo> bi = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         nint lineNum = 1;
         defer(() => {
             if (err != default!) {
                 err = fmt.Errorf("could not parse Go build info: line %d: %w"u8, lineNum, err);
             }
-        });
+        }, ref ᒐ);
         @string pathLine = pathˢ;
         @string modLine = modˢ2;
         @string depLine = depˢ2;
@@ -206,7 +207,7 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 last = bi.of(BuildInfo.ᏑMain);
                 (last.Value, err) = readModuleLine(elem);
                 if (err != default!) {
-                    (bi, err) = (default!, err); return;
+                    (bi, err) = (default!, err); goto ᒐdone;
                 }
                 break;
             }
@@ -216,17 +217,17 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 bi.Value.Deps = append((~bi).Deps, last);
                 (last.Value, err) = readModuleLine(elem);
                 if (err != default!) {
-                    (bi, err) = (default!, err); return;
+                    (bi, err) = (default!, err); goto ᒐdone;
                 }
                 break;
             }
             case {} when strings.HasPrefix(line, repLine): {
                 var elem = strings.Split(line[(int)(len(repLine))..], tab);
                 if (len(elem) != 3) {
-                    (bi, err) = (default!, fmt.Errorf("expected 3 columns for replacement; got %d"u8, len(elem))); return;
+                    (bi, err) = (default!, fmt.Errorf("expected 3 columns for replacement; got %d"u8, len(elem))); goto ᒐdone;
                 }
                 if (last == nil) {
-                    (bi, err) = (default!, fmt.Errorf("replacement with no module on previous line"u8)); return;
+                    (bi, err) = (default!, fmt.Errorf("replacement with no module on previous line"u8)); goto ᒐdone;
                 }
                 last.Value.Replace = Ꮡ(new Module(
                     Path: ((@string)elem[0]),
@@ -239,25 +240,25 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
             case {} when strings.HasPrefix(line, buildLine): {
                 @string kv = line[(int)(len(buildLine))..];
                 if (len(kv) < 1) {
-                    (bi, err) = (default!, fmt.Errorf("build line missing '='"u8)); return;
+                    (bi, err) = (default!, fmt.Errorf("build line missing '='"u8)); goto ᒐdone;
                 }
                 @string key = default!;
                 @string rawValue = default!;
                 switch (kv[0]) {
                 case (rune)'=': {
-                    (bi, err) = (default!, fmt.Errorf("build line with missing key"u8)); return;
+                    (bi, err) = (default!, fmt.Errorf("build line with missing key"u8)); goto ᒐdone;
                 }
                 case (rune)'`' or (rune)'"': {
                     var (rawKey, errΔ6) = strconv.QuotedPrefix(kv);
                     if (errΔ6 != default!) {
-                        (bi, err) = (default!, fmt.Errorf("invalid quoted key in build line"u8)); return;
+                        (bi, err) = (default!, fmt.Errorf("invalid quoted key in build line"u8)); goto ᒐdone;
                     }
                     if (len(kv) == len(rawKey)) {
-                        (bi, err) = (default!, fmt.Errorf("build line missing '=' after quoted key"u8)); return;
+                        (bi, err) = (default!, fmt.Errorf("build line missing '=' after quoted key"u8)); goto ᒐdone;
                     }
                     {
                         var c = kv[len(rawKey)]; if (c != (rune)'=') {
-                            (bi, err) = (default!, fmt.Errorf("unexpected character after quoted key: %q"u8, c)); return;
+                            (bi, err) = (default!, fmt.Errorf("unexpected character after quoted key: %q"u8, c)); goto ᒐdone;
                         }
                     }
                     (key, _) = strconv.Unquote(rawKey);
@@ -268,10 +269,10 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                     bool okΔ4 = default!;
                     (key, rawValue, okΔ4) = strings.Cut(kv, "="u8);
                     if (!okΔ4) {
-                        (bi, err) = (default!, fmt.Errorf("build line missing '=' after key"u8)); return;
+                        (bi, err) = (default!, fmt.Errorf("build line missing '=' after key"u8)); goto ᒐdone;
                     }
                     if (quoteKey(key)) {
-                        (bi, err) = (default!, fmt.Errorf("unquoted key %q must be quoted"u8, key)); return;
+                        (bi, err) = (default!, fmt.Errorf("unquoted key %q must be quoted"u8, key)); goto ᒐdone;
                     }
                     break;
                 }}
@@ -283,14 +284,14 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                         error errΔ8 = default!;
                         (value, errΔ8) = strconv.Unquote(rawValue);
                         if (errΔ8 != default!) {
-                            (bi, err) = (default!, fmt.Errorf("invalid quoted value in build line"u8)); return;
+                            (bi, err) = (default!, fmt.Errorf("invalid quoted value in build line"u8)); goto ᒐdone;
                         }
                         break;
                     }
                     default: {
                         value = rawValue;
                         if (quoteValue(value)) {
-                            (bi, err) = (default!, fmt.Errorf("unquoted value %q must be quoted"u8, value)); return;
+                            (bi, err) = (default!, fmt.Errorf("unquoted value %q must be quoted"u8, value)); goto ᒐdone;
                         }
                         break;
                     }}
@@ -303,8 +304,10 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
             lineNum++;
         }
         (bi, err) = (bi, default!);
-    });
-    return (bi, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (bi, err);
 }
 
 } // end debug_package

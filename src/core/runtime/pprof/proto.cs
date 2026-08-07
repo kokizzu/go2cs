@@ -582,68 +582,73 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // and returns the location ID encoded in the profile protobuf.
 // It emits to b.pb, so there must be no message encoding in progress.
 // It resets the deck.
-internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) => func<uint64>((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    if (len(b.deck.pcs) == 0) {
-        return 0;
-    }
-    defer(Ꮡb.of(profileBuilder.Ꮡdeck).reset);
-    var addr = b.deck.pcs[0];
-    var firstFrame = b.deck.frames[0];
-    var newFuncs = new slice<emitLocation_newFunc>(0, 8);
-    var id = (uint64)len(b.locs) + 1;
-    b.locs[addr] = new locInfo(
-        id: id,
-        pcs: append(new uintptr[]{}.slice(), b.deck.pcs.ꓸꓸꓸ),
-        firstPCSymbolizeResult: b.deck.firstPCSymbolizeResult,
-        firstPCFrames: append(new runtime.Frame[]{}.slice(), b.deck.frames[..(int)(b.deck.firstPCFrames)].ꓸꓸꓸ)
-    );
-    msgOffset start = b.pb.startMessage();
-    b.pb.uint64Opt(tagLocation_ID, id);
-    b.pb.uint64Opt(tagLocation_Address, (uint64)firstFrame.PC);
-    foreach (var (_, vᴛ1) in b.deck.frames) {
-        ref var frame = ref heap(new runtime.Frame(), out var Ꮡframe);
-        frame = vᴛ1;
+        if (len(b.deck.pcs) == 0) {
+            return 0;
+        }
+        defer(Ꮡb.of(profileBuilder.Ꮡdeck).reset, ref ᒐ);
+        var addr = b.deck.pcs[0];
+        var firstFrame = b.deck.frames[0];
+        var newFuncs = new slice<emitLocation_newFunc>(0, 8);
+        var id = (uint64)len(b.locs) + 1;
+        b.locs[addr] = new locInfo(
+            id: id,
+            pcs: append(new uintptr[]{}.slice(), b.deck.pcs.ꓸꓸꓸ),
+            firstPCSymbolizeResult: b.deck.firstPCSymbolizeResult,
+            firstPCFrames: append(new runtime.Frame[]{}.slice(), b.deck.frames[..(int)(b.deck.firstPCFrames)].ꓸꓸꓸ)
+        );
+        msgOffset start = b.pb.startMessage();
+        b.pb.uint64Opt(tagLocation_ID, id);
+        b.pb.uint64Opt(tagLocation_Address, (uint64)firstFrame.PC);
+        foreach (var (_, vᴛ1) in b.deck.frames) {
+            ref var frame = ref heap(new runtime.Frame(), out var Ꮡframe);
+            frame = vᴛ1;
 
-        // Write out each line in frame expansion.
-        @string funcName = runtime_FrameSymbolName(Ꮡframe);
-        var funcID = (uint64)b.funcs[funcName];
-        if (funcID == 0) {
-            funcID = (uint64)len(b.funcs) + 1;
-            b.funcs[funcName] = (nint)funcID;
-            newFuncs = append(newFuncs, new emitLocation_newFunc(
-                id: funcID,
-                name: funcName,
-                @file: frame.File,
-                startLine: (int64)runtime_FrameStartLine(Ꮡframe)
-            ));
+            // Write out each line in frame expansion.
+            @string funcName = runtime_FrameSymbolName(Ꮡframe);
+            var funcID = (uint64)b.funcs[funcName];
+            if (funcID == 0) {
+                funcID = (uint64)len(b.funcs) + 1;
+                b.funcs[funcName] = (nint)funcID;
+                newFuncs = append(newFuncs, new emitLocation_newFunc(
+                    id: funcID,
+                    name: funcName,
+                    @file: frame.File,
+                    startLine: (int64)runtime_FrameStartLine(Ꮡframe)
+                ));
+            }
+            b.pbLine(tagLocation_Line, funcID, (int64)frame.Line);
         }
-        b.pbLine(tagLocation_Line, funcID, (int64)frame.Line);
-    }
-    foreach (var (i, _) in b.mem) {
-        if (b.mem[i].start <= addr && addr < b.mem[i].end || b.mem[i].fake) {
-            b.pb.uint64Opt(tagLocation_MappingID, (uint64)(i + 1));
-            var m = b.mem[i];
-            m.funcs |= (symbolizeFlag)(b.deck.symbolizeResult);
-            b.mem[i] = m;
-            break;
+        foreach (var (i, _) in b.mem) {
+            if (b.mem[i].start <= addr && addr < b.mem[i].end || b.mem[i].fake) {
+                b.pb.uint64Opt(tagLocation_MappingID, (uint64)(i + 1));
+                var m = b.mem[i];
+                m.funcs |= (symbolizeFlag)(b.deck.symbolizeResult);
+                b.mem[i] = m;
+                break;
+            }
         }
+        b.pb.endMessage(tagProfile_Location, start);
+        // Write out functions we found during frame expansion.
+        foreach (var (_, fn) in newFuncs) {
+            msgOffset startΔ1 = b.pb.startMessage();
+            b.pb.uint64Opt(tagFunction_ID, fn.id);
+            b.pb.int64Opt(tagFunction_Name, b.stringIndex(fn.name));
+            b.pb.int64Opt(tagFunction_SystemName, b.stringIndex(fn.name));
+            b.pb.int64Opt(tagFunction_Filename, b.stringIndex(fn.@file));
+            b.pb.int64Opt(tagFunction_StartLine, fn.startLine);
+            b.pb.endMessage(tagProfile_Function, startΔ1);
+        }
+        b.flush();
+        return id;
     }
-    b.pb.endMessage(tagProfile_Location, start);
-    // Write out functions we found during frame expansion.
-    foreach (var (_, fn) in newFuncs) {
-        msgOffset startΔ1 = b.pb.startMessage();
-        b.pb.uint64Opt(tagFunction_ID, fn.id);
-        b.pb.int64Opt(tagFunction_Name, b.stringIndex(fn.name));
-        b.pb.int64Opt(tagFunction_SystemName, b.stringIndex(fn.name));
-        b.pb.int64Opt(tagFunction_Filename, b.stringIndex(fn.@file));
-        b.pb.int64Opt(tagFunction_StartLine, fn.startLine);
-        b.pb.endMessage(tagProfile_Function, startΔ1);
-    }
-    b.flush();
-    return id;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<byte> space = slice<byte>(" "u8);
 

@@ -37,12 +37,17 @@ internal static void Main() {
     var s = New(debugˢ);
     fmt.Println((~s).setting == nil);
     var sʗ1 = s;
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            fmt.Println(recoveredˢ, recover());
-        });
-        fmt.Println((~sʗ1).name);
-    })))();
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                fmt.Println(recoveredˢ, recover());
+            }, ref ᒐ);
+            fmt.Println((~sʗ1).name);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     ж<setting> p = default!;
     s.Value.setting = p;
     fmt.Println((~s).setting == nil);

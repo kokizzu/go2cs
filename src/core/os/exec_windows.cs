@@ -23,19 +23,20 @@ internal static readonly @string getProcessTimesˢ = "GetProcessTimes"u8;
 internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
     ж<ProcessState> ps = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
         var (handle, status) = Ꮡp.handleTransientAcquire();
         var exprᴛ1 = status;
         if (exprᴛ1 == statusDone) {
-            (ps, err) = (default!, ErrProcessDone); return;
+            (ps, err) = (default!, ErrProcessDone); goto ᒐdone;
         }
         if (exprᴛ1 == statusReleased) {
-            (ps, err) = (default!, syscall.EINVAL); return;
+            (ps, err) = (default!, syscall.EINVAL); goto ᒐdone;
         }
 
-        defer(Ꮡp.handleTransientRelease);
+        defer(Ꮡp.handleTransientRelease, ref ᒐ);
         var (s, e) = syscall.WaitForSingleObject(((syscallꓸHandle)handle), syscall.INFINITE);
         var exprᴛ2 = s;
         if (exprᴛ2 == syscall.WAIT_OBJECT_0) {
@@ -44,57 +45,64 @@ internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
             } while (false);
         }
         else if (exprᴛ2 == syscall.WAIT_FAILED) {
-            (ps, err) = (default!, NewSyscallError(waitForSingleObjectˢ, e)); return;
+            (ps, err) = (default!, NewSyscallError(waitForSingleObjectˢ, e)); goto ᒐdone;
         }
         else { /* default: */
-            (ps, err) = (default!, errors.New(osUnexpectedResultFromˢ)); return;
+            (ps, err) = (default!, errors.New(osUnexpectedResultFromˢ)); goto ᒐdone;
         }
 
         ref var ec = ref heap(new uint32(), out var Ꮡec);
         e = syscall.GetExitCodeProcess(((syscallꓸHandle)handle), Ꮡec);
         if (e != default!) {
-            (ps, err) = (default!, NewSyscallError(getExitCodeProcessˢ, e)); return;
+            (ps, err) = (default!, NewSyscallError(getExitCodeProcessˢ, e)); goto ᒐdone;
         }
         ref var u = ref heap(new syscall.Rusage(), out var Ꮡu);
         e = syscall.GetProcessTimes(((syscallꓸHandle)handle), Ꮡu.of(syscall.Rusage.ᏑCreationTime), Ꮡu.of(syscall.Rusage.ᏑExitTime), Ꮡu.of(syscall.Rusage.ᏑKernelTime), Ꮡu.of(syscall.Rusage.ᏑUserTime));
         if (e != default!) {
-            (ps, err) = (default!, NewSyscallError(getProcessTimesˢ, e)); return;
+            (ps, err) = (default!, NewSyscallError(getProcessTimesˢ, e)); goto ᒐdone;
         }
-        defer(() => Ꮡp.Release());
+        defer(() => Ꮡp.Release(), ref ᒐ);
         (ps, err) = (Ꮡ(new ProcessState(p.Pid, new syscall.WaitStatus(ExitCode: ec), Ꮡu)), default!);
-    });
-    return (ps, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (ps, err);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
 internal static readonly @string terminateProcessˢ = "TerminateProcess"u8;
 
-internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) => func<error>((defer, recover) => {
-    var (handle, status) = Ꮡp.handleTransientAcquire();
-    var exprᴛ1 = status;
-    if (exprᴛ1 == statusDone) {
-        return ErrProcessDone;
-    }
-    if (exprᴛ1 == statusReleased) {
-        return syscall.EINVAL;
-    }
-
-    defer(Ꮡp.handleTransientRelease);
-    if (AreEqual(sig, ΔKill)) {
-        ref var terminationHandle = ref heap(new syscallꓸHandle(), out var ᏑterminationHandle);
-        var e = syscall.DuplicateHandle(~((syscallꓸHandle)((syscallꓸHandle)0)), ((syscallꓸHandle)handle), ~((syscallꓸHandle)((syscallꓸHandle)0)), ᏑterminationHandle, syscall.PROCESS_TERMINATE, false, 0);
-        if (e != default!) {
-            return NewSyscallError(duplicateHandleˢ, e);
+internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) {
+    GoFrame ᒐ = default;
+    try {
+        var (handle, status) = Ꮡp.handleTransientAcquire();
+        var exprᴛ1 = status;
+        if (exprᴛ1 == statusDone) {
+            return ErrProcessDone;
         }
-        Δruntime.KeepAlive(Ꮡp.OrTypedNil());
-        deferǃ(syscall.CloseHandle, terminationHandle, defer);
-        e = syscall.TerminateProcess(terminationHandle, 1);
-        return NewSyscallError(terminateProcessˢ, e);
+        if (exprᴛ1 == statusReleased) {
+            return syscall.EINVAL;
+        }
+
+        defer(Ꮡp.handleTransientRelease, ref ᒐ);
+        if (AreEqual(sig, ΔKill)) {
+            ref var terminationHandle = ref heap(new syscallꓸHandle(), out var ᏑterminationHandle);
+            var e = syscall.DuplicateHandle(~((syscallꓸHandle)((syscallꓸHandle)0)), ((syscallꓸHandle)handle), ~((syscallꓸHandle)((syscallꓸHandle)0)), ᏑterminationHandle, syscall.PROCESS_TERMINATE, false, 0);
+            if (e != default!) {
+                return NewSyscallError(duplicateHandleˢ, e);
+            }
+            Δruntime.KeepAlive(Ꮡp.OrTypedNil());
+            defer(syscall.CloseHandle, terminationHandle, ref ᒐ);
+            e = syscall.TerminateProcess(terminationHandle, 1);
+            return NewSyscallError(terminateProcessˢ, e);
+        }
+        // TODO(rsc): Handle Interrupt too?
+        return ((syscall.Errno)syscall.EWINDOWS);
     }
-    // TODO(rsc): Handle Interrupt too?
-    return ((syscall.Errno)syscall.EWINDOWS);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static error release(this ж<Process> Ꮡp) {
     // Drop the Process' reference and mark handle unusable for

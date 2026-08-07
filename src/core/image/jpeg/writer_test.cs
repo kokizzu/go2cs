@@ -121,15 +121,20 @@ internal static int64 delta(uint32 u0, uint32 u1) {
     return d;
 }
 
-internal static (image.Image, error) readPng(@string filename) => func<(image.Image, error)>((defer, recover) => {
-    var (f, err) = os.Open(filename);
-    if (err != default!) {
-        return (default!, err);
+internal static (image.Image, error) readPng(@string filename) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(filename);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        return png.Decode(new jpeg_internal_test_package.os_FileжReader(f));
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    return png.Decode(new jpeg_internal_test_package.os_FileжReader(f));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestWriter(ж<testing.T> Ꮡt) {
     foreach (var (_, tc) in testCase) {

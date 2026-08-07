@@ -175,25 +175,26 @@ notfound:
 public static (ж<types.Package> pkg, error err) Import(ж<token.FileSet> Ꮡfset, map<@string, ж<types.Package>> packages, @string path, @string srcDir, Func<@string, (io.ReadCloser, error)> lookup) {
     ж<types.Package> pkg = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         io.ReadCloser rc = default!;
         @string id = default!;
         if (lookup != default!){
             // With custom lookup specified, assume that caller has
             // converted path to a canonical import path for use in the map.
             if (path == "unsafe"u8) {
-                (pkg, err) = (types.Unsafe, default!); return;
+                (pkg, err) = (types.Unsafe, default!); goto ᒐdone;
             }
             id = path;
             // No need to re-import if the package was imported completely before.
             {
                 pkg = packages[id]; if (pkg != nil && pkg.Complete()) {
-                    return;
+                    goto ᒐdone;
                 }
             }
             var (f, errΔ1) = lookup(path);
             if (errΔ1 != default!) {
-                (pkg, err) = (default!, errΔ1); return;
+                (pkg, err) = (default!, errΔ1); goto ᒐdone;
             }
             rc = f;
         } else {
@@ -201,36 +202,36 @@ public static (ж<types.Package> pkg, error err) Import(ж<token.FileSet> Ꮡfse
             (filename, id, err) = FindPkg(path, srcDir);
             if (filename == ""u8) {
                 if (path == "unsafe"u8) {
-                    (pkg, err) = (types.Unsafe, default!); return;
+                    (pkg, err) = (types.Unsafe, default!); goto ᒐdone;
                 }
-                (pkg, err) = (default!, err); return;
+                (pkg, err) = (default!, err); goto ᒐdone;
             }
             // no need to re-import if the package was imported completely before
             {
                 pkg = packages[id]; if (pkg != nil && pkg.Complete()) {
-                    return;
+                    goto ᒐdone;
                 }
             }
             // open file
             ref var errΔ2 = ref heap<error>(out var ᏑerrΔ2);
             (var f, errΔ2) = os.Open(filename);
             if (errΔ2 != default!) {
-                (pkg, err) = (default!, errΔ2); return;
+                (pkg, err) = (default!, errΔ2); goto ᒐdone;
             }
             defer(() => {
                 if (ᏑerrΔ2.ValueSlot != default!) {
                     // add file name to error
                     ᏑerrΔ2.ValueSlot = fmt.Errorf("%s: %v"u8, filename, ᏑerrΔ2.ValueSlot);
                 }
-            });
+            }, ref ᒐ);
             rc = new os_FileжReadCloser(f);
         }
         var rcʗ1 = rc;
-        defer(() => rcʗ1.Close());
+        defer(() => rcʗ1.Close(), ref ᒐ);
         var buf = bufio.NewReader(rc);
         (var hdr, var size, err) = FindExportData(buf);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         var exprᴛ1 = hdr;
         if (exprᴛ1 == "$$\n"u8) {
@@ -240,7 +241,7 @@ public static (ж<types.Package> pkg, error err) Import(ж<token.FileSet> Ꮡfse
             byte exportFormatΔ1 = default!;
             {
                 (exportFormatΔ1, err) = buf.ReadByte(); if (err != default!) {
-                    return;
+                    goto ᒐdone;
                 }
             }
             size--;
@@ -255,13 +256,13 @@ public static (ж<types.Package> pkg, error err) Import(ж<token.FileSet> Ꮡfse
                 if (size >= 0){
                     {
                         (dataΔ3, err) = saferio.ReadData(r, (uint64)size); if (err != default!) {
-                            return;
+                            goto ᒐdone;
                         }
                     }
                 } else 
                 {
                     (dataΔ3, err) = io.ReadAll(r); if (err != default!) {
-                        return;
+                        goto ᒐdone;
                     }
                 }
                 @string s = ((@string)dataΔ3);
@@ -284,8 +285,10 @@ public static (ж<types.Package> pkg, error err) Import(ж<token.FileSet> Ꮡfse
             err = fmt.Errorf("import %q: unknown export data header: %q"u8, path, hdr);
         }
 
-    });
-    return (pkg, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (pkg, err);
 }
 
 } // end gcimporter_package

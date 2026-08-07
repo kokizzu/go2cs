@@ -42,54 +42,59 @@ partial class gcimporter_package {
 
 // readUnifiedPackage reads a package description from the given
 // unified IR export data decoder.
-internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) => func((defer, recover) => {
-    input = input.ΔClone();
+internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) {
+    GoFrame ᒐ = default;
+    try {
+        input = input.ΔClone();
 
-    ref var pr = ref heap<pkgReader>(out var Ꮡpr);
-    pr = new pkgReader(
-        PkgDecoder: input.ΔClone(),
-        fake: new fakeFileSet(
-            fset: Ꮡfset,
-            files: new map<@string, ж<fileInfo>>()
-        ),
-        ctxt: Ꮡctxt,
-        imports: imports,
-        posBases: new slice<@string>(input.NumElems(pkgbits.RelocPosBase)),
-        pkgs: new slice<ж<types.Package>>(input.NumElems(pkgbits.RelocPkg)),
-        typs: new slice<typesꓸType>(input.NumElems(pkgbits.RelocType))
-    );
-    defer(Ꮡpr.of(pkgReader.Ꮡfake).setLines);
-    var r = Ꮡpr.newReader(pkgbits.RelocMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic);
-    var pkg = r.pkg();
-    r.of(reader.ᏑDecoder).Bool();
-    // TODO(mdempsky): Remove; was "has init"
-    for ((nint i, nint n) = (0, r.of(reader.ᏑDecoder).Len()); i < n; i++) {
-        // As if r.obj(), but avoiding the Scope.Lookup call,
-        // to avoid eager loading of imports.
-        r.of(reader.ᏑDecoder).Sync(pkgbits.SyncObject);
-        assert(!r.of(reader.ᏑDecoder).Bool());
-        (~r).p.objIdx(r.of(reader.ᏑDecoder).Reloc(pkgbits.RelocObj));
-        assert(r.of(reader.ᏑDecoder).Len() == 0);
-    }
-    r.of(reader.ᏑDecoder).Sync(pkgbits.SyncEOF);
-    foreach (var (_, fn) in pr.laterFns) {
-        fn();
-    }
-    foreach (var (_, iface) in pr.ifaces) {
-        iface.Complete();
-    }
-    // Imports() of pkg are all of the transitive packages that were loaded.
-    slice<ж<types.Package>> imps = default!;
-    foreach (var (_, imp) in pr.pkgs) {
-        if (imp != nil && imp != pkg) {
-            imps = append(imps, imp);
+        ref var pr = ref heap<pkgReader>(out var Ꮡpr);
+        pr = new pkgReader(
+            PkgDecoder: input.ΔClone(),
+            fake: new fakeFileSet(
+                fset: Ꮡfset,
+                files: new map<@string, ж<fileInfo>>()
+            ),
+            ctxt: Ꮡctxt,
+            imports: imports,
+            posBases: new slice<@string>(input.NumElems(pkgbits.RelocPosBase)),
+            pkgs: new slice<ж<types.Package>>(input.NumElems(pkgbits.RelocPkg)),
+            typs: new slice<typesꓸType>(input.NumElems(pkgbits.RelocType))
+        );
+        defer(Ꮡpr.of(pkgReader.Ꮡfake).setLines, ref ᒐ);
+        var r = Ꮡpr.newReader(pkgbits.RelocMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic);
+        var pkg = r.pkg();
+        r.of(reader.ᏑDecoder).Bool();
+        // TODO(mdempsky): Remove; was "has init"
+        for ((nint i, nint n) = (0, r.of(reader.ᏑDecoder).Len()); i < n; i++) {
+            // As if r.obj(), but avoiding the Scope.Lookup call,
+            // to avoid eager loading of imports.
+            r.of(reader.ᏑDecoder).Sync(pkgbits.SyncObject);
+            assert(!r.of(reader.ᏑDecoder).Bool());
+            (~r).p.objIdx(r.of(reader.ᏑDecoder).Reloc(pkgbits.RelocObj));
+            assert(r.of(reader.ᏑDecoder).Len() == 0);
         }
+        r.of(reader.ᏑDecoder).Sync(pkgbits.SyncEOF);
+        foreach (var (_, fn) in pr.laterFns) {
+            fn();
+        }
+        foreach (var (_, iface) in pr.ifaces) {
+            iface.Complete();
+        }
+        // Imports() of pkg are all of the transitive packages that were loaded.
+        slice<ж<types.Package>> imps = default!;
+        foreach (var (_, imp) in pr.pkgs) {
+            if (imp != nil && imp != pkg) {
+                imps = append(imps, imp);
+            }
+        }
+        slices.SortFunc(imps, (ж<types.Package> a, ж<types.Package> b) => strings.Compare(a.Path(), b.Path()));
+        pkg.SetImports(imps);
+        pkg.MarkComplete();
+        return pkg;
     }
-    slices.SortFunc(imps, (ж<types.Package> a, ж<types.Package> b) => strings.Compare(a.Path(), b.Path()));
-    pkg.SetImports(imps);
-    pkg.MarkComplete();
-    return pkg;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // A reader holds the state for reading a single unified IR element
 // within a package.

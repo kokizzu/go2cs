@@ -758,42 +758,47 @@ internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune ve
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string methodˢ = " method: "u8;
 
-internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    {
-        var err = recover(); if (err != default!) {
-            // If it's a nil pointer, just say "<nil>". The likeliest causes are a
-            // Stringer that fails to guard against nil or a nil pointer for a
-            // value receiver, and in either case, "<nil>" is a nice result.
-            {
-                var v = reflect.ValueOf(arg); if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
-                    p.buf.writeString(nilAngleString);
-                    return;
+        {
+            var err = recover(); if (err != default!) {
+                // If it's a nil pointer, just say "<nil>". The likeliest causes are a
+                // Stringer that fails to guard against nil or a nil pointer for a
+                // value receiver, and in either case, "<nil>" is a nice result.
+                {
+                    var v = reflect.ValueOf(arg); if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
+                        p.buf.writeString(nilAngleString);
+                        return;
+                    }
                 }
+                // Otherwise print a concise panic message. Most of the time the panic
+                // value will print itself nicely.
+                if (p.panicking) {
+                    // Nested panics; the recursion in printArg cannot succeed.
+                    throw panic(err);
+                }
+                var oldFlags = p.fmt.fmtFlags;
+                // For this output we want default behavior.
+                p.fmt.clearflags();
+                p.buf.writeString(percentBangString);
+                p.buf.writeRune(verb);
+                p.buf.writeString(panicString);
+                p.buf.writeString(method);
+                p.buf.writeString(methodˢ);
+                p.panicking = true;
+                Ꮡp.printArg(err, (rune)'v');
+                p.panicking = false;
+                p.buf.writeByte((rune)')');
+                p.fmt.fmtFlags = oldFlags;
             }
-            // Otherwise print a concise panic message. Most of the time the panic
-            // value will print itself nicely.
-            if (p.panicking) {
-                // Nested panics; the recursion in printArg cannot succeed.
-                throw panic(err);
-            }
-            var oldFlags = p.fmt.fmtFlags;
-            // For this output we want default behavior.
-            p.fmt.clearflags();
-            p.buf.writeString(percentBangString);
-            p.buf.writeRune(verb);
-            p.buf.writeString(panicString);
-            p.buf.writeString(method);
-            p.buf.writeString(methodˢ);
-            p.panicking = true;
-            Ꮡp.printArg(err, (rune)'v');
-            p.panicking = false;
-            p.buf.writeByte((rune)')');
-            p.fmt.fmtFlags = oldFlags;
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string formatˢ = "Format"u8;
@@ -803,18 +808,19 @@ internal static readonly @string stringˢ = "String"u8;
 
 internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     bool handled = default!;
-    func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.erroring) {
-            return;
+            goto ᒐdone;
         }
         if (verb == (rune)'w') {
             // It is invalid to use %w other than with Errorf or with a non-error arg.
             var (_, ok) = p.arg._<error>(ᐧ);
             if (!ok || !p.wrapErrs) {
                 Ꮡp.badVerb(verb);
-                handled = true; return;
+                handled = true; goto ᒐdone;
             }
             // If the arg is a Formatter, pass 'v' as the verb to it.
             verb = (rune)'v';
@@ -823,9 +829,9 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
         {
             var (formatter, ok) = p.arg._<Formatter>(ᐧ); if (ok) {
                 handled = true;
-                deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, formatˢ, defer);
+                defer(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, formatˢ, ref ᒐ);
                 formatter.Format(new ppжState(Ꮡp), verb);
-                return;
+                goto ᒐdone;
             }
         }
         // If we're doing Go syntax and the argument knows how to supply it, take care of it now.
@@ -833,10 +839,10 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
             {
                 var (stringer, ok) = p.arg._<GoStringer>(ᐧ); if (ok) {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, goStringˢ, defer);
+                    defer(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, goStringˢ, ref ᒐ);
                     // Print the result of GoString unadorned.
                     p.fmt.fmtS(stringer.GoString());
-                    return;
+                    goto ᒐdone;
                 }
             }
         } else {
@@ -848,23 +854,25 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
                 switch (p.arg.type()) {
                 case {} Δv when Δv._<error>(out var v): {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, errorˢ, defer);
+                    defer(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, errorˢ, ref ᒐ);
                     Ꮡp.fmtString(v.Error(), verb);
-                    return;
+                    goto ᒐdone;
                 }
                 case {} Δv when Δv._<Stringer>(out var v): {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, stringˢ, defer);
+                    defer(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, stringˢ, ref ᒐ);
                     Ꮡp.fmtString(v.String(), verb);
-                    return;
+                    goto ᒐdone;
                 }}
                 break;
             }}
 
         }
         handled = false;
-    });
-    return handled;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return handled;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

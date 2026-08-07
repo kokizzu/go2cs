@@ -48,34 +48,39 @@ internal static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
 }
 
 // tryUpdate tries to update conf.
-internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) => func((defer, recover) => {
-    ref var conf = ref Ꮡconf.DerefOrNull();
+internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) {
+    GoFrame ᒐ = default;
+    try {
+        ref var conf = ref Ꮡconf.DerefOrNull();
 
-    Ꮡconf.of(nsswitchConfig.ᏑinitOnce).Do(Ꮡconf.init);
-    // Ensure only one update at a time checks nsswitch.conf
-    if (!conf.tryAcquireSema()) {
-        return;
-    }
-    defer(Ꮡconf.releaseSema);
-    var now = time.Now();
-    if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
-        return;
-    }
-    conf.lastChecked = now;
-    time.Time mtime = default!;
-    {
-        var (fi, err) = os.Stat(nssConfigPath); if (err == default!) {
-            mtime = fi.ModTime();
+        Ꮡconf.of(nsswitchConfig.ᏑinitOnce).Do(Ꮡconf.init);
+        // Ensure only one update at a time checks nsswitch.conf
+        if (!conf.tryAcquireSema()) {
+            return;
         }
+        defer(Ꮡconf.releaseSema, ref ᒐ);
+        var now = time.Now();
+        if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
+            return;
+        }
+        conf.lastChecked = now;
+        time.Time mtime = default!;
+        {
+            var (fi, err) = os.Stat(nssConfigPath); if (err == default!) {
+                mtime = fi.ModTime();
+            }
+        }
+        if (mtime.Equal((~conf.nssConf).mtime)) {
+            return;
+        }
+        var nssConf = parseNSSConfFile(nssConfigPath);
+        Ꮡconf.of(nsswitchConfig.Ꮡmu).Lock();
+        conf.nssConf = nssConf;
+        Ꮡconf.of(nsswitchConfig.Ꮡmu).Unlock();
     }
-    if (mtime.Equal((~conf.nssConf).mtime)) {
-        return;
-    }
-    var nssConf = parseNSSConfFile(nssConfigPath);
-    Ꮡconf.of(nsswitchConfig.Ꮡmu).Lock();
-    conf.nssConf = nssConf;
-    Ꮡconf.of(nsswitchConfig.Ꮡmu).Unlock();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void acquireSema(this ref nsswitchConfig conf) {
     conf.ch.ᐸꟷ(new EmptyStruct());
@@ -157,21 +162,26 @@ internal static bool standardStatusAction(this nssCriterion c, bool last) {
     return c.action == def;
 }
 
-internal static ж<nssConf> parseNSSConfFile(@string Δfile) => func((defer, recover) => {
-    var (f, err) = open(Δfile);
-    if (err != default!) {
-        return Ꮡ(new nssConf(err: err));
+internal static ж<nssConf> parseNSSConfFile(@string Δfile) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = open(Δfile);
+        if (err != default!) {
+            return Ꮡ(new nssConf(err: err));
+        }
+        var fʗ1 = f;
+        defer(fʗ1.close, ref ᒐ);
+        (var mtime, _, err) = f.stat();
+        if (err != default!) {
+            return Ꮡ(new nssConf(err: err));
+        }
+        var conf = parseNSSConf(f);
+        conf.Value.mtime = mtime;
+        return conf;
     }
-    var fʗ1 = f;
-    defer(fʗ1.close);
-    (var mtime, _, err) = f.stat();
-    if (err != default!) {
-        return Ꮡ(new nssConf(err: err));
-    }
-    var conf = parseNSSConf(f);
-    conf.Value.mtime = mtime;
-    return conf;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string noColonOnLineˢ = "no colon on line"u8;

@@ -83,35 +83,40 @@ public static ж<Template> New(@string name) {
 // templates to the copy but not to the original. Clone can be used to prepare
 // common templates and use them with variant definitions for other templates
 // by adding the variants after the clone is made.
-public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var nt = t.copy(nil);
-    nt.init();
-    if (t.common == nil) {
+        var nt = t.copy(nil);
+        nt.init();
+        if (t.common == nil) {
+            return (nt, default!);
+        }
+        Ꮡt.of(Template.ᏑmuTmpl).RLock();
+        defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock, ref ᒐ);
+        foreach (var (k, v) in t.tmpl) {
+            if (k == t.name) {
+                nt.Value.tmpl[t.name] = nt;
+                continue;
+            }
+            // The associated templates share nt's common structure.
+            var tmpl = v.copy((~nt).common);
+            nt.Value.tmpl[k] = tmpl;
+        }
+        Ꮡt.of(Template.ᏑmuFuncs).RLock();
+        defer(Ꮡt.of(Template.ᏑmuFuncs).RUnlock, ref ᒐ);
+        foreach (var (k, v) in t.parseFuncs) {
+            nt.Value.parseFuncs[k] = v;
+        }
+        foreach (var (k, v) in t.execFuncs) {
+            nt.Value.execFuncs[k] = v;
+        }
         return (nt, default!);
     }
-    Ꮡt.of(Template.ᏑmuTmpl).RLock();
-    defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock);
-    foreach (var (k, v) in t.tmpl) {
-        if (k == t.name) {
-            nt.Value.tmpl[t.name] = nt;
-            continue;
-        }
-        // The associated templates share nt's common structure.
-        var tmpl = v.copy((~nt).common);
-        nt.Value.tmpl[k] = tmpl;
-    }
-    Ꮡt.of(Template.ᏑmuFuncs).RLock();
-    defer(Ꮡt.of(Template.ᏑmuFuncs).RUnlock);
-    foreach (var (k, v) in t.parseFuncs) {
-        nt.Value.parseFuncs[k] = v;
-    }
-    foreach (var (k, v) in t.execFuncs) {
-        nt.Value.execFuncs[k] = v;
-    }
-    return (nt, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // copy returns a shallow copy of t, with common set to the argument.
 [GoRecv] internal static ж<Template> copy(this ref Template t, ж<common> Ꮡc) {
@@ -128,39 +133,49 @@ public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Te
 // it the specified name. If the template has not been defined, this tree becomes
 // its definition. If it has been defined and already has that name, the existing
 // definition is replaced; otherwise a new template is created, defined, and returned.
-public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.init();
-    Ꮡt.of(Template.ᏑmuTmpl).Lock();
-    defer(Ꮡt.of(Template.ᏑmuTmpl).Unlock);
-    var nt = Ꮡt;
-    if (name != t.name) {
-        nt = t.New(name);
+        t.init();
+        Ꮡt.of(Template.ᏑmuTmpl).Lock();
+        defer(Ꮡt.of(Template.ᏑmuTmpl).Unlock, ref ᒐ);
+        var nt = Ꮡt;
+        if (name != t.name) {
+            nt = t.New(name);
+        }
+        // Even if nt == t, we need to install it in the common.tmpl map.
+        if (t.associate(nt, Ꮡtree) || (~nt).Tree == nil) {
+            nt.Value.Tree = Ꮡtree;
+        }
+        return (nt, default!);
     }
-    // Even if nt == t, we need to install it in the common.tmpl map.
-    if (t.associate(nt, Ꮡtree) || (~nt).Tree == nil) {
-        nt.Value.Tree = Ꮡtree;
-    }
-    return (nt, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Templates returns a slice of defined templates associated with t.
-public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func<slice<ж<Template>>>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (t.common == nil) {
-        return default!;
+        if (t.common == nil) {
+            return default!;
+        }
+        // Return a slice so we don't expose the map.
+        Ꮡt.of(Template.ᏑmuTmpl).RLock();
+        defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock, ref ᒐ);
+        var m = new slice<ж<Template>>(0, len(t.tmpl));
+        foreach (var (_, v) in t.tmpl) {
+            m = append(m, v);
+        }
+        return m;
     }
-    // Return a slice so we don't expose the map.
-    Ꮡt.of(Template.ᏑmuTmpl).RLock();
-    defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock);
-    var m = new slice<ж<Template>>(0, len(t.tmpl));
-    foreach (var (_, v) in t.tmpl) {
-        m = append(m, v);
-    }
-    return m;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Delims sets the action delimiters to the specified strings, to be used in
 // subsequent calls to [Template.Parse], [Template.ParseFiles], or [Template.ParseGlob]. Nested template
@@ -182,29 +197,39 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 // type or if the name cannot be used syntactically as a function in a template.
 // It is legal to overwrite elements of the map. The return value is the template,
 // so calls can be chained.
-public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static ж<Template> Funcs(this ж<Template> Ꮡt, FuncMap funcMap) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.init();
-    Ꮡt.of(Template.ᏑmuFuncs).Lock();
-    defer(Ꮡt.of(Template.ᏑmuFuncs).Unlock);
-    addValueFuncs(t.execFuncs, funcMap);
-    addFuncs(t.parseFuncs, funcMap);
-    return Ꮡt;
-});
+        t.init();
+        Ꮡt.of(Template.ᏑmuFuncs).Lock();
+        defer(Ꮡt.of(Template.ᏑmuFuncs).Unlock, ref ᒐ);
+        addValueFuncs(t.execFuncs, funcMap);
+        addFuncs(t.parseFuncs, funcMap);
+        return Ꮡt;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Lookup returns the template with the given name that is associated with t.
 // It returns nil if there is no such template or the template has no definition.
-public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) => func<ж<Template>>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (t.common == nil) {
-        return default!;
+        if (t.common == nil) {
+            return default!;
+        }
+        Ꮡt.of(Template.ᏑmuTmpl).RLock();
+        defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock, ref ᒐ);
+        return t.tmpl[name];
     }
-    Ꮡt.of(Template.ᏑmuTmpl).RLock();
-    defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock);
-    return t.tmpl[name];
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Parse parses text as a template body for t.
 // Named template definitions ({{define ...}} or {{block ...}} statements) in text

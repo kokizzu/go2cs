@@ -49,18 +49,23 @@ public static void TestOnce(ж<Δtesting.T> Ꮡt) {
 
 public static void TestOncePanic(ж<Δtesting.T> Ꮡt) {
     ref var once = ref heap(new Δsync.Once(), out var Ꮡonce);
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r == default!) {
-                    Ꮡt.Fatalf("Once.Do did not panic"u8);
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                {
+                    var r = recover(); if (r == default!) {
+                        Ꮡt.Fatalf("Once.Do did not panic"u8);
+                    }
                 }
-            }
-        });
-        Ꮡonce.Do(() => {
-            throw panic("failed");
-        });
-    })))();
+            }, ref ᒐ);
+            Ꮡonce.Do(() => {
+                throw panic("failed");
+            });
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     Ꮡonce.Do(() => {
         Ꮡt.Fatalf("Once.Do called twice"u8);
     });

@@ -169,49 +169,54 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
 internal static readonly object updateNotGivenˢ = (@string)"-update not given"u8;
 internal static readonly @string exampleTestGoˢ = "example_test.go"u8;
 
-public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void TestUpdateExample(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (!update.Value) {
-        Ꮡt.Skip(updateNotGivenˢ);
-    }
-    var oldStdout = os.Stdout;
-    var oldStdoutʗ1 = oldStdout;
-    defer(() => {
-        os.Stdout = oldStdoutʗ1;
-    });
-    var (r, w, err) = os.Pipe();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var rʗ1 = r;
-    defer(() => rʗ1.Close());
-    var wʗ1 = w;
-    defer(() => wʗ1.Close());
-    var oldStdoutʗ2 = oldStdout;
-    var wʗ2 = w;
-    goǃ(() => {
-        os.Stdout = wʗ2;
-        Example_rand();
-        os.Stdout = oldStdoutʗ2;
-        wʗ2.Close();
-    });
-    (var @out, err) = io.ReadAll(new rand_test_package.os_FileжReader(r));
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// Output:\n"u8);
-    foreach (var (_, line) in strings.Split(((@string)@out), "\n"u8)) {
-        if (line != ""u8) {
-            fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// %s\n"u8, line);
+        if (!update.Value) {
+            Ꮡt.Skip(updateNotGivenˢ);
         }
+        var oldStdout = os.Stdout;
+        var oldStdoutʗ1 = oldStdout;
+        defer(() => {
+            os.Stdout = oldStdoutʗ1;
+        }, ref ᒐ);
+        var (r, w, err) = os.Pipe();
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var rʗ1 = r;
+        defer(() => rʗ1.Close(), ref ᒐ);
+        var wʗ1 = w;
+        defer(() => wʗ1.Close(), ref ᒐ);
+        var oldStdoutʗ2 = oldStdout;
+        var wʗ2 = w;
+        goǃ(() => {
+            os.Stdout = wʗ2;
+            Example_rand();
+            os.Stdout = oldStdoutʗ2;
+            wʗ2.Close();
+        });
+        (var @out, err) = io.ReadAll(new rand_test_package.os_FileжReader(r));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+        fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// Output:\n"u8);
+        foreach (var (_, line) in strings.Split(((@string)@out), "\n"u8)) {
+            if (line != ""u8) {
+                fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// %s\n"u8, line);
+            }
+        }
+        replace(Ꮡt, exampleTestGoˢ, buf.Bytes());
+        // Exit so that Example_rand cannot fail.
+        fmt.Printf("UPDATED; ignore non-zero exit status\n"u8);
+        os.Exit(1);
     }
-    replace(Ꮡt, exampleTestGoˢ, buf.Bytes());
-    // Exit so that Example_rand cannot fail.
-    fmt.Printf("UPDATED; ignore non-zero exit status\n"u8);
-    os.Exit(1);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // replace substitutes the definition text from new into the content of file.
 // The text in new is of the form

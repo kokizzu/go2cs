@@ -26,76 +26,91 @@ internal static slice<@string> data = new @string[]{
 
 // Tests that compressing and then decompressing the given file at the given compression level and dictionary
 // yields equivalent bytes to the original file.
-internal static void testFileLevelDict(ж<testing.T> Ꮡt, @string fn, nint level, @string d) => func((defer, recover) => {
-    // Read the file, as golden output.
-    var (golden, err) = os.Open(fn);
-    if (err != default!) {
-        Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
-        return;
+internal static void testFileLevelDict(ж<testing.T> Ꮡt, @string fn, nint level, @string d) {
+    GoFrame ᒐ = default;
+    try {
+        // Read the file, as golden output.
+        var (golden, err) = os.Open(fn);
+        if (err != default!) {
+            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
+            return;
+        }
+        var goldenʗ1 = golden;
+        defer(() => goldenʗ1.Close(), ref ᒐ);
+        var (b0, err0) = io.ReadAll(new zlib_test_package.os_FileжReader(golden));
+        if (err0 != default!) {
+            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err0);
+            return;
+        }
+        testLevelDict(Ꮡt, fn, b0, level, d);
     }
-    var goldenʗ1 = golden;
-    defer(() => goldenʗ1.Close());
-    var (b0, err0) = io.ReadAll(new zlib_test_package.os_FileжReader(golden));
-    if (err0 != default!) {
-        Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err0);
-        return;
-    }
-    testLevelDict(Ꮡt, fn, b0, level, d);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b0, nint level, @string d) => func((defer, recover) => {
-    // Make dictionary, if given.
-    slice<byte> dict = default!;
-    if (d != ""u8) {
-        dict = slice<byte>(d);
-    }
-    // Push data through a pipe that compresses at the write end, and decompresses at the read end.
-    var (piper, pipew) = io.Pipe();
-    var piperʗ1 = piper;
-    defer(() => piperʗ1.Close());
-    var b0ʗ1 = b0;
-    var dictʗ1 = dict;
-    var pipewʗ1 = pipew;
-    goǃ(() => func((defer, recover) => {
-        var pipewʗ2 = pipewʗ1;
-        defer(() => pipewʗ2.Close());
-        var (zlibw, errΔ1) = NewWriterLevelDict(new zlib_test_package.io_PipeWriterжWriter(pipewʗ1), level, dictʗ1);
-        if (errΔ1 != default!) {
-            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
+internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b0, nint level, @string d) {
+    GoFrame ᒐ = default;
+    try {
+        // Make dictionary, if given.
+        slice<byte> dict = default!;
+        if (d != ""u8) {
+            dict = slice<byte>(d);
+        }
+        // Push data through a pipe that compresses at the write end, and decompresses at the read end.
+        var (piper, pipew) = io.Pipe();
+        var piperʗ1 = piper;
+        defer(() => piperʗ1.Close(), ref ᒐ);
+        var b0ʗ1 = b0;
+        var dictʗ1 = dict;
+        var pipewʗ1 = pipew;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                var pipewʗ2 = pipewʗ1;
+                defer(() => pipewʗ2.Close(), ref ᒐ);
+                var (zlibw, errΔ1) = NewWriterLevelDict(new zlib_test_package.io_PipeWriterжWriter(pipewʗ1), level, dictʗ1);
+                if (errΔ1 != default!) {
+                    Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
+                    return;
+                }
+                var zlibwʗ1 = zlibw;
+                defer(() => zlibwʗ1.Close(), ref ᒐ);
+                (_, errΔ1) = zlibw.Write(b0ʗ1);
+                if (errΔ1 != default!) {
+                    Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
+                    return;
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        var (zlibr, err) = NewReaderDict(new zlib_test_package.io_PipeReaderжReader(piper), dict);
+        if (err != default!) {
+            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
             return;
         }
-        var zlibwʗ1 = zlibw;
-        defer(() => zlibwʗ1.Close());
-        (_, errΔ1) = zlibw.Write(b0ʗ1);
-        if (errΔ1 != default!) {
-            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
+        var zlibrʗ1 = zlibr;
+        defer(() => zlibrʗ1.Close(), ref ᒐ);
+        // Compare the decompressed data.
+        var (b1, err1) = io.ReadAll(zlibr);
+        if (err1 != default!) {
+            Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err1);
             return;
         }
-    }));
-    var (zlibr, err) = NewReaderDict(new zlib_test_package.io_PipeReaderжReader(piper), dict);
-    if (err != default!) {
-        Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
-        return;
-    }
-    var zlibrʗ1 = zlibr;
-    defer(() => zlibrʗ1.Close());
-    // Compare the decompressed data.
-    var (b1, err1) = io.ReadAll(zlibr);
-    if (err1 != default!) {
-        Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err1);
-        return;
-    }
-    if (len(b0) != len(b1)) {
-        Ꮡt.Errorf("%s (level=%d, dict=%q): length mismatch %d versus %d"u8, fn, level, d, len(b0), len(b1));
-        return;
-    }
-    for (nint i = 0; i < len(b0); i++) {
-        if (b0[i] != b1[i]) {
-            Ꮡt.Errorf("%s (level=%d, dict=%q): mismatch at %d, 0x%02x versus 0x%02x\n"u8, fn, level, d, i, b0[i], b1[i]);
+        if (len(b0) != len(b1)) {
+            Ꮡt.Errorf("%s (level=%d, dict=%q): length mismatch %d versus %d"u8, fn, level, d, len(b0), len(b1));
             return;
         }
+        for (nint i = 0; i < len(b0); i++) {
+            if (b0[i] != b1[i]) {
+                Ꮡt.Errorf("%s (level=%d, dict=%q): mismatch at %d, 0x%02x versus 0x%02x\n"u8, fn, level, d, i, b0[i], b1[i]);
+                return;
+            }
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void testFileLevelDictReset(ж<testing.T> Ꮡt, @string fn, nint level, slice<byte> dict) {
     slice<byte> b0 = default!;

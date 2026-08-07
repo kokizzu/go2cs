@@ -21,18 +21,23 @@ internal static bool isNil(this ж<node> Ꮡn) {
     internal ж<node> p;
 }
 
-internal static void @catch(@string what, Action f) => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r != default!){
-                fmt.Printf("%s recovered: %v\n"u8, what, r);
-            } else {
-                fmt.Printf("%s NO PANIC\n"u8, what);
+internal static void @catch(@string what, Action f) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var r = recover(); if (r != default!){
+                    fmt.Printf("%s recovered: %v\n"u8, what, r);
+                } else {
+                    fmt.Printf("%s NO PANIC\n"u8, what);
+                }
             }
-        }
-    });
-    f();
-});
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string methodCallˢ = "method-call"u8;

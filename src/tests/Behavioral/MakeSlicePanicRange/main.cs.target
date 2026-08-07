@@ -6,10 +6,11 @@ partial class main_package {
 
 internal static any /*r*/ tryMake(nint length, nint capacity) {
     any r = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             r = recover();
-        });
+        }, ref ᒐ);
         slice<byte> b = default!;
         if (capacity < 0){
             b = new slice<byte>(length);
@@ -18,7 +19,9 @@ internal static any /*r*/ tryMake(nint length, nint capacity) {
         }
         _ = b;
         r = default!;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return r;
 }
 

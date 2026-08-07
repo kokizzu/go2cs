@@ -116,17 +116,22 @@ internal static ref bool testingForceReadDirLstat => ref ᏑtestingForceReadDirL
 // If an error occurs reading the directory,
 // ReadDir returns the entries it was able to read before the error,
 // along with the error.
-public static (slice<DirEntry>, error) ReadDir(@string name) => func<(slice<DirEntry>, error)>((defer, recover) => {
-    var (f, err) = openDir(name);
-    if (err != default!) {
-        return (default!, err);
+public static (slice<DirEntry>, error) ReadDir(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = openDir(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var dirs, err) = f.ReadDir(-1);
+        slices.SortFunc(dirs, (DirEntry a, DirEntry b) => bytealg.CompareString(a.Name(), b.Name()));
+        return (dirs, err);
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    (var dirs, err) = f.ReadDir(-1);
-    slices.SortFunc(dirs, (DirEntry a, DirEntry b) => bytealg.CompareString(a.Name(), b.Name()));
-    return (dirs, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // CopyFS copies the file system fsys into the directory dir,
 // creating dir if necessary.
@@ -146,47 +151,52 @@ public static (slice<DirEntry>, error) ReadDir(@string name) => func<(slice<DirE
 //
 // Copying stops at and returns the first error encountered.
 public static error CopyFS(@string dir, fs.FS fsys) {
-    return fs.WalkDir(fsys, "."u8, error (@string path, fs.DirEntry d, error err) => func<error>((defer, recover) => {
-        if (err != default!) {
-            return err;
-        }
-        (var fpath, err) = filepathlite.Localize(path);
-        if (err != default!) {
-            return err;
-        }
-        ref var newPath = ref heap<@string>(out var ᏑnewPath);
-        newPath = joinPath(dir, fpath);
-        if (d.IsDir()) {
-            return MkdirAll(newPath, 511);
-        }
-        // TODO(panjf2000): handle symlinks with the help of fs.ReadLinkFS
-        // 		once https://go.dev/issue/49580 is done.
-        //		we also need filepathlite.IsLocal from https://go.dev/cl/564295.
-        if (!d.Type().IsRegular()) {
-            return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "CopyFS"u8, Path: path, Err: ErrInvalid)));
-        }
-        (var r, err) = fsys.Open(path);
-        if (err != default!) {
-            return err;
-        }
-        var rʗ1 = r;
-        defer(() => rʗ1.Close());
-        (var info, err) = r.Stat();
-        if (err != default!) {
-            return err;
-        }
-        (var w, err) = OpenFile(newPath, (nint)((nint)(nint)(O_CREATE | O_EXCL) | O_WRONLY), (fs.FileMode)(438 | (fs.FileMode)(info.Mode() & 511)));
-        if (err != default!) {
-            return err;
-        }
-        {
-            var (_, errΔ1) = Δio.Copy(new FileжWriter(w), new fs_FileᴠReader(r)); if (errΔ1 != default!) {
-                w.Close();
-                return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "Copy"u8, Path: newPath, Err: errΔ1)));
+    return fs.WalkDir(fsys, "."u8, error (@string path, fs.DirEntry d, error err) => {
+        GoFrame ᒐ = default;
+        try {
+            if (err != default!) {
+                return err;
             }
+            (var fpath, err) = filepathlite.Localize(path);
+            if (err != default!) {
+                return err;
+            }
+            ref var newPath = ref heap<@string>(out var ᏑnewPath);
+            newPath = joinPath(dir, fpath);
+            if (d.IsDir()) {
+                return MkdirAll(newPath, 511);
+            }
+            // TODO(panjf2000): handle symlinks with the help of fs.ReadLinkFS
+            // 		once https://go.dev/issue/49580 is done.
+            //		we also need filepathlite.IsLocal from https://go.dev/cl/564295.
+            if (!d.Type().IsRegular()) {
+                return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "CopyFS"u8, Path: path, Err: ErrInvalid)));
+            }
+            (var r, err) = fsys.Open(path);
+            if (err != default!) {
+                return err;
+            }
+            var rʗ1 = r;
+            defer(() => rʗ1.Close(), ref ᒐ);
+            (var info, err) = r.Stat();
+            if (err != default!) {
+                return err;
+            }
+            (var w, err) = OpenFile(newPath, (nint)((nint)(nint)(O_CREATE | O_EXCL) | O_WRONLY), (fs.FileMode)(438 | (fs.FileMode)(info.Mode() & 511)));
+            if (err != default!) {
+                return err;
+            }
+            {
+                var (_, errΔ1) = Δio.Copy(new FileжWriter(w), new fs_FileᴠReader(r)); if (errΔ1 != default!) {
+                    w.Close();
+                    return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "Copy"u8, Path: newPath, Err: errΔ1)));
+                }
+            }
+            return w.Close();
         }
-        return w.Close();
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+        finally { ᒐ.Run(); }
+    });
 }
 
 } // end os_package

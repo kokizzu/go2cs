@@ -259,41 +259,56 @@ internal static void unlockProfiles() {
 // separate name spaces for each package.
 // For compatibility with various tools that read pprof data,
 // profile names should not contain spaces.
-public static ж<Profile> NewProfile(@string name) => func((defer, recover) => {
-    lockProfiles();
-    defer(unlockProfiles);
-    if (name == ""u8) {
-        throw panic("pprof: NewProfile with empty name");
+public static ж<Profile> NewProfile(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        lockProfiles();
+        defer(unlockProfiles, ref ᒐ);
+        if (name == ""u8) {
+            throw panic("pprof: NewProfile with empty name");
+        }
+        if (profiles.m[name] != nil) {
+            throw panic("pprof: NewProfile name already in use: " + name);
+        }
+        var p = Ꮡ(new Profile(
+            name: name,
+            m: new map<any, slice<uintptr>>{}
+        ));
+        profiles.m[name] = p;
+        return p;
     }
-    if (profiles.m[name] != nil) {
-        throw panic("pprof: NewProfile name already in use: " + name);
-    }
-    var p = Ꮡ(new Profile(
-        name: name,
-        m: new map<any, slice<uintptr>>{}
-    ));
-    profiles.m[name] = p;
-    return p;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Lookup returns the profile with the given name, or nil if no such profile exists.
-public static ж<Profile> Lookup(@string name) => func((defer, recover) => {
-    lockProfiles();
-    defer(unlockProfiles);
-    return profiles.m[name];
-});
+public static ж<Profile> Lookup(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        lockProfiles();
+        defer(unlockProfiles, ref ᒐ);
+        return profiles.m[name];
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Profiles returns a slice of all the known profiles, sorted by name.
-public static slice<ж<Profile>> Profiles() => func((defer, recover) => {
-    lockProfiles();
-    defer(unlockProfiles);
-    var all = new slice<ж<Profile>>(0, len(profiles.m));
-    foreach (var (_, p) in profiles.m) {
-        all = append(all, p);
+public static slice<ж<Profile>> Profiles() {
+    GoFrame ᒐ = default;
+    try {
+        lockProfiles();
+        defer(unlockProfiles, ref ᒐ);
+        var all = new slice<ж<Profile>>(0, len(profiles.m));
+        foreach (var (_, p) in profiles.m) {
+            all = append(all, p);
+        }
+        slices.SortFunc(all, (ж<Profile> a, ж<Profile> b) => strings_package.Compare((~a).name, (~b).name));
+        return all;
     }
-    slices.SortFunc(all, (ж<Profile> a, ж<Profile> b) => strings_package.Compare((~a).name, (~b).name));
-    return all;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Name returns this profile's name, which can be passed to [Lookup] to reobtain the profile.
 [GoRecv] public static @string Name(this ref Profile p) {
@@ -301,16 +316,21 @@ public static slice<ж<Profile>> Profiles() => func((defer, recover) => {
 }
 
 // Count returns the number of execution stacks currently in the profile.
-public static nint Count(this ж<Profile> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+public static nint Count(this ж<Profile> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(Profile.Ꮡmu).Lock();
-    defer(Ꮡp.of(Profile.Ꮡmu).Unlock);
-    if (p.count != default!) {
-        return p.count();
+        Ꮡp.of(Profile.Ꮡmu).Lock();
+        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        if (p.count != default!) {
+            return p.count();
+        }
+        return len(p.m);
     }
-    return len(p.m);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Add adds the current execution stack to the profile, associated with value.
 // Add stores value in an internal map, so value must be suitable for use as
@@ -329,39 +349,49 @@ public static nint Count(this ж<Profile> Ꮡp) => func((defer, recover) => {
 //
 // Passing skip=0 begins the stack trace at the call to Add inside rpc.NewClient.
 // Passing skip=1 begins the stack trace at the call to NewClient inside mypkg.Run.
-public static void Add(this ж<Profile> Ꮡp, any value, nint skip) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    if (p.name == ""u8) {
-        throw panic("pprof: use of uninitialized Profile");
+        if (p.name == ""u8) {
+            throw panic("pprof: use of uninitialized Profile");
+        }
+        if (p.write != default!) {
+            throw panic("pprof: Add called on built-in Profile " + p.name);
+        }
+        var stk = new slice<uintptr>(32);
+        nint n = runtime.Callers(skip + 1, stk[..]);
+        stk = stk[..(int)(n)];
+        if (len(stk) == 0) {
+            // The value for skip is too large, and there's no stack trace to record.
+            stk = new uintptr[]{abi.FuncPCABIInternal(lostProfileEvent)}.slice();
+        }
+        Ꮡp.of(Profile.Ꮡmu).Lock();
+        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        if (p.m[value] != default!) {
+            throw panic("pprof: Profile.Add of duplicate value");
+        }
+        p.m[value] = stk;
     }
-    if (p.write != default!) {
-        throw panic("pprof: Add called on built-in Profile " + p.name);
-    }
-    var stk = new slice<uintptr>(32);
-    nint n = runtime.Callers(skip + 1, stk[..]);
-    stk = stk[..(int)(n)];
-    if (len(stk) == 0) {
-        // The value for skip is too large, and there's no stack trace to record.
-        stk = new uintptr[]{abi.FuncPCABIInternal(lostProfileEvent)}.slice();
-    }
-    Ꮡp.of(Profile.Ꮡmu).Lock();
-    defer(Ꮡp.of(Profile.Ꮡmu).Unlock);
-    if (p.m[value] != default!) {
-        throw panic("pprof: Profile.Add of duplicate value");
-    }
-    p.m[value] = stk;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Remove removes the execution stack associated with value from the profile.
 // It is a no-op if the value is not in the profile.
-public static void Remove(this ж<Profile> Ꮡp, any value) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+public static void Remove(this ж<Profile> Ꮡp, any value) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(Profile.Ꮡmu).Lock();
-    defer(Ꮡp.of(Profile.Ꮡmu).Unlock);
-    delete(p.m, value);
-});
+        Ꮡp.of(Profile.Ꮡmu).Lock();
+        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        delete(p.m, value);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // WriteTo writes a pprof-formatted snapshot of the profile to w.
 // If a write to w returns an error, WriteTo returns that error.
@@ -863,31 +893,36 @@ internal static ref cpuᴛ1 cpu => ref Ꮡcpu.Value;
 // not to the one used by Go. To make it work, call [os/signal.Notify]
 // for [syscall.SIGPROF], but note that doing so may break any profiling
 // being done by the main program.
-public static error StartCPUProfile(io.Writer w) => func<error>((defer, recover) => {
-    // The runtime routines allow a variable profiling rate,
-    // but in practice operating systems cannot trigger signals
-    // at more than about 500 Hz, and our processing of the
-    // signal is not cheap (mostly getting the stack trace).
-    // 100 Hz is a reasonable choice: it is frequent enough to
-    // produce useful data, rare enough not to bog down the
-    // system, and a nice round number to make it easy to
-    // convert sample counts to seconds. Instead of requiring
-    // each client to specify the frequency, we hard code it.
-    const nint hz = 100;
-    Ꮡcpu.of(cpuᴛ1.ᏑMutex).Lock();
-    defer(Ꮡcpu.of(cpuᴛ1.ᏑMutex).Unlock);
-    if (cpu.done == default!) {
-        cpu.done = new channel<bool>(0);
+public static error StartCPUProfile(io.Writer w) {
+    GoFrame ᒐ = default;
+    try {
+        // The runtime routines allow a variable profiling rate,
+        // but in practice operating systems cannot trigger signals
+        // at more than about 500 Hz, and our processing of the
+        // signal is not cheap (mostly getting the stack trace).
+        // 100 Hz is a reasonable choice: it is frequent enough to
+        // produce useful data, rare enough not to bog down the
+        // system, and a nice round number to make it easy to
+        // convert sample counts to seconds. Instead of requiring
+        // each client to specify the frequency, we hard code it.
+        const nint hz = 100;
+        Ꮡcpu.of(cpuᴛ1.ᏑMutex).Lock();
+        defer(Ꮡcpu.of(cpuᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        if (cpu.done == default!) {
+            cpu.done = new channel<bool>(0);
+        }
+        // Double-check.
+        if (cpu.profiling) {
+            return fmt.Errorf("cpu profiling already in use"u8);
+        }
+        cpu.profiling = true;
+        runtime.SetCPUProfileRate(hz);
+        goǃ(profileWriter, w);
+        return default!;
     }
-    // Double-check.
-    if (cpu.profiling) {
-        return fmt.Errorf("cpu profiling already in use"u8);
-    }
-    cpu.profiling = true;
-    runtime.SetCPUProfileRate(hz);
-    goǃ(profileWriter, w);
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // readProfile, provided by the runtime, returns the next chunk of
 // binary CPU profiling stack trace data, blocking until data is available.
@@ -923,16 +958,21 @@ internal static void profileWriter(io.Writer w) {
 // StopCPUProfile stops the current CPU profile, if any.
 // StopCPUProfile only returns after all the writes for the
 // profile have completed.
-public static void StopCPUProfile() => func((defer, recover) => {
-    Ꮡcpu.of(cpuᴛ1.ᏑMutex).Lock();
-    defer(Ꮡcpu.of(cpuᴛ1.ᏑMutex).Unlock);
-    if (!cpu.profiling) {
-        return;
+public static void StopCPUProfile() {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡcpu.of(cpuᴛ1.ᏑMutex).Lock();
+        defer(Ꮡcpu.of(cpuᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        if (!cpu.profiling) {
+            return;
+        }
+        cpu.profiling = false;
+        runtime.SetCPUProfileRate(0);
+        ᐸꟷ(cpu.done);
     }
-    cpu.profiling = false;
-    runtime.SetCPUProfileRate(0);
-    ᐸꟷ(cpu.done);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // countBlock returns the number of records in the blocking profile.
 internal static nint countBlock() {

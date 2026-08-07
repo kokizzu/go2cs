@@ -69,13 +69,18 @@ public static void Do(this ж<Once> Ꮡo, Action f) {
     }
 }
 
-internal static void doSlow(this ж<Once> Ꮡo, Action f) => func((defer, recover) => {
-    Ꮡo.of(Once.Ꮡm).Lock();
-    defer(Ꮡo.of(Once.Ꮡm).Unlock);
-    if (Ꮡo.of(Once.Ꮡdone).Load() == 0) {
-        deferǃ(Ꮡo.of(Once.Ꮡdone).Store, (uint32)(1), defer);
-        f();
+internal static void doSlow(this ж<Once> Ꮡo, Action f) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡo.of(Once.Ꮡm).Lock();
+        defer(Ꮡo.of(Once.Ꮡm).Unlock, ref ᒐ);
+        if (Ꮡo.of(Once.Ꮡdone).Load() == 0) {
+            defer(Ꮡo.of(Once.Ꮡdone).Store, (uint32)(1), ref ᒐ);
+            f();
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end sync_package

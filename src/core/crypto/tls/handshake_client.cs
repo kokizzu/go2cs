@@ -267,10 +267,11 @@ internal static readonly @string tlsDowngradeAttemptˢ = "tls: downgrade attempt
 
 internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Context ctx) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         if (c.config == nil) {
             c.config = defaultConfig();
         }
@@ -279,11 +280,11 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
         c.didResume = false;
         (var hello, var keyShareKeys, var ech, err) = Ꮡc.makeClientHello();
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         (var session, var earlySecret, var binderKey, err) = Ꮡc.loadSession(hello);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         if (session != nil) {
             defer(() => {
@@ -300,7 +301,7 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
                         }
                     }
                 }
-            });
+            }, ref ᒐ);
         }
         if (ech != nil) {
             // Split hello into inner and outer
@@ -312,21 +313,21 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
             hello.Value.random = new slice<byte>(32);
             (_, err) = io.ReadFull(c.config.rand(), (~hello).random);
             if (err != default!) {
-                err = errors.New("tls: short read from Rand: "u8 + err.Error()); return;
+                err = errors.New("tls: short read from Rand: "u8 + err.Error()); goto ᒐdone;
             }
             // NOTE: we don't do PSK GREASE, in line with boringssl, it's meant to
             // work around _possibly_ broken middleboxes, but there is little-to-no
             // evidence that this is actually a problem.
             {
                 var errΔ1 = computeAndUpdateOuterECHExtension(hello, (~ech).innerHello, ech, true); if (errΔ1 != default!) {
-                    err = errΔ1; return;
+                    err = errΔ1; goto ᒐdone;
                 }
             }
         }
         c.serverName = hello.Value.serverName;
         {
             var (_, errΔ2) = Ꮡc.writeHandshakeRecord(new clientHelloMsgжhandshakeMessage(hello), default!); if (errΔ2 != default!) {
-                err = errΔ2; return;
+                err = errΔ2; goto ᒐdone;
             }
         }
         if ((~hello).earlyData) {
@@ -334,7 +335,7 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
             var transcript = (~suite).hash.New();
             {
                 var errΔ3 = transcriptMsg(new clientHelloMsgжhandshakeMessage(hello), new hash_HashᴠtranscriptHash(transcript)); if (errΔ3 != default!) {
-                    err = errΔ3; return;
+                    err = errΔ3; goto ᒐdone;
                 }
             }
             var earlyTrafficSecret = suite.deriveSecret(earlySecret, clientEarlyTrafficLabel, transcript);
@@ -343,16 +344,16 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
         // serverHelloMsg is not included in the transcript
         (var msg, err) = Ꮡc.readHandshake(default!);
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         var (serverHello, ok) = msg._<ж<serverHelloMsg>>(ᐧ);
         if (!ok) {
             Ꮡc.sendAlert(alertUnexpectedMessage);
-            err = unexpectedMessageError(serverHello.OrTypedNil(), msg); return;
+            err = unexpectedMessageError(serverHello.OrTypedNil(), msg); goto ᒐdone;
         }
         {
             var errΔ4 = Ꮡc.pickTLSVersion(serverHello); if (errΔ4 != default!) {
-                err = errΔ4; return;
+                err = errΔ4; goto ᒐdone;
             }
         }
         // If we are negotiating a protocol version that's lower than what we
@@ -363,7 +364,7 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
         var tls11Downgrade = ((sstring)((~serverHello).random[24..])) == downgradeCanaryTLS11;
         if (maxVers == VersionTLS13 && c.vers <= VersionTLS12 && (tls12Downgrade || tls11Downgrade) || maxVers == VersionTLS12 && c.vers <= VersionTLS11 && tls11Downgrade) {
             Ꮡc.sendAlert(alertIllegalParameter);
-            err = errors.New(tlsDowngradeAttemptˢ); return;
+            err = errors.New(tlsDowngradeAttemptˢ); goto ᒐdone;
         }
         if (c.vers == VersionTLS13) {
             var hsΔ1 = Ꮡ(new clientHandshakeStateTLS13(
@@ -377,7 +378,7 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
                 binderKey: binderKey,
                 echContext: ech
             ));
-            err = hsΔ1.handshake(); return;
+            err = hsΔ1.handshake(); goto ᒐdone;
         }
         var hs = Ꮡ(new clientHandshakeState(
             c: Ꮡc,
@@ -387,8 +388,10 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
             session: session
         ));
         err = hs.handshake();
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 internal static (ж<SessionState> session, slice<byte> earlySecret, slice<byte> binderKey, error err) loadSession(this ж<Conn> Ꮡc, ж<clientHelloMsg> Ꮡhello) {

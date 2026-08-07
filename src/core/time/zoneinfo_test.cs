@@ -24,22 +24,27 @@ partial class time_test_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string asiaJerusalemˢ = "Asia/Jerusalem"u8;
 
-public static void TestEnvVarUsage(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void TestEnvVarUsage(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    time_internal_test_package.ResetZoneinfoForTesting();
-    @string testZoneinfo = "foo.zip"u8;
-    @string env = "ZONEINFO"u8;
-    Ꮡt.Setenv(env, testZoneinfo);
-    // Result isn't important, we're testing the side effect of this command
-    Δtime.LoadLocation(asiaJerusalemˢ);
-    defer(time_internal_test_package.ResetZoneinfoForTesting);
-    {
-        var zoneinfo = time_internal_test_package.ZoneinfoForTesting(); if (testZoneinfo != zoneinfo.Value) {
-            Ꮡt.Errorf("zoneinfo does not match env variable: got %q want %q"u8, zoneinfo.Value, testZoneinfo);
+        time_internal_test_package.ResetZoneinfoForTesting();
+        @string testZoneinfo = "foo.zip"u8;
+        @string env = "ZONEINFO"u8;
+        Ꮡt.Setenv(env, testZoneinfo);
+        // Result isn't important, we're testing the side effect of this command
+        Δtime.LoadLocation(asiaJerusalemˢ);
+        defer(time_internal_test_package.ResetZoneinfoForTesting, ref ᒐ);
+        {
+            var zoneinfo = time_internal_test_package.ZoneinfoForTesting(); if (testZoneinfo != zoneinfo.Value) {
+                Ꮡt.Errorf("zoneinfo does not match env variable: got %q want %q"u8, zoneinfo.Value, testZoneinfo);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string asiaSomethingNotExistˢ = "Asia/SomethingNotExist"u8;
@@ -72,15 +77,20 @@ public static void TestLoadLocationValidatesNames(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-public static void TestVersion3(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    var (_, err) = Δtime.LoadLocation(asiaJerusalemˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
+public static void TestVersion3(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        var (_, err) = Δtime.LoadLocation(asiaJerusalemˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType("dyn")] partial struct TestFirstZone_type {
     internal @string zone;
@@ -92,40 +102,45 @@ public static void TestVersion3(ж<Δtesting.T> Ꮡt) => func((defer, recover) =
 // Test that we get the correct results for times before the first
 // transition time. To do this we explicitly check early dates in a
 // couple of specific timezones.
-public static void TestFirstZone(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    @string format = "Mon, 02 Jan 2006 15:04:05 -0700 (MST)"u8;
-    slice<TestFirstZone_type> tests = new TestFirstZone_type[]{
-        new(
-            "PST8PDT"u8,
-            -1633269601,
-            "Sun, 31 Mar 1918 01:59:59 -0800 (PST)"u8,
-            "Sun, 31 Mar 1918 03:00:00 -0700 (PDT)"u8
-        ),
-        new(
-            "Pacific/Fakaofo"u8,
-            1325242799,
-            "Thu, 29 Dec 2011 23:59:59 -1100 (-11)"u8,
-            "Sat, 31 Dec 2011 00:00:00 +1300 (+13)"u8
-        )
-    }.slice();
-    foreach (var (_, test) in tests) {
-        var (z, err) = Δtime.LoadLocation(test.zone);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        @string s = Δtime.Unix(test.unix, 0).In(z).Format(format);
-        if (s != test.want1) {
-            Ꮡt.Errorf("for %s %d got %q want %q"u8, test.zone, test.unix, s, test.want1);
-        }
-        s = Δtime.Unix(test.unix + 1, 0).In(z).Format(format);
-        if (s != test.want2) {
-            Ꮡt.Errorf("for %s %d got %q want %q"u8, test.zone, test.unix, s, test.want2);
+public static void TestFirstZone(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        @string format = "Mon, 02 Jan 2006 15:04:05 -0700 (MST)"u8;
+        slice<TestFirstZone_type> tests = new TestFirstZone_type[]{
+            new(
+                "PST8PDT"u8,
+                -1633269601,
+                "Sun, 31 Mar 1918 01:59:59 -0800 (PST)"u8,
+                "Sun, 31 Mar 1918 03:00:00 -0700 (PDT)"u8
+            ),
+            new(
+                "Pacific/Fakaofo"u8,
+                1325242799,
+                "Thu, 29 Dec 2011 23:59:59 -1100 (-11)"u8,
+                "Sat, 31 Dec 2011 00:00:00 +1300 (+13)"u8
+            )
+        }.slice();
+        foreach (var (_, test) in tests) {
+            var (z, err) = Δtime.LoadLocation(test.zone);
+            if (err != default!) {
+                Ꮡt.Fatal(err);
+            }
+            @string s = Δtime.Unix(test.unix, 0).In(z).Format(format);
+            if (s != test.want1) {
+                Ꮡt.Errorf("for %s %d got %q want %q"u8, test.zone, test.unix, s, test.want1);
+            }
+            s = Δtime.Unix(test.unix + 1, 0).In(z).Format(format);
+            if (s != test.want2) {
+                Ꮡt.Errorf("for %s %d got %q want %q"u8, test.zone, test.unix, s, test.want2);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestLocationNames(ж<Δtesting.T> Ꮡt) {
     if (Δtime.ΔLocal.String() != "Local"u8) {
@@ -139,60 +154,70 @@ public static void TestLocationNames(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object failedToLocateTzinfoˢ = (@string)"Failed to locate tzinfo source in GOROOT."u8;
 
-public static void TestLoadLocationFromTZData(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void TestLoadLocationFromTZData(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    @string locationName = "Asia/Jerusalem"u8;
-    var (reference, err) = Δtime.LoadLocation(locationName);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        @string locationName = "Asia/Jerusalem"u8;
+        var (reference, err) = Δtime.LoadLocation(locationName);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var (gorootSource, ok) = time_internal_test_package.GorootZoneSource(testenv.GOROOT(new time_test_package.testing_TжTB(Ꮡt)));
+        if (!ok) {
+            Ꮡt.Fatal(failedToLocateTzinfoˢ);
+        }
+        (var tzinfo, err) = time_internal_test_package.LoadTzinfo(locationName, gorootSource);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        (var sample, err) = Δtime.LoadLocationFromTZData(locationName, tzinfo);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (!reflect.DeepEqual(reference.OrTypedNil(), sample.OrTypedNil())) {
+            Ꮡt.Errorf("return values of LoadLocationFromTZData and LoadLocation don't match"u8);
+        }
     }
-    var (gorootSource, ok) = time_internal_test_package.GorootZoneSource(testenv.GOROOT(new time_test_package.testing_TжTB(Ꮡt)));
-    if (!ok) {
-        Ꮡt.Fatal(failedToLocateTzinfoˢ);
-    }
-    (var tzinfo, err) = time_internal_test_package.LoadTzinfo(locationName, gorootSource);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    (var sample, err) = Δtime.LoadLocationFromTZData(locationName, tzinfo);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    if (!reflect.DeepEqual(reference.OrTypedNil(), sample.OrTypedNil())) {
-        Ꮡt.Errorf("return values of LoadLocationFromTZData and LoadLocation don't match"u8);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string estˢ = "EST"u8;
 
 // Issue 30099.
-public static void TestEarlyLocation(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    @string locName = "America/New_York"u8;
-    var (loc, err) = Δtime.LoadLocation(locName);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var d = Δtime.Date(1900, Δtime.January, 1, 0, 0, 0, 0, loc);
-    var (tzName, tzOffset) = d.Zone();
-    {
-        @string want = estˢ; if (tzName != want) {
-            Ꮡt.Errorf("Zone name == %s, want %s"u8, tzName, want);
+public static void TestEarlyLocation(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        @string locName = "America/New_York"u8;
+        var (loc, err) = Δtime.LoadLocation(locName);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var d = Δtime.Date(1900, Δtime.January, 1, 0, 0, 0, 0, loc);
+        var (tzName, tzOffset) = d.Zone();
+        {
+            @string want = estˢ; if (tzName != want) {
+                Ꮡt.Errorf("Zone name == %s, want %s"u8, tzName, want);
+            }
+        }
+        {
+            nint want = -18000; if (tzOffset != want) {
+                Ꮡt.Errorf("Zone offset == %d, want %d"u8, tzOffset, want);
+            }
         }
     }
-    {
-        nint want = -18000; if (tzOffset != want) {
-            Ꮡt.Errorf("Zone offset == %d, want %d"u8, tzOffset, want);
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string abcˢ = "abc"u8;

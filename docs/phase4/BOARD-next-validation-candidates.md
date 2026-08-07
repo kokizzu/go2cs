@@ -699,7 +699,51 @@ not be deleted from the container — the session's git proxy rejects ref-deleti
 MCP surface here has no delete-branch tool. One `git push origin --delete claude/go2cs-issue-32-5osg4q`
 locally, or the button on GitHub.
 
-## COMMISSIONED — the GoFrame arc (user rulings 2026-08-05), and two tasks it queues
+## LANDED — the GoFrame arc (2026-08-05), and what it leaves behind
+
+The frame is built. `DESIGN-closure-emission.md` §4 is now the AS-BUILT record; §4.10 carries the
+findings and §4.11 the bang verdict. Landed in five gated checkpoints along §4.8's path — golib frame,
+declarations with unnamed results, recover + named results, function literals, then the rename and the
+deletion of the machinery it replaced — each with its own full behavioral gate.
+
+**Verdicts and findings, in one place:**
+
+- **The bang is DROPPED.** `deferǃ` is `defer`. `defer` is a Go *keyword*, so no Go identifier can ever
+  be spelled that way; it is not a C# keyword; and the one binder that ever put the bare name in scope
+  was the execution context's lambda parameter, which is gone. `goǃ` and `makeǃ` keep theirs, for
+  reasons of their own (`go` is the root namespace; `make` is a predeclared Go identifier a package may
+  shadow). Full analysis: design §4.11.
+- **§4.5 (open-coding the static defers) is NOT in the arc**, and the measurement says why. A defer whose
+  target is a cached static method group already costs **0 B** under the frame; the residue §4.5 would
+  remove is entirely the display class + delegate of a defer that genuinely CLOSES OVER something —
+  measured at 96 B for one and 192 B for two. There is therefore no cheap subset to take: the eligible
+  shapes are exactly the ones needing argument and receiver temps hoisted OUT of the `try` (a `finally`
+  cannot see a variable declared inside it), which is §4.5's own fiddly half. It is a separately
+  reviewable increment worth ~192 B on a two-capturing-defer function and nothing on the rest.
+- **A shape §4 did not anticipate: a DEFERRED literal that defers on its own account.** Go scopes that
+  inner defer to the literal; the old emission registered it into the enclosing function instead. Zero
+  instances in the corpus, so it was a latent hole rather than a live defect, and the frame closed it.
+- **Two C# scoping facts, verified by compiling rather than reasoning.** A lambda or local function MAY
+  declare a local spelled like one in the enclosing method (the pre-C#-8 CS0136 rule does not fire), so
+  every frame reads under the same name; a LABEL may not (CS0158), so the named-result exit label alone
+  is depth-numbered.
+- **`bodyWrappedInDeferContext` is now OPTIONAL and deliberately kept.** It forced the direct-`ж`
+  receiver because a `ref T` receiver cannot be referenced from inside a lambda; an inline body removes
+  that constraint. Kept because the direct-`ж` form is also the alloc-free, race-free one and changing
+  receiver shapes corpus-wide is its own change. **Open simplification.**
+- **Pre-existing, NOT this arc: the auto-sibling visit panic.** A `-stdlib` reconvert reports
+  `visit file error: … nil pointer dereference` for `internal/godebug/godebug.go` and
+  `internal/concurrent/hashtriemap.go`, skipping their `.cs.auto` REVIEW siblings only (production
+  emission and package-wide state are unaffected — it is a separate re-visit pass). A/B'd against the
+  master converter: identical. Belongs with CleanupBacklog item 18, which already owns `.cs.auto`
+  staleness.
+
+**The measured result.** `os.File.WriteString` — the row that named the 440 B term in the first place —
+goes **2,736 → 2,368 B/call**, the same 368 B coming off `os.File.Write` and off the wrapper band that
+contains `internal/poll.FD.Write`'s two defers. Per-shape: the execution context cost 160 B with no
+defers and 248 B with one or two non-capturing ones; the frame costs **0**.
+
+## The arc's original commission (user rulings 2026-08-05), and two tasks it queues
 
 **The closure-emission frame design is APPROVED** ([`DESIGN-closure-emission.md`](DESIGN-closure-emission.md)
 §4–§5): the execution-context lambda gives way to the `ref struct` frame with the body emitted inline in

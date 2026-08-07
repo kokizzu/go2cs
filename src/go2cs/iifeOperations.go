@@ -567,14 +567,3 @@ func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, de
 
 	return decls.String()
 }
-
-// wrapIIFEDeferContext wraps an IIFE lambda body in a `func((defer, recover) => …)` execution
-// context when the literal uses defer/recover, so it runs with its own scope. Both parameters
-// are named (the func() built-in takes both); unused-parameter warnings are suppressed.
-func wrapIIFEFuncContext(body string, hasDefer, hasRecover bool) string {
-	if !hasDefer && !hasRecover {
-		return body
-	}
-
-	return fmt.Sprintf("func((defer, recover) => %s)", body)
-}

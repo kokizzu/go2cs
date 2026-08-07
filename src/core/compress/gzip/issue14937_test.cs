@@ -73,24 +73,29 @@ public static void TestGZIPFilesHaveZeroMTimes(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static void checkZeroMTime(ж<testing.T> Ꮡt, @string path) => func((defer, recover) => {
-    var (f, err) = os.Open(path);
-    if (err != default!) {
-        Ꮡt.Error(err);
-        return;
+internal static void checkZeroMTime(ж<testing.T> Ꮡt, @string path) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(path);
+        if (err != default!) {
+            Ꮡt.Error(err);
+            return;
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var gz, err) = NewReader(new gzip_test_package.os_FileжReader(f));
+        if (err != default!) {
+            Ꮡt.Errorf("cannot read gzip file %s: %s"u8, path, err);
+            return;
+        }
+        var gzʗ1 = gz;
+        defer(() => gzʗ1.Close(), ref ᒐ);
+        if (!(~gz).ModTime.IsZero()) {
+            Ꮡt.Errorf("gzip file %s has non-zero mtime (%s)"u8, path, (~gz).ModTime);
+        }
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    (var gz, err) = NewReader(new gzip_test_package.os_FileжReader(f));
-    if (err != default!) {
-        Ꮡt.Errorf("cannot read gzip file %s: %s"u8, path, err);
-        return;
-    }
-    var gzʗ1 = gz;
-    defer(() => gzʗ1.Close());
-    if (!(~gz).ModTime.IsZero()) {
-        Ꮡt.Errorf("gzip file %s has non-zero mtime (%s)"u8, path, (~gz).ModTime);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end gzip_internal_test_package

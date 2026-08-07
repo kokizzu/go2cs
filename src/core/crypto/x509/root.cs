@@ -31,21 +31,31 @@ internal static error systemRootsErr;
 
 internal static bool fallbacksSet;
 
-internal static ж<CertPool> systemRootsPool() => func((defer, recover) => {
-    Ꮡonce.Do(initSystemRoots);
-    ᏑsystemRootsMu.RLock();
-    defer(ᏑsystemRootsMu.RUnlock);
-    return systemRoots;
-});
-
-internal static void initSystemRoots() => func((defer, recover) => {
-    ᏑsystemRootsMu.Lock();
-    defer(ᏑsystemRootsMu.Unlock);
-    (systemRoots, systemRootsErr) = loadSystemRoots();
-    if (systemRootsErr != default!) {
-        systemRoots = default!;
+internal static ж<CertPool> systemRootsPool() {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡonce.Do(initSystemRoots);
+        ᏑsystemRootsMu.RLock();
+        defer(ᏑsystemRootsMu.RUnlock, ref ᒐ);
+        return systemRoots;
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
+internal static void initSystemRoots() {
+    GoFrame ᒐ = default;
+    try {
+        ᏑsystemRootsMu.Lock();
+        defer(ᏑsystemRootsMu.Unlock, ref ᒐ);
+        (systemRoots, systemRootsErr) = loadSystemRoots();
+        if (systemRootsErr != default!) {
+            systemRoots = default!;
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<godebug.Setting> x509usefallbackroots = godebug.New("x509usefallbackroots"u8);
 
@@ -62,28 +72,33 @@ internal static ж<godebug.Setting> x509usefallbackroots = godebug.New("x509usef
 // on Windows and macOS this will disable usage of the platform verification
 // APIs and cause the pure Go verifier to be used). Setting
 // x509usefallbackroots=1 without calling SetFallbackRoots has no effect.
-public static void SetFallbackRoots(ж<CertPool> Ꮡroots) => func((defer, recover) => {
-    ref var roots = ref Ꮡroots.DerefOrNull();
+public static void SetFallbackRoots(ж<CertPool> Ꮡroots) {
+    GoFrame ᒐ = default;
+    try {
+        ref var roots = ref Ꮡroots.DerefOrNull();
 
-    if (Ꮡroots == nil) {
-        throw panic("roots must be non-nil");
-    }
-    // trigger initSystemRoots if it hasn't already been called before we
-    // take the lock
-    _ = systemRootsPool();
-    ᏑsystemRootsMu.Lock();
-    defer(ᏑsystemRootsMu.Unlock);
-    if (fallbacksSet) {
-        throw panic("SetFallbackRoots has already been called");
-    }
-    fallbacksSet = true;
-    if (systemRoots != nil && (systemRoots.len() > 0 || (~systemRoots).systemPool)) {
-        if (x509usefallbackroots.Value() != "1"u8) {
-            return;
+        if (Ꮡroots == nil) {
+            throw panic("roots must be non-nil");
         }
-        x509usefallbackroots.IncNonDefault();
+        // trigger initSystemRoots if it hasn't already been called before we
+        // take the lock
+        _ = systemRootsPool();
+        ᏑsystemRootsMu.Lock();
+        defer(ᏑsystemRootsMu.Unlock, ref ᒐ);
+        if (fallbacksSet) {
+            throw panic("SetFallbackRoots has already been called");
+        }
+        fallbacksSet = true;
+        if (systemRoots != nil && (systemRoots.len() > 0 || (~systemRoots).systemPool)) {
+            if (x509usefallbackroots.Value() != "1"u8) {
+                return;
+            }
+            x509usefallbackroots.IncNonDefault();
+        }
+        (systemRoots, systemRootsErr) = (Ꮡroots, default!);
     }
-    (systemRoots, systemRootsErr) = (Ꮡroots, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end x509_package

@@ -119,35 +119,45 @@ partial class trace_package {
 // Start enables tracing for the current program.
 // While tracing, the trace will be buffered and written to w.
 // Start returns an error if tracing is already enabled.
-public static error Start(io.Writer w) => func<error>((defer, recover) => {
-    Ꮡtracing.of(tracingᴛ1.ᏑMutex).Lock();
-    defer(Ꮡtracing.of(tracingᴛ1.ᏑMutex).Unlock);
-    {
-        var err = runtime.StartTrace(); if (err != default!) {
-            return err;
-        }
-    }
-    goǃ(() => {
-        while (ᐧ) {
-            var data = runtime.ReadTrace();
-            if (data == default!) {
-                break;
+public static error Start(io.Writer w) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡtracing.of(tracingᴛ1.ᏑMutex).Lock();
+        defer(Ꮡtracing.of(tracingᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        {
+            var err = runtime.StartTrace(); if (err != default!) {
+                return err;
             }
-            w.Write(data);
         }
-    });
-    Ꮡtracing.of(tracingᴛ1.Ꮡenabled).Store(true);
-    return default!;
-});
+        goǃ(() => {
+            while (ᐧ) {
+                var data = runtime.ReadTrace();
+                if (data == default!) {
+                    break;
+                }
+                w.Write(data);
+            }
+        });
+        Ꮡtracing.of(tracingᴛ1.Ꮡenabled).Store(true);
+        return default!;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Stop stops the current tracing, if any.
 // Stop only returns after all the writes for the trace have completed.
-public static void Stop() => func((defer, recover) => {
-    Ꮡtracing.of(tracingᴛ1.ᏑMutex).Lock();
-    defer(Ꮡtracing.of(tracingᴛ1.ᏑMutex).Unlock);
-    Ꮡtracing.of(tracingᴛ1.Ꮡenabled).Store(false);
-    runtime.StopTrace();
-});
+public static void Stop() {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡtracing.of(tracingᴛ1.ᏑMutex).Lock();
+        defer(Ꮡtracing.of(tracingᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        Ꮡtracing.of(tracingᴛ1.Ꮡenabled).Store(false);
+        runtime.StopTrace();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 
 [GoType("dyn")] partial struct tracingᴛ1 {

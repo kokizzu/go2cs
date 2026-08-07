@@ -51,21 +51,26 @@ internal static void Main() {
     Ꮡb.write(", "u8);
     Ꮡb.write(worldˢ);
     fmt.Println(b.String());
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(caughtˢ, r);
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(caughtˢ, r);
+                    }
                 }
-            }
-        });
-        ref var src = ref heap(new builder(), out var Ꮡsrc);
-        Ꮡsrc.write(seedˢ);
-        ref var cp = ref heap<builder>(out var Ꮡcp);
-        cp = src;
-        Ꮡcp.write(moreˢ);
-        fmt.Println(unreachableˢ);
-    })))();
+            }, ref ᒐ);
+            ref var src = ref heap(new builder(), out var Ꮡsrc);
+            Ꮡsrc.write(seedˢ);
+            ref var cp = ref heap<builder>(out var Ꮡcp);
+            cp = src;
+            Ꮡcp.write(moreˢ);
+            fmt.Println(unreachableˢ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
 }
 
 } // end main_package

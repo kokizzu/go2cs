@@ -27,7 +27,7 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 
 	// A func-literal ARGUMENT of the deferred call — `defer once.Do(func() { stop() })`
 	// (x/net/nettest conntest.go) — can capture enclosing-scope locals; the capture-snapshot
-	// declarations (`var stopʗ1 = stop;`) must hoist BEFORE the `deferǃ(...)` call, never emit
+	// declarations (`var stopʗ1 = stop;`) must hoist BEFORE the `defer(...)` call, never emit
 	// inline in its argument list (an invalid statement mid-expression → CS1001/CS1002/CS1003/
 	// CS1026). Provide the hoist sink UNCONDITIONALLY so convFuncLit routes any argument
 	// literal's captures here (threaded via convCallExpr → convExprList → the arg's
@@ -57,8 +57,8 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 
 		// A BUILTIN callee (`defer close(returned)`, net dial) is generic with `in`
 		// parameters — its method group neither infers nor converts to Action<T>
-		// (CS1503). Render the temp-param lambda (`deferǃ(ᴛ1 => close(ᴛ1), returned,
-		// defer)`) so the eager-argument form still evaluates the argument at defer time.
+		// (CS1503). Render the temp-param lambda (`defer(ᴛ1 => close(ᴛ1), returned,
+		// ref ᒐ)`) so the eager-argument form still evaluates the argument at defer time.
 		if calleeIdent, ok := deferStmt.Call.Fun.(*ast.Ident); ok && paramCount > 0 {
 			if _, isBuiltin := v.info.ObjectOf(calleeIdent).(*types.Builtin); isBuiltin {
 				renderLambdaParams = true
@@ -91,6 +91,12 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		result.WriteString(v.newline)
 		result.WriteString(v.indent(v.indentLevel))
 	}
+
+	// Every registration names the frame it registers into — this function's own GoFrame local,
+	// passed by reference because a ref struct cannot be captured (see goFrameOperations.go). The
+	// arity-0 rung is one of the ladder like every other; the name carries no bang because there is
+	// no longer a `defer`-named delegate parameter to disambiguate from.
+	deferTarget := fmt.Sprintf(", ref %s);", v.goFrameName())
 
 	if paramCount == 0 {
 		result.WriteString("defer(")
@@ -140,9 +146,9 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		}
 
 		result.WriteString(callExpr)
-		result.WriteString(");")
+		result.WriteString(deferTarget)
 	} else {
-		result.WriteString("defer\u01C3(")
+		result.WriteString("defer(")
 
 		if renderLambdaParams {
 			if paramCount > 1 {
@@ -173,7 +179,7 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		result.WriteString(callExpr)
 		result.WriteString(", ")
 		result.WriteString(strings.Join(lambdaContext.callArgs, ", "))
-		result.WriteString(", defer);")
+		result.WriteString(deferTarget)
 	}
 
 	v.outputBuilder.WriteString(result.String())

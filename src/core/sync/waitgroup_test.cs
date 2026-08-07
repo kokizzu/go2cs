@@ -59,19 +59,24 @@ public static void TestWaitGroup(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object shouldPanicˢ = (@string)"Should panic"u8;
 
-public static void TestWaitGroupMisuse(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        var err = recover();
-        if (!AreEqual(err, (@string)("sync: negative WaitGroup counter"))) {
-            Ꮡt.Fatalf("Unexpected panic: %#v"u8, err);
-        }
-    });
-    var wg = Ꮡ(new WaitGroup(nil));
-    wg.Add(1);
-    wg.Done();
-    wg.Done();
-    Ꮡt.Fatal(shouldPanicˢ);
-});
+public static void TestWaitGroupMisuse(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            var err = recover();
+            if (!AreEqual(err, (@string)("sync: negative WaitGroup counter"))) {
+                Ꮡt.Fatalf("Unexpected panic: %#v"u8, err);
+            }
+        }, ref ᒐ);
+        var wg = Ꮡ(new WaitGroup(nil));
+        wg.Add(1);
+        wg.Done();
+        wg.Done();
+        Ꮡt.Fatal(shouldPanicˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object spuriousWakeupFromWaitˢ = (@string)"Spurious wakeup from Wait"u8;

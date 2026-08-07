@@ -231,7 +231,8 @@ internal static (@string expr, bool ok) splitGoBuild(@string line) {
 internal static (Expr x, error err) parseExpr(@string text) {
     Expr x = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var e = recover(); if (e != default!) {
@@ -244,7 +245,7 @@ internal static (Expr x, error err) parseExpr(@string text) {
                     throw panic(e);
                 }
             }
-        });
+        }, ref ᒐ);
         // unreachable unless parser has a bug
         var p = Ꮡ(new exprParser(s: text));
         x = p.or();
@@ -252,7 +253,9 @@ internal static (Expr x, error err) parseExpr(@string text) {
             throw panic(Ꮡ(new SyntaxError(Offset: (~p).pos, Err: "unexpected token "u8 + (~p).tok)));
         }
         (x, err) = (x, default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (x, err);
 }
 
@@ -309,42 +312,47 @@ internal static readonly @string missingCloseParenˢ = "missing close paren"u8;
 // atom parses a tag or a parenthesized expression.
 // On entry, the next input token HAS been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
-internal static Expr atom(this ж<exprParser> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+internal static Expr atom(this ж<exprParser> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    // first token already in p.tok
-    if (p.tok == "("u8) {
-        ref var pos = ref heap<nint>(out var Ꮡpos);
-        pos = p.pos;
-        defer(() => {
-            {
-                var e = recover(); if (e != default!) {
-                    {
-                        var (eΔ1, ok) = e._<ж<SyntaxError>>(ᐧ); if (ok && (~eΔ1).Err == "unexpected end of expression"u8) {
-                            eΔ1.Value.Err = missingCloseParenˢ;
+        // first token already in p.tok
+        if (p.tok == "("u8) {
+            ref var pos = ref heap<nint>(out var Ꮡpos);
+            pos = p.pos;
+            defer(() => {
+                {
+                    var e = recover(); if (e != default!) {
+                        {
+                            var (eΔ1, ok) = e._<ж<SyntaxError>>(ᐧ); if (ok && (~eΔ1).Err == "unexpected end of expression"u8) {
+                                eΔ1.Value.Err = missingCloseParenˢ;
+                            }
                         }
+                        throw panic(e);
                     }
-                    throw panic(e);
                 }
+            }, ref ᒐ);
+            var x = Ꮡp.or();
+            if (p.tok != ")"u8) {
+                throw panic(Ꮡ(new SyntaxError(Offset: pos, Err: "missing close paren"u8)));
             }
-        });
-        var x = Ꮡp.or();
-        if (p.tok != ")"u8) {
-            throw panic(Ꮡ(new SyntaxError(Offset: pos, Err: "missing close paren"u8)));
+            p.lex();
+            return x;
         }
+        if (!p.isTag) {
+            if (p.tok == ""u8) {
+                throw panic(Ꮡ(new SyntaxError(Offset: p.pos, Err: "unexpected end of expression"u8)));
+            }
+            throw panic(Ꮡ(new SyntaxError(Offset: p.pos, Err: "unexpected token "u8 + p.tok)));
+        }
+        @string tok = p.tok;
         p.lex();
-        return x;
+        return tag(tok);
     }
-    if (!p.isTag) {
-        if (p.tok == ""u8) {
-            throw panic(Ꮡ(new SyntaxError(Offset: p.pos, Err: "unexpected end of expression"u8)));
-        }
-        throw panic(Ꮡ(new SyntaxError(Offset: p.pos, Err: "unexpected token "u8 + p.tok)));
-    }
-    @string tok = p.tok;
-    p.lex();
-    return tag(tok);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // lex finds and consumes the next token in the input stream.
 // On return, p.tok is set to the token text,

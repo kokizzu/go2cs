@@ -468,26 +468,31 @@ public static UntypedInt Escape => /* '\xff' */ 255;
     return len(line.ValueSlot);
 }
 
-internal static void handlePanic(this ж<Writer> Ꮡb, ж<error> Ꮡerr, @string op) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
-    ref var err = ref Ꮡerr.DerefOrNull();
+internal static void handlePanic(this ж<Writer> Ꮡb, ж<error> Ꮡerr, @string op) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
-    {
-        var e = recover(); if (e != default!) {
-            if (op == "Flush"u8) {
-                // If Flush ran into a panic, we still need to reset.
-                b.reset();
-            }
-            {
-                var (nerr, ok) = e._<osError>(ᐧ); if (ok) {
-                    err = nerr.err;
-                    return;
+        {
+            var e = recover(); if (e != default!) {
+                if (op == "Flush"u8) {
+                    // If Flush ran into a panic, we still need to reset.
+                    b.reset();
                 }
+                {
+                    var (nerr, ok) = e._<osError>(ᐧ); if (ok) {
+                        err = nerr.err;
+                        return;
+                    }
+                }
+                throw panic(fmt.Sprintf("tabwriter: panic during %s (%v)"u8, op, e));
             }
-            throw panic(fmt.Sprintf("tabwriter: panic during %s (%v)"u8, op, e));
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Flush should be called after the last call to [Writer.Write] to ensure
 // that any data buffered in the [Writer] is written to output. Any
@@ -504,14 +509,17 @@ private static readonly @string flushˢ = "Flush"u8;
 // don't want to expose.
 internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(Ꮡb.handlePanic, Ꮡerr, flushˢ, defer);
+        ref var err = ref Ꮡerr.ValueSlot;
+        defer(Ꮡb.handlePanic, Ꮡerr, flushˢ, ref ᒐ);
         b.flushNoDefers();
         err = default!;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return Ꮡerr.ValueSlot;
 }
 
@@ -543,11 +551,12 @@ private static readonly @string writeˢ = "Write"u8;
 public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
     nint n = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(Ꮡb.handlePanic, Ꮡerr, writeˢ, defer);
+        ref var err = ref Ꮡerr.ValueSlot;
+        defer(Ꮡb.handlePanic, Ꮡerr, writeˢ, ref ᒐ);
         // split text into cells
         n = 0;
         foreach (var (i, ch) in buf) {
@@ -619,7 +628,9 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
         // append leftover text
         b.append(buf[(int)(n)..]);
         n = len(buf);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (n, Ꮡerr.ValueSlot);
 }
 

@@ -11,21 +11,31 @@ internal static ref atomic.Int32 locked => ref Ꮡlocked.Value;
 internal static ж<atomic.Uint64> ᏑrunGoid = new(default(atomic.Uint64));
 internal static ref atomic.Uint64 runGoid => ref ᏑrunGoid.Value;
 
-internal static int32 lockUnlock(uint64 id) => func((defer, recover) => {
-    while (!Ꮡlocked.CompareAndSwap(0, 1)) {
+internal static int32 lockUnlock(uint64 id) {
+    GoFrame ᒐ = default;
+    try {
+        while (!Ꮡlocked.CompareAndSwap(0, 1)) {
+        }
+        defer(Ꮡlocked.Store, (int32)(0), ref ᒐ);
+        ᏑrunGoid.Store(id);
+        defer(ᏑrunGoid.Store, (uint64)(0), ref ᒐ);
+        return Ꮡlocked.Load();
     }
-    deferǃ(Ꮡlocked.Store, (int32)(0), defer);
-    ᏑrunGoid.Store(id);
-    deferǃ(ᏑrunGoid.Store, (uint64)(0), defer);
-    return Ꮡlocked.Load();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static int32 localAtomicDefer() => func((defer, recover) => {
-    ref var n = ref heap(new atomic.Int32(), out var Ꮡn);
-    Ꮡn.Store(41);
-    deferǃ(Ꮡn.Store, (int32)(0), defer);
-    return Ꮡn.Load();
-});
+internal static int32 localAtomicDefer() {
+    GoFrame ᒐ = default;
+    try {
+        ref var n = ref heap(new atomic.Int32(), out var Ꮡn);
+        Ꮡn.Store(41);
+        defer(Ꮡn.Store, (int32)(0), ref ᒐ);
+        return Ꮡn.Load();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object whileLockedˢ = (@string)"while locked:"u8;

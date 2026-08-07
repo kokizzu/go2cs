@@ -93,3 +93,12 @@ const PackageTestInitHookMethod = "init\u1D1B\u1D1Btests"
 // the same collision-avoidance marker the promoted-accessor rename uses. Arrays keep golib's own
 // `Clone()` — see valueCloneSuffix.
 const ValueCloneMethod = "\u0394Clone"
+
+// GoFrameVar names the GoFrame local that a converted function which defers or recovers
+// declares - the ref struct holding this frame's defer registrations, whose Run() drains
+// them in the emitted finally. It replaces the func((defer, recover) => ...) execution
+// context OBJECT: the body is emitted INLINE inside try/catch/finally, so nothing captures
+// the frame and it costs no allocation. The rest of the emitted frame vocabulary composes
+// from this one symbol (the catch's exception and panic locals, the named-result exit
+// label), so renaming it moves all of them together.
+const GoFrameVar = "\u1490"

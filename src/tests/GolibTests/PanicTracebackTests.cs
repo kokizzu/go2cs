@@ -9,11 +9,11 @@ namespace GolibTests;
 [TestClass]
 public class PanicTracebackTests
 {
-    // A panic does not reach its reporter on the stack it was raised on. GoFunc's finally-based
-    // defer machinery re-raises it (`throw CapturedPanic.Value`) once the deferred sequence has
+    // A panic does not reach its reporter on the stack it was raised on. The frame's finally-based
+    // defer drain re-raises it (`throw CapturedPanic.Value`) once the deferred sequence has
     // declined to recover it, and re-raising a stored instance resets Exception.StackTrace to the
     // re-raise point; a runtime-error panic is synthesized from the .NET exception and was never
-    // thrown at the fault site at all. Left alone, BOTH print `GoFunc.HandleFinally` as the deepest
+    // thrown at the fault site at all. Left alone, BOTH print `GoFrame.Run` as the deepest
     // frame — so every panic in the corpus reads as a defect in the defer machinery, and the fault
     // site is unrecoverable. PanicException.StackTrace prefers the origin snapshot for exactly this
     // reason; these tests pin that it survives each way a panic travels.
@@ -53,19 +53,42 @@ public class PanicTracebackTests
         return null;
     }
 
+    // Runs `body` inside a GoFrame exactly as the converter emits one — the shape a converted Go
+    // function that defers or recovers compiles to.
+    private static void inFrame(Action body, Action deferred = null)
+    {
+        GoFrame frame = default;
+
+        try
+        {
+            if (deferred is not null)
+                defer(deferred, ref frame);
+
+            body();
+        }
+        catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException p))
+        {
+            GoFrame.Capture(p);
+        }
+        finally
+        {
+            frame.Run();
+        }
+    }
+
     [TestMethod]
     public void SynthesizedRuntimeErrorPanicReportsTheFaultSite()
     {
         // A nil dereference inside a deferring function: NullReferenceException is mapped to a Go
         // panic by RuntimeErrorPanic, so the PanicException that escapes was never thrown at the
         // fault — only the mapped-from exception carries those frames.
-        PanicException escaped = escapingPanic(static () => func((defer, recover) => dereferenceNilPointer()));
+        PanicException escaped = escapingPanic(static () => inFrame(dereferenceNilPointer));
 
         StringAssert.Contains(escaped.Message, "nil pointer dereference");
 
         string trace = escaped.StackTrace;
 
-        Assert.IsNotNull(trace, "a panic that escaped a GoFunc must still carry a traceback");
+        Assert.IsNotNull(trace, "a panic that escaped a frame must still carry a traceback");
         StringAssert.Contains(trace, nameof(dereferenceNilPointer),
             "the traceback must name the FAULT site, not just the defer machinery that re-raised it");
     }
@@ -74,17 +97,17 @@ public class PanicTracebackTests
     public void ExplicitPanicReportsTheThrowSiteAfterReRaise()
     {
         // An explicit panic() IS thrown at its site, so its base trace starts out correct — and is
-        // then destroyed by the re-raise in HandleFinally. The origin snapshot is what survives.
-        PanicException escaped = escapingPanic(static () => func((defer, recover) => raiseExplicitPanic()));
+        // then destroyed by the re-raise in GoFrame.Run. The origin snapshot is what survives.
+        PanicException escaped = escapingPanic(static () => inFrame(raiseExplicitPanic));
 
         StringAssert.Contains(escaped.StackTrace, nameof(raiseExplicitPanic),
             "re-raising the stored instance reset the base trace; the origin snapshot must replace it");
     }
 
     [TestMethod]
-    public void RuntimeErrorPanicOutsideAnyGoFuncStillReportsTheFaultSite()
+    public void RuntimeErrorPanicOutsideAnyFrameStillReportsTheFaultSite()
     {
-        // A converted function that never defers is not wrapped in a GoFunc, so NOTHING between the
+        // A converted function that never defers carries no frame, so NOTHING between the
         // fault and the reporter is part of the panic machinery: the NullReferenceException travels
         // raw and is adopted at the reporter's own catch. The synthesized panic is brand new there,
         // so unless the adoption point itself snapshots the origin the report carries no traceback at
@@ -113,11 +136,7 @@ public class PanicTracebackTests
         // reporter, and must not leave the function looking like it faulted.
         object recovered = null;
 
-        func((defer, recover) =>
-        {
-            defer(() => recovered = recover());
-            dereferenceNilPointer();
-        });
+        inFrame(dereferenceNilPointer, () => recovered = recover());
 
         Assert.IsNotNull(recovered, "recover() must observe the mapped runtime-error panic");
         StringAssert.Contains(recovered.ToString(), "nil pointer dereference");
@@ -126,7 +145,7 @@ public class PanicTracebackTests
     [TestMethod]
     public void PanicWithNoOriginSnapshotFallsBackToTheBaseTrace()
     {
-        // A panic raised outside any GoFunc is never caught by the defer machinery, so nothing
+        // A panic raised outside any frame is never caught by the defer machinery, so nothing
         // snapshots an origin. The base trace is intact in that case and must be what is reported —
         // the override adds the origin, it does not replace a good trace with nothing.
         PanicException escaped = escapingPanic(static () => raiseExplicitPanic());

@@ -30,12 +30,13 @@ internal static readonly @string dltˢ = "Dlt"u8;
 internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @string kname, @string stdname, @string dstname) {
     bool matched = default!;
     error err2 = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var (k, err) = registry.OpenKey(zones, kname, registry.READ);
         if (err != default!) {
-            (matched, err2) = (false, err); return;
+            (matched, err2) = (false, err); goto ᒐdone;
         }
-        defer(() => k.Close());
+        defer(() => k.Close(), ref ᒐ);
         @string std = default!;
         @string dlt = default!;
         // Try MUI_Std and MUI_Dlt first, fallback to Std and Dlt if *any* error occurs
@@ -47,24 +48,26 @@ internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @str
             // Fallback to Std and Dlt
             {
                 (std, _, err) = k.GetStringValue(stdˢ); if (err != default!) {
-                    (matched, err2) = (false, err); return;
+                    (matched, err2) = (false, err); goto ᒐdone;
                 }
             }
             {
                 (dlt, _, err) = k.GetStringValue(dltˢ); if (err != default!) {
-                    (matched, err2) = (false, err); return;
+                    (matched, err2) = (false, err); goto ᒐdone;
                 }
             }
         }
         if (std != stdname) {
-            (matched, err2) = (false, default!); return;
+            (matched, err2) = (false, default!); goto ᒐdone;
         }
         if (dlt != dstname && dstname != stdname) {
-            (matched, err2) = (false, default!); return;
+            (matched, err2) = (false, default!); goto ᒐdone;
         }
         (matched, err2) = (true, default!);
-    });
-    return (matched, err2);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (matched, err2);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -72,24 +75,29 @@ internal static readonly @string softwareMicrosoftWindowsˢ = @"SOFTWARE\Microso
 
 // toEnglishName searches the registry for an English name of a time zone
 // whose zone names are stdname and dstname and returns the English name.
-internal static (@string, error) toEnglishName(@string stdname, @string dstname) => func<(@string, error)>((defer, recover) => {
-    var (k, err) = registry.OpenKey(registry.LOCAL_MACHINE, softwareMicrosoftWindowsˢ, (uint32)((uint32)registry.ENUMERATE_SUB_KEYS | (uint32)registry.QUERY_VALUE));
-    if (err != default!) {
-        return ("", err);
-    }
-    defer(() => k.Close());
-    (var names, err) = k.ReadSubKeyNames();
-    if (err != default!) {
-        return ("", err);
-    }
-    foreach (var (_, name) in names) {
-        var (matched, errΔ1) = matchZoneKey(k, name, stdname, dstname);
-        if (errΔ1 == default! && matched) {
-            return (name, default!);
+internal static (@string, error) toEnglishName(@string stdname, @string dstname) {
+    GoFrame ᒐ = default;
+    try {
+        var (k, err) = registry.OpenKey(registry.LOCAL_MACHINE, softwareMicrosoftWindowsˢ, (uint32)((uint32)registry.ENUMERATE_SUB_KEYS | (uint32)registry.QUERY_VALUE));
+        if (err != default!) {
+            return ("", err);
         }
+        defer(() => k.Close(), ref ᒐ);
+        (var names, err) = k.ReadSubKeyNames();
+        if (err != default!) {
+            return ("", err);
+        }
+        foreach (var (_, name) in names) {
+            var (matched, errΔ1) = matchZoneKey(k, name, stdname, dstname);
+            if (errΔ1 == default! && matched) {
+                return (name, default!);
+            }
+        }
+        return ("", errors.New(@"English name for time zone """u8 + stdname + @""" not found in registry"u8));
     }
-    return ("", errors.New(@"English name for time zone """u8 + stdname + @""" not found in registry"u8));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // extractCAPS extracts capital letters from description desc.
 internal static @string extractCAPS(@string desc) {

@@ -129,11 +129,12 @@ func (v *Visitor) constExprContainsUntypedNamedConstRef(expr ast.Expr) bool {
 // every other reference must be the callee of a call. That also subsumes reassignment (`f = …` is a
 // non-call use) and address-taking, so the emitted name can never need to be a first-class value.
 //
-// Deliberately EXCLUDED: a literal that uses defer or recover. Its body is emitted inside a
-// `func((defer, recover) => …)` execution context whose GoFunc frame, display class and per-defer
-// delegates dominate the cost this change removes; converting the outer binding alone would churn
-// the goldens for no measurable win. Making that shape allocation-free is the ref-struct frame
-// design (docs/phase4/DESIGN-closure-emission.md), not this rule.
+// A literal that uses defer or recover was excluded while its body was emitted inside a
+// `func((defer, recover) => …)` execution context, whose GoFunc object, display class and per-defer
+// delegates dominated the cost this rule removes — converting the outer binding alone would have
+// churned goldens for no measurable win. The ref-struct frame (docs/phase4/DESIGN-closure-emission.md
+// §4) made that shape free, so the exclusion is gone: such a literal is a local function whose body
+// declares its own `GoFrame`, which is an ordinary local of one.
 func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format FormattingContext) (*ast.Ident, *ast.FuncLit, bool) {
 	// A local function is a DECLARATION statement: it is only legal in a statement list, never in
 	// the init/post clause of a `for`, or an `if`/`switch` init, which is what !useNewLine marks.
@@ -158,10 +159,6 @@ func (v *Visitor) localFunctionDefine(assignStmt *ast.AssignStmt, format Formatt
 	obj, ok := v.info.Defs[ident].(*types.Var)
 
 	if !ok || obj == nil {
-		return nil, nil, false
-	}
-
-	if hasDefer, hasRecover := v.funcBodyDeferRecover(funcLit.Body); hasDefer || hasRecover {
 		return nil, nil, false
 	}
 
@@ -242,10 +239,29 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	var litHasDefer, litHasRecover, litNamedDefer bool
 	var litNamedNames []string
 
-	if litSig != nil && !context.deferCall {
+	if litSig != nil {
 		litHasDefer, litHasRecover = v.funcBodyDeferRecover(funcLit.Body)
+
+		if context.deferCall {
+			// A DEFERRED literal's `recover()` recovers the ENCLOSING function — that is the whole
+			// point of `defer func(){ recover() }()` — so it gets no recover scope of its own. A
+			// `defer` written INSIDE it is a different matter: Go scopes that to the literal, and
+			// dropping both together registered it into the enclosing function's scope instead, to
+			// run at the wrong time. The frame form is what makes the split expressible, since the
+			// literal can now carry its own frame while recover() keeps resolving statically to the
+			// enclosing panic slot. (The shape occurs nowhere in the converted corpus, so this
+			// closes a latent hole rather than fixing a live defect.)
+			litHasRecover = false
+		}
+
 		litNamedDefer, litNamedNames = v.detectNamedReturnDefer(litSig, litHasDefer, litHasRecover)
 	}
+
+	// Does THIS literal's defer/recover scope emit as a GoFrame? A literal is a lambda (or a local
+	// function), and a ref struct is a perfectly ordinary local of one — it is only CAPTURE that is
+	// forbidden, and an inline body captures nothing. So the same frame the enclosing function gets
+	// works here verbatim, which is also what lifts §3.1's local-function exclusion.
+	useLitFrame := v.litGoFrameEligible(litSig, litHasDefer, litHasRecover, funcLit)
 
 	// A function literal with NAMED results needs their declarations at the top of its block —
 	// Go zero-initializes them and a bare `return` returns them. iter.Pull's
@@ -280,11 +296,31 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	savedInFunction := v.inFunction
 	v.inFunction = true
 
+	// A literal's body is NOT inside the ENCLOSING function's GoFrame, whatever that function emits
+	// as: a `defer` written here belongs to this literal, and a ref struct cannot be captured by a
+	// lambda in any case. It gets a frame of its OWN when it defers or recovers, and that frame is a
+	// nested one — so its names take a depth suffix that keeps them out of the enclosing declaration
+	// space (CS0136). Both the body conversion and the composition of `inner` below name the frame,
+	// so the depth is held across both and restored after — the same save/restore, and for the same
+	// reason, as the named-result mode above (see visitorState's inGoFrame).
+	savedInGoFrame := v.inGoFrame
+	savedGoFrameNamedExit := v.goFrameNamedExit
+	savedOpenGoFrames := v.openGoFrames
+	v.inGoFrame = useLitFrame
+	v.goFrameNamedExit = false
+
+	if useLitFrame {
+		v.openGoFrames++
+	}
+
 	defer func() {
 		v.namedReturnDeferMode = savedNamedReturnDeferMode
 		v.namedReturnNames = savedNamedReturnNames
 		v.currentReturnSignature = savedReturnSignature
 		v.inFunction = savedInFunction
+		v.inGoFrame = savedInGoFrame
+		v.goFrameNamedExit = savedGoFrameNamedExit
+		v.openGoFrames = savedOpenGoFrames
 	}()
 
 	if v.lambdaCapture == nil {
@@ -379,26 +415,13 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	_, parameterSignature = v.convFuncType(funcLit.Type)
 	v.funcLitHeapBoxParamNames = nil
 
-	litVariadicExecRefMode := litSig != nil && litSig.Variadic() && (litHasDefer || litHasRecover)
-	litVariadicExecParamType := ""
-	litVariadicExecParamName := ""
-
-	if litVariadicExecRefMode {
-		param := litSig.Params().At(litSig.Params().Len() - 1)
-		litVariadicExecParamType = v.variadicParamType(param.Type().(*types.Slice).Elem())
-		litVariadicExecParamName = getVariadicParamName(param)
-
-		if context.isIIFE {
-			litVariadicExecParamName = v.iifeParamName(param)
-		}
-	}
-
 	blockStatementContext := DefaultBlockStmtContext()
 	blockStatementContext.format.useNewLine = false
 
 	// In namedReturnDefer mode the literal's body sits inside an extra block + func() wrapper, so
-	// indent it one level deeper.
-	if litNamedDefer {
+	// indent it one level deeper. A frame-form literal nests the same way — its body is the `try`
+	// block inside the lambda's own block.
+	if litNamedDefer || useLitFrame {
 		v.indentLevel++
 	}
 
@@ -420,8 +443,18 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 
 	v.hoistedDecls = savedHoist
 
-	if litNamedDefer {
+	if litNamedDefer || useLitFrame {
 		v.indentLevel--
+	}
+
+	// The prologues below (boxed value params, the variadic slice binding, plain named-result
+	// declarations) are composed AFTER the body visit restored the indent, so under a frame they
+	// need the extra level the frame's 	ry block added — same correction visitFuncDecl applies to
+	// its own block prefix (reindentGoFrameBlock).
+	bodyIndent := v.indentLevel + 1
+
+	if useLitFrame {
+		bodyIndent++
 	}
 
 	// A boxed VALUE parameter (see funcLitHeapBoxParamIdents) arrives under the `ʗp` name; the
@@ -451,10 +484,10 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				}
 
 				if v.options.preferVarDecl {
-					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
 				} else {
 					csTypeName := v.getCSharpTypeName(v.getIdentType(ident))
-					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(bodyIndent), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
 				}
 			}
 
@@ -521,9 +554,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			}
 
 			if v.options.preferVarDecl {
-				prologue = fmt.Sprintf("%s%svar %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+				prologue = fmt.Sprintf("%s%svar %s = %s.%s();", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			} else {
-				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(bodyIndent), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			}
 
 			body = "{" + prologue + strings.TrimPrefix(trimmedBody, "{")
@@ -534,7 +567,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// source); other single-return literals collapse to an expression-bodied lambda. A
 	// namedReturnDefer literal always keeps a block (it returns its named results after the
 	// func() wrapper).
-	if v.firstStatementIsReturn && !context.isIIFE && !litNamedDefer && !litHasNamedResults {
+	if v.firstStatementIsReturn && !context.isIIFE && !litNamedDefer && !litHasNamedResults && !useLitFrame {
 		// Find return statement in string and remove it
 		returnIndex := strings.Index(body, "return ")
 
@@ -572,7 +605,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// Declare plain named results at the top of the literal's block (the litNamedDefer arm
 	// below declares its own, outside the func() wrapper).
 	if litHasNamedResults && !litNamedDefer && strings.HasPrefix(body, "{") {
-		body = "{" + v.namedReturnDeclLines(litSig, v.indentLevel+1, false) + strings.TrimPrefix(body, "{")
+		body = "{" + v.namedReturnDeclLines(litSig, bodyIndent, false) + strings.TrimPrefix(body, "{")
 	}
 
 	// Build the lambda body (what follows `=>`). A function literal that uses defer/recover gets
@@ -583,48 +616,49 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	var inner string
 
 	switch {
-	case litNamedDefer:
-		// `{ T r = default!; func((defer, recover) => <body>); return r; }`
-		// A heap-box-backed named result declares only its box out here (the wrapper lambda
-		// cannot capture a ref local — CS8175); the wrapper re-aliases the value name inside,
-		// and the trailing return reads through the box (`Ꮡe.ValueSlot`).
-		returnNames := v.namedReturnBoxReadNames(litSig, litNamedNames)
-		returnExpr := strings.Join(returnNames, ", ")
+	case useLitFrame:
+		// The frame form, in the literal's own block. A value-returning literal's catch arm ends
+		// with Go's zero results for the same reason a value-returning function's does (see
+		// visitFuncDecl): a recovered panic returns them, and an unrecovered one never gets there.
+		catchReturn := ""
 
-		if len(returnNames) > 1 {
-			returnExpr = "(" + returnExpr + ")"
+		if litSig != nil && litSig.Results() != nil && litSig.Results().Len() > 0 && !litNamedDefer {
+			catchReturn = "return default!;"
 		}
 
-		if aliases := v.namedResultBoxAliasLines(litSig, v.indentLevel+2); aliases != "" && strings.HasPrefix(body, "{") {
-			body = "{" + aliases + strings.TrimPrefix(body, "{")
-		}
+		namedDecls := ""
+		exitAndClose := fmt.Sprintf("%s%s}", v.newline, v.indent(v.indentLevel))
 
-		execHead := "func((defer, recover) =>"
+		if litNamedDefer {
+			// §4.4 in a literal: results declared before the try, mutated by the deferred calls,
+			// read back after the finally through the label the body's exits jump to.
+			namedDecls = v.namedReturnDeclLines(litSig, v.indentLevel+1, true)
 
-		if litVariadicExecRefMode {
-			execHead = fmt.Sprintf("func(ref %s, (ref %s %s, Defer defer, Recover recover) =>", litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName)
-		}
+			returnNames := v.namedReturnBoxReadNames(litSig, litNamedNames)
+			returnExpr := strings.Join(returnNames, ", ")
 
-		inner = fmt.Sprintf("{%s%s%s%s %s);%s%sreturn %s;%s%s}",
-			v.namedReturnDeclLines(litSig, v.indentLevel+1, true),
-			v.newline, v.indent(v.indentLevel+1), execHead, body,
-			v.newline, v.indent(v.indentLevel+1), returnExpr,
-			v.newline, v.indent(v.indentLevel))
-	case litHasDefer || litHasRecover:
-		// A result-RETURNING literal wraps in the VALUE execution context — the void
-		// `func((defer, recover) => …)` cannot return a value (CS8030 ×4, net
-		// lookup_windows' `getaddr := func() ([]IPAddr, error) { defer …; return … }`).
-		if litSig != nil && litSig.Results() != nil && litSig.Results().Len() > 0 && !litHasNamedResults {
-			if litVariadicExecRefMode {
-				inner = fmt.Sprintf("func<%s, %s>(ref %s, (ref %s %s, Defer defer, Recover recover) => %s)", litVariadicExecParamType, v.generateResultSignature(litSig), litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName, body)
-			} else {
-				inner = fmt.Sprintf("func<%s>((defer, recover) => %s)", v.generateResultSignature(litSig), body)
+			if len(returnNames) > 1 {
+				returnExpr = "(" + returnExpr + ")"
 			}
-		} else if litVariadicExecRefMode {
-			inner = fmt.Sprintf("func(ref %s, (ref %s %s, Defer defer, Recover recover) => %s)", litVariadicExecParamName, litVariadicExecParamType, litVariadicExecParamName, body)
-		} else {
-			inner = wrapIIFEFuncContext(body, litHasDefer, litHasRecover)
+
+			exitLabel := ""
+
+			if v.goFrameNamedExit {
+				exitLabel = v.goFrameExitLabel() + ": "
+			}
+
+			if aliases := v.namedResultBoxAliasLines(litSig, v.indentLevel+2); aliases != "" && strings.HasPrefix(body, "{") {
+				body = "{" + aliases + strings.TrimPrefix(body, "{")
+			}
+
+			exitAndClose = fmt.Sprintf("%s%s%sreturn %s;%s%s}", v.newline, v.indent(v.indentLevel+1), exitLabel, returnExpr, v.newline, v.indent(v.indentLevel))
 		}
+
+		inner = fmt.Sprintf("{%s%s%sGoFrame %s = default;%s%stry %s%s%s",
+			namedDecls,
+			v.newline, v.indent(v.indentLevel+1), v.goFrameName(),
+			v.newline, v.indent(v.indentLevel+1), body,
+			v.goFrameTail(v.indentLevel, catchReturn), exitAndClose)
 	default:
 		inner = body
 	}

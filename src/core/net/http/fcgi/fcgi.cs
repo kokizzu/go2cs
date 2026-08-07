@@ -106,17 +106,22 @@ internal static ж<conn> newConn(io.ReadWriteCloser rwc) {
 }
 
 // Close closes the conn if it is not already closed.
-internal static error Close(this ж<conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+internal static error Close(this ж<conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(conn.Ꮡmutex).Lock();
-    defer(Ꮡc.of(conn.Ꮡmutex).Unlock);
-    if (!c.closed) {
-        c.closeErr = c.rwc.Close();
-        c.closed = true;
+        Ꮡc.of(conn.Ꮡmutex).Lock();
+        defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
+        if (!c.closed) {
+            c.closeErr = c.rwc.Close();
+            c.closed = true;
+        }
+        return c.closeErr;
     }
-    return c.closeErr;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] [GoValueClone("buf")] partial struct record {
     internal header h;
@@ -152,31 +157,36 @@ internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
 }
 
 // writeRecord writes and sends a single record.
-internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 reqId, slice<byte> b) => func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 reqId, slice<byte> b) {
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(conn.Ꮡmutex).Lock();
-    defer(Ꮡc.of(conn.Ꮡmutex).Unlock);
-    c.buf.Reset();
-    c.h.init(recType, reqId, len(b));
-    {
-        var errΔ1 = binary.Write(new bytes_BufferжWriter(Ꮡc.of(conn.Ꮡbuf)), binary.BigEndian, c.h); if (errΔ1 != default!) {
-            return errΔ1;
+        Ꮡc.of(conn.Ꮡmutex).Lock();
+        defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
+        c.buf.Reset();
+        c.h.init(recType, reqId, len(b));
+        {
+            var errΔ1 = binary.Write(new bytes_BufferжWriter(Ꮡc.of(conn.Ꮡbuf)), binary.BigEndian, c.h); if (errΔ1 != default!) {
+                return errΔ1;
+            }
         }
-    }
-    {
-        var (_, errΔ2) = c.buf.Write(b); if (errΔ2 != default!) {
-            return errΔ2;
+        {
+            var (_, errΔ2) = c.buf.Write(b); if (errΔ2 != default!) {
+                return errΔ2;
+            }
         }
-    }
-    {
-        var (_, errΔ3) = c.buf.Write(pad[..(int)(c.h.PaddingLength)]); if (errΔ3 != default!) {
-            return errΔ3;
+        {
+            var (_, errΔ3) = c.buf.Write(pad[..(int)(c.h.PaddingLength)]); if (errΔ3 != default!) {
+                return errΔ3;
+            }
         }
+        var (_, err) = c.rwc.Write(c.buf.Bytes());
+        return err;
     }
-    var (_, err) = c.rwc.Write(c.buf.Bytes());
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static error writeEndRequest(this ж<conn> Ꮡc, uint16 reqId, nint appStatus, uint8 protocolStatus) {
     var b = new slice<byte>(8);

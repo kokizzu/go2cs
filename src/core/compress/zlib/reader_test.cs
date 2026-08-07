@@ -148,44 +148,49 @@ internal static void initᴛzlibTests() { zlibTests = new zlibTest[]{
     )
 }.slice(); }
 
-public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var b = @new<bytes.Buffer>();
-    foreach (var (_, tt) in zlibTests) {
-        var @in = bytes.NewReader(tt.compressed);
-        var (zr, err) = NewReaderDict(new zlib_test_package.bytes_ReaderжReader(@in), tt.dict);
-        if (err != default!) {
-            if (!AreEqual(err, tt.err)) {
-                Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
+public static void TestDecompressor(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var b = @new<bytes.Buffer>();
+        foreach (var (_, tt) in zlibTests) {
+            var @in = bytes.NewReader(tt.compressed);
+            var (zr, err) = NewReaderDict(new zlib_test_package.bytes_ReaderжReader(@in), tt.dict);
+            if (err != default!) {
+                if (!AreEqual(err, tt.err)) {
+                    Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
+                }
+                continue;
             }
-            continue;
-        }
-        var zrʗ1 = zr;
-        defer(() => zrʗ1.Close());
-        // Read and verify correctness of data.
-        b.Reset();
-        (var n, err) = io.Copy(new zlib_test_package.bytes_BufferжWriter(b), zr);
-        if (err != default!) {
-            if (!AreEqual(err, tt.err)) {
-                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
+            var zrʗ1 = zr;
+            defer(() => zrʗ1.Close(), ref ᒐ);
+            // Read and verify correctness of data.
+            b.Reset();
+            (var n, err) = io.Copy(new zlib_test_package.bytes_BufferжWriter(b), zr);
+            if (err != default!) {
+                if (!AreEqual(err, tt.err)) {
+                    Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
+                }
+                continue;
             }
-            continue;
-        }
-        @string s = b.String();
-        if (s != tt.raw) {
-            Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
-        }
-        // Check for sticky errors.
-        {
-            var (nΔ1, errΔ1) = zr.Read(new byte[]{0}.slice()); if (nΔ1 != 0 || !AreEqual(errΔ1, io.EOF)) {
-                Ꮡt.Errorf("%s: Read() = (%d, %v), want (0, io.EOF)"u8, tt.desc, nΔ1, errΔ1);
+            @string s = b.String();
+            if (s != tt.raw) {
+                Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
             }
-        }
-        {
-            var errΔ2 = zr.Close(); if (errΔ2 != default!) {
-                Ꮡt.Errorf("%s: Close() = %v, want nil"u8, tt.desc, errΔ2);
+            // Check for sticky errors.
+            {
+                var (nΔ1, errΔ1) = zr.Read(new byte[]{0}.slice()); if (nΔ1 != 0 || !AreEqual(errΔ1, io.EOF)) {
+                    Ꮡt.Errorf("%s: Read() = (%d, %v), want (0, io.EOF)"u8, tt.desc, nΔ1, errΔ1);
+                }
+            }
+            {
+                var errΔ2 = zr.Close(); if (errΔ2 != default!) {
+                    Ꮡt.Errorf("%s: Close() = %v, want nil"u8, tt.desc, errΔ2);
+                }
             }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end zlib_internal_test_package

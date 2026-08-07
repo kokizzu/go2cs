@@ -132,37 +132,42 @@ private static readonly @string utf16PtrFromStringˢ = "UTF16PtrFromString"u8;
 private static readonly @string findFirstFileˢ = "FindFirstFile"u8;
 private static readonly @string findNextFileˢ = "FindNextFile"u8;
 
-internal static slice<entry> enumerate(@string dir) => func((defer, recover) => {
-    var (pattern, err) = syscall.UTF16PtrFromString(dir + @"\*"u8);
-    if (err != default!) {
-        fatal(utf16PtrFromStringˢ, err);
-    }
-    ref var data = ref heap(new syscall.Win32finddata(), out var Ꮡdata);
-    (var h, err) = syscall.FindFirstFile(pattern, Ꮡdata);
-    if (err != default!) {
-        fatal(findFirstFileˢ, err);
-    }
-    deferǃ(syscall.FindClose, h, defer);
-    slice<entry> @out = default!;
-    while (ᐧ) {
-        {
-            var (e, ok) = toEntry(Ꮡdata); if (ok) {
-                @out = append(@out, e);
-            }
+internal static slice<entry> enumerate(@string dir) {
+    GoFrame ᒐ = default;
+    try {
+        var (pattern, err) = syscall.UTF16PtrFromString(dir + @"\*"u8);
+        if (err != default!) {
+            fatal(utf16PtrFromStringˢ, err);
         }
-        {
-            var errΔ1 = syscall.FindNextFile(h, Ꮡdata); if (errΔ1 != default!) {
-                if (AreEqual(errΔ1, syscall.ERROR_NO_MORE_FILES)) {
-                    break;
+        ref var data = ref heap(new syscall.Win32finddata(), out var Ꮡdata);
+        (var h, err) = syscall.FindFirstFile(pattern, Ꮡdata);
+        if (err != default!) {
+            fatal(findFirstFileˢ, err);
+        }
+        defer(syscall.FindClose, h, ref ᒐ);
+        slice<entry> @out = default!;
+        while (ᐧ) {
+            {
+                var (e, ok) = toEntry(Ꮡdata); if (ok) {
+                    @out = append(@out, e);
                 }
-                fatal(findNextFileˢ, errΔ1);
+            }
+            {
+                var errΔ1 = syscall.FindNextFile(h, Ꮡdata); if (errΔ1 != default!) {
+                    if (AreEqual(errΔ1, syscall.ERROR_NO_MORE_FILES)) {
+                        break;
+                    }
+                    fatal(findNextFileˢ, errΔ1);
+                }
             }
         }
+        var outʗ1 = @out;
+        sort.Slice(@out, (nint i, nint j) => outʗ1[i].name < outʗ1[j].name);
+        return @out;
     }
-    var outʗ1 = @out;
-    sort.Slice(@out, (nint i, nint j) => outʗ1[i].name < outʗ1[j].name);
-    return @out;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static entry lookup(@string path) {
     var (e, err) = find(path);

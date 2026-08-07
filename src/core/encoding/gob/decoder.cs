@@ -235,29 +235,34 @@ internal static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unass
 // a non-nil pointer to data or be an assignable reflect.Value (v.CanSet())
 // If the input is at EOF, DecodeValue returns [io.EOF] and
 // does not modify v.
-public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) => func((defer, recover) => {
-    ref var dec = ref Ꮡdec.DerefOrNull();
+public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
+    GoFrame ᒐ = default;
+    try {
+        ref var dec = ref Ꮡdec.DerefOrNull();
 
-    if (v.IsValid()) {
-        if (v.Kind() == reflect.ΔPointer && !v.IsNil()){
-        } else 
-        if (!v.CanSet()) {
-            // That's okay, we'll store through the pointer.
-            return errors.New(gobDecodeValueOfˢ);
+        if (v.IsValid()) {
+            if (v.Kind() == reflect.ΔPointer && !v.IsNil()){
+            } else 
+            if (!v.CanSet()) {
+                // That's okay, we'll store through the pointer.
+                return errors.New(gobDecodeValueOfˢ);
+            }
         }
+        // Make sure we're single-threaded through here.
+        Ꮡdec.of(Decoder.Ꮡmutex).Lock();
+        defer(Ꮡdec.of(Decoder.Ꮡmutex).Unlock, ref ᒐ);
+        dec.buf.Reset();
+        // In case data lingers from previous invocation.
+        dec.err = default!;
+        var id = Ꮡdec.decodeTypeSequence(false);
+        if (dec.err == default!) {
+            Ꮡdec.decodeValue(id, v);
+        }
+        return dec.err;
     }
-    // Make sure we're single-threaded through here.
-    Ꮡdec.of(Decoder.Ꮡmutex).Lock();
-    defer(Ꮡdec.of(Decoder.Ꮡmutex).Unlock);
-    dec.buf.Reset();
-    // In case data lingers from previous invocation.
-    dec.err = default!;
-    var id = Ꮡdec.decodeTypeSequence(false);
-    if (dec.err == default!) {
-        Ꮡdec.decodeValue(id, v);
-    }
-    return dec.err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // If debug.go is compiled into the program, debugFunc prints a human-readable
 // representation of the gob data read from r by calling that file's Debug function.

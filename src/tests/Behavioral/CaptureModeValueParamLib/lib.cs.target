@@ -12,8 +12,9 @@ partial class CaptureModeValueParamLib_package {
 internal static (@string @out, error err) fprint(this ж<Config> Ꮡcfg, @string label) {
     @string @out = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var cfg = ref Ꮡcfg.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         defer(() => {
             {
@@ -21,10 +22,12 @@ internal static (@string @out, error err) fprint(this ж<Config> Ꮡcfg, @string
                     err = fmt.Errorf("panic: %v"u8, e);
                 }
             }
-        });
+        }, ref ᒐ);
         cfg.trace = fmt.Sprintf("%s|%s"u8, cfg.trace, label);
         (@out, err) = (fmt.Sprintf("%s@%d"u8, label, cfg.Indent), default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (@out, err);
 }
 

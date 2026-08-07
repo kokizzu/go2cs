@@ -41,17 +41,22 @@ internal static @string label(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object closedˢ = (@string)"closed"u8;
 
-internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, defer);
-    {
-        var (_, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
-            delete(t.m, Ꮡc);
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, ref ᒐ);
+        {
+            var (_, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
+                delete(t.m, Ꮡc);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string busyˢ = "busy"u8;

@@ -43,11 +43,16 @@ public static void SetGoroutineLabels(context.Context ctx) {
 // order provided, overriding any previous value for the same key.
 // The augmented label map will be set for the duration of the call to f
 // and restored once f returns.
-public static void Do(context.Context ctx, LabelSet labels, Action<context.Context> f) => func((defer, recover) => {
-    deferǃ(SetGoroutineLabels, ctx, defer);
-    ctx = WithLabels(ctx, labels);
-    SetGoroutineLabels(ctx);
-    f(ctx);
-});
+public static void Do(context.Context ctx, LabelSet labels, Action<context.Context> f) {
+    GoFrame ᒐ = default;
+    try {
+        defer(SetGoroutineLabels, ctx, ref ᒐ);
+        ctx = WithLabels(ctx, labels);
+        SetGoroutineLabels(ctx);
+        f(ctx);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end pprof_package

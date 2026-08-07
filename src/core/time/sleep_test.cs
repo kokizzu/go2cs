@@ -137,55 +137,65 @@ public static void TestTickerConcurrentStress(ж<Δtesting.T> Ꮡt) {
     for (nint i = 0; i < 10; i++) {
         Ꮡwg.Add(1);
         var tickerʗ1 = ticker;
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            for (nint iΔ1 = 0; iΔ1 < 100; iΔ1++) {
-                ᐸꟷ((~tickerʗ1).C);
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                for (nint iΔ1 = 0; iΔ1 < 100; iΔ1++) {
+                    ᐸꟷ((~tickerʗ1).C);
+                }
             }
-        }));
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
     Ꮡwg.Wait();
     ticker.Stop();
     Ꮡstop.Store(true);
 }
 
-public static void TestAfterFuncStarvation(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    // Start two goroutines ping-ponging on a channel send.
-    // At any given time, at least one of these goroutines is runnable:
-    // if the channel buffer is full, the receiver is runnable,
-    // and if it is not full, the sender is runnable.
-    //
-    // In addition, the AfterFunc callback should become runnable after
-    // the indicated delay.
-    //
-    // Even if GOMAXPROCS=1, we expect the runtime to eventually schedule
-    // the AfterFunc goroutine instead of the runnable channel goroutine.
-    // However, in https://go.dev/issue/65178 this was observed to live-lock
-    // on wasip1/wasm and js/wasm after <10000 runs.
-    deferǃ(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(1), defer);
-    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
-    ref var stop = ref heap(new atomic.Bool(), out var Ꮡstop);
-    channel<bool> c = new channel<bool>(1);
-    Ꮡwg.Add(2);
-    var cʗ1 = c;
-    goǃ(() => {
-        while (!Ꮡstop.Load()) {
-            cʗ1.ᐸꟷ(true);
-        }
-        close(cʗ1);
-        Ꮡwg.Done();
-    });
-    var cʗ2 = c;
-    goǃ(() => {
-        foreach (var _ᴛ1 in cʗ2) {
-        }
-        Ꮡwg.Done();
-    });
-    AfterFunc(1 * Microsecond, () => {
-        Ꮡstop.Store(true);
-    });
-    Ꮡwg.Wait();
-});
+public static void TestAfterFuncStarvation(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Start two goroutines ping-ponging on a channel send.
+        // At any given time, at least one of these goroutines is runnable:
+        // if the channel buffer is full, the receiver is runnable,
+        // and if it is not full, the sender is runnable.
+        //
+        // In addition, the AfterFunc callback should become runnable after
+        // the indicated delay.
+        //
+        // Even if GOMAXPROCS=1, we expect the runtime to eventually schedule
+        // the AfterFunc goroutine instead of the runnable channel goroutine.
+        // However, in https://go.dev/issue/65178 this was observed to live-lock
+        // on wasip1/wasm and js/wasm after <10000 runs.
+        defer(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(1), ref ᒐ);
+        ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+        ref var stop = ref heap(new atomic.Bool(), out var Ꮡstop);
+        channel<bool> c = new channel<bool>(1);
+        Ꮡwg.Add(2);
+        var cʗ1 = c;
+        goǃ(() => {
+            while (!Ꮡstop.Load()) {
+                cʗ1.ᐸꟷ(true);
+            }
+            close(cʗ1);
+            Ꮡwg.Done();
+        });
+        var cʗ2 = c;
+        goǃ(() => {
+            foreach (var _ᴛ1 in cʗ2) {
+            }
+            Ꮡwg.Done();
+        });
+        AfterFunc(1 * Microsecond, () => {
+            Ꮡstop.Store(true);
+        });
+        Ꮡwg.Wait();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void benchmark(ж<Δtesting.B> Ꮡb, Action<ж<Δtesting.PB>> bench) {
     ref var b = ref Ꮡb.DerefOrNull();
@@ -197,14 +207,19 @@ internal static void benchmark(ж<Δtesting.B> Ꮡb, Action<ж<Δtesting.PB>> be
     foreach (var (i, _) in garbageAll) {
         Ꮡwg.Add(1);
         var garbageAllʗ2 = garbageAll;
-        goǃ((nint iΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var garbage = new slice<ж<Δtime.Timer>>((1 << (int)(15)));
-            foreach (var (j, _) in garbage) {
-                garbage[j] = AfterFunc(ΔHour, default!);
+        goǃ((nint iΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                var garbage = new slice<ж<Δtime.Timer>>((1 << (int)(15)));
+                foreach (var (j, _) in garbage) {
+                    garbage[j] = AfterFunc(ΔHour, default!);
+                }
+                garbageAllʗ2[iΔ1] = garbage;
             }
-            garbageAllʗ2[iΔ1] = garbage;
-        }), i);
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     Ꮡwg.Wait();
     b.ResetTimer();
@@ -535,28 +550,33 @@ public static void TestTimerStopStress(ж<Δtesting.T> Ꮡt) {
     Sleep((Δtime.Duration)(3000000000L));
 }
 
-public static void TestSleepZeroDeadlock(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    // Sleep(0) used to hang, the sequence of events was as follows.
-    // Sleep(0) sets G's status to Gwaiting, but then immediately returns leaving the status.
-    // Then the goroutine calls e.g. new and falls down into the scheduler due to pending GC.
-    // After the GC nobody wakes up the goroutine from Gwaiting status.
-    deferǃ(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(4), defer);
-    var c = new channel<bool>(0);
-    var cʗ1 = c;
-    goǃ(() => {
+public static void TestSleepZeroDeadlock(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Sleep(0) used to hang, the sequence of events was as follows.
+        // Sleep(0) sets G's status to Gwaiting, but then immediately returns leaving the status.
+        // Then the goroutine calls e.g. new and falls down into the scheduler due to pending GC.
+        // After the GC nobody wakes up the goroutine from Gwaiting status.
+        defer(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(4), ref ᒐ);
+        var c = new channel<bool>(0);
+        var cʗ1 = c;
+        goǃ(() => {
+            for (nint i = 0; i < 100; i++) {
+                Δruntime.GC();
+            }
+            cʗ1.ᐸꟷ(true);
+        });
         for (nint i = 0; i < 100; i++) {
-            Δruntime.GC();
+            Sleep(0);
+            var tmp = new channel<bool>(1);
+            tmp.ᐸꟷ(true);
+            ᐸꟷ(tmp);
         }
-        cʗ1.ᐸꟷ(true);
-    });
-    for (nint i = 0; i < 100; i++) {
-        Sleep(0);
-        var tmp = new channel<bool>(1);
-        tmp.ᐸꟷ(true);
-        ᐸꟷ(tmp);
+        ᐸꟷ(c);
     }
-    ᐸꟷ(c);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string resettingUnfiredTimerˢ = "resetting unfired timer returned false"u8;
@@ -666,24 +686,29 @@ internal static readonly object shouldBeUnreachableˢ = (@string)"Should be unre
 
 // Test that a panic while deleting a timer does not leave
 // the timers mutex held, deadlocking a ticker.Stop in a defer.
-public static void TestIssue5745(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var ticker = NewTicker(ΔHour);
-    var tickerʗ1 = ticker;
-    defer(() => {
-        // would deadlock here before the fix due to
-        // lock taken before the segfault.
-        tickerʗ1.Stop();
-        {
-            var r = recover(); if (r == default!) {
-                Ꮡt.Error(expectedPanicButNoneˢ);
+public static void TestIssue5745(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var ticker = NewTicker(ΔHour);
+        var tickerʗ1 = ticker;
+        defer(() => {
+            // would deadlock here before the fix due to
+            // lock taken before the segfault.
+            tickerʗ1.Stop();
+            {
+                var r = recover(); if (r == default!) {
+                    Ꮡt.Error(expectedPanicButNoneˢ);
+                }
             }
-        }
-    });
-    // cause a panic due to a segfault
-    ж<Δtime.Timer> timer = default!;
-    timer.Stop();
-    Ꮡt.Error(shouldBeUnreachableˢ);
-});
+        }, ref ᒐ);
+        // cause a panic due to a segfault
+        ж<Δtime.Timer> timer = default!;
+        timer.Stop();
+        Ꮡt.Error(shouldBeUnreachableˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestOverflowPeriodRuntimeTimer(ж<Δtesting.T> Ꮡt) {
     // This may hang forever if timers are broken. See comment near
@@ -694,27 +719,42 @@ public static void TestOverflowPeriodRuntimeTimer(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string calledOnUninitializedˢ = "called on uninitialized Timer"u8;
 
-internal static void checkZeroPanicString(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var e = recover();
-    var (s, _) = e._<@string>(ᐧ);
-    {
-        @string want = calledOnUninitializedˢ; if (!strings.Contains(s, want)) {
-            Ꮡt.Errorf("panic = %v; want substring %q"u8, e, want);
+internal static void checkZeroPanicString(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var e = recover();
+        var (s, _) = e._<@string>(ᐧ);
+        {
+            @string want = calledOnUninitializedˢ; if (!strings.Contains(s, want)) {
+                Ꮡt.Errorf("panic = %v; want substring %q"u8, e, want);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-public static void TestZeroTimerResetPanics(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(checkZeroPanicString, Ꮡt, defer);
-    ref var tr = ref heap(new Δtime.Timer(), out var Ꮡtr);
-    Ꮡtr.Reset(1);
-});
+public static void TestZeroTimerResetPanics(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(checkZeroPanicString, Ꮡt, ref ᒐ);
+        ref var tr = ref heap(new Δtime.Timer(), out var Ꮡtr);
+        Ꮡtr.Reset(1);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-public static void TestZeroTimerStopPanics(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(checkZeroPanicString, Ꮡt, defer);
-    ref var tr = ref heap(new Δtime.Timer(), out var Ꮡtr);
-    Ꮡtr.Stop();
-});
+public static void TestZeroTimerStopPanics(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(checkZeroPanicString, Ꮡt, ref ᒐ);
+        ref var tr = ref heap(new Δtime.Timer(), out var Ꮡtr);
+        Ꮡtr.Stop();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string implCacheˢ = "impl=cache"u8;
@@ -761,46 +801,51 @@ internal static readonly object deadlineExpiredˢ = (@string)"deadline expired"u
 
 // Test that rapidly moving a timer earlier doesn't cause it to get dropped.
 // Issue 47329.
-public static void TestTimerModifiedEarlier(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    if (Δruntime.GOOS == "plan9"u8 && Δruntime.GOARCH == "arm"u8) {
-        testenv.SkipFlaky(new time_test_package.testing_TжTB(Ꮡt), 50470);
-    }
-    var past = Until(Unix(0, 0));
-    nint count = 1000;
-    nint fail = 0;
-    for (nint i = 0; i < count; i++) {
-        var timer = newTimerFunc(ΔHour);
-        for (nint j = 0; j < 10; j++) {
-            if (!timer.Stop()) {
-                ᐸꟷ((~timer).C);
-            }
-            timer.Reset(past);
+public static void TestTimerModifiedEarlier(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        if (Δruntime.GOOS == "plan9"u8 && Δruntime.GOARCH == "arm"u8) {
+            testenv.SkipFlaky(new time_test_package.testing_TжTB(Ꮡt), 50470);
         }
-        var deadline = NewTimer((Δtime.Duration)(10000000000L));
-        var deadlineʗ1 = deadline;
-        defer(() => deadlineʗ1.Stop());
-        var now = Now();
-        var selᴛ13 = (~timer).C;
-        var selᴛ14 = (~deadline).C;
-        switch (select(ᐸꟷ(selᴛ13, ꓸꓸꓸ), ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
-        case 0 when selᴛ13.ꟷᐳ(out _): {
-            {
-                var since = Since(now); if (since > (Δtime.Duration)(8000000000L)) {
-                    Ꮡt.Errorf("timer took too long (%v)"u8, since);
-                    fail++;
+        var past = Until(Unix(0, 0));
+        nint count = 1000;
+        nint fail = 0;
+        for (nint i = 0; i < count; i++) {
+            var timer = newTimerFunc(ΔHour);
+            for (nint j = 0; j < 10; j++) {
+                if (!timer.Stop()) {
+                    ᐸꟷ((~timer).C);
                 }
+                timer.Reset(past);
             }
-            break;
+            var deadline = NewTimer((Δtime.Duration)(10000000000L));
+            var deadlineʗ1 = deadline;
+            defer(() => deadlineʗ1.Stop(), ref ᒐ);
+            var now = Now();
+            var selᴛ13 = (~timer).C;
+            var selᴛ14 = (~deadline).C;
+            switch (select(ᐸꟷ(selᴛ13, ꓸꓸꓸ), ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+            case 0 when selᴛ13.ꟷᐳ(out _): {
+                {
+                    var since = Since(now); if (since > (Δtime.Duration)(8000000000L)) {
+                        Ꮡt.Errorf("timer took too long (%v)"u8, since);
+                        fail++;
+                    }
+                }
+                break;
+            }
+            case 1 when selᴛ14.ꟷᐳ(out _): {
+                Ꮡt.Error(deadlineExpiredˢ);
+                break;
+            }}
         }
-        case 1 when selᴛ14.ꟷᐳ(out _): {
-            Ꮡt.Error(deadlineExpiredˢ);
-            break;
-        }}
+        if (fail > 0) {
+            Ꮡt.Errorf("%d failures"u8, fail);
+        }
     }
-    if (fail > 0) {
-        Ꮡt.Errorf("%d failures"u8, fail);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object timerResetReturnedTrueˢ = (@string)"timer.Reset returned true"u8;
@@ -1008,24 +1053,29 @@ public static void BenchmarkStaggeredTickerLatency(ж<Δtesting.B> Ꮡb) {
                         ᏑexpectedWakeup.Value = Now().Add(delay);
                         var ticker = NewTicker(delay);
                         var statsʗ4 = stats;
-                        goǃ((nint c, ж<Δtime.Ticker> tickerΔ1, Δtime.Time firstWake) => func((defer, recover) => {
-                            defer(tickerΔ1.Stop);
-                            for (; c > 0; c--) {
-                                ᐸꟷ((~tickerΔ1).C);
-                                var late = Since(ᏑexpectedWakeup.Value);
-                                if (late < 0) {
-                                    late = 0;
+                        goǃ((nint c, ж<Δtime.Ticker> tickerΔ1, Δtime.Time firstWake) => {
+                            GoFrame ᒐ = default;
+                            try {
+                                defer(tickerΔ1.Stop, ref ᒐ);
+                                for (; c > 0; c--) {
+                                    ᐸꟷ((~tickerΔ1).C);
+                                    var late = Since(ᏑexpectedWakeup.Value);
+                                    if (late < 0) {
+                                        late = 0;
+                                    }
+                                    statsʗ4[jΔ1].count++;
+                                    statsʗ4[jΔ1].sum += (float64)late.Nanoseconds();
+                                    if (late > statsʗ4[jΔ1].max) {
+                                        statsʗ4[jΔ1].max = late;
+                                    }
+                                    ᏑexpectedWakeup.Value = ᏑexpectedWakeup.Value.Add(delay);
+                                    doWork(dur);
                                 }
-                                statsʗ4[jΔ1].count++;
-                                statsʗ4[jΔ1].sum += (float64)late.Nanoseconds();
-                                if (late > statsʗ4[jΔ1].max) {
-                                    statsʗ4[jΔ1].max = late;
-                                }
-                                ᏑexpectedWakeup.Value = ᏑexpectedWakeup.Value.Add(delay);
-                                doWork(dur);
+                                Ꮡwg.Done();
                             }
-                            Ꮡwg.Done();
-                        }), (~bΔ2).N, ticker, ᏑexpectedWakeup.Value);
+                            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                            finally { ᒐ.Run(); }
+                        }, (~bΔ2).N, ticker, ᏑexpectedWakeup.Value);
                     }
                     Ꮡwg.Wait();
                     float64 total = default!;

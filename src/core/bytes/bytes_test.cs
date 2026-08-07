@@ -1314,7 +1314,8 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
 
 internal static error /*err*/ repeat(slice<byte> b, nint count) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
@@ -1330,9 +1331,11 @@ internal static error /*err*/ repeat(slice<byte> b, nint count) {
                     }}
                 }
             }
-        });
+        }, ref ᒐ);
         Repeat(b, count);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return err;
 }
 
@@ -1939,48 +1942,63 @@ public static void TestCutSuffix(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object grow1ShouldHavePanickedˢ = (@string)"Grow(-1) should have panicked"u8;
 
-public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (err == default!) {
-                Ꮡt.Fatal(grow1ShouldHavePanickedˢ);
+public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (err == default!) {
+                    Ꮡt.Fatal(grow1ShouldHavePanickedˢ);
+                }
             }
-        }
-    });
-    bytes.Buffer b = default!;
-    b.Grow(-1);
-});
+        }, ref ᒐ);
+        bytes.Buffer b = default!;
+        b.Grow(-1);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object truncate1ShouldHaveˢ = (@string)"Truncate(-1) should have panicked"u8;
 
-public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (err == default!) {
-                Ꮡt.Fatal(truncate1ShouldHaveˢ);
+public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (err == default!) {
+                    Ꮡt.Fatal(truncate1ShouldHaveˢ);
+                }
             }
-        }
-    });
-    bytes.Buffer b = default!;
-    b.Truncate(-1);
-});
+        }, ref ᒐ);
+        bytes.Buffer b = default!;
+        b.Truncate(-1);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object truncate20ShouldHaveˢ = (@string)"Truncate(20) should have panicked"u8;
 
-public static void TestBufferTruncateOutOfRange(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (err == default!) {
-                Ꮡt.Fatal(truncate20ShouldHaveˢ);
+public static void TestBufferTruncateOutOfRange(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (err == default!) {
+                    Ꮡt.Fatal(truncate20ShouldHaveˢ);
+                }
             }
-        }
-    });
-    bytes.Buffer b = default!;
-    b.Write(new slice<byte>(10));
-    b.Truncate(20);
-});
+        }, ref ᒐ);
+        bytes.Buffer b = default!;
+        b.Write(new slice<byte>(10));
+        b.Truncate(20);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 
 [GoType("dyn")] partial struct containsTestsᴛ1 {

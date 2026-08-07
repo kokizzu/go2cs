@@ -68,11 +68,16 @@ internal static void Main() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object recoveredˢ = (@string)"recovered:"u8;
 
-internal static void @catch(Action f) => func((defer, recover) => {
-    defer(() => {
-        fmt.Println(recoveredˢ, recover());
-    });
-    f();
-});
+internal static void @catch(Action f) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            fmt.Println(recoveredˢ, recover());
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end main_package

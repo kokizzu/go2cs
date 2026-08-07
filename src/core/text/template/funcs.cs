@@ -155,26 +155,29 @@ internal static (reflectꓸValue v, bool isBuiltin, bool ok) findFunction(@strin
     reflectꓸValue v = new(nil);
     bool isBuiltin = default!;
     bool ok = default!;
-    func((defer, recover) => {
-    ref var tmpl = ref Ꮡtmpl.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var tmpl = ref Ꮡtmpl.DerefOrNull();
 
         if (Ꮡtmpl != nil && tmpl.common != nil) {
             Ꮡtmpl.of(Template.ᏑmuFuncs).RLock();
-            defer(Ꮡtmpl.of(Template.ᏑmuFuncs).RUnlock);
+            defer(Ꮡtmpl.of(Template.ᏑmuFuncs).RUnlock, ref ᒐ);
             {
                 var fn = tmpl.execFuncs[name]; if (fn.IsValid()) {
-                    (v, isBuiltin, ok) = (fn, false, true); return;
+                    (v, isBuiltin, ok) = (fn, false, true); goto ᒐdone;
                 }
             }
         }
         {
             var fn = builtinFuncs()[name]; if (fn.IsValid()) {
-                (v, isBuiltin, ok) = (fn, true, true); return;
+                (v, isBuiltin, ok) = (fn, true, true); goto ᒐdone;
             }
         }
         (v, isBuiltin, ok) = (new reflectꓸValue(nil), false, false);
-    });
-    return (v, isBuiltin, ok);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (v, isBuiltin, ok);
 }
 
 // prepareArg checks if value can be used as an argument of type argType, and
@@ -420,7 +423,8 @@ internal static (reflectꓸValue, error) call(@string name, reflectꓸValue fn, 
 internal static (reflectꓸValue val, error err) safeCall(reflectꓸValue fun, slice<reflectꓸValue> args) {
     reflectꓸValue val = new(nil);
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
@@ -433,14 +437,16 @@ internal static (reflectꓸValue val, error err) safeCall(reflectꓸValue fun, s
                     }
                 }
             }
-        });
+        }, ref ᒐ);
         var ret = fun.Call(args);
         if (len(ret) == 2 && !ret[1].IsNil()) {
-            (val, err) = (ret[0], ret[1].Interface()._<error>()); return;
+            (val, err) = (ret[0], ret[1].Interface()._<error>()); goto ᒐdone;
         }
         (val, err) = (ret[0], default!);
-    });
-    return (val, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (val, err);
 }
 
 // Boolean logic.

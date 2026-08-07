@@ -78,125 +78,82 @@ public static void TestRE2Search(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bz2ˢ = ".bz2"u8;
 
-internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void testRE2(ж<testing.T> Ꮡt, @string @file) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var (f, err) = Δos.Open(@file);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    Δio.Reader txt = default!;
-    if (strings.HasSuffix(@file, bz2ˢ)){
-        var z = bzip2.NewReader(new regexp_test_package.os_FileжReader(f));
-        txt = z;
-        @file = @file[..(int)(len(@file) - len(".bz2"))];
-    } else {
-        // for error messages
-        txt = new regexp_test_package.os_FileжReader(f);
-    }
-    nint lineno = 0;
-    var scanner = bufio.NewScanner(txt);
-    slice<@string> str = default!;
-    slice<@string> input = default!;
-    bool inStrings = default!;
-    ж<global::go.regexp_package.Regexp> re = default!;
-    ж<global::go.regexp_package.Regexp> refull = default!;
-    nint nfail = default!;
-    nint ncase = default!;
-    for (nint linenoΔ1 = 1; scanner.Scan(); linenoΔ1++) {
-        @string line = scanner.Text();
-        switch (ᐧ) {
-        case {} when line == ""u8: {
-            Ꮡt.Fatalf("%s:%d: unexpected blank line"u8, @file, linenoΔ1);
-            break;
+        var (f, err) = Δos.Open(@file);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
         }
-        case {} when line[0] is (rune)'#': {
-            continue;
-            break;
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        Δio.Reader txt = default!;
+        if (strings.HasSuffix(@file, bz2ˢ)){
+            var z = bzip2.NewReader(new regexp_test_package.os_FileжReader(f));
+            txt = z;
+            @file = @file[..(int)(len(@file) - len(".bz2"))];
+        } else {
+            // for error messages
+            txt = new regexp_test_package.os_FileжReader(f);
         }
-        case {} when (rune)'A' <= line[0] && line[0] <= (rune)'Z': {
-            Ꮡt.Logf("%s\n"u8, // Test name.
+        nint lineno = 0;
+        var scanner = bufio.NewScanner(txt);
+        slice<@string> str = default!;
+        slice<@string> input = default!;
+        bool inStrings = default!;
+        ж<global::go.regexp_package.Regexp> re = default!;
+        ж<global::go.regexp_package.Regexp> refull = default!;
+        nint nfail = default!;
+        nint ncase = default!;
+        for (nint linenoΔ1 = 1; scanner.Scan(); linenoΔ1++) {
+            @string line = scanner.Text();
+            switch (ᐧ) {
+            case {} when line == ""u8: {
+                Ꮡt.Fatalf("%s:%d: unexpected blank line"u8, @file, linenoΔ1);
+                break;
+            }
+            case {} when line[0] is (rune)'#': {
+                continue;
+                break;
+            }
+            case {} when (rune)'A' <= line[0] && line[0] <= (rune)'Z': {
+                Ꮡt.Logf("%s\n"u8, // Test name.
  line);
-            continue;
-            break;
-        }
-        case {} when line == "strings"u8: {
-            str = str[..0];
-            inStrings = true;
-            break;
-        }
-        case {} when line == "regexps"u8: {
-            inStrings = false;
-            break;
-        }
-        case {} when line[0] is (rune)'"': {
-            var (q, errΔ2) = strconv.Unquote(line);
-            if (errΔ2 != default!) {
-                // Fatal because we'll get out of sync.
-                Ꮡt.Fatalf("%s:%d: unquote %s: %v"u8, @file, linenoΔ1, line, errΔ2);
-            }
-            if (inStrings) {
-                str = append(str, q);
                 continue;
+                break;
             }
-            if (len(input) != 0) {
-                // Is a regexp.
-                Ꮡt.Fatalf("%s:%d: out of sync: have %d strings left before %#q"u8, @file, linenoΔ1, len(input), q);
+            case {} when line == "strings"u8: {
+                str = str[..0];
+                inStrings = true;
+                break;
             }
-            (re, errΔ2) = tryCompile(q);
-            if (errΔ2 != default!) {
-                if (errΔ2.Error() == "error parsing regexp: invalid escape sequence: `\\C`"u8) {
-                    // We don't and likely never will support \C; keep going.
+            case {} when line == "regexps"u8: {
+                inStrings = false;
+                break;
+            }
+            case {} when line[0] is (rune)'"': {
+                var (q, errΔ2) = strconv.Unquote(line);
+                if (errΔ2 != default!) {
+                    // Fatal because we'll get out of sync.
+                    Ꮡt.Fatalf("%s:%d: unquote %s: %v"u8, @file, linenoΔ1, line, errΔ2);
+                }
+                if (inStrings) {
+                    str = append(str, q);
                     continue;
                 }
-                Ꮡt.Errorf("%s:%d: compile %#q: %v"u8, @file, linenoΔ1, q, errΔ2);
-                {
-                    nfail++; if (nfail >= 100) {
-                        Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
-                    }
+                if (len(input) != 0) {
+                    // Is a regexp.
+                    Ꮡt.Fatalf("%s:%d: out of sync: have %d strings left before %#q"u8, @file, linenoΔ1, len(input), q);
                 }
-                continue;
-            }
-            @string full = @"\A(?:"u8 + q + @")\z"u8;
-            (refull, errΔ2) = tryCompile(full);
-            if (errΔ2 != default!) {
-                // Fatal because q worked, so this should always work.
-                Ꮡt.Fatalf("%s:%d: compile full %#q: %v"u8, @file, linenoΔ1, full, errΔ2);
-            }
-            input = str;
-            break;
-        }
-        case {} when line[0] == (rune)'-' || (rune)'0' <= line[0] && line[0] <= (rune)'9': {
-            ncase++;
-            if (re == nil) {
-                // A sequence of match results.
-                // Failed to compile: skip results.
-                continue;
-            }
-            if (len(input) == 0) {
-                Ꮡt.Fatalf("%s:%d: out of sync: no input remaining"u8, @file, linenoΔ1);
-            }
-            @string text = default!;
-            (text, input) = (input[0], input[1..]);
-            if (!isSingleBytes(text) && strings.Contains(re.String(), @"\B"u8)) {
-                // RE2's \B considers every byte position,
-                // so it sees 'not word boundary' in the
-                // middle of UTF-8 sequences. This package
-                // only considers the positions between runes,
-                // so it disagrees. Skip those cases.
-                continue;
-            }
-            var res = strings.Split(line, ";"u8);
-            if (len(res) != len(run)) {
-                Ꮡt.Fatalf("%s:%d: have %d test results, want %d"u8, @file, linenoΔ1, len(res), len(run));
-            }
-            foreach (var (i, _) in res) {
-                var (have, suffix) = run[i](re, refull, text);
-                var want = parseResult(Ꮡt, @file, linenoΔ1, res[i]);
-                if (!slices.Equal<slice<nint>, nint>(have, want)) {
-                    Ꮡt.Errorf("%s:%d: %#q%s.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, have, want);
+                (re, errΔ2) = tryCompile(q);
+                if (errΔ2 != default!) {
+                    if (errΔ2.Error() == "error parsing regexp: invalid escape sequence: `\\C`"u8) {
+                        // We don't and likely never will support \C; keep going.
+                        continue;
+                    }
+                    Ꮡt.Errorf("%s:%d: compile %#q: %v"u8, @file, linenoΔ1, q, errΔ2);
                     {
                         nfail++; if (nfail >= 100) {
                             Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
@@ -204,35 +161,83 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, 
                     }
                     continue;
                 }
-                (var b, suffix) = Δmatch[i](re, refull, text);
-                if (b != (want != default!)) {
-                    Ꮡt.Errorf("%s:%d: %#q%s.MatchString(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, b, !b);
-                    {
-                        nfail++; if (nfail >= 100) {
-                            Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
-                        }
-                    }
+                @string full = @"\A(?:"u8 + q + @")\z"u8;
+                (refull, errΔ2) = tryCompile(full);
+                if (errΔ2 != default!) {
+                    // Fatal because q worked, so this should always work.
+                    Ꮡt.Fatalf("%s:%d: compile full %#q: %v"u8, @file, linenoΔ1, full, errΔ2);
+                }
+                input = str;
+                break;
+            }
+            case {} when line[0] == (rune)'-' || (rune)'0' <= line[0] && line[0] <= (rune)'9': {
+                ncase++;
+                if (re == nil) {
+                    // A sequence of match results.
+                    // Failed to compile: skip results.
                     continue;
                 }
+                if (len(input) == 0) {
+                    Ꮡt.Fatalf("%s:%d: out of sync: no input remaining"u8, @file, linenoΔ1);
+                }
+                @string text = default!;
+                (text, input) = (input[0], input[1..]);
+                if (!isSingleBytes(text) && strings.Contains(re.String(), @"\B"u8)) {
+                    // RE2's \B considers every byte position,
+                    // so it sees 'not word boundary' in the
+                    // middle of UTF-8 sequences. This package
+                    // only considers the positions between runes,
+                    // so it disagrees. Skip those cases.
+                    continue;
+                }
+                var res = strings.Split(line, ";"u8);
+                if (len(res) != len(run)) {
+                    Ꮡt.Fatalf("%s:%d: have %d test results, want %d"u8, @file, linenoΔ1, len(res), len(run));
+                }
+                foreach (var (i, _) in res) {
+                    var (have, suffix) = run[i](re, refull, text);
+                    var want = parseResult(Ꮡt, @file, linenoΔ1, res[i]);
+                    if (!slices.Equal<slice<nint>, nint>(have, want)) {
+                        Ꮡt.Errorf("%s:%d: %#q%s.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, have, want);
+                        {
+                            nfail++; if (nfail >= 100) {
+                                Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
+                            }
+                        }
+                        continue;
+                    }
+                    (var b, suffix) = Δmatch[i](re, refull, text);
+                    if (b != (want != default!)) {
+                        Ꮡt.Errorf("%s:%d: %#q%s.MatchString(%#q) = %v, want %v"u8, @file, linenoΔ1, re.OrTypedNil(), suffix, text, b, !b);
+                        {
+                            nfail++; if (nfail >= 100) {
+                                Ꮡt.Fatalf("stopping after %d errors"u8, nfail);
+                            }
+                        }
+                        continue;
+                    }
+                }
+                break;
             }
-            break;
-        }
-        default: {
-            Ꮡt.Fatalf("%s:%d: out of sync: %s\n"u8, @file, linenoΔ1, line);
-            break;
-        }}
+            default: {
+                Ꮡt.Fatalf("%s:%d: out of sync: %s\n"u8, @file, linenoΔ1, line);
+                break;
+            }}
 
-    }
-    {
-        var errΔ3 = scanner.Err(); if (errΔ3 != default!) {
-            Ꮡt.Fatalf("%s:%d: %v"u8, @file, lineno, errΔ3);
         }
+        {
+            var errΔ3 = scanner.Err(); if (errΔ3 != default!) {
+                Ꮡt.Fatalf("%s:%d: %v"u8, @file, lineno, errΔ3);
+            }
+        }
+        if (len(input) != 0) {
+            Ꮡt.Fatalf("%s:%d: out of sync: have %d strings left at EOF"u8, @file, lineno, len(input));
+        }
+        Ꮡt.Logf("%d cases tested"u8, ncase);
     }
-    if (len(input) != 0) {
-        Ꮡt.Fatalf("%s:%d: out of sync: have %d strings left at EOF"u8, @file, lineno, len(input));
-    }
-    Ꮡt.Logf("%d cases tested"u8, ncase);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (slice<nint>, @string)>> run;
 internal static void initᴛrun() { run = new Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (slice<nint>, @string)>[]{
@@ -318,7 +323,8 @@ internal static bool isSingleBytes(@string s) {
 internal static (ж<global::go.regexp_package.Regexp> re, error err) tryCompile(@string s) {
     ж<global::go.regexp_package.Regexp> re = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         // Protect against panic during Compile.
         defer(() => {
             {
@@ -326,9 +332,11 @@ internal static (ж<global::go.regexp_package.Regexp> re, error err) tryCompile(
                     err = fmt.Errorf("panic: %v"u8, r);
                 }
             }
-        });
+        }, ref ᒐ);
         (re, err) = Compile(s);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (re, err);
 }
 
@@ -391,238 +399,243 @@ public static void TestFowler(ж<testing.T> Ꮡt) {
 internal static ж<global::go.regexp_package.Regexp> notab;
 internal static void initᴛnotab() { notab = MustCompilePOSIX(@"[^\t]+"u8); }
 
-internal static void testFowler(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void testFowler(ж<testing.T> Ꮡt, @string @file) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var (f, err) = Δos.Open(@file);
-    if (err != default!) {
-        Ꮡt.Error(err);
-        return;
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    var b = bufio.NewReader(new regexp_test_package.os_FileжReader(f));
-    nint lineno = 0;
-    @string lastRegexp = ""u8;
+        var (f, err) = Δos.Open(@file);
+        if (err != default!) {
+            Ꮡt.Error(err);
+            return;
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        var b = bufio.NewReader(new regexp_test_package.os_FileжReader(f));
+        nint lineno = 0;
+        @string lastRegexp = ""u8;
 Reading:
-    while (ᐧ) {
-        lineno++;
-        var (line, errΔ1) = b.ReadString((rune)'\n');
-        if (errΔ1 != default!) {
-            if (!AreEqual(errΔ1, Δio.EOF)) {
-                Ꮡt.Errorf("%s:%d: %v"u8, @file, lineno, errΔ1);
+        while (ᐧ) {
+            lineno++;
+            var (line, errΔ1) = b.ReadString((rune)'\n');
+            if (errΔ1 != default!) {
+                if (!AreEqual(errΔ1, Δio.EOF)) {
+                    Ꮡt.Errorf("%s:%d: %v"u8, @file, lineno, errΔ1);
+                }
+                goto break_Reading;
             }
-            goto break_Reading;
-        }
-        // http://www2.research.att.com/~astopen/man/man1/testregex.html
-        //
-        // INPUT FORMAT
-        //   Input lines may be blank, a comment beginning with #, or a test
-        //   specification. A specification is five fields separated by one
-        //   or more tabs. NULL denotes the empty string and NIL denotes the
-        //   0 pointer.
-        if (line[0] == (rune)'#' || line[0] == (rune)'\n') {
-            goto continue_Reading;
-        }
-        line = line[..(int)(len(line) - 1)];
-        var field = notab.FindAllString(line, -1);
-        foreach (var (i, fΔ1) in field) {
-            if (fΔ1 == "NULL"u8) {
-                field[i] = ""u8;
-            }
-            if (fΔ1 == "NIL"u8) {
-                Ꮡt.Logf("%s:%d: skip: %s"u8, @file, lineno, line);
+            // http://www2.research.att.com/~astopen/man/man1/testregex.html
+            //
+            // INPUT FORMAT
+            //   Input lines may be blank, a comment beginning with #, or a test
+            //   specification. A specification is five fields separated by one
+            //   or more tabs. NULL denotes the empty string and NIL denotes the
+            //   0 pointer.
+            if (line[0] == (rune)'#' || line[0] == (rune)'\n') {
                 goto continue_Reading;
             }
-        }
-        if (len(field) == 0) {
-            goto continue_Reading;
-        }
-        //   Field 1: the regex(3) flags to apply, one character per REG_feature
-        //   flag. The test is skipped if REG_feature is not supported by the
-        //   implementation. If the first character is not [BEASKLP] then the
-        //   specification is a global control line. One or more of [BEASKLP] may be
-        //   specified; the test will be repeated for each mode.
-        //
-        //     B 	basic			BRE	(grep, ed, sed)
-        //     E 	REG_EXTENDED		ERE	(egrep)
-        //     A	REG_AUGMENTED		ARE	(egrep with negation)
-        //     S	REG_SHELL		SRE	(sh glob)
-        //     K	REG_SHELL|REG_AUGMENTED	KRE	(ksh glob)
-        //     L	REG_LITERAL		LRE	(fgrep)
-        //
-        //     a	REG_LEFT|REG_RIGHT	implicit ^...$
-        //     b	REG_NOTBOL		lhs does not match ^
-        //     c	REG_COMMENT		ignore space and #...\n
-        //     d	REG_SHELL_DOT		explicit leading . match
-        //     e	REG_NOTEOL		rhs does not match $
-        //     f	REG_MULTIPLE		multiple \n separated patterns
-        //     g	FNM_LEADING_DIR		testfnmatch only -- match until /
-        //     h	REG_MULTIREF		multiple digit backref
-        //     i	REG_ICASE		ignore case
-        //     j	REG_SPAN		. matches \n
-        //     k	REG_ESCAPE		\ to escape [...] delimiter
-        //     l	REG_LEFT		implicit ^...
-        //     m	REG_MINIMAL		minimal match
-        //     n	REG_NEWLINE		explicit \n match
-        //     o	REG_ENCLOSED		(|&) magic inside [@|&](...)
-        //     p	REG_SHELL_PATH		explicit / match
-        //     q	REG_DELIMITED		delimited pattern
-        //     r	REG_RIGHT		implicit ...$
-        //     s	REG_SHELL_ESCAPED	\ not special
-        //     t	REG_MUSTDELIM		all delimiters must be specified
-        //     u	standard unspecified behavior -- errors not counted
-        //     v	REG_CLASS_ESCAPE	\ special inside [...]
-        //     w	REG_NOSUB		no subexpression match array
-        //     x	REG_LENIENT		let some errors slide
-        //     y	REG_LEFT		regexec() implicit ^...
-        //     z	REG_NULL		NULL subexpressions ok
-        //     $	                        expand C \c escapes in fields 2 and 3
-        //     /	                        field 2 is a regsubcomp() expression
-        //     =	                        field 3 is a regdecomp() expression
-        //
-        //   Field 1 control lines:
-        //
-        //     C		set LC_COLLATE and LC_CTYPE to locale in field 2
-        //
-        //     ?test ...	output field 5 if passed and != EXPECTED, silent otherwise
-        //     &test ...	output field 5 if current and previous passed
-        //     |test ...	output field 5 if current passed and previous failed
-        //     ; ...	output field 2 if previous failed
-        //     {test ...	skip if failed until }
-        //     }		end of skip
-        //
-        //     : comment		comment copied as output NOTE
-        //     :comment:test	:comment: ignored
-        //     N[OTE] comment	comment copied as output NOTE
-        //     T[EST] comment	comment
-        //
-        //     number		use number for nmatch (20 by default)
-        @string flag = field[0];
-        switch (flag[0]) {
-        case (rune)'?' or (rune)'&' or (rune)'|' or (rune)';' or (rune)'{' or (rune)'}': {
-            flag = flag[1..];
-            if (flag == ""u8) {
-                // Ignore all the control operators.
-                // Just run everything.
-                goto continue_Reading;
-            }
-            break;
-        }
-        case (rune)':': {
-            bool okΔ2 = default!;
-            {
-                (_, flag, okΔ2) = strings.Cut(flag[1..], ":"u8); if (!okΔ2) {
-                    Ꮡt.Logf("skip: %s"u8, line);
+            line = line[..(int)(len(line) - 1)];
+            var field = notab.FindAllString(line, -1);
+            foreach (var (i, fΔ1) in field) {
+                if (fΔ1 == "NULL"u8) {
+                    field[i] = ""u8;
+                }
+                if (fΔ1 == "NIL"u8) {
+                    Ꮡt.Logf("%s:%d: skip: %s"u8, @file, lineno, line);
                     goto continue_Reading;
                 }
             }
-            break;
-        }
-        case (rune)'C' or (rune)'N' or (rune)'T' or (rune)'0' or (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9': {
-            Ꮡt.Logf("skip: %s"u8, line);
-            goto continue_Reading;
-            break;
-        }}
-
-        // Can check field count now that we've handled the myriad comment formats.
-        if (len(field) < 4) {
-            Ꮡt.Errorf("%s:%d: too few fields: %s"u8, @file, lineno, line);
-            goto continue_Reading;
-        }
-        // Expand C escapes (a.k.a. Go escapes).
-        if (strings.Contains(flag, "$"u8)) {
-            @string fΔ2 = @"""" + field[1] + @"""";
-            {
-                (field[1], errΔ1) = strconv.Unquote(fΔ2); if (errΔ1 != default!) {
-                    Ꮡt.Errorf("%s:%d: cannot unquote %s"u8, @file, lineno, fΔ2);
-                }
+            if (len(field) == 0) {
+                goto continue_Reading;
             }
-            fΔ2 = @"""" + field[2] + @"""";
-            {
-                (field[2], errΔ1) = strconv.Unquote(fΔ2); if (errΔ1 != default!) {
-                    Ꮡt.Errorf("%s:%d: cannot unquote %s"u8, @file, lineno, fΔ2);
+            //   Field 1: the regex(3) flags to apply, one character per REG_feature
+            //   flag. The test is skipped if REG_feature is not supported by the
+            //   implementation. If the first character is not [BEASKLP] then the
+            //   specification is a global control line. One or more of [BEASKLP] may be
+            //   specified; the test will be repeated for each mode.
+            //
+            //     B 	basic			BRE	(grep, ed, sed)
+            //     E 	REG_EXTENDED		ERE	(egrep)
+            //     A	REG_AUGMENTED		ARE	(egrep with negation)
+            //     S	REG_SHELL		SRE	(sh glob)
+            //     K	REG_SHELL|REG_AUGMENTED	KRE	(ksh glob)
+            //     L	REG_LITERAL		LRE	(fgrep)
+            //
+            //     a	REG_LEFT|REG_RIGHT	implicit ^...$
+            //     b	REG_NOTBOL		lhs does not match ^
+            //     c	REG_COMMENT		ignore space and #...\n
+            //     d	REG_SHELL_DOT		explicit leading . match
+            //     e	REG_NOTEOL		rhs does not match $
+            //     f	REG_MULTIPLE		multiple \n separated patterns
+            //     g	FNM_LEADING_DIR		testfnmatch only -- match until /
+            //     h	REG_MULTIREF		multiple digit backref
+            //     i	REG_ICASE		ignore case
+            //     j	REG_SPAN		. matches \n
+            //     k	REG_ESCAPE		\ to escape [...] delimiter
+            //     l	REG_LEFT		implicit ^...
+            //     m	REG_MINIMAL		minimal match
+            //     n	REG_NEWLINE		explicit \n match
+            //     o	REG_ENCLOSED		(|&) magic inside [@|&](...)
+            //     p	REG_SHELL_PATH		explicit / match
+            //     q	REG_DELIMITED		delimited pattern
+            //     r	REG_RIGHT		implicit ...$
+            //     s	REG_SHELL_ESCAPED	\ not special
+            //     t	REG_MUSTDELIM		all delimiters must be specified
+            //     u	standard unspecified behavior -- errors not counted
+            //     v	REG_CLASS_ESCAPE	\ special inside [...]
+            //     w	REG_NOSUB		no subexpression match array
+            //     x	REG_LENIENT		let some errors slide
+            //     y	REG_LEFT		regexec() implicit ^...
+            //     z	REG_NULL		NULL subexpressions ok
+            //     $	                        expand C \c escapes in fields 2 and 3
+            //     /	                        field 2 is a regsubcomp() expression
+            //     =	                        field 3 is a regdecomp() expression
+            //
+            //   Field 1 control lines:
+            //
+            //     C		set LC_COLLATE and LC_CTYPE to locale in field 2
+            //
+            //     ?test ...	output field 5 if passed and != EXPECTED, silent otherwise
+            //     &test ...	output field 5 if current and previous passed
+            //     |test ...	output field 5 if current passed and previous failed
+            //     ; ...	output field 2 if previous failed
+            //     {test ...	skip if failed until }
+            //     }		end of skip
+            //
+            //     : comment		comment copied as output NOTE
+            //     :comment:test	:comment: ignored
+            //     N[OTE] comment	comment copied as output NOTE
+            //     T[EST] comment	comment
+            //
+            //     number		use number for nmatch (20 by default)
+            @string flag = field[0];
+            switch (flag[0]) {
+            case (rune)'?' or (rune)'&' or (rune)'|' or (rune)';' or (rune)'{' or (rune)'}': {
+                flag = flag[1..];
+                if (flag == ""u8) {
+                    // Ignore all the control operators.
+                    // Just run everything.
+                    goto continue_Reading;
                 }
-            }
-        }
-        //   Field 2: the regular expression pattern; SAME uses the pattern from
-        //     the previous specification.
-        //
-        if (field[1] == "SAME") {
-            field[1] = lastRegexp;
-        }
-        lastRegexp = field[1];
-        //   Field 3: the string to match.
-        @string text = field[2];
-        //   Field 4: the test outcome...
-        var (ok, shouldCompile, shouldMatch, pos) = parseFowlerResult(field[3]);
-        if (!ok) {
-            Ꮡt.Errorf("%s:%d: cannot parse result %#q"u8, @file, lineno, field[3]);
-            goto continue_Reading;
-        }
-        //   Field 5: optional comment appended to the report.
-Testing:
-        foreach (var (_, c) in flag) {
-            // Run test once for each specified capital letter mode that we support.
-            @string pattern = field[1];
-            var syn = (syntax.Flags)(syntax.POSIX | syntax.ClassNL);
-            switch (c) {
-            default: {
-                goto continue_Testing;
                 break;
             }
-            case (rune)'E': {
+            case (rune)':': {
+                bool okΔ2 = default!;
+                {
+                    (_, flag, okΔ2) = strings.Cut(flag[1..], ":"u8); if (!okΔ2) {
+                        Ꮡt.Logf("skip: %s"u8, line);
+                        goto continue_Reading;
+                    }
+                }
                 break;
             }
-            case (rune)'L': {
-                pattern = QuoteMeta(pattern);
+            case (rune)'C' or (rune)'N' or (rune)'T' or (rune)'0' or (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9': {
+                Ꮡt.Logf("skip: %s"u8, line);
+                goto continue_Reading;
                 break;
             }}
 
-            // extended regexp (what we support)
-            // literal
-            foreach (var (_, cΔ1) in flag) {
-                switch (cΔ1) {
-                case (rune)'i': {
-                    syn |= (syntax.Flags)(syntax.FoldCase);
+            // Can check field count now that we've handled the myriad comment formats.
+            if (len(field) < 4) {
+                Ꮡt.Errorf("%s:%d: too few fields: %s"u8, @file, lineno, line);
+                goto continue_Reading;
+            }
+            // Expand C escapes (a.k.a. Go escapes).
+            if (strings.Contains(flag, "$"u8)) {
+                @string fΔ2 = @"""" + field[1] + @"""";
+                {
+                    (field[1], errΔ1) = strconv.Unquote(fΔ2); if (errΔ1 != default!) {
+                        Ꮡt.Errorf("%s:%d: cannot unquote %s"u8, @file, lineno, fΔ2);
+                    }
+                }
+                fΔ2 = @"""" + field[2] + @"""";
+                {
+                    (field[2], errΔ1) = strconv.Unquote(fΔ2); if (errΔ1 != default!) {
+                        Ꮡt.Errorf("%s:%d: cannot unquote %s"u8, @file, lineno, fΔ2);
+                    }
+                }
+            }
+            //   Field 2: the regular expression pattern; SAME uses the pattern from
+            //     the previous specification.
+            //
+            if (field[1] == "SAME") {
+                field[1] = lastRegexp;
+            }
+            lastRegexp = field[1];
+            //   Field 3: the string to match.
+            @string text = field[2];
+            //   Field 4: the test outcome...
+            var (ok, shouldCompile, shouldMatch, pos) = parseFowlerResult(field[3]);
+            if (!ok) {
+                Ꮡt.Errorf("%s:%d: cannot parse result %#q"u8, @file, lineno, field[3]);
+                goto continue_Reading;
+            }
+            //   Field 5: optional comment appended to the report.
+Testing:
+            foreach (var (_, c) in flag) {
+                // Run test once for each specified capital letter mode that we support.
+                @string pattern = field[1];
+                var syn = (syntax.Flags)(syntax.POSIX | syntax.ClassNL);
+                switch (c) {
+                default: {
+                    goto continue_Testing;
+                    break;
+                }
+                case (rune)'E': {
+                    break;
+                }
+                case (rune)'L': {
+                    pattern = QuoteMeta(pattern);
                     break;
                 }}
 
-            }
-            var (re, errΔ2) = compile(pattern, syn, true);
-            if (errΔ2 != default!) {
-                if (shouldCompile) {
-                    Ꮡt.Errorf("%s:%d: %#q did not compile"u8, @file, lineno, pattern);
+                // extended regexp (what we support)
+                // literal
+                foreach (var (_, cΔ1) in flag) {
+                    switch (cΔ1) {
+                    case (rune)'i': {
+                        syn |= (syntax.Flags)(syntax.FoldCase);
+                        break;
+                    }}
+
                 }
-                goto continue_Testing;
-            }
-            if (!shouldCompile) {
-                Ꮡt.Errorf("%s:%d: %#q should not compile"u8, @file, lineno, pattern);
-                goto continue_Testing;
-            }
-            var Δmatch = re.MatchString(text);
-            if (Δmatch != shouldMatch) {
-                Ꮡt.Errorf("%s:%d: %#q.Match(%#q) = %v, want %v"u8, @file, lineno, pattern, text, Δmatch, shouldMatch);
-                goto continue_Testing;
-            }
-            var have = re.FindStringSubmatchIndex(text);
-            if ((len(have) > 0) != Δmatch) {
-                Ꮡt.Errorf("%s:%d: %#q.Match(%#q) = %v, but %#q.FindSubmatchIndex(%#q) = %v"u8, @file, lineno, pattern, text, Δmatch, pattern, text, have);
-                goto continue_Testing;
-            }
-            if (len(have) > len(pos)) {
-                have = have[..(int)(len(pos))];
-            }
-            if (!slices.Equal<slice<nint>, nint>(have, pos)) {
-                Ꮡt.Errorf("%s:%d: %#q.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, lineno, pattern, text, have, pos);
-            }
+                var (re, errΔ2) = compile(pattern, syn, true);
+                if (errΔ2 != default!) {
+                    if (shouldCompile) {
+                        Ꮡt.Errorf("%s:%d: %#q did not compile"u8, @file, lineno, pattern);
+                    }
+                    goto continue_Testing;
+                }
+                if (!shouldCompile) {
+                    Ꮡt.Errorf("%s:%d: %#q should not compile"u8, @file, lineno, pattern);
+                    goto continue_Testing;
+                }
+                var Δmatch = re.MatchString(text);
+                if (Δmatch != shouldMatch) {
+                    Ꮡt.Errorf("%s:%d: %#q.Match(%#q) = %v, want %v"u8, @file, lineno, pattern, text, Δmatch, shouldMatch);
+                    goto continue_Testing;
+                }
+                var have = re.FindStringSubmatchIndex(text);
+                if ((len(have) > 0) != Δmatch) {
+                    Ꮡt.Errorf("%s:%d: %#q.Match(%#q) = %v, but %#q.FindSubmatchIndex(%#q) = %v"u8, @file, lineno, pattern, text, Δmatch, pattern, text, have);
+                    goto continue_Testing;
+                }
+                if (len(have) > len(pos)) {
+                    have = have[..(int)(len(pos))];
+                }
+                if (!slices.Equal<slice<nint>, nint>(have, pos)) {
+                    Ꮡt.Errorf("%s:%d: %#q.FindSubmatchIndex(%#q) = %v, want %v"u8, @file, lineno, pattern, text, have, pos);
+                }
 continue_Testing:;
-        }
+            }
 break_Testing:;
 continue_Reading:;
-    }
+        }
 break_Reading:;
-});
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static (bool ok, bool compiled, bool matched, slice<nint> pos) parseFowlerResult(@string s) {
     bool ok = default!;

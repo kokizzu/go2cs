@@ -18,19 +18,24 @@ partial class fs_package {
 //
 // If fs implements [StatFS], Stat calls fs.Stat.
 // Otherwise, Stat opens the [File] to stat it.
-public static (FileInfo, error) Stat(FS fsys, @string name) => func<(FileInfo, error)>((defer, recover) => {
-    {
-        var (fsysΔ1, ok) = fsys._<StatFS>(ᐧ); if (ok) {
-            return fsysΔ1.Stat(name);
+public static (FileInfo, error) Stat(FS fsys, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (fsysΔ1, ok) = fsys._<StatFS>(ᐧ); if (ok) {
+                return fsysΔ1.Stat(name);
+            }
         }
+        var (@file, err) = fsys.Open(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fileʗ1 = @file;
+        defer(() => fileʗ1.Close(), ref ᒐ);
+        return @file.Stat();
     }
-    var (@file, err) = fsys.Open(name);
-    if (err != default!) {
-        return (default!, err);
-    }
-    var fileʗ1 = @file;
-    defer(() => fileʗ1.Close());
-    return @file.Stat();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end fs_package

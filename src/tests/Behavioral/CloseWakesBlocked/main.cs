@@ -4,12 +4,17 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void expectPanic(@string name, Action f) => func((defer, recover) => {
-    defer(() => {
-        fmt.Println(name, (@string)"->"u8, recover());
-    });
-    f();
-});
+internal static void expectPanic(@string name, Action f) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            fmt.Println(name, (@string)"->"u8, recover());
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string senderCompletedWrongˢ = "sender completed (wrong)"u8;
@@ -40,18 +45,23 @@ internal static void Main() {
     var res2 = new channel<@string>(1);
     var ch2ʗ1 = ch2;
     var res2ʗ1 = res2;
-    goǃ(() => func((defer, recover) => {
-        var res2ʗ2 = res2ʗ1;
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    res2ʗ2.ᐸꟷ(fmt.Sprintf("sender panicked: %v"u8, r));
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            var res2ʗ2 = res2ʗ1;
+            defer(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        res2ʗ2.ᐸꟷ(fmt.Sprintf("sender panicked: %v"u8, r));
+                    }
                 }
-            }
-        });
-        ch2ʗ1.ᐸꟷ(1);
-        res2ʗ1.ᐸꟷ(senderCompletedWrongˢ);
-    }));
+            }, ref ᒐ);
+            ch2ʗ1.ᐸꟷ(1);
+            res2ʗ1.ᐸꟷ(senderCompletedWrongˢ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     close(ch2);
     fmt.Println(ᐸꟷ(res2));
     var ch3 = new channel<nint>(0);
@@ -81,27 +91,32 @@ internal static void Main() {
     var ch4ʗ1 = ch4;
     var other2ʗ1 = other2;
     var res4ʗ1 = res4;
-    goǃ(() => func((defer, recover) => {
-        var res4ʗ2 = res4ʗ1;
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    res4ʗ2.ᐸꟷ(fmt.Sprintf("select send panicked: %v"u8, r));
+    goǃ(() => {
+        GoFrame ᒐ = default;
+        try {
+            var res4ʗ2 = res4ʗ1;
+            defer(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        res4ʗ2.ᐸꟷ(fmt.Sprintf("select send panicked: %v"u8, r));
+                    }
                 }
+            }, ref ᒐ);
+            var selᴛ3 = ch4ʗ1.ᐸꟷ(99, ꓸꓸꓸ);
+            var selᴛ4 = other2ʗ1;
+            switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+            case 0: {
+                res4ʗ1.ᐸꟷ(selectSendCompletedWrongˢ);
+                break;
             }
-        });
-        var selᴛ3 = ch4ʗ1.ᐸꟷ(99, ꓸꓸꓸ);
-        var selᴛ4 = other2ʗ1;
-        switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-        case 0: {
-            res4ʗ1.ᐸꟷ(selectSendCompletedWrongˢ);
-            break;
+            case 1 when selᴛ4.ꟷᐳ(out var v): {
+                res4ʗ1.ᐸꟷ(fmt.Sprintf("other %d (wrong)"u8, v));
+                break;
+            }}
         }
-        case 1 when selᴛ4.ꟷᐳ(out var v): {
-            res4ʗ1.ᐸꟷ(fmt.Sprintf("other %d (wrong)"u8, v));
-            break;
-        }}
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     close(ch4);
     fmt.Println(ᐸꟷ(res4));
     expectPanic(closeOfClosedˢ, () => {

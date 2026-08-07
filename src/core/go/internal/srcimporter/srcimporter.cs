@@ -71,107 +71,112 @@ public static (ж<types.Package>, error) Import(this ж<Importer> Ꮡp, @string 
 // maintained with the importer. The import mode must be zero but is otherwise ignored.
 // Packages that are not comprised entirely of pure Go files may fail to import because the
 // type checker may not be able to determine all exported entities (e.g. due to cgo dependencies).
-public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @string path, @string srcDir, types.ImportMode mode) => func<(ж<types.Package>, error)>((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @string path, @string srcDir, types.ImportMode mode) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    if (mode != 0) {
-        throw panic("non-zero import mode");
-    }
-    {
-        var (abs, errΔ1) = p.absPath(srcDir); if (errΔ1 == default!) {
-            // see issue #14282
-            srcDir = abs;
+        if (mode != 0) {
+            throw panic("non-zero import mode");
         }
-    }
-    var (bp, err) = p.ctxt.Import(path, srcDir, 0);
-    if (err != default!) {
-        return (default!, err);
-    }
-    // err may be *build.NoGoError - return as is
-    // package unsafe is known to the type checker
-    if ((~bp).ImportPath == "unsafe"u8) {
-        return (types.Unsafe, default!);
-    }
-    // no need to re-import if the package was imported completely before
-    var pkg = p.packages[(~bp).ImportPath];
-    if (pkg != nil) {
-        if (pkg == Ꮡimporting) {
-            return (default!, fmt.Errorf("import cycle through package %q"u8, (~bp).ImportPath));
+        {
+            var (abs, errΔ1) = p.absPath(srcDir); if (errΔ1 == default!) {
+                // see issue #14282
+                srcDir = abs;
+            }
         }
-        if (!pkg.Complete()) {
-            // Package exists but is not complete - we cannot handle this
-            // at the moment since the source importer replaces the package
-            // wholesale rather than augmenting it (see #19337 for details).
-            // Return incomplete package with error (see #16088).
-            return (pkg, fmt.Errorf("reimported partially imported package %q"u8, (~bp).ImportPath));
+        var (bp, err) = p.ctxt.Import(path, srcDir, 0);
+        if (err != default!) {
+            return (default!, err);
         }
+        // err may be *build.NoGoError - return as is
+        // package unsafe is known to the type checker
+        if ((~bp).ImportPath == "unsafe"u8) {
+            return (types.Unsafe, default!);
+        }
+        // no need to re-import if the package was imported completely before
+        var pkg = p.packages[(~bp).ImportPath];
+        if (pkg != nil) {
+            if (pkg == Ꮡimporting) {
+                return (default!, fmt.Errorf("import cycle through package %q"u8, (~bp).ImportPath));
+            }
+            if (!pkg.Complete()) {
+                // Package exists but is not complete - we cannot handle this
+                // at the moment since the source importer replaces the package
+                // wholesale rather than augmenting it (see #19337 for details).
+                // Return incomplete package with error (see #16088).
+                return (pkg, fmt.Errorf("reimported partially imported package %q"u8, (~bp).ImportPath));
+            }
+            return (pkg, default!);
+        }
+        p.packages[(~bp).ImportPath] = Ꮡimporting;
+        var bpʗ1 = bp;
+        defer(() => {
+            // clean up in case of error
+            // TODO(gri) Eventually we may want to leave a (possibly empty)
+            // package in the map in all cases (and use that package to
+            // identify cycles). See also issue 16088.
+            if (Ꮡp.Value.packages[(~bpʗ1).ImportPath] == Ꮡimporting) {
+                Ꮡp.Value.packages[(~bpʗ1).ImportPath] = default!;
+            }
+        }, ref ᒐ);
+        slice<@string> filenames = default!;
+        filenames = append(filenames, (~bp).GoFiles.ꓸꓸꓸ);
+        filenames = append(filenames, (~bp).CgoFiles.ꓸꓸꓸ);
+        (var files, err) = Ꮡp.parseFiles((~bp).Dir, filenames);
+        if (err != default!) {
+            return (default!, err);
+        }
+        // type-check package files
+        ref var firstHardErr = ref heap<error>(out var ᏑfirstHardErr);
+        ref var conf = ref heap<types.Config>(out var Ꮡconf);
+        conf = new types.Config(
+            IgnoreFuncBodies: true, // continue type-checking after the first error
+
+            Error: (error errΔ2) => {
+                if (ᏑfirstHardErr.ValueSlot == default! && !errΔ2._<typesꓸError>().Soft) {
+                    ᏑfirstHardErr.ValueSlot = errΔ2;
+                }
+            },
+            Importer: new ImporterжImporter(Ꮡp),
+            Sizes: p.sizes
+        );
+        if (len((~bp).CgoFiles) > 0) {
+            if ((~p.ctxt).OpenFile != default!){
+                // cgo, gcc, pkg-config, etc. do not support
+                // build.Context's VFS.
+                conf.FakeImportC = true;
+            } else {
+                setUsesCgo(Ꮡconf);
+                var (@file, errΔ3) = Ꮡp.cgo(bp);
+                if (errΔ3 != default!) {
+                    return (default!, fmt.Errorf("error processing cgo for package %q: %w"u8, (~bp).ImportPath, errΔ3));
+                }
+                files = append(files, @file);
+            }
+        }
+        (pkg, err) = Ꮡconf.Check((~bp).ImportPath, p.fset, files, nil);
+        if (err != default!) {
+            // If there was a hard error it is possibly unsafe
+            // to use the package as it may not be fully populated.
+            // Do not return it (see also #20837, #20855).
+            if (firstHardErr != default!) {
+                pkg = default!;
+                err = firstHardErr;
+            }
+            // give preference to first hard error over any soft error
+            return (pkg, fmt.Errorf("type-checking package %q failed (%v)"u8, (~bp).ImportPath, err));
+        }
+        if (firstHardErr != default!) {
+            // this can only happen if we have a bug in go/types
+            throw panic("package is not safe yet no error was returned");
+        }
+        p.packages[(~bp).ImportPath] = pkg;
         return (pkg, default!);
     }
-    p.packages[(~bp).ImportPath] = Ꮡimporting;
-    var bpʗ1 = bp;
-    defer(() => {
-        // clean up in case of error
-        // TODO(gri) Eventually we may want to leave a (possibly empty)
-        // package in the map in all cases (and use that package to
-        // identify cycles). See also issue 16088.
-        if (Ꮡp.Value.packages[(~bpʗ1).ImportPath] == Ꮡimporting) {
-            Ꮡp.Value.packages[(~bpʗ1).ImportPath] = default!;
-        }
-    });
-    slice<@string> filenames = default!;
-    filenames = append(filenames, (~bp).GoFiles.ꓸꓸꓸ);
-    filenames = append(filenames, (~bp).CgoFiles.ꓸꓸꓸ);
-    (var files, err) = Ꮡp.parseFiles((~bp).Dir, filenames);
-    if (err != default!) {
-        return (default!, err);
-    }
-    // type-check package files
-    ref var firstHardErr = ref heap<error>(out var ᏑfirstHardErr);
-    ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new types.Config(
-        IgnoreFuncBodies: true, // continue type-checking after the first error
-
-        Error: (error errΔ2) => {
-            if (ᏑfirstHardErr.ValueSlot == default! && !errΔ2._<typesꓸError>().Soft) {
-                ᏑfirstHardErr.ValueSlot = errΔ2;
-            }
-        },
-        Importer: new ImporterжImporter(Ꮡp),
-        Sizes: p.sizes
-    );
-    if (len((~bp).CgoFiles) > 0) {
-        if ((~p.ctxt).OpenFile != default!){
-            // cgo, gcc, pkg-config, etc. do not support
-            // build.Context's VFS.
-            conf.FakeImportC = true;
-        } else {
-            setUsesCgo(Ꮡconf);
-            var (@file, errΔ3) = Ꮡp.cgo(bp);
-            if (errΔ3 != default!) {
-                return (default!, fmt.Errorf("error processing cgo for package %q: %w"u8, (~bp).ImportPath, errΔ3));
-            }
-            files = append(files, @file);
-        }
-    }
-    (pkg, err) = Ꮡconf.Check((~bp).ImportPath, p.fset, files, nil);
-    if (err != default!) {
-        // If there was a hard error it is possibly unsafe
-        // to use the package as it may not be fully populated.
-        // Do not return it (see also #20837, #20855).
-        if (firstHardErr != default!) {
-            pkg = default!;
-            err = firstHardErr;
-        }
-        // give preference to first hard error over any soft error
-        return (pkg, fmt.Errorf("type-checking package %q failed (%v)"u8, (~bp).ImportPath, err));
-    }
-    if (firstHardErr != default!) {
-        // this can only happen if we have a bug in go/types
-        throw panic("package is not safe yet no error was returned");
-    }
-    p.packages[(~bp).ImportPath] = pkg;
-    return (pkg, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, @string dir, slice<@string> filenames) {
     ref var p = ref Ꮡp.DerefOrNull();
@@ -192,16 +197,21 @@ internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, 
         var errorsʗ3 = errors;
         var filesʗ3 = files;
         var openʗ3 = open;
-        goǃ((nint iΔ1, @string filepath) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var (src, err) = openʗ3(filepath);
-            if (err != default!) {
-                errorsʗ3[iΔ1] = err;
-                return;
+        goǃ((nint iΔ1, @string filepath) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                var (src, err) = openʗ3(filepath);
+                if (err != default!) {
+                    errorsʗ3[iΔ1] = err;
+                    return;
+                }
+                (filesʗ3[iΔ1], errorsʗ3[iΔ1]) = parser.ParseFile(Ꮡp.Value.fset, filepath, src, parser.SkipObjectResolution);
+                src.Close();
             }
-            (filesʗ3[iΔ1], errorsʗ3[iΔ1]) = parser.ParseFile(Ꮡp.Value.fset, filepath, src, parser.SkipObjectResolution);
-            src.Close();
-        }), i, Ꮡp.Value.joinPath(dir, filename));
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i, Ꮡp.Value.joinPath(dir, filename));
     }
     Ꮡwg.Wait();
     // if there are errors, return the first one for deterministic results
@@ -220,54 +230,59 @@ internal static readonly @string cgoCppflagsˢ = "CGO_CPPFLAGS"u8;
 internal static readonly @string cgoCflagsˢ = "CGO_CFLAGS"u8;
 internal static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
 
-internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) => func<(ж<ast.File>, error)>((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var bp = ref Ꮡbp.DerefOrNull();
+internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var bp = ref Ꮡbp.DerefOrNull();
 
-    var (tmpdir, err) = os.MkdirTemp(""u8, srcimporterˢ);
-    if (err != default!) {
-        return (default!, err);
-    }
-    deferǃ(os.RemoveAll, tmpdir, defer);
-    @string goCmd = "go"u8;
-    if ((~p.ctxt).GOROOT != ""u8) {
-        goCmd = filepath.Join((~p.ctxt).GOROOT, binˢ, "go");
-    }
-    var args = new @string[]{goCmd, "tool"u8, "cgo"u8, "-objdir"u8, tmpdir}.slice();
-    if (bp.Goroot) {
-        var exprᴛ1 = bp.ImportPath;
-        if (exprᴛ1 == "runtime/cgo"u8) {
-            args = append(args, "-import_runtime_cgo=false"u8, "-import_syscall=false");
+        var (tmpdir, err) = os.MkdirTemp(""u8, srcimporterˢ);
+        if (err != default!) {
+            return (default!, err);
         }
-        else if (exprᴛ1 == "runtime/race"u8) {
-            args = append(args, "-import_syscall=false"u8);
+        defer(os.RemoveAll, tmpdir, ref ᒐ);
+        @string goCmd = "go"u8;
+        if ((~p.ctxt).GOROOT != ""u8) {
+            goCmd = filepath.Join((~p.ctxt).GOROOT, binˢ, "go");
         }
+        var args = new @string[]{goCmd, "tool"u8, "cgo"u8, "-objdir"u8, tmpdir}.slice();
+        if (bp.Goroot) {
+            var exprᴛ1 = bp.ImportPath;
+            if (exprᴛ1 == "runtime/cgo"u8) {
+                args = append(args, "-import_runtime_cgo=false"u8, "-import_syscall=false");
+            }
+            else if (exprᴛ1 == "runtime/race"u8) {
+                args = append(args, "-import_syscall=false"u8);
+            }
 
-    }
-    args = append(args, "--"u8);
-    args = append(args, strings.Fields(os.Getenv(cgoCppflagsˢ)).ꓸꓸꓸ);
-    args = append(args, bp.CgoCPPFLAGS.ꓸꓸꓸ);
-    if (len(bp.CgoPkgConfig) > 0) {
-        var cmdΔ1 = exec.Command("pkg-config"u8, append(new @string[]{"--cflags"u8}.slice(), bp.CgoPkgConfig.ꓸꓸꓸ).ꓸꓸꓸ);
-        var (@out, errΔ1) = cmdΔ1.Output();
-        if (errΔ1 != default!) {
-            return (default!, fmt.Errorf("pkg-config --cflags: %w"u8, errΔ1));
         }
-        args = append(args, strings.Fields(((@string)@out)).ꓸꓸꓸ);
-    }
-    args = append(args, "-I"u8, tmpdir);
-    args = append(args, strings.Fields(os.Getenv(cgoCflagsˢ)).ꓸꓸꓸ);
-    args = append(args, bp.CgoCFLAGS.ꓸꓸꓸ);
-    args = append(args, bp.CgoFiles.ꓸꓸꓸ);
-    var cmd = exec.Command(args[0], args[1..].ꓸꓸꓸ);
-    cmd.Value.Dir = bp.Dir;
-    {
-        var errΔ2 = cmd.Run(); if (errΔ2 != default!) {
-            return (default!, fmt.Errorf("go tool cgo: %w"u8, errΔ2));
+        args = append(args, "--"u8);
+        args = append(args, strings.Fields(os.Getenv(cgoCppflagsˢ)).ꓸꓸꓸ);
+        args = append(args, bp.CgoCPPFLAGS.ꓸꓸꓸ);
+        if (len(bp.CgoPkgConfig) > 0) {
+            var cmdΔ1 = exec.Command("pkg-config"u8, append(new @string[]{"--cflags"u8}.slice(), bp.CgoPkgConfig.ꓸꓸꓸ).ꓸꓸꓸ);
+            var (@out, errΔ1) = cmdΔ1.Output();
+            if (errΔ1 != default!) {
+                return (default!, fmt.Errorf("pkg-config --cflags: %w"u8, errΔ1));
+            }
+            args = append(args, strings.Fields(((@string)@out)).ꓸꓸꓸ);
         }
+        args = append(args, "-I"u8, tmpdir);
+        args = append(args, strings.Fields(os.Getenv(cgoCflagsˢ)).ꓸꓸꓸ);
+        args = append(args, bp.CgoCFLAGS.ꓸꓸꓸ);
+        args = append(args, bp.CgoFiles.ꓸꓸꓸ);
+        var cmd = exec.Command(args[0], args[1..].ꓸꓸꓸ);
+        cmd.Value.Dir = bp.Dir;
+        {
+            var errΔ2 = cmd.Run(); if (errΔ2 != default!) {
+                return (default!, fmt.Errorf("go tool cgo: %w"u8, errΔ2));
+            }
+        }
+        return parser.ParseFile(p.fset, filepath.Join(tmpdir, cgoGotypesGoˢ), default!, parser.SkipObjectResolution);
     }
-    return parser.ParseFile(p.fset, filepath.Join(tmpdir, cgoGotypesGoˢ), default!, parser.SkipObjectResolution);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // context-controlled file system operations
 [GoRecv] internal static (@string, error) absPath(this ref Importer p, @string path) {

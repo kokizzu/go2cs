@@ -109,10 +109,15 @@ internal static error release(errno e) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object usingˢ = (@string)"using"u8;
 
-internal static void useAndRelease() => func((defer, recover) => {
-    deferǃ(release, errAgain, defer);
-    fmt.Println(usingˢ);
-});
+internal static void useAndRelease() {
+    GoFrame ᒐ = default;
+    try {
+        defer(release, errAgain, ref ᒐ);
+        fmt.Println(usingˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
     ref var zoo = ref Ꮡzoo.DerefOrNull();

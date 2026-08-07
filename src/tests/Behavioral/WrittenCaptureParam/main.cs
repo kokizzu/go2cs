@@ -29,17 +29,20 @@ internal static (@string, @string) declRedeclare(fmt.Stringer sʗp) {
 
 internal static @string /*result*/ declDeferObserver(fmt.Stringer xʗp, fmt.Stringer y) {
     @string result = default!;
-    func((defer, recover) => {
-    ref var x = ref heap(xʗp, out var Ꮡx);
+    GoFrame ᒐ = default;
+    try {
+        ref var x = ref heap(xʗp, out var Ꮡx);
 
         defer(() => {
             result = "final:"u8 + Ꮡx.ValueSlot.String() + "/"u8 + y.String();
-        });
+        }, ref ᒐ);
         (x, y) = (y, x);
         (x, var n) = swap(x);
         _ = n;
         result = ""u8;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return result;
 }
 

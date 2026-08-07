@@ -92,13 +92,18 @@ internal static void testOncePanicWith(ж<Δtesting.T> Ꮡt, ж<nint> Ꮡcalls, 
     foreach (var (_, label) in new @string[]{"first time"u8, "second time"u8}.slice()) {
         ref var p = ref heap<any>(out var Ꮡp);
         var panicked = true;
-        ((Action)(() => func((defer, recover) => {
-            defer(() => {
-                Ꮡp.ValueSlot = recover();
-            });
-            f();
-            panicked = false;
-        })))();
+        ((Action)(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(() => {
+                    Ꮡp.ValueSlot = recover();
+                }, ref ᒐ);
+                f();
+                panicked = false;
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }))();
         if (!panicked) {
             Ꮡt.Fatalf("%s: f did not panic"u8, label);
         }
@@ -177,13 +182,18 @@ public static void TestOnceFuncGoexit(ж<Δtesting.T> Ꮡt) {
     for (nint i = 0; i < 2; i++) {
         Ꮡwg.Add(1);
         var fʗ1 = f;
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            defer(() => {
-                recover();
-            });
-            fʗ1();
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                defer(() => {
+                    recover();
+                }, ref ᒐ);
+                fʗ1();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
         Ꮡwg.Wait();
     }
     if (calls != 1) {
@@ -194,24 +204,29 @@ public static void TestOnceFuncGoexit(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string syncTestOnceFuncPanicˢ = "sync_test.onceFuncPanic"u8;
 
-public static void TestOnceFuncPanicTraceback(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    // Test that on the first invocation of a OnceFunc, the stack trace goes all
-    // the way to the origin of the panic.
-    var f = Δsync.OnceFunc(onceFuncPanic);
-    defer(() => {
-        {
-            var p = recover(); if (!AreEqual(p, (@string)("x"))) {
-                Ꮡt.Fatalf("want panic %v, got %v"u8, (@string)"x"u8, p);
+public static void TestOnceFuncPanicTraceback(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Test that on the first invocation of a OnceFunc, the stack trace goes all
+        // the way to the origin of the panic.
+        var f = Δsync.OnceFunc(onceFuncPanic);
+        defer(() => {
+            {
+                var p = recover(); if (!AreEqual(p, (@string)("x"))) {
+                    Ꮡt.Fatalf("want panic %v, got %v"u8, (@string)"x"u8, p);
+                }
             }
-        }
-        var stack = debug.Stack();
-        @string want = syncTestOnceFuncPanicˢ;
-        if (!bytes.Contains(stack, slice<byte>(want))) {
-            Ꮡt.Fatalf("want stack containing %v, got:\n%s"u8, want, ((@string)stack));
-        }
-    });
-    f();
-});
+            var stack = debug.Stack();
+            @string want = syncTestOnceFuncPanicˢ;
+            if (!bytes.Contains(stack, slice<byte>(want))) {
+                Ꮡt.Fatalf("want stack containing %v, got:\n%s"u8, want, ((@string)stack));
+            }
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void onceFuncPanic() {
     throw panic("x");

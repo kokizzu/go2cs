@@ -349,55 +349,65 @@ internal static readonly @string testReadFromPanicReader2ˢ = "TestReadFromPanic
 
 // Make sure that an empty Buffer remains empty when
 // it is "grown" before a Read that panics
-public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // First verify non-panic behaviour
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    var (i, err) = buf.ReadFrom(new panicReader(nil));
-    if (err != default!) {
-        Ꮡt.Fatal(err);
+public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // First verify non-panic behaviour
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+        var (i, err) = buf.ReadFrom(new panicReader(nil));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (i != 0) {
+            Ꮡt.Fatalf("unexpected return from bytes.ReadFrom (1): got: %d, want %d"u8, i, (nint)(0));
+        }
+        check(Ꮡt, testReadFromPanicReader1ˢ, Ꮡbuf, ""u8);
+        // Confirm that when Reader panics, the empty buffer remains empty
+        ref var buf2 = ref heap(new bytes.Buffer(), out var Ꮡbuf2);
+        defer(() => {
+            recover();
+            check(Ꮡt, testReadFromPanicReader2ˢ, Ꮡbuf2, ""u8);
+        }, ref ᒐ);
+        buf2.ReadFrom(new panicReader(panic: true));
     }
-    if (i != 0) {
-        Ꮡt.Fatalf("unexpected return from bytes.ReadFrom (1): got: %d, want %d"u8, i, (nint)(0));
-    }
-    check(Ꮡt, testReadFromPanicReader1ˢ, Ꮡbuf, ""u8);
-    // Confirm that when Reader panics, the empty buffer remains empty
-    ref var buf2 = ref heap(new bytes.Buffer(), out var Ꮡbuf2);
-    defer(() => {
-        recover();
-        check(Ꮡt, testReadFromPanicReader2ˢ, Ꮡbuf2, ""u8);
-    });
-    buf2.ReadFrom(new panicReader(panic: true));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object bytesBufferReadFromDidnTˢ = (@string)"bytes.Buffer.ReadFrom didn't panic"u8;
 internal static readonly @string bytesBufferReaderˢ = "bytes.Buffer: reader returned negative count from Read"u8;
 
-public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    bytes.Buffer b = default!;
-    defer(() => {
-        var switchᴛ1 = recover();
-        switch (switchᴛ1.type()) {
-        case null: {
-            Ꮡt.Fatal(bytesBufferReadFromDidnTˢ);
-            break;
-        }
-        case {} Δerr when Δerr._<error>(out var err): {
-            @string wantError = bytesBufferReaderˢ;
-            if (err.Error() != wantError) {
-                // this is the error string of errNegativeRead
-                Ꮡt.Fatalf("recovered panic: got %v, want %v"u8, err.Error(), wantError);
+public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        bytes.Buffer b = default!;
+        defer(() => {
+            var switchᴛ1 = recover();
+            switch (switchᴛ1.type()) {
+            case null: {
+                Ꮡt.Fatal(bytesBufferReadFromDidnTˢ);
+                break;
             }
-            break;
-        }
-        default: {
-            var err = switchᴛ1;
-            Ꮡt.Fatalf("unexpected panic value: %#v"u8, err);
-            break;
-        }}
-    });
-    b.ReadFrom(new bytes_test_package.negativeReaderжReader(@new<negativeReader>()));
-});
+            case {} Δerr when Δerr._<error>(out var err): {
+                @string wantError = bytesBufferReaderˢ;
+                if (err.Error() != wantError) {
+                    // this is the error string of errNegativeRead
+                    Ꮡt.Fatalf("recovered panic: got %v, want %v"u8, err.Error(), wantError);
+                }
+                break;
+            }
+            default: {
+                var err = switchᴛ1;
+                Ꮡt.Fatalf("unexpected panic value: %#v"u8, err);
+                break;
+            }}
+        }, ref ᒐ);
+        b.ReadFrom(new bytes_test_package.negativeReaderжReader(@new<negativeReader>()));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testWriteTo1ˢ = "TestWriteTo (1)"u8;
@@ -657,18 +667,23 @@ public static void TestGrow(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestGrowOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (!AreEqual(err, ErrTooLarge)) {
-                Ꮡt.Errorf("after too-large Grow, recover() = %v; want %v"u8, err, ErrTooLarge);
+public static void TestGrowOverflow(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (!AreEqual(err, ErrTooLarge)) {
+                    Ꮡt.Errorf("after too-large Grow, recover() = %v; want %v"u8, err, ErrTooLarge);
+                }
             }
-        }
-    });
-    var buf = NewBuffer(new slice<byte>(1));
-    nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
-    buf.Grow(maxInt);
-});
+        }, ref ᒐ);
+        var buf = NewBuffer(new slice<byte>(1));
+        nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
+        buf.Grow(maxInt);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Was a bug: used to give EOF reading empty slice at EOF.
 public static void TestReadEmptyAtEOF(ж<testing.T> Ꮡt) {

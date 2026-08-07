@@ -175,29 +175,39 @@ internal static slice<byte> appendJSONMayExpand(this ж<Map> Ꮡv, slice<byte> b
 }
 
 // Init removes all keys from the map.
-public static ж<Map> Init(this ж<Map> Ꮡv) => func((defer, recover) => {
-    ref var v = ref Ꮡv.DerefOrNull();
+public static ж<Map> Init(this ж<Map> Ꮡv) {
+    GoFrame ᒐ = default;
+    try {
+        ref var v = ref Ꮡv.DerefOrNull();
 
-    Ꮡv.of(Map.ᏑkeysMu).Lock();
-    defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
-    v.keys = v.keys[..0];
-    Ꮡv.of(Map.Ꮡm).Clear();
-    return Ꮡv;
-});
+        Ꮡv.of(Map.ᏑkeysMu).Lock();
+        defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
+        v.keys = v.keys[..0];
+        Ꮡv.of(Map.Ꮡm).Clear();
+        return Ꮡv;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // addKey updates the sorted list of keys in v.keys.
-internal static void addKey(this ж<Map> Ꮡv, @string key) => func((defer, recover) => {
-    ref var v = ref Ꮡv.DerefOrNull();
+internal static void addKey(this ж<Map> Ꮡv, @string key) {
+    GoFrame ᒐ = default;
+    try {
+        ref var v = ref Ꮡv.DerefOrNull();
 
-    Ꮡv.of(Map.ᏑkeysMu).Lock();
-    defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
-    // Using insertion sort to place key into the already-sorted v.keys.
-    var (i, found) = slices.BinarySearch(v.keys, key);
-    if (found) {
-        return;
+        Ꮡv.of(Map.ᏑkeysMu).Lock();
+        defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
+        // Using insertion sort to place key into the already-sorted v.keys.
+        var (i, found) = slices.BinarySearch(v.keys, key);
+        if (found) {
+            return;
+        }
+        v.keys = slices.Insert(v.keys, i, key);
     }
-    v.keys = slices.Insert(v.keys, i, key);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static Var Get(this ж<Map> Ꮡv, @string key) {
     var (i, _) = Ꮡv.of(Map.Ꮡm).Load(key);
@@ -259,32 +269,42 @@ public static void AddFloat(this ж<Map> Ꮡv, @string key, float64 delta) {
 }
 
 // Delete deletes the given key from the map.
-public static void Delete(this ж<Map> Ꮡv, @string key) => func((defer, recover) => {
-    ref var v = ref Ꮡv.DerefOrNull();
+public static void Delete(this ж<Map> Ꮡv, @string key) {
+    GoFrame ᒐ = default;
+    try {
+        ref var v = ref Ꮡv.DerefOrNull();
 
-    Ꮡv.of(Map.ᏑkeysMu).Lock();
-    defer(Ꮡv.of(Map.ᏑkeysMu).Unlock);
-    var (i, found) = slices.BinarySearch(v.keys, key);
-    if (found) {
-        v.keys = slices.Delete<slice<@string>, @string>(v.keys, i, i + 1);
-        Ꮡv.of(Map.Ꮡm).Delete(key);
+        Ꮡv.of(Map.ᏑkeysMu).Lock();
+        defer(Ꮡv.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
+        var (i, found) = slices.BinarySearch(v.keys, key);
+        if (found) {
+            v.keys = slices.Delete<slice<@string>, @string>(v.keys, i, i + 1);
+            Ꮡv.of(Map.Ꮡm).Delete(key);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Do calls f for each entry in the map.
 // The map is locked during the iteration,
 // but existing entries may be concurrently updated.
-public static void Do(this ж<Map> Ꮡv, Action<KeyValue> f) => func((defer, recover) => {
-    ref var v = ref Ꮡv.DerefOrNull();
+public static void Do(this ж<Map> Ꮡv, Action<KeyValue> f) {
+    GoFrame ᒐ = default;
+    try {
+        ref var v = ref Ꮡv.DerefOrNull();
 
-    Ꮡv.of(Map.ᏑkeysMu).RLock();
-    defer(Ꮡv.of(Map.ᏑkeysMu).RUnlock);
-    foreach (var (_, k) in v.keys) {
-        var (i, _) = Ꮡv.of(Map.Ꮡm).Load(k);
-        var (val, _) = i._<Var>(ᐧ);
-        f(new KeyValue(k, val));
+        Ꮡv.of(Map.ᏑkeysMu).RLock();
+        defer(Ꮡv.of(Map.ᏑkeysMu).RUnlock, ref ᒐ);
+        foreach (var (_, k) in v.keys) {
+            var (i, _) = Ꮡv.of(Map.Ꮡm).Load(k);
+            var (val, _) = i._<Var>(ᐧ);
+            f(new KeyValue(k, val));
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // String is a string variable, and satisfies the [Var] interface.
 [GoType] partial struct ΔString {
@@ -331,17 +351,22 @@ internal static readonly object reuseOfExportedVarNameˢ = (@string)"Reuse of ex
 // Publish declares a named exported variable. This should be called from a
 // package's init function when it creates its Vars. If the name is already
 // registered then this will log.Panic.
-public static void Publish(@string name, Var v) => func((defer, recover) => {
-    {
-        var (_, dup) = Ꮡvars.of(Map.Ꮡm).LoadOrStore(name, v); if (dup) {
-            Δlog.Panicln(reuseOfExportedVarNameˢ, name);
+public static void Publish(@string name, Var v) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (_, dup) = Ꮡvars.of(Map.Ꮡm).LoadOrStore(name, v); if (dup) {
+                Δlog.Panicln(reuseOfExportedVarNameˢ, name);
+            }
         }
+        Ꮡvars.of(Map.ᏑkeysMu).Lock();
+        defer(Ꮡvars.of(Map.ᏑkeysMu).Unlock, ref ᒐ);
+        vars.keys = append(vars.keys, name);
+        slices.Sort<slice<@string>, @string>(vars.keys);
     }
-    Ꮡvars.of(Map.ᏑkeysMu).Lock();
-    defer(Ꮡvars.of(Map.ᏑkeysMu).Unlock);
-    vars.keys = append(vars.keys, name);
-    slices.Sort<slice<@string>, @string>(vars.keys);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Get retrieves a named exported variable. It returns nil if the name has
 // not been registered.

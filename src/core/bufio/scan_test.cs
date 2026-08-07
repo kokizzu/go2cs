@@ -517,30 +517,35 @@ internal static readonly @string emptyTokensˢ = "empty tokens"u8;
 internal static readonly object loopingˢ = (@string)"looping"u8;
 internal static readonly object afterScanˢ = (@string)"after scan:"u8;
 
-public static void TestDontLoopForever(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcˢ)));
-    s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(loopAtEOFSplit));
-    // Expect a panic
-    defer(() => {
-        var err = recover();
-        if (err == default!) {
-            Ꮡt.Fatal(shouldHavePanickedˢ);
-        }
-        {
-            var (msg, ok) = err._<@string>(ᐧ); if (!ok || !strings.Contains(msg, emptyTokensˢ)) {
-                throw panic(err);
+public static void TestDontLoopForever(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcˢ)));
+        s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(loopAtEOFSplit));
+        // Expect a panic
+        defer(() => {
+            var err = recover();
+            if (err == default!) {
+                Ꮡt.Fatal(shouldHavePanickedˢ);
+            }
+            {
+                var (msg, ok) = err._<@string>(ᐧ); if (!ok || !strings.Contains(msg, emptyTokensˢ)) {
+                    throw panic(err);
+                }
+            }
+        }, ref ᒐ);
+        for (nint count = 0; s.Scan(); count++) {
+            if (count > 1000) {
+                Ꮡt.Fatal(loopingˢ);
             }
         }
-    });
-    for (nint count = 0; s.Scan(); count++) {
-        if (count > 1000) {
-            Ꮡt.Fatal(loopingˢ);
+        if (s.Err() != default!) {
+            Ꮡt.Fatal(afterScanˢ, s.Err());
         }
     }
-    if (s.Err() != default!) {
-        Ꮡt.Fatal(afterScanˢ, s.Err());
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestBlankLines(ж<Δtesting.T> Ꮡt) {
     var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("\n"u8, 1000))));

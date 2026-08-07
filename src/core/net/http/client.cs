@@ -666,21 +666,22 @@ internal static readonly @string refererˢ = "Referer"u8;
 internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж<Request> Ꮡreq) {
     ж<Response> retres = default!;
     error reterr = default!;
-    func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
         if (testHookClientDoResult != default!) {
             defer(() => {
                 testHookClientDoResult(retres, reterr);
-            });
+            }, ref ᒐ);
         }
         if (req.URL == nil) {
             req.closeBody();
             (retres, reterr) = (default!, new url.ΔErrorжerror(Ꮡ(new urlꓸError(
                 Op: urlErrorOp(req.Method),
                 Err: errors.New(httpNilRequestUrlˢ)
-            )))); return;
+            )))); goto ᒐdone;
         }
         _ = c;
         // panic early if c is nil; see go.dev/issue/53521
@@ -717,12 +718,12 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     // While most 3xx responses include a Location, it is not
                     // required and 3xx responses without a Location have been
                     // observed in the wild. See issues #17773 and #49281.
-                    (retres, reterr) = (resp, default!); return;
+                    (retres, reterr) = (resp, default!); goto ᒐdone;
                 }
                 var (u, errΔ1) = req.URL.Parse(loc);
                 if (errΔ1 != default!) {
                     resp.closeBody();
-                    (retres, reterr) = (default!, uerr(fmt.Errorf("failed to parse Location header %q: %v"u8, loc, errΔ1))); return;
+                    (retres, reterr) = (default!, uerr(fmt.Errorf("failed to parse Location header %q: %v"u8, loc, errΔ1))); goto ᒐdone;
                 }
                 ref var host = ref heap<@string>(out var Ꮡhost);
                 host = ""u8;
@@ -750,7 +751,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     (req.Body, errΔ1) = (~ireq).GetBody();
                     if (errΔ1 != default!) {
                         resp.closeBody();
-                        (retres, reterr) = (default!, uerr(errΔ1)); return;
+                        (retres, reterr) = (default!, uerr(errΔ1)); goto ᒐdone;
                     }
                     req.ContentLength = ireq.Value.ContentLength;
                 }
@@ -771,7 +772,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 // previous response, without closing its
                 // body. See Issue 10069.
                 if (AreEqual(errΔ1, ErrUseLastResponse)) {
-                    (retres, reterr) = (resp, default!); return;
+                    (retres, reterr) = (resp, default!); goto ᒐdone;
                 }
                 // Close the previous response's body. But
                 // read at least some of the body so if it's
@@ -790,7 +791,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     // The resp.Body has already been closed.
                     var ue = uerr(errΔ1);
                     ue._<ж<urlꓸError>>().Value.URL = loc;
-                    (retres, reterr) = (resp, ue); return;
+                    (retres, reterr) = (resp, ue); goto ᒐdone;
                 }
             }
             reqs = append(reqs, Ꮡreq);
@@ -803,18 +804,20 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     if (!deadline.IsZero() && didTimeout()) {
                         err = new timeoutErrorжerror(Ꮡ(new timeoutError(err.Error() + " (Client.Timeout exceeded while awaiting headers)"u8)));
                     }
-                    (retres, reterr) = (default!, uerr(err)); return;
+                    (retres, reterr) = (default!, uerr(err)); goto ᒐdone;
                 }
             }
             bool shouldRedirect = default!;
             (redirectMethod, shouldRedirect, includeBody) = redirectBehavior(req.Method, resp, reqs[0]);
             if (!shouldRedirect) {
-                (retres, reterr) = (resp, default!); return;
+                (retres, reterr) = (resp, default!); goto ᒐdone;
             }
             req.closeBody();
         }
-    });
-    return (retres, reterr);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (retres, reterr);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

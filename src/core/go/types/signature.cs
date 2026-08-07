@@ -133,195 +133,200 @@ internal static readonly @string pointerOrInterfaceTypeˢ = "pointer or interfac
 // Implementation
 
 // funcType type-checks a function or method type.
-internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig, ж<ast.FieldList> ᏑrecvPar, ж<ast.FuncType> Ꮡftyp) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var sig = ref Ꮡsig.DerefOrNull();
-    ref var recvPar = ref ᏑrecvPar.DerefOrNull();
-    ref var ftyp = ref Ꮡftyp.DerefOrNull();
+internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig, ж<ast.FieldList> ᏑrecvPar, ж<ast.FuncType> Ꮡftyp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var sig = ref Ꮡsig.DerefOrNull();
+        ref var recvPar = ref ᏑrecvPar.DerefOrNull();
+        ref var ftyp = ref Ꮡftyp.DerefOrNull();
 
-    check.openScope(new ast.FuncTypeжNode(Ꮡftyp), functionˢ);
-    check.scope.Value.isFunc = true;
-    check.recordScope(new ast.FuncTypeжNode(Ꮡftyp), check.scope);
-    sig.scope = check.scope;
-    defer(Ꮡcheck.closeScope);
-    if (ᏑrecvPar != nil && len(recvPar.List) > 0) {
-        // collect generic receiver type parameters, if any
-        // - a receiver type parameter is like any other type parameter, except that it is declared implicitly
-        // - the receiver specification acts as local declaration for its type parameters, which may be blank
-        var (_, rname, rparams) = Ꮡcheck.unpackRecv((~recvPar.List[0]).Type, true);
-        if (len(rparams) > 0) {
-            // The scope of the type parameter T in "func (r T[T]) f()"
-            // starts after f, not at "r"; see #52038.
-            tokenꓸPos scopePosΔ1 = ftyp.Params.Pos();
-            var tparams = Ꮡcheck.declareTypeParams(default!, rparams, scopePosΔ1);
-            sig.rparams = bindTParams(tparams);
-            // Blank identifiers don't get declared, so naive type-checking of the
-            // receiver type expression would fail in Checker.collectParams below,
-            // when Checker.ident cannot resolve the _ to a type.
-            //
-            // Checker.recvTParamMap maps these blank identifiers to their type parameter
-            // types, so that they may be resolved in Checker.ident when they fail
-            // lookup in the scope.
-            foreach (var (i, p) in rparams) {
-                if ((~p).Name == "_"u8) {
-                    if (check.recvTParamMap == default!) {
-                        check.recvTParamMap = new map<ж<ast.Ident>, ж<TypeParam>>();
-                    }
-                    check.recvTParamMap[p] = tparams[i];
-                }
-            }
-            // determine receiver type to get its type parameters
-            // and the respective type parameter bounds
-            slice<ж<TypeParam>> recvTParams = default!;
-            if (rname != nil) {
-                // recv should be a Named type (otherwise an error is reported elsewhere)
-                // Also: Don't report an error via genericType since it will be reported
-                //       again when we type-check the signature.
-                // TODO(gri) maybe the receiver should be marked as invalid instead?
-                {
-                    var recv = asNamed(Ꮡcheck.genericType(new ast_IdentжExpr(rname), nil)); if (recv != nil) {
-                        recvTParams = recv.TypeParams().list();
+        check.openScope(new ast.FuncTypeжNode(Ꮡftyp), functionˢ);
+        check.scope.Value.isFunc = true;
+        check.recordScope(new ast.FuncTypeжNode(Ꮡftyp), check.scope);
+        sig.scope = check.scope;
+        defer(Ꮡcheck.closeScope, ref ᒐ);
+        if (ᏑrecvPar != nil && len(recvPar.List) > 0) {
+            // collect generic receiver type parameters, if any
+            // - a receiver type parameter is like any other type parameter, except that it is declared implicitly
+            // - the receiver specification acts as local declaration for its type parameters, which may be blank
+            var (_, rname, rparams) = Ꮡcheck.unpackRecv((~recvPar.List[0]).Type, true);
+            if (len(rparams) > 0) {
+                // The scope of the type parameter T in "func (r T[T]) f()"
+                // starts after f, not at "r"; see #52038.
+                tokenꓸPos scopePosΔ1 = ftyp.Params.Pos();
+                var tparams = Ꮡcheck.declareTypeParams(default!, rparams, scopePosΔ1);
+                sig.rparams = bindTParams(tparams);
+                // Blank identifiers don't get declared, so naive type-checking of the
+                // receiver type expression would fail in Checker.collectParams below,
+                // when Checker.ident cannot resolve the _ to a type.
+                //
+                // Checker.recvTParamMap maps these blank identifiers to their type parameter
+                // types, so that they may be resolved in Checker.ident when they fail
+                // lookup in the scope.
+                foreach (var (i, p) in rparams) {
+                    if ((~p).Name == "_"u8) {
+                        if (check.recvTParamMap == default!) {
+                            check.recvTParamMap = new map<ж<ast.Ident>, ж<TypeParam>>();
+                        }
+                        check.recvTParamMap[p] = tparams[i];
                     }
                 }
-            }
-            // provide type parameter bounds
-            if (len(tparams) == len(recvTParams)){
-                var smap = makeRenameMap(recvTParams, tparams);
-                foreach (var (i, tpar) in tparams) {
-                    var recvTPar = recvTParams[i];
-                    check.mono.recordCanon(tpar, recvTPar);
-                    // recvTPar.bound is (possibly) parameterized in the context of the
-                    // receiver type declaration. Substitute parameters for the current
-                    // context.
-                    tpar.Value.bound = Ꮡcheck.subst((~(~tpar).obj).pos, (~recvTPar).bound, smap, nil, check.context());
+                // determine receiver type to get its type parameters
+                // and the respective type parameter bounds
+                slice<ж<TypeParam>> recvTParams = default!;
+                if (rname != nil) {
+                    // recv should be a Named type (otherwise an error is reported elsewhere)
+                    // Also: Don't report an error via genericType since it will be reported
+                    //       again when we type-check the signature.
+                    // TODO(gri) maybe the receiver should be marked as invalid instead?
+                    {
+                        var recv = asNamed(Ꮡcheck.genericType(new ast_IdentжExpr(rname), nil)); if (recv != nil) {
+                            recvTParams = recv.TypeParams().list();
+                        }
+                    }
                 }
-            } else 
-            if (len(tparams) < len(recvTParams)) {
-                // Reporting an error here is a stop-gap measure to avoid crashes in the
-                // compiler when a type parameter/argument cannot be inferred later. It
-                // may lead to follow-on errors (see issues go.dev/issue/51339, go.dev/issue/51343).
-                // TODO(gri) find a better solution
-                @string got = measure(len(tparams), typeParameterˢ);
-                Ꮡcheck.errorf(new ast_FieldListжpositioner(ᏑrecvPar), BadRecv, "got %s, but receiver base type declares %d"u8, got, len(recvTParams));
+                // provide type parameter bounds
+                if (len(tparams) == len(recvTParams)){
+                    var smap = makeRenameMap(recvTParams, tparams);
+                    foreach (var (i, tpar) in tparams) {
+                        var recvTPar = recvTParams[i];
+                        check.mono.recordCanon(tpar, recvTPar);
+                        // recvTPar.bound is (possibly) parameterized in the context of the
+                        // receiver type declaration. Substitute parameters for the current
+                        // context.
+                        tpar.Value.bound = Ꮡcheck.subst((~(~tpar).obj).pos, (~recvTPar).bound, smap, nil, check.context());
+                    }
+                } else 
+                if (len(tparams) < len(recvTParams)) {
+                    // Reporting an error here is a stop-gap measure to avoid crashes in the
+                    // compiler when a type parameter/argument cannot be inferred later. It
+                    // may lead to follow-on errors (see issues go.dev/issue/51339, go.dev/issue/51343).
+                    // TODO(gri) find a better solution
+                    @string got = measure(len(tparams), typeParameterˢ);
+                    Ꮡcheck.errorf(new ast_FieldListжpositioner(ᏑrecvPar), BadRecv, "got %s, but receiver base type declares %d"u8, got, len(recvTParams));
+                }
             }
         }
-    }
-    if (ftyp.TypeParams != nil) {
-        Ꮡcheck.collectTypeParams(Ꮡsig.of(types_package.ΔSignature.Ꮡtparams), ftyp.TypeParams);
-        // Always type-check method type parameters but complain that they are not allowed.
-        // (A separate check is needed when type-checking interface method signatures because
-        // they don't have a receiver specification.)
+        if (ftyp.TypeParams != nil) {
+            Ꮡcheck.collectTypeParams(Ꮡsig.of(types_package.ΔSignature.Ꮡtparams), ftyp.TypeParams);
+            // Always type-check method type parameters but complain that they are not allowed.
+            // (A separate check is needed when type-checking interface method signatures because
+            // they don't have a receiver specification.)
+            if (ᏑrecvPar != nil) {
+                Ꮡcheck.error(new ast_FieldListжpositioner(ftyp.TypeParams), InvalidMethodTypeParams, methodsCannotHaveTypeˢ);
+            }
+        }
+        // Use a temporary scope for all parameter declarations and then
+        // squash that scope into the parent scope (and report any
+        // redeclarations at that time).
+        //
+        // TODO(adonovan): now that each declaration has the correct
+        // scopePos, there should be no need for scope squashing.
+        // Audit to ensure all lookups honor scopePos and simplify.
+        var scope = NewScope(check.scope, nopos, nopos, functionBodyTempScopeˢ);
+        tokenꓸPos scopePos = ftyp.End();
+        // all parameters' scopes start after the signature
+        var (recvList, _) = Ꮡcheck.collectParams(scope, ᏑrecvPar, false, scopePos);
+        var (@params, variadic) = Ꮡcheck.collectParams(scope, ftyp.Params, true, scopePos);
+        var (results, _) = Ꮡcheck.collectParams(scope, ftyp.Results, false, scopePos);
+        scope.squash((Object obj, Object alt) => {
+            var err = Ꮡcheck.newError(DuplicateDecl);
+            err.addf(new Objectᴠpositioner(obj), "%s redeclared in this block"u8, obj.Name());
+            err.addAltDecl(alt);
+            err.report();
+        });
         if (ᏑrecvPar != nil) {
-            Ꮡcheck.error(new ast_FieldListжpositioner(ftyp.TypeParams), InvalidMethodTypeParams, methodsCannotHaveTypeˢ);
-        }
-    }
-    // Use a temporary scope for all parameter declarations and then
-    // squash that scope into the parent scope (and report any
-    // redeclarations at that time).
-    //
-    // TODO(adonovan): now that each declaration has the correct
-    // scopePos, there should be no need for scope squashing.
-    // Audit to ensure all lookups honor scopePos and simplify.
-    var scope = NewScope(check.scope, nopos, nopos, functionBodyTempScopeˢ);
-    tokenꓸPos scopePos = ftyp.End();
-    // all parameters' scopes start after the signature
-    var (recvList, _) = Ꮡcheck.collectParams(scope, ᏑrecvPar, false, scopePos);
-    var (@params, variadic) = Ꮡcheck.collectParams(scope, ftyp.Params, true, scopePos);
-    var (results, _) = Ꮡcheck.collectParams(scope, ftyp.Results, false, scopePos);
-    scope.squash((Object obj, Object alt) => {
-        var err = Ꮡcheck.newError(DuplicateDecl);
-        err.addf(new Objectᴠpositioner(obj), "%s redeclared in this block"u8, obj.Name());
-        err.addAltDecl(alt);
-        err.report();
-    });
-    if (ᏑrecvPar != nil) {
-        // recv parameter list present (may be empty)
-        // spec: "The receiver is specified via an extra parameter section preceding the
-        // method name. That parameter section must declare a single parameter, the receiver."
-        ж<Var> recv = default!;
-        var exprᴛ1 = len(recvList);
-        var matchᴛ1 = false;
-        var matchᴛ2 = exprᴛ1 is 0 || exprᴛ1 is 1;
-        if (exprᴛ1 is 0) {
-            recv = NewParam(nopos, // error reported by resolver
+            // recv parameter list present (may be empty)
+            // spec: "The receiver is specified via an extra parameter section preceding the
+            // method name. That parameter section must declare a single parameter, the receiver."
+            ж<Var> recv = default!;
+            var exprᴛ1 = len(recvList);
+            var matchᴛ1 = false;
+            var matchᴛ2 = exprᴛ1 is 0 || exprᴛ1 is 1;
+            if (exprᴛ1 is 0) {
+                recv = NewParam(nopos, // error reported by resolver
  nil, ""u8, new BasicжΔType(Typ[Invalid]));
-        }
-        else if (!matchᴛ2) { /* default: */
-            Ꮡcheck.error(new Varжpositioner(recvList[len(recvList) - 1]), // ignore recv below
+            }
+            else if (!matchᴛ2) { /* default: */
+                Ꮡcheck.error(new Varжpositioner(recvList[len(recvList) - 1]), // ignore recv below
  // more than one receiver
  InvalidRecv, methodHasMultipleˢ);
-            fallthrough = true;
-        }
-        if (fallthrough || !matchᴛ1 && exprᴛ1 is 1) { matchᴛ1 = true;
-            recv = recvList[0];
-        }
-
-        // continue with first receiver
-        sig.recv = recv;
-        // Delay validation of receiver type as it may cause premature expansion
-        // of types the receiver type is dependent on (see issues go.dev/issue/51232, go.dev/issue/51233).
-        var recvʗ1 = recv;
-
-        var recvʗ3 = recv;
-
-        var recvʗ5 = recv;
-
-        var recvʗ7 = recv;
-        check.later(() => {
-            var (rtyp, _) = deref((~recvʗ7).typ);
-            var atyp = Unalias(rtyp);
-            if (!isValid(atyp)) {
-                return;
+                fallthrough = true;
             }
-            switch (atyp.type()) {
-            case ж<Named> T: {
-                if (T.TypeArgs() != nil && Ꮡsig.Value.RecvTypeParams() == nil) {
-                    Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on instantiated type %s"u8, rtyp);
+            if (fallthrough || !matchᴛ1 && exprᴛ1 is 1) { matchᴛ1 = true;
+                recv = recvList[0];
+            }
+
+            // continue with first receiver
+            sig.recv = recv;
+            // Delay validation of receiver type as it may cause premature expansion
+            // of types the receiver type is dependent on (see issues go.dev/issue/51232, go.dev/issue/51233).
+            var recvʗ1 = recv;
+
+            var recvʗ3 = recv;
+
+            var recvʗ5 = recv;
+
+            var recvʗ7 = recv;
+            check.later(() => {
+                var (rtyp, _) = deref((~recvʗ7).typ);
+                var atyp = Unalias(rtyp);
+                if (!isValid(atyp)) {
+                    return;
+                }
+                switch (atyp.type()) {
+                case ж<Named> T: {
+                    if (T.TypeArgs() != nil && Ꮡsig.Value.RecvTypeParams() == nil) {
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on instantiated type %s"u8, rtyp);
+                        break;
+                    }
+                    if ((~(~T).obj).pkg != Ꮡcheck.Value.pkg) {
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
+                        break;
+                    }
+                    @string cause = default!;
+                    var switchᴛ20 = T.under();
+                    switch (switchᴛ20.type()) {
+                    case ж<Basic> u: {
+                        if ((~u).kind == UnsafePointer) {
+                            cause = unsafePointerˢ;
+                        }
+                        break;
+                    }
+                    case ж<Pointer> _:
+                    case ж<Interface> _: {
+                        var u = switchᴛ20;
+                        cause = pointerOrInterfaceTypeˢ;
+                        break;
+                    }
+                    case ж<TypeParam> u: {
+                        throw panic("unreachable");
+                        break;
+                    }}
+                    if (cause != ""u8) {
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s (%s)"u8, rtyp, cause);
+                    }
                     break;
                 }
-                if ((~(~T).obj).pkg != Ꮡcheck.Value.pkg) {
+                case ж<Basic> T: {
                     Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
                     break;
                 }
-                @string cause = default!;
-                var switchᴛ20 = T.under();
-                switch (switchᴛ20.type()) {
-                case ж<Basic> u: {
-                    if ((~u).kind == UnsafePointer) {
-                        cause = unsafePointerˢ;
-                    }
-                    break;
-                }
-                case ж<Pointer> _:
-                case ж<Interface> _: {
-                    var u = switchᴛ20;
-                    cause = pointerOrInterfaceTypeˢ;
-                    break;
-                }
-                case ж<TypeParam> u: {
-                    throw panic("unreachable");
+                default: {
+                    var T = atyp;
+                    Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s"u8, (~recvʗ7).typ);
                     break;
                 }}
-                if (cause != ""u8) {
-                    Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s (%s)"u8, rtyp, cause);
-                }
-                break;
-            }
-            case ж<Basic> T: {
-                Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
-                break;
-            }
-            default: {
-                var T = atyp;
-                Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s"u8, (~recvʗ7).typ);
-                break;
-            }}
-        }).describef(new Varжpositioner(recv), "validate receiver %s"u8, recv.OrTypedNil());
+            }).describef(new Varжpositioner(recv), "validate receiver %s"u8, recv.OrTypedNil());
+        }
+        sig.@params = NewTuple(@params.ꓸꓸꓸ);
+        sig.results = NewTuple(results.ꓸꓸꓸ);
+        sig.variadic = variadic;
     }
-    sig.@params = NewTuple(@params.ꓸꓸꓸ);
-    sig.results = NewTuple(results.ꓸꓸꓸ);
-    sig.variadic = variadic;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string anonymousParameterˢ = "anonymous parameter"u8;

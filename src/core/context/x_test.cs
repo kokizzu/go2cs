@@ -172,28 +172,33 @@ public static void TestWithCancel(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static void testDeadline(context.Context c, @string name, ж<testing.T> Ꮡt) => func((defer, recover) => {
-    Ꮡt.Helper();
-    var d = quiescent(Ꮡt);
-    var timer = time.NewTimer(d);
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    var selᴛ15 = (~timer).C;
-    var selᴛ16 = c.Done();
-    switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
-    case 0 when selᴛ15.ꟷᐳ(out _): {
-        Ꮡt.Fatalf("%s: context not timed out after %v"u8, name, d);
-        break;
-    }
-    case 1 when selᴛ16.ꟷᐳ(out _): {
-        break;
-    }}
-    {
-        var e = c.Err(); if (!AreEqual(e, DeadlineExceeded)) {
-            Ꮡt.Errorf("%s: c.Err() == %v; want %v"u8, name, e, DeadlineExceeded);
+internal static void testDeadline(context.Context c, @string name, ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡt.Helper();
+        var d = quiescent(Ꮡt);
+        var timer = time.NewTimer(d);
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        var selᴛ15 = (~timer).C;
+        var selᴛ16 = c.Done();
+        switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
+        case 0 when selᴛ15.ꟷᐳ(out _): {
+            Ꮡt.Fatalf("%s: context not timed out after %v"u8, name, d);
+            break;
+        }
+        case 1 when selᴛ16.ꟷᐳ(out _): {
+            break;
+        }}
+        {
+            var e = c.Err(); if (!AreEqual(e, DeadlineExceeded)) {
+                Ꮡt.Errorf("%s: c.Err() == %v; want %v"u8, name, e, DeadlineExceeded);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string contextBackgroundˢ3 = "context.Background.WithDeadline("u8;
@@ -439,100 +444,110 @@ public static void TestAllocs(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestSimultaneousCancels(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (root, cancel) = WithCancel(Background());
-    var m = new map<context.Context, Action>{[root] = cancel};
-    var q = new context.Context[]{root}.slice();
-    // Create a tree of contexts.
-    while (len(q) != 0 && len(m) < 100) {
-        var parent = q[0];
-        q = q[1..];
-        for (nint i = 0; i < 4; i++) {
-            var (ctx, cancelΔ1) = WithCancel(parent);
-            m[ctx] = cancelΔ1;
-            q = append(q, ctx);
+public static void TestSimultaneousCancels(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (root, cancel) = WithCancel(Background());
+        var m = new map<context.Context, Action>{[root] = cancel};
+        var q = new context.Context[]{root}.slice();
+        // Create a tree of contexts.
+        while (len(q) != 0 && len(m) < 100) {
+            var parent = q[0];
+            q = q[1..];
+            for (nint i = 0; i < 4; i++) {
+                var (ctx, cancelΔ1) = WithCancel(parent);
+                m[ctx] = cancelΔ1;
+                q = append(q, ctx);
+            }
         }
-    }
-    // Start all the cancels in a random order.
-    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
-    Ꮡwg.Add(len(m));
-    foreach (var (_, cancelΔ2) in m) {
-        goǃ((Action cancelΔ3) => {
-            cancelΔ3();
-            Ꮡwg.Done();
-        }, cancelΔ2);
-    }
-    var d = quiescent(Ꮡt);
-    var stuck = new channel<EmptyStruct>(0);
-    var stuckʗ1 = stuck;
-    var timer = time.AfterFunc(d, () => {
-        close(stuckʗ1);
-    });
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    // Wait on all the contexts in a random order.
-    foreach (var (ctx, _) in m) {
-        var selᴛ18 = ctx.Done();
-        var selᴛ19 = stuck;
-        switch (select(ᐸꟷ(selᴛ18, ꓸꓸꓸ), ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
-        case 0 when selᴛ18.ꟷᐳ(out _): {
+        // Start all the cancels in a random order.
+        ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+        Ꮡwg.Add(len(m));
+        foreach (var (_, cancelΔ2) in m) {
+            goǃ((Action cancelΔ3) => {
+                cancelΔ3();
+                Ꮡwg.Done();
+            }, cancelΔ2);
+        }
+        var d = quiescent(Ꮡt);
+        var stuck = new channel<EmptyStruct>(0);
+        var stuckʗ1 = stuck;
+        var timer = time.AfterFunc(d, () => {
+            close(stuckʗ1);
+        });
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        // Wait on all the contexts in a random order.
+        foreach (var (ctx, _) in m) {
+            var selᴛ18 = ctx.Done();
+            var selᴛ19 = stuck;
+            switch (select(ᐸꟷ(selᴛ18, ꓸꓸꓸ), ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
+            case 0 when selᴛ18.ꟷᐳ(out _): {
+                break;
+            }
+            case 1 when selᴛ19.ꟷᐳ(out _): {
+                var buf = new slice<byte>((10 << (int)(10)));
+                nint n = Δruntime.Stack(buf, true);
+                Ꮡt.Fatalf("timed out after %v waiting for <-ctx.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
+                break;
+            }}
+        }
+        // Wait for all the cancel functions to return.
+        var done = new channel<EmptyStruct>(0);
+        var doneʗ1 = done;
+        goǃ(() => {
+            Ꮡwg.Wait();
+            close(doneʗ1);
+        });
+        var selᴛ20 = done;
+        var selᴛ21 = stuck;
+        switch (select(ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
+        case 0 when selᴛ20.ꟷᐳ(out _): {
             break;
         }
-        case 1 when selᴛ19.ꟷᐳ(out _): {
+        case 1 when selᴛ21.ꟷᐳ(out _): {
             var buf = new slice<byte>((10 << (int)(10)));
             nint n = Δruntime.Stack(buf, true);
-            Ꮡt.Fatalf("timed out after %v waiting for <-ctx.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
+            Ꮡt.Fatalf("timed out after %v waiting for cancel functions; stacks:\n%s"u8, d, buf[..(int)(n)]);
             break;
         }}
     }
-    // Wait for all the cancel functions to return.
-    var done = new channel<EmptyStruct>(0);
-    var doneʗ1 = done;
-    goǃ(() => {
-        Ꮡwg.Wait();
-        close(doneʗ1);
-    });
-    var selᴛ20 = done;
-    var selᴛ21 = stuck;
-    switch (select(ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
-    case 0 when selᴛ20.ꟷᐳ(out _): {
-        break;
-    }
-    case 1 when selᴛ21.ꟷᐳ(out _): {
-        var buf = new slice<byte>((10 << (int)(10)));
-        nint n = Δruntime.Stack(buf, true);
-        Ꮡt.Fatalf("timed out after %v waiting for cancel functions; stacks:\n%s"u8, d, buf[..(int)(n)]);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-public static void TestInterlockedCancels(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (parent, cancelParent) = WithCancel(Background());
-    var (child, cancelChild) = WithCancel(parent);
-    var cancelChildʗ1 = cancelChild;
-    var parentʗ1 = parent;
-    goǃ(() => {
-        ᐸꟷ(parentʗ1.Done());
-        cancelChildʗ1();
-    });
-    cancelParent();
-    var d = quiescent(Ꮡt);
-    var timer = time.NewTimer(d);
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    var selᴛ22 = child.Done();
-    var selᴛ23 = (~timer).C;
-    switch (select(ᐸꟷ(selᴛ22, ꓸꓸꓸ), ᐸꟷ(selᴛ23, ꓸꓸꓸ))) {
-    case 0 when selᴛ22.ꟷᐳ(out _): {
-        break;
+public static void TestInterlockedCancels(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (parent, cancelParent) = WithCancel(Background());
+        var (child, cancelChild) = WithCancel(parent);
+        var cancelChildʗ1 = cancelChild;
+        var parentʗ1 = parent;
+        goǃ(() => {
+            ᐸꟷ(parentʗ1.Done());
+            cancelChildʗ1();
+        });
+        cancelParent();
+        var d = quiescent(Ꮡt);
+        var timer = time.NewTimer(d);
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        var selᴛ22 = child.Done();
+        var selᴛ23 = (~timer).C;
+        switch (select(ᐸꟷ(selᴛ22, ꓸꓸꓸ), ᐸꟷ(selᴛ23, ꓸꓸꓸ))) {
+        case 0 when selᴛ22.ꟷᐳ(out _): {
+            break;
+        }
+        case 1 when selᴛ23.ꟷᐳ(out _): {
+            var buf = new slice<byte>((10 << (int)(10)));
+            nint n = Δruntime.Stack(buf, true);
+            Ꮡt.Fatalf("timed out after %v waiting for child.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
+            break;
+        }}
     }
-    case 1 when selᴛ23.ꟷᐳ(out _): {
-        var buf = new slice<byte>((10 << (int)(10)));
-        nint n = Δruntime.Stack(buf, true);
-        Ꮡt.Fatalf("timed out after %v waiting for child.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestLayersCancel(ж<testing.T> Ꮡt) {
     testLayers(Ꮡt, time.Now().UnixNano(), false);
@@ -550,108 +565,113 @@ internal static readonly @string afterCancelˢ = "after cancel"u8;
 
 [GoType("num:nint")] partial struct testLayers_value;
 
-internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout) => func((defer, recover) => {
-    Ꮡt.Parallel();
-    var r = rand.New(rand.NewSource(seed));
-    @string prefix = fmt.Sprintf("seed=%d"u8, seed);
-    void errorf(@string format, params ꓸꓸꓸany aʗp) {
-        var a = aʗp.slice();
-        Ꮡt.Errorf(prefix + format, a.ꓸꓸꓸ);
-    }
-    const nint minLayers = 30;
-    slice<ж<testLayers_value>> vals = default!;
-    slice<Action> cancels = default!;
-    nint numTimers = default!;
-    context.Context ctx = Background();
-    for (nint i = 0; i < minLayers || numTimers == 0 || len(cancels) == 0 || len(vals) == 0; i++) {
-        switch (r.Intn(3)) {
-        case 0: {
-            var v = @new<testLayers_value>();
-            ctx = WithValue(ctx, v.OrTypedNil(), v.OrTypedNil());
-            vals = append(vals, v);
-            break;
+internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡt.Parallel();
+        var r = rand.New(rand.NewSource(seed));
+        @string prefix = fmt.Sprintf("seed=%d"u8, seed);
+        void errorf(@string format, params ꓸꓸꓸany aʗp) {
+            var a = aʗp.slice();
+            Ꮡt.Errorf(prefix + format, a.ꓸꓸꓸ);
         }
-        case 1: {
-            Action cancel = default!;
-            (ctx, cancel) = WithCancel(ctx);
-            cancels = append(cancels, cancel);
-            break;
-        }
-        case 2: {
-            Action cancel = default!;
-            var d = veryLongDuration;
-            if (testTimeout) {
-                d = shortDuration;
+        const nint minLayers = 30;
+        slice<ж<testLayers_value>> vals = default!;
+        slice<Action> cancels = default!;
+        nint numTimers = default!;
+        context.Context ctx = Background();
+        for (nint i = 0; i < minLayers || numTimers == 0 || len(cancels) == 0 || len(vals) == 0; i++) {
+            switch (r.Intn(3)) {
+            case 0: {
+                var v = @new<testLayers_value>();
+                ctx = WithValue(ctx, v.OrTypedNil(), v.OrTypedNil());
+                vals = append(vals, v);
+                break;
             }
-            (ctx, cancel) = WithTimeout(ctx, d);
-            cancels = append(cancels, cancel);
-            numTimers++;
-            break;
-        }}
+            case 1: {
+                Action cancel = default!;
+                (ctx, cancel) = WithCancel(ctx);
+                cancels = append(cancels, cancel);
+                break;
+            }
+            case 2: {
+                Action cancel = default!;
+                var d = veryLongDuration;
+                if (testTimeout) {
+                    d = shortDuration;
+                }
+                (ctx, cancel) = WithTimeout(ctx, d);
+                cancels = append(cancels, cancel);
+                numTimers++;
+                break;
+            }}
 
-    }
-    var ctxʗ1 = ctx;
-    var errorfʗ1 = errorf;
-    var valsʗ1 = vals;
-    void checkValues(@string when) {
-        foreach (var (_, key) in valsʗ1) {
-            {
-                var val = ctxʗ1.Value(key.OrTypedNil())._<ж<testLayers_value>>(); if (key != val) {
-                    errorfʗ1("%s: ctx.Value(%p) = %p want %p"u8, when, key.OrTypedNil(), val.OrTypedNil(), key.OrTypedNil());
+        }
+        var ctxʗ1 = ctx;
+        var errorfʗ1 = errorf;
+        var valsʗ1 = vals;
+        void checkValues(@string when) {
+            foreach (var (_, key) in valsʗ1) {
+                {
+                    var val = ctxʗ1.Value(key.OrTypedNil())._<ж<testLayers_value>>(); if (key != val) {
+                        errorfʗ1("%s: ctx.Value(%p) = %p want %p"u8, when, key.OrTypedNil(), val.OrTypedNil(), key.OrTypedNil());
+                    }
                 }
             }
         }
-    }
-    if (!testTimeout) {
-        var selᴛ24 = ctx.Done();
-        switch (trySelect(ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
-        case 0 when selᴛ24.ꟷᐳ(out _): {
-            errorf("ctx should not be canceled yet"u8);
-            break;
+        if (!testTimeout) {
+            var selᴛ24 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
+            case 0 when selᴛ24.ꟷᐳ(out _): {
+                errorf("ctx should not be canceled yet"u8);
+                break;
+            }
+            default: {
+                break;
+            }}
         }
-        default: {
-            break;
-        }}
-    }
-    {
-        @string s = fmt.Sprint(ctx);
-        @string prefixΔ1 = contextBackgroundˢ7; if (!strings.HasPrefix(s, prefixΔ1)) {
-            Ꮡt.Errorf("ctx.String() = %q want prefix %q"u8, s, prefixΔ1);
+        {
+            @string s = fmt.Sprint(ctx);
+            @string prefixΔ1 = contextBackgroundˢ7; if (!strings.HasPrefix(s, prefixΔ1)) {
+                Ꮡt.Errorf("ctx.String() = %q want prefix %q"u8, s, prefixΔ1);
+            }
+        }
+        Ꮡt.Log(ctx);
+        checkValues(beforeCancelˢ);
+        if (testTimeout){
+            var d = quiescent(Ꮡt);
+            var timer = time.NewTimer(d);
+            var timerʗ1 = timer;
+            defer(() => timerʗ1.Stop(), ref ᒐ);
+            var selᴛ25 = ctx.Done();
+            var selᴛ26 = (~timer).C;
+            switch (select(ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
+            case 0 when selᴛ25.ꟷᐳ(out _): {
+                break;
+            }
+            case 1 when selᴛ26.ꟷᐳ(out _): {
+                errorf("ctx should have timed out after %v"u8, d);
+                break;
+            }}
+            checkValues(afterTimeoutˢ);
+        } else {
+            var cancel = cancels[r.Intn(len(cancels))];
+            cancel();
+            var selᴛ27 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ27, ꓸꓸꓸ))) {
+            case 0 when selᴛ27.ꟷᐳ(out _): {
+                break;
+            }
+            default: {
+                errorf("ctx should be canceled"u8);
+                break;
+            }}
+            checkValues(afterCancelˢ);
         }
     }
-    Ꮡt.Log(ctx);
-    checkValues(beforeCancelˢ);
-    if (testTimeout){
-        var d = quiescent(Ꮡt);
-        var timer = time.NewTimer(d);
-        var timerʗ1 = timer;
-        defer(() => timerʗ1.Stop());
-        var selᴛ25 = ctx.Done();
-        var selᴛ26 = (~timer).C;
-        switch (select(ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
-        case 0 when selᴛ25.ꟷᐳ(out _): {
-            break;
-        }
-        case 1 when selᴛ26.ꟷᐳ(out _): {
-            errorf("ctx should have timed out after %v"u8, d);
-            break;
-        }}
-        checkValues(afterTimeoutˢ);
-    } else {
-        var cancel = cancels[r.Intn(len(cancels))];
-        cancel();
-        var selᴛ27 = ctx.Done();
-        switch (trySelect(ᐸꟷ(selᴛ27, ꓸꓸꓸ))) {
-        case 0 when selᴛ27.ꟷᐳ(out _): {
-            break;
-        }
-        default: {
-            errorf("ctx should be canceled"u8);
-            break;
-        }}
-        checkValues(afterCancelˢ);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestWithCancelCanceledParent(ж<testing.T> Ꮡt) {
     var (parent, pcancel) = WithCancelCause(Background());
@@ -750,12 +770,15 @@ public static void TestInvalidDerivedFail(ж<testing.T> Ꮡt) {
 
 internal static any /*v*/ recoveredValue(Action fn) {
     any v = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             v = recover();
-        });
+        }, ref ᒐ);
         fn();
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return v;
 }
 
@@ -1114,31 +1137,36 @@ public static void TestWithoutCancel(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testCustomContextPropagationˢ = "TestCustomContextPropagation"u8;
 
-public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var cause = errors.New(testCustomContextPropagationˢ);
-    var donec = new channel<EmptyStruct>(0);
-    var (ctx1, cancel1) = WithCancelCause(Background());
-    var ctx2 = Ꮡ(new customDoneContext(
-        Context: ctx1,
-        donec: donec
-    ));
-    var (ctx3, cancel3) = WithCancel(new context_test_package.customDoneContextжContext(ctx2));
-    var cancel3ʗ1 = cancel3;
-    defer(() => cancel3ʗ1());
-    cancel1(cause);
-    close(donec);
-    ᐸꟷ(ctx3.Done());
-    {
-        var (got, want) = (ctx3.Err(), Canceled); if (!AreEqual(got, want)) {
-            Ꮡt.Errorf("child not canceled; got = %v, want = %v"u8, got, want);
+public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var cause = errors.New(testCustomContextPropagationˢ);
+        var donec = new channel<EmptyStruct>(0);
+        var (ctx1, cancel1) = WithCancelCause(Background());
+        var ctx2 = Ꮡ(new customDoneContext(
+            Context: ctx1,
+            donec: donec
+        ));
+        var (ctx3, cancel3) = WithCancel(new context_test_package.customDoneContextжContext(ctx2));
+        var cancel3ʗ1 = cancel3;
+        defer(() => cancel3ʗ1(), ref ᒐ);
+        cancel1(cause);
+        close(donec);
+        ᐸꟷ(ctx3.Done());
+        {
+            var (got, want) = (ctx3.Err(), Canceled); if (!AreEqual(got, want)) {
+                Ꮡt.Errorf("child not canceled; got = %v, want = %v"u8, got, want);
+            }
+        }
+        {
+            var (got, want) = (Cause(ctx3), cause); if (!AreEqual(got, want)) {
+                Ꮡt.Errorf("child has wrong cause; got = %v, want = %v"u8, got, want);
+            }
         }
     }
-    {
-        var (got, want) = (Cause(ctx3), cause); if (!AreEqual(got, want)) {
-            Ꮡt.Errorf("child has wrong cause; got = %v, want = %v"u8, got, want);
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // customCauseContext is a custom Context used to test context.Cause.
 [GoType] partial struct customCauseContext {
@@ -1155,21 +1183,31 @@ public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) => func((def
     return (deadline, ok);
 }
 
-internal static /*<-*/channel<EmptyStruct> Done(this ж<customCauseContext> Ꮡccc) => func((defer, recover) => {
-    ref var ccc = ref Ꮡccc.DerefOrNull();
+internal static /*<-*/channel<EmptyStruct> Done(this ж<customCauseContext> Ꮡccc) {
+    GoFrame ᒐ = default;
+    try {
+        ref var ccc = ref Ꮡccc.DerefOrNull();
 
-    Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
-    defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock);
-    return ccc.done;
-});
+        Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
+        defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock, ref ᒐ);
+        return ccc.done;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static error Err(this ж<customCauseContext> Ꮡccc) => func((defer, recover) => {
-    ref var ccc = ref Ꮡccc.DerefOrNull();
+internal static error Err(this ж<customCauseContext> Ꮡccc) {
+    GoFrame ᒐ = default;
+    try {
+        ref var ccc = ref Ꮡccc.DerefOrNull();
 
-    Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
-    defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock);
-    return ccc.err;
-});
+        Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
+        defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock, ref ᒐ);
+        return ccc.err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static any Value(this ref customCauseContext ccc, any key) {
     return default!;
@@ -1328,26 +1366,31 @@ public static void TestAfterFuncCalledAfterCancel(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestAfterFuncCalledAfterTimeout(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (ctx, cancel) = WithTimeout(Background(), shortDuration);
-    var cancelʗ1 = cancel;
-    defer(() => cancelʗ1());
-    var donec = new channel<EmptyStruct>(0);
-    var donecʗ1 = donec;
-    AfterFunc(ctx, () => {
-        close(donecʗ1);
-    });
-    var selᴛ33 = donec;
-    var selᴛ34 = time.After(veryLongDuration);
-    switch (select(ᐸꟷ(selᴛ33, ꓸꓸꓸ), ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
-    case 0 when selᴛ33.ꟷᐳ(out _): {
-        break;
+public static void TestAfterFuncCalledAfterTimeout(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (ctx, cancel) = WithTimeout(Background(), shortDuration);
+        var cancelʗ1 = cancel;
+        defer(() => cancelʗ1(), ref ᒐ);
+        var donec = new channel<EmptyStruct>(0);
+        var donecʗ1 = donec;
+        AfterFunc(ctx, () => {
+            close(donecʗ1);
+        });
+        var selᴛ33 = donec;
+        var selᴛ34 = time.After(veryLongDuration);
+        switch (select(ᐸꟷ(selᴛ33, ꓸꓸꓸ), ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
+        case 0 when selᴛ33.ꟷᐳ(out _): {
+            break;
+        }
+        case 1 when selᴛ34.ꟷᐳ(out _): {
+            Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
+            break;
+        }}
     }
-    case 1 when selᴛ34.ꟷᐳ(out _): {
-        Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestAfterFuncCalledImmediately(ж<testing.T> Ꮡt) {
     var (ctx, cancel) = WithCancel(Background());
@@ -1396,28 +1439,33 @@ public static void TestAfterFuncNotCalledAfterStop(ж<testing.T> Ꮡt) {
 }
 
 // This test verifies that canceling a context does not block waiting for AfterFuncs to finish.
-public static void TestAfterFuncCalledAsynchronously(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (ctx, cancel) = WithCancel(Background());
-    var donec = new channel<EmptyStruct>(0);
-    var donecʗ1 = donec;
-    var stop = AfterFunc(ctx, () => {
-        // The channel send blocks until donec is read from.
-        donecʗ1.ᐸꟷ(new EmptyStruct());
-    });
-    var stopʗ1 = stop;
-    defer(() => stopʗ1());
-    cancel();
-    // After cancel returns, read from donec and unblock the AfterFunc.
-    var selᴛ39 = donec;
-    var selᴛ40 = time.After(veryLongDuration);
-    switch (select(ᐸꟷ(selᴛ39, ꓸꓸꓸ), ᐸꟷ(selᴛ40, ꓸꓸꓸ))) {
-    case 0 when selᴛ39.ꟷᐳ(out _): {
-        break;
+public static void TestAfterFuncCalledAsynchronously(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (ctx, cancel) = WithCancel(Background());
+        var donec = new channel<EmptyStruct>(0);
+        var donecʗ1 = donec;
+        var stop = AfterFunc(ctx, () => {
+            // The channel send blocks until donec is read from.
+            donecʗ1.ᐸꟷ(new EmptyStruct());
+        });
+        var stopʗ1 = stop;
+        defer(() => stopʗ1(), ref ᒐ);
+        cancel();
+        // After cancel returns, read from donec and unblock the AfterFunc.
+        var selᴛ39 = donec;
+        var selᴛ40 = time.After(veryLongDuration);
+        switch (select(ᐸꟷ(selᴛ39, ꓸꓸꓸ), ᐸꟷ(selᴛ40, ꓸꓸꓸ))) {
+        case 0 when selᴛ39.ꟷᐳ(out _): {
+            break;
+        }
+        case 1 when selᴛ40.ꟷᐳ(out _): {
+            Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
+            break;
+        }}
     }
-    case 1 when selᴛ40.ꟷᐳ(out _): {
-        Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end context_test_package

@@ -6,17 +6,22 @@ partial class main_package {
 
 internal static bool writePanicked;
 
-internal static void tryWrite(map<@string, nint> m) => func((defer, recover) => {
-    writePanicked = false;
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                writePanicked = true;
+internal static void tryWrite(map<@string, nint> m) {
+    GoFrame ᒐ = default;
+    try {
+        writePanicked = false;
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    writePanicked = true;
+                }
             }
-        }
-    });
-    m["x"u8] = 1;
-});
+        }, ref ᒐ);
+        m["x"u8] = 1;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object deleteOkˢ = (@string)"delete ok"u8;

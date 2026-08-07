@@ -899,16 +899,19 @@ internal static slice<unmarshalTest> largeUnmarshalTests = new unmarshalTest[]{
 internal static (slice<byte> sum, error err) safeSum(hash.Hash h) {
     slice<byte> sum = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
                     err = fmt.Errorf("sum panic: %v"u8, r);
                 }
             }
-        });
+        }, ref ᒐ);
         (sum, err) = (h.Sum(default!), default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (sum, err);
 }
 

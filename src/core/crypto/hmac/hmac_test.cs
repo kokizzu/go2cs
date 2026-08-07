@@ -583,20 +583,25 @@ public static void TestHMAC(ж<testing.T> Ꮡt) {
 internal static readonly object hashHashProvidedByˢ = (@string)"hash.Hash provided by boringcrypto are not comparable"u8;
 internal static readonly object expectedPanicWhenCallingˢ = (@string)"expected panic when calling New with a non-unique hash generation function"u8;
 
-public static void TestNonUniqueHash(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    if (boring.Enabled) {
-        Ꮡt.Skip(hashHashProvidedByˢ);
-    }
-    var sha = sha256.New();
-    defer(() => {
-        var err = recover();
-        if (err == default!) {
-            Ꮡt.Error(expectedPanicWhenCallingˢ);
+public static void TestNonUniqueHash(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        if (boring.Enabled) {
+            Ꮡt.Skip(hashHashProvidedByˢ);
         }
-    });
-    var shaʗ1 = sha;
-    New(() => shaʗ1, slice<byte>("bytes"u8));
-});
+        var sha = sha256.New();
+        defer(() => {
+            var err = recover();
+            if (err == default!) {
+                Ꮡt.Error(expectedPanicWhenCallingˢ);
+            }
+        }, ref ᒐ);
+        var shaʗ1 = sha;
+        New(() => shaʗ1, slice<byte>("bytes"u8));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // justHash implements just the hash.Hash methods and nothing else
 [GoType] internal partial struct justHash {

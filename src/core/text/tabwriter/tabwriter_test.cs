@@ -451,49 +451,64 @@ internal static (nint, error) Write(this panicWriter _Δp0, slice<byte> _Δp1) {
     throw panic("cannot write");
 }
 
-internal static void wantPanicString(ж<testing.T> Ꮡt, @string want) => func((defer, recover) => {
-    {
-        var e = recover(); if (e != default!) {
-            var (got, ok) = e._<@string>(ᐧ);
-            switch (ᐧ) {
-            case {} when !ok: {
-                Ꮡt.Errorf("got %v (%T), want panic string"u8, e, e);
-                break;
-            }
-            case {} when got != want: {
-                Ꮡt.Errorf("wrong panic message: got %q, want %q"u8, got, want);
-                break;
-            }}
+internal static void wantPanicString(ж<testing.T> Ꮡt, @string want) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var e = recover(); if (e != default!) {
+                var (got, ok) = e._<@string>(ᐧ);
+                switch (ᐧ) {
+                case {} when !ok: {
+                    Ꮡt.Errorf("got %v (%T), want panic string"u8, e, e);
+                    break;
+                }
+                case {} when got != want: {
+                    Ꮡt.Errorf("wrong panic message: got %q, want %q"u8, got, want);
+                    break;
+                }}
 
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string tabwriterPanicDuringˢ = "tabwriter: panic during Flush (cannot write)"u8;
 
-public static void TestPanicDuringFlush(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(wantPanicString, Ꮡt, tabwriterPanicDuringˢ, defer);
-    panicWriter p = default!;
-    var w = @new<tabwriter.Writer>();
-    w.Init(p, 0, 0, 5, (rune)' ', 0);
-    io.WriteString(new tabwriter.WriterжWriter(w), "a"u8);
-    w.Flush();
-    Ꮡt.Errorf("failed to panic during Flush"u8);
-});
+public static void TestPanicDuringFlush(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(wantPanicString, Ꮡt, tabwriterPanicDuringˢ, ref ᒐ);
+        panicWriter p = default!;
+        var w = @new<tabwriter.Writer>();
+        w.Init(p, 0, 0, 5, (rune)' ', 0);
+        io.WriteString(new tabwriter.WriterжWriter(w), "a"u8);
+        w.Flush();
+        Ꮡt.Errorf("failed to panic during Flush"u8);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string tabwriterPanicDuringˢ2 = "tabwriter: panic during Write (cannot write)"u8;
 
-public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(wantPanicString, Ꮡt, tabwriterPanicDuringˢ2, defer);
-    panicWriter p = default!;
-    var w = @new<tabwriter.Writer>();
-    w.Init(p, 0, 0, 5, (rune)' ', 0);
-    io.WriteString(new tabwriter.WriterжWriter(w), "a\n\n"u8);
-    // the second \n triggers a call to w.Write and thus a panic
-    Ꮡt.Errorf("failed to panic during Write"u8);
-});
+public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(wantPanicString, Ꮡt, tabwriterPanicDuringˢ2, ref ᒐ);
+        panicWriter p = default!;
+        var w = @new<tabwriter.Writer>();
+        w.Init(p, 0, 0, 5, (rune)' ', 0);
+        io.WriteString(new tabwriter.WriterжWriter(w), "a\n\n"u8);
+        // the second \n triggers a call to w.Write and thus a panic
+        Ꮡt.Errorf("failed to panic during Write"u8);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string newˢ = "new"u8;

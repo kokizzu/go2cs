@@ -201,158 +201,168 @@ internal static UntypedInt go120magic => 0xfffffff1;
 }
 
 // parsePclnTab parses the pclntab, setting the version.
-internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    Ꮡt.of(LineTable.Ꮡmu).Lock();
-    defer(Ꮡt.of(LineTable.Ꮡmu).Unlock);
-    if (t.version != verUnknown) {
-        return;
-    }
-    // Note that during this function, setting the version is the last thing we do.
-    // If we set the version too early, and parsing failed (likely as a panic on
-    // slice lookups), we'd have a mistaken version.
-    //
-    // Error paths through this code will default the version to 1.1.
-    t.version = ver11;
-    if (!disableRecover) {
-        defer(() => {
-            // If we panic parsing, assume it's a Go 1.1 pclntab.
-            recover();
-        });
-    }
-    // Check header: 4-byte magic, two zeros, pc quantum, pointer size.
-    if (len(t.Data) < 16 || t.Data[4] != 0 || t.Data[5] != 0 || (t.Data[6] != 1 && t.Data[6] != 2 && t.Data[6] != 4) || (t.Data[7] != 4 && t.Data[7] != 8)) {
-        // pc quantum
-        // pointer size
-        return;
-    }
-    version possibleVersion = default!;
-    var leMagic = binary.LittleEndian.Uint32(t.Data);
-    var beMagic = binary.BigEndian.Uint32(t.Data);
-    switch (ᐧ) {
-    case {} when leMagic == go12magic: {
-        (t.binary, possibleVersion) = (binary.LittleEndian, ver12);
-        break;
-    }
-    case {} when beMagic == go12magic: {
-        (t.binary, possibleVersion) = (binary.BigEndian, ver12);
-        break;
-    }
-    case {} when leMagic == go116magic: {
-        (t.binary, possibleVersion) = (binary.LittleEndian, ver116);
-        break;
-    }
-    case {} when beMagic == go116magic: {
-        (t.binary, possibleVersion) = (binary.BigEndian, ver116);
-        break;
-    }
-    case {} when leMagic == go118magic: {
-        (t.binary, possibleVersion) = (binary.LittleEndian, ver118);
-        break;
-    }
-    case {} when beMagic == go118magic: {
-        (t.binary, possibleVersion) = (binary.BigEndian, ver118);
-        break;
-    }
-    case {} when leMagic == go120magic: {
-        (t.binary, possibleVersion) = (binary.LittleEndian, ver120);
-        break;
-    }
-    case {} when beMagic == go120magic: {
-        (t.binary, possibleVersion) = (binary.BigEndian, ver120);
-        break;
-    }
-    default: {
-        return;
-    }}
+        Ꮡt.of(LineTable.Ꮡmu).Lock();
+        defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
+        if (t.version != verUnknown) {
+            return;
+        }
+        // Note that during this function, setting the version is the last thing we do.
+        // If we set the version too early, and parsing failed (likely as a panic on
+        // slice lookups), we'd have a mistaken version.
+        //
+        // Error paths through this code will default the version to 1.1.
+        t.version = ver11;
+        if (!disableRecover) {
+            defer(() => {
+                // If we panic parsing, assume it's a Go 1.1 pclntab.
+                recover();
+            }, ref ᒐ);
+        }
+        // Check header: 4-byte magic, two zeros, pc quantum, pointer size.
+        if (len(t.Data) < 16 || t.Data[4] != 0 || t.Data[5] != 0 || (t.Data[6] != 1 && t.Data[6] != 2 && t.Data[6] != 4) || (t.Data[7] != 4 && t.Data[7] != 8)) {
+            // pc quantum
+            // pointer size
+            return;
+        }
+        version possibleVersion = default!;
+        var leMagic = binary.LittleEndian.Uint32(t.Data);
+        var beMagic = binary.BigEndian.Uint32(t.Data);
+        switch (ᐧ) {
+        case {} when leMagic == go12magic: {
+            (t.binary, possibleVersion) = (binary.LittleEndian, ver12);
+            break;
+        }
+        case {} when beMagic == go12magic: {
+            (t.binary, possibleVersion) = (binary.BigEndian, ver12);
+            break;
+        }
+        case {} when leMagic == go116magic: {
+            (t.binary, possibleVersion) = (binary.LittleEndian, ver116);
+            break;
+        }
+        case {} when beMagic == go116magic: {
+            (t.binary, possibleVersion) = (binary.BigEndian, ver116);
+            break;
+        }
+        case {} when leMagic == go118magic: {
+            (t.binary, possibleVersion) = (binary.LittleEndian, ver118);
+            break;
+        }
+        case {} when beMagic == go118magic: {
+            (t.binary, possibleVersion) = (binary.BigEndian, ver118);
+            break;
+        }
+        case {} when leMagic == go120magic: {
+            (t.binary, possibleVersion) = (binary.LittleEndian, ver120);
+            break;
+        }
+        case {} when beMagic == go120magic: {
+            (t.binary, possibleVersion) = (binary.BigEndian, ver120);
+            break;
+        }
+        default: {
+            return;
+        }}
 
-    t.version = possibleVersion;
-    // quantum and ptrSize are the same between 1.2, 1.16, and 1.18
-    t.quantum = (uint32)t.Data[6];
-    t.ptrsize = (uint32)t.Data[7];
-    uint64 offset(uint32 word) => Ꮡt.Value.uintptr(Ꮡt.Value.Data[(int)(8 + word * Ꮡt.Value.ptrsize)..]);
-    var offsetʗ1 = offset;
-    slice<byte> data(uint32 word) => Ꮡt.Value.Data[(int)(offsetʗ1(word))..];
-    var exprᴛ1 = possibleVersion;
-    if (exprᴛ1 == ver118 || exprᴛ1 == ver120) {
-        t.nfunctab = (uint32)offset(0);
-        t.nfiletab = (uint32)offset(1);
-        t.textStart = t.PC;
-        t.funcnametab = data(3);
-        t.cutab = data(4);
-        t.filetab = data(5);
-        t.pctab = data(6);
-        t.funcdata = data(7);
-        t.functab = data(7);
-        nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
-        t.functab = t.functab[..(int)(functabsize)];
-    }
-    else if (exprᴛ1 == ver116) {
-        t.nfunctab = (uint32)offset(0);
-        t.nfiletab = (uint32)offset(1);
-        t.funcnametab = data(2);
-        t.cutab = data(3);
-        t.filetab = data(4);
-        t.pctab = data(5);
-        t.funcdata = data(6);
-        t.functab = data(6);
-        nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
-        t.functab = t.functab[..(int)(functabsize)];
-    }
-    else if (exprᴛ1 == ver12) {
-        t.nfunctab = (uint32)t.uintptr(t.Data[8..]);
-        t.funcdata = t.Data;
-        t.funcnametab = t.Data;
-        t.functab = t.Data[(int)(8 + t.ptrsize)..];
-        t.pctab = t.Data;
-        nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
-        var fileoff = t.binary.Uint32(t.functab[(int)(functabsize)..]);
-        t.functab = t.functab[..(int)(functabsize)];
-        t.filetab = t.Data[(int)(fileoff)..];
-        t.nfiletab = t.binary.Uint32(t.filetab);
-        t.filetab = t.filetab[..(int)(t.nfiletab * 4)];
-    }
-    else { /* default: */
-        throw panic("unreachable");
-    }
+        t.version = possibleVersion;
+        // quantum and ptrSize are the same between 1.2, 1.16, and 1.18
+        t.quantum = (uint32)t.Data[6];
+        t.ptrsize = (uint32)t.Data[7];
+        uint64 offset(uint32 word) => Ꮡt.Value.uintptr(Ꮡt.Value.Data[(int)(8 + word * Ꮡt.Value.ptrsize)..]);
+        var offsetʗ1 = offset;
+        slice<byte> data(uint32 word) => Ꮡt.Value.Data[(int)(offsetʗ1(word))..];
+        var exprᴛ1 = possibleVersion;
+        if (exprᴛ1 == ver118 || exprᴛ1 == ver120) {
+            t.nfunctab = (uint32)offset(0);
+            t.nfiletab = (uint32)offset(1);
+            t.textStart = t.PC;
+            t.funcnametab = data(3);
+            t.cutab = data(4);
+            t.filetab = data(5);
+            t.pctab = data(6);
+            t.funcdata = data(7);
+            t.functab = data(7);
+            nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
+            t.functab = t.functab[..(int)(functabsize)];
+        }
+        else if (exprᴛ1 == ver116) {
+            t.nfunctab = (uint32)offset(0);
+            t.nfiletab = (uint32)offset(1);
+            t.funcnametab = data(2);
+            t.cutab = data(3);
+            t.filetab = data(4);
+            t.pctab = data(5);
+            t.funcdata = data(6);
+            t.functab = data(6);
+            nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
+            t.functab = t.functab[..(int)(functabsize)];
+        }
+        else if (exprᴛ1 == ver12) {
+            t.nfunctab = (uint32)t.uintptr(t.Data[8..]);
+            t.funcdata = t.Data;
+            t.funcnametab = t.Data;
+            t.functab = t.Data[(int)(8 + t.ptrsize)..];
+            t.pctab = t.Data;
+            nint functabsize = ((nint)t.nfunctab * 2 + 1) * t.functabFieldSize();
+            var fileoff = t.binary.Uint32(t.functab[(int)(functabsize)..]);
+            t.functab = t.functab[..(int)(functabsize)];
+            t.filetab = t.Data[(int)(fileoff)..];
+            t.nfiletab = t.binary.Uint32(t.filetab);
+            t.filetab = t.filetab[..(int)(t.nfiletab * 4)];
+        }
+        else { /* default: */
+            throw panic("unreachable");
+        }
 
-});
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // use the start PC instead of reading from the table, which may be unrelocated
 
 // go12Funcs returns a slice of Funcs derived from the Go 1.2+ pcln table.
-internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    // Assume it is malformed and return nil on error.
-    if (!disableRecover) {
-        defer(() => {
-            recover();
-        });
+        // Assume it is malformed and return nil on error.
+        if (!disableRecover) {
+            defer(() => {
+                recover();
+            }, ref ᒐ);
+        }
+        var ft = Ꮡt.funcTab();
+        var funcs = new slice<Func>(ft.Count(), () => new(nil));
+        var syms = new slice<Sym>(len(funcs));
+        foreach (var (i, _) in funcs) {
+            var f = Ꮡ(funcs, i);
+            f.Value.Entry = ft.pc(i);
+            f.Value.End = ft.pc(i + 1);
+            var info = Ꮡt.funcData((uint32)i);
+            f.Value.LineTable = Ꮡt;
+            f.Value.FrameSize = (nint)info.deferreturn();
+            syms[i] = new Sym(
+                Value: (~f).Entry,
+                Type: (rune)'T',
+                Name: t.funcName(info.nameOff()),
+                ΔGoType: 0,
+                Func: f,
+                goVersion: t.version
+            );
+            f.Value.Sym = Ꮡ(syms, i);
+        }
+        return funcs;
     }
-    var ft = Ꮡt.funcTab();
-    var funcs = new slice<Func>(ft.Count(), () => new(nil));
-    var syms = new slice<Sym>(len(funcs));
-    foreach (var (i, _) in funcs) {
-        var f = Ꮡ(funcs, i);
-        f.Value.Entry = ft.pc(i);
-        f.Value.End = ft.pc(i + 1);
-        var info = Ꮡt.funcData((uint32)i);
-        f.Value.LineTable = Ꮡt;
-        f.Value.FrameSize = (nint)info.deferreturn();
-        syms[i] = new Sym(
-            Value: (~f).Entry,
-            Type: (rune)'T',
-            Name: t.funcName(info.nameOff()),
-            ΔGoType: 0,
-            Func: f,
-            goVersion: t.version
-        );
-        f.Value.Sym = Ꮡ(syms, i);
-    }
-    return funcs;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // findFunc returns the funcData corresponding to the given program counter.
 internal static ΔfuncData findFunc(this ж<LineTable> Ꮡt, uint64 pc) {
@@ -632,80 +642,87 @@ internal static uint32 field(this ΔfuncData f, uint32 n) {
 // go12PCToLine maps program counter to line number for the Go 1.2+ pcln table.
 internal static nint /*line*/ go12PCToLine(this ж<LineTable> Ꮡt, uint64 pc) {
     nint line = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
                 line = -1;
             }
-        });
+        }, ref ᒐ);
         var f = Ꮡt.findFunc(pc);
         if (f.IsZero()) {
-            line = -1; return;
+            line = -1; goto ᒐdone;
         }
         var entry = f.entryPC();
         var linetab = f.pcln();
         line = (nint)t.pcvalue(linetab, entry, pc);
-    });
-    return line;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return line;
 }
 
 // go12PCToFile maps program counter to file name for the Go 1.2+ pcln table.
 internal static @string /*file*/ go12PCToFile(this ж<LineTable> Ꮡt, uint64 pc) {
     @string @file = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
                 @file = ""u8;
             }
-        });
+        }, ref ᒐ);
         var f = Ꮡt.findFunc(pc);
         if (f.IsZero()) {
-            @file = ""u8; return;
+            @file = ""u8; goto ᒐdone;
         }
         var entry = f.entryPC();
         var filetab = f.pcfile();
         var fno = t.pcvalue(filetab, entry, pc);
         if (t.version == ver12) {
             if (fno <= 0) {
-                @file = ""u8; return;
+                @file = ""u8; goto ᒐdone;
             }
-            @file = t.@string(t.binary.Uint32(t.filetab[(int)(4 * fno)..])); return;
+            @file = t.@string(t.binary.Uint32(t.filetab[(int)(4 * fno)..])); goto ᒐdone;
         }
         // Go ≥ 1.16
         if (fno < 0) {
             // 0 is valid for ≥ 1.16
-            @file = ""u8; return;
+            @file = ""u8; goto ᒐdone;
         }
         var cuoff = f.cuOffset();
         {
             var fnoff = t.binary.Uint32(t.cutab[(int)((cuoff + (uint32)fno) * 4)..]); if (fnoff != ~(uint32)0) {
-                @file = t.stringFrom(t.filetab, fnoff); return;
+                @file = t.stringFrom(t.filetab, fnoff); goto ᒐdone;
             }
         }
         @file = ""u8;
-    });
-    return @file;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return @file;
 }
 
 // go12LineToPC maps a (file, line) pair to a program counter for the Go 1.2+ pcln table.
 internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @file, nint line) {
     uint64 pc = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         defer(() => {
             if (!disableRecover && recover() != default!) {
                 pc = 0;
             }
-        });
+        }, ref ᒐ);
         Ꮡt.initFileMap();
         var (filenum, ok) = t.fileMap[@file, ꟷ];
         if (!ok) {
-            pc = 0; return;
+            pc = 0; goto ᒐdone;
         }
         // Scan all functions.
         // If this turns out to be a bottleneck, we could build a map[int32][]int32
@@ -725,56 +742,68 @@ internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @fil
             }
             var pcΔ1 = t.findFileLine(entry, filetab, linetab, (int32)filenum, (int32)line, cutab);
             if (pcΔ1 != 0) {
-                pc = pcΔ1; return;
+                pc = pcΔ1; goto ᒐdone;
             }
         }
         pc = 0;
-    });
-    return pc;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return pc;
 }
 
 // initFileMap initializes the map from file name to file number.
-internal static void initFileMap(this ж<LineTable> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void initFileMap(this ж<LineTable> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    Ꮡt.of(LineTable.Ꮡmu).Lock();
-    defer(Ꮡt.of(LineTable.Ꮡmu).Unlock);
-    if (t.fileMap != default!) {
-        return;
-    }
-    var m = new map<@string, uint32>();
-    if (t.version == ver12){
-        for (var i = (uint32)1; i < t.nfiletab; i++) {
-            @string s = t.@string(t.binary.Uint32(t.filetab[(int)(4 * i)..]));
-            m[s] = i;
+        Ꮡt.of(LineTable.Ꮡmu).Lock();
+        defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
+        if (t.fileMap != default!) {
+            return;
         }
-    } else {
-        uint32 pos = default!;
-        for (var i = (uint32)0; i < t.nfiletab; i++) {
-            @string s = t.stringFrom(t.filetab, pos);
-            m[s] = pos;
-            pos += (uint32)(len(s) + 1);
+        var m = new map<@string, uint32>();
+        if (t.version == ver12){
+            for (var i = (uint32)1; i < t.nfiletab; i++) {
+                @string s = t.@string(t.binary.Uint32(t.filetab[(int)(4 * i)..]));
+                m[s] = i;
+            }
+        } else {
+            uint32 pos = default!;
+            for (var i = (uint32)0; i < t.nfiletab; i++) {
+                @string s = t.stringFrom(t.filetab, pos);
+                m[s] = pos;
+                pos += (uint32)(len(s) + 1);
+            }
         }
+        t.fileMap = m;
     }
-    t.fileMap = m;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // go12MapFiles adds to m a key for every file in the Go 1.2 LineTable.
 // Every key maps to obj. That's not a very interesting map, but it provides
 // a way for callers to obtain the list of files in the program.
-internal static void go12MapFiles(this ж<LineTable> Ꮡt, map<@string, ж<Obj>> m, ж<Obj> Ꮡobj) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static void go12MapFiles(this ж<LineTable> Ꮡt, map<@string, ж<Obj>> m, ж<Obj> Ꮡobj) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (!disableRecover) {
-        defer(() => {
-            recover();
-        });
+        if (!disableRecover) {
+            defer(() => {
+                recover();
+            }, ref ᒐ);
+        }
+        Ꮡt.initFileMap();
+        foreach (var (@file, _) in t.fileMap) {
+            m[@file] = Ꮡobj;
+        }
     }
-    Ꮡt.initFileMap();
-    foreach (var (@file, _) in t.fileMap) {
-        m[@file] = Ꮡobj;
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // disableRecover causes this package not to swallow panics.
 // This is useful when making changes.

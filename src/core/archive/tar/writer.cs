@@ -453,40 +453,45 @@ internal static readonly @string tarCannotAddNonRegularˢ = "tar: cannot add non
 // It walks the directory tree starting at the root of the filesystem
 // adding each file to the tar archive while maintaining the directory structure.
 public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
-    return fs.WalkDir(fsys, "."u8, error (@string name, fs.DirEntry d, error err) => func<error>((defer, recover) => {
-        if (err != default!) {
-            return err;
-        }
-        if (d.IsDir()) {
-            return default!;
-        }
-        (var info, err) = d.Info();
-        if (err != default!) {
-            return err;
-        }
-        // TODO(#49580): Handle symlinks when fs.ReadLinkFS is available.
-        if (!info.Mode().IsRegular()) {
-            return errors.New(tarCannotAddNonRegularˢ);
-        }
-        (var h, err) = FileInfoHeader(info, ""u8);
-        if (err != default!) {
-            return err;
-        }
-        h.Value.Name = name;
-        {
-            var errΔ1 = Ꮡtw.WriteHeader(h); if (errΔ1 != default!) {
-                return errΔ1;
+    return fs.WalkDir(fsys, "."u8, error (@string name, fs.DirEntry d, error err) => {
+        GoFrame ᒐ = default;
+        try {
+            if (err != default!) {
+                return err;
             }
-        }
-        (var f, err) = fsys.Open(name);
-        if (err != default!) {
+            if (d.IsDir()) {
+                return default!;
+            }
+            (var info, err) = d.Info();
+            if (err != default!) {
+                return err;
+            }
+            // TODO(#49580): Handle symlinks when fs.ReadLinkFS is available.
+            if (!info.Mode().IsRegular()) {
+                return errors.New(tarCannotAddNonRegularˢ);
+            }
+            (var h, err) = FileInfoHeader(info, ""u8);
+            if (err != default!) {
+                return err;
+            }
+            h.Value.Name = name;
+            {
+                var errΔ1 = Ꮡtw.WriteHeader(h); if (errΔ1 != default!) {
+                    return errΔ1;
+                }
+            }
+            (var f, err) = fsys.Open(name);
+            if (err != default!) {
+                return err;
+            }
+            var fʗ1 = f;
+            defer(() => fʗ1.Close(), ref ᒐ);
+            (_, err) = io.Copy(new WriterжWriter(Ꮡtw), new fs_FileᴠReader(f));
             return err;
         }
-        var fʗ1 = f;
-        defer(() => fʗ1.Close());
-        (_, err) = io.Copy(new WriterжWriter(Ꮡtw), new fs_FileᴠReader(f));
-        return err;
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+        finally { ᒐ.Run(); }
+    });
 }
 
 // splitUSTARPath splits a path according to USTAR prefix and suffix rules.

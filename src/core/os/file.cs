@@ -894,47 +894,52 @@ internal static (@string, error) join(this dirFS dir, @string name) {
 // A successful call returns err == nil, not err == EOF.
 // Because ReadFile reads the whole file, it does not treat an EOF from Read
 // as an error to be reported.
-public static (slice<byte>, error) ReadFile(@string name) => func<(slice<byte>, error)>((defer, recover) => {
-    var (f, err) = Open(name);
-    if (err != default!) {
-        return (default!, err);
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    nint size = default!;
-    {
-        var (info, errΔ1) = f.Stat(); if (errΔ1 == default!) {
-            var size64 = info.Size();
-            if ((int64)(nint)size64 == size64) {
-                size = (nint)size64;
+public static (slice<byte>, error) ReadFile(@string name) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = Open(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        nint size = default!;
+        {
+            var (info, errΔ1) = f.Stat(); if (errΔ1 == default!) {
+                var size64 = info.Size();
+                if ((int64)(nint)size64 == size64) {
+                    size = (nint)size64;
+                }
+            }
+        }
+        size++;
+        // one byte for final read at EOF
+        // If a file claims a small size, read at least 512 bytes.
+        // In particular, files in Linux's /proc claim size 0 but
+        // then do not work right if read in small pieces,
+        // so an initial read of 1 byte would not work correctly.
+        if (size < 512) {
+            size = 512;
+        }
+        var data = new slice<byte>(0, size);
+        while (ᐧ) {
+            var (n, errΔ2) = f.Read(data[(int)(len(data))..(int)(cap(data))]);
+            data = data[..(int)(len(data) + n)];
+            if (errΔ2 != default!) {
+                if (AreEqual(errΔ2, Δio.EOF)) {
+                    errΔ2 = default!;
+                }
+                return (data, errΔ2);
+            }
+            if (len(data) >= cap(data)) {
+                var d = append(data[..(int)(cap(data))], (byte)(0));
+                data = d[..(int)(len(data))];
             }
         }
     }
-    size++;
-    // one byte for final read at EOF
-    // If a file claims a small size, read at least 512 bytes.
-    // In particular, files in Linux's /proc claim size 0 but
-    // then do not work right if read in small pieces,
-    // so an initial read of 1 byte would not work correctly.
-    if (size < 512) {
-        size = 512;
-    }
-    var data = new slice<byte>(0, size);
-    while (ᐧ) {
-        var (n, errΔ2) = f.Read(data[(int)(len(data))..(int)(cap(data))]);
-        data = data[..(int)(len(data) + n)];
-        if (errΔ2 != default!) {
-            if (AreEqual(errΔ2, Δio.EOF)) {
-                errΔ2 = default!;
-            }
-            return (data, errΔ2);
-        }
-        if (len(data) >= cap(data)) {
-            var d = append(data[..(int)(cap(data))], (byte)(0));
-            data = d[..(int)(len(data))];
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // WriteFile writes data to the named file, creating it if necessary.
 // If the file does not exist, WriteFile creates it with permissions perm (before umask);

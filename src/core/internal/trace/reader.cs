@@ -75,16 +75,17 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
 public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
     ΔEvent e = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var r = ref Ꮡr.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var r = ref Ꮡr.DerefOrNull();
 
         if (r.go121Events != nil) {
             var (evΔ1, errΔ1) = r.go121Events.next();
             if (errΔ1 != default!) {
                 // XXX do we have to emit an EventSync when the trace is done?
-                (e, err) = (new ΔEvent(nil), errΔ1); return;
+                (e, err) = (new ΔEvent(nil), errΔ1); goto ᒐdone;
             }
-            (e, err) = (evΔ1.ΔClone(), default!); return;
+            (e, err) = (evΔ1.ΔClone(), default!); goto ᒐdone;
         }
         // Go 1.22+ trace parsing algorithm.
         //
@@ -115,21 +116,21 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 e.@base.time = Ꮡr.Value.lastTs + 1;
             }
             Ꮡr.Value.lastTs = e.@base.time;
-        });
+        }, ref ᒐ);
         // Consume any events in the ordering first.
         {
             var (evΔ2, okΔ1) = r.order.Next(); if (okΔ1) {
-                (e, err) = (evΔ2.ΔClone(), default!); return;
+                (e, err) = (evΔ2.ΔClone(), default!); goto ᒐdone;
             }
         }
         // Check if we need to refresh the generation.
         if (len(r.frontier) == 0 && len(r.cpuSamples) == 0) {
             if (!r.emittedSync) {
                 r.emittedSync = true;
-                (e, err) = (syncEvent((~r.gen).evTable, r.lastTs), default!); return;
+                (e, err) = (syncEvent((~r.gen).evTable, r.lastTs), default!); goto ᒐdone;
             }
             if (r.spillErr != default!) {
-                (e, err) = (new ΔEvent(nil), r.spillErr); return;
+                (e, err) = (new ΔEvent(nil), r.spillErr); goto ᒐdone;
             }
             if (r.gen != nil && r.spill == nil) {
                 // If we have a generation from the last read,
@@ -137,13 +138,13 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 // there's no spilled batch, indicating that there's
                 // no further generation, it means we're done.
                 // Return io.EOF.
-                (e, err) = (new ΔEvent(nil), io.EOF); return;
+                (e, err) = (new ΔEvent(nil), io.EOF); goto ᒐdone;
             }
             // Read the next generation.
             error errΔ2 = default!;
             (r.gen, r.spill, errΔ2) = readGeneration(r.r, r.spill);
             if (r.gen == nil) {
-                (e, err) = (new ΔEvent(nil), errΔ2); return;
+                (e, err) = (new ΔEvent(nil), errΔ2); goto ᒐdone;
             }
             r.spillErr = errΔ2;
             // Reset CPU samples cursor.
@@ -156,7 +157,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 var bc = Ꮡ(new batchCursor(m: m));
                 var (okΔ2, errΔ3) = bc.nextEvent(batches, (~r.gen).freq);
                 if (errΔ3 != default!) {
-                    (e, err) = (new ΔEvent(nil), errΔ3); return;
+                    (e, err) = (new ΔEvent(nil), errΔ3); goto ᒐdone;
                 }
                 if (!okΔ2) {
                     // Turns out there aren't actually any events in these batches.
@@ -193,17 +194,17 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
             if (len(r.frontier) == 0 || r.cpuSamples[0].time < (~r.frontier[0]).ev.time) {
                 var eΔ1 = r.cpuSamples[0].asEvent((~r.gen).evTable);
                 r.cpuSamples = r.cpuSamples[1..];
-                (e, err) = (eΔ1.ΔClone(), default!); return;
+                (e, err) = (eΔ1.ΔClone(), default!); goto ᒐdone;
             }
         }
         // Try to advance the head of the frontier, which should have the minimum timestamp.
         // This should be by far the most common case
         if (len(r.frontier) == 0) {
-            (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: frontier is empty:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); return;
+            (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: frontier is empty:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); goto ᒐdone;
         }
         {
             var (okΔ5, errΔ6) = tryAdvance(0); if (errΔ6 != default!){
-                (e, err) = (new ΔEvent(nil), errΔ6); return;
+                (e, err) = (new ΔEvent(nil), errΔ6); goto ᒐdone;
             } else 
             if (!okΔ5) {
                 // Try to advance the rest of the frontier, in timestamp order.
@@ -216,7 +217,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 for (nint i = 1; i < len(r.frontier); i++) {
                     {
                         (okΔ5, errΔ6) = tryAdvance(i); if (errΔ6 != default!){
-                            (e, err) = (new ΔEvent(nil), errΔ6); return;
+                            (e, err) = (new ΔEvent(nil), errΔ6); goto ᒐdone;
                         } else 
                         if (okΔ5) {
                             success = true;
@@ -225,7 +226,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                     }
                 }
                 if (!success) {
-                    (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: failed to advance: frontier:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); return;
+                    (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: failed to advance: frontier:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); goto ᒐdone;
                 }
             }
         }
@@ -235,8 +236,10 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
             throw panic("invariant violation: advance successful, but queue is empty");
         }
         (e, err) = (ev.ΔClone(), default!);
-    });
-    return (e, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (e, err);
 }
 
 internal static @string dumpFrontier(slice<ж<batchCursor>> frontier) {

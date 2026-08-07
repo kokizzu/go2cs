@@ -4,11 +4,16 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void setViaDefer(ж<nint> Ꮡp) => func((defer, recover) => {
-    defer(() => {
-        Ꮡp.Value = 42;
-    });
-});
+internal static void setViaDefer(ж<nint> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            Ꮡp.Value = 42;
+        }, ref ᒐ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void bumpInClosure(ж<nint> Ꮡp) {
     void add() {
@@ -18,14 +23,19 @@ internal static void bumpInClosure(ж<nint> Ꮡp) {
     add();
 }
 
-internal static void mixed(ж<nint> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+internal static void mixed(ж<nint> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    p = 5;
-    defer(() => {
-        Ꮡp.Value = Ꮡp.Value * 10;
-    });
-});
+        p = 5;
+        defer(() => {
+            Ꮡp.Value = Ꮡp.Value * 10;
+        }, ref ᒐ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void Main() {
     ref var a = ref heap(new nint(), out var Ꮡa);

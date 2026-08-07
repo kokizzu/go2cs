@@ -164,17 +164,22 @@ internal static (ж<Profile>, error) parseUncompressed(slice<byte> data) {
 }
 
 // Write writes the profile as a gzip-compressed marshaled protobuf.
-public static error Write(this ж<Profile> Ꮡp, io.Writer w) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    p.preEncode();
-    var b = marshal(new Profileжmessage(Ꮡp));
-    var zw = gzip.NewWriter(w);
-    var zwʗ1 = zw;
-    defer(() => zwʗ1.Close());
-    var (_, err) = zw.Write(b);
-    return err;
-});
+        p.preEncode();
+        var b = marshal(new Profileжmessage(Ꮡp));
+        var zw = gzip.NewWriter(w);
+        var zwʗ1 = zw;
+        defer(() => zwʗ1.Close(), ref ᒐ);
+        var (_, err) = zw.Write(b);
+        return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // CheckValid tests whether the profile is valid. Checks include, but are
 // not limited to:

@@ -17,20 +17,23 @@ private static readonly object hookˢ = (@string)"hook:"u8;
 internal static (int64 written, error err) send(nint n) {
     int64 written = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var err = ref Ꮡerr.ValueSlot;
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             fmt.Println(hookˢ, written, Ꮡerr.ValueSlot, written > 0);
-        });
+        }, ref ᒐ);
         (var v, err) = pair(n);
         if (err != default!) {
             (written, err) = (0, fmt.Errorf("send: %w"u8, err));
-            return;
+            goto ᒐdone;
         }
         written = (int64)v;
-    });
-    return (written, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (written, Ꮡerr.ValueSlot);
 }
 
 internal static nint /*x*/ addrv() {
@@ -48,23 +51,26 @@ internal static nint /*x*/ addrv() {
 private static readonly object litHookˢ = (@string)"lit hook:"u8;
 
 internal static (int64, error) lit(nint n) {
-    var f = () => {
+    (int64 w, error e) f() {
         int64 w = default!;
         heap<error>(out var Ꮡe);
-        func((defer, recover) => {
+        GoFrame ᒐ = default;
+        try {
             ref var e = ref Ꮡe.ValueSlot;
             defer(() => {
                 fmt.Println(litHookˢ, w, Ꮡe.ValueSlot);
-            });
+            }, ref ᒐ);
             (var v, Ꮡe.ValueSlot) = pair(n);
             if (Ꮡe.ValueSlot != default!) {
-                return;
+                goto ᒐdone;
             }
             w = (int64)v;
-            return;
-        });
-        return (w, Ꮡe.ValueSlot);
-    };
+            goto ᒐdone;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        ᒐdone: return (w, Ꮡe.ValueSlot);
+    }
     return f();
 }
 

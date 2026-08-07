@@ -1934,12 +1934,17 @@ public static void TestConcurrentTimerReset(ж<Δtesting.T> Ꮡt) {
     var timer = NewTimer(ΔHour);
     for (nint i = 0; i < goroutines; i++) {
         var timerʗ2 = timer;
-        goǃ((nint iΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            for (nint j = 0; j < tries; j++) {
-                timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+        goǃ((nint iΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                for (nint j = 0; j < tries; j++) {
+                    timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+                }
             }
-        }), i);
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     Ꮡwg.Wait();
 }
@@ -1953,17 +1958,27 @@ public static void TestConcurrentTimerResetStop(ж<Δtesting.T> Ꮡt) {
     var timer = NewTimer(ΔHour);
     for (nint i = 0; i < goroutines; i++) {
         var timerʗ2 = timer;
-        goǃ((nint iΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            for (nint j = 0; j < tries; j++) {
-                timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+        goǃ((nint iΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                for (nint j = 0; j < tries; j++) {
+                    timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+                }
             }
-        }), i);
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
         var timerʗ4 = timer;
-        goǃ((nint iΔ2) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            timerʗ4.Stop();
-        }), i);
+        goǃ((nint iΔ2) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                timerʗ4.Stop();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     Ꮡwg.Wait();
 }
@@ -1977,38 +1992,43 @@ internal static readonly @string fixedTimeˢ = "FIXED_TIME"u8;
     internal bool want;
 }
 
-public static void TestTimeIsDST(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void TestTimeIsDST(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    var (tzWithDST, err) = LoadLocation(australiaSydneyˢ);
-    if (err != default!) {
-        Ꮡt.Fatalf("could not load tz 'Australia/Sydney': %v"u8, err);
-    }
-    (var tzWithoutDST, err) = LoadLocation(australiaBrisbaneˢ);
-    if (err != default!) {
-        Ꮡt.Fatalf("could not load tz 'Australia/Brisbane': %v"u8, err);
-    }
-    var tzFixed = FixedZone(fixedTimeˢ, 12345);
-    var tests = new array<TestTimeIsDST_tests>(8){
-        [0] = new(Date(2009, 1, 1, 12, 0, 0, 0, ΔUTC), false),
-        [1] = new(Date(2009, 6, 1, 12, 0, 0, 0, ΔUTC), false),
-        [2] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzWithDST), true),
-        [3] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzWithDST), false),
-        [4] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzWithoutDST), false),
-        [5] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzWithoutDST), false),
-        [6] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzFixed), false),
-        [7] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzFixed), false)
-    };
-    foreach (var (i, tt) in tests) {
-        var got = tt.time.IsDST();
-        if (got != tt.want) {
-            Ꮡt.Errorf("#%d:: (%#v).IsDST()=%t, want %t"u8, i, tt.time.Format(RFC3339), got, tt.want);
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        var (tzWithDST, err) = LoadLocation(australiaSydneyˢ);
+        if (err != default!) {
+            Ꮡt.Fatalf("could not load tz 'Australia/Sydney': %v"u8, err);
+        }
+        (var tzWithoutDST, err) = LoadLocation(australiaBrisbaneˢ);
+        if (err != default!) {
+            Ꮡt.Fatalf("could not load tz 'Australia/Brisbane': %v"u8, err);
+        }
+        var tzFixed = FixedZone(fixedTimeˢ, 12345);
+        var tests = new array<TestTimeIsDST_tests>(8){
+            [0] = new(Date(2009, 1, 1, 12, 0, 0, 0, ΔUTC), false),
+            [1] = new(Date(2009, 6, 1, 12, 0, 0, 0, ΔUTC), false),
+            [2] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzWithDST), true),
+            [3] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzWithDST), false),
+            [4] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzWithoutDST), false),
+            [5] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzWithoutDST), false),
+            [6] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzFixed), false),
+            [7] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzFixed), false)
+        };
+        foreach (var (i, tt) in tests) {
+            var got = tt.time.IsDST();
+            if (got != tt.want) {
+                Ꮡt.Errorf("#%d:: (%#v).IsDST()=%t, want %t"u8, i, tt.time.Format(RFC3339), got, tt.want);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestTimeAddSecOverflow(ж<Δtesting.T> Ꮡt) {
     // Test it with positive delta.
@@ -2044,40 +2064,45 @@ public static void TestTimeAddSecOverflow(ж<Δtesting.T> Ꮡt) {
 }
 
 // Issue 49284: time: ParseInLocation incorrectly because of Daylight Saving Time
-public static void TestTimeWithZoneTransition(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    var (loc, err) = LoadLocation(asiaShanghaiˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var tests = new array<TestTimeWithZoneTransition_tests>(8){ // 14 Apr 1991 - Daylight Saving Time Started
+public static void TestTimeWithZoneTransition(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        var (loc, err) = LoadLocation(asiaShanghaiˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var tests = new array<TestTimeWithZoneTransition_tests>(8){ // 14 Apr 1991 - Daylight Saving Time Started
  // When time of "Asia/Shanghai" was about to reach
  // Sunday, 14 April 1991, 02:00:00 clocks were turned forward 1 hour to
  // Sunday, 14 April 1991, 03:00:00 local daylight time instead.
  // The UTC time was 13 April 1991, 18:00:00
 
-        [0] = new(Date(1991, April, 13, 17, 50, 0, 0, loc), Date(1991, April, 13, 9, 50, 0, 0, ΔUTC)),
-        [1] = new(Date(1991, April, 13, 18, 0, 0, 0, loc), Date(1991, April, 13, 10, 0, 0, 0, ΔUTC)),
-        [2] = new(Date(1991, April, 14, 1, 50, 0, 0, loc), Date(1991, April, 13, 17, 50, 0, 0, ΔUTC)),
-        [3] = new(Date(1991, April, 14, 3, 0, 0, 0, loc), Date(1991, April, 13, 18, 0, 0, 0, ΔUTC)), // 15 Sep 1991 - Daylight Saving Time Ended
+            [0] = new(Date(1991, April, 13, 17, 50, 0, 0, loc), Date(1991, April, 13, 9, 50, 0, 0, ΔUTC)),
+            [1] = new(Date(1991, April, 13, 18, 0, 0, 0, loc), Date(1991, April, 13, 10, 0, 0, 0, ΔUTC)),
+            [2] = new(Date(1991, April, 14, 1, 50, 0, 0, loc), Date(1991, April, 13, 17, 50, 0, 0, ΔUTC)),
+            [3] = new(Date(1991, April, 14, 3, 0, 0, 0, loc), Date(1991, April, 13, 18, 0, 0, 0, ΔUTC)), // 15 Sep 1991 - Daylight Saving Time Ended
  // When local daylight time of "Asia/Shanghai" was about to reach
  // Sunday, 15 September 1991, 02:00:00 clocks were turned backward 1 hour to
  // Sunday, 15 September 1991, 01:00:00 local standard time instead.
  // The UTC time was 14 September 1991, 17:00:00
 
-        [4] = new(Date(1991, September, 14, 16, 50, 0, 0, loc), Date(1991, September, 14, 7, 50, 0, 0, ΔUTC)),
-        [5] = new(Date(1991, September, 14, 17, 0, 0, 0, loc), Date(1991, September, 14, 8, 0, 0, 0, ΔUTC)),
-        [6] = new(Date(1991, September, 15, 0, 50, 0, 0, loc), Date(1991, September, 14, 15, 50, 0, 0, ΔUTC)),
-        [7] = new(Date(1991, September, 15, 2, 0, 0, 0, loc), Date(1991, September, 14, 18, 0, 0, 0, ΔUTC))
-    };
-    foreach (var (i, tt) in tests) {
-        if (!tt.give.Equal(tt.want)) {
-            Ꮡt.Errorf("#%d:: %#v is not equal to %#v"u8, i, tt.give.Format(RFC3339), tt.want.Format(RFC3339));
+            [4] = new(Date(1991, September, 14, 16, 50, 0, 0, loc), Date(1991, September, 14, 7, 50, 0, 0, ΔUTC)),
+            [5] = new(Date(1991, September, 14, 17, 0, 0, 0, loc), Date(1991, September, 14, 8, 0, 0, 0, ΔUTC)),
+            [6] = new(Date(1991, September, 15, 0, 50, 0, 0, loc), Date(1991, September, 14, 15, 50, 0, 0, ΔUTC)),
+            [7] = new(Date(1991, September, 15, 2, 0, 0, 0, loc), Date(1991, September, 14, 18, 0, 0, 0, ΔUTC))
+        };
+        foreach (var (i, tt) in tests) {
+            if (!tt.give.Equal(tt.want)) {
+                Ꮡt.Errorf("#%d:: %#v is not equal to %#v"u8, i, tt.give.Format(RFC3339), tt.want.Format(RFC3339));
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType("dyn")] partial struct TestZoneBounds_realTests {
     internal Δtime.Time giveTime;
@@ -2085,82 +2110,87 @@ public static void TestTimeWithZoneTransition(ж<Δtesting.T> Ꮡt) => func((def
     internal Δtime.Time wantEnd;
 }
 
-public static void TestZoneBounds(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    var (loc, err) = LoadLocation(asiaShanghaiˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    // The ZoneBounds of a UTC location would just return two zero Time.
-    foreach (var (_, vᴛ1) in utctests) {
-        ref var test = ref heap(new TimeTest(), out var Ꮡtest);
-        test = vᴛ1;
-
-        var sec = test.seconds;
-        var golden = Ꮡtest.of(TimeTest.Ꮡgolden);
-        var tm = Unix(sec, 0).UTC();
-        var (startΔ1, endΔ1) = tm.ZoneBounds();
-        if (!(startΔ1.IsZero() && endΔ1.IsZero())) {
-            Ꮡt.Errorf("ZoneBounds of %+v expects two zero Time, got:\n  start=%v\n  end=%v"u8, golden.Value, startΔ1, endΔ1);
+public static void TestZoneBounds(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        var (loc, err) = LoadLocation(asiaShanghaiˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
         }
-    }
-    // If the zone begins at the beginning of time, start will be returned as a zero Time.
-    // Use math.MinInt32 to avoid overflow of int arguments on 32-bit systems.
-    var beginTime = Date(Δmath.MinInt32, January, 1, 0, 0, 0, 0, loc);
-    var (start, end) = beginTime.ZoneBounds();
-    if (!start.IsZero() || end.IsZero()) {
-        Ꮡt.Errorf("ZoneBounds of %v expects start is zero Time, got:\n  start=%v\n  end=%v"u8, beginTime, start, end);
-    }
-    // If the zone goes on forever, end will be returned as a zero Time.
-    // Use math.MaxInt32 to avoid overflow of int arguments on 32-bit systems.
-    var foreverTime = Date(Δmath.MaxInt32, January, 1, 0, 0, 0, 0, loc);
-    (start, end) = foreverTime.ZoneBounds();
-    if (start.IsZero() || !end.IsZero()) {
-        Ꮡt.Errorf("ZoneBounds of %v expects end is zero Time, got:\n  start=%v\n  end=%v"u8, foreverTime, start, end);
-    }
-    // Check some real-world cases to make sure we're getting the right bounds.
-    var boundOne = Date(1990, September, 16, 1, 0, 0, 0, loc);
-    var boundTwo = Date(1991, April, 14, 3, 0, 0, 0, loc);
-    var boundThree = Date(1991, September, 15, 1, 0, 0, 0, loc);
-    Δtime.Time makeLocalTime(int64 sec) => Unix(sec, 0);
-    var realTests = new array<TestZoneBounds_realTests>(23){ // The ZoneBounds of "Asia/Shanghai" Daylight Saving Time
+        // The ZoneBounds of a UTC location would just return two zero Time.
+        foreach (var (_, vᴛ1) in utctests) {
+            ref var test = ref heap(new TimeTest(), out var Ꮡtest);
+            test = vᴛ1;
 
-        [0] = new(Date(1991, April, 13, 17, 50, 0, 0, loc), boundOne, boundTwo),
-        [1] = new(Date(1991, April, 13, 18, 0, 0, 0, loc), boundOne, boundTwo),
-        [2] = new(Date(1991, April, 14, 1, 50, 0, 0, loc), boundOne, boundTwo),
-        [3] = new(boundTwo, boundTwo, boundThree),
-        [4] = new(Date(1991, September, 14, 16, 50, 0, 0, loc), boundTwo, boundThree),
-        [5] = new(Date(1991, September, 14, 17, 0, 0, 0, loc), boundTwo, boundThree),
-        [6] = new(Date(1991, September, 15, 0, 50, 0, 0, loc), boundTwo, boundThree), // The ZoneBounds of a "Asia/Shanghai" after the last transition (Standard Time)
+            var sec = test.seconds;
+            var golden = Ꮡtest.of(TimeTest.Ꮡgolden);
+            var tm = Unix(sec, 0).UTC();
+            var (startΔ1, endΔ1) = tm.ZoneBounds();
+            if (!(startΔ1.IsZero() && endΔ1.IsZero())) {
+                Ꮡt.Errorf("ZoneBounds of %+v expects two zero Time, got:\n  start=%v\n  end=%v"u8, golden.Value, startΔ1, endΔ1);
+            }
+        }
+        // If the zone begins at the beginning of time, start will be returned as a zero Time.
+        // Use math.MinInt32 to avoid overflow of int arguments on 32-bit systems.
+        var beginTime = Date(Δmath.MinInt32, January, 1, 0, 0, 0, 0, loc);
+        var (start, end) = beginTime.ZoneBounds();
+        if (!start.IsZero() || end.IsZero()) {
+            Ꮡt.Errorf("ZoneBounds of %v expects start is zero Time, got:\n  start=%v\n  end=%v"u8, beginTime, start, end);
+        }
+        // If the zone goes on forever, end will be returned as a zero Time.
+        // Use math.MaxInt32 to avoid overflow of int arguments on 32-bit systems.
+        var foreverTime = Date(Δmath.MaxInt32, January, 1, 0, 0, 0, 0, loc);
+        (start, end) = foreverTime.ZoneBounds();
+        if (start.IsZero() || !end.IsZero()) {
+            Ꮡt.Errorf("ZoneBounds of %v expects end is zero Time, got:\n  start=%v\n  end=%v"u8, foreverTime, start, end);
+        }
+        // Check some real-world cases to make sure we're getting the right bounds.
+        var boundOne = Date(1990, September, 16, 1, 0, 0, 0, loc);
+        var boundTwo = Date(1991, April, 14, 3, 0, 0, 0, loc);
+        var boundThree = Date(1991, September, 15, 1, 0, 0, 0, loc);
+        Δtime.Time makeLocalTime(int64 sec) => Unix(sec, 0);
+        var realTests = new array<TestZoneBounds_realTests>(23){ // The ZoneBounds of "Asia/Shanghai" Daylight Saving Time
 
-        [7] = new(boundThree, boundThree, new Time(nil)),
-        [8] = new(Date(1991, December, 15, 1, 50, 0, 0, loc), boundThree, new Time(nil)),
-        [9] = new(Date(1992, April, 13, 17, 50, 0, 0, loc), boundThree, new Time(nil)),
-        [10] = new(Date(1992, April, 13, 18, 0, 0, 0, loc), boundThree, new Time(nil)),
-        [11] = new(Date(1992, April, 14, 1, 50, 0, 0, loc), boundThree, new Time(nil)),
-        [12] = new(Date(1992, September, 14, 16, 50, 0, 0, loc), boundThree, new Time(nil)),
-        [13] = new(Date(1992, September, 14, 17, 0, 0, 0, loc), boundThree, new Time(nil)),
-        [14] = new(Date(1992, September, 15, 0, 50, 0, 0, loc), boundThree, new Time(nil)), // The ZoneBounds of a local time would return two local Time.
+            [0] = new(Date(1991, April, 13, 17, 50, 0, 0, loc), boundOne, boundTwo),
+            [1] = new(Date(1991, April, 13, 18, 0, 0, 0, loc), boundOne, boundTwo),
+            [2] = new(Date(1991, April, 14, 1, 50, 0, 0, loc), boundOne, boundTwo),
+            [3] = new(boundTwo, boundTwo, boundThree),
+            [4] = new(Date(1991, September, 14, 16, 50, 0, 0, loc), boundTwo, boundThree),
+            [5] = new(Date(1991, September, 14, 17, 0, 0, 0, loc), boundTwo, boundThree),
+            [6] = new(Date(1991, September, 15, 0, 50, 0, 0, loc), boundTwo, boundThree), // The ZoneBounds of a "Asia/Shanghai" after the last transition (Standard Time)
+
+            [7] = new(boundThree, boundThree, new Time(nil)),
+            [8] = new(Date(1991, December, 15, 1, 50, 0, 0, loc), boundThree, new Time(nil)),
+            [9] = new(Date(1992, April, 13, 17, 50, 0, 0, loc), boundThree, new Time(nil)),
+            [10] = new(Date(1992, April, 13, 18, 0, 0, 0, loc), boundThree, new Time(nil)),
+            [11] = new(Date(1992, April, 14, 1, 50, 0, 0, loc), boundThree, new Time(nil)),
+            [12] = new(Date(1992, September, 14, 16, 50, 0, 0, loc), boundThree, new Time(nil)),
+            [13] = new(Date(1992, September, 14, 17, 0, 0, 0, loc), boundThree, new Time(nil)),
+            [14] = new(Date(1992, September, 15, 0, 50, 0, 0, loc), boundThree, new Time(nil)), // The ZoneBounds of a local time would return two local Time.
  // Note: We preloaded "America/Los_Angeles" as time.Local for testing
 
-        [15] = new(makeLocalTime(0), makeLocalTime(-5756400), makeLocalTime(9972000)),
-        [16] = new(makeLocalTime(1221681866), makeLocalTime(1205056800), makeLocalTime(1225616400)),
-        [17] = new(makeLocalTime((nint)2152173599L), makeLocalTime(2145916800), makeLocalTime((nint)2152173600L)),
-        [18] = new(makeLocalTime((nint)2152173600L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-        [19] = new(makeLocalTime((nint)2152173601L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-        [20] = new(makeLocalTime((nint)2159200800L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-        [21] = new(makeLocalTime((nint)2172733199L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-        [22] = new(makeLocalTime((nint)2172733200L), makeLocalTime((nint)2172733200L), makeLocalTime((nint)2177452800L))
-    };
-    foreach (var (i, tt) in realTests) {
-        var (startΔ2, endΔ2) = tt.giveTime.ZoneBounds();
-        if (!startΔ2.Equal(tt.wantStart) || !endΔ2.Equal(tt.wantEnd)) {
-            Ꮡt.Errorf("#%d:: ZoneBounds of %v expects right bounds:\n  got start=%v\n  want start=%v\n  got end=%v\n  want end=%v"u8,
-                i, tt.giveTime, startΔ2, tt.wantStart, endΔ2, tt.wantEnd);
+            [15] = new(makeLocalTime(0), makeLocalTime(-5756400), makeLocalTime(9972000)),
+            [16] = new(makeLocalTime(1221681866), makeLocalTime(1205056800), makeLocalTime(1225616400)),
+            [17] = new(makeLocalTime((nint)2152173599L), makeLocalTime(2145916800), makeLocalTime((nint)2152173600L)),
+            [18] = new(makeLocalTime((nint)2152173600L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
+            [19] = new(makeLocalTime((nint)2152173601L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
+            [20] = new(makeLocalTime((nint)2159200800L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
+            [21] = new(makeLocalTime((nint)2172733199L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
+            [22] = new(makeLocalTime((nint)2172733200L), makeLocalTime((nint)2172733200L), makeLocalTime((nint)2177452800L))
+        };
+        foreach (var (i, tt) in realTests) {
+            var (startΔ2, endΔ2) = tt.giveTime.ZoneBounds();
+            if (!startΔ2.Equal(tt.wantStart) || !endΔ2.Equal(tt.wantEnd)) {
+                Ꮡt.Errorf("#%d:: ZoneBounds of %v expects right bounds:\n  got start=%v\n  want start=%v\n  got end=%v\n  want end=%v"u8,
+                    i, tt.giveTime, startΔ2, tt.wantStart, endΔ2, tt.wantEnd);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end time_test_package

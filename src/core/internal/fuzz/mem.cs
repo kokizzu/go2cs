@@ -62,11 +62,12 @@ internal static readonly @string fuzzˢ = "fuzz-*"u8;
 internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
     ж<sharedMem> m = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         // Create a temporary file.
         (var f, err) = os.CreateTemp(""u8, fuzzˢ);
         if (err != default!) {
-            (m, err) = (default!, err); return;
+            (m, err) = (default!, err); goto ᒐdone;
         }
         var errʗ1 = err;
         var fʗ1 = f;
@@ -75,19 +76,21 @@ internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
                 fʗ1.Close();
                 os.Remove(fʗ1.Name());
             }
-        });
+        }, ref ᒐ);
         // Resize it to the correct size.
         nint totalSize = sharedMemSize(size);
         {
             var errΔ1 = f.Truncate((int64)totalSize); if (errΔ1 != default!) {
-                (m, err) = (default!, errΔ1); return;
+                (m, err) = (default!, errΔ1); goto ᒐdone;
             }
         }
         // Map the file into memory.
         var removeOnClose = true;
         (m, err) = sharedMemMapFile(f, totalSize, removeOnClose);
-    });
-    return (m, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (m, err);
 }
 
 // header returns a pointer to metadata within the shared memory region.

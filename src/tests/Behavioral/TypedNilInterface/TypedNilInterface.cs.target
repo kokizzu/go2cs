@@ -147,7 +147,8 @@ internal static any boxed(ж<BErr> Ꮡp) {
 
 internal static @string /*msg*/ panicked() {
     @string msg = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             var r = recover();
             {
@@ -157,10 +158,12 @@ internal static @string /*msg*/ panicked() {
                     msg = fmt.Sprintf("panic-recovered other %T %v"u8, r, r == default!);
                 }
             }
-        });
+        }, ref ᒐ);
         ж<AErr> p = default!;
         throw panic(p.OrTypedNil());
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return msg;
 }
 

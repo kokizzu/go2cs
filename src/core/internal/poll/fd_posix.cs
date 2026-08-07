@@ -19,54 +19,74 @@ partial class poll_package {
 }
 
 // Shutdown wraps syscall.Shutdown.
-public static error Shutdown(this ж<FD> Ꮡfd, nint how) => func((defer, recover) => {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+public static error Shutdown(this ж<FD> Ꮡfd, nint how) {
+    GoFrame ᒐ = default;
+    try {
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
-    {
-        var err = Ꮡfd.incref(); if (err != default!) {
-            return err;
+        {
+            var err = Ꮡfd.incref(); if (err != default!) {
+                return err;
+            }
         }
+        defer(() => Ꮡfd.decref(), ref ᒐ);
+        return Δsyscall.Shutdown(fd.Sysfd, how);
     }
-    defer(() => Ꮡfd.decref());
-    return Δsyscall.Shutdown(fd.Sysfd, how);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Fchown wraps syscall.Fchown.
-public static error Fchown(this ж<FD> Ꮡfd, nint uid, nint gid) => func((defer, recover) => {
-    {
-        var err = Ꮡfd.incref(); if (err != default!) {
-            return err;
+public static error Fchown(this ж<FD> Ꮡfd, nint uid, nint gid) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var err = Ꮡfd.incref(); if (err != default!) {
+                return err;
+            }
         }
+        defer(() => Ꮡfd.decref(), ref ᒐ);
+        return ignoringEINTR(() => Δsyscall.Fchown(Ꮡfd.Value.Sysfd, uid, gid));
     }
-    defer(() => Ꮡfd.decref());
-    return ignoringEINTR(() => Δsyscall.Fchown(Ꮡfd.Value.Sysfd, uid, gid));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Ftruncate wraps syscall.Ftruncate.
-public static error Ftruncate(this ж<FD> Ꮡfd, int64 size) => func((defer, recover) => {
-    {
-        var err = Ꮡfd.incref(); if (err != default!) {
-            return err;
+public static error Ftruncate(this ж<FD> Ꮡfd, int64 size) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var err = Ꮡfd.incref(); if (err != default!) {
+                return err;
+            }
         }
+        defer(() => Ꮡfd.decref(), ref ᒐ);
+        return ignoringEINTR(() => Δsyscall.Ftruncate(Ꮡfd.Value.Sysfd, size));
     }
-    defer(() => Ꮡfd.decref());
-    return ignoringEINTR(() => Δsyscall.Ftruncate(Ꮡfd.Value.Sysfd, size));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // RawControl invokes the user-defined function f for a non-IO
 // operation.
-public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) => func<error>((defer, recover) => {
-    ref var fd = ref Ꮡfd.DerefOrNull();
+public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) {
+    GoFrame ᒐ = default;
+    try {
+        ref var fd = ref Ꮡfd.DerefOrNull();
 
-    {
-        var err = Ꮡfd.incref(); if (err != default!) {
-            return err;
+        {
+            var err = Ꮡfd.incref(); if (err != default!) {
+                return err;
+            }
         }
+        defer(() => Ꮡfd.decref(), ref ᒐ);
+        f((uintptr)fd.Sysfd);
+        return default!;
     }
-    defer(() => Ꮡfd.decref());
-    f((uintptr)fd.Sysfd);
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ignoringEINTR makes a function call and repeats it if it returns
 // an EINTR error. This appears to be required even though we install all

@@ -293,109 +293,114 @@ private static readonly object statementsˢ = (@string)"(statements)"u8;
 // to name them (this is also consistent with the legacy cmd/cover
 // implementation). We do want to include their counts in the overall
 // summary however.
-public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<error>((defer, recover) => {
-    ref var fm = ref Ꮡfm.DerefOrNull();
+public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) {
+    GoFrame ᒐ = default;
+    try {
+        ref var fm = ref Ꮡfm.DerefOrNull();
 
-    if (fm.cm == coverage.CtrModeInvalid) {
-        throw panic("internal error, counter mode unset");
-    }
-    float64 perc(uint64 covered, uint64 total) {
-        if (total == 0) {
-            total = 1;
+        if (fm.cm == coverage.CtrModeInvalid) {
+            throw panic("internal error, counter mode unset");
         }
-        return 100.0D * (float64)covered / (float64)total;
-    }
-    var tabber = tabwriter.NewWriter(w, 1, 8, 1, (rune)'\t', 0);
-    var tabberʗ1 = tabber;
-    defer(() => tabberʗ1.Flush());
-    var allStmts = (uint64)0;
-    var covStmts = (uint64)0;
-    var pkgs = new slice<@string>(0, len(fm.pm));
-    foreach (var (importpath, _) in fm.pm) {
-        pkgs = append(pkgs, importpath);
-    }
-    slices.Sort<slice<@string>, @string>(pkgs);
-    // Emit functions for each package, sorted by import path.
-    foreach (var (_, importpath) in pkgs) {
-        var p = fm.pm[importpath];
-        if (len((~p).unitTable) == 0) {
-            continue;
-        }
-        var units = new slice<extcu>(0, () => new(nil), len((~p).unitTable));
-        foreach (var (u, _) in (~p).unitTable) {
-            units = append(units, u);
-        }
-        // Within a package, sort the units, then walk through the
-        // sorted array. Each time we hit a new function, emit the
-        // summary entry for the previous function, then make one last
-        // emit call at the end of the loop.
-        p.sortUnits(units);
-        @string fname = ""u8;
-        @string ffile = ""u8;
-        var flit = false;
-        uint32 fline = default!;
-        uint64 cstmts = default!;
-        uint64 tstmts = default!;
-        var pʗ1 = p;
-        void captureFuncStart(extcu u) {
-            fname = (~pʗ1).funcs[(nint)(u.fnfid)].fname;
-            ffile = (~pʗ1).funcs[(nint)(u.fnfid)].@file;
-            flit = (~pʗ1).funcs[(nint)(u.fnfid)].lit;
-            fline = u.StLine;
-        }
-        var captureFuncStartʗ1 = captureFuncStart;
-        var percʗ1 = perc;
-        var tabberʗ2 = tabber;
-        error emitFunc(extcu u) {
-            // Don't emit entries for function literals (see discussion
-            // in function header comment above).
-            if (!flit) {
-                {
-                    var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabberʗ2), "%s:%d:\t%s\t%.1f%%\n"u8,
-                        ffile, fline, fname, percʗ1(cstmts, tstmts)); if (err != default!) {
-                        return err;
-                    }
-                }
+        float64 perc(uint64 covered, uint64 total) {
+            if (total == 0) {
+                total = 1;
             }
-            captureFuncStartʗ1(u);
-            allStmts += tstmts;
-            covStmts += cstmts;
-            tstmts = 0;
-            cstmts = 0;
-            return default!;
+            return 100.0D * (float64)covered / (float64)total;
         }
-        foreach (var (k, u) in units) {
-            if (k == 0){
-                captureFuncStart(u);
-            } else {
-                if (fname != (~p).funcs[(nint)(u.fnfid)].fname) {
-                    // New function; emit entry for previous one.
+        var tabber = tabwriter.NewWriter(w, 1, 8, 1, (rune)'\t', 0);
+        var tabberʗ1 = tabber;
+        defer(() => tabberʗ1.Flush(), ref ᒐ);
+        var allStmts = (uint64)0;
+        var covStmts = (uint64)0;
+        var pkgs = new slice<@string>(0, len(fm.pm));
+        foreach (var (importpath, _) in fm.pm) {
+            pkgs = append(pkgs, importpath);
+        }
+        slices.Sort<slice<@string>, @string>(pkgs);
+        // Emit functions for each package, sorted by import path.
+        foreach (var (_, importpath) in pkgs) {
+            var p = fm.pm[importpath];
+            if (len((~p).unitTable) == 0) {
+                continue;
+            }
+            var units = new slice<extcu>(0, () => new(nil), len((~p).unitTable));
+            foreach (var (u, _) in (~p).unitTable) {
+                units = append(units, u);
+            }
+            // Within a package, sort the units, then walk through the
+            // sorted array. Each time we hit a new function, emit the
+            // summary entry for the previous function, then make one last
+            // emit call at the end of the loop.
+            p.sortUnits(units);
+            @string fname = ""u8;
+            @string ffile = ""u8;
+            var flit = false;
+            uint32 fline = default!;
+            uint64 cstmts = default!;
+            uint64 tstmts = default!;
+            var pʗ1 = p;
+            void captureFuncStart(extcu u) {
+                fname = (~pʗ1).funcs[(nint)(u.fnfid)].fname;
+                ffile = (~pʗ1).funcs[(nint)(u.fnfid)].@file;
+                flit = (~pʗ1).funcs[(nint)(u.fnfid)].lit;
+                fline = u.StLine;
+            }
+            var captureFuncStartʗ1 = captureFuncStart;
+            var percʗ1 = perc;
+            var tabberʗ2 = tabber;
+            error emitFunc(extcu u) {
+                // Don't emit entries for function literals (see discussion
+                // in function header comment above).
+                if (!flit) {
                     {
-                        var err = emitFunc(u); if (err != default!) {
+                        var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabberʗ2), "%s:%d:\t%s\t%.1f%%\n"u8,
+                            ffile, fline, fname, percʗ1(cstmts, tstmts)); if (err != default!) {
                             return err;
                         }
                     }
                 }
+                captureFuncStartʗ1(u);
+                allStmts += tstmts;
+                covStmts += cstmts;
+                tstmts = 0;
+                cstmts = 0;
+                return default!;
             }
-            tstmts += (uint64)u.NxStmts;
-            var count = (~p).unitTable[u];
-            if (count != 0) {
-                cstmts += (uint64)u.NxStmts;
+            foreach (var (k, u) in units) {
+                if (k == 0){
+                    captureFuncStart(u);
+                } else {
+                    if (fname != (~p).funcs[(nint)(u.fnfid)].fname) {
+                        // New function; emit entry for previous one.
+                        {
+                            var err = emitFunc(u); if (err != default!) {
+                                return err;
+                            }
+                        }
+                    }
+                }
+                tstmts += (uint64)u.NxStmts;
+                var count = (~p).unitTable[u];
+                if (count != 0) {
+                    cstmts += (uint64)u.NxStmts;
+                }
+            }
+            {
+                var err = emitFunc(new extcu(nil)); if (err != default!) {
+                    return err;
+                }
             }
         }
         {
-            var err = emitFunc(new extcu(nil)); if (err != default!) {
+            var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabber), "%s\t%s\t%.1f%%\n"u8,
+                totalˢ, statementsˢ, perc(covStmts, allStmts)); if (err != default!) {
                 return err;
             }
         }
+        return default!;
     }
-    {
-        var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabber), "%s\t%s\t%.1f%%\n"u8,
-            totalˢ, statementsˢ, perc(covStmts, allStmts)); if (err != default!) {
-            return err;
-        }
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end cformat_package

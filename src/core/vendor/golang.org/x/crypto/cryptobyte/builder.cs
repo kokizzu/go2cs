@@ -139,29 +139,34 @@ public static void AddUint32LengthPrefixed(this ж<Builder> Ꮡb, Action<ж<Buil
     Ꮡb.addLengthPrefixed(4, false, f);
 }
 
-internal static void callContinuation(this ж<Builder> Ꮡb, Action<ж<Builder>> f, ж<Builder> Ꮡarg) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static void callContinuation(this ж<Builder> Ꮡb, Action<ж<Builder>> f, ж<Builder> Ꮡarg) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    if (!b.inContinuation.Value) {
-        b.inContinuation.Value = true;
-        defer(() => {
-            Ꮡb.Value.inContinuation.Value = false;
-            var r = recover();
-            if (r == default!) {
-                return;
-            }
-            {
-                ref var buildError = ref heap<BuildError>(out var ᏑbuildError);
-                (buildError, var ok) = r._<BuildError>(ᐧ); if (ok){
-                    Ꮡb.Value.err = buildError.Err;
-                } else {
-                    throw panic(r);
+        if (!b.inContinuation.Value) {
+            b.inContinuation.Value = true;
+            defer(() => {
+                Ꮡb.Value.inContinuation.Value = false;
+                var r = recover();
+                if (r == default!) {
+                    return;
                 }
-            }
-        });
+                {
+                    ref var buildError = ref heap<BuildError>(out var ᏑbuildError);
+                    (buildError, var ok) = r._<BuildError>(ᐧ); if (ok){
+                        Ꮡb.Value.err = buildError.Err;
+                    } else {
+                        throw panic(r);
+                    }
+                }
+            }, ref ᒐ);
+        }
+        f(Ꮡarg);
     }
-    f(Ꮡarg);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool isASN1, Action<ж<Builder>> f) {
     ref var b = ref Ꮡb.DerefOrNull();

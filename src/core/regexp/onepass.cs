@@ -165,64 +165,69 @@ internal const uint32 mergeFailed = /* uint32(0xffffffff) */ 4294967295;
 internal static slice<rune> noRune = new rune[]{}.slice();
 internal static slice<uint32> noNext = new uint32[]{mergeFailed}.slice();
 
-internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> ᏑleftRunes, ж<slice<rune>> ᏑrightRunes, uint32 leftPC, uint32 rightPC) => func((defer, recover) => {
-    ref var leftRunes = ref ᏑleftRunes.DerefOrNull();
-    ref var rightRunes = ref ᏑrightRunes.DerefOrNull();
+internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> ᏑleftRunes, ж<slice<rune>> ᏑrightRunes, uint32 leftPC, uint32 rightPC) {
+    GoFrame ᒐ = default;
+    try {
+        ref var leftRunes = ref ᏑleftRunes.DerefOrNull();
+        ref var rightRunes = ref ᏑrightRunes.DerefOrNull();
 
-    nint leftLen = len(leftRunes);
-    nint rightLen = len(rightRunes);
-    if ((nint)(leftLen & 0x1) != 0 || (nint)(rightLen & 0x1) != 0) {
-        throw panic("mergeRuneSets odd length []rune");
-    }
-    ref var lx = ref heap(new nint(), out var Ꮡlx);
-    ref var rx = ref heap(new nint(), out var Ꮡrx);
-    ref var merged = ref heap<slice<rune>>(out var Ꮡmerged);
-    merged = new slice<rune>(0);
-    ref var next = ref heap<slice<uint32>>(out var Ꮡnext);
-    next = new slice<uint32>(0);
-    var ok = true;
-    defer(() => {
-        if (!ok) {
-            Ꮡmerged.ValueSlot = default!;
-            Ꮡnext.ValueSlot = default!;
+        nint leftLen = len(leftRunes);
+        nint rightLen = len(rightRunes);
+        if ((nint)(leftLen & 0x1) != 0 || (nint)(rightLen & 0x1) != 0) {
+            throw panic("mergeRuneSets odd length []rune");
         }
-    });
-    nint ix = -1;
-    bool extend(ж<nint> newLow, ж<slice<rune>> newArray, uint32 pc) {
-        if (ix > 0 && (newArray.ValueSlot)[newLow.Value] <= Ꮡmerged.ValueSlot[ix]) {
-            return false;
+        ref var lx = ref heap(new nint(), out var Ꮡlx);
+        ref var rx = ref heap(new nint(), out var Ꮡrx);
+        ref var merged = ref heap<slice<rune>>(out var Ꮡmerged);
+        merged = new slice<rune>(0);
+        ref var next = ref heap<slice<uint32>>(out var Ꮡnext);
+        next = new slice<uint32>(0);
+        var ok = true;
+        defer(() => {
+            if (!ok) {
+                Ꮡmerged.ValueSlot = default!;
+                Ꮡnext.ValueSlot = default!;
+            }
+        }, ref ᒐ);
+        nint ix = -1;
+        bool extend(ж<nint> newLow, ж<slice<rune>> newArray, uint32 pc) {
+            if (ix > 0 && (newArray.ValueSlot)[newLow.Value] <= Ꮡmerged.ValueSlot[ix]) {
+                return false;
+            }
+            Ꮡmerged.ValueSlot = append(Ꮡmerged.ValueSlot, (newArray.ValueSlot)[newLow.Value], (newArray.ValueSlot)[newLow.Value + 1]);
+            newLow.Value += 2;
+            ix += 2;
+            Ꮡnext.ValueSlot = append(Ꮡnext.ValueSlot, pc);
+            return true;
         }
-        Ꮡmerged.ValueSlot = append(Ꮡmerged.ValueSlot, (newArray.ValueSlot)[newLow.Value], (newArray.ValueSlot)[newLow.Value + 1]);
-        newLow.Value += 2;
-        ix += 2;
-        Ꮡnext.ValueSlot = append(Ꮡnext.ValueSlot, pc);
-        return true;
-    }
-    while (lx < leftLen || rx < rightLen) {
-        switch (ᐧ) {
-        case {} when rx >= rightLen: {
-            ok = extend(Ꮡlx, ᏑleftRunes, leftPC);
-            break;
-        }
-        case {} when lx >= leftLen: {
-            ok = extend(Ꮡrx, ᏑrightRunes, rightPC);
-            break;
-        }
-        case {} when (rightRunes)[rx] < (leftRunes)[lx]: {
-            ok = extend(Ꮡrx, ᏑrightRunes, rightPC);
-            break;
-        }
-        default: {
-            ok = extend(Ꮡlx, ᏑleftRunes, leftPC);
-            break;
-        }}
+        while (lx < leftLen || rx < rightLen) {
+            switch (ᐧ) {
+            case {} when rx >= rightLen: {
+                ok = extend(Ꮡlx, ᏑleftRunes, leftPC);
+                break;
+            }
+            case {} when lx >= leftLen: {
+                ok = extend(Ꮡrx, ᏑrightRunes, rightPC);
+                break;
+            }
+            case {} when (rightRunes)[rx] < (leftRunes)[lx]: {
+                ok = extend(Ꮡrx, ᏑrightRunes, rightPC);
+                break;
+            }
+            default: {
+                ok = extend(Ꮡlx, ᏑleftRunes, leftPC);
+                break;
+            }}
 
-        if (!ok) {
-            return (noRune, noNext);
+            if (!ok) {
+                return (noRune, noNext);
+            }
         }
+        return (merged, next);
     }
-    return (merged, next);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // cleanupOnePass drops working memory, and restores certain shortcut instructions.
 internal static void cleanupOnePass(ж<onePassProg> Ꮡprog, ж<syntax.Prog> Ꮡoriginal) {

@@ -2062,44 +2062,49 @@ internal static nint bodySize(this ж<printer> Ꮡp, ж<ast.BlockStmt> Ꮡb, nin
 // the block is printed on the current line, without line breaks, spaced from the header
 // by sep. Otherwise the block's opening "{" is printed on the current line, followed by
 // lines for the block's statements and its closing "}".
-internal static void funcBody(this ж<printer> Ꮡp, nint headerSize, whiteSpace sep, ж<ast.BlockStmt> Ꮡb) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static void funcBody(this ж<printer> Ꮡp, nint headerSize, whiteSpace sep, ж<ast.BlockStmt> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    if (Ꮡb == nil) {
-        return;
-    }
-    // save/restore composite literal nesting level
-    deferǃ((nint level) => {
-        Ꮡp.Value.level = level;
-    }, Ꮡp.Value.level, defer);
-    p.level = 0;
-    const nint maxSize = 100;
-    if (headerSize + Ꮡp.bodySize(Ꮡb, maxSize) <= maxSize) {
-        Ꮡp.print(sep);
-        p.setPos(b.Lbrace);
-        Ꮡp.print(token.LBRACE);
-        if (len(b.List) > 0) {
-            Ꮡp.print(blank);
-            foreach (var (i, s) in b.List) {
-                if (i > 0) {
-                    Ꮡp.print(token.SEMICOLON, blank);
+        if (Ꮡb == nil) {
+            return;
+        }
+        // save/restore composite literal nesting level
+        defer((nint level) => {
+            Ꮡp.Value.level = level;
+        }, Ꮡp.Value.level, ref ᒐ);
+        p.level = 0;
+        const nint maxSize = 100;
+        if (headerSize + Ꮡp.bodySize(Ꮡb, maxSize) <= maxSize) {
+            Ꮡp.print(sep);
+            p.setPos(b.Lbrace);
+            Ꮡp.print(token.LBRACE);
+            if (len(b.List) > 0) {
+                Ꮡp.print(blank);
+                foreach (var (i, s) in b.List) {
+                    if (i > 0) {
+                        Ꮡp.print(token.SEMICOLON, blank);
+                    }
+                    Ꮡp.stmt(s, i == len(b.List) - 1);
                 }
-                Ꮡp.stmt(s, i == len(b.List) - 1);
+                Ꮡp.print(blank);
             }
+            Ꮡp.print(noExtraLinebreak);
+            p.setPos(b.Rbrace);
+            Ꮡp.print(token.RBRACE, noExtraLinebreak);
+            return;
+        }
+        if (sep != ignore) {
             Ꮡp.print(blank);
         }
-        Ꮡp.print(noExtraLinebreak);
-        p.setPos(b.Rbrace);
-        Ꮡp.print(token.RBRACE, noExtraLinebreak);
-        return;
+        // always use blank
+        Ꮡp.block(Ꮡb, 1);
     }
-    if (sep != ignore) {
-        Ꮡp.print(blank);
-    }
-    // always use blank
-    Ꮡp.block(Ꮡb, 1);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // distanceFrom returns the column difference between p.out (the current output
 // position) and startOutCol. If the start position is on a different line from

@@ -66,13 +66,18 @@ internal static ж<coro> newcoro(Action<ж<coro>> f) {
 // corostart is the entry func for a new coroutine.
 // It runs the coroutine user function f passed to corostart
 // and then calls coroexit to remove the extra concurrency.
-internal static void corostart() => func((defer, recover) => {
-    var gp = getg();
-    var c = gp.Value.coroarg;
-    gp.Value.coroarg = default!;
-    deferǃ(coroexit, c, defer);
-    (~c).f(c);
-});
+internal static void corostart() {
+    GoFrame ᒐ = default;
+    try {
+        var gp = getg();
+        var c = gp.Value.coroarg;
+        gp.Value.coroarg = default!;
+        defer(coroexit, c, ref ᒐ);
+        (~c).f(c);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // coroexit is like coroswitch but closes the coro
 // and exits the current goroutine

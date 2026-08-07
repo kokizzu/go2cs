@@ -180,65 +180,70 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsStreamRoundTrip
 }
 
 // exchange sends a query on the connection and hopes for a response.
-internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<Resolver> Ꮡr, context.Context ctx, @string server, dnsmessageꓸQuestion q, time.Duration timeout, bool useTCP, bool ad) => func<(dnsmessage.Parser, dnsmessage.Header, error)>((defer, recover) => {
-    q = q.ΔClone();
+internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<Resolver> Ꮡr, context.Context ctx, @string server, dnsmessageꓸQuestion q, time.Duration timeout, bool useTCP, bool ad) {
+    GoFrame ᒐ = default;
+    try {
+        q = q.ΔClone();
 
-    q.Class = dnsmessage.ClassINET;
-    var (id, udpReq, tcpReq, err) = newRequest(q, ad);
-    if (err != default!) {
-        return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errCannotMarshalDNSMessage);
-    }
-    slice<@string> networks = default!;
-    if (useTCP){
-        networks = new @string[]{"tcp"u8}.slice();
-    } else {
-        networks = new @string[]{"udp"u8, "tcp"u8}.slice();
-    }
-    foreach (var (_, network) in networks) {
-        var (ctxΔ1, cancel) = context.WithDeadline(ctx, time.Now().Add(timeout));
-        var cancelʗ1 = cancel;
-        defer(() => cancelʗ1());
-        var (c, errΔ1) = Ꮡr.dial(ctxΔ1, network, server);
-        if (errΔ1 != default!) {
-            return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errΔ1);
+        q.Class = dnsmessage.ClassINET;
+        var (id, udpReq, tcpReq, err) = newRequest(q, ad);
+        if (err != default!) {
+            return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errCannotMarshalDNSMessage);
         }
-        {
-            var (d, ok) = ctxΔ1.Deadline(); if (ok && !d.IsZero()) {
-                c.SetDeadline(d);
+        slice<@string> networks = default!;
+        if (useTCP){
+            networks = new @string[]{"tcp"u8}.slice();
+        } else {
+            networks = new @string[]{"udp"u8, "tcp"u8}.slice();
+        }
+        foreach (var (_, network) in networks) {
+            var (ctxΔ1, cancel) = context.WithDeadline(ctx, time.Now().Add(timeout));
+            var cancelʗ1 = cancel;
+            defer(() => cancelʗ1(), ref ᒐ);
+            var (c, errΔ1) = Ꮡr.dial(ctxΔ1, network, server);
+            if (errΔ1 != default!) {
+                return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errΔ1);
             }
-        }
-        dnsmessage.Parser p = default!;
-        dnsmessage.Header h = default!;
-        {
-            var (_, ok) = c._<PacketConn>(ᐧ); if (ok){
-                (p, h, errΔ1) = dnsPacketRoundTrip(c, id, q, udpReq);
-            } else {
-                (p, h, errΔ1) = dnsStreamRoundTrip(c, id, q, tcpReq);
+            {
+                var (d, ok) = ctxΔ1.Deadline(); if (ok && !d.IsZero()) {
+                    c.SetDeadline(d);
+                }
             }
-        }
-        c.Close();
-        if (errΔ1 != default!) {
-            return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), mapErr(errΔ1));
-        }
-        {
-            var errΔ2 = p.SkipQuestion(); if (!AreEqual(errΔ2, dnsmessage.ErrSectionDone)) {
-                return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errInvalidDNSResponse);
+            dnsmessage.Parser p = default!;
+            dnsmessage.Header h = default!;
+            {
+                var (_, ok) = c._<PacketConn>(ᐧ); if (ok){
+                    (p, h, errΔ1) = dnsPacketRoundTrip(c, id, q, udpReq);
+                } else {
+                    (p, h, errΔ1) = dnsStreamRoundTrip(c, id, q, tcpReq);
+                }
             }
+            c.Close();
+            if (errΔ1 != default!) {
+                return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), mapErr(errΔ1));
+            }
+            {
+                var errΔ2 = p.SkipQuestion(); if (!AreEqual(errΔ2, dnsmessage.ErrSectionDone)) {
+                    return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errInvalidDNSResponse);
+                }
+            }
+            // RFC 5966 indicates that when a client receives a UDP response with
+            // the TC flag set, it should take the TC flag as an indication that it
+            // should retry over TCP instead.
+            // The case when the TC flag is set in a TCP response is not well specified,
+            // so this implements the glibc resolver behavior, returning the existing
+            // dns response instead of returning a "errNoAnswerFromDNSServer" error.
+            // See go.dev/issue/64896
+            if (h.Truncated && network == "udp"u8) {
+                continue;
+            }
+            return (p, h, default!);
         }
-        // RFC 5966 indicates that when a client receives a UDP response with
-        // the TC flag set, it should take the TC flag as an indication that it
-        // should retry over TCP instead.
-        // The case when the TC flag is set in a TCP response is not well specified,
-        // so this implements the glibc resolver behavior, returning the existing
-        // dns response instead of returning a "errNoAnswerFromDNSServer" error.
-        // See go.dev/issue/64896
-        if (h.Truncated && network == "udp"u8) {
-            continue;
-        }
-        return (p, h, default!);
+        return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errNoAnswerFromDNSServer);
     }
-    return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errNoAnswerFromDNSServer);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // checkHeader performs basic sanity checks on the header.
 internal static error checkHeader(ж<dnsmessage.Parser> Ꮡp, dnsmessage.Header h) {
@@ -416,46 +421,51 @@ internal static void init(this ж<resolverConfig> Ꮡconf) {
 // tryUpdate tries to update conf with the named resolv.conf file.
 // The name variable only exists for testing. It is otherwise always
 // "/etc/resolv.conf".
-internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) => func((defer, recover) => {
-    ref var conf = ref Ꮡconf.DerefOrNull();
+internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        ref var conf = ref Ꮡconf.DerefOrNull();
 
-    Ꮡconf.of(resolverConfig.ᏑinitOnce).Do(Ꮡconf.init);
-    if ((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).noReload) {
-        return;
-    }
-    // Ensure only one update at a time checks resolv.conf.
-    if (!conf.tryAcquireSema()) {
-        return;
-    }
-    defer(Ꮡconf.releaseSema);
-    var now = time.Now();
-    if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
-        return;
-    }
-    conf.lastChecked = now;
-    var exprᴛ1 = Δruntime.GOOS;
-    if (exprᴛ1 == "windows"u8) {
-    }
-    else { /* default: */
+        Ꮡconf.of(resolverConfig.ᏑinitOnce).Do(Ꮡconf.init);
+        if ((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).noReload) {
+            return;
+        }
+        // Ensure only one update at a time checks resolv.conf.
+        if (!conf.tryAcquireSema()) {
+            return;
+        }
+        defer(Ꮡconf.releaseSema, ref ᒐ);
+        var now = time.Now();
+        if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
+            return;
+        }
+        conf.lastChecked = now;
+        var exprᴛ1 = Δruntime.GOOS;
+        if (exprᴛ1 == "windows"u8) {
+        }
+        else { /* default: */
 // There's no file on disk, so don't bother checking
 // and failing.
 //
 // The Windows implementation of dnsReadConfig (called
 // below) ignores the name.
-        time.Time mtime = default!;
-        {
-            var (fi, err) = os.Stat(name); if (err == default!) {
-                mtime = fi.ModTime();
+            time.Time mtime = default!;
+            {
+                var (fi, err) = os.Stat(name); if (err == default!) {
+                    mtime = fi.ModTime();
+                }
+            }
+            if (mtime.Equal((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).mtime)) {
+                return;
             }
         }
-        if (mtime.Equal((~Ꮡconf.of(resolverConfig.ᏑdnsConfig).Load()).mtime)) {
-            return;
-        }
-    }
 
-    var dnsConf = dnsReadConfig(name);
-    Ꮡconf.of(resolverConfig.ᏑdnsConfig).Store(dnsConf);
-});
+        var dnsConf = dnsReadConfig(name);
+        Ꮡconf.of(resolverConfig.ᏑdnsConfig).Store(dnsConf);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static bool tryAcquireSema(this ref resolverConfig conf) {
     var selᴛ8 = conf.ch.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
@@ -707,12 +717,17 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
     if (conf.singleRequest){
         queryFn = (@string fqdn, dnsmessage.Type qtype) => {
         };
-        responseFn = (@string fqdn, dnsmessage.Type qtype) => func<goLookupIPCNAMEOrder_result>((defer, recover) => {
-            ᏑdnsWaitGroup.Add(1);
-            defer(ᏑdnsWaitGroup.Done);
-            var (p, server, errΔ2) = Ꮡr.tryOneName(ctx, Ꮡconf, fqdn, qtype);
-            return new goLookupIPCNAMEOrder_result(p, server, errΔ2);
-        });
+        responseFn = (@string fqdn, dnsmessage.Type qtype) => {
+            GoFrame ᒐ = default;
+            try {
+                ᏑdnsWaitGroup.Add(1);
+                defer(ᏑdnsWaitGroup.Done, ref ᒐ);
+                var (p, server, errΔ2) = Ꮡr.tryOneName(ctx, Ꮡconf, fqdn, qtype);
+                return new goLookupIPCNAMEOrder_result(p, server, errΔ2);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+            finally { ᒐ.Run(); }
+        };
     } else {
         var laneʗ1 = lane;
         queryFn = (@string fqdn, dnsmessage.Type qtype) => {

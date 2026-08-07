@@ -41,9 +41,11 @@ internal static void sendCtrlBreak(ж<testing.T> Ꮡt, nint pid) {
 internal static readonly @string ctlbreakˢ = "ctlbreak"u8;
 internal static readonly @string buildˢ = "build"u8;
 
-public static void TestCtrlBreak(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // create source file
-    @string source = """
+public static void TestCtrlBreak(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // create source file
+        @string source = """
 
 package main
 
@@ -69,45 +71,48 @@ func main() {
 }
 
 """u8;
-    @string tmp = Ꮡt.TempDir();
-    // write ctrlbreak.go
-    @string name = filepath.Join(tmp, ctlbreakˢ);
-    @string src = name + ".go"u8;
-    var (f, err) = os.Create(src);
-    if (err != default!) {
-        Ꮡt.Fatalf("Failed to create %v: %v"u8, src, err);
+        @string tmp = Ꮡt.TempDir();
+        // write ctrlbreak.go
+        @string name = filepath.Join(tmp, ctlbreakˢ);
+        @string src = name + ".go"u8;
+        var (f, err) = os.Create(src);
+        if (err != default!) {
+            Ꮡt.Fatalf("Failed to create %v: %v"u8, src, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        f.Write(slice<byte>(source));
+        // compile it
+        @string exe = name + ".exe"u8;
+        defer(os.Remove, exe, ref ᒐ);
+        (var o, err) = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), testenv.GoToolPath(new signal_test_package.testing_TжTB(Ꮡt)), buildˢ, "-o", exe, src).CombinedOutput();
+        if (err != default!) {
+            Ꮡt.Fatalf("Failed to compile: %v\n%v"u8, err, ((@string)o));
+        }
+        // run it
+        var cmd = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), exe);
+        ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
+        cmd.Value.Stdout = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
+        cmd.Value.Stderr = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
+        cmd.Value.SysProcAttr = Ꮡ(new syscall.SysProcAttr(
+            CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP
+        ));
+        err = cmd.Start();
+        if (err != default!) {
+            Ꮡt.Fatalf("Start failed: %v"u8, err);
+        }
+        var cmdʗ1 = cmd;
+        goǃ(() => {
+            time.Sleep(1 * time.ΔSecond);
+            sendCtrlBreak(Ꮡt, (~(~cmdʗ1).Process).Pid);
+        });
+        err = cmd.Wait();
+        if (err != default!) {
+            Ꮡt.Fatalf("Program exited with error: %v\n%v"u8, err, buf.String());
+        }
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    f.Write(slice<byte>(source));
-    // compile it
-    @string exe = name + ".exe"u8;
-    deferǃ(os.Remove, exe, defer);
-    (var o, err) = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), testenv.GoToolPath(new signal_test_package.testing_TжTB(Ꮡt)), buildˢ, "-o", exe, src).CombinedOutput();
-    if (err != default!) {
-        Ꮡt.Fatalf("Failed to compile: %v\n%v"u8, err, ((@string)o));
-    }
-    // run it
-    var cmd = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), exe);
-    ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    cmd.Value.Stdout = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
-    cmd.Value.Stderr = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
-    cmd.Value.SysProcAttr = Ꮡ(new syscall.SysProcAttr(
-        CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP
-    ));
-    err = cmd.Start();
-    if (err != default!) {
-        Ꮡt.Fatalf("Start failed: %v"u8, err);
-    }
-    var cmdʗ1 = cmd;
-    goǃ(() => {
-        time.Sleep(1 * time.ΔSecond);
-        sendCtrlBreak(Ꮡt, (~(~cmdʗ1).Process).Pid);
-    });
-    err = cmd.Wait();
-    if (err != default!) {
-        Ꮡt.Fatalf("Program exited with error: %v\n%v"u8, err, buf.String());
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end signal_internal_test_package

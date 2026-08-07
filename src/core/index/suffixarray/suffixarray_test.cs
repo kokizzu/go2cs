@@ -262,55 +262,60 @@ internal static bool equal(ж<global::go.index.suffixarray_package.Index> Ꮡx, 
 }
 
 // returns the serialized index size
-internal static nint testSaveRestore(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var tc = ref Ꮡtc.DerefOrNull();
-    ref var x = ref Ꮡx.DerefOrNull();
+internal static nint testSaveRestore(ж<testing.T> Ꮡt, ж<testCase> Ꮡtc, ж<global::go.index.suffixarray_package.Index> Ꮡx) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
+        ref var tc = ref Ꮡtc.DerefOrNull();
+        ref var x = ref Ꮡx.DerefOrNull();
 
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    {
-        var err = x.Write(new suffixarray_test_package.bytes_BufferжWriter(Ꮡbuf)); if (err != default!) {
-            Ꮡt.Errorf("failed writing index %s (%s)"u8, tc.name, err);
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+        {
+            var err = x.Write(new suffixarray_test_package.bytes_BufferжWriter(Ꮡbuf)); if (err != default!) {
+                Ꮡt.Errorf("failed writing index %s (%s)"u8, tc.name, err);
+            }
         }
-    }
-    nint size = buf.Len();
-    ref var y = ref heap(new global::go.index.suffixarray_package.Index(), out var Ꮡy);
-    {
-        var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
-            Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+        nint size = buf.Len();
+        ref var y = ref heap(new global::go.index.suffixarray_package.Index(), out var Ꮡy);
+        {
+            var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
+                Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+            }
         }
-    }
-    if (!equal(Ꮡx, Ꮡy)) {
-        Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
-    }
-    nint old = maxData32;
-    defer(() => {
-        maxData32 = old;
-    });
-    // Reread as forced 32.
-    y = new Index(nil);
-    maxData32 = realMaxData32;
-    {
-        var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
-            Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+        if (!equal(Ꮡx, Ꮡy)) {
+            Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
         }
-    }
-    if (!equal(Ꮡx, Ꮡy)) {
-        Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
-    }
-    // Reread as forced 64.
-    y = new Index(nil);
-    maxData32 = -1;
-    {
-        var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
-            Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+        nint old = maxData32;
+        defer(() => {
+            maxData32 = old;
+        }, ref ᒐ);
+        // Reread as forced 32.
+        y = new Index(nil);
+        maxData32 = realMaxData32;
+        {
+            var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
+                Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+            }
         }
+        if (!equal(Ꮡx, Ꮡy)) {
+            Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
+        }
+        // Reread as forced 64.
+        y = new Index(nil);
+        maxData32 = -1;
+        {
+            var err = y.Read(new suffixarray_test_package.bytes_ReaderжReader(bytes.NewReader(buf.Bytes()))); if (err != default!) {
+                Ꮡt.Errorf("failed reading index %s (%s)"u8, tc.name, err);
+            }
+        }
+        if (!equal(Ꮡx, Ꮡy)) {
+            Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
+        }
+        return size;
     }
-    if (!equal(Ꮡx, Ꮡy)) {
-        Ꮡt.Errorf("restored index doesn't match saved index %s"u8, tc.name);
-    }
-    return size;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void testIndex(ж<testing.T> Ꮡt) {
     foreach (var (_, vᴛ1) in testCases) {
@@ -332,13 +337,18 @@ public static void TestIndex32(ж<testing.T> Ꮡt) {
     testIndex(Ꮡt);
 }
 
-public static void TestIndex64(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    maxData32 = -1;
-    defer(() => {
-        maxData32 = realMaxData32;
-    });
-    testIndex(Ꮡt);
-});
+public static void TestIndex64(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        maxData32 = -1;
+        defer(() => {
+            maxData32 = realMaxData32;
+        }, ref ᒐ);
+        testIndex(Ꮡt);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestNew32(ж<testing.T> Ꮡt) {
     test(Ꮡt, (slice<byte> x) => {
@@ -475,33 +485,38 @@ internal static void testRec(ж<testing.T> Ꮡt, slice<byte> x, nint i, nint max
 
 // testSA tests the suffix array build function on the input x.
 // It constructs the suffix array and then checks that it is correct.
-internal static bool testSA(ж<testing.T> Ꮡt, slice<byte> x, Func<slice<byte>, slice<nint>> build) => func<bool>((defer, recover) => {
-    var xʗ1 = x;
-    defer(() => {
-        {
-            var e = recover(); if (e != default!) {
-                Ꮡt.Logf("build %v"u8, xʗ1);
-                throw panic(e);
+internal static bool testSA(ж<testing.T> Ꮡt, slice<byte> x, Func<slice<byte>, slice<nint>> build) {
+    GoFrame ᒐ = default;
+    try {
+        var xʗ1 = x;
+        defer(() => {
+            {
+                var e = recover(); if (e != default!) {
+                    Ꮡt.Logf("build %v"u8, xʗ1);
+                    throw panic(e);
+                }
+            }
+        }, ref ᒐ);
+        var sa = build(x);
+        if (builtin.len(sa) != builtin.len(x)) {
+            Ꮡt.Errorf("build %v: len(sa) = %d, want %d"u8, x, builtin.len(sa), builtin.len(x));
+            return false;
+        }
+        for (nint i = 0; i + 1 < builtin.len(sa); i++) {
+            if (sa[i] < 0 || sa[i] >= builtin.len(x) || sa[i + 1] < 0 || sa[i + 1] >= builtin.len(x)) {
+                Ꮡt.Errorf("build %s: sa out of range: %v\n"u8, x, sa);
+                return false;
+            }
+            if (bytes.Compare(x[(int)(sa[i])..], x[(int)(sa[i + 1])..]) >= 0) {
+                Ꮡt.Errorf("build %v -> %v\nsa[%d:] = %d,%d out of order"u8, x, sa, i, sa[i], sa[i + 1]);
+                return false;
             }
         }
-    });
-    var sa = build(x);
-    if (builtin.len(sa) != builtin.len(x)) {
-        Ꮡt.Errorf("build %v: len(sa) = %d, want %d"u8, x, builtin.len(sa), builtin.len(x));
-        return false;
+        return true;
     }
-    for (nint i = 0; i + 1 < builtin.len(sa); i++) {
-        if (sa[i] < 0 || sa[i] >= builtin.len(x) || sa[i + 1] < 0 || sa[i + 1] >= builtin.len(x)) {
-            Ꮡt.Errorf("build %s: sa out of range: %v\n"u8, x, sa);
-            return false;
-        }
-        if (bytes.Compare(x[(int)(sa[i])..], x[(int)(sa[i + 1])..]) >= 0) {
-            Ꮡt.Errorf("build %v -> %v\nsa[%d:] = %d,%d out of order"u8, x, sa, i, sa[i], sa[i + 1]);
-            return false;
-        }
-    }
-    return true;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<byte> benchdata = new slice<byte>(1000000);
 internal static slice<byte> benchrand = new slice<byte>(1000000);
@@ -611,16 +626,21 @@ public static void BenchmarkNew(ж<testing.B> Ꮡb) {
                             continue;
                         }
                         var dataʗ2 = dataʗ1;
-                        bΔ2.Run(fmt.Sprintf("bits=%d"u8, bits), (ж<testing.B> bΔ3) => func((defer, recover) => {
-                            var cleanup = setBits(bits);
-                            var cleanupʗ1 = cleanup;
-                            defer(cleanupʗ1);
-                            bΔ3.SetBytes((int64)builtin.len(dataʗ2));
-                            bΔ3.ReportAllocs();
-                            for (nint i = 0; i < (~bΔ3).N; i++) {
-                                New(dataʗ2);
+                        bΔ2.Run(fmt.Sprintf("bits=%d"u8, bits), (ж<testing.B> bΔ3) => {
+                            GoFrame ᒐ = default;
+                            try {
+                                var cleanup = setBits(bits);
+                                var cleanupʗ1 = cleanup;
+                                defer(cleanupʗ1, ref ᒐ);
+                                bΔ3.SetBytes((int64)builtin.len(dataʗ2));
+                                bΔ3.ReportAllocs();
+                                for (nint i = 0; i < (~bΔ3).N; i++) {
+                                    New(dataʗ2);
+                                }
                             }
-                        }));
+                            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                            finally { ᒐ.Run(); }
+                        });
                     }
                 });
             }
@@ -641,34 +661,39 @@ public static void BenchmarkSaveRestore(ж<testing.B> Ꮡb) {
             continue;
         }
         var dataʗ1 = data;
-        Ꮡb.Run(fmt.Sprintf("bits=%d"u8, bits), (ж<testing.B> bΔ1) => func((defer, recover) => {
-            var cleanup = setBits(bits);
-            var cleanupʗ1 = cleanup;
-            defer(cleanupʗ1);
-            bΔ1.StopTimer();
-            var x = New(dataʗ1);
-            nint size = testSaveRestore(nil, nil, x);
-            // verify correctness
-            var buf = bytes.NewBuffer(new slice<byte>(size));
-            // avoid growing
-            bΔ1.SetBytes((int64)size);
-            bΔ1.StartTimer();
-            bΔ1.ReportAllocs();
-            for (nint i = 0; i < (~bΔ1).N; i++) {
-                buf.Reset();
-                {
-                    var err = x.Write(new suffixarray_test_package.bytes_BufferжWriter(buf)); if (err != default!) {
-                        bΔ1.Fatal(err);
+        Ꮡb.Run(fmt.Sprintf("bits=%d"u8, bits), (ж<testing.B> bΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                var cleanup = setBits(bits);
+                var cleanupʗ1 = cleanup;
+                defer(cleanupʗ1, ref ᒐ);
+                bΔ1.StopTimer();
+                var x = New(dataʗ1);
+                nint size = testSaveRestore(nil, nil, x);
+                // verify correctness
+                var buf = bytes.NewBuffer(new slice<byte>(size));
+                // avoid growing
+                bΔ1.SetBytes((int64)size);
+                bΔ1.StartTimer();
+                bΔ1.ReportAllocs();
+                for (nint i = 0; i < (~bΔ1).N; i++) {
+                    buf.Reset();
+                    {
+                        var err = x.Write(new suffixarray_test_package.bytes_BufferжWriter(buf)); if (err != default!) {
+                            bΔ1.Fatal(err);
+                        }
                     }
-                }
-                global::go.index.suffixarray_package.Index y = default!;
-                {
-                    var err = y.Read(new suffixarray_test_package.bytes_BufferжReader(buf)); if (err != default!) {
-                        bΔ1.Fatal(err);
+                    global::go.index.suffixarray_package.Index y = default!;
+                    {
+                        var err = y.Read(new suffixarray_test_package.bytes_BufferжReader(buf)); if (err != default!) {
+                            bΔ1.Fatal(err);
+                        }
                     }
                 }
             }
-        }));
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
 }
 

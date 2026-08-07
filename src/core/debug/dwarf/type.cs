@@ -454,486 +454,491 @@ internal static readonly @string volatileˢ = "volatile"u8;
 // type cache, appends new typedef types to typedefs, and computes the
 // sizes of types. Callers should pass nil for typedefs; this is used
 // for internal recursion.
-internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeReader r, Offset off, map<Offset, ΔType> typeCache, ж<typeFixer> Ꮡfixups) => func<(ΔType, error)>((defer, recover) => {
-    ref var d = ref Ꮡd.DerefOrNull();
-    ref var fixups = ref Ꮡfixups.DerefOrNull();
+internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeReader r, Offset off, map<Offset, ΔType> typeCache, ж<typeFixer> Ꮡfixups) {
+    GoFrame ᒐ = default;
+    try {
+        ref var d = ref Ꮡd.DerefOrNull();
+        ref var fixups = ref Ꮡfixups.DerefOrNull();
 
-    {
-        var (t, ok) = typeCache[off, ꟷ]; if (ok) {
-            return (t, default!);
+        {
+            var (t, ok) = typeCache[off, ꟷ]; if (ok) {
+                return (t, default!);
+            }
         }
-    }
-    r.Seek(off);
-    ref var err = ref heap<error>(out var Ꮡerr);
-    (var e, err) = r.Next();
-    if (err != default!) {
-        return (default!, err);
-    }
-    nint addressSize = r.AddressSize();
-    if (e == nil || (~e).Offset != off) {
-        return (default!, new DecodeError(name, off, "no type at offset"u8));
-    }
-    // If this is the root of the recursion, prepare to resolve
-    // typedef sizes and perform other fixups once the recursion is
-    // done. This must be done after the type graph is constructed
-    // because it may need to resolve cycles in a different order than
-    // readType encounters them.
-    if (Ꮡfixups == nil) {
-        ref var fixer = ref heap(new typeFixer(), out var Ꮡfixer);
-        defer(() => {
-            Ꮡfixer.Value.apply();
-        });
-        Ꮡfixups = Ꮡfixer; fixups = ref Ꮡfixups.DerefOrNull();
-    }
-    // Parse type from Entry.
-    // Must always set typeCache[off] before calling
-    // d.readType recursively, to handle circular types correctly.
-    ΔType typ = default!;
-    nint nextDepth = 0;
-    // Get next child; set err if error happens.
-    var eʗ1 = e;
-    ж<Entry> next() {
-        if (!(~eʗ1).Children) {
-            return default!;
+        r.Seek(off);
+        ref var err = ref heap<error>(out var Ꮡerr);
+        (var e, err) = r.Next();
+        if (err != default!) {
+            return (default!, err);
         }
-        // Only return direct children.
-        // Skip over composite entries that happen to be nested
-        // inside this one. Most DWARF generators wouldn't generate
-        // such a thing, but clang does.
-        // See golang.org/issue/6472.
-        while (ᐧ) {
-            var (kid, err1) = r.Next();
-            if (err1 != default!) {
-                Ꮡerr.ValueSlot = err1;
+        nint addressSize = r.AddressSize();
+        if (e == nil || (~e).Offset != off) {
+            return (default!, new DecodeError(name, off, "no type at offset"u8));
+        }
+        // If this is the root of the recursion, prepare to resolve
+        // typedef sizes and perform other fixups once the recursion is
+        // done. This must be done after the type graph is constructed
+        // because it may need to resolve cycles in a different order than
+        // readType encounters them.
+        if (Ꮡfixups == nil) {
+            ref var fixer = ref heap(new typeFixer(), out var Ꮡfixer);
+            defer(() => {
+                Ꮡfixer.Value.apply();
+            }, ref ᒐ);
+            Ꮡfixups = Ꮡfixer; fixups = ref Ꮡfixups.DerefOrNull();
+        }
+        // Parse type from Entry.
+        // Must always set typeCache[off] before calling
+        // d.readType recursively, to handle circular types correctly.
+        ΔType typ = default!;
+        nint nextDepth = 0;
+        // Get next child; set err if error happens.
+        var eʗ1 = e;
+        ж<Entry> next() {
+            if (!(~eʗ1).Children) {
                 return default!;
             }
-            if (kid == nil) {
-                Ꮡerr.ValueSlot = new DecodeError(name, r.offset(), "unexpected end of DWARF entries"u8);
-                return default!;
-            }
-            if ((~kid).Tag == 0) {
+            // Only return direct children.
+            // Skip over composite entries that happen to be nested
+            // inside this one. Most DWARF generators wouldn't generate
+            // such a thing, but clang does.
+            // See golang.org/issue/6472.
+            while (ᐧ) {
+                var (kid, err1) = r.Next();
+                if (err1 != default!) {
+                    Ꮡerr.ValueSlot = err1;
+                    return default!;
+                }
+                if (kid == nil) {
+                    Ꮡerr.ValueSlot = new DecodeError(name, r.offset(), "unexpected end of DWARF entries"u8);
+                    return default!;
+                }
+                if ((~kid).Tag == 0) {
+                    if (nextDepth > 0) {
+                        nextDepth--;
+                        continue;
+                    }
+                    return default!;
+                }
+                if ((~kid).Children) {
+                    nextDepth++;
+                }
                 if (nextDepth > 0) {
-                    nextDepth--;
                     continue;
                 }
-                return default!;
-            }
-            if ((~kid).Children) {
-                nextDepth++;
-            }
-            if (nextDepth > 0) {
-                continue;
-            }
-            return kid;
-        }
-    }
-    // Get Type referred to by Entry's AttrType field.
-    // Set err if error happens. Not having a type is an error.
-    var typeCacheʗ1 = typeCache;
-    ΔType typeOf(ж<Entry> eΔ1) {
-        var tval = eΔ1.Val(AttrType);
-        ΔType t = default!;
-        switch (tval.type()) {
-        case Offset toff: {
-            {
-                (t, Ꮡerr.ValueSlot) = Ꮡd.readType(name, r.clone(), toff, typeCacheʗ1, Ꮡfixups); if (Ꮡerr.ValueSlot != default!) {
-                    return default!;
-                }
-            }
-            break;
-        }
-        case uint64 toff: {
-            {
-                (t, Ꮡerr.ValueSlot) = Ꮡd.sigToType(toff); if (Ꮡerr.ValueSlot != default!) {
-                    return default!;
-                }
-            }
-            break;
-        }
-        default: {
-            var toff = tval;
-            return new VoidTypeжΔType(@new<VoidType>());
-        }}
-        // It appears that no Type means "void".
-        return t;
-    }
-    var exprᴛ1 = (~e).Tag;
-    if (exprᴛ1 == TagArrayType) {
-        var t = @new<ArrayType>();
-        typ = new ArrayTypeжΔType(t);
-        typeCache[off] = new ArrayTypeжΔType(t);
-        {
-            t.Value.Type = typeOf(e); if (err != default!) {
-                // Multi-dimensional array.  (DWARF v2 §5.4)
-                // Attributes:
-                //	AttrType:subtype [required]
-                //	AttrStrideSize: size in bits of each element of the array
-                //	AttrByteSize: size of entire array
-                // Children:
-                //	TagSubrangeType or TagEnumerationType giving one dimension.
-                //	dimensions are in left to right order.
-                goto Error;
+                return kid;
             }
         }
-        (t.Value.StrideBitSize, _) = e.Val(AttrStrideSize)._<int64>(ᐧ);
-        // Accumulate dimensions,
-        slice<int64> dims = default!;
-        for (var kid = next(); kid != nil; kid = next()) {
-            // TODO(rsc): Can also be TagEnumerationType
-            // but haven't seen that in the wild yet.
-            var exprᴛ2 = (~kid).Tag;
-            if (exprᴛ2 == TagSubrangeType) {
-                var (count, ok) = kid.Val(AttrCount)._<int64>(ᐧ);
-                if (!ok) {
-                    // Old binaries may have an upper bound instead.
-                    (count, ok) = kid.Val(AttrUpperBound)._<int64>(ᐧ);
-                    if (ok){
-                        count++;
-                    } else 
-                    if (len(dims) == 0) {
-                        // Length is one more than upper bound.
-                        count = -1;
-                    }
-                }
-                dims = append(dims, // As in x[].
- count);
-            }
-            else if (exprᴛ2 == TagEnumerationType) {
-                err = new DecodeError(name, (~kid).Offset, "cannot handle enumeration type as array bound"u8);
-                goto Error;
-            }
-
-        }
-        if (len(dims) == 0) {
-            // LLVM generates this for x[].
-            dims = new int64[]{-1}.slice();
-        }
-        t.Value.Count = dims[0];
-        for (nint i = len(dims) - 1; i >= 1; i--) {
-            t.Value.Type = new ArrayTypeжΔType(Ꮡ(new ArrayType(Type: (~t).Type, Count: dims[i])));
-        }
-    }
-    else if (exprᴛ1 == TagBaseType) {
-        var (nameΔ2, _) = e.Val(AttrName)._<@string>(ᐧ);
-        var (enc, ok) = e.Val(AttrEncoding)._<int64>(ᐧ);
-        if (!ok) {
-            // Basic type.  (DWARF v2 §5.1)
-            // Attributes:
-            //	AttrName: name of base type in programming language of the compilation unit [required]
-            //	AttrEncoding: encoding value for type (encFloat etc) [required]
-            //	AttrByteSize: size of type in bytes [required]
-            //	AttrBitOffset: bit offset of value within containing storage unit
-            //	AttrDataBitOffset: bit offset of value within containing storage unit
-            //	AttrBitSize: size in bits
-            //
-            // For most languages BitOffset/DataBitOffset/BitSize will not be present
-            // for base types.
-            err = new DecodeError(nameΔ2, (~e).Offset, "missing encoding attribute for "u8 + nameΔ2);
-            goto Error;
-        }
-        var exprᴛ3 = enc;
-        if (exprᴛ3 == encAddress) {
-            typ = new AddrTypeжΔType(@new<AddrType>());
-        }
-        else if (exprᴛ3 == encBoolean) {
-            typ = new BoolTypeжΔType(@new<BoolType>());
-        }
-        else if (exprᴛ3 == encComplexFloat) {
-            typ = new ComplexTypeжΔType(@new<ComplexType>());
-            if (nameΔ2 == "complex"u8) {
-                // clang writes out 'complex' instead of 'complex float' or 'complex double'.
-                // clang also writes out a byte size that we can use to distinguish.
-                // See issue 8694.
+        // Get Type referred to by Entry's AttrType field.
+        // Set err if error happens. Not having a type is an error.
+        var typeCacheʗ1 = typeCache;
+        ΔType typeOf(ж<Entry> eΔ1) {
+            var tval = eΔ1.Val(AttrType);
+            ΔType t = default!;
+            switch (tval.type()) {
+            case Offset toff: {
                 {
-                    var (byteSize, _) = e.Val(AttrByteSize)._<int64>(ᐧ);
-                    switch (byteSize) {
-                    case 8: {
-                        nameΔ2 = complexFloatˢ;
-                        break;
+                    (t, Ꮡerr.ValueSlot) = Ꮡd.readType(name, r.clone(), toff, typeCacheʗ1, Ꮡfixups); if (Ꮡerr.ValueSlot != default!) {
+                        return default!;
                     }
-                    case 16: {
-                        nameΔ2 = complexDoubleˢ;
-                        break;
-                    }}
-                }
-
-            }
-        }
-        else if (exprᴛ3 == encFloat) {
-            typ = new FloatTypeжΔType(@new<FloatType>());
-        }
-        else if (exprᴛ3 == encSigned) {
-            typ = new IntTypeжΔType(@new<IntType>());
-        }
-        else if (exprᴛ3 == encUnsigned) {
-            typ = new UintTypeжΔType(@new<UintType>());
-        }
-        else if (exprᴛ3 == encSignedChar) {
-            typ = new CharTypeжΔType(@new<CharType>());
-        }
-        else if (exprᴛ3 == encUnsignedChar) {
-            typ = new UcharTypeжΔType(@new<UcharType>());
-        }
-        else { /* default: */
-            err = new DecodeError(nameΔ2, (~e).Offset, "unrecognized encoding attribute value"u8);
-            goto Error;
-        }
-
-        typeCache[off] = typ;
-        var t = typ._<readType_type>().Basic();
-        t.Value.Name = nameΔ2;
-        (t.Value.BitSize, _) = e.Val(AttrBitSize)._<int64>(ᐧ);
-        var haveBitOffset = false;
-        var haveDataBitOffset = false;
-        (t.Value.BitOffset, haveBitOffset) = e.Val(AttrBitOffset)._<int64>(ᐧ);
-        (t.Value.DataBitOffset, haveDataBitOffset) = e.Val(AttrDataBitOffset)._<int64>(ᐧ);
-        if (haveBitOffset && haveDataBitOffset) {
-            err = new DecodeError(nameΔ2, (~e).Offset, "duplicate bit offset attributes"u8);
-            goto Error;
-        }
-    }
-    else if (exprᴛ1 == TagClassType || exprᴛ1 == TagStructType || exprᴛ1 == TagUnionType) {
-        var t = @new<StructType>();
-        typ = new StructTypeжΔType(t);
-        typeCache[off] = new StructTypeжΔType(t);
-        var exprᴛ4 = (~e).Tag;
-        if (exprᴛ4 == TagClassType) {
-            t.Value.Kind = classˢ;
-        }
-        else if (exprᴛ4 == TagStructType) {
-            t.Value.Kind = structˢ;
-        }
-        else if (exprᴛ4 == TagUnionType) {
-            t.Value.Kind = unionˢ;
-        }
-
-        (t.Value.StructName, _) = e.Val(AttrName)._<@string>(ᐧ);
-        t.Value.Incomplete = e.Val(AttrDeclaration) != default!;
-        t.Value.Field = new slice<ж<StructField>>(0, 8);
-        ж<ΔType> lastFieldType = default!;
-        int64 lastFieldBitSize = default!;
-        int64 lastFieldByteOffset = default!;
-        for (var kid = next(); kid != nil; kid = next()) {
-            if ((~kid).Tag != TagMember) {
-                continue;
-            }
-            var f = @new<StructField>();
-            {
-                f.Value.Type = typeOf(kid); if (err != default!) {
-                    goto Error;
-                }
-            }
-            switch (kid.Val(AttrDataMemberLoc).type()) {
-            case slice<byte> loc: {
-                var b = makeBuf(Ꮡd, // TODO: Should have original compilation
- // unit here, not unknownFormat.
- new unknownFormat(nil), locationˢ, 0, loc);
-                if (b.uint8() != opPlusUconst) {
-                    err = new DecodeError(name, (~kid).Offset, "unexpected opcode"u8);
-                    goto Error;
-                }
-                f.Value.ByteOffset = (int64)b.@uint();
-                if (b.err != default!) {
-                    err = b.err;
-                    goto Error;
                 }
                 break;
             }
-            case int64 loc: {
-                f.Value.ByteOffset = loc;
+            case uint64 toff: {
+                {
+                    (t, Ꮡerr.ValueSlot) = Ꮡd.sigToType(toff); if (Ꮡerr.ValueSlot != default!) {
+                        return default!;
+                    }
+                }
                 break;
+            }
+            default: {
+                var toff = tval;
+                return new VoidTypeжΔType(@new<VoidType>());
             }}
-            (f.Value.Name, _) = kid.Val(AttrName)._<@string>(ᐧ);
-            (f.Value.ByteSize, _) = kid.Val(AttrByteSize)._<int64>(ᐧ);
+            // It appears that no Type means "void".
+            return t;
+        }
+        var exprᴛ1 = (~e).Tag;
+        if (exprᴛ1 == TagArrayType) {
+            var t = @new<ArrayType>();
+            typ = new ArrayTypeжΔType(t);
+            typeCache[off] = new ArrayTypeжΔType(t);
+            {
+                t.Value.Type = typeOf(e); if (err != default!) {
+                    // Multi-dimensional array.  (DWARF v2 §5.4)
+                    // Attributes:
+                    //	AttrType:subtype [required]
+                    //	AttrStrideSize: size in bits of each element of the array
+                    //	AttrByteSize: size of entire array
+                    // Children:
+                    //	TagSubrangeType or TagEnumerationType giving one dimension.
+                    //	dimensions are in left to right order.
+                    goto Error;
+                }
+            }
+            (t.Value.StrideBitSize, _) = e.Val(AttrStrideSize)._<int64>(ᐧ);
+            // Accumulate dimensions,
+            slice<int64> dims = default!;
+            for (var kid = next(); kid != nil; kid = next()) {
+                // TODO(rsc): Can also be TagEnumerationType
+                // but haven't seen that in the wild yet.
+                var exprᴛ2 = (~kid).Tag;
+                if (exprᴛ2 == TagSubrangeType) {
+                    var (count, ok) = kid.Val(AttrCount)._<int64>(ᐧ);
+                    if (!ok) {
+                        // Old binaries may have an upper bound instead.
+                        (count, ok) = kid.Val(AttrUpperBound)._<int64>(ᐧ);
+                        if (ok){
+                            count++;
+                        } else 
+                        if (len(dims) == 0) {
+                            // Length is one more than upper bound.
+                            count = -1;
+                        }
+                    }
+                    dims = append(dims, // As in x[].
+ count);
+                }
+                else if (exprᴛ2 == TagEnumerationType) {
+                    err = new DecodeError(name, (~kid).Offset, "cannot handle enumeration type as array bound"u8);
+                    goto Error;
+                }
+
+            }
+            if (len(dims) == 0) {
+                // LLVM generates this for x[].
+                dims = new int64[]{-1}.slice();
+            }
+            t.Value.Count = dims[0];
+            for (nint i = len(dims) - 1; i >= 1; i--) {
+                t.Value.Type = new ArrayTypeжΔType(Ꮡ(new ArrayType(Type: (~t).Type, Count: dims[i])));
+            }
+        }
+        else if (exprᴛ1 == TagBaseType) {
+            var (nameΔ2, _) = e.Val(AttrName)._<@string>(ᐧ);
+            var (enc, ok) = e.Val(AttrEncoding)._<int64>(ᐧ);
+            if (!ok) {
+                // Basic type.  (DWARF v2 §5.1)
+                // Attributes:
+                //	AttrName: name of base type in programming language of the compilation unit [required]
+                //	AttrEncoding: encoding value for type (encFloat etc) [required]
+                //	AttrByteSize: size of type in bytes [required]
+                //	AttrBitOffset: bit offset of value within containing storage unit
+                //	AttrDataBitOffset: bit offset of value within containing storage unit
+                //	AttrBitSize: size in bits
+                //
+                // For most languages BitOffset/DataBitOffset/BitSize will not be present
+                // for base types.
+                err = new DecodeError(nameΔ2, (~e).Offset, "missing encoding attribute for "u8 + nameΔ2);
+                goto Error;
+            }
+            var exprᴛ3 = enc;
+            if (exprᴛ3 == encAddress) {
+                typ = new AddrTypeжΔType(@new<AddrType>());
+            }
+            else if (exprᴛ3 == encBoolean) {
+                typ = new BoolTypeжΔType(@new<BoolType>());
+            }
+            else if (exprᴛ3 == encComplexFloat) {
+                typ = new ComplexTypeжΔType(@new<ComplexType>());
+                if (nameΔ2 == "complex"u8) {
+                    // clang writes out 'complex' instead of 'complex float' or 'complex double'.
+                    // clang also writes out a byte size that we can use to distinguish.
+                    // See issue 8694.
+                    {
+                        var (byteSize, _) = e.Val(AttrByteSize)._<int64>(ᐧ);
+                        switch (byteSize) {
+                        case 8: {
+                            nameΔ2 = complexFloatˢ;
+                            break;
+                        }
+                        case 16: {
+                            nameΔ2 = complexDoubleˢ;
+                            break;
+                        }}
+                    }
+
+                }
+            }
+            else if (exprᴛ3 == encFloat) {
+                typ = new FloatTypeжΔType(@new<FloatType>());
+            }
+            else if (exprᴛ3 == encSigned) {
+                typ = new IntTypeжΔType(@new<IntType>());
+            }
+            else if (exprᴛ3 == encUnsigned) {
+                typ = new UintTypeжΔType(@new<UintType>());
+            }
+            else if (exprᴛ3 == encSignedChar) {
+                typ = new CharTypeжΔType(@new<CharType>());
+            }
+            else if (exprᴛ3 == encUnsignedChar) {
+                typ = new UcharTypeжΔType(@new<UcharType>());
+            }
+            else { /* default: */
+                err = new DecodeError(nameΔ2, (~e).Offset, "unrecognized encoding attribute value"u8);
+                goto Error;
+            }
+
+            typeCache[off] = typ;
+            var t = typ._<readType_type>().Basic();
+            t.Value.Name = nameΔ2;
+            (t.Value.BitSize, _) = e.Val(AttrBitSize)._<int64>(ᐧ);
             var haveBitOffset = false;
             var haveDataBitOffset = false;
-            (f.Value.BitOffset, haveBitOffset) = kid.Val(AttrBitOffset)._<int64>(ᐧ);
-            (f.Value.DataBitOffset, haveDataBitOffset) = kid.Val(AttrDataBitOffset)._<int64>(ᐧ);
+            (t.Value.BitOffset, haveBitOffset) = e.Val(AttrBitOffset)._<int64>(ᐧ);
+            (t.Value.DataBitOffset, haveDataBitOffset) = e.Val(AttrDataBitOffset)._<int64>(ᐧ);
             if (haveBitOffset && haveDataBitOffset) {
-                err = new DecodeError(name, (~e).Offset, "duplicate bit offset attributes"u8);
-                goto Error;
-            }
-            (f.Value.BitSize, _) = kid.Val(AttrBitSize)._<int64>(ᐧ);
-            t.Value.Field = append((~t).Field, f);
-            if (lastFieldBitSize == 0 && lastFieldByteOffset == (~f).ByteOffset && (~t).Kind != "union"u8) {
-                // Last field was zero width. Fix array length.
-                // (DWARF writes out 0-length arrays as if they were 1-length arrays.)
-                fixups.recordArrayType(lastFieldType);
-            }
-            lastFieldType = f.of(StructField.ᏑType);
-            lastFieldByteOffset = f.Value.ByteOffset;
-            lastFieldBitSize = f.Value.BitSize;
-        }
-        if ((~t).Kind != "union"u8) {
-            var (b, ok) = e.Val(AttrByteSize)._<int64>(ᐧ);
-            if (ok && b == lastFieldByteOffset) {
-                // Final field must be zero width. Fix array length.
-                fixups.recordArrayType(lastFieldType);
-            }
-        }
-    }
-    else if (exprᴛ1 == TagConstType || exprᴛ1 == TagVolatileType || exprᴛ1 == TagRestrictType) {
-        var t = @new<QualType>();
-        typ = new QualTypeжΔType(t);
-        typeCache[off] = new QualTypeжΔType(t);
-        {
-            t.Value.Type = typeOf(e); if (err != default!) {
-                // Type modifier (DWARF v2 §5.2)
-                // Attributes:
-                //	AttrType: subtype
+                err = new DecodeError(nameΔ2, (~e).Offset, "duplicate bit offset attributes"u8);
                 goto Error;
             }
         }
-        var exprᴛ5 = (~e).Tag;
-        if (exprᴛ5 == TagConstType) {
-            t.Value.Qual = constˢ;
-        }
-        else if (exprᴛ5 == TagRestrictType) {
-            t.Value.Qual = restrictˢ;
-        }
-        else if (exprᴛ5 == TagVolatileType) {
-            t.Value.Qual = volatileˢ;
-        }
+        else if (exprᴛ1 == TagClassType || exprᴛ1 == TagStructType || exprᴛ1 == TagUnionType) {
+            var t = @new<StructType>();
+            typ = new StructTypeжΔType(t);
+            typeCache[off] = new StructTypeжΔType(t);
+            var exprᴛ4 = (~e).Tag;
+            if (exprᴛ4 == TagClassType) {
+                t.Value.Kind = classˢ;
+            }
+            else if (exprᴛ4 == TagStructType) {
+                t.Value.Kind = structˢ;
+            }
+            else if (exprᴛ4 == TagUnionType) {
+                t.Value.Kind = unionˢ;
+            }
 
-    }
-    else if (exprᴛ1 == TagEnumerationType) {
-        var t = @new<EnumType>();
-        typ = new EnumTypeжΔType(t);
-        typeCache[off] = new EnumTypeжΔType(t);
-        (t.Value.EnumName, _) = e.Val(AttrName)._<@string>(ᐧ);
-        t.Value.Val = new slice<ж<EnumValue>>(0, 8);
-        for (var kid = next(); kid != nil; kid = next()) {
-            if ((~kid).Tag == TagEnumerator) {
-                var f = @new<EnumValue>();
-                (f.Value.Name, _) = kid.Val(AttrName)._<@string>(ᐧ);
-                (f.Value.Val, _) = kid.Val(AttrConstValue)._<int64>(ᐧ);
-                nint n = len((~t).Val);
-                if (n >= cap((~t).Val)) {
-                    var val = new slice<ж<EnumValue>>(n, n * 2);
-                    copy(val, (~t).Val);
-                    t.Value.Val = val;
+            (t.Value.StructName, _) = e.Val(AttrName)._<@string>(ᐧ);
+            t.Value.Incomplete = e.Val(AttrDeclaration) != default!;
+            t.Value.Field = new slice<ж<StructField>>(0, 8);
+            ж<ΔType> lastFieldType = default!;
+            int64 lastFieldBitSize = default!;
+            int64 lastFieldByteOffset = default!;
+            for (var kid = next(); kid != nil; kid = next()) {
+                if ((~kid).Tag != TagMember) {
+                    continue;
                 }
-                t.Value.Val = (~t).Val[0..(int)(n + 1)];
-                t.Value.Val[n] = f;
-            }
-        }
-    }
-    else if (exprᴛ1 == TagPointerType) {
-        do {
-            var t = @new<PtrType>();
-            typ = new PtrTypeжΔType(t);
-            typeCache[off] = new PtrTypeжΔType(t);
-            if (e.Val(AttrType) == default!) {
-                // Type modifier (DWARF v2 §5.2)
-                // Attributes:
-                //	AttrType: subtype [not required!  void* has no AttrType]
-                //	AttrAddrClass: address class [ignored]
-                t.Value.Type = new VoidTypeжΔType(Ꮡ(new VoidType(nil)));
-                break;
-            }
-            t.Value.Type = typeOf(e);
-        } while (false);
-    }
-    else if (exprᴛ1 == TagSubroutineType) {
-        var t = @new<FuncType>();
-        typ = new FuncTypeжΔType(t);
-        typeCache[off] = new FuncTypeжΔType(t);
-        {
-            t.Value.ReturnType = typeOf(e); if (err != default!) {
-                // Subroutine type.  (DWARF v2 §5.7)
-                // Attributes:
-                //	AttrType: type of return value if any
-                //	AttrName: possible name of type [ignored]
-                //	AttrPrototyped: whether used ANSI C prototype [ignored]
-                // Children:
-                //	TagFormalParameter: typed parameter
-                //		AttrType: type of parameter
-                //	TagUnspecifiedParameter: final ...
-                goto Error;
-            }
-        }
-        t.Value.ParamType = new slice<ΔType>(0, 8);
-        for (var kid = next(); kid != nil; kid = next()) {
-            ΔType tkidΔ1 = default!;
-            var exprᴛ6 = (~kid).Tag;
-            if (exprᴛ6 == TagFormalParameter) {
+                var f = @new<StructField>();
                 {
-                    tkidΔ1 = typeOf(kid); if (err != default!) {
+                    f.Value.Type = typeOf(kid); if (err != default!) {
                         goto Error;
                     }
                 }
+                switch (kid.Val(AttrDataMemberLoc).type()) {
+                case slice<byte> loc: {
+                    var b = makeBuf(Ꮡd, // TODO: Should have original compilation
+ // unit here, not unknownFormat.
+ new unknownFormat(nil), locationˢ, 0, loc);
+                    if (b.uint8() != opPlusUconst) {
+                        err = new DecodeError(name, (~kid).Offset, "unexpected opcode"u8);
+                        goto Error;
+                    }
+                    f.Value.ByteOffset = (int64)b.@uint();
+                    if (b.err != default!) {
+                        err = b.err;
+                        goto Error;
+                    }
+                    break;
+                }
+                case int64 loc: {
+                    f.Value.ByteOffset = loc;
+                    break;
+                }}
+                (f.Value.Name, _) = kid.Val(AttrName)._<@string>(ᐧ);
+                (f.Value.ByteSize, _) = kid.Val(AttrByteSize)._<int64>(ᐧ);
+                var haveBitOffset = false;
+                var haveDataBitOffset = false;
+                (f.Value.BitOffset, haveBitOffset) = kid.Val(AttrBitOffset)._<int64>(ᐧ);
+                (f.Value.DataBitOffset, haveDataBitOffset) = kid.Val(AttrDataBitOffset)._<int64>(ᐧ);
+                if (haveBitOffset && haveDataBitOffset) {
+                    err = new DecodeError(name, (~e).Offset, "duplicate bit offset attributes"u8);
+                    goto Error;
+                }
+                (f.Value.BitSize, _) = kid.Val(AttrBitSize)._<int64>(ᐧ);
+                t.Value.Field = append((~t).Field, f);
+                if (lastFieldBitSize == 0 && lastFieldByteOffset == (~f).ByteOffset && (~t).Kind != "union"u8) {
+                    // Last field was zero width. Fix array length.
+                    // (DWARF writes out 0-length arrays as if they were 1-length arrays.)
+                    fixups.recordArrayType(lastFieldType);
+                }
+                lastFieldType = f.of(StructField.ᏑType);
+                lastFieldByteOffset = f.Value.ByteOffset;
+                lastFieldBitSize = f.Value.BitSize;
             }
-            else if (exprᴛ6 == TagUnspecifiedParameters) {
-                tkidΔ1 = new DotDotDotTypeжΔType(Ꮡ(new DotDotDotType(nil)));
+            if ((~t).Kind != "union"u8) {
+                var (b, ok) = e.Val(AttrByteSize)._<int64>(ᐧ);
+                if (ok && b == lastFieldByteOffset) {
+                    // Final field must be zero width. Fix array length.
+                    fixups.recordArrayType(lastFieldType);
+                }
             }
-            else { /* default: */
-                continue;
-            }
-
-            t.Value.ParamType = append((~t).ParamType, tkidΔ1);
         }
-    }
-    else if (exprᴛ1 == TagTypedef) {
-        var t = @new<TypedefType>();
-        typ = new TypedefTypeжΔType(t);
-        typeCache[off] = new TypedefTypeжΔType(t);
-        (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
-        t.Value.Type = typeOf(e);
-    }
-    else if (exprᴛ1 == TagUnspecifiedType) {
-        var t = @new<UnspecifiedType>();
-        typ = new UnspecifiedTypeжΔType(t);
-        typeCache[off] = new UnspecifiedTypeжΔType(t);
-        (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
-    }
-    else { /* default: */
-        var t = @new<UnsupportedType>();
-        typ = new UnsupportedTypeжΔType(t);
-        typeCache[off] = new UnsupportedTypeжΔType(t);
-        t.Value.Tag = e.Value.Tag;
-        (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
-    }
+        else if (exprᴛ1 == TagConstType || exprᴛ1 == TagVolatileType || exprᴛ1 == TagRestrictType) {
+            var t = @new<QualType>();
+            typ = new QualTypeжΔType(t);
+            typeCache[off] = new QualTypeжΔType(t);
+            {
+                t.Value.Type = typeOf(e); if (err != default!) {
+                    // Type modifier (DWARF v2 §5.2)
+                    // Attributes:
+                    //	AttrType: subtype
+                    goto Error;
+                }
+            }
+            var exprᴛ5 = (~e).Tag;
+            if (exprᴛ5 == TagConstType) {
+                t.Value.Qual = constˢ;
+            }
+            else if (exprᴛ5 == TagRestrictType) {
+                t.Value.Qual = restrictˢ;
+            }
+            else if (exprᴛ5 == TagVolatileType) {
+                t.Value.Qual = volatileˢ;
+            }
 
-    // Typedef (DWARF v2 §5.3)
-    // Attributes:
-    //	AttrName: name [required]
-    //	AttrType: type definition [required]
-    // Unspecified type (DWARF v3 §5.2)
-    // Attributes:
-    //	AttrName: name
-    // This is some other type DIE that we're currently not
-    // equipped to handle. Return an abstract "unsupported type"
-    // object in such cases.
-    if (err != default!) {
-        goto Error;
-    }
-    {
-        var (b, ok) = e.Val(AttrByteSize)._<int64>(ᐧ);
-        if (!ok) {
-            b = -1;
-            switch (typ.type()) {
-            case ж<TypedefType> t: {
-                fixups.typedefs = append(fixups.typedefs, // Record that we need to resolve this
+        }
+        else if (exprᴛ1 == TagEnumerationType) {
+            var t = @new<EnumType>();
+            typ = new EnumTypeжΔType(t);
+            typeCache[off] = new EnumTypeжΔType(t);
+            (t.Value.EnumName, _) = e.Val(AttrName)._<@string>(ᐧ);
+            t.Value.Val = new slice<ж<EnumValue>>(0, 8);
+            for (var kid = next(); kid != nil; kid = next()) {
+                if ((~kid).Tag == TagEnumerator) {
+                    var f = @new<EnumValue>();
+                    (f.Value.Name, _) = kid.Val(AttrName)._<@string>(ᐧ);
+                    (f.Value.Val, _) = kid.Val(AttrConstValue)._<int64>(ᐧ);
+                    nint n = len((~t).Val);
+                    if (n >= cap((~t).Val)) {
+                        var val = new slice<ж<EnumValue>>(n, n * 2);
+                        copy(val, (~t).Val);
+                        t.Value.Val = val;
+                    }
+                    t.Value.Val = (~t).Val[0..(int)(n + 1)];
+                    t.Value.Val[n] = f;
+                }
+            }
+        }
+        else if (exprᴛ1 == TagPointerType) {
+            do {
+                var t = @new<PtrType>();
+                typ = new PtrTypeжΔType(t);
+                typeCache[off] = new PtrTypeжΔType(t);
+                if (e.Val(AttrType) == default!) {
+                    // Type modifier (DWARF v2 §5.2)
+                    // Attributes:
+                    //	AttrType: subtype [not required!  void* has no AttrType]
+                    //	AttrAddrClass: address class [ignored]
+                    t.Value.Type = new VoidTypeжΔType(Ꮡ(new VoidType(nil)));
+                    break;
+                }
+                t.Value.Type = typeOf(e);
+            } while (false);
+        }
+        else if (exprᴛ1 == TagSubroutineType) {
+            var t = @new<FuncType>();
+            typ = new FuncTypeжΔType(t);
+            typeCache[off] = new FuncTypeжΔType(t);
+            {
+                t.Value.ReturnType = typeOf(e); if (err != default!) {
+                    // Subroutine type.  (DWARF v2 §5.7)
+                    // Attributes:
+                    //	AttrType: type of return value if any
+                    //	AttrName: possible name of type [ignored]
+                    //	AttrPrototyped: whether used ANSI C prototype [ignored]
+                    // Children:
+                    //	TagFormalParameter: typed parameter
+                    //		AttrType: type of parameter
+                    //	TagUnspecifiedParameter: final ...
+                    goto Error;
+                }
+            }
+            t.Value.ParamType = new slice<ΔType>(0, 8);
+            for (var kid = next(); kid != nil; kid = next()) {
+                ΔType tkidΔ1 = default!;
+                var exprᴛ6 = (~kid).Tag;
+                if (exprᴛ6 == TagFormalParameter) {
+                    {
+                        tkidΔ1 = typeOf(kid); if (err != default!) {
+                            goto Error;
+                        }
+                    }
+                }
+                else if (exprᴛ6 == TagUnspecifiedParameters) {
+                    tkidΔ1 = new DotDotDotTypeжΔType(Ꮡ(new DotDotDotType(nil)));
+                }
+                else { /* default: */
+                    continue;
+                }
+
+                t.Value.ParamType = append((~t).ParamType, tkidΔ1);
+            }
+        }
+        else if (exprᴛ1 == TagTypedef) {
+            var t = @new<TypedefType>();
+            typ = new TypedefTypeжΔType(t);
+            typeCache[off] = new TypedefTypeжΔType(t);
+            (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
+            t.Value.Type = typeOf(e);
+        }
+        else if (exprᴛ1 == TagUnspecifiedType) {
+            var t = @new<UnspecifiedType>();
+            typ = new UnspecifiedTypeжΔType(t);
+            typeCache[off] = new UnspecifiedTypeжΔType(t);
+            (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
+        }
+        else { /* default: */
+            var t = @new<UnsupportedType>();
+            typ = new UnsupportedTypeжΔType(t);
+            typeCache[off] = new UnsupportedTypeжΔType(t);
+            t.Value.Tag = e.Value.Tag;
+            (t.Value.Name, _) = e.Val(AttrName)._<@string>(ᐧ);
+        }
+
+        // Typedef (DWARF v2 §5.3)
+        // Attributes:
+        //	AttrName: name [required]
+        //	AttrType: type definition [required]
+        // Unspecified type (DWARF v3 §5.2)
+        // Attributes:
+        //	AttrName: name
+        // This is some other type DIE that we're currently not
+        // equipped to handle. Return an abstract "unsupported type"
+        // object in such cases.
+        if (err != default!) {
+            goto Error;
+        }
+        {
+            var (b, ok) = e.Val(AttrByteSize)._<int64>(ᐧ);
+            if (!ok) {
+                b = -1;
+                switch (typ.type()) {
+                case ж<TypedefType> t: {
+                    fixups.typedefs = append(fixups.typedefs, // Record that we need to resolve this
  // type's size once the type graph is
  // constructed.
  t);
-                break;
+                    break;
+                }
+                case ж<PtrType> t: {
+                    b = (int64)addressSize;
+                    break;
+                }}
             }
-            case ж<PtrType> t: {
-                b = (int64)addressSize;
-                break;
-            }}
+            typ.Common().Value.ByteSize = b;
         }
-        typ.Common().Value.ByteSize = b;
-    }
-    return (typ, default!);
+        return (typ, default!);
 Error:
-    delete(typeCache, // If the parse fails, take the type out of the cache
+        delete(typeCache, // If the parse fails, take the type out of the cache
  // so that the next call with this offset doesn't hit
  // the cache and return success.
  off);
-    return (default!, err);
-});
+        return (default!, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void zeroArray(ж<ΔType> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();

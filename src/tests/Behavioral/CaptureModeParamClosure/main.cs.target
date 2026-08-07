@@ -9,14 +9,19 @@ partial class main_package {
     internal @string log;
 }
 
-public static void Add(this ж<Tally> Ꮡt, nint n) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void Add(this ж<Tally> Ꮡt, nint n) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    defer(() => {
-        Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
-    });
-    t.total += n;
-});
+        defer(() => {
+            Ꮡt.Value.log = fmt.Sprintf("%s+%d"u8, Ꮡt.Value.log, n);
+        }, ref ᒐ);
+        t.total += n;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static (nint, nint, @string) closureRead(Tally tʗp, nint n) {
     ref var t = ref heap(tʗp, out var Ꮡt);
@@ -43,32 +48,38 @@ internal static (nint, @string) closureWrite(Tally tʗp, nint n) {
 internal static (nint result, @string log) deferClosure(Tally tʗp, nint n) {
     nint result = default!;
     @string log = default!;
-    func((defer, recover) => {
-    ref var t = ref heap(tʗp, out var Ꮡt);
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref heap(tʗp, out var Ꮡt);
 
         defer(() => {
             (result, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
-        });
+        }, ref ᒐ);
         Ꮡt.Add(n);
         t.total += 7;
         (result, log) = (0, "");
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (result, log);
 }
 
 internal static (nint total, @string log) deferMethodValue(Tally tʗp, nint n) {
     nint total = default!;
     @string log = default!;
-    func((defer, recover) => {
-    ref var t = ref heap(tʗp, out var Ꮡt);
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref heap(tʗp, out var Ꮡt);
 
         defer(() => {
             (total, log) = (Ꮡt.Value.total, Ꮡt.Value.log);
-        });
-        deferǃ(Ꮡt.Add, n, defer);
+        }, ref ᒐ);
+        defer(Ꮡt.Add, n, ref ᒐ);
         t.total++;
         (total, log) = (0, "");
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (total, log);
 }
 

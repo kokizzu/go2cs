@@ -200,30 +200,35 @@ internal static readonly object doneˢ = (@string)"Done!"u8;
 internal static readonly object currentTimeˢ = (@string)"Current time: "u8;
 
 // Output: Go launched at 2009-11-10 15:00:00 -0800 PST
-public static void ExampleNewTicker() => func((defer, recover) => {
-    var ticker = Δtime.NewTicker(Δtime.ΔSecond);
-    var tickerʗ1 = ticker;
-    defer(tickerʗ1.Stop);
-    var done = new channel<bool>(0);
-    var doneʗ1 = done;
-    goǃ(() => {
-        Δtime.Sleep((Δtime.Duration)(10000000000L));
-        doneʗ1.ᐸꟷ(true);
-    });
-    while (ᐧ) {
-        var selᴛ3 = done;
-        var selᴛ4 = (~ticker).C;
-        switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-        case 0 when selᴛ3.ꟷᐳ(out _): {
-            fmt.Println(doneˢ);
-            return;
+public static void ExampleNewTicker() {
+    GoFrame ᒐ = default;
+    try {
+        var ticker = Δtime.NewTicker(Δtime.ΔSecond);
+        var tickerʗ1 = ticker;
+        defer(tickerʗ1.Stop, ref ᒐ);
+        var done = new channel<bool>(0);
+        var doneʗ1 = done;
+        goǃ(() => {
+            Δtime.Sleep((Δtime.Duration)(10000000000L));
+            doneʗ1.ᐸꟷ(true);
+        });
+        while (ᐧ) {
+            var selᴛ3 = done;
+            var selᴛ4 = (~ticker).C;
+            switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+            case 0 when selᴛ3.ꟷᐳ(out _): {
+                fmt.Println(doneˢ);
+                return;
+            }
+            case 1 when selᴛ4.ꟷᐳ(out var t): {
+                fmt.Println(currentTimeˢ, t);
+                break;
+            }}
         }
-        case 1 when selᴛ4.ꟷᐳ(out var t): {
-            fmt.Println(currentTimeˢ, t);
-            break;
-        }}
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string wedFeb25110639Pst2015ˢ = "Wed Feb 25 11:06:39 PST 2015"u8;

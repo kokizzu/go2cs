@@ -581,7 +581,8 @@ internal static UntypedInt maxLogValues => 100;
 // Resolve's return value is guaranteed not to be of Kind [KindLogValuer].
 public static Value /*rv*/ Resolve(this Value v) {
     Value rv = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var orig = v;
         defer(() => {
             {
@@ -589,17 +590,19 @@ public static Value /*rv*/ Resolve(this Value v) {
                     rv = AnyValue(fmt.Errorf("LogValue panicked\n%s"u8, stack(3, 5)));
                 }
             }
-        });
+        }, ref ᒐ);
         for (nint i = 0; i < maxLogValues; i++) {
             if (v.Kind() != KindLogValuer) {
-                rv = v; return;
+                rv = v; goto ᒐdone;
             }
             v = v.LogValuer().LogValue();
         }
         var err = fmt.Errorf("LogValue called too many times on Value of type %T"u8, orig.Any());
         rv = AnyValue(err);
-    });
-    return rv;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return rv;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

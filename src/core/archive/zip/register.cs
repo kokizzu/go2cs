@@ -39,32 +39,40 @@ internal static readonly @string writeAfterCloseˢ = "Write after Close"u8;
 internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice<byte> p) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var w = ref Ꮡw.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var w = ref Ꮡw.DerefOrNull();
 
         Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
-        defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock);
+        defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
         if (w.fw == nil) {
-            (n, err) = (0, errors.New(writeAfterCloseˢ)); return;
+            (n, err) = (0, errors.New(writeAfterCloseˢ)); goto ᒐdone;
         }
         (n, err) = w.fw.Write(p);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
-internal static error Close(this ж<pooledFlateWriter> Ꮡw) => func((defer, recover) => {
-    ref var w = ref Ꮡw.DerefOrNull();
+internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
+    GoFrame ᒐ = default;
+    try {
+        ref var w = ref Ꮡw.DerefOrNull();
 
-    Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
-    defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock);
-    error err = default!;
-    if (w.fw != nil) {
-        err = w.fw.Close();
-        ᏑflateWriterPool.Put(w.fw.OrTypedNil());
-        w.fw = default!;
+        Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
+        defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
+        error err = default!;
+        if (w.fw != nil) {
+            err = w.fw.Close();
+            ᏑflateWriterPool.Put(w.fw.OrTypedNil());
+            w.fw = default!;
+        }
+        return err;
     }
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<sync.Pool> ᏑflateReaderPool = new(default(sync.Pool));
 internal static ref sync.Pool flateReaderPool => ref ᏑflateReaderPool.Value;
@@ -90,32 +98,40 @@ internal static readonly @string readAfterCloseˢ = "Read after Close"u8;
 internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<byte> p) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var r = ref Ꮡr.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var r = ref Ꮡr.DerefOrNull();
 
         Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
-        defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock);
+        defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
         if (r.fr == default!) {
-            (n, err) = (0, errors.New(readAfterCloseˢ)); return;
+            (n, err) = (0, errors.New(readAfterCloseˢ)); goto ᒐdone;
         }
         (n, err) = r.fr.Read(p);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
-internal static error Close(this ж<pooledFlateReader> Ꮡr) => func((defer, recover) => {
-    ref var r = ref Ꮡr.DerefOrNull();
+internal static error Close(this ж<pooledFlateReader> Ꮡr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var r = ref Ꮡr.DerefOrNull();
 
-    Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
-    defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock);
-    error err = default!;
-    if (r.fr != default!) {
-        err = r.fr.Close();
-        ᏑflateReaderPool.Put(r.fr);
-        r.fr = default!;
+        Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
+        defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
+        error err = default!;
+        if (r.fr != default!) {
+            err = r.fr.Close();
+            ᏑflateReaderPool.Put(r.fr);
+            r.fr = default!;
+        }
+        return err;
     }
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<sync.Map> Ꮡcompressors = new(default(sync.Map));
 internal static ref sync.Map compressors => ref Ꮡcompressors.Value; // map[uint16]Compressor

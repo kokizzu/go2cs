@@ -314,75 +314,90 @@ internal static bool valid(reflectꓸValue v) {
 }
 
 // encodeSingle encodes a single top-level non-struct value.
-internal static void encodeSingle(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) => func((defer, recover) => {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+internal static void encodeSingle(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) {
+    GoFrame ᒐ = default;
+    try {
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
-    var state = Ꮡenc.newEncoderState(Ꮡb);
-    deferǃ(Ꮡenc.freeEncoderState, state, defer);
-    state.Value.fieldnum = singletonField;
-    // There is no surrounding struct to frame the transmission, so we must
-    // generate data even if the item is zero. To do this, set sendZero.
-    state.Value.sendZero = true;
-    var instr = Ꮡ(engine.instr, singletonField);
-    if ((~instr).indir > 0) {
-        value = encIndirect(value, (~instr).indir);
+        var state = Ꮡenc.newEncoderState(Ꮡb);
+        defer(Ꮡenc.freeEncoderState, state, ref ᒐ);
+        state.Value.fieldnum = singletonField;
+        // There is no surrounding struct to frame the transmission, so we must
+        // generate data even if the item is zero. To do this, set sendZero.
+        state.Value.sendZero = true;
+        var instr = Ꮡ(engine.instr, singletonField);
+        if ((~instr).indir > 0) {
+            value = encIndirect(value, (~instr).indir);
+        }
+        if (valid(value)) {
+            (~instr).op(instr, state, value);
+        }
     }
-    if (valid(value)) {
-        (~instr).op(instr, state, value);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // encodeStruct encodes a single struct value.
-internal static void encodeStruct(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) => func((defer, recover) => {
-    ref var engine = ref Ꮡengine.DerefOrNull();
+internal static void encodeStruct(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, ж<encEngine> Ꮡengine, reflectꓸValue value) {
+    GoFrame ᒐ = default;
+    try {
+        ref var engine = ref Ꮡengine.DerefOrNull();
 
-    if (!valid(value)) {
-        return;
-    }
-    var state = Ꮡenc.newEncoderState(Ꮡb);
-    deferǃ(Ꮡenc.freeEncoderState, state, defer);
-    state.Value.fieldnum = -1;
-    for (nint i = 0; i < len(engine.instr); i++) {
-        var instr = Ꮡ(engine.instr, i);
-        if (i >= value.NumField()) {
-            // encStructTerminator
-            (~instr).op(instr, state, new reflectꓸValue(nil));
-            break;
+        if (!valid(value)) {
+            return;
         }
-        var field = value.FieldByIndex((~instr).index);
-        if ((~instr).indir > 0) {
-            field = encIndirect(field, (~instr).indir);
-            // TODO: Is field guaranteed valid? If so we could avoid this check.
-            if (!valid(field)) {
-                continue;
+        var state = Ꮡenc.newEncoderState(Ꮡb);
+        defer(Ꮡenc.freeEncoderState, state, ref ᒐ);
+        state.Value.fieldnum = -1;
+        for (nint i = 0; i < len(engine.instr); i++) {
+            var instr = Ꮡ(engine.instr, i);
+            if (i >= value.NumField()) {
+                // encStructTerminator
+                (~instr).op(instr, state, new reflectꓸValue(nil));
+                break;
             }
+            var field = value.FieldByIndex((~instr).index);
+            if ((~instr).indir > 0) {
+                field = encIndirect(field, (~instr).indir);
+                // TODO: Is field guaranteed valid? If so we could avoid this check.
+                if (!valid(field)) {
+                    continue;
+                }
+            }
+            (~instr).op(instr, state, field);
         }
-        (~instr).op(instr, state, field);
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // encodeArray encodes an array.
-internal static void encodeArray(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflectꓸValue value, Action<ж<encInstr>, ж<encoderState>, reflectꓸValue> op, nint elemIndir, nint length, Func<ж<encoderState>, reflectꓸValue, bool> helper) => func((defer, recover) => {
-    var state = Ꮡenc.newEncoderState(Ꮡb);
-    deferǃ(Ꮡenc.freeEncoderState, state, defer);
-    state.Value.fieldnum = -1;
-    state.Value.sendZero = true;
-    state.encodeUint((uint64)length);
-    if (helper != default! && helper(state, value)) {
-        return;
-    }
-    for (nint i = 0; i < length; i++) {
-        var elem = value.Index(i);
-        if (elemIndir > 0) {
-            elem = encIndirect(elem, elemIndir);
-            // TODO: Is elem guaranteed valid? If so we could avoid this check.
-            if (!valid(elem)) {
-                errorf("encodeArray: nil element"u8);
-            }
+internal static void encodeArray(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflectꓸValue value, Action<ж<encInstr>, ж<encoderState>, reflectꓸValue> op, nint elemIndir, nint length, Func<ж<encoderState>, reflectꓸValue, bool> helper) {
+    GoFrame ᒐ = default;
+    try {
+        var state = Ꮡenc.newEncoderState(Ꮡb);
+        defer(Ꮡenc.freeEncoderState, state, ref ᒐ);
+        state.Value.fieldnum = -1;
+        state.Value.sendZero = true;
+        state.encodeUint((uint64)length);
+        if (helper != default! && helper(state, value)) {
+            return;
         }
-        op(nil, state, elem);
+        for (nint i = 0; i < length; i++) {
+            var elem = value.Index(i);
+            if (elemIndir > 0) {
+                elem = encIndirect(elem, elemIndir);
+                // TODO: Is elem guaranteed valid? If so we could avoid this check.
+                if (!valid(elem)) {
+                    errorf("encodeArray: nil element"u8);
+                }
+            }
+            op(nil, state, elem);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // encodeReflectValue is a helper for maps. It encodes the value v.
 internal static void encodeReflectValue(ж<encoderState> Ꮡstate, reflectꓸValue v, Action<ж<encInstr>, ж<encoderState>, reflectꓸValue> op, nint indir) {
@@ -702,42 +717,52 @@ internal static ж<encEngine> getEncEngine(ж<userTypeInfo> Ꮡut, map<ж<typeIn
     return enc;
 }
 
-internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) => func<ж<encEngine>>((defer, recover) => {
-    // Check for recursive types.
-    if (building != default! && building[Ꮡinfo]) {
-        return default!;
-    }
-    Ꮡinfo.of(typeInfo.ᏑencInit).Lock();
-    defer(Ꮡinfo.of(typeInfo.ᏑencInit).Unlock);
-    var enc = Ꮡinfo.of(typeInfo.Ꮡencoder).Load();
-    if (enc == nil) {
-        if (building == default!) {
-            building = new map<ж<typeInfo>, bool>();
+internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) {
+    GoFrame ᒐ = default;
+    try {
+        // Check for recursive types.
+        if (building != default! && building[Ꮡinfo]) {
+            return default!;
         }
-        building[Ꮡinfo] = true;
-        enc = compileEnc(Ꮡut, building);
-        Ꮡinfo.of(typeInfo.Ꮡencoder).Store(enc);
+        Ꮡinfo.of(typeInfo.ᏑencInit).Lock();
+        defer(Ꮡinfo.of(typeInfo.ᏑencInit).Unlock, ref ᒐ);
+        var enc = Ꮡinfo.of(typeInfo.Ꮡencoder).Load();
+        if (enc == nil) {
+            if (building == default!) {
+                building = new map<ж<typeInfo>, bool>();
+            }
+            building[Ꮡinfo] = true;
+            enc = compileEnc(Ꮡut, building);
+            Ꮡinfo.of(typeInfo.Ꮡencoder).Store(enc);
+        }
+        return enc;
     }
-    return enc;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static void encode(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflectꓸValue value, ж<userTypeInfo> Ꮡut) => func((defer, recover) => {
-    ref var ut = ref Ꮡut.DerefOrNull();
+internal static void encode(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflectꓸValue value, ж<userTypeInfo> Ꮡut) {
+    GoFrame ᒐ = default;
+    try {
+        ref var ut = ref Ꮡut.DerefOrNull();
 
-    deferǃ(catchError, Ꮡenc.of(Encoder.Ꮡerr), defer);
-    var engine = getEncEngine(Ꮡut, default!);
-    nint indir = ut.indir;
-    if (ut.externalEnc != 0) {
-        indir = (nint)ut.encIndir;
+        defer(catchError, Ꮡenc.of(Encoder.Ꮡerr), ref ᒐ);
+        var engine = getEncEngine(Ꮡut, default!);
+        nint indir = ut.indir;
+        if (ut.externalEnc != 0) {
+            indir = (nint)ut.encIndir;
+        }
+        for (nint i = 0; i < indir; i++) {
+            value = reflect.Indirect(value);
+        }
+        if (ut.externalEnc == 0 && value.Type().Kind() == reflect.Struct){
+            Ꮡenc.encodeStruct(Ꮡb, engine, value);
+        } else {
+            Ꮡenc.encodeSingle(Ꮡb, engine, value);
+        }
     }
-    for (nint i = 0; i < indir; i++) {
-        value = reflect.Indirect(value);
-    }
-    if (ut.externalEnc == 0 && value.Type().Kind() == reflect.Struct){
-        Ꮡenc.encodeStruct(Ꮡb, engine, value);
-    } else {
-        Ꮡenc.encodeSingle(Ꮡb, engine, value);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end gob_package

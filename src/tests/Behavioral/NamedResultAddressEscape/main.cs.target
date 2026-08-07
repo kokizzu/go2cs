@@ -16,49 +16,63 @@ internal static void addOne(ж<nint> Ꮡn) {
     n++;
 }
 
-internal static void handlePanic(ж<error> Ꮡerr) => func((defer, recover) => {
-    ref var err = ref Ꮡerr.DerefOrNull();
+internal static void handlePanic(ж<error> Ꮡerr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.DerefOrNull();
 
-    {
-        var e = recover(); if (e != default!) {
-            err = fmt.Errorf("recovered: %v"u8, e);
+        {
+            var e = recover(); if (e != default!) {
+                err = fmt.Errorf("recovered: %v"u8, e);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static error /*err*/ errResult(bool fail) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var err = ref Ꮡerr.ValueSlot;
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(setErr, Ꮡerr, defer);
+        defer(setErr, Ꮡerr, ref ᒐ);
         if (fail) {
-            err = fmt.Errorf("original"u8); return;
+            err = fmt.Errorf("original"u8); goto ᒐdone;
         }
         err = default!;
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 internal static nint /*n*/ intResult() {
     heap<nint>(out var Ꮡn);
-    func((defer, recover) => {
-    ref var n = ref Ꮡn.Value;
+    GoFrame ᒐ = default;
+    try {
+        ref var n = ref Ꮡn.Value;
 
-        deferǃ(addOne, Ꮡn, defer);
+        defer(addOne, Ꮡn, ref ᒐ);
         n = 5;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return Ꮡn.Value;
 }
 
 internal static error /*err*/ recoverResult() {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var err = ref Ꮡerr.ValueSlot;
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(handlePanic, Ꮡerr, defer);
+        defer(handlePanic, Ꮡerr, ref ᒐ);
         throw panic("boom");
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return Ꮡerr.ValueSlot;
 }
 

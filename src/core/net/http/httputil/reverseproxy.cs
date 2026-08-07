@@ -359,228 +359,238 @@ internal static readonly @string forwardedˢ = "Forwarded"u8;
 internal static readonly @string userAgentˢ = "User-Agent"u8;
 internal static readonly @string trailerˢ = "Trailer"u8;
 
-public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var req = ref Ꮡreq.DerefOrNull();
+public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var req = ref Ꮡreq.DerefOrNull();
 
-    var transport = p.Transport;
-    if (transport == default!) {
-        transport = http.DefaultTransport;
-    }
-    var ctx = req.Context();
-    if (ctx.Done() != default!){
-    } else 
-    {
-        var (cn, ok) = rw._<http.CloseNotifier>(ᐧ); if (ok) {
-            // CloseNotifier predates context.Context, and has been
-            // entirely superseded by it. If the request contains
-            // a Context that carries a cancellation signal, don't
-            // bother spinning up a goroutine to watch the CloseNotify
-            // channel (if any).
-            //
-            // If the request Context has a nil Done channel (which
-            // means it is either context.Background, or a custom
-            // Context implementation with no cancellation signal),
-            // then consult the CloseNotifier if available.
-            Action cancel = default!;
-            (ctx, cancel) = context.WithCancel(ctx);
-            var cancelʗ1 = cancel;
-            defer(() => cancelʗ1());
-            var notifyChan = cn.CloseNotify();
-            var cancelʗ2 = cancel;
-            var ctxʗ1 = ctx;
-            var notifyChanʗ1 = notifyChan;
-            goǃ(() => {
-                var selᴛ3 = notifyChanʗ1;
-                var selᴛ4 = ctxʗ1.Done();
-                switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-                case 0 when selᴛ3.ꟷᐳ(out _): {
-                    cancelʗ2();
-                    break;
-                }
-                case 1 when selᴛ4.ꟷᐳ(out _): {
-                    break;
-                }}
-            });
+        var transport = p.Transport;
+        if (transport == default!) {
+            transport = http.DefaultTransport;
         }
-    }
-    var outreq = req.Clone(ctx);
-    if (req.ContentLength == 0) {
-        outreq.Value.Body = default!;
-    }
-    // Issue 16036: nil Body for http.Transport retries
-    if ((~outreq).Body != default!) {
-        // Reading from the request body after returning from a handler is not
-        // allowed, and the RoundTrip goroutine that reads the Body can outlive
-        // this handler. This can lead to a crash if the handler panics (see
-        // Issue 46866). Although calling Close doesn't guarantee there isn't
-        // any Read in flight after the handle returns, in practice it's safe to
-        // read after closing it.
-        var outreqʗ1 = outreq;
-        defer(() => (~outreqʗ1).Body.Close());
-    }
-    if ((~outreq).Header == default!) {
-        outreq.Value.Header = new httpꓸHeader(0);
-    }
-    // Issue 33142: historical behavior was to always allocate
-    if ((p.Director != default!) == (p.Rewrite != default!)) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, errors.New(reverseProxyMustHaveˢ));
-        return;
-    }
-    if (p.Director != default!) {
-        p.Director(outreq);
-        if ((~outreq).Form != default!) {
-            outreq.Value.URL.Value.RawQuery = cleanQueryParams((~(~outreq).URL).RawQuery);
-        }
-    }
-    outreq.Value.Close = false;
-    @string reqUpType = upgradeType((~outreq).Header);
-    if (!ascii.IsPrint(reqUpType)) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("client tried to switch to invalid protocol %q"u8, reqUpType));
-        return;
-    }
-    removeHopByHopHeaders((~outreq).Header);
-    // Issue 21096: tell backend applications that care about trailer support
-    // that we support trailers. (We do, but we don't go out of our way to
-    // advertise that unless the incoming client request thought it was worth
-    // mentioning.) Note that we look at req.Header, not outreq.Header, since
-    // the latter has passed through removeHopByHopHeaders.
-    if (httpguts.HeaderValuesContainsToken(req.Header["Te"u8], trailersˢ)) {
-        (~outreq).Header.Set("Te"u8, trailersˢ);
-    }
-    // After stripping all the hop-by-hop connection headers above, add back any
-    // necessary for protocol upgrades, such as for websockets.
-    if (reqUpType != ""u8) {
-        (~outreq).Header.Set(connectionˢ, upgradeˢ);
-        (~outreq).Header.Set(upgradeˢ, reqUpType);
-    }
-    if (p.Rewrite != default!){
-        // Strip client-provided forwarding headers.
-        // The Rewrite func may use SetXForwarded to set new values
-        // for these or copy the previous values from the inbound request.
-        (~outreq).Header.Del(forwardedˢ);
-        (~outreq).Header.Del(xForwardedForˢ);
-        (~outreq).Header.Del(xForwardedHostˢ);
-        (~outreq).Header.Del(xForwardedProtoˢ);
-        // Remove unparsable query parameters from the outbound request.
-        outreq.Value.URL.Value.RawQuery = cleanQueryParams((~(~outreq).URL).RawQuery);
-        var pr = Ꮡ(new ProxyRequest(
-            In: Ꮡreq,
-            Out: outreq
-        ));
-        p.Rewrite(pr);
-        outreq = pr.Value.Out;
-    } else {
+        var ctx = req.Context();
+        if (ctx.Done() != default!){
+        } else 
         {
-            var (clientIP, _, errΔ1) = net.SplitHostPort(req.RemoteAddr); if (errΔ1 == default!) {
-                // If we aren't the first proxy retain prior
-                // X-Forwarded-For information as a comma+space
-                // separated list and fold multiple headers into one.
-                var (prior, ok) = (~outreq).Header[xForwardedForˢ, ꟷ];
-                var omit = ok && prior == default!;
-                // Issue 38079: nil now means don't populate the header
-                if (len(prior) > 0) {
-                    clientIP = strings.Join(prior, ", "u8) + ", "u8 + clientIP;
-                }
-                if (!omit) {
-                    (~outreq).Header.Set(xForwardedForˢ, clientIP);
+            var (cn, ok) = rw._<http.CloseNotifier>(ᐧ); if (ok) {
+                // CloseNotifier predates context.Context, and has been
+                // entirely superseded by it. If the request contains
+                // a Context that carries a cancellation signal, don't
+                // bother spinning up a goroutine to watch the CloseNotify
+                // channel (if any).
+                //
+                // If the request Context has a nil Done channel (which
+                // means it is either context.Background, or a custom
+                // Context implementation with no cancellation signal),
+                // then consult the CloseNotifier if available.
+                Action cancel = default!;
+                (ctx, cancel) = context.WithCancel(ctx);
+                var cancelʗ1 = cancel;
+                defer(() => cancelʗ1(), ref ᒐ);
+                var notifyChan = cn.CloseNotify();
+                var cancelʗ2 = cancel;
+                var ctxʗ1 = ctx;
+                var notifyChanʗ1 = notifyChan;
+                goǃ(() => {
+                    var selᴛ3 = notifyChanʗ1;
+                    var selᴛ4 = ctxʗ1.Done();
+                    switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+                    case 0 when selᴛ3.ꟷᐳ(out _): {
+                        cancelʗ2();
+                        break;
+                    }
+                    case 1 when selᴛ4.ꟷᐳ(out _): {
+                        break;
+                    }}
+                });
+            }
+        }
+        var outreq = req.Clone(ctx);
+        if (req.ContentLength == 0) {
+            outreq.Value.Body = default!;
+        }
+        // Issue 16036: nil Body for http.Transport retries
+        if ((~outreq).Body != default!) {
+            // Reading from the request body after returning from a handler is not
+            // allowed, and the RoundTrip goroutine that reads the Body can outlive
+            // this handler. This can lead to a crash if the handler panics (see
+            // Issue 46866). Although calling Close doesn't guarantee there isn't
+            // any Read in flight after the handle returns, in practice it's safe to
+            // read after closing it.
+            var outreqʗ1 = outreq;
+            defer(() => (~outreqʗ1).Body.Close(), ref ᒐ);
+        }
+        if ((~outreq).Header == default!) {
+            outreq.Value.Header = new httpꓸHeader(0);
+        }
+        // Issue 33142: historical behavior was to always allocate
+        if ((p.Director != default!) == (p.Rewrite != default!)) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, errors.New(reverseProxyMustHaveˢ));
+            return;
+        }
+        if (p.Director != default!) {
+            p.Director(outreq);
+            if ((~outreq).Form != default!) {
+                outreq.Value.URL.Value.RawQuery = cleanQueryParams((~(~outreq).URL).RawQuery);
+            }
+        }
+        outreq.Value.Close = false;
+        @string reqUpType = upgradeType((~outreq).Header);
+        if (!ascii.IsPrint(reqUpType)) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("client tried to switch to invalid protocol %q"u8, reqUpType));
+            return;
+        }
+        removeHopByHopHeaders((~outreq).Header);
+        // Issue 21096: tell backend applications that care about trailer support
+        // that we support trailers. (We do, but we don't go out of our way to
+        // advertise that unless the incoming client request thought it was worth
+        // mentioning.) Note that we look at req.Header, not outreq.Header, since
+        // the latter has passed through removeHopByHopHeaders.
+        if (httpguts.HeaderValuesContainsToken(req.Header["Te"u8], trailersˢ)) {
+            (~outreq).Header.Set("Te"u8, trailersˢ);
+        }
+        // After stripping all the hop-by-hop connection headers above, add back any
+        // necessary for protocol upgrades, such as for websockets.
+        if (reqUpType != ""u8) {
+            (~outreq).Header.Set(connectionˢ, upgradeˢ);
+            (~outreq).Header.Set(upgradeˢ, reqUpType);
+        }
+        if (p.Rewrite != default!){
+            // Strip client-provided forwarding headers.
+            // The Rewrite func may use SetXForwarded to set new values
+            // for these or copy the previous values from the inbound request.
+            (~outreq).Header.Del(forwardedˢ);
+            (~outreq).Header.Del(xForwardedForˢ);
+            (~outreq).Header.Del(xForwardedHostˢ);
+            (~outreq).Header.Del(xForwardedProtoˢ);
+            // Remove unparsable query parameters from the outbound request.
+            outreq.Value.URL.Value.RawQuery = cleanQueryParams((~(~outreq).URL).RawQuery);
+            var pr = Ꮡ(new ProxyRequest(
+                In: Ꮡreq,
+                Out: outreq
+            ));
+            p.Rewrite(pr);
+            outreq = pr.Value.Out;
+        } else {
+            {
+                var (clientIP, _, errΔ1) = net.SplitHostPort(req.RemoteAddr); if (errΔ1 == default!) {
+                    // If we aren't the first proxy retain prior
+                    // X-Forwarded-For information as a comma+space
+                    // separated list and fold multiple headers into one.
+                    var (prior, ok) = (~outreq).Header[xForwardedForˢ, ꟷ];
+                    var omit = ok && prior == default!;
+                    // Issue 38079: nil now means don't populate the header
+                    if (len(prior) > 0) {
+                        clientIP = strings.Join(prior, ", "u8) + ", "u8 + clientIP;
+                    }
+                    if (!omit) {
+                        (~outreq).Header.Set(xForwardedForˢ, clientIP);
+                    }
                 }
             }
         }
-    }
-    {
-        var (_, ok) = (~outreq).Header[userAgentˢ, ꟷ]; if (!ok) {
-            // If the outbound request doesn't have a User-Agent header set,
-            // don't send the default Go HTTP client User-Agent.
-            (~outreq).Header.Set(userAgentˢ, ""u8);
-        }
-    }
-    ref var roundTripMutex = ref heap(new sync.Mutex(), out var ᏑroundTripMutex);
-    bool roundTripDone = default!;
-    var trace = Ꮡ(new httptrace.ClientTrace(
-        Got1xxResponse: (nint code, textproto.MIMEHeader header) => func<error>((defer, recover) => {
-            ᏑroundTripMutex.Lock();
-            defer(ᏑroundTripMutex.Unlock);
-            if (roundTripDone) {
-                // If RoundTrip has returned, don't try to further modify
-                // the ResponseWriter's header map.
-                return default!;
+        {
+            var (_, ok) = (~outreq).Header[userAgentˢ, ꟷ]; if (!ok) {
+                // If the outbound request doesn't have a User-Agent header set,
+                // don't send the default Go HTTP client User-Agent.
+                (~outreq).Header.Set(userAgentˢ, ""u8);
             }
-            var h = rw.Header();
-            copyHeader(h, ((httpꓸHeader)(map<@string, slice<@string>>)header));
-            rw.WriteHeader(code);
-            // Clear headers, it's not automatically done by ResponseWriter.WriteHeader() for 1xx responses
-            clear(h);
-            return default!;
-        })
-    ));
-    outreq = outreq.WithContext(httptrace.WithClientTrace(outreq.Context(), trace));
-    var (res, err) = transport.RoundTrip(outreq);
-    ᏑroundTripMutex.Lock();
-    roundTripDone = true;
-    ᏑroundTripMutex.Unlock();
-    if (err != default!) {
-        Ꮡp.getErrorHandler()(rw, outreq, err);
-        return;
-    }
-    // Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
-    if ((~res).StatusCode == http.StatusSwitchingProtocols) {
+        }
+        ref var roundTripMutex = ref heap(new sync.Mutex(), out var ᏑroundTripMutex);
+        bool roundTripDone = default!;
+        var trace = Ꮡ(new httptrace.ClientTrace(
+            Got1xxResponse: (nint code, textproto.MIMEHeader header) => {
+                GoFrame ᒐ = default;
+                try {
+                    ᏑroundTripMutex.Lock();
+                    defer(ᏑroundTripMutex.Unlock, ref ᒐ);
+                    if (roundTripDone) {
+                        // If RoundTrip has returned, don't try to further modify
+                        // the ResponseWriter's header map.
+                        return default!;
+                    }
+                    var h = rw.Header();
+                    copyHeader(h, ((httpꓸHeader)(map<@string, slice<@string>>)header));
+                    rw.WriteHeader(code);
+                    // Clear headers, it's not automatically done by ResponseWriter.WriteHeader() for 1xx responses
+                    clear(h);
+                    return default!;
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+                finally { ᒐ.Run(); }
+            }
+        ));
+        outreq = outreq.WithContext(httptrace.WithClientTrace(outreq.Context(), trace));
+        var (res, err) = transport.RoundTrip(outreq);
+        ᏑroundTripMutex.Lock();
+        roundTripDone = true;
+        ᏑroundTripMutex.Unlock();
+        if (err != default!) {
+            Ꮡp.getErrorHandler()(rw, outreq, err);
+            return;
+        }
+        // Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
+        if ((~res).StatusCode == http.StatusSwitchingProtocols) {
+            if (!Ꮡp.modifyResponse(rw, res, outreq)) {
+                return;
+            }
+            Ꮡp.handleUpgradeResponse(rw, outreq, res);
+            return;
+        }
+        removeHopByHopHeaders((~res).Header);
         if (!Ꮡp.modifyResponse(rw, res, outreq)) {
             return;
         }
-        Ꮡp.handleUpgradeResponse(rw, outreq, res);
-        return;
-    }
-    removeHopByHopHeaders((~res).Header);
-    if (!Ꮡp.modifyResponse(rw, res, outreq)) {
-        return;
-    }
-    copyHeader(rw.Header(), (~res).Header);
-    // The "Trailer" header isn't included in the Transport's response,
-    // at least for *http.Transport. Build it up from Trailer.
-    nint announcedTrailers = len((~res).Trailer);
-    if (announcedTrailers > 0) {
-        var trailerKeys = new slice<@string>(0, len((~res).Trailer));
-        foreach (var (k, _) in (~res).Trailer) {
-            trailerKeys = append(trailerKeys, k);
+        copyHeader(rw.Header(), (~res).Header);
+        // The "Trailer" header isn't included in the Transport's response,
+        // at least for *http.Transport. Build it up from Trailer.
+        nint announcedTrailers = len((~res).Trailer);
+        if (announcedTrailers > 0) {
+            var trailerKeys = new slice<@string>(0, len((~res).Trailer));
+            foreach (var (k, _) in (~res).Trailer) {
+                trailerKeys = append(trailerKeys, k);
+            }
+            rw.Header().Add(trailerˢ, strings.Join(trailerKeys, ", "u8));
         }
-        rw.Header().Add(trailerˢ, strings.Join(trailerKeys, ", "u8));
-    }
-    rw.WriteHeader((~res).StatusCode);
-    err = Ꮡp.copyResponse(rw, (~res).Body, p.flushInterval(res));
-    if (err != default!) {
-        var resʗ1 = res;
-        defer(() => (~resʗ1).Body.Close());
-        // Since we're streaming the response, if we run into an error all we can do
-        // is abort the request. Issue 23643: ReverseProxy should use ErrAbortHandler
-        // on read error while copying body.
-        if (!shouldPanicOnCopyError(Ꮡreq)) {
-            p.logf("suppressing panic for copyResponse error in test; copy error: %v"u8, err);
+        rw.WriteHeader((~res).StatusCode);
+        err = Ꮡp.copyResponse(rw, (~res).Body, p.flushInterval(res));
+        if (err != default!) {
+            var resʗ1 = res;
+            defer(() => (~resʗ1).Body.Close(), ref ᒐ);
+            // Since we're streaming the response, if we run into an error all we can do
+            // is abort the request. Issue 23643: ReverseProxy should use ErrAbortHandler
+            // on read error while copying body.
+            if (!shouldPanicOnCopyError(Ꮡreq)) {
+                p.logf("suppressing panic for copyResponse error in test; copy error: %v"u8, err);
+                return;
+            }
+            throw panic(http.ErrAbortHandler);
+        }
+        (~res).Body.Close();
+        // close now, instead of defer, to populate res.Trailer
+        if (len((~res).Trailer) > 0) {
+            // Force chunking if we saw a response trailer.
+            // This prevents net/http from calculating the length for short
+            // bodies and adding a Content-Length.
+            http.NewResponseController(rw).Flush();
+        }
+        if (len((~res).Trailer) == announcedTrailers) {
+            copyHeader(rw.Header(), (~res).Trailer);
             return;
         }
-        throw panic(http.ErrAbortHandler);
-    }
-    (~res).Body.Close();
-    // close now, instead of defer, to populate res.Trailer
-    if (len((~res).Trailer) > 0) {
-        // Force chunking if we saw a response trailer.
-        // This prevents net/http from calculating the length for short
-        // bodies and adding a Content-Length.
-        http.NewResponseController(rw).Flush();
-    }
-    if (len((~res).Trailer) == announcedTrailers) {
-        copyHeader(rw.Header(), (~res).Trailer);
-        return;
-    }
-    foreach (var (kᴛ1, vv) in (~res).Trailer) {
-        var k = kᴛ1;
+        foreach (var (kᴛ1, vv) in (~res).Trailer) {
+            var k = kᴛ1;
 
-        k = http.TrailerPrefix + k;
-        foreach (var (_, v) in vv) {
-            rw.Header().Add(k, v);
+            k = http.TrailerPrefix + k;
+            foreach (var (_, v) in vv) {
+                rw.Header().Add(k, v);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static bool inOurTests; // whether we're in our own tests
 
@@ -652,31 +662,36 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
     return p.FlushInterval;
 }
 
-internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter dst, io.Reader src, time.Duration flushInterval) => func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter dst, io.Reader src, time.Duration flushInterval) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    io.Writer w = new http_ResponseWriterᴠWriter(dst);
-    if (flushInterval != 0) {
-        var mlw = Ꮡ(new maxLatencyWriter(
-            dst: new http_ResponseWriterᴠWriter(dst),
-            flush: http.NewResponseController(dst).Flush,
-            latency: flushInterval
-        ));
-        var mlwʗ1 = mlw;
-        defer(mlwʗ1.stop);
-        // set up initial timer so headers get flushed even if body writes are delayed
-        mlw.Value.flushPending = true;
-        mlw.Value.t = time.AfterFunc(flushInterval, mlw.delayedFlush);
-        w = new maxLatencyWriterжWriter(mlw);
+        io.Writer w = new http_ResponseWriterᴠWriter(dst);
+        if (flushInterval != 0) {
+            var mlw = Ꮡ(new maxLatencyWriter(
+                dst: new http_ResponseWriterᴠWriter(dst),
+                flush: http.NewResponseController(dst).Flush,
+                latency: flushInterval
+            ));
+            var mlwʗ1 = mlw;
+            defer(mlwʗ1.stop, ref ᒐ);
+            // set up initial timer so headers get flushed even if body writes are delayed
+            mlw.Value.flushPending = true;
+            mlw.Value.t = time.AfterFunc(flushInterval, mlw.delayedFlush);
+            w = new maxLatencyWriterжWriter(mlw);
+        }
+        slice<byte> buf = default!;
+        if (p.BufferPool != default!) {
+            buf = p.BufferPool.Get();
+            defer(Ꮡp.Value.BufferPool.Put, buf, ref ᒐ);
+        }
+        var (_, err) = p.copyBuffer(w, src, buf);
+        return err;
     }
-    slice<byte> buf = default!;
-    if (p.BufferPool != default!) {
-        buf = p.BufferPool.Get();
-        deferǃ(Ꮡp.Value.BufferPool.Put, buf, defer);
-    }
-    var (_, err) = p.copyBuffer(w, src, buf);
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // copyBuffer returns any write errors or non-EOF read errors, and the amount
 // of bytes written.
@@ -733,18 +748,19 @@ internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWrit
 internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<byte> p) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
-        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
+        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
         (n, err) = m.dst.Write(p);
         if (m.latency < 0) {
             m.flush();
-            return;
+            goto ᒐdone;
         }
         if (m.flushPending) {
-            return;
+            goto ᒐdone;
         }
         if (m.t == nil){
             m.t = time.AfterFunc(m.latency, Ꮡm.delayedFlush);
@@ -752,33 +768,45 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
             m.t.Reset(m.latency);
         }
         m.flushPending = true;
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
-internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
-    Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
-    defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
-    if (!m.flushPending) {
-        // if stop was called but AfterFunc already started this goroutine
-        return;
+        Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
+        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
+        if (!m.flushPending) {
+            // if stop was called but AfterFunc already started this goroutine
+            return;
+        }
+        m.flush();
+        m.flushPending = false;
     }
-    m.flush();
-    m.flushPending = false;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-internal static void stop(this ж<maxLatencyWriter> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+internal static void stop(this ж<maxLatencyWriter> Ꮡm) {
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
-    Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
-    defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock);
-    m.flushPending = false;
-    if (m.t != nil) {
-        m.t.Stop();
+        Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
+        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
+        m.flushPending = false;
+        if (m.t != nil) {
+            m.t.Stop();
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static @string upgradeType(httpꓸHeader h) {
     if (!httpguts.HeaderValuesContainsToken(h[connectionˢ], upgradeˢ)) {
@@ -787,80 +815,85 @@ internal static @string upgradeType(httpꓸHeader h) {
     return h.Get(upgradeˢ);
 }
 
-internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡres) => func((defer, recover) => {
-    ref var req = ref Ꮡreq.DerefOrNull();
-    ref var res = ref Ꮡres.DerefOrNull();
+internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡres) {
+    GoFrame ᒐ = default;
+    try {
+        ref var req = ref Ꮡreq.DerefOrNull();
+        ref var res = ref Ꮡres.DerefOrNull();
 
-    @string reqUpType = upgradeType(req.Header);
-    @string resUpType = upgradeType(res.Header);
-    if (!ascii.IsPrint(resUpType)) {
-        // We know reqUpType is ASCII, it's checked by the caller.
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch to invalid protocol %q"u8, resUpType));
-    }
-    if (!ascii.EqualFold(reqUpType, resUpType)) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch protocol %q when %q was requested"u8, resUpType, reqUpType));
-        return;
-    }
-    var (backConn, ok) = res.Body._<io.ReadWriteCloser>(ᐧ);
-    if (!ok) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("internal error: 101 switching protocols response with non-writable body"u8));
-        return;
-    }
-    var rc = http.NewResponseController(rw);
-    var (conn, brw, hijackErr) = rc.Hijack();
-    if (errors.Is(hijackErr, new http.ProtocolErrorжerror(http.ErrNotSupported))) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("can't switch protocols using non-Hijacker ResponseWriter type %T"u8, rw));
-        return;
-    }
-    var backConnCloseCh = new channel<bool>(0);
-    var backConnʗ1 = backConn;
-    var backConnCloseChʗ1 = backConnCloseCh;
-    goǃ(() => {
-        // Ensure that the cancellation of a request closes the backend.
-        // See issue https://golang.org/issue/35559.
-        var selᴛ5 = Ꮡreq.Value.Context().Done();
-        var selᴛ6 = backConnCloseChʗ1;
-        switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-        case 0 when selᴛ5.ꟷᐳ(out _): {
-            break;
+        @string reqUpType = upgradeType(req.Header);
+        @string resUpType = upgradeType(res.Header);
+        if (!ascii.IsPrint(resUpType)) {
+            // We know reqUpType is ASCII, it's checked by the caller.
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch to invalid protocol %q"u8, resUpType));
         }
-        case 1 when selᴛ6.ꟷᐳ(out _): {
-            break;
-        }}
-        backConnʗ1.Close();
-    });
-    deferǃ(ᴛ1 => close(ᴛ1), backConnCloseCh, defer);
-    if (hijackErr != default!) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("Hijack failed on protocol switch: %v"u8, hijackErr));
-        return;
-    }
-    var connʗ1 = conn;
-    defer(() => connʗ1.Close());
-    copyHeader(rw.Header(), res.Header);
-    res.Header = rw.Header();
-    res.Body = default!;
-    // so res.Write only writes the headers; we have res.Body in backConn above
-    {
-        var err = res.Write(new bufio_ReadWriterжWriter(brw)); if (err != default!) {
-            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("response write: %v"u8, err));
+        if (!ascii.EqualFold(reqUpType, resUpType)) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch protocol %q when %q was requested"u8, resUpType, reqUpType));
             return;
         }
-    }
-    {
-        var err = brw.Value.Writer.Value.Flush(); if (err != default!) {
-            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("response flush: %v"u8, err));
+        var (backConn, ok) = res.Body._<io.ReadWriteCloser>(ᐧ);
+        if (!ok) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("internal error: 101 switching protocols response with non-writable body"u8));
             return;
         }
+        var rc = http.NewResponseController(rw);
+        var (conn, brw, hijackErr) = rc.Hijack();
+        if (errors.Is(hijackErr, new http.ProtocolErrorжerror(http.ErrNotSupported))) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("can't switch protocols using non-Hijacker ResponseWriter type %T"u8, rw));
+            return;
+        }
+        var backConnCloseCh = new channel<bool>(0);
+        var backConnʗ1 = backConn;
+        var backConnCloseChʗ1 = backConnCloseCh;
+        goǃ(() => {
+            // Ensure that the cancellation of a request closes the backend.
+            // See issue https://golang.org/issue/35559.
+            var selᴛ5 = Ꮡreq.Value.Context().Done();
+            var selᴛ6 = backConnCloseChʗ1;
+            switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+            case 0 when selᴛ5.ꟷᐳ(out _): {
+                break;
+            }
+            case 1 when selᴛ6.ꟷᐳ(out _): {
+                break;
+            }}
+            backConnʗ1.Close();
+        });
+        defer(ᴛ1 => close(ᴛ1), backConnCloseCh, ref ᒐ);
+        if (hijackErr != default!) {
+            Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("Hijack failed on protocol switch: %v"u8, hijackErr));
+            return;
+        }
+        var connʗ1 = conn;
+        defer(() => connʗ1.Close(), ref ᒐ);
+        copyHeader(rw.Header(), res.Header);
+        res.Header = rw.Header();
+        res.Body = default!;
+        // so res.Write only writes the headers; we have res.Body in backConn above
+        {
+            var err = res.Write(new bufio_ReadWriterжWriter(brw)); if (err != default!) {
+                Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("response write: %v"u8, err));
+                return;
+            }
+        }
+        {
+            var err = brw.Value.Writer.Value.Flush(); if (err != default!) {
+                Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("response flush: %v"u8, err));
+                return;
+            }
+        }
+        var errc = new channel<error>(1);
+        ref var spc = ref heap<switchProtocolCopier>(out var Ꮡspc);
+        spc = new switchProtocolCopier(user: new net_ConnᴠReadWriter(conn), backend: new io_ReadWriteCloserᴠReadWriter(backConn));
+        var spcʗ1 = spc;
+        goǃ(ᴛ1 => spcʗ1.copyToBackend(ᴛ1), errc);
+        var spcʗ2 = spc;
+        goǃ(ᴛ1 => spcʗ2.copyFromBackend(ᴛ1), errc);
+        ᐸꟷ(errc);
     }
-    var errc = new channel<error>(1);
-    ref var spc = ref heap<switchProtocolCopier>(out var Ꮡspc);
-    spc = new switchProtocolCopier(user: new net_ConnᴠReadWriter(conn), backend: new io_ReadWriteCloserᴠReadWriter(backConn));
-    var spcʗ1 = spc;
-    goǃ(ᴛ1 => spcʗ1.copyToBackend(ᴛ1), errc);
-    var spcʗ2 = spc;
-    goǃ(ᴛ1 => spcʗ2.copyFromBackend(ᴛ1), errc);
-    ᐸꟷ(errc);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // switchProtocolCopier exists so goroutines proxying data back and
 // forth have nice names in stacks.

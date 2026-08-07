@@ -743,7 +743,8 @@ internal static readonly @string expectedRacectx0ˢ = "expected racectx == 0"u8;
 internal static (slice<byte> buf, bool park) readTrace0() {
     slice<byte> buf = default!;
     bool park = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         if (raceenabled) {
             // g0 doesn't have a race context. Borrow the user G's.
             if ((~getg()).racectx != 0) {
@@ -754,7 +755,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             // the system stack.)
             defer(() => {
                 getg().Value.racectx = 0;
-            });
+            }, ref ᒐ);
         }
         // This function must not allocate while holding trace.lock:
         // allocation can call heap allocate, which will try to emit a trace
@@ -766,7 +767,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             // because tracing can be enabled at runtime on prod servers.
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
             println((@string)"runtime: ReadTrace called from multiple goroutines simultaneously"u8);
-            (buf, park) = (default!, false); return;
+            (buf, park) = (default!, false); goto ᒐdone;
         }
         // Recycle the old buffer.
         {
@@ -780,7 +781,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
         if (!Δtrace.headerWritten) {
             Δtrace.headerWritten = true;
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-            (buf, park) = (slice<byte>("go 1.23 trace\x00\x00\x00"u8), false); return;
+            (buf, park) = (slice<byte>("go 1.23 trace\x00\x00\x00"u8), false); goto ᒐdone;
         }
         // Read the next buffer.
         if (ᏑΔtrace.of(runtime_package.Δtraceᴛ1.ᏑreaderGen).Load() == 0) {
@@ -816,7 +817,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
                     semrelease(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2)));
                     // We're shutting down, and the last generation is fully
                     // read. We're done.
-                    (buf, park) = (default!, false); return;
+                    (buf, park) = (default!, false); goto ᒐdone;
                 }
                 // The previous gen has had all of its buffers flushed, and
                 // there's nothing else for us to read. Advance the generation
@@ -847,15 +848,17 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             // we drop the lock.
             ᏑΔtrace.of(runtime_package.Δtraceᴛ1.ᏑworkAvailable).Store(false);
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-            (buf, park) = (default!, true); return;
+            (buf, park) = (default!, true); goto ᒐdone;
         }
         // Pull a buffer.
         var tbuf = Δtrace.full[(nint)(gen % 2)].pop();
         Δtrace.reading = tbuf;
         unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
         (buf, park) = ((~tbuf).arr[..(int)((~tbuf).pos)], false);
-    });
-    return (buf, park);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (buf, park);
 }
 
 // traceReader returns the trace reader that should be woken up, if any.

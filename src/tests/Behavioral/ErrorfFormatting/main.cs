@@ -9,16 +9,21 @@ internal static void Main() {
     fmt.Println(fmt.Errorf("got %v"u8, (nint)(42)));
     fmt.Println(fmt.Errorf("name %s = %d"u8, (@string)"x"u8, (nint)(7)));
     fmt.Println(fmt.Errorf("%v and %v"u8, true, (@string)"y"u8));
-    ((Action)(() => func((defer, recover) => {
-        defer(() => {
-            {
-                var r = recover(); if (r != default!) {
-                    fmt.Println(fmt.Errorf("recovered: %v"u8, r));
+    ((Action)(() => {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                {
+                    var r = recover(); if (r != default!) {
+                        fmt.Println(fmt.Errorf("recovered: %v"u8, r));
+                    }
                 }
-            }
-        });
-        throw panic("kaboom");
-    })))();
+            }, ref ᒐ);
+            throw panic("kaboom");
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }))();
     var @base = fmt.Errorf("base failure"u8);
     var wrapped = fmt.Errorf("while doing X: %w"u8, @base);
     fmt.Println(wrapped);

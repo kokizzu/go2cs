@@ -167,31 +167,36 @@ public static error Unwrap(this ExecError e) {
 
 // errRecover is the handler that turns panics into returns from the top
 // level of Parse.
-internal static void errRecover(ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var errp = ref Ꮡerrp.DerefOrNull();
+internal static void errRecover(ж<error> Ꮡerrp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var errp = ref Ꮡerrp.DerefOrNull();
 
-    var e = recover();
-    if (e != default!) {
-        switch (e.type()) {
-        case {} Δerr when Δerr._<runtimeꓸError>(out var err): {
-            throw panic(e);
-            break;
+        var e = recover();
+        if (e != default!) {
+            switch (e.type()) {
+            case {} Δerr when Δerr._<runtimeꓸError>(out var err): {
+                throw panic(e);
+                break;
+            }
+            case ΔwriteError err: {
+                errp = err.Err;
+                break;
+            }
+            case ExecError err: {
+                errp = err;
+                break;
+            }
+            default: {
+                var err = e;
+                throw panic(e);
+                break;
+            }}
         }
-        case ΔwriteError err: {
-            errp = err.Err;
-            break;
-        }
-        case ExecError err: {
-            errp = err;
-            break;
-        }
-        default: {
-            var err = e;
-            throw panic(e);
-            break;
-        }}
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Strip the wrapper.
 // Keep the wrapper.
@@ -229,11 +234,12 @@ public static error Execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
 
 internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(errRecover, Ꮡerr, defer);
+        ref var err = ref Ꮡerr.ValueSlot;
+        defer(errRecover, Ꮡerr, ref ᒐ);
         var (value, ok) = data._<reflectꓸValue>(ᐧ);
         if (!ok) {
             value = reflect.ValueOf(data);
@@ -247,7 +253,9 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
             state.errorf("%q is an incomplete or empty template"u8, t.Name());
         }
         state.walk(value, new parse.ListNodeжNode(t.Root));
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return Ꮡerr.ValueSlot;
 }
 
@@ -258,28 +266,33 @@ internal static readonly @string definedTemplatesAreˢ = "; defined templates ar
 // prefixed by the string "; defined templates are: ". If there are none,
 // it returns the empty string. For generating an error message here
 // and in [html/template].
-public static @string DefinedTemplates(this ж<Template> Ꮡt) => func<@string>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static @string DefinedTemplates(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (t.common == nil) {
-        return ""u8;
-    }
-    ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-    Ꮡt.of(Template.ᏑmuTmpl).RLock();
-    defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock);
-    foreach (var (name, tmpl) in t.tmpl) {
-        if ((~tmpl).Tree == nil || (~tmpl).Root == nil) {
-            continue;
+        if (t.common == nil) {
+            return ""u8;
         }
-        if (b.Len() == 0){
-            Ꮡb.WriteString(definedTemplatesAreˢ);
-        } else {
-            Ꮡb.WriteString(", "u8);
+        ref var b = ref heap(new strings.Builder(), out var Ꮡb);
+        Ꮡt.of(Template.ᏑmuTmpl).RLock();
+        defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock, ref ᒐ);
+        foreach (var (name, tmpl) in t.tmpl) {
+            if ((~tmpl).Tree == nil || (~tmpl).Root == nil) {
+                continue;
+            }
+            if (b.Len() == 0){
+                Ꮡb.WriteString(definedTemplatesAreˢ);
+            } else {
+                Ꮡb.WriteString(", "u8);
+            }
+            fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "%q"u8, name);
         }
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "%q"u8, name);
+        return b.String();
     }
-    return b.String();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Sentinel errors for use with panic to signal early exits from range loops.
 internal static error walkBreak = errors.New("break"u8);
@@ -352,26 +365,31 @@ internal static void walk(this ж<state> Ꮡs, reflectꓸValue dot, parse.Node n
 
 // walkIfOrWith walks an 'if' or 'with' node. The two control structures
 // are identical in behavior except that 'with' sets dot.
-internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, reflectꓸValue dot, ж<parse.PipeNode> Ꮡpipe, ж<parse.ListNode> Ꮡlist, ж<parse.ListNode> ᏑelseList) => func((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
+internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, reflectꓸValue dot, ж<parse.PipeNode> Ꮡpipe, ж<parse.ListNode> Ꮡlist, ж<parse.ListNode> ᏑelseList) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    deferǃ(Ꮡs.pop, Ꮡs.Value.mark(), defer);
-    var val = s.evalPipeline(dot, Ꮡpipe);
-    var (truth, ok) = isTrue(indirectInterface(val));
-    if (!ok) {
-        s.errorf("if/with can't use %v"u8, val);
-    }
-    if (truth){
-        if (typ == parse.NodeWith){
-            Ꮡs.walk(val, new parse.ListNodeжNode(Ꮡlist));
-        } else {
-            Ꮡs.walk(dot, new parse.ListNodeжNode(Ꮡlist));
+        defer(Ꮡs.pop, Ꮡs.Value.mark(), ref ᒐ);
+        var val = s.evalPipeline(dot, Ꮡpipe);
+        var (truth, ok) = isTrue(indirectInterface(val));
+        if (!ok) {
+            s.errorf("if/with can't use %v"u8, val);
         }
-    } else 
-    if (ᏑelseList != nil) {
-        Ꮡs.walk(dot, new parse.ListNodeжNode(ᏑelseList));
+        if (truth){
+            if (typ == parse.NodeWith){
+                Ꮡs.walk(val, new parse.ListNodeжNode(Ꮡlist));
+            } else {
+                Ꮡs.walk(dot, new parse.ListNodeжNode(Ꮡlist));
+            }
+        } else 
+        if (ᏑelseList != nil) {
+            Ꮡs.walk(dot, new parse.ListNodeжNode(ᏑelseList));
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // IsTrue reports whether the value is 'true', in the sense of not the zero of its type,
 // and whether the value has a meaningful truth value. This is the definition of
@@ -424,119 +442,129 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
     return (truth, true);
 }
 
-internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<parse.RangeNode> Ꮡr) => func((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
-    ref var r = ref Ꮡr.DerefOrNull();
+internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<parse.RangeNode> Ꮡr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
-    s.at(new parse.RangeNodeжNode(Ꮡr));
-    defer(() => {
-        {
-            var rΔ1 = recover(); if (rΔ1 != default! && !AreEqual(rΔ1, walkBreak)) {
-                throw panic(rΔ1);
-            }
-        }
-    });
-    deferǃ(Ꮡs.pop, Ꮡs.Value.mark(), defer);
-    var (val, _) = indirect(s.evalPipeline(dot, r.Pipe));
-    // mark top of stack before any variables in the body are pushed.
-    nint mark = s.mark();
-    var oneIteration = (reflectꓸValue index, reflectꓸValue elem) => func((defer, recover) => {
-        if (len((~Ꮡr.Value.Pipe).Decl) > 0) {
-            if ((~Ꮡr.Value.Pipe).IsAssign){
-                // With two variables, index comes first.
-                // With one, we use the element.
-                if (len((~Ꮡr.Value.Pipe).Decl) > 1){
-                    Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[0]).Ident[0], index);
-                } else {
-                    Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[0]).Ident[0], elem);
-                }
-            } else {
-                // Set top var (lexically the second if there
-                // are two) to the element.
-                Ꮡs.Value.setTopVar(1, elem);
-            }
-        }
-        if (len((~Ꮡr.Value.Pipe).Decl) > 1) {
-            if ((~Ꮡr.Value.Pipe).IsAssign){
-                Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[1]).Ident[0], elem);
-            } else {
-                // Set next var (lexically the first if there
-                // are two) to the index.
-                Ꮡs.Value.setTopVar(2, index);
-            }
-        }
-        deferǃ(Ꮡs.pop, mark, defer);
+        s.at(new parse.RangeNodeжNode(Ꮡr));
         defer(() => {
-            // Consume panic(walkContinue)
             {
-                var rΔ2 = recover(); if (rΔ2 != default! && !AreEqual(rΔ2, walkContinue)) {
-                    throw panic(rΔ2);
+                var rΔ1 = recover(); if (rΔ1 != default! && !AreEqual(rΔ1, walkBreak)) {
+                    throw panic(rΔ1);
                 }
             }
-        });
-        Ꮡs.walk(elem, new parse.ListNodeжNode(Ꮡr.Value.List));
-    });
-    var exprᴛ1 = val.Kind();
-    if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) {
-        do {
-            if (val.Len() == 0) {
-                break;
+        }, ref ᒐ);
+        defer(Ꮡs.pop, Ꮡs.Value.mark(), ref ᒐ);
+        var (val, _) = indirect(s.evalPipeline(dot, r.Pipe));
+        // mark top of stack before any variables in the body are pushed.
+        nint mark = s.mark();
+        void oneIteration(reflectꓸValue index, reflectꓸValue elem) {
+            GoFrame ᒐ = default;
+            try {
+                if (len((~Ꮡr.Value.Pipe).Decl) > 0) {
+                    if ((~Ꮡr.Value.Pipe).IsAssign){
+                        // With two variables, index comes first.
+                        // With one, we use the element.
+                        if (len((~Ꮡr.Value.Pipe).Decl) > 1){
+                            Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[0]).Ident[0], index);
+                        } else {
+                            Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[0]).Ident[0], elem);
+                        }
+                    } else {
+                        // Set top var (lexically the second if there
+                        // are two) to the element.
+                        Ꮡs.Value.setTopVar(1, elem);
+                    }
+                }
+                if (len((~Ꮡr.Value.Pipe).Decl) > 1) {
+                    if ((~Ꮡr.Value.Pipe).IsAssign){
+                        Ꮡs.Value.setVar((~(~Ꮡr.Value.Pipe).Decl[1]).Ident[0], elem);
+                    } else {
+                        // Set next var (lexically the first if there
+                        // are two) to the index.
+                        Ꮡs.Value.setTopVar(2, index);
+                    }
+                }
+                defer(Ꮡs.pop, mark, ref ᒐ);
+                defer(() => {
+                    // Consume panic(walkContinue)
+                    {
+                        var rΔ2 = recover(); if (rΔ2 != default! && !AreEqual(rΔ2, walkContinue)) {
+                            throw panic(rΔ2);
+                        }
+                    }
+                }, ref ᒐ);
+                Ꮡs.walk(elem, new parse.ListNodeжNode(Ꮡr.Value.List));
             }
-            for (nint i = 0; i < val.Len(); i++) {
-                oneIteration(reflect.ValueOf(i), val.Index(i));
-            }
-            return;
-        } while (false);
-    }
-    else if (exprᴛ1 == reflect.Map) {
-        do {
-            if (val.Len() == 0) {
-                break;
-            }
-            var om = fmtsort.Sort(val);
-            foreach (var (_, m) in om) {
-                oneIteration(m.Key, m.Value);
-            }
-            return;
-        } while (false);
-    }
-    else if (exprᴛ1 == reflect.Chan) {
-        do {
-            if (val.IsNil()) {
-                break;
-            }
-            if (val.Type().ChanDir() == reflect.SendDir) {
-                s.errorf("range over send-only channel %v"u8, val);
-                break;
-            }
-            nint i = 0;
-            for (; ᐧ ; i++) {
-                var (elem, ok) = val.Recv();
-                if (!ok) {
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }
+        var exprᴛ1 = val.Kind();
+        if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) {
+            do {
+                if (val.Len() == 0) {
                     break;
                 }
-                oneIteration(reflect.ValueOf(i), elem);
-            }
-            if (i == 0) {
+                for (nint i = 0; i < val.Len(); i++) {
+                    oneIteration(reflect.ValueOf(i), val.Index(i));
+                }
+                return;
+            } while (false);
+        }
+        else if (exprᴛ1 == reflect.Map) {
+            do {
+                if (val.Len() == 0) {
+                    break;
+                }
+                var om = fmtsort.Sort(val);
+                foreach (var (_, m) in om) {
+                    oneIteration(m.Key, m.Value);
+                }
+                return;
+            } while (false);
+        }
+        else if (exprᴛ1 == reflect.Chan) {
+            do {
+                if (val.IsNil()) {
+                    break;
+                }
+                if (val.Type().ChanDir() == reflect.SendDir) {
+                    s.errorf("range over send-only channel %v"u8, val);
+                    break;
+                }
+                nint i = 0;
+                for (; ᐧ ; i++) {
+                    var (elem, ok) = val.Recv();
+                    if (!ok) {
+                        break;
+                    }
+                    oneIteration(reflect.ValueOf(i), elem);
+                }
+                if (i == 0) {
+                    break;
+                }
+                return;
+            } while (false);
+        }
+        else if (exprᴛ1 == reflect.Invalid) {
+            do {
                 break;
-            }
-            return;
-        } while (false);
-    }
-    else if (exprᴛ1 == reflect.Invalid) {
-        do {
-            break;
-        } while (false);
-    }
-    else { /* default: */
-        s.errorf("range can't iterate over %v"u8, // An invalid value is likely a nil map, etc. and acts like an empty map.
+            } while (false);
+        }
+        else { /* default: */
+            s.errorf("range can't iterate over %v"u8, // An invalid value is likely a nil map, etc. and acts like an empty map.
  val);
-    }
+        }
 
-    if (r.ElseList != nil) {
-        Ꮡs.walk(dot, new parse.ListNodeжNode(r.ElseList));
+        if (r.ElseList != nil) {
+            Ꮡs.walk(dot, new parse.ListNodeжNode(r.ElseList));
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void walkTemplate(this ref state s, reflectꓸValue dot, ж<parse.TemplateNode> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();

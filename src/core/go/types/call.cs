@@ -140,9 +140,10 @@ internal static readonly @string sUnderSˢ = "=> %s (under = %s)"u8;
 
 internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ast.Expr expr, ж<ΔSignature> Ꮡtyp, slice<ΔType> targs, slice<ast.Expr> xlist) {
     ж<ΔSignature> res = default!;
-    func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var typ = ref Ꮡtyp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var typ = ref Ꮡtyp.DerefOrNull();
 
         assert(Ꮡcheck != nil);
         assert(len(targs) == typ.TypeParams().Len());
@@ -152,7 +153,7 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
             defer(() => {
                 Ꮡcheck.Value.indent--;
                 Ꮡcheck.trace(pos, sUnderSˢ, res.OrTypedNil(), res.Underlying());
-            });
+            }, ref ᒐ);
         }
         var inst = Ꮡcheck.instance(pos, new ΔSignatureжΔgenericType(Ꮡtyp), targs, nil, check.context())._<ж<ΔSignature>>();
         assert(inst.TypeParams().Len() == 0);
@@ -186,7 +187,9 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
             }
         }).describef(((atPos)pos), "verify instantiation"u8);
         res = inst;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return res;
 }
 
@@ -397,8 +400,9 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
     slice<ж<operand>> resList = default!;
     slice<slice<ΔType>> targsList = default!;
     slice<slice<ast.Expr>> xlistList = default!;
-    func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if (debug) {
             defer(() => {
@@ -415,7 +419,7 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
                         }
                     }
                 }
-            });
+            }, ref ᒐ);
         }
         // Before Go 1.21, uninstantiated or partially instantiated argument functions are
         // nor permitted. Checker.funcInst must infer missing type arguments in that case.
@@ -494,7 +498,9 @@ internal static (slice<ж<operand>> resList, slice<slice<ΔType>> targsList, sli
                 resList[i] = Ꮡx;
             }
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (resList, targsList, xlistList);
 }
 

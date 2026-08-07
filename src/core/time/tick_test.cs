@@ -134,131 +134,156 @@ public static void TestTick(ж<Δtesting.T> Ꮡt) {
 }
 
 // Test that NewTicker panics when given a duration less than zero.
-public static void TestNewTickerLtZeroDuration(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (err == default!) {
-                Ꮡt.Errorf("NewTicker(-1) should have panicked"u8);
+public static void TestNewTickerLtZeroDuration(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (err == default!) {
+                    Ꮡt.Errorf("NewTicker(-1) should have panicked"u8);
+                }
             }
-        }
-    });
-    NewTicker(-1);
-});
+        }, ref ᒐ);
+        NewTicker(-1);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Test that Ticker.Reset panics when given a duration less than zero.
-public static void TestTickerResetLtZeroDuration(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var err = recover(); if (err == default!) {
-                Ꮡt.Errorf("Ticker.Reset(0) should have panicked"u8);
+public static void TestTickerResetLtZeroDuration(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var err = recover(); if (err == default!) {
+                    Ꮡt.Errorf("Ticker.Reset(0) should have panicked"u8);
+                }
             }
-        }
-    });
-    var tk = NewTicker(ΔSecond);
-    tk.Reset(0);
-});
+        }, ref ᒐ);
+        var tk = NewTicker(ΔSecond);
+        tk.Reset(0);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object outputChannelIsClosedˢ = (@string)"output channel is closed"u8;
 internal static readonly object timerExpiredˢ = (@string)"timer expired"u8;
 
-public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    if (Δruntime.GOOS == "android"u8 || Δruntime.GOOS == "ios"u8) {
-        Ꮡt.Skipf("skipping on %s - too slow"u8, Δruntime.GOOS);
-    }
-    Ꮡt.Parallel();
-    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    // Build up the timer heap.
-    const nint count = 5000;
-    Ꮡwg.Add(count);
-    foreach (var _ᴛ1 in range(count)) {
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            Sleep(10 * Microsecond);
-        }));
-    }
-    foreach (var _ᴛ2 in range(count)) {
-        Sleep(1 * Microsecond);
-    }
-    // Give ourselves 60 seconds to complete.
-    // This used to reliably fail on a Mac M3 laptop,
-    // which needed 77 seconds.
-    // Trybots are slower, so it will fail even more reliably there.
-    // With the fix, the code runs in under a second.
-    var done = new channel<bool>(0);
-    var doneʗ1 = done;
-    AfterFunc((Δtime.Duration)(60000000000L), () => {
-        close(doneʗ1);
-    });
-    // Set up a queuing goroutine to ping pong through the scheduler.
-    var inQ = new channel<Action>(0);
-    var outQ = new channel<Action>(0);
-    deferǃ(ᴛ1 => close(ᴛ1), inQ, defer);
-    Ꮡwg.Add(1);
-    var doneʗ3 = done;
-    var inQʗ1 = inQ;
-    var outQʗ1 = outQ;
-    goǃ(() => func((defer, recover) => {
-        defer(Ꮡwg.Done);
-        deferǃ(ᴛ1 => close(ᴛ1), outQʗ1, defer);
-        slice<Action> q = default!;
-        while (ᐧ) {
-            channel<Action> sendTo = default!;
-            Action send = default!;
-            if (len(q) > 0) {
-                sendTo = outQʗ1;
-                send = q[0];
-            }
-            var selᴛ16 = sendTo.ᐸꟷ(send, ꓸꓸꓸ);
-            var selᴛ17 = inQʗ1;
-            var selᴛ18 = doneʗ3;
-            switch (select(selᴛ16, ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
-            case 0: {
-                q = q[1..];
-                break;
-            }
-            case 1 when selᴛ17.ꟷᐳ(out var f, out var ok): {
-                if (!ok) {
-                    return;
-                }
-                q = append(q, f);
-                break;
-            }
-            case 2 when selᴛ18.ꟷᐳ(out _): {
-                return;
-            }}
+public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        if (Δruntime.GOOS == "android"u8 || Δruntime.GOOS == "ios"u8) {
+            Ꮡt.Skipf("skipping on %s - too slow"u8, Δruntime.GOOS);
         }
-    }));
-    foreach (var i in range(50000)) {
-        const nint @try = 20;
-        foreach (var _ᴛ3 in range(@try)) {
-            inQ.ᐸꟷ(
-            () => {
+        Ꮡt.Parallel();
+        ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        // Build up the timer heap.
+        const nint count = 5000;
+        Ꮡwg.Add(count);
+        foreach (var _ᴛ1 in range(count)) {
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    Sleep(10 * Microsecond);
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
             });
         }
-        foreach (var _ᴛ4 in range(@try)) {
-            var selᴛ19 = outQ;
-            var selᴛ20 = After((Δtime.Duration)(5000000000L));
-            var selᴛ21 = done;
-            switch (select(ᐸꟷ(selᴛ19, ꓸꓸꓸ), ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
-            case 0 when selᴛ19.ꟷᐳ(out var _, out var ok): {
-                if (!ok) {
-                    Ꮡt.Fatal(outputChannelIsClosedˢ);
+        foreach (var _ᴛ2 in range(count)) {
+            Sleep(1 * Microsecond);
+        }
+        // Give ourselves 60 seconds to complete.
+        // This used to reliably fail on a Mac M3 laptop,
+        // which needed 77 seconds.
+        // Trybots are slower, so it will fail even more reliably there.
+        // With the fix, the code runs in under a second.
+        var done = new channel<bool>(0);
+        var doneʗ1 = done;
+        AfterFunc((Δtime.Duration)(60000000000L), () => {
+            close(doneʗ1);
+        });
+        // Set up a queuing goroutine to ping pong through the scheduler.
+        var inQ = new channel<Action>(0);
+        var outQ = new channel<Action>(0);
+        defer(ᴛ1 => close(ᴛ1), inQ, ref ᒐ);
+        Ꮡwg.Add(1);
+        var doneʗ3 = done;
+        var inQʗ1 = inQ;
+        var outQʗ1 = outQ;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                defer(ᴛ1 => close(ᴛ1), outQʗ1, ref ᒐ);
+                slice<Action> q = default!;
+                while (ᐧ) {
+                    channel<Action> sendTo = default!;
+                    Action send = default!;
+                    if (len(q) > 0) {
+                        sendTo = outQʗ1;
+                        send = q[0];
+                    }
+                    var selᴛ16 = sendTo.ᐸꟷ(send, ꓸꓸꓸ);
+                    var selᴛ17 = inQʗ1;
+                    var selᴛ18 = doneʗ3;
+                    switch (select(selᴛ16, ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+                    case 0: {
+                        q = q[1..];
+                        break;
+                    }
+                    case 1 when selᴛ17.ꟷᐳ(out var f, out var ok): {
+                        if (!ok) {
+                            return;
+                        }
+                        q = append(q, f);
+                        break;
+                    }
+                    case 2 when selᴛ18.ꟷᐳ(out _): {
+                        return;
+                    }}
                 }
-                break;
             }
-            case 1 when selᴛ20.ꟷᐳ(out _): {
-                Ꮡt.Fatalf("failed to read work, iteration %d"u8, i);
-                break;
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        foreach (var i in range(50000)) {
+            const nint @try = 20;
+            foreach (var _ᴛ3 in range(@try)) {
+                inQ.ᐸꟷ(
+                () => {
+                });
             }
-            case 2 when selᴛ21.ꟷᐳ(out _): {
-                Ꮡt.Fatal(timerExpiredˢ);
-                break;
-            }}
+            foreach (var _ᴛ4 in range(@try)) {
+                var selᴛ19 = outQ;
+                var selᴛ20 = After((Δtime.Duration)(5000000000L));
+                var selᴛ21 = done;
+                switch (select(ᐸꟷ(selᴛ19, ꓸꓸꓸ), ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
+                case 0 when selᴛ19.ꟷᐳ(out var _, out var ok): {
+                    if (!ok) {
+                        Ꮡt.Fatal(outputChannelIsClosedˢ);
+                    }
+                    break;
+                }
+                case 1 when selᴛ20.ꟷᐳ(out _): {
+                    Ꮡt.Fatalf("failed to read work, iteration %d"u8, i);
+                    break;
+                }
+                case 2 when selᴛ21.ꟷᐳ(out _): {
+                    Ꮡt.Fatal(timerExpiredˢ);
+                    break;
+                }}
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkTicker(ж<Δtesting.B> Ꮡb) {
     benchmark(Ꮡb, (ж<Δtesting.PB> pb) => {

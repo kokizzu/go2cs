@@ -12,7 +12,8 @@ partial class net_package {
 
 internal static ж<dnsConfig> /*conf*/ dnsReadConfig(@string ignoredFilename) {
     ж<dnsConfig> conf = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         conf = Ꮡ(new dnsConfig(
             ndots: 1,
             timeout: (time.Duration)(5000000000L),
@@ -22,10 +23,10 @@ internal static ж<dnsConfig> /*conf*/ dnsReadConfig(@string ignoredFilename) {
             if (len((~conf).servers) == 0) {
                 conf.Value.servers = defaultNS;
             }
-        });
+        }, ref ᒐ);
         var (aas, err) = adapterAddresses();
         if (err != default!) {
-            return;
+            goto ᒐdone;
         }
         foreach (var (_, aa) in aas) {
             // Only take interfaces whose OperStatus is IfOperStatusUp(0x01) into DNS configs.
@@ -69,8 +70,10 @@ internal static ж<dnsConfig> /*conf*/ dnsReadConfig(@string ignoredFilename) {
                 conf.Value.servers = append((~conf).servers, JoinHostPort(ip.String(), "53"u8));
             }
         }
-    });
-    return conf;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return conf;
 }
 
 } // end net_package

@@ -59,11 +59,12 @@ public static (TypeAndValue, error err) Eval(ж<token.FileSet> Ꮡfset, ж<Packa
 // untyped type rather than the respective context-specific type.
 public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡpkg, tokenꓸPos pos, ast.Expr expr, ж<ΔInfo> Ꮡinfo) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var fset = ref Ꮡfset.DerefOrNull();
-    ref var pkg = ref Ꮡpkg.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var fset = ref Ꮡfset.DerefOrNull();
+        ref var pkg = ref Ꮡpkg.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         // determine scope
         ж<ΔScope> scope = default!;
         if (Ꮡpkg == nil){
@@ -91,7 +92,7 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
                 }
                 // s == nil || s == pkg.scope
                 if (s == nil) {
-                    err = fmt.Errorf("no position %s found in package %s"u8, Ꮡfset.Position(pos), pkg.name); return;
+                    err = fmt.Errorf("no position %s found in package %s"u8, Ꮡfset.Position(pos), pkg.name); goto ᒐdone;
                 }
             }
         }
@@ -100,7 +101,7 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         check.Value.scope = scope;
         check.Value.pos = pos;
         var checkʗ1 = check;
-        deferǃ(checkʗ1.handleBailout, Ꮡerr, defer);
+        defer(checkʗ1.handleBailout, Ꮡerr, ref ᒐ);
         // evaluate node
         ref var x = ref heap(new operand(), out var Ꮡx);
         check.rawExpr(nil, Ꮡx, expr, default!, true);
@@ -109,8 +110,10 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         // incl. all functions
         check.recordUntyped();
         err = default!;
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 } // end types_package

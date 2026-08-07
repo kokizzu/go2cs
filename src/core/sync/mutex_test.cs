@@ -48,20 +48,25 @@ public static void BenchmarkUncontendedSemaphore(ж<Δtesting.B> Ꮡb) {
     HammerSemaphore(s, b.N, new channel<bool>(2));
 }
 
-public static void BenchmarkContendedSemaphore(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+public static void BenchmarkContendedSemaphore(ж<Δtesting.B> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    b.StopTimer();
-    var s = @new<uint32>();
-    s.Value = 1;
-    var c = new channel<bool>(0);
-    deferǃ(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(2), defer);
-    b.StartTimer();
-    goǃ(HammerSemaphore, s, Ꮡb.Value.N / 2, c);
-    goǃ(HammerSemaphore, s, Ꮡb.Value.N / 2, c);
-    ᐸꟷ(c);
-    ᐸꟷ(c);
-});
+        b.StopTimer();
+        var s = @new<uint32>();
+        s.Value = 1;
+        var c = new channel<bool>(0);
+        defer(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(2), ref ᒐ);
+        b.StartTimer();
+        goǃ(HammerSemaphore, s, Ꮡb.Value.N / 2, c);
+        goǃ(HammerSemaphore, s, Ꮡb.Value.N / 2, c);
+        ᐸꟷ(c);
+        ᐸꟷ(c);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void HammerMutex(ж<Δsync.Mutex> Ꮡm, nint loops, channel<bool> cdone) {
     for (nint i = 0; i < loops; i++) {
@@ -77,31 +82,36 @@ public static void HammerMutex(ж<Δsync.Mutex> Ꮡm, nint loops, channel<bool> 
     cdone.ᐸꟷ(true);
 }
 
-public static void TestMutex(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    {
-        nint n = Δruntime.SetMutexProfileFraction(1); if (n != 0) {
-            Ꮡt.Logf("got mutexrate %d expected 0"u8, n);
+public static void TestMutex(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            nint n = Δruntime.SetMutexProfileFraction(1); if (n != 0) {
+                Ꮡt.Logf("got mutexrate %d expected 0"u8, n);
+            }
+        }
+        defer(Δruntime.SetMutexProfileFraction, (nint)(0), ref ᒐ);
+        var m = @new<Δsync.Mutex>();
+        m.Lock();
+        if (m.TryLock()) {
+            Ꮡt.Fatalf("TryLock succeeded with mutex locked"u8);
+        }
+        m.Unlock();
+        if (!m.TryLock()) {
+            Ꮡt.Fatalf("TryLock failed with mutex unlocked"u8);
+        }
+        m.Unlock();
+        var c = new channel<bool>(0);
+        for (nint i = 0; i < 10; i++) {
+            goǃ(HammerMutex, m, (nint)(1000), c);
+        }
+        for (nint i = 0; i < 10; i++) {
+            ᐸꟷ(c);
         }
     }
-    deferǃ(Δruntime.SetMutexProfileFraction, (nint)(0), defer);
-    var m = @new<Δsync.Mutex>();
-    m.Lock();
-    if (m.TryLock()) {
-        Ꮡt.Fatalf("TryLock succeeded with mutex locked"u8);
-    }
-    m.Unlock();
-    if (!m.TryLock()) {
-        Ꮡt.Fatalf("TryLock failed with mutex unlocked"u8);
-    }
-    m.Unlock();
-    var c = new channel<bool>(0);
-    for (nint i = 0; i < 10; i++) {
-        goǃ(HammerMutex, m, (nint)(1000), c);
-    }
-    for (nint i = 0; i < 10; i++) {
-        ᐸꟷ(c);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 
 [GoType("dyn")] partial struct misuseTestsᴛ1 {
@@ -183,12 +193,17 @@ internal static slice<misuseTestsᴛ1> misuseTests = new misuseTestsᴛ1[]{
 
             if (test.name == Δos.Args[2]) {
                 var testʗ1 = test;
-                ((Action)(() => func((defer, recover) => {
-                    defer(() => {
-                        recover();
-                    });
-                    testʗ1.f();
-                })))();
+                ((Action)(() => {
+                    GoFrame ᒐ = default;
+                    try {
+                        defer(() => {
+                            recover();
+                        }, ref ᒐ);
+                        testʗ1.f();
+                    }
+                    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                    finally { ᒐ.Run(); }
+                }))();
                 fmt.Printf("test completed\n"u8);
                 Δos.Exit(0);
             }
@@ -212,49 +227,54 @@ public static void TestMutexMisuse(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    ref var mu = ref heap(new Δsync.Mutex(), out var Ꮡmu);
-    var stop = new channel<bool>(0);
-    deferǃ(ᴛ1 => close(ᴛ1), stop, defer);
-    var stopʗ1 = stop;
-    goǃ(() => {
-        while (ᐧ) {
-            Ꮡmu.Lock();
-            time.Sleep(100 * time.Microsecond);
-            Ꮡmu.Unlock();
-            var selᴛ7 = stopʗ1;
-            switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
-            case 0 when selᴛ7.ꟷᐳ(out _): {
-                return;
+        ref var mu = ref heap(new Δsync.Mutex(), out var Ꮡmu);
+        var stop = new channel<bool>(0);
+        defer(ᴛ1 => close(ᴛ1), stop, ref ᒐ);
+        var stopʗ1 = stop;
+        goǃ(() => {
+            while (ᐧ) {
+                Ꮡmu.Lock();
+                time.Sleep(100 * time.Microsecond);
+                Ꮡmu.Unlock();
+                var selᴛ7 = stopʗ1;
+                switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+                case 0 when selᴛ7.ꟷᐳ(out _): {
+                    return;
+                }
+                default: {
+                    break;
+                }}
             }
-            default: {
-                break;
-            }}
+        });
+        var done = new channel<bool>(1);
+        var doneʗ1 = done;
+        goǃ(() => {
+            for (nint i = 0; i < 10; i++) {
+                time.Sleep(100 * time.Microsecond);
+                Ꮡmu.Lock();
+                Ꮡmu.Unlock();
+            }
+            doneʗ1.ᐸꟷ(true);
+        });
+        var selᴛ8 = done;
+        var selᴛ9 = time.After((time.Duration)(10000000000L));
+        switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+        case 0 when selᴛ8.ꟷᐳ(out _): {
+            break;
         }
-    });
-    var done = new channel<bool>(1);
-    var doneʗ1 = done;
-    goǃ(() => {
-        for (nint i = 0; i < 10; i++) {
-            time.Sleep(100 * time.Microsecond);
-            Ꮡmu.Lock();
-            Ꮡmu.Unlock();
-        }
-        doneʗ1.ᐸꟷ(true);
-    });
-    var selᴛ8 = done;
-    var selᴛ9 = time.After((time.Duration)(10000000000L));
-    switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
-    case 0 when selᴛ8.ꟷᐳ(out _): {
-        break;
+        case 1 when selᴛ9.ꟷᐳ(out _): {
+            Ꮡt.Fatalf("can't acquire Mutex in 10 seconds"u8);
+            break;
+        }}
     }
-    case 1 when selᴛ9.ꟷᐳ(out _): {
-        Ꮡt.Fatalf("can't acquire Mutex in 10 seconds"u8);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoLocalName("PaddedMutex")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkMutexUncontended_PaddedMutex {
     public partial ref sync_package.Mutex Mutex { get; }

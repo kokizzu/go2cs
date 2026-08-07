@@ -242,6 +242,26 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Returns the value of the panic being handled by this frame's deferred sequence, if any,
+    /// and stops the panic — Go's <c>recover</c>.
+    /// </summary>
+    /// <returns>Recovered panic state, or <c>null</c> when no panic is in flight.</returns>
+    /// <remarks>
+    /// Reads the one thread-local slot the emitted <c>catch</c> parked the panic in
+    /// (<see cref="GoFrame.Capture"/>), so it resolves STATICALLY from wherever it is called —
+    /// which is what lets a deferred closure recover without holding a handle on the frame that
+    /// registered it. It replaces the <c>Recover</c> delegate the retired
+    /// <c>func((defer, recover) =&gt; ...)</c> execution context passed into the body; that
+    /// delegate's <c>HandleRecover</c> did exactly this, against exactly this slot.
+    /// </remarks>
+    public static object? recover()
+    {
+        object? state = GoFuncRoot.CapturedPanicValue?.State;
+        GoFuncRoot.CapturedPanicValue = null;
+        return state;
+    }
+
+    /// <summary>
     /// Appends elements to the end of a slice. If it has sufficient capacity, the destination is
     /// resliced to accommodate the new elements. If it does not, a new underlying array will be
     /// allocated.

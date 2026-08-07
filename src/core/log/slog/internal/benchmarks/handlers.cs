@@ -40,35 +40,40 @@ internal static readonly @string timeˢ = "time="u8;
 internal static readonly @string levelˢ = "level="u8;
 internal static readonly @string msgˢ = "msg="u8;
 
-internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) => func((defer, recover) => {
-    r = r.ΔClone();
+internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) {
+    GoFrame ᒐ = default;
+    try {
+        r = r.ΔClone();
 
-    ref var h = ref Ꮡh.DerefOrNull();
-    var buf = buffer.New();
-    var bufʗ1 = buf;
-    defer(bufʗ1.Free);
-    if (!r.Time.IsZero()) {
-        buf.WriteString(timeˢ);
-        h.appendTime(buf, r.Time);
+        ref var h = ref Ꮡh.DerefOrNull();
+        var buf = buffer.New();
+        var bufʗ1 = buf;
+        defer(bufʗ1.Free, ref ᒐ);
+        if (!r.Time.IsZero()) {
+            buf.WriteString(timeˢ);
+            h.appendTime(buf, r.Time);
+            buf.WriteByte((rune)' ');
+        }
+        buf.WriteString(levelˢ);
+        buf.ValueSlot = strconv.AppendInt(buf.ValueSlot, (int64)(nint)r.Level, 10);
         buf.WriteByte((rune)' ');
+        buf.WriteString(msgˢ);
+        buf.WriteString(r.Message);
+        var bufʗ2 = buf;
+        r.Attrs((slog.Attr a) => {
+            bufʗ2.WriteByte((rune)' ');
+            bufʗ2.WriteString(a.Key);
+            bufʗ2.WriteByte((rune)'=');
+            Ꮡh.Value.appendValue(bufʗ2, a.Value);
+            return true;
+        });
+        buf.WriteByte((rune)'\n');
+        var (_, err) = h.w.Write(buf.ValueSlot);
+        return err;
     }
-    buf.WriteString(levelˢ);
-    buf.ValueSlot = strconv.AppendInt(buf.ValueSlot, (int64)(nint)r.Level, 10);
-    buf.WriteByte((rune)' ');
-    buf.WriteString(msgˢ);
-    buf.WriteString(r.Message);
-    var bufʗ2 = buf;
-    r.Attrs((slog.Attr a) => {
-        bufʗ2.WriteByte((rune)' ');
-        bufʗ2.WriteString(a.Key);
-        bufʗ2.WriteByte((rune)'=');
-        Ꮡh.Value.appendValue(bufʗ2, a.Value);
-        return true;
-    });
-    buf.WriteByte((rune)'\n');
-    var (_, err) = h.w.Write(buf.ValueSlot);
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void appendValue(this ref fastTextHandler h, ж<buffer.Buffer> Ꮡbuf, slog.Value v) {
     ref var buf = ref Ꮡbuf.DerefOrNull();

@@ -235,21 +235,26 @@ internal static void debugCallWrap1() {
     });
 }
 
-internal static void debugCallWrap2(uintptr dispatch) => func((defer, recover) => {
-    // Call the dispatch function and trap panics.
-    ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
-    ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
-    dispatchFV = new funcval(dispatch);
-    (ᏑdispatchF.Reinterpret<Action, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
-    bool ok = default!;
-    defer(() => {
-        if (!ok) {
-            var err = recover();
-            debugCallPanicked(err);
-        }
-    });
-    dispatchF();
-    ok = true;
-});
+internal static void debugCallWrap2(uintptr dispatch) {
+    GoFrame ᒐ = default;
+    try {
+        // Call the dispatch function and trap panics.
+        ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
+        ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
+        dispatchFV = new funcval(dispatch);
+        (ᏑdispatchF.Reinterpret<Action, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
+        bool ok = default!;
+        defer(() => {
+            if (!ok) {
+                var err = recover();
+                debugCallPanicked(err);
+            }
+        }, ref ᒐ);
+        dispatchF();
+        ok = true;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end runtime_package

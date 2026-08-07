@@ -250,13 +250,18 @@ public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-add
     internal bool hijackedv;
 }
 
-internal static bool hijacked(this ж<conn> Ꮡc) => func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+internal static bool hijacked(this ж<conn> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(conn.Ꮡmu).Lock();
-    defer(Ꮡc.of(conn.Ꮡmu).Unlock);
-    return c.hijackedv;
-});
+        Ꮡc.of(conn.Ꮡmu).Lock();
+        defer(Ꮡc.of(conn.Ꮡmu).Unlock, ref ᒐ);
+        return c.hijackedv;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // c.mu must be held.
 internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) hijackLocked(this ж<conn> Ꮡc) {
@@ -529,17 +534,18 @@ internal static void disableWriteContinue(this ж<response> Ꮡw) {
 internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader src) {
     int64 n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var w = ref Ꮡw.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var w = ref Ꮡw.DerefOrNull();
 
         var buf = getCopyBuf();
-        deferǃ(putCopyBuf, buf, defer);
+        defer(putCopyBuf, buf, ref ᒐ);
         // Our underlying w.conn.rwc is usually a *TCPConn (with its
         // own ReadFrom method). If not, just fall back to the normal
         // copy method.
         var (rf, ok) = (~w.conn).rwc._<io.ReaderFrom>(ᐧ);
         if (!ok) {
-            (n, err) = io.CopyBuffer(new writerOnly(new responseжWriter(Ꮡw)), src, buf); return;
+            (n, err) = io.CopyBuffer(new writerOnly(new responseжWriter(Ꮡw)), src, buf); goto ᒐdone;
         }
         // Copy the first sniffLen bytes before switching to ReadFrom.
         // This ensures we don't start writing the response before the
@@ -549,7 +555,7 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
             var (n0Δ1, errΔ1) = io.CopyBuffer(new writerOnly(new responseжWriter(Ꮡw)), io.LimitReader(src, sniffLen), buf);
             n += n0Δ1;
             if (errΔ1 != default! || n0Δ1 < sniffLen) {
-                (n, err) = (n, errΔ1); return;
+                (n, err) = (n, errΔ1); goto ᒐdone;
             }
         }
         w.w.Flush();
@@ -561,12 +567,14 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
             var (n0Δ2, errΔ2) = rf.ReadFrom(src);
             n += n0Δ2;
             w.written += n0Δ2;
-            (n, err) = (n, errΔ2); return;
+            (n, err) = (n, errΔ2); goto ᒐdone;
         }
         (var n0, err) = io.CopyBuffer(new writerOnly(new responseжWriter(Ꮡw)), src, buf);
         n += n0;
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 // debugServerConnections controls whether all server connections are wrapped
@@ -624,21 +632,26 @@ internal static void unlock(this ж<connReader> Ꮡcr) {
     Ꮡcr.of(connReader.Ꮡmu).Unlock();
 }
 
-internal static void startBackgroundRead(this ж<connReader> Ꮡcr) => func((defer, recover) => {
-    ref var cr = ref Ꮡcr.DerefOrNull();
+internal static void startBackgroundRead(this ж<connReader> Ꮡcr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var cr = ref Ꮡcr.DerefOrNull();
 
-    Ꮡcr.@lock();
-    defer(Ꮡcr.unlock);
-    if (cr.inRead) {
-        throw panic("invalid concurrent Body.Read call");
+        Ꮡcr.@lock();
+        defer(Ꮡcr.unlock, ref ᒐ);
+        if (cr.inRead) {
+            throw panic("invalid concurrent Body.Read call");
+        }
+        if (cr.hasByte) {
+            return;
+        }
+        cr.inRead = true;
+        (~cr.conn).rwc.SetReadDeadline(new time.Time(nil));
+        goǃ(Ꮡcr.backgroundRead);
     }
-    if (cr.hasByte) {
-        return;
-    }
-    cr.inRead = true;
-    (~cr.conn).rwc.SetReadDeadline(new time.Time(nil));
-    goǃ(Ꮡcr.backgroundRead);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void backgroundRead(this ж<connReader> Ꮡcr) {
     ref var cr = ref Ꮡcr.DerefOrNull();
@@ -685,21 +698,26 @@ internal static void backgroundRead(this ж<connReader> Ꮡcr) {
     cr.cond.Broadcast();
 }
 
-internal static void abortPendingRead(this ж<connReader> Ꮡcr) => func((defer, recover) => {
-    ref var cr = ref Ꮡcr.DerefOrNull();
+internal static void abortPendingRead(this ж<connReader> Ꮡcr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var cr = ref Ꮡcr.DerefOrNull();
 
-    Ꮡcr.@lock();
-    defer(Ꮡcr.unlock);
-    if (!cr.inRead) {
-        return;
+        Ꮡcr.@lock();
+        defer(Ꮡcr.unlock, ref ᒐ);
+        if (!cr.inRead) {
+            return;
+        }
+        cr.aborted = true;
+        (~cr.conn).rwc.SetReadDeadline(aLongTimeAgo);
+        while (cr.inRead) {
+            cr.cond.Wait();
+        }
+        (~cr.conn).rwc.SetReadDeadline(new time.Time(nil));
     }
-    cr.aborted = true;
-    (~cr.conn).rwc.SetReadDeadline(aLongTimeAgo);
-    while (cr.inRead) {
-        cr.cond.Wait();
-    }
-    (~cr.conn).rwc.SetReadDeadline(new time.Time(nil));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void setReadLimit(this ref connReader cr, int64 remain) {
     cr.remain = remain;
@@ -1018,11 +1036,12 @@ internal static readonly @string invalidHeaderValueˢ = "invalid header value"u8
 internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, context.Context ctx) {
     ж<response> w = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
         if (Ꮡc.hijacked()) {
-            (w, err) = (default!, ErrHijacked); return;
+            (w, err) = (default!, ErrHijacked); goto ᒐdone;
         }
         time.Time wholeReqDeadline = default!;    // or zero if none
         time.Time hdrDeadline = default!;              // or zero if none
@@ -1042,7 +1061,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
             var d = c.server.Value.WriteTimeout; if (d > 0) {
                 defer(() => {
                     Ꮡc.Value.rwc.SetWriteDeadline(time.Now().Add(d));
-                });
+                }, ref ᒐ);
             }
         }
         c.r.setReadLimit(c.server.initialReadLimitSize());
@@ -1055,30 +1074,30 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
         (var req, err) = readRequest(c.bufr);
         if (err != default!) {
             if (c.r.hitReadLimit()) {
-                (w, err) = (default!, errTooLarge); return;
+                (w, err) = (default!, errTooLarge); goto ᒐdone;
             }
-            (w, err) = (default!, err); return;
+            (w, err) = (default!, err); goto ᒐdone;
         }
         if (!http1ServerSupportsRequest(req)) {
-            (w, err) = (default!, new statusError(StatusHTTPVersionNotSupported, "unsupported protocol version"u8)); return;
+            (w, err) = (default!, new statusError(StatusHTTPVersionNotSupported, "unsupported protocol version"u8)); goto ᒐdone;
         }
         c.lastMethod = req.Value.Method;
         c.r.setInfiniteReadLimit();
         var (hosts, haveHost) = (~req).Header[hostˢ, ꟷ];
         var isH2Upgrade = req.isH2Upgrade();
         if (req.ProtoAtLeast(1, 1) && (!haveHost || builtin.len(hosts) == 0) && !isH2Upgrade && (~req).Method != "CONNECT"u8) {
-            (w, err) = (default!, badRequestError(missingRequiredHostˢ)); return;
+            (w, err) = (default!, badRequestError(missingRequiredHostˢ)); goto ᒐdone;
         }
         if (builtin.len(hosts) == 1 && !httpguts.ValidHostHeader(hosts[0])) {
-            (w, err) = (default!, badRequestError(malformedHostHeaderˢ)); return;
+            (w, err) = (default!, badRequestError(malformedHostHeaderˢ)); goto ᒐdone;
         }
         foreach (var (k, vv) in (~req).Header) {
             if (!httpguts.ValidHeaderFieldName(k)) {
-                (w, err) = (default!, badRequestError(invalidHeaderNameˢ)); return;
+                (w, err) = (default!, badRequestError(invalidHeaderNameˢ)); goto ᒐdone;
             }
             foreach (var (_, v) in vv) {
                 if (!httpguts.ValidHeaderFieldValue(v)) {
-                    (w, err) = (default!, badRequestError(invalidHeaderValueˢ)); return;
+                    (w, err) = (default!, badRequestError(invalidHeaderValueˢ)); goto ᒐdone;
                 }
             }
         }
@@ -1116,8 +1135,10 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
         w.Value.cw.res = w;
         w.Value.w = newBufioWriterSize(new chunkWriterжWriter(w.of(response.Ꮡcw)), bufferBeforeChunkingSize);
         (w, err) = (w, default!);
-    });
-    return (w, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (w, err);
 }
 
 // http1ServerSupportsRequest reports whether Go's HTTP/1.x server
@@ -1979,214 +2000,219 @@ internal static readonly @string http10400BadRequestˢ = "HTTP/1.0 400 Bad Reque
 internal static readonly @string clientSentAnHttpRequestˢ = "client sent an HTTP request to an HTTPS server"u8;
 
 // Serve a new connection.
-internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((defer, recover) => {
-    ref var c = ref Ꮡc.DerefOrNull();
+internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
+    GoFrame ᒐ = default;
+    try {
+        ref var c = ref Ꮡc.DerefOrNull();
 
-    {
-        var ra = c.rwc.RemoteAddr(); if (ra != default!) {
-            c.remoteAddr = ra.String();
-        }
-    }
-    ctx = context_package.WithValue(ctx, LocalAddrContextKey.OrTypedNil(), c.rwc.LocalAddr());
-    ref var inFlightResponse = ref heap<ж<response>>(out var ᏑinFlightResponse);
-    defer(() => {
         {
-            var err = recover(); if (err != default! && !AreEqual(err, ErrAbortHandler)) {
-                const nint size = /* 64 << 10 */ 65536;
-                var buf = new slice<byte>(size);
-                buf = buf[..(int)(runtime.Stack(buf, false))];
-                Ꮡc.Value.server.logf("http: panic serving %v: %v\n%s"u8, Ꮡc.Value.remoteAddr, err, buf);
+            var ra = c.rwc.RemoteAddr(); if (ra != default!) {
+                c.remoteAddr = ra.String();
             }
         }
-        if (ᏑinFlightResponse.ValueSlot != nil) {
-            (~ᏑinFlightResponse.ValueSlot).cancelCtx();
-            ᏑinFlightResponse.ValueSlot.disableWriteContinue();
-        }
-        if (!Ꮡc.hijacked()) {
+        ctx = context_package.WithValue(ctx, LocalAddrContextKey.OrTypedNil(), c.rwc.LocalAddr());
+        ref var inFlightResponse = ref heap<ж<response>>(out var ᏑinFlightResponse);
+        defer(() => {
+            {
+                var err = recover(); if (err != default! && !AreEqual(err, ErrAbortHandler)) {
+                    const nint size = /* 64 << 10 */ 65536;
+                    var buf = new slice<byte>(size);
+                    buf = buf[..(int)(runtime.Stack(buf, false))];
+                    Ꮡc.Value.server.logf("http: panic serving %v: %v\n%s"u8, Ꮡc.Value.remoteAddr, err, buf);
+                }
+            }
             if (ᏑinFlightResponse.ValueSlot != nil) {
-                (~(~ᏑinFlightResponse.ValueSlot).conn).r.abortPendingRead();
-                (~ᏑinFlightResponse.ValueSlot).reqBody.Close();
+                (~ᏑinFlightResponse.ValueSlot).cancelCtx();
+                ᏑinFlightResponse.ValueSlot.disableWriteContinue();
             }
-            Ꮡc.Value.close();
-            Ꮡc.setState(Ꮡc.Value.rwc, StateClosed, runHooks);
-        }
-    });
-    {
-        var (tlsConn, ok) = c.rwc._<ж<tls.Conn>>(ᐧ); if (ok) {
-            var tlsTO = c.server.tlsHandshakeTimeout();
-            if (tlsTO > 0) {
-                var dl = time.Now().Add(tlsTO);
-                c.rwc.SetReadDeadline(dl);
-                c.rwc.SetWriteDeadline(dl);
+            if (!Ꮡc.hijacked()) {
+                if (ᏑinFlightResponse.ValueSlot != nil) {
+                    (~(~ᏑinFlightResponse.ValueSlot).conn).r.abortPendingRead();
+                    (~ᏑinFlightResponse.ValueSlot).reqBody.Close();
+                }
+                Ꮡc.Value.close();
+                Ꮡc.setState(Ꮡc.Value.rwc, StateClosed, runHooks);
             }
-            {
-                var err = tlsConn.HandshakeContext(ctx); if (err != default!) {
-                    // If the handshake failed due to the client not speaking
-                    // TLS, assume they're speaking plaintext HTTP and write a
-                    // 400 response on the TLS conn's underlying net.Conn.
-                    @string reason = default!;
-                    {
-                        var (re, okΔ1) = err._<tls.RecordHeaderError>(ᐧ); if (okΔ1 && re.Conn != default! && tlsRecordHeaderLooksLikeHTTP(re.RecordHeader)){
-                            io.WriteString(new net_ConnᴠWriter(re.Conn), http10400BadRequestˢ);
-                            re.Conn.Close();
-                            reason = clientSentAnHttpRequestˢ;
-                        } else {
-                            reason = err.Error();
+        }, ref ᒐ);
+        {
+            var (tlsConn, ok) = c.rwc._<ж<tls.Conn>>(ᐧ); if (ok) {
+                var tlsTO = c.server.tlsHandshakeTimeout();
+                if (tlsTO > 0) {
+                    var dl = time.Now().Add(tlsTO);
+                    c.rwc.SetReadDeadline(dl);
+                    c.rwc.SetWriteDeadline(dl);
+                }
+                {
+                    var err = tlsConn.HandshakeContext(ctx); if (err != default!) {
+                        // If the handshake failed due to the client not speaking
+                        // TLS, assume they're speaking plaintext HTTP and write a
+                        // 400 response on the TLS conn's underlying net.Conn.
+                        @string reason = default!;
+                        {
+                            var (re, okΔ1) = err._<tls.RecordHeaderError>(ᐧ); if (okΔ1 && re.Conn != default! && tlsRecordHeaderLooksLikeHTTP(re.RecordHeader)){
+                                io.WriteString(new net_ConnᴠWriter(re.Conn), http10400BadRequestˢ);
+                                re.Conn.Close();
+                                reason = clientSentAnHttpRequestˢ;
+                            } else {
+                                reason = err.Error();
+                            }
                         }
+                        c.server.logf("http: TLS handshake error from %s: %v"u8, c.rwc.RemoteAddr(), reason);
+                        return;
                     }
-                    c.server.logf("http: TLS handshake error from %s: %v"u8, c.rwc.RemoteAddr(), reason);
-                    return;
+                }
+                // Restore Conn-level deadlines.
+                if (tlsTO > 0) {
+                    c.rwc.SetReadDeadline(new time.Time(nil));
+                    c.rwc.SetWriteDeadline(new time.Time(nil));
+                }
+                c.tlsState = @new<tlsꓸConnectionState>();
+                c.tlsState.Value = tlsConn.ConnectionState();
+                {
+                    @string proto = c.tlsState.Value.NegotiatedProtocol; if (validNextProto(proto)) {
+                        {
+                            var fn = (~c.server).TLSNextProto[proto]; if (fn != default!) {
+                                var h = new initALPNRequest(ctx, tlsConn, new serverHandler(c.server));
+                                // Mark freshly created HTTP/2 as active and prevent any server state hooks
+                                // from being run on these connections. This prevents closeIdleConns from
+                                // closing such connections. See issue https://golang.org/issue/39776.
+                                Ꮡc.setState(c.rwc, StateActive, skipHooks);
+                                fn(c.server, tlsConn, h);
+                            }
+                        }
+                        return;
+                    }
                 }
             }
-            // Restore Conn-level deadlines.
-            if (tlsTO > 0) {
-                c.rwc.SetReadDeadline(new time.Time(nil));
-                c.rwc.SetWriteDeadline(new time.Time(nil));
+        }
+        // HTTP/1.x from here on.
+        (ctx, var cancelCtx) = context_package.WithCancel(ctx);
+        c.cancelCtx = cancelCtx;
+        var cancelCtxʗ1 = cancelCtx;
+        defer(() => cancelCtxʗ1(), ref ᒐ);
+        c.r = Ꮡ(new connReader(conn: Ꮡc));
+        c.bufr = newBufioReader(new connReaderжReader(c.r));
+        c.bufw = newBufioWriterSize(new checkConnErrorWriter(Ꮡc), (4 << (int)(10)));
+        while (ᐧ) {
+            var (w, err) = Ꮡc.readRequest(ctx);
+            if ((~c.r).remain != c.server.initialReadLimitSize()) {
+                // If we read any bytes off the wire, we're active.
+                Ꮡc.setState(c.rwc, StateActive, runHooks);
             }
-            c.tlsState = @new<tlsꓸConnectionState>();
-            c.tlsState.Value = tlsConn.ConnectionState();
-            {
-                @string proto = c.tlsState.Value.NegotiatedProtocol; if (validNextProto(proto)) {
-                    {
-                        var fn = (~c.server).TLSNextProto[proto]; if (fn != default!) {
-                            var h = new initALPNRequest(ctx, tlsConn, new serverHandler(c.server));
-                            // Mark freshly created HTTP/2 as active and prevent any server state hooks
-                            // from being run on these connections. This prevents closeIdleConns from
-                            // closing such connections. See issue https://golang.org/issue/39776.
-                            Ꮡc.setState(c.rwc, StateActive, skipHooks);
-                            fn(c.server, tlsConn, h);
-                        }
-                    }
+            if (err != default!) {
+                @string errorHeaders = "\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n"u8;
+                switch (ᐧ) {
+                case {} when AreEqual(err, errTooLarge): {
+                    // Their HTTP client may or may not be
+                    // able to read this if we're
+                    // responding to them and hanging up
+                    // while they're still writing their
+                    // request. Undefined behavior.
+                    @string publicErr = "431 Request Header Fields Too Large"u8;
+                    fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
+                    c.closeWriteAndWait();
                     return;
                 }
-            }
-        }
-    }
-    // HTTP/1.x from here on.
-    (ctx, var cancelCtx) = context_package.WithCancel(ctx);
-    c.cancelCtx = cancelCtx;
-    var cancelCtxʗ1 = cancelCtx;
-    defer(() => cancelCtxʗ1());
-    c.r = Ꮡ(new connReader(conn: Ꮡc));
-    c.bufr = newBufioReader(new connReaderжReader(c.r));
-    c.bufw = newBufioWriterSize(new checkConnErrorWriter(Ꮡc), (4 << (int)(10)));
-    while (ᐧ) {
-        var (w, err) = Ꮡc.readRequest(ctx);
-        if ((~c.r).remain != c.server.initialReadLimitSize()) {
-            // If we read any bytes off the wire, we're active.
-            Ꮡc.setState(c.rwc, StateActive, runHooks);
-        }
-        if (err != default!) {
-            @string errorHeaders = "\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n"u8;
-            switch (ᐧ) {
-            case {} when AreEqual(err, errTooLarge): {
-                // Their HTTP client may or may not be
-                // able to read this if we're
-                // responding to them and hanging up
-                // while they're still writing their
-                // request. Undefined behavior.
-                @string publicErr = "431 Request Header Fields Too Large"u8;
-                fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
-                c.closeWriteAndWait();
-                return;
-            }
-            case {} when isUnsupportedTEError(err): {
-                nint code = StatusNotImplemented;
-                fmt.Fprintf(new net_ConnᴠWriter(c.rwc), // Respond as per RFC 7230 Section 3.3.1 which says,
+                case {} when isUnsupportedTEError(err): {
+                    nint code = StatusNotImplemented;
+                    fmt.Fprintf(new net_ConnᴠWriter(c.rwc), // Respond as per RFC 7230 Section 3.3.1 which says,
  //      A server that receives a request message with a
  //      transfer coding it does not understand SHOULD
  //      respond with 501 (Unimplemented).
  // We purposefully aren't echoing back the transfer-encoding's value,
  // so as to mitigate the risk of cross side scripting by an attacker.
  "HTTP/1.1 %d %s%sUnsupported transfer encoding"u8, code, StatusText(code), errorHeaders);
-                return;
-            }
-            case {} when isCommonNetReadError(err): {
-                return;
-            }
-            default: {
-                {
-                    var (v, ok) = err._<statusError>(ᐧ); if (ok) {
-                        // don't reply
-                        fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 %d %s: %s%s%d %s: %s"u8, v.code, StatusText(v.code), v.text, errorHeaders, v.code, StatusText(v.code), v.text);
-                        return;
-                    }
+                    return;
                 }
-                @string publicErr = "400 Bad Request"u8;
-                fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
-                return;
-            }}
+                case {} when isCommonNetReadError(err): {
+                    return;
+                }
+                default: {
+                    {
+                        var (v, ok) = err._<statusError>(ᐧ); if (ok) {
+                            // don't reply
+                            fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 %d %s: %s%s%d %s: %s"u8, v.code, StatusText(v.code), v.text, errorHeaders, v.code, StatusText(v.code), v.text);
+                            return;
+                        }
+                    }
+                    @string publicErr = "400 Bad Request"u8;
+                    fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
+                    return;
+                }}
 
-        }
-        // Expect 100 Continue support
-        var req = w.Value.req;
-        if (req.expectsContinue()){
-            if (req.ProtoAtLeast(1, 1) && (~req).ContentLength != 0) {
-                // Wrap the Body reader with one that replies on the connection
-                req.Value.Body = new expectContinueReaderжReadCloser(Ꮡ(new expectContinueReader(readCloser: (~req).Body, resp: w)));
-                w.of(response.ᏑcanWriteContinue).Store(true);
             }
-        } else 
-        if ((~req).Header.get(expectˢ) != ""u8) {
-            w.sendExpectationFailed();
-            return;
-        }
-        Ꮡc.of(conn.ᏑcurReq).Store(w);
-        if (requestBodyRemains((~req).Body)){
-            registerOnHitEOF((~req).Body, (~(~w).conn).r.startBackgroundRead);
-        } else {
-            (~(~w).conn).r.startBackgroundRead();
-        }
-        // HTTP cannot have multiple simultaneous active requests.[*]
-        // Until the server replies to this request, it can't read another,
-        // so we might as well run the handler in this goroutine.
-        // [*] Not strictly true: HTTP pipelining. We could let them all process
-        // in parallel even if their responses need to be serialized.
-        // But we're not going to implement HTTP pipelining because it
-        // was never deployed in the wild and the answer is HTTP/2.
-        inFlightResponse = w;
-        new serverHandler(c.server).ServeHTTP(new responseжResponseWriter(w), (~w).req);
-        inFlightResponse = default!;
-        (~w).cancelCtx();
-        if (Ꮡc.hijacked()) {
-            return;
-        }
-        w.finishRequest();
-        c.rwc.SetWriteDeadline(new time.Time(nil));
-        if (!w.shouldReuseConnection()) {
-            if ((~w).requestBodyLimitHit || w.closedRequestBodyEarly()) {
-                c.closeWriteAndWait();
-            }
-            return;
-        }
-        Ꮡc.setState(c.rwc, StateIdle, runHooks);
-        Ꮡc.of(conn.ᏑcurReq).Store(nil);
-        if (!(~(~w).conn).server.doKeepAlives()) {
-            // We're in shutdown mode. We might've replied
-            // to the user without "Connection: close" and
-            // they might think they can send another
-            // request, but such is life with HTTP/1.1.
-            return;
-        }
-        {
-            var d = c.server.idleTimeout(); if (d > 0){
-                c.rwc.SetReadDeadline(time.Now().Add(d));
-            } else {
-                c.rwc.SetReadDeadline(new time.Time(nil));
-            }
-        }
-        // Wait for the connection to become readable again before trying to
-        // read the next request. This prevents a ReadHeaderTimeout or
-        // ReadTimeout from starting until the first bytes of the next request
-        // have been received.
-        {
-            var (_, errΔ1) = c.bufr.Peek(4); if (errΔ1 != default!) {
+            // Expect 100 Continue support
+            var req = w.Value.req;
+            if (req.expectsContinue()){
+                if (req.ProtoAtLeast(1, 1) && (~req).ContentLength != 0) {
+                    // Wrap the Body reader with one that replies on the connection
+                    req.Value.Body = new expectContinueReaderжReadCloser(Ꮡ(new expectContinueReader(readCloser: (~req).Body, resp: w)));
+                    w.of(response.ᏑcanWriteContinue).Store(true);
+                }
+            } else 
+            if ((~req).Header.get(expectˢ) != ""u8) {
+                w.sendExpectationFailed();
                 return;
             }
+            Ꮡc.of(conn.ᏑcurReq).Store(w);
+            if (requestBodyRemains((~req).Body)){
+                registerOnHitEOF((~req).Body, (~(~w).conn).r.startBackgroundRead);
+            } else {
+                (~(~w).conn).r.startBackgroundRead();
+            }
+            // HTTP cannot have multiple simultaneous active requests.[*]
+            // Until the server replies to this request, it can't read another,
+            // so we might as well run the handler in this goroutine.
+            // [*] Not strictly true: HTTP pipelining. We could let them all process
+            // in parallel even if their responses need to be serialized.
+            // But we're not going to implement HTTP pipelining because it
+            // was never deployed in the wild and the answer is HTTP/2.
+            inFlightResponse = w;
+            new serverHandler(c.server).ServeHTTP(new responseжResponseWriter(w), (~w).req);
+            inFlightResponse = default!;
+            (~w).cancelCtx();
+            if (Ꮡc.hijacked()) {
+                return;
+            }
+            w.finishRequest();
+            c.rwc.SetWriteDeadline(new time.Time(nil));
+            if (!w.shouldReuseConnection()) {
+                if ((~w).requestBodyLimitHit || w.closedRequestBodyEarly()) {
+                    c.closeWriteAndWait();
+                }
+                return;
+            }
+            Ꮡc.setState(c.rwc, StateIdle, runHooks);
+            Ꮡc.of(conn.ᏑcurReq).Store(nil);
+            if (!(~(~w).conn).server.doKeepAlives()) {
+                // We're in shutdown mode. We might've replied
+                // to the user without "Connection: close" and
+                // they might think they can send another
+                // request, but such is life with HTTP/1.1.
+                return;
+            }
+            {
+                var d = c.server.idleTimeout(); if (d > 0){
+                    c.rwc.SetReadDeadline(time.Now().Add(d));
+                } else {
+                    c.rwc.SetReadDeadline(new time.Time(nil));
+                }
+            }
+            // Wait for the connection to become readable again before trying to
+            // read the next request. This prevents a ReadHeaderTimeout or
+            // ReadTimeout from starting until the first bytes of the next request
+            // have been received.
+            {
+                var (_, errΔ1) = c.bufr.Peek(4); if (errΔ1 != default!) {
+                    return;
+                }
+            }
+            c.rwc.SetReadDeadline(new time.Time(nil));
         }
-        c.rwc.SetReadDeadline(new time.Time(nil));
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void sendExpectationFailed(this ж<response> Ꮡw) {
     ref var w = ref Ꮡw.DerefOrNull();
@@ -2214,8 +2240,9 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
     net.Conn rwc = default!;
     ж<bufio.ReadWriter> buf = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var w = ref Ꮡw.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var w = ref Ꮡw.DerefOrNull();
 
         if (Ꮡw.of(response.ᏑhandlerDone).Load()) {
             throw panic("net/http: Hijack called after ServeHTTP finished");
@@ -2227,7 +2254,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
         var c = w.conn;
         c.of(conn.Ꮡmu).Lock();
         var cʗ1 = c;
-        defer(cʗ1.of(conn.Ꮡmu).Unlock);
+        defer(cʗ1.of(conn.Ꮡmu).Unlock, ref ᒐ);
         // Release the bufioWriter that writes to the chunk writer, it is not
         // used after a connection has been hijacked.
         (rwc, buf, err) = c.hijackLocked();
@@ -2235,7 +2262,9 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) Hijack(this 
             putBufioWriter(w.w);
             w.w = default!;
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (rwc, buf, err);
 }
 
@@ -2742,11 +2771,12 @@ internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirec
     ж<routingNode> _ᴛ1 = default!;
     slice<@string> matches = default!;
     ж<urlpkg.URL> redirectTo = default!;
-    func((defer, recover) => {
-    ref var u = ref Ꮡu.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var u = ref Ꮡu.DerefOrNull();
 
         Ꮡmux.of(ServeMux.Ꮡmu).RLock();
-        defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock);
+        defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock, ref ᒐ);
         (var n, matches) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
         // If we have an exact match, or we were asked not to try trailing-slash redirection,
         // or the URL already has a trailing slash, then we're done.
@@ -2755,12 +2785,14 @@ internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirec
             path += "/"u8;
             var (n2, _) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
             if (exactMatch(n2, path)) {
-                (_ᴛ1, matches, redirectTo) = (default!, default!, Ꮡ(new url.URL(Path: cleanPath(u.Path) + "/"u8, RawQuery: u.RawQuery))); return;
+                (_ᴛ1, matches, redirectTo) = (default!, default!, Ꮡ(new url.URL(Path: cleanPath(u.Path) + "/"u8, RawQuery: u.RawQuery))); goto ᒐdone;
             }
         }
         (_ᴛ1, matches, redirectTo) = (n, matches, default!);
-    });
-    return (_ᴛ1, matches, redirectTo);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (_ᴛ1, matches, redirectTo);
 }
 
 // exactMatch reports whether the node's pattern exactly matches the path.
@@ -2815,19 +2847,24 @@ internal static bool exactMatch(ж<routingNode> Ꮡn, @string path) {
 }
 
 // matchingMethods return a sorted list of all methods that would match with the given host and path.
-internal static slice<@string> matchingMethods(this ж<ServeMux> Ꮡmux, @string host, @string path) => func((defer, recover) => {
-    // Hold the read lock for the entire method so that the two matches are done
-    // on the same set of registered patterns.
-    Ꮡmux.of(ServeMux.Ꮡmu).RLock();
-    defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock);
-    var ms = new map<@string, bool>{};
-    Ꮡmux.of(ServeMux.Ꮡtree).matchingMethods(host, path, ms);
-    // matchOrRedirect will try appending a trailing slash if there is no match.
-    if (!strings.HasSuffix(path, "/"u8)) {
-        Ꮡmux.of(ServeMux.Ꮡtree).matchingMethods(host, path + "/"u8, ms);
+internal static slice<@string> matchingMethods(this ж<ServeMux> Ꮡmux, @string host, @string path) {
+    GoFrame ᒐ = default;
+    try {
+        // Hold the read lock for the entire method so that the two matches are done
+        // on the same set of registered patterns.
+        Ꮡmux.of(ServeMux.Ꮡmu).RLock();
+        defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock, ref ᒐ);
+        var ms = new map<@string, bool>{};
+        Ꮡmux.of(ServeMux.Ꮡtree).matchingMethods(host, path, ms);
+        // matchOrRedirect will try appending a trailing slash if there is no match.
+        if (!strings.HasSuffix(path, "/"u8)) {
+            Ꮡmux.of(ServeMux.Ꮡtree).matchingMethods(host, path + "/"u8, ms);
+        }
+        return slices.Sorted(maps.Keys<map<@string, bool>, @string, bool>(ms));
     }
-    return slices.Sorted(maps.Keys<map<@string, bool>, @string, bool>(ms));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ServeHTTP dispatches the request to the handler whose
 // pattern most closely matches the request URL.
@@ -2908,53 +2945,58 @@ internal static readonly @string httpInvalidPatternˢ = "http: invalid pattern"u
 internal static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
 internal static readonly @string unknownLocationˢ = "unknown location"u8;
 
-internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) => func<error>((defer, recover) => {
-    ref var mux = ref Ꮡmux.DerefOrNull();
+internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) {
+    GoFrame ᒐ = default;
+    try {
+        ref var mux = ref Ꮡmux.DerefOrNull();
 
-    if (patstr == ""u8) {
-        return errors.New(httpInvalidPatternˢ);
-    }
-    if (handler == default!) {
-        return errors.New(httpNilHandlerˢ);
-    }
-    {
-        var (f, okΔ1) = handler._<HandlerFunc>(ᐧ); if (okΔ1 && f == default!) {
+        if (patstr == ""u8) {
+            return errors.New(httpInvalidPatternˢ);
+        }
+        if (handler == default!) {
             return errors.New(httpNilHandlerˢ);
         }
-    }
-    var (pat, err) = parsePattern(patstr);
-    if (err != default!) {
-        return fmt.Errorf("parsing %q: %w"u8, patstr, err);
-    }
-    // Get the caller's location, for better conflict error messages.
-    // Skip register and whatever calls it.
-    var (_, @file, line, ok) = runtime.Caller(3);
-    if (!ok){
-        pat.Value.loc = unknownLocationˢ;
-    } else {
-        pat.Value.loc = fmt.Sprintf("%s:%d"u8, @file, line);
-    }
-    Ꮡmux.of(ServeMux.Ꮡmu).Lock();
-    defer(Ꮡmux.of(ServeMux.Ꮡmu).Unlock);
-    // Check for conflict.
-    {
-        var patʗ1 = pat;
-        var errΔ1 = mux.index.possiblyConflictingPatterns(pat, error (ж<pattern> pat2) => {
-            if (patʗ1.conflictsWith(pat2)) {
-                @string d = describeConflict(patʗ1, pat2);
-                return fmt.Errorf("pattern %q (registered at %s) conflicts with pattern %q (registered at %s):\n%s"u8,
-                    patʗ1.OrTypedNil(), (~patʗ1).loc, pat2.OrTypedNil(), (~pat2).loc, d);
+        {
+            var (f, okΔ1) = handler._<HandlerFunc>(ᐧ); if (okΔ1 && f == default!) {
+                return errors.New(httpNilHandlerˢ);
             }
-            return default!;
-        }); if (errΔ1 != default!) {
-            return errΔ1;
         }
+        var (pat, err) = parsePattern(patstr);
+        if (err != default!) {
+            return fmt.Errorf("parsing %q: %w"u8, patstr, err);
+        }
+        // Get the caller's location, for better conflict error messages.
+        // Skip register and whatever calls it.
+        var (_, @file, line, ok) = runtime.Caller(3);
+        if (!ok){
+            pat.Value.loc = unknownLocationˢ;
+        } else {
+            pat.Value.loc = fmt.Sprintf("%s:%d"u8, @file, line);
+        }
+        Ꮡmux.of(ServeMux.Ꮡmu).Lock();
+        defer(Ꮡmux.of(ServeMux.Ꮡmu).Unlock, ref ᒐ);
+        // Check for conflict.
+        {
+            var patʗ1 = pat;
+            var errΔ1 = mux.index.possiblyConflictingPatterns(pat, error (ж<pattern> pat2) => {
+                if (patʗ1.conflictsWith(pat2)) {
+                    @string d = describeConflict(patʗ1, pat2);
+                    return fmt.Errorf("pattern %q (registered at %s) conflicts with pattern %q (registered at %s):\n%s"u8,
+                        patʗ1.OrTypedNil(), (~patʗ1).loc, pat2.OrTypedNil(), (~pat2).loc, d);
+                }
+                return default!;
+            }); if (errΔ1 != default!) {
+                return errΔ1;
+            }
+        }
+        Ꮡmux.of(ServeMux.Ꮡtree).addPattern(pat, handler);
+        mux.index.addPattern(pat);
+        mux.patterns = append(mux.patterns, pat);
+        return default!;
     }
-    Ꮡmux.of(ServeMux.Ꮡtree).addPattern(pat, handler);
-    mux.index.addPattern(pat);
-    mux.patterns = append(mux.patterns, pat);
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Serve accepts incoming HTTP connections on the listener l,
 // creating a new service goroutine for each. The service goroutines
@@ -3093,26 +3135,31 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
 //
 // Close returns any error returned from closing the [Server]'s
 // underlying Listener(s).
-public static error Close(this ж<Server> Ꮡsrv) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error Close(this ж<Server> Ꮡsrv) {
+    GoFrame ᒐ = default;
+    try {
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-    Ꮡsrv.of(Server.Ꮡmu).Lock();
-    defer(Ꮡsrv.of(Server.Ꮡmu).Unlock);
-    var err = srv.closeListenersLocked();
-    // Unlock srv.mu while waiting for listenerGroup.
-    // The group Add and Done calls are made with srv.mu held,
-    // to avoid adding a new listener in the window between
-    // us setting inShutdown above and waiting here.
-    Ꮡsrv.of(Server.Ꮡmu).Unlock();
-    Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
-    Ꮡsrv.of(Server.Ꮡmu).Lock();
-    foreach (var (c, _) in srv.activeConn) {
-        (~c).rwc.Close();
-        delete(srv.activeConn, c);
+        Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
+        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        defer(Ꮡsrv.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        var err = srv.closeListenersLocked();
+        // Unlock srv.mu while waiting for listenerGroup.
+        // The group Add and Done calls are made with srv.mu held,
+        // to avoid adding a new listener in the window between
+        // us setting inShutdown above and waiting here.
+        Ꮡsrv.of(Server.Ꮡmu).Unlock();
+        Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
+        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        foreach (var (c, _) in srv.activeConn) {
+            (~c).rwc.Close();
+            delete(srv.activeConn, c);
+        }
+        return err;
     }
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // shutdownPollIntervalMax is the max polling interval when checking
 // quiescence during Server.Shutdown. Polling starts with a small
@@ -3143,48 +3190,53 @@ internal static time.Duration shutdownPollIntervalMax => /* 500 * time.Milliseco
 //
 // Once Shutdown has been called on a server, it may not be reused;
 // future calls to methods such as Serve will return ErrServerClosed.
-public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
+    GoFrame ᒐ = default;
+    try {
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-    Ꮡsrv.of(Server.Ꮡmu).Lock();
-    var lnerr = srv.closeListenersLocked();
-    foreach (var (_, f) in srv.onShutdown) {
-        var fʗ1 = f;
-        goǃ(fʗ1);
-    }
-    Ꮡsrv.of(Server.Ꮡmu).Unlock();
-    Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
-    var pollIntervalBase = time.Millisecond;
-    time.Duration nextPollInterval() {
-        // Add 10% jitter.
-        var interval = pollIntervalBase + ((time.Duration)(int64)rand.Intn((nint)(int64)(pollIntervalBase / 10)));
-        // Double and clamp for next time.
-        pollIntervalBase *= 2;
-        if (pollIntervalBase > shutdownPollIntervalMax) {
-            pollIntervalBase = shutdownPollIntervalMax;
+        Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
+        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        var lnerr = srv.closeListenersLocked();
+        foreach (var (_, f) in srv.onShutdown) {
+            var fʗ1 = f;
+            goǃ(fʗ1);
         }
-        return interval;
-    }
-    var timer = time.NewTimer(nextPollInterval());
-    var timerʗ1 = timer;
-    defer(() => timerʗ1.Stop());
-    while (ᐧ) {
-        if (Ꮡsrv.closeIdleConns()) {
-            return lnerr;
+        Ꮡsrv.of(Server.Ꮡmu).Unlock();
+        Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
+        var pollIntervalBase = time.Millisecond;
+        time.Duration nextPollInterval() {
+            // Add 10% jitter.
+            var interval = pollIntervalBase + ((time.Duration)(int64)rand.Intn((nint)(int64)(pollIntervalBase / 10)));
+            // Double and clamp for next time.
+            pollIntervalBase *= 2;
+            if (pollIntervalBase > shutdownPollIntervalMax) {
+                pollIntervalBase = shutdownPollIntervalMax;
+            }
+            return interval;
         }
-        var selᴛ81 = ctx.Done();
-        var selᴛ82 = (~timer).C;
-        switch (select(ᐸꟷ(selᴛ81, ꓸꓸꓸ), ᐸꟷ(selᴛ82, ꓸꓸꓸ))) {
-        case 0 when selᴛ81.ꟷᐳ(out _): {
-            return ctx.Err();
+        var timer = time.NewTimer(nextPollInterval());
+        var timerʗ1 = timer;
+        defer(() => timerʗ1.Stop(), ref ᒐ);
+        while (ᐧ) {
+            if (Ꮡsrv.closeIdleConns()) {
+                return lnerr;
+            }
+            var selᴛ81 = ctx.Done();
+            var selᴛ82 = (~timer).C;
+            switch (select(ᐸꟷ(selᴛ81, ꓸꓸꓸ), ᐸꟷ(selᴛ82, ꓸꓸꓸ))) {
+            case 0 when selᴛ81.ꟷᐳ(out _): {
+                return ctx.Err();
+            }
+            case 1 when selᴛ82.ꟷᐳ(out _): {
+                timer.Reset(nextPollInterval());
+                break;
+            }}
         }
-        case 1 when selᴛ82.ꟷᐳ(out _): {
-            timer.Reset(nextPollInterval());
-            break;
-        }}
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // RegisterOnShutdown registers a function to call on [Server.Shutdown].
 // This can be used to gracefully shutdown connections that have
@@ -3201,31 +3253,36 @@ public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
 
 // closeIdleConns closes all idle connections and reports whether the
 // server is quiescent.
-internal static bool closeIdleConns(this ж<Server> Ꮡs) => func((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
+internal static bool closeIdleConns(this ж<Server> Ꮡs) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    defer(Ꮡs.of(Server.Ꮡmu).Unlock);
-    var quiescent = true;
-    foreach (var (c, _) in s.activeConn) {
-        var (st, unixSec) = c.getState();
-        // Issue 22682: treat StateNew connections as if
-        // they're idle if we haven't read the first request's
-        // header in over 5 seconds.
-        if (st == StateNew && unixSec < time.Now().Unix() - 5) {
-            st = StateIdle;
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        var quiescent = true;
+        foreach (var (c, _) in s.activeConn) {
+            var (st, unixSec) = c.getState();
+            // Issue 22682: treat StateNew connections as if
+            // they're idle if we haven't read the first request's
+            // header in over 5 seconds.
+            if (st == StateNew && unixSec < time.Now().Unix() - 5) {
+                st = StateIdle;
+            }
+            if (st != StateIdle || unixSec == 0) {
+                // Assume unixSec == 0 means it's a very new
+                // connection, without state set yet.
+                quiescent = false;
+                continue;
+            }
+            (~c).rwc.Close();
+            delete(s.activeConn, c);
         }
-        if (st != StateIdle || unixSec == 0) {
-            // Assume unixSec == 0 means it's a very new
-            // connection, without state set yet.
-            quiescent = false;
-            continue;
-        }
-        (~c).rwc.Close();
-        delete(s.activeConn, c);
+        return quiescent;
     }
-    return quiescent;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static error closeListenersLocked(this ref Server s) {
     error err = default!;
@@ -3379,79 +3436,84 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 //
 // Serve always returns a non-nil error and closes l.
 // After [Server.Shutdown] or [Server.Close], the returned error is [ErrServerClosed].
-public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    ref var l = ref heap(lʗp, out var Ꮡl);
-    {
-        var fn = testHookServerServe; if (fn != default!) {
-            fn(Ꮡsrv, l);
-        }
-    }
-    // call hook with unwrapped listener
-    var origListener = l;
-    l = new onceCloseListenerжListener(Ꮡ(new onceCloseListener(Listener: l)));
-    defer(() => Ꮡl.ValueSlot.Close());
-    {
-        var err = Ꮡsrv.setupHTTP2_Serve(); if (err != default!) {
-            return err;
-        }
-    }
-    if (!Ꮡsrv.trackListener(Ꮡl, true)) {
-        return ErrServerClosed;
-    }
-    deferǃ(Ꮡsrv.trackListener, Ꮡl, (bool)false, defer);
-    var baseCtx = context_package.Background();
-    if (srv.BaseContext != default!) {
-        baseCtx = srv.BaseContext(origListener);
-        if (baseCtx == default!) {
-            throw panic("BaseContext returned a nil context");
-        }
-    }
-    time.Duration tempDelay = default!;                   // how long to sleep on accept failure
-    var ctx = context_package.WithValue(baseCtx, ServerContextKey.OrTypedNil(), Ꮡsrv.OrTypedNil());
-    while (ᐧ) {
-        var (rw, err) = l.Accept();
-        if (err != default!) {
-            if (Ꮡsrv.shuttingDown()) {
-                return ErrServerClosed;
-            }
-            {
-                var (ne, ok) = err._<netꓸError>(ᐧ); if (ok && ne.Temporary()) {
-                    if (tempDelay == 0){
-                        tempDelay = 5 * time.Millisecond;
-                    } else {
-                        tempDelay *= 2;
-                    }
-                    {
-                        var max = 1 * time.ΔSecond; if (tempDelay > max) {
-                            tempDelay = max;
-                        }
-                    }
-                    srv.logf("http: Accept error: %v; retrying in %v"u8, err, tempDelay);
-                    time.Sleep(tempDelay);
-                    continue;
-                }
-            }
-            return err;
-        }
-        var connCtx = ctx;
+        ref var l = ref heap(lʗp, out var Ꮡl);
         {
-            var cc = srv.ConnContext; if (cc != default!) {
-                connCtx = cc(connCtx, rw);
-                if (connCtx == default!) {
-                    throw panic("ConnContext returned nil");
-                }
+            var fn = testHookServerServe; if (fn != default!) {
+                fn(Ꮡsrv, l);
             }
         }
-        tempDelay = 0;
-        var c = Ꮡsrv.newConn(rw);
-        c.setState((~c).rwc, StateNew, runHooks);
-        // before Serve can return
-        var cʗ1 = c;
-        goǃ(cʗ1.serve, connCtx);
+        // call hook with unwrapped listener
+        var origListener = l;
+        l = new onceCloseListenerжListener(Ꮡ(new onceCloseListener(Listener: l)));
+        defer(() => Ꮡl.ValueSlot.Close(), ref ᒐ);
+        {
+            var err = Ꮡsrv.setupHTTP2_Serve(); if (err != default!) {
+                return err;
+            }
+        }
+        if (!Ꮡsrv.trackListener(Ꮡl, true)) {
+            return ErrServerClosed;
+        }
+        defer(Ꮡsrv.trackListener, Ꮡl, (bool)false, ref ᒐ);
+        var baseCtx = context_package.Background();
+        if (srv.BaseContext != default!) {
+            baseCtx = srv.BaseContext(origListener);
+            if (baseCtx == default!) {
+                throw panic("BaseContext returned a nil context");
+            }
+        }
+        time.Duration tempDelay = default!;                   // how long to sleep on accept failure
+        var ctx = context_package.WithValue(baseCtx, ServerContextKey.OrTypedNil(), Ꮡsrv.OrTypedNil());
+        while (ᐧ) {
+            var (rw, err) = l.Accept();
+            if (err != default!) {
+                if (Ꮡsrv.shuttingDown()) {
+                    return ErrServerClosed;
+                }
+                {
+                    var (ne, ok) = err._<netꓸError>(ᐧ); if (ok && ne.Temporary()) {
+                        if (tempDelay == 0){
+                            tempDelay = 5 * time.Millisecond;
+                        } else {
+                            tempDelay *= 2;
+                        }
+                        {
+                            var max = 1 * time.ΔSecond; if (tempDelay > max) {
+                                tempDelay = max;
+                            }
+                        }
+                        srv.logf("http: Accept error: %v; retrying in %v"u8, err, tempDelay);
+                        time.Sleep(tempDelay);
+                        continue;
+                    }
+                }
+                return err;
+            }
+            var connCtx = ctx;
+            {
+                var cc = srv.ConnContext; if (cc != default!) {
+                    connCtx = cc(connCtx, rw);
+                    if (connCtx == default!) {
+                        throw panic("ConnContext returned nil");
+                    }
+                }
+            }
+            tempDelay = 0;
+            var c = Ꮡsrv.newConn(rw);
+            c.setState((~c).rwc, StateNew, runHooks);
+            // before Serve can return
+            var cʗ1 = c;
+            goǃ(cʗ1.serve, connCtx);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // ServeTLS accepts incoming connections on the Listener l, creating a
 // new service goroutine for each. The service goroutines perform TLS
@@ -3504,41 +3566,51 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
 // Listener from another caller.
 //
 // It reports whether the server is still up (not Shutdown or Closed).
-internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln, bool add) => func<bool>((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
+internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln, bool add) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    defer(Ꮡs.of(Server.Ꮡmu).Unlock);
-    if (s.listeners == default!) {
-        s.listeners = new map<ж<net.Listener>, EmptyStruct>();
-    }
-    if (add){
-        if (Ꮡs.shuttingDown()) {
-            return false;
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        if (s.listeners == default!) {
+            s.listeners = new map<ж<net.Listener>, EmptyStruct>();
         }
-        s.listeners[Ꮡln] = new EmptyStruct();
-        Ꮡs.of(Server.ᏑlistenerGroup).Add(1);
-    } else {
-        delete(s.listeners, Ꮡln);
-        Ꮡs.of(Server.ᏑlistenerGroup).Done();
+        if (add){
+            if (Ꮡs.shuttingDown()) {
+                return false;
+            }
+            s.listeners[Ꮡln] = new EmptyStruct();
+            Ꮡs.of(Server.ᏑlistenerGroup).Add(1);
+        } else {
+            delete(s.listeners, Ꮡln);
+            Ꮡs.of(Server.ᏑlistenerGroup).Done();
+        }
+        return true;
     }
-    return true;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) => func((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
+internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) {
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(Server.Ꮡmu).Lock();
-    defer(Ꮡs.of(Server.Ꮡmu).Unlock);
-    if (s.activeConn == default!) {
-        s.activeConn = new map<ж<conn>, EmptyStruct>();
+        Ꮡs.of(Server.Ꮡmu).Lock();
+        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        if (s.activeConn == default!) {
+            s.activeConn = new map<ж<conn>, EmptyStruct>();
+        }
+        if (add){
+            s.activeConn[Ꮡc] = new EmptyStruct();
+        } else {
+            delete(s.activeConn, Ꮡc);
+        }
     }
-    if (add){
-        s.activeConn[Ꮡc] = new EmptyStruct();
-    } else {
-        delete(s.activeConn, Ꮡc);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static time.Duration idleTimeout(this ref Server s) {
     if (s.IdleTimeout != 0) {
@@ -3642,24 +3714,29 @@ internal static readonly @string httpsˢ2 = ":https"u8;
 //
 // ListenAndServeTLS always returns a non-nil error. After [Server.Shutdown] or
 // [Server.Close], the returned error is [ErrServerClosed].
-public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, @string keyFile) => func((defer, recover) => {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, @string keyFile) {
+    GoFrame ᒐ = default;
+    try {
+        ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    if (Ꮡsrv.shuttingDown()) {
-        return ErrServerClosed;
+        if (Ꮡsrv.shuttingDown()) {
+            return ErrServerClosed;
+        }
+        @string addr = srv.Addr;
+        if (addr == ""u8) {
+            addr = httpsˢ2;
+        }
+        var (ln, err) = net.Listen(tcpˢ, addr);
+        if (err != default!) {
+            return err;
+        }
+        var lnʗ1 = ln;
+        defer(() => lnʗ1.Close(), ref ᒐ);
+        return Ꮡsrv.ServeTLS(ln, certFile, keyFile);
     }
-    @string addr = srv.Addr;
-    if (addr == ""u8) {
-        addr = httpsˢ2;
-    }
-    var (ln, err) = net.Listen(tcpˢ, addr);
-    if (err != default!) {
-        return err;
-    }
-    var lnʗ1 = ln;
-    defer(() => lnʗ1.Close());
-    return Ꮡsrv.ServeTLS(ln, certFile, keyFile);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // setupHTTP2_ServeTLS conditionally configures HTTP/2 on
 // srv and reports whether there was an error setting it up. If it is
@@ -3759,84 +3836,94 @@ internal static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Ti
     return htmlHeadTitleTimeoutˢ;
 }
 
-internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, ж<Request> Ꮡr) => func((defer, recover) => {
-    ref var h = ref Ꮡh.DerefOrNull();
-    ref var r = ref Ꮡr.DerefOrNull();
+internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, ж<Request> Ꮡr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var h = ref Ꮡh.DerefOrNull();
+        ref var r = ref Ꮡr.DerefOrNull();
 
-    var ctx = h.testContext;
-    if (ctx == default!) {
-        Action cancelCtx = default!;
-        (ctx, cancelCtx) = context_package.WithTimeout(r.Context(), h.dt);
-        var cancelCtxʗ1 = cancelCtx;
-        defer(() => cancelCtxʗ1());
-    }
-    Ꮡr = r.WithContext(ctx); r = ref Ꮡr.DerefOrNull();
-    var done = new channel<EmptyStruct>(0);
-    var tw = Ꮡ(new timeoutWriter(
-        w: w,
-        h: new ΔHeader(0),
-        req: Ꮡr
-    ));
-    var panicChan = new channel<any>(1);
-    var doneʗ1 = done;
-    var panicChanʗ1 = panicChan;
-    var twʗ1 = tw;
-    goǃ(() => func((defer, recover) => {
-        var panicChanʗ2 = panicChanʗ1;
-        defer(() => {
+        var ctx = h.testContext;
+        if (ctx == default!) {
+            Action cancelCtx = default!;
+            (ctx, cancelCtx) = context_package.WithTimeout(r.Context(), h.dt);
+            var cancelCtxʗ1 = cancelCtx;
+            defer(() => cancelCtxʗ1(), ref ᒐ);
+        }
+        Ꮡr = r.WithContext(ctx); r = ref Ꮡr.DerefOrNull();
+        var done = new channel<EmptyStruct>(0);
+        var tw = Ꮡ(new timeoutWriter(
+            w: w,
+            h: new ΔHeader(0),
+            req: Ꮡr
+        ));
+        var panicChan = new channel<any>(1);
+        var doneʗ1 = done;
+        var panicChanʗ1 = panicChan;
+        var twʗ1 = tw;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                var panicChanʗ2 = panicChanʗ1;
+                defer(() => {
+                    {
+                        var p = recover(); if (p != default!) {
+                            panicChanʗ2.ᐸꟷ(p);
+                        }
+                    }
+                }, ref ᒐ);
+                Ꮡh.Value.handler.ServeHTTP(new timeoutWriterжResponseWriter(twʗ1), Ꮡr);
+                builtin.close(doneʗ1);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        var selᴛ83 = panicChan;
+        var selᴛ84 = done;
+        var selᴛ85 = ctx.Done();
+        switch (select(ᐸꟷ(selᴛ83, ꓸꓸꓸ), ᐸꟷ(selᴛ84, ꓸꓸꓸ), ᐸꟷ(selᴛ85, ꓸꓸꓸ))) {
+        case 0 when selᴛ83.ꟷᐳ(out var p): {
+            throw panic(p);
+            break;
+        }
+        case 1 when selᴛ84.ꟷᐳ(out _): {
+            tw.of(timeoutWriter.Ꮡmu).Lock();
+            var twʗ2 = tw;
+            defer(twʗ2.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
+            var dst = w.Header();
+            foreach (var (k, vv) in (~tw).h) {
+                dst[k] = vv;
+            }
+            if (!(~tw).wroteHeader) {
+                tw.Value.code = StatusOK;
+            }
+            w.WriteHeader((~tw).code);
+            w.Write(tw.of(timeoutWriter.Ꮡwbuf).Bytes());
+            break;
+        }
+        case 2 when selᴛ85.ꟷᐳ(out _): {
+            tw.of(timeoutWriter.Ꮡmu).Lock();
+            var twʗ3 = tw;
+            defer(twʗ3.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
             {
-                var p = recover(); if (p != default!) {
-                    panicChanʗ2.ᐸꟷ(p);
+                var err = ctx.Err();
+                var exprᴛ1 = err;
+                if (AreEqual(exprᴛ1, context_package.DeadlineExceeded)) {
+                    w.WriteHeader(StatusServiceUnavailable);
+                    io.WriteString(w, h.errorBody());
+                    tw.Value.err = ErrHandlerTimeout;
+                }
+                else { /* default: */
+                    w.WriteHeader(StatusServiceUnavailable);
+                    tw.Value.err = err;
                 }
             }
-        });
-        Ꮡh.Value.handler.ServeHTTP(new timeoutWriterжResponseWriter(twʗ1), Ꮡr);
-        builtin.close(doneʗ1);
-    }));
-    var selᴛ83 = panicChan;
-    var selᴛ84 = done;
-    var selᴛ85 = ctx.Done();
-    switch (select(ᐸꟷ(selᴛ83, ꓸꓸꓸ), ᐸꟷ(selᴛ84, ꓸꓸꓸ), ᐸꟷ(selᴛ85, ꓸꓸꓸ))) {
-    case 0 when selᴛ83.ꟷᐳ(out var p): {
-        throw panic(p);
-        break;
-    }
-    case 1 when selᴛ84.ꟷᐳ(out _): {
-        tw.of(timeoutWriter.Ꮡmu).Lock();
-        var twʗ2 = tw;
-        defer(twʗ2.of(timeoutWriter.Ꮡmu).Unlock);
-        var dst = w.Header();
-        foreach (var (k, vv) in (~tw).h) {
-            dst[k] = vv;
-        }
-        if (!(~tw).wroteHeader) {
-            tw.Value.code = StatusOK;
-        }
-        w.WriteHeader((~tw).code);
-        w.Write(tw.of(timeoutWriter.Ꮡwbuf).Bytes());
-        break;
-    }
-    case 2 when selᴛ85.ꟷᐳ(out _): {
-        tw.of(timeoutWriter.Ꮡmu).Lock();
-        var twʗ3 = tw;
-        defer(twʗ3.of(timeoutWriter.Ꮡmu).Unlock);
-        {
-            var err = ctx.Err();
-            var exprᴛ1 = err;
-            if (AreEqual(exprᴛ1, context_package.DeadlineExceeded)) {
-                w.WriteHeader(StatusServiceUnavailable);
-                io.WriteString(w, h.errorBody());
-                tw.Value.err = ErrHandlerTimeout;
-            }
-            else { /* default: */
-                w.WriteHeader(StatusServiceUnavailable);
-                tw.Value.err = err;
-            }
-        }
 
-        break;
-    }}
-});
+            break;
+        }}
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct timeoutWriter {
     internal ResponseWriter w;
@@ -3865,19 +3952,24 @@ internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher(((ж<timeoutWriter>)
     return tw.h;
 }
 
-internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p) => func<(nint, error)>((defer, recover) => {
-    ref var tw = ref Ꮡtw.DerefOrNull();
+internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p) {
+    GoFrame ᒐ = default;
+    try {
+        ref var tw = ref Ꮡtw.DerefOrNull();
 
-    Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
-    defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock);
-    if (tw.err != default!) {
-        return (0, tw.err);
+        Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
+        defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
+        if (tw.err != default!) {
+            return (0, tw.err);
+        }
+        if (!tw.wroteHeader) {
+            tw.writeHeaderLocked(StatusOK);
+        }
+        return tw.wbuf.Write(p);
     }
-    if (!tw.wroteHeader) {
-        tw.writeHeaderLocked(StatusOK);
-    }
-    return tw.wbuf.Write(p);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static void writeHeaderLocked(this ref timeoutWriter tw, nint code) {
     checkWriteHeaderCode(code);
@@ -3900,13 +3992,18 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
 
 }
 
-internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) => func((defer, recover) => {
-    ref var tw = ref Ꮡtw.DerefOrNull();
+internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) {
+    GoFrame ᒐ = default;
+    try {
+        ref var tw = ref Ꮡtw.DerefOrNull();
 
-    Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
-    defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock);
-    tw.writeHeaderLocked(code);
-});
+        Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
+        defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
+        tw.writeHeaderLocked(code);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // onceCloseListener wraps a net.Listener, protecting it from
 // multiple Close calls.
@@ -3989,15 +4086,20 @@ internal static ж<sync.Mutex> ᏑuniqNameMu = new(default(sync.Mutex));
 internal static ref sync.Mutex uniqNameMu => ref ᏑuniqNameMu.Value;
 internal static map<@string, nint> uniqNameNext = new map<@string, nint>();
 
-internal static net.Conn newLoggingConn(@string baseName, net.Conn c) => func((defer, recover) => {
-    ᏑuniqNameMu.Lock();
-    defer(ᏑuniqNameMu.Unlock);
-    uniqNameNext[baseName]++;
-    return new loggingConnжConn(Ꮡ(new loggingConn(
-        name: fmt.Sprintf("%s-%d"u8, baseName, uniqNameNext[baseName]),
-        Conn: c
-    )));
-});
+internal static net.Conn newLoggingConn(@string baseName, net.Conn c) {
+    GoFrame ᒐ = default;
+    try {
+        ᏑuniqNameMu.Lock();
+        defer(ᏑuniqNameMu.Unlock, ref ᒐ);
+        uniqNameNext[baseName]++;
+        return new loggingConnжConn(Ꮡ(new loggingConn(
+            name: fmt.Sprintf("%s-%d"u8, baseName, uniqNameNext[baseName]),
+            Conn: c
+        )));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoRecv] internal static (nint n, error err) Write(this ref loggingConn c, slice<byte> p) {
     nint n = default!;

@@ -129,26 +129,31 @@ internal const uint64 regionEndCode = /* uint64(1) */ 1;
 //
 // The regionType is used to classify regions, so there should be only a
 // handful of unique region types.
-public static void WithRegion(context.Context ctx, @string regionType, Action fn) => func((defer, recover) => {
-    // NOTE:
-    // WithRegion helps avoiding misuse of the API but in practice,
-    // this is very restrictive:
-    // - Use of WithRegion makes the stack traces captured from
-    //   region start and end are identical.
-    // - Refactoring the existing code to use WithRegion is sometimes
-    //   hard and makes the code less readable.
-    //     e.g. code block nested deep in the loop with various
-    //          exit point with return values
-    // - Refactoring the code to use this API with closure can
-    //   cause different GC behavior such as retaining some parameters
-    //   longer.
-    // This causes more churns in code than I hoped, and sometimes
-    // makes the code less readable.
-    var id = fromContext(ctx).Value.id;
-    userRegion(id, regionStartCode, regionType);
-    deferǃ(userRegion, id, regionEndCode, regionType, defer);
-    fn();
-});
+public static void WithRegion(context.Context ctx, @string regionType, Action fn) {
+    GoFrame ᒐ = default;
+    try {
+        // NOTE:
+        // WithRegion helps avoiding misuse of the API but in practice,
+        // this is very restrictive:
+        // - Use of WithRegion makes the stack traces captured from
+        //   region start and end are identical.
+        // - Refactoring the existing code to use WithRegion is sometimes
+        //   hard and makes the code less readable.
+        //     e.g. code block nested deep in the loop with various
+        //          exit point with return values
+        // - Refactoring the code to use this API with closure can
+        //   cause different GC behavior such as retaining some parameters
+        //   longer.
+        // This causes more churns in code than I hoped, and sometimes
+        // makes the code less readable.
+        var id = fromContext(ctx).Value.id;
+        userRegion(id, regionStartCode, regionType);
+        defer(userRegion, id, regionEndCode, regionType, ref ᒐ);
+        fn();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // StartRegion starts a region and returns it.
 // The returned Region's [Region.End] method must be called

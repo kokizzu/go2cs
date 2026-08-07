@@ -25,84 +25,89 @@ public static (FileInfo, error) Stat(this ж<File> Ꮡfile) {
 }
 
 // stat implements both Stat and Lstat of a file.
-internal static (FileInfo, error) stat(@string funcname, @string name, bool followSurrogates) => func<(FileInfo, error)>((defer, recover) => {
-    if (len(name) == 0) {
-        return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: funcname, Path: name, Err: ((syscall.Errno)syscall.ERROR_PATH_NOT_FOUND)))));
-    }
-    var (namep, err) = syscall.UTF16PtrFromString(fixLongPath(name));
-    if (err != default!) {
-        return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: funcname, Path: name, Err: err))));
-    }
-    // Try GetFileAttributesEx first, because it is faster than CreateFile.
-    // See https://golang.org/issues/19922#issuecomment-300031421 for details.
-    ref var fa = ref heap(new syscall.Win32FileAttributeData(), out var Ꮡfa);
-    err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, Ꮡfa.Reinterpret<syscall.Win32FileAttributeData, byte>());
-    if (err == default! && (uint32)(fa.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
-        // Not a surrogate for another named entity, because it isn't any kind of reparse point.
-        // The information we got from GetFileAttributesEx is good enough for now.
-        var fs = newFileStatFromWin32FileAttributeData(Ꮡfa);
-        {
-            var errΔ1 = fs.saveInfoFromPath(name); if (errΔ1 != default!) {
-                return (default!, errΔ1);
-            }
+internal static (FileInfo, error) stat(@string funcname, @string name, bool followSurrogates) {
+    GoFrame ᒐ = default;
+    try {
+        if (len(name) == 0) {
+            return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: funcname, Path: name, Err: ((syscall.Errno)syscall.ERROR_PATH_NOT_FOUND)))));
         }
-        return (new fileStatжFileInfo(fs), default!);
-    }
-    // GetFileAttributesEx fails with ERROR_SHARING_VIOLATION error for
-    // files like c:\pagefile.sys. Use FindFirstFile for such files.
-    if (AreEqual(err, windows.ERROR_SHARING_VIOLATION)) {
-        ref var fd = ref heap(new syscall.Win32finddata(), out var Ꮡfd);
-        var (sh, errΔ2) = syscall.FindFirstFile(namep, Ꮡfd);
-        if (errΔ2 != default!) {
-            return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "FindFirstFile"u8, Path: name, Err: errΔ2))));
+        var (namep, err) = syscall.UTF16PtrFromString(fixLongPath(name));
+        if (err != default!) {
+            return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: funcname, Path: name, Err: err))));
         }
-        syscall.FindClose(sh);
-        if ((uint32)(fd.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
-            // Not a surrogate for another named entity. FindFirstFile is good enough.
-            var fs = newFileStatFromWin32finddata(Ꮡfd);
+        // Try GetFileAttributesEx first, because it is faster than CreateFile.
+        // See https://golang.org/issues/19922#issuecomment-300031421 for details.
+        ref var fa = ref heap(new syscall.Win32FileAttributeData(), out var Ꮡfa);
+        err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, Ꮡfa.Reinterpret<syscall.Win32FileAttributeData, byte>());
+        if (err == default! && (uint32)(fa.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+            // Not a surrogate for another named entity, because it isn't any kind of reparse point.
+            // The information we got from GetFileAttributesEx is good enough for now.
+            var fs = newFileStatFromWin32FileAttributeData(Ꮡfa);
             {
-                var errΔ3 = fs.saveInfoFromPath(name); if (errΔ3 != default!) {
-                    return (default!, errΔ3);
+                var errΔ1 = fs.saveInfoFromPath(name); if (errΔ1 != default!) {
+                    return (default!, errΔ1);
                 }
             }
             return (new fileStatжFileInfo(fs), default!);
         }
-    }
-    // Use CreateFile to determine whether the file is a name surrogate and, if so,
-    // save information about the link target.
-    // Set FILE_FLAG_BACKUP_SEMANTICS so that CreateFile will create the handle
-    // even if name refers to a directory.
-    uint32 flags = (uint32)((uint32)syscall.FILE_FLAG_BACKUP_SEMANTICS | (uint32)syscall.FILE_FLAG_OPEN_REPARSE_POINT);
-    (var h, err) = syscall.CreateFile(namep, 0, 0, nil, syscall.OPEN_EXISTING, flags, 0);
-    if (AreEqual(err, windows.ERROR_INVALID_PARAMETER)) {
-        // Console handles, like "\\.\con", require generic read access. See
-        // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew#consoles.
-        // We haven't set it previously because it is normally not required
-        // to read attributes and some files may not allow it.
-        (h, err) = syscall.CreateFile(namep, syscall.GENERIC_READ, 0, nil, syscall.OPEN_EXISTING, flags, 0);
-    }
-    if (err != default!) {
-        // Since CreateFile failed, we can't determine whether name refers to a
-        // name surrogate, or some other kind of reparse point. Since we can't return a
-        // FileInfo with a known-accurate Mode, we must return an error.
-        return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "CreateFile"u8, Path: name, Err: err))));
-    }
-    (var fi, err) = statHandle(name, h);
-    syscall.CloseHandle(h);
-    if (err == default! && followSurrogates && fi._<ж<fileStat>>().isReparseTagNameSurrogate()) {
-        // To obtain information about the link target, we reopen the file without
-        // FILE_FLAG_OPEN_REPARSE_POINT and examine the resulting handle.
-        // (See https://devblogs.microsoft.com/oldnewthing/20100212-00/?p=14963.)
-        (h, err) = syscall.CreateFile(namep, 0, 0, nil, syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0);
+        // GetFileAttributesEx fails with ERROR_SHARING_VIOLATION error for
+        // files like c:\pagefile.sys. Use FindFirstFile for such files.
+        if (AreEqual(err, windows.ERROR_SHARING_VIOLATION)) {
+            ref var fd = ref heap(new syscall.Win32finddata(), out var Ꮡfd);
+            var (sh, errΔ2) = syscall.FindFirstFile(namep, Ꮡfd);
+            if (errΔ2 != default!) {
+                return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "FindFirstFile"u8, Path: name, Err: errΔ2))));
+            }
+            syscall.FindClose(sh);
+            if ((uint32)(fd.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+                // Not a surrogate for another named entity. FindFirstFile is good enough.
+                var fs = newFileStatFromWin32finddata(Ꮡfd);
+                {
+                    var errΔ3 = fs.saveInfoFromPath(name); if (errΔ3 != default!) {
+                        return (default!, errΔ3);
+                    }
+                }
+                return (new fileStatжFileInfo(fs), default!);
+            }
+        }
+        // Use CreateFile to determine whether the file is a name surrogate and, if so,
+        // save information about the link target.
+        // Set FILE_FLAG_BACKUP_SEMANTICS so that CreateFile will create the handle
+        // even if name refers to a directory.
+        uint32 flags = (uint32)((uint32)syscall.FILE_FLAG_BACKUP_SEMANTICS | (uint32)syscall.FILE_FLAG_OPEN_REPARSE_POINT);
+        (var h, err) = syscall.CreateFile(namep, 0, 0, nil, syscall.OPEN_EXISTING, flags, 0);
+        if (AreEqual(err, windows.ERROR_INVALID_PARAMETER)) {
+            // Console handles, like "\\.\con", require generic read access. See
+            // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew#consoles.
+            // We haven't set it previously because it is normally not required
+            // to read attributes and some files may not allow it.
+            (h, err) = syscall.CreateFile(namep, syscall.GENERIC_READ, 0, nil, syscall.OPEN_EXISTING, flags, 0);
+        }
         if (err != default!) {
-            // name refers to a symlink, but we couldn't resolve the symlink target.
+            // Since CreateFile failed, we can't determine whether name refers to a
+            // name surrogate, or some other kind of reparse point. Since we can't return a
+            // FileInfo with a known-accurate Mode, we must return an error.
             return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "CreateFile"u8, Path: name, Err: err))));
         }
-        deferǃ(syscall.CloseHandle, h, defer);
-        return statHandle(name, h);
+        (var fi, err) = statHandle(name, h);
+        syscall.CloseHandle(h);
+        if (err == default! && followSurrogates && fi._<ж<fileStat>>().isReparseTagNameSurrogate()) {
+            // To obtain information about the link target, we reopen the file without
+            // FILE_FLAG_OPEN_REPARSE_POINT and examine the resulting handle.
+            // (See https://devblogs.microsoft.com/oldnewthing/20100212-00/?p=14963.)
+            (h, err) = syscall.CreateFile(namep, 0, 0, nil, syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0);
+            if (err != default!) {
+                // name refers to a symlink, but we couldn't resolve the symlink target.
+                return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "CreateFile"u8, Path: name, Err: err))));
+            }
+            defer(syscall.CloseHandle, h, ref ᒐ);
+            return statHandle(name, h);
+        }
+        return (fi, err);
     }
-    return (fi, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static (FileInfo, error) statHandle(@string name, syscallꓸHandle h) {
     ref var ft = ref heap<uint32>(out var Ꮡft);

@@ -49,20 +49,25 @@ internal static error escapeOK = fmt.Errorf("template escaped correctly"u8);
 
 // Templates returns a slice of the templates associated with t, including t
 // itself.
-public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    var ns = t.nameSpace;
-    ns.of(nameSpace.Ꮡmu).Lock();
-    var nsʗ1 = ns;
-    defer(nsʗ1.of(nameSpace.Ꮡmu).Unlock);
-    // Return a slice so we don't expose the map.
-    var m = new slice<ж<Template>>(0, len((~ns).set));
-    foreach (var (_, v) in (~ns).set) {
-        m = append(m, v);
+        var ns = t.nameSpace;
+        ns.of(nameSpace.Ꮡmu).Lock();
+        var nsʗ1 = ns;
+        defer(nsʗ1.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        // Return a slice so we don't expose the map.
+        var m = new slice<ж<Template>>(0, len((~ns).set));
+        foreach (var (_, v) in (~ns).set) {
+            m = append(m, v);
+        }
+        return m;
     }
-    return m;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Option sets options for the template. Options are described by
 // strings, either a simple string or "key=value". There can be at
@@ -92,42 +97,52 @@ public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring
 
 // checkCanParse checks whether it is OK to parse templates.
 // If not, it returns an error.
-internal static error checkCanParse(this ж<Template> Ꮡt) => func<error>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static error checkCanParse(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    if (Ꮡt == nil) {
+        if (Ꮡt == nil) {
+            return default!;
+        }
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        if ((~t.nameSpace).escaped) {
+            return fmt.Errorf("html/template: cannot Parse after Execute"u8);
+        }
         return default!;
     }
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    if ((~t.nameSpace).escaped) {
-        return fmt.Errorf("html/template: cannot Parse after Execute"u8);
-    }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // escape escapes all associated templates.
-internal static error escape(this ж<Template> Ꮡt) => func<error>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+internal static error escape(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    t.nameSpace.Value.escaped = true;
-    if (t.escapeErr == default!){
-        if (t.Tree == nil) {
-            return fmt.Errorf("template: %q is an incomplete or empty template"u8, t.Name());
-        }
-        {
-            var err = escapeTemplate(Ꮡt, new parse.ListNodeжNode((~t.text).Root), t.Name()); if (err != default!) {
-                return err;
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        t.nameSpace.Value.escaped = true;
+        if (t.escapeErr == default!){
+            if (t.Tree == nil) {
+                return fmt.Errorf("template: %q is an incomplete or empty template"u8, t.Name());
             }
+            {
+                var err = escapeTemplate(Ꮡt, new parse.ListNodeжNode((~t.text).Root), t.Name()); if (err != default!) {
+                    return err;
+                }
+            }
+        } else 
+        if (!AreEqual(t.escapeErr, escapeOK)) {
+            return t.escapeErr;
         }
-    } else 
-    if (!AreEqual(t.escapeErr, escapeOK)) {
-        return t.escapeErr;
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Execute applies a parsed template to the specified data object,
 // writing the output to wr.
@@ -168,21 +183,22 @@ public static error ExecuteTemplate(this ж<Template> Ꮡt, io.Writer wr, @strin
 internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<Template> Ꮡt, @string name) {
     ж<Template> tmpl = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
         t.nameSpace.Value.escaped = true;
         tmpl = t.set[name];
         if (tmpl == nil) {
-            (tmpl, err) = (default!, fmt.Errorf("html/template: %q is undefined"u8, name)); return;
+            (tmpl, err) = (default!, fmt.Errorf("html/template: %q is undefined"u8, name)); goto ᒐdone;
         }
         if ((~tmpl).escapeErr != default! && !AreEqual((~tmpl).escapeErr, escapeOK)) {
-            (tmpl, err) = (default!, (~tmpl).escapeErr); return;
+            (tmpl, err) = (default!, (~tmpl).escapeErr); goto ᒐdone;
         }
         if ((~(~tmpl).text).Tree == nil || (~(~tmpl).text).Root == nil) {
-            (tmpl, err) = (default!, fmt.Errorf("html/template: %q is an incomplete template"u8, name)); return;
+            (tmpl, err) = (default!, fmt.Errorf("html/template: %q is an incomplete template"u8, name)); goto ᒐdone;
         }
         if (t.text.Lookup(name) == nil) {
             throw panic("html/template internal error: template escaping out of sync");
@@ -190,8 +206,10 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
         if ((~tmpl).escapeErr == default!) {
             err = escapeTemplate(tmpl, new parse.ListNodeжNode((~(~tmpl).text).Root), name);
         }
-    });
-    return (tmpl, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (tmpl, err);
 }
 
 // DefinedTemplates returns a string listing the defined templates,
@@ -212,62 +230,72 @@ internal static (ж<Template> tmpl, error err) lookupAndEscapeTemplate(this ж<T
 // is considered empty and will not replace an existing template's body.
 // This allows using Parse to add new named template definitions without
 // overwriting the main template body.
-public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static (ж<Template>, error) Parse(this ж<Template> Ꮡt, @string text) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    {
-        var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
-            return (default!, errΔ1);
+        {
+            var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
         }
-    }
-    var (ret, err) = t.text.Parse(text);
-    if (err != default!) {
-        return (default!, err);
-    }
-    // In general, all the named templates might have changed underfoot.
-    // Regardless, some new ones may have been defined.
-    // The template.Template set has been updated; update ours.
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    foreach (var (_, v) in ret.Templates()) {
-        @string name = v.Name();
-        var tmpl = t.set[name];
-        if (tmpl == nil) {
-            tmpl = t.@new(name);
+        var (ret, err) = t.text.Parse(text);
+        if (err != default!) {
+            return (default!, err);
         }
-        tmpl.Value.text = v;
-        tmpl.Value.Tree = v.Value.Tree;
+        // In general, all the named templates might have changed underfoot.
+        // Regardless, some new ones may have been defined.
+        // The template.Template set has been updated; update ours.
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        foreach (var (_, v) in ret.Templates()) {
+            @string name = v.Name();
+            var tmpl = t.set[name];
+            if (tmpl == nil) {
+                tmpl = t.@new(name);
+            }
+            tmpl.Value.text = v;
+            tmpl.Value.Tree = v.Value.Tree;
+        }
+        return (Ꮡt, default!);
     }
-    return (Ꮡt, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // AddParseTree creates a new template with the name and parse tree
 // and associates it with t.
 //
 // It returns an error if t or any associated template has already been executed.
-public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string name, ж<parse.Tree> Ꮡtree) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    {
-        var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
-            return (default!, errΔ1);
+        {
+            var errΔ1 = Ꮡt.checkCanParse(); if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
         }
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        var (text, err) = t.text.AddParseTree(name, Ꮡtree);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var ret = Ꮡ(new Template(
+            default!,
+            text,
+            (~text).Tree,
+            t.nameSpace
+        ));
+        t.set[name] = ret;
+        return (ret, default!);
     }
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    var (text, err) = t.text.AddParseTree(name, Ꮡtree);
-    if (err != default!) {
-        return (default!, err);
-    }
-    var ret = Ꮡ(new Template(
-        default!,
-        text,
-        (~text).Tree,
-        t.nameSpace
-    ));
-    t.set[name] = ret;
-    return (ret, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Clone returns a duplicate of the template, including all associated
 // templates. The actual representation is not copied, but the name space of
@@ -277,44 +305,49 @@ public static (ж<Template>, error) AddParseTree(this ж<Template> Ꮡt, @string
 // by adding the variants after the clone is made.
 //
 // It returns an error if t has already been executed.
-public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) => func<(ж<Template>, error)>((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    if (t.escapeErr != default!) {
-        return (default!, fmt.Errorf("html/template: cannot Clone %q after it has executed"u8, t.Name()));
-    }
-    var (textClone, err) = t.text.Clone();
-    if (err != default!) {
-        return (default!, err);
-    }
-    var ns = Ꮡ(new nameSpace(set: new map<@string, ж<Template>>()));
-    ns.Value.esc = makeEscaper(ns);
-    var ret = Ꮡ(new Template(
-        default!,
-        textClone,
-        (~textClone).Tree,
-        ns
-    ));
-    ret.Value.set[ret.Name()] = ret;
-    foreach (var (_, x) in textClone.Templates()) {
-        @string name = x.Name();
-        var src = t.set[name];
-        if (src == nil || (~src).escapeErr != default!) {
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        if (t.escapeErr != default!) {
             return (default!, fmt.Errorf("html/template: cannot Clone %q after it has executed"u8, t.Name()));
         }
-        x.Value.Tree = (~x).Tree.Copy();
-        ret.Value.set[name] = Ꮡ(new Template(
+        var (textClone, err) = t.text.Clone();
+        if (err != default!) {
+            return (default!, err);
+        }
+        var ns = Ꮡ(new nameSpace(set: new map<@string, ж<Template>>()));
+        ns.Value.esc = makeEscaper(ns);
+        var ret = Ꮡ(new Template(
             default!,
-            x,
-            (~x).Tree,
-            (~ret).nameSpace
+            textClone,
+            (~textClone).Tree,
+            ns
         ));
+        ret.Value.set[ret.Name()] = ret;
+        foreach (var (_, x) in textClone.Templates()) {
+            @string name = x.Name();
+            var src = t.set[name];
+            if (src == nil || (~src).escapeErr != default!) {
+                return (default!, fmt.Errorf("html/template: cannot Clone %q after it has executed"u8, t.Name()));
+            }
+            x.Value.Tree = (~x).Tree.Copy();
+            ret.Value.set[name] = Ꮡ(new Template(
+                default!,
+                x,
+                (~x).Tree,
+                (~ret).nameSpace
+            ));
+        }
+        // Return the template associated with the name of this template.
+        return ((~ret).set[ret.Name()], default!);
     }
-    // Return the template associated with the name of this template.
-    return ((~ret).set[ret.Name()], default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // New allocates a new HTML template with the given name.
 public static ж<Template> New(@string name) {
@@ -337,13 +370,18 @@ public static ж<Template> New(@string name) {
 // If a template with the given name already exists, the new HTML template
 // will replace it. The existing template will be reset and disassociated with
 // t.
-public static ж<Template> New(this ж<Template> Ꮡt, @string name) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static ж<Template> New(this ж<Template> Ꮡt, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    return t.@new(name);
-});
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        return t.@new(name);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // new is the implementation of New, without the lock.
 [GoRecv] internal static ж<Template> @new(this ref Template t, @string name) {
@@ -394,13 +432,18 @@ public static ж<Template> Delims(this ж<Template> Ꮡt, @string left, @string 
 
 // Lookup returns the template with the given name that is associated with t,
 // or nil if there is no such template.
-public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) => func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+public static ж<Template> Lookup(this ж<Template> Ꮡt, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
-    t.nameSpace.of(nameSpace.Ꮡmu).Lock();
-    defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock);
-    return t.set[name];
-});
+        t.nameSpace.of(nameSpace.Ꮡmu).Lock();
+        defer(Ꮡt.Value.nameSpace.of(nameSpace.Ꮡmu).Unlock, ref ᒐ);
+        return t.set[name];
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Must is a helper that wraps a call to a function returning ([*Template], error)
 // and panics if the error is non-nil. It is intended for use in variable initializations

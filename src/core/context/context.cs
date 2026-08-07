@@ -303,22 +303,27 @@ internal static ж<cancelCtx> withCancel(Context parent) {
 // then [Cause] returns err.
 // Otherwise Cause(c) returns the same value as c.Err().
 // Cause returns nil if c has not been canceled yet.
-public static error Cause(Context c) => func((defer, recover) => {
-    {
-        var (cc, ok) = c.Value(ᏑcancelCtxKey)._<ж<cancelCtx>>(ᐧ); if (ok) {
-            cc.of(cancelCtx.Ꮡmu).Lock();
-            var ccʗ1 = cc;
-            defer(ccʗ1.of(cancelCtx.Ꮡmu).Unlock);
-            return (~cc).cause;
+public static error Cause(Context c) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (cc, ok) = c.Value(ᏑcancelCtxKey)._<ж<cancelCtx>>(ᐧ); if (ok) {
+                cc.of(cancelCtx.Ꮡmu).Lock();
+                var ccʗ1 = cc;
+                defer(ccʗ1.of(cancelCtx.Ꮡmu).Unlock, ref ᒐ);
+                return (~cc).cause;
+            }
         }
+        // There is no cancelCtxKey value, so we know that c is
+        // not a descendant of some Context created by WithCancelCause.
+        // Therefore, there is no specific cause to return.
+        // If this is not one of the standard Context types,
+        // it might still have an error even though it won't have a cause.
+        return c.Err();
     }
-    // There is no cancelCtxKey value, so we know that c is
-    // not a descendant of some Context created by WithCancelCause.
-    // Therefore, there is no specific cause to return.
-    // If this is not one of the standard Context types,
-    // it might still have an error even though it won't have a cause.
-    return c.Err();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // AfterFunc arranges to call f in its own goroutine after ctx is done
 // (canceled or timed out).
@@ -471,20 +476,25 @@ internal static any Value(this ж<cancelCtx> Ꮡc, any key) {
     return value(c.Context, key);
 }
 
-internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) => func((defer, recover) => {
-    var d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
-    if (d != default!) {
+internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
+    GoFrame ᒐ = default;
+    try {
+        var d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
+        if (d != default!) {
+            return d._<channel<EmptyStruct>>();
+        }
+        Ꮡc.of(cancelCtx.Ꮡmu).Lock();
+        defer(Ꮡc.of(cancelCtx.Ꮡmu).Unlock, ref ᒐ);
+        d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
+        if (d == default!) {
+            d = new channel<EmptyStruct>(0);
+            Ꮡc.of(cancelCtx.Ꮡdone).Store(d);
+        }
         return d._<channel<EmptyStruct>>();
     }
-    Ꮡc.of(cancelCtx.Ꮡmu).Lock();
-    defer(Ꮡc.of(cancelCtx.Ꮡmu).Unlock);
-    d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
-    if (d == default!) {
-        d = new channel<EmptyStruct>(0);
-        Ꮡc.of(cancelCtx.Ꮡdone).Store(d);
-    }
-    return d._<channel<EmptyStruct>>();
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static error Err(this ж<cancelCtx> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
@@ -670,43 +680,48 @@ public static (Context, Action) WithDeadline(Context parent, time.Time d) {
 // WithDeadlineCause behaves like [WithDeadline] but also sets the cause of the
 // returned Context when the deadline is exceeded. The returned [CancelFunc] does
 // not set the cause.
-public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, error cause) => func<(Context, Action)>((defer, recover) => {
-    if (parent == default!) {
-        throw panic("cannot create context from nil parent");
-    }
-    {
-        var (cur, ok) = parent.Deadline(); if (ok && cur.Before(d)) {
-            // The current deadline is already sooner than the new one.
-            return WithCancel(parent);
+public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, error cause) {
+    GoFrame ᒐ = default;
+    try {
+        if (parent == default!) {
+            throw panic("cannot create context from nil parent");
         }
-    }
-    var c = Ꮡ(new timerCtx(
-        deadline: d
-    ));
-    c.of(timerCtx.ᏑcancelCtx).propagateCancel(parent, new timerCtxжcanceler(c));
-    var dur = time.Until(d);
-    if (dur <= 0) {
-        c.cancel(true, DeadlineExceeded, cause);
-        // deadline has already passed
-        var cʗ1 = c;
+        {
+            var (cur, ok) = parent.Deadline(); if (ok && cur.Before(d)) {
+                // The current deadline is already sooner than the new one.
+                return WithCancel(parent);
+            }
+        }
+        var c = Ꮡ(new timerCtx(
+            deadline: d
+        ));
+        c.of(timerCtx.ᏑcancelCtx).propagateCancel(parent, new timerCtxжcanceler(c));
+        var dur = time.Until(d);
+        if (dur <= 0) {
+            c.cancel(true, DeadlineExceeded, cause);
+            // deadline has already passed
+            var cʗ1 = c;
+            return (new timerCtxжContext(c), () => {
+                cʗ1.cancel(false, Canceled, default!);
+            });
+        }
+        c.of(timerCtx.Ꮡmu).Lock();
+        var cʗ2 = c;
+        defer(cʗ2.of(timerCtx.Ꮡmu).Unlock, ref ᒐ);
+        if ((~c).err == default!) {
+            var cʗ3 = c;
+            c.Value.timer = time.AfterFunc(dur, () => {
+                cʗ3.cancel(true, DeadlineExceeded, cause);
+            });
+        }
+        var cʗ5 = c;
         return (new timerCtxжContext(c), () => {
-            cʗ1.cancel(false, Canceled, default!);
+            cʗ5.cancel(true, Canceled, default!);
         });
     }
-    c.of(timerCtx.Ꮡmu).Lock();
-    var cʗ2 = c;
-    defer(cʗ2.of(timerCtx.Ꮡmu).Unlock);
-    if ((~c).err == default!) {
-        var cʗ3 = c;
-        c.Value.timer = time.AfterFunc(dur, () => {
-            cʗ3.cancel(true, DeadlineExceeded, cause);
-        });
-    }
-    var cʗ5 = c;
-    return (new timerCtxжContext(c), () => {
-        cʗ5.cancel(true, Canceled, default!);
-    });
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // A timerCtx carries a timer and a deadline. It embeds a cancelCtx to
 // implement Done and Err. It implements cancel by stopping its timer then

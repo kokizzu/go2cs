@@ -344,6 +344,19 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		v.namedReturnDeferMode, v.namedReturnNames = v.detectNamedReturnDefer(signature, v.hasDefer, v.hasRecover)
 	}
 
+	// Does this function's defer/recover scope emit as a GoFrame (an inline body in
+	// try/catch/finally) rather than as the func((defer, recover) => …) execution context? Decided
+	// HERE, before the body is visited, because the body's own `defer` statements register into the
+	// frame by name and visitDeferStmt reads this to know that (see goFrameOperations.go).
+	useGoFrame := v.goFrameEligible(funcDecl, signature)
+	v.inGoFrame = useGoFrame
+	v.goFrameNamedExit = false
+	v.openGoFrames = 0
+
+	if useGoFrame {
+		v.openGoFrames = 1
+	}
+
 	// Collect parameter names from the function declaration
 	if v.paramNames == nil {
 		v.paramNames = HashSet[string]{}
@@ -481,8 +494,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 		// In namedReturnDeferMode the func() wrapper is nested inside an extra block body, so
 		// the lambda body sits one level deeper. Bump the indent across the body visit so the
-		// statements (and the closing `}` that the `);` attaches to) align under `func(…`.
-		bodyInBlockForm := v.namedReturnDeferMode
+		// statements (and the closing `}` that the `);` attaches to) align under `func(…`. The
+		// frame form nests the same way: its body is the `try` block inside the method's own block.
+		bodyInBlockForm := v.namedReturnDeferMode || useGoFrame
 
 		if bodyInBlockForm {
 			v.indentLevel++
@@ -498,24 +512,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	}
 
 	signatureOnly := funcDecl.Body == nil
-	useFuncExecutionContext := v.hasDefer || v.hasRecover
-	// Pass a variadic params Span explicitly through the one-ref execution wrapper. The wrapper
-	// lambda uses its own ref Span parameter instead of capturing the outer ref-like parameter
-	// (CS9108), so the slice prologue remains inside and eligible uses retain an aliasing sslice.
-	variadicExecRefMode := useFuncExecutionContext && signature.Variadic()
-	variadicExecParamType := ""
-	variadicExecParamName := ""
-
-	if variadicExecRefMode {
-		param := signature.Params().At(signature.Params().Len() - 1)
-		variadicExecParamType = v.variadicParamType(param.Type().(*types.Slice).Elem())
-		variadicExecParamName = getVariadicParamName(param)
-	}
 
 	parameterSignature, receiverAccess := v.generateParametersSignature(signature, true)
 	blockPrefix := ""
-	// In namedReturnDeferMode this holds the named-return declarations, emitted outside the
-	// func() wrapper (see the exec-context assembly below).
+	// In namedReturnDeferMode this holds the named-return declarations, emitted outside the frame's
+	// `try` (see the frame assembly below).
 	namedReturnDeclsStr := ""
 
 	// If receiver access is not public, update function access to match
@@ -1029,54 +1030,21 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	var funcExecutionContext string
 
-	if useFuncExecutionContext {
-		// Always name the wrapper's two parameters by their roles, even when one is unused.
-		// Using `_` for an unused parameter is unsafe: a single `_` is a *named* C# lambda
-		// parameter (not a discard), so a `_ = expr` discard in the body would bind to it
-		// rather than discarding (e.g. `_ = call()` → CS0029). Unused-parameter warnings are
-		// already suppressed (IDE0060) for the converted projects.
-		deferParam := "defer"
-		recoverParam := "recover"
-
-		if v.namedReturnDeferMode {
-			// Named results stay outside the wrapper so deferred code can mutate them. A variadic
-			// params Span is passed by ref into the wrapper rather than captured from outer scope.
-			wrapperHead := fmt.Sprintf("func((%s, %s) =>", deferParam, recoverParam)
-
-			if variadicExecRefMode {
-				wrapperHead = fmt.Sprintf("func(ref %s, (ref %s %s, Defer %s, Recover %s) =>", variadicExecParamName, variadicExecParamType, variadicExecParamName, deferParam, recoverParam)
-			}
-
-			funcExecutionContext = fmt.Sprintf(" {%s%s%s%s", namedReturnDeclsStr, v.newline, v.indent(v.indentLevel+1), wrapperHead)
-		} else if variadicExecRefMode {
-			resultTypeArg := ""
-
-			if signature.Results().Len() > 0 && (v.allExecWrapperReturnsAreTypeless(funcDecl) || v.execWrapperReturnsLackCommonType(funcDecl)) {
-				resultTypeArg = fmt.Sprintf("<%s, %s>", variadicExecParamType, v.generateResultSignature(signature))
-			}
-
-			funcExecutionContext = fmt.Sprintf(" => func%s(ref %s, (ref %s %s, Defer %s, Recover %s) =>", resultTypeArg, variadicExecParamName, variadicExecParamType, variadicExecParamName, deferParam, recoverParam)
-		} else {
-			// C# infers the value-returning wrapper's T (func<T>, builtin.cs GoFunction) from the
-			// lambda's return statements; a return whose expression contains a typeless `default!`
-			// (Go nil) has no natural type — a tuple literal is typed only when ALL elements are.
-			// When NO return contributes a type, inference fails and overload resolution binds the
-			// void GoAction overload instead (CS8030 on every value return — syscall
-			// getProcessEntry). Emit the explicit result type argument for exactly that shape;
-			// any function with one fully-typed return keeps the inferred (unchanged) form.
-			resultTypeArg := ""
-
-			if signature.Results().Len() > 0 && (v.allExecWrapperReturnsAreTypeless(funcDecl) || v.execWrapperReturnsLackCommonType(funcDecl)) {
-				resultTypeArg = fmt.Sprintf("<%s>", v.generateResultSignature(signature))
-			}
-
-			funcExecutionContext = fmt.Sprintf(" => func%s((%s, %s) =>", resultTypeArg, deferParam, recoverParam)
-		}
+	if useGoFrame {
+		// The frame form has no wrapper to assemble: the body is the method's own `try` block, so
+		// all that goes here is the frame declaration and the `try` the body's `{` attaches to.
+		// Named results are declared ahead of it for the same reason they were declared ahead of
+		// the wrapper — deferred code mutates them and the exit reads them back afterwards.
+		funcExecutionContext = v.goFrameHead(v.indentLevel, namedReturnDeclsStr)
 	} else {
 		funcExecutionContext = ""
 	}
 
 	v.replaceMarker(functionExecContextMarker, funcExecutionContext)
+	if useGoFrame {
+		blockPrefix = v.reindentGoFrameBlock(blockPrefix)
+	}
+
 	v.replaceMarker(functionBlockPrefixMarker, blockPrefix)
 
 	if v.currentFuncPrefix.Len() > 0 {
@@ -1085,12 +1053,31 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	v.replaceMarker(functionPrefixMarker, v.currentFuncPrefix.String())
 
-	if useFuncExecutionContext {
+	if useGoFrame {
+		// Close the frame: the catch that parks a panic where recover() can read it, the finally
+		// that drains the defers on every exit path, and the method's own closing brace.
+		//
+		// The catch arm of a value-returning function ends with Go's zero results. A panic a
+		// deferred call RECOVERED leaves the function returning those (Go's rule), and one no
+		// deferred call recovered never reaches the return at all — Run() re-throws it from the
+		// finally, which overrides the pending return. It is also what keeps the method's endpoint
+		// unreachable, so a value-returning function needs nothing after the try statement.
+		catchReturn := ""
+
+		if signature.Results().Len() > 0 && !v.namedReturnDeferMode {
+			catchReturn = "return default!;"
+		}
+
+		savedIndent := v.indentLevel
+		v.indentLevel = 0
+
 		if v.namedReturnDeferMode {
-			// Close the func(...) call (attaches to the lambda's `}` → `});`), then return the
-			// named results — which the deferred code / recover may have mutated — and close the
-			// block body opened in the exec-context above. A heap-box-backed result's value alias
-			// lives INSIDE the wrapper, so the return reads it through the box (`Ꮡerr.ValueSlot`).
+			// The named-result exit (§4.4). Go assigns the result params, runs the deferred calls,
+			// and only then returns — which a `finally` cannot do to a value a `return` has already
+			// evaluated. So the results were declared before the try, every `return` inside it left
+			// through a goto (which runs the finally exactly as a return would), and the read
+			// happens out here. A heap-box-backed result's value alias lives inside the try, so the
+			// read goes through the box (`Ꮡerr.ValueSlot`).
 			returnNames := v.namedReturnBoxReadNames(signature, v.namedReturnNames)
 			returnExpr := strings.Join(returnNames, ", ")
 
@@ -1098,17 +1085,20 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				returnExpr = "(" + returnExpr + ")"
 			}
 
-			indentInner := v.indent(v.indentLevel + 1)
-			indentOuter := v.indent(v.indentLevel)
-			savedIndent := v.indentLevel
-			v.indentLevel = 0
-			v.writeOutputLn(");")
-			v.writeOutputLn("%sreturn %s;", indentInner, returnExpr)
-			v.writeOutputLn("%s}", indentOuter)
-			v.indentLevel = savedIndent
+			// The label exists only if something jumps to it: a body that simply falls off the end
+			// reaches this return anyway, and an unreferenced label is a warning worth not emitting.
+			exitLabel := ""
+
+			if v.goFrameNamedExit {
+				exitLabel = v.goFrameExitLabel() + ": "
+			}
+
+			v.writeOutputLn("%s%s%s%sreturn %s;%s%s}", v.goFrameTail(savedIndent, catchReturn), v.newline, v.indent(savedIndent+1), exitLabel, returnExpr, v.newline, v.indent(savedIndent))
 		} else {
-			v.writeOutputLn(");")
+			v.writeOutputLn("%s%s%s}", v.goFrameTail(savedIndent, catchReturn), v.newline, v.indent(savedIndent))
 		}
+
+		v.indentLevel = savedIndent
 	} else if signatureOnly {
 		if hasLinknameForward {
 			// Cross-package //go:linkname pull — emit a forwarder body calling the target.
@@ -1123,168 +1113,8 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	}
 
 	v.inFunction = false
-}
-
-// allExecWrapperReturnsAreTypeless reports whether no top-level return statement in the function
-// body carries a C#-inferable natural type: every return (if any) includes at least one untyped-nil
-// result, which renders as a typeless `default!`. Nested function literals are skipped — they get
-// their own execution wrappers. Zero-return bodies (all paths loop/panic) also report true: with no
-// returns C# infers a VOID lambda, which cannot convert to the value-returning wrapper either.
-func (v *Visitor) allExecWrapperReturnsAreTypeless(funcDecl *ast.FuncDecl) bool {
-	if funcDecl.Body == nil {
-		return false
-	}
-
-	unreliableReturnFound := false
-
-	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
-		if unreliableReturnFound {
-			return false
-		}
-
-		if _, ok := n.(*ast.FuncLit); ok {
-			return false
-		}
-
-		returnStmt, ok := n.(*ast.ReturnStmt)
-
-		if !ok {
-			return true
-		}
-
-		if len(returnStmt.Results) == 0 {
-			return true
-		}
-
-		for _, result := range returnStmt.Results {
-			tv, ok := v.info.Types[result]
-
-			if !ok {
-				continue
-			}
-
-			// A Go-nil result renders `default!` (no natural type). A CONSTANT result
-			// renders as a bare literal typed by C#'s defaults (`return 0, err` in a
-			// (uint32, error) function types its tuple as (int, error)) — either way this
-			// return's natural type can DISAGREE with the declared results, and C# lambda
-			// inference needs every return to agree (one poisoned return binds the void
-			// GoAction overload — CS8030 ×2, poll GetFileType's `return 0, err` beside a
-			// fully-typed call return). ANY such result forces the explicit form.
-			if tv.IsNil() || tv.Value != nil {
-				unreliableReturnFound = true
-				return false
-			}
-
-			// A FUNC LITERAL result is typed in Go and TYPELESS in C#: it renders as a bare
-			// lambda, which has no natural type, so it contributes nothing to the wrapper's T
-			// exactly as `default!` does. The Go-side shapes above (nil, constant) missed it —
-			// context's `func (c *afterFuncContext) AfterFunc(f func()) func() bool` returns
-			// `func() bool { … }` from a defer-wrapped body and bound the void GoAction overload
-			// (CS8030). Parens are peeled: `return (func(){…})` is the same expression.
-			if resultRendersAsBareLambda(result) {
-				unreliableReturnFound = true
-				return false
-			}
-		}
-
-		return true
-	})
-
-	return unreliableReturnFound
-}
-
-// resultRendersAsBareLambda reports whether a return result renders as a C# lambda with no natural
-// type — a Go function literal, through any number of parentheses. C# infers a value-returning exec
-// wrapper's T from its return expressions, and a lambda contributes nothing to that inference, so
-// such a result forces the explicit `func<T>` form just as an untyped `default!` does.
-func resultRendersAsBareLambda(expr ast.Expr) bool {
-	for {
-		switch e := expr.(type) {
-		case *ast.ParenExpr:
-			expr = e.X
-		case *ast.FuncLit:
-			return true
-		default:
-			return false
-		}
-	}
-}
-
-// execWrapperReturnsLackCommonType reports whether the function's top-level return statements yield,
-// at some result position, expressions whose types have NO best-common-type — i.e. no single one of
-// them that every other is identical or assignable to. C# infers a value-returning exec wrapper's T
-// (`func<T>`, builtin.cs GoFunction) from the lambda's return expressions using best-common-type; two
-// returns of unrelated concrete types that share only the declared interface (go/parser parseTypeName:
-// `return &ast.SelectorExpr{...}` beside `return ident` where the result type is ast.Expr) have no
-// common type, so T cannot be inferred and overload resolution binds the void GoAction overload
-// (CS8030 on every value return). Emit the explicit result type for exactly that shape; a single
-// return, or returns that DO share a best-common-type (a concrete beside its interface), keep the
-// inferred (unchanged) form and churn no goldens. Nested function literals get their own wrappers.
-func (v *Visitor) execWrapperReturnsLackCommonType(funcDecl *ast.FuncDecl) bool {
-	if funcDecl.Body == nil {
-		return false
-	}
-
-	var posTypes [][]types.Type // per result position: the return-expression types seen
-
-	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
-		if _, ok := n.(*ast.FuncLit); ok {
-			return false
-		}
-
-		returnStmt, ok := n.(*ast.ReturnStmt)
-
-		if !ok {
-			return true
-		}
-
-		for i, result := range returnStmt.Results {
-			tv, ok := v.info.Types[result]
-
-			if !ok || tv.Type == nil {
-				continue
-			}
-
-			for len(posTypes) <= i {
-				posTypes = append(posTypes, nil)
-			}
-
-			posTypes[i] = append(posTypes[i], tv.Type)
-		}
-
-		return true
-	})
-
-	for _, atPos := range posTypes {
-		if len(atPos) < 2 {
-			continue
-		}
-
-		// A best-common-type exists iff some candidate accepts every other type at this position.
-		hasCommon := false
-
-		for _, cand := range atPos {
-			acceptsAll := true
-
-			for _, t := range atPos {
-				if !types.Identical(t, cand) && !types.AssignableTo(t, cand) {
-					acceptsAll = false
-					break
-				}
-			}
-
-			if acceptsAll {
-				hasCommon = true
-				break
-			}
-		}
-
-		if !hasCommon {
-			return true
-		}
-	}
-
-	return false
+	v.inGoFrame = false
+	v.openGoFrames = 0
 }
 
 // identIsParameter checks if the given identifier is a parameter in the current function.

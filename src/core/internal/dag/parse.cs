@@ -198,7 +198,8 @@ internal static readonly @string missingˢ = "missing <"u8;
 internal static (slice<rule> @out, error err) parseRules(@string rules) {
     slice<rule> @out = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             var e = recover();
             switch (e.type()) {
@@ -214,7 +215,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
                 throw panic(eΔ1);
                 break;
             }}
-        });
+        }, ref ᒐ);
         var p = Ꮡ(new rulesParser(lineno: 1, text: rules));
         slice<@string> prev = default!;
         @string op = default!;
@@ -240,7 +241,9 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
             }
             op = tok;
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (@out, err);
 }
 

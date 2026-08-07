@@ -413,24 +413,29 @@ internal static goVersion versionMax(goVersion a, goVersion b) {
 [GoType] partial struct bailout {
 }
 
-internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var err = ref Ꮡerr.DerefOrNull();
+internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var err = ref Ꮡerr.DerefOrNull();
 
-    var switchᴛ6 = recover();
-    switch (switchᴛ6.type()) {
-    case null:
-    case bailout _: {
-        var p = switchᴛ6;
-        err = check.firstErr;
-        break;
+        var switchᴛ6 = recover();
+        switch (switchᴛ6.type()) {
+        case null:
+        case bailout _: {
+            var p = switchᴛ6;
+            err = check.firstErr;
+            break;
+        }
+        default: {
+            var p = switchᴛ6;
+            throw panic(p);
+            break;
+        }}
     }
-    default: {
-        var p = switchᴛ6;
-        throw panic(p);
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // normal return or early exit
 // re-panic
@@ -438,23 +443,26 @@ internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) 
 // Files checks the provided files as part of the checker's package.
 public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         if (check.pkg == Unsafe) {
             // Defensive handling for Unsafe, which cannot be type checked, and must
             // not be mutated. See https://go.dev/issue/61212 for an example of where
             // Unsafe is passed to NewChecker.
-            err = default!; return;
+            err = default!; goto ᒐdone;
         }
         // Avoid early returns here! Nearly all errors can be
         // localized to a piece of syntax and needn't prevent
         // type-checking of the rest of the package.
-        deferǃ(Ꮡcheck.handleBailout, Ꮡerr, defer);
+        defer(Ꮡcheck.handleBailout, Ꮡerr, ref ᒐ);
         Ꮡcheck.checkFiles(files);
-    });
-    return Ꮡerr.ValueSlot;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return Ꮡerr.ValueSlot;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -471,63 +479,68 @@ internal static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
 // a side effect, not by returning early, to ensure that well-formed
 // syntax is properly type annotated even in a package containing
 // errors.
-internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
-    // Ensure that _EnableAlias is consistent among concurrent type checking
-    // operations. See the documentation of [_aliasAny] for details.
-    if ((~check.conf)._EnableAlias){
-        if (atomic.AddInt32(Ꮡ_aliasAny, 1) <= 0) {
-            throw panic("EnableAlias set while !EnableAlias type checking is ongoing");
+        // Ensure that _EnableAlias is consistent among concurrent type checking
+        // operations. See the documentation of [_aliasAny] for details.
+        if ((~check.conf)._EnableAlias){
+            if (atomic.AddInt32(Ꮡ_aliasAny, 1) <= 0) {
+                throw panic("EnableAlias set while !EnableAlias type checking is ongoing");
+            }
+            defer(atomic.AddInt32, Ꮡ_aliasAny, (int32)(-1), ref ᒐ);
+        } else {
+            if (atomic.AddInt32(Ꮡ_aliasAny, -1) >= 0) {
+                throw panic("!EnableAlias set while EnableAlias type checking is ongoing");
+            }
+            defer(atomic.AddInt32, Ꮡ_aliasAny, (int32)(1), ref ᒐ);
         }
-        deferǃ(atomic.AddInt32, Ꮡ_aliasAny, (int32)(-1), defer);
-    } else {
-        if (atomic.AddInt32(Ꮡ_aliasAny, -1) >= 0) {
-            throw panic("!EnableAlias set while EnableAlias type checking is ongoing");
+        void print(@string msg) {
+            if ((~Ꮡcheck.Value.conf)._Trace) {
+                fmt.Println();
+                fmt.Println(msg);
+            }
         }
-        deferǃ(atomic.AddInt32, Ꮡ_aliasAny, (int32)(1), defer);
-    }
-    void print(@string msg) {
-        if ((~Ꮡcheck.Value.conf)._Trace) {
-            fmt.Println();
-            fmt.Println(msg);
+        print(initFilesˢ);
+        Ꮡcheck.initFiles(files);
+        print(collectObjectsˢ);
+        Ꮡcheck.collectObjects();
+        print(packageObjectsˢ);
+        Ꮡcheck.packageObjects();
+        print(processDelayedˢ);
+        Ꮡcheck.processDelayed(0);
+        // incl. all functions
+        print(cleanupˢ);
+        check.cleanup();
+        print(initOrderˢ);
+        Ꮡcheck.initOrder();
+        if (!(~check.conf).DisableUnusedImportCheck) {
+            print(unusedImportsˢ);
+            Ꮡcheck.unusedImports();
         }
+        print(recordUntypedˢ);
+        Ꮡcheck.recordUntyped();
+        if (check.firstErr == default!) {
+            // TODO(mdempsky): Ensure monomorph is safe when errors exist.
+            Ꮡcheck.monomorph();
+        }
+        check.pkg.Value.goVersion = check.conf.Value.GoVersion;
+        check.pkg.Value.complete = true;
+        // no longer needed - release memory
+        check.imports = default!;
+        check.dotImportMap = default!;
+        check.pkgPathMap = default!;
+        check.seenPkgMap = default!;
+        check.recvTParamMap = default!;
+        check.brokenAliases = default!;
+        check.unionTypeSets = default!;
+        check.ctxt = default!;
     }
-    print(initFilesˢ);
-    Ꮡcheck.initFiles(files);
-    print(collectObjectsˢ);
-    Ꮡcheck.collectObjects();
-    print(packageObjectsˢ);
-    Ꮡcheck.packageObjects();
-    print(processDelayedˢ);
-    Ꮡcheck.processDelayed(0);
-    // incl. all functions
-    print(cleanupˢ);
-    check.cleanup();
-    print(initOrderˢ);
-    Ꮡcheck.initOrder();
-    if (!(~check.conf).DisableUnusedImportCheck) {
-        print(unusedImportsˢ);
-        Ꮡcheck.unusedImports();
-    }
-    print(recordUntypedˢ);
-    Ꮡcheck.recordUntyped();
-    if (check.firstErr == default!) {
-        // TODO(mdempsky): Ensure monomorph is safe when errors exist.
-        Ꮡcheck.monomorph();
-    }
-    check.pkg.Value.goVersion = check.conf.Value.GoVersion;
-    check.pkg.Value.complete = true;
-    // no longer needed - release memory
-    check.imports = default!;
-    check.dotImportMap = default!;
-    check.pkgPathMap = default!;
-    check.seenPkgMap = default!;
-    check.recvTParamMap = default!;
-    check.brokenAliases = default!;
-    check.unionTypeSets = default!;
-    check.ctxt = default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string delayedPˢ = "-- delayed %p"u8;

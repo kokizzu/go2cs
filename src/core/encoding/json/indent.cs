@@ -51,46 +51,51 @@ public static error Compact(ж<bytes.Buffer> Ꮡdst, slice<byte> src) {
     return err;
 }
 
-internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> src, bool escape) => func<(slice<byte>, error)>((defer, recover) => {
-    nint origLen = len(dst);
-    var scan = newScanner();
-    deferǃ(freeScanner, scan, defer);
-    nint start = 0;
-    foreach (var (i, c) in src) {
-        if (escape && (c == (rune)'<' || c == (rune)'>' || c == (rune)'&')) {
-            if (start < i) {
-                dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> src, bool escape) {
+    GoFrame ᒐ = default;
+    try {
+        nint origLen = len(dst);
+        var scan = newScanner();
+        defer(freeScanner, scan, ref ᒐ);
+        nint start = 0;
+        foreach (var (i, c) in src) {
+            if (escape && (c == (rune)'<' || c == (rune)'>' || c == (rune)'&')) {
+                if (start < i) {
+                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                }
+                dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'0'), (byte)((rune)'0'), hex[(c >> (int)(4))], hex[(byte)(c & 0xF)]);
+                start = i + 1;
             }
-            dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'0'), (byte)((rune)'0'), hex[(c >> (int)(4))], hex[(byte)(c & 0xF)]);
-            start = i + 1;
+            // Convert U+2028 and U+2029 (E2 80 A8 and E2 80 A9).
+            if (escape && c == 0xE2 && i + 2 < len(src) && src[i + 1] == 0x80 && (byte)(src[i + 2] & ~1) == 0xA8) {
+                if (start < i) {
+                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                }
+                dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'2'), (byte)((rune)'0'), (byte)((rune)'2'), hex[(byte)(src[i + 2] & 0xF)]);
+                start = i + 3;
+            }
+            nint v = (~scan).step(scan, c);
+            if (v >= scanSkipSpace) {
+                if (v == scanError) {
+                    break;
+                }
+                if (start < i) {
+                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                }
+                start = i + 1;
+            }
         }
-        // Convert U+2028 and U+2029 (E2 80 A8 and E2 80 A9).
-        if (escape && c == 0xE2 && i + 2 < len(src) && src[i + 1] == 0x80 && (byte)(src[i + 2] & ~1) == 0xA8) {
-            if (start < i) {
-                dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
-            }
-            dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'2'), (byte)((rune)'0'), (byte)((rune)'2'), hex[(byte)(src[i + 2] & 0xF)]);
-            start = i + 3;
+        if (scan.eof() == scanError) {
+            return (dst[..(int)(origLen)], (~scan).err);
         }
-        nint v = (~scan).step(scan, c);
-        if (v >= scanSkipSpace) {
-            if (v == scanError) {
-                break;
-            }
-            if (start < i) {
-                dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
-            }
-            start = i + 1;
+        if (start < len(src)) {
+            dst = append(dst, src[(int)(start)..].ꓸꓸꓸ);
         }
+        return (dst, default!);
     }
-    if (scan.eof() == scanError) {
-        return (dst[..(int)(origLen)], (~scan).err);
-    }
-    if (start < len(src)) {
-        dst = append(dst, src[(int)(start)..].ꓸꓸꓸ);
-    }
-    return (dst, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<byte> appendNewline(slice<byte> dst, @string prefix, @string indent, nint depth) {
     dst = append(dst, (byte)((rune)'\n'));
@@ -130,70 +135,75 @@ public static error Indent(ж<bytes.Buffer> Ꮡdst, slice<byte> src, @string pre
     return err;
 }
 
-internal static (slice<byte>, error) appendIndent(slice<byte> dst, slice<byte> src, @string prefix, @string indent) => func<(slice<byte>, error)>((defer, recover) => {
-    nint origLen = len(dst);
-    var scan = newScanner();
-    deferǃ(freeScanner, scan, defer);
-    var needIndent = false;
-    nint depth = 0;
-    foreach (var (_, c) in src) {
-        scan.Value.bytes++;
-        nint v = (~scan).step(scan, c);
-        if (v == scanSkipSpace) {
-            continue;
-        }
-        if (v == scanError) {
-            break;
-        }
-        if (needIndent && v != scanEndObject && v != scanEndArray) {
-            needIndent = false;
-            depth++;
-            dst = appendNewline(dst, prefix, indent, depth);
-        }
-        // Emit semantically uninteresting bytes
-        // (in particular, punctuation in strings) unmodified.
-        if (v == scanContinue) {
-            dst = append(dst, c);
-            continue;
-        }
-        // Add spacing around real punctuation.
-        switch (c) {
-        case (rune)'{' or (rune)'[': {
-            needIndent = true;
-            dst = append(dst, // delay indent so that empty object and array are formatted as {} and [].
- c);
-            break;
-        }
-        case (rune)',': {
-            dst = append(dst, c);
-            dst = appendNewline(dst, prefix, indent, depth);
-            break;
-        }
-        case (rune)':': {
-            dst = append(dst, c, (byte)((rune)' '));
-            break;
-        }
-        case (rune)'}' or (rune)']': {
-            if (needIndent){
-                // suppress indent in empty object/array
+internal static (slice<byte>, error) appendIndent(slice<byte> dst, slice<byte> src, @string prefix, @string indent) {
+    GoFrame ᒐ = default;
+    try {
+        nint origLen = len(dst);
+        var scan = newScanner();
+        defer(freeScanner, scan, ref ᒐ);
+        var needIndent = false;
+        nint depth = 0;
+        foreach (var (_, c) in src) {
+            scan.Value.bytes++;
+            nint v = (~scan).step(scan, c);
+            if (v == scanSkipSpace) {
+                continue;
+            }
+            if (v == scanError) {
+                break;
+            }
+            if (needIndent && v != scanEndObject && v != scanEndArray) {
                 needIndent = false;
-            } else {
-                depth--;
+                depth++;
                 dst = appendNewline(dst, prefix, indent, depth);
             }
-            dst = append(dst, c);
-            break;
-        }
-        default: {
-            dst = append(dst, c);
-            break;
-        }}
+            // Emit semantically uninteresting bytes
+            // (in particular, punctuation in strings) unmodified.
+            if (v == scanContinue) {
+                dst = append(dst, c);
+                continue;
+            }
+            // Add spacing around real punctuation.
+            switch (c) {
+            case (rune)'{' or (rune)'[': {
+                needIndent = true;
+                dst = append(dst, // delay indent so that empty object and array are formatted as {} and [].
+ c);
+                break;
+            }
+            case (rune)',': {
+                dst = append(dst, c);
+                dst = appendNewline(dst, prefix, indent, depth);
+                break;
+            }
+            case (rune)':': {
+                dst = append(dst, c, (byte)((rune)' '));
+                break;
+            }
+            case (rune)'}' or (rune)']': {
+                if (needIndent){
+                    // suppress indent in empty object/array
+                    needIndent = false;
+                } else {
+                    depth--;
+                    dst = appendNewline(dst, prefix, indent, depth);
+                }
+                dst = append(dst, c);
+                break;
+            }
+            default: {
+                dst = append(dst, c);
+                break;
+            }}
 
+        }
+        if (scan.eof() == scanError) {
+            return (dst[..(int)(origLen)], (~scan).err);
+        }
+        return (dst, default!);
     }
-    if (scan.eof() == scanError) {
-        return (dst[..(int)(origLen)], (~scan).err);
-    }
-    return (dst, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end json_package

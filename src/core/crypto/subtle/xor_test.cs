@@ -91,28 +91,33 @@ public static void BenchmarkXORBytes(ж<testing.B> Ꮡb) {
     }
 }
 
-internal static void mustPanic(ж<testing.T> Ꮡt, @string expected, Action f) => func((defer, recover) => {
-    Ꮡt.Helper();
-    defer(() => {
-        var switchᴛ1 = recover();
-        switch (switchᴛ1.type()) {
-        case null: {
-            Ꮡt.Errorf("expected panic(%q), but did not panic"u8, expected);
-            break;
-        }
-        case @string msg: {
-            if (msg != expected) {
-                Ꮡt.Errorf("expected panic(%q), but got panic(%q)"u8, expected, msg);
+internal static void mustPanic(ж<testing.T> Ꮡt, @string expected, Action f) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡt.Helper();
+        defer(() => {
+            var switchᴛ1 = recover();
+            switch (switchᴛ1.type()) {
+            case null: {
+                Ꮡt.Errorf("expected panic(%q), but did not panic"u8, expected);
+                break;
             }
-            break;
-        }
-        default: {
-            var msg = switchᴛ1;
-            Ꮡt.Errorf("expected panic(%q), but got panic(%T%v)"u8, expected, msg, msg);
-            break;
-        }}
-    });
-    f();
-});
+            case @string msg: {
+                if (msg != expected) {
+                    Ꮡt.Errorf("expected panic(%q), but got panic(%q)"u8, expected, msg);
+                }
+                break;
+            }
+            default: {
+                var msg = switchᴛ1;
+                Ꮡt.Errorf("expected panic(%q), but got panic(%T%v)"u8, expected, msg, msg);
+                break;
+            }}
+        }, ref ᒐ);
+        f();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end subtle_test_package

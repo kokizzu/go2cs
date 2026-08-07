@@ -9,18 +9,23 @@ partial class socktest_package {
 
 [GoType("map[syscallꓸHandle, Status]")] partial struct ΔSockets;
 
-internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) => func<ж<Status>>((defer, recover) => {
-    ref var sw = ref Ꮡsw.DerefOrNull();
+internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) {
+    GoFrame ᒐ = default;
+    try {
+        ref var sw = ref Ꮡsw.DerefOrNull();
 
-    Ꮡsw.of(Switch.Ꮡsmu).RLock();
-    defer(Ꮡsw.of(Switch.Ꮡsmu).RUnlock);
-    ref var so = ref heap<Status>(out var Ꮡso);
-    (so, var ok) = sw.sotab[s, ꟷ];
-    if (!ok) {
-        return default!;
+        Ꮡsw.of(Switch.Ꮡsmu).RLock();
+        defer(Ꮡsw.of(Switch.Ꮡsmu).RUnlock, ref ᒐ);
+        ref var so = ref heap<Status>(out var Ꮡso);
+        (so, var ok) = sw.sotab[s, ꟷ];
+        if (!ok) {
+            return default!;
+        }
+        return Ꮡso;
     }
-    return Ꮡso;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // addLocked returns a new Status without locking.
 // sw.smu must be held before call.

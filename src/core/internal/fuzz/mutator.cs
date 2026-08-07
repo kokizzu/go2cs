@@ -303,28 +303,33 @@ internal static void initᴛbyteSliceMutators() { byteSliceMutators = new Func<�
     byteSliceSwapBytes
 }.slice(); }
 
-internal static void mutateBytes(this ж<mutator> Ꮡm, ж<slice<byte>> ᏑptrB) => func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
-    ref var ptrB = ref ᏑptrB.DerefOrNull();
+internal static void mutateBytes(this ж<mutator> Ꮡm, ж<slice<byte>> ᏑptrB) {
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
+        ref var ptrB = ref ᏑptrB.DerefOrNull();
 
-    ref var b = ref heap<slice<byte>>(out var Ꮡb);
-    b = ptrB;
-    defer(() => {
-        if (@unsafe.SliceData(ᏑptrB.ValueSlot) != @unsafe.SliceData(Ꮡb.ValueSlot)) {
-            throw panic("data moved to new address");
-        }
-        ᏑptrB.ValueSlot = Ꮡb.ValueSlot;
-    });
-    while (ᐧ) {
-        var mut = byteSliceMutators[m.rand(len(byteSliceMutators))];
-        {
-            var mutated = mut(Ꮡm, b); if (mutated != default!) {
-                b = mutated;
-                return;
+        ref var b = ref heap<slice<byte>>(out var Ꮡb);
+        b = ptrB;
+        defer(() => {
+            if (@unsafe.SliceData(ᏑptrB.ValueSlot) != @unsafe.SliceData(Ꮡb.ValueSlot)) {
+                throw panic("data moved to new address");
+            }
+            ᏑptrB.ValueSlot = Ꮡb.ValueSlot;
+        }, ref ᒐ);
+        while (ᐧ) {
+            var mut = byteSliceMutators[m.rand(len(byteSliceMutators))];
+            {
+                var mutated = mut(Ꮡm, b); if (mutated != default!) {
+                    b = mutated;
+                    return;
+                }
             }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static slice<int8> interesting8 = new int8[]{(int8)(-128), (int8)(-1), 0, 1, 16, 32, 64, 100, 127}.slice();
 internal static slice<int16> interesting16 = new int16[]{(int16)(-32768), (int16)(-129), 128, 255, 256, 512, 1000, 1024, 4096, 32767}.slice();

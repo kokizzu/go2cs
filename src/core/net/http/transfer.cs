@@ -379,8 +379,9 @@ internal static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
 // always closes t.BodyCloser
 internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer w) {
     error err = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         int64 ncopy = default!;
         var closed = false;
@@ -393,7 +394,7 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
                     err = closeErr;
                 }
             }
-        });
+        }, ref ᒐ);
         // Write body. We "unwrap" the body first if it was wrapped in a
         // nopCloser or readTrackingBody. This is to ensure that we can take advantage of
         // OS-level optimizations in the event that the body is an
@@ -421,42 +422,44 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
             } else {
                 (ncopy, err) = Ꮡt.doBodyCopy(w, io.LimitReader(body, t.ContentLength));
                 if (err != default!) {
-                    return;
+                    goto ᒐdone;
                 }
                 int64 nextra = default!;
                 (nextra, err) = Ꮡt.doBodyCopy(io.Discard, body);
                 ncopy += nextra;
             }
             if (err != default!) {
-                return;
+                goto ᒐdone;
             }
         }
         if (t.BodyCloser != default!) {
             closed = true;
             {
                 var errΔ1 = t.BodyCloser.Close(); if (errΔ1 != default!) {
-                    err = errΔ1; return;
+                    err = errΔ1; goto ᒐdone;
                 }
             }
         }
         if (!t.ResponseToHEAD && t.ContentLength != -1 && t.ContentLength != ncopy) {
             err = fmt.Errorf("http: ContentLength=%d with Body length %d"u8,
-                t.ContentLength, ncopy); return;
+                t.ContentLength, ncopy); goto ᒐdone;
         }
         if (chunked(t.TransferEncoding)) {
             // Write Trailer header
             if (t.Trailer != default!) {
                 {
                     var errΔ2 = t.Trailer.Write(w); if (errΔ2 != default!) {
-                        err = errΔ2; return;
+                        err = errΔ2; goto ᒐdone;
                     }
                 }
             }
             // Last chunk, empty trailer
             (_, err) = io.WriteString(w, "\r\n"u8);
         }
-    });
-    return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return err;
 }
 
 // doBodyCopy wraps a copy operation, with any resulting error also
@@ -466,16 +469,19 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
 internal static (int64 n, error err) doBodyCopy(this ж<transferWriter> Ꮡt, io.Writer dst, io.Reader src) {
     int64 n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
 
         var buf = getCopyBuf();
-        deferǃ(putCopyBuf, buf, defer);
+        defer(putCopyBuf, buf, ref ᒐ);
         (n, err) = io.CopyBuffer(dst, src, buf);
         if (err != default! && !AreEqual(err, io.EOF)) {
             t.bodyReadError = err;
         }
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (n, err);
 }
 
@@ -907,17 +913,20 @@ public static error ErrBodyReadAfterClose = errors.New("http: invalid Read on cl
 internal static (nint n, error err) Read(this ж<body> Ꮡb, slice<byte> p) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
         Ꮡb.of(body.Ꮡmu).Lock();
-        defer(Ꮡb.of(body.Ꮡmu).Unlock);
+        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         if (b.closed) {
-            (n, err) = (0, ErrBodyReadAfterClose); return;
+            (n, err) = (0, ErrBodyReadAfterClose); goto ᒐdone;
         }
         (n, err) = b.readLocked(p);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 // Must hold b.mu.
@@ -1066,84 +1075,104 @@ internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
     return -1;
 }
 
-internal static error Close(this ж<body> Ꮡb) => func<error>((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static error Close(this ж<body> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    Ꮡb.of(body.Ꮡmu).Lock();
-    defer(Ꮡb.of(body.Ꮡmu).Unlock);
-    if (b.closed) {
-        return default!;
-    }
-    error err = default!;
-    switch (ᐧ) {
-    case {} when b.sawEOF: {
-        break;
-    }
-    case {} when b.hdr == default! && b.closing: {
-        break;
-    }
-    case {} when b.doEarlyClose: {
-        {
-            var (lr, ok) = b.src._<ж<io.LimitedReader>>(ᐧ); if (ok && (~lr).N > maxPostHandlerReadBytes){
-                // Already saw EOF, so no need going to look for it.
-                // no trailer and closing the connection next.
-                // no point in reading to EOF.
-                // Read up to maxPostHandlerReadBytes bytes of the body, looking
-                // for EOF (and trailers), so we can re-use this connection.
-                // There was a declared Content-Length, and we have more bytes remaining
-                // than our maxPostHandlerReadBytes tolerance. So, give up.
-                b.earlyClose = true;
-            } else {
-                int64 n = default!;
-                // Consume the body, or, which will also lead to us reading
-                // the trailer headers after the body, if present.
-                (n, err) = io.CopyN(io.Discard, new bodyLocked(Ꮡb), maxPostHandlerReadBytes);
-                if (AreEqual(err, io.EOF)) {
-                    err = default!;
-                }
-                if (n == maxPostHandlerReadBytes) {
+        Ꮡb.of(body.Ꮡmu).Lock();
+        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        if (b.closed) {
+            return default!;
+        }
+        error err = default!;
+        switch (ᐧ) {
+        case {} when b.sawEOF: {
+            break;
+        }
+        case {} when b.hdr == default! && b.closing: {
+            break;
+        }
+        case {} when b.doEarlyClose: {
+            {
+                var (lr, ok) = b.src._<ж<io.LimitedReader>>(ᐧ); if (ok && (~lr).N > maxPostHandlerReadBytes){
+                    // Already saw EOF, so no need going to look for it.
+                    // no trailer and closing the connection next.
+                    // no point in reading to EOF.
+                    // Read up to maxPostHandlerReadBytes bytes of the body, looking
+                    // for EOF (and trailers), so we can re-use this connection.
+                    // There was a declared Content-Length, and we have more bytes remaining
+                    // than our maxPostHandlerReadBytes tolerance. So, give up.
                     b.earlyClose = true;
+                } else {
+                    int64 n = default!;
+                    // Consume the body, or, which will also lead to us reading
+                    // the trailer headers after the body, if present.
+                    (n, err) = io.CopyN(io.Discard, new bodyLocked(Ꮡb), maxPostHandlerReadBytes);
+                    if (AreEqual(err, io.EOF)) {
+                        err = default!;
+                    }
+                    if (n == maxPostHandlerReadBytes) {
+                        b.earlyClose = true;
+                    }
                 }
             }
+            break;
         }
-        break;
-    }
-    default: {
-        (_, err) = io.Copy(io.Discard, // Fully consume the body, which will also lead to us reading
+        default: {
+            (_, err) = io.Copy(io.Discard, // Fully consume the body, which will also lead to us reading
  // the trailer headers after the body, if present.
  new bodyLocked(Ꮡb));
-        break;
-    }}
+            break;
+        }}
 
-    b.closed = true;
-    return err;
-});
+        b.closed = true;
+        return err;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static bool didEarlyClose(this ж<body> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static bool didEarlyClose(this ж<body> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    Ꮡb.of(body.Ꮡmu).Lock();
-    defer(Ꮡb.of(body.Ꮡmu).Unlock);
-    return b.earlyClose;
-});
+        Ꮡb.of(body.Ꮡmu).Lock();
+        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        return b.earlyClose;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // bodyRemains reports whether future Read calls might
 // yield data.
-internal static bool bodyRemains(this ж<body> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static bool bodyRemains(this ж<body> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    Ꮡb.of(body.Ꮡmu).Lock();
-    defer(Ꮡb.of(body.Ꮡmu).Unlock);
-    return !b.sawEOF;
-});
+        Ꮡb.of(body.Ꮡmu).Lock();
+        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        return !b.sawEOF;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    Ꮡb.of(body.Ꮡmu).Lock();
-    defer(Ꮡb.of(body.Ꮡmu).Unlock);
-    b.onHitEOF = fn;
-});
+        Ꮡb.of(body.Ꮡmu).Lock();
+        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        b.onHitEOF = fn;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // bodyLocked is an io.Reader reading from a *body when its mutex is
 // already held.

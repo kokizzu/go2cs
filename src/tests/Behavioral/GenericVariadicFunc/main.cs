@@ -16,13 +16,18 @@ public static nint Count<T>(params Span<T> valsʗp) {
     return len(vals);
 }
 
-public static nint DeferredCount<T>(params Span<T> valsʗp) => func(ref valsʗp, (ref Span<T> valsʗp, Defer defer, Recover recover) => {
-    var vals = valsʗp.sslice();
+public static nint DeferredCount<T>(params Span<T> valsʗp) {
+    GoFrame ᒐ = default;
+    try {
+        var vals = valsʗp.sslice();
 
-    defer(() => {
-    });
-    return len(vals);
-});
+        defer(() => {
+        }, ref ᒐ);
+        return len(vals);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 public static T Or<T>(params Span<T> valsʗp)
     where T : /* comparable */ new()

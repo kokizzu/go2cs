@@ -311,69 +311,74 @@ internal static readonly @string secondsAndDebugParamsAreˢ = "seconds and debug
 internal static readonly @string failedToCollectProfileˢ = "failed to collect profile"u8;
 internal static readonly @string failedToComputeDeltaˢ = "failed to compute delta"u8;
 
-internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) => func((defer, recover) => {
-    ref var r = ref Ꮡr.DerefOrNull();
+internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var r = ref Ꮡr.DerefOrNull();
 
-    var (sec, err) = strconv.ParseInt(secStr, 10, 64);
-    if (err != default! || sec <= 0) {
-        serveError(w, http.StatusBadRequest, invalidValueForSecondsˢ);
-        return;
-    }
-    // 'name' should be a key in profileSupportsDelta.
-    if (!profileSupportsDelta[name]) {
-        serveError(w, http.StatusBadRequest, secondsParameterIsNotˢ);
-        return;
-    }
-    configureWriteDeadline(w, Ꮡr, (float64)sec);
-    var (debug, _) = strconv.Atoi(Ꮡr.FormValue(debugˢ));
-    if (debug != 0) {
-        serveError(w, http.StatusBadRequest, secondsAndDebugParamsAreˢ);
-        return;
-    }
-    (var p0, err) = collectProfile(Ꮡp);
-    if (err != default!) {
-        serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
-        return;
-    }
-    var t = time.NewTimer(((time.Duration)sec) * time.ΔSecond);
-    var tʗ1 = t;
-    defer(() => tʗ1.Stop());
-    var selᴛ3 = r.Context().Done();
-    var selᴛ4 = (~t).C;
-    switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-    case 0 when selᴛ3.ꟷᐳ(out _): {
-        var errΔ1 = r.Context().Err();
-        if (AreEqual(errΔ1, context.DeadlineExceeded)){
-            serveError(w, http.StatusRequestTimeout, errΔ1.Error());
-        } else {
-            // TODO: what's a good status code for canceled requests? 400?
-            serveError(w, http.StatusInternalServerError, errΔ1.Error());
+        var (sec, err) = strconv.ParseInt(secStr, 10, 64);
+        if (err != default! || sec <= 0) {
+            serveError(w, http.StatusBadRequest, invalidValueForSecondsˢ);
+            return;
         }
-        return;
+        // 'name' should be a key in profileSupportsDelta.
+        if (!profileSupportsDelta[name]) {
+            serveError(w, http.StatusBadRequest, secondsParameterIsNotˢ);
+            return;
+        }
+        configureWriteDeadline(w, Ꮡr, (float64)sec);
+        var (debug, _) = strconv.Atoi(Ꮡr.FormValue(debugˢ));
+        if (debug != 0) {
+            serveError(w, http.StatusBadRequest, secondsAndDebugParamsAreˢ);
+            return;
+        }
+        (var p0, err) = collectProfile(Ꮡp);
+        if (err != default!) {
+            serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
+            return;
+        }
+        var t = time.NewTimer(((time.Duration)sec) * time.ΔSecond);
+        var tʗ1 = t;
+        defer(() => tʗ1.Stop(), ref ᒐ);
+        var selᴛ3 = r.Context().Done();
+        var selᴛ4 = (~t).C;
+        switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+        case 0 when selᴛ3.ꟷᐳ(out _): {
+            var errΔ1 = r.Context().Err();
+            if (AreEqual(errΔ1, context.DeadlineExceeded)){
+                serveError(w, http.StatusRequestTimeout, errΔ1.Error());
+            } else {
+                // TODO: what's a good status code for canceled requests? 400?
+                serveError(w, http.StatusInternalServerError, errΔ1.Error());
+            }
+            return;
+        }
+        case 1 when selᴛ4.ꟷᐳ(out _): {
+            break;
+        }}
+        (var p1, err) = collectProfile(Ꮡp);
+        if (err != default!) {
+            serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
+            return;
+        }
+        var ts = p1.Value.TimeNanos;
+        var dur = (~p1).TimeNanos - (~p0).TimeNanos;
+        p0.Scale(-1D);
+        (p1, err) = profile.Merge(new ж<profile.Profile>[]{p0, p1}.slice());
+        if (err != default!) {
+            serveError(w, http.StatusInternalServerError, failedToComputeDeltaˢ);
+            return;
+        }
+        p1.Value.TimeNanos = ts;
+        // set since we don't know what profile.Merge set for TimeNanos.
+        p1.Value.DurationNanos = dur;
+        w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
+        w.Header().Set(contentDispositionˢ, fmt.Sprintf(@"attachment; filename=""%s-delta"""u8, name));
+        p1.Write(new http_ResponseWriterᴠWriter(w));
     }
-    case 1 when selᴛ4.ꟷᐳ(out _): {
-        break;
-    }}
-    (var p1, err) = collectProfile(Ꮡp);
-    if (err != default!) {
-        serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
-        return;
-    }
-    var ts = p1.Value.TimeNanos;
-    var dur = (~p1).TimeNanos - (~p0).TimeNanos;
-    p0.Scale(-1D);
-    (p1, err) = profile.Merge(new ж<profile.Profile>[]{p0, p1}.slice());
-    if (err != default!) {
-        serveError(w, http.StatusInternalServerError, failedToComputeDeltaˢ);
-        return;
-    }
-    p1.Value.TimeNanos = ts;
-    // set since we don't know what profile.Merge set for TimeNanos.
-    p1.Value.DurationNanos = dur;
-    w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
-    w.Header().Set(contentDispositionˢ, fmt.Sprintf(@"attachment; filename=""%s-delta"""u8, name));
-    p1.Write(new http_ResponseWriterᴠWriter(w));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static (ж<profile.Profile>, error) collectProfile(ж<pprof.Profile> Ꮡp) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);

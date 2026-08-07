@@ -66,8 +66,9 @@ internal static slice<byte> buildInfoMagic = slice<byte>(((@string)(new byte[]{0
 public static (ж<BuildInfo> info, error err) ReadFile(@string name) {
     ж<BuildInfo> info = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var err = ref Ꮡerr.ValueSlot;
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
             {
@@ -79,16 +80,18 @@ public static (ж<BuildInfo> info, error err) ReadFile(@string name) {
                     Ꮡerr.ValueSlot = fmt.Errorf("could not read Go build info from %s: %w"u8, name, Ꮡerr.ValueSlot);
                 }
             }
-        });
+        }, ref ᒐ);
         (var f, err) = os.Open(name);
         if (err != default!) {
-            (info, err) = (default!, err); return;
+            (info, err) = (default!, err); goto ᒐdone;
         }
         var fʗ1 = f;
-        defer(() => fʗ1.Close());
+        defer(() => fʗ1.Close(), ref ᒐ);
         (info, err) = Read(new os_FileжReaderAt(f));
-    });
-    return (info, Ꮡerr.ValueSlot);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (info, Ꮡerr.ValueSlot);
 }
 
 // Read returns build information embedded in a Go binary file

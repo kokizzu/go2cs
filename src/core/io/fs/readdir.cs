@@ -29,26 +29,31 @@ private static readonly @string notImplementedˢ = "not implemented"u8;
 // If fs implements [ReadDirFS], ReadDir calls fs.ReadDir.
 // Otherwise ReadDir calls fs.Open and uses ReadDir and Close
 // on the returned file.
-public static (slice<DirEntry>, error) ReadDir(FS fsys, @string name) => func<(slice<DirEntry>, error)>((defer, recover) => {
-    {
-        var (fsysΔ1, okΔ1) = fsys._<ReadDirFS>(ᐧ); if (okΔ1) {
-            return fsysΔ1.ReadDir(name);
+public static (slice<DirEntry>, error) ReadDir(FS fsys, @string name) {
+    GoFrame ᒐ = default;
+    try {
+        {
+            var (fsysΔ1, okΔ1) = fsys._<ReadDirFS>(ᐧ); if (okΔ1) {
+                return fsysΔ1.ReadDir(name);
+            }
         }
+        var (@file, err) = fsys.Open(name);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fileʗ1 = @file;
+        defer(() => fileʗ1.Close(), ref ᒐ);
+        var (dir, ok) = @file._<ReadDirFile>(ᐧ);
+        if (!ok) {
+            return (default!, new PathErrorжerror(Ꮡ(new PathError(Op: "readdir"u8, Path: name, Err: errors.New(notImplementedˢ)))));
+        }
+        (var list, err) = dir.ReadDir(-1);
+        slices.SortFunc(list, (DirEntry a, DirEntry b) => bytealg.CompareString(a.Name(), b.Name()));
+        return (list, err);
     }
-    var (@file, err) = fsys.Open(name);
-    if (err != default!) {
-        return (default!, err);
-    }
-    var fileʗ1 = @file;
-    defer(() => fileʗ1.Close());
-    var (dir, ok) = @file._<ReadDirFile>(ᐧ);
-    if (!ok) {
-        return (default!, new PathErrorжerror(Ꮡ(new PathError(Op: "readdir"u8, Path: name, Err: errors.New(notImplementedˢ)))));
-    }
-    (var list, err) = dir.ReadDir(-1);
-    slices.SortFunc(list, (DirEntry a, DirEntry b) => bytealg.CompareString(a.Name(), b.Name()));
-    return (list, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // dirInfo is a DirEntry based on a FileInfo.
 [GoType] partial struct dirInfo {

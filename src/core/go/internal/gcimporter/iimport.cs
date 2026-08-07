@@ -89,10 +89,11 @@ private static readonly @string anyˢ = "any"u8;
 internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet> Ꮡfset, map<@string, ж<types.Package>> imports, ж<bufio.Reader> ᏑdataReader, @string path) {
     ж<types.Package> pkg = default!;
     heap<error>(out var Ꮡerr);
-    func((defer, recover) => {
-    ref var fset = ref Ꮡfset.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var fset = ref Ꮡfset.DerefOrNull();
 
-    ref var err = ref Ꮡerr.ValueSlot;
+        ref var err = ref Ꮡerr.ValueSlot;
         const int64 currentVersion = /* iexportVersionCurrent */ 2;
         var version = (int64)(-1);
         defer(() => {
@@ -105,7 +106,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
                     }
                 }
             }
-        });
+        }, ref ᒐ);
         var r = Ꮡ(new intReader(ᏑdataReader, path));
         version = (int64)r.uint64();
         var exprᴛ1 = version;
@@ -145,7 +146,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
                 files: new map<@string, ж<fileInfo>>()
             )
         );
-        defer(Ꮡp.of(iimporter.Ꮡfake).setLines);
+        defer(Ꮡp.of(iimporter.Ꮡfake).setLines, ref ᒐ);
         // set lines for files in fset
         foreach (var (i, pt) in predeclared) {
             p.typCache[(uint64)i] = pt;
@@ -207,7 +208,9 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
         // package was imported completely and without errors
         localpkg.MarkComplete();
         (pkg, err) = (localpkg, default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (pkg, Ꮡerr.ValueSlot);
 }
 

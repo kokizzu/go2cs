@@ -499,15 +499,20 @@ public static void TestParseInLocation(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string australiaSydneyˢ = "Australia/Sydney"u8;
 
-public static void TestLoadLocationZipFile(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    var (_, err) = LoadLocation(australiaSydneyˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
+public static void TestLoadLocationZipFile(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        var (_, err) = LoadLocation(australiaSydneyˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Ignore the time zone in the test. If it parses, it'll be OK.
 internal static slice<ParseTest> rubyTests = new ParseTest[]{

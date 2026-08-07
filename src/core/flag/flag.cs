@@ -594,8 +594,9 @@ public static error Set(@string name, @string value) {
 internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value) {
     bool ok = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var flag = ref Ꮡflag.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var flag = ref Ꮡflag.DerefOrNull();
 
         // Build a zero value of the flag's Value type, and see if the
         // result of calling its String method equals the value passed in.
@@ -620,9 +621,11 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
                     err = fmt.Errorf("panic calling String method on zero %v for flag %s: %v"u8, Ꮡtyp.ValueSlot, Ꮡflag.Value.Name, e);
                 }
             }
-        });
+        }, ref ᒐ);
         (ok, err) = (value == z.Interface()._<Value>().String(), default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (ok, err);
 }
 

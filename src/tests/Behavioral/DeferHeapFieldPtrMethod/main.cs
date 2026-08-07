@@ -32,15 +32,20 @@ internal static void seed(ж<parser> Ꮡp) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object runDoneˢ = (@string)"run done:"u8;
 
-internal static void run() => func((defer, recover) => {
-    ref var p = ref heap<parser>(out var Ꮡp);
-    p = new parser(name: "p1"u8);
-    seed(Ꮡp);
-    defer(Ꮡp.of(parser.Ꮡtrk).flush);
-    p.trk.lines = append(p.trk.lines, "after-defer"u8);
-    p.trk.lines = append(p.trk.lines, "final"u8);
-    fmt.Println(runDoneˢ, p.name);
-});
+internal static void run() {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref heap<parser>(out var Ꮡp);
+        p = new parser(name: "p1"u8);
+        seed(Ꮡp);
+        defer(Ꮡp.of(parser.Ꮡtrk).flush, ref ᒐ);
+        p.trk.lines = append(p.trk.lines, "after-defer"u8);
+        p.trk.lines = append(p.trk.lines, "final"u8);
+        fmt.Println(runDoneˢ, p.name);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void Main() {
     run();

@@ -27,50 +27,60 @@ internal static pipeDeadline makePipeDeadline() {
 // t value in the future.
 //
 // A zero value for t prevents timeout.
-internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) => func((defer, recover) => {
-    ref var d = ref Ꮡd.DerefOrNull();
+internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
+    GoFrame ᒐ = default;
+    try {
+        ref var d = ref Ꮡd.DerefOrNull();
 
-    Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
-    defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock);
-    if (d.timer != nil && !d.timer.Stop()) {
-        ᐸꟷ(d.cancel);
-    }
-    // Wait for the timer callback to finish and close cancel
-    d.timer = default!;
-    // Time is zero, then there is no deadline.
-    var closed = isClosedChan(d.cancel);
-    if (t.IsZero()) {
-        if (closed) {
-            d.cancel = new channel<EmptyStruct>(0);
+        Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
+        defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
+        if (d.timer != nil && !d.timer.Stop()) {
+            ᐸꟷ(d.cancel);
         }
-        return;
-    }
-    // Time in the future, setup a timer to cancel in the future.
-    {
-        var dur = time.Until(t); if (dur > 0) {
+        // Wait for the timer callback to finish and close cancel
+        d.timer = default!;
+        // Time is zero, then there is no deadline.
+        var closed = isClosedChan(d.cancel);
+        if (t.IsZero()) {
             if (closed) {
                 d.cancel = new channel<EmptyStruct>(0);
             }
-            d.timer = time.AfterFunc(dur, () => {
-                builtin.close(Ꮡd.Value.cancel);
-            });
             return;
         }
+        // Time in the future, setup a timer to cancel in the future.
+        {
+            var dur = time.Until(t); if (dur > 0) {
+                if (closed) {
+                    d.cancel = new channel<EmptyStruct>(0);
+                }
+                d.timer = time.AfterFunc(dur, () => {
+                    builtin.close(Ꮡd.Value.cancel);
+                });
+                return;
+            }
+        }
+        // Time in the past, so close immediately.
+        if (!closed) {
+            builtin.close(d.cancel);
+        }
     }
-    // Time in the past, so close immediately.
-    if (!closed) {
-        builtin.close(d.cancel);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // wait returns a channel that is closed when the deadline is exceeded.
-internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) => func((defer, recover) => {
-    ref var d = ref Ꮡd.DerefOrNull();
+internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) {
+    GoFrame ᒐ = default;
+    try {
+        ref var d = ref Ꮡd.DerefOrNull();
 
-    Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
-    defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock);
-    return d.cancel;
-});
+        Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
+        defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
+        return d.cancel;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static bool isClosedChan(/*<-*/channel<EmptyStruct> c) {
     var selᴛ22 = c;
@@ -208,23 +218,24 @@ internal static (nint, error) Write(this ж<pipe> Ꮡp, slice<byte> b) {
 internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     nint n = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
         switch (ᐧ) {
         case {} when isClosedChan(p.localDone): {
-            (n, err) = (0, Δio.ErrClosedPipe); return;
+            (n, err) = (0, Δio.ErrClosedPipe); goto ᒐdone;
         }
         case {} when isClosedChan(p.remoteDone): {
-            (n, err) = (0, Δio.ErrClosedPipe); return;
+            (n, err) = (0, Δio.ErrClosedPipe); goto ᒐdone;
         }
         case {} when isClosedChan(Ꮡp.of(pipe.ᏑwriteDeadline).wait()): {
-            (n, err) = (0, os.ErrDeadlineExceeded); return;
+            (n, err) = (0, os.ErrDeadlineExceeded); goto ᒐdone;
         }}
 
         Ꮡp.of(pipe.ᏑwrMu).Lock();
         // Ensure entirety of b is written together
-        defer(Ꮡp.of(pipe.ᏑwrMu).Unlock);
+        defer(Ꮡp.of(pipe.ᏑwrMu).Unlock, ref ᒐ);
         for (var once = true; once || len(b) > 0; once = false) {
             var selᴛ27 = p.wrTx.ᐸꟷ(b, ꓸꓸꓸ);
             var selᴛ28 = p.localDone;
@@ -238,18 +249,20 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
                 break;
             }
             case 1 when selᴛ28.ꟷᐳ(out _): {
-                (n, err) = (n, Δio.ErrClosedPipe); return;
+                (n, err) = (n, Δio.ErrClosedPipe); goto ᒐdone;
             }
             case 2 when selᴛ29.ꟷᐳ(out _): {
-                (n, err) = (n, Δio.ErrClosedPipe); return;
+                (n, err) = (n, Δio.ErrClosedPipe); goto ᒐdone;
             }
             case 3 when selᴛ30.ꟷᐳ(out _): {
-                (n, err) = (n, os.ErrDeadlineExceeded); return;
+                (n, err) = (n, os.ErrDeadlineExceeded); goto ᒐdone;
             }}
         }
         (n, err) = (n, default!);
-    });
-    return (n, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (n, err);
 }
 
 internal static error SetDeadline(this ж<pipe> Ꮡp, time.Time t) {

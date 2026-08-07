@@ -27,26 +27,36 @@ partial class gif_internal_test_package {
     builtin.initPackage(typeof(go.image.png_package));
 }
 
-internal static (image.Image, error) readImg(@string filename) => func<(image.Image, error)>((defer, recover) => {
-    var (f, err) = os.Open(filename);
-    if (err != default!) {
-        return (default!, err);
+internal static (image.Image, error) readImg(@string filename) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(filename);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var m, _, err) = image.Decode(new gif_internal_test_package.os_FileжReader(f));
+        return (m, err);
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    (var m, _, err) = image.Decode(new gif_internal_test_package.os_FileжReader(f));
-    return (m, err);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
-internal static (ж<global::go.image.gif_package.GIF>, error) readGIF(@string filename) => func<(ж<global::go.image.gif_package.GIF>, error)>((defer, recover) => {
-    var (f, err) = os.Open(filename);
-    if (err != default!) {
-        return (default!, err);
+internal static (ж<global::go.image.gif_package.GIF>, error) readGIF(@string filename) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(filename);
+        if (err != default!) {
+            return (default!, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        return DecodeAll(new gif_internal_test_package.os_FileжReader(f));
     }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    return DecodeAll(new gif_internal_test_package.os_FileжReader(f));
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static int64 delta(uint32 u0, uint32 u1) {
     var d = (int64)u0 - (int64)u1;

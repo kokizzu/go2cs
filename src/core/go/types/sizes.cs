@@ -49,18 +49,19 @@ partial class types_package {
 
 public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
     int64 result = default!;
-    func((defer, recover) => {
-    ref var s = ref Ꮡs.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var s = ref Ꮡs.DerefOrNull();
 
         defer(() => {
             assert(result >= 1);
-        });
+        }, ref ᒐ);
         // For arrays and structs, alignment is defined in terms
         // of alignment of the elements and fields, respectively.
         var switchᴛ22 = under(T);
         switch (switchᴛ22.type()) {
         case ж<Array> t: {
-            result = Ꮡs.Alignof((~t).elem); return;
+            result = Ꮡs.Alignof((~t).elem); goto ᒐdone;
         }
         case ж<Struct> t: {
             if (len((~t).fields) == 0 && _IsSyncAtomicAlign64(T)) {
@@ -73,7 +74,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
                 //
                 // This logic is equivalent to the logic in
                 // cmd/compile/internal/types/size.go:calcStructOffset
-                result = 8; return;
+                result = 8; goto ᒐdone;
             }
             var max = (int64)1;
             foreach (var (_, f) in (~t).fields) {
@@ -86,13 +87,13 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
                     }
                 }
             }
-            result = max; return;
+            result = max; goto ᒐdone;
         }
         case ж<Slice> _:
         case ж<Interface> _: {
             var t = switchᴛ22;
             assert(!isTypeParam(T));
-            result = s.WordSize; return;
+            result = s.WordSize; goto ᒐdone;
         }
         case ж<Basic> t: {
             if ((BasicInfo)(t.Info() & IsString) != 0) {
@@ -101,7 +102,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
                 // Type parameters lead to variable sizes/alignments;
                 // StdSizes.Alignof won't be called for them.
                 // Strings are like slices and interfaces.
-                result = s.WordSize; return;
+                result = s.WordSize; goto ᒐdone;
             }
             break;
         }
@@ -115,18 +116,20 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
         // may be 0 or negative
         // spec: "For a variable x of any type: unsafe.Alignof(x) is at least 1."
         if (a < 1) {
-            result = 1; return;
+            result = 1; goto ᒐdone;
         }
         // complex{64,128} are aligned like [2]float{32,64}.
         if (isComplex(T)) {
             a /= 2;
         }
         if (a > s.MaxAlign) {
-            result = s.MaxAlign; return;
+            result = s.MaxAlign; goto ᒐdone;
         }
         result = a;
-    });
-    return result;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return result;
 }
 
 internal static bool _IsSyncAtomicAlign64(ΔType T) {

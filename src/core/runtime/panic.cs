@@ -655,40 +655,45 @@ internal static readonly @string panicWhilePrintingPanicˢ = "panic while printi
 
 // Call all Error and String methods before freezing the world.
 // Used when crashing with panicking.
-internal static void preprintpanics(ж<_panic> Ꮡp) => func((defer, recover) => {
-    ref var Δp = ref Ꮡp.DerefOrNull();
+internal static void preprintpanics(ж<_panic> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var Δp = ref Ꮡp.DerefOrNull();
 
-    defer(() => {
-        @string text = panicWhilePrintingPanicˢ;
-        var switchᴛ1 = recover();
-        switch (switchᴛ1.type()) {
-        case null: {
-            break;
+        defer(() => {
+            @string text = panicWhilePrintingPanicˢ;
+            var switchᴛ1 = recover();
+            switch (switchᴛ1.type()) {
+            case null: {
+                break;
+            }
+            case @string r: {
+                @throw(text + ": "u8 + r);
+                break;
+            }
+            default: {
+                var r = switchᴛ1;
+                @throw(text + ": type "u8 + toRType((~efaceOf(Ꮡ(r)))._type).@string());
+                break;
+            }}
+        }, ref ᒐ);
+        // nothing to do
+        while (Ꮡp != nil) {
+            switch (Δp.arg.type()) {
+            case {} Δv when Δv._<error>(out var v): {
+                Δp.arg = v.Error();
+                break;
+            }
+            case {} Δv when Δv._<stringer>(out var v): {
+                Δp.arg = v.String();
+                break;
+            }}
+            Ꮡp = Δp.link; Δp = ref Ꮡp.DerefOrNull();
         }
-        case @string r: {
-            @throw(text + ": "u8 + r);
-            break;
-        }
-        default: {
-            var r = switchᴛ1;
-            @throw(text + ": type "u8 + toRType((~efaceOf(Ꮡ(r)))._type).@string());
-            break;
-        }}
-    });
-    // nothing to do
-    while (Ꮡp != nil) {
-        switch (Δp.arg.type()) {
-        case {} Δv when Δv._<error>(out var v): {
-            Δp.arg = v.Error();
-            break;
-        }
-        case {} Δv when Δv._<stringer>(out var v): {
-            Δp.arg = v.String();
-            break;
-        }}
-        Ꮡp = Δp.link; Δp = ref Ꮡp.DerefOrNull();
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Print all currently active panics. Used when crashing.
 // Should only be called after preprintpanics.

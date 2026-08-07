@@ -42,15 +42,20 @@ public static void TestFormatComplex(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestFormatComplexInvalidBitSize(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        {
-            var r = recover(); if (r == default!) {
-                Ꮡt.Fatalf("expected panic due to invalid bitSize"u8);
+public static void TestFormatComplexInvalidBitSize(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var r = recover(); if (r == default!) {
+                    Ꮡt.Fatalf("expected panic due to invalid bitSize"u8);
+                }
             }
-        }
-    });
-    _ = FormatComplex(1D + 2D.i(), (rune)'g', -1, 100);
-});
+        }, ref ᒐ);
+        _ = FormatComplex(1D + 2D.i(), (rune)'g', -1, 100);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end strconv_test_package

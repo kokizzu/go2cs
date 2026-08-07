@@ -890,7 +890,8 @@ public static (ж<Regexp>, error) Parse(@string s, Flags flags) {
 internal static (ж<Regexp>, error err) parse(@string s, Flags flags) {
     ж<Regexp> _ᴛ1 = default!;
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover();
@@ -910,15 +911,15 @@ Code: ErrLarge, Expr: s)));
                 }
             }
 
-        });
+        }, ref ᒐ);
         if ((Flags)(flags & Literal) != 0) {
             // Trivial parser for literal string.
             {
                 var errΔ1 = checkUTF8(s); if (errΔ1 != default!) {
-                    (_ᴛ1, err) = (default!, errΔ1); return;
+                    (_ᴛ1, err) = (default!, errΔ1); goto ᒐdone;
                 }
             }
-            (_ᴛ1, err) = (literalRegexp(s, flags), default!); return;
+            (_ᴛ1, err) = (literalRegexp(s, flags), default!); goto ᒐdone;
         }
         // Otherwise, must do real work.
         ref var p = ref heap(new parser(), out var Ꮡp);
@@ -938,7 +939,7 @@ BigSwitch:
             default: {
                 {
                     (c, t, err) = nextRune(t); if (err != default!) {
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 p.literal(c);
@@ -949,7 +950,7 @@ BigSwitch:
                     // Flag changes and non-capturing groups.
                     {
                         (t, err) = p.parsePerlFlags(t); if (err != default!) {
-                            (_ᴛ1, err) = (default!, err); return;
+                            (_ᴛ1, err) = (default!, err); goto ᒐdone;
                         }
                     }
                     break;
@@ -967,7 +968,7 @@ BigSwitch:
             case (rune)')': {
                 {
                     err = p.parseRightParen(); if (err != default!) {
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 t = t[1..];
@@ -1003,7 +1004,7 @@ BigSwitch:
             case (rune)'[': {
                 {
                     (t, err) = Ꮡp.parseClass(t); if (err != default!) {
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 break;
@@ -1027,7 +1028,7 @@ BigSwitch:
                 @string afterΔ1 = t[1..];
                 {
                     (afterΔ1, err) = p.repeat(op, 0, 0, before, afterΔ1, lastRepeat); if (err != default!) {
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 repeat = before;
@@ -1046,11 +1047,11 @@ BigSwitch:
                 }
                 if (min < 0 || min > 1000 || max > 1000 || max >= 0 && min > max) {
                     // Numbers were too big, or max is present and min > max.
-                    (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidRepeatSize, before[..(int)(len(before) - len(after))])))); return;
+                    (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidRepeatSize, before[..(int)(len(before) - len(after))])))); goto ᒐdone;
                 }
                 {
                     (after, err) = p.repeat(op, min, max, before, after, lastRepeat); if (err != default!) {
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 repeat = before;
@@ -1080,7 +1081,7 @@ BigSwitch:
                     }
                     case (rune)'C': {
                         (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError( // any byte; not supported
-ErrInvalidEscape, t[..2])))); return;
+ErrInvalidEscape, t[..2])))); goto ᒐdone;
                     }
                     case (rune)'Q': {
                         // \Q ... \E: the ... is always literals
@@ -1089,7 +1090,7 @@ ErrInvalidEscape, t[..2])))); return;
                         while (lit != ""u8) {
                             var (cΔ4, rest, errΔ6) = nextRune(lit);
                             if (errΔ6 != default!) {
-                                (_ᴛ1, err) = (default!, errΔ6); return;
+                                (_ᴛ1, err) = (default!, errΔ6); goto ᒐdone;
                             }
                             p.literal(cΔ4);
                             lit = rest;
@@ -1111,7 +1112,7 @@ ErrInvalidEscape, t[..2])))); return;
                     // Look for Unicode character group like \p{Han}
                     var (r, rest, errΔ7) = Ꮡp.parseUnicodeClass(t, (~re).Rune0[..0]);
                     if (errΔ7 != default!) {
-                        (_ᴛ1, err) = (default!, errΔ7); return;
+                        (_ᴛ1, err) = (default!, errΔ7); goto ᒐdone;
                     }
                     if (r != default!) {
                         re.Value.Rune = r;
@@ -1133,7 +1134,7 @@ ErrInvalidEscape, t[..2])))); return;
                 {
                     (c, t, err) = p.parseEscape(t); if (err != default!) {
                         // Ordinary single-character escape.
-                        (_ᴛ1, err) = (default!, err); return;
+                        (_ᴛ1, err) = (default!, err); goto ᒐdone;
                     }
                 }
                 p.literal(c);
@@ -1151,11 +1152,13 @@ ErrInvalidEscape, t[..2])))); return;
         p.alternate();
         nint n = len(p.stack);
         if (n != 1) {
-            (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrMissingParen, s)))); return;
+            (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrMissingParen, s)))); goto ᒐdone;
         }
         (_ᴛ1, err) = (p.stack[0], default!);
-    });
-    return (_ᴛ1, err);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (_ᴛ1, err);
 }
 
 // parseRepeat parses {min} (max=min) or {min,} (max=-1) or {min,max}.

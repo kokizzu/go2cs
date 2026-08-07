@@ -928,16 +928,21 @@ public static void TestAdd64OverflowPanic(ж<testing.T> Ꮡt) {
         }
     }.slice();
     foreach (var (_, test) in tests) {
-        var shouldPanic = (Action f) => func((defer, recover) => {
-            defer(() => {
-                {
-                    var err = recover(); if (err == default!) {
-                        Ꮡt.Fatalf("expected panic"u8);
+        void shouldPanic(Action f) {
+            GoFrame ᒐ = default;
+            try {
+                defer(() => {
+                    {
+                        var err = recover(); if (err == default!) {
+                            Ꮡt.Fatalf("expected panic"u8);
+                        }
                     }
-                }
-            });
-            f();
-        });
+                }, ref ᒐ);
+                f();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }
         // overflow
         var testʗ1 = test;
         shouldPanic(() => {
@@ -999,16 +1004,21 @@ public static void TestSub64OverflowPanic(ж<testing.T> Ꮡt) {
         }
     }.slice();
     foreach (var (_, test) in tests) {
-        var shouldPanic = (Action f) => func((defer, recover) => {
-            defer(() => {
-                {
-                    var err = recover(); if (err == default!) {
-                        Ꮡt.Fatalf("expected panic"u8);
+        void shouldPanic(Action f) {
+            GoFrame ᒐ = default;
+            try {
+                defer(() => {
+                    {
+                        var err = recover(); if (err == default!) {
+                            Ꮡt.Fatalf("expected panic"u8);
+                        }
                     }
-                }
-            });
-            f();
-        });
+                }, ref ᒐ);
+                f();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }
         // overflow
         var testʗ1 = test;
         shouldPanic(() => {
@@ -1166,128 +1176,158 @@ internal static readonly @string overflowError = "runtime error: integer overflo
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object divShouldHavePanickedˢ = (@string)"Div should have panicked when y<=hi"u8;
 
-public static void TestDivPanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(divShouldHavePanickedˢ);
-            } else 
+public static void TestDivPanicOverflow(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
-                    Ꮡt.Errorf("Div expected panic: %q, got: %q "u8, overflowError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(divShouldHavePanickedˢ);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
+                        Ꮡt.Errorf("Div expected panic: %q, got: %q "u8, overflowError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div(1, 0, 1);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div(1, 0, 1);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object div32ShouldHavePanickedˢ = (@string)"Div32 should have panicked when y<=hi"u8;
 
-public static void TestDiv32PanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(div32ShouldHavePanickedˢ);
-            } else 
+public static void TestDiv32PanicOverflow(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
-                    Ꮡt.Errorf("Div32 expected panic: %q, got: %q "u8, overflowError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(div32ShouldHavePanickedˢ);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
+                        Ꮡt.Errorf("Div32 expected panic: %q, got: %q "u8, overflowError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div32(1, 0, 1);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div32(1, 0, 1);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object div64ShouldHavePanickedˢ = (@string)"Div64 should have panicked when y<=hi"u8;
 
-public static void TestDiv64PanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(div64ShouldHavePanickedˢ);
-            } else 
+public static void TestDiv64PanicOverflow(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
-                    Ꮡt.Errorf("Div64 expected panic: %q, got: %q "u8, overflowError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(div64ShouldHavePanickedˢ);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
+                        Ꮡt.Errorf("Div64 expected panic: %q, got: %q "u8, overflowError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div64(1, 0, 1);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div64 should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div64(1, 0, 1);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div64 should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object divShouldHavePanickedˢ2 = (@string)"Div should have panicked when y==0"u8;
 
-public static void TestDivPanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(divShouldHavePanickedˢ2);
-            } else 
+public static void TestDivPanicZero(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
-                    Ꮡt.Errorf("Div expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(divShouldHavePanickedˢ2);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
+                        Ꮡt.Errorf("Div expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div(1, 1, 0);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div(1, 1, 0);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object div32ShouldHavePanickedˢ2 = (@string)"Div32 should have panicked when y==0"u8;
 
-public static void TestDiv32PanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(div32ShouldHavePanickedˢ2);
-            } else 
+public static void TestDiv32PanicZero(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
-                    Ꮡt.Errorf("Div32 expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(div32ShouldHavePanickedˢ2);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
+                        Ꮡt.Errorf("Div32 expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div32(1, 1, 0);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div32(1, 1, 0);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object div64ShouldHavePanickedˢ2 = (@string)"Div64 should have panicked when y==0"u8;
 
-public static void TestDiv64PanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Expect a panic
-    defer(() => {
-        {
-            var err = recover(); if (err == default!){
-                Ꮡt.Error(div64ShouldHavePanickedˢ2);
-            } else 
+public static void TestDiv64PanicZero(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Expect a panic
+        defer(() => {
             {
-                var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
-                    Ꮡt.Errorf("Div64 expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                var err = recover(); if (err == default!){
+                    Ꮡt.Error(div64ShouldHavePanickedˢ2);
+                } else 
+                {
+                    var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
+                        Ꮡt.Errorf("Div64 expected panic: %q, got: %q "u8, divZeroError, e.Error());
+                    }
                 }
             }
-        }
-    });
-    var (q, r) = Div64(1, 1, 0);
-    Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div64 should have panicked"u8, q, r);
-});
+        }, ref ᒐ);
+        var (q, r) = Div64(1, 1, 0);
+        Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div64 should have panicked"u8, q, r);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestRem32(ж<testing.T> Ꮡt) {
     // Sanity check: for non-oveflowing dividends, the result is the

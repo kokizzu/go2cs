@@ -35,18 +35,23 @@ internal static void error_(error err) {
 
 // catchError is meant to be used as a deferred function to turn a panic(gobError) into a
 // plain error. It overwrites the error return of the function that deferred its call.
-internal static void catchError(ж<error> Ꮡerr) => func((defer, recover) => {
-    ref var err = ref Ꮡerr.DerefOrNull();
+internal static void catchError(ж<error> Ꮡerr) {
+    GoFrame ᒐ = default;
+    try {
+        ref var err = ref Ꮡerr.DerefOrNull();
 
-    {
-        var e = recover(); if (e != default!) {
-            var (ge, ok) = e._<gobError>(ᐧ);
-            if (!ok) {
-                throw panic(e);
+        {
+            var e = recover(); if (e != default!) {
+                var (ge, ok) = e._<gobError>(ᐧ);
+                if (!ok) {
+                    throw panic(e);
+                }
+                err = ge.err;
             }
-            err = ge.err;
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end gob_package

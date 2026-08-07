@@ -108,106 +108,111 @@ internal static readonly @string http11204NoContentˢ = "HTTP/1.1 204 No Content
 // DumpRequestOut is like [DumpRequest] but for outgoing client requests. It
 // includes any headers that the standard [http.Transport] adds, such as
 // User-Agent.
-public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool body) => func<(slice<byte>, error)>((defer, recover) => {
-    ref var req = ref Ꮡreq.DerefOrNull();
+public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool body) {
+    GoFrame ᒐ = default;
+    try {
+        ref var req = ref Ꮡreq.DerefOrNull();
 
-    var save = req.Body;
-    var dummyBody = false;
-    if (!body){
-        var contentLength = outgoingLength(Ꮡreq);
-        if (contentLength != 0) {
-            req.Body = io.NopCloser(io.LimitReader(((neverEnding)(rune)'x'), contentLength));
-            dummyBody = true;
-        }
-    } else {
-        error errΔ1 = default!;
-        (save, req.Body, errΔ1) = drainBody(req.Body);
-        if (errΔ1 != default!) {
-            return (default!, errΔ1);
-        }
-    }
-    // Since we're using the actual Transport code to write the request,
-    // switch to http so the Transport doesn't try to do an SSL
-    // negotiation with our dumpConn and its bytes.Buffer & pipe.
-    // The wire format for https and http are the same, anyway.
-    var reqSend = Ꮡreq;
-    if ((~req.URL).Scheme == "https"u8) {
-        reqSend = @new<http.Request>();
-        reqSend.Value = req;
-        reqSend.Value.URL = @new<url.URL>();
-        (~reqSend).URL.Value = req.URL.Value;
-        reqSend.Value.URL.Value.Scheme = httpˢ;
-    }
-    // Use the actual Transport code to record what we would send
-    // on the wire, but not using TCP.  Use a Transport with a
-    // custom dialer that returns a fake net.Conn that waits
-    // for the full input (and recording it), and then responds
-    // with a dummy response.
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);                       // records the output
-    var (pr, pw) = io.Pipe();
-    var prʗ1 = pr;
-    defer(() => prʗ1.Close());
-    var pwʗ1 = pw;
-    defer(() => pwʗ1.Close());
-    var dr = Ꮡ(new delegateReader(c: new channel<io.Reader>(0)));
-        var drʗ1 = dr;
-        var pwʗ2 = pw;
-    var t = Ꮡ(new http.Transport(
-        Dial: (@string netΔ1, @string addr) => (new dumpConnжConn(Ꮡ(new dumpConn(io.MultiWriter(new bytes_BufferжWriter(Ꮡbuf), new io_PipeWriterжWriter(pwʗ2)), new delegateReaderжReader(drʗ1)))), default!)
-    ));
-    var tʗ1 = t;
-    defer(tʗ1.CloseIdleConnections);
-    // We need this channel to ensure that the reader
-    // goroutine exits if t.RoundTrip returns an error.
-    // See golang.org/issue/32571.
-    var quitReadCh = new channel<EmptyStruct>(0);
-    // Wait for the request before replying with a dummy response:
-    var drʗ2 = dr;
-    var prʗ2 = pr;
-    var quitReadChʗ1 = quitReadCh;
-    goǃ(() => {
-        var (reqΔ1, errΔ2) = http.ReadRequest(bufio.NewReader(new io_PipeReaderжReader(prʗ2)));
-        if (errΔ2 == default!) {
-            // Ensure all the body is read; otherwise
-            // we'll get a partial dump.
-            io.Copy(io.Discard, (~reqΔ1).Body);
-            (~reqΔ1).Body.Close();
-        }
-        var selᴛ1 = (~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader(http11204NoContentˢ)), ꓸꓸꓸ);
-        var selᴛ2 = quitReadChʗ1;
-        switch (select(selᴛ1, ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-        case 0: {
-            break;
-        }
-        case 1 when selᴛ2.ꟷᐳ(out _): {
-            close((~drʗ2).c);
-            break;
-        }}
-    });
-    // Ensure delegateReader.Read doesn't block forever if we get an error.
-    var (_, err) = t.RoundTrip(reqSend);
-    req.Body = save;
-    if (err != default!) {
-        pw.Close();
-        dr.Value.err = err;
-        close(quitReadCh);
-        return (default!, err);
-    }
-    var dump = buf.Bytes();
-    // If we used a dummy body above, remove it now.
-    // TODO: if the req.ContentLength is large, we allocate memory
-    // unnecessarily just to slice it off here. But this is just
-    // a debug function, so this is acceptable for now. We could
-    // discard the body earlier if this matters.
-    if (dummyBody) {
-        {
-            nint i = bytes.Index(dump, slice<byte>("\r\n\r\n"u8)); if (i >= 0) {
-                dump = dump[..(int)(i + 4)];
+        var save = req.Body;
+        var dummyBody = false;
+        if (!body){
+            var contentLength = outgoingLength(Ꮡreq);
+            if (contentLength != 0) {
+                req.Body = io.NopCloser(io.LimitReader(((neverEnding)(rune)'x'), contentLength));
+                dummyBody = true;
+            }
+        } else {
+            error errΔ1 = default!;
+            (save, req.Body, errΔ1) = drainBody(req.Body);
+            if (errΔ1 != default!) {
+                return (default!, errΔ1);
             }
         }
+        // Since we're using the actual Transport code to write the request,
+        // switch to http so the Transport doesn't try to do an SSL
+        // negotiation with our dumpConn and its bytes.Buffer & pipe.
+        // The wire format for https and http are the same, anyway.
+        var reqSend = Ꮡreq;
+        if ((~req.URL).Scheme == "https"u8) {
+            reqSend = @new<http.Request>();
+            reqSend.Value = req;
+            reqSend.Value.URL = @new<url.URL>();
+            (~reqSend).URL.Value = req.URL.Value;
+            reqSend.Value.URL.Value.Scheme = httpˢ;
+        }
+        // Use the actual Transport code to record what we would send
+        // on the wire, but not using TCP.  Use a Transport with a
+        // custom dialer that returns a fake net.Conn that waits
+        // for the full input (and recording it), and then responds
+        // with a dummy response.
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);                       // records the output
+        var (pr, pw) = io.Pipe();
+        var prʗ1 = pr;
+        defer(() => prʗ1.Close(), ref ᒐ);
+        var pwʗ1 = pw;
+        defer(() => pwʗ1.Close(), ref ᒐ);
+        var dr = Ꮡ(new delegateReader(c: new channel<io.Reader>(0)));
+            var drʗ1 = dr;
+            var pwʗ2 = pw;
+        var t = Ꮡ(new http.Transport(
+            Dial: (@string netΔ1, @string addr) => (new dumpConnжConn(Ꮡ(new dumpConn(io.MultiWriter(new bytes_BufferжWriter(Ꮡbuf), new io_PipeWriterжWriter(pwʗ2)), new delegateReaderжReader(drʗ1)))), default!)
+        ));
+        var tʗ1 = t;
+        defer(tʗ1.CloseIdleConnections, ref ᒐ);
+        // We need this channel to ensure that the reader
+        // goroutine exits if t.RoundTrip returns an error.
+        // See golang.org/issue/32571.
+        var quitReadCh = new channel<EmptyStruct>(0);
+        // Wait for the request before replying with a dummy response:
+        var drʗ2 = dr;
+        var prʗ2 = pr;
+        var quitReadChʗ1 = quitReadCh;
+        goǃ(() => {
+            var (reqΔ1, errΔ2) = http.ReadRequest(bufio.NewReader(new io_PipeReaderжReader(prʗ2)));
+            if (errΔ2 == default!) {
+                // Ensure all the body is read; otherwise
+                // we'll get a partial dump.
+                io.Copy(io.Discard, (~reqΔ1).Body);
+                (~reqΔ1).Body.Close();
+            }
+            var selᴛ1 = (~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader(http11204NoContentˢ)), ꓸꓸꓸ);
+            var selᴛ2 = quitReadChʗ1;
+            switch (select(selᴛ1, ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+            case 0: {
+                break;
+            }
+            case 1 when selᴛ2.ꟷᐳ(out _): {
+                close((~drʗ2).c);
+                break;
+            }}
+        });
+        // Ensure delegateReader.Read doesn't block forever if we get an error.
+        var (_, err) = t.RoundTrip(reqSend);
+        req.Body = save;
+        if (err != default!) {
+            pw.Close();
+            dr.Value.err = err;
+            close(quitReadCh);
+            return (default!, err);
+        }
+        var dump = buf.Bytes();
+        // If we used a dummy body above, remove it now.
+        // TODO: if the req.ContentLength is large, we allocate memory
+        // unnecessarily just to slice it off here. But this is just
+        // a debug function, so this is acceptable for now. We could
+        // discard the body earlier if this matters.
+        if (dummyBody) {
+            {
+                nint i = bytes.Index(dump, slice<byte>("\r\n\r\n"u8)); if (i >= 0) {
+                    dump = dump[..(int)(i + 4)];
+                }
+            }
+        }
+        return (dump, default!);
     }
-    return (dump, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // delegateReader is a reader that delegates to another reader,
 // once it arrives on a channel.

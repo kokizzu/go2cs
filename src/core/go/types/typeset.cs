@@ -176,194 +176,199 @@ internal static void initᴛtopTypeSet() { topTypeSet = new _TypeSet(terms: allT
 internal static readonly @string typeSetForSˢ = "-- type set for %s"u8;
 
 // computeInterfaceTypeSet may be called with check == nil.
-internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) => func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var ityp = ref Ꮡityp.DerefOrNull();
+internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var ityp = ref Ꮡityp.DerefOrNull();
 
-    if (ityp.tset != nil) {
-        return ityp.tset;
-    }
-    // If the interface is not fully set up yet, the type set will
-    // not be complete, which may lead to errors when using the
-    // type set (e.g. missing method). Don't compute a partial type
-    // set (and don't store it!), so that we still compute the full
-    // type set eventually. Instead, return the top type set and
-    // let any follow-on errors play out.
-    //
-    // TODO(gri) Consider recording when this happens and reporting
-    // it as an error (but only if there were no other errors so to
-    // to not have unnecessary follow-on errors).
-    if (!ityp.complete) {
-        return ᏑtopTypeSet;
-    }
-    if (Ꮡcheck != nil && (~check.conf)._Trace) {
-        // Types don't generally have position information.
-        // If we don't have a valid pos provided, try to use
-        // one close enough.
-        if (!pos.IsValid() && len(ityp.methods) > 0) {
-            pos = ityp.methods[0].Value.pos;
+        if (ityp.tset != nil) {
+            return ityp.tset;
         }
-        Ꮡcheck.trace(pos, typeSetForSˢ, Ꮡityp.OrTypedNil());
-        check.indent++;
-        defer(() => {
-            Ꮡcheck.Value.indent--;
-            Ꮡcheck.trace(pos, "=> %s "u8, Ꮡityp.typeSet().OrTypedNil());
-        });
-    }
-    // An infinitely expanding interface (due to a cycle) is detected
-    // elsewhere (Checker.validType), so here we simply assume we only
-    // have valid interfaces. Mark the interface as complete to avoid
-    // infinite recursion if the validType check occurs later for some
-    // reason.
-    ityp.tset = Ꮡ(new _TypeSet(terms: allTermlist));
-    // TODO(gri) is this sufficient?
-    map<ж<Union>, ж<_TypeSet>> unionSets = default!;
-    if (Ꮡcheck != nil){
-        if (check.unionTypeSets == default!) {
-            check.unionTypeSets = new map<ж<Union>, ж<_TypeSet>>();
+        // If the interface is not fully set up yet, the type set will
+        // not be complete, which may lead to errors when using the
+        // type set (e.g. missing method). Don't compute a partial type
+        // set (and don't store it!), so that we still compute the full
+        // type set eventually. Instead, return the top type set and
+        // let any follow-on errors play out.
+        //
+        // TODO(gri) Consider recording when this happens and reporting
+        // it as an error (but only if there were no other errors so to
+        // to not have unnecessary follow-on errors).
+        if (!ityp.complete) {
+            return ᏑtopTypeSet;
         }
-        unionSets = check.unionTypeSets;
-    } else {
-        unionSets = new map<ж<Union>, ж<_TypeSet>>();
-    }
-    // Methods of embedded interfaces are collected unchanged; i.e., the identity
-    // of a method I.m's Func Object of an interface I is the same as that of
-    // the method m in an interface that embeds interface I. On the other hand,
-    // if a method is embedded via multiple overlapping embedded interfaces, we
-    // don't provide a guarantee which "original m" got chosen for the embedding
-    // interface. See also go.dev/issue/34421.
-    //
-    // If we don't care to provide this identity guarantee anymore, instead of
-    // reusing the original method in embeddings, we can clone the method's Func
-    // Object and give it the position of a corresponding embedded interface. Then
-    // we can get rid of the mpos map below and simply use the cloned method's
-    // position.
-    ref var seen = ref heap<objset>(out var Ꮡseen);
-    ref var allMethods = ref heap<slice<ж<Func>>>(out var ᏑallMethods);
-    var mpos = new map<ж<Func>, tokenꓸPos>();
-    // method specification or method embedding position, for good error messages
-    var mposʗ1 = mpos;
-    void addMethod(tokenꓸPos posΔ1, ж<Func> m, bool @explicit) {
-        {
-            var other = Ꮡseen.ValueSlot.insert(new FuncжObject(m));
-            switch (ᐧ) {
-            case {} when other == default!: {
-                ᏑallMethods.ValueSlot = append(ᏑallMethods.ValueSlot, m);
-                mposʗ1[m] = posΔ1;
+        if (Ꮡcheck != nil && (~check.conf)._Trace) {
+            // Types don't generally have position information.
+            // If we don't have a valid pos provided, try to use
+            // one close enough.
+            if (!pos.IsValid() && len(ityp.methods) > 0) {
+                pos = ityp.methods[0].Value.pos;
+            }
+            Ꮡcheck.trace(pos, typeSetForSˢ, Ꮡityp.OrTypedNil());
+            check.indent++;
+            defer(() => {
+                Ꮡcheck.Value.indent--;
+                Ꮡcheck.trace(pos, "=> %s "u8, Ꮡityp.typeSet().OrTypedNil());
+            }, ref ᒐ);
+        }
+        // An infinitely expanding interface (due to a cycle) is detected
+        // elsewhere (Checker.validType), so here we simply assume we only
+        // have valid interfaces. Mark the interface as complete to avoid
+        // infinite recursion if the validType check occurs later for some
+        // reason.
+        ityp.tset = Ꮡ(new _TypeSet(terms: allTermlist));
+        // TODO(gri) is this sufficient?
+        map<ж<Union>, ж<_TypeSet>> unionSets = default!;
+        if (Ꮡcheck != nil){
+            if (check.unionTypeSets == default!) {
+                check.unionTypeSets = new map<ж<Union>, ж<_TypeSet>>();
+            }
+            unionSets = check.unionTypeSets;
+        } else {
+            unionSets = new map<ж<Union>, ж<_TypeSet>>();
+        }
+        // Methods of embedded interfaces are collected unchanged; i.e., the identity
+        // of a method I.m's Func Object of an interface I is the same as that of
+        // the method m in an interface that embeds interface I. On the other hand,
+        // if a method is embedded via multiple overlapping embedded interfaces, we
+        // don't provide a guarantee which "original m" got chosen for the embedding
+        // interface. See also go.dev/issue/34421.
+        //
+        // If we don't care to provide this identity guarantee anymore, instead of
+        // reusing the original method in embeddings, we can clone the method's Func
+        // Object and give it the position of a corresponding embedded interface. Then
+        // we can get rid of the mpos map below and simply use the cloned method's
+        // position.
+        ref var seen = ref heap<objset>(out var Ꮡseen);
+        ref var allMethods = ref heap<slice<ж<Func>>>(out var ᏑallMethods);
+        var mpos = new map<ж<Func>, tokenꓸPos>();
+        // method specification or method embedding position, for good error messages
+        var mposʗ1 = mpos;
+        void addMethod(tokenꓸPos posΔ1, ж<Func> m, bool @explicit) {
+            {
+                var other = Ꮡseen.ValueSlot.insert(new FuncжObject(m));
+                switch (ᐧ) {
+                case {} when other == default!: {
+                    ᏑallMethods.ValueSlot = append(ᏑallMethods.ValueSlot, m);
+                    mposʗ1[m] = posΔ1;
+                    break;
+                }
+                case {} when @explicit: {
+                    if (Ꮡcheck != nil) {
+                        var err = Ꮡcheck.newError(DuplicateDecl);
+                        err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
+                        err.addf(((atPos)mposʗ1[other._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
+                        err.report();
+                    }
+                    break;
+                }
+                default: {
+                    if (Ꮡcheck != nil) {
+                        // We have a duplicate method name in an embedded (not explicitly declared) method.
+                        // Check method signatures after all types are computed (go.dev/issue/33656).
+                        // If we're pre-go1.14 (overlapping embeddings are not permitted), report that
+                        // error here as well (even though we could do it eagerly) because it's the same
+                        // error message.
+                        var mposʗ2 = mposʗ1;
+                        var otherʗ1 = other;
+
+                        var mposʗ4 = mposʗ1;
+                        var otherʗ3 = other;
+
+                        var mposʗ6 = mposʗ1;
+                        var otherʗ5 = other;
+
+                        var mposʗ8 = mposʗ1;
+                        var otherʗ7 = other;
+                        Ꮡcheck.Value.later(() => {
+                            if (posΔ1.IsValid() && !Ꮡcheck.allowVersion(((atPos)posΔ1), go1_14) || !Identical((~m).typ, otherʗ7.Type())) {
+                                var err = Ꮡcheck.newError(DuplicateDecl);
+                                err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
+                                err.addf(((atPos)mposʗ8[otherʗ7._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
+                                err.report();
+                            }
+                        }).describef(((atPos)posΔ1), "duplicate method check for %s"u8, (~m).name);
+                    }
+                    break;
+                }}
+            }
+
+        }
+        foreach (var (_, m) in ityp.methods) {
+            addMethod((~m).pos, m, true);
+        }
+        // collect embedded elements
+        var allTerms = allTermlist;
+        var allComparable = false;
+        foreach (var (i, typ) in ityp.embeddeds) {
+            // The embedding position is nil for imported interfaces.
+            // We don't need to do version checks in those cases.
+            tokenꓸPos posΔ2 = default!;              // embedding position
+            if (ityp.embedPos != nil) {
+                posΔ2 = (ityp.embedPos.ValueSlot)[i];
+            }
+            bool comparable = default!;
+            Δtermlist terms = default!;
+            var switchᴛ24 = under(typ);
+            switch (switchᴛ24.type()) {
+            case ж<Interface> u: {
+                assert(!isTypeParam(typ));
+                var tset = computeInterfaceTypeSet(Ꮡcheck, // For now we don't permit type parameters as constraints.
+ posΔ2, u);
+                if (posΔ2.IsValid() && Ꮡcheck != nil && check.isImportedConstraint(typ) && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // If typ is local, an error was already reported where typ is specified/defined.
+ go1_18, "embedding constraint interface %s"u8, typ)) {
+                    continue;
+                }
+                comparable = tset.Value.comparable;
+                foreach (var (_, m) in (~tset).methods) {
+                    addMethod(posΔ2, m, false);
+                }
+                terms = tset.Value.terms;
                 break;
             }
-            case {} when @explicit: {
-                if (Ꮡcheck != nil) {
-                    var err = Ꮡcheck.newError(DuplicateDecl);
-                    err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
-                    err.addf(((atPos)mposʗ1[other._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
-                    err.report();
+            case ж<Union> u: {
+                if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // use embedding position pos rather than m.pos
+ go1_18, "embedding interface element %s"u8, u.OrTypedNil())) {
+                    continue;
                 }
+                var tset = computeUnionTypeSet(Ꮡcheck, unionSets, posΔ2, u);
+                if (tset == ᏑinvalidTypeSet) {
+                    continue;
+                }
+                assert(!(~tset).comparable);
+                assert(len((~tset).methods) == 0);
+                terms = tset.Value.terms;
                 break;
             }
             default: {
-                if (Ꮡcheck != nil) {
-                    // We have a duplicate method name in an embedded (not explicitly declared) method.
-                    // Check method signatures after all types are computed (go.dev/issue/33656).
-                    // If we're pre-go1.14 (overlapping embeddings are not permitted), report that
-                    // error here as well (even though we could do it eagerly) because it's the same
-                    // error message.
-                    var mposʗ2 = mposʗ1;
-                    var otherʗ1 = other;
-
-                    var mposʗ4 = mposʗ1;
-                    var otherʗ3 = other;
-
-                    var mposʗ6 = mposʗ1;
-                    var otherʗ5 = other;
-
-                    var mposʗ8 = mposʗ1;
-                    var otherʗ7 = other;
-                    Ꮡcheck.Value.later(() => {
-                        if (posΔ1.IsValid() && !Ꮡcheck.allowVersion(((atPos)posΔ1), go1_14) || !Identical((~m).typ, otherʗ7.Type())) {
-                            var err = Ꮡcheck.newError(DuplicateDecl);
-                            err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
-                            err.addf(((atPos)mposʗ8[otherʗ7._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
-                            err.report();
-                        }
-                    }).describef(((atPos)posΔ1), "duplicate method check for %s"u8, (~m).name);
+                var u = switchᴛ24;
+                if (!isValid(u)) {
+                    // ignore invalid unions
+                    continue;
                 }
+                if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), go1_18, "embedding non-interface type %s"u8, typ)) {
+                    continue;
+                }
+                terms = new Δtermlist(new ж<term>[]{Ꮡ(new term(false, typ))}.slice());
                 break;
             }}
+            // The type set of an interface is the intersection of the type sets of all its elements.
+            // Due to language restrictions, only embedded interfaces can add methods, they are handled
+            // separately. Here we only need to intersect the term lists and comparable bits.
+            (allTerms, allComparable) = intersectTermLists(allTerms, allComparable, terms, comparable);
         }
-
-    }
-    foreach (var (_, m) in ityp.methods) {
-        addMethod((~m).pos, m, true);
-    }
-    // collect embedded elements
-    var allTerms = allTermlist;
-    var allComparable = false;
-    foreach (var (i, typ) in ityp.embeddeds) {
-        // The embedding position is nil for imported interfaces.
-        // We don't need to do version checks in those cases.
-        tokenꓸPos posΔ2 = default!;              // embedding position
-        if (ityp.embedPos != nil) {
-            posΔ2 = (ityp.embedPos.ValueSlot)[i];
+        ityp.tset.Value.comparable = allComparable;
+        if (len(allMethods) != 0) {
+            sortMethods(allMethods);
+            ityp.tset.Value.methods = allMethods;
         }
-        bool comparable = default!;
-        Δtermlist terms = default!;
-        var switchᴛ24 = under(typ);
-        switch (switchᴛ24.type()) {
-        case ж<Interface> u: {
-            assert(!isTypeParam(typ));
-            var tset = computeInterfaceTypeSet(Ꮡcheck, // For now we don't permit type parameters as constraints.
- posΔ2, u);
-            if (posΔ2.IsValid() && Ꮡcheck != nil && check.isImportedConstraint(typ) && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // If typ is local, an error was already reported where typ is specified/defined.
- go1_18, "embedding constraint interface %s"u8, typ)) {
-                continue;
-            }
-            comparable = tset.Value.comparable;
-            foreach (var (_, m) in (~tset).methods) {
-                addMethod(posΔ2, m, false);
-            }
-            terms = tset.Value.terms;
-            break;
-        }
-        case ж<Union> u: {
-            if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // use embedding position pos rather than m.pos
- go1_18, "embedding interface element %s"u8, u.OrTypedNil())) {
-                continue;
-            }
-            var tset = computeUnionTypeSet(Ꮡcheck, unionSets, posΔ2, u);
-            if (tset == ᏑinvalidTypeSet) {
-                continue;
-            }
-            assert(!(~tset).comparable);
-            assert(len((~tset).methods) == 0);
-            terms = tset.Value.terms;
-            break;
-        }
-        default: {
-            var u = switchᴛ24;
-            if (!isValid(u)) {
-                // ignore invalid unions
-                continue;
-            }
-            if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), go1_18, "embedding non-interface type %s"u8, typ)) {
-                continue;
-            }
-            terms = new Δtermlist(new ж<term>[]{Ꮡ(new term(false, typ))}.slice());
-            break;
-        }}
-        // The type set of an interface is the intersection of the type sets of all its elements.
-        // Due to language restrictions, only embedded interfaces can add methods, they are handled
-        // separately. Here we only need to intersect the term lists and comparable bits.
-        (allTerms, allComparable) = intersectTermLists(allTerms, allComparable, terms, comparable);
+        ityp.tset.Value.terms = allTerms;
+        return ityp.tset;
     }
-    ityp.tset.Value.comparable = allComparable;
-    if (len(allMethods) != 0) {
-        sortMethods(allMethods);
-        ityp.tset.Value.methods = allMethods;
-    }
-    ityp.tset.Value.terms = allTerms;
-    return ityp.tset;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // TODO(gri) The intersectTermLists function belongs to the termlist implementation.
 //           The comparable type set may also be best represented as a term (using

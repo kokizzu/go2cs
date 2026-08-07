@@ -82,97 +82,107 @@ internal static slice<lzwTest> lzwTests = new lzwTest[]{
     )
 }.slice();
 
-public static void TestReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-    foreach (var (_, tt) in lzwTests) {
-        var d = strings.Split(tt.desc, ";"u8);
-        global::go.compress.lzw_package.Order order = default!;
-        var exprᴛ1 = d[1];
-        if (exprᴛ1 == "LSB"u8) {
-            order = LSB;
-        }
-        else if (exprᴛ1 == "MSB"u8) {
-            order = MSB;
-        }
-        else { /* default: */
-            Ꮡt.Errorf("%s: bad order %q"u8, tt.desc, d[1]);
-        }
+public static void TestReader(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
+        foreach (var (_, tt) in lzwTests) {
+            var d = strings.Split(tt.desc, ";"u8);
+            global::go.compress.lzw_package.Order order = default!;
+            var exprᴛ1 = d[1];
+            if (exprᴛ1 == "LSB"u8) {
+                order = LSB;
+            }
+            else if (exprᴛ1 == "MSB"u8) {
+                order = MSB;
+            }
+            else { /* default: */
+                Ꮡt.Errorf("%s: bad order %q"u8, tt.desc, d[1]);
+            }
 
-        var (litWidth, _) = strconv.Atoi(d[2]);
-        var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
-        var rcʗ1 = rc;
-        defer(() => rcʗ1.Close());
-        b.Reset();
-        var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
-        @string s = Ꮡb.String();
-        if (err != default!) {
-            if (!AreEqual(err, tt.err)) {
-                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
-            }
-            if (AreEqual(err, io.ErrUnexpectedEOF)) {
-                // Even if the input is truncated, we should still return the
-                // partial decoded result.
-                if (n == 0 || !strings.HasPrefix(tt.raw, s)) {
-                    Ꮡt.Errorf("got %d bytes (%q), want a non-empty prefix of %q"u8, n, s, tt.raw);
+            var (litWidth, _) = strconv.Atoi(d[2]);
+            var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+            var rcʗ1 = rc;
+            defer(() => rcʗ1.Close(), ref ᒐ);
+            b.Reset();
+            var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
+            @string s = Ꮡb.String();
+            if (err != default!) {
+                if (!AreEqual(err, tt.err)) {
+                    Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
                 }
+                if (AreEqual(err, io.ErrUnexpectedEOF)) {
+                    // Even if the input is truncated, we should still return the
+                    // partial decoded result.
+                    if (n == 0 || !strings.HasPrefix(tt.raw, s)) {
+                        Ꮡt.Errorf("got %d bytes (%q), want a non-empty prefix of %q"u8, n, s, tt.raw);
+                    }
+                }
+                continue;
             }
-            continue;
-        }
-        if (s != tt.raw) {
-            Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
+            if (s != tt.raw) {
+                Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
-public static void TestReaderReset(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-    foreach (var (_, tt) in lzwTests) {
-        var d = strings.Split(tt.desc, ";"u8);
-        global::go.compress.lzw_package.Order order = default!;
-        var exprᴛ1 = d[1];
-        if (exprᴛ1 == "LSB"u8) {
-            order = LSB;
-        }
-        else if (exprᴛ1 == "MSB"u8) {
-            order = MSB;
-        }
-        else { /* default: */
-            Ꮡt.Errorf("%s: bad order %q"u8, tt.desc, d[1]);
-        }
-
-        var (litWidth, _) = strconv.Atoi(d[2]);
-        var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
-        var rcʗ1 = rc;
-        defer(() => rcʗ1.Close());
-        b.Reset();
-        var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
-        var b1 = b.Bytes();
-        if (err != default!) {
-            if (!AreEqual(err, tt.err)) {
-                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
+public static void TestReaderReset(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
+        foreach (var (_, tt) in lzwTests) {
+            var d = strings.Split(tt.desc, ";"u8);
+            global::go.compress.lzw_package.Order order = default!;
+            var exprᴛ1 = d[1];
+            if (exprᴛ1 == "LSB"u8) {
+                order = LSB;
             }
-            if (AreEqual(err, io.ErrUnexpectedEOF)) {
-                // Even if the input is truncated, we should still return the
-                // partial decoded result.
-                if (n == 0 || !strings.HasPrefix(tt.raw, Ꮡb.String())) {
-                    Ꮡt.Errorf("got %d bytes (%q), want a non-empty prefix of %q"u8, n, Ꮡb.String(), tt.raw);
+            else if (exprᴛ1 == "MSB"u8) {
+                order = MSB;
+            }
+            else { /* default: */
+                Ꮡt.Errorf("%s: bad order %q"u8, tt.desc, d[1]);
+            }
+
+            var (litWidth, _) = strconv.Atoi(d[2]);
+            var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+            var rcʗ1 = rc;
+            defer(() => rcʗ1.Close(), ref ᒐ);
+            b.Reset();
+            var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
+            var b1 = b.Bytes();
+            if (err != default!) {
+                if (!AreEqual(err, tt.err)) {
+                    Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
                 }
+                if (AreEqual(err, io.ErrUnexpectedEOF)) {
+                    // Even if the input is truncated, we should still return the
+                    // partial decoded result.
+                    if (n == 0 || !strings.HasPrefix(tt.raw, Ꮡb.String())) {
+                        Ꮡt.Errorf("got %d bytes (%q), want a non-empty prefix of %q"u8, n, Ꮡb.String(), tt.raw);
+                    }
+                }
+                continue;
             }
-            continue;
-        }
-        b.Reset();
-        rc._<ж<global::go.compress.lzw_package.Reader>>().Reset(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
-        (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
-        var b2 = b.Bytes();
-        if (err != default!) {
-            Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, default!);
-            continue;
-        }
-        if (!bytes.Equal(b1, b2)) {
-            Ꮡt.Errorf("bytes read were not the same"u8);
+            b.Reset();
+            rc._<ж<global::go.compress.lzw_package.Reader>>().Reset(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+            (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
+            var b2 = b.Bytes();
+            if (err != default!) {
+                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, default!);
+                continue;
+            }
+            if (!bytes.Equal(b1, b2)) {
+                Ꮡt.Errorf("bytes read were not the same"u8);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] internal partial struct devZero {
 }

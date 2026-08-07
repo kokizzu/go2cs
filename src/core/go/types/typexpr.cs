@@ -276,8 +276,9 @@ internal static readonly @string missingComparableˢ = " (missing comparable con
 // Must only be called by definedType or genericType.
 internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0, ж<TypeName> Ꮡdef) {
     ΔType T = default!;
-    func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(e0.Pos(), typeSˢ, e0);
@@ -295,7 +296,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
                 } else {
                     Ꮡcheck.trace(e0.Pos(), sUnderSSˢ, T, under, goTypeName(T));
                 }
-            });
+            }, ref ᒐ);
         }
         switch (e0.type()) {
         case ж<ast.BadExpr> e: {
@@ -309,7 +310,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             if (exprᴛ1 == typexpr) {
                 var typΔ2 = x.typ;
                 setDefType(Ꮡdef, typΔ2);
-                T = typΔ2; return;
+                T = typΔ2; goto ᒐdone;
             }
             if (exprᴛ1 == invalid) {
             }
@@ -330,7 +331,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             if (exprᴛ2 == typexpr) {
                 var typΔ4 = x.typ;
                 setDefType(Ꮡdef, typΔ4);
-                T = typΔ4; return;
+                T = typΔ4; goto ᒐdone;
             }
             if (exprᴛ2 == invalid) {
             }
@@ -349,19 +350,19 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             var e = e0;
             var ix = typeparams.UnpackIndexExpr(e);
             Ꮡcheck.verifyVersionf(inNode(e, (~ix).Lbrack), go1_18, "type instantiation"u8);
-            T = Ꮡcheck.instantiatedType(ix, Ꮡdef); return;
+            T = Ꮡcheck.instantiatedType(ix, Ꮡdef); goto ᒐdone;
         }
         case ж<ast.ParenExpr> e: {
             T = Ꮡcheck.definedType((~e).X, // Generic types must be instantiated before they can be used in any form.
  // Consequently, generic types cannot be parenthesized.
- Ꮡdef); return;
+ Ꮡdef); goto ᒐdone;
         }
         case ж<ast.ArrayType> e: {
             if ((~e).Len == default!) {
                 var typΔ5 = @new<Slice>();
                 setDefType(Ꮡdef, new SliceжΔType(typΔ5));
                 typΔ5.Value.elem = Ꮡcheck.varType((~e).Elt);
-                T = new SliceжΔType(typΔ5); return;
+                T = new SliceжΔType(typΔ5); goto ᒐdone;
             }
             var typΔ6 = @new<Array>();
             setDefType(Ꮡdef, new ArrayжΔType(typΔ6));
@@ -377,7 +378,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             }
             typΔ6.Value.elem = Ꮡcheck.varType((~e).Elt);
             if ((~typΔ6).len >= 0) {
-                T = new ArrayжΔType(typΔ6); return;
+                T = new ArrayжΔType(typΔ6); goto ᒐdone;
             }
             break;
         }
@@ -393,7 +394,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             var typΔ7 = @new<Struct>();
             setDefType(Ꮡdef, new StructжΔType(typΔ7));
             Ꮡcheck.structType(typΔ7, e);
-            T = new StructжΔType(typΔ7); return;
+            T = new StructжΔType(typΔ7); goto ᒐdone;
         }
         case ж<ast.StarExpr> e: {
             var typΔ8 = @new<Pointer>();
@@ -401,19 +402,19 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             setDefType(Ꮡdef, // avoid nil base in invalid recursive type declaration
  new PointerжΔType(typΔ8));
             typΔ8.Value.@base = Ꮡcheck.varType((~e).X);
-            T = new PointerжΔType(typΔ8); return;
+            T = new PointerжΔType(typΔ8); goto ᒐdone;
         }
         case ж<ast.FuncType> e: {
             var typΔ9 = @new<ΔSignature>();
             setDefType(Ꮡdef, new ΔSignatureжΔType(typΔ9));
             Ꮡcheck.funcType(typΔ9, nil, e);
-            T = new ΔSignatureжΔType(typΔ9); return;
+            T = new ΔSignatureжΔType(typΔ9); goto ᒐdone;
         }
         case ж<ast.InterfaceType> e: {
             var typΔ10 = Ꮡcheck.newInterface();
             setDefType(Ꮡdef, new InterfaceжΔType(typΔ10));
             Ꮡcheck.interfaceType(typΔ10, e, Ꮡdef);
-            T = new InterfaceжΔType(typΔ10); return;
+            T = new InterfaceжΔType(typΔ10); goto ᒐdone;
         }
         case ж<ast.MapType> e: {
             var typΔ11 = @new<Map>();
@@ -436,7 +437,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
                     Ꮡcheck.errorf(new ast_Exprᴠpositioner((~e).Key), IncomparableMapKey, "invalid map key type %s%s"u8, (~typʗ7).key, why);
                 }
             }).describef(new ast_Exprᴠpositioner((~e).Key), "check map key %s"u8, (~typΔ11).key);
-            T = new MapжΔType(typΔ11); return;
+            T = new MapжΔType(typΔ11); goto ᒐdone;
         }
         case ж<ast.ChanType> e: {
             var typΔ12 = @new<Chan>();
@@ -458,7 +459,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
 
             typΔ12.Value.dir = dir;
             typΔ12.Value.elem = Ꮡcheck.varType((~e).Value);
-            T = new ChanжΔType(typΔ12); return;
+            T = new ChanжΔType(typΔ12); goto ᒐdone;
         }
         default: {
             var e = e0;
@@ -470,8 +471,10 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
         var typ = Typ[Invalid];
         setDefType(Ꮡdef, new BasicжΔType(typ));
         T = new BasicжΔType(typ);
-    });
-    return T;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return T;
 }
 
 internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
@@ -509,9 +512,10 @@ internal static readonly @string instantiatingTypeSWithSˢ = "-- instantiating t
 
 internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡix, ж<TypeName> Ꮡdef) {
     ΔType res = default!;
-    func((defer, recover) => {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-    ref var ix = ref Ꮡix.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var ix = ref Ꮡix.DerefOrNull();
 
         if ((~check.conf)._Trace) {
             Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.X, ix.Indices);
@@ -520,28 +524,28 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
                 Ꮡcheck.Value.indent--;
                 // Don't format the underlying here. It will always be nil.
                 Ꮡcheck.trace(Ꮡix.Value.Pos(), "=> %s"u8, res);
-            });
+            }, ref ᒐ);
         }
         defer(() => {
             setDefType(Ꮡdef, res);
-        });
+        }, ref ᒐ);
         ref var cause = ref heap(new @string(), out var Ꮡcause);
         var gtyp = Ꮡcheck.genericType(ix.X, Ꮡcause);
         if (cause != ""u8) {
             Ꮡcheck.errorf(new ast_Exprᴠpositioner(ix.Orig), NotAGenericType, invalidOp + "%s (%s)", ix.Orig, cause);
         }
         if (!isValid(gtyp)) {
-            res = gtyp; return;
+            res = gtyp; goto ᒐdone;
         }
         // error already reported
         // evaluate arguments
         var targs = Ꮡcheck.typeList(ix.Indices);
         if (targs == default!) {
-            res = new BasicжΔType(Typ[Invalid]); return;
+            res = new BasicжΔType(Typ[Invalid]); goto ᒐdone;
         }
         {
             var (origΔ1, _) = gtyp._<ж<Alias>>(ᐧ); if (origΔ1 != nil) {
-                res = Ꮡcheck.instance(ix.Pos(), new AliasжΔgenericType(origΔ1), targs, nil, check.context()); return;
+                res = Ꮡcheck.instance(ix.Pos(), new AliasжΔgenericType(origΔ1), targs, nil, check.context()); goto ᒐdone;
             }
         }
         var orig = asNamed(gtyp);
@@ -576,8 +580,10 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
             Ꮡcheck.validType(instʗ7);
         }).describef(new typeparams_IndexExprжpositioner(Ꮡix), "resolve instance %s"u8, inst.OrTypedNil());
         res = new NamedжΔType(inst);
-    });
-    return res;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return res;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

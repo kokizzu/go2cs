@@ -144,51 +144,56 @@ public static (ж<Conn>, error) DialWithDialer(ж<net.Dialer> Ꮡdialer, @string
     return dial(context.Background(), Ꮡdialer, network, addr, Ꮡconfig);
 }
 
-internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> ᏑnetDialer, @string network, @string addr, ж<Config> Ꮡconfig) => func<(ж<Conn>, error)>((defer, recover) => {
-    ref var netDialer = ref ᏑnetDialer.DerefOrNull();
-    ref var config = ref Ꮡconfig.DerefOrNull();
+internal static (ж<Conn>, error) dial(context.Context ctx, ж<net.Dialer> ᏑnetDialer, @string network, @string addr, ж<Config> Ꮡconfig) {
+    GoFrame ᒐ = default;
+    try {
+        ref var netDialer = ref ᏑnetDialer.DerefOrNull();
+        ref var config = ref Ꮡconfig.DerefOrNull();
 
-    if (netDialer.Timeout != 0) {
-        Action cancel = default!;
-        (ctx, cancel) = context.WithTimeout(ctx, netDialer.Timeout);
-        var cancelʗ1 = cancel;
-        defer(() => cancelʗ1());
-    }
-    if (!netDialer.Deadline.IsZero()) {
-        Action cancel = default!;
-        (ctx, cancel) = context.WithDeadline(ctx, netDialer.Deadline);
-        var cancelʗ2 = cancel;
-        defer(() => cancelʗ2());
-    }
-    var (rawConn, err) = ᏑnetDialer.DialContext(ctx, network, addr);
-    if (err != default!) {
-        return (default!, err);
-    }
-    nint colonPos = strings.LastIndex(addr, ":"u8);
-    if (colonPos == -1) {
-        colonPos = len(addr);
-    }
-    @string hostname = addr[..(int)(colonPos)];
-    if (Ꮡconfig == nil) {
-        Ꮡconfig = defaultConfig(); config = ref Ꮡconfig.DerefOrNull();
-    }
-    // If no ServerName is set, infer the ServerName
-    // from the hostname we're connecting to.
-    if (config.ServerName == ""u8) {
-        // Make a copy to avoid polluting argument or default.
-        var c = Ꮡconfig.Clone();
-        c.Value.ServerName = hostname;
-        Ꮡconfig = c; config = ref Ꮡconfig.DerefOrNull();
-    }
-    var conn = Client(rawConn, Ꮡconfig);
-    {
-        var errΔ1 = conn.HandshakeContext(ctx); if (errΔ1 != default!) {
-            rawConn.Close();
-            return (default!, errΔ1);
+        if (netDialer.Timeout != 0) {
+            Action cancel = default!;
+            (ctx, cancel) = context.WithTimeout(ctx, netDialer.Timeout);
+            var cancelʗ1 = cancel;
+            defer(() => cancelʗ1(), ref ᒐ);
         }
+        if (!netDialer.Deadline.IsZero()) {
+            Action cancel = default!;
+            (ctx, cancel) = context.WithDeadline(ctx, netDialer.Deadline);
+            var cancelʗ2 = cancel;
+            defer(() => cancelʗ2(), ref ᒐ);
+        }
+        var (rawConn, err) = ᏑnetDialer.DialContext(ctx, network, addr);
+        if (err != default!) {
+            return (default!, err);
+        }
+        nint colonPos = strings.LastIndex(addr, ":"u8);
+        if (colonPos == -1) {
+            colonPos = len(addr);
+        }
+        @string hostname = addr[..(int)(colonPos)];
+        if (Ꮡconfig == nil) {
+            Ꮡconfig = defaultConfig(); config = ref Ꮡconfig.DerefOrNull();
+        }
+        // If no ServerName is set, infer the ServerName
+        // from the hostname we're connecting to.
+        if (config.ServerName == ""u8) {
+            // Make a copy to avoid polluting argument or default.
+            var c = Ꮡconfig.Clone();
+            c.Value.ServerName = hostname;
+            Ꮡconfig = c; config = ref Ꮡconfig.DerefOrNull();
+        }
+        var conn = Client(rawConn, Ꮡconfig);
+        {
+            var errΔ1 = conn.HandshakeContext(ctx); if (errΔ1 != default!) {
+                rawConn.Close();
+                return (default!, errΔ1);
+            }
+        }
+        return (conn, default!);
     }
-    return (conn, default!);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // Dial connects to the given network address using net.Dial
 // and then initiates a TLS handshake, returning the resulting

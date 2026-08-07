@@ -84,14 +84,19 @@ public static ж<Logger> New(Δio.Writer @out, @string prefix, nint flag) {
 }
 
 // SetOutput sets the output destination for the logger.
-public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) => func((defer, recover) => {
-    ref var l = ref Ꮡl.DerefOrNull();
+public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) {
+    GoFrame ᒐ = default;
+    try {
+        ref var l = ref Ꮡl.DerefOrNull();
 
-    Ꮡl.of(Logger.ᏑoutMu).Lock();
-    defer(Ꮡl.of(Logger.ᏑoutMu).Unlock);
-    l.@out = w;
-    Ꮡl.of(Logger.ᏑisDiscard).Store(AreEqual(w, Δio.Discard));
-});
+        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
+        l.@out = w;
+        Ꮡl.of(Logger.ᏑisDiscard).Store(AreEqual(w, Δio.Discard));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static ж<Logger> std = New(new os.FileжWriter(os.Stderr), ""u8, LstdFlags);
 
@@ -216,50 +221,55 @@ public static error Output(this ж<Logger> Ꮡl, nint calldepth, @string s) {
 
 // output can take either a calldepth or a pc to get source line information.
 // It uses the pc if it is non-zero.
-internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, Func<slice<byte>, slice<byte>> appendOutput) => func<error>((defer, recover) => {
-    ref var l = ref Ꮡl.DerefOrNull();
+internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, Func<slice<byte>, slice<byte>> appendOutput) {
+    GoFrame ᒐ = default;
+    try {
+        ref var l = ref Ꮡl.DerefOrNull();
 
-    if (Ꮡl.of(Logger.ᏑisDiscard).Load()) {
-        return default!;
-    }
-    var now = time.Now();
-    // get this early.
-    // Load prefix and flag once so that their value is consistent within
-    // this call regardless of any concurrent changes to their value.
-    @string prefix = Ꮡl.Prefix();
-    nint flag = Ꮡl.Flags();
-    @string @file = default!;
-    nint line = default!;
-    if ((nint)(flag & (nint)((nint)((nint)Lshortfile | (nint)Llongfile))) != 0) {
-        if (pc == 0){
-            bool ok = default!;
-            (_, @file, line, ok) = Δruntime.Caller(calldepth);
-            if (!ok) {
-                @file = "???"u8;
-                line = 0;
-            }
-        } else {
-            var fs = Δruntime.CallersFrames(new uintptr[]{pc}.slice());
-            var (f, _) = fs.Next();
-            @file = f.File;
-            if (@file == ""u8) {
-                @file = "???"u8;
-            }
-            line = f.Line;
+        if (Ꮡl.of(Logger.ᏑisDiscard).Load()) {
+            return default!;
         }
+        var now = time.Now();
+        // get this early.
+        // Load prefix and flag once so that their value is consistent within
+        // this call regardless of any concurrent changes to their value.
+        @string prefix = Ꮡl.Prefix();
+        nint flag = Ꮡl.Flags();
+        @string @file = default!;
+        nint line = default!;
+        if ((nint)(flag & (nint)((nint)((nint)Lshortfile | (nint)Llongfile))) != 0) {
+            if (pc == 0){
+                bool ok = default!;
+                (_, @file, line, ok) = Δruntime.Caller(calldepth);
+                if (!ok) {
+                    @file = "???"u8;
+                    line = 0;
+                }
+            } else {
+                var fs = Δruntime.CallersFrames(new uintptr[]{pc}.slice());
+                var (f, _) = fs.Next();
+                @file = f.File;
+                if (@file == ""u8) {
+                    @file = "???"u8;
+                }
+                line = f.Line;
+            }
+        }
+        var buf = getBuffer();
+        defer(putBuffer, buf, ref ᒐ);
+        formatHeader(buf, now, prefix, flag, @file, line);
+        buf.ValueSlot = appendOutput(buf.ValueSlot);
+        if (len(buf.ValueSlot) == 0 || (buf.ValueSlot)[len(buf.ValueSlot) - 1] != (rune)'\n') {
+            buf.ValueSlot = append(buf.ValueSlot, (byte)((rune)'\n'));
+        }
+        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
+        var (_, err) = l.@out.Write(buf.ValueSlot);
+        return err;
     }
-    var buf = getBuffer();
-    deferǃ(putBuffer, buf, defer);
-    formatHeader(buf, now, prefix, flag, @file, line);
-    buf.ValueSlot = appendOutput(buf.ValueSlot);
-    if (len(buf.ValueSlot) == 0 || (buf.ValueSlot)[len(buf.ValueSlot) - 1] != (rune)'\n') {
-        buf.ValueSlot = append(buf.ValueSlot, (byte)((rune)'\n'));
-    }
-    Ꮡl.of(Logger.ᏑoutMu).Lock();
-    defer(Ꮡl.of(Logger.ᏑoutMu).Unlock);
-    var (_, err) = l.@out.Write(buf.ValueSlot);
-    return err;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 [GoInit] internal static void init() {
     Δinternal.DefaultOutput = (uintptr pc, slice<byte> data) => {
@@ -376,13 +386,18 @@ public static void SetPrefix(this ж<Logger> Ꮡl, @string prefixʗp) {
 }
 
 // Writer returns the output destination for the logger.
-public static Δio.Writer Writer(this ж<Logger> Ꮡl) => func((defer, recover) => {
-    ref var l = ref Ꮡl.DerefOrNull();
+public static Δio.Writer Writer(this ж<Logger> Ꮡl) {
+    GoFrame ᒐ = default;
+    try {
+        ref var l = ref Ꮡl.DerefOrNull();
 
-    Ꮡl.of(Logger.ᏑoutMu).Lock();
-    defer(Ꮡl.of(Logger.ᏑoutMu).Unlock);
-    return l.@out;
-});
+        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
+        return l.@out;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // SetOutput sets the output destination for the standard logger.
 public static void SetOutput(Δio.Writer w) {
