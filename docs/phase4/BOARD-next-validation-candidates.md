@@ -61,6 +61,77 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## UP NEXT — the ARGUMENT-path exponential, banked and rooted (2026-08-07, user ruling: own session)
+
+**Same bug class as the chained-call exponential closed directly below, one code path over. Rooted,
+reproduced and measured; deliberately NOT folded into that arc so its A/B stayed clean. A fresh session
+should be able to start here without re-exploring.**
+
+**What it is.** After rendering a call, `convCallExpr` re-walks every argument for its recording side
+effects — the loop at [`convCallExpr.go:2472-2484`](../../src/go2cs/convCallExpr.go#L2472), whose own
+comment says it "re-converts each arg purely for its side-effects (recording implicit conversions); the
+result is discarded" — and `checkForImplicitConversion` opens with a full
+`expr := v.convExpr(arg, nil)` ([`convCallExpr.go:2537`](../../src/go2cs/convCallExpr.go#L2537)). So every
+argument subtree is converted **twice**: once by `convExprList` for the emitted text, once again here for
+the recording. On NESTED calls — `f(f(f(…)))`, where each argument IS the next call — that compounds to
+**2^depth**.
+
+**Measured**, with the chained-call fix already in (so this is the residual, not the closed defect); scratch
+module, single-package conversion, laptop:
+
+| argument nesting depth | wall |
+|---|---|
+| 10 | 1.9s |
+| 14 | 2.0s |
+| 18 | 3.4s |
+| 22 | **24.9s** |
+
+Against the ~1.9s `go/packages` load floor that is 0.1s → 23s of actual conversion across four levels —
+a factor of ~1.6–1.7 per level, i.e. exponential, not a constant 2× tax.
+
+**Why it did not block the reporter, and why it is still worth closing.** Argument nesting that deep is far
+rarer than the 42-link fluent chains that made the sibling defect fatal, so issue #33 never reached it. But
+it is the same latent shape, it is a real ~2× tax on EVERY call in the corpus even at depth 1, and the
+profile taken during the bsoncodec spin attributed **29% of CPU** to `checkForImplicitConversion` — second
+only to the real conversion path (`convExprList`, 31.6%).
+
+**The fix is already designed, and the key fact is established:** the recording is **entirely
+type-driven**. Read `checkForImplicitConversion` end to end — `expr` is used for nothing but the RETURN
+value and two pointer-case wraps (`(%s?.Value ?? default!)`); every recording decision is made from
+`funcType`, `argType`, `targetTypeName`/`argTypeName` and `packageTypeSpecRHS`. So split rendering from
+recording:
+
+- extract the body below the `convExpr` into `applyImplicitConversion(funcType, arg, targetTypeName, expr)`,
+- keep `checkForImplicitConversion` = `convExpr` + that (for the one caller that USES the return,
+  [`convCallExpr.go:433`](../../src/go2cs/convCallExpr.go#L433), the type-conversion branch),
+- have the discard-the-result loop call the extracted form directly, skipping `convExpr` entirely.
+
+**The one thing to prove, not assume.** The second traversal converts with a `nil` context where the real
+one uses `callExprContext`, so a different branch of `convCallExpr` can execute — the recorded SET is
+expected to be identical (every nested call node is visited by the real traversal too, and each runs its own
+recording loop), but that is the hypothesis the gates must test, not a given.
+
+**Gates this will need.** CNR is the instrument: recorded conversions land in `package_info.cs` and drive
+`ImplicitConvGenerator`, so a divergence shows up as changed emitted C# rather than as a silent behavior
+change. **Expect goldens to move** — the sibling arc moved two on a capture-counter side effect alone, and
+this removes a whole traversal — so budget for classifying each one (Compile + Output must pass before any
+re-baseline), then the full behavioral suite and `go test ./...`. Worth adding a nested-argument scaling
+guard alongside `TestChainedCallConversionIsNotExponential`, built the same way (child process, budget, plus
+a content assertion so it cannot pass by dropping the expression).
+
+**Reproduction fixture** (depth N nested calls; N=22 is the row above):
+
+```go
+package main
+
+func f(x int) int { return x + 1 }
+
+func main() {
+	y := f(f(f(/* … N deep … */ 1)))
+	println(y)
+}
+```
+
 ## CLOSED — the issue-#33 follow-up: the bsoncodec "hang" is an EXPONENTIAL, and it is fixed (2026-08-07)
 
 **The reporter re-ran with the three fixes in, cleared the crash, and hit a different wall: a `-recurse`
@@ -140,7 +211,9 @@ with the callee fix already in: nesting depth 18 → 3.4s, depth 22 → 24.9s. I
 **entirely type-driven** — `expr` flows only to the return value — so the durable fix is to split the
 recording from the rendering and let the discard-the-result call site skip `convExpr` entirely.
 Deliberately NOT folded in here: it is an independent change with its own emission-regression surface (this
-arc already moved two goldens), and entangling it with a one-line fix would cost the clean A/B.
+arc already moved two goldens), and entangling it with a one-line fix would cost the clean A/B. **Banked as
+its own arc by user ruling (2026-08-07) — the full root, measurements, fix design and gate plan are in
+*UP NEXT* at the top of this board; work it there, not from this paragraph.**
 
 ## ~~OWED~~ DISCHARGED — the issue-#33 arc is measured on Windows (2026-08-06, same day)
 

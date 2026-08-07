@@ -310,7 +310,11 @@ ONE stdlib in a build; there is now only one on disk.
   the full runs (re-measured 2026-08-04 by r40, corpus at 569 transpiled packages / 571 registered `.csproj`).** The
   corpus keeps growing (371 → 457 → 518 → 543 → 569 packages), and both full instruments
   legitimately exceed three minutes. Timeouts must clear the real number or a healthy run gets killed
-  mid-flight (a 600s ceiling killed a *passing* full suite once):
+  mid-flight (a 600s ceiling killed a *passing* full suite once). ⚠ **These are DESKTOP numbers.** The
+  same repo is also worked from a laptop (Ryzen 7 PRO 6850U, a 15–28W mobile part), where the parallel
+  MSBuild phases run materially slower — a full behavioral suite measured **1,792s** there on 2026-08-07
+  with nothing else running. A run over the table on the laptop is the machine, not corpus growth: do
+  **not** re-baseline these rows from a laptop run, and size timeouts from the top of the range:
 
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
