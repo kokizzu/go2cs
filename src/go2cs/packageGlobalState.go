@@ -48,8 +48,6 @@ const DynamicCastArgMarker = ">>MARKER:DYNAMIC_CAST_ARG<<"
 // with nothing, collapsing the line to the blank line the template has always had there.
 const ValidationPackMarker = ">>MARKER:VALIDATION_PACK<<"
 
-const MaxSupportedGoVersion = 23
-
 // Define package level variables
 var packageName string
 

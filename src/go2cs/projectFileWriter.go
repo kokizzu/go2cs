@@ -32,7 +32,17 @@ import (
 )
 
 func getGoEnv(name string) (string, error) {
+	return getGoEnvFrom("", name)
+}
+
+// getGoEnvFrom runs `go env <name>` from dir (the process working directory when dir is empty).
+// The directory matters for anything GOTOOLCHAIN can change: with GOTOOLCHAIN=auto the go command
+// re-execs whichever toolchain the module found by walking up from dir asks for, so asking from the
+// same directory go/packages loads from is what makes the two agree.
+func getGoEnvFrom(dir string, name string) (string, error) {
 	cmd := exec.Command("go", "env", name)
+	cmd.Dir = dir
+
 	var out bytes.Buffer
 
 	cmd.Stdout = &out

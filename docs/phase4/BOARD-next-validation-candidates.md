@@ -64,7 +64,7 @@
 ## ~~OWED~~ DISCHARGED — the issue-#33 arc is measured on Windows (2026-08-06, same day)
 
 **Every owed gate ran green, the 3a probe validated findings (b) and (c) end to end, and the probe paid
-for itself with a new finding — (d), below.**
+for itself with a new finding — (d), below, FIXED and CLOSED the same day.**
 
 1. **CNR: NO REGRESSION — byte-identical across all 569**, exit 0 (1,088s). `go2cs.exe` was rebuilt
    immediately before the run per this entry's own route-#2 warning. This also discharges item 5
@@ -92,19 +92,56 @@ for itself with a new finding — (d), below.**
 The stray remote branch `claude/recurse-option-diagnosis-cb1ins` (fully contained in `master`) is
 deleted. The container's original record follows.
 
-**(d) NEW, from the 3a probe — the build-constraint evaluator cannot parse `go1.N` release tags.**
-Five `github.com/go-logr/logr@v1.4.3` files gated `//go:build go1.21` each warned `failed to parse
-build constraint: 1:4: expected 'EOF', found .21` and were included by the ERROR fallback
-(conversionDriver.go:231 warns and falls through; only a clean non-match excludes) — the right
-outcome by the wrong path. Mechanism: `EvaluateConstraint` (directiveOperations.go:216-228) feeds the
-expression to `parser.ParseExpr`, for which `go1.21` is an illegal selector — while the evaluator
-pre-seeds `go1.%d` tags (directiveOperations.go:195) expecting to satisfy them. Unexplained residue:
-the paired `context_noslog.go` (`!go1.21`, same dual-line header style) was silently and CORRECTLY
-excluded, so the two forms take different paths the probe did not chase. Filed as a task chip with
-full evidence; the durable fix is the stdlib `go/build/constraint` package (Parse + PlusBuildLines +
-`Expr.Eval` over the existing tag map) replacing the hand-rolled parse/eval — not a dot-case patch.
-Pre-existing, not owned by this arc: the same warnings are visible in the container's earlier
-"13 best-effort warnings" run.
+**(d) CLOSED 2026-08-06 — the build-constraint evaluator could not parse a Go release tag, and the
+`!go1.21` "asymmetry" was never an asymmetry.** Observed in the same otel probe: five
+`github.com/go-logr/logr@v1.4.3` files gated `//go:build go1.21` each warned `failed to parse build
+constraint: 1:4: expected 'EOF', found .21`, while the paired `context_noslog.go` (`!go1.21`) warned not at
+all and was correctly excluded — with an identical dual-line header, which made the two look like they were
+handled by different code paths.
+
+**Root cause.** `EvaluateConstraint` ran the constraint through `parser.ParseExpr`, a Go **expression**
+parser, for which `go1.21` is the identifier `go1` followed by an illegal `.21` selector. It fails on
+`!go1.21` too — at `1:5` — so nothing diverged here. `context_noslog.go` produced no warning because
+`go/packages` had **already excluded it upstream**: it is absent from `pkg.GoFiles` and never reaches this
+code at all. Verified directly, both halves: `ParseExpr` errors on both forms, and a two-file probe module
+loaded through `packages.Load` returns only the `go1.21` file.
+
+**Why it was not cosmetic.** `conversionDriver.go` warns on a constraint error and falls THROUGH to
+including the file, so on those five files the wrong machinery reached the right answer. It is wrong the
+moment a constraint mixes a release tag with a platform: `//go:build go1.21 && windows` converted for linux
+lost its platform half along with the rest of the expression and was included. Two further defects fell out
+of the same layer — the regex scanner matched only `//go:`-prefixed lines, so a legacy `// +build`-only file
+(the norm in pre-1.17 third-party modules, which is exactly what `-recurse` meets) converted as
+**unconstrained**; and it scanned the WHOLE file, so a `//go:build` quoted in documentation *below* the
+package clause gated the file.
+
+**Fix.** The hand-rolled parse/eval layer is gone, replaced by `go/build/constraint` — the package the
+toolchain itself uses. `constraint.IsGoBuild`/`IsPlusBuild` recognize the lines (column zero, header only,
+`//go:build` winning over `+build` as go/build orders them), `constraint.Parse` parses both syntaxes, and
+`Expr.Eval` drives a single `matchTag` callback that owns every tag class. Tag matching is now
+case-sensitive, as the toolchain matches; the old evaluator lowercased the whole expression, which quietly
+made a mixed-case `-tags MyTag` unsatisfiable.
+
+**One hazard this fix creates and closes in the same change, and it is finding (c) wearing a different
+hat.** Release-tag evaluation was previously inert — it *always* errored — so activating it puts the
+compiled-in `build.Default.ReleaseTags` in charge of `go1.N`. Under `GOTOOLCHAIN=auto` that list is not the
+loader's: go2cs.exe built with Go 1.23 converting a module that declares `go 1.25` would call `go1.24` false
+while `go/packages` called it true, dropping every file gated between the two **along with** the `!go1.24`
+sibling the loader had already excluded — leaving the package with neither half. That configuration is not
+hypothetical; it is what this machine had (converter built go1.23.2, otel probe loading under go1.25.0).
+Over-exclusion is this evaluator's recurring failure mode — the `purego` seeding and the `goexperiment`
+ToolTags branch both exist to undo one — and it is the dangerous direction, because the loader has already
+applied the full constraint for the target platform, so anything this pass subtracts is real code. Release
+tags are therefore resolved by asking the go command (`go env GOVERSION` from the same directory
+`packages.Load` uses), cached per module root so a `-stdlib` run pays one ~300 ms lookup rather than 302.
+Note this does **not** retire (c): the linked-in *type checker* is still whatever release compiled go2cs,
+and no toolchain switch reaches it. Build go2cs with a toolchain at least as new as the closure's newest
+`go` directive regardless.
+
+Guarded by `src/go2cs/buildConstraints_test.go` — release tags bare/negated/compound, the legacy `+build`
+grammar, extraction precedence, and the loader-toolchain resolution. Verified against the pre-fix converter
+rather than assumed: every new assertion fails on it, including the two the fix was not looking for (the
+legacy-only file and the documentation-gated file).
 
 For the next **local (Windows)** session: `master` carries the issue-#33 arc in three commits — `fe9bec0`
 (the `package_info.cs` EOL-agnostic read-back, Linux finding F3), `6ca9565` (the panic fix itself), and the
@@ -1534,7 +1571,8 @@ It is also why `AliasPointer` CLAMPS: an unclamped `(int)` of that length would 
 | `TestCmdArgs` | 1 | Newly REACHED 2026-08-02 (it was inside r35's unreached block). Raw metal, pre-existing: `syscall.CommandLineToArgv` returns a NATIVE pointer, so `(ж<array<ж<array<uint16>>>>)(uintptr)(r0)` reads an `array<T>` STRUCT — a backing reference plus bounds — out of the pointer array's own bytes, and `(*argv)[:argc]` then slices with fabricated bounds: `ArgumentException: Indices low, high and max represent a range outside bounds of the array reference`. Untouched by the element-alias arm, which requires a Go POINTER source; a `uintptr` source keeps the address route by design. Same family as `TestDirectoryJunction` and the `createMountPoint` reinterpret. |
 | `TestGetppid` | 1 | Newly REACHED 2026-08-02. The child runs and answers, but `syscall.Getppid()` reports `0` where the parent's pid is expected — `getProcessEntry`'s `Process32First`/`Next` walk finds no entry. A real, contained syscall gap (it does NOT fault, which is what the struct-passing census below already recorded for this wrapper). |
 | `TestReadlink` | 0–1 | Newly REACHED 2026-08-02, and it is the **symlink-privilege row** (the `os.runtime_rand` → `testenv.MustHaveSymlink` row above) surfacing at last: standalone, its six `symlink_*` subtests fail with *"A required privilege is not held by the client"* while the three `junction_*` subtests PASS. Go SKIPS the symlink arms for want of the privilege; C# runs and fails them. Confirms that row's prediction — clearing `MustHaveSymlink` converts these to matching skips rather than passes. (It agreed in the final full run, so it is privilege/timing-sensitive as well.) |
-| `TestRootDirAsTemp` | 1 | Newly REACHED 2026-08-02. The test re-execs the host with TMP/TEMP pointed at a drive ROOT to check `TempDir()`; the CHILD host then cannot create its own isolated run directory there — `DirectoryNotFoundException: Could not find a part of the path 'Z:\go2cs-tests\os\…'` out of `TestHost.Run`'s `Directory.CreateDirectory(workingDirectory)`. The isolation model and the test's premise collide: Go's test binary needs no scratch directory of its own. Pre-existing (same line before and after this lane's host change). || `TestWriteStringAlloc` | 1 | `AllocsPerRun` bounded at ZERO. Deliberately **not** disclosed: the byte-derived shim CAN report 0, so the io/strings unit-mismatch ruling does not cover it. Go's `WriteString` avoids the copy with `unsafe.Slice` over the string's own bytes; a go2cs `@string` is its own storage, so the write path allocates (measured 9088 bytes). A real divergence — an `sstring`-shaped optimization, not a disclosure. |
+| `TestRootDirAsTemp` | 1 | Newly REACHED 2026-08-02. The test re-execs the host with TMP/TEMP pointed at a drive ROOT to check `TempDir()`; the CHILD host then cannot create its own isolated run directory there — `DirectoryNotFoundException: Could not find a part of the path 'Z:\go2cs-tests\os\…'` out of `TestHost.Run`'s `Directory.CreateDirectory(workingDirectory)`. The isolation model and the test's premise collide: Go's test binary needs no scratch directory of its own. Pre-existing (same line before and after this lane's host change). |
+| `TestWriteStringAlloc` | 1 | `AllocsPerRun` bounded at ZERO. Deliberately **not** disclosed: the byte-derived shim CAN report 0, so the io/strings unit-mismatch ruling does not cover it. Go's `WriteString` avoids the copy with `unsafe.Slice` over the string's own bytes; a go2cs `@string` is its own storage, so the write path allocates (measured 9088 bytes). A real divergence — an `sstring`-shaped optimization, not a disclosure. |
 | `TestRemoveAllWithExecutedProcess` | 1 | **ROOTED 2026-08-02 (r36-os-tail), and it is the .NET deployment model, not a conversion defect.** The test copies `os.Executable()` — one file — into a fresh `t.TempDir()` 100 times and runs each copy, to make Windows hold an image handle. `os.Executable()` is CORRECT: it returns the test host's **apphost** (`os.tests.exe`). But an apphost is a stub bound at build time to a managed assembly of the same base name that must sit BESIDE it, so a single-file copy can never run. Reproduced standalone by copying any converted project's apphost alone into a temp directory: exit `0x8000809a` = hostfxr `LibHostAppRootFindFailure`, message *"The application to execute does not exist: '…\<AssemblyName>.dll'"* — byte-for-byte the code the test reports. Go's test binary is statically linked, which is the only reason its premise holds there. The sole fix that would satisfy it is publishing every converted test host **self-contained single-file** (≈70 MB and a publish instead of a build, per package) — disproportionate to one test. Environment divergence; leave failing. |
 | `TestStartProcess/relative` | 1 | **RE-MEASURED 2026-08-02 (r36-os-tail): PASSES** — 3/3 standalone and in the full run, with nothing in this lane touching `joinExeDirAndFName`/`FullPath`/`StartProcess`. It belongs to the load-sensitive child-output class below, not to a code defect. |
 | **load-sensitive child-process flakes** | ~6 | New classification 2026-08-02 (r36-os-tail). A set of tests that **pass standalone and fail only in the full parallel run**, all with one signature: the child process produced NO output (`system hostname of ""`, `Child returned "[]"`, `reports stdin is not pipe ''`) or a `t.TempDir()` that had vanished. The membership MOVES between runs, which is the tell: across the two full runs measured, `TestFileReaddir/TempDir`, `TestStatLxSymLink` and `TestReadlink` failed in one and passed in the other, while `TestStartProcess` and `TestLongPath` did the reverse; `TestHostname`, `TestExecutable` and `TestStatStdin` failed in both yet pass 3/3 standalone. Measured while three sibling worktrees ran their own pipelines. **Treat any single-run failure in this set as unconfirmed until it is reproduced standalone** — that is how `TestStartProcess/relative` came to be recorded as a rooted mismatch when it is not one. |
