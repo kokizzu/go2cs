@@ -138,7 +138,7 @@ $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 
 if ($drift) {
-    # Nineteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
+    # Twenty production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
     # converts the package in its TEST closure, which imports more than the production closure, and
     # a wider closure legitimately changes three things in the production emission:
     #
@@ -179,6 +179,7 @@ if ($drift) {
         'src/core/regexp/regexp.cs'
         'src/core/strings/reader.cs'
         'src/core/strings/replace.cs'
+        'src/core/time/package_init.cs'
         'src/core/unicode/package_init.cs'
     )
 

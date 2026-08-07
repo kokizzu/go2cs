@@ -3460,3 +3460,40 @@ that the same `go test` passes from a different working directory. `go clean -ca
 and is machine-global (bad while siblings are running); the surgical one is to delete only cache files
 whose first bytes are zero, which is a cache MISS rather than a corruption and is safe concurrently.
 The same reboot zero-filled 566 files under `src/core/**/{bin,obj}` — those read as build failures too.
+
+### The gate — 96 of 96, and what the aftermath said
+
+The bank's gate is the full validated sweep at the NEW roster, and it ran clean: **96 packages, 96
+matching at their exact banked counts, zero `COUNT` mismatches and zero failures.** (81 through
+`run-validated-sweep.ps1`, which was killed externally at `path/filepath` — the machine-global
+kill signature §9 warns about, not a verdict — and the remaining 15 driven straight through the
+pipeline and cross-checked against the table's counts by hand.)
+
+Two things in the aftermath are worth recording because neither is drift and both will recur.
+
+**`src/core/time/package_init.cs` was a standing restore that no list named.** The `time` bank
+recorded it in prose ("no committed `package_init.cs` in the corpus carries the hook, and time's
+implements nothing") but never added it to `run-validated-sweep.ps1`'s `$closureFiles`, so every
+sweep since has reported it under *CONTENT drift — inspect before banking or restoring*. It is now
+listed, alongside the four this arc's own banks contribute.
+
+**Twelve banked TEST sources are stale against the current converter, and it is pre-existing.**
+`bytes/reader_test.cs`, `compress/flate/deflate_test.cs`, `context/benchmark_test.cs`,
+`strings/reader_test.cs`, `sync/{cond,map,mutex,rwmutex,waitgroup,example}_test.cs`,
+`time/{sleep,time}_test.cs` all re-emit differently — almost entirely the **capture suffix
+renumbering** (`ʗ2` → `ʗ1`) that a later converter arc introduced, plus one comment-emission
+difference in `sync/example_test.cs`. This lane changed no converter, golib or generator source
+(`git diff master..HEAD -- src/go2cs src/core/golib src/gen` is empty), so the staleness is master's:
+those packages were banked before the change and their test sources were never refreshed. Restored
+here rather than banked — refreshing another package's test sources is a **rebank**'s job, not a
+breadth lane's — and owed to the next one, alongside the `.cs.auto` review siblings (CleanupBacklog
+item 18), eight of which drift the same way.
+
+⚠ **One more environmental trap, alongside the build-cache one above: a full sweep at 96 packages can
+FILL THE DISK.** Each package's test `bin` holds a copy of its whole closure, so a cold sweep writes
+tens of gigabytes; this one exhausted `C:` mid-run with sibling lanes also building. The failure is
+loud but misleading — the converter reports `failed to write to output source file … There is not
+enough space on the disk` for `crypto/sha1/sha1.cs` and friends, i.e. it **truncates TRACKED corpus
+files**, which then read as corpus corruption. `git checkout -- src/core` restores all of it, but the
+lesson is to check free space before a full sweep and to prune `bin`/`obj` between chunks on a
+contended box.
