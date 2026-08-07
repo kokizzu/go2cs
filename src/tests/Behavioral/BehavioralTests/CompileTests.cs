@@ -535,6 +535,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckGenericStringTypeArg() => CheckTarget("GenericStringTypeArg");
 
     [TestMethod]
+    public void CheckGenericStructEquality() => CheckTarget("GenericStructEquality");
+
+    [TestMethod]
     public void CheckGenericStructFields() => CheckTarget("GenericStructFields");
 
     [TestMethod]

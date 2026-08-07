@@ -124,6 +124,115 @@ public static class StructDeclarationSyntaxExtensions
     }
 
     /// <summary>
+    /// Gets the names of the struct's instance members (the same set <see cref="GetStructMembers"/>
+    /// enumerates with <c>filterToRefProperties</c>) whose type cannot appear in a C# <c>==</c>
+    /// comparison — the members the generated <c>Equals</c> must compare via golib's
+    /// <c>AreEqual</c> instead. Consulted only for a GENERIC struct
+    /// that failed the whole-struct <c>IEqualityOperators</c> gate: the gate disqualified the ENTIRE
+    /// struct when ANY type parameter lacked the constraint, emitting a constant-<c>false</c> Equals
+    /// that broke every field-independent comparison (unique's <c>Handle&lt;T&gt;</c> holds only a
+    /// <c>ж&lt;T&gt;</c>, whose pointer-identity <c>==</c> is valid for every T — yet no two handles
+    /// ever compared equal, contradicting the type's documented contract).
+    /// </summary>
+    public static HashSet<string> GetEqualityFallbackMembers(
+        this StructDeclarationSyntax structDeclaration,
+        Compilation compilation)
+    {
+        SemanticModel semanticModel = compilation.GetSemanticModel(structDeclaration.SyntaxTree);
+        INamedTypeSymbol? equalityOperators = compilation.GetTypeByMetadataName("System.Numerics.IEqualityOperators`3");
+        HashSet<string> fallbackMembers = new(StringComparer.Ordinal);
+
+        foreach (MemberDeclarationSyntax member in structDeclaration.Members)
+        {
+            if (member.Modifiers.Any(SyntaxKind.StaticKeyword))
+                continue;
+
+            switch (member)
+            {
+                case PropertyDeclarationSyntax propertyDeclaration:
+                {
+                    // Same membership as GetStructMembers(filterToRefProperties: true): only the
+                    // promoted-embed `partial ref` properties participate in the comparison.
+                    if (propertyDeclaration.Type is not RefTypeSyntax refType)
+                        continue;
+
+                    if (!SupportsEqualityOperator(semanticModel.GetTypeInfo(refType.Type).Type, equalityOperators))
+                        fallbackMembers.Add(propertyDeclaration.Identifier.Text);
+
+                    break;
+                }
+                case FieldDeclarationSyntax fieldDeclaration:
+                {
+                    if (SupportsEqualityOperator(semanticModel.GetTypeInfo(fieldDeclaration.Declaration.Type).Type, equalityOperators))
+                        continue;
+
+                    foreach (VariableDeclaratorSyntax variable in fieldDeclaration.Declaration.Variables)
+                        fallbackMembers.Add(variable.Identifier.Text);
+
+                    break;
+                }
+            }
+        }
+
+        return fallbackMembers;
+    }
+
+    // Reports whether `left == right` COMPILES for operands of this type — the per-member question
+    // the fallback set is built from. Deliberately about compilability, not semantics: wherever ==
+    // is legal it is emitted, matching what a NON-generic struct's memberwise compare has always
+    // done for the same member type.
+    private static bool SupportsEqualityOperator(ITypeSymbol? type, INamedTypeSymbol? equalityOperators)
+    {
+        if (type is null)
+            return false;
+
+        // A type parameter supports == only through a constraint carrying the static abstract
+        // operator (IEqualityOperators<T, T, bool>). ANY one qualifying constraint suffices for
+        // C# operator resolution — unlike the whole-struct gate, which requires EVERY constraint
+        // of every parameter to qualify. Checked before IsReferenceType: a class-constrained
+        // parameter is a "reference type" whose reference-== is farther from Go semantics than
+        // AreEqual's typed dispatch.
+        if (type is ITypeParameterSymbol typeParameter)
+        {
+            return equalityOperators is not null &&
+                   typeParameter.ConstraintTypes.Any(constraint => TypeDeclarationSyntaxExtensions.ImplementsInterface(constraint, equalityOperators));
+        }
+
+        // Reference types (classes incl. ж<T> and unsafe.Pointer, interfaces, arrays, delegates):
+        // == always compiles — user-defined where declared, reference equality otherwise.
+        if (type.IsReferenceType)
+            return true;
+
+        // Enums, native pointers and function pointers compare with built-in ==.
+        if (type.TypeKind is TypeKind.Enum or TypeKind.Pointer or TypeKind.FunctionPointer)
+            return true;
+
+        if (type is not INamedTypeSymbol namedType)
+            return false;
+
+        // Built-in value types (bool, char, the numerics, nint/nuint, decimal, DateTime, …).
+        if (namedType.SpecialType != SpecialType.None)
+            return true;
+
+        // A [GoType] struct ALWAYS receives a same-type operator == (StructTypeTemplate and
+        // InheritedTypeTemplate both emit it unconditionally). The attribute — not the operator —
+        // must be the test for a struct of THIS compilation: its generated operator does not exist
+        // yet while this generator is running, so a member scan cannot see it.
+        if (namedType.OriginalDefinition.GetAttributes().Any(attribute =>
+                attribute.AttributeClass is { Name: "GoTypeAttribute", ContainingNamespace: { Name: "go", ContainingNamespace.IsGlobalNamespace: true } }))
+        {
+            return true;
+        }
+
+        // Any other value type (golib's slice/map/array/@string/…, arriving as metadata) qualifies
+        // only by actually declaring a same-type operator ==.
+        return namedType.GetMembers("op_Equality").OfType<IMethodSymbol>().Any(op =>
+            op.Parameters.Length == 2 &&
+            SymbolEqualityComparer.Default.Equals(op.Parameters[0].Type.OriginalDefinition, namedType.OriginalDefinition) &&
+            SymbolEqualityComparer.Default.Equals(op.Parameters[1].Type.OriginalDefinition, namedType.OriginalDefinition));
+    }
+
+    /// <summary>
     /// METADATA counterpart to <see cref="GetStructMembers"/>: the members of a struct whose SOURCE
     /// this compilation cannot see, read from its type SYMBOL. Same tuple shape, so a caller can use
     /// either resolution interchangeably.

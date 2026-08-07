@@ -405,6 +405,7 @@
     <Project Path="tests/Behavioral/GenericReceiverFieldAddress/GenericReceiverFieldAddress.csproj" />
     <Project Path="tests/Behavioral/GenericResultLambdaInfer/GenericResultLambdaInfer.csproj" />
     <Project Path="tests/Behavioral/GenericStringTypeArg/GenericStringTypeArg.csproj" />
+    <Project Path="tests/Behavioral/GenericStructEquality/GenericStructEquality.csproj" />
     <Project Path="tests/Behavioral/GenericStructFields/GenericStructFields.csproj" />
     <Project Path="tests/Behavioral/GenericTypeAssertions/GenericTypeAssertions.csproj" />
     <Project Path="tests/Behavioral/GenericTypeDecl/GenericTypeDecl.csproj" />
