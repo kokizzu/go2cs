@@ -10812,7 +10812,10 @@ What this deliberately does **not** cover: Go's prefix-downcast idiom, where the
 larger struct, hands out a pointer to its embedded header, and casts back
 (`(*structType)(unsafe.Pointer(t))` with `t` a `*abi.Type`). In Go the larger allocation is really
 there; in the managed model a `ж<abi.Type>` holds only an `abi.Type`, so there is nothing behind it
-to downcast to. Those sites keep the address route and remain the raw-metal class.
+to downcast to. Those sites keep the address route and remain the raw-metal class — which is why the
+two of them that converted code actually *reaches*, `abi.Type.StructType()` and `ArrayType()`, are
+hand-owned and SYNTHESIZED instead (see
+[*`abi.Type`'s SPECIALIZATIONS are synthesized, not downcast*](#abitypes-specializations-are-synthesized-not-downcast--structtype--arraytype)).
 
 Emission detail: the peeling is shared with the identity-reinterpret elision
 (`pointerConversionSource` — it unwraps an optional `abi.NoEscape`/`noescape` wrapper and an
@@ -11144,6 +11147,38 @@ foreach (var i in range(size)) {
 }
 ```
 For `var i` to infer `nint` — matching Go's index type — golib's `range(nint)` must *yield* `nint`, not a C# `int`. It originally returned `Enumerable.Range(0, (int)n)` (element type `int`), so `var i` inferred `int`. That is invisible until the index feeds a generic builtin: `append(s, i)` with `s` a `slice<nint>` and `i` an `int` matches **two** `builtin.append` overloads with **different** inferred `T` — `append<T>(slice<T>, params Span<T>)` infers `T=nint` (from `s`; the `int→nint` element conversion is implicit), while `append<T>(ISlice, params T[])` infers `T=int` (from `i`). Neither wins the argument-by-argument betterness tie (each is better on one argument), so the call is ambiguous — **CS0121**. An explicit `nint i` always resolved (both overloads then infer `T=nint`, and `slice<T>` beats `ISlice` on the first argument), which is the tell that the defect was the *element type* the index inferred, not the converter's `var` (correct and idiomatic) nor the `append` overload set (unambiguous for a correctly-typed `nint`). The root fix is therefore in golib: `range(nint)` yields `nint`. As a hand-written iterator (`for (nint i = 0; i < n; i++) yield return i;`) it also matches Go's integer-range semantics for `n <= 0` exactly (zero iterations), where the old `Enumerable.Range` threw on a negative count. Because the converter emission is unchanged, this is a pure golib change — byte-identical `check-no-regression` — that silently corrects the index type for *every* range-over-int loop in the corpus, and unblocked the `maps` and `slices` Phase-4 test suites (whose `want = append(want, i)` over a `range(size)` index hit exactly this CS0121). Guarded by the `RangeIntIndexAppend` behavioral test (the minimal `append(s, i)`-over-`range(size)` shape, output-compared vs Go; neutering golib's `range` back to `IEnumerable<int>` reproduces the CS0121).
+
+### Range-over-integer covers EVERY integer type, and the iteration variable keeps the operand's width
+Go 1.22's range-over-integer accepts **any** integer type, not just `int`, and gives the iteration variable *that* type. The converter recognized only `types.Int` and untyped-int, so every other integer kind — `uintptr`, `int64`, `uint8`, `rune`, a named integer type — fell through `visitRangeStmt`'s `unexpected 'ast.RangeStmt' expression` arm, which prints the statement as a **C# comment**. The loop did not fail to convert loudly; it silently *vanished*, and the program quietly computed a different answer.
+
+The corpus site that proved it is `internal/abi`'s `for range atyp.Len` inside `unique.buildArrayCloneSeq` (`unique/clone.go`), where `atyp.Len` is a `uintptr`:
+```go
+for range atyp.Len {
+	switch etyp.Kind() {
+	case abi.String:
+		seq.stringOffsets = append(seq.stringOffsets, offset)
+	…
+	}
+	offset += etyp.Size()
+}
+```
+```csharp
+foreach (var _ᴛ1 in range<uintptr>((~atyp).Len)) {
+    var exprᴛ1 = etyp.Kind();
+    if (exprᴛ1 == abi.ΔString) {
+        seq.stringOffsets = append(seq.stringOffsets, offset);
+    }
+    …
+    offset += etyp.Size();
+}
+```
+The whole body had been a `/* … */` block, so `unique`'s `cloneSeq` for any array-of-string type came back **empty** instead of carrying one offset per element. It was the only such comment in the entire converted standard library — a one-site defect precisely because non-`int` range operands are rare, and invisible for exactly the same reason.
+
+Two pieces carry the fix. golib gains a generic `range<T>(T n)`, constrained to the **operator pair the loop actually uses** (`IComparisonOperators<T,T,bool>` + `IIncrementOperators<T>`, with `default(T)` for the zero) rather than `IBinaryInteger<T>` — golib's own `uintptr` is a hand-written struct that implements the generic-math *operator* interfaces but not the `INumberBase` hierarchy, and `uintptr` is exactly the type this site ranges over. The converter then names `T` **explicitly** at every non-`int` site (`range<uintptr>(…)`, `range<rune>(…)`), because Go's `rune` and C#'s `int` are one CLR type and an inferred call could not tell `for i := range r` (yields `rune`) from `for i := range 3` (yields Go's `int`); a NAMED integer type additionally has its operand cast down to the underlying width, since a converted `[GoType("num:…")]` struct satisfies no generic-math interface at all.
+
+The `int` case is emitted byte-identically — bare `range(expr)` — but it needed one guard of its own. A literal operand hands the overload set a C# `int`, where the new generic is an **identity** match and `range(nint)` needs an implicit numeric conversion; the generic therefore wins outright and C#'s "a non-generic method is better than a generic method" tie-break never applies (measured, not reasoned — the first attempt did regress `range(3)` to `System.Int32`). golib carries a third overload, `range(int n) → IEnumerable<nint>`, meaning "a C# `int` operand is Go's `int`": an `int`-typed operand in emitted code can only be an untyped Go constant, since a Go `int` expression already renders as `nint` and every other width is emitted with an explicit type argument. With it, `for i := range 3` stays on `nint` and the CS0121 above cannot come back.
+
+Guarded by the `RangeOverIntegerTypes` behavioral test (blank-key `uintptr`, `uint8`/`int64`/`uint64`/`rune`, a named `uintptr` type, non-positive operands, and the unchanged `int`/untyped cases, output-compared vs Go — reverting the `isInt` widening reproduces `FAIL [Target,Output]`) and by `GolibTests.GoStructLayoutTests` (the `range<T>` widths and the literal-operand overload binding). Behavioral `check-no-regression` is byte-identical across all 570 packages apart from the new project, which is the expected shape: the corpus contained exactly one non-`int` range operand.
 
 ### A blank scalar range variable never emits as `_`
 A `range` with no iteration variable (or an explicit blank) over a **scalar-yield** source — a channel, an integer (Go 1.22 `for range n`), or a single-value yield function — needs a C# `foreach` iteration variable, and that variable must **not** be named `_`: in a scalar `foreach` position C# declares a genuine read-only variable *named* `_` (only tuple-deconstruction `_` is a discard), which shadows the discard idiom for the entire loop body. Any Go blank assignment inside the body (`_ = f(x)` — evaluate and discard) then resolves to that variable and becomes an illegal write to a `foreach` iteration variable (**CS1656**; first hit: `encoding/binary`'s `BenchmarkSize`, `for range b.N { _ = Size(data) }`). The converter emits a marked temp instead:
@@ -12117,6 +12152,69 @@ all). `unique` itself goes **0 → 1 of 19** and, more usefully, stops being a o
 file, which makes `internal/concurrent` fully hand-owned — see
 [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md) for what that does to the package's
 `.csproj`/`package_info.cs`/`README.md`, and for the seeded-reconvert proof in both directions.
+
+### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
+
+Go's `(*structType)(unsafe.Pointer(t))` is the **prefix-downcast** idiom: the linker really allocated a
+`structType` and handed out a pointer to its embedded `Type` header, so casting back reaches the
+sub-record. The section on `Reinterpret` above names this as the one case the managed arm deliberately
+does not cover — nothing sits behind a `ж<abi.Type>` but an `abi.Type` — and these are the two sites
+where converted code took that cast anyway.
+
+The failure is not the contained wrong read the address route usually gives. `Reinterpret` correctly
+**refuses** to alias managed storage for a reference-bearing pair (aliasing would fabricate object
+references), so it fell through to the raw address and read `ΔStructType`'s fields out of the memory
+that follows the descriptor's value slot. Probed on `abi.TypeFor[testStringStruct]()`:
+
+```
+Fields.Length   8830452760576     <- an address fragment read as a slice length
+Fields.Capacity 16                <- the descriptor's OWN Size_, bleeding through the shifted view
+```
+
+`m_array` happened to land on a real heap object, so indexing it threw `IndexOutOfRangeException`
+rather than access-violating — a caught CLR type-safety break. That is **six of `unique`'s nineteen
+rows**, thrown on the first iteration of `unique.buildStructCloneSeq`, and `internal/reflectlite`'s
+`NumField`/`Len` read the same garbage.
+
+Both specializations are therefore hand-owned in `internal/abi/type_impl.cs` (registered in
+`manualConversionFuncs` as `Type.StructType` / `Type.ArrayType`, so the converter emits a placeholder
+comment for the Go bodies) and **synthesized from the descriptor's carried `System.Type`**, exactly as
+the descriptor itself is:
+
+| Field | Answer |
+|---|---|
+| `StructType.Fields[i].Typ` | `synthType` of the projected Go field type, dims-stamped from the declaring zero instance |
+| `StructType.Fields[i].Offset` | the field's **Go** (amd64) byte offset |
+| `ArrayType.Len` / `.Elem` / `.Slice` | the descriptor's carried array dims, the element descriptor, and `[]T`'s |
+
+The offsets are Go's numbers, not the CLR's — a Go `string` is 16 bytes where `@string` is an 8-byte
+reference — and they come from the SAME walk that stamps a descriptor's `Size_`
+(`GoReflect.GoFieldOffsets`, factored out of `GoSizeOf`'s struct arm), so a field's `Offset` and its
+struct's `Size_` cannot disagree. `unique`'s `cloneSeq` values are the demonstrated consumer:
+`struct{ z float64; b string }` → offsets `[8]`, `[2]struct{ a string }` → `[0 16]`, `[3]string` →
+`[0 16 32]`, each matching `go test` exactly.
+
+Two things are deliberately **not** invented, following the r39d rule that a descriptor field whose
+read cannot be honored must not be populated to look truthful. A descriptor with no `System.Type`, or
+a struct holding a field whose Go size is unknowable (one unknown size makes every later offset a
+guess), answers Go's **nil** — which every Go caller already tests. And `StructField.Name` /
+`StructType.PkgPath` stay the zero `ΔName`: a `ΔName` is a pointer into the linker's name blob and
+every reader of one walks it with `addChecked` raw-address arithmetic, the same route that produced
+the garbage above, whereas Go's own `ΔName.Name()` answers `""` for a nil `Bytes` — so the zero value
+is a state the format *defines* rather than a fabrication. A named field descriptor already comes
+from `reflect`'s hand-owned `rtype.Field` over `GoReflect.GoFields`, and no converted caller of
+`abi.StructType` reads a field name.
+
+Same defect class, **still open** and deliberately not chased here: `Type.Elem()`, `MapType()`,
+`FuncType()`, `InterfaceType()`, `Key()` and the free `Len()` reinterpret the same way. `Elem()`'s
+pointer arm is the mechanism behind the board's separate "`abi.TypeFor<T>()` is silently wrong for an
+interface `T`" root.
+
+Guarded by `GolibTests.GoStructLayoutTests` (Go offsets and sizes for the exact shapes `unique`'s
+`TestMakeCloneSeq` exercises, plus alignment padding — removing the per-field alignment rounding fails
+`FieldOffsets_ApplyGoAlignmentPadding`), and measured by `unique`'s own suite: **1 → 4 of 19 matched**,
+with all six `IndexOutOfRangeException` rows gone and the three `TestHandle` ones moved on to the
+`internal/weak` linkname root behind them.
 
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)
 

@@ -89,27 +89,61 @@ public static partial class GoReflect
                 return elemSize < 0 ? -1 : elemSize * arrayDims[0];
             }
             case Struct:
-            {
-                nint size = 0, maxAlign = 1;
-
-                foreach (GoFieldInfo field in GoFields(t))
-                {
-                    nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
-                    nint fieldSize = GoSizeOf(field.Type, dims);
-
-                    if (fieldSize < 0)
-                        return -1;
-
-                    nint align = GoAlignOf(field.Type);
-                    maxAlign = align > maxAlign ? align : maxAlign;
-                    size = (size + align - 1) / align * align + fieldSize;
-                }
-
-                return (size + maxAlign - 1) / maxAlign * maxAlign;
-            }
+                return tryStructLayout(t, out _, out nint structSize) ? structSize : -1;
             default:
                 return -1;
         }
+    }
+
+    /// <summary>
+    /// The Go (amd64) byte OFFSET of each projected Go field of the struct type
+    /// <paramref name="t"/>, in <see cref="GoFields"/> order — or <c>null</c> when
+    /// <paramref name="t"/> is not a struct kind, or when any field's Go size cannot be known
+    /// (an array whose length the managed type does not carry), since one unknown size makes
+    /// every LATER offset a guess rather than an answer.
+    /// </summary>
+    /// <remarks>
+    /// Offsets and <see cref="GoSizeOf"/> run the SAME layout walk, so a descriptor's stamped
+    /// <c>Size_</c> and its fields' <c>Offset</c>s can never disagree. The demonstrated consumer
+    /// is internal/abi's synthesized <c>StructType()</c> specialization, which is what
+    /// <c>unique.buildStructCloneSeq</c> walks to find the string offsets inside a value.
+    /// </remarks>
+    public static nint[]? GoFieldOffsets(Type t)
+    {
+        return KindOf(t) == Struct && tryStructLayout(t, out nint[] offsets, out _) ? offsets : null;
+    }
+
+    // The one Go struct layout walk: per-field aligned offsets plus the aligned total size.
+    // False (with size -1) when any field's Go size is unknowable.
+    private static bool tryStructLayout(Type t, out nint[] offsets, out nint size)
+    {
+        GoFieldInfo[] fields = GoFields(t);
+        offsets = new nint[fields.Length];
+        size = 0;
+        nint maxAlign = 1;
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            GoFieldInfo field = fields[i];
+            nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
+            nint fieldSize = GoSizeOf(field.Type, dims);
+
+            if (fieldSize < 0)
+            {
+                offsets = [];
+                size = -1;
+                return false;
+            }
+
+            nint align = GoAlignOf(field.Type);
+            maxAlign = align > maxAlign ? align : maxAlign;
+            size = (size + align - 1) / align * align;
+            offsets[i] = size;
+            size += fieldSize;
+        }
+
+        size = (size + maxAlign - 1) / maxAlign * maxAlign;
+        return true;
     }
 
     /// <summary>The Go (amd64) alignment of a type (struct = max field alignment; array = element alignment).</summary>

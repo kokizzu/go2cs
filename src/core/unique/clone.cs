@@ -89,19 +89,22 @@ internal static void buildArrayCloneSeq(ж<abi.Type> Ꮡtyp, ж<cloneSeq> Ꮡseq
     var atyp = Ꮡtyp.ArrayType();
     var etyp = atyp.Value.Elem;
     var offset = baseOffset;
-    /* for range atyp.Len {
-	switch etyp.Kind() {
-	case abi.String:
-		seq.stringOffsets = append(seq.stringOffsets, offset)
-	case abi.Struct:
-		buildStructCloneSeq(etyp, seq, offset)
-	case abi.Array:
-		buildArrayCloneSeq(etyp, seq, offset)
-	}
-	offset += etyp.Size()
-	align := uintptr(etyp.FieldAlign())
-	offset = (offset + align - 1) &^ (align - 1)
-} */
+    foreach (var _ᴛ1 in range<uintptr>((~atyp).Len)) {
+        var exprᴛ1 = etyp.Kind();
+        if (exprᴛ1 == abi.ΔString) {
+            seq.stringOffsets = append(seq.stringOffsets, offset);
+        }
+        else if (exprᴛ1 == abi.Struct) {
+            buildStructCloneSeq(etyp, Ꮡseq, offset);
+        }
+        else if (exprᴛ1 == abi.Array) {
+            buildArrayCloneSeq(etyp, Ꮡseq, offset);
+        }
+
+        offset += etyp.Size();
+        var align = (uintptr)etyp.FieldAlign();
+        offset = (uintptr)((offset + align - 1) & ~(align - 1));
+    }
 }
 
 } // end unique_package

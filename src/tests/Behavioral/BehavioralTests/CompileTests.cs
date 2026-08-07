@@ -1201,6 +1201,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckRangeIntIndexAppend() => CheckTarget("RangeIntIndexAppend");
 
     [TestMethod]
+    public void CheckRangeOverIntegerTypes() => CheckTarget("RangeOverIntegerTypes");
+
+    [TestMethod]
     public void CheckRangePointerArrayConversion() => CheckTarget("RangePointerArrayConversion");
 
     [TestMethod]

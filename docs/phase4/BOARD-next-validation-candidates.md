@@ -52,9 +52,18 @@
 > rooted one layer down in the reflection bridge (see *r39-nilcomplex* at the end of the gob section).
 > The roster is **still 71/72**: gob does not bank.
 >
+> **Revised again 2026-08-07 (r41c-cloneseq)**: `unique`'s `makeCloneSeq` root closes and the package
+> moves **1 → 4 of 19**, on an `internal/abi` hand-own plus a converter fix — but the row's own
+> DESCRIPTION below was wrong in both halves (it is not a `slice<T>` enumerator edge, and it is
+> reflection-bridge territory), so read *The `makeCloneSeq` root, CLOSED* rather than the table cell.
+> The roster is **unchanged at 73**: `unique` does not bank.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
+> r41c is the same lesson at one more remove: the exception TYPE and the frame it is thrown in
+> (`IndexOutOfRangeException` in `go.slice<T>.Enumerator`) named a component that had nothing wrong
+> with it, because a garbage slice HEADER two frames up makes a correct enumerator throw.
 >
 > Re-validate everything after any change here with `./src/run-validated-sweep.ps1` — it reads the
 > roster and the expected counts from [`ValidatedTestPackages.md`](../ValidatedTestPackages.md) and
@@ -3109,7 +3118,7 @@ separately actionable:
 | **Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`** | 4 | `runtime/mheap.go` pushes both. Hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. ⚠ Even once linked, `runtime`'s converted bodies walk `mheap_` span metadata that the managed model does not populate (`getWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`), so this row wants a `internal/weak` hand-own on managed weak references, not a linkname fix alone |
 | **`abi.TypeFor<T>()` is silently WRONG for an INTERFACE `T`** | 1 | `TypeFor`'s interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for `Kind == Pointer` reinterprets the descriptor as a `PtrType` and reads `.Elem` — which under the managed layout lands on the descriptor's **`Equal` field**. `TypeFor<any>()` and `TypeFor<error>()` return a `System.Func<unsafe.Pointer, unsafe.Pointer, bool>`, not a `ж<abi.Type>`. Shared generics store it into `ConcurrentDictionary<ж<abi.Type>, any>` uncast-checked, and the first key comparison dispatches `IEquatable<ж<abi.Type>>.Equals` on a delegate → `EntryPointNotFoundException`. **Corpus-wide, and it was invisible until now**: the old trie compared raw addresses through `keyEqual` and never dispatched on a key's runtime type. Reflection-bridge row |
 | **`GCHandle: Object contains references`** | 1 | `abi.Escape` pinning a managed pointee on the `weak.Make` path |
-| **`IndexOutOfRangeException` in `go.slice<T>.Enumerator.get_Current`** | 6 | inside `unique.makeCloneSeq` (`clone.cs`), reached from both `TestHandle` and `TestMakeCloneSeq` — the only root here that is neither linkname nor reflection, and the cheapest next step |
+| ~~**`IndexOutOfRangeException` in `go.slice<T>.Enumerator.get_Current`**~~ | 6 | **CLOSED 2026-08-07 (r41c-cloneseq).** Not the enumerator, and not "neither linkname nor reflection" — see *the `makeCloneSeq` root, closed* immediately below |
 
 Plus the 3 `fail` rows the r38 census already recorded (`TestMakeCloneSeq/#00`, `#01`, `interface_{}` — Go
 names those subtests from `reflect.TypeFor[T]().String()`, which C# renders `""`; note this is the *same*
@@ -3124,6 +3133,73 @@ over the worktree's, reverting the hand-own. **Always use absolute paths with th
 pre-passes, and panics on a generic file (`WARNING: visit file error: … nil pointer dereference in
 "hashtriemap.go" (auto-conversion sibling skipped)`), so no `.cs.auto` review sibling is produced for
 `internal/concurrent`. Pre-existing converter defect, harmless to the marker's protection, not chased.
+
+### The `makeCloneSeq` root, CLOSED — `unique` 1 → 4 of 19 (2026-08-07, r41c-cloneseq)
+
+**The board's guess about this root was wrong in both halves, and the way it was wrong is the finding.**
+It is not a `slice<T>.Enumerator` edge — the enumerator behaves correctly given the header it is handed
+— and it is squarely reflection-bridge territory rather than "the only root that is neither linkname nor
+reflection". What made it look otherwise is that the *diagnostic* names golib and the *cause* is two
+frames up, which is charter §9's layering lesson in a new dress: **a first diagnostic is a starting
+point, not a diagnosis.**
+
+**The root.** `makeCloneSeq` → `buildStructCloneSeq` opens with `styp := typ.StructType()`, and Go's
+`(*structType)(unsafe.Pointer(t))` is the PREFIX-DOWNCAST idiom — the linker really allocated a
+`structType` behind the `Type` header. Nothing sits behind a `ж<abi.Type>`, and golib's `Reinterpret`
+rightly REFUSES to alias managed storage for a reference-bearing pair (aliasing would fabricate object
+references), so it fell through to the raw-address route and read `ΔStructType`'s fields out of the
+memory following the descriptor's value slot. Probed on `abi.TypeFor[testStringStruct]()`:
+
+```
+Fields.Length   8830452760576   <- an address fragment read as a slice length
+Fields.Capacity 16              <- the descriptor's OWN Size_, bleeding through the shifted view
+```
+
+`m_array` landed on a real heap object, so the first `Current` threw `IndexOutOfRangeException` instead
+of access-violating: a CLR type-safety break that happened to be caught. `internal/reflectlite`'s
+`NumField`/`Len` read the same garbage.
+
+**The fix, at the root's own layer.** `Type.StructType` and `Type.ArrayType` join `TypeOf` in
+`manualConversionFuncs["internal/abi"]` and are SYNTHESIZED in `type_impl.cs` from the descriptor's
+carried `System.Type` — field types via `synthType`, Go (amd64) field offsets and array `Len`/`Elem`/
+`Slice` via golib. Offsets come from the same walk that stamps a descriptor's `Size_`
+(`GoReflect.GoFieldOffsets`, factored out of `GoSizeOf`'s struct arm), so the two cannot disagree.
+Nothing unknowable is invented: no `System.Type`, or a field whose Go size is unknowable, answers Go's
+nil; `StructField.Name`/`PkgPath` stay the zero `ΔName` (its readers walk `addChecked` raw addresses —
+the same route that produced the garbage — and Go's own `Name()` answers `""` for a nil `Bytes`, so the
+zero value is a state the format defines). Full rationale:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *`abi.Type`'s
+SPECIALIZATIONS are synthesized, not downcast*.
+
+**A second, independent defect in the same file — a converter one, and silent.** `buildArrayCloneSeq`'s
+whole body was emitted as a `/* … */` COMMENT. `visitRangeStmt` recognized range-over-integer only for
+`types.Int`/untyped-int, so `for range atyp.Len` (a `uintptr`) fell through to the "unexpected
+expression" arm and the loop VANISHED — `unique`'s `cloneSeq` for any array-of-string type came back
+empty. It was the only such comment in the entire converted stdlib. Fixed generally (any integer kind,
+golib `range<T>` with the operand's own Go width, explicit type argument at each non-`int` site) and
+guarded by the `RangeOverIntegerTypes` behavioral test; details in the same reference doc,
+*Range-over-integer covers EVERY integer type*. ⚠ Worth remembering: the first attempt at the golib
+overload REGRESSED `range(3)` to `System.Int32`, because the generic is an identity match where
+`range(nint)` needs a conversion and C#'s prefer-non-generic tie-break never fires — caught by probe,
+not by reading, and closed with a third `range(int)` overload.
+
+**Census, `unique`, matched rows: 1 → 4 of 19.** All six `IndexOutOfRangeException` rows are gone. The
+three `TestMakeCloneSeq` ones (`testStringStruct`, `testStruct`, `testStringStructArrayStruct`) now
+PASS; the three `TestHandle` ones MOVED to the `internal/weak.runtime_registerWeakPointer` root that
+was always behind them. A fifth subtest, `TestMakeCloneSeq/testStringArray`, now computes the correct
+`{[0 16 32]}` but still cannot MATCH, because C# names it `#01` — that is the `TypeFor`/`Name` root,
+row three of the table above, untouched. `TestHandle/interface_{}/<nil>` also moved (from
+`EntryPointNotFoundException` to a null `HashTrieMap` key); that root's `Type.Elem()` reinterpret is
+the SAME defect class as this one and simply read different garbage this run — it was not chased, and
+neither were `MapType()`/`FuncType()`/`InterfaceType()`/`Key()`/`Len()`, which all still reinterpret.
+`unique` still does **not** bank; its test artifacts were restored, not committed.
+
+**Blast radius.** `StructType()`/`ArrayType()` have exactly two corpus callers (`unique`,
+`internal/reflectlite`), and the range widening has exactly one corpus site. Gates: behavioral CNR
+byte-identical across all 570 packages apart from the new test project; `run-behavioral.ps1` full
+**545/545** transpile+compile+golden and **515/515** stdout (30 skipped, no `package main`), 1,081 s;
+`go2cs-stdlib.slnx` **304/304**, 0 errors; `go test ./...` in the converter ok; GolibTests **69/69**
+(60 + 9 new), ChannelTests **24/24**.
 
 ## The WHOLE-CORPUS REBANK — 1,316 files, sixteen families, zero unclassified (2026-08-04, r40-rebank)
 
