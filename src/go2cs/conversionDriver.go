@@ -227,7 +227,10 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			for i, file := range pkg.Syntax {
 				path := pkg.GoFiles[i]
 
-				if match, err := CheckBuildConstraints(path, options.targetPlatform, options.buildTags); err != nil {
+				// cfg.Dir is the directory the loader ran the go command in, so it is also the
+				// directory whose GOTOOLCHAIN resolution decides which Go release tags the
+				// constraint re-check must agree with.
+				if match, err := CheckBuildConstraints(path, options.targetPlatform, options.buildTags, cfg.Dir); err != nil {
 					showWarning("Failed to evaluate build constraints for file \"%s\": %s", path, err)
 				} else if !match {
 					// Skipping file due to non-matching build constraints

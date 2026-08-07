@@ -9,125 +9,31 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"go/ast"
 	"go/build"
-	"go/parser"
-	"go/token"
-	"io"
+	"go/build/constraint"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 )
 
-// DirectiveType represents the type of Go directive
-type DirectiveType string
-
-const (
-	// Common Go directives
-	BuildDirective    DirectiveType = "build"
-	GenerateDirective DirectiveType = "generate"
-	LinkDirective     DirectiveType = "link"
-	EmbedDirective    DirectiveType = "embed"
-	// Add other directives as needed
-)
-
-// Directive represents a parsed Go directive
-type Directive struct {
-	Type    DirectiveType
-	Content string
-	Line    int
-}
-
-// DirectiveParser parses Go directives from source code
-type DirectiveParser struct {
-	directiveRegex *regexp.Regexp
-}
-
-// NewDirectiveParser creates a new directive parser
-func NewDirectiveParser() *DirectiveParser {
-	// Matches //go: followed by any text
-	regex := regexp.MustCompile(`^\s*//go:(\w+)(.*)$`)
-	return &DirectiveParser{
-		directiveRegex: regex,
-	}
-}
-
-// ParseReader parses directives from a reader
-func (p *DirectiveParser) ParseReader(r io.Reader) ([]Directive, error) {
-	scanner := bufio.NewScanner(r)
-	lineNum := 0
-	var directives []Directive
-
-	for scanner.Scan() {
-		lineNum++
-		line := scanner.Text()
-
-		matches := p.directiveRegex.FindStringSubmatch(line)
-		if len(matches) == 3 {
-			directiveType := DirectiveType(strings.ToLower(matches[1]))
-			content := strings.TrimSpace(matches[2])
-
-			directives = append(directives, Directive{
-				Type:    directiveType,
-				Content: content,
-				Line:    lineNum,
-			})
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning source: %w", err)
-	}
-
-	return directives, nil
-}
-
-// ParseString parses directives from a string
-func (p *DirectiveParser) ParseString(src string) ([]Directive, error) {
-	return p.ParseReader(strings.NewReader(src))
-}
-
-// FilterByType returns directives of a specific type
-func FilterByType(directives []Directive, directiveType DirectiveType) []Directive {
-	var filtered []Directive
-	for _, d := range directives {
-		if d.Type == directiveType {
-			filtered = append(filtered, d)
-		}
-	}
-	return filtered
-}
-
-func ParseDirectives(filename string) ([]Directive, error) {
-	parser := NewDirectiveParser()
-
-	file, err := os.Open(filename)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file %s: %w", filename, err)
-	}
-
-	defer file.Close()
-
-	source, err := io.ReadAll(file)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
-	}
-
-	directives, err := parser.ParseString(string(source))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return directives, nil
-}
+// goBuildPrefix is the token that opens a modern build-constraint line. constraint.Parse wants a
+// whole line, so a caller holding only the expression text gets this prepended.
+const goBuildPrefix = "//go:build "
 
 // BuildConstraintEvaluator evaluates build constraints against a set of allowed platforms
 type BuildConstraintEvaluator struct {
 	allowedPlatforms map[string]bool
+
+	// loaderDir is the directory go/packages loaded from, which selects the toolchain whose release
+	// tags apply; empty means there is no loader context. releaseTags caches the resolved set and is
+	// filled on FIRST USE — resolving it costs a `go env` subprocess, and most files never mention a
+	// release tag at all (no behavioral package does, and exactly one standard-library package does),
+	// so resolving eagerly would buy nothing and cost one subprocess per module root.
+	loaderDir   string
+	releaseTags []string
 }
 
 // NewBuildConstraintEvaluator creates a new build constraint evaluator
@@ -190,10 +96,8 @@ func NewBuildConstraintEvaluator(platforms []string) *BuildConstraintEvaluator {
 	allowedMap["gccgo"] = false
 	allowedMap["tinygo"] = false
 
-	// Set Go version tags
-	for i := range MaxSupportedGoVersion {
-		allowedMap[fmt.Sprintf("go1.%d", i)] = true
-	}
+	// Go RELEASE tags (`go1.21`) are deliberately NOT seeded here — matchTag resolves them from the
+	// toolchain's own list instead, so the answer cannot drift from the loader's.
 
 	// For cgo, we defer to explicit settings rather than auto-detecting
 
@@ -212,121 +116,317 @@ func (e *BuildConstraintEvaluator) SetTag(tag string, value bool) {
 	e.allowedPlatforms[tag] = value
 }
 
-// EvaluateConstraint evaluates if a build constraint matches allowed platforms
-func (e *BuildConstraintEvaluator) EvaluateConstraint(constraint string) (bool, error) {
-	// Convert build constraint to Go expression syntax
-	expr := convertToGoSyntax(constraint)
+// matchTag reports whether a single build tag is satisfied for the target platform. It is the
+// callback go/build/constraint's Expr.Eval drives, so EVERY name a constraint can mention — a GOOS,
+// a GOARCH, the derived `unix`/`posix` categories, a -tags value, a Go release tag, a dotted tool
+// tag — resolves here, and the boolean structure around them (`&&`, `||`, `!`, parentheses) is the
+// stdlib's problem rather than ours.
+//
+// Tags are matched CASE-SENSITIVELY, as the Go toolchain matches them. The evaluator this replaced
+// lowercased the whole expression first, which quietly made a mixed-case `-tags MyTag` unsatisfiable
+// (the tag was stored verbatim by SetTag but looked up folded).
+func (e *BuildConstraintEvaluator) matchTag(tag string) bool {
+	// GOOS/GOARCH, the derived categories, the compiler tags and every -tags value share one map
+	// because a build constraint treats them identically — `linux`, `amd64` and `purego` are all
+	// just names that are either satisfied or not. A tag present-but-false (`gccgo`) is answered
+	// here rather than falling through to the toolchain lists below.
+	if allowed, ok := e.allowedPlatforms[tag]; ok {
+		return allowed
+	}
 
-	// Parse the expression
-	node, err := parser.ParseExpr(expr)
+	// A Go RELEASE tag (`go1.21`) is not a platform property, so it must resolve exactly as it did
+	// for go/packages when it selected these files: this evaluator only ever re-checks the loader's
+	// output against a possibly-different TARGET platform, and any disagreement on a non-platform
+	// tag can only drop code the build really does include. It is what decides between the paired
+	// `go1.N`/`!go1.N` variants of a file (sort's sort_impl_go121.go / sort_impl_120.go), so getting
+	// it wrong in either direction leaves the package with NEITHER half.
+	//
+	// Testing the SHAPE first is what keeps resolution lazy: no release tag in the constraint, no
+	// `go env` subprocess. A release tag is also never a tool tag, so an unsatisfied one is final.
+	if isGoReleaseTag(tag) {
+		for _, releaseTag := range e.resolveReleaseTags() {
+			if releaseTag == tag {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// A DOTTED build tag — `goexperiment.coverageredesign`, `amd64.v1` — is matched against the
+	// host toolchain's active tool tags (go/build's ToolTags), again exactly as go/packages did.
+	// Without this the tag falls through to `false`, so a `//go:build goexperiment.X` _on.go file
+	// for an experiment ON by default (coverageredesign, regabiwrappers, regabiargs) was
+	// re-EXCLUDED here after packages.Load had INCLUDED it, dropping that file's consts (testing's
+	// `goexperiment.CoverageRedesign`, CS0117). An experiment that is off keeps its tag out of
+	// ToolTags → false → the `!goexperiment.X` _off.go file is included instead, so exactly one of
+	// the pair survives, as Go intends.
+	if strings.Contains(tag, ".") {
+		for _, toolTag := range build.Default.ToolTags {
+			if strings.EqualFold(toolTag, tag) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// Release tags are resolved by asking the go command, not by trusting the list compiled into this
+// binary, because GOTOOLCHAIN=auto makes the two diverge in an ordinary setup: the go command
+// re-execs a NEWER toolchain when the main module asks for one, so go2cs.exe built with Go 1.23 while
+// converting a module that declares `go 1.25` would evaluate `go1.24` against its own 1.23 list and
+// silently drop every file gated between the two — along with the `!go1.24` sibling the loader had
+// already excluded, leaving the package with neither. Over-exclusion is this evaluator's recurring
+// failure mode (the purego and goexperiment seedings exist for the same reason), and it is the
+// dangerous direction: the loader has already applied the full constraint for the target platform,
+// so anything this pass subtracts is code the build really does contain.
+//
+// `go env` costs roughly 300ms on Windows, so the cost is contained twice over. Resolution is LAZY —
+// a constraint that names no release tag never triggers it, which is every behavioral package and all
+// but one standard-library package — and the answer is then cached per MODULE ROOT rather than per
+// directory, because GOTOOLCHAIN resolution is a property of the module. Both matter: the behavioral
+// corpus is 569 SEPARATE modules, so the cache alone would still pay 569 lookups to answer a question
+// none of them asks, while a -stdlib run reaches the lookup once and GOROOT/src carries a single
+// go.mod above all 302 packages.
+var (
+	releaseTagsLock  sync.Mutex
+	releaseTagsCache = map[string][]string{}
+)
+
+// isGoReleaseTag reports whether a tag has the shape of a Go release tag — `go1.` followed by digits
+// and nothing else. It is the cheap test that keeps release-tag resolution lazy.
+func isGoReleaseTag(tag string) bool {
+	minor, found := strings.CutPrefix(tag, "go1.")
+
+	if !found || minor == "" {
+		return false
+	}
+
+	for i := 0; i < len(minor); i++ {
+		if minor[i] < '0' || minor[i] > '9' {
+			return false
+		}
+	}
+
+	return true
+}
+
+// resolveReleaseTags returns this evaluator's release tags, resolving them from the loader directory
+// on first use and caching the answer for the rest of the evaluator's life.
+func (e *BuildConstraintEvaluator) resolveReleaseTags() []string {
+	if e.releaseTags == nil {
+		e.releaseTags = loaderReleaseTags(e.loaderDir)
+	}
+
+	return e.releaseTags
+}
+
+// loaderReleaseTags returns the Go release tags satisfied by the toolchain the go command selects in
+// loaderDir — the directory go/packages was configured to load from. An empty loaderDir means there
+// is no loader context to ask about, so the tags compiled into this binary are the best answer
+// available.
+//
+// It falls back to those same compiled-in tags whenever the go command cannot be reached or its
+// answer cannot be parsed. Converting standalone code with no module context is legitimate, and an
+// unreachable toolchain is never a reason to start excluding files.
+func loaderReleaseTags(loaderDir string) []string {
+	if loaderDir == "" {
+		return build.Default.ReleaseTags
+	}
+
+	moduleRoot := moduleRootDir(loaderDir)
+
+	releaseTagsLock.Lock()
+	defer releaseTagsLock.Unlock()
+
+	if tags, cached := releaseTagsCache[moduleRoot]; cached {
+		return tags
+	}
+
+	tags := build.Default.ReleaseTags
+
+	if version, err := getGoEnvFrom(moduleRoot, "GOVERSION"); err == nil {
+		if resolved := releaseTagsForVersion(version); resolved != nil {
+			tags = resolved
+		}
+	}
+
+	releaseTagsCache[moduleRoot] = tags
+
+	return tags
+}
+
+// releaseTagsForVersion expands a `go env GOVERSION` string (`go1.25.0`, `go1.25rc1`, `devel …`) into
+// the release-tag list a toolchain of that version satisfies: go1.1 through its own minor, which is
+// exactly how go/build builds the list. Returns nil when the version is not of a recognizable release
+// shape, leaving the caller on its fallback.
+func releaseTagsForVersion(version string) []string {
+	minor := strings.TrimPrefix(version, "go1.")
+
+	if minor == version {
+		return nil
+	}
+
+	// Trim any patch or pre-release suffix: `25.0` and `25rc1` both describe Go 1.25.
+	end := 0
+
+	for end < len(minor) && minor[end] >= '0' && minor[end] <= '9' {
+		end++
+	}
+
+	latest, err := strconv.Atoi(minor[:end])
+
+	if err != nil || latest < 1 {
+		return nil
+	}
+
+	tags := make([]string, 0, latest)
+
+	for i := 1; i <= latest; i++ {
+		tags = append(tags, fmt.Sprintf("go1.%d", i))
+	}
+
+	return tags
+}
+
+// moduleRootDir returns the nearest ancestor of dir that holds a go.mod — the unit GOTOOLCHAIN
+// resolution actually keys on — or dir itself when there is none.
+func moduleRootDir(dir string) string {
+	if dir == "" {
+		return ""
+	}
+
+	for current := filepath.Clean(dir); ; {
+		if _, err := os.Stat(filepath.Join(current, "go.mod")); err == nil {
+			return current
+		}
+
+		parent := filepath.Dir(current)
+
+		if parent == current {
+			return filepath.Clean(dir)
+		}
+
+		current = parent
+	}
+}
+
+// EvaluateConstraint evaluates a build constraint against the allowed platforms. It accepts either a
+// bare expression (`go1.21 && amd64`) or a whole constraint line in either syntax (`//go:build …`,
+// `// +build …`), so a caller can hand over whichever form it is holding.
+func (e *BuildConstraintEvaluator) EvaluateConstraint(expression string) (bool, error) {
+	line := strings.TrimSpace(expression)
+
+	if !constraint.IsGoBuild(line) && !constraint.IsPlusBuild(line) {
+		line = goBuildPrefix + line
+	}
+
+	expr, err := constraint.Parse(line)
+
 	if err != nil {
 		return false, fmt.Errorf("failed to parse build constraint: %w", err)
 	}
 
-	// Evaluate the expression
-	return e.evaluateExpr(node), nil
+	return expr.Eval(e.matchTag), nil
 }
 
-// evaluateExpr recursively evaluates the AST expression
-func (e *BuildConstraintEvaluator) evaluateExpr(expr ast.Expr) bool {
-	switch node := expr.(type) {
-	case *ast.BinaryExpr:
-		// Handle binary operations (&&, ||)
-		left := e.evaluateExpr(node.X)
-		right := e.evaluateExpr(node.Y)
+// readFileBuildConstraint returns the build constraint a Go source file declares, or nil when it
+// declares none.
+//
+// Only the file HEADER is scanned — everything above the package clause, line comments only —
+// matching go/build's own reader: a `//go:build` line quoted in documentation below the package
+// clause, or sitting inside a block comment, is prose and not a constraint. go/build's precedence
+// between the two syntaxes is applied verbatim: a `//go:build` line wins outright, and the legacy
+// `// +build` lines apply only in its absence (ANDed across lines, with `,` meaning AND and a space
+// meaning OR within one). Legacy-only files are exactly what a -recurse run meets in third-party
+// modules predating Go 1.17, and the regex-based scanner this replaced could not see them at all —
+// it only matched `//go:`-prefixed lines, so those files silently converted as unconstrained.
+func readFileBuildConstraint(filename string) (constraint.Expr, error) {
+	file, err := os.Open(filename)
 
-		switch node.Op {
-		case token.LAND: // &&
-			return left && right
-		case token.LOR: // ||
-			return left || right
-		default:
-			return false
-		}
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", filename, err)
+	}
 
-	case *ast.UnaryExpr:
-		// Handle unary operations (!)
-		if node.Op == token.NOT {
-			return !e.evaluateExpr(node.X)
-		}
-		return false
+	defer file.Close()
 
-	case *ast.Ident:
-		// Check if the identifier (e.g., "linux", "darwin", "amd64") is allowed
-		identifier := node.Name
-		return e.allowedPlatforms[identifier]
+	var goBuildLine string
+	var plusBuildLines []string
 
-	case *ast.SelectorExpr:
-		// A DOTTED build tag — `goexperiment.coverageredesign`, `amd64.v1` — is matched against the
-		// host toolchain's active tool tags (go/build's ToolTags), exactly as go/packages did when
-		// it selected these files. Without this the tag fell through to `false`, so a
-		// `//go:build goexperiment.X` _on.go file for an experiment ON by default (coverageredesign,
-		// regabiwrappers, regabiargs) was re-EXCLUDED here after packages.Load had INCLUDED it,
-		// dropping that file's consts (testing's `goexperiment.CoverageRedesign`, CS0117). An
-		// experiment that is off keeps its tag out of ToolTags → false → the `!goexperiment.X`
-		// _off.go file is included instead, so exactly one of the pair survives, as Go intends.
-		if x, ok := node.X.(*ast.Ident); ok {
-			tag := x.Name + "." + node.Sel.Name
+	scanner := bufio.NewScanner(file)
+	inBlockComment := false
 
-			for _, toolTag := range build.Default.ToolTags {
-				if strings.EqualFold(toolTag, tag) {
-					return true
-				}
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		if inBlockComment {
+			end := strings.Index(trimmed, "*/")
+
+			if end < 0 {
+				continue
 			}
+
+			inBlockComment = false
+			trimmed = strings.TrimSpace(trimmed[end+len("*/"):])
+		} else if strings.HasPrefix(trimmed, "/*") && !strings.Contains(trimmed, "*/") {
+			inBlockComment = true
+			continue
 		}
-		return false
 
-	case *ast.ParenExpr:
-		// Handle parenthesized expressions
-		return e.evaluateExpr(node.X)
+		// Constraints live above the package clause; nothing below it can be one.
+		if trimmed == "package" || strings.HasPrefix(trimmed, "package ") || strings.HasPrefix(trimmed, "package\t") {
+			break
+		}
 
-	default:
-		return false
-	}
-}
-
-// convertToGoSyntax converts a build constraint to Go expression syntax
-func convertToGoSyntax(constraint string) string {
-	// Trim any whitespace
-	expr := strings.TrimSpace(constraint)
-
-	// Normalize the expression to lowercase
-	expr = strings.ToLower(expr)
-
-	return expr
-}
-
-// IsBuildAllowed determines if a build directive allows building for the configured platforms
-func (e *BuildConstraintEvaluator) IsBuildAllowed(buildDirective Directive) (bool, error) {
-	if buildDirective.Type != BuildDirective {
-		return false, fmt.Errorf("directive is not a build directive")
+		// The untrimmed line is what gets tested: both recognizers require the comment to start at
+		// column zero, which is the rule the toolchain enforces.
+		switch {
+		case constraint.IsGoBuild(line):
+			// Go permits at most one //go:build line per file. Keep the first and ignore any stray
+			// extras rather than inventing a combination the toolchain would have rejected outright.
+			if goBuildLine == "" {
+				goBuildLine = line
+			}
+		case constraint.IsPlusBuild(line):
+			plusBuildLines = append(plusBuildLines, line)
+		}
 	}
 
-	return e.EvaluateConstraint(buildDirective.Content)
-}
-
-func (e *BuildConstraintEvaluator) CheckDirectives(directives []Directive) (bool, error) {
-	buildDirectives := FilterByType(directives, BuildDirective)
-
-	// If no build directives, assume it's allowed
-	if len(buildDirectives) == 0 {
-		return true, nil
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
 	}
 
-	// Check each build directive
-	for _, directive := range buildDirectives {
-		allowed, err := e.IsBuildAllowed(directive)
+	if goBuildLine != "" {
+		expr, err := constraint.Parse(goBuildLine)
+
 		if err != nil {
-			return false, err
+			return nil, fmt.Errorf("failed to parse build constraint: %w", err)
 		}
 
-		if allowed {
-			return true, nil
+		return expr, nil
+	}
+
+	// Multiple `// +build` lines are ANDed together, so they combine into one expression the same way
+	// go/build's own reader combines them.
+	var plusBuildExpr constraint.Expr
+
+	for _, plusBuildLine := range plusBuildLines {
+		expr, err := constraint.Parse(plusBuildLine)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse build constraint: %w", err)
+		}
+
+		if plusBuildExpr == nil {
+			plusBuildExpr = expr
+		} else {
+			plusBuildExpr = &constraint.AndExpr{X: plusBuildExpr, Y: expr}
 		}
 	}
 
-	// No matching build directive found
-	return false, nil
+	return plusBuildExpr, nil
 }
 
 // isFileNameCompatible checks if a Go source file should be included in a build
@@ -407,17 +507,16 @@ var knownGOARCH = map[string]bool{
 func isKnownGOOS(s string) bool   { return knownGOOS[s] }
 func isKnownGOARCH(s string) bool { return knownGOARCH[s] }
 
-// Modified CheckBuildConstraints that handles both directives and filename constraints
-func CheckBuildConstraints(filename string, targetPlatform string, buildTags []string) (bool, error) {
-	// Parse the source code to extract directives
-	directives, err := ParseDirectives(filename)
-
-	if err != nil {
-		return false, fmt.Errorf("failed to parse directives: %w", err)
-	}
-
+// CheckBuildConstraints reports whether a Go source file belongs in the build for the given target
+// platform, honoring both its filename suffixes and its declared build constraint.
+//
+// loaderDir is the directory go/packages loaded this file's package from; it selects the toolchain
+// whose Go release tags the constraint is evaluated against (see loaderReleaseTags). Pass "" when
+// there is no loader context and the tags compiled into this binary are the best available answer.
+func CheckBuildConstraints(filename string, targetPlatform string, buildTags []string, loaderDir string) (bool, error) {
 	// Create a new build constraint evaluator
 	evaluator := NewBuildConstraintEvaluator([]string{targetPlatform})
+	evaluator.loaderDir = loaderDir
 
 	// A -tags tag must be honored HERE too, not just by the go/packages loader. The loader selects
 	// files with the tag applied — `-tags purego` picks crypto/sha256's sha256block_generic.go, which
@@ -435,14 +534,18 @@ func CheckBuildConstraints(filename string, targetPlatform string, buildTags []s
 		return false, nil
 	}
 
-	// If no build directives exist, we already passed the filename check
-	buildDirectives := FilterByType(directives, BuildDirective)
-	if len(buildDirectives) == 0 {
+	expr, err := readFileBuildConstraint(filename)
+
+	if err != nil {
+		return false, err
+	}
+
+	// If the file declares no constraint, the filename check above is the whole verdict
+	if expr == nil {
 		return true, nil
 	}
 
-	// Otherwise, check explicit build directives
-	return evaluator.CheckDirectives(directives)
+	return expr.Eval(evaluator.matchTag), nil
 }
 
 // containsManualConversionMarker checks if a file contains the GoManualConversion module marker

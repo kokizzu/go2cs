@@ -219,6 +219,57 @@ warnings" to "14/14, silent". **Left as guidance, not code** — the honest fix 
 optional refinement (naming this condition in the diagnostic instead of letting it read as an ordinary type
 error) is a small, separate change nobody is blocked on.
 
+**(d) CLOSED 2026-08-06 — the build-constraint evaluator could not parse a Go release tag, and the
+`!go1.21` "asymmetry" was never an asymmetry.** Observed in the same otel probe: five
+`github.com/go-logr/logr@v1.4.3` files gated `//go:build go1.21` each warned `failed to parse build
+constraint: 1:4: expected 'EOF', found .21`, while the paired `context_noslog.go` (`!go1.21`) warned not at
+all and was correctly excluded — with an identical dual-line header, which made the two look like they were
+handled by different code paths.
+
+**Root cause.** `EvaluateConstraint` ran the constraint through `parser.ParseExpr`, a Go **expression**
+parser, for which `go1.21` is the identifier `go1` followed by an illegal `.21` selector. It fails on
+`!go1.21` too — at `1:5` — so nothing diverged here. `context_noslog.go` produced no warning because
+`go/packages` had **already excluded it upstream**: it is absent from `pkg.GoFiles` and never reaches this
+code at all. Verified directly, both halves: `ParseExpr` errors on both forms, and a two-file probe module
+loaded through `packages.Load` returns only the `go1.21` file.
+
+**Why it was not cosmetic.** `conversionDriver.go` warns on a constraint error and falls THROUGH to
+including the file, so on those five files the wrong machinery reached the right answer. It is wrong the
+moment a constraint mixes a release tag with a platform: `//go:build go1.21 && windows` converted for linux
+lost its platform half along with the rest of the expression and was included. Two further defects fell out
+of the same layer — the regex scanner matched only `//go:`-prefixed lines, so a legacy `// +build`-only file
+(the norm in pre-1.17 third-party modules, which is exactly what `-recurse` meets) converted as
+**unconstrained**; and it scanned the WHOLE file, so a `//go:build` quoted in documentation *below* the
+package clause gated the file.
+
+**Fix.** The hand-rolled parse/eval layer is gone, replaced by `go/build/constraint` — the package the
+toolchain itself uses. `constraint.IsGoBuild`/`IsPlusBuild` recognize the lines (column zero, header only,
+`//go:build` winning over `+build` as go/build orders them), `constraint.Parse` parses both syntaxes, and
+`Expr.Eval` drives a single `matchTag` callback that owns every tag class. Tag matching is now
+case-sensitive, as the toolchain matches; the old evaluator lowercased the whole expression, which quietly
+made a mixed-case `-tags MyTag` unsatisfiable.
+
+**One hazard this fix creates and closes in the same change, and it is finding (c) wearing a different
+hat.** Release-tag evaluation was previously inert — it *always* errored — so activating it puts the
+compiled-in `build.Default.ReleaseTags` in charge of `go1.N`. Under `GOTOOLCHAIN=auto` that list is not the
+loader's: go2cs.exe built with Go 1.23 converting a module that declares `go 1.25` would call `go1.24` false
+while `go/packages` called it true, dropping every file gated between the two **along with** the `!go1.24`
+sibling the loader had already excluded — leaving the package with neither half. That configuration is not
+hypothetical; it is what this machine had (converter built go1.23.2, otel probe loading under go1.25.0).
+Over-exclusion is this evaluator's recurring failure mode — the `purego` seeding and the `goexperiment`
+ToolTags branch both exist to undo one — and it is the dangerous direction, because the loader has already
+applied the full constraint for the target platform, so anything this pass subtracts is real code. Release
+tags are therefore resolved by asking the go command (`go env GOVERSION` from the same directory
+`packages.Load` uses), cached per module root so a `-stdlib` run pays one ~300 ms lookup rather than 302.
+Note this does **not** retire (c): the linked-in *type checker* is still whatever release compiled go2cs,
+and no toolchain switch reaches it. Build go2cs with a toolchain at least as new as the closure's newest
+`go` directive regardless.
+
+Guarded by `src/go2cs/buildConstraints_test.go` — release tags bare/negated/compound, the legacy `+build`
+grammar, extraction precedence, and the loader-toolchain resolution. Verified against the pre-fix converter
+rather than assumed: every new assertion fails on it, including the two the fix was not looking for (the
+legacy-only file and the documentation-gated file).
+
 ## ~~OWED~~ DISCHARGED — the issue-#32 go.work fix is measured on Windows (2026-08-06, same day)
 
 **Every owed gate ran; the change is clean, and its emission-neutrality is proved against the converter

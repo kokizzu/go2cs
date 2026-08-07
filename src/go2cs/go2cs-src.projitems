@@ -17,6 +17,7 @@
     <None Include="$(MSBuildThisFileDirectory)astTypeSyntax.go" />
     <None Include="$(MSBuildThisFileDirectory)autoSiblingOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)blankImportInit_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)commandLineOptions.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintOperations.go" />
@@ -130,6 +131,7 @@
     <None Include="$(MSBuildThisFileDirectory)typeSignatureParsing.go" />
     <None Include="$(MSBuildThisFileDirectory)untypedConstAnalysisOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)untypedConstOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)untypedPackageConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)validationProofPages.go" />
     <None Include="$(MSBuildThisFileDirectory)validationProofPages_test.go" />
     <None Include="$(MSBuildThisFileDirectory)variableAnalysisOperations.go" />
