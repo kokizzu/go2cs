@@ -50,6 +50,20 @@ adopted verbatim; it is what `push-nuget.ps1` packs. They overlap deliberately �
 different scope — so a project can be opened from either. (A third, classic-format
 `src/go2cs-examples.sln` covers the samples; the old hand-maintained classic `.sln` files are retired.)
 
+⚠ **NOTHING routinely builds `go2cs.slnx` end to end, so a broken solution member rots invisibly.**
+Every harness — `BehavioralRunner`, MSTest, `check-no-regression.ps1`, `run-validated-sweep.ps1` —
+builds each `.csproj` **by path**, never through the solution (the same by-path habit
+`check-solution-integrity.ps1` polices from the other direction). A solution member that no gate
+compiles can therefore break while every gate stays green. That is what happened to the
+`utilities/QuickTest` scratch project: the r41 GoFrame arc (`6adab2909`, 2026-08-05) retired golib's
+`func`/`Defer`/`Recover` execution-context API and carried the corpus with it, but QuickTest was
+hand-written scratch nobody builds, so it took `go2cs.slnx` down for two days unnoticed. It was
+**retired** on 2026-08-07 rather than hand-fixed again: it was the solution's only hand-written,
+un-gated member, so it would have rotted at the next golib change, and the experiments it held
+(struct/interface promotion hand-simulated *before* `go2cs-gen` existed) are covered by real
+behavioral tests now. Git keeps it at `d3223d252` if a shape is ever wanted back. **After changing a
+golib/runtime API, build `src/go2cs.slnx` once before banking** — ~90 s, and no other gate covers it.
+
 Converter internals (full taxonomy in [`docs/Architecture.md`](docs/Architecture.md)):
 - Entry: `src/go2cs/main.go`. Stdlib driver: `src/go2cs/stdLibConverter.go` (builds the package
   dependency graph + topological `sortedQueue`).
@@ -324,6 +338,7 @@ ONE stdlib in a build; there is now only one on disk.
   | `go2cs -stdlib -comments` (full reconvert) | **~195–225s (223s measured r41, 2026-08-05)** | 600s | 304 projects; per-file work is sub-second, the cost is `go/packages` |
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
   | full `go2cs-stdlib.slnx` build | **~92–188s** warm (304 projects; 188s measured r41 and 158s at r40, both with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`) | 600s | cold restore adds a few minutes |
+  | full `go2cs.slnx` build | **~87s** `--no-incremental` / **~39s** incremental (573 projects; measured 2026-08-07) | 900s | the ONLY gate that compiles the non-generated solution members (utilities, examples) — run it after any golib/runtime API change. ⚠ Under concurrent-lane load a `go2cs-gen` run can die with `AccessViolationException` inside `TypeGenerator`'s recursive `PromotedStructDeclarations`, reported as an `error` against the package (seen once on `core/runtime`, NOT reproducible in two immediate retries with identical flags): re-run before believing it, exactly as with the Go-toolchain crash above |
   | `run-validated-sweep.ps1` (full roster) | **~46–53 min (2,736s measured 2026-08-04 SOLO at the 73-package / 2,713-verdict roster; 3,154s on 2026-08-01 at 71 — the old "hours" figure is stale)** | run it BACKGROUNDED | ~37 s for a typical package; use `-Filter` for anything but a final gate |
 
   Materially *past* these means the test host has hung under lock contention, not real work — stop and

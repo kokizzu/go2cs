@@ -821,7 +821,6 @@
   </Folder>
   <Folder Name="/utilities/">
     <File Path="set-version.ps1" />
-    <Project Path="utilities/QuickTest/QuickTest.csproj" />
     <Project Path="utilities/UpdateTestTargets/UpdateTestTargets.csproj" />
   </Folder>
 </Solution>
