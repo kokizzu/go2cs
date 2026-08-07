@@ -779,15 +779,41 @@ changes every deferred function's emitted shape: `ConversionStrategies.md` and
 match reality. Style ruling: present tense, educating a new reader — no history in the teaching docs;
 posterity lives in the design doc.
 
-**Queued task 2 — the `[GoTestMatchingConsoleOutput]` audit (idle-point, measured).** Before `core/fmt`
-was real, some behavioral tests skipped output-matching because the stub could not format their output.
-Measured 2026-08-05: **14 projects** have `package main` but no attribute — ChannelReceiveFromNil,
-ChannelSendToClosed, ChannelSendToNil, DeferSimple, ForVariants, GoCallVariations,
-InferredForeignTypeNoImport, InterfaceInheritance, PointerCastSliceRange, RangePointerArrayConversion,
-SelectStatement, StructWithPointer, TypeConversionReturnType, UnsafePointerReinterpret. Evaluate each
-against `go run` under the real fmt; some are deliberate (nondeterministic or panic-exit programs), but
-the number that can graduate to output-compared is likely not zero. Adding the attribute + regenerating
-the test classes via UpdateTestTargets is the whole change per graduate.
+**Queued task 2 — the `[GoTestMatchingConsoleOutput]` audit — CLOSED (r41b-outputattr, 2026-08-07).**
+Before `core/fmt` was real, some behavioral tests skipped output-matching because the stub could not
+format their output. Measured 2026-08-05: **14 projects** had `package main` but no attribute. Each was
+run via `go run .` (5+ repetitions per project, comparing stdout/exit-code across runs) to classify as
+GRADUATE (deterministic stdout, exit 0), DELIBERATE-SKIP (nondeterministic or panic/deadlock by design),
+or FIXABLE-MISMATCH (deterministic Go output, but the transpiled C# currently diverges). **4 of 14
+graduated** and are now output-compared (`run-behavioral.ps1 --filter <Name>`, all four phases green);
+one attempted graduate uncovered a genuine converter bug and was left un-annotated, reported below as a
+new board candidate:
+
+| Project | Verdict | Reason |
+|:--|:--|:--|
+| ChannelReceiveFromNil | DELIBERATE-SKIP | `<-` on a nil channel — Go's deadlock detector fires (`fatal error: all goroutines are asleep - deadlock!`), zero stdout, exit code 2. The message carries a goroutine stack trace (addresses/line offsets); a managed re-implementation cannot be expected to reproduce it byte-for-byte, and there is nothing on stdout to compare regardless. |
+| ChannelSendToClosed | DELIBERATE-SKIP | Ten goroutines race to send on / close the same buffered channel with no synchronization — a deliberately racy program. Repeated `go run` showed both the *count* of values printed before the panic (0 vs 10 observed) and *which* goroutine panics vary between runs; output is provably nondeterministic. |
+| ChannelSendToNil | DELIBERATE-SKIP | `c <- v` on a nil channel — same deadlock-detector shape as ChannelReceiveFromNil (zero stdout, exit code 2, non-reproducible stack trace). |
+| **DeferSimple** | **GRADUATED** | Deterministic 3-line stdout (`Open file` / `Write data to file` / `Close file`), exit 0, confirmed across 5 runs. `run-behavioral.ps1 --filter DeferSimple` — 4/4 phases PASS (48.2s). |
+| ForVariants | DELIBERATE-SKIP | Spawns unsynchronized goroutines (`go fmt.Println(...)`) whose print ordering interleaves with the main goroutine's loop output. Two consecutive `go run` invocations produced different line orderings/content, confirming scheduler-dependent nondeterminism. |
+| GoCallVariations | DELIBERATE-SKIP | Exercises ~8 different `go`-statement call shapes (bare func, closure, method value, function-returning-function, etc.) with no synchronization between them; two consecutive runs printed the same lines in different relative order — nondeterministic by design (that's the point of the test). |
+| **InferredForeignTypeNoImport** | **GRADUATED** | Deterministic 2-line stdout (`true` / `5`), exit 0, confirmed across 5 runs. `run-behavioral.ps1 --filter InferredForeignTypeNoImport` — 4/4 phases PASS (19.6s). |
+| **InterfaceInheritance** | **GRADUATED** | Deterministic 2-line stdout (two `map[:N :M]` lines — Go's `fmt` sorts map keys since 1.12, so the single-key-per-map output is stable), exit 0, confirmed across 5 runs. `run-behavioral.ps1 --filter InterfaceInheritance` — 4/4 phases PASS (15.5s), proving the transpiled map-print ordering matches too. |
+| **PointerCastSliceRange** | **GRADUATED** | Deterministic single-line stdout (`6 100 11`), exit 0, confirmed across 5 runs. `run-behavioral.ps1 --filter PointerCastSliceRange` — 4/4 phases PASS (17.9s). |
+| RangePointerArrayConversion | **FIXABLE-MISMATCH (new board candidate)** | Go's stdout is deterministic (`63`, exit 0, confirmed across 5 runs) — a graduate by the audit's own criterion — but the transpiled C# prints `0`. Root cause is visible in the emitted code: `for i, x := range (*[3]int)(p)` (`p := unsafe.Pointer(&a)`) converts to `foreach (var (i, x) in ((ж<array<nint>>)(uintptr)(p)).Value)` — the round-trip through `uintptr` cannot recover the original managed box `Ꮡa`, so the cast yields a fresh/default `array<nint>` and the loop sums over zero elements instead of `{10,20,30}`. This is the same "unsafe.Pointer reinterpret via raw address" limitation already load-bearing in the neighboring `UnsafePointerReinterpret` test's own design comment (that test deliberately stays Compile+Target-only for exactly this reason). **The attribute was NOT added** — adding it would redden the Output phase — so this project is left exactly as measured (no diff). Candidate fix belongs with whichever arc next touches unsafe.Pointer reinterpret-cast codegen (see `ж<T>`/`Ꮡ` boxing notes); until then this stays a known, deliberate non-graduate for a different reason than the other nine (a real bug, not an inherent nondeterminism). |
+| SelectStatement | DELIBERATE-SKIP | Go's `select` deliberately pseudo-randomizes among multiple ready cases. Two consecutive runs showed different orderings/values (`OK: true -- got: 12` at a different line position; final tuple `17 -5 12 3` vs `3 17 20 -5`) — confirmed nondeterministic. |
+| StructWithPointer | DELIBERATE-SKIP | stdout embeds a raw pointer address (`Value of red = {2 red 0xc0...}`); 5 repeated runs showed two distinct addresses (`0xc000028180`, `0xc00010a150`) recurring at random. A memory address can never be expected to match between the Go runtime's allocator and the CLR's, so this can never be a stable golden regardless of transpile correctness. |
+| TypeConversionReturnType | DELIBERATE-SKIP | Same shape as StructWithPointer — stdout embeds two raw pointer addresses (`{Go 0xc0... 0xc0... map[]}`) that varied across all 5 runs. Not stable in Go itself, so not a candidate for a byte-exact golden. |
+| UnsafePointerReinterpret | DELIBERATE-SKIP | Explicitly documented in its own source comment as "a Compile + Target (golden byte-comparison) test, NOT an output-comparison test" — it uses `println` (Go builtin, writes to stderr) rather than `fmt.Println`, and exercises the same raw-address unsafe.Pointer reinterpret limitation that RangePointerArrayConversion's mismatch surfaces at runtime. |
+
+**Net: 4 graduated (DeferSimple, InferredForeignTypeNoImport, InterfaceInheritance,
+PointerCastSliceRange), 9 deliberate-skips (documented above, each for a distinct concrete reason —
+deadlock detection, goroutine-scheduling nondeterminism, select randomization, or raw pointer-address
+non-reproducibility), 1 new FIXABLE-MISMATCH board candidate (RangePointerArrayConversion — unsafe.Pointer
+reinterpret-cast through a raw `uintptr` round-trip loses the original managed box).** Change footprint:
+4 one-line `[GoTestMatchingConsoleOutput]` additions to `package_info.cs` + the UpdateTestTargets-generated
+`OutputComparisonTests.cs` block (4 new `Check<Name>()` methods) — no golden re-baselining needed (no
+emission changed), no `go2cs.slnx` registration changes (all 14 projects were already registered).
 
 ## The `-tests` reference-closure family — CLOSED (2026-07-27)
 

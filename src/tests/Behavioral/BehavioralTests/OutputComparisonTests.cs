@@ -296,6 +296,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferLambdaParam() => CheckTarget("DeferLambdaParam");
 
     [TestMethod]
+    public void CheckDeferSimple() => CheckTarget("DeferSimple");
+
+    [TestMethod]
     public void CheckDeferTypelessReturns() => CheckTarget("DeferTypelessReturns");
 
     [TestMethod]
@@ -608,10 +611,16 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckIndexExprCaseLabel() => CheckTarget("IndexExprCaseLabel");
 
     [TestMethod]
+    public void CheckInferredForeignTypeNoImport() => CheckTarget("InferredForeignTypeNoImport");
+
+    [TestMethod]
     public void CheckInterfaceFieldNamedScalar() => CheckTarget("InterfaceFieldNamedScalar");
 
     [TestMethod]
     public void CheckInterfaceImplementation() => CheckTarget("InterfaceImplementation");
+
+    [TestMethod]
+    public void CheckInterfaceInheritance() => CheckTarget("InterfaceInheritance");
 
     [TestMethod]
     public void CheckInterfaceIntraFunction() => CheckTarget("InterfaceIntraFunction");
@@ -1026,6 +1035,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPointerArraySlice() => CheckTarget("PointerArraySlice");
+
+    [TestMethod]
+    public void CheckPointerCastSliceRange() => CheckTarget("PointerCastSliceRange");
 
     [TestMethod]
     public void CheckPointerCastSliceReinterpret() => CheckTarget("PointerCastSliceReinterpret");
