@@ -3873,9 +3873,9 @@ now does, on all four source shapes.
 
 | Class | Rows | Disposition |
 |:--|:--:|:--|
-| **Go-source geometry** - `TestCallDepth`, `TestConnections` (+1 sub), `TestJSONAndTextHandlers/Source` (+2), `TestPanics`, `TestRecordSource` | 8 | The SAME class r43g named on `log`'s `TestAll`: `runtime.Caller` honestly reports `logger_test.cs:905` where the assert wants `^logger_test\.go:\d+$`. **Not disclosable** - satisfiable at a layer go2cs owns (a Go-source position map: `#line` directives, or a per-package side-car). It is the architectural arc to design with the user, and it is what actually gates `log/slog` *and* `log`. |
+| **Go-source geometry** - `TestCallDepth`, `TestConnections` (+1 sub), `TestJSONAndTextHandlers` (+3), `TestPanics`, `TestRecordSource` | 9 | The SAME class r43g named on `log`'s `TestAll`: `runtime.Caller` honestly reports `logger_test.cs:905` where the assert wants `^logger_test\.go:\d+$`. **Not disclosable** - satisfiable at a layer go2cs owns (a Go-source position map: `#line` directives, or a per-package side-car). It is the architectural arc to design with the user, and it is what actually gates `log/slog` *and* `log`. |
 | **`alloc-profile`** - `TestAlloc` (+13 subs), `TestAnyLevelAlloc`, `TestAttrNoAlloc`, `TestTextHandlerAlloc`, `TestValueNoAlloc` | 18 | The established disclosure class. **Nothing disclosed** - disclosing them alone banks nothing while the geometry class stands, which is the same call r43f and r43g made on `log`. |
-| **Package initialization ORDER** - `TestSetDefault` (hard crash), `TestLogLoggerLevelForDefaultHandler` | 2 | A new, general root; see below. |
+| **Package initialization ORDER** - `TestLogLoggerLevelForDefaultHandler` (fail), `TestSetDefault` (the crash) | 1 + crash | A new, general root; see below. |
 
 ### Root 3 (found, NOT fixed) - Go initializes an imported package before its importer; C# does not
 
