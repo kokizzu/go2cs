@@ -116,30 +116,30 @@ internal static void Main() {
     @try(nilFileCheckValidˢ, () => {
         fmt.Printf("  checkValid -> %v (is errInvalid: %v)\n"u8, nilFileʗ1.checkValid("x"u8), AreEqual(nilFileʗ1.checkValid("x"u8), errInvalid));
     });
-    var nilFileʗ3 = nilFile;
+    var nilFileʗ2 = nilFile;
     @try(nilFileChdirˢ, () => {
-        var err = nilFileʗ3.Chdir();
+        var err = nilFileʗ2.Chdir();
         fmt.Printf("  Chdir -> %v (is errInvalid: %v)\n"u8, err, AreEqual(err, errInvalid));
     });
     fmt.Println();
     fmt.Println(nilReceiverUnconditionalˢ);
-    var nilFileʗ5 = nilFile;
+    var nilFileʗ3 = nilFile;
     @try(nilFileBoxNameˢ, () => {
-        _ = nilFileʗ5.BoxName();
+        _ = nilFileʗ3.BoxName();
     });
-    var nilFileʗ7 = nilFile;
+    var nilFileʗ4 = nilFile;
     @try(nilFileValNameˢ, () => {
-        _ = nilFileʗ7.ValName();
+        _ = nilFileʗ4.ValName();
     });
     fmt.Println();
     fmt.Println(nilReceiverSideEffectˢ);
-    var nilFileʗ9 = nilFile;
+    var nilFileʗ5 = nilFile;
     @try(nilFileBoxAnnounceˢ, () => {
-        _ = nilFileʗ9.BoxAnnounce();
+        _ = nilFileʗ5.BoxAnnounce();
     });
-    var nilFileʗ11 = nilFile;
+    var nilFileʗ6 = nilFile;
     @try(nilFileValAnnounceˢ, () => {
-        _ = nilFileʗ11.ValAnnounce();
+        _ = nilFileʗ6.ValAnnounce();
     });
     fmt.Println();
     fmt.Println(nonNilReceiverBothShapesˢ);
@@ -148,25 +148,25 @@ internal static void Main() {
     @try(realCheckValidˢ, () => {
         fmt.Printf("  checkValid -> %v\n"u8, realʗ1.checkValid("x"u8));
     });
-    var realʗ3 = real;
+    var realʗ2 = real;
     @try(realChdirˢ, () => {
-        fmt.Printf("  Chdir -> %v\n"u8, realʗ3.Chdir());
+        fmt.Printf("  Chdir -> %v\n"u8, realʗ2.Chdir());
+    });
+    var realʗ3 = real;
+    @try(realBoxNameˢ, () => {
+        fmt.Printf("  BoxName -> %s\n"u8, realʗ3.BoxName());
+    });
+    var realʗ4 = real;
+    @try(realValNameˢ, () => {
+        fmt.Printf("  ValName -> %s\n"u8, realʗ4.ValName());
     });
     var realʗ5 = real;
-    @try(realBoxNameˢ, () => {
-        fmt.Printf("  BoxName -> %s\n"u8, realʗ5.BoxName());
-    });
-    var realʗ7 = real;
-    @try(realValNameˢ, () => {
-        fmt.Printf("  ValName -> %s\n"u8, realʗ7.ValName());
-    });
-    var realʗ9 = real;
     @try(realValFdˢ, () => {
-        fmt.Printf("  ValFd -> %d\n"u8, realʗ9.ValFd());
+        fmt.Printf("  ValFd -> %d\n"u8, realʗ5.ValFd());
     });
-    var realʗ11 = real;
+    var realʗ6 = real;
     @try(realBoxAnnounceˢ, () => {
-        fmt.Printf("  BoxAnnounce -> %s\n"u8, realʗ11.BoxAnnounce());
+        fmt.Printf("  BoxAnnounce -> %s\n"u8, realʗ6.BoxAnnounce());
     });
     fmt.Printf("  box/ref shapes agree on the name: %v\n"u8, real.BoxName() == real.ValName());
     fmt.Println();

@@ -153,26 +153,26 @@ internal static void Main() {
         var err = checkArg(nilNodeʗ1, "x"u8);
         fmt.Printf("  checkArg -> %v (is errNilArg: %v)\n"u8, err, AreEqual(err, errNilArg));
     });
-    var nilNodeʗ3 = nilNode;
+    var nilNodeʗ2 = nilNode;
     @try(storeNilˢ, () => {
-        var h = store(nilNodeʗ3);
+        var h = store(nilNodeʗ2);
         fmt.Printf("  store -> %s, next nil: %v\n"u8, (~h).name, (~h).next == nil);
     });
-    var nilNodeʗ5 = nilNode;
+    var nilNodeʗ3 = nilNode;
     @try(guardedNilˢ, () => {
-        fmt.Printf("  %s\n"u8, guarded(nilNodeʗ5));
+        fmt.Printf("  %s\n"u8, guarded(nilNodeʗ3));
     });
     fmt.Println();
     fmt.Println(nilArgumentUnconditionalˢ);
-    var nilNodeʗ7 = nilNode;
+    var nilNodeʗ4 = nilNode;
     @try(readNameNilˢ, () => {
-        _ = readName(nilNodeʗ7);
+        _ = readName(nilNodeʗ4);
     });
     fmt.Println();
     fmt.Println(nilArgumentSideEffectˢ);
-    var nilNodeʗ9 = nilNode;
+    var nilNodeʗ5 = nilNode;
     @try(announceNilˢ, () => {
-        _ = announce(nilNodeʗ9);
+        _ = announce(nilNodeʗ5);
     });
     fmt.Println();
     fmt.Println(nilTerminatedWalkˢ);
@@ -181,9 +181,9 @@ internal static void Main() {
     @try(walkLenChainˢ, () => {
         fmt.Printf("  walkLen -> %d\n"u8, walkLen(chainʗ1));
     });
-    var nilNodeʗ11 = nilNode;
+    var nilNodeʗ6 = nilNode;
     @try(walkLenNilˢ, () => {
-        fmt.Printf("  walkLen -> %d\n"u8, walkLen(nilNodeʗ11));
+        fmt.Printf("  walkLen -> %d\n"u8, walkLen(nilNodeʗ6));
     });
     fmt.Println();
     fmt.Println(errorParameterHoldingNilˢ);
@@ -196,35 +196,35 @@ internal static void Main() {
     });
     fmt.Println();
     fmt.Println(normalizationRepointedˢ);
-    var nilNodeʗ13 = nilNode;
+    var nilNodeʗ7 = nilNode;
     @try(normalizeNilˢ, () => {
-        fmt.Printf("  normalize -> %s\n"u8, normalize(nilNodeʗ13));
+        fmt.Printf("  normalize -> %s\n"u8, normalize(nilNodeʗ7));
     });
-    var chainʗ3 = chain;
+    var chainʗ2 = chain;
     @try(normalizeChainˢ, () => {
-        fmt.Printf("  normalize -> %s\n"u8, normalize(chainʗ3));
+        fmt.Printf("  normalize -> %s\n"u8, normalize(chainʗ2));
     });
     fmt.Println();
     fmt.Println(nonNilArgumentsˢ);
-    var chainʗ5 = chain;
+    var chainʗ3 = chain;
     @try(checkArgChainˢ, () => {
-        fmt.Printf("  checkArg -> %v\n"u8, checkArg(chainʗ5, "x"u8));
+        fmt.Printf("  checkArg -> %v\n"u8, checkArg(chainʗ3, "x"u8));
+    });
+    var chainʗ4 = chain;
+    @try(guardedChainˢ, () => {
+        fmt.Printf("  %s\n"u8, guarded(chainʗ4));
+    });
+    var chainʗ5 = chain;
+    @try(readNameChainˢ, () => {
+        fmt.Printf("  readName -> %s\n"u8, readName(chainʗ5));
+    });
+    var chainʗ6 = chain;
+    @try(announceChainˢ, () => {
+        fmt.Printf("  announce -> %s\n"u8, announce(chainʗ6));
     });
     var chainʗ7 = chain;
-    @try(guardedChainˢ, () => {
-        fmt.Printf("  %s\n"u8, guarded(chainʗ7));
-    });
-    var chainʗ9 = chain;
-    @try(readNameChainˢ, () => {
-        fmt.Printf("  readName -> %s\n"u8, readName(chainʗ9));
-    });
-    var chainʗ11 = chain;
-    @try(announceChainˢ, () => {
-        fmt.Printf("  announce -> %s\n"u8, announce(chainʗ11));
-    });
-    var chainʗ13 = chain;
     @try(storeChainˢ, () => {
-        var h = store(chainʗ13);
+        var h = store(chainʗ7);
         fmt.Printf("  store -> %s, next: %s\n"u8, (~h).name, (~(~h).next).name);
     });
     fmt.Println();

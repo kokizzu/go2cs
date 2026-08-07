@@ -2469,21 +2469,24 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
-	// Check each argument for implicit conversions. This re-converts each arg purely for its
-	// side-effects (recording implicit conversions); the result is discarded. Suppress capture-decl
-	// hoisting during it so a func-literal arg's decls (already emitted by the real conversion
-	// above) are not written a second time into the hoist buffer.
-	savedHoist := v.hoistedDecls
-	v.hoistedDecls = nil
-
+	// Record each argument's implicit conversions. Nothing here is emitted — the call text was
+	// assembled above — so this walks the RECORDING half only (applyImplicitConversion), never
+	// convExpr.
+	//
+	// It used to call checkForImplicitConversion, i.e. a full second conversion of every argument
+	// subtree whose result was discarded, which made every call cost 2× and every NESTED call
+	// `f(f(f(…)))` cost 2^depth: depth 22 took 10.6s against a 0.6s floor on this machine. Same
+	// class as the issue-#33 callee-path exponential (a chained call re-converting its callee once
+	// per parameter), one code path over — see the board's ARGUMENT-path entry. The recording is
+	// entirely type-driven, so dropping the traversal is free: it also removes the need to suppress
+	// capture-decl hoisting around the loop (the second conversion of a func-literal argument was
+	// what wrote its decls into the hoist buffer a second time).
 	for _, arg := range callExpr.Args {
 		argType := v.getType(arg, false)
 		argTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(argType, false))
 
-		v.checkForImplicitConversion(funcType, arg, argTypeName)
+		v.applyImplicitConversion(funcType, arg, argTypeName, "")
 	}
-
-	v.hoistedDecls = savedHoist
 
 	return result
 }
@@ -2533,8 +2536,24 @@ func (v *Visitor) identDeclaredFromMethodGroup(ident *ast.Ident) bool {
 	return found
 }
 
+// checkForImplicitConversion converts arg and applies any implicit conversion the call site needs,
+// returning the emitted expression. This is the RENDERING caller's entry point (the explicit
+// type-conversion branch of convCallExpr, which uses the returned text); a caller that only wants
+// the recording side effect calls applyImplicitConversion directly and skips the conversion — see
+// the argument loop at the end of convCallExpr.
 func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string) string {
-	expr := v.convExpr(arg, nil)
+	return v.applyImplicitConversion(funcType, arg, targetTypeName, v.convExpr(arg, nil))
+}
+
+// applyImplicitConversion records the implicit conversion, if any, between arg's type and the
+// call's target type, returning expr wrapped as the target requires.
+//
+// Every DECISION here is type-driven — funcType, argType, targetTypeName and packageTypeSpecRHS —
+// and expr is pure text that flows only to the return value (the two pointer cases wrap it). That
+// is what lets the recording run without a conversion at all: a caller that discards the result
+// passes "" and pays no traversal. Keep it that way; reading anything out of expr would put a whole
+// second walk of the argument subtree back on every call (see the loop's note in convCallExpr).
+func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string, expr string) string {
 	argType := v.getType(arg, false)
 
 	// The callee of a call whose operand went INVALID has no recorded type at all (go/types drops

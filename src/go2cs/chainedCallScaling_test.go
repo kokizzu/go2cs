@@ -114,7 +114,8 @@ func main() {
 	output, err := runWithinBudget(t, cmd, budget)
 
 	if err != nil {
-		t.Fatalf("converting a %d-link chained call: %v\n%s", chainedCallLinks, err, output)
+		t.Fatalf("converting a %d-link chained call: %v — the callee is being re-converted per "+
+			"parameter again (issue #33)\n%s", chainedCallLinks, err, output)
 	}
 
 	mainCs := readGenerated(t, filepath.Join(pkgDir, "out", "main.cs"))
@@ -127,6 +128,8 @@ func main() {
 }
 
 // runWithinBudget runs cmd and kills it if it outlives budget, reporting the timeout as the error.
+// The message stays generic — each scaling guard names its own defect in the Fatalf that wraps it,
+// because both this guard and the argument-path one (nestedArgScaling_test.go) share this helper.
 func runWithinBudget(t *testing.T, cmd *exec.Cmd, budget time.Duration) (string, error) {
 	t.Helper()
 
@@ -153,8 +156,7 @@ func runWithinBudget(t *testing.T, cmd *exec.Cmd, budget time.Duration) (string,
 		_ = cmd.Process.Kill()
 		<-done
 
-		return combined.String(), fmt.Errorf("did not finish within %s — the callee is being "+
-			"re-converted per parameter again (issue #33)", budget)
+		return combined.String(), fmt.Errorf("did not finish within %s (killed)", budget)
 	}
 }
 

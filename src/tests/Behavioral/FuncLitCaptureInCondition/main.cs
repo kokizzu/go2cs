@@ -27,18 +27,18 @@ internal static void Main() {
     }
     {
         nint extra = 7;
-        var lookupʗ3 = lookup;
-        if (anyMatch(vals, (nint u) => lookupʗ3[u] || u == extra)) {
+        var lookupʗ2 = lookup;
+        if (anyMatch(vals, (nint u) => lookupʗ2[u] || u == extra)) {
             fmt.Println(ifInitˢ, true);
         }
     }
-    var lookupʗ5 = lookup;
-    for (nint i = 0; i < 2 && anyMatch(vals, (nint u) => lookupʗ5[u + i]); i++) {
+    var lookupʗ3 = lookup;
+    for (nint i = 0; i < 2 && anyMatch(vals, (nint u) => lookupʗ3[u + i]); i++) {
         fmt.Println(forˢ, i);
     }
     nint n = 0;
-    var lookupʗ7 = lookup;
-    while (anyMatch(vals, (nint u) => lookupʗ7[u] && n < 2)) {
+    var lookupʗ4 = lookup;
+    while (anyMatch(vals, (nint u) => lookupʗ4[u] && n < 2)) {
         fmt.Println(whileˢ, n);
         n++;
     }

@@ -70,63 +70,115 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
-## UP NEXT — the ARGUMENT-path exponential, banked and rooted (2026-08-07, user ruling: own session)
+## CLOSED — the ARGUMENT-path exponential is fixed, and the corpus paid its 29-file debt in the same change (2026-08-07, r43a-argexp)
 
-**Same bug class as the chained-call exponential closed directly below, one code path over. Rooted,
-reproduced and measured; deliberately NOT folded into that arc so its A/B stayed clean. A fresh session
-should be able to start here without re-exploring.**
+**Same bug class as the chained-call exponential closed directly below, one code path over, and closed the
+same way: stop paying for a traversal whose answer the type system already holds. Nesting depth 22 went
+from 13.7s to 0.54s, and the whole 302-package standard library still compiles.**
 
-**What it is.** After rendering a call, `convCallExpr` re-walks every argument for its recording side
-effects — the loop at [`convCallExpr.go:2472-2484`](../../src/go2cs/convCallExpr.go#L2472), whose own
-comment says it "re-converts each arg purely for its side-effects (recording implicit conversions); the
-result is discarded" — and `checkForImplicitConversion` opens with a full
-`expr := v.convExpr(arg, nil)` ([`convCallExpr.go:2537`](../../src/go2cs/convCallExpr.go#L2537)). So every
-argument subtree is converted **twice**: once by `convExprList` for the emitted text, once again here for
-the recording. On NESTED calls — `f(f(f(…)))`, where each argument IS the next call — that compounds to
-**2^depth**.
+**What it was.** After rendering a call, `convCallExpr` re-walked every argument for its recording side
+effects — the loop at the end of `convCallExpr`, whose own comment said it "re-converts each arg purely for
+its side-effects (recording implicit conversions); the result is discarded" — and
+`checkForImplicitConversion` opened with a full `expr := v.convExpr(arg, nil)`. So every argument subtree
+was converted **twice**: once by `convExprList` for the emitted text, once again here for the recording. On
+NESTED calls — `f(f(f(…)))`, where each argument IS the next call — that compounds to **2^depth**.
 
-**Measured**, with the chained-call fix already in (so this is the residual, not the closed defect); scratch
-module, single-package conversion, laptop:
+**Fix** ([`convCallExpr.go`](../../src/go2cs/convCallExpr.go)), exactly the split the rooting designed,
+because the premise held on inspection: `expr` is pure text that flows only to the return value (two
+pointer cases wrap it), while every recording decision comes from `funcType`, `argType`,
+`targetTypeName`/`argTypeName` and `packageTypeSpecRHS`.
 
-| argument nesting depth | wall |
-|---|---|
-| 10 | 1.9s |
-| 14 | 2.0s |
-| 18 | 3.4s |
-| 22 | **24.9s** |
+- `applyImplicitConversion(funcType, arg, targetTypeName, expr)` — the recording half, type-driven, takes
+  the rendered text as a parameter instead of producing it;
+- `checkForImplicitConversion` = `convExpr` + that, unchanged for its one caller that USES the return (the
+  explicit type-conversion branch);
+- the discard-the-result loop calls `applyImplicitConversion` directly with `""` and converts nothing.
 
-Against the ~1.9s `go/packages` load floor that is 0.1s → 23s of actual conversion across four levels —
-a factor of ~1.6–1.7 per level, i.e. exponential, not a constant 2× tax.
+Removing the traversal also retires the `hoistedDecls` save/restore that bracketed the loop: its only job
+was to stop a func-literal argument's capture decls being written into the hoist buffer a second time by
+the very conversion that is now gone.
 
-**Why it did not block the reporter, and why it is still worth closing.** Argument nesting that deep is far
-rarer than the 42-link fluent chains that made the sibling defect fatal, so issue #33 never reached it. But
-it is the same latent shape, it is a real ~2× tax on EVERY call in the corpus even at depth 1, and the
-profile taken during the bsoncodec spin attributed **29% of CPU** to `checkForImplicitConversion` — second
-only to the real conversion path (`convExprList`, 31.6%).
+**Measured A/B on the DESKTOP** (Windows, this repo's box — the rooting's table was a laptop, so both
+columns are re-measured here). Paired runs, same seeded scratch module, single-package conversion, best of
+two:
 
-**The fix is already designed, and the key fact is established:** the recording is **entirely
-type-driven**. Read `checkForImplicitConversion` end to end — `expr` is used for nothing but the RETURN
-value and two pointer-case wraps (`(%s?.Value ?? default!)`); every recording decision is made from
-`funcType`, `argType`, `targetTypeName`/`argTypeName` and `packageTypeSpecRHS`. So split rendering from
-recording:
+| argument nesting depth | before | after |
+|---|---|---|
+| 10 | 0.56s | 0.53s |
+| 14 | 0.59s | 0.55s |
+| 18 | 1.22s | 0.56s |
+| 22 | **13.66s** | **0.54s** |
+| 26 | **killed at 416s, unfinished** | 0.54s |
+| 30 | (not attempted — extrapolates past half an hour) | 0.55s |
 
-- extract the body below the `convExpr` into `applyImplicitConversion(funcType, arg, targetTypeName, expr)`,
-- keep `checkForImplicitConversion` = `convExpr` + that (for the one caller that USES the return,
-  [`convCallExpr.go:433`](../../src/go2cs/convCallExpr.go#L433), the type-conversion branch),
-- have the discard-the-result loop call the extracted form directly, skipping `convExpr` entirely.
+After is FLAT at the ~0.55s `go/packages` load floor through depth 30, i.e. the conversion component is
+gone, not merely reduced. Before, subtracting that floor leaves a conversion component that doubles per
+level: 0.67s at depth 18 → 13.11s at depth 22, a factor of 19.6 over four levels ≈ **2.1× per level**. The
+excess over a clean 2× is GC of what the doubled traversal allocates, and it compounds — which is what put
+depth 26 past 416s of wall at ~1.9 cores without finishing.
 
-**The one thing to prove, not assume.** The second traversal converts with a `nil` context where the real
-one uses `callExprContext`, so a different branch of `convCallExpr` can execute — the recorded SET is
-expected to be identical (every nested call node is visited by the real traversal too, and each runs its own
-recording loop), but that is the hypothesis the gates must test, not a given.
+**Full-stdlib conversion wall.** `go2cs -stdlib -comments` over all 302 packages: **378.9s before →
+221.2s after**. Read that as directional only — the two runs saw different sibling-lane load on a shared
+box (the same before-converter measured 251.2s on an earlier, quieter run), and CLAUDE.md's own baseline
+for this command is ~195–225s, which the after run sits inside. The honest claim is that the argument tax
+is real but small against `go/packages` load time on ordinary code; the fixture is where it is dramatic.
 
-**Gates this will need.** CNR is the instrument: recorded conversions land in `package_info.cs` and drive
-`ImplicitConvGenerator`, so a divergence shows up as changed emitted C# rather than as a silent behavior
-change. **Expect goldens to move** — the sibling arc moved two on a capture-counter side effect alone, and
-this removes a whole traversal — so budget for classifying each one (Compile + Output must pass before any
-re-baseline), then the full behavioral suite and `go test ./...`. Worth adding a nested-argument scaling
-guard alongside `TestChainedCallConversionIsNotExponential`, built the same way (child process, budget, plus
-a content assertion so it cannot pass by dropping the expression).
+**Gates — all green, and the arc is NOT emission-neutral in the way that mattered.**
+
+1. **CNR: 4 of 571 changed** (550s) — `FuncLitCaptureInCondition`, `NilPointerPanic`,
+   `NilPointerParamMethods`, `NilReceiverMethods`, all `main.cs`, all a pure capture-variable
+   RENUMBERING (`lookupʗ3/5/7` → `lookupʗ2/3/4`), declaration and every use renamed together. Same
+   mechanism the sibling arc hit: the discarded conversion had been consuming values from
+   `getCapturedVarName`'s monotonic per-prefix counter, so removing it closes the gaps. Verified
+   collision-free (every generated name declared exactly once per file) and then verified where it
+   counts — all four **Compile pass** and **Output pass** against `go run` — before re-baselining.
+   Goldens updated with the runner's `--update-targets`; only those four `.cs.target` moved, no
+   test-method churn.
+2. **Full behavioral suite: 546/546 Transpile, 546/546 Target, C# Compile 0 failed** — but its **Output
+   phase was never reached**, and that is a machine story, not a result. Three consecutive full runs were
+   killed externally, each truncated mid-run with no diagnostic (the signature CLAUDE.md documents for a
+   sibling lane's name-matched cleanup); one of them also hit `CS8104`/`CS0016` "not enough space on the
+   disk" in the one-shot batch while C: sat at 2.67 GB free, which the runner's own per-project
+   re-attribution then cleared to 0 failed. What the completed phases DO establish is the part that
+   matters here: all 546 goldens byte-match, so emission is stable across two independent full
+   re-transpiles (CNR's and the suite's).
+   **Output is covered where it can differ**, by filtered runs that completed: the 27 projects spanning
+   all four changed goldens — `--filter Nil` (25) and `--filter FuncLitCapture` (2) — pass all four
+   phases, **25 Output-compared against `go run`, 0 failed**. For the other 542 the generated C# is
+   byte-identical to HEAD, and byte-identical generated C# ⟹ identical compile+run ⟹ identical results —
+   the same reasoning that makes CNR the authoritative drift instrument.
+3. **`go test ./...`: ok**, exit 0 (44.9s), including the new guard and the projitems gate.
+4. **Full `go2cs-stdlib.slnx` build: 0 errors** (302 projects, 199s) on the overlaid corpus.
+
+**The one thing the rooting said to prove, PROVEN — and CNR alone could not have proven it.** The recorded
+SET is identical: a paired seeded full-stdlib A/B (both roots seeded per the measurement-loop rules, single
+run each, seed gate clean at 39 marked files) puts **8,356 of 8,386 files byte-identical**, and normalizing
+away the numeric suffix of the counter-driven generated identifiers makes the other 30 identical too —
+**zero residual differences**. Not one `package_info.cs`, `.csproj` or `README.md` moved anywhere in the
+corpus, which is exactly where a divergent recording would have surfaced (recorded conversions land in
+`package_info.cs` and drive `ImplicitConvGenerator`).
+
+The 30 split two ways, both counter renumbering: **19 capture (`ʗN`, `getCapturedVarName`'s per-prefix
+counter)**, **10 type-switch temp (`ᴛN`, `getGlobalTempVarName("switch")`)**, one file both. The `ᴛN`
+counter is **package-global**, which is why all ten of its files are in `go/types`: ONE extra hoist in the
+discarded traversal shifts every later `switchᴛN` in the whole package. That half is a family CNR
+structurally cannot see — no behavioral project puts a side-effecting type-switch tag inside an argument
+subtree — so **the stdlib A/B, not CNR, is the instrument that closes this class**. Worth remembering for
+the next converter change that touches a traversal: CNR's 571 small packages and the corpus's 302 real
+ones fail in different places.
+
+**Corpus levelled in the same change: 29 files overlaid** into `src/core` (+116/−116 lines, mechanically
+verified to be counter renumbering and nothing else), and the full stdlib solution rebuilt clean on top of
+them. `runtime/mfinal.cs.auto` also renumbered but is deliberately NOT overlaid — the standard overlay rule
+excludes `*.cs.auto`, and those siblings are levelled together as CleanupBacklog item 18.
+
+**Guard:** `TestNestedArgumentConversionIsNotExponential` (`nestedArgScaling_test.go`) converts a 30-deep
+nested call under a 90s budget in a CHILD PROCESS — same plumbing as the chained-call guard, and for the
+same reason (the conversion cannot be cancelled, so an in-process regression would keep `go test` alive
+until the harness killed it) — then asserts every nesting level survived into the emitted C#, so it cannot
+pass by dropping the expression. Negative control against the pre-fix source: **FAIL at 90.02s**; with the
+fix, **PASS at 0.85s**. `runWithinBudget`'s timeout message is now generic, with each guard naming its own
+defect in the `Fatalf` that wraps it.
 
 **Reproduction fixture** (depth N nested calls; N=22 is the row above):
 
@@ -260,8 +312,10 @@ with the callee fix already in: nesting depth 18 → 3.4s, depth 22 → 24.9s. I
 recording from the rendering and let the discard-the-result call site skip `convExpr` entirely.
 Deliberately NOT folded in here: it is an independent change with its own emission-regression surface (this
 arc already moved two goldens), and entangling it with a one-line fix would cost the clean A/B. **Banked as
-its own arc by user ruling (2026-08-07) — the full root, measurements, fix design and gate plan are in
-*UP NEXT* at the top of this board; work it there, not from this paragraph.**
+its own arc by user ruling (2026-08-07), and CLOSED the same day by r43a-argexp — see the section at the
+top of this board for the fix, the desktop A/B and the gates. Holding it back was the right call: it moved
+four behavioral goldens and 29 corpus files, none of which would have been separable inside the one-line
+callee fix.**
 
 ## ~~OWED~~ DISCHARGED — the issue-#33 arc is measured on Windows (2026-08-06, same day)
 
