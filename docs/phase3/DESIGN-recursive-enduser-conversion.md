@@ -438,12 +438,14 @@ out-of-corpus and narrower than the namespace fix. Left for Phase-4 hardening (n
 7. *(robustness, recurse)* A **deeply-nested module-cache subpackage** (`github.com/google/go-cmp/cmp/internal/
    flags`) converted with a bare `namespace go;` instead of the full dotted namespace — `getProjectName`'s
    walk-up-to-`go.mod` needs to handle the `@version`-segmented cache path at depth.
-8. *(low, converter)* A C# **keyword embedded after a dot** in a single import-path segment (the `in` of
+8. ~~*(low, converter)* A C# **keyword embedded after a dot** in a single import-path segment (the `in` of
    `gopkg.in`) is escaped by `getProjectName` (the dependency's own namespace → `gopkg.@in`) but NOT by
    `convertImportPathToNamespace` (an importer's reference → bare `gopkg.in`), so a `gopkg.in/*` dependency's
    own package compiles while its importers mis-reference it. Needs a dot-splitting sanitizer in
    `convertImportPathToNamespace` that escapes the embedded keyword WITHOUT Δ-prefixing the `_package` class
-   suffix (the naive `getCoreSanitizedIdentifier` swap does the latter — see the reverted attempt above).
+   suffix (the naive `getCoreSanitizedIdentifier` swap does the latter — see the reverted attempt above).~~
+   **FIXED 2026-08-07** (issue #33) — see *One sanitizer knew the dots, the other did not* below. It was
+   not low: it is the whole reason the reporter's converted app did not compile.
 
 ### Conversion scope: the module without its dependency graph (`-recurse=module`, 2026-08-05)
 
@@ -629,6 +631,83 @@ app's `ProjectReference` resolving). It then meets **backlog item 8** above, unc
 namespace escapes the embedded C# keyword (`namespace go.gopkg.@in;`) while an importer's reference does not
 (`using yaml = gopkg.in.yaml_package;`), so the converted app does not yet compile. Item 8 is the next thing
 a `gopkg.in` user hits and is now a demonstrated, reproducible case rather than a predicted one.
+
+### One sanitizer knew the dots, the other did not (issue #33 follow-up, 2026-08-07)
+
+Backlog item 8, taken directly after the item above handed it a `gopkg.in/yaml.v3` that converts. It was
+filed *low*; it is in fact the whole remaining reason the reporter's app does not build. A `-recurse` run
+over a scratch module importing `gopkg.in/yaml.v3@v3.0.1` converts 2/2 packages, and then:
+
+```
+main.cs(4,20): error CS1001: Identifier expected
+main.cs(4,20): error CS1002: ; expected
+main.cs(4,20): error CS1022: Type or namespace definition, or end-of-file expected
+main.cs(4,23): error CS0116: A namespace cannot directly contain members …
+main.cs(5,13): error CS1001 / CS1002 / CS1022
+```
+
+Eight errors, all of them the same two lines the importer emits:
+
+```csharp
+using yaml = gopkg.in.yaml_package;
+using gopkg.in;
+```
+
+`in` is a C# keyword. The dependency itself is fine — `yaml.cs` opens `namespace go.gopkg.@in;` and the
+whole yaml.v3 package compiles clean — so the two sides of one namespace simply disagreed.
+
+**Root.** A path ELEMENT may contain dots (`gopkg.in`, `yaml.v3`, `example.com`), and each dot is a
+namespace separator in the emitted C#, so the parts either side are separate identifiers needing separate
+escapes. The **declaration** side knew that: `getProjectName` sanitizes each element through
+`getCoreSanitizedIdentifier`, which splits on dots. Every **consumer** emission renders through
+`convertImportPathToNamespace`, which sanitized each element through `getSanitizedImport` — measuring it
+whole, where `gopkg.in` is not a keyword and passes through bare.
+
+**Fix — one function, both sides.** `getSanitizedImport` now splits on dots as well, escaping each level
+independently. All four consumer emission sites are downstream of it and were fixed at once: the
+`using <alias> = <ns>;` line, the enclosing-namespace `using <ns>;` an unaliased import adds
+(`requiredUsings`), the `packageChildNamespaces` map that decides root qualification
+(`importAliasOperations`), and the string-path type renderer (`convertToCSTypeName` →
+`convertImportPathToNamespace`). The recursion deliberately stays inside `getSanitizedImport` rather than
+switching to `getCoreSanitizedIdentifier`: callers append the `_package` class suffix to the FINAL element,
+and the core sanitizer Δ-prefixes anything ending in `_package`, which is precisely why the naive swap was
+reverted when item 8 was filed. Project/csproj FILE names are untouched — that is the previous section's
+territory, and a file name is not a C# identifier.
+
+Emission-neutral by construction (the change is exactly "a dotted input with a keyword sub-token is now
+escaped"; a dotted string could never equal a keyword, so the old test never fired for one) and measured
+rather than assumed: the behavioral corpus has **no dotted module path at all**, the standard library's
+only dotted element is the GOROOT-vendored `golang.org`, whose parts are not keywords — CNR byte-identical
+across **572** packages, and a seeded full stdlib reconvert byte-identical across **5,179**
+`.cs`/`.csproj`/`README.md` plus the generated `go2cs-stdlib.slnx`.
+
+Guarded at both altitudes, both neuter-proven (restoring the whole-string measurement reproduces the
+reporter's emitted text verbatim): `TestGetSanitizedImportKeywordSegments` (unit — several keywords in
+several positions, the two sanitizers asserted to AGREE on a segment, the `_package` suffix asserted not to
+be Δ-prefixed, idempotence) and `TestRecurseKeywordNamespaceSegment` (integration, network-free — an
+unaliased import of a `gopkg.in`-shaped dependency through a local `replace`, asserting the producer's
+`namespace` and both consumer emissions name the same thing, then sweeping every `using` in the file
+against the converter's own `keywords` set so a keyword the fixture never exercises is covered too).
+
+**What this unblocks, measured end to end.** The scratch `gopkg.in/yaml.v3` app now goes from 8 errors to
+**0** — the whole converted yaml.v3 package plus the app, `dotnet build` clean — and the built C# program
+**runs**, decoding a nested document (structs, `[]string`, `map[string]string`, ints, bools) to output
+byte-identical to `go run`. That is the first third-party `gopkg.in/*` dependency working end to end.
+
+**What honestly remains, and why it is out of scope here.** `yaml.Marshal` panics at runtime with
+`invalid memory address or nil pointer dereference`, on input as small as `yaml.Marshal(map[string]int{"a":
+1})`; `yaml.Unmarshal` is unaffected and correct on everything tried. So the ENCODE path of the converted
+yaml.v3 carries a Phase-4 operational defect that has nothing to do with namespaces — both sides of this
+fix compile and the decode path runs. Diagnosing it needs the `-tests` pipeline against yaml.v3's own
+suite, not another emission fix; tracked on the Phase-4 board under the issue-#33 entry alongside the
+`loadClosure` reuse item.
+
+One unrelated observation from the reconvert control, recorded so it is not re-discovered as drift: **24
+committed `src/core/*/README.md` validation badges are stale** (`not_yet_validated` where the package's
+proof page in `docs/validation/current` now says validated — `hash` 18/18, `net/url` 48/48, `crypto/aes`
+13/13, …). The badge is composed from repository files rather than from the conversion, so the READMEs
+simply predate those banks. Proven pre-existing: a converter built at this branch's merge-base emits the
+same green badges, byte for byte, as the fixed one. It levels on the next corpus regen.
 
 ### Operational stdlib — native sync primitives (2026-07-11, Phase-4 start)
 

@@ -686,6 +686,107 @@ func TestRecurseQuotedModulePath(t *testing.T) {
 	}
 }
 
+// TestRecurseKeywordNamespaceSegment guards issue #33's wall AFTER the csproj-filename one above: a
+// dependency whose import path embeds a C# keyword in a dotted path ELEMENT (the `in` of gopkg.in)
+// converted fine and then would not compile, because the two sides of the same namespace disagreed.
+// The dependency's own declaration escaped it — `namespace go.gopkg.@in;`, composed through
+// getCoreSanitizedIdentifier, which splits an element on its dots — while every importer rendered
+// through getSanitizedImport, which measured the element whole, so `gopkg.in` was not a keyword and
+// emitted bare: `using yaml = gopkg.in.yaml_package;` and `using gopkg.in;`, neither of which parses
+// (CS1001/CS1002/CS1022 at the `in`).
+//
+// Same fixture shape as TestRecurseQuotedModulePath — a versioned, dotted-host dependency resolved
+// through a local replace, so this stays deterministic and network-free — but the import is
+// UNALIASED, which is what makes the consumer emit BOTH forms (the alias and the enclosing-namespace
+// `using`); an aliased import emits only the first. The final assertion is deliberately stated as a
+// property over the converter's own `keywords` set rather than a list of literals, so a keyword this
+// test never names is covered too.
+func TestRecurseKeywordNamespaceSegment(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	libDir := filepath.Join(root, "lib.v3")
+
+	writeModuleFile(t, filepath.Join(libDir, "go.mod"), "module gopkg.in/lib.v3\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(libDir, "greeting.go"),
+		"package lib\n\nimport \"strings\"\n\nfunc Greeting(name string) string {\n\treturn strings.TrimSpace(\"Hello, \"+name+\"!\")\n}\n")
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire gopkg.in/lib.v3 v3.0.0\n\nreplace gopkg.in/lib.v3 => ../lib.v3\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\t\"gopkg.in/lib.v3\"\n)\n\nfunc main() {\n\tfmt.Println(lib.Greeting(\"go2cs\"))\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	// getImportPackageInfo resolves stdlib references through build.Default; pin it as main() does.
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	// The PRODUCER side — unchanged by the fix, and the reference the consumer has to match.
+	greetingCs := readGenerated(t, filepath.Join(options.recurseOutputRoot, "pkg", "gopkg.in", "lib.v3", "greeting.cs"))
+	wantNamespace := RootNamespace + ".gopkg.@in"
+
+	if !strings.Contains(greetingCs, "namespace "+wantNamespace+";") {
+		t.Fatalf("dependency did not declare %s:\n%s", wantNamespace, greetingCs)
+	}
+
+	// The CONSUMER side — both emissions an unaliased import produces, naming that same namespace.
+	mainCs := readGenerated(t, filepath.Join(options.recurseOutputRoot, "src", "example.com", "app", "main.cs"))
+
+	for _, want := range []string{"using lib = gopkg.@in.lib" + PackageSuffix + ";", "using gopkg.@in;"} {
+		if !strings.Contains(mainCs, want) {
+			t.Errorf("app main.cs missing %q:\n%s", want, mainCs)
+		}
+	}
+
+	// …and the property behind those two literals, over every using the file emits: no level of a
+	// rendered namespace may be a bare C# keyword. Read from the converter's own keyword set, so a
+	// keyword this fixture never exercises is guarded by the same assertion.
+	for _, line := range strings.Split(mainCs, "\n") {
+		line = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(line), ";"))
+
+		if !strings.HasPrefix(line, "using ") {
+			continue
+		}
+
+		target := strings.TrimPrefix(strings.TrimPrefix(line, "using "), "static ")
+
+		if equals := strings.Index(target, " = "); equals != -1 {
+			target = target[equals+len(" = "):]
+		}
+
+		for _, level := range strings.Split(target, ".") {
+			if keywords.Contains(level) {
+				t.Errorf("using target %q names the C# keyword %q unescaped (line %q)", target, level, line)
+			}
+		}
+	}
+}
+
 func writeModuleFile(t *testing.T, path, content string) {
 	t.Helper()
 

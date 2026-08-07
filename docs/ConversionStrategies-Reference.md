@@ -8109,6 +8109,53 @@ math/rand/v2's shape: a struct field `ж<vlib.Rand>` (renderer #2), a `*PCG → 
 recorded as `go.vlib.vlib_package.PCG` (#3/#4), output-compared vs `go run` across all four phases.
 This is what unblocks sort as Phase 4's second validated package (its test suite imports math/rand/v2).
 
+### A C# keyword inside a dotted import-path element
+A Go import-path element may itself contain **dots** — a module host (`gopkg.in`, `example.com`,
+`golang.org`) or a versioned tail (`yaml.v3`) — and every one of those dots is a **namespace
+separator** in the emitted C#. So `gopkg.in/yaml.v3` does not render two namespace levels, it renders
+four, and each is a separate C# identifier that has to be keyword-escaped on its own.
+
+Two sanitizers render namespace text, and until 2026-08-07 only one of them knew that. The
+**declaration** side (`getProjectName` → `getCoreSanitizedIdentifier`) has always split an element on
+its dots, so the dependency's own file correctly opens `namespace go.gopkg.@in;`. Every **consumer**
+emission — the import's `using yaml = …;` alias, the enclosing-namespace `using gopkg.…;` an unaliased
+import adds, the child-namespace map that decides root qualification, and the string-path type
+renderer — goes through `convertImportPathToNamespace`, which sanitized each `/`-split element with
+`getSanitizedImport`, measuring it **whole**. Whole, `gopkg.in` is not a C# keyword, so it passed
+through bare and the importer emitted
+
+```csharp
+using yaml = gopkg.in.yaml_package;   // CS1001/CS1002/CS1022 — `in` is a keyword
+using gopkg.in;
+```
+
+against a producer that had named itself `go.gopkg.@in`. The dependency compiled; nothing that
+imported it could. (Issue #33: `gopkg.in/yaml.v3` converts, then does not build.)
+
+The fix is one function, both sides: **`getSanitizedImport` splits on dots too**, escaping each level
+independently — exactly what the declaration side does. The recursion stays inside `getSanitizedImport`
+rather than deferring to `getCoreSanitizedIdentifier`, because callers append the `_package` class
+suffix to the final element before calling and the core sanitizer `Δ`-prefixes anything ending in
+`_package`; that swap would emit `Δyaml_package`, a class no producer declares. Escaping is idempotent
+(an already-`@`-marked part returns unchanged), so re-sanitizing a rendered namespace is stable.
+
+The behavior change is exactly "a dotted input with a keyword sub-token is now escaped": a string
+containing a dot could never equal a keyword, so the old whole-string test never fired for one, and
+hyphen/tilde replacement is per-part identical either way. Emission-neutral for both corpora, and
+measured so — the behavioral corpus has no dotted module path at all, and the standard library's only
+dotted element is `golang.org` (the GOROOT-vendored tree), whose `golang`/`org` are not keywords:
+[CNR](Glossary.md#cnr) byte-identical across 572 packages, and a seeded full reconvert byte-identical
+across 5,179 `.cs`/`.csproj`/`README.md` plus the generated `go2cs-stdlib.slnx`.
+
+Guarded at both altitudes: `TestGetSanitizedImportKeywordSegments` (`sanitization_test.go` — several
+keywords in several positions, the two sanitizers asserted to agree on a segment, the `_package`
+suffix asserted NOT to be `Δ`-prefixed, and idempotence) and `TestRecurseKeywordNamespaceSegment`
+(`moduleConverter_integration_test.go` — network-free, an unaliased import of a `gopkg.in`-shaped
+dependency, asserting the producer's declaration and both consumer emissions name the same namespace,
+then sweeping every `using` in the file against the converter's own `keywords` set so a keyword the
+fixture never exercises is covered by the same assertion). Both neuter-proven: restoring the
+whole-string measurement reproduces the reporter's emitted text verbatim.
+
 ### A non-canonically-aliased import renders foreign types via the file's alias
 A file that imports a package under an **explicit alias that differs from the canonical package
 name** must render that package's types through the alias, not the canonical name. cryptobyte's

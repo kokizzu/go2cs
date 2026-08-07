@@ -109,9 +109,37 @@ func replaceInvalidIdentifierChars(identifier string) string {
 	return strings.NewReplacer("-", "_", "~", "_").Replace(identifier)
 }
 
+// getSanitizedImport renders ONE namespace/class segment of an import path as a legal C#
+// identifier.
+//
+// A path element may itself contain DOTS — a module host (`gopkg.in`, `example.com`) or a
+// versioned tail (`yaml.v3`) — and every dot is a NAMESPACE SEPARATOR in the emitted C#, so the
+// parts on either side are separate identifiers and each has to be escaped on its own. Measured
+// whole, `gopkg.in` is not a keyword and passed straight through; that is issue #33's second
+// wall: the dependency's OWN declaration reads `namespace go.gopkg.@in;` (composed through
+// getCoreSanitizedIdentifier, which has always split on dots) while every consumer emitted
+// `using yaml = gopkg.in.yaml_package;` and `using gopkg.in;`, which do not parse at all
+// (CS1001/CS1002/CS1022 at the `in`). Splitting here is what makes the two sides agree — one
+// function, both sides.
+//
+// The recursion is deliberately back into THIS function rather than getCoreSanitizedIdentifier:
+// callers append the `_package` class suffix to the final segment before calling, and the core
+// sanitizer would Δ-prefix that suffix (`Δyaml_package`), naming a class the producer never
+// emitted. Escaping is idempotent (an already-`@`-marked part returns as-is), so a re-sanitized
+// namespace string is stable.
 func getSanitizedImport(identifier string) string {
 	if strings.HasPrefix(identifier, "@") {
 		return identifier // Already sanitized
+	}
+
+	if strings.Contains(identifier, ".") {
+		parts := strings.Split(identifier, ".")
+
+		for i, part := range parts {
+			parts[i] = getSanitizedImport(part)
+		}
+
+		return strings.Join(parts, ".")
 	}
 
 	identifier = replaceInvalidIdentifierChars(identifier)

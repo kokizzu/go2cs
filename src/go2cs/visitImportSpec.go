@@ -654,10 +654,10 @@ func convertImportPathToNamespace(importPath string, packageSuffix string) strin
 	}
 
 	// Update all import path parts to sanitized identifiers. getSanitizedImport maps a hyphen/tilde in
-	// a segment to an underscore (github.com/mattn/go-isatty), so a legal C# namespace/class is
-	// produced. (A C# keyword embedded AFTER a dot in a single segment — the `in` of gopkg.in — is not
-	// escaped here; that narrower case is a documented Phase-4 item, since escaping it needs the
-	// dot-splitting getCoreSanitizedIdentifier, which would also Δ-prefix the `_package` class suffix.)
+	// a segment to an underscore (github.com/mattn/go-isatty) and splits the segment on its dots so an
+	// embedded C# keyword is escaped per namespace level (the `in` of gopkg.in → `gopkg.@in`), which is
+	// exactly what the DECLARATION side (getProjectName → getCoreSanitizedIdentifier) has always done —
+	// the two agreeing is what makes a `gopkg.in/*` dependency referenceable from its importers.
 	for i, part := range importPathParts {
 		if i == len(importPathParts)-1 {
 			part = part + packageSuffix
