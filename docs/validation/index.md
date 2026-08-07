@@ -48,6 +48,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/doc/comment` | [`go.doc.comment.md`](current/go.doc.comment.md) | [`src/core/go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) |
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/printer` | [`go.printer.md`](current/go.printer.md) | [`src/core/go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) |
+| `go/scanner` | [`go.scanner.md`](current/go.scanner.md) | [`src/core/go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) |
 | `go/token` | [`go.token.md`](current/go.token.md) | [`src/core/go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) |
 | `go/version` | [`go.version.md`](current/go.version.md) | [`src/core/go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/version) |
 | `hash` | [`hash.md`](current/hash.md) | [`src/core/hash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash) |
