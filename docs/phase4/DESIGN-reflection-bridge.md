@@ -125,7 +125,12 @@
 > invisible, exactly as Go's interface dispatch adds no frame — so relative depths match Go's
 > logical model (io's `readDepth == myDepth+2` holds bit-exactly); PCs are opaque interned
 > process-lifetime tokens. **`getcallersp` itself stays an honest stub** — the chain is severed at
-> the API boundary where a managed answer exists, the `methodName` rule. io: 45/54 → **47/54**;
+> the API boundary where a managed answer exists, the `methodName` rule. (⚠ Follow-up 2026-08-07,
+> r43g-caller: this increment hand-owned the EXPORTED `Callers` only, and `runtime.Caller` calls
+> the *lower-case* `callers` — so `Caller` itself stayed dead, which is what kept `log` and
+> `testing/slogtest` on the stub. `methodName` was unaffected, being hand-owned in its own right.
+> The lower-case funnel is hand-owned too now, one entry, and `Caller` works while staying
+> auto-converted.) io: 45/54 → **47/54**;
 > the remaining seven verdicts keep their non-reflection owners (os arc, StringCheckCall, two
 > alloc-profile disclosure rulings). Full design:
 > ConversionStrategies-Reference `runtime.Callers / Frames.Next walk the managed stack projected

@@ -3649,7 +3649,7 @@ keeps classifying them rather than reporting them as content drift.
 | `go/parser` | `performance_test.cs`'s package initializer reads a testdata file **at cctor time** and panics, taking every test in the internal variant with it — the `-tests` init-relocation shape `internal/fmtsort` already needed a rule for. |
 | `expvar` | Type-initializer failure inside a generated `ᴛRegisterAdapter` for `ΔStringжVar`; first divergent verdict `TestAppendJSONQuote`. |
 | `internal/cpu` | `getGOAMD64level` is an unimplemented `PartialStubGenerator` stub; every GODEBUG-driven feature-mask row reaches it. |
-| `testing/slogtest` | `runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries. |
+| `testing/slogtest` | ~~`runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries.~~ **Caller root CLOSED 2026-08-07 (r43g-caller)** — the package now initializes and RUNS its whole matrix for the first time: `TestRun` 7 of 18 subtests pass. Two `log/slog` roots stand behind it, neither a slogtest defect: (1) **`unsafe.SliceData` over a reference-bearing element type** — `slog.GroupValue`'s `groupptr(unsafe.SliceData(as))` on `[]Attr` reaches `slice<T>.buffer` → `PinnedBuffer` → `GCHandle.Alloc(…, Pinned)`, which throws `ArgumentException: Object contains references` (5 infrastructure-errors: `groups`, `empty-group`, `inline-group`, `resolve-groups`, `resolve-WithAttrs-groups`); (2) a **`WithAttrs` attribute-loss** (4 fails: `WithAttrs`, `multi-With`, `empty-group-record`, `resolve-WithAttrs` — all "missing key"), whose likely shape is `Value.Kind()`/`isEmptyGroup` misclassifying a non-group value so `commonHandler.withAttrs`'s `countEmptyGroups(as) == len(as)` early-return drops the attrs. Both belong to a `log/slog` operational arc, which is unmeasured (`log/slog` is on neither the roster nor this board). |
 | `internal/unsafeheader` | `TestTypeMatchesReflectType` / `TestWriteThroughHeader`: the converted `unsafeheader.Slice`/`String` do not alias the same storage a `slice<T>` does, so a write through the header is invisible. Structural — a managed slice is not a `{Data,Len,Cap}` triple. |
 | `io/ioutil` | `TestReadDir` reads `..` and expects the **sibling** package's `io_test.go`. The pipeline stages Go sources only for the package under test, so the parent directory holds none. Environment, not conversion. |
 | `internal/singleflight` | The only **hang** in the batch: `TestDoAndForgetUnsharedRace` never returns and the package hits the deadline. |
@@ -3763,3 +3763,56 @@ agree with `go test`; two roots stand behind the closure one, neither of them th
 
 Both were reachable only after the closure fix, so the edge paid for itself twice over even where it
 did not bank: `log`'s suite had never linked a host and had never been measured.
+
+## `runtime.Caller` lands — and `log` still does not bank, for a reason worth naming (2026-08-07, r43g-caller)
+
+The row above predicted "a real `runtime.Caller` … would likely bank log and slogtest together". The
+`Caller` half was right and cheap; the prediction was wrong, in both packages, and the reasons are
+different and both worth carrying.
+
+**The fix is one entry, and it is on the FUNNEL.** `runtime.Caller`'s auto body calls the
+*lower-case* `callers`, not the exported `Callers` the 2026-07-31 reflection chip hand-owned — and
+`callers` is the declaration that opens with `getcallersp()`. Four call sites funnel through it
+(`Caller`, `mprof`, `proc.createstack`, `tracestack`), so `"callers": true` on
+`manualConversionFuncs["runtime"]` fixes all four and leaves `Caller` itself auto-converted and
+Go-shaped. Corpus A/B footprint: **one file**, `src/core/runtime/traceback.cs` (the body becomes the
+standard placeholder comment). Mechanism, the `skip + 1` / `skip + 2` frame budgets, the
+`NoInlining` requirement, and the honesty boundary are in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *`runtime.Callers` /
+`Frames.Next` walk the managed stack*. Guarded by the `RuntimeCallerFrames` behavioral test.
+
+**`log` — 7/9 still, and `TestAll` is now an honest, measured divergence instead of a crash.** With
+`Caller` alive, `TestAll` runs its whole flag matrix and produces real output. It fails on **Go
+source geometry**, which the fix was never going to supply:
+
+| Go asserts | The converted run reports |
+|:--|:--|
+| `` ^[A-Za-z0-9_\-]+\.go:(63\|65): hello 23 world$ `` | `C:\…\src\core\log\log_test.cs:69: hello 23 world` |
+| `` ^.*/[A-Za-z0-9_\-]+\.go:(63\|65): … `` (Llongfile) | same, with `\` separators |
+
+Three separate mismatches in one assert: the `.go` extension, the `/` path separator, and the exact
+line numbers of the `Printf`/`Println` calls **inside `log_test.go`** (the test's own comment says
+"must update if the calls to l.Printf / l.Print below move"). `Caller` reports the converted `.cs`
+position because that is the source the running program has.
+
+⚠ **This is deliberately NOT disclosed.** The bar for the disclosed-divergence manifest is an
+assertion *unsatisfiable at any layer go2cs owns* (`alloc-profile`, `codegen-liveness`). This one is
+satisfiable at a layer go2cs owns — a **Go-source position map**: either `#line` directives in the
+emitted C# (the CLR's own transpiler mechanism; the PDB would then carry `.go` files and lines, and
+`StackFrame.GetFileName`/`GetFileLineNumber` would answer in Go's terms for free), or a side-car map
+per package consulted by `internCallerFrame`. Both are whole-corpus emission changes with real
+trade-offs — `#line` noise cuts against the readability goal, a side-car adds a file and a csproj
+item to every package — so this is an **architectural arc to design with the user**, not something
+to slip in behind a bank. Until it lands, `log` stays off the roster; disclosing around it would
+launder a missing capability as an unsatisfiable assert.
+
+`TestDiscard` re-derived under the fix: **still `got 424 allocs, want at most 1`**, unchanged by this
+arc (flag is `0`, so `Output` never reaches `Caller`). The figure is go2cs's `AllocsPerRun` shim
+reporting **bytes** per run, not mallocs; Go allocates once (the `[]any{s}` variadic pack) for
+`l.Printf("%s", s)` over a 102 400-byte string. It remains a legitimate `alloc-profile` candidate and
+remains undisclosed, because disclosing it alone banks nothing — the same call r43f made.
+
+**`testing/slogtest` — initializes and runs for the first time, 7 of 18 subtests pass, two `log/slog`
+roots behind it.** Detail in the runtime-roots table above. The lesson is that slogtest is a *thin
+wrapper over `log/slog`*: banking it is a `log/slog` operational arc, and `log/slog` has never been
+measured at all. That is the recorded next candidate out of this lane.

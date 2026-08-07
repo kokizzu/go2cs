@@ -100,6 +100,16 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// asserts over runtime.Callers) are the demonstrated consumers.
 		"Callers":     true,
 		"Frames.Next": true,
+		// The lower-case `callers` is the FUNNEL every other traceback entry point goes through
+		// (Caller, mprof's profile recorders, proc's createstack, tracestack) and the one that
+		// actually reaches getcallersp — so severing it here, one level below Callers, is what
+		// makes runtime.Caller work rather than hand-owning Caller itself. Caller stays
+		// auto-converted and Go-shaped; its `callers(skip+1, rpc)` now lands on the managed walk.
+		// Go's own comment on the declaration ("almost identical to Callers", linkname'd by the
+		// ecosystem, do not change the signature) says the same thing: it is an API boundary with
+		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
+		// Caller(1) are the demonstrated consumers.
+		"callers": true,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs

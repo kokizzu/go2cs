@@ -1288,6 +1288,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRingPointerMethods() => CheckTarget("RingPointerMethods");
 
     [TestMethod]
+    public void CheckRuntimeCallerFrames() => CheckTarget("RuntimeCallerFrames");
+
+    [TestMethod]
     public void CheckSamePackageImplementNoWitness() => CheckTarget("SamePackageImplementNoWitness");
 
     [TestMethod]

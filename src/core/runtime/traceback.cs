@@ -1070,30 +1070,7 @@ internal static void printAncestorTracebackFuncInfo(ΔfuncInfo f, uintptr pc) {
     print((@string)"\n"u8);
 }
 
-// callers should be an internal detail,
-// (and is almost identical to Callers),
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/phuslu/log
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname callers
-internal static nint callers(nint skip, slice<uintptr> pcbuf) {
-    var sp = getcallersp();
-    var pc = getcallerpc();
-    var gp = getg();
-    nint n = default!;
-    var gpʗ1 = gp;
-    var pcbufʗ1 = pcbuf;
-    systemstack(() => {
-        ref var u = ref heap(new unwinder(), out var Ꮡu);
-        Ꮡu.initAt(pc, sp, 0, gpʗ1, unwindSilentErrors);
-        n = tracebackPCs(Ꮡu, skip, pcbufʗ1);
-    });
-    return n;
-}
+// go2cs generated this placeholder — func callers is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static nint gcallers(ж<g> Ꮡgp, nint skip, slice<uintptr> pcbuf) {
     ref var u = ref heap(new unwinder(), out var Ꮡu);
