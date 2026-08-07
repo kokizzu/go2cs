@@ -138,7 +138,7 @@ $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 
 if ($drift) {
-    # Fifteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
+    # Sixteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
     # converts the package in its TEST closure, which imports more than the production closure, and
     # a wider closure legitimately changes three things in the production emission:
     #
@@ -149,7 +149,8 @@ if ($drift) {
     #                       closure imports a package whose own namespace shadows the root
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
-    #                       variant's relocated initializers implement (unicode, internal/zstd).
+    #                       variant's relocated initializers implement (unicode, internal/zstd,
+    #                       time).
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -173,6 +174,7 @@ if ($drift) {
         'src/core/regexp/regexp.cs'
         'src/core/strings/reader.cs'
         'src/core/strings/replace.cs'
+        'src/core/time/package_init.cs'
         'src/core/unicode/package_init.cs'
     )
 
