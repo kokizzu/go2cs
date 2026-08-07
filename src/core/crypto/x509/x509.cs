@@ -1474,9 +1474,9 @@ internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> po
             }
         } else {
             foreach (var (_, v) in policyIdentifiersʗ1) {
-                var vʗ7 = v;
+                var vʗ3 = v;
                 child.AddASN1(cryptobyte_asn1.SEQUENCE, (ж<cryptobyte.Builder> childΔ3) => {
-                    childΔ3.AddASN1ObjectIdentifier(vʗ7);
+                    childΔ3.AddASN1ObjectIdentifier(vʗ3);
                 });
             }
         }

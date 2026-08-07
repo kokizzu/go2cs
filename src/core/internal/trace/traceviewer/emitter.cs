@@ -44,10 +44,10 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
         var encʗ2 = enc;
         var requiredFramesʗ1 = requiredFrames;
 
-        var allFramesʗ6 = allFrames;
+        var allFramesʗ4 = allFrames;
 
         var encʗ3 = enc;
-        var requiredFramesʗ6 = requiredFrames;
+        var requiredFramesʗ4 = requiredFrames;
     return new TraceConsumer(
         ConsumeTimeUnit: (@string unit) => {
             io.WriteString(w, displayTimeUnitˢ);
@@ -66,11 +66,11 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
                 @string s = strconv.Itoa(id);
                 requiredFramesʗ2[s] = allFramesʗ2[s];
             });
-            var allFramesʗ4 = allFramesʗ1;
-            var requiredFramesʗ4 = requiredFramesʗ1;
+            var allFramesʗ3 = allFramesʗ1;
+            var requiredFramesʗ3 = requiredFramesʗ1;
             WalkStackFrames(allFramesʗ1, (~v).EndStack, (nint id) => {
                 @string s = strconv.Itoa(id);
-                requiredFramesʗ4[s] = allFramesʗ4[s];
+                requiredFramesʗ3[s] = allFramesʗ3[s];
             });
             if (written == 0) {
                 io.WriteString(w, traceEventsˢ);
@@ -84,11 +84,11 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
             written++;
         },
         ConsumeViewerFrame: (@string k, format.Frame v) => {
-            allFramesʗ6[k] = v;
+            allFramesʗ4[k] = v;
         },
         Flush: () => {
             io.WriteString(w, stackFramesˢ);
-            encʗ3.Encode(requiredFramesʗ6);
+            encʗ3.Encode(requiredFramesʗ4);
             io.WriteString(w, @"}"u8);
         }
     );
@@ -110,9 +110,9 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
     var s = @new<splitter>();
         var allFramesʗ1 = allFrames;
 
-        var allFramesʗ6 = allFrames;
+        var allFramesʗ4 = allFrames;
 
-        var allFramesʗ7 = allFrames;
+        var allFramesʗ5 = allFrames;
         var sʗ1 = s;
     return (s, new TraceConsumer(
         ConsumeTimeUnit: (@string unit) => {
@@ -129,10 +129,10 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
                     @string sΔ1 = strconv.Itoa(id);
                     Ꮡdata.Value.Frames[sΔ1] = allFramesʗ2[sΔ1];
                 });
-                var allFramesʗ4 = allFramesʗ1;
+                var allFramesʗ3 = allFramesʗ1;
                 WalkStackFrames(allFramesʗ1, (~v).EndStack, (nint id) => {
                     @string sΔ2 = strconv.Itoa(id);
-                    Ꮡdata.Value.Frames[sΔ2] = allFramesʗ4[sΔ2];
+                    Ꮡdata.Value.Frames[sΔ2] = allFramesʗ3[sΔ2];
                 });
                 return;
             }
@@ -154,7 +154,7 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
             Ꮡcw.Value.size = 0;
         },
         ConsumeViewerFrame: (@string k, format.Frame v) => {
-            allFramesʗ6[k] = v;
+            allFramesʗ4[k] = v;
         },
         Flush: () => {
             // Calculate size of the mandatory part of the trace.
@@ -182,7 +182,7 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
                     if (ok) {
                         continue;
                     }
-                    var f = allFramesʗ7[sΔ3];
+                    var f = allFramesʗ5[sΔ3];
                     frames[sΔ3] = f;
                     framesSize += stackFrameEncodedSize((nuint)id, f);
                 }

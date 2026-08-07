@@ -60,17 +60,17 @@ internal static void Main() {
     @catch(methodCallˢ, () => {
         fmt.Println(pʗ1.label());
     });
-    var pʗ3 = p;
+    var pʗ2 = p;
     @catch(fieldReadˢ, () => {
-        fmt.Println((~pʗ3).name);
+        fmt.Println((~pʗ2).name);
     });
-    var pʗ5 = p;
+    var pʗ3 = p;
     @catch(fieldWriteˢ, () => {
-        pʗ5.Value.name = "x"u8;
+        pʗ3.Value.name = "x"u8;
     });
-    var pʗ7 = p;
+    var pʗ4 = p;
     @catch(explicitDerefˢ, () => {
-        fmt.Println(pʗ7.Value);
+        fmt.Println(pʗ4.Value);
     });
     ref var b = ref heap(new box(), out var Ꮡb);
     var bʗ1 = b;
@@ -92,19 +92,19 @@ internal static void Main() {
     @catch(chainWalkˢ, () => {
         fmt.Println((~(~realʗ1).next).name);
     });
-    var pʗ9 = p;
+    var pʗ5 = p;
     @catch(nilSafeMethodˢ, () => {
-        fmt.Println(pʗ9.isNil());
+        fmt.Println(pʗ5.isNil());
     });
-    var realʗ3 = real;
+    var realʗ2 = real;
     @catch(realMethodˢ, () => {
-        fmt.Println(realʗ3.label());
+        fmt.Println(realʗ2.label());
     });
-    var bʗ3 = b;
-    var nodesʗ3 = nodes;
-    var pʗ11 = p;
+    var bʗ2 = b;
+    var nodesʗ2 = nodes;
+    var pʗ6 = p;
     @catch(nilCompareˢ, () => {
-        fmt.Println(pʗ11 == nil, bʗ3.p == nil, nodesʗ3[0] == nil);
+        fmt.Println(pʗ6 == nil, bʗ2.p == nil, nodesʗ2[0] == nil);
     });
     fmt.Println(stillRunningˢ, real.label());
 }

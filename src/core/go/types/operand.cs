@@ -417,7 +417,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         var ok = false;
         errors.Code code = IncompatibleAssign;
         var Vpʗ1 = Vp;
-        var errorfʗ3 = errorf;
+        var errorfʗ2 = errorf;
         var origTʗ1 = origT;
         Vp.@is((ж<term> VΔ1) => {
             if (VΔ1 == nil) {
@@ -427,7 +427,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
             ᏑxΔ1.Value.typ = VΔ1.Value.typ;
             (ok, code) = ᏑxΔ1.assignableTo(Ꮡcheck, T, Ꮡcause);
             if (!ok) {
-                errorfʗ3("cannot assign %s (in %s) to %s"u8, (~VΔ1).typ, Vpʗ1.OrTypedNil(), origTʗ1);
+                errorfʗ2("cannot assign %s (in %s) to %s"u8, (~VΔ1).typ, Vpʗ1.OrTypedNil(), origTʗ1);
                 return false;
             }
             return true;

@@ -493,10 +493,10 @@ send:
     if (asanenabled) {
         asanread((~cas).elem, (~(~c).elemtype).Size_);
     }
-    var lockorderʗ3 = lockorder;
-    var scasesʗ3 = scases;
+    var lockorderʗ2 = lockorder;
+    var scasesʗ2 = scases;
     send(c, sg, (~cas).elem, () => {
-        selunlock(scasesʗ3, lockorderʗ3);
+        selunlock(scasesʗ2, lockorderʗ2);
     }, 2);
     if (debugSelect) {
         print((@string)"syncsend: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)" c="u8, c.OrTypedNil(), (@string)"\n"u8);

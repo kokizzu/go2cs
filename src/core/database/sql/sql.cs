@@ -2701,9 +2701,9 @@ public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<
             Ꮡstmt.of(sql_package.ΔStmt.Ꮡmu).Unlock();
             if (si == default!) {
                 ref var ds = ref heap<ж<driverStmt>>(out var Ꮡds);
-                var dcʗ3 = dc;
+                var dcʗ2 = dc;
                 withLock(new driverConnжLocker(dc), () => {
-                    (Ꮡds.ValueSlot, Ꮡerr.ValueSlot) = Ꮡstmt.prepareOnConnLocked(ctx, dcʗ3);
+                    (Ꮡds.ValueSlot, Ꮡerr.ValueSlot) = Ꮡstmt.prepareOnConnLocked(ctx, dcʗ2);
                 });
                 if (err != default!) {
                     return Ꮡ(new ΔStmt(stickyErr: err));

@@ -350,9 +350,9 @@ internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bo
         exts.AddUint16(extensionPreSharedKey);
         Ꮡexts.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ32) => {
             extsΔ32.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ33) => {
-                foreach (var (_, vᴛ5) in Ꮡm.Value.pskIdentities) {
+                foreach (var (_, vᴛ2) in Ꮡm.Value.pskIdentities) {
                     ref var psk = ref heap(new pskIdentity(), out var Ꮡpsk);
-                    psk = vᴛ5;
+                    psk = vᴛ2;
 
                     var pskʗ1 = psk;
                     extsΔ33.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ34) => {
@@ -1561,11 +1561,11 @@ internal static void marshalCertificate(ж<cryptobyte.Builder> Ꮡb, Certificate
                 }
                 if (certificateʗ2.SignedCertificateTimestamps != default!) {
                     bΔ3.AddUint16(extensionSCT);
-                    var certificateʗ9 = certificateʗ2;
+                    var certificateʗ5 = certificateʗ2;
                     bΔ3.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ6) => {
-                        var certificateʗ10 = certificateʗ9;
+                        var certificateʗ6 = certificateʗ5;
                         bΔ6.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ7) => {
-                            foreach (var (_, sct) in certificateʗ10.SignedCertificateTimestamps) {
+                            foreach (var (_, sct) in certificateʗ6.SignedCertificateTimestamps) {
                                 var sctʗ1 = sct;
                                 bΔ7.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ8) => {
                                     bΔ8.AddBytes(sctʗ1);

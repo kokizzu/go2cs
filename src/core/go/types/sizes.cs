@@ -58,8 +58,8 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
         }, ref ᒐ);
         // For arrays and structs, alignment is defined in terms
         // of alignment of the elements and fields, respectively.
-        var switchᴛ16 = under(T);
-        switch (switchᴛ16.type()) {
+        var switchᴛ14 = under(T);
+        switch (switchᴛ14.type()) {
         case ж<Array> t: {
             result = Ꮡs.Alignof((~t).elem); goto ᒐdone;
         }
@@ -91,7 +91,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
         }
         case ж<Slice> _:
         case ж<Interface> _: {
-            var t = switchᴛ16;
+            var t = switchᴛ14;
             assert(!isTypeParam(T));
             result = s.WordSize; goto ᒐdone;
         }
@@ -108,7 +108,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
         }
         case ж<TypeParam> _:
         case ж<Union> _: {
-            var t = switchᴛ16;
+            var t = switchᴛ14;
             throw panic("unreachable");
             break;
         }}
@@ -187,8 +187,8 @@ internal static array<byte> basicSizes = new golib.SparseArray<byte>{
 public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    var switchᴛ17 = under(T);
-    switch (switchᴛ17.type()) {
+    var switchᴛ15 = under(T);
+    switch (switchᴛ15.type()) {
     case ж<Basic> t: {
         assert(isTyped(T));
         BasicKind k = t.Value.kind;
@@ -260,7 +260,7 @@ public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
     }
     case ж<TypeParam> _:
     case ж<Union> _: {
-        var t = switchᴛ17;
+        var t = switchᴛ15;
         throw panic("unreachable");
         break;
     }}

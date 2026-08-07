@@ -304,9 +304,9 @@ internal static slice<@file> readDir(this FS f, @string dir) {
         var (idir, _, _) = split(filesʗ1[iΔ1].name);
         return idir >= dir;
     });
-    var filesʗ3 = files;
+    var filesʗ2 = files;
     nint j = sortSearch(len(files), (nint jΔ1) => {
-        var (jdir, _, _) = split(filesʗ3[jΔ1].name);
+        var (jdir, _, _) = split(filesʗ2[jΔ1].name);
         return jdir > dir;
     });
     return files[(int)(i)..(int)(j)];

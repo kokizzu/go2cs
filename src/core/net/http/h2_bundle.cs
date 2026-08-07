@@ -2867,8 +2867,8 @@ internal static (http2Frame, error) readMetaFrame(this ж<http2Framer> Ꮡfr, ж
             mhʗ1.Value.Fields = append((~mhʗ1).Fields, hfΔ1);
         });
         // Lose reference to MetaHeadersFrame:
-        var hdecʗ3 = hdec;
-        defer(hdecʗ3.SetEmitFunc, (hpack.HeaderField hfΔ2) => {
+        var hdecʗ2 = hdec;
+        defer(hdecʗ2.SetEmitFunc, (hpack.HeaderField hfΔ2) => {
         }, ref ᒐ);
         http2headersOrContinuation hc = new http2HeadersFrameжhttp2headersOrContinuation(Ꮡhf);
         while (ᐧ) {

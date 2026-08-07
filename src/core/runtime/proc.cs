@@ -4467,9 +4467,9 @@ internal static void reentersyscall(uintptr pc, uintptr sp, uintptr bp) {
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
-        var gpʗ3 = gp;
+        var gpʗ2 = gp;
         systemstack(() => {
-            print((@string)"entersyscall inconsistent bp "u8, ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
+            print((@string)"entersyscall inconsistent bp "u8, ((Δhex)(uint64)(~gpʗ2).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ2).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ2).stack.hi), (@string)"]\n"u8);
             @throw(entersyscallˢ);
         });
     }
@@ -4615,16 +4615,16 @@ internal static void entersyscallblock() {
     }
     casgstatus(gp, _Grunning, _Gsyscall);
     if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
-        var gpʗ3 = gp;
+        var gpʗ2 = gp;
         systemstack(() => {
-            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).sched.sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
+            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ2).sched.sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ2).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ2).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ2).stack.hi), (@string)"]\n"u8);
             @throw(entersyscallblockˢ);
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
-        var gpʗ5 = gp;
+        var gpʗ3 = gp;
         systemstack(() => {
-            print((@string)"entersyscallblock inconsistent bp "u8, ((Δhex)(uint64)bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).sched.bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ5).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ5).stack.hi), (@string)"]\n"u8);
+            print((@string)"entersyscallblock inconsistent bp "u8, ((Δhex)(uint64)bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).sched.bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
             @throw(entersyscallblockˢ);
         });
     }
@@ -5270,9 +5270,9 @@ retry:
     }
     if ((~gp).stack.lo == 0){
         // Stack was deallocated in gfput or just above. Allocate a new one.
-        var gpʗ3 = gp;
+        var gpʗ2 = gp;
         systemstack(() => {
-            gpʗ3.Value.stack = @stackalloc(startingStackSize);
+            gpʗ2.Value.stack = @stackalloc(startingStackSize);
         });
         gp.Value.stackguard0 = (~gp).stack.lo + (uintptr)stackGuard;
     } else {

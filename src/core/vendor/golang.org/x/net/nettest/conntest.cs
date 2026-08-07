@@ -91,12 +91,12 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
         defer(Ꮡonce.Do, () => {
             stopʗ1();
         }, ref ᒐ);
-        var stopʗ3 = stop;
+        var stopʗ2 = stop;
         var timer = time.AfterFunc(time.ΔMinute, () => {
-            var stopʗ4 = stopʗ3;
+            var stopʗ3 = stopʗ2;
             Ꮡonce.Do(() => {
                 Ꮡt.Error(testTimedOutTerminatingˢ);
-                stopʗ4();
+                stopʗ3();
             });
         });
         var timerʗ1 = timer;

@@ -714,9 +714,9 @@ public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, e
                 cʗ3.cancel(true, DeadlineExceeded, cause);
             });
         }
-        var cʗ5 = c;
+        var cʗ4 = c;
         return (new timerCtxжContext(c), () => {
-            cʗ5.cancel(true, Canceled, default!);
+            cʗ4.cancel(true, Canceled, default!);
         });
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }

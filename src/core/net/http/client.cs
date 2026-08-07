@@ -435,12 +435,12 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
     ref var timedOut = ref heap(new atomic.Bool(), out var ᏑtimedOut);
     var doCancelʗ1 = doCancel;
     var initialReqCancelʗ1 = initialReqCancel;
-    var stopTimerChʗ4 = stopTimerCh;
+    var stopTimerChʗ3 = stopTimerCh;
     var timerʗ1 = timer;
     goǃ(() => {
         var selᴛ1 = initialReqCancelʗ1;
         var selᴛ2 = (~timerʗ1).C;
-        var selᴛ3 = stopTimerChʗ4;
+        var selᴛ3 = stopTimerChʗ3;
         switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
         case 0 when selᴛ1.ꟷᐳ(out _): {
             doCancelʗ1();

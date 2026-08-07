@@ -105,13 +105,13 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
                     Ꮡfd.of(netFD.Ꮡpfd).SetWriteDeadline(aLongTimeAgo);
                     builtin.close(doneʗ1);
                 });
-                var doneʗ3 = done;
+                var doneʗ2 = done;
                 var stopʗ1 = stop;
                 defer(() => {
                     if (!stopʗ1()) {
                         // Wait for the call to SetWriteDeadline to complete so that we can
                         // reset the deadline if everything else succeeded.
-                        ᐸꟷ(doneʗ3);
+                        ᐸꟷ(doneʗ2);
                     }
                 }, ref ᒐ);
             }
