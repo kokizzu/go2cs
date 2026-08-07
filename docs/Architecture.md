@@ -46,7 +46,7 @@ Each `visit*` file handles one Go AST node category, emitting the corresponding 
 | `visitIfStmt.go` / `visitForStmt.go` / `visitRangeStmt.go` | Conditionals & loops (range handles ptr deref). |
 | `visitSwitchStmt.go` / `visitTypeSwitchStmt.go` / `visitSelectStmt.go` / `visitCommClause.go` | switch / type-switch / select + comm clauses. |
 | `visitReturnStmt.go` / `visitBranchStmt.go` / `visitLabeledStmt.go` | return, break/continue/goto, labels. |
-| `visitDeferStmt.go` / `visitGoStmt.go` | `defer` (LIFO closure stack), `go` (goroutine → thread pool/Task). |
+| `visitDeferStmt.go` / `visitGoStmt.go` | `defer` (registers into the enclosing `GoFrame`, drained LIFO), `go` (goroutine → thread pool/Task). |
 | `visitIdent.go` | Identifier emission / name sanitization. |
 
 ## `conv*.go` — expression & type converters
@@ -102,6 +102,7 @@ Compile-time emission so converted C# stays visually close to Go. Referenced as 
 | `int`/`uint` (platform-sized) | `nint`/`nuint` |
 | `uint8`/`rune`/`uintptr`/`complex128`/… | aliases (`byte`/`int32`/`UIntPtr`/`Complex`) via global usings |
 | panic / runtime error | `PanicException` / `RuntimeErrorPanic` |
+| per-call `defer` list | `GoFrame` (`ref struct`, LIFO drain) — `GoFrame.cs` |
 
 See [`ConversionStrategies.md`](ConversionStrategies.md) for a high-level, example-driven tour of the
 per-construct mapping, and [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) for the

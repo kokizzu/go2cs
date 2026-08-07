@@ -228,8 +228,8 @@ signing is never bypassed, and cherry-picks re-sign automatically.
 
 **Marker glyphs / `Symbols.cs` / `symbols.json`.**
 The emitted C# uses reserved glyphs (`ж` pointer box, `Ꮡ` address-of, `Δ` shadow/collision rename,
-`ꓸ` type-alias dot, `ᴛ` temp, …). Converter and generator **source** must reference named
-constants, never literal glyphs: the C# side (golib, go2cs-gen) uses `Symbols.cs`
+`ꓸ` type-alias dot, `ᴛ` temp, `ᒐ` the per-function `GoFrame` defer local, …).
+Converter and generator **source** must reference named constants, never literal glyphs: the C# side (golib, go2cs-gen) uses `Symbols.cs`
 (`PointerPrefix`, `AddressPrefix`, `ShadowVarMarker`, …, via `using static go2cs.Symbols`); the
 Go converter uses the same-named constants in `src/go2cs/symbols.go`. Both files are **generated
 projections of the canonical symbol table `src/core/go2cs/symbols.json`** (kept pure-ASCII —
