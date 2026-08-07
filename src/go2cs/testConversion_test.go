@@ -1001,7 +1001,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	foreign := loadProductionForDir(t, foreignDir)
-	if got := declarationClosureImports([]*packages.Package{foreign}, nil, []string{"hash"}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{foreign}, nil, []string{"hash"}, nil); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("hash.Hash embeds io.Writer, so referencing hash must surface io; got %v", got)
 	}
 
@@ -1024,7 +1024,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	fsys := loadProductionForDir(t, fsysDir)
-	if got := declarationClosureImports([]*packages.Package{fsys}, nil, []string{fsys.PkgPath}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{fsys}, nil, []string{fsys.PkgPath}, nil); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("File structurally implements io.ReadCloser, so the io assembly must be surfaced; got %v", got)
 	}
 
@@ -1040,7 +1040,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	chain := loadProductionForDir(t, chainDir)
-	got := declarationClosureImports([]*packages.Package{chain}, nil, []string{"example/chain/b"})
+	got := declarationClosureImports([]*packages.Package{chain}, nil, []string{"example/chain/b"}, nil)
 
 	if len(got) != 2 || got[0] != "example/chain/a" || got[1] != "io" {
 		t.Fatalf("the closure must follow b -> a -> io, got %v", got)
@@ -1060,7 +1060,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	unnamed := loadProductionForDir(t, unnamedDir)
-	if got := declarationClosureImports([]*packages.Package{unnamed}, nil, []string{"fmt", unnamed.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{unnamed}, nil, []string{"fmt", unnamed.PkgPath}, nil); len(got) != 0 {
 		t.Fatalf("fmt is referenced but fmt.State is never named, so nothing must be surfaced; got %v", got)
 	}
 
@@ -1074,7 +1074,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	namedPkg := loadProductionForDir(t, namedDir)
-	if got := declarationClosureImports([]*packages.Package{namedPkg}, nil, []string{"fmt", namedPkg.PkgPath}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{namedPkg}, nil, []string{"fmt", namedPkg.PkgPath}, nil); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("naming fmt.State binds an interface whose base is io.Writer; got %v", got)
 	}
 
@@ -1091,7 +1091,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	plain := loadProductionForDir(t, plainDir)
-	if got := declarationClosureImports([]*packages.Package{plain}, nil, []string{plain.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{plain}, nil, []string{plain.PkgPath}, nil); len(got) != 0 {
 		t.Fatalf("no exported interface matches an imported interface, so the closure must be empty; got %v", got)
 	}
 
@@ -1136,22 +1136,22 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	writeModuleFiles(t, fieldDir, fieldFiles)
 
 	built := loadProductionForDir(t, filepath.Join(fieldDir, "build"))
-	if got := declarationClosureImports([]*packages.Package{built}, nil, []string{"example/field/cfg"}); len(got) != 1 || got[0] != "math/rand" {
+	if got := declarationClosureImports([]*packages.Package{built}, nil, []string{"example/field/cfg"}, nil); len(got) != 1 || got[0] != "math/rand" {
 		t.Fatalf("constructing Config must surface its *rand.Rand field's math/rand; got %v", got)
 	}
 
 	used := loadProductionForDir(t, filepath.Join(fieldDir, "use"))
-	if got := declarationClosureImports([]*packages.Package{used}, nil, []string{"example/field/cfg"}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{used}, nil, []string{"example/field/cfg"}, nil); len(got) != 0 {
 		t.Fatalf("holding a Config VALUE demands no field assembly — only the constructor does; got %v", got)
 	}
 
 	zero := loadProductionForDir(t, filepath.Join(fieldDir, "zero"))
-	if got := declarationClosureImports([]*packages.Package{zero}, nil, []string{"example/field/cfg"}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{zero}, nil, []string{"example/field/cfg"}, nil); len(got) != 0 {
 		t.Fatalf("a FOREIGN struct's EMPTY literal resolves against no accessible fieldwise constructor; got %v", got)
 	}
 
 	rootZero := loadProductionForDir(t, filepath.Join(fieldDir, "root"))
-	if got := declarationClosureImports([]*packages.Package{rootZero}, nil, nil); len(got) != 1 || got[0] != "math/rand" {
+	if got := declarationClosureImports([]*packages.Package{rootZero}, nil, nil, nil); len(got) != 1 || got[0] != "math/rand" {
 		t.Fatalf("a ROOT struct's EMPTY literal still resolves against its accessible fieldwise constructor; got %v", got)
 	}
 
@@ -1168,7 +1168,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	funcField := loadProductionForDir(t, funcFieldDir)
-	if got := declarationClosureImports([]*packages.Package{funcField}, nil, []string{"example/funcfield/cfg"}); len(got) != 1 || got[0] != "math/rand" {
+	if got := declarationClosureImports([]*packages.Package{funcField}, nil, []string{"example/funcfield/cfg"}, nil); len(got) != 1 || got[0] != "math/rand" {
 		t.Fatalf("a func-typed field's signature must surface math/rand; got %v", got)
 	}
 
@@ -1186,7 +1186,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	layout := loadProductionForDir(t, layoutDir)
-	got = declarationClosureImports([]*packages.Package{layout}, nil, []string{"example/layout/mid"})
+	got = declarationClosureImports([]*packages.Package{layout}, nil, []string{"example/layout/mid"}, nil)
 
 	if len(got) != 1 || got[0] != "example/layout/deep" {
 		t.Fatalf("the field edge is one level — deep's assembly, not deep's own field types; got %v", got)
@@ -1216,7 +1216,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	}
 
 	roots := []*packages.Package{excludedProduction, excludedExternal}
-	control := declarationClosureImports(roots, nil, []string{"example/excluded/cfg"})
+	control := declarationClosureImports(roots, nil, []string{"example/excluded/cfg"}, nil)
 
 	if len(control) != 1 || control[0] != "math/rand" {
 		t.Fatalf("control: with the file compiled, its literal must surface math/rand; got %v", control)
@@ -1227,7 +1227,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 		t.Fatalf("the Example-only file must be compile-excluded; got %v", excluded)
 	}
 
-	if got := declarationClosureImports(roots, excluded, []string{"example/excluded/cfg"}); len(got) != 0 {
+	if got := declarationClosureImports(roots, excluded, []string{"example/excluded/cfg"}, nil); len(got) != 0 {
 		t.Fatalf("a compile-excluded file names nothing in the compilation; got %v", got)
 	}
 
@@ -1256,7 +1256,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 		t.Fatal("the external test variant was not loaded")
 	}
 
-	if got := declarationClosureImports([]*packages.Package{selfProduction, selfExternal}, nil, []string{selfProduction.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{selfProduction, selfExternal}, nil, []string{selfProduction.PkgPath}, nil); len(got) != 0 {
 		t.Fatalf("a root's own package is never a project reference; got %v", got)
 	}
 
@@ -1274,7 +1274,7 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 	})
 
 	testingSource := loadProductionForDir(t, testingDir)
-	if got := declarationClosureImports([]*packages.Package{testingSource}, nil, []string{"testing", testingSource.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{testingSource}, nil, []string{"testing", testingSource.PkgPath}, nil); len(got) != 0 {
 		t.Fatalf("testing binds to the hand-owned shim and must never be walked; got %v", got)
 	}
 }
@@ -1302,7 +1302,7 @@ func TestDeclarationClosureImportsSurfacesMemberAccessEdges(t *testing.T) {
 	varInternal, varExternal := loadTestVariantsForDir(t, varDir)
 
 	got := declarationClosureImports([]*packages.Package{varProduction, varInternal, varExternal}, nil,
-		[]string{varProduction.PkgPath, "example/valdecl/lib", "testing"})
+		[]string{varProduction.PkgPath, "example/valdecl/lib", "testing"}, nil)
 
 	if len(got) != 1 || got[0] != "sync" {
 		t.Fatalf("a member access on a foreign var of type sync.Mutex must surface sync; got %v", got)
@@ -1324,7 +1324,7 @@ func TestDeclarationClosureImportsSurfacesMemberAccessEdges(t *testing.T) {
 	namedInternal, namedExternal := loadTestVariantsForDir(t, namedOnlyDir)
 
 	if got := declarationClosureImports([]*packages.Package{namedProduction, namedInternal, namedExternal}, nil,
-		[]string{namedProduction.PkgPath, "example/valnamed/lib", "testing"}); len(got) != 0 {
+		[]string{namedProduction.PkgPath, "example/valnamed/lib", "testing"}, nil); len(got) != 0 {
 		t.Fatalf("naming a declaration is not accessing a member of it; got %v", got)
 	}
 
@@ -1344,7 +1344,7 @@ func TestDeclarationClosureImportsSurfacesMemberAccessEdges(t *testing.T) {
 	prodInternal, prodExternal := loadTestVariantsForDir(t, prodOnlyDir)
 
 	if got := declarationClosureImports([]*packages.Package{prodProduction, prodInternal, prodExternal}, nil,
-		[]string{prodProduction.PkgPath, "example/valprod/lib", "testing"}); len(got) != 0 {
+		[]string{prodProduction.PkgPath, "example/valprod/lib", "testing"}, nil); len(got) != 0 {
 		t.Fatalf("a member access in PRODUCTION source is not in the test compilation; got %v", got)
 	}
 
@@ -1364,8 +1364,175 @@ func TestDeclarationClosureImportsSurfacesMemberAccessEdges(t *testing.T) {
 	qualInternal, qualExternal := loadTestVariantsForDir(t, qualifiedDir)
 
 	if got := declarationClosureImports([]*packages.Package{qualProduction, qualInternal, qualExternal}, nil,
-		[]string{qualProduction.PkgPath, "example/valqual/lib", "testing"}); len(got) != 0 {
+		[]string{qualProduction.PkgPath, "example/valqual/lib", "testing"}, nil); len(got) != 0 {
 		t.Fatalf("a package-qualified selector has no receiver type to surface; got %v", got)
+	}
+}
+
+// The ZERO-VALUE DECLARATION form of the constructor edge (log): `var l Logger` writes no composite
+// literal anywhere, yet the converter renders Go's zero value as a CONSTRUCTOR CALL, so overload
+// resolution must still materialize the accessible fieldwise constructor's parameter types. log's
+// white-box TestNonNewLogger died `CS0012 … 'atomic_package.Pointer<>'` on it. Each positive is
+// paired with the negative that keeps the edge exactly where the empty-literal form already sits:
+// accessible constructors only (ROOT-declared), and `_test.go` sources only.
+func TestDeclarationClosureImportsSurfacesZeroValueVarDeclarations(t *testing.T) {
+	// The log shape: a root struct declared at its zero value in a white-box test, with a field
+	// type from a package neither half imports.
+	rootDir := t.TempDir()
+	writeModuleFiles(t, rootDir, map[string]string{
+		"go.mod":       "module example/zerovar\n\ngo 1.23\n",
+		"main.go":      "package zerovar\nimport \"math/rand\"\ntype Holder struct{ r *rand.Rand }\nfunc Use() int { return 1 }\n",
+		"main_test.go": "package zerovar\nimport \"testing\"\nfunc TestZero(t *testing.T) {\n\tvar h Holder\n\t_ = h\n}\n",
+	})
+
+	rootProduction := loadProductionForDir(t, rootDir)
+	rootInternal, rootExternal := loadTestVariantsForDir(t, rootDir)
+
+	got := declarationClosureImports([]*packages.Package{rootProduction, rootInternal, rootExternal}, nil,
+		[]string{rootProduction.PkgPath, "testing"}, nil)
+
+	if len(got) != 1 || got[0] != "math/rand" {
+		t.Fatalf("a ROOT struct's zero-value var declaration constructs it; got %v", got)
+	}
+
+	// NEGATIVE (accessibility, the same gate the empty literal carries). A FOREIGN struct's
+	// fieldwise constructor is `internal` for any struct with an unexported field, so it is not a
+	// resolution candidate here at all and the declaration demands nothing.
+	foreignDir := t.TempDir()
+	writeModuleFiles(t, foreignDir, map[string]string{
+		"go.mod":     "module example/zeroforeign\n\ngo 1.23\n",
+		"lib/lib.go": "package lib\nimport \"math/rand\"\ntype Holder struct{ r *rand.Rand }\n",
+		"main.go":    "package zeroforeign\nfunc Use() int { return 1 }\n",
+		"main_test.go": "package zeroforeign\nimport (\n\t\"testing\"\n\n\t\"example/zeroforeign/lib\"\n)\n" +
+			"func TestZero(t *testing.T) {\n\tvar h lib.Holder\n\t_ = h\n}\n",
+	})
+
+	foreignProduction := loadProductionForDir(t, foreignDir)
+	foreignInternal, foreignExternal := loadTestVariantsForDir(t, foreignDir)
+
+	if got := declarationClosureImports([]*packages.Package{foreignProduction, foreignInternal, foreignExternal}, nil,
+		[]string{foreignProduction.PkgPath, "example/zeroforeign/lib", "testing"}, nil); len(got) != 0 {
+		t.Fatalf("a FOREIGN struct's zero-value declaration resolves against no accessible constructor; got %v", got)
+	}
+
+	// NEGATIVE (the test-file scoping). The same declaration in PRODUCTION source is compiled into
+	// the referenced assembly, not into this compilation, and that assembly carries its own
+	// references.
+	prodDir := t.TempDir()
+	writeModuleFiles(t, prodDir, map[string]string{
+		"go.mod":       "module example/zeroprod\n\ngo 1.23\n",
+		"main.go":      "package zeroprod\nimport \"math/rand\"\ntype Holder struct{ r *rand.Rand }\nfunc Use() Holder {\n\tvar h Holder\n\treturn h\n}\n",
+		"main_test.go": "package zeroprod\nimport \"testing\"\nfunc TestUse(t *testing.T) { _ = Use() }\n",
+	})
+
+	prodProduction := loadProductionForDir(t, prodDir)
+	prodInternal, prodExternal := loadTestVariantsForDir(t, prodDir)
+
+	if got := declarationClosureImports([]*packages.Package{prodProduction, prodInternal, prodExternal}, nil,
+		[]string{prodProduction.PkgPath, "testing"}, nil); len(got) != 0 {
+		t.Fatalf("a zero-value declaration in PRODUCTION source is not in the test compilation; got %v", got)
+	}
+}
+
+// The IMPLEMENTED-INTERFACE edge (go/scanner): a converted concrete type carries its interfaces in
+// its package's `[assembly: GoImplement<T, I>]` records, which go2cs-gen realizes as a partial base
+// list INSIDE THE DECLARING ASSEMBLY — so the metadata type declares them and binding any member on
+// it resolves that list. `ErrorList`'s `sort.Interface` base failed `CS0012` ×13 across the suite and
+// the generated `error` adapter's own `m_value.Equals(…)`.
+func TestDeclarationClosureImportsSurfacesImplementedInterfaceBases(t *testing.T) {
+	// The scanner shape: a named slice whose value method set satisfies sort.Interface, with sort in
+	// the PRODUCTION package's imports and in neither test import list.
+	implDir := t.TempDir()
+	writeModuleFiles(t, implDir, map[string]string{
+		"go.mod": "module example/implbase\n\ngo 1.23\n",
+		"main.go": "package implbase\n" +
+			"import \"sort\"\n" +
+			"type Rows []int\n" +
+			"func (r Rows) Len() int           { return len(r) }\n" +
+			"func (r Rows) Less(i, j int) bool { return r[i] < r[j] }\n" +
+			"func (r Rows) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }\n" +
+			"func (r Rows) Total() int         { return len(r) }\n" +
+			"func Order(r Rows)                { sort.Sort(r) }\n",
+		"main_test.go": "package implbase\nimport \"testing\"\nfunc TestTotal(t *testing.T) {\n\tvar r Rows\n\tif r.Total() != 0 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n",
+	})
+
+	implProduction := loadProductionForDir(t, implDir)
+	implInternal, implExternal := loadTestVariantsForDir(t, implDir)
+
+	// The record set the production half emitted, as packageImplementBases parses it out of
+	// package_info.cs: `[assembly: GoImplement<Rows, sort_package.Interface>]`.
+	recorded := map[string][]string{"Rows": {"sort_package"}}
+
+	got := declarationClosureImports([]*packages.Package{implProduction, implInternal, implExternal}, nil,
+		[]string{implProduction.PkgPath, "testing"}, recorded)
+
+	if len(got) != 1 || got[0] != "sort" {
+		t.Fatalf("binding a member on Rows must surface the sort.Interface base its declaration carries; got %v", got)
+	}
+
+	// NEGATIVE, and the one that matters most — THE RECORDS ARE THE GATE, not Go satisfaction. The
+	// same package, the same member access, the same `types.Implements` answer; only the record set
+	// is empty, as it is for a type the converter never converted a cast of. Go satisfaction alone
+	// drifts 16 of the 96 banked projects (os.File's syscall.Conn into thirteen, bytes.Buffer's io
+	// into sort and unicode/utf8, buildcfg's fmt.Stringer), every one of which compiles clean with
+	// none of it.
+	if got := declarationClosureImports([]*packages.Package{implProduction, implInternal, implExternal}, nil,
+		[]string{implProduction.PkgPath, "testing"}, nil); len(got) != 0 {
+		t.Fatalf("satisfying an interface is not carrying it as a base — only a record does; got %v", got)
+	}
+
+	// NEGATIVE (a record for ANOTHER type answers for nothing). os records `rawConn` against
+	// syscall.RawConn and thirteen projects bind `os.File` members with no syscall reference; the
+	// per-TYPE key is what keeps those apart.
+	if got := declarationClosureImports([]*packages.Package{implProduction, implInternal, implExternal}, nil,
+		[]string{implProduction.PkgPath, "testing"}, map[string][]string{"Other": {"sort_package"}}); len(got) != 0 {
+		t.Fatalf("a record keyed to another type must not surface a base here; got %v", got)
+	}
+
+	// NEGATIVE (the receiver restriction carries here too). The same type, the same production
+	// import — but the test only NAMES a value of it and never binds a member, so no declaration has
+	// to be resolved.
+	valueDir := t.TempDir()
+	writeModuleFiles(t, valueDir, map[string]string{
+		"go.mod": "module example/implvalue\n\ngo 1.23\n",
+		"main.go": "package implvalue\n" +
+			"import \"sort\"\n" +
+			"type Rows []int\n" +
+			"func (r Rows) Len() int           { return len(r) }\n" +
+			"func (r Rows) Less(i, j int) bool { return r[i] < r[j] }\n" +
+			"func (r Rows) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }\n" +
+			"func Order(r Rows)                { sort.Sort(r) }\n",
+		"main_test.go": "package implvalue\nimport \"testing\"\nfunc TestPass(t *testing.T) {\n\tvar r Rows\n\tOrder(r)\n}\n",
+	})
+
+	valueProduction := loadProductionForDir(t, valueDir)
+	valueInternal, valueExternal := loadTestVariantsForDir(t, valueDir)
+
+	if got := declarationClosureImports([]*packages.Package{valueProduction, valueInternal, valueExternal}, nil,
+		[]string{valueProduction.PkgPath, "testing"}, map[string][]string{"Rows": {"sort_package"}}); len(got) != 0 {
+		t.Fatalf("passing a value along binds no member and resolves no base list; got %v", got)
+	}
+
+	// NEGATIVE (the candidate match is real satisfaction, not mere presence of the import). The
+	// production package still imports sort and the test still binds a member — but the type's
+	// method set does not satisfy sort.Interface, so its declaration carries no such base.
+	noneDir := t.TempDir()
+	writeModuleFiles(t, noneDir, map[string]string{
+		"go.mod": "module example/implnone\n\ngo 1.23\n",
+		"main.go": "package implnone\n" +
+			"import \"sort\"\n" +
+			"type Rows []int\n" +
+			"func (r Rows) Total() int { return len(r) }\n" +
+			"func Order(s []int)       { sort.Ints(s) }\n",
+		"main_test.go": "package implnone\nimport \"testing\"\nfunc TestTotal(t *testing.T) {\n\tvar r Rows\n\tif r.Total() != 0 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n",
+	})
+
+	noneProduction := loadProductionForDir(t, noneDir)
+	noneInternal, noneExternal := loadTestVariantsForDir(t, noneDir)
+
+	if got := declarationClosureImports([]*packages.Package{noneProduction, noneInternal, noneExternal}, nil,
+		[]string{noneProduction.PkgPath, "testing"}, map[string][]string{"Rows": {"sort_package"}}); len(got) != 0 {
+		t.Fatalf("a type that satisfies nothing carries no interface base; got %v", got)
 	}
 }
 

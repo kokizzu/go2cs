@@ -2741,6 +2741,66 @@ reason it is never a walk SOURCE — its reference is fixed in the project templ
 strips `"testing"` from the import-derived set rather than passing it through as already-referenced, so
 `reach()` now honours `closureWalkable` too.
 
+**The fourth and fifth closure edges — a ZERO-VALUE DECLARATION and a RECORDED INTERFACE BASE (2026-08-07, r43f).**
+`log` and `go/scanner` sat on the build-blocked list with one CS0012 family each, and each named a demand the
+first three edges structurally cannot see.
+
+*`log` — the zero-value declaration.* `TestNonNewLogger` writes `var l Logger`. There is no composite literal
+anywhere in it, so the struct-field edge's `*ast.CompositeLit` seed never fires — but Go's zero value of a
+struct is not `default(T)` in the emission. The converter renders the declaration as a **constructor call**:
+`ref var l = ref heap(new Logger(), out var Ꮡl)` for the address-taken shape (`escapeAnalysisOperations`),
+`new Logger()` otherwise (`visitValueSpec`). C# overload resolution must materialize every **accessible**
+constructor's signature before it can choose one, and under the white-box `InternalsVisibleTo` grant the
+package-under-test's `internal` fieldwise overload is accessible — so `log_test.cs` failed
+`CS0012 … 'atomic_package.Pointer<>' … assembly 'sync.atomic'` at `new Logger()`, `Logger`'s three `atomic.*`
+fields being spelled in no import list on either side. This is the **empty-literal edge's exact demand by
+another route**, so it feeds the same seed (`constructedEmpty`) under the same ROOT/accessibility gate, scoped
+to `_test.go` files for the member-access edge's reason. `math/rand/v2`'s `*p = ChaCha8{}` and log's
+`var l Logger` are now one rule.
+
+*`go/scanner` — the recorded interface base.* A converted **concrete** type names no interface in its own
+emitted declaration — `[GoType("[]ж<ΔError>")] partial struct ErrorList;` names none at all. Its bases arrive
+as the **VALUE-form `[assembly: GoImplement<T, I>]` records** its package emits, which the go2cs-gen
+`ImplementGenerator` realizes as `partial struct ErrorList : global::go.sort_package.Interface` **inside the
+declaring assembly**. The metadata type therefore *declares* that base, and binding **any** member on it makes
+the compiler resolve the base list: `list.Sort()`, `len(list)`, `Ꮡlist.RemoveMultiples()` and the generated
+`ErrorList`→`error` value adapter's own `m_value.Equals(…)` all failed
+`CS0012 … 'sort_package.Interface'`, thirteen times across the suite, with `sort` in no test import and no
+alias `using`. The edge hangs off the **member-access seed** the third edge already computes — it is what
+binding that receiver additionally costs — and interfaces are excluded from it because the base walk covers
+them already.
+
+**Measured minimality — and here the instrument rejected the rule C#'s binding rules appear to justify.**
+"The interfaces the receiver's type implements, taken from the declaring package's imports" is the natural
+`go/types` statement of the edge, mirroring `interfaceBaseCandidates` one type-kind over. It drifts **16 of
+the 96** banked projects. The reason is that a `GoImplement` record exists only where the converter converted
+a **cast**, so Go satisfaction wildly over-approximates the emitted base list: `os.File` satisfies
+`syscall.Conn` and handed `syscall` to thirteen projects (compress/{flate,gzip,lzw,zlib}, image and four
+image codecs, io, math/rand/v2, regexp, strconv) — while `os` records `File` only against `io/fs.File` and
+`io.Writer`, and both **POINTER-form**, which generates an adapter *class* (`FileжWriter`) rather than a base
+on the type and so demands nothing of a member binding; `bytes.Buffer` satisfies most of `io` and handed `io`
+to `sort` and `unicode/utf8` though `bytes` emits **no records at all**; `internal/buildcfg`'s `Stringer`
+handed it `fmt` from an equally empty set. All sixteen compile clean today with none of it. So the **records
+are the gate** and satisfaction merely supplies the candidate universe: `packageImplementBases` parses the
+package's own freshly-written `package_info.cs` (value form only — `parseExportedValueImplementLines` already
+drops the pointer form), keys the interfaces by the implementing type, and the walk fires only where the
+receiver's type *and* the candidate's package both match a record. Keyed **per type**, because os's one
+genuine `syscall` record is for `rawConn`, not `File`. With that gate the roster is **zero-drift**: converting
+all 96 banked packages on both binaries changes not one line of one `.tests.csproj`. The lookup is scoped to
+the package under test, whose `package_info.cs` this run has just written; a foreign type's base list is its
+own package's record set in its own `package_info.cs`, and no measured case has ever demanded one — widening
+is the same lookup pointed at that file.
+
+Guarded by the `TestDeclarationClosureImportsSurfacesZeroValueVarDeclarations` (the log shape through real
+test variants, plus the foreign-struct accessibility negative and the production-source scoping negative) and
+`TestDeclarationClosureImportsSurfacesImplementedInterfaceBases` (the scanner shape, plus the three negatives
+that pin the gate: **no records ⇒ no edge** even where `types.Implements` says yes, a record keyed to another
+type, and the receiver restriction) converter unit tests. `go/scanner` **validates 11/11** on the fix.
+`log` builds and runs for the first time — seven of its nine test functions agree with `go test` — but does
+**not** bank: two roots stand behind the closure one, `runtime.Caller`'s unimplemented `getcallersp` stub
+(`TestAll`, the same row `testing/slogtest` carries) and `TestDiscard`'s exact allocation-count assert
+(the established `alloc-profile` class).
+
 ### An Example/Benchmark-ONLY test file is dropped from the compile set (Phase-4D file exclusion)
 
 `Example` and `Benchmark` declarations are uniformly **Phase-4D-deferred** — `discoverTestDeclarations` records them in the manifest with status `unsupported` ("… execution is deferred to Phase 4D") and the differential oracle filters them from both sides (`eligibleTerminalTestResults` admits only `included` `test`-kind declarations). The **option-a ruling** (2026-07-24) extends that deferral from the *declaration* to the *file*: a `_test.go` file is dropped from the `-tests` conversion/compile set (`selectCompileExcludedTestFiles`) iff **both**

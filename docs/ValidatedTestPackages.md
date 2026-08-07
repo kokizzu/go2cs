@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **96 / 215 testable packages validated — 44.7%**
+> ### Phase 4 progress: **97 / 215 testable packages validated — 45.1%**
 >
-> **13,070 matching test verdicts · 50 disclosed** *(updated 2026-08-07 — maintained as part of the
+> **13,081 matching test verdicts · 50 disclosed** *(updated 2026-08-07 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -72,6 +72,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) | 10059 | | Doc-comment parsing and re-printing to text/markdown/HTML over the whole `testdata` corpus, plus a sweep over **every doc comment in the converted standard library's Go sources** — 10,000+ subtests, the largest verdict set banked. · [proof](validation/current/go.doc.comment.md) |
 | [`go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) | 4 | | gofmt's public entry points — `format.Source` on whole files and partial fragments, and `format.Node`'s no-modify guarantee over a parsed AST. · [proof](validation/current/go.format.md) |
 | [`go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) | 45 | | The Go pretty-printer — the golden-file corpus (declarations, expressions, generics, comments, `//go:build` lines), comment placement and bad-node recovery, `CommentedNode`, and base-indentation modes. · [proof](validation/current/go.printer.md) |
+| [`go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) | 11 | | Go's lexical scanner — the whole token and literal matrix, automatic semicolon insertion, `//line` directive handling (valid and invalid), `ErrorList` collection with its sort and one-per-line dedup, and CR stripping in raw strings. · [proof](validation/current/go.scanner.md) |
 | [`go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) | 31 | | FileSet/Position machinery; a full `encoding/gob` serialization round-trip — the reflect type-relation mirrors driving real Encoder/Decoder engines. · [proof](validation/current/go.token.md) |
 | [`go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/version) | 3 | | Go version-string comparison. · [proof](validation/current/go.version.md) |
 | [`hash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash) | 18 | | The `hash.Hash` contract itself — `encoding.BinaryMarshaler`/`BinaryUnmarshaler` state round-trips exercised across **every** standard-library digest (adler32, crc32/64, the six FNV widths, md5, sha1, and the six SHA-2 variants). · [proof](validation/current/hash.md) |
