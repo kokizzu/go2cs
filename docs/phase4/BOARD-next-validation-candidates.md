@@ -3238,8 +3238,8 @@ separately actionable:
 
 | Root | unique rows | Shape |
 |:--|--:|:--|
-| **`//go:linkname` PUSH never links: `unique.runtime_registerUniqueMapCleanup`** | 1 (+ gob's `TestNetIP`, + `net`'s cctor) | `runtime/mgc.go` PUSHES its body into `unique`'s bodyless declaration. The converter's forwarder handles the **PULL** direction only, so the consuming side is a throwing `PartialStubGenerator` stub. Hit by `unique.Make`'s `setupMake.Do(registerCleanup)`. `sync.Once` marks done through the panic, so later `Make` calls proceed — which is why only one row shows this root |
-| **Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`** | 4 | `runtime/mheap.go` pushes both. Hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. ⚠ Even once linked, `runtime`'s converted bodies walk `mheap_` span metadata that the managed model does not populate (`getWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`), so this row wants a `internal/weak` hand-own on managed weak references, not a linkname fix alone |
+| ~~**`//go:linkname` PUSH never links: `unique.runtime_registerUniqueMapCleanup`**~~ | 1 (+ gob's `TestNetIP`, + `net`'s cctor) | **CLOSED 2026-08-07 (r43b-linkname).** `runtime/mgc.go` PUSHES its body into `unique`'s bodyless declaration and the converter's forwarder handled the **PULL** direction only, so the consuming side was a throwing `PartialStubGenerator` stub. It now FORWARDS to runtime's converted body — see *the linkname PUSH direction* below |
+| **Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`** | 4 → **7** | `runtime/mheap.go` pushes both. Hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. ⚠ Even once linked, `runtime`'s converted bodies walk `mheap_` span metadata that the managed model does not populate (`getWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`), so this row wants a `internal/weak` hand-own on managed weak references, not a linkname fix alone. **r43b took the linkname half only** — the pair is registered UNHONORABLE and now announces itself by name instead of throwing an opaque `NotImplementedException`; the hand-own is still owed, and it is what this row is waiting on. It ABSORBED the rows that used to stop one frame earlier at the cleanup registration |
 | **`abi.TypeFor<T>()` is silently WRONG for an INTERFACE `T`** | 1 | `TypeFor`'s interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for `Kind == Pointer` reinterprets the descriptor as a `PtrType` and reads `.Elem` — which under the managed layout lands on the descriptor's **`Equal` field**. `TypeFor<any>()` and `TypeFor<error>()` return a `System.Func<unsafe.Pointer, unsafe.Pointer, bool>`, not a `ж<abi.Type>`. Shared generics store it into `ConcurrentDictionary<ж<abi.Type>, any>` uncast-checked, and the first key comparison dispatches `IEquatable<ж<abi.Type>>.Equals` on a delegate → `EntryPointNotFoundException`. **Corpus-wide, and it was invisible until now**: the old trie compared raw addresses through `keyEqual` and never dispatched on a key's runtime type. Reflection-bridge row |
 | **`GCHandle: Object contains references`** | 1 | `abi.Escape` pinning a managed pointee on the `weak.Make` path |
 | ~~**`IndexOutOfRangeException` in `go.slice<T>.Enumerator.get_Current`**~~ | 6 | **CLOSED 2026-08-07 (r41c-cloneseq).** Not the enumerator, and not "neither linkname nor reflection" — see *the `makeCloneSeq` root, closed* immediately below |
@@ -3324,6 +3324,74 @@ byte-identical across all 570 packages apart from the new test project; `run-beh
 **545/545** transpile+compile+golden and **515/515** stdout (30 skipped, no `package main`), 1,081 s;
 `go2cs-stdlib.slnx` **304/304**, 0 errors; `go test ./...` in the converter ok; GolibTests **69/69**
 (60 + 9 new), ChannelTests **24/24**.
+
+### The linkname PUSH direction, CLOSED as a MECHANISM — one pair links, one announces itself (2026-08-07, r43b-linkname)
+
+The converter's forwarder handled only the PULL direction (a bodyless declaration naming another
+package's symbol). Go's other direction — the DEFINING package carries the body and names another
+package's declaration, the consumer being a bodyless func under a **one-arg** `//go:linkname` handle
+— linked nothing, so every consumer fell to the `PartialStubGenerator`. Mechanism and rationale:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A cross-package
+`//go:linkname` PUSH resolves per recorded disposition*.
+
+| Pair | Disposition | Why |
+|:--|:--|:--|
+| `runtime.unique_runtime_registerUniqueMapCleanup` → `unique.runtime_registerUniqueMapCleanup` | **FORWARDED** | The pushed body is ordinary converted Go — a `chan struct{}` plus a goroutine that drains it and calls the callback. The managed model runs the real thing; nothing signals the channel because `clearpools()` is driven by Go's GC, which does not run. That is Go's own behavior for a program whose GC never fires (the intern map keeps its entries), not a fabricated answer |
+| `runtime.internal_weak_runtime_registerWeakPointer` → `internal/weak.runtime_registerWeakPointer` | **LOUD STUB** | `getOrAddWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`: the body walks `mheap_` span metadata the managed model does not populate |
+| `runtime.internal_weak_runtime_makeStrongFromWeak` → `internal/weak.runtime_makeStrongFromWeak` | **LOUD STUB** | Re-derives an object pointer from a heap address. A forwarder would fault or — worse — return a plausible pointer derived from garbage, the inverse-atomic rule's exact prohibition |
+
+**The registry is curated, and the reason is structural, not caution.** The converter never sees the
+pushing package's directives while converting the consumer — a package is converted from its own
+syntax, dependencies contribute types rather than comments, and the pusher need not even be a
+dependency. Go 1.23 carries ~200 pushes outside `cmd/`; the corpus exposes **eleven** as bodyless
+one-arg-handle declarations, and linking those wholesale would REGRESS working packages: `time`'s
+timer trio is already answered by `time_impl.cs` and a converter-emitted body would collide with it,
+while `internal/syscall/windows`'s `stdcall` wrappers and `internal/coverage/cfile`'s linker-section
+walk push bodies the managed model cannot run at all.
+
+**Measurement — the honest read is "the root moved", not "rows flipped".**
+
+* **`unique`: 4 of 19, UNCHANGED.** The cleanup registration links and no longer throws anywhere; the
+  seven `TestHandle` rows that stopped there now stop one frame later, inside `weak.Make`, on the
+  ANNOUNCED weak pair. The remaining roots are untouched: `abi.TypeFor<T>()` for an interface `T`
+  (`EntryPointNotFoundException`, still row three of the table above), `GCHandle: Object contains
+  references` on `abi.Escape`, and the `TypeFor`/`Name` subtest-naming rows. `unique` does **not**
+  bank; its test artifacts were restored, not committed.
+* **`encoding/gob`: 98 of 106; `TestNetIP` does NOT flip.** Its root moves from
+  `NotImplementedException: runtime_registerUniqueMapCleanup` to the announced
+  `internal/weak.runtime_registerWeakPointer` inside `net/netip`'s `cctor` → `unique.Make` →
+  `newValue()`. ⚠ The 98 is **not** this arc's delta: the board's 95 dates from r39d and the other
+  seven failures (`TestBadData`, `TestEndToEnd`, `TestIgnoreDepthLimit`, `TestIgnoreRecursiveType`,
+  `TestIndirectSliceMapArray`, `TestNilPointerInsideInterface`, `TestSingletons`) are gob-internal,
+  outside anything three files in `unique`/`weak`/`runtime` can reach. The intervening arcs moved
+  them; re-baseline the row from this number, do not credit it here.
+
+**What `internal/weak` is now waiting on — and it is the ONLY thing.** A hand-owned managed weak
+reference (`System.WeakReference` over the `ж<T>` box) under `[module: go.GoManualConversion]`, the
+same shape `sync`'s Mutex family and `internal/concurrent.HashTrieMap` took: honor the observable
+contract, never emulate the mechanism. Deliberately NOT attempted in this lane — the linkname
+mechanism and a semantic hand-own are separate units of work, and the loud stub is what makes the
+second one findable. Its single file (`internal/weak/pointer.go`) makes a whole-file replacement the
+natural form.
+
+**Gates.** `go test ./...` in the converter ok (new `TestRecurseLinknamePush`, both arms
+neuter-proven); CNR byte-identical across all **571** behavioral packages; a seeded full
+`-stdlib -comments` reconvert is byte-identical to the committed tree across every `.cs`/`.csproj`/
+`README.md` (zero unclassified; hand-own clobber gate 0 violations; no `DYNTYPE` markers);
+`go2cs-stdlib.slnx` **304/304**, 0 errors. A/B footprint: **3** corpus files.
+
+⚠ **A NEW environmental failure shape worth recognizing: the host DISK FILLED mid-suite.** The full
+`run-behavioral.ps1` reported `FAIL (546 projects, 1,413.5s)` with **115 Go build failures** plus one
+Output mismatch — and every one of the 115 reads verbatim `compile: writing output: write
+$WORK\b001\_pkg_.a: There is not enough space on the disk` (C: was at **2.8 GB** free of 1.86 TB, three
+lanes deep). The C#-side phases, the ones a converter change can actually move, all passed the WHOLE
+corpus: **Transpile 546/546, Compile 546/546, Target 546/546**. Output read 404 pass / 1 fail / 141 skip,
+where the skips are the 115 disk-killed Go builds on top of the usual no-`package main` set. The single
+Output failure, `FindFirstFileData`, **re-runs PASS 1/1 across all four phases in isolation** once space
+is freed — the standing rule for a Go-toolchain-side failure under load (*re-run that one project
+filtered before believing it*) applied to a new cause. Read a wall of identical `not enough space on the
+disk` lines as the machine: check `Get-PSDrive C` FIRST, and do not go hunting for a converter
+regression — Target passing 546/546 already proves no golden moved.
 
 ## The WHOLE-CORPUS REBANK — 1,316 files, sixteen families, zero unclassified (2026-08-04, r40-rebank)
 

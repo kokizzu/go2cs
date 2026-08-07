@@ -1531,7 +1531,11 @@ layer for real wherever .NET exposes the same instructions the `.s` file issues 
 
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
 every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,
-whitelisted `//go:linkname` forwarders,
+whitelisted `//go:linkname` forwarders in both directions (a
+[PULL](ConversionStrategies-Reference.md#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub)
+binds another package's symbol; a
+[PUSH](ConversionStrategies-Reference.md#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)
+takes another package's body, or announces the pair it cannot honor),
 [realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics),
 [realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer),
 [the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism), and

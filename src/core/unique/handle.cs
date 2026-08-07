@@ -162,6 +162,8 @@ internal static void registerCleanup() {
 // Implemented in runtime.
 
 //go:linkname runtime_registerUniqueMapCleanup
-internal static partial void runtime_registerUniqueMapCleanup(Action cleanup);
+internal static void runtime_registerUniqueMapCleanup(Action cleanup) {
+    Δruntime.unique_runtime_registerUniqueMapCleanup(cleanup);
+}
 
 } // end unique_package

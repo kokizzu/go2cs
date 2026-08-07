@@ -1573,7 +1573,7 @@ internal static void boring_registerCache(@unsafe.Pointer Δp) {
 }
 
 //go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup
-internal static void unique_runtime_registerUniqueMapCleanup(Action f) {
+public static void unique_runtime_registerUniqueMapCleanup(Action f) {
     // Start the goroutine in the runtime so it's counted as a system goroutine.
     uniqueMapCleanup = new channel<EmptyStruct>(1);
     goǃ((Action cleanup) => {

@@ -79,9 +79,13 @@ public static ж<T> Strong<T>(this Pointer<T> p) {
 // Implemented in runtime.
 
 //go:linkname runtime_registerWeakPointer
-internal static partial @unsafe.Pointer runtime_registerWeakPointer(@unsafe.Pointer _);
+internal static @unsafe.Pointer runtime_registerWeakPointer(@unsafe.Pointer _) {
+    throw panic("go2cs: //go:linkname push runtime.internal_weak_runtime_registerWeakPointer -> internal/weak.runtime_registerWeakPointer is not honored: the pushed body walks mheap_ span metadata the managed model does not populate; internal/weak wants a hand-owned managed weak reference");
+}
 
 //go:linkname runtime_makeStrongFromWeak
-internal static partial @unsafe.Pointer runtime_makeStrongFromWeak(@unsafe.Pointer _);
+internal static @unsafe.Pointer runtime_makeStrongFromWeak(@unsafe.Pointer _) {
+    throw panic("go2cs: //go:linkname push runtime.internal_weak_runtime_makeStrongFromWeak -> internal/weak.runtime_makeStrongFromWeak is not honored: the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; internal/weak wants a hand-owned managed weak reference");
+}
 
 } // end weak_package

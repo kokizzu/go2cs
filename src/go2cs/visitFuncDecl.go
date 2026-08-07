@@ -992,8 +992,16 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// modifier is dropped (it now has a body); the body is written at the signatureOnly branch below.
 	linknameAlias, linknameFunc, hasLinknameForward := "", "", false
 
+	// The mirror image: a bodyless func under a one-arg `//go:linkname <thisFunc>` handle whose body
+	// ANOTHER package PUSHES in (runtime/mgc.go pushes unique.runtime_registerUniqueMapCleanup). It
+	// resolves to a forwarder to the pushing definition, or — when the pushed body is runtime
+	// machinery the managed model cannot run — to a stub that panics naming the pair.
+	linknamePanic := ""
+
 	if funcDecl.Body == nil {
-		linknameAlias, linknameFunc, hasLinknameForward = v.funcLinknameForward(funcDecl)
+		if linknameAlias, linknameFunc, hasLinknameForward = v.funcLinknameForward(funcDecl); !hasLinknameForward {
+			linknameAlias, linknameFunc, linknamePanic, hasLinknameForward = v.funcLinknamePush(funcDecl)
+		}
 	}
 
 	// A nil body means the Go function is implemented externally (assembly or cgo):
@@ -1100,8 +1108,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 		v.indentLevel = savedIndent
 	} else if signatureOnly {
-		if hasLinknameForward {
-			// Cross-package //go:linkname pull — emit a forwarder body calling the target.
+		if linknamePanic != "" {
+			// Cross-package //go:linkname push the managed model cannot honor — announce the pair.
+			v.writeLinknamePanicStub(linknamePanic)
+		} else if hasLinknameForward {
+			// Cross-package //go:linkname pull or push — emit a forwarder body calling the target.
 			v.writeLinknameForwarder(signature, linknameAlias, linknameFunc)
 		} else {
 			// Bodyless (assembly/cgo) function: emit a `partial` declaration; the body is
@@ -1689,42 +1700,104 @@ func (v *Visitor) funcLinknameForward(funcDecl *ast.FuncDecl) (alias string, tar
 		}
 
 		dot := strings.LastIndex(target, ".")
-		pkgPath := target[:dot]
-		targetFunc = getSanitizedFunctionName(target[dot+1:])
 
-		// The C# using-alias is whatever THIS file actually emitted for the target package —
-		// never the bare last path segment. When the package name collides with a namespace
-		// segment the collision analysis renames the alias (sync's oncefunc_test.go emits
-		// `using Δruntime = runtime_package;` because the bare `runtime` would bind the
-		// `go.runtime` NAMESPACE), and a forwarder spelled `runtime.<fn>` is then CS0234.
-		// An explicit `import r "runtime"` is recorded in importPathAliases; otherwise the
-		// canonical alias (which importQualifier has already renamed if needed) is what
-		// visitImportSpec emitted.
-		// A linkname pull can be the ONLY edge to the target package — `time/tzdata` imports errors,
-		// syscall and unsafe, never `time`, yet its `init()` calls
-		// `time.registerLoadFromEmbeddedTZData`. Queue the path so the PROJECT reference is emitted;
-		// for a package the file already imports this is a no-op. (The var-pull arm does the same —
-		// see visitValueSpec's varLinknamePull site.)
-		v.importQueue.Add(pkgPath)
-
-		if emitted, ok := v.importPathAliases[pkgPath]; ok && emitted != "" {
-			return emitted, targetFunc, true
-		}
-
-		// No IMPORT SPEC means no `using` alias in this file, so the call must be fully qualified —
-		// the same form the var pull's forwarding property uses, which resolves inside `namespace go;`
-		// with no alias at all. A bare `time.` here would bind the `go.time` CHILD NAMESPACE (tzdata's
-		// own), not the package class: CS0234.
-		if !v.canonicalAliasImported.Contains(pkgPath) {
-			return globalQualifyRooted(RootNamespace + "." + convertImportPathToNamespace(pkgPath, PackageSuffix)), targetFunc, true
-		}
-
-		alias, _ = packageUsingAlias(pkgPath)
-
-		return getSanitizedImport(importQualifier(alias)), targetFunc, true
+		return v.linknameTargetAlias(target[:dot]), getSanitizedFunctionName(target[dot+1:]), true
 	}
 
 	return "", "", false
+}
+
+// linknameTargetAlias returns the qualifier a linkname forwarder must spell to reach pkgPath's
+// package class from THIS file, and queues pkgPath for a project reference.
+//
+// The C# using-alias is whatever THIS file actually emitted for the target package — never the bare
+// last path segment. When the package name collides with a namespace segment the collision analysis
+// renames the alias (sync's oncefunc_test.go emits `using Δruntime = runtime_package;` because the
+// bare `runtime` would bind the `go.runtime` NAMESPACE), and a forwarder spelled `runtime.<fn>` is
+// then CS0234. An explicit `import r "runtime"` is recorded in importPathAliases; otherwise the
+// canonical alias (which importQualifier has already renamed if needed) is what visitImportSpec
+// emitted.
+//
+// A linkname edge can be the ONLY edge to the target package — `time/tzdata` imports errors, syscall
+// and unsafe, never `time`, yet its `init()` calls `time.registerLoadFromEmbeddedTZData`. Queue the
+// path so the PROJECT reference is emitted; for a package the file already imports this is a no-op.
+// (The var-pull arm does the same — see visitValueSpec's varLinknamePull site.)
+func (v *Visitor) linknameTargetAlias(pkgPath string) string {
+	v.importQueue.Add(pkgPath)
+
+	if emitted, ok := v.importPathAliases[pkgPath]; ok && emitted != "" {
+		return emitted
+	}
+
+	// No IMPORT SPEC means no `using` alias in this file, so the call must be fully qualified —
+	// the same form the var pull's forwarding property uses, which resolves inside `namespace go;`
+	// with no alias at all. A bare `time.` here would bind the `go.time` CHILD NAMESPACE (tzdata's
+	// own), not the package class: CS0234.
+	if !v.canonicalAliasImported.Contains(pkgPath) {
+		return globalQualifyRooted(RootNamespace + "." + convertImportPathToNamespace(pkgPath, PackageSuffix))
+	}
+
+	alias, _ := packageUsingAlias(pkgPath)
+
+	return getSanitizedImport(importQualifier(alias))
+}
+
+// funcLinknamePush recognizes the CONSUMING side of a `//go:linkname` PUSH: a bodyless function
+// under a one-arg `//go:linkname <thisFunc>` handle whose body another package supplies by naming
+// it in a two-arg directive (`//go:linkname unique_runtime_registerUniqueMapCleanup
+// unique.runtime_registerUniqueMapCleanup` in runtime/mgc.go). The handle is Go's authorization for
+// the push and is required here, exactly as the pull arm requires the remote's handle.
+//
+// The push's disposition comes from linknamePushTargets, keyed by this declaration's own
+// fully-qualified name — the converter cannot read the pushing package's directives while
+// converting the consumer, and a bodyless one-arg-handle func is otherwise indistinguishable from
+// an ordinary assembly stub. A LINKED entry returns the alias and name of the pushing definition,
+// which packageFuncAccess has emitted public on the other side. An UNHONORABLE entry returns the
+// recorded reason, and the caller emits a panicking stub naming both halves of the pair.
+func (v *Visitor) funcLinknamePush(funcDecl *ast.FuncDecl) (alias string, targetFunc string, reason string, ok bool) {
+	if funcDecl.Doc == nil || funcDecl.Name == nil {
+		return "", "", "", false
+	}
+
+	push, isPushed := linknamePushTargets[currentPackagePath+"."+funcDecl.Name.Name]
+
+	if !isPushed {
+		return "", "", "", false
+	}
+
+	for _, comment := range funcDecl.Doc.List {
+		fields := strings.Fields(comment.Text)
+
+		// //go:linkname <thisFunc> — the one-arg handle, i.e. this declaration is open to a push.
+		if len(fields) != 2 || fields[0] != "//go:linkname" || fields[1] != funcDecl.Name.Name {
+			continue
+		}
+
+		if push.reason != "" {
+			return "", "", fmt.Sprintf("//go:linkname push %s -> %s.%s is not honored: %s", push.source, currentPackagePath, funcDecl.Name.Name, push.reason), true
+		}
+
+		dot := strings.LastIndex(push.source, ".")
+
+		return v.linknameTargetAlias(push.source[:dot]), getSanitizedFunctionName(push.source[dot+1:]), "", true
+	}
+
+	return "", "", "", false
+}
+
+// writeLinknamePanicStub emits the body of a `//go:linkname` push whose pushed body the managed
+// model cannot honor: a `throw panic(...)` naming the pair and the reason. It is deliberately a Go
+// PANIC rather than the PartialStubGenerator's NotImplementedException — the declaration is not an
+// unimplemented assembly stub, it is a real Go contract this conversion has decided it cannot keep,
+// and the message has to say which linkname pair and why so the first caller to hit it lands on the
+// hand-own the row actually needs.
+func (v *Visitor) writeLinknamePanicStub(reason string) {
+	savedIndent := v.indentLevel
+	v.indentLevel = 0
+
+	v.writeOutputLn(" {%s%sthrow panic(\"go2cs: %s\");%s%s}", v.newline, v.indent(savedIndent+1), reason, v.newline, v.indent(savedIndent))
+
+	v.indentLevel = savedIndent
 }
 
 // linknameForwardArgName returns the C# identifier a parameter was emitted under in the forwarder's

@@ -12203,6 +12203,88 @@ internal static any clone(any m) {
 
 `builtin.mapclone(any m)` is Go's `runtime.mapclone` at golib level: it recovers the boxed map's concrete key/value types through `IMap.CloneMap()` (a default interface method on `IMap<TKey, TValue>`, so both the concrete `map<K, V>` and the generated named-map wrappers get it with no source-generator change — no reflection) and returns a fresh `map<K, V>` populated from the source's entries. The clone's backing `Dictionary` is **independent** — Go's shallow clone (keys/values copied by ordinary assignment), so mutating the clone never touches the original — and a nil map clones to nil. This is what carries the `maps` package to full Phase-4 validation (14/14 tests vs `go test`; the 6 Clone/Copy/DeleteFunc tests previously threw). Extend `linknameForwardBuiltins` when another linkname intrinsic gains a golib builtin. Guarded by the `MapCloneLinkname` behavioral test — the exact `//go:linkname clone maps.clone` shape in a `main` package, cloning a `map[string]int`, mutating the clone (overwrite/add/delete) and asserting the original is unchanged, output-compared vs `go run`; proven to emit the throwing stub against the un-fixed converter.
 
+### A cross-package `//go:linkname` PUSH resolves per recorded disposition — forwarder or announced panic
+
+The PULL above is one of two directions, and the converter long handled only that one. A **PUSH** runs the
+other way: the *defining* package carries the body and names ANOTHER package's declaration as the symbol it
+defines, while the consuming side is an ordinary bodyless func under a **one-argument** `//go:linkname
+<thisFunc>` handle. `runtime/mgc.go` pushes into `unique`, `runtime/mheap.go` into `internal/weak`:
+
+```go
+// unique/handle.go — the CONSUMER: bodyless, one-arg handle (Go's authorization for the push)
+//go:linkname runtime_registerUniqueMapCleanup
+func runtime_registerUniqueMapCleanup(cleanup func())
+
+// runtime/mgc.go — the PUSHER: an ordinary body naming the consumer's symbol
+//go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup
+func unique_runtime_registerUniqueMapCleanup(f func()) { … }
+```
+
+Nothing linked the two, so the consumer's declaration fell to the [`PartialStubGenerator`](#source-generators)
+and threw on first call — `unique.Make`'s `setupMake.Do(registerCleanup)` took `net/netip`'s initializer and
+`encoding/gob`'s `TestNetIP` with it. The consuming side now resolves to one of **two** emissions, chosen by a
+disposition recorded per pair in `linknamePushTargets` (`linknameOperations.go`), keyed by the consumer's own
+`<pkgPath>.<symbol>`:
+
+```csharp
+// unique/handle.cs — FORWARDED: the pushed body is ordinary converted Go, so call it
+//go:linkname runtime_registerUniqueMapCleanup
+internal static void runtime_registerUniqueMapCleanup(Action cleanup) {
+    Δruntime.unique_runtime_registerUniqueMapCleanup(cleanup);
+}
+
+// internal/weak/pointer.cs — UNHONORABLE: announce the pair, never fabricate a body
+//go:linkname runtime_registerWeakPointer
+internal static @unsafe.Pointer runtime_registerWeakPointer(@unsafe.Pointer _) {
+    throw panic("go2cs: //go:linkname push runtime.internal_weak_runtime_registerWeakPointer -> internal/weak.runtime_registerWeakPointer is not honored: the pushed body walks mheap_ span metadata the managed model does not populate; internal/weak wants a hand-owned managed weak reference");
+}
+```
+
+The accessibility half mirrors the pull's: a forwarder calls the pushing definition **across an assembly
+boundary**, so `packageFuncAccess` emits that definition `public` from the reverse index `linknamePushSources`.
+The pull arm requires the target's own one-arg handle as Go's authorization; a push carries its authorization on
+the **consumer's** side instead, so this arm reads the registry alone — and the consumer's handle is still
+required, because forwarding into a declaration that never opened itself would not be faithful. Reaching the
+pusher can be the only edge to its package, so the path is queued for a project reference exactly as the pull
+queues its target (`linknameTargetAlias`, now shared by both arms, also resolves the file's actual using-alias —
+`unique/handle.cs` spells `Δruntime`, not `runtime`).
+
+**Why a curated registry rather than general detection.** The same reason the pull whitelist exists, plus one
+more that is structural: **the converter never sees the pushing package's directives while converting the
+consumer.** A package is converted from its own syntax; its dependencies contribute types, not comments — and
+the pusher is not even guaranteed to be a dependency. So a bodyless one-arg-handle func is indistinguishable at
+conversion time from an ordinary assembly stub, and the disposition has to be recorded. Go 1.23 carries ~200
+pushes outside `cmd/`; the converted corpus exposes **eleven** of them as bodyless one-arg-handle declarations,
+and linking those wholesale would be a regression dressed as a feature — `time`'s timer trio is already answered
+by `time_impl.cs` and a converter-emitted body would collide with it, while `internal/syscall/windows`'s
+`stdcall` wrappers and `internal/coverage/cfile`'s linker-section walk push bodies the managed model cannot run
+at all. Each entry is therefore a judgment, recorded with its reasoning beside the key.
+
+**The unhonorable arm is the inverse-atomic rule in emission form.** `internal/weak`'s two halves reach the span
+allocator (`registerWeakPointer` → `getOrAddWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid
+pointer")`; `makeStrongFromWeak` re-derives an object pointer from a heap address). A forwarder there would
+either fault or — far worse — hand back a plausible-looking pointer derived from garbage, which is exactly the
+"populate a field whose read cannot be honored" move the rule forbids. The panic is deliberately a **Go panic
+naming both halves of the pair and the reason**, not the generator's `NotImplementedException`: the declaration
+is not an unimplemented assembly stub, it is a real Go contract this conversion has decided it cannot keep, and
+the first caller to hit it should land on the hand-own the row actually needs (`internal/weak` wants a managed
+weak reference over the `ж<T>` box — recorded on the Phase-4 board, deliberately not attempted speculatively).
+
+By contrast `unique`'s pushed body is **ordinary converted Go** — it makes a `chan struct{}` and starts a
+goroutine that drains it and calls the callback — so the managed model runs the real thing: the registration
+succeeds and the cleanup goroutine parks on the channel. Nothing signals it, because the converted runtime's
+`clearpools()` is driven by Go's own GC, which does not run. That is Go's OWN behavior for a program whose GC
+never fires (the intern map simply keeps its entries), not a fabricated answer — the distinction the two arms
+turn on.
+
+Guarded by `TestRecurseLinknamePush`, which runs the real `-recurse` converter over a two-package module fixture
+with its dispositions injected for the test's duration, and asserts all four arms: the forwarder body, the
+pushing definition's publicization, the pair-naming panic, and that both an unregistered handle and a registered
+declaration *without* a handle stay bodyless stubs. (A behavioral project cannot reach this mechanism — the
+registry is keyed by the consumer's import path, and the behavioral harness converts each package alone, so
+neither a fixture path nor cross-package discovery is available to it. The pull forwarder is guarded at the same
+layer, and for the same reason, by `TestRecurseLinknameForwarder`.)
+
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —
@@ -12276,14 +12358,18 @@ shape the converted corpus actually interns these agree:
 **Two further walls sit BEHIND this one**, both uncovered by making `unique` reachable for the first time
 and both outside this file:
 
-1. **A cross-assembly `//go:linkname` PUSH never links.** The forwarder machinery above handles the PULL
-   direction (a bodyless declaration naming another package's symbol). `runtime` pushes the other way —
+1. ~~**A cross-assembly `//go:linkname` PUSH never links.**~~ **CLOSED** — see
+   [*A cross-package `//go:linkname` PUSH resolves per recorded disposition*](#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)
+   above. The forwarder machinery handled the PULL direction only (a bodyless declaration naming another
+   package's symbol); `runtime` pushes the other way —
    `//go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup`
    (`mgc.go`), `//go:linkname internal_weak_runtime_registerWeakPointer internal/weak.runtime_registerWeakPointer`
-   (`mheap.go`) — and the *consuming* package's bodyless declaration is left for the
-   [`PartialStubGenerator`](#source-generators) to fill with `NotImplementedException`. `unique.Make` hits
-   the first on its `setupMake.Do(registerCleanup)` line and the second inside `weak.Make`, so
-   `net/netip`'s initializer still throws — one frame past `NewHashTrieMap` instead of inside it.
+   (`mheap.go`) — and the *consuming* package's bodyless declaration was left for the
+   [`PartialStubGenerator`](#source-generators) to fill with `NotImplementedException`. `unique`'s
+   registration now FORWARDS to runtime's converted body; `internal/weak`'s two halves stay unlinked **by
+   ruling** (the pushed bodies walk `mheap_` span metadata) and announce the linkname pair rather than
+   fabricate one, so the row's real remedy — a hand-owned managed weak reference — is what a caller is told
+   to reach for.
 2. **`abi.TypeFor<T>()` is silently WRONG for an interface `T`.** Its non-interface branch returns an
    interned descriptor; the interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for
    `Kind == Pointer` reinterprets the descriptor as a `PtrType` (`Ꮡt.Reinterpret<Type, PtrType>()`) and
