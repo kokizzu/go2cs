@@ -188,6 +188,17 @@ ONE stdlib in a build; there is now only one on disk.
 - **`check-no-regression.ps1` re-transpiles UNCONDITIONALLY** (it has no `UpToDate` equivalent), which is
   why CNR was immune to both false-green routes and remains the authoritative drift instrument for
   converter changes. Preserve that asymmetry: never add an up-to-date skip to CNR.
+- **A new converter `.go` file must be registered in `src/go2cs/go2cs-src.projitems`** — the VS
+  shared-project item list `go2cs-src.shproj` imports (and that shproj is a member of `go2cs.slnx`).
+  Nothing *builds* from it (`go build` walks the directory), so a missing entry is invisible at the
+  command line and only bites in Visual Studio, where the unlisted source is absent from Solution
+  Explorer. It had drifted silently until 2026-08-06. **`projitemsIntegrity_test.go`** now gates it
+  both ways — every `*.go` on disk (including `internal\*`) is registered, every registered path
+  exists — under the plain `go test ./...` run from `src/go2cs`, so no new harness and nothing to
+  remember; a failure prints the exact `<None Include=… />` line and the entry it goes after. (Same
+  invariant `tests/Behavioral/check-solution-integrity.ps1` applies to `go2cs.slnx`.) The file is
+  UTF-8 **with BOM** and its line endings are uniform — a third guard holds both, so edit it in place
+  or via `[System.IO.File]::ReadAllText/WriteAllText`, never PS 5.1 `Get-Content`/`Out-File`.
 - **FALSE-GREEN route #3 — NESTED sub-library packages were never enumerated (fixed 2026-08-02).** All
   three transpile gates walked `tests\Behavioral\*` **top-level only**, so the 22 sub-library packages
   nested inside a test folder (`IoLike\FsLike`, `VersionedImport\vlib`, `CrossPackageArrayZeroValue\bufpkg`,
