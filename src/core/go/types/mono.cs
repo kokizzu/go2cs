@@ -207,10 +207,10 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
     ref var @do = ref heap<Action<ΔType>>(out var Ꮡdo);
     var flowʗ1 = flow;
     @do = (ΔType typ) => {
-        var switchᴛ11 = Unalias(typ);
-        switch (switchᴛ11.type()) {
+        var switchᴛ10 = Unalias(typ);
+        switch (switchᴛ10.type()) {
         default: {
-            var typΔ1 = switchᴛ11;
+            var typΔ1 = switchᴛ10;
             throw panic("unexpected type");
             break;
         }

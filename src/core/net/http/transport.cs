@@ -1814,7 +1814,7 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
             });
         }
     }
-    var errcʗ3 = errc;
+    var errcʗ2 = errc;
     var timerʗ1 = timer;
     var tlsConnʗ1 = tlsConn;
     goǃ(() => {
@@ -1825,7 +1825,7 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
         if (timerʗ1 != nil) {
             timerʗ1.Stop();
         }
-        errcʗ3.ᐸꟷ(err);
+        errcʗ2.ᐸꟷ(err);
     });
     {
         var err = ᐸꟷ(errc); if (err != default!) {

@@ -287,8 +287,8 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                         break;
                     }
                     @string cause = default!;
-                    var switchᴛ14 = T.under();
-                    switch (switchᴛ14.type()) {
+                    var switchᴛ13 = T.under();
+                    switch (switchᴛ13.type()) {
                     case ж<Basic> u: {
                         if ((~u).kind == UnsafePointer) {
                             // unsafe.Pointer is treated like a regular pointer
@@ -298,7 +298,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                     }
                     case ж<Pointer> _:
                     case ж<Interface> _: {
-                        var u = switchᴛ14;
+                        var u = switchᴛ13;
                         cause = pointerOrInterfaceTypeˢ;
                         break;
                     }

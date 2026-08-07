@@ -1091,8 +1091,8 @@ internal static bool use1(this ж<Checker> Ꮡcheck, ast.Expr e, bool lhs) {
     ref var x = ref heap(new operand(), out var Ꮡx);
     x.mode = value;
     // anything but invalid
-    var switchᴛ5 = ast.Unparen(e);
-    switch (switchᴛ5.type()) {
+    var switchᴛ4 = ast.Unparen(e);
+    switch (switchᴛ4.type()) {
     case null: {
         break;
     }
@@ -1129,7 +1129,7 @@ internal static bool use1(this ж<Checker> Ꮡcheck, ast.Expr e, bool lhs) {
         break;
     }
     default: {
-        var n = switchᴛ5;
+        var n = switchᴛ4;
         Ꮡcheck.rawExpr(nil, // restore v.used
  Ꮡx, e, default!, true);
         break;

@@ -301,8 +301,8 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
             }
             bool comparable = default!;
             Δtermlist terms = default!;
-            var switchᴛ18 = under(typ);
-            switch (switchᴛ18.type()) {
+            var switchᴛ16 = under(typ);
+            switch (switchᴛ16.type()) {
             case ж<Interface> u: {
                 assert(!isTypeParam(typ));
                 var tset = computeInterfaceTypeSet(Ꮡcheck, // For now we don't permit type parameters as constraints.
@@ -333,7 +333,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                 break;
             }
             default: {
-                var u = switchᴛ18;
+                var u = switchᴛ16;
                 if (!isValid(u)) {
                     // ignore invalid unions
                     continue;

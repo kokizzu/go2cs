@@ -977,8 +977,8 @@ internal static bool /*varSized*/ hasVarSize(ΔType t, map<ж<Named>, bool> seen
             }
         }
         // record final determination for named
-        var switchᴛ4 = under(t);
-        switch (switchᴛ4.type()) {
+        var switchᴛ3 = under(t);
+        switch (switchᴛ3.type()) {
         case ж<Array> u: {
             varSized = hasVarSize((~u).elem, seen); goto ᒐdone;
         }
@@ -995,7 +995,7 @@ internal static bool /*varSized*/ hasVarSize(ΔType t, map<ж<Named>, bool> seen
         }
         case ж<Named> _:
         case ж<Union> _: {
-            var u = switchᴛ4;
+            var u = switchᴛ3;
             throw panic("unreachable");
             break;
         }}

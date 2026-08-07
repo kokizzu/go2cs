@@ -1480,9 +1480,9 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
     // Any goroutine that the scheduler tries to execute concurrently with this
     // call will start by adding itself to the profile (before the act of
     // executing can cause any changes in its stack).
-    var pcbufʗ3 = pcbuf;
+    var pcbufʗ2 = pcbuf;
     forEachGRace((ж<g> gp1) => {
-        tryRecordGoroutineProfile(gp1, pcbufʗ3, Gosched);
+        tryRecordGoroutineProfile(gp1, pcbufʗ2, Gosched);
     });
     stw = stopTheWorld(stwGoroutineProfileCleanup);
     var endOffset = ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡoffset).Swap(0);
@@ -1656,11 +1656,11 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
             lbl = lbl[1..];
         }
         // Save other goroutines.
-        var isOKʗ3 = isOK;
+        var isOKʗ2 = isOK;
         var labelsʗ1 = labels;
-        var pcbufʗ3 = pcbuf;
+        var pcbufʗ2 = pcbuf;
         forEachGRace((ж<g> gp1) => {
-            if (!isOKʗ3(gp1)) {
+            if (!isOKʗ2(gp1)) {
                 return;
             }
             if (len(Ꮡr.ValueSlot) == 0) {
@@ -1672,9 +1672,9 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
             // The world is stopped, so it cannot use cgocall (which will be
             // blocked at exitsyscall). Do it on the system stack so it won't
             // call into the schedular (see traceback.go:cgoContextPCs).
-            var pcbufʗ4 = pcbufʗ3;
+            var pcbufʗ3 = pcbufʗ2;
             systemstack(() => {
-                saveg(~(uintptr)0, ~(uintptr)0, gp1, Ꮡ(Ꮡr.ValueSlot, 0), pcbufʗ4);
+                saveg(~(uintptr)0, ~(uintptr)0, gp1, Ꮡ(Ꮡr.ValueSlot, 0), pcbufʗ3);
             });
             if (labelsʗ1 != default!) {
                 Ꮡlbl.ValueSlot[0] = gp1.Value.labels;

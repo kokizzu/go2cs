@@ -821,9 +821,9 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
             if ((~s).largeType != nil && (abi.TFlag)((~(~s).largeType).TFlag & abi.TFlagUnrolledBitmap) != 0) {
                 // The unrolled GCProg bitmap is allocated separately.
                 // Free the space for the unrolled bitmap.
-                var sʗ3 = s;
+                var sʗ2 = s;
                 systemstack(() => {
-                    var sΔ1 = spanOf((uintptr)(~sʗ3).largeType);
+                    var sΔ1 = spanOf((uintptr)(~sʗ2).largeType);
                     Ꮡmheap_.freeManual(sΔ1, spanAllocPtrScalarBits);
                 });
                 // Make sure to zero this pointer without putting the old

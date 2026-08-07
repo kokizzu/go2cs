@@ -160,10 +160,10 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
             if (pinState.isMultiPinned()){
                 bool exists = default!;
                 // TODO(mknyszek): investigate if systemstack is necessary here
-                var spanʗ3 = span;
+                var spanʗ2 = span;
                 systemstack(() => {
-                    var offset = objIndex * (~spanʗ3).elemsize;
-                    exists = spanʗ3.decPinCounter(offset);
+                    var offset = objIndex * (~spanʗ2).elemsize;
+                    exists = spanʗ2.decPinCounter(offset);
                 });
                 if (!exists) {
                     // counter is 0, clear multipin bit

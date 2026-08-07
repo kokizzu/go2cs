@@ -407,8 +407,8 @@ internal static (ΔType, constant.Value, errors.Code) implicitTypeAndValue(this 
         }
         return (default!, default!, InvalidUntypedConversion);
     }
-    var switchᴛ7 = under(target);
-    switch (switchᴛ7.type()) {
+    var switchᴛ6 = under(target);
+    switch (switchᴛ6.type()) {
     case ж<Basic> u: {
         if (x.mode == constant_) {
             var (v, code) = Ꮡcheck.representation(Ꮡx, u);
@@ -489,14 +489,14 @@ internal static (ΔType, constant.Value, errors.Code) implicitTypeAndValue(this 
     case ж<Slice> _:
     case ж<Map> _:
     case ж<Chan> _: {
-        var u = switchᴛ7;
+        var u = switchᴛ6;
         if (!x.isNil()) {
             return (default!, default!, InvalidUntypedConversion);
         }
         return (new BasicжΔType(Typ[UntypedNil]), default!, 0);
     }
     default: {
-        var u = switchᴛ7;
+        var u = switchᴛ6;
         return (default!, default!, InvalidUntypedConversion);
     }}
     // Keep nil untyped - see comment for interfaces, above.
@@ -1303,8 +1303,8 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             break;
         }}
 
-        var switchᴛ8 = coreType(@base);
-        switch (switchᴛ8.type()) {
+        var switchᴛ7 = coreType(@base);
+        switch (switchᴛ7.type()) {
         case ж<Struct> utyp: {
             if ((~utyp).fields == default!) {
                 // Prevent crash if the struct referred to is not yet set up.
@@ -1482,7 +1482,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             break;
         }
         default: {
-            var utyp = switchᴛ8;
+            var utyp = switchᴛ7;
             foreach (var (_, vᴛ1) in (~eΔ1).Elts) {
                 var eΔ5 = vᴛ1;
 

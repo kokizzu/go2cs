@@ -220,14 +220,14 @@ internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, 
         seen = new map<ΔType, bool>();
     }
     seen[T] = true;
-    var switchᴛ12 = under(T);
-    switch (switchᴛ12.type()) {
+    var switchᴛ11 = under(T);
+    switch (switchᴛ11.type()) {
     case ж<Basic> t: {
         return (~t).kind != UntypedNil;
     }
     case ж<Pointer> _:
     case ж<Chan> _: {
-        var t = switchᴛ12;
+        var t = switchᴛ11;
         return true;
     }
     case ж<Struct> t: {
@@ -271,8 +271,8 @@ internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, 
 
 // hasNil reports whether type t includes the nil value.
 internal static bool hasNil(ΔType t) {
-    var switchᴛ13 = under(t);
-    switch (switchᴛ13.type()) {
+    var switchᴛ12 = under(t);
+    switch (switchᴛ12.type()) {
     case ж<Basic> u: {
         return (~u).kind == UnsafePointer;
     }
@@ -281,7 +281,7 @@ internal static bool hasNil(ΔType t) {
     case ж<ΔSignature> _:
     case ж<Map> _:
     case ж<Chan> _: {
-        var u = switchᴛ13;
+        var u = switchᴛ12;
         return true;
     }
     case ж<Interface> u: {

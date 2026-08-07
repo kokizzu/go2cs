@@ -419,16 +419,16 @@ internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) 
         ref var check = ref Ꮡcheck.DerefOrNull();
         ref var err = ref Ꮡerr.DerefOrNull();
 
-        var switchᴛ6 = recover();
-        switch (switchᴛ6.type()) {
+        var switchᴛ5 = recover();
+        switch (switchᴛ5.type()) {
         case null:
         case bailout _: {
-            var p = switchᴛ6;
+            var p = switchᴛ5;
             err = check.firstErr;
             break;
         }
         default: {
-            var p = switchᴛ6;
+            var p = switchᴛ5;
             throw panic(p);
             break;
         }}

@@ -307,8 +307,8 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
     case {} when Vp != nil: {
         ref var xΔ3 = ref heap<operand>(out var ᏑxΔ3);
         xΔ3 = x;
-        var Vpʗ7 = Vp;
-        var errorfʗ7 = errorf;
+        var Vpʗ3 = Vp;
+        var errorfʗ3 = errorf;
         var origTʗ1 = origT;
         return Vp.@is((ж<term> VΔ5) => {
             // don't clobber outer x
@@ -318,22 +318,22 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             // no specific types
             ᏑxΔ3.Value.typ = VΔ5.Value.typ;
             if (!ᏑxΔ3.convertibleTo(Ꮡcheck, T, Ꮡcause)) {
-                errorfʗ7("cannot convert %s (in %s) to type %s"u8, (~VΔ5).typ, Vpʗ7.OrTypedNil(), origTʗ1);
+                errorfʗ3("cannot convert %s (in %s) to type %s"u8, (~VΔ5).typ, Vpʗ3.OrTypedNil(), origTʗ1);
                 return false;
             }
             return true;
         });
     }
     case {} when Tp != nil: {
-        var Tpʗ7 = Tp;
-        var errorfʗ9 = errorf;
+        var Tpʗ3 = Tp;
+        var errorfʗ4 = errorf;
         return Tp.@is((ж<term> TΔ5) => {
             if (TΔ5 == nil) {
                 return false;
             }
             // no specific types
             if (!Ꮡx.convertibleTo(Ꮡcheck, (~TΔ5).typ, Ꮡcause)) {
-                errorfʗ9("cannot convert %s to type %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ5).typ, Tpʗ7.OrTypedNil());
+                errorfʗ4("cannot convert %s to type %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ5).typ, Tpʗ3.OrTypedNil());
                 return false;
             }
             return true;
