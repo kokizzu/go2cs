@@ -431,18 +431,21 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      overlaying — PATH-PRECISE, not a count:** for every `[module: GoManualConversion]`-marked
      committed file, the temp root must NOT contain a freshly-EMITTED plain `.cs` at that path
      (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
-     differ — **40 marked files (re-measured r40, 2026-08-04) but only 16 produce `.cs.auto`**; the
-     other 24 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
+     differ — **40 marked files (re-measured r43e, 2026-08-07) but only 15 produce `.cs.auto`**; the
+     other 25 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
      that path, so they need no protection. A same-count assertion is wrong in both directions.
+     ⚠ The 40 is a COINCIDENCE, not stability: it was 40 at r40, fell to **39** when `math/unsafe.cs`
+     shed its marker, and is back at 40 only because `internal/weak/pointer.cs` joined at r43e. This
+     is exactly why the census is re-measured, never carried forward.
      **The marker scan must be LINE-ANCHORED (`^\s*\[module:\s*(go\.)?GoManualConversion\]`)** —
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` reports **63**
      against the real 40 and turns the gate into a false clobber alarm. (The census grows — 32 at
-     r14, 39 before `internal/concurrent`'s `hashtriemap.cs` joined in r39d — so re-measure it,
-     never assert last session's number.) ⚠ The `.cs.auto` siblings are **tracked in git but are
-     NOT refreshed by the overlay**: the same exclusion that protects the hand-owned `.cs` beside
-     them also freezes them, so they go stale on their own schedule (11 of 16 were stale at r40 —
-     CleanupBacklog item 18).
+     r14, 39 before `internal/concurrent`'s `hashtriemap.cs` joined in r39d — and it also SHRINKS,
+     so re-measure it, never assert last session's number.) ⚠ The `.cs.auto` siblings are **tracked
+     in git but are NOT refreshed by the overlay**: the same exclusion that protects the hand-owned
+     `.cs` beside them also freezes them, so they go stale on their own schedule (11 of 16 were
+     stale at r40 — CleanupBacklog item 18).
   1a. **⚠ SEED `version.props` AND `docs/validation` TOO, and MIRROR THE `src/` LAYOUT** (added
      2026-08-02 with the README validation badges). The badge each package README carries is composed
      from two REPOSITORY files, not from the conversion: `src/version.props` (the published version

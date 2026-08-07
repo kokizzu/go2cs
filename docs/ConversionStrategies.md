@@ -1522,7 +1522,10 @@ The same rule hand-owns `sync/atomic.Value` (stores the boxed `any` directly, `V
 for the atomics), the reflection bridge (`reflect`/`internal/reflectlite` carry a boxed managed value
 plus a synthetic descriptor stamped with the real `System.Type`), `sync.Pool`'s eface ring (a single
 `any?` slot with `null` as the empty sentinel), `sync.Cond`'s copy detector (compares root-allocation
-identity instead of a GC-unsound stored address), `time`'s runtime timers (one dedicated thread servicing
+identity instead of a GC-unsound stored address),
+[`internal/weak.Pointer`](ConversionStrategies-Reference.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
+(a short `WeakReference` over the `ж<T>` box, with a `ConditionalWeakTable` standing in for the runtime's
+canonical per-address weak handle so two weak pointers to one object still compare equal), `time`'s runtime timers (one dedicated thread servicing
 a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
 surface (`GC`, `GOMAXPROCS`, `Gosched`, `LockOSThread`, `Goexit`) as its contracts rather than its
 scheduler-level mechanics. The same "realize, don't stub" instinct also ports an asm-backed architecture

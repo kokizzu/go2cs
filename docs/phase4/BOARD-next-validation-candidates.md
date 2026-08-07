@@ -3185,7 +3185,7 @@ separately actionable:
 | Root | unique rows | Shape |
 |:--|--:|:--|
 | ~~**`//go:linkname` PUSH never links: `unique.runtime_registerUniqueMapCleanup`**~~ | 1 (+ gob's `TestNetIP`, + `net`'s cctor) | **CLOSED 2026-08-07 (r43b-linkname).** `runtime/mgc.go` PUSHES its body into `unique`'s bodyless declaration and the converter's forwarder handled the **PULL** direction only, so the consuming side was a throwing `PartialStubGenerator` stub. It now FORWARDS to runtime's converted body — see *the linkname PUSH direction* below |
-| **Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`** | 4 → **7** | `runtime/mheap.go` pushes both. Hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. ⚠ Even once linked, `runtime`'s converted bodies walk `mheap_` span metadata that the managed model does not populate (`getWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`), so this row wants a `internal/weak` hand-own on managed weak references, not a linkname fix alone. **r43b took the linkname half only** — the pair is registered UNHONORABLE and now announces itself by name instead of throwing an opaque `NotImplementedException`; the hand-own is still owed, and it is what this row is waiting on. It ABSORBED the rows that used to stop one frame earlier at the cleanup registration |
+| ~~**Same class: `internal/weak.runtime_registerWeakPointer` / `runtime_makeStrongFromWeak`**~~ | 4 → 7 → **0** | **CLOSED 2026-08-07 (r43e-weak).** `runtime/mheap.go` pushes both; hit inside `weak.Make`, i.e. `unique.Make`'s `newValue()`. r43b took the linkname half only (registered UNHONORABLE, announcing itself by name), because linking was never the remedy — `runtime`'s converted bodies walk `mheap_` span metadata the managed model does not populate. The remedy was the hand-own it announced, and it has landed: `internal/weak/pointer.cs` on `System.WeakReference` + a `ConditionalWeakTable` canonical index. The seven rows it had absorbed now advance INTO the test body — see *`internal/weak` HAND-OWNED* at the end of this file for where each one stops instead |
 | **`abi.TypeFor<T>()` is silently WRONG for an INTERFACE `T`** | 1 | `TypeFor`'s interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for `Kind == Pointer` reinterprets the descriptor as a `PtrType` and reads `.Elem` — which under the managed layout lands on the descriptor's **`Equal` field**. `TypeFor<any>()` and `TypeFor<error>()` return a `System.Func<unsafe.Pointer, unsafe.Pointer, bool>`, not a `ж<abi.Type>`. Shared generics store it into `ConcurrentDictionary<ж<abi.Type>, any>` uncast-checked, and the first key comparison dispatches `IEquatable<ж<abi.Type>>.Equals` on a delegate → `EntryPointNotFoundException`. **Corpus-wide, and it was invisible until now**: the old trie compared raw addresses through `keyEqual` and never dispatched on a key's runtime type. Reflection-bridge row |
 | **`GCHandle: Object contains references`** | 1 | `abi.Escape` pinning a managed pointee on the `weak.Make` path |
 | ~~**`IndexOutOfRangeException` in `go.slice<T>.Enumerator.get_Current`**~~ | 6 | **CLOSED 2026-08-07 (r41c-cloneseq).** Not the enumerator, and not "neither linkname nor reflection" — see *the `makeCloneSeq` root, closed* immediately below |
@@ -3283,8 +3283,8 @@ package's declaration, the consumer being a bodyless func under a **one-arg** `/
 | Pair | Disposition | Why |
 |:--|:--|:--|
 | `runtime.unique_runtime_registerUniqueMapCleanup` → `unique.runtime_registerUniqueMapCleanup` | **FORWARDED** | The pushed body is ordinary converted Go — a `chan struct{}` plus a goroutine that drains it and calls the callback. The managed model runs the real thing; nothing signals the channel because `clearpools()` is driven by Go's GC, which does not run. That is Go's own behavior for a program whose GC never fires (the intern map keeps its entries), not a fabricated answer |
-| `runtime.internal_weak_runtime_registerWeakPointer` → `internal/weak.runtime_registerWeakPointer` | **LOUD STUB** | `getOrAddWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`: the body walks `mheap_` span metadata the managed model does not populate |
-| `runtime.internal_weak_runtime_makeStrongFromWeak` → `internal/weak.runtime_makeStrongFromWeak` | **LOUD STUB** | Re-derives an object pointer from a heap address. A forwarder would fault or — worse — return a plausible pointer derived from garbage, the inverse-atomic rule's exact prohibition |
+| `runtime.internal_weak_runtime_registerWeakPointer` → `internal/weak.runtime_registerWeakPointer` | **LOUD STUB** → **HAND-OWNED** | `getOrAddWeakHandle` → `spanOfHeap` → `throw("getWeakHandle on invalid pointer")`: the body walks `mheap_` span metadata the managed model does not populate. **Answered 2026-08-07 (r43e-weak)** by the `internal/weak` hand-own; the registry row STAYS, because it is what a conversion into a root without the hand-own must still emit |
+| `runtime.internal_weak_runtime_makeStrongFromWeak` → `internal/weak.runtime_makeStrongFromWeak` | **LOUD STUB** → **HAND-OWNED** | Re-derives an object pointer from a heap address. A forwarder would fault or — worse — return a plausible pointer derived from garbage, the inverse-atomic rule's exact prohibition. Same disposition, same answer, same reason for keeping the row |
 
 **The registry is curated, and the reason is structural, not caution.** The converter never sees the
 pushing package's directives while converting the consumer — a package is converted from its own
@@ -3318,7 +3318,8 @@ same shape `sync`'s Mutex family and `internal/concurrent.HashTrieMap` took: hon
 contract, never emulate the mechanism. Deliberately NOT attempted in this lane — the linkname
 mechanism and a semantic hand-own are separate units of work, and the loud stub is what makes the
 second one findable. Its single file (`internal/weak/pointer.go`) makes a whole-file replacement the
-natural form.
+natural form. ✅ **Landed the same day (r43e-weak)**, in exactly that shape — see
+*`internal/weak` HAND-OWNED* at the end of this file.
 
 **Gates.** `go test ./...` in the converter ok (new `TestRecurseLinknamePush`, both arms
 neuter-proven); CNR byte-identical across all **571** behavioral packages; a seeded full
@@ -3338,6 +3339,87 @@ is freed — the standing rule for a Go-toolchain-side failure under load (*re-r
 filtered before believing it*) applied to a new cause. Read a wall of identical `not enough space on the
 disk` lines as the machine: check `Get-PSDrive C` FIRST, and do not go hunting for a converter
 regression — Target passing 546/546 already proves no golden moved.
+
+## `internal/weak` HAND-OWNED — the announced pair gets its answer (2026-08-07, r43e-weak)
+
+The third instance of the ruled precedent, after `sync`'s Mutex family and
+`internal/concurrent.HashTrieMap`, and the easiest fit of the three: `src/core/internal/weak/pointer.cs`
+is now a whole-file hand-own under `[module: go.GoManualConversion]` built on `System.WeakReference`
+over the `ж<T>` box, with a `ConditionalWeakTable` keyed on `ж<T>.ReferentObject` standing in for the
+runtime's canonical per-address `specialWeakHandle`. Design, the clause-by-clause contract table, the
+ephemeron argument for why the canonical index does not pin what it indexes, and the guarding
+measurements: [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md),
+*`internal/weak.Pointer`*. Marker census **39 → 40** (line-anchored; note 39, not the 40 CLAUDE.md
+records from r40 — `math/unsafe.cs` shed its marker in the interim). `internal/weak` joins
+`internal/godebug` and `internal/concurrent` as **fully hand-owned**: `internal.weak.csproj`,
+`package_info.cs` and `README.md` stop re-emitting and no `.cs.auto` sibling is produced — all three
+confirmed in place, since a `-tests` run over the package left every one of them untouched.
+
+**A SECOND defect was standing behind the first, and it is not weak's.** The `[GoType]` generator gates
+struct equality on *every type parameter* carrying an `IEqualityOperators` constraint, so a Go type
+declared `[T any]` (or `[T comparable]`, which the converter renders `new()`) emits
+`Equals(other) => false /* missing equality constraints */` — **even when no field's type mentions the
+parameter at all**. Both `weak.Pointer[T]` (field `unsafe.Pointer`) and `unique.Handle[T]` (field
+`ж<T>`, which defines `==` for every `T`) were victims. `Pointer[T]`'s copy is fixed here by hand-writing
+the struct; `unique.Handle`'s is a GENERATOR fix, chipped, and it is what six `TestHandle` rows now
+report.
+
+### Measurements — every root moved, no row count did
+
+| Package | Before | After | What actually changed |
+|:--|:--|:--|:--|
+| `internal/weak` (own suite, first ever run) | — | **1 of 3** | `TestPointerEquality` **PASSES** vs `go test` — the canonicalization clause, the hardest one, validated end to end. `TestPointer`/`TestPointerFinalizer` fail on the roster's `codegen-liveness` class (below). **Does NOT bank**, and not because the count is short of the bar: `TestPointerFinalizer` does not fail an assertion that could be disclosed, it BLOCKS forever on `<-done` awaiting a finalizer a still-rooted object can never queue |
+| `unique` | 4 of 19 | **4 of 19** | the announced weak panic is gone from every row; the host stops DEADLOCKING; the seven `TestHandle` rows resolve into four distinct new roots |
+| `encoding/gob` | 98 of 106 | **98 of 106** | `TestNetIP` no longer throws — `net/netip`'s package initializer **completes for the first time** and the test produces a value: `decoded to ::ffff:1.2.3.4%, want 1.2.3.4`. A netip 4-in-6/zone rendering difference, in nothing this arc touches. The other seven failures are the same gob-internal set |
+
+**The `unique` host used to hang, and closing weak is what exposed it.** `handle_test.go`'s `drainMaps`
+arms a one-shot notification, calls `runtime.GC()`, then BLOCKS on `<-wait` until the intern-map cleanup
+runs. `runtime.GC()`'s hand-owned managed body (`runtime/managed_impl.cs`) wired only the `sync.Pool` arm
+of `clearpools()`, so the cleanup could never run and every `TestHandle` subtest deadlocked — taking the
+whole test host to its package timeout and **erasing the verdicts of the 12 rows that had nothing to do
+with it**. That deadlock only became reachable once `internal/weak` stopped panicking one frame earlier.
+`GC()` now also does clearpools' unique arm — the same non-blocking send on `uniqueMapCleanup`, inert
+until `unique.Make` has run. Result: a 10-minute timeout with 3 usable verdicts becomes a **2-minute run
+with 19**.
+
+**`unique`'s four surviving roots, all measured this arc:**
+
+| Root | Rows | Shape |
+|:--|--:|:--|
+| **`[GoType]` equality gate — `unique.Handle<T>.Equals` is `false`** | 6 | every reachable subtest reports `v0 != v1` and **never** `v0.Value() != v1.Value()`, i.e. both `Make` calls interned the SAME `ж<T>`. Generator fix (chipped), not a hand-own |
+| **`codegen-liveness` — a live C# local roots what Go proves dead** | 6 (same rows) | `checkMapsFor` reports `value X still referenced a handle`. The cleanup now RUNS and `CompareAndDelete` is reachable for the first time; `v0`/`v1` are simply still rooted where Go's per-safepoint liveness maps have already dropped them. The roster's existing disclosure class (`sync` carries several) |
+| **`abi.TypeFor<T>()` for an interface `T`** | 2 | `EntryPointNotFoundException` at `IEquatable<ж<abi.Type>>.Equals` — unchanged, reflection-bridge row |
+| **`GCHandle: Object contains references`** | 1 | now reached in `clone` → `ж<T>`→`uintptr` → `pinnedArrayData`, not on the `abi.Escape` path the old row named |
+| **`array<T>.Equals` structural comparer** | 1 | `ArgumentException: Type of argument is not compatible with the generic comparer` for an array OF `[GoType]` structs. **New row**, previously masked |
+
+Plus the standing `TypeFor().Name()` subtest-naming rows, which pair up by content but cannot match by
+name.
+
+**`TestPointer`'s failure is GC precision, and that is proven rather than argued.** Go's own
+`pointer_test.go` does `st := wt.Strong()`, then `runtime.GC()`, then asserts nil — Go's compiler proves
+`st` and `bt` dead; a C# frame reports them live. A dedicated probe separates the two by creating and
+dropping the referent inside a `[MethodImpl(NoInlining)]` helper:
+
+```
+PASS  CONTROL plain object collects
+PASS  CONTROL ж<int> in a self-keyed ConditionalWeakTable collects
+PASS  CONTROL two-level CWT->ConcurrentDictionary keyed on ж<int> collects
+PASS  Strong() is nil once the referent is unreachable (never probed)
+FAIL  Strong() is nil once the referent is unreachable (probed first)
+```
+
+16 of 17 assertions pass, and the single failure is the probe's own frame holding the `ж<int>` that an
+earlier `Strong()` returned. The controls make the ephemeron reasoning measured rather than assumed.
+
+**Linkname PUSH registry — disposition unchanged, prose updated.** The two `internal/weak` rows STAY in
+`linknamePushTargets` as loud stubs, because they describe what a conversion into a root that does not
+already carry the hand-own must emit; the deployed corpus never regenerates the marked file. Their
+`reason` strings now name `internal/weak/pointer.cs` instead of asking for it.
+
+**Gates.** `internal/weak` + `unique` + `runtime` build clean; `go2cs-stdlib.slnx` **304/304**, 0 errors;
+seeded full `-stdlib -comments` reconvert with the hand-own clobber gate; `go test ./...` in the
+converter ok; GolibTests / ChannelTests at baseline; full behavioral suite. A/B footprint: **2** corpus
+files (`internal/weak/pointer.cs`, `runtime/managed_impl.cs`) + the converter's registry comments.
 
 ## The WHOLE-CORPUS REBANK — 1,316 files, sixteen families, zero unclassified (2026-08-04, r40-rebank)
 

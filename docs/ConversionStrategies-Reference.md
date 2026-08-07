@@ -12267,8 +12267,11 @@ either fault or — far worse — hand back a plausible-looking pointer derived 
 "populate a field whose read cannot be honored" move the rule forbids. The panic is deliberately a **Go panic
 naming both halves of the pair and the reason**, not the generator's `NotImplementedException`: the declaration
 is not an unimplemented assembly stub, it is a real Go contract this conversion has decided it cannot keep, and
-the first caller to hit it should land on the hand-own the row actually needs (`internal/weak` wants a managed
-weak reference over the `ж<T>` box — recorded on the Phase-4 board, deliberately not attempted speculatively).
+the first caller to hit it should land on the hand-own the row actually needs. That hand-own has since
+LANDED — see [*`internal/weak.Pointer`*](#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
+below — so these two rows no longer describe the deployed corpus, where `pointer.cs` is marked and never
+regenerated; they describe what a conversion into a root that does *not* already carry the hand-own emits,
+which must still be the loud pair. The reason string now names the file to reach for.
 
 By contrast `unique`'s pushed body is **ordinary converted Go** — it makes a `chan struct{}` and starts a
 goroutine that drains it and calls the callback — so the managed model runs the real thing: the registration
@@ -12368,8 +12371,9 @@ and both outside this file:
    [`PartialStubGenerator`](#source-generators) to fill with `NotImplementedException`. `unique`'s
    registration now FORWARDS to runtime's converted body; `internal/weak`'s two halves stay unlinked **by
    ruling** (the pushed bodies walk `mheap_` span metadata) and announce the linkname pair rather than
-   fabricate one, so the row's real remedy — a hand-owned managed weak reference — is what a caller is told
-   to reach for.
+   fabricate one. The remedy they name — a hand-owned managed weak reference — has since landed; see
+   [*`internal/weak.Pointer`*](#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
+   below.
 2. **`abi.TypeFor<T>()` is silently WRONG for an interface `T`.** Its non-interface branch returns an
    interned descriptor; the interface branch is `TypeOf((*T)(nil)).Elem()`, and `Type.Elem()` for
    `Kind == Pointer` reinterprets the descriptor as a `PtrType` (`Ꮡt.Reinterpret<Type, PtrType>()`) and
@@ -12393,6 +12397,111 @@ all). `unique` itself goes **0 → 1 of 19** and, more usefully, stops being a o
 file, which makes `internal/concurrent` fully hand-owned — see
 [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md) for what that does to the package's
 `.csproj`/`package_info.cs`/`README.md`, and for the seeded-reconvert proof in both directions.
+
+### `internal/weak.Pointer` — the CLR already has weak references, so the runtime handle becomes one
+
+`internal/weak` is `unique`'s liveness model, one layer below `internal/concurrent.HashTrieMap` and in
+front of the same consumers. The package's entire body is two `//go:linkname` declarations, and both
+pushed bodies live in `runtime/mheap.go`:
+
+```go
+func Make[T any](ptr *T) Pointer[T] {
+	ptr = abi.Escape(ptr)                                   // force the pointee onto the heap
+	var u unsafe.Pointer
+	if ptr != nil {
+		u = runtime_registerWeakPointer(unsafe.Pointer(ptr))
+	}
+	runtime.KeepAlive(ptr)
+	return Pointer[T]{u}
+}
+
+func (p Pointer[T]) Strong() *T { return (*T)(runtime_makeStrongFromWeak(p.u)) }
+```
+
+`registerWeakPointer` → `getOrAddWeakHandle` → `getWeakHandle` → `spanOfHeap` walks `mheap_` span
+metadata to find or hang a `specialWeakHandle` off the span, and `makeStrongFromWeak` loads a word out of
+that handle and **re-derives an object pointer from the address**. The managed model populates no span
+metadata, and *"what object lives at this address?"* is a question the CLR does not answer at all — so the
+pair is registered UNHONORABLE in `linknamePushTargets` and each half announces itself by name (see
+[*A cross-package `//go:linkname` PUSH resolves per recorded disposition*](#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)).
+The announcement is what pointed at this hand-own; this is what it was pointing at.
+
+**The ruling is the `sync.Mutex` / `internal/concurrent.HashTrieMap` precedent, and it fits better here
+than anywhere it has been applied before, because the CLR has first-class weak references of its own.**
+`src/core/internal/weak/pointer.cs` carries `[module: go.GoManualConversion]` and contains no span walk.
+The contract translates clause for clause:
+
+| Go's contract | Managed mechanism |
+|:--|:--|
+| `Make(ptr)` never fails; `Strong()` yields the ORIGINAL pointer while the referent is reachable, and nil once the collector has identified it unreachable — **before** a finalizer can resurrect it | `WeakReference<ж<T>>` over the `ж<T>` box, **SHORT** (`trackResurrection: false`); Go's handle likewise clears ahead of finalization |
+| A weak pointer does not keep its referent alive | Nothing on the `Pointer<T>` → `handle<T>` → referent path is a strong reference |
+| Weak handles are **unique and canonical per byte offset into an object**, so weak pointers made from pointers that compare equal compare equal — and pointers to different offsets within one object do not | A `ConditionalWeakTable` keyed on the referent ALLOCATION whose value is a `ConcurrentDictionary` keyed on the GO POINTER. `ж<T>`'s own `Equals`/`GetHashCode` ARE Go's pointer identity, including "two fields of one struct are different addresses" |
+| Equality is retained after the referent is reclaimed | `Pointer<T>` holds the handle STRONGLY, so the handle outlives the referent and keeps answering — it just answers nil forever after |
+| A weak pointer made after a resurrection is NEWLY UNIQUE | The table entry dies with the referent (that is what a `ConditionalWeakTable` key is), so a later `Make` mints a fresh handle |
+| `abi.Escape(ptr)` — force the pointee out of the frame | Nothing to force: a `ж<T>` IS a heap allocation from construction, whatever its pointee's type |
+| `runtime.KeepAlive(ptr)` | `GC.KeepAlive` — load-bearing, not decorative: the referent is reachable from `Make`'s frame only through the argument, and every use of it is finished before the return |
+
+**Why the canonical table does not pin what it indexes — the one subtle claim.** A
+`ConditionalWeakTable` is an EPHEMERON: its value is kept alive only while the KEY is independently
+reachable, and edges *from* the value *to* the key do not count as reachability. The key is
+`ж<T>.ReferentObject` — the same lifetime question `runtime.SetFinalizer` already keys on (`mfinal.cs`),
+answered the same way: an element ref resolves to its backing storage, a field ref to the containing
+allocation, and a standard heap box to itself. The value holds the `ж<T>` boxes strongly, as dictionary
+keys, which is deliberate — for a field or element pointer the box is a per-expression view that would
+otherwise die long before the struct does, and `Strong()` must keep returning it; the ephemeron makes
+that safe. The handle holds only a `WeakReference`. Composing the three, **a box is reachable exactly
+when its referent is**, so one plain `WeakReference` tracks the REFERENT's liveness for every pointer
+shape, not merely the standard-box shape.
+
+One shape is deliberately not modelled, and it is Go's error case too: a box that ALIASES A NATIVE
+ADDRESS names unmanaged storage the collector does not own, so its managed reachability is not the Go
+question. Go answers by faulting (`throw("getWeakHandle on invalid pointer")` — a non-heap address has no
+span); here it would observe an eventual nil rather than a fabricated pointer, the safe direction.
+Nothing in the converted corpus takes a weak pointer to one.
+
+**A second, independent defect this closes.** `Pointer[T]` is written out rather than left to `[GoType]`,
+because the generated struct equality is field-wise `==` **guarded on every type parameter carrying an
+`IEqualityOperators` constraint** (`TypeGenerator`'s `hasEqualityOperators` → `AllGenericTypesHaveConstraint`),
+and Go's `Pointer[T any]` carries none — so the emitted body was literally
+`Equals(other) => false /* missing equality constraints */`. Two weak pointers to one object NEVER
+compared equal, contradicting the type's own doc comment and silently defeating `unique.Make`'s
+`m.CompareAndDelete(value, wp)`, which could therefore never match and never evict a dead entry.
+Equality is the *whole reason* the runtime canonicalizes the handle, so it is hand-written here — and as
+`IEquatable<Pointer<T>>`, which the generated form does not implement, so `EqualityComparer<Pointer<T>>.Default`
+reaches it without boxing on every lookup. ⚠ **The gate itself is over-conservative and the defect is
+corpus-wide**: it disqualifies a struct when ANY type parameter lacks the constraint, even when no
+field's type mentions that parameter. `unique.Handle[T]` is the other confirmed victim — its single field
+is a `ж<T>`, which defines `==` for every `T`, yet its generated `Equals` is `false` too, so
+`unique.Handle` values never compare equal either. That is a generator fix rather than a hand-own, and is
+left to its own arc.
+
+**Guarding measurement.** `internal/weak`'s own suite now links and runs
+(`go2cs -tests -test-action all "<GOROOT>/src/internal/weak" src/core/internal/weak`): **`TestPointerEquality`
+PASSES against `go test`** — the canonicalization clause, the hardest one, validated end to end.
+`TestPointer` and `TestPointerFinalizer` do not, and the reason is the roster's already-named
+**`codegen-liveness`** class rather than the weak model: both hold the referent in a live C# local (`bt`)
+across the `runtime.GC()` that is supposed to kill it, where Go's per-safepoint liveness maps drop it at
+its last use. (Neither is *disclosable* — `TestPointerFinalizer` does not fail an assertion, it blocks
+forever on `<-done` waiting for a finalizer that a still-rooted object can never queue — so
+`internal/weak` does not bank.) A dedicated probe separates the two — a referent
+created and dropped inside a `[MethodImpl(NoInlining)]` helper is reported collected, and only a weak
+pointer that had `Strong()` called on it *earlier in the same frame* stays alive:
+
+```
+PASS  Strong() is nil once the referent is unreachable (never probed)
+FAIL  Strong() is nil once the referent is unreachable (probed first)
+```
+
+with a self-keyed `ConditionalWeakTable` control and the two-level table control both collecting, so the
+ephemeron reasoning above is confirmed rather than assumed. `unique` reads the same way from the other
+side: every `TestHandle` subtest that gets far enough reports **only** `v0 != v1` (the `[GoType]` equality
+gate above) and never `v0.Value() != v1.Value()` — i.e. both `Make` calls interned the *same* `ж<T>`, which
+is exactly what canonical weak handles plus `LoadOrStore` are for.
+
+`pointer.go` is this package's only Go file, so marking it makes `internal/weak` **fully hand-owned**: the
+driver `continue`s on `unmarkedFileCount == 0` and stops re-emitting `internal.weak.csproj`,
+`package_info.cs` and `README.md`, and no `pointer.cs.auto` review sibling is produced — the position
+`internal/godebug` and `internal/concurrent` are already in. The marker census moves **39 → 40**.
 
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 
