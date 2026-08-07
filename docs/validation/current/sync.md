@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `sync` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f6e9c0cf0`*
+*Validated 2026-08-07 · converter `d6aa09e73`*
 
 **41 matched · 10 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync).
@@ -78,9 +78,9 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 |:--|:--|:--|
 | `TestMapClearNoAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: Map.Clear walks the read/dirty maps through the golib map enumerator, and every enumeration step materializes a managed entry object where Go's bucket walk is allocation-free; a malloc-counting shim would fail the same assert |
 | `TestMapRangeNoAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: Range boxes each key and value into `any` for the visitor callback — a CLR heap allocation per entry that Go's non-escaping eface avoids |
-| `TestOnceFunc` | `alloc-profile` | want-zero AllocsPerRun assert: the wrapper OnceFunc returns is a delegate over a closure display class, and calling it through the golib defer/recover machinery allocates a GoFunc context per call where Go's inlined fast path (a single atomic load) allocates nothing |
-| `TestOnceValue` | `alloc-profile` | want-zero AllocsPerRun assert: same as TestOnceFunc, plus the generic result slot is read through a heap box (ж<T>) where Go reads a stack-allocated closure field |
-| `TestOnceValues` | `alloc-profile` | want-zero AllocsPerRun assert: same as TestOnceValue for the two-result form; the tuple return and the two heap-boxed result slots allocate per call in the managed model |
+| `TestOnceFunc` | `alloc-profile` | want-zero AllocsPerRun assert: every measured call takes Once.Do's fast path — the once-body and its defer run only in AllocsPerRun's warm-up, and measured, that fast path accounts for the whole per-call figure. It evaluates two addresses of struct fields, `&once.done` and, inside atomic.Uint32.Load, `&done.v`, and each one materializes an interior-pointer box: a Go pointer must be a storable, identity-comparable, nil-able value, and the CLR's only allocation-free interior pointer (`ref T`) is stack-only and can be none of those. Go's `o.done.Load()` inlines to a single atomic load off the receiver and allocates nothing; a malloc-counting shim would fail the same assert |
+| `TestOnceValue` | `alloc-profile` | want-zero AllocsPerRun assert: the same Once.Do fast path as TestOnceFunc, measured at the same cost — the generic result slot is READ through the box it already lives in, never allocated, so the one-result form adds nothing per call |
+| `TestOnceValues` | `alloc-profile` | want-zero AllocsPerRun assert: the same Once.Do fast path as TestOnceFunc, measured at the same cost — the two result slots are read through the boxes they already live in and the tuple return is a value, so the two-result form adds nothing per call either |
 | `TestOnceXGC` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestOnceXGC/OnceFunc` | `codegen-liveness` | The test asserts its own frame's `buf` is collectible while the frame is still running. sync.OnceFunc DOES drop the wrapped function (measured: the backing array is released after the first call), but the test's own `f := fn(buf)` passes the 32-byte slice header BY VALUE, so the x64 ABI makes the caller materialize an address-exposed stack temp; an address-exposed slot is not lifetime-tracked and the CLR reports it live for the whole method, pinning the array until the subtest RETURNS. Go's per-safepoint liveness maps release the caller's copy at its last use. Not satisfiable at any layer go2cs owns — it is the CLR's GC-info conservatism, and it holds in fully optimized code, not just under the non-optimizing JIT. |
 | `TestOnceXGC/OnceValue` | `codegen-liveness` | Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking |

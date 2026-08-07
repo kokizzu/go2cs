@@ -17,19 +17,19 @@
       "name": "TestOnceFunc",
       "class": "alloc-profile",
       "signature": "want 0 allocations per call, got ",
-      "reason": "want-zero AllocsPerRun assert: the wrapper OnceFunc returns is a delegate over a closure display class, and calling it through the golib defer/recover machinery allocates a GoFunc context per call where Go's inlined fast path (a single atomic load) allocates nothing"
+      "reason": "want-zero AllocsPerRun assert: every measured call takes Once.Do's fast path — the once-body and its defer run only in AllocsPerRun's warm-up, and measured, that fast path accounts for the whole per-call figure. It evaluates two addresses of struct fields, `&once.done` and, inside atomic.Uint32.Load, `&done.v`, and each one materializes an interior-pointer box: a Go pointer must be a storable, identity-comparable, nil-able value, and the CLR's only allocation-free interior pointer (`ref T`) is stack-only and can be none of those. Go's `o.done.Load()` inlines to a single atomic load off the receiver and allocates nothing; a malloc-counting shim would fail the same assert"
     },
     {
       "name": "TestOnceValue",
       "class": "alloc-profile",
       "signature": "want 0 allocations per call, got ",
-      "reason": "want-zero AllocsPerRun assert: same as TestOnceFunc, plus the generic result slot is read through a heap box (ж<T>) where Go reads a stack-allocated closure field"
+      "reason": "want-zero AllocsPerRun assert: the same Once.Do fast path as TestOnceFunc, measured at the same cost — the generic result slot is READ through the box it already lives in, never allocated, so the one-result form adds nothing per call"
     },
     {
       "name": "TestOnceValues",
       "class": "alloc-profile",
       "signature": "want 0 allocations per call, got ",
-      "reason": "want-zero AllocsPerRun assert: same as TestOnceValue for the two-result form; the tuple return and the two heap-boxed result slots allocate per call in the managed model"
+      "reason": "want-zero AllocsPerRun assert: the same Once.Do fast path as TestOnceFunc, measured at the same cost — the two result slots are read through the boxes they already live in and the tuple return is a value, so the two-result form adds nothing per call either"
     },
     {
       "name": "TestOnceXGC/OnceFunc",
