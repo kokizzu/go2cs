@@ -151,7 +151,9 @@ if ($drift) {
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
     #                       variant's relocated initializers implement (unicode, internal/zstd,
     #                       time, and internal/buildcfg -- whose test half implements nothing, so
-    #                       the hook is erased again and the committed file stays hookless).
+    #                       the hook is erased again and the committed file stays hookless. time
+    #                       previously landed in the "inspect" bucket every sweep, the exact false
+    #                       alarm this section exists to stop).
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.

@@ -157,16 +157,23 @@ var linknamePushTargets = map[string]linknamePush{
 	// `throw("getWeakHandle on invalid pointer")`, and makeStrongFromWeak reads a handle word out of
 	// the heap and re-derives a pointer from it. The managed model populates no mheap_ span metadata
 	// and cannot re-derive an object from an address, so a forwarder here would either fault or, far
-	// worse, hand back a plausible-looking pointer derived from garbage. internal/weak wants a
-	// hand-owned managed weak reference (System.WeakReference over the ж<T> box) — recorded on the
-	// Phase-4 board; until it exists the pair announces itself loudly.
+	// worse, hand back a plausible-looking pointer derived from garbage.
+	//
+	// The remedy these two announced has since LANDED: src/core/internal/weak/pointer.cs is a
+	// hand-owned managed weak reference over the ж<T> box under [module: go.GoManualConversion] —
+	// System.WeakReference plus a ConditionalWeakTable canonical index (see
+	// ConversionStrategies-Reference, "internal/weak.Pointer"). These rows therefore no longer
+	// describe the deployed corpus, where the marked file is never regenerated; they describe what a
+	// conversion into a root that does NOT already carry the hand-own emits, and that must still be
+	// the loud pair rather than a fabricated body. Keep them, with the reason naming the file the
+	// caller should be reaching for.
 	"internal/weak.runtime_registerWeakPointer": {
 		source: "runtime.internal_weak_runtime_registerWeakPointer",
-		reason: "the pushed body walks mheap_ span metadata the managed model does not populate; internal/weak wants a hand-owned managed weak reference",
+		reason: "the pushed body walks mheap_ span metadata the managed model does not populate; use the hand-owned managed weak reference in internal/weak/pointer.cs",
 	},
 	"internal/weak.runtime_makeStrongFromWeak": {
 		source: "runtime.internal_weak_runtime_makeStrongFromWeak",
-		reason: "the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; internal/weak wants a hand-owned managed weak reference",
+		reason: "the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; use the hand-owned managed weak reference in internal/weak/pointer.cs",
 	},
 }
 
