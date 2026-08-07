@@ -389,15 +389,7 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
     return default!;
 }
 
-// StructType returns t cast to a *StructType, or nil if its tag does not match.
-public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() != Struct) {
-        return default!;
-    }
-    return Ꮡt.Reinterpret<Type, ΔStructType>();
-}
+// go2cs generated this placeholder — func StructType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // MapType returns t cast to a *MapType, or nil if its tag does not match.
 public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
@@ -409,15 +401,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
     return Ꮡt.Reinterpret<Type, ΔMapType>();
 }
 
-// ArrayType returns t cast to a *ArrayType, or nil if its tag does not match.
-public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() != Array) {
-        return default!;
-    }
-    return Ꮡt.Reinterpret<Type, ΔArrayType>();
-}
+// go2cs generated this placeholder — func ArrayType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // FuncType returns t cast to a *FuncType, or nil if its tag does not match.
 public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {

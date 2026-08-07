@@ -247,6 +247,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	}
 
 	var isSlice, isArray, isMap, isChan, isStr, untypedStr, isInt, untypedInt bool
+	var intBasic *types.Basic
 	yieldFunc := -1
 
 	// Slice type is expected to be most common, so this is checked first
@@ -271,10 +272,18 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 			if basicType, ok := rangeType.(*types.Basic); ok {
 				kind := basicType.Kind()
 
-				isInt = kind == types.Int || kind == types.UntypedInt
+				// Go's range-over-integer (Go 1.22) accepts ANY integer type, not just `int`
+				// — `for range atyp.Len` over a uintptr is legal, and internal/abi's
+				// buildArrayCloneSeq (unique/clone.go) is the corpus site that proved it.
+				// Recognizing only types.Int made every other integer kind fall through to the
+				// "unexpected 'ast.RangeStmt' expression" arm below, which emits the whole
+				// statement as a COMMENT — the loop silently vanished from the conversion.
+				isInt = basicType.Info()&types.IsInteger != 0
 				untypedInt = kind == types.UntypedInt
 
-				if !isInt {
+				if isInt {
+					intBasic = basicType
+				} else {
 					isStr = kind == types.String || kind == types.UntypedString
 					untypedStr = kind == types.UntypedString
 				}
@@ -481,16 +490,33 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 
 		v.writeOutput("foreach (%s%s in %s%s)", keyType, scalarKeyExpr, rangeExpr, ptrDeref)
 	} else if isInt {
+		// A non-`int` integer width binds golib's GENERIC range<T>, since Go gives the iteration
+		// variable the range operand's OWN type. T is named EXPLICITLY rather than inferred: Go's
+		// `rune` and C#'s `int` are the same CLR type, so inference could not tell
+		// `for i := range r` (yields rune) from `for i := range 3` (yields Go's int), and a NAMED
+		// integer type (a converted `[GoType("num:…")]` struct) satisfies no generic-math interface
+		// at all, so its operand is also cast down to the underlying width. `int` itself keeps the
+		// bare `range(expr)` form — the overwhelmingly common case, emitted byte-identically.
+		rangeTypeArg := ""
+
 		if untypedInt {
 			rangeExpr = fmt.Sprintf("@int(%s%s)", rangeExpr, ptrDeref)
 			ptrDeref = ""
+		} else if intBasic != nil && intBasic.Kind() != types.Int {
+			csIntType := v.getCSharpTypeName(types.Default(intBasic))
+			rangeTypeArg = fmt.Sprintf("<%s>", csIntType)
+
+			if rangeIsNamedType {
+				rangeExpr = fmt.Sprintf("(%s)(%s%s)", csIntType, rangeExpr, ptrDeref)
+				ptrDeref = ""
+			}
 		}
 
 		if v.options.preferVarDecl {
 			keyType = "var "
 		}
 
-		v.writeOutput("foreach (%s%s in range(%s%s))", keyType, scalarKeyExpr, rangeExpr, ptrDeref)
+		v.writeOutput("foreach (%s%s in range%s(%s%s))", keyType, scalarKeyExpr, rangeTypeArg, rangeExpr, ptrDeref)
 	} else if yieldFunc > -1 {
 		// A NAMED func type renders as a C# DELEGATE; golib's range() overloads take
 		// Action<Func<…>>, and a distinct delegate type has no conversion — but its method

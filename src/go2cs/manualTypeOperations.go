@@ -105,8 +105,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs
 	// synthesizes an abi.Type whose Kind_ is classified from the value's managed System.Type. See
 	// docs/phase4/DESIGN-reflection-bridge.md.
+	// Type.StructType / Type.ArrayType are Go's PREFIX-DOWNCAST idiom —
+	// `(*structType)(unsafe.Pointer(t))` reaches a sub-record the linker really allocated behind
+	// the Type header. Nothing sits behind a ж<abi.Type>, and golib's Reinterpret rightly refuses
+	// to alias managed storage for a reference-bearing pair, so the auto forms read the
+	// specialization's fields out of the memory that follows the value slot: `Fields` came back as
+	// a fabricated StructField[] of length 8830452760576 — an IndexOutOfRangeException on the
+	// FIRST iteration of unique.buildStructCloneSeq, and internal/reflectlite's NumField/Len read
+	// the same garbage. type_impl.cs synthesizes both specializations from the descriptor's
+	// carried System.Type over the same golib layout machinery that stamps Size_/Align_.
 	"internal/abi": {
-		"TypeOf": true,
+		"TypeOf":          true,
+		"Type.StructType": true,
+		"Type.ArrayType":  true,
 	},
 	// reflect.Value's entry + value-reader methods (the reflection bridge, Phase 2). Go reads the
 	// value through v.ptr as flat memory at computed offsets — no managed form. value_impl.cs carries

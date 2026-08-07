@@ -94,4 +94,102 @@ public static ж<Type> TypeOf(any a) {
     return synthType(dyn, dims);
 }
 
+// ==== the descriptor SPECIALIZATIONS: StructType() / ArrayType() ====
+//
+// Go's `(*structType)(unsafe.Pointer(t))` is the prefix-downcast idiom: the linker really did
+// allocate a structType and hand out a pointer to its embedded Type header, so casting back
+// reaches the sub-record. There is nothing behind a ж<abi.Type> to downcast to — the box holds an
+// abi.Type and only an abi.Type — and golib's Reinterpret correctly REFUSES to alias managed
+// storage for a reference-bearing pair (it would fabricate object references), so the auto form
+// fell back to the raw-address route and read the specialization's fields out of whatever memory
+// follows the value slot. Measured: `Fields` came back with Length 8830452760576 over a fabricated
+// StructField[] reference — an IndexOutOfRangeException on the FIRST iteration of
+// unique.buildStructCloneSeq, and internal/reflectlite's NumField/Len read the same garbage.
+//
+// The specializations are therefore SYNTHESIZED from the descriptor's carried System.Type, exactly
+// as the descriptor itself is, over the same golib layout machinery (GoReflect.GoFields /
+// GoSizeOf / GoAlignOf) that stamps Size_/Align_ — so a field's Offset and the descriptor's Size_
+// can never disagree. What is NOT knowable is not invented: a descriptor with no System.Type, or a
+// struct holding a field whose Go size cannot be computed, answers Go's nil rather than a
+// plausible-looking record (the r39d rule — a descriptor field whose read cannot be honored must
+// not be populated to look truthful), and every Go caller already tests that nil.
+//
+// StructField.Name and StructType.PkgPath stay the ZERO ΔName on purpose. A ΔName is a pointer
+// into the linker's name blob, and every reader of one (Name/IsExported/IsEmbedded/ReadVarint)
+// walks it with `addChecked` raw-address arithmetic — the same route that produced the garbage
+// above. Go's own ΔName.Name() answers "" for a nil Bytes, so the zero value is a state the
+// format DEFINES, not a fabrication; a synthesized encoding would instead hand every reader an
+// address whose arithmetic has never been exercised. reflect's own hand-owned rtype.Field is
+// where a named field descriptor already comes from (over GoReflect.GoFields), and no converted
+// caller of abi.StructType reads a field name: unique reads Typ and Offset, internal/reflectlite
+// reads len(Fields).
+
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<ΔStructType>> s_structTypes = new();
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<ΔArrayType>> s_arrayTypes = new();
+
+// StructType returns t cast to a *StructType, or nil if its tag does not match.
+public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Struct || Ꮡt.Value.sysType is null) {
+        return default!;
+    }
+    return s_structTypes.GetOrAdd(Ꮡt, static box => synthesizeStructType(box));
+}
+
+private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
+    System.Type st = Ꮡt.Value.sysType!;
+    GoReflect.GoFieldInfo[] infos = GoReflect.GoFields(st);
+    nint[]? offsets = GoReflect.GoFieldOffsets(st);
+
+    // A struct holding a field whose Go size is unknowable has no truthful layout at all — one
+    // unknown size makes every later offset a guess. Answer Go's nil rather than a plausible record.
+    if (offsets is null) {
+        return default!;
+    }
+    StructField[] fields = new StructField[infos.Length];
+
+    for (int i = 0; i < infos.Length; i++) {
+        GoReflect.GoFieldInfo info = infos[i];
+        nint[]? dims = GoReflect.KindOf(info.Type) == GoReflect.Array ? info.ArrayDims : null;
+        fields[i] = new StructField(
+            Name: default!,
+            Typ: synthType(info.Type, dims),
+            Offset: (uintptr)(nuint)offsets[i]
+        );
+    }
+
+    return new ж<ΔStructType>(new ΔStructType(
+        Type: Ꮡt.Value,
+        PkgPath: default!,
+        Fields: new slice<StructField>(fields)
+    ));
+}
+
+// ArrayType returns t cast to a *ArrayType, or nil if its tag does not match.
+public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Array || Ꮡt.Value.sysType is null) {
+        return default!;
+    }
+    return s_arrayTypes.GetOrAdd(Ꮡt, static box => synthesizeArrayType(box));
+}
+
+private static ж<ΔArrayType> synthesizeArrayType(ж<Type> Ꮡt) {
+    System.Type at = Ꮡt.Value.sysType!;
+    System.Type? elem = GoReflect.ElementType(at);
+    nint[]? dims = Ꮡt.Value.arrayDims;
+
+    // array<T> carries its element type but not its LENGTH — a descriptor built without dims
+    // cannot answer Len, and guessing 0 would read as a real empty array.
+    if (elem is null || dims is not { Length: > 0 }) {
+        return default!;
+    }
+    nint[]? elemDims = dims.Length > 1 ? dims[1..] : null;
+
+    return new ж<ΔArrayType>(new ΔArrayType(
+        Type: Ꮡt.Value,
+        Elem: synthType(elem, elemDims),
+        Slice: synthType(typeof(slice<>).MakeGenericType(elem)),
+        Len: (uintptr)(nuint)dims[0]
+    ));
+}
+
 } // end abi_package

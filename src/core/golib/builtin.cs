@@ -599,6 +599,59 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Enumerates over a range of integers whose operand is a C# <see cref="int"/>.
+    /// </summary>
+    /// <param name="n">Number of integers to enumerate.</param>
+    /// <returns>Enumerable range of <see cref="nint"/> values — Go's <c>int</c>.</returns>
+    /// <remarks>
+    /// An <see cref="int"/>-typed operand in emitted code is a Go untyped integer CONSTANT
+    /// (<c>for i := range 3</c>); a Go <c>int</c> expression already renders as <c>nint</c>, and every
+    /// other Go integer width is emitted with an explicit type argument on <see cref="range{T}(T)"/>.
+    /// So this overload means "a C# int operand is Go's int", and it exists to keep the constant case
+    /// on <see cref="nint"/>: without it the generic below is an IDENTITY match for an <c>int</c>
+    /// argument where <see cref="range(nint)"/> needs an implicit numeric conversion, so the generic
+    /// wins outright and <c>for i := range 3</c> starts yielding <see cref="int"/> — the exact
+    /// divergence <c>Tests/Behavioral/RangeIntIndexAppend</c> guards (a <c>var i</c> of the wrong
+    /// width made <c>append(s, i)</c> ambiguous, CS0121). Measured, not reasoned: the generic really
+    /// does take the literal, so the tie-break that prefers a non-generic candidate never applies.
+    /// </remarks>
+    public static IEnumerable<nint> range(int n)
+    {
+        return range((nint)n);
+    }
+
+    /// <summary>
+    /// Enumerates over a range of integers of any Go integer type.
+    /// </summary>
+    /// <typeparam name="T">Integer type of the range operand.</typeparam>
+    /// <param name="n">Number of integers to enumerate.</param>
+    /// <returns>Enumerable range of <typeparamref name="T"/> values.</returns>
+    /// <remarks>
+    /// Go's range-over-integer accepts ANY integer type, not just <c>int</c>, and gives the iteration
+    /// variable THAT type — <c>for i := range n</c> over a <c>uintptr</c> yields <c>uintptr</c> values.
+    /// This overload is that general case. The converter names <typeparamref name="T"/> EXPLICITLY at
+    /// every such site (<c>range&lt;uintptr&gt;(n)</c>), which is what keeps the widths that share a
+    /// CLR type distinct: Go's <c>rune</c> and C#'s <c>int</c> are one type here, so an inferred call
+    /// could not tell <c>for i := range r</c> (yields <c>rune</c>) from <c>for i := range 3</c>
+    /// (yields Go's <c>int</c>). Producing values 0..n-1 (and no iterations when n &lt;= 0) matches
+    /// Go's integer-range semantics exactly.
+    /// <para>
+    /// The constraint is the OPERATOR pair the loop actually uses, not <c>IBinaryInteger&lt;T&gt;</c>:
+    /// golib's own <see cref="uintptr"/> is a hand-written struct that implements the generic-math
+    /// OPERATOR interfaces but not the <c>INumberBase</c> hierarchy, and <c>uintptr</c> is exactly
+    /// the type <c>for range atyp.Len</c> ranges over. <c>default(T)</c> is the zero of every Go
+    /// integer type, so no <c>T.Zero</c> — and therefore no <c>INumberBase</c> — is needed.
+    /// </para>
+    /// </remarks>
+    public static IEnumerable<T> range<T>(T n) where T : struct, System.Numerics.IComparisonOperators<T, T, bool>, System.Numerics.IIncrementOperators<T>
+    {
+        for (T i = default; i < n; i++)
+        {
+            yield return i;
+        }
+    }
+
+    /// <summary>
     /// Enumerates over a yield function.
     /// </summary>
     /// <param name="enumerator">Yield function.</param>

@@ -1139,6 +1139,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRangeIntIndexAppend() => CheckTarget("RangeIntIndexAppend");
 
     [TestMethod]
+    public void CheckRangeOverIntegerTypes() => CheckTarget("RangeOverIntegerTypes");
+
+    [TestMethod]
     public void CheckRangeShadowSelectorMethod() => CheckTarget("RangeShadowSelectorMethod");
 
     [TestMethod]

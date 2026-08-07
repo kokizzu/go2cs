@@ -639,6 +639,7 @@
     <Project Path="tests/Behavioral/PublicizedInterfaceParam/PublicizedInterfaceParam.csproj" />
     <Project Path="tests/Behavioral/RangeExprFuncLitCapture/RangeExprFuncLitCapture.csproj" />
     <Project Path="tests/Behavioral/RangeIntIndexAppend/RangeIntIndexAppend.csproj" />
+    <Project Path="tests/Behavioral/RangeOverIntegerTypes/RangeOverIntegerTypes.csproj" />
     <Project Path="tests/Behavioral/RangePointerArrayConversion/RangePointerArrayConversion.csproj" />
     <Project Path="tests/Behavioral/RangeStatements/RangeStatements.csproj" />
     <Project Path="tests/Behavioral/RangeVarHeapBox/RangeVarHeapBox.csproj" />
