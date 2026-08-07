@@ -58,6 +58,14 @@
 > reflection-bridge territory), so read *The `makeCloneSeq` root, CLOSED* rather than the table cell.
 > The roster is **unchanged at 73**: `unique` does not bank.
 >
+> **Revised again 2026-08-07 (r43c-candidates)**: the first pure **measure-first breadth pass** — 47
+> never-measured candidates run back to back through the pipeline. **Twenty-three validated on the
+> first run with no converter change of any kind**, taking the roster **73 → 96 (44.7%)**; every one
+> of the twenty-four that did not is rooted in the new section at the end of this file. The finding
+> worth carrying forward is the negative one: the corpus had already grown past those packages and
+> nothing was watching, so **the roster's denominator is limited by who has looked, not by what is
+> broken**. Re-scout the tail after any capability lands, not only the packages that capability names.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -3488,3 +3496,126 @@ the moment each package's `-tests` pipeline ran, with no separate work. Zero rem
    than by re-running 17 packages.
 
 <!-- {% endraw %} -->
+
+## The r43c breadth pass — 58 candidates measured, 23 bank, every non-bank rooted (2026-08-07)
+
+The charter says the cheapest scout is the pipeline itself, and until now it had only ever been
+pointed at packages some *other* arc had named. This pass pointed it at the long tail as a batch:
+**58 never-measured candidates** run back to back through
+`go2cs -tests -test-action all -test-timeout 10m`, selected only by "its dependency closure is
+already validated and it is not behind a known deep wall."
+
+**Twenty-three validated on the first run, with no converter, golib or host change of any kind** —
+roster **73 → 96 (44.7%)**, 13,070 matching verdicts. One candidate (`image/color/palette`) has no
+eligible `Test` declarations at all. The remaining **34 are rooted below**.
+
+The finding worth carrying forward is the negative one. None of the twenty-three needed anything;
+the corpus had already grown past them, package by package, as forty banked packages' worth of
+shared machinery landed, and **nobody had looked**. The roster's denominator was limited by
+attention, not by defects. So: **re-scout the tail after any capability lands, not just the packages
+that capability was aimed at** — a Tier-0 frog closes silently for packages nobody associated with it.
+
+Two mechanical notes for the next person running a batch like this:
+
+- The batch is cheap. A leaf package costs **9–20 s** end to end (convert, build, run both sides,
+  diff). Fifty-eight candidates is under half an hour of wall time — far cheaper than reasoning
+  about which ones *might* be close.
+- The proof-page renderer and `docs/validation/index.md` update themselves on every successful
+  `all` run, so a batch of banks costs no per-package documentation work. The roster row, its
+  header arithmetic, and the closure-family restore are the only manual steps.
+
+### The twenty-three
+
+`crypto` · `crypto/aes` · `crypto/des` · `crypto/rc4` · `crypto/internal/alias` ·
+`crypto/internal/bigmod` · `go/constant` · `go/doc/comment` · `go/format` · `go/printer` · `hash` ·
+`image` · `image/color` · `internal/buildcfg` · `internal/coverage/cformat` ·
+`internal/coverage/cmerge` · `internal/coverage/pods` · `internal/dag` · `internal/diff` ·
+`mime/quotedprintable` · `net/url` · `testing/iotest` · `text/template/parse`
+
+`go/doc/comment` alone contributes **10,059** verdicts — its `TestTestdata` walks every doc comment
+in the standard library's own Go sources — and is now the largest single suite banked. `hash`,
+`crypto` and `image` are worth noting for a different reason: each is a tiny *contract* package
+whose suite exercises the whole family beneath it (`hash`'s marshal round-trip runs across all
+eighteen stdlib digests; `crypto`'s out-of-bounds guards run every stream mode).
+
+Four of the twenty-three flip a production `.cs` on every sweep, per the standing `-tests`-closure
+family (`crypto/crypto.cs`, `hash/hash.cs`, `image/format.cs` — the `Δio` alias; and
+`internal/buildcfg/package_init.cs` — the init-tests hook, which its test half implements nothing
+of). All four are added to `run-validated-sweep.ps1`'s documented `$closureFiles` set so the sweep
+keeps classifying them rather than reporting them as content drift.
+
+### Build-blocked — eight roots
+
+| Package | First diagnostic | Root, as far as it was taken |
+|:--|:--|:--|
+| `log`, `go/scanner` | CS0012 | **A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.** |
+| `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
+| `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
+| `archive/zip` | CS1929 | The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser` — the pointer/value receiver split on an interface realized through an *embedded* field. |
+| `testing/fstest` | CS0030 | Converting the test-local named type `shuffledFS` to its underlying `map[string]*MapFile`. |
+| `internal/types/errors` | CS0246 | `Error` / `Info` — names the emitted code does not declare for a test-local enumeration. |
+| `crypto/ecdh` (CS1001), `crypto/ed25519` (CS0030), `crypto/internal/mlkem768` (CS0315), `runtime/debug` (CS0264) | — | not taken past the first diagnostic. |
+
+### Runtime — rooted, not fixed
+
+| Package | Root |
+|:--|:--|
+| `html` | **`map[K][N]T`'s missing-key read yields a zero-LENGTH array, not Go's zero-VALUE array.** `unescapeEntity` does `x := entity2[name]` over a `map[string][2]rune` and then tests `x[0]`; C#'s `default(array<rune>)` carries `m_length == 0`, so the read throws `IndexOutOfRange` where Go sees `0`. The class is wider than maps: **anywhere the Go zero value of `[N]T` (or of a struct containing one) is produced by C#'s `default(T)`, it is wrong the same way**. The converter already knows how to render the right thing (`arrayZeroValueArgs`, `visitArrayType.go`) — it simply is not consulted at a map read. |
+| `internal/platform`, `crypto/internal/hpke` | **Same shape, two packages:** `json: cannot unmarshal array into Go value of type []T`, where `T` is a converter-**lifted anonymous struct** (`[]platform_test.listEntry`, `[]hpke.TestRFC9180Vectors_vectors`). A JSON array of arrays/objects decoded into a slice of a lifted type — worth one look, since two independent packages reach it. |
+| `net/http/internal` | `TestChunkReaderAllocs` — an exact allocation-count assert, the established `alloc-count-semantics` class. Would be a disclosure candidate *only* after re-deriving the measurement; the rest of the package matched. |
+| `go/ast` | `ast.Fprint` → `reflect.MapKeys` → `mapType.get_MapType()` fails an interface conversion inside go2cs-gen's promoted-field accessor. Reflection-bridge territory — that chip's, not a breadth lane's. |
+| `go/parser` | `performance_test.cs`'s package initializer reads a testdata file **at cctor time** and panics, taking every test in the internal variant with it — the `-tests` init-relocation shape `internal/fmtsort` already needed a rule for. |
+| `expvar` | Type-initializer failure inside a generated `ᴛRegisterAdapter` for `ΔStringжVar`; first divergent verdict `TestAppendJSONQuote`. |
+| `internal/cpu` | `getGOAMD64level` is an unimplemented `PartialStubGenerator` stub; every GODEBUG-driven feature-mask row reaches it. |
+| `testing/slogtest` | `runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries. |
+| `internal/unsafeheader` | `TestTypeMatchesReflectType` / `TestWriteThroughHeader`: the converted `unsafeheader.Slice`/`String` do not alias the same storage a `slice<T>` does, so a write through the header is invisible. Structural — a managed slice is not a `{Data,Len,Cap}` triple. |
+| `io/ioutil` | `TestReadDir` reads `..` and expects the **sibling** package's `io_test.go`. The pipeline stages Go sources only for the package under test, so the parent directory holds none. Environment, not conversion. |
+| `internal/singleflight` | The only **hang** in the batch: `TestDoAndForgetUnsharedRace` never returns and the package hits the deadline. |
+| `crypto/cipher` (`TestGCMAsm`), `internal/godebugs` (`TestAll`) | one row each, both `Go="pass" C#="skip"` — a build-tag/capability gate the C# side answers differently. |
+| `crypto/elliptic` (`TestInfinity/P224/Params`), `crypto/internal/edwards25519/field` (`TestBytesBigEquivalence`), `crypto/internal/boring/bcache` (init in `cache_test.cs`), `internal/chacha8rand` (`TestBlockGeneric`), `internal/profile` (`TestPackedEncoding` encodes empty), `encoding/asn1` (`TestCertificate`), `go/doc` (`Test/default/a`), `net/mail` (`TestAddressParser`), `net/http/httptrace` (`TestCompose`), `mime/multipart` (`TestLineContinuation`) | first divergent verdict recorded; not root-attributed. |
+
+⚠ **One trap this pass hit, worth writing down: a corrupted GO BUILD CACHE reads exactly like a
+package failure.** A host reboot mid-run left twelve zero-filled entries in `%LOCALAPPDATA%\go-build`,
+and `crypto/internal/alias` then failed with `could not import crypto/internal/alias (EOF)` — reported
+by the pipeline as `FAIL … [build failed]` on the **Go** side, i.e. the oracle itself. The tell is
+that the same `go test` passes from a different working directory. `go clean -cache` is the blunt fix
+and is machine-global (bad while siblings are running); the surgical one is to delete only cache files
+whose first bytes are zero, which is a cache MISS rather than a corruption and is safe concurrently.
+The same reboot zero-filled 566 files under `src/core/**/{bin,obj}` — those read as build failures too.
+
+### The gate — 96 of 96, and what the aftermath said
+
+The bank's gate is the full validated sweep at the NEW roster, and it ran clean: **96 packages, 96
+matching at their exact banked counts, zero `COUNT` mismatches and zero failures.** (81 through
+`run-validated-sweep.ps1`, which was killed externally at `path/filepath` — the machine-global
+kill signature §9 warns about, not a verdict — and the remaining 15 driven straight through the
+pipeline and cross-checked against the table's counts by hand.)
+
+Two things in the aftermath are worth recording because neither is drift and both will recur.
+
+**`src/core/time/package_init.cs` was a standing restore that no list named.** The `time` bank
+recorded it in prose ("no committed `package_init.cs` in the corpus carries the hook, and time's
+implements nothing") but never added it to `run-validated-sweep.ps1`'s `$closureFiles`, so every
+sweep since has reported it under *CONTENT drift — inspect before banking or restoring*. It is now
+listed, alongside the four this arc's own banks contribute.
+
+**Twelve banked TEST sources are stale against the current converter, and it is pre-existing.**
+`bytes/reader_test.cs`, `compress/flate/deflate_test.cs`, `context/benchmark_test.cs`,
+`strings/reader_test.cs`, `sync/{cond,map,mutex,rwmutex,waitgroup,example}_test.cs`,
+`time/{sleep,time}_test.cs` all re-emit differently — almost entirely the **capture suffix
+renumbering** (`ʗ2` → `ʗ1`) that a later converter arc introduced, plus one comment-emission
+difference in `sync/example_test.cs`. This lane changed no converter, golib or generator source
+(`git diff master..HEAD -- src/go2cs src/core/golib src/gen` is empty), so the staleness is master's:
+those packages were banked before the change and their test sources were never refreshed. Restored
+here rather than banked — refreshing another package's test sources is a **rebank**'s job, not a
+breadth lane's — and owed to the next one, alongside the `.cs.auto` review siblings (CleanupBacklog
+item 18), eight of which drift the same way.
+
+⚠ **One more environmental trap, alongside the build-cache one above: a full sweep at 96 packages can
+FILL THE DISK.** Each package's test `bin` holds a copy of its whole closure, so a cold sweep writes
+tens of gigabytes; this one exhausted `C:` mid-run with sibling lanes also building. The failure is
+loud but misleading — the converter reports `failed to write to output source file … There is not
+enough space on the disk` for `crypto/sha1/sha1.cs` and friends, i.e. it **truncates TRACKED corpus
+files**, which then read as corpus corruption. `git checkout -- src/core` restores all of it, but the
+lesson is to check free space before a full sweep and to prune `bin`/`obj` between chunks on a
+contended box.
