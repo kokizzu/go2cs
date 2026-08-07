@@ -72,17 +72,17 @@ internal static void benchmarkWithTimeout(ж<testing.B> Ꮡb, nint concurrentCon
     var ccf = new slice<slice<Action>>(gomaxprocs);
     foreach (var (i, _) in ccf) {
         Ꮡwg.Add(1);
-        var ccfʗ2 = ccf;
-        var rootʗ2 = root;
+        var ccfʗ1 = ccf;
+        var rootʗ1 = root;
         goǃ((nint iΔ1) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
                 var cf = new slice<Action>(perPContexts);
                 foreach (var (j, _) in cf) {
-                    (_, cf[j]) = WithTimeout(rootʗ2, time.ΔHour);
+                    (_, cf[j]) = WithTimeout(rootʗ1, time.ΔHour);
                 }
-                ccfʗ2[iΔ1] = cf;
+                ccfʗ1[iΔ1] = cf;
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
@@ -90,12 +90,12 @@ internal static void benchmarkWithTimeout(ж<testing.B> Ꮡb, nint concurrentCon
     }
     Ꮡwg.Wait();
     b.ResetTimer();
-    var rootʗ3 = root;
+    var rootʗ2 = root;
     Ꮡb.RunParallel((ж<testing.PB> pb) => {
         var wcf = new slice<Action>(10);
         while (pb.Next()) {
             foreach (var (i, _) in wcf) {
-                (_, wcf[i]) = WithTimeout(rootʗ3, time.ΔHour);
+                (_, wcf[i]) = WithTimeout(rootʗ2, time.ΔHour);
             }
             foreach (var (_, f) in wcf) {
                 f();

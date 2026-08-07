@@ -74,14 +74,14 @@ public static void TestCondSignalGenerations(ж<Δtesting.T> Ꮡt) {
     var running = new channel<bool>(n);
     var awake = new channel<nint>(n);
     for (nint i = 0; i < n; i++) {
-        var awakeʗ2 = awake;
-        var cʗ2 = c;
-        var runningʗ2 = running;
+        var awakeʗ1 = awake;
+        var cʗ1 = c;
+        var runningʗ1 = running;
         goǃ((nint iΔ1) => {
             Ꮡm.Lock();
-            runningʗ2.ᐸꟷ(true);
-            cʗ2.Wait();
-            awakeʗ2.ᐸꟷ(iΔ1);
+            runningʗ1.ᐸꟷ(true);
+            cʗ1.Wait();
+            awakeʗ1.ᐸꟷ(iΔ1);
             Ꮡm.Unlock();
         }, i);
         if (i > 0) {
@@ -109,15 +109,15 @@ public static void TestCondBroadcast(ж<Δtesting.T> Ꮡt) {
     var awake = new channel<nint>(n);
     var exit = false;
     for (nint i = 0; i < n; i++) {
-        var awakeʗ2 = awake;
-        var cʗ2 = c;
-        var runningʗ2 = running;
+        var awakeʗ1 = awake;
+        var cʗ1 = c;
+        var runningʗ1 = running;
         goǃ((nint g) => {
             Ꮡm.Lock();
             while (!exit) {
-                runningʗ2.ᐸꟷ(g);
-                cʗ2.Wait();
-                awakeʗ2.ᐸꟷ(g);
+                runningʗ1.ᐸꟷ(g);
+                cʗ1.Wait();
+                awakeʗ1.ᐸꟷ(g);
             }
             Ꮡm.Unlock();
         }, i);

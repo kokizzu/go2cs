@@ -185,9 +185,9 @@ public static void TestRLocker(ж<Δtesting.T> Ꮡt) {
     for (nint i = 0; i < n; i++) {
         ᐸꟷ(rlocked);
         rl.Unlock();
-        var selᴛ10 = wlocked;
-        switch (trySelect(ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
-        case 0 when selᴛ10.ꟷᐳ(out _): {
+        var selᴛ9 = wlocked;
+        switch (trySelect(ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+        case 0 when selᴛ9.ꟷᐳ(out _): {
             Ꮡt.Fatal(rLockerDidnTReadLockItˢ);
             break;
         }
@@ -196,9 +196,9 @@ public static void TestRLocker(ж<Δtesting.T> Ꮡt) {
         }}
         rl.Unlock();
         ᐸꟷ(wlocked);
-        var selᴛ11 = rlocked;
-        switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
-        case 0 when selᴛ11.ꟷᐳ(out _): {
+        var selᴛ10 = rlocked;
+        switch (trySelect(ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
+        case 0 when selᴛ10.ꟷᐳ(out _): {
             Ꮡt.Fatal(rLockerDidnTRespectTheˢ);
             break;
         }

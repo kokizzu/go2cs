@@ -34,7 +34,9 @@ public static void ExampleWaitGroup() {
         goǃ((@string urlΔ1) => {
             GoFrame ᒐ = default;
             try {
+                // Decrement the counter when the goroutine completes.
                 defer(Ꮡwg.Done, ref ᒐ);
+                // Fetch the URL.
                 http.Get(urlΔ1);
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

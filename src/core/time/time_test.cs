@@ -1933,13 +1933,13 @@ public static void TestConcurrentTimerReset(ж<Δtesting.T> Ꮡt) {
     Ꮡwg.Add(goroutines);
     var timer = NewTimer(ΔHour);
     for (nint i = 0; i < goroutines; i++) {
-        var timerʗ2 = timer;
+        var timerʗ1 = timer;
         goǃ((nint iΔ1) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
                 for (nint j = 0; j < tries; j++) {
-                    timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+                    timerʗ1.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
                 }
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -1957,24 +1957,24 @@ public static void TestConcurrentTimerResetStop(ж<Δtesting.T> Ꮡt) {
     Ꮡwg.Add(goroutines * 2);
     var timer = NewTimer(ΔHour);
     for (nint i = 0; i < goroutines; i++) {
-        var timerʗ2 = timer;
+        var timerʗ1 = timer;
         goǃ((nint iΔ1) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
                 for (nint j = 0; j < tries; j++) {
-                    timerʗ2.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
+                    timerʗ1.Reset(ΔHour + ((Δtime.Duration)(int64)(iΔ1 * j)));
                 }
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         }, i);
-        var timerʗ4 = timer;
+        var timerʗ2 = timer;
         goǃ((nint iΔ2) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
-                timerʗ4.Stop();
+                timerʗ2.Stop();
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }

@@ -1103,7 +1103,7 @@ public static void TestMaxStackSize(ж<testing.T> Ꮡt) {
         for (nint level = HuffmanOnly; level <= BestCompression; level++) {
             // Run in separate goroutine to increase probability of stack regrowth.
             Ꮡwg.Add(1);
-            var bʗ2 = b;
+            var bʗ1 = b;
             goǃ((nint levelΔ1) => {
                 GoFrame ᒐ = default;
                 try {
@@ -1113,8 +1113,8 @@ public static void TestMaxStackSize(ж<testing.T> Ꮡt) {
                         Ꮡt.Errorf("level %d, NewWriter() = %v, want nil"u8, levelΔ1, err);
                     }
                     {
-                        var (nΔ1, errΔ1) = zw.Write(bʗ2); if (nΔ1 != len(bʗ2) || errΔ1 != default!) {
-                            Ꮡt.Errorf("level %d, Write() = (%d, %v), want (%d, nil)"u8, levelΔ1, nΔ1, errΔ1, len(bʗ2));
+                        var (nΔ1, errΔ1) = zw.Write(bʗ1); if (nΔ1 != len(bʗ1) || errΔ1 != default!) {
+                            Ꮡt.Errorf("level %d, Write() = (%d, %v), want (%d, nil)"u8, levelΔ1, nΔ1, errΔ1, len(bʗ1));
                         }
                     }
                     {

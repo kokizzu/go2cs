@@ -30,9 +30,9 @@ internal static void testWaitGroup(ж<Δtesting.T> Ꮡt, ж<Δsync.WaitGroup> �
     }
     Ꮡwg1.Wait();
     for (nint i = 0; i != n; i++) {
-        var selᴛ12 = exited;
-        switch (trySelect(ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
-        case 0 when selᴛ12.ꟷᐳ(out _): {
+        var selᴛ11 = exited;
+        switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
+        case 0 when selᴛ11.ꟷᐳ(out _): {
             Ꮡt.Fatal(waitGroupReleasedGroupˢ);
             break;
         }
