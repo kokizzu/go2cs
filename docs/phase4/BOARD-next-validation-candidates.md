@@ -3649,7 +3649,7 @@ keeps classifying them rather than reporting them as content drift.
 | `go/parser` | `performance_test.cs`'s package initializer reads a testdata file **at cctor time** and panics, taking every test in the internal variant with it — the `-tests` init-relocation shape `internal/fmtsort` already needed a rule for. |
 | `expvar` | Type-initializer failure inside a generated `ᴛRegisterAdapter` for `ΔStringжVar`; first divergent verdict `TestAppendJSONQuote`. |
 | `internal/cpu` | `getGOAMD64level` is an unimplemented `PartialStubGenerator` stub; every GODEBUG-driven feature-mask row reaches it. |
-| `testing/slogtest` | ~~`runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries.~~ **Caller root CLOSED 2026-08-07 (r43g-caller)** — the package now initializes and RUNS its whole matrix for the first time: `TestRun` 7 of 18 subtests pass. Two `log/slog` roots stand behind it, neither a slogtest defect: (1) **`unsafe.SliceData` over a reference-bearing element type** — `slog.GroupValue`'s `groupptr(unsafe.SliceData(as))` on `[]Attr` reaches `slice<T>.buffer` → `PinnedBuffer` → `GCHandle.Alloc(…, Pinned)`, which throws `ArgumentException: Object contains references` (5 infrastructure-errors: `groups`, `empty-group`, `inline-group`, `resolve-groups`, `resolve-WithAttrs-groups`); (2) a **`WithAttrs` attribute-loss** (4 fails: `WithAttrs`, `multi-With`, `empty-group-record`, `resolve-WithAttrs` — all "missing key"), whose likely shape is `Value.Kind()`/`isEmptyGroup` misclassifying a non-group value so `commonHandler.withAttrs`'s `countEmptyGroups(as) == len(as)` early-return drops the attrs. Both belong to a `log/slog` operational arc, which is unmeasured (`log/slog` is on neither the roster nor this board). |
+| `testing/slogtest` | ✅ **BANKED 2026-08-07 (r44b-slog) — 17/17, no disclosures.** Both `log/slog` roots below are closed; see *`testing/slogtest` banks* at the end of this document. ~~`runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries.~~ **Caller root CLOSED 2026-08-07 (r43g-caller)** — the package now initializes and RUNS its whole matrix for the first time: `TestRun` 7 of 18 subtests pass. Two `log/slog` roots stand behind it, neither a slogtest defect: (1) **`unsafe.SliceData` over a reference-bearing element type** — `slog.GroupValue`'s `groupptr(unsafe.SliceData(as))` on `[]Attr` reaches `slice<T>.buffer` → `PinnedBuffer` → `GCHandle.Alloc(…, Pinned)`, which throws `ArgumentException: Object contains references` (5 infrastructure-errors: `groups`, `empty-group`, `inline-group`, `resolve-groups`, `resolve-WithAttrs-groups`); (2) a **`WithAttrs` attribute-loss** (4 fails: `WithAttrs`, `multi-With`, `empty-group-record`, `resolve-WithAttrs` — all "missing key"), whose likely shape is `Value.Kind()`/`isEmptyGroup` misclassifying a non-group value so `commonHandler.withAttrs`'s `countEmptyGroups(as) == len(as)` early-return drops the attrs. Both belong to a `log/slog` operational arc, which is unmeasured (`log/slog` is on neither the roster nor this board). |
 | `internal/unsafeheader` | `TestTypeMatchesReflectType` / `TestWriteThroughHeader`: the converted `unsafeheader.Slice`/`String` do not alias the same storage a `slice<T>` does, so a write through the header is invisible. Structural — a managed slice is not a `{Data,Len,Cap}` triple. |
 | `io/ioutil` | `TestReadDir` reads `..` and expects the **sibling** package's `io_test.go`. The pipeline stages Go sources only for the package under test, so the parent directory holds none. Environment, not conversion. |
 | `internal/singleflight` | The only **hang** in the batch: `TestDoAndForgetUnsharedRace` never returns and the package hits the deadline. |
@@ -3816,3 +3816,116 @@ remains undisclosed, because disclosing it alone banks nothing — the same call
 roots behind it.** Detail in the runtime-roots table above. The lesson is that slogtest is a *thin
 wrapper over `log/slog`*: banking it is a `log/slog` operational arc, and `log/slog` has never been
 measured at all. That is the recorded next candidate out of this lane.
+
+## `testing/slogtest` banks, and `log/slog` gets its first census (2026-08-07, r44b-slog)
+
+Both roots r43g left behind were real, both were converter/runtime defects with corpus-wide reach
+beyond slog, and both closed. `testing/slogtest` went **7 of 18 -> 17/17 matched, no disclosures**
+in one pass. `log/slog` was measured for the first time and does **not** bank, for reasons that are
+now named rather than guessed at.
+
+### Root 1 - `unsafe.SliceData` was a PIN where Go means an INTERIOR POINTER
+
+`slog.GroupValue` stores a group as `groupptr(unsafe.SliceData(as))` plus `len(as)` and rebuilds it
+with `unsafe.Slice` in `Value.group()`. That is identity and aliasing, never an address - but golib
+answered `SliceData` with a pinned-buffer box over `slice.buffer`, and `GCHandle.Alloc(..., Pinned)`
+refuses any storage whose element type carries a managed reference. Every grouping path in the
+package infrastructure-errored with `ArgumentException: Object contains references`.
+
+Go DEFINES `unsafe.SliceData(s)` as `&s[:1][0]`, so the faithful model is the array-element
+reference the converter already emits for `&s[0]`. Pinning was never `SliceData`'s job: an address
+is needed only at a `uintptr`/`void*` conversion, and the pointer box pins there on demand
+(`EnsureStableAddress`), declining gracefully for storage that cannot be held still. Two further
+latent defects fell out with it: the pin covered the whole backing array **from index 0**, so
+`SliceData(s[2:])` addressed the wrong element and failed Go's `== &s[2]` identity; and
+`PinnedBuffer` implements `IArray<byte>` alone, so the derived pointer was **undereferenceable for
+every element type but `byte`**. A/B footprint: one hand-owned file, `src/core/unsafe/unsafe.cs`.
+Guarded by the new `UnsafeSliceDataAliasing` behavioral test. Full mechanism in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *`unsafe.SliceData` is
+an INTERIOR POINTER, not a pin*.
+
+### Root 2 - the named-slice pointer reinterpret boxed a COPY, so out-parameters wrote nowhere
+
+r43g's guess (a `Value.Kind()`/`isEmptyGroup` misclassification driving `countEmptyGroups`) was
+wrong, and the real root is upstream of slog entirely. `commonHandler.withAttrs` writes its
+pre-formatted attributes through `(*buffer.Buffer)(&h2.preformattedAttrs)` - a pointer conversion
+from `*[]byte` to a named-slice pointer, whose whole purpose is that the bytes land in `h2`'s own
+field. The converter emitted a wrapper box over a **copy**. Its own comment recorded the assumption
+- *"aliasing with the original is not preserved ... but the reinterpret is used through the returned
+pointer, which is the pattern"* - and that assumption is false for exactly the sites that matter.
+`WithAttrs` dropped every attribute while still advancing `groupPrefix`/`nOpenGroups`, so the JSON
+that followed was unbalanced: four slogtest rows (`WithAttrs`, `multi-With`, `empty-group-record`,
+`resolve-WithAttrs`).
+
+The fix routes the shape through golib's existing storage reinterpret -
+`Reinterpret<slice<byte>, buffer.Buffer>()` over the field's own pointer - which re-views the same
+slot as the wrapper. A generated named-slice wrapper is a single-field struct over the slice header,
+precisely the correspondence `ReinterpretAliasesStorage` recognizes, so the managed alias arm engages
+and writes reach the addressed storage. **The reach is wider than slog:** `crypto/tls`'s
+`readUint{8,16,24}LengthPrefixed` and `parseECHConfigList`, and cryptobyte's `ReadASN1Bytes`, all
+take `(*cryptobyte.String)(out)` on an out-PARAMETER or a struct FIELD - every one of them was
+silently discarding what it parsed. Corpus A/B footprint: **5 files, 8 sites**. Guarded by the
+extended `NamedSlicePointerReinterpret` behavioral test, whose previous version had written the
+defect into its own comments as expected behavior and deliberately never read the source back; it
+now does, on all four source shapes.
+
+### `log/slog` - first census: 185 pass, 28 fail, 1 crash. It does not bank.
+
+| Class | Rows | Disposition |
+|:--|:--:|:--|
+| **Go-source geometry** - `TestCallDepth`, `TestConnections` (+1 sub), `TestJSONAndTextHandlers/Source` (+2), `TestPanics`, `TestRecordSource` | 8 | The SAME class r43g named on `log`'s `TestAll`: `runtime.Caller` honestly reports `logger_test.cs:905` where the assert wants `^logger_test\.go:\d+$`. **Not disclosable** - satisfiable at a layer go2cs owns (a Go-source position map: `#line` directives, or a per-package side-car). It is the architectural arc to design with the user, and it is what actually gates `log/slog` *and* `log`. |
+| **`alloc-profile`** - `TestAlloc` (+13 subs), `TestAnyLevelAlloc`, `TestAttrNoAlloc`, `TestTextHandlerAlloc`, `TestValueNoAlloc` | 18 | The established disclosure class. **Nothing disclosed** - disclosing them alone banks nothing while the geometry class stands, which is the same call r43f and r43g made on `log`. |
+| **Package initialization ORDER** - `TestSetDefault` (hard crash), `TestLogLoggerLevelForDefaultHandler` | 2 | A new, general root; see below. |
+
+### Root 3 (found, NOT fixed) - Go initializes an imported package before its importer; C# does not
+
+`slog`'s `init` captures `log/internal.DefaultOutput`, which **`log`'s own `init`** installs. Go's
+spec orders that by the import graph, so the capture is always non-nil. A .NET module initializer
+fires at first access to *its own* module, so whichever of `log`/`log/slog` is touched first wins:
+touch `slog` first and `defaultHandler.output` is captured **nil**, and the next `slog.Info` is an
+unrecovered nil-pointer panic that kills the process. In the census it aborted the run at
+`TestSetDefault` and hid 34 further rows (re-measured separately: 32 of them pass).
+
+Reduced to a 12-line standalone program that `go run` handles and the transpiled build crashes on:
+
+```go
+func main() {
+	slog.Info("hello from slog")   // touch slog BEFORE anything in log
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	slog.Info("second")
+	fmt.Printf("log buffer: %q\n", buf.String())
+}
+```
+
+The mechanism to fix it already exists and is already documented - golib's
+`builtin.initPackage(Type)` (`RuntimeHelpers.RunModuleConstructor`), which the converter emits today
+for **blank** imports. Making every package force its DIRECT imports at module-init time reproduces
+Go's ordering exactly and transitively (the import graph is a DAG, so direct-imports-only composes to
+the full closure in post-order). That is precisely the extension
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) records as *"deliberately
+deferred, not overlooked"*: it trades eager loading of the whole transitive assembly closure at module
+init for fidelity. `log/slog` is the first case that NEEDS it, and it is a whole-corpus emission
+change with a real startup trade-off - so it is left as an **architectural arc to design with the
+user**, alongside the position map, rather than slipped in behind a bank. It buys 2 `log/slog` rows
+on its own and would not bank the package.
+
+### Aftermath noticed in passing: 24 README validation badges are stale
+
+A full seeded `-stdlib` reconvert on this lane's converter differed from the committed tree in
+**28** files: 3 are this lane's fix (above), 1 is `testing/slogtest`'s own new badge, and the other
+**24 are `src/core/<pkg>/README.md` badges still reading `not_yet_validated`** for packages that
+validated in `47ec27319` ("bank 23 packages from a measure-first breadth pass"). That bank wrote the
+proof pages under `docs/validation/current/` but never overlaid the READMEs the converter composes
+from them, so those 24 packages currently **under-report themselves on nuget.org**. Deterministic
+converter output, zero risk to refresh - left for an idle-point overlay rather than folded into this
+lane's commits. Affected: `crypto`, `crypto/aes`, `crypto/des`, `crypto/rc4`, `crypto/internal/alias`,
+`crypto/internal/bigmod`, `go/constant`, `go/doc/comment`, `go/format`, `go/printer`, `go/scanner`,
+`hash`, `image`, `image/color`, `internal/buildcfg`, `internal/coverage/cformat`,
+`internal/coverage/cmerge`, `internal/coverage/pods`, `internal/dag`, `internal/diff`,
+`mime/quotedprintable`, `net/url`, `testing/iotest`, `text/template/parse`.
+
+**Recorded next candidates out of this lane.** Two architectural arcs, both now with named
+beneficiaries: the **Go-source position map** (unblocks `log` *and* `log/slog`, ~9 rows across the
+two) and **import-ordered package initialization** (correctness, not just verdicts - any converted
+program that touches `log/slog` before `log` crashes today).

@@ -101,6 +101,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `sync` | [`sync.md`](current/sync.md) | [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) |
 | `testing/iotest` | [`testing.iotest.md`](current/testing.iotest.md) | [`src/core/testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) |
 | `testing/quick` | [`testing.quick.md`](current/testing.quick.md) | [`src/core/testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) |
+| `testing/slogtest` | [`testing.slogtest.md`](current/testing.slogtest.md) | [`src/core/testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) |
 | `text/scanner` | [`text.scanner.md`](current/text.scanner.md) | [`src/core/text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) |
 | `text/tabwriter` | [`text.tabwriter.md`](current/text.tabwriter.md) | [`src/core/text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) |
 | `text/template/parse` | [`text.template.parse.md`](current/text.template.parse.md) | [`src/core/text/template/parse`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template/parse) |

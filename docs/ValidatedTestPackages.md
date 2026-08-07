@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **97 / 215 testable packages validated — 45.1%**
+> ### Phase 4 progress: **98 / 215 testable packages validated — 45.6%**
 >
-> **13,081 matching test verdicts · 50 disclosed** *(updated 2026-08-07 — maintained as part of the
+> **13,098 matching test verdicts · 50 disclosed** *(updated 2026-08-07 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -125,6 +125,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 41 | 10 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
 | [`testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) | 18 | | The `io` testing helpers — the half/one-byte/timeout/error reader wrappers, `DataErrReader`'s final-read fusion, and the read/write loggers' `log` output. · [proof](validation/current/testing.iotest.md) |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |
+| [`testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) | 17 | | The `slog.Handler` conformance harness Go ships for third-party handlers, run against the real `TextHandler`/`JSONHandler` — the whole 17-case matrix of groups, inline and empty groups, `WithAttrs`/`WithGroup` composition, and `LogValuer` resolution. · [proof](validation/current/testing.slogtest.md) |
 | [`text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) | 18 | | Rune-level source scanning. · [proof](validation/current/text.scanner.md) |
 | [`text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) | 3 | | Elastic-tab column formatting; panic-during-write recovery. · [proof](validation/current/text.tabwriter.md) |
 | [`text/template/parse`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template/parse) | 52 | | Template lexing and parse-tree construction — the item stream, custom and alphanumeric delimiters, actions/pipelines/variables, `{{block}}` and tree copying, and the full parse-error matrix. · [proof](validation/current/text.template.parse.md) |
