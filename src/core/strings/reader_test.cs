@@ -116,11 +116,16 @@ public static void TestReaderAtConcurrent(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < 5; i++) {
         Ꮡwg.Add(1);
         var rʗ2 = r;
-        goǃ((nint iΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            ref var buf = ref heap(new array<byte>(1), out var Ꮡbuf);
-            rʗ2.ReadAt(buf[..], (int64)iΔ1);
-        }), i);
+        goǃ((nint iΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                ref var buf = ref heap(new array<byte>(1), out var Ꮡbuf);
+                rʗ2.ReadAt(buf[..], (int64)iΔ1);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     Ꮡwg.Wait();
 }
@@ -136,16 +141,26 @@ public static void TestEmptyReaderConcurrent(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < 5; i++) {
         Ꮡwg.Add(2);
         var rʗ1 = r;
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            ref var buf = ref heap(new array<byte>(1), out var Ꮡbuf);
-            rʗ1.Read(buf[..]);
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                ref var buf = ref heap(new array<byte>(1), out var Ꮡbuf);
+                rʗ1.Read(buf[..]);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
         var rʗ2 = r;
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            rʗ2.Read(default!);
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                rʗ2.Read(default!);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
     Ꮡwg.Wait();
 }

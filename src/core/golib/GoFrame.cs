@@ -30,7 +30,7 @@ namespace go;
 /// GoFrame ᒐ = default;
 /// try
 /// {
-///     deferǃ(g, ref ᒐ);
+///     defer(g, ref ᒐ);
 ///     …
 /// }
 /// catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -75,7 +75,7 @@ public ref struct GoFrame
     /// <param name="deferred">Deferred call to register; a null registration is ignored.</param>
     /// <remarks>
     /// Go evaluates a deferred call's ARGUMENTS at the <c>defer</c> statement and runs the call on
-    /// function exit, so the emission captures the arguments here — see the <c>deferǃ</c> arity
+    /// function exit, so the emission captures the arguments here — see the <c>defer</c> arity
     /// ladder in <c>builtin.DeferRegistrations.cs</c>, which is what closes over them.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -267,16 +267,21 @@ public static void TestAsValidation(ж<testing.T> Ꮡt) {
     foreach (var (_, tc) in testCases) {
         var errʗ1 = err;
         var tcʗ1 = tc;
-        Ꮡt.Run(fmt.Sprintf("%T(%v)"u8, tc, tc), (ж<testing.T> tΔ1) => func((defer, recover) => {
-            defer(() => {
-                recover();
-            });
-            if (errors.As(errʗ1, tcʗ1)) {
-                tΔ1.Errorf("As(err, %T(%v)) = true, want false"u8, tcʗ1, tcʗ1);
-                return;
+        Ꮡt.Run(fmt.Sprintf("%T(%v)"u8, tc, tc), (ж<testing.T> tΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(() => {
+                    recover();
+                }, ref ᒐ);
+                if (errors.As(errʗ1, tcʗ1)) {
+                    tΔ1.Errorf("As(err, %T(%v)) = true, want false"u8, tcʗ1, tcʗ1);
+                    return;
+                }
+                tΔ1.Errorf("As(err, %T(%v)) did not panic"u8, tcʗ1, tcʗ1);
             }
-            tΔ1.Errorf("As(err, %T(%v)) did not panic"u8, tcʗ1, tcʗ1);
-        }));
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
 }
 

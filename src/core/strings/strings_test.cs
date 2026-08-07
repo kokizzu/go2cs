@@ -1303,7 +1303,8 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
 
 internal static error /*err*/ repeat(@string s, nint count) {
     error err = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
@@ -1319,9 +1320,11 @@ internal static error /*err*/ repeat(@string s, nint count) {
                     }}
                 }
             }
-        });
+        }, ref ᒐ);
         Repeat(s, count);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return err;
 }
 

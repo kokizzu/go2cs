@@ -1506,31 +1506,36 @@ public static void TestWriterReadFromCounts(ж<Δtesting.T> Ꮡt) {
 internal static readonly object readDidNotPanicˢ = (@string)"read did not panic"u8;
 internal static readonly @string readerReturnedNegativeˢ = "reader returned negative count from Read"u8;
 
-public static void TestNegativeRead(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    // should panic with a description pointing at the reader, not at itself.
-    // (should NOT panic with slice index error, for example.)
-    var b = NewReader(new bufio_test_package.negativeReaderжReader(@new<negativeReader>()));
-    defer(() => {
-        var switchᴛ1 = recover();
-        switch (switchᴛ1.type()) {
-        case null: {
-            Ꮡt.Fatal(readDidNotPanicˢ);
-            break;
-        }
-        case {} Δerr when Δerr._<error>(out var err): {
-            if (!strings.Contains(err.Error(), readerReturnedNegativeˢ)) {
-                Ꮡt.Fatalf("wrong panic: %v"u8, err);
+public static void TestNegativeRead(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // should panic with a description pointing at the reader, not at itself.
+        // (should NOT panic with slice index error, for example.)
+        var b = NewReader(new bufio_test_package.negativeReaderжReader(@new<negativeReader>()));
+        defer(() => {
+            var switchᴛ1 = recover();
+            switch (switchᴛ1.type()) {
+            case null: {
+                Ꮡt.Fatal(readDidNotPanicˢ);
+                break;
             }
-            break;
-        }
-        default: {
-            var err = switchᴛ1;
-            Ꮡt.Fatalf("unexpected panic value: %T(%v)"u8, err, err);
-            break;
-        }}
-    });
-    b.Read(new slice<byte>(100));
-});
+            case {} Δerr when Δerr._<error>(out var err): {
+                if (!strings.Contains(err.Error(), readerReturnedNegativeˢ)) {
+                    Ꮡt.Fatalf("wrong panic: %v"u8, err);
+                }
+                break;
+            }
+            default: {
+                var err = switchᴛ1;
+                Ꮡt.Fatalf("unexpected panic value: %T(%v)"u8, err, err);
+                break;
+            }}
+        }, ref ᒐ);
+        b.Read(new slice<byte>(100));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static error errFake = errors.New("fake error"u8);
 

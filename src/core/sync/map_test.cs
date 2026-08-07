@@ -168,69 +168,79 @@ public static void TestMapMatchesDeepCopy(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-public static void TestConcurrentRange(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    UntypedInt mapSize = /* 1 << 10 */ 1024;
-    var m = @new<Δsync.Map>();
-    for (var n = (int64)1; n <= mapSize; n++) {
-        m.Store(n, (int64)n);
-    }
-    var done = new channel<EmptyStruct>(0);
-    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
-    var doneʗ1 = done;
-    defer(() => {
-        close(doneʗ1);
-        Ꮡwg.Wait();
-    });
-    for (var g = (int64)Δruntime.GOMAXPROCS(0); g > 0; g--) {
-        var r = rand.New(rand.NewSource(g));
-        Ꮡwg.Add(1);
-        var doneʗ3 = done;
-        var mʗ2 = m;
-        var rʗ2 = r;
-        goǃ((int64 gΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            for (var i = (int64)0; ᐧ ; i++) {
-                var selᴛ6 = doneʗ3;
-                switch (trySelect(ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-                case 0 when selᴛ6.ꟷᐳ(out _): {
-                    return;
-                }
-                default: {
-                    break;
-                }}
-                for (var n = (int64)1; n < mapSize; n++) {
-                    if (rʗ2.Int63n(mapSize) == 0){
-                        mʗ2.Store(n, n * i * gΔ1);
-                    } else {
-                        mʗ2.Load(n);
+public static void TestConcurrentRange(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        UntypedInt mapSize = /* 1 << 10 */ 1024;
+        var m = @new<Δsync.Map>();
+        for (var n = (int64)1; n <= mapSize; n++) {
+            m.Store(n, (int64)n);
+        }
+        var done = new channel<EmptyStruct>(0);
+        ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+        var doneʗ1 = done;
+        defer(() => {
+            close(doneʗ1);
+            Ꮡwg.Wait();
+        }, ref ᒐ);
+        for (var g = (int64)Δruntime.GOMAXPROCS(0); g > 0; g--) {
+            var r = rand.New(rand.NewSource(g));
+            Ꮡwg.Add(1);
+            var doneʗ3 = done;
+            var mʗ2 = m;
+            var rʗ2 = r;
+            goǃ((int64 gΔ1) => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    for (var i = (int64)0; ᐧ ; i++) {
+                        var selᴛ6 = doneʗ3;
+                        switch (trySelect(ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+                        case 0 when selᴛ6.ꟷᐳ(out _): {
+                            return;
+                        }
+                        default: {
+                            break;
+                        }}
+                        for (var n = (int64)1; n < mapSize; n++) {
+                            if (rʗ2.Int63n(mapSize) == 0){
+                                mʗ2.Store(n, n * i * gΔ1);
+                            } else {
+                                mʗ2.Load(n);
+                            }
+                        }
                     }
                 }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            }, g);
+        }
+        nint iters = (1 << (int)(10));
+        if (Δtesting.Short()) {
+            iters = 16;
+        }
+        for (nint n = iters; n > 0; n--) {
+            var seen = new map<int64, bool>(mapSize);
+            var seenʗ1 = seen;
+            m.Range((any ki, any vi) => {
+                var (k, v) = (ki._<int64>(), vi._<int64>());
+                if (v % k != 0) {
+                    Ꮡt.Fatalf("while Storing multiples of %v, Range saw value %v"u8, k, v);
+                }
+                if (seenʗ1[k]) {
+                    Ꮡt.Fatalf("Range visited key %v twice"u8, k);
+                }
+                seenʗ1[k] = true;
+                return true;
+            });
+            if (len(seen) != mapSize) {
+                Ꮡt.Fatalf("Range visited %v elements of %v-element Map"u8, len(seen), (nint)(mapSize));
             }
-        }), g);
-    }
-    nint iters = (1 << (int)(10));
-    if (Δtesting.Short()) {
-        iters = 16;
-    }
-    for (nint n = iters; n > 0; n--) {
-        var seen = new map<int64, bool>(mapSize);
-        var seenʗ1 = seen;
-        m.Range((any ki, any vi) => {
-            var (k, v) = (ki._<int64>(), vi._<int64>());
-            if (v % k != 0) {
-                Ꮡt.Fatalf("while Storing multiples of %v, Range saw value %v"u8, k, v);
-            }
-            if (seenʗ1[k]) {
-                Ꮡt.Fatalf("Range visited key %v twice"u8, k);
-            }
-            seenʗ1[k] = true;
-            return true;
-        });
-        if (len(seen) != mapSize) {
-            Ꮡt.Fatalf("Range visited %v elements of %v-element Map"u8, len(seen), (nint)(mapSize));
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestIssue40999(ж<Δtesting.T> Ꮡt) {
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
@@ -340,30 +350,45 @@ public static void TestConcurrentClear(ж<Δtesting.T> Ꮡt) {
     // 10 goroutines for writing, 10 goroutines for reading, 10 goroutines for waiting
     // Writing data to the map concurrently
     for (nint i = 0; i < 10; i++) {
-        goǃ((nint k, nint v) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            Ꮡm.Store(k, v);
-        }), i, i * 10);
+        goǃ((nint k, nint v) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                Ꮡm.Store(k, v);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i, i * 10);
     }
     // Reading data from the map concurrently
     for (nint i = 0; i < 10; i++) {
-        goǃ((nint k) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            {
-                var (value, ok) = Ꮡm.Load(k); if (ok){
-                    Ꮡt.Logf("Key: %v, Value: %v\n"u8, k, value);
-                } else {
-                    Ꮡt.Logf("Key: %v not found\n"u8, k);
+        goǃ((nint k) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                {
+                    var (value, ok) = Ꮡm.Load(k); if (ok){
+                        Ꮡt.Logf("Key: %v, Value: %v\n"u8, k, value);
+                    } else {
+                        Ꮡt.Logf("Key: %v not found\n"u8, k);
+                    }
                 }
             }
-        }), i);
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     // Clearing data from the map concurrently
     for (nint i = 0; i < 10; i++) {
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            Ꮡm.Clear();
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                Ꮡm.Clear();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
     Ꮡwg.Wait();
     Ꮡm.Clear();

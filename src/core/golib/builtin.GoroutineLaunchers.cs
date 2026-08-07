@@ -488,11 +488,11 @@ public static partial class builtin
     /// Starts a goroutine on a VALUE-RETURNING function, discarding the result - Go discards the
     /// return values of `go f(...)` exactly as it does a deferred call's. Without these Func twins a
     /// value-returning literal or method group cannot bind the Action overloads above (CS8934 /
-    /// CS0407; net's `go func(ln Listener) (retErr error) {…}(ln)`). Mirrors the deferǃ Func twins,
+    /// CS0407; net's `go func(ln Listener) (retErr error) {…}(ln)`). Mirrors the defer Func twins,
     /// including their deliberate omission of a NULLARY twin: `Func&lt;TResult&gt;` could never win
     /// overload resolution against the non-generic <c>goǃ(Action)</c> - a non-generic candidate beats
     /// a generic one - so a nullary value-returning callee is the converter's discarding wrap to
-    /// handle (<c>goǃ(() =&gt; nib())</c>), exactly as it is for deferǃ.
+    /// handle (<c>goǃ(() =&gt; nib())</c>), exactly as it is for defer.
     /// </summary>
     public static void goǃ<T, TResult>(Func<T, TResult> action, T arg)
     {

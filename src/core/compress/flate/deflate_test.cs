@@ -1090,37 +1090,47 @@ public static void TestBestSpeedShiftOffsets(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestMaxStackSize(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // This test must not run in parallel with other tests as debug.SetMaxStack
-    // affects all goroutines.
-    nint n = debug.SetMaxStack((1 << (int)(16)));
-    deferǃ(debug.SetMaxStack, n, defer);
-    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
-    defer(Ꮡwg.Wait);
-    var b = new slice<byte>((1 << (int)(20)));
-    for (nint level = HuffmanOnly; level <= BestCompression; level++) {
-        // Run in separate goroutine to increase probability of stack regrowth.
-        Ꮡwg.Add(1);
-        var bʗ2 = b;
-        goǃ((nint levelΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var (zw, err) = NewWriter(io.Discard, levelΔ1);
-            if (err != default!) {
-                Ꮡt.Errorf("level %d, NewWriter() = %v, want nil"u8, levelΔ1, err);
-            }
-            {
-                var (nΔ1, errΔ1) = zw.Write(bʗ2); if (nΔ1 != len(bʗ2) || errΔ1 != default!) {
-                    Ꮡt.Errorf("level %d, Write() = (%d, %v), want (%d, nil)"u8, levelΔ1, nΔ1, errΔ1, len(bʗ2));
+public static void TestMaxStackSize(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // This test must not run in parallel with other tests as debug.SetMaxStack
+        // affects all goroutines.
+        nint n = debug.SetMaxStack((1 << (int)(16)));
+        defer(debug.SetMaxStack, n, ref ᒐ);
+        ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+        defer(Ꮡwg.Wait, ref ᒐ);
+        var b = new slice<byte>((1 << (int)(20)));
+        for (nint level = HuffmanOnly; level <= BestCompression; level++) {
+            // Run in separate goroutine to increase probability of stack regrowth.
+            Ꮡwg.Add(1);
+            var bʗ2 = b;
+            goǃ((nint levelΔ1) => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    var (zw, err) = NewWriter(io.Discard, levelΔ1);
+                    if (err != default!) {
+                        Ꮡt.Errorf("level %d, NewWriter() = %v, want nil"u8, levelΔ1, err);
+                    }
+                    {
+                        var (nΔ1, errΔ1) = zw.Write(bʗ2); if (nΔ1 != len(bʗ2) || errΔ1 != default!) {
+                            Ꮡt.Errorf("level %d, Write() = (%d, %v), want (%d, nil)"u8, levelΔ1, nΔ1, errΔ1, len(bʗ2));
+                        }
+                    }
+                    {
+                        var errΔ2 = zw.Close(); if (errΔ2 != default!) {
+                            Ꮡt.Errorf("level %d, Close() = %v, want nil"u8, levelΔ1, errΔ2);
+                        }
+                    }
+                    zw.Reset(io.Discard);
                 }
-            }
-            {
-                var errΔ2 = zw.Close(); if (errΔ2 != default!) {
-                    Ꮡt.Errorf("level %d, Close() = %v, want nil"u8, levelΔ1, errΔ2);
-                }
-            }
-            zw.Reset(io.Discard);
-        }), level);
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            }, level);
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end flate_internal_test_package

@@ -19,32 +19,37 @@ internal static readonly @string keyˢ = "key"u8;
 internal static readonly @string valueˢ = "value"u8;
 internal static readonly object shouldNotBeReachedˢ = (@string)"should not be reached"u8;
 
-public static void BenchmarkCommonParentCancel(ж<testing.B> Ꮡb) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+public static void BenchmarkCommonParentCancel(ж<testing.B> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    var root = WithValue(Background(), keyˢ, valueˢ);
-    var (shared, sharedcancel) = WithCancel(root);
-    var sharedcancelʗ1 = sharedcancel;
-    defer(() => sharedcancelʗ1());
-    b.ResetTimer();
-    var sharedʗ1 = shared;
-    Ꮡb.RunParallel((ж<testing.PB> pb) => {
-        nint x = 0;
-        while (pb.Next()) {
-            var (ctx, cancel) = WithCancel(sharedʗ1);
-            if (ctx.Value(keyˢ)._<@string>() != "value"u8) {
-                Ꮡb.Fatal(shouldNotBeReachedˢ);
+        var root = WithValue(Background(), keyˢ, valueˢ);
+        var (shared, sharedcancel) = WithCancel(root);
+        var sharedcancelʗ1 = sharedcancel;
+        defer(() => sharedcancelʗ1(), ref ᒐ);
+        b.ResetTimer();
+        var sharedʗ1 = shared;
+        Ꮡb.RunParallel((ж<testing.PB> pb) => {
+            nint x = 0;
+            while (pb.Next()) {
+                var (ctx, cancel) = WithCancel(sharedʗ1);
+                if (ctx.Value(keyˢ)._<@string>() != "value"u8) {
+                    Ꮡb.Fatal(shouldNotBeReachedˢ);
+                }
+                for (nint i = 0; i < 100; i++) {
+                    x /= x + 1;
+                }
+                cancel();
+                for (nint i = 0; i < 100; i++) {
+                    x /= x + 1;
+                }
             }
-            for (nint i = 0; i < 100; i++) {
-                x /= x + 1;
-            }
-            cancel();
-            for (nint i = 0; i < 100; i++) {
-                x /= x + 1;
-            }
-        }
-    });
-});
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkWithTimeout(ж<testing.B> Ꮡb) {
     for (nint concurrencyᴛ1 = 40; concurrencyᴛ1 <= 400000; concurrencyᴛ1 *= 100) {
@@ -69,14 +74,19 @@ internal static void benchmarkWithTimeout(ж<testing.B> Ꮡb, nint concurrentCon
         Ꮡwg.Add(1);
         var ccfʗ2 = ccf;
         var rootʗ2 = root;
-        goǃ((nint iΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            var cf = new slice<Action>(perPContexts);
-            foreach (var (j, _) in cf) {
-                (_, cf[j]) = WithTimeout(rootʗ2, time.ΔHour);
+        goǃ((nint iΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                var cf = new slice<Action>(perPContexts);
+                foreach (var (j, _) in cf) {
+                    (_, cf[j]) = WithTimeout(rootʗ2, time.ΔHour);
+                }
+                ccfʗ2[iΔ1] = cf;
             }
-            ccfʗ2[iΔ1] = cf;
-        }), i);
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, i);
     }
     Ꮡwg.Wait();
     b.ResetTimer();
@@ -166,24 +176,29 @@ public static void BenchmarkCheckCanceled(ж<testing.B> Ꮡb) {
     });
 }
 
-public static void BenchmarkContextCancelDone(ж<testing.B> Ꮡb) => func((defer, recover) => {
-    var (ctx, cancel) = WithCancel(Background());
-    var cancelʗ1 = cancel;
-    defer(() => cancelʗ1());
-    var ctxʗ1 = ctx;
-    Ꮡb.RunParallel((ж<testing.PB> pb) => {
-        while (pb.Next()) {
-            var selᴛ3 = ctxʗ1.Done();
-            switch (trySelect(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
-            case 0 when selᴛ3.ꟷᐳ(out _): {
-                break;
+public static void BenchmarkContextCancelDone(ж<testing.B> Ꮡb) {
+    GoFrame ᒐ = default;
+    try {
+        var (ctx, cancel) = WithCancel(Background());
+        var cancelʗ1 = cancel;
+        defer(() => cancelʗ1(), ref ᒐ);
+        var ctxʗ1 = ctx;
+        Ꮡb.RunParallel((ж<testing.PB> pb) => {
+            while (pb.Next()) {
+                var selᴛ3 = ctxʗ1.Done();
+                switch (trySelect(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+                case 0 when selᴛ3.ꟷᐳ(out _): {
+                    break;
+                }
+                default: {
+                    break;
+                }}
             }
-            default: {
-                break;
-            }}
-        }
-    });
-});
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkDeepValueNewGoRoutine(ж<testing.B> Ꮡb) {
     foreach (var (_, depth) in new nint[]{10, 20, 30, 50, 100}.slice()) {
@@ -196,10 +211,15 @@ public static void BenchmarkDeepValueNewGoRoutine(ж<testing.B> Ꮡb) {
             for (nint i = 0; i < (~bΔ1).N; i++) {
                 ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
                 Ꮡwg.Add(1);
-                goǃ(() => func((defer, recover) => {
-                    defer(Ꮡwg.Done);
-                    Ꮡctx.ValueSlot.Value((nint)(-1));
-                }));
+                goǃ(() => {
+                    GoFrame ᒐ = default;
+                    try {
+                        defer(Ꮡwg.Done, ref ᒐ);
+                        Ꮡctx.ValueSlot.Value((nint)(-1));
+                    }
+                    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                    finally { ᒐ.Run(); }
+                });
                 Ꮡwg.Wait();
             }
         });

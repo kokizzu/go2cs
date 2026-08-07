@@ -410,40 +410,45 @@ public static void TestUnexpectedEOF(ж<testing.T> Ꮡt) {
 internal static readonly object decodeˢ = (@string)"Decode:"u8;
 
 // See golang.org/issue/22237
-public static void TestDecodeMemoryConsumption(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    const nint frames = 3000;
-    var img = image.NewPaletted(new image.Rectangle(Max: new image.Point(1, 1)), palette.WebSafe);
-    var hugeGIF = Ꮡ(new GIF(
-        Image: new slice<ж<image.Paletted>>(frames),
-        Delay: new slice<nint>(frames),
-        Disposal: new slice<byte>(frames)
-    ));
-    for (nint i = 0; i < frames; i++) {
-        hugeGIF.Value.Image[i] = img;
-        hugeGIF.Value.Delay[i] = 60;
-    }
-    var buf = @new<bytes.Buffer>();
-    {
-        var err = EncodeAll(new gif_internal_test_package.bytes_BufferжWriter(buf), hugeGIF); if (err != default!) {
-            Ꮡt.Fatal(encodeAllˢ, err);
+public static void TestDecodeMemoryConsumption(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        const nint frames = 3000;
+        var img = image.NewPaletted(new image.Rectangle(Max: new image.Point(1, 1)), palette.WebSafe);
+        var hugeGIF = Ꮡ(new GIF(
+            Image: new slice<ж<image.Paletted>>(frames),
+            Delay: new slice<nint>(frames),
+            Disposal: new slice<byte>(frames)
+        ));
+        for (nint i = 0; i < frames; i++) {
+            hugeGIF.Value.Image[i] = img;
+            hugeGIF.Value.Delay[i] = 60;
+        }
+        var buf = @new<bytes.Buffer>();
+        {
+            var err = EncodeAll(new gif_internal_test_package.bytes_BufferжWriter(buf), hugeGIF); if (err != default!) {
+                Ꮡt.Fatal(encodeAllˢ, err);
+            }
+        }
+        var (s0, s1) = (@new<runtime.MemStats>(), @new<runtime.MemStats>());
+        runtime.GC();
+        defer(debug.SetGCPercent, debug.SetGCPercent(5), ref ᒐ);
+        runtime.ReadMemStats(s0);
+        {
+            var (_, err) = Decode(new gif_internal_test_package.bytes_BufferжReader(buf)); if (err != default!) {
+                Ꮡt.Fatal(decodeˢ, err);
+            }
+        }
+        runtime.ReadMemStats(s1);
+        {
+            var heapDiff = (int64)((~s1).HeapAlloc - (~s0).HeapAlloc); if (heapDiff > ((int64)30 << (int)(20))) {
+                Ꮡt.Fatalf("Decode of %d frames increased heap by %dMB"u8, (nint)(frames), (heapDiff >> (int)(20)));
+            }
         }
     }
-    var (s0, s1) = (@new<runtime.MemStats>(), @new<runtime.MemStats>());
-    runtime.GC();
-    deferǃ(debug.SetGCPercent, debug.SetGCPercent(5), defer);
-    runtime.ReadMemStats(s0);
-    {
-        var (_, err) = Decode(new gif_internal_test_package.bytes_BufferжReader(buf)); if (err != default!) {
-            Ꮡt.Fatal(decodeˢ, err);
-        }
-    }
-    runtime.ReadMemStats(s1);
-    {
-        var heapDiff = (int64)((~s1).HeapAlloc - (~s0).HeapAlloc); if (heapDiff > ((int64)30 << (int)(20))) {
-            Ꮡt.Fatalf("Decode of %d frames increased heap by %dMB"u8, (nint)(frames), (heapDiff >> (int)(20)));
-        }
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataVideo001Gifˢ = "../testdata/video-001.gif"u8;

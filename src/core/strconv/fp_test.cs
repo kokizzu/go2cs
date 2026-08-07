@@ -117,54 +117,59 @@ internal static readonly object wantˢ = (@string)"want "u8;
 internal static readonly object gotˢ = (@string)" got "u8;
 internal static readonly object testfpReadTestdataTestfpˢ = (@string)"testfp: read testdata/testfp.txt: "u8;
 
-public static void TestFp(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (f, err) = os.Open(testdataTestfpTxtˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(testfpOpenTestdataTestfpˢ, err);
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    var s = bufio.NewScanner(new strconv_test_package.os_FileжReader(f));
-    for (nint lineno = 1; s.Scan(); lineno++) {
-        @string line = s.Text();
-        if (len(line) == 0 || line[0] == (rune)'#') {
-            continue;
+public static void TestFp(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(testdataTestfpTxtˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(testfpOpenTestdataTestfpˢ, err);
         }
-        var a = strings.Split(line, " "u8);
-        if (len(a) != 4) {
-            Ꮡt.Error(testdataTestfpTxtˢ2, lineno, wrongFieldCountˢ);
-            continue;
-        }
-        @string sΔ1 = default!;
-        float64 v = default!;
-        var exprᴛ1 = a[0];
-        if (exprᴛ1 == "float64"u8) {
-            bool ok = default!;
-            (v, ok) = myatof64(a[2]);
-            if (!ok) {
-                Ꮡt.Error(testdataTestfpTxtˢ2, lineno, cannotAtof64ˢ, a[2]);
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        var s = bufio.NewScanner(new strconv_test_package.os_FileжReader(f));
+        for (nint lineno = 1; s.Scan(); lineno++) {
+            @string line = s.Text();
+            if (len(line) == 0 || line[0] == (rune)'#') {
                 continue;
             }
-            sΔ1 = fmt.Sprintf(a[1], v);
-        }
-        else if (exprᴛ1 == "float32"u8) {
-            var (v1, ok) = myatof32(a[2]);
-            if (!ok) {
-                Ꮡt.Error(testdataTestfpTxtˢ2, lineno, cannotAtof32ˢ, a[2]);
+            var a = strings.Split(line, " "u8);
+            if (len(a) != 4) {
+                Ꮡt.Error(testdataTestfpTxtˢ2, lineno, wrongFieldCountˢ);
                 continue;
             }
-            sΔ1 = fmt.Sprintf(a[1], v1);
-            v = (float64)v1;
-        }
+            @string sΔ1 = default!;
+            float64 v = default!;
+            var exprᴛ1 = a[0];
+            if (exprᴛ1 == "float64"u8) {
+                bool ok = default!;
+                (v, ok) = myatof64(a[2]);
+                if (!ok) {
+                    Ꮡt.Error(testdataTestfpTxtˢ2, lineno, cannotAtof64ˢ, a[2]);
+                    continue;
+                }
+                sΔ1 = fmt.Sprintf(a[1], v);
+            }
+            else if (exprᴛ1 == "float32"u8) {
+                var (v1, ok) = myatof32(a[2]);
+                if (!ok) {
+                    Ꮡt.Error(testdataTestfpTxtˢ2, lineno, cannotAtof32ˢ, a[2]);
+                    continue;
+                }
+                sΔ1 = fmt.Sprintf(a[1], v1);
+                v = (float64)v1;
+            }
 
-        if (sΔ1 != a[3]) {
-            Ꮡt.Error(testdataTestfpTxtˢ2, lineno, (@string)": "u8, a[0], (@string)" "u8, a[1], (@string)" "u8, a[2], (@string)" ("u8, v, (@string)") "u8,
-                wantˢ, a[3], gotˢ, sΔ1);
+            if (sΔ1 != a[3]) {
+                Ꮡt.Error(testdataTestfpTxtˢ2, lineno, (@string)": "u8, a[0], (@string)" "u8, a[1], (@string)" "u8, a[2], (@string)" ("u8, v, (@string)") "u8,
+                    wantˢ, a[3], gotˢ, sΔ1);
+            }
+        }
+        if (s.Err() != default!) {
+            Ꮡt.Fatal(testfpReadTestdataTestfpˢ, s.Err());
         }
     }
-    if (s.Err() != default!) {
-        Ꮡt.Fatal(testfpReadTestdataTestfpˢ, s.Err());
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end strconv_test_package

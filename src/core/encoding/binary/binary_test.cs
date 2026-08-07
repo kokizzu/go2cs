@@ -577,15 +577,20 @@ public static void TestUnexportedRead(ж<testing.T> Ꮡt) {
         dec = vᴛ1;
 
         var decʗ1 = dec;
-        Ꮡt.Run(dec.name, (ж<testing.T> tΔ1) => func((defer, recover) => {
-            defer(() => {
-                if (recover() == default!) {
-                    tΔ1.Fatal(didNotPanicˢ);
-                }
-            });
-            ref var u2 = ref heap(new Unexported(), out var Ꮡu2);
-            decʗ1.fn(LittleEndian, Ꮡu2, Ꮡbuf.Value.Bytes());
-        }));
+        Ꮡt.Run(dec.name, (ж<testing.T> tΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(() => {
+                    if (recover() == default!) {
+                        tΔ1.Fatal(didNotPanicˢ);
+                    }
+                }, ref ᒐ);
+                ref var u2 = ref heap(new Unexported(), out var Ꮡu2);
+                decʗ1.fn(LittleEndian, Ꮡu2, Ꮡbuf.Value.Bytes());
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
 }
 
@@ -661,27 +666,33 @@ public static void TestReadTruncated(ж<testing.T> Ꮡt) {
 
 internal static bool /*panicked*/ testUint64SmallSliceLengthPanics() {
     bool panicked = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             panicked = recover() != default!;
-        });
+        }, ref ᒐ);
         var b = new byte[]{1, 2, 3, 4, 5, 6, 7, 8}.array();
         LittleEndian.Uint64(b[..4]);
         panicked = false;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return panicked;
 }
 
 internal static bool /*panicked*/ testPutUint64SmallSliceLengthPanics() {
     bool panicked = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         defer(() => {
             panicked = recover() != default!;
-        });
+        }, ref ᒐ);
         var b = new byte[]{}.array(8);
         LittleEndian.PutUint64(b[..4], 0x0102030405060708UL);
         panicked = false;
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return panicked;
 }
 

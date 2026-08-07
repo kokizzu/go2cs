@@ -22,49 +22,54 @@ internal static slice<@string> zones = new @string[]{
     "America/Los_Angeles"u8
 }.slice();
 
-public static void TestEmbeddedTZData(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var undo = time_internal_test_package.DisablePlatformSources();
-    var undoʗ1 = undo;
-    defer(undoʗ1);
-    foreach (var (_, zone) in zones) {
-        var (@ref, err) = Δtime.LoadLocation(zone);
-        if (err != default!) {
-            Ꮡt.Errorf("LoadLocation(%q): %v"u8, zone, err);
-            continue;
-        }
-        (var embedded, err) = time_internal_test_package.LoadFromEmbeddedTZData(zone);
-        if (err != default!) {
-            Ꮡt.Errorf("LoadFromEmbeddedTZData(%q): %v"u8, zone, err);
-            continue;
-        }
-        (var sample, err) = Δtime.LoadLocationFromTZData(zone, slice<byte>(embedded));
-        if (err != default!) {
-            Ꮡt.Errorf("LoadLocationFromTZData failed for %q: %v"u8, zone, err);
-            continue;
-        }
-        // Compare the name and zone fields of ref and sample.
-        // The tx field changes faster as tzdata is updated.
-        // The cache fields are expected to differ.
-        var v1 = reflect.ValueOf(@ref.OrTypedNil()).Elem();
-        var v2 = reflect.ValueOf(sample.OrTypedNil()).Elem();
-        var typ = v1.Type();
-        nint nf = typ.NumField();
-        nint found = 0;
-        for (nint i = 0; i < nf; i++) {
-            var ft = typ.Field(i);
-            if (ft.Name != "name"u8 && ft.Name != "zone"u8) {
+public static void TestEmbeddedTZData(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var undo = time_internal_test_package.DisablePlatformSources();
+        var undoʗ1 = undo;
+        defer(undoʗ1, ref ᒐ);
+        foreach (var (_, zone) in zones) {
+            var (@ref, err) = Δtime.LoadLocation(zone);
+            if (err != default!) {
+                Ꮡt.Errorf("LoadLocation(%q): %v"u8, zone, err);
                 continue;
             }
-            found++;
-            if (!equal(Ꮡt, v1.Field(i), v2.Field(i))) {
-                Ꮡt.Errorf("zone %s: system and embedded tzdata field %s differs"u8, zone, ft.Name);
+            (var embedded, err) = time_internal_test_package.LoadFromEmbeddedTZData(zone);
+            if (err != default!) {
+                Ꮡt.Errorf("LoadFromEmbeddedTZData(%q): %v"u8, zone, err);
+                continue;
+            }
+            (var sample, err) = Δtime.LoadLocationFromTZData(zone, slice<byte>(embedded));
+            if (err != default!) {
+                Ꮡt.Errorf("LoadLocationFromTZData failed for %q: %v"u8, zone, err);
+                continue;
+            }
+            // Compare the name and zone fields of ref and sample.
+            // The tx field changes faster as tzdata is updated.
+            // The cache fields are expected to differ.
+            var v1 = reflect.ValueOf(@ref.OrTypedNil()).Elem();
+            var v2 = reflect.ValueOf(sample.OrTypedNil()).Elem();
+            var typ = v1.Type();
+            nint nf = typ.NumField();
+            nint found = 0;
+            for (nint i = 0; i < nf; i++) {
+                var ft = typ.Field(i);
+                if (ft.Name != "name"u8 && ft.Name != "zone"u8) {
+                    continue;
+                }
+                found++;
+                if (!equal(Ꮡt, v1.Field(i), v2.Field(i))) {
+                    Ꮡt.Errorf("zone %s: system and embedded tzdata field %s differs"u8, zone, ft.Name);
+                }
+            }
+            if (found != 2) {
+                Ꮡt.Errorf("test must be updated for change to time.Location struct"u8);
             }
         }
-        if (found != 2) {
-            Ꮡt.Errorf("test must be updated for change to time.Location struct"u8);
-        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // equal is a small version of reflect.DeepEqual that we use to
 // compare the values of zoneinfo unexported fields.

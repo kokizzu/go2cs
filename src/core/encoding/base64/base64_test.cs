@@ -304,21 +304,26 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestDecodeBounds(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    array<byte> buf = new(32);
-    @string s = StdEncoding.EncodeToString(buf[..]);
-    defer(() => {
-        {
-            var errΔ1 = recover(); if (errΔ1 != default!) {
-                Ꮡt.Fatalf("Decode panicked unexpectedly: %v\n%s"u8, errΔ1, debug.Stack());
+public static void TestDecodeBounds(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        array<byte> buf = new(32);
+        @string s = StdEncoding.EncodeToString(buf[..]);
+        defer(() => {
+            {
+                var errΔ1 = recover(); if (errΔ1 != default!) {
+                    Ꮡt.Fatalf("Decode panicked unexpectedly: %v\n%s"u8, errΔ1, debug.Stack());
+                }
             }
+        }, ref ᒐ);
+        var (n, err) = StdEncoding.Decode(buf[..], slice<byte>(s));
+        if (n != len(buf) || err != default!) {
+            Ꮡt.Fatalf("StdEncoding.Decode = %d, %v, want %d, nil"u8, n, err, len(buf));
         }
-    });
-    var (n, err) = StdEncoding.Decode(buf[..], slice<byte>(s));
-    if (n != len(buf) || err != default!) {
-        Ꮡt.Fatalf("StdEncoding.Decode = %d, %v, want %d, nil"u8, n, err, len(buf));
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoLocalName("test")] [GoType("dyn")] internal partial struct TestEncodedLen_test {
     internal ж<global::go.encoding.base64_package.Encoding> enc;

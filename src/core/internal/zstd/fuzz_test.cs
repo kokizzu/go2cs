@@ -91,56 +91,61 @@ internal static readonly object byteMismatchAfterErrorˢ = (@string)"byte mismat
 
 // Fuzz test to check that if we can decompress some data,
 // so can zstd, and that we get the same result.
-public static void FuzzReverse(ж<testing.F> Ꮡf) => func((defer, recover) => {
-    ref var f = ref Ꮡf.DerefOrNull();
+public static void FuzzReverse(ж<testing.F> Ꮡf) {
+    GoFrame ᒐ = default;
+    try {
+        ref var f = ref Ꮡf.DerefOrNull();
 
-    @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
-    foreach (var (_, test) in tests) {
-        f.Add(slice<byte>(test.compressed));
-    }
-    // Set a hook to reject some cases where we don't match zstd.
-    fuzzing = true;
-    defer(() => {
-        fuzzing = false;
-    });
-    Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
-        var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
-        var (goExp, goErr) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
-        var cmd = exec.Command(zstd, "-d"u8);
-        cmd.Value.Stdin = new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b));
-        ref var uncompressed = ref heap(new bytes.Buffer(), out var Ꮡuncompressed);
-        cmd.Value.Stdout = new zstd_internal_test_package.bytes_BufferжWriter(Ꮡuncompressed);
-        cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
-        var zstdErr = cmd.Run();
-        var zstdExp = uncompressed.Bytes();
-        if (goErr == default! && zstdErr == default!){
-            if (!bytes.Equal(zstdExp, goExp)) {
-                showDiffs(t, zstdExp, goExp);
-            }
-        } else {
-            // Ideally we should check that this package and
-            // the zstd program both fail or both succeed,
-            // and that if they both fail one byte sequence
-            // is an exact prefix of the other.
-            // Actually trying this proved to be frustrating,
-            // as the zstd program appears to accept invalid
-            // byte sequences using rules that are difficult
-            // to determine.
-            // So we just check the prefix.
-            nint c = builtin.len(goExp);
-            if (c > builtin.len(zstdExp)) {
-                c = builtin.len(zstdExp);
-            }
-            goExp = goExp[..(int)(c)];
-            zstdExp = zstdExp[..(int)(c)];
-            if (!bytes.Equal(goExp, zstdExp)) {
-                t.Error(byteMismatchAfterErrorˢ);
-                t.Logf("Go error: %v\n"u8, goErr);
-                t.Logf("zstd error: %v\n"u8, zstdErr);
-                showDiffs(t, zstdExp, goExp);
-            }
+        @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
+        foreach (var (_, test) in tests) {
+            f.Add(slice<byte>(test.compressed));
         }
-    });
-});
+        // Set a hook to reject some cases where we don't match zstd.
+        fuzzing = true;
+        defer(() => {
+            fuzzing = false;
+        }, ref ᒐ);
+        Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
+            var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
+            var (goExp, goErr) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
+            var cmd = exec.Command(zstd, "-d"u8);
+            cmd.Value.Stdin = new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b));
+            ref var uncompressed = ref heap(new bytes.Buffer(), out var Ꮡuncompressed);
+            cmd.Value.Stdout = new zstd_internal_test_package.bytes_BufferжWriter(Ꮡuncompressed);
+            cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
+            var zstdErr = cmd.Run();
+            var zstdExp = uncompressed.Bytes();
+            if (goErr == default! && zstdErr == default!){
+                if (!bytes.Equal(zstdExp, goExp)) {
+                    showDiffs(t, zstdExp, goExp);
+                }
+            } else {
+                // Ideally we should check that this package and
+                // the zstd program both fail or both succeed,
+                // and that if they both fail one byte sequence
+                // is an exact prefix of the other.
+                // Actually trying this proved to be frustrating,
+                // as the zstd program appears to accept invalid
+                // byte sequences using rules that are difficult
+                // to determine.
+                // So we just check the prefix.
+                nint c = builtin.len(goExp);
+                if (c > builtin.len(zstdExp)) {
+                    c = builtin.len(zstdExp);
+                }
+                goExp = goExp[..(int)(c)];
+                zstdExp = zstdExp[..(int)(c)];
+                if (!bytes.Equal(goExp, zstdExp)) {
+                    t.Error(byteMismatchAfterErrorˢ);
+                    t.Logf("Go error: %v\n"u8, goErr);
+                    t.Logf("zstd error: %v\n"u8, zstdErr);
+                    showDiffs(t, zstdExp, goExp);
+                }
+            }
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end zstd_internal_test_package

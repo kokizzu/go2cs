@@ -300,38 +300,43 @@ public static void TestWriteNil(ж<testing.T> Ꮡt) {
     r.Close();
 }
 
-public static void TestWriteAfterWriterClose(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (r, w) = Pipe();
-    var rʗ1 = r;
-    defer(() => rʗ1.Close());
-    var done = new channel<bool>(0);
-    ref var writeErr = ref heap<error>(out var ᏑwriteErr);
-    var doneʗ1 = done;
-    var wʗ1 = w;
-    goǃ(() => {
-        var (_, errΔ1) = wʗ1.Write(slice<byte>("hello"u8));
-        if (errΔ1 != default!) {
-            Ꮡt.Errorf("got error: %q; expected none"u8, errΔ1);
+public static void TestWriteAfterWriterClose(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (r, w) = Pipe();
+        var rʗ1 = r;
+        defer(() => rʗ1.Close(), ref ᒐ);
+        var done = new channel<bool>(0);
+        ref var writeErr = ref heap<error>(out var ᏑwriteErr);
+        var doneʗ1 = done;
+        var wʗ1 = w;
+        goǃ(() => {
+            var (_, errΔ1) = wʗ1.Write(slice<byte>("hello"u8));
+            if (errΔ1 != default!) {
+                Ꮡt.Errorf("got error: %q; expected none"u8, errΔ1);
+            }
+            wʗ1.Close();
+            (_, ᏑwriteErr.ValueSlot) = wʗ1.Write(slice<byte>("world"u8));
+            doneʗ1.ᐸꟷ(true);
+        });
+        var buf = new slice<byte>(100);
+        @string result = default!;
+        var (n, err) = ReadFull(new io_test_package.io_PipeReaderжReader(r), buf);
+        if (err != default! && !AreEqual(err, ErrUnexpectedEOF)) {
+            Ꮡt.Fatalf("got: %q; want: %q"u8, err, ErrUnexpectedEOF);
         }
-        wʗ1.Close();
-        (_, ᏑwriteErr.ValueSlot) = wʗ1.Write(slice<byte>("world"u8));
-        doneʗ1.ᐸꟷ(true);
-    });
-    var buf = new slice<byte>(100);
-    @string result = default!;
-    var (n, err) = ReadFull(new io_test_package.io_PipeReaderжReader(r), buf);
-    if (err != default! && !AreEqual(err, ErrUnexpectedEOF)) {
-        Ꮡt.Fatalf("got: %q; want: %q"u8, err, ErrUnexpectedEOF);
+        result = ((@string)(buf[0..(int)(n)]));
+        ᐸꟷ(done);
+        if (result != "hello"u8) {
+            Ꮡt.Errorf("got: %q; want: %q"u8, result, helloˢ);
+        }
+        if (!AreEqual(writeErr, ErrClosedPipe)) {
+            Ꮡt.Errorf("got: %q; want: %q"u8, writeErr, ErrClosedPipe);
+        }
     }
-    result = ((@string)(buf[0..(int)(n)]));
-    ᐸꟷ(done);
-    if (result != "hello"u8) {
-        Ꮡt.Errorf("got: %q; want: %q"u8, result, helloˢ);
-    }
-    if (!AreEqual(writeErr, ErrClosedPipe)) {
-        Ꮡt.Errorf("got: %q; want: %q"u8, writeErr, ErrClosedPipe);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoLocalName("testError1")] [GoType("dyn")] partial struct TestPipeCloseError_testError1 {
     internal error error;

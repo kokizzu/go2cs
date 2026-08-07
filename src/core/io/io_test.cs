@@ -574,61 +574,66 @@ internal static readonly @string normalˢ = "normal"u8;
     internal int64 returnOff;
 }
 
-public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    @string tmpfilename = testOffsetWriterSeekˢ;
-    var (tmpfile, err) = os.CreateTemp(Ꮡt.TempDir(), tmpfilename);
-    if (err != default! || tmpfile == nil) {
-        Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
-    }
-    var tmpfileʗ1 = tmpfile;
-    defer(() => tmpfileʗ1.Close());
-    var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), 0);
-    // Should throw error errWhence if whence is not valid
-    var wʗ1 = w;
-    Ꮡt.Run(errWhenceˢ, (ж<testing.T> tΔ1) => {
-        foreach (var (_, whence) in new nint[]{-3, -2, -1, 3, 4, 5}.slice()) {
-            int64 offset = 0;
-            var (gotOff, gotErr) = wʗ1.Seek(offset, whence);
-            if (gotOff != 0 || !AreEqual(gotErr, io_internal_test_package.ErrWhence)) {
-                tΔ1.Errorf("For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, %v)"u8,
-                    whence, offset, gotOff, gotErr, (nint)(0), io_internal_test_package.ErrWhence);
-            }
+public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        @string tmpfilename = testOffsetWriterSeekˢ;
+        var (tmpfile, err) = os.CreateTemp(Ꮡt.TempDir(), tmpfilename);
+        if (err != default! || tmpfile == nil) {
+            Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
         }
-    });
-    // Should throw error errOffset if offset is negative
-    var wʗ3 = w;
-    Ꮡt.Run(errOffsetˢ, (ж<testing.T> tΔ2) => {
-        foreach (var (_, whence) in new nint[]{SeekStart, SeekCurrent}.slice()) {
-            for (var offset = (int64)(-3); offset < 0; offset++) {
-                var (gotOff, gotErr) = wʗ3.Seek(offset, whence);
-                if (gotOff != 0 || !AreEqual(gotErr, io_internal_test_package.ErrOffset)) {
-                    tΔ2.Errorf("For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, %v)"u8,
-                        whence, offset, gotOff, gotErr, (nint)(0), io_internal_test_package.ErrOffset);
+        var tmpfileʗ1 = tmpfile;
+        defer(() => tmpfileʗ1.Close(), ref ᒐ);
+        var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), 0);
+        // Should throw error errWhence if whence is not valid
+        var wʗ1 = w;
+        Ꮡt.Run(errWhenceˢ, (ж<testing.T> tΔ1) => {
+            foreach (var (_, whence) in new nint[]{-3, -2, -1, 3, 4, 5}.slice()) {
+                int64 offset = 0;
+                var (gotOff, gotErr) = wʗ1.Seek(offset, whence);
+                if (gotOff != 0 || !AreEqual(gotErr, io_internal_test_package.ErrWhence)) {
+                    tΔ1.Errorf("For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, %v)"u8,
+                        whence, offset, gotOff, gotErr, (nint)(0), io_internal_test_package.ErrWhence);
                 }
             }
-        }
-    });
-    // Normal tests
-    var wʗ5 = w;
-    Ꮡt.Run(normalˢ, (ж<testing.T> tΔ3) => {
-        var tests = new TestOffsetWriter_Seek_tests[]{ // keep in order
-
-            new(whence: SeekStart, offset: 1, returnOff: 1),
-            new(whence: SeekStart, offset: 2, returnOff: 2),
-            new(whence: SeekStart, offset: 3, returnOff: 3),
-            new(whence: SeekCurrent, offset: 1, returnOff: 4),
-            new(whence: SeekCurrent, offset: 2, returnOff: 6),
-            new(whence: SeekCurrent, offset: 3, returnOff: 9)
-        }.slice();
-        foreach (var (idx, tt) in tests) {
-            var (gotOff, gotErr) = wʗ5.Seek(tt.offset, tt.whence);
-            if (gotOff != tt.returnOff || gotErr != default!) {
-                tΔ3.Errorf("%d:: For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, <nil>)"u8,
-                    idx + 1, tt.whence, tt.offset, gotOff, gotErr, tt.returnOff);
+        });
+        // Should throw error errOffset if offset is negative
+        var wʗ3 = w;
+        Ꮡt.Run(errOffsetˢ, (ж<testing.T> tΔ2) => {
+            foreach (var (_, whence) in new nint[]{SeekStart, SeekCurrent}.slice()) {
+                for (var offset = (int64)(-3); offset < 0; offset++) {
+                    var (gotOff, gotErr) = wʗ3.Seek(offset, whence);
+                    if (gotOff != 0 || !AreEqual(gotErr, io_internal_test_package.ErrOffset)) {
+                        tΔ2.Errorf("For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, %v)"u8,
+                            whence, offset, gotOff, gotErr, (nint)(0), io_internal_test_package.ErrOffset);
+                    }
+                }
             }
-        }
-    });
-});
+        });
+        // Normal tests
+        var wʗ5 = w;
+        Ꮡt.Run(normalˢ, (ж<testing.T> tΔ3) => {
+            var tests = new TestOffsetWriter_Seek_tests[]{ // keep in order
+
+                new(whence: SeekStart, offset: 1, returnOff: 1),
+                new(whence: SeekStart, offset: 2, returnOff: 2),
+                new(whence: SeekStart, offset: 3, returnOff: 3),
+                new(whence: SeekCurrent, offset: 1, returnOff: 4),
+                new(whence: SeekCurrent, offset: 2, returnOff: 6),
+                new(whence: SeekCurrent, offset: 3, returnOff: 9)
+            }.slice();
+            foreach (var (idx, tt) in tests) {
+                var (gotOff, gotErr) = wʗ5.Seek(tt.offset, tt.whence);
+                if (gotOff != tt.returnOff || gotErr != default!) {
+                    tΔ3.Errorf("%d:: For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, <nil>)"u8,
+                        idx + 1, tt.whence, tt.offset, gotOff, gotErr, tt.returnOff);
+                }
+            }
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testOffsetWriterWriteAtˢ = "TestOffsetWriter_WriteAt"u8;
@@ -640,42 +645,52 @@ public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    var work = (int64 off, int64 at) => func((defer, recover) => {
-        @string position = fmt.Sprintf("off_%d_at_%d"u8, off, at);
-        var (tmpfile, errΔ1) = os.CreateTemp(tmpdir, position);
-        if (errΔ1 != default! || tmpfile == nil) {
-            Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, position, errΔ1);
+    void work(int64 off, int64 at) {
+        GoFrame ᒐ = default;
+        try {
+            @string position = fmt.Sprintf("off_%d_at_%d"u8, off, at);
+            var (tmpfile, errΔ1) = os.CreateTemp(tmpdir, position);
+            if (errΔ1 != default! || tmpfile == nil) {
+                Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, position, errΔ1);
+            }
+            var tmpfileʗ1 = tmpfile;
+            defer(() => tmpfileʗ1.Close(), ref ᒐ);
+            ref var writeN = ref heap(new int64(), out var ᏑwriteN);
+            ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+            // Concurrent writes, one byte at a time
+            foreach (var (step, value) in slice<byte>(content)) {
+                Ꮡwg.Add(1);
+                goǃ((ж<Δsync.WaitGroup> wgΔ1, ж<os.File> tmpfileΔ1, byte valueΔ1, int64 offΔ1, int64 atΔ1, nint stepΔ1) => {
+                    GoFrame ᒐ = default;
+                    try {
+                        defer(wgΔ1.Done, ref ᒐ);
+                        var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfileΔ1), offΔ1);
+                        var (n, e) = w.WriteAt(new byte[]{valueΔ1}.slice(), atΔ1 + (int64)stepΔ1);
+                        if (e != default!) {
+                            Ꮡt.Errorf("WriteAt failed. off: %d, at: %d, step: %d\n error: %v"u8, offΔ1, atΔ1, stepΔ1, e);
+                        }
+                        atomic.AddInt64(ᏑwriteN, (int64)n);
+                    }
+                    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                    finally { ᒐ.Run(); }
+                }, Ꮡwg, tmpfile, value, off, at, step);
+            }
+            Ꮡwg.Wait();
+            // Read one more byte to reach EOF
+            var buf = new slice<byte>((nint)(contentSize + 1));
+            (var readN, errΔ1) = tmpfile.ReadAt(buf, off + at);
+            if (!AreEqual(errΔ1, EOF)) {
+                Ꮡt.Fatalf("ReadAt failed: %v"u8, errΔ1);
+            }
+            @string readContent = ((@string)(buf[..(int)(contentSize)]));
+            if (ᏑwriteN.Value != (int64)readN || ᏑwriteN.Value != contentSize || readContent != content) {
+                Ꮡt.Fatalf("%s:: WriteAt(%s, %d) error. \ngot n: %v, content: %s \nexpected n: %v, content: %v"u8,
+                    position, content, at, readN, readContent, contentSize, content);
+            }
         }
-        var tmpfileʗ1 = tmpfile;
-        defer(() => tmpfileʗ1.Close());
-        ref var writeN = ref heap(new int64(), out var ᏑwriteN);
-        ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
-        // Concurrent writes, one byte at a time
-        foreach (var (step, value) in slice<byte>(content)) {
-            Ꮡwg.Add(1);
-            goǃ((ж<Δsync.WaitGroup> wgΔ1, ж<os.File> tmpfileΔ1, byte valueΔ1, int64 offΔ1, int64 atΔ1, nint stepΔ1) => func((defer, recover) => {
-                defer(wgΔ1.Done);
-                var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfileΔ1), offΔ1);
-                var (n, e) = w.WriteAt(new byte[]{valueΔ1}.slice(), atΔ1 + (int64)stepΔ1);
-                if (e != default!) {
-                    Ꮡt.Errorf("WriteAt failed. off: %d, at: %d, step: %d\n error: %v"u8, offΔ1, atΔ1, stepΔ1, e);
-                }
-                atomic.AddInt64(ᏑwriteN, (int64)n);
-            }), Ꮡwg, tmpfile, value, off, at, step);
-        }
-        Ꮡwg.Wait();
-        // Read one more byte to reach EOF
-        var buf = new slice<byte>((nint)(contentSize + 1));
-        (var readN, errΔ1) = tmpfile.ReadAt(buf, off + at);
-        if (!AreEqual(errΔ1, EOF)) {
-            Ꮡt.Fatalf("ReadAt failed: %v"u8, errΔ1);
-        }
-        @string readContent = ((@string)(buf[..(int)(contentSize)]));
-        if (ᏑwriteN.Value != (int64)readN || ᏑwriteN.Value != contentSize || readContent != content) {
-            Ꮡt.Fatalf("%s:: WriteAt(%s, %d) error. \ngot n: %v, content: %s \nexpected n: %v, content: %v"u8,
-                position, content, at, readN, readContent, contentSize, content);
-        }
-    });
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }
     for (var off = (int64)0; off < 2; off++) {
         for (var at = (int64)0; at < 2; at++) {
             work(off, at);
@@ -683,25 +698,30 @@ public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestWriteAt_PositionPriorToBase(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    @string tmpdir = Ꮡt.TempDir();
-    @string tmpfilename = testOffsetWriterWriteAtˢ;
-    var (tmpfile, err) = os.CreateTemp(tmpdir, tmpfilename);
-    if (err != default!) {
-        Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
+public static void TestWriteAt_PositionPriorToBase(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        @string tmpdir = Ꮡt.TempDir();
+        @string tmpfilename = testOffsetWriterWriteAtˢ;
+        var (tmpfile, err) = os.CreateTemp(tmpdir, tmpfilename);
+        if (err != default!) {
+            Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
+        }
+        var tmpfileʗ1 = tmpfile;
+        defer(() => tmpfileʗ1.Close(), ref ᒐ);
+        // start writing position in OffsetWriter
+        var offset = (int64)10;
+        // position we want to write to the tmpfile
+        var at = (int64)(-1);
+        var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), offset);
+        var (_, e) = w.WriteAt(slice<byte>("hello"u8), at);
+        if (e == default!) {
+            Ꮡt.Errorf("error expected to be not nil"u8);
+        }
     }
-    var tmpfileʗ1 = tmpfile;
-    defer(() => tmpfileʗ1.Close());
-    // start writing position in OffsetWriter
-    var offset = (int64)10;
-    // position we want to write to the tmpfile
-    var at = (int64)(-1);
-    var w = NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), offset);
-    var (_, e) = w.WriteAt(slice<byte>("hello"u8), at);
-    if (e == default!) {
-        Ꮡt.Errorf("error expected to be not nil"u8);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string writeˢ = "Write"u8;
@@ -737,40 +757,50 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
     name = writeˢ;
     var checkContentʗ1 = checkContent;
     var makeOffsetWriterʗ1 = makeOffsetWriter;
-    Ꮡt.Run(name, (ж<testing.T> tΔ1) => func((defer, recover) => {
-        // Write directly (off: 0, at: 0)
-        // Write content to file
-        var (w, f) = makeOffsetWriterʗ1(name);
-        var fʗ1 = f;
-        defer(() => fʗ1.Close());
-        foreach (var (_, value) in slice<byte>(content)) {
-            var (n, err) = w.Write(new byte[]{value}.slice());
-            if (err != default!) {
-                tΔ1.Fatalf("Write failed, n: %d, err: %v"u8, n, err);
+    Ꮡt.Run(name, (ж<testing.T> tΔ1) => {
+        GoFrame ᒐ = default;
+        try {
+            // Write directly (off: 0, at: 0)
+            // Write content to file
+            var (w, f) = makeOffsetWriterʗ1(name);
+            var fʗ1 = f;
+            defer(() => fʗ1.Close(), ref ᒐ);
+            foreach (var (_, value) in slice<byte>(content)) {
+                var (n, err) = w.Write(new byte[]{value}.slice());
+                if (err != default!) {
+                    tΔ1.Fatalf("Write failed, n: %d, err: %v"u8, n, err);
+                }
             }
+            checkContentʗ1(name, f);
+            // Copy -> Write
+            // Copy file f to file f2
+            name = copyˢ;
+            var (w2, f2) = makeOffsetWriterʗ1(name);
+            var f2ʗ1 = f2;
+            defer(() => f2ʗ1.Close(), ref ᒐ);
+            Copy(new io_test_package.io_OffsetWriterжWriter(w2), new io_test_package.os_FileжReader(f));
+            checkContentʗ1(name, f2);
         }
-        checkContentʗ1(name, f);
-        // Copy -> Write
-        // Copy file f to file f2
-        name = copyˢ;
-        var (w2, f2) = makeOffsetWriterʗ1(name);
-        var f2ʗ1 = f2;
-        defer(() => f2ʗ1.Close());
-        Copy(new io_test_package.io_OffsetWriterжWriter(w2), new io_test_package.os_FileжReader(f));
-        checkContentʗ1(name, f2);
-    }));
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
     // Copy -> WriteTo -> Write
     // Note: strings.Reader implements the io.WriterTo interface.
     name = writeOfCopyWriteToˢ;
     var checkContentʗ3 = checkContent;
     var makeOffsetWriterʗ3 = makeOffsetWriter;
-    Ꮡt.Run(name, (ж<testing.T> tΔ2) => func((defer, recover) => {
-        var (w, f) = makeOffsetWriterʗ3(name);
-        var fʗ3 = f;
-        defer(() => fʗ3.Close());
-        Copy(new io_test_package.io_OffsetWriterжWriter(w), new io_test_package.strings_ReaderжReader(strings.NewReader(content)));
-        checkContentʗ3(name, f);
-    }));
+    Ꮡt.Run(name, (ж<testing.T> tΔ2) => {
+        GoFrame ᒐ = default;
+        try {
+            var (w, f) = makeOffsetWriterʗ3(name);
+            var fʗ3 = f;
+            defer(() => fʗ3.Close(), ref ᒐ);
+            Copy(new io_test_package.io_OffsetWriterжWriter(w), new io_test_package.strings_ReaderжReader(strings.NewReader(content)));
+            checkContentʗ3(name, f);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    });
 }
 
 } // end io_test_package

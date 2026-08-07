@@ -25,44 +25,49 @@ public static void BenchmarkSemaUncontended(ж<Δtesting.B> Ꮡb) {
     });
 }
 
-internal static void benchmarkSema(ж<Δtesting.B> Ꮡb, bool block, bool work) => func((defer, recover) => {
-    ref var b = ref Ꮡb.DerefOrNull();
+internal static void benchmarkSema(ж<Δtesting.B> Ꮡb, bool block, bool work) {
+    GoFrame ᒐ = default;
+    try {
+        ref var b = ref Ꮡb.DerefOrNull();
 
-    if (b.N == 0) {
-        return;
-    }
-    ref var sem = ref heap<uint32>(out var Ꮡsem);
-    sem = (uint32)0;
-    if (block) {
-        var done = new channel<bool>(0);
-        var doneʗ1 = done;
-        goǃ(() => {
-            for (nint p = 0; p < Δruntime.GOMAXPROCS(0) / 2; p++) {
+        if (b.N == 0) {
+            return;
+        }
+        ref var sem = ref heap<uint32>(out var Ꮡsem);
+        sem = (uint32)0;
+        if (block) {
+            var done = new channel<bool>(0);
+            var doneʗ1 = done;
+            goǃ(() => {
+                for (nint p = 0; p < Δruntime.GOMAXPROCS(0) / 2; p++) {
+                    sync_internal_test_package.Runtime_Semacquire(Ꮡsem);
+                }
+                doneʗ1.ᐸꟷ(true);
+            });
+            var doneʗ2 = done;
+            defer(() => {
+                ᐸꟷ(doneʗ2);
+            }, ref ᒐ);
+        }
+        Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
+            nint foo = 0;
+            while (pb.Next()) {
+                sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
+                if (work) {
+                    for (nint i = 0; i < 100; i++) {
+                        foo *= 2;
+                        foo /= 2;
+                    }
+                }
                 sync_internal_test_package.Runtime_Semacquire(Ꮡsem);
             }
-            doneʗ1.ᐸꟷ(true);
-        });
-        var doneʗ2 = done;
-        defer(() => {
-            ᐸꟷ(doneʗ2);
+            _ = foo;
+            sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
         });
     }
-    Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
-        nint foo = 0;
-        while (pb.Next()) {
-            sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
-            if (work) {
-                for (nint i = 0; i < 100; i++) {
-                    foo *= 2;
-                    foo /= 2;
-                }
-            }
-            sync_internal_test_package.Runtime_Semacquire(Ꮡsem);
-        }
-        _ = foo;
-        sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
-    });
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkSemaSyntNonblock(ж<Δtesting.B> Ꮡb) {
     benchmarkSema(Ꮡb, false, false);

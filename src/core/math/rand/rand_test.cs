@@ -762,12 +762,17 @@ public static void BenchmarkConcurrent(ж<testing.B> Ꮡb) {
     ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
     Ꮡwg.Add(goroutines);
     for (nint i = 0; i < goroutines; i++) {
-        goǃ(() => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            for (nint n = Ꮡb.Value.N; n > 0; n--) {
-                Int63();
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                for (nint n = Ꮡb.Value.N; n > 0; n--) {
+                    Int63();
+                }
             }
-        }));
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
     Ꮡwg.Wait();
 }

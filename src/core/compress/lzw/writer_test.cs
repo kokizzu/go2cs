@@ -24,76 +24,86 @@ internal static slice<@string> filenames = new @string[]{
 
 // testFile tests that compressing and then decompressing the given file with
 // the given options yields equivalent bytes to the original file.
-internal static void testFile(ж<testing.T> Ꮡt, @string fn, global::go.compress.lzw_package.Order order, nint litWidth) => func((defer, recover) => {
-    // Read the file, as golden output.
-    var (golden, err) = os.Open(fn);
-    if (err != default!) {
-        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err);
-        return;
-    }
-    var goldenʗ1 = golden;
-    defer(() => goldenʗ1.Close());
-    // Read the file again, and push it through a pipe that compresses at the write end, and decompresses at the read end.
-    (var raw, err) = os.Open(fn);
-    if (err != default!) {
-        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err);
-        return;
-    }
-    var (piper, pipew) = io.Pipe();
-    var piperʗ1 = piper;
-    defer(() => piperʗ1.Close());
-    var pipewʗ1 = pipew;
-    var rawʗ1 = raw;
-    goǃ(() => func((defer, recover) => {
-        var rawʗ2 = rawʗ1;
-        defer(() => rawʗ2.Close());
-        var pipewʗ2 = pipewʗ1;
-        defer(() => pipewʗ2.Close());
-        var lzww = NewWriter(new lzw_internal_test_package.io_PipeWriterжWriter(pipewʗ1), order, litWidth);
-        var lzwwʗ1 = lzww;
-        defer(() => lzwwʗ1.Close());
-        ref var b = ref heap(new array<byte>(4096), out var Ꮡb);
-        while (ᐧ) {
-            var (n, err0Δ1) = rawʗ1.Read(b[..]);
-            if (err0Δ1 != default! && !AreEqual(err0Δ1, io.EOF)) {
-                Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err0Δ1);
-                return;
-            }
-            var (_, err1Δ1) = lzww.Write(b[..(int)(n)]);
-            if (err1Δ1 != default!) {
-                Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err1Δ1);
-                return;
-            }
-            if (AreEqual(err0Δ1, io.EOF)) {
-                break;
-            }
-        }
-    }));
-    var lzwr = NewReader(new lzw_internal_test_package.io_PipeReaderжReader(piper), order, litWidth);
-    var lzwrʗ1 = lzwr;
-    defer(() => lzwrʗ1.Close());
-    // Compare the two.
-    var (b0, err0) = io.ReadAll(new lzw_internal_test_package.os_FileжReader(golden));
-    var (b1, err1) = io.ReadAll(lzwr);
-    if (err0 != default!) {
-        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err0);
-        return;
-    }
-    if (err1 != default!) {
-        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err1);
-        return;
-    }
-    if (len(b1) != len(b0)) {
-        Ꮡt.Errorf("%s (order=%d litWidth=%d): length mismatch %d != %d"u8, fn, order, litWidth, len(b1), len(b0));
-        return;
-    }
-    for (nint i = 0; i < len(b0); i++) {
-        if (b1[i] != b0[i]) {
-            Ꮡt.Errorf("%s (order=%d litWidth=%d): mismatch at %d, 0x%02x != 0x%02x\n"u8, fn, order, litWidth, i, b1[i], b0[i]);
+internal static void testFile(ж<testing.T> Ꮡt, @string fn, global::go.compress.lzw_package.Order order, nint litWidth) {
+    GoFrame ᒐ = default;
+    try {
+        // Read the file, as golden output.
+        var (golden, err) = os.Open(fn);
+        if (err != default!) {
+            Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err);
             return;
         }
+        var goldenʗ1 = golden;
+        defer(() => goldenʗ1.Close(), ref ᒐ);
+        // Read the file again, and push it through a pipe that compresses at the write end, and decompresses at the read end.
+        (var raw, err) = os.Open(fn);
+        if (err != default!) {
+            Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err);
+            return;
+        }
+        var (piper, pipew) = io.Pipe();
+        var piperʗ1 = piper;
+        defer(() => piperʗ1.Close(), ref ᒐ);
+        var pipewʗ1 = pipew;
+        var rawʗ1 = raw;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                var rawʗ2 = rawʗ1;
+                defer(() => rawʗ2.Close(), ref ᒐ);
+                var pipewʗ2 = pipewʗ1;
+                defer(() => pipewʗ2.Close(), ref ᒐ);
+                var lzww = NewWriter(new lzw_internal_test_package.io_PipeWriterжWriter(pipewʗ1), order, litWidth);
+                var lzwwʗ1 = lzww;
+                defer(() => lzwwʗ1.Close(), ref ᒐ);
+                ref var b = ref heap(new array<byte>(4096), out var Ꮡb);
+                while (ᐧ) {
+                    var (n, err0Δ1) = rawʗ1.Read(b[..]);
+                    if (err0Δ1 != default! && !AreEqual(err0Δ1, io.EOF)) {
+                        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err0Δ1);
+                        return;
+                    }
+                    var (_, err1Δ1) = lzww.Write(b[..(int)(n)]);
+                    if (err1Δ1 != default!) {
+                        Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err1Δ1);
+                        return;
+                    }
+                    if (AreEqual(err0Δ1, io.EOF)) {
+                        break;
+                    }
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+        var lzwr = NewReader(new lzw_internal_test_package.io_PipeReaderжReader(piper), order, litWidth);
+        var lzwrʗ1 = lzwr;
+        defer(() => lzwrʗ1.Close(), ref ᒐ);
+        // Compare the two.
+        var (b0, err0) = io.ReadAll(new lzw_internal_test_package.os_FileжReader(golden));
+        var (b1, err1) = io.ReadAll(lzwr);
+        if (err0 != default!) {
+            Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err0);
+            return;
+        }
+        if (err1 != default!) {
+            Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err1);
+            return;
+        }
+        if (len(b1) != len(b0)) {
+            Ꮡt.Errorf("%s (order=%d litWidth=%d): length mismatch %d != %d"u8, fn, order, litWidth, len(b1), len(b0));
+            return;
+        }
+        for (nint i = 0; i < len(b0); i++) {
+            if (b1[i] != b0[i]) {
+                Ꮡt.Errorf("%s (order=%d litWidth=%d): mismatch at %d, 0x%02x != 0x%02x\n"u8, fn, order, litWidth, i, b1[i], b0[i]);
+                return;
+            }
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestWriter(ж<testing.T> Ꮡt) {
     foreach (var (_, filename) in filenames) {

@@ -198,125 +198,130 @@ internal static readonly object gotUnexpectedEofˢ = (@string)"got unexpected EO
 
 // testBlock tests a block against its references,
 // or regenerate the references, if "-update" flag is set.
-internal static void testBlock(ж<testing.T> Ꮡt, huffTest test, @string ttype) => func((defer, recover) => {
-    if (test.want != ""u8) {
-        test.want = fmt.Sprintf(test.want, ttype);
-    }
-    test.wantNoInput = fmt.Sprintf(test.wantNoInput, ttype);
-    if (update.Value) {
+internal static void testBlock(ж<testing.T> Ꮡt, huffTest test, @string ttype) {
+    GoFrame ᒐ = default;
+    try {
+        if (test.want != ""u8) {
+            test.want = fmt.Sprintf(test.want, ttype);
+        }
+        test.wantNoInput = fmt.Sprintf(test.wantNoInput, ttype);
+        if (update.Value) {
+            if (test.input != ""u8) {
+                Ꮡt.Logf("Updating %q"u8, test.want);
+                var (input, errΔ1) = os.ReadFile(test.input);
+                if (errΔ1 != default!) {
+                    Ꮡt.Error(errΔ1);
+                    return;
+                }
+                (var fΔ1, errΔ1) = os.Create(test.want);
+                if (errΔ1 != default!) {
+                    Ꮡt.Error(errΔ1);
+                    return;
+                }
+                var fʗ1 = fΔ1;
+                defer(() => fʗ1.Close(), ref ᒐ);
+                var bwΔ1 = newHuffmanBitWriter(new os.FileжWriter(fΔ1));
+                writeToType(Ꮡt, ttype, bwΔ1, test.tokens, input);
+            }
+            Ꮡt.Logf("Updating %q"u8, test.wantNoInput);
+            var (f, errΔ2) = os.Create(test.wantNoInput);
+            if (errΔ2 != default!) {
+                Ꮡt.Error(errΔ2);
+                return;
+            }
+            var fʗ2 = f;
+            defer(() => fʗ2.Close(), ref ᒐ);
+            var bwΔ2 = newHuffmanBitWriter(new os.FileжWriter(f));
+            writeToType(Ꮡt, ttype, bwΔ2, test.tokens, default!);
+            return;
+        }
         if (test.input != ""u8) {
-            Ꮡt.Logf("Updating %q"u8, test.want);
-            var (input, errΔ1) = os.ReadFile(test.input);
-            if (errΔ1 != default!) {
-                Ꮡt.Error(errΔ1);
+            Ꮡt.Logf("Testing %q"u8, test.want);
+            var (input, errΔ3) = os.ReadFile(test.input);
+            if (errΔ3 != default!) {
+                Ꮡt.Error(errΔ3);
                 return;
             }
-            (var fΔ1, errΔ1) = os.Create(test.want);
-            if (errΔ1 != default!) {
-                Ꮡt.Error(errΔ1);
+            (var want, errΔ3) = os.ReadFile(test.want);
+            if (errΔ3 != default!) {
+                Ꮡt.Error(errΔ3);
                 return;
             }
-            var fʗ1 = fΔ1;
-            defer(() => fʗ1.Close());
-            var bwΔ1 = newHuffmanBitWriter(new os.FileжWriter(fΔ1));
-            writeToType(Ꮡt, ttype, bwΔ1, test.tokens, input);
-        }
-        Ꮡt.Logf("Updating %q"u8, test.wantNoInput);
-        var (f, errΔ2) = os.Create(test.wantNoInput);
-        if (errΔ2 != default!) {
-            Ꮡt.Error(errΔ2);
-            return;
-        }
-        var fʗ2 = f;
-        defer(() => fʗ2.Close());
-        var bwΔ2 = newHuffmanBitWriter(new os.FileжWriter(f));
-        writeToType(Ꮡt, ttype, bwΔ2, test.tokens, default!);
-        return;
-    }
-    if (test.input != ""u8) {
-        Ꮡt.Logf("Testing %q"u8, test.want);
-        var (input, errΔ3) = os.ReadFile(test.input);
-        if (errΔ3 != default!) {
-            Ꮡt.Error(errΔ3);
-            return;
-        }
-        (var want, errΔ3) = os.ReadFile(test.want);
-        if (errΔ3 != default!) {
-            Ꮡt.Error(errΔ3);
-            return;
-        }
-        ref var bufΔ1 = ref heap(new bytes.Buffer(), out var ᏑbufΔ1);
-        var bwΔ3 = newHuffmanBitWriter(new flate_test_package.bytes_BufferжWriter(ᏑbufΔ1));
-        writeToType(Ꮡt, ttype, bwΔ3, test.tokens, input);
-        var gotΔ1 = bufΔ1.Bytes();
-        if (!bytes.Equal(gotΔ1, want)) {
-            Ꮡt.Errorf("writeBlock did not yield expected result for file %q with input. See %q"u8, test.want, test.want + ".got");
-            {
-                var errΔ4 = os.WriteFile(test.want + ".got"u8, gotΔ1, 438); if (errΔ4 != default!) {
-                    Ꮡt.Error(errΔ4);
+            ref var bufΔ1 = ref heap(new bytes.Buffer(), out var ᏑbufΔ1);
+            var bwΔ3 = newHuffmanBitWriter(new flate_test_package.bytes_BufferжWriter(ᏑbufΔ1));
+            writeToType(Ꮡt, ttype, bwΔ3, test.tokens, input);
+            var gotΔ1 = bufΔ1.Bytes();
+            if (!bytes.Equal(gotΔ1, want)) {
+                Ꮡt.Errorf("writeBlock did not yield expected result for file %q with input. See %q"u8, test.want, test.want + ".got");
+                {
+                    var errΔ4 = os.WriteFile(test.want + ".got"u8, gotΔ1, 438); if (errΔ4 != default!) {
+                        Ꮡt.Error(errΔ4);
+                    }
                 }
             }
+            Ꮡt.Log(outputOkˢ);
+            // Test if the writer produces the same output after reset.
+            bufΔ1.Reset();
+            bwΔ3.reset(new flate_test_package.bytes_BufferжWriter(ᏑbufΔ1));
+            writeToType(Ꮡt, ttype, bwΔ3, test.tokens, input);
+            bwΔ3.flush();
+            gotΔ1 = bufΔ1.Bytes();
+            if (!bytes.Equal(gotΔ1, want)) {
+                Ꮡt.Errorf("reset: writeBlock did not yield expected result for file %q with input. See %q"u8, test.want, test.want + ".reset.got");
+                {
+                    var errΔ5 = os.WriteFile(test.want + ".reset.got"u8, gotΔ1, 438); if (errΔ5 != default!) {
+                        Ꮡt.Error(errΔ5);
+                    }
+                }
+                return;
+            }
+            Ꮡt.Log(resetOkˢ);
+            testWriterEOF(Ꮡt, "wb"u8, test, true);
+        }
+        Ꮡt.Logf("Testing %q"u8, test.wantNoInput);
+        var (wantNI, err) = os.ReadFile(test.wantNoInput);
+        if (err != default!) {
+            Ꮡt.Error(err);
+            return;
+        }
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+        var bw = newHuffmanBitWriter(new flate_test_package.bytes_BufferжWriter(Ꮡbuf));
+        writeToType(Ꮡt, ttype, bw, test.tokens, default!);
+        var got = buf.Bytes();
+        if (!bytes.Equal(got, wantNI)){
+            Ꮡt.Errorf("writeBlock did not yield expected result for file %q with input. See %q"u8, test.wantNoInput, test.wantNoInput + ".got");
+            {
+                var errΔ6 = os.WriteFile(test.want + ".got"u8, got, 438); if (errΔ6 != default!) {
+                    Ꮡt.Error(errΔ6);
+                }
+            }
+        } else 
+        if ((byte)(got[0] & 1) == 1) {
+            Ꮡt.Error(gotUnexpectedEofˢ);
+            return;
         }
         Ꮡt.Log(outputOkˢ);
         // Test if the writer produces the same output after reset.
-        bufΔ1.Reset();
-        bwΔ3.reset(new flate_test_package.bytes_BufferжWriter(ᏑbufΔ1));
-        writeToType(Ꮡt, ttype, bwΔ3, test.tokens, input);
-        bwΔ3.flush();
-        gotΔ1 = bufΔ1.Bytes();
-        if (!bytes.Equal(gotΔ1, want)) {
-            Ꮡt.Errorf("reset: writeBlock did not yield expected result for file %q with input. See %q"u8, test.want, test.want + ".reset.got");
+        buf.Reset();
+        bw.reset(new flate_test_package.bytes_BufferжWriter(Ꮡbuf));
+        writeToType(Ꮡt, ttype, bw, test.tokens, default!);
+        bw.flush();
+        got = buf.Bytes();
+        if (!bytes.Equal(got, wantNI)) {
+            Ꮡt.Errorf("reset: writeBlock did not yield expected result for file %q without input. See %q"u8, test.want, test.want + ".reset.got");
             {
-                var errΔ5 = os.WriteFile(test.want + ".reset.got"u8, gotΔ1, 438); if (errΔ5 != default!) {
-                    Ꮡt.Error(errΔ5);
+                var errΔ7 = os.WriteFile(test.want + ".reset.got"u8, got, 438); if (errΔ7 != default!) {
+                    Ꮡt.Error(errΔ7);
                 }
             }
             return;
         }
         Ꮡt.Log(resetOkˢ);
-        testWriterEOF(Ꮡt, "wb"u8, test, true);
+        testWriterEOF(Ꮡt, "wb"u8, test, false);
     }
-    Ꮡt.Logf("Testing %q"u8, test.wantNoInput);
-    var (wantNI, err) = os.ReadFile(test.wantNoInput);
-    if (err != default!) {
-        Ꮡt.Error(err);
-        return;
-    }
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    var bw = newHuffmanBitWriter(new flate_test_package.bytes_BufferжWriter(Ꮡbuf));
-    writeToType(Ꮡt, ttype, bw, test.tokens, default!);
-    var got = buf.Bytes();
-    if (!bytes.Equal(got, wantNI)){
-        Ꮡt.Errorf("writeBlock did not yield expected result for file %q with input. See %q"u8, test.wantNoInput, test.wantNoInput + ".got");
-        {
-            var errΔ6 = os.WriteFile(test.want + ".got"u8, got, 438); if (errΔ6 != default!) {
-                Ꮡt.Error(errΔ6);
-            }
-        }
-    } else 
-    if ((byte)(got[0] & 1) == 1) {
-        Ꮡt.Error(gotUnexpectedEofˢ);
-        return;
-    }
-    Ꮡt.Log(outputOkˢ);
-    // Test if the writer produces the same output after reset.
-    buf.Reset();
-    bw.reset(new flate_test_package.bytes_BufferжWriter(Ꮡbuf));
-    writeToType(Ꮡt, ttype, bw, test.tokens, default!);
-    bw.flush();
-    got = buf.Bytes();
-    if (!bytes.Equal(got, wantNI)) {
-        Ꮡt.Errorf("reset: writeBlock did not yield expected result for file %q without input. See %q"u8, test.want, test.want + ".reset.got");
-        {
-            var errΔ7 = os.WriteFile(test.want + ".reset.got"u8, got, 438); if (errΔ7 != default!) {
-                Ꮡt.Error(errΔ7);
-            }
-        }
-        return;
-    }
-    Ꮡt.Log(resetOkˢ);
-    testWriterEOF(Ꮡt, "wb"u8, test, false);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void writeToType(ж<testing.T> Ꮡt, @string ttype, ж<global::go.compress.flate_package.huffmanBitWriter> Ꮡbw, slice<global::go.compress.flate_package.token> tok, slice<byte> input) {
     ref var bw = ref Ꮡbw.DerefOrNull();

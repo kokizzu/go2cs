@@ -124,45 +124,50 @@ public static void TestBuilderReset(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestBuilderGrow(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    foreach (var (_, growLen) in new nint[]{0, 100, 1000, 10000, 100000}.slice()) {
-        var p = bytes.Repeat(new byte[]{(rune)'a'}.slice(), growLen);
-        var pʗ1 = p;
-        var allocs = testing.AllocsPerRun(100, () => {
-            ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-            Ꮡb.Grow(growLen);
-            // should be only alloc, when growLen > 0
-            if (b.Cap() < growLen) {
-                Ꮡt.Fatalf("growLen=%d: Cap() is lower than growLen"u8, growLen);
+public static void TestBuilderGrow(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        foreach (var (_, growLen) in new nint[]{0, 100, 1000, 10000, 100000}.slice()) {
+            var p = bytes.Repeat(new byte[]{(rune)'a'}.slice(), growLen);
+            var pʗ1 = p;
+            var allocs = testing.AllocsPerRun(100, () => {
+                ref var b = ref heap(new strings.Builder(), out var Ꮡb);
+                Ꮡb.Grow(growLen);
+                // should be only alloc, when growLen > 0
+                if (b.Cap() < growLen) {
+                    Ꮡt.Fatalf("growLen=%d: Cap() is lower than growLen"u8, growLen);
+                }
+                Ꮡb.Write(pʗ1);
+                if (b.String() != ((@string)pʗ1)) {
+                    Ꮡt.Fatalf("growLen=%d: bad data written after Grow"u8, growLen);
+                }
+            });
+            nint wantAllocs = 1;
+            if (growLen == 0) {
+                wantAllocs = 0;
             }
-            Ꮡb.Write(pʗ1);
-            if (b.String() != ((@string)pʗ1)) {
-                Ꮡt.Fatalf("growLen=%d: bad data written after Grow"u8, growLen);
+            {
+                nint g = (nint)allocs;
+                nint w = wantAllocs; if (g != w) {
+                    Ꮡt.Errorf("growLen=%d: got %d allocs during Write; want %v"u8, growLen, g, w);
+                }
             }
-        });
-        nint wantAllocs = 1;
-        if (growLen == 0) {
-            wantAllocs = 0;
         }
-        {
-            nint g = (nint)allocs;
-            nint w = wantAllocs; if (g != w) {
-                Ꮡt.Errorf("growLen=%d: got %d allocs during Write; want %v"u8, growLen, g, w);
+        // when growLen < 0, should panic
+        ref var a = ref heap(new strings.Builder(), out var Ꮡa);
+        nint n = -1;
+        defer(() => {
+            {
+                var r = recover(); if (r == default!) {
+                    Ꮡt.Errorf("a.Grow(%d) should panic()"u8, n);
+                }
             }
-        }
+        }, ref ᒐ);
+        Ꮡa.Grow(n);
     }
-    // when growLen < 0, should panic
-    ref var a = ref heap(new strings.Builder(), out var Ꮡa);
-    nint n = -1;
-    defer(() => {
-        {
-            var r = recover(); if (r == default!) {
-                Ꮡt.Errorf("a.Grow(%d) should panic()"u8, n);
-            }
-        }
-    });
-    Ꮡa.Grow(n);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType("dyn")] partial struct TestBuilderWrite2_type {
     internal @string name;
@@ -373,13 +378,18 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
         var didPanic = new channel<bool>(0);
         var didPanicʗ1 = didPanic;
         var ttʗ1 = tt;
-        goǃ(() => func((defer, recover) => {
-            var didPanicʗ2 = didPanicʗ1;
-            defer(() => {
-                didPanicʗ2.ᐸꟷ(recover() != default!);
-            });
-            ttʗ1.fn();
-        }));
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                var didPanicʗ2 = didPanicʗ1;
+                defer(() => {
+                    didPanicʗ2.ᐸꟷ(recover() != default!);
+                }, ref ᒐ);
+                ttʗ1.fn();
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
         {
             var got = ᐸꟷ(didPanic); if (got != tt.wantPanic) {
                 Ꮡt.Errorf("%s: panicked = %v; want %v"u8, tt.name, got, tt.wantPanic);

@@ -376,98 +376,108 @@ internal static void initᴛgunzipTests() { gunzipTests = new gunzipTest[]{
     )
 }.slice(); }
 
-public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Keep resetting this reader.
-    // It is intended behavior that Reader.Reset can be called on a zero-value
-    // Reader and be the equivalent as if NewReader was used instead.
-    var r1 = @new<global::go.compress.gzip_package.Reader>();
-    var b = @new<bytes.Buffer>();
-    foreach (var (_, tt) in gunzipTests) {
-        // Test NewReader.
-        var @in = bytes.NewReader(tt.gzip);
-        var (r2, err) = NewReader(new gzip_test_package.bytes_ReaderжReader(@in));
-        if (err != default!) {
-            Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
-            continue;
-        }
-        var r2ʗ1 = r2;
-        defer(() => r2ʗ1.Close());
-        if (tt.name != (~r2).Name) {
-            Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r2).Name);
-        }
-        b.Reset();
-        (var n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r2));
-        if (!AreEqual(err, tt.err)) {
-            Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
-        }
-        @string s = b.String();
-        if (s != tt.raw) {
-            Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
-        }
-        // Test Reader.Reset.
-        @in = bytes.NewReader(tt.gzip);
-        err = r1.Reset(new gzip_test_package.bytes_ReaderжReader(@in));
-        if (err != default!) {
-            Ꮡt.Errorf("%s: Reset: %s"u8, tt.desc, err);
-            continue;
-        }
-        if (tt.name != (~r1).Name) {
-            Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r1).Name);
-        }
-        b.Reset();
-        (n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r1));
-        if (!AreEqual(err, tt.err)) {
-            Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
-        }
-        s = b.String();
-        if (s != tt.raw) {
-            Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
+public static void TestDecompressor(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Keep resetting this reader.
+        // It is intended behavior that Reader.Reset can be called on a zero-value
+        // Reader and be the equivalent as if NewReader was used instead.
+        var r1 = @new<global::go.compress.gzip_package.Reader>();
+        var b = @new<bytes.Buffer>();
+        foreach (var (_, tt) in gunzipTests) {
+            // Test NewReader.
+            var @in = bytes.NewReader(tt.gzip);
+            var (r2, err) = NewReader(new gzip_test_package.bytes_ReaderжReader(@in));
+            if (err != default!) {
+                Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
+                continue;
+            }
+            var r2ʗ1 = r2;
+            defer(() => r2ʗ1.Close(), ref ᒐ);
+            if (tt.name != (~r2).Name) {
+                Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r2).Name);
+            }
+            b.Reset();
+            (var n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r2));
+            if (!AreEqual(err, tt.err)) {
+                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
+            }
+            @string s = b.String();
+            if (s != tt.raw) {
+                Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
+            }
+            // Test Reader.Reset.
+            @in = bytes.NewReader(tt.gzip);
+            err = r1.Reset(new gzip_test_package.bytes_ReaderжReader(@in));
+            if (err != default!) {
+                Ꮡt.Errorf("%s: Reset: %s"u8, tt.desc, err);
+                continue;
+            }
+            if (tt.name != (~r1).Name) {
+                Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r1).Name);
+            }
+            b.Reset();
+            (n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r1));
+            if (!AreEqual(err, tt.err)) {
+                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
+            }
+            s = b.String();
+            if (s != tt.raw) {
+                Ꮡt.Errorf("%s: got %d-byte %q want %d-byte %q"u8, tt.desc, n, s, len(tt.raw), tt.raw);
+            }
         }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataIssue6550Gzˢ = "testdata/issue6550.gz.base64"u8;
 
-public static void TestIssue6550(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Apple’s notarization service will recursively attempt to decompress
-    // files in order to find binaries to notarize. Since the service is
-    // unable to decompress this file, it may reject the entire toolchain. Use a
-    // base64-encoded version to avoid this.
-    // See golang.org/issue/34986
-    var (f, err) = os.Open(testdataIssue6550Gzˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    (var gzip, err) = NewReader(base64.NewDecoder(base64.StdEncoding, new gzip_test_package.os_FileжReader(f)));
-    if (err != default!) {
-        Ꮡt.Fatalf("NewReader(testdata/issue6550.gz): %v"u8, err);
-    }
-    var gzipʗ1 = gzip;
-    defer(() => gzipʗ1.Close());
-    var done = new channel<bool>(1);
-    var doneʗ1 = done;
-    var gzipʗ2 = gzip;
-    goǃ(() => {
-        var (_, errΔ1) = io.Copy(io.Discard, new gzip_test_package.gzip_ReaderжReader(gzipʗ2));
-        if (errΔ1 == default!){
-            Ꮡt.Errorf("Copy succeeded"u8);
-        } else {
-            Ꮡt.Logf("Copy failed (correctly): %v"u8, errΔ1);
+public static void TestIssue6550(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Apple’s notarization service will recursively attempt to decompress
+        // files in order to find binaries to notarize. Since the service is
+        // unable to decompress this file, it may reject the entire toolchain. Use a
+        // base64-encoded version to avoid this.
+        // See golang.org/issue/34986
+        var (f, err) = os.Open(testdataIssue6550Gzˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
         }
-        doneʗ1.ᐸꟷ(true);
-    });
-    var selᴛ1 = time.After(1 * time.ΔSecond);
-    var selᴛ2 = done;
-    switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-    case 0 when selᴛ1.ꟷᐳ(out _): {
-        Ꮡt.Errorf("Copy hung"u8);
-        break;
+        (var gzip, err) = NewReader(base64.NewDecoder(base64.StdEncoding, new gzip_test_package.os_FileжReader(f)));
+        if (err != default!) {
+            Ꮡt.Fatalf("NewReader(testdata/issue6550.gz): %v"u8, err);
+        }
+        var gzipʗ1 = gzip;
+        defer(() => gzipʗ1.Close(), ref ᒐ);
+        var done = new channel<bool>(1);
+        var doneʗ1 = done;
+        var gzipʗ2 = gzip;
+        goǃ(() => {
+            var (_, errΔ1) = io.Copy(io.Discard, new gzip_test_package.gzip_ReaderжReader(gzipʗ2));
+            if (errΔ1 == default!){
+                Ꮡt.Errorf("Copy succeeded"u8);
+            } else {
+                Ꮡt.Logf("Copy failed (correctly): %v"u8, errΔ1);
+            }
+            doneʗ1.ᐸꟷ(true);
+        });
+        var selᴛ1 = time.After(1 * time.ΔSecond);
+        var selᴛ2 = done;
+        switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+        case 0 when selᴛ1.ꟷᐳ(out _): {
+            Ꮡt.Errorf("Copy hung"u8);
+            break;
+        }
+        case 1 when selᴛ2.ꟷᐳ(out _): {
+            break;
+        }}
     }
-    case 1 when selᴛ2.ꟷᐳ(out _): {
-        break;
-    }}
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object cannotFindHelloTxtX2Inˢ = (@string)"cannot find hello.txt x2 in gunzip tests"u8;

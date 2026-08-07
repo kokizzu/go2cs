@@ -776,45 +776,50 @@ internal static readonly @string testdataVideo001Pngˢ = "../testdata/video-001.
 
 // TestPaletted tests that the drawPaletted function behaves the same
 // regardless of whether dst is an *image.Paletted.
-public static void TestPaletted(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    var (f, err) = os.Open(testdataVideo001Pngˢ);
-    if (err != default!) {
-        Ꮡt.Fatalf("open: %v"u8, err);
-    }
-    var fʗ1 = f;
-    defer(() => fʗ1.Close());
-    (var video001, err) = png.Decode(new draw_test_package.os_FileжReader(f));
-    if (err != default!) {
-        Ꮡt.Fatalf("decode: %v"u8, err);
-    }
-    var b = video001.Bounds();
-    var cgaPalette = new color.Palette(new color.Color[]{new colorꓸRGBA(0x00, 0x00, 0x00, 0xff), new colorꓸRGBA(0x55, 0xff, 0xff, 0xff), new colorꓸRGBA(0xff, 0x55, 0xff, 0xff), new colorꓸRGBA(0xff, 0xff, 0xff, 0xff)
-    }.slice());
-    var drawers = new map<@string, global::go.image.draw_package.Drawer>{["src"u8] = Src, ["floyd-steinberg"u8] = FloydSteinberg
-    };
-    var sources = new map<@string, image.Image>{["uniform"u8] = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(new colorꓸRGBA(0xff, 0x7f, 0xff, 0xff)))), ["video001"u8] = video001
-    };
-    foreach (var (dName, d) in drawers) {
+public static void TestPaletted(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (f, err) = os.Open(testdataVideo001Pngˢ);
+        if (err != default!) {
+            Ꮡt.Fatalf("open: %v"u8, err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var video001, err) = png.Decode(new draw_test_package.os_FileжReader(f));
+        if (err != default!) {
+            Ꮡt.Fatalf("decode: %v"u8, err);
+        }
+        var b = video001.Bounds();
+        var cgaPalette = new color.Palette(new color.Color[]{new colorꓸRGBA(0x00, 0x00, 0x00, 0xff), new colorꓸRGBA(0x55, 0xff, 0xff, 0xff), new colorꓸRGBA(0xff, 0x55, 0xff, 0xff), new colorꓸRGBA(0xff, 0xff, 0xff, 0xff)
+        }.slice());
+        var drawers = new map<@string, global::go.image.draw_package.Drawer>{["src"u8] = Src, ["floyd-steinberg"u8] = FloydSteinberg
+        };
+        var sources = new map<@string, image.Image>{["uniform"u8] = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(new colorꓸRGBA(0xff, 0x7f, 0xff, 0xff)))), ["video001"u8] = video001
+        };
+        foreach (var (dName, d) in drawers) {
 loop:
-        foreach (var (sName, src) in sources) {
-            var dst0 = image.NewPaletted(b, cgaPalette);
-            var dst1 = image.NewPaletted(b, cgaPalette);
-            d.Draw(new draw_test_package.image_PalettedжImage(dst0), b, src, new image.Point(nil));
-            d.Draw(new embeddedPaletted(dst1), b, src, new image.Point(nil));
-            for (nint y = b.Min.Y; y < b.Max.Y; y++) {
-                for (nint x = b.Min.X; x < b.Max.X; x++) {
-                    if (!eq(dst0.At(x, y), dst1.At(x, y))) {
-                        Ꮡt.Errorf("%s / %s: at (%d, %d), %v versus %v"u8,
-                            dName, sName, x, y, dst0.At(x, y), dst1.At(x, y));
-                        goto continue_loop;
+            foreach (var (sName, src) in sources) {
+                var dst0 = image.NewPaletted(b, cgaPalette);
+                var dst1 = image.NewPaletted(b, cgaPalette);
+                d.Draw(new draw_test_package.image_PalettedжImage(dst0), b, src, new image.Point(nil));
+                d.Draw(new embeddedPaletted(dst1), b, src, new image.Point(nil));
+                for (nint y = b.Min.Y; y < b.Max.Y; y++) {
+                    for (nint x = b.Min.X; x < b.Max.X; x++) {
+                        if (!eq(dst0.At(x, y), dst1.At(x, y))) {
+                            Ꮡt.Errorf("%s / %s: at (%d, %d), %v versus %v"u8,
+                                dName, sName, x, y, dst0.At(x, y), dst1.At(x, y));
+                            goto continue_loop;
+                        }
                     }
                 }
-            }
 continue_loop:;
-        }
+            }
 break_loop:;
+        }
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void TestSqDiff(ж<testing.T> Ꮡt) {
     // This test is similar to the one from the image/color package, but

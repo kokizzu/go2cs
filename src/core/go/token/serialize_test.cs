@@ -15,52 +15,57 @@ partial class token_internal_test_package {
 
 // equal returns nil if p and q describe the same file set;
 // otherwise it returns an error describing the discrepancy.
-internal static error equal(ж<global::go.go.token_package.FileSet> Ꮡp, ж<global::go.go.token_package.FileSet> Ꮡq) => func<error>((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
-    ref var q = ref Ꮡq.DerefOrNull();
+internal static error equal(ж<global::go.go.token_package.FileSet> Ꮡp, ж<global::go.go.token_package.FileSet> Ꮡq) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
+        ref var q = ref Ꮡq.DerefOrNull();
 
-    if (Ꮡp == Ꮡq) {
-        // avoid deadlock if p == q
+        if (Ꮡp == Ꮡq) {
+            // avoid deadlock if p == q
+            return default!;
+        }
+        // not strictly needed for the test
+        Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
+        Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
+        defer(Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        defer(Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        if (p.@base != q.@base) {
+            return fmt.Errorf("different bases: %d != %d"u8, p.@base, q.@base);
+        }
+        if (len(p.files) != len(q.files)) {
+            return fmt.Errorf("different number of files: %d != %d"u8, len(p.files), len(q.files));
+        }
+        foreach (var (i, f) in p.files) {
+            var g = q.files[i];
+            if ((~f).name != (~g).name) {
+                return fmt.Errorf("different filenames: %q != %q"u8, (~f).name, (~g).name);
+            }
+            if ((~f).@base != (~g).@base) {
+                return fmt.Errorf("different base for %q: %d != %d"u8, (~f).name, (~f).@base, (~g).@base);
+            }
+            if ((~f).size != (~g).size) {
+                return fmt.Errorf("different size for %q: %d != %d"u8, (~f).name, (~f).size, (~g).size);
+            }
+            foreach (var (j, l) in (~f).lines) {
+                nint m = (~g).lines[j];
+                if (l != m) {
+                    return fmt.Errorf("different offsets for %q"u8, (~f).name);
+                }
+            }
+            foreach (var (j, l) in (~f).infos) {
+                var m = (~g).infos[j];
+                if (l.Offset != m.Offset || l.Filename != m.Filename || l.Line != m.Line) {
+                    return fmt.Errorf("different infos for %q"u8, (~f).name);
+                }
+            }
+        }
+        // we don't care about .last - it's just a cache
         return default!;
     }
-    // not strictly needed for the test
-    Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
-    Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
-    defer(Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock);
-    defer(Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock);
-    if (p.@base != q.@base) {
-        return fmt.Errorf("different bases: %d != %d"u8, p.@base, q.@base);
-    }
-    if (len(p.files) != len(q.files)) {
-        return fmt.Errorf("different number of files: %d != %d"u8, len(p.files), len(q.files));
-    }
-    foreach (var (i, f) in p.files) {
-        var g = q.files[i];
-        if ((~f).name != (~g).name) {
-            return fmt.Errorf("different filenames: %q != %q"u8, (~f).name, (~g).name);
-        }
-        if ((~f).@base != (~g).@base) {
-            return fmt.Errorf("different base for %q: %d != %d"u8, (~f).name, (~f).@base, (~g).@base);
-        }
-        if ((~f).size != (~g).size) {
-            return fmt.Errorf("different size for %q: %d != %d"u8, (~f).name, (~f).size, (~g).size);
-        }
-        foreach (var (j, l) in (~f).lines) {
-            nint m = (~g).lines[j];
-            if (l != m) {
-                return fmt.Errorf("different offsets for %q"u8, (~f).name);
-            }
-        }
-        foreach (var (j, l) in (~f).infos) {
-            var m = (~g).infos[j];
-            if (l.Offset != m.Offset || l.Filename != m.Filename || l.Line != m.Line) {
-                return fmt.Errorf("different infos for %q"u8, (~f).name);
-            }
-        }
-    }
-    // we don't care about .last - it's just a cache
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 internal static void checkSerialize(ж<testing.T> Ꮡt, ж<global::go.go.token_package.FileSet> Ꮡp) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);

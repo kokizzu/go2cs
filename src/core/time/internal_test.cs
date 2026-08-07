@@ -56,20 +56,25 @@ internal static void empty(any arg, uintptr seq, int64 delta) {
 //
 // This test has to be in internal_test.go since it fiddles with
 // unexported data structures.
-public static void CheckRuntimeTimerPeriodOverflow() => func((defer, recover) => {
-    // We manually create a runtimeTimer with huge period, but that expires
-    // immediately. The public Timer interface would require waiting for
-    // the entire period before the first update.
-    var t = newTimer(runtimeNano(), 9223372036854775807L, empty, default!, nil);
-    var tʗ1 = t;
-    defer(() => tʗ1.Stop());
-    // If this test fails, we will either throw (when siftdownTimer detects
-    // bad when on update), or other timers will hang (if the timer in a
-    // heap is in a bad state). There is no reliable way to test this, but
-    // we wait on a short timer here as a smoke test (alternatively, timers
-    // in later tests may hang).
-    ᐸꟷ(After(25 * Millisecond));
-});
+public static void CheckRuntimeTimerPeriodOverflow() {
+    GoFrame ᒐ = default;
+    try {
+        // We manually create a runtimeTimer with huge period, but that expires
+        // immediately. The public Timer interface would require waiting for
+        // the entire period before the first update.
+        var t = newTimer(runtimeNano(), 9223372036854775807L, empty, default!, nil);
+        var tʗ1 = t;
+        defer(() => tʗ1.Stop(), ref ᒐ);
+        // If this test fails, we will either throw (when siftdownTimer detects
+        // bad when on update), or other timers will hang (if the timer in a
+        // heap is in a bad state). There is no reliable way to test this, but
+        // we wait on a short timer here as a smoke test (alternatively, timers
+        // in later tests may hang).
+        ᐸꟷ(After(25 * Millisecond));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static global::go.time_package.Time MinMonoTime;
 internal static void initᴛMinMonoTime() { MinMonoTime = new Time(wall: ((uint64)1 << (int)(63)), ext: -9223372036854775808L, loc: ΔUTC); }

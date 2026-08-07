@@ -199,23 +199,28 @@ public static void TestReverseRange(ж<testing.T> Ꮡt) {
     }
 }
 
-public static void TestNonDeterministicComparison(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    // Ensure that sort.Sort does not panic when Less returns inconsistent results.
-    // See https://golang.org/issue/14377.
-    defer(() => {
-        {
-            var r = recover(); if (r != default!) {
-                Ꮡt.Error(r);
+public static void TestNonDeterministicComparison(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        // Ensure that sort.Sort does not panic when Less returns inconsistent results.
+        // See https://golang.org/issue/14377.
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    Ꮡt.Error(r);
+                }
             }
+        }, ref ᒐ);
+        var td = Ꮡ(new nonDeterministicTestingData(
+            r: rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(0, 0)))
+        ));
+        for (nint i = 0; i < 10; i++) {
+            Sort(new sort_test_package.nonDeterministicTestingDataжInterface(td));
         }
-    });
-    var td = Ꮡ(new nonDeterministicTestingData(
-        r: rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(0, 0)))
-    ));
-    for (nint i = 0; i < 10; i++) {
-        Sort(new sort_test_package.nonDeterministicTestingDataжInterface(td));
     }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkSortString1K(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();

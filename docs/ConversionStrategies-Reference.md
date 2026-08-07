@@ -6205,8 +6205,15 @@ of their own: `goǃ` cannot be `go`, which is the root namespace every converted
 ### A nested defer scope gets a frame of its own
 
 A `ref struct` cannot be captured by a lambda, and it does not need to be: a function literal that
-defers carries its own frame inside the lambda (or local function) it emits as, and nested frames are
-numbered by depth (`ᒐ`, `ᒐ1`, …) so an inner one does not collide with the enclosing declaration.
+defers carries its own frame inside the lambda (or local function) it emits as.
+
+Every frame reads under the **same name**, at every nesting depth. A C# lambda or local function may
+declare a local spelled like one in the enclosing method — the pre-C# 8 CS0136 rule does not fire —
+and the inner declaration precedes every inner use, so an inner `GoFrame ᒐ = default;` simply shadows
+the outer one. The one name that *cannot* repeat is the named-result exit **label**: labels do not
+shadow (CS0158, *"the label shadows another label by the same name in a contained scope"*), so
+`ᒐdone` alone carries a nesting-depth suffix. Both facts were settled by compiling the shapes rather
+than reasoning about them.
 
 That is also what makes a **deferred literal that defers on its own account** expressible.
 `defer func(){ defer cleanup(); … }()` scopes the inner `defer` to the literal in Go; the literal is

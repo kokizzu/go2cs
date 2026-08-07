@@ -284,21 +284,26 @@ public static void TestCondSignalStealing(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-public static void TestCondCopy(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    defer(() => {
-        var err = recover();
-        if (err == default! || err._<@string>() != "sync.Cond is copied"u8) {
-            Ꮡt.Fatalf("got %v, expect sync.Cond is copied"u8, err);
-        }
-    });
-    ref var c = ref heap<Δsync.Cond>(out var Ꮡc);
-    c = new Cond(L: new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
-    Ꮡc.Signal();
-    ref var c2 = ref heap(new Δsync.Cond(), out var Ꮡc2);
-    reflect.ValueOf(Ꮡc2).Elem().Set(reflect.ValueOf(Ꮡc).Elem());
-    // c2 := c, hidden from vet
-    Ꮡc2.Signal();
-});
+public static void TestCondCopy(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            var err = recover();
+            if (err == default! || err._<@string>() != "sync.Cond is copied"u8) {
+                Ꮡt.Fatalf("got %v, expect sync.Cond is copied"u8, err);
+            }
+        }, ref ᒐ);
+        ref var c = ref heap<Δsync.Cond>(out var Ꮡc);
+        c = new Cond(L: new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
+        Ꮡc.Signal();
+        ref var c2 = ref heap(new Δsync.Cond(), out var Ꮡc2);
+        reflect.ValueOf(Ꮡc2).Elem().Set(reflect.ValueOf(Ꮡc).Elem());
+        // c2 := c, hidden from vet
+        Ꮡc2.Signal();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 public static void BenchmarkCond1(ж<Δtesting.B> Ꮡb) {
     benchmarkCond(Ꮡb, 1);

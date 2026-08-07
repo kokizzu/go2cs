@@ -31,10 +31,15 @@ public static void ExampleWaitGroup() {
         // Increment the WaitGroup counter.
         Ꮡwg.Add(1);
         // Launch a goroutine to fetch the URL.
-        goǃ((@string urlΔ1) => func((defer, recover) => {
-            defer(Ꮡwg.Done);
-            http.Get(urlΔ1);
-        }), url);
+        goǃ((@string urlΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                http.Get(urlΔ1);
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        }, url);
     }
     // Wait for all HTTP fetches to complete.
     Ꮡwg.Wait();

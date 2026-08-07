@@ -58,48 +58,53 @@ internal static slice<itob64Test> itob64tests = new itob64Test[]{
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object abcˢ = (@string)"abc"u8;
 
-public static void TestItoa(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    foreach (var (_, test) in itob64tests) {
-        @string s = FormatInt(test.@in, test.@base);
-        if (s != test.@out) {
-            Ꮡt.Errorf("FormatInt(%v, %v) = %v want %v"u8,
-                test.@in, test.@base, s, test.@out);
-        }
-        var x = AppendInt(slice<byte>("abc"u8), test.@in, test.@base);
-        if (((@string)x) != "abc"u8 + test.@out) {
-            Ꮡt.Errorf("AppendInt(%q, %v, %v) = %q want %v"u8,
-                abcˢ, test.@in, test.@base, x, test.@out);
-        }
-        if (test.@in >= 0) {
-            @string sΔ1 = FormatUint((uint64)test.@in, test.@base);
-            if (sΔ1 != test.@out) {
-                Ꮡt.Errorf("FormatUint(%v, %v) = %v want %v"u8,
-                    test.@in, test.@base, sΔ1, test.@out);
+public static void TestItoa(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        foreach (var (_, test) in itob64tests) {
+            @string s = FormatInt(test.@in, test.@base);
+            if (s != test.@out) {
+                Ꮡt.Errorf("FormatInt(%v, %v) = %v want %v"u8,
+                    test.@in, test.@base, s, test.@out);
             }
-            var xΔ1 = AppendUint(default!, (uint64)test.@in, test.@base);
-            if (((sstring)xΔ1) != test.@out) {
-                Ꮡt.Errorf("AppendUint(%q, %v, %v) = %q want %v"u8,
-                    abcˢ, (uint64)test.@in, test.@base, xΔ1, test.@out);
+            var x = AppendInt(slice<byte>("abc"u8), test.@in, test.@base);
+            if (((@string)x) != "abc"u8 + test.@out) {
+                Ꮡt.Errorf("AppendInt(%q, %v, %v) = %q want %v"u8,
+                    abcˢ, test.@in, test.@base, x, test.@out);
+            }
+            if (test.@in >= 0) {
+                @string sΔ1 = FormatUint((uint64)test.@in, test.@base);
+                if (sΔ1 != test.@out) {
+                    Ꮡt.Errorf("FormatUint(%v, %v) = %v want %v"u8,
+                        test.@in, test.@base, sΔ1, test.@out);
+                }
+                var xΔ1 = AppendUint(default!, (uint64)test.@in, test.@base);
+                if (((sstring)xΔ1) != test.@out) {
+                    Ꮡt.Errorf("AppendUint(%q, %v, %v) = %q want %v"u8,
+                        abcˢ, (uint64)test.@in, test.@base, xΔ1, test.@out);
+                }
+            }
+            if (test.@base == 10 && (int64)(nint)test.@in == test.@in) {
+                @string sΔ2 = Itoa((nint)test.@in);
+                if (sΔ2 != test.@out) {
+                    Ꮡt.Errorf("Itoa(%v) = %v want %v"u8,
+                        test.@in, sΔ2, test.@out);
+                }
             }
         }
-        if (test.@base == 10 && (int64)(nint)test.@in == test.@in) {
-            @string sΔ2 = Itoa((nint)test.@in);
-            if (sΔ2 != test.@out) {
-                Ꮡt.Errorf("Itoa(%v) = %v want %v"u8,
-                    test.@in, sΔ2, test.@out);
+        // Override when base is illegal
+        defer(() => {
+            {
+                var r = recover(); if (r == default!) {
+                    Ꮡt.Fatalf("expected panic due to illegal base"u8);
+                }
             }
-        }
+        }, ref ᒐ);
+        FormatUint(12345678, 1);
     }
-    // Override when base is illegal
-    defer(() => {
-        {
-            var r = recover(); if (r == default!) {
-                Ꮡt.Fatalf("expected panic due to illegal base"u8);
-            }
-        }
-    });
-    FormatUint(12345678, 1);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 [GoType] partial struct uitob64Test {
     internal uint64 @in;

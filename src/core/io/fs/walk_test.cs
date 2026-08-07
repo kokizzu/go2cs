@@ -95,77 +95,87 @@ internal static error mark(fs.DirEntry entry, error err, ж<slice<error>> Ꮡerr
 private static readonly object findingWorkingDirˢ = (@string)"finding working dir:"u8;
 private static readonly object enteringTempDirˢ = (@string)"entering temp dir:"u8;
 
-public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    @string tmpDir = Ꮡt.TempDir();
-    var (origDir, err) = os.Getwd();
-    if (err != default!) {
-        Ꮡt.Fatal(findingWorkingDirˢ, err);
-    }
-    {
-        err = os.Chdir(tmpDir); if (err != default!) {
-            Ꮡt.Fatal(enteringTempDirˢ, err);
+public static void TestWalkDir(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        @string tmpDir = Ꮡt.TempDir();
+        var (origDir, err) = os.Getwd();
+        if (err != default!) {
+            Ꮡt.Fatal(findingWorkingDirˢ, err);
         }
-    }
-    deferǃ(os.Chdir, origDir, defer);
-    var fsys = makeTree();
-    ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
-    errors = new slice<error>(0, 10);
-    var clear = true;
-    var markFn = (@string path, fs.DirEntry entry, error errΔ1) => mark(entry, errΔ1, Ꮡerrors, clear);
-    // Expect no errors.
-    err = WalkDir(fsys, "."u8, new Func<@string, fs.DirEntry, error, error>(markFn));
-    if (err != default!) {
-        Ꮡt.Fatalf("no error expected, found: %s"u8, err);
-    }
-    if (len(errors) != 0) {
-        Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
-    }
-    walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {
-        if ((~n).mark != 1) {
-            Ꮡt.Errorf("node %s mark = %d; expected 1"u8, path, (~n).mark);
+        {
+            err = os.Chdir(tmpDir); if (err != default!) {
+                Ꮡt.Fatal(enteringTempDirˢ, err);
+            }
         }
-        n.Value.mark = 0;
-    });
-});
+        defer(os.Chdir, origDir, ref ᒐ);
+        var fsys = makeTree();
+        ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
+        errors = new slice<error>(0, 10);
+        var clear = true;
+        var markFn = (@string path, fs.DirEntry entry, error errΔ1) => mark(entry, errΔ1, Ꮡerrors, clear);
+        // Expect no errors.
+        err = WalkDir(fsys, "."u8, new Func<@string, fs.DirEntry, error, error>(markFn));
+        if (err != default!) {
+            Ꮡt.Fatalf("no error expected, found: %s"u8, err);
+        }
+        if (len(errors) != 0) {
+            Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
+        }
+        walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {
+            if ((~n).mark != 1) {
+                Ꮡt.Errorf("node %s mark = %d; expected 1"u8, path, (~n).mark);
+            }
+            n.Value.mark = 0;
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string badˢ = "bad"u8;
 private static readonly @string nextˢ = "next"u8;
 
-public static void TestIssue51617(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    @string dir = Ꮡt.TempDir();
-    foreach (var (_, sub) in new @string[]{"a"u8, filepath.Join("a"u8, badˢ), filepath.Join("a"u8, nextˢ)}.slice()) {
-        {
-            var errΔ1 = os.Mkdir(filepath.Join(dir, sub), 493); if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
+public static void TestIssue51617(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        @string dir = Ꮡt.TempDir();
+        foreach (var (_, sub) in new @string[]{"a"u8, filepath.Join("a"u8, badˢ), filepath.Join("a"u8, nextˢ)}.slice()) {
+            {
+                var errΔ1 = os.Mkdir(filepath.Join(dir, sub), 493); if (errΔ1 != default!) {
+                    Ꮡt.Fatal(errΔ1);
+                }
             }
         }
-    }
-    @string bad = filepath.Join(dir, "a", badˢ);
-    {
-        var errΔ2 = os.Chmod(bad, 0); if (errΔ2 != default!) {
-            Ꮡt.Fatal(errΔ2);
+        @string bad = filepath.Join(dir, "a", badˢ);
+        {
+            var errΔ2 = os.Chmod(bad, 0); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+        }
+        defer(os.Chmod, bad, (fs.FileMode)(448), ref ᒐ);
+        // avoid errors on cleanup
+        ref var saw = ref heap<slice<@string>>(out var Ꮡsaw);
+        var err = WalkDir(os.DirFS(dir), "."u8, error (@string path, fs.DirEntry d, error errΔ3) => {
+            if (errΔ3 != default!) {
+                return filepath.SkipDir;
+            }
+            if (d.IsDir()) {
+                Ꮡsaw.ValueSlot = append(Ꮡsaw.ValueSlot, path);
+            }
+            return default!;
+        });
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var want = new @string[]{"."u8, "a"u8, "a/bad"u8, "a/next"u8}.slice();
+        if (!reflect.DeepEqual(saw, want)) {
+            Ꮡt.Errorf("got directories %v, want %v"u8, saw, want);
         }
     }
-    deferǃ(os.Chmod, bad, (fs.FileMode)(448), defer);
-    // avoid errors on cleanup
-    ref var saw = ref heap<slice<@string>>(out var Ꮡsaw);
-    var err = WalkDir(os.DirFS(dir), "."u8, error (@string path, fs.DirEntry d, error errΔ3) => {
-        if (errΔ3 != default!) {
-            return filepath.SkipDir;
-        }
-        if (d.IsDir()) {
-            Ꮡsaw.ValueSlot = append(Ꮡsaw.ValueSlot, path);
-        }
-        return default!;
-    });
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var want = new @string[]{"."u8, "a"u8, "a/bad"u8, "a/next"u8}.slice();
-    if (!reflect.DeepEqual(saw, want)) {
-        Ꮡt.Errorf("got directories %v, want %v"u8, saw, want);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end fs_test_package

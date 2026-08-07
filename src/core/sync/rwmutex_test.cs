@@ -47,12 +47,17 @@ internal static void doTestParallelReaders(nint numReaders, nint gomaxprocs) {
     }
 }
 
-public static void TestParallelReaders(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(-1), defer);
-    doTestParallelReaders(1, 4);
-    doTestParallelReaders(3, 4);
-    doTestParallelReaders(4, 2);
-});
+public static void TestParallelReaders(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        defer(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(-1), ref ᒐ);
+        doTestParallelReaders(1, 4);
+        doTestParallelReaders(3, 4);
+        doTestParallelReaders(4, 2);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 internal static void reader(ж<Δsync.RWMutex> Ꮡrwm, nint num_iterations, ж<int32> Ꮡactivity, channel<bool> cdone) {
     for (nint i = 0; i < num_iterations; i++) {
@@ -107,47 +112,52 @@ public static void HammerRWMutex(nint gomaxprocs, nint numReaders, nint num_iter
     }
 }
 
-public static void TestRWMutex(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    ref var m = ref heap(new Δsync.RWMutex(), out var Ꮡm);
-    Ꮡm.Lock();
-    if (Ꮡm.TryLock()) {
-        Ꮡt.Fatalf("TryLock succeeded with mutex locked"u8);
+public static void TestRWMutex(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref heap(new Δsync.RWMutex(), out var Ꮡm);
+        Ꮡm.Lock();
+        if (Ꮡm.TryLock()) {
+            Ꮡt.Fatalf("TryLock succeeded with mutex locked"u8);
+        }
+        if (Ꮡm.TryRLock()) {
+            Ꮡt.Fatalf("TryRLock succeeded with mutex locked"u8);
+        }
+        Ꮡm.Unlock();
+        if (!Ꮡm.TryLock()) {
+            Ꮡt.Fatalf("TryLock failed with mutex unlocked"u8);
+        }
+        Ꮡm.Unlock();
+        if (!Ꮡm.TryRLock()) {
+            Ꮡt.Fatalf("TryRLock failed with mutex unlocked"u8);
+        }
+        if (!Ꮡm.TryRLock()) {
+            Ꮡt.Fatalf("TryRLock failed with mutex rlocked"u8);
+        }
+        if (Ꮡm.TryLock()) {
+            Ꮡt.Fatalf("TryLock succeeded with mutex rlocked"u8);
+        }
+        Ꮡm.RUnlock();
+        Ꮡm.RUnlock();
+        defer(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(-1), ref ᒐ);
+        nint n = 1000;
+        if (Δtesting.Short()) {
+            n = 5;
+        }
+        HammerRWMutex(1, 1, n);
+        HammerRWMutex(1, 3, n);
+        HammerRWMutex(1, 10, n);
+        HammerRWMutex(4, 1, n);
+        HammerRWMutex(4, 3, n);
+        HammerRWMutex(4, 10, n);
+        HammerRWMutex(10, 1, n);
+        HammerRWMutex(10, 3, n);
+        HammerRWMutex(10, 10, n);
+        HammerRWMutex(10, 5, n);
     }
-    if (Ꮡm.TryRLock()) {
-        Ꮡt.Fatalf("TryRLock succeeded with mutex locked"u8);
-    }
-    Ꮡm.Unlock();
-    if (!Ꮡm.TryLock()) {
-        Ꮡt.Fatalf("TryLock failed with mutex unlocked"u8);
-    }
-    Ꮡm.Unlock();
-    if (!Ꮡm.TryRLock()) {
-        Ꮡt.Fatalf("TryRLock failed with mutex unlocked"u8);
-    }
-    if (!Ꮡm.TryRLock()) {
-        Ꮡt.Fatalf("TryRLock failed with mutex rlocked"u8);
-    }
-    if (Ꮡm.TryLock()) {
-        Ꮡt.Fatalf("TryLock succeeded with mutex rlocked"u8);
-    }
-    Ꮡm.RUnlock();
-    Ꮡm.RUnlock();
-    deferǃ(Δruntime.GOMAXPROCS, Δruntime.GOMAXPROCS(-1), defer);
-    nint n = 1000;
-    if (Δtesting.Short()) {
-        n = 5;
-    }
-    HammerRWMutex(1, 1, n);
-    HammerRWMutex(1, 3, n);
-    HammerRWMutex(1, 10, n);
-    HammerRWMutex(4, 1, n);
-    HammerRWMutex(4, 3, n);
-    HammerRWMutex(4, 10, n);
-    HammerRWMutex(10, 1, n);
-    HammerRWMutex(10, 3, n);
-    HammerRWMutex(10, 10, n);
-    HammerRWMutex(10, 5, n);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object rLockerDidnTReadLockItˢ = (@string)"RLocker() didn't read-lock it"u8;

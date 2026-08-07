@@ -368,6 +368,15 @@ not to have traded allocation for wall time.
 emitted shape differs from the sketch, what the design did not anticipate, and what is deliberately
 not in the arc.
 
+**How it was actually staged.** Six gated checkpoints, not five. §4.8's stages 1, 2 and 5 landed as
+written. Its stage 3 was three steps (recover, then named results, then literals); recover and named
+results landed TOGETHER, because a `recover()` that mutates a named result is precisely the shape
+neither could have gated alone, and literals landed on their own. Stage 4 (§4.5) is not in the arc at
+all — see below. The sixth checkpoint is not a stage: it repairs two defects found by *reading* the
+regenerated corpus rather than by any gate — a preamble left an indent level out from the body it
+belongs to, and a mojibake'd comment banner in the generated registration ladder. Neither could fail
+a gate, which is the argument for reading the output as well as testing it.
+
 **The end-to-end number.** `os.File.WriteString` — the row r39-osalloc decomposed and the reason the
 440 B term was ever named — measures **2,736 → 2,368 B/call** across the arc (−368 B), with the same
 368 B coming off `os.File.Write` and off the `Write − syscall.Write` wrapper band that contains

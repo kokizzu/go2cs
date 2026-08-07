@@ -109,8 +109,9 @@ public static void TestLex(ж<testing.T> Ꮡt) {
 internal static (@string tok, error err) lexHelp(ж<global::go.go.build.constraint_package.exprParser> Ꮡp) {
     @string tok = default!;
     error err = default!;
-    func((defer, recover) => {
-    ref var p = ref Ꮡp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
         defer(() => {
             {
@@ -124,10 +125,12 @@ internal static (@string tok, error err) lexHelp(ж<global::go.go.build.constrai
                     throw panic(e);
                 }
             }
-        });
+        }, ref ᒐ);
         p.lex();
         (tok, err) = (p.tok, default!);
-    });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
     return (tok, err);
 }
 

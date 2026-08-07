@@ -94,18 +94,28 @@ internal static void doDefaultTest(ж<testing.T> Ꮡt, @string v) {
         Ꮡwg.Add(goroutines);
         for (nint i = 0; i < goroutines; i++) {
             // Call Seed and Uint64 concurrently.
-            goǃ((int64 s) => func((defer, recover) => {
-                defer(Ꮡwg.Done);
-                Seed(s);
-            }), (int64)i + 100);
+            goǃ((int64 s) => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    Seed(s);
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            }, (int64)i + 100);
         }
         Ꮡwg.Add(goroutines);
         for (nint i = 0; i < goroutines; i++) {
             var chʗ1 = ch;
-            goǃ(() => func((defer, recover) => {
-                defer(Ꮡwg.Done);
-                chʗ1.ᐸꟷ(Uint64());
-            }));
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    chʗ1.ᐸꟷ(Uint64());
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            });
         }
         break;
     }
@@ -114,10 +124,15 @@ internal static void doDefaultTest(ж<testing.T> Ꮡt, @string v) {
         for (nint i = 0; i < goroutines; i++) {
             // Call Uint64 concurrently with no Seed.
             var chʗ2 = ch;
-            goǃ(() => func((defer, recover) => {
-                defer(Ꮡwg.Done);
-                chʗ2.ᐸꟷ(Uint64());
-            }));
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    chʗ2.ᐸꟷ(Uint64());
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            });
         }
         break;
     }
@@ -127,18 +142,28 @@ internal static void doDefaultTest(ж<testing.T> Ꮡt, @string v) {
         for (nint i = 0; i < goroutines; i++) {
             // Start with Uint64 to pick the fast source, then call
             // Seed and Uint64 concurrently.
-            goǃ((int64 s) => func((defer, recover) => {
-                defer(Ꮡwg.Done);
-                Seed(s);
-            }), (int64)i + 100);
+            goǃ((int64 s) => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    Seed(s);
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            }, (int64)i + 100);
         }
         Ꮡwg.Add(goroutines);
         for (nint i = 0; i < goroutines; i++) {
             var chʗ3 = ch;
-            goǃ(() => func((defer, recover) => {
-                defer(Ꮡwg.Done);
-                chʗ3.ᐸꟷ(Uint64());
-            }));
+            goǃ(() => {
+                GoFrame ᒐ = default;
+                try {
+                    defer(Ꮡwg.Done, ref ᒐ);
+                    chʗ3.ᐸꟷ(Uint64());
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                finally { ᒐ.Run(); }
+            });
         }
         break;
     }

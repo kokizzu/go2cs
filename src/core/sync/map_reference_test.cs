@@ -116,42 +116,48 @@ public static void Delete(this ж<RWMutexMap> Ꮡm, any key) {
 
 public static bool /*swapped*/ CompareAndSwap(this ж<RWMutexMap> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
-    func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
+        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock, ref ᒐ);
         if (m.dirty == default!) {
-            swapped = false; return;
+            swapped = false; goto ᒐdone;
         }
         var (value, loaded) = m.dirty[key, ꟷ];
         if (loaded && AreEqual(value, old)) {
             m.dirty[key] = @new;
-            swapped = true; return;
+            swapped = true; goto ᒐdone;
         }
         swapped = false;
-    });
-    return swapped;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return swapped;
 }
 
 public static bool /*deleted*/ CompareAndDelete(this ж<RWMutexMap> Ꮡm, any key, any old) {
     bool deleted = default!;
-    func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
+        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock, ref ᒐ);
         if (m.dirty == default!) {
-            deleted = false; return;
+            deleted = false; goto ᒐdone;
         }
         var (value, loaded) = m.dirty[key, ꟷ];
         if (loaded && AreEqual(value, old)) {
             delete(m.dirty, key);
-            deleted = true; return;
+            deleted = true; goto ᒐdone;
         }
         deleted = false;
-    });
-    return deleted;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return deleted;
 }
 
 public static void Range(this ж<RWMutexMap> Ꮡm, Func<any, any, bool> f) {
@@ -174,13 +180,18 @@ public static void Range(this ж<RWMutexMap> Ꮡm, Func<any, any, bool> f) {
     }
 }
 
-public static void Clear(this ж<RWMutexMap> Ꮡm) => func((defer, recover) => {
-    ref var m = ref Ꮡm.DerefOrNull();
+public static void Clear(this ж<RWMutexMap> Ꮡm) {
+    GoFrame ᒐ = default;
+    try {
+        ref var m = ref Ꮡm.DerefOrNull();
 
-    Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
-    defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock);
-    clear(m.dirty);
-});
+        Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
+        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock, ref ᒐ);
+        clear(m.dirty);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // DeepCopyMap is an implementation of mapInterface using a Mutex and
 // atomic.Value.  It makes deep copies of the map on every write to avoid
@@ -267,48 +278,54 @@ public static void Delete(this ж<DeepCopyMap> Ꮡm, any key) {
 
 public static bool /*swapped*/ CompareAndSwap(this ж<DeepCopyMap> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
         {
             var (previous, ok) = clean[key, ꟷ]; if (!ok || !AreEqual(previous, old)) {
-                swapped = false; return;
+                swapped = false; goto ᒐdone;
             }
         }
         Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock);
+        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
         var dirty = Ꮡm.dirty();
         var (value, loaded) = dirty[key, ꟷ];
         if (loaded && AreEqual(value, old)) {
             dirty[key] = @new;
             Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-            swapped = true; return;
+            swapped = true; goto ᒐdone;
         }
         swapped = false;
-    });
-    return swapped;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return swapped;
 }
 
 public static bool /*deleted*/ CompareAndDelete(this ж<DeepCopyMap> Ꮡm, any key, any old) {
     bool deleted = default!;
-    func((defer, recover) => {
+    GoFrame ᒐ = default;
+    try {
         var (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
         {
             var (previous, ok) = clean[key, ꟷ]; if (!ok || !AreEqual(previous, old)) {
-                deleted = false; return;
+                deleted = false; goto ᒐdone;
             }
         }
         Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock);
+        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
         var dirty = Ꮡm.dirty();
         var (value, loaded) = dirty[key, ꟷ];
         if (loaded && AreEqual(value, old)) {
             delete(dirty, key);
             Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-            deleted = true; return;
+            deleted = true; goto ᒐdone;
         }
         deleted = false;
-    });
-    return deleted;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return deleted;
 }
 
 public static void Range(this ж<DeepCopyMap> Ꮡm, Func<any, any, bool> f) {
@@ -329,10 +346,15 @@ internal static map<any, any> dirty(this ж<DeepCopyMap> Ꮡm) {
     return dirty;
 }
 
-public static void Clear(this ж<DeepCopyMap> Ꮡm) => func((defer, recover) => {
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
-    defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock);
-    Ꮡm.of(DeepCopyMap.Ꮡclean).Store((map<any, any>)(default!));
-});
+public static void Clear(this ж<DeepCopyMap> Ꮡm) {
+    GoFrame ᒐ = default;
+    try {
+        Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
+        Ꮡm.of(DeepCopyMap.Ꮡclean).Store((map<any, any>)(default!));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 } // end sync_test_package
