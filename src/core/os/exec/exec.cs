@@ -746,20 +746,20 @@ public static error Start(this ж<Cmd> Ꮡc) {
             var statusc = new channel<Start_goroutineStatus>(1);
             statusc.ᐸꟷ(new Start_goroutineStatus(running: len(c.goroutine)));
             foreach (var (_, fn) in c.goroutine) {
-                var goroutineErrʗ2 = goroutineErr;
-                var statuscʗ2 = statusc;
+                var goroutineErrʗ1 = goroutineErr;
+                var statuscʗ1 = statusc;
                 goǃ((Func<error> fnΔ1) => {
                     var errΔ2 = fnΔ1();
                     ref var status = ref heap<Start_goroutineStatus>(out var Ꮡstatus);
-                    status = ᐸꟷ(statuscʗ2);
+                    status = ᐸꟷ(statuscʗ1);
                     if (status.firstErr == default!) {
                         status.firstErr = errΔ2;
                     }
                     status.running--;
                     if (status.running == 0){
-                        goroutineErrʗ2.ᐸꟷ(status.firstErr);
+                        goroutineErrʗ1.ᐸꟷ(status.firstErr);
                     } else {
-                        statuscʗ2.ᐸꟷ(status);
+                        statuscʗ1.ᐸꟷ(status);
                     }
                 }, fn);
             }

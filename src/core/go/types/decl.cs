@@ -688,9 +688,11 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
         check.later(() => {
             {
                 var t = asNamed(Ꮡobj.Value.typ); if (t != nil) {
+                    // type may be invalid
                     Ꮡcheck.validType(t);
                 }
             }
+            // If typ is local, an error was already reported where typ is specified/defined.
             _ = !versionErr && Ꮡcheck.Value.isImportedConstraint(Ꮡrhs.ValueSlot) && Ꮡcheck.verifyVersionf(new ast_Exprᴠpositioner(Ꮡtdecl.Value.Type), go1_18, "using type constraint %s"u8, Ꮡrhs.ValueSlot);
         }).describef(new TypeNameжpositioner(Ꮡobj), "validType(%s)"u8, Ꮡobj.of(TypeName.Ꮡobject).Name());
         // First type parameter, or nil.
@@ -927,14 +929,8 @@ internal static void collectMethods(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡo
         // See go.dev/issue/52529: we must delay the expansion of underlying here, as
         // base may not be fully set-up.
         var baseʗ1 = @base;
-
-        var baseʗ3 = @base;
-
-        var baseʗ5 = @base;
-
-        var baseʗ7 = @base;
         check.later(() => {
-            Ꮡcheck.checkFieldUniqueness(baseʗ7);
+            Ꮡcheck.checkFieldUniqueness(baseʗ1);
         }).describef(new TypeNameжpositioner(Ꮡobj), "verifying field uniqueness for %v"u8, @base.OrTypedNil());
         // Checker.Files may be called multiple times; additional package files
         // may add methods to already type-checked types. Add pre-existing methods
@@ -1032,17 +1028,8 @@ internal static void funcDecl(this ж<Checker> Ꮡcheck, ж<Func> Ꮡobj, ж<dec
     if (!(~check.conf).IgnoreFuncBodies && (~fdecl).Body != nil) {
         var fdeclʗ1 = fdecl;
         var sigʗ1 = sig;
-
-        var fdeclʗ3 = fdecl;
-        var sigʗ3 = sig;
-
-        var fdeclʗ5 = fdecl;
-        var sigʗ5 = sig;
-
-        var fdeclʗ7 = fdecl;
-        var sigʗ7 = sig;
         check.later(() => {
-            Ꮡcheck.funcBody(Ꮡdecl, Ꮡobj.Value.name, sigʗ7, (~fdeclʗ7).Body, default!);
+            Ꮡcheck.funcBody(Ꮡdecl, Ꮡobj.Value.name, sigʗ1, (~fdeclʗ1).Body, default!);
         }).describef(new Funcжpositioner(Ꮡobj), "func %s"u8, obj.name);
     }
 }

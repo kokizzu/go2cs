@@ -263,40 +263,42 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
             // Delay validation of receiver type as it may cause premature expansion
             // of types the receiver type is dependent on (see issues go.dev/issue/51232, go.dev/issue/51233).
             var recvʗ1 = recv;
-
-            var recvʗ3 = recv;
-
-            var recvʗ5 = recv;
-
-            var recvʗ7 = recv;
             check.later(() => {
-                var (rtyp, _) = deref((~recvʗ7).typ);
+                // spec: "The receiver type must be of the form T or *T where T is a type name."
+                var (rtyp, _) = deref((~recvʗ1).typ);
                 var atyp = Unalias(rtyp);
                 if (!isValid(atyp)) {
                     return;
                 }
+                // error was reported before
+                // spec: "The type denoted by T is called the receiver base type; it must not
+                // be a pointer or interface type and it must be declared in the same package
+                // as the method."
                 switch (atyp.type()) {
                 case ж<Named> T: {
                     if (T.TypeArgs() != nil && Ꮡsig.Value.RecvTypeParams() == nil) {
-                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on instantiated type %s"u8, rtyp);
+                        // The receiver type may be an instantiated type referred to
+                        // by an alias (which cannot have receiver parameters for now).
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ1), InvalidRecv, "cannot define new methods on instantiated type %s"u8, rtyp);
                         break;
                     }
                     if ((~(~T).obj).pkg != Ꮡcheck.Value.pkg) {
-                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ1), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
                         break;
                     }
                     @string cause = default!;
-                    var switchᴛ20 = T.under();
-                    switch (switchᴛ20.type()) {
+                    var switchᴛ14 = T.under();
+                    switch (switchᴛ14.type()) {
                     case ж<Basic> u: {
                         if ((~u).kind == UnsafePointer) {
+                            // unsafe.Pointer is treated like a regular pointer
                             cause = unsafePointerˢ;
                         }
                         break;
                     }
                     case ж<Pointer> _:
                     case ж<Interface> _: {
-                        var u = switchᴛ20;
+                        var u = switchᴛ14;
                         cause = pointerOrInterfaceTypeˢ;
                         break;
                     }
@@ -305,17 +307,19 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                         break;
                     }}
                     if (cause != ""u8) {
-                        Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s (%s)"u8, rtyp, cause);
+                        // The underlying type of a receiver base type cannot be a
+                        // type parameter: "type T[P any] P" is not a valid declaration.
+                        Ꮡcheck.errorf(new Varжpositioner(recvʗ1), InvalidRecv, "invalid receiver type %s (%s)"u8, rtyp, cause);
                     }
                     break;
                 }
                 case ж<Basic> T: {
-                    Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
+                    Ꮡcheck.errorf(new Varжpositioner(recvʗ1), InvalidRecv, "cannot define new methods on non-local type %s"u8, rtyp);
                     break;
                 }
                 default: {
                     var T = atyp;
-                    Ꮡcheck.errorf(new Varжpositioner(recvʗ7), InvalidRecv, "invalid receiver type %s"u8, (~recvʗ7).typ);
+                    Ꮡcheck.errorf(new Varжpositioner(recvʗ1), InvalidRecv, "invalid receiver type %s"u8, (~recvʗ1).typ);
                     break;
                 }}
             }).describef(new Varжpositioner(recv), "validate receiver %s"u8, recv.OrTypedNil());

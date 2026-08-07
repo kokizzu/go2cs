@@ -272,20 +272,11 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                         // error message.
                         var mposʗ2 = mposʗ1;
                         var otherʗ1 = other;
-
-                        var mposʗ4 = mposʗ1;
-                        var otherʗ3 = other;
-
-                        var mposʗ6 = mposʗ1;
-                        var otherʗ5 = other;
-
-                        var mposʗ8 = mposʗ1;
-                        var otherʗ7 = other;
                         Ꮡcheck.Value.later(() => {
-                            if (posΔ1.IsValid() && !Ꮡcheck.allowVersion(((atPos)posΔ1), go1_14) || !Identical((~m).typ, otherʗ7.Type())) {
+                            if (posΔ1.IsValid() && !Ꮡcheck.allowVersion(((atPos)posΔ1), go1_14) || !Identical((~m).typ, otherʗ1.Type())) {
                                 var err = Ꮡcheck.newError(DuplicateDecl);
                                 err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
-                                err.addf(((atPos)mposʗ8[otherʗ7._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
+                                err.addf(((atPos)mposʗ2[otherʗ1._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
                                 err.report();
                             }
                         }).describef(((atPos)posΔ1), "duplicate method check for %s"u8, (~m).name);
@@ -310,8 +301,8 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
             }
             bool comparable = default!;
             Δtermlist terms = default!;
-            var switchᴛ24 = under(typ);
-            switch (switchᴛ24.type()) {
+            var switchᴛ18 = under(typ);
+            switch (switchᴛ18.type()) {
             case ж<Interface> u: {
                 assert(!isTypeParam(typ));
                 var tset = computeInterfaceTypeSet(Ꮡcheck, // For now we don't permit type parameters as constraints.
@@ -342,7 +333,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                 break;
             }
             default: {
-                var u = switchᴛ24;
+                var u = switchᴛ18;
                 if (!isValid(u)) {
                     // ignore invalid unions
                     continue;

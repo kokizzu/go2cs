@@ -1281,6 +1281,7 @@ internal static void parseInitDataDirective(this ж<parser> Ꮡp) {
         }
         else if (exprᴛ1 == "checksum"u8) {
             defer((nuint mode) => {
+                // Don't let the scanner try to parse the checksum as a number.
                 Ꮡp.Value.scanner.Value.Mode = mode;
             }, (~Ꮡp.Value.scanner).Mode, ref ᒐ);
             p.scanner.Value.Mode &= unchecked((nuint)~(nuint)((nuint)((nuint)scanner.ScanInts | (nuint)scanner.ScanFloats)));

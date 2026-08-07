@@ -381,6 +381,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
             Δp.Value.cap = cap(s);
             Δp.Value.len = len(s);
             defer((ж<g> gpΔ1) => {
+                // Decrease the length of the slice by one, safely.
                 var pΔ1 = gpΔ1.of(g.ᏑcgoCtxt).Reinterpret<slice<uintptr>, Δsliceᴛ>();
                 pΔ1.Value.len--;
             }, gp, ref ᒐ);

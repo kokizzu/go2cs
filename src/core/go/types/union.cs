@@ -112,17 +112,8 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
     // Note: This is a quadratic algorithm, but unions tend to be short.
     var termsʗ1 = terms;
     var tlistʗ1 = tlist;
-
-    var termsʗ3 = terms;
-    var tlistʗ3 = tlist;
-
-    var termsʗ5 = terms;
-    var tlistʗ5 = tlist;
-
-    var termsʗ7 = terms;
-    var tlistʗ7 = tlist;
     check.later(() => {
-        foreach (var (i, t) in termsʗ7) {
+        foreach (var (i, t) in termsʗ1) {
             if (!isValid((~t).typ)) {
                 continue;
             }
@@ -130,35 +121,43 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
             var (f, _) = uΔ1._<ж<Interface>>(ᐧ);
             if ((~t).tilde) {
                 if (f != nil) {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "invalid use of ~ (%s is an interface)"u8, (~t).typ);
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "invalid use of ~ (%s is an interface)"u8, (~t).typ);
                     continue;
                 }
+                // don't report another error for t
                 if (!Identical(uΔ1, (~t).typ)) {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "invalid use of ~ (underlying type of %s is %s)"u8, (~t).typ, uΔ1);
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "invalid use of ~ (underlying type of %s is %s)"u8, (~t).typ, uΔ1);
                     continue;
                 }
             }
+            // Stand-alone embedded interfaces are ok and are handled by the single-type case
+            // in the beginning. Embedded interfaces with tilde are excluded above. If we reach
+            // here, we must have at least two terms in the syntactic term list (but not necessarily
+            // in the term list of the union's type set).
             if (f != nil) {
                 var tset = f.typeSet();
                 switch (ᐧ) {
                 case {} when tset.NumMethods() is not 0: {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s contains methods)"u8, t.OrTypedNil(), t.OrTypedNil());
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "cannot use %s in union (%s contains methods)"u8, t.OrTypedNil(), t.OrTypedNil());
                     break;
                 }
                 case {} when AreEqual((~t).typ, universeComparable.Type()): {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, cannotUseComparableInˢ);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, cannotUseComparableInˢ);
                     break;
                 }
                 case {} when (~tset).comparable: {
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use %s in union (%s embeds comparable)"u8, t.OrTypedNil(), t.OrTypedNil());
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "cannot use %s in union (%s embeds comparable)"u8, t.OrTypedNil(), t.OrTypedNil());
                     break;
                 }}
 
                 continue;
             }
+            // terms with interface types are not subject to the no-overlap rule
+            // Report overlapping (non-disjoint) terms such as
+            // a|a, a|~a, ~a|~a, and ~a|A (where under(A) == a).
             {
-                nint j = overlappingTerm(termsʗ7[..(int)(i)], t); if (j >= 0) {
-                    Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "overlapping terms %s and %s"u8, t.OrTypedNil(), termsʗ7[j].OrTypedNil());
+                nint j = overlappingTerm(termsʗ1[..(int)(i)], t); if (j >= 0) {
+                    Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "overlapping terms %s and %s"u8, t.OrTypedNil(), termsʗ1[j].OrTypedNil());
                 }
             }
         }

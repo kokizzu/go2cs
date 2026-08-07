@@ -732,16 +732,16 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
         var laneʗ1 = lane;
         queryFn = (@string fqdn, dnsmessage.Type qtype) => {
             ᏑdnsWaitGroup.Add(1);
-            var laneʗ3 = laneʗ1;
+            var laneʗ2 = laneʗ1;
             goǃ((dnsmessage.Type qtypeΔ1) => {
                 ref var p = ref heap<dnsmessage.Parser>(out var Ꮡp);
                 (p, var server, var errΔ3) = Ꮡr.tryOneName(ctx, Ꮡconf, fqdn, qtypeΔ1);
-                laneʗ3.ᐸꟷ(new goLookupIPCNAMEOrder_result(p, server, errΔ3));
+                laneʗ2.ᐸꟷ(new goLookupIPCNAMEOrder_result(p, server, errΔ3));
                 ᏑdnsWaitGroup.Done();
             }, qtype);
         };
-        var laneʗ4 = lane;
-        responseFn = (@string fqdn, dnsmessage.Type qtype) => ᐸꟷ(laneʗ4);
+        var laneʗ3 = lane;
+        responseFn = (@string fqdn, dnsmessage.Type qtype) => ᐸꟷ(laneʗ3);
     }
     error lastErr = default!;
     foreach (var (_, fqdn) in conf.nameList(name)) {

@@ -208,6 +208,7 @@ internal static void validVarType(this ж<Checker> Ꮡcheck, ast.Expr e, ΔType 
         {
             var (t, _) = under(typ)._<ж<Interface>>(ᐧ); if (t != nil) {
                 var tset = computeInterfaceTypeSet(Ꮡcheck, e.Pos(), t);
+                // TODO(gri) is this the correct position?
                 if (!tset.IsMethodSet()) {
                     if ((~tset).comparable){
                         Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(e), MisplacedConstraintIface, "cannot use type %s outside a type constraint: interface is (or embeds) comparable"u8, typ);
@@ -422,19 +423,19 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             typΔ11.Value.key = Ꮡcheck.varType((~e).Key);
             typΔ11.Value.elem = Ꮡcheck.varType((~e).Value);
             var typʗ1 = typΔ11;
-
-            var typʗ3 = typΔ11;
-
-            var typʗ5 = typΔ11;
-
-            var typʗ7 = typΔ11;
             check.later(() => {
-                if (!Comparable((~typʗ7).key)) {
+                // spec: "The comparison operators == and != must be fully defined
+                // for operands of the key type; thus the key type must not be a
+                // function, map, or slice."
+                //
+                // Delay this check because it requires fully setup types;
+                // it is safe to continue in any case (was go.dev/issue/6667).
+                if (!Comparable((~typʗ1).key)) {
                     @string why = default!;
-                    if (isTypeParam((~typʗ7).key)) {
+                    if (isTypeParam((~typʗ1).key)) {
                         why = missingComparableˢ;
                     }
-                    Ꮡcheck.errorf(new ast_Exprᴠpositioner((~e).Key), IncomparableMapKey, "invalid map key type %s%s"u8, (~typʗ7).key, why);
+                    Ꮡcheck.errorf(new ast_Exprᴠpositioner((~e).Key), IncomparableMapKey, "invalid map key type %s%s"u8, (~typʗ1).key, why);
                 }
             }).describef(new ast_Exprᴠpositioner((~e).Key), "check map key %s"u8, (~typΔ11).key);
             T = new MapжΔType(typΔ11); goto ᒐdone;
@@ -556,28 +557,29 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
         var inst = asNamed(Ꮡcheck.instance(ix.Pos(), new NamedжΔgenericType(orig), targs, nil, check.context()));
         // orig.tparams may not be set up, so we need to do expansion later.
         var instʗ1 = inst;
-
-        var instʗ3 = inst;
-
-        var instʗ5 = inst;
-
-        var instʗ7 = inst;
         check.later(() => {
-            Ꮡcheck.Value.recordInstance(Ꮡix.Value.Orig, instʗ7.TypeArgs().list(), new NamedжΔType(instʗ7));
-            if (Ꮡcheck.validateTArgLen(Ꮡix.Value.Pos(), (~(~instʗ7).obj).name, instʗ7.TypeParams().Len(), instʗ7.TypeArgs().Len())) {
+            // This is an instance from the source, not from recursive substitution,
+            // and so it must be resolved during type-checking so that we can report
+            // errors.
+            Ꮡcheck.Value.recordInstance(Ꮡix.Value.Orig, instʗ1.TypeArgs().list(), new NamedжΔType(instʗ1));
+            if (Ꮡcheck.validateTArgLen(Ꮡix.Value.Pos(), (~(~instʗ1).obj).name, instʗ1.TypeParams().Len(), instʗ1.TypeArgs().Len())) {
                 {
-                    var (i, err) = Ꮡcheck.verify(Ꮡix.Value.Pos(), instʗ7.TypeParams().list(), instʗ7.TypeArgs().list(), Ꮡcheck.Value.context()); if (err != default!){
+                    var (i, err) = Ꮡcheck.verify(Ꮡix.Value.Pos(), instʗ1.TypeParams().list(), instʗ1.TypeArgs().list(), Ꮡcheck.Value.context()); if (err != default!){
+                        // best position for error reporting
                         tokenꓸPos pos = Ꮡix.Value.Pos();
                         if (i < len(Ꮡix.Value.Indices)) {
                             pos = Ꮡix.Value.Indices[i].Pos();
                         }
                         Ꮡcheck.softErrorf(((atPos)pos), InvalidTypeArg, "%v"u8, err);
                     } else {
-                        Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, Ꮡix.Value.Pos(), instʗ7.TypeParams().list(), instʗ7.TypeArgs().list(), Ꮡix.Value.Indices);
+                        Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, Ꮡix.Value.Pos(), instʗ1.TypeParams().list(), instʗ1.TypeArgs().list(), Ꮡix.Value.Indices);
                     }
                 }
             }
-            Ꮡcheck.validType(instʗ7);
+            // TODO(rfindley): remove this call: we don't need to call validType here,
+            // as cycles can only occur for types used inside a Named type declaration,
+            // and so it suffices to call validType from declared types.
+            Ꮡcheck.validType(instʗ1);
         }).describef(new typeparams_IndexExprжpositioner(Ꮡix), "resolve instance %s"u8, inst.OrTypedNil());
         res = new NamedжΔType(inst);
     }

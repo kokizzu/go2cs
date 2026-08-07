@@ -68,6 +68,7 @@
     <None Include="$(MSBuildThisFileDirectory)globalAddressOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)go.mod" />
     <None Include="$(MSBuildThisFileDirectory)go.sum" />
+    <None Include="$(MSBuildThisFileDirectory)goFrameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)HashSet.go" />
     <None Include="$(MSBuildThisFileDirectory)hoistedLiteralOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)identifierNaming.go" />

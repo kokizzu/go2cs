@@ -163,26 +163,18 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
         // verify instantiation lazily (was go.dev/issue/50450)
         var targsʗ1 = targs;
         var xlistʗ1 = xlist;
-
-        var targsʗ3 = targs;
-        var xlistʗ3 = xlist;
-
-        var targsʗ5 = targs;
-        var xlistʗ5 = xlist;
-
-        var targsʗ7 = targs;
-        var xlistʗ7 = xlist;
         check.later(() => {
             var tparams = Ꮡtyp.Value.TypeParams().list();
             {
-                var (i, err) = Ꮡcheck.verify(pos, tparams, targsʗ7, Ꮡcheck.Value.context()); if (err != default!){
+                var (i, err) = Ꮡcheck.verify(pos, tparams, targsʗ1, Ꮡcheck.Value.context()); if (err != default!){
+                    // best position for error reporting
                     tokenꓸPos posΔ1 = pos;
-                    if (i < len(xlistʗ7)) {
-                        posΔ1 = xlistʗ7[i].Pos();
+                    if (i < len(xlistʗ1)) {
+                        posΔ1 = xlistʗ1[i].Pos();
                     }
                     Ꮡcheck.softErrorf(((atPos)posΔ1), InvalidTypeArg, "%s"u8, err);
                 } else {
-                    Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, pos, tparams, targsʗ7, xlistʗ7);
+                    Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, pos, tparams, targsʗ1, xlistʗ1);
                 }
             }
         }).describef(((atPos)pos), "verify instantiation"u8);

@@ -194,19 +194,20 @@ internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, 
     ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
     Ꮡwg.Add(len(filenames));
     foreach (var (i, filename) in filenames) {
-        var errorsʗ3 = errors;
-        var filesʗ3 = files;
-        var openʗ3 = open;
+        var errorsʗ1 = errors;
+        var filesʗ1 = files;
+        var openʗ1 = open;
         goǃ((nint iΔ1, @string filepath) => {
             GoFrame ᒐ = default;
             try {
                 defer(Ꮡwg.Done, ref ᒐ);
-                var (src, err) = openʗ3(filepath);
+                var (src, err) = openʗ1(filepath);
                 if (err != default!) {
-                    errorsʗ3[iΔ1] = err;
+                    errorsʗ1[iΔ1] = err;
+                    // open provides operation and filename in error
                     return;
                 }
-                (filesʗ3[iΔ1], errorsʗ3[iΔ1]) = parser.ParseFile(Ꮡp.Value.fset, filepath, src, parser.SkipObjectResolution);
+                (filesʗ1[iΔ1], errorsʗ1[iΔ1]) = parser.ParseFile(Ꮡp.Value.fset, filepath, src, parser.SkipObjectResolution);
                 src.Close();
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

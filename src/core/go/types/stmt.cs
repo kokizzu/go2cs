@@ -451,6 +451,7 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
         // statements must end with the same top scope as they started with
         if (debug) {
             defer((ж<ΔScope> scope) => {
+                // don't check if code is panicking
                 {
                     var p = recover(); if (p != default!) {
                         throw panic(p);

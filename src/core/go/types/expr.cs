@@ -1246,20 +1246,8 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     var declʗ1 = decl;
                     var iotaʗ1 = iota;
                     var sigʗ1 = sig;
-
-                    var declʗ3 = decl;
-                    var iotaʗ3 = iota;
-                    var sigʗ3 = sig;
-
-                    var declʗ5 = decl;
-                    var iotaʗ5 = iota;
-                    var sigʗ5 = sig;
-
-                    var declʗ7 = decl;
-                    var iotaʗ7 = iota;
-                    var sigʗ7 = sig;
                     check.later(() => {
-                        Ꮡcheck.funcBody(declʗ7, functionLiteralˢ, sigʗ7, (~eΔ1).Body, iotaʗ7);
+                        Ꮡcheck.funcBody(declʗ1, functionLiteralˢ, sigʗ1, (~eΔ1).Body, iotaʗ1);
                     }).describef(new ast_FuncLitжpositioner(eΔ1), "func literal"u8);
                 }
                 x.mode = value;

@@ -158,38 +158,34 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
             var embeddedPos = f.Value.Type;
             var embeddedPosʗ1 = embeddedPos;
             var embeddedTypʗ1 = embeddedTyp;
-
-            var embeddedPosʗ3 = embeddedPos;
-            var embeddedTypʗ3 = embeddedTyp;
-
-            var embeddedPosʗ5 = embeddedPos;
-            var embeddedTypʗ5 = embeddedTyp;
-
-            var embeddedPosʗ7 = embeddedPos;
-            var embeddedTypʗ7 = embeddedTyp;
             check.later(() => {
-                var (t, isPtr) = deref(embeddedTypʗ7);
+                var (t, isPtr) = deref(embeddedTypʗ1);
                 switch (under(t).type()) {
                 case ж<Basic> u: {
                     if (!isValid(t)) {
+                        // error was reported before
                         return;
                     }
                     if ((~u).kind == UnsafePointer) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ);
+                        // unsafe.Pointer is treated like a regular pointer
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ1), InvalidPtrEmbed, embeddedFieldTypeCannotˢ);
                     }
                     break;
                 }
                 case ж<Pointer> u: {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ2);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ1), InvalidPtrEmbed, embeddedFieldTypeCannotˢ2);
                     break;
                 }
                 case ж<Interface> u: {
                     if (isTypeParam(t)) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), MisplacedTypeParam, embeddedFieldTypeCannotˢ3);
+                        // The error code here is inconsistent with other error codes for
+                        // invalid embedding, because this restriction may be relaxed in the
+                        // future, and so it did not warrant a new error code.
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ1), MisplacedTypeParam, embeddedFieldTypeCannotˢ3);
                         break;
                     }
                     if (isPtr) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ4);
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ1), InvalidPtrEmbed, embeddedFieldTypeCannotˢ4);
                     }
                     break;
                 }}
