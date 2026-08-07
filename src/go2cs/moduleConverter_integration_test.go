@@ -8,6 +8,7 @@ package main
 
 import (
 	"go/build"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -461,6 +462,123 @@ func TestModuleCachePoisonedGoWorkLoad(t *testing.T) {
 
 	if !strings.Contains(valueCs, "Value") {
 		t.Errorf("converted value.cs missing func Value:\n%s", valueCs)
+	}
+}
+
+// TestModuleCacheVestigialReplaceLoad guards the load SHAPE for a module-cache package (issue #33
+// follow-up). A published module zip routinely carries directives that were written for the source
+// repo and are vestigial once unpacked — here a monorepo's `replace example.com/sub => ./sub`, whose
+// target is a separate module and so is excluded from the zip. Loading the package from ITS OWN
+// directory makes the go command treat that go.mod as the MAIN module, where a `replace` IS
+// authoritative, and the dependency dies: `replacement directory ./sub does not exist`, an
+// empty-named types.Package, and `could not import example.com/sub (invalid package name: "")` at
+// every use site. Loading the same package from the APP's directory by import path ignores the
+// dependency's replaces, exactly as the app's own build does.
+//
+// Both sides are asserted from one fixture, so the control proves the fixture still reproduces the
+// failure rather than the guard passing vacuously. Network-free: the "module cache" is a temp
+// directory that goModCache is pinned to, and the app reaches both modules through its own replaces.
+func TestModuleCacheVestigialReplaceLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the fixture packages via go/packages")
+	}
+
+	root := t.TempDir()
+	modCache := filepath.Join(root, "modcache")
+	depDir := filepath.Join(modCache, "example.com", "dep@v1.0.0")
+	subDir := filepath.Join(modCache, "example.com", "sub@v1.0.0")
+	appDir := filepath.Join(root, "app")
+
+	// The dependency, as unpacked from its zip: it requires a sibling module and replaces that module
+	// with a RELATIVE directory the zip does not contain.
+	writeModuleFile(t, filepath.Join(depDir, "go.mod"),
+		"module example.com/dep\n\ngo 1.23\n\nrequire example.com/sub v1.0.0\n\nreplace example.com/sub => ./sub\n")
+	writeModuleFile(t, filepath.Join(depDir, "value.go"),
+		"package dep\n\nimport \"example.com/sub\"\n\nfunc Value() string {\n\treturn sub.Name()\n}\n")
+
+	// The sibling module, present in the cache at its own path — which is how the app resolves it.
+	writeModuleFile(t, filepath.Join(subDir, "go.mod"), "module example.com/sub\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(subDir, "name.go"),
+		"package sub\n\nfunc Name() string {\n\treturn \"sub\"\n}\n")
+
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire (\n\texample.com/dep v1.0.0\n\texample.com/sub v1.0.0\n)\n\n"+
+			"replace example.com/dep => "+filepath.ToSlash(depDir)+"\n\nreplace example.com/sub => "+filepath.ToSlash(subDir)+"\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport \"example.com/dep\"\n\nfunc main() {\n\tprintln(dep.Value())\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	// Point the module-cache classification at the fixture, as the go.work guard does.
+	savedModCache := goModCache
+	goModCache = modCache
+
+	defer func() { goModCache = savedModCache }()
+
+	// The loader reports type errors through the standard logger, and processConversion converts
+	// best-effort either way — so the log is where the two shapes actually differ.
+	convert := func(opts Options, outDir string) string {
+		var captured strings.Builder
+
+		savedOutput := log.Writer()
+		log.SetOutput(&captured)
+
+		defer log.SetOutput(savedOutput)
+
+		if err := processConversion(depDir, true, outDir, opts); err != nil {
+			t.Fatalf("conversion failed: %v", err)
+		}
+
+		return captured.String()
+	}
+
+	// Control — the old shape: no main module to borrow a context from, so the load runs from inside
+	// the cache and the vestigial replace fires. If this side ever goes quiet, the fixture has stopped
+	// reproducing and the guard below proves nothing.
+	controlLog := convert(options, filepath.Join(root, "out-control"))
+
+	if !strings.Contains(controlLog, "invalid package name") {
+		t.Fatalf("control did not reproduce the vestigial-replace failure — the guard below is vacuous:\n%s", controlLog)
+	}
+
+	// The fix: name the main module and the package's import path, and the same package loads from
+	// the app's context, where the dependency's replaces are correctly ignored.
+	fixed := options
+	fixed.mainModuleDir = appDir
+	fixed.packageImportPath = "example.com/dep"
+
+	fixedLog := convert(fixed, filepath.Join(root, "out-fixed"))
+
+	if strings.Contains(fixedLog, "invalid package name") {
+		t.Errorf("main-module load still hit the dependency's vestigial replace:\n%s", fixedLog)
+	}
+
+	if strings.Contains(fixedLog, "resolved away from") {
+		t.Errorf("import path did not resolve to the convert-set directory:\n%s", fixedLog)
+	}
+
+	// The conversion is real on the fixed side, not merely quiet.
+	if valueCs := readGenerated(t, filepath.Join(root, "out-fixed", "value.cs")); !strings.Contains(valueCs, "sub.Name()") {
+		t.Errorf("converted value.cs lost the cross-module call:\n%s", valueCs)
 	}
 }
 

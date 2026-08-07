@@ -31,6 +31,8 @@ type Options struct {
 	recurse             bool
 	recurseOutputRoot   string // -recurse: writable root for generated src\ + pkg\ trees; defaults to go2csPath
 	mainModulePath      string // -recurse: import path of the app (main) module; routes its packages to src\, deps to pkg\
+	mainModuleDir       string // -recurse: DIRECTORY of the app (main) module; the context a module-cache package is loaded from (see processConversion)
+	packageImportPath   string // -recurse: import path of the ONE package being converted right now; set per package by convertAll, not from the command line
 	moduleOnly          bool   // -recurse=module: convert the input module's OWN packages only; the third-party closure is referenced (into pkg\) but not converted
 	nugetRefs           bool   // -recurse=nuget: reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local $(go2csPath) project references
 	targetPlatform      string

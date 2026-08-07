@@ -68,6 +68,16 @@ func NewModuleConverter(options Options) *ModuleConverter {
 func (m *ModuleConverter) ConvertModule(moduleDir string) error {
 	fmt.Printf("Recursively converting module at %s\n", moduleDir)
 
+	// The main module's directory is the CONTEXT every module-cache package is re-loaded from — see
+	// the load-shape note in processConversion. Resolve it absolute once: the per-package load sets
+	// it as the go command's working directory, and a relative path would resolve against whatever
+	// the process' cwd happens to be by then.
+	if absModuleDir, err := filepath.Abs(moduleDir); err == nil {
+		m.options.mainModuleDir = absModuleDir
+	} else {
+		m.options.mainModuleDir = moduleDir
+	}
+
 	// 1. Load the module and its full dependency closure. This load is used only to DISCOVER and
 	//    CLASSIFY the closure (import paths, source dirs, module identity) and to build the
 	//    dependency graph — each package is re-loaded with full syntax/types when it is converted,
@@ -382,7 +392,12 @@ func (m *ModuleConverter) convertAll() {
 				}
 			}()
 
-			return processConversion(pkg.Dir, true, outputDir, m.options)
+			// Name the package being converted, so a module-cache load can be issued by IMPORT PATH
+			// from the main module rather than by directory from inside the cache (processConversion).
+			packageOptions := m.options
+			packageOptions.packageImportPath = pkgPath
+
+			return processConversion(pkg.Dir, true, outputDir, packageOptions)
 		}()
 
 		if err != nil {

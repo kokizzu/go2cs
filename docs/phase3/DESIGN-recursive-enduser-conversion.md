@@ -541,10 +541,33 @@ vestigial `replace … => ../`), is to load a `GOMODCACHE` package from the **ma
 `go.work` is not read either and the `GOWORK=off` gate becomes redundant for third-party packages — it should
 stay for the non-recurse paths, which have no main module to load from.
 
-Not implemented: it changes the load path for every third-party package in a recurse run, and it is worth
-weighing against the fact that this is also 1,726 separate `packages.Load` invocations — the dominant cost of
-a recurse run — over a closure `loadClosure` already type-checked correctly in one pass. Tracked on the
-Phase-4 board under the issue-#33 entry, rooted and ready.
+**LANDED (2026-08-07).** `processConversion` takes the main-module shape whenever all four conditions hold:
+the input is under `GOMODCACHE`, the run is `-recurse`, and both the main module's directory and the
+package's import path are known. `ModuleConverter` resolves the module directory absolute once in
+`ConvertModule` (the load sets it as the go command's working directory, so a relative path would resolve
+against whatever the process' cwd happens to be) and names each package in `convertAll` through a per-package
+copy of `Options`. Everything else keeps the directory load, and `GOWORK=off` with it — a single-package
+conversion has no main module to borrow a context from.
+
+One defensive check rides along: an import path resolves through the main module's version selection, so it
+MUST land on the directory the convert-set names — the same selection produced both. If it ever does not, the
+output would be written for one package under another's path, silently; `loadedPackageIsAt` catches that and
+falls back to the directory load with a warning. It has never been observed to fire.
+
+Guarded by `TestModuleCacheVestigialReplaceLoad` (network-free, both sides from one fixture: the control
+asserts the vestigial `replace` still reproduces, so the fix side cannot pass vacuously). Verified end to end
+against the reporter's own dependency: a `-recurse` run over the otel closure goes from 2 `invalid package
+name` failures to **0**, and with the converter itself rebuilt under Go 1.25 the whole closure converts
+**14/14 with no warning of any kind**. Emission-neutral for the corpus by construction — no behavioral
+package is under `GOMODCACHE` — and measured so: all **569** packages transpile byte-identically to the
+converter that predates the change.
+
+**Deliberately NOT done, and left for a future pass:** reusing the closure `loadClosure` already type-checked
+instead of re-loading each package. Now that a dependency is loaded from the main module's directory anyway,
+the per-package reload is doing in 1,726 separate `packages.Load` invocations — the dominant cost of a recurse
+run — what one pass already did correctly. That is a pipeline-shape decision rather than a bug fix, and it has
+to respect `-recurse=module`, which deliberately skips the full-closure type-check so an unconvertible
+dependency graph cannot block the app's own code. Tracked on the Phase-4 board under the issue-#33 entry.
 
 A second, independent finding from the same reproduction: the converter cannot type-check a module whose `go`
 directive exceeds the Go release **go2cs itself was built with** (`otel@v1.44.0` declares `go 1.25.0`; a

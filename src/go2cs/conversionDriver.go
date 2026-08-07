@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -53,6 +54,28 @@ func goModCacheDir() string {
 	return goModCache
 }
 
+// loadedPackageIsAt reports whether the load produced exactly the package that lives at dir. Used to
+// confirm that an import-path load landed on the directory the convert-set entry names, since the
+// output path is derived from that directory. Comparison is case-insensitive on Windows, matching
+// isPathUnder's treatment of the same paths.
+func loadedPackageIsAt(pkgs []*packages.Package, dir string) bool {
+	for _, pkg := range pkgs {
+		if pkg.Dir == "" {
+			continue
+		}
+
+		if pkg.Dir == dir {
+			return true
+		}
+
+		if runtime.GOOS == "windows" && strings.EqualFold(pkg.Dir, dir) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // processConversion converts ONE resolved input — a single .go file or a package directory — into
 // C# at outputFilePath. It returns an error only for a PACKAGE LOAD failure, which is the one
 // failure mode that belongs to the input rather than to the environment: a batch driver
@@ -82,15 +105,40 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	// files from a cross-platform conversion.
 	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]))
 
-	// A package in the read-only module cache can carry a vestigial go.work file unpacked from its
-	// module zip — the cloud.google.com/go monorepo ships one listing ~200 sibling modules that are
-	// not in the cache — and the go command, walking up from cfg.Dir, would enter workspace mode
-	// and fail this load with "cannot load module ../<sibling> listed in go.work file", losing the
-	// package from a -recurse run (issue #32). A go.work inside the module cache is never an
-	// authoritative workspace, so disable workspace mode for these loads; loads anywhere else keep
-	// the ambient GOWORK behavior (an end-user module may legitimately resolve its own packages
-	// through a real workspace).
-	if isPathUnder(inputFilePath, goModCacheDir()) {
+	// A MODULE-CACHE package is loaded from the MAIN MODULE's directory, by import path — not from
+	// its own directory, by path. The distinction is not stylistic: the go command treats the module
+	// whose go.mod it finds by walking up from cfg.Dir as the MAIN module, and a cache directory is
+	// not one. Promoting a dependency's go.mod to main-module status activates directives that are
+	// authoritative only there, and a published module zip routinely carries ones that are vestigial
+	// outside the source repo they were written for:
+	//
+	//   - `replace` (issue #33) — `go.opentelemetry.io/otel`'s go.mod says `replace
+	//     go.opentelemetry.io/otel/trace => ./trace`, correct in the monorepo where that is a sibling
+	//     directory. The zip EXCLUDES it (trace is its own module), so in the cache the go command
+	//     reports "replacement directory ./trace does not exist", `otel/trace` never loads, its
+	//     types.Package comes back empty-named, and go/types reports `could not import
+	//     go.opentelemetry.io/otel/trace (invalid package name: "")` at every use site — untyping
+	//     189 of the 244 packages in that one module. A `replace` is honored ONLY in the main module,
+	//     so loading from the app's directory ignores it, which is the correct semantics.
+	//   - `go.work` (issue #32) — the cloud.google.com/go monorepo ships one listing ~200 sibling
+	//     modules that are not in the cache, and the load failed with "cannot load module ../<sibling>
+	//     listed in go.work file".
+	//
+	// Loading from the main module resolves the package exactly as the app's own build does, which is
+	// also how ModuleConverter.loadClosure discovered it in the first place. The go command never
+	// enters the dependency's directory, so BOTH families above are structurally out of reach rather
+	// than each needing its own gate.
+	//
+	// The GOWORK=off gate stays for every load that must still run from inside the cache — a
+	// single-package conversion has no main module to borrow a context from.
+	loadPattern := inputFilePath
+	inModuleCache := isPathUnder(inputFilePath, goModCacheDir())
+	fromMainModule := inModuleCache && options.recurse && options.mainModuleDir != "" && options.packageImportPath != ""
+
+	if fromMainModule {
+		cfg.Dir = options.mainModuleDir
+		loadPattern = options.packageImportPath
+	} else if inModuleCache {
 		cfg.Env = append(cfg.Env, "GOWORK=off")
 	}
 
@@ -104,6 +152,18 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	if !options.recurse && strings.HasPrefix(strings.ToLower(inputFilePath), strings.ToLower(options.goPath)) {
 		pkgs, err = packages.Load(cfg, "./...")
 	} else {
+		pkgs, err = packages.Load(cfg, loadPattern)
+	}
+
+	// An import path resolves through the main module's version selection, so it MUST land on the
+	// directory the closure was built from — the same selection produced both. If it somehow does
+	// not, the output would be written for one package under another's path, silently; fall back to
+	// the directory load rather than emit that. Defensive, and it has never been observed to fire.
+	if fromMainModule && err == nil && !loadedPackageIsAt(pkgs, inputFilePath) {
+		showWarning("Import path %q resolved away from %q; re-loading that directory directly", options.packageImportPath, inputFilePath)
+
+		cfg.Dir = inputFilePath
+		cfg.Env = append(cfg.Env, "GOWORK=off")
 		pkgs, err = packages.Load(cfg, inputFilePath)
 	}
 

@@ -63,11 +63,13 @@
 
 ## OWED — the issue-#33 panic fix needs its Windows gates (2026-08-06, same day)
 
-For the next **local (Windows)** session: `master` carries the issue-#33 arc — commits `fe9bec0` (the
-`package_info.cs` EOL-agnostic read-back, Linux finding F3) and `6ca9565` (the panic fix itself), posted
-directly to master under the same standing ruling as the issue-#32 entry below, and for the same reason:
-a remote Linux container where the .NET/PowerShell gates cannot run, so the change ships with
-converter-level evidence only.
+For the next **local (Windows)** session: `master` carries the issue-#33 arc in three commits — `fe9bec0`
+(the `package_info.cs` EOL-agnostic read-back, Linux finding F3), `6ca9565` (the panic fix itself), and the
+main-module load shape for module-cache packages that closes finding (b) below — posted directly to master
+under the same standing ruling as the issue-#32 entry, and for the same reason: a remote Linux container
+where the .NET/PowerShell gates cannot run, so the arc ships with converter-level evidence only. All three
+are emission-neutral for the corpus, and that is measured rather than argued: **569/569** behavioral
+packages transpile byte-identically to the converter that predates each change.
 
 **What the reporter hit.** A `-recurse` conversion of [renart](https://github.com/renart-data/renart) died
 at `[736/1726]` on a nil dereference at `escapeAnalysisOperations.go:739`, discarding ~1,000 packages of
@@ -111,9 +113,15 @@ Owed, in order (budgets from the CLAUDE.md table):
    corpus has none on Windows. ⚠ Re-run `go build -o bin\go2cs.exe` first: a `git checkout` restore refreshes
    every `.cs` mtime and re-arms false-green route #2, exactly as the issue-#32 entry records.
 2. `./src/tests/Behavioral/run-behavioral.ps1` (full) — timeout 2100s. Expect 544/544 + 514/514.
-3. `go test ./...` from `src/go2cs` — expect `ok`, exit 0, including the two new guards
-   (`TestUntypedPackageConvertsWithoutPanic`, `TestEscapeAnalysisPanicReachesCaller`) and the seven
-   pre-existing recurse tests that the Linux container cannot pass.
+3. `go test ./...` from `src/go2cs` — expect `ok`, exit 0, including the three new guards
+   (`TestUntypedPackageConvertsWithoutPanic`, `TestEscapeAnalysisPanicReachesCaller`,
+   `TestModuleCacheVestigialReplaceLoad`) and the seven pre-existing recurse tests that the Linux container
+   cannot pass. The third guard asserts both sides from one fixture, so a Windows pass also confirms the
+   control still reproduces there.
+3a. **Worth doing once, and it is not a gate:** a real `-recurse` run against a module that depends on
+   `go.opentelemetry.io/otel@v1.44.0` (or any monorepo-layout module with relative replaces) — the container
+   measured 2 → 0 `invalid package name` failures, and Windows is where the reporter hit it. Build the
+   converter with **Go 1.25 or newer** first, per finding (c).
 4. `./src/run-validated-sweep.ps1` only if 1–3 surface anything — byte-identical emission leaves no path
    into the banked suites otherwise.
 5. **One Windows-specific risk worth a look, not a gate:** F3 now splits a read-back `package_info.cs`
@@ -132,8 +140,8 @@ are the CRLF-template tests. All nine are unchanged with the #33 arc removed. Re
 *count* of Linux failures moved for a benign reason, and the next Linux session should not read it as drift.
 F5 remains Arc 2 of [`PLAN-linux-operation.md`](../PLAN-linux-operation.md), untouched.
 
-**(b) ROOTED and REPRODUCED — the reporter's `invalid package name: ""` is the issue-#32 family, one
-directive over.** Reproduced end-to-end the same session against the reporter's own dependency
+**(b) ROOTED, REPRODUCED, and FIXED — the reporter's `invalid package name: ""` was the issue-#32 family,
+one directive over.** Reproduced end-to-end the same session against the reporter's own dependency
 (`go.opentelemetry.io/otel@v1.44.0`), so this is measured, not argued. The hypothesis first written here —
 "the standalone module-cache load is a weaker context" — is **confirmed in mechanism and wrong in detail**:
 it has nothing to do with MVS version selection or the app's own `replace` directives.
@@ -176,10 +184,25 @@ non-recurse paths. `ModuleConverter` has both inputs already (`pkgPath` and the 
 time: this is also 1,726 separate `packages.Load` invocations, the dominant cost of a recurse run, against a
 closure `loadClosure` already type-checked correctly in one pass.
 
-**Not implemented here.** It changes the load path for every third-party package in a recurse run and the
-Windows gates cannot run in this container — the maintainer's call, but it is now a rooted, reproduced,
-ready item rather than a hypothesis. Consequence today: with the panic fix in, it costs one degraded package
-instead of the run.
+**LANDED 2026-08-07** (commit on master; design detail in
+[`DESIGN-recursive-enduser-conversion.md`](../phase3/DESIGN-recursive-enduser-conversion.md), *The same seam,
+one directive over*). A module-cache package is loaded from the main module's directory by import path
+whenever the run is `-recurse` and both inputs are known; every other load keeps the directory shape and the
+`GOWORK=off` gate with it. Measured: the otel `-recurse` run goes **2 → 0** `invalid package name` failures,
+and with the converter rebuilt under Go 1.25 the closure converts **14/14 with no warning of any kind**. All
+**569** behavioral packages transpile **byte-identically** to the converter that predates the change —
+expected, since no behavioral package is under `GOMODCACHE`, and measured rather than assumed. Guarded by
+`TestModuleCacheVestigialReplaceLoad`, which asserts BOTH sides from one fixture so the guard cannot pass
+vacuously. The converter's own suite has the same nine pre-existing Linux failures, unchanged.
+
+**Deliberately LEFT UNDONE — the one item this arc hands forward.** Closure reuse: `loadClosure` already
+type-checks the whole graph in one pass in the main module's context, and now that each package is loaded
+from that same context anyway, the per-package reload is re-deriving in **1,726 separate `packages.Load`
+invocations** what one pass already had. That is the dominant cost of a recurse run. It was not folded into
+this fix because it is a pipeline-shape decision rather than a bug fix, and because it has to respect
+`-recurse=module`, which deliberately skips the full-closure type-check precisely so an unconvertible
+dependency graph cannot block the app's own code (issue #32's mode). Rooted and ready; wants a measurement of
+the real saving before it is worth the risk.
 
 **(c) A second, independent finding from the same reproduction — the converter cannot type-check a module
 whose `go` directive exceeds the Go release go2cs was BUILT with.** `otel@v1.44.0` declares `go 1.25.0`; a
@@ -190,7 +213,11 @@ switch reaches that. This is invisible until a dependency adopts a new language 
 degrades whole packages. Two things follow: build go2cs with a toolchain at least as new as the newest `go`
 directive in any closure it is asked to convert, and consider making the converter **say so by name** rather
 than letting it read as an ordinary type error. Independent of (b) — it reproduced on both load shapes and
-disappeared on both when the probe was re-run under go1.25.
+disappeared on both when the probe was re-run under go1.25, and confirmed a third time end to end: rebuilding
+the converter itself with Go 1.25 is what took the otel `-recurse` run from "14/14 with 13 best-effort
+warnings" to "14/14, silent". **Left as guidance, not code** — the honest fix is a build requirement, and the
+optional refinement (naming this condition in the diagnostic instead of letting it read as an ordinary type
+error) is a small, separate change nobody is blocked on.
 
 ## ~~OWED~~ DISCHARGED — the issue-#32 go.work fix is measured on Windows (2026-08-06, same day)
 
