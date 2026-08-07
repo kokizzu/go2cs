@@ -389,15 +389,23 @@ internal class StructTypeTemplate : TemplateBase
                     if (typeSymbol is null)
                         yield break;
 
-                    foreach (IFieldSymbol field in typeSymbol.GetMembers().OfType<IFieldSymbol>())
+                    // `fieldSymbol`, not `field`: this local function is nested inside the
+                    // `PromotedStructDeclarations` GET accessor, and C# 14 makes `field` a KEYWORD there
+                    // (the synthesized-backing-field feature). Under LangVersion 14 the declaration is
+                    // CS9273 and each use binds to the synthesized backing field instead of the loop
+                    // variable — CS1061 on `.DeclaredAccessibility`/`.IsStatic`/`.Name`/`.Type`, which
+                    // is what broke every build on the .NET 10 SDK (issue #34). The sibling
+                    // `property` loop below is unaffected; `field` is the only contextual keyword the
+                    // accessor scope introduces.
+                    foreach (IFieldSymbol fieldSymbol in typeSymbol.GetMembers().OfType<IFieldSymbol>())
                     {
-                        if (field.DeclaredAccessibility != Accessibility.Public || field.IsStatic || field.IsImplicitlyDeclared)
+                        if (fieldSymbol.DeclaredAccessibility != Accessibility.Public || fieldSymbol.IsStatic || fieldSymbol.IsImplicitlyDeclared)
                             continue;
 
-                        if (GetSimpleName(field.Name) == "_")
+                        if (GetSimpleName(fieldSymbol.Name) == "_")
                             continue;
 
-                        yield return (field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), field.Name);
+                        yield return (fieldSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), fieldSymbol.Name);
                     }
 
                     // A REFERENCED assembly's generated wrapper exposes its embedded member and its
