@@ -582,6 +582,110 @@ func TestModuleCacheVestigialReplaceLoad(t *testing.T) {
 	}
 }
 
+// TestRecurseQuotedModulePath guards issue #33's csproj-filename failure end to end. A go.mod module
+// path is a token and may be QUOTED — gopkg.in/yaml.v3 declares itself `module "gopkg.in/yaml.v3"`,
+// and the gopkg.in family generally does — so reading the directive's raw remainder carried the
+// quotes into the project name and from there into the file the project writer opens:
+//
+//	Error while writing project file "…\pkg\gopkg.in\yaml.v3\"gopkg.in.yaml.v3".csproj":
+//	The filename, directory name, or volume label syntax is incorrect.
+//
+// github.com/… paths never showed it because their go.mod writes the path bare; the quoting is the
+// whole discriminator. The fixture reproduces the shape exactly — a versioned, dotted-host dependency
+// whose go.mod quotes both its module path and its requires — resolved through a local replace so the
+// test stays deterministic and network-free.
+func TestRecurseQuotedModulePath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	libDir := filepath.Join(root, "lib.v3")
+
+	// Byte-for-byte the gopkg.in shape: quoted module path, quoted require paths.
+	writeModuleFile(t, filepath.Join(libDir, "go.mod"),
+		"module \"gopkg.in/lib.v3\"\n\nrequire (\n\t\"gopkg.in/check.v1\" v0.0.0-20161208181325-20d25e280405\n)\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(libDir, "greeting.go"),
+		"package lib\n\nimport \"strings\"\n\nfunc Greeting(name string) string {\n\treturn strings.TrimSpace(\"Hello, \"+name+\"!\")\n}\n")
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire gopkg.in/lib.v3 v3.0.0\n\nreplace gopkg.in/lib.v3 => ../lib.v3\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\tlib \"gopkg.in/lib.v3\"\n)\n\nfunc main() {\n\tfmt.Println(lib.Greeting(\"go2cs\"))\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	// getImportPackageInfo resolves stdlib references through build.Default; pin it as main() does.
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	if queue := converter.graph.sortedQueue; len(queue) != 2 || queue[0] != "gopkg.in/lib.v3" || queue[1] != "example.com/app" {
+		t.Fatalf("convert order = %v, want [gopkg.in/lib.v3 example.com/app]", queue)
+	}
+
+	// The dependency's project file exists under the unquoted, dotted import path. Before the fix the
+	// write failed outright (logged as a per-package WARNING, so the run itself still returned nil) and
+	// nothing was here at all.
+	libProjectDir := filepath.Join(options.recurseOutputRoot, "pkg", "gopkg.in", "lib.v3")
+	libProject := filepath.Join(libProjectDir, "gopkg.in.lib.v3.csproj")
+
+	if _, err := os.Stat(libProject); err != nil {
+		t.Fatalf("dependency project file was not written at %s: %v", libProject, err)
+	}
+
+	// …and nothing quoted was written beside it under some other name.
+	entries, err := os.ReadDir(libProjectDir)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, entry := range entries {
+		if strings.ContainsAny(entry.Name(), `"'`) {
+			t.Errorf("generated file name %q carries go.mod quoting", entry.Name())
+		}
+	}
+
+	// The converted dependency is real, and the app references it by that unquoted name.
+	if greetingCs := readGenerated(t, filepath.Join(libProjectDir, "greeting.cs")); !strings.Contains(greetingCs, "strings.TrimSpace") {
+		t.Errorf("lib greeting.cs missing strings.TrimSpace:\n%s", greetingCs)
+	}
+
+	appProjectDir := filepath.Join(options.recurseOutputRoot, "src", "example.com", "app")
+	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
+	libReference, err := filepath.Rel(appProjectDir, libProject)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(appCsproj, `<ProjectReference Include="`+libReference+`" />`) {
+		t.Errorf("app csproj missing the relative lib ProjectReference %q:\n%s", libReference, appCsproj)
+	}
+}
+
 func writeModuleFile(t *testing.T, path, content string) {
 	t.Helper()
 

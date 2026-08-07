@@ -576,6 +576,60 @@ untyped). The go *command* switches toolchains automatically; the `go/types` go2
 release compiled it, and no toolchain switch reaches that. Build the converter with a toolchain at least as
 new as the newest `go` directive in any closure it will be asked to convert.
 
+### The module path is a token, not the rest of the line (issue #33 follow-up, 2026-08-07)
+
+The reporter's next wall after the load fixes above was not a load at all — it was a **file name**:
+
+```
+Error while writing project file "…\pkg\gopkg.in\yaml.v3\"gopkg.in.yaml.v3".csproj":
+The filename, directory name, or volume label syntax is incorrect.
+```
+
+The csproj name carried literal double quotes, so the open failed before a byte was written and
+`gopkg.in/yaml.v3` was lost from the run (as a per-package `WARNING` — the run itself continued and
+reported success for everything else, which is why it reads as a mystery rather than a crash).
+
+The quotes come from the dependency's own `go.mod`. A go.mod directive is a sequence of **tokens**, and a
+token may be written as a quoted string; `gopkg.in/yaml.v3@v3.0.1` uses that form throughout:
+
+```
+module "gopkg.in/yaml.v3"
+
+require (
+	"gopkg.in/check.v1" v0.0.0-20161208181325-20d25e280405
+)
+```
+
+`readModuleFromGoMod` matched `module\s+(.+)` and returned the rest of the LINE, so the module path became
+`"gopkg.in/yaml.v3"` — quotes and all. `getProjectName` then split it on `/` and joined with dots into the
+project name, which is also the csproj file name, and Windows rejects `"` in a path. Nothing downstream was
+wrong: the quotes were never part of the module path, they are syntax the reader was not reading.
+
+That is also the discriminator against every dependency the recurse path had been exercised on. The
+`github.com/…` convention is the bare form (`module github.com/fatih/color`), so the DAG this feature was
+built against could not show it; the gopkg.in family writes the quoted form, and the old reader was equally
+wrong about a `//` trailing comment and a backtick-quoted path.
+
+The fix reads the token instead of the line: **`modfile.ModulePath`** (`golang.org/x/mod`, already in the
+build graph) — the same tolerant reader `cmd/go` uses for exactly this job. It drops `//` comments, requires
+`module` to begin the line, and unquotes both the interpreted and raw forms. Emission-neutral by
+construction (a bare module path parses identically) and measured so: all **571** behavioral packages
+transpile byte-identically.
+
+Guarded twice, at the two altitudes the defect crossed: `TestProjectNameFromModuleDirective`
+(`importOperations_test.go` — the four directive shapes, plus the standing invariant that a project name
+never contains a character a file name cannot) and `TestRecurseQuotedModulePath` (integration, network-free:
+a versioned dotted-host dependency resolved through a local `replace`, asserting the dependency's `.csproj`
+exists under the unquoted name and the app references it there). Neuter-proven — restoring the regex
+reproduces the reporter's error text verbatim in the integration guard.
+
+**What this unblocks, and what it does not.** A `gopkg.in/*` dependency now converts end to end (verified on
+a scratch module importing `gopkg.in/yaml.v3@v3.0.1`: 2/2 packages, project + solution files written, the
+app's `ProjectReference` resolving). It then meets **backlog item 8** above, unchanged: the dependency's own
+namespace escapes the embedded C# keyword (`namespace go.gopkg.@in;`) while an importer's reference does not
+(`using yaml = gopkg.in.yaml_package;`), so the converted app does not yet compile. Item 8 is the next thing
+a `gopkg.in` user hits and is now a demonstrated, reproducible case rather than a predicted one.
+
 ### Operational stdlib — native sync primitives (2026-07-11, Phase-4 start)
 
 Running (not just compiling) the `fatih/color` sample exposed the Phase-3 → Phase-4 boundary: the full

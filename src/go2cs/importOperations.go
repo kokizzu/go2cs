@@ -17,6 +17,8 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
 // PackageInfo represents information about a package
@@ -155,7 +157,16 @@ func getProjectName(importPath string, options Options) (string, string) {
 	return projectName, namespace
 }
 
-// readModuleFromGoMod reads the module name from a go.mod file
+// readModuleFromGoMod reads the module path from a go.mod file.
+//
+// The module path is a go.mod TOKEN, and a token may be written as a quoted string — gopkg.in/yaml.v3
+// declares itself `module "gopkg.in/yaml.v3"`, and the gopkg.in family generally does. A raw read of
+// the line's remainder carries those quotes into the module path, hence into the project name, hence
+// into the csproj FILENAME, which Windows rejects outright: issue #33's
+// `"gopkg.in.yaml.v3".csproj` … "The filename, directory name, or volume label syntax is incorrect."
+// The quotes are syntax, never part of the path, so the fix is to read the token rather than the line.
+// modfile.ModulePath is the tolerant reader cmd/go itself uses for exactly this job: it drops `//`
+// comments, requires `module` to begin the line, and unquotes both the interpreted and raw forms.
 func readModuleFromGoMod(goModPath string) string {
 	data, err := os.ReadFile(goModPath)
 
@@ -163,14 +174,7 @@ func readModuleFromGoMod(goModPath string) string {
 		return ""
 	}
 
-	re := regexp.MustCompile(`module\s+(.+)`)
-	matches := re.FindSubmatch(data)
-
-	if len(matches) > 1 {
-		return strings.TrimSpace(string(matches[1]))
-	}
-
-	return ""
+	return modfile.ModulePath(data)
 }
 
 // getRelativePath returns the relative path from basePath to targetPath
