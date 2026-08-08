@@ -1,9 +1,11 @@
 # PLAN — cross-platform operation (the big three: Windows, Linux, macOS)
 
-> **Status:** partially executed. Arc 1 is complete (F2, F3), Arc 2 is complete except its
-> whole-corpus item (F6 and F10 done; **F5 open** — it rewrites a line in every emitted `.csproj`, so
-> it must land inside a rebank arc), and Arc 3 has landed its PowerShell tier plus `BehavioralRunner`
-> and `UpdateTestTargets`. Per-finding disposition is the **Status** column of the findings table in
+> **Status:** partially executed. **Arc 1 and Arc 2 are complete** (F2, F3, F5, F6), and Arc 3 has
+> landed its PowerShell tier plus `BehavioralRunner` and `UpdateTestTargets`. As of the Arc-2
+> completion (lane r47a, 2026-08-08) the converter **builds, unit-tests green, converts and produces
+> a project that `dotnet build`s — natively on Linux** (see the execution log in §2); F10's "clean"
+> verdict is corrected there by one real platform coupling the original scan had no pattern for.
+> Per-finding disposition is the **Status** column of the findings table in
 > §2, and the reasoning behind each is the *Execution log* directly beneath it — read that before
 > re-planning anything here. Everything else stands as originally written: a plan, unimplemented.
 >
@@ -42,12 +44,12 @@ can be planned against:
 | **F2** | Committed `.cs` blobs are stored **LF** (`git ls-files --eol` → `i/lf`), while the converter deterministically emits **CRLF**. A fresh Linux clone (`core.autocrlf=false` by default) therefore materializes LF and every single converted file reports as modified. `check-no-regression.ps1` is 100 % false-positive on Linux before the first line of converter work. | **S1** |
 | **F3** ✅ | `packageInfoWriter.go:52` splits a **read-back** `package_info.cs` on `"\r\n"`. The `.gitattributes` `eol=crlf` pins (commit `026762932`) cover the three *embedded templates* only — they do **not** cover this seam. On an LF checkout the section markers are never found and the converter `log.Fatal`s on the first package. Consequence of F2, but a separate remedy. | **S1** |<br>**FIXED** (landed early, as a blocker of the issue-#33 regression test — that test calls `processConversion`, and a `log.Fatal` ends the whole `go test` binary). Both splits are now EOL-agnostic, the template one too: the `eol=crlf` pin governs a *checkout*, so a tree materialized before the pin landed embeds an LF template and a **fresh** `package_info.cs` was fatal as well. Measured on Linux: 0/569 behavioral packages converted before, 569/569 after, and **42** `.cs` files that had been emitting an unresolved `«ADAPTER:…»` marker (the records live in the `package_info.cs` the converter could not read) now match their committed Windows goldens byte-for-byte modulo CRLF — the fix moves Linux output TOWARD the canonical corpus and no file away from it. |
 | **F4** | Every harness instrument breaks on Linux at line 30-ish: `Join-Path $root "src\go2cs"`, `bin\go2cs.exe`, `-notmatch '\\(bin\|obj)'`, `($_.FullName -split '\\').Count`, `Path.Combine(base, @"..\..\..\..")`, `PublishProfile = "win-x64"`, `BinOutput.Split(@"\")`. The depth-sort and bin/obj filters fail **silently**, which reverts the deepest-first invariant that closed FALSE-GREEN route #3. | **S1** |
-| **F5** | Hosted on Linux, the converter emits `$(go2csPath)core\fmt/\fmt.csproj` — `filepath.Join` on Unix does not normalize the `\` the code injects two lines earlier (`importOperations.go:263`, `:324`). Every emitted `ProjectReference` to a stdlib package is malformed. | **S1** |<br>**Now VISIBLE in `go test`.** F3 was masking it: the old binary `log.Fatal`ed inside the first `processConversion`, ending the whole test binary, so most of the suite never ran and the truncated output read as two failures. With F3 fixed the suite completes and reports **nine** — seven F5 (`TestIsSelfProjectReference`, `TestParseCoreProjectRefs`, both `TestCollectConvertedProjects*`, all three `TestRecurse*`) plus the two CRLF-template tests. Benign, and the expected count until Arc 2 lands; do not read the jump as drift. |
+| **F5** ✅ | Hosted on Linux, the converter emits `$(go2csPath)core\fmt/\fmt.csproj` — `filepath.Join` on Unix does not normalize the `\` the code injects two lines earlier (`importOperations.go:263`, `:324`). Every emitted `ProjectReference` to a stdlib package is malformed. | **S1** |<br>**FIXED** (lane r47a, as a whole-corpus rebank). The ruling was to emit `/` **universally** rather than per-host: MSBuild accepts forward slashes on Windows too, so ONE corpus form is correct on every host. Every emitter of a relative path into an emitted MSBuild file moved — both csproj templates, the validation-pack block, the nine publish profiles, the fixed test-project references, and the three reference-composition sites (now one helper, `emittedProjectReference`) — plus a `filepath.ToSlash` at each of the two emission points, because `filepath.Rel` returns OS-native. Corpus footprint: **297** stdlib `.csproj` + 7 hand-owned `core` files + the behavioral/performance/test-host projects; **zero** `.cs` movement. Detail in the execution log below and in [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) §"Path separators in emitted MSBuild files". |
 | **F6** | `pathReplace` (`importOperations.go:458`) gates case-insensitivity on `runtime.GOOS == "windows"`. On Linux the exact-match replace **silently no-ops** when the resolved `GOROOT` spelling differs from `go/build`'s (symlinked toolchains), leaving a machine-specific absolute path in the emitted csproj with no diagnostic. | **S2** |
 | **F7** | `deploy-core.ps1` stages the tree with **robocopy**, which does not exist on Linux. It is the only script with a hard external Windows dependency. | **S2** |
 | **F8** | Two behavioral tests are Windows-semantic by construction (`LocalTimeZone`, `FindFirstFileData`); a third (`StdLibInternalAbi`) is `-text`-pinned for runtime byte-exactness. `time.initLocal` → `syscall.GetTimeZoneInformation` → `DllImport("kernel32.dll")` is a hard Linux fault on any converted program that touches `time.Local`. | **S2** |
 | **F9** | NuGet packing is already RID-agnostic and needs no packaging change — but the *content* is GOOS-pinned, so `go.os`/`go.syscall`/`go.net`/`go.time` published today are Windows-only libraries wearing platform-neutral package IDs. That is a correctness-of-claim problem, not a build problem. | **S2** |
-| **F10** | `golib` and `go2cs-gen` are **clean**: zero P/Invoke, zero Windows APIs, zero path assumptions across 50 runtime files and the whole netstandard2.0 analyzer. The runtime layer costs nothing to port. (One triviality: `golib.csproj` lacks the `USERPROFILE`→`HOME` fallback the converter's template carries.) | **S4** |
+| **F10** | `golib` and `go2cs-gen` are **clean**: zero P/Invoke, zero Windows APIs, zero path assumptions across 50 runtime files and the whole netstandard2.0 analyzer. The runtime layer costs nothing to port. (One triviality: `golib.csproj` lacks the `USERPROFILE`→`HOME` fallback the converter's template carries.) | ~~**S4**~~ **S1** |<br>⚠ **This verdict was WRONG for `go2cs-gen`, and the miss is instructive** (found by lane r47a's Linux smoke, 2026-08-08). The scan looked for `DllImport`, `RuntimeInformation`, `OSPlatform`, `Environment.OSVersion`, `Process.Start`, `Path.DirectorySeparator` and raw backslashes. The actual coupling was **`Path.GetInvalidFileNameChars()`** in `Common.GetValidFileName`, which sanitizes every `AddSource` hint name — 41 characters on Windows, **2** on Unix. Roslyn validates hint names identically on both, so every generator threw `ArgumentException` on Linux, was reported as the *warning* CS8785, contributed nothing, and the corpus failed a layer lower with 106 errors that named none of it. Fixed by replacing the OS query with Roslyn's own allow-list. `golib` itself remains clean. Detail in the execution log below.|
 
 **Recommended sequencing.** The three senses above are independent, and the cheap two are prerequisites for
 measuring the expensive one. Do them in this order and each arc lands green on its own:
@@ -88,17 +90,17 @@ different library.
 | F2 | Line endings / `.gitattributes` determinism | S1 | ~~0.5 arc~~ | ✅ **done** — pin landed, renormalize blast radius measured at **0 files** |
 | F3 ✅ | `packageInfoWriter` `\r\n` read-back seam | S1 | ~~1 session~~ | ✅ **done** — plus the `testConversion` insert and guard tests |
 | F4 | Harness scripts + runners + utilities | S1 | 1 arc | ◑ **partial** — PowerShell tier + `BehavioralRunner` + `UpdateTestTargets` done; `BehavioralTestBase`, `PerformanceRunner`, `run-validated-sweep`, `run-behavioral-tests`, `mod-init-all` remain |
-| F5 | Converter path emission on a Linux host | S1 | 1 session | open — **whole-corpus rebank**, must land with a rebank arc |
+| F5 ✅ | Converter path emission on a Linux host | S1 | ~~1 session~~ | ✅ **done** — `/` emitted universally; landed as its own whole-corpus rebank (lane r47a) |
 | F6 | `pathReplace` silent no-match | S2 | ~~0.5 session~~ | ✅ **done** — no-match is now loud, plus a fallback-only symlink resolve |
 | F7 | `deploy-core.ps1` robocopy | S2 | 0.5 session | open — deliberately deferred (no safe end-to-end gate; see below) |
 | F8 | Windows-semantic behavioral tests + time zone seam | S2 | 1 session (gate) + carried by F1 | open |
 | F9 | NuGet strategy for GOOS-pinned content | S2 | plan: this doc; execution 1 session after F1 | open |
-| F10 | golib / go2cs-gen | S4 | ~~trivial~~ | ✅ **done** — `golib.csproj` `USERPROFILE`→`HOME` fallback |
+| F10 | golib / go2cs-gen | ~~S4~~ S1 | ~~trivial~~ | ✅ **done** — `golib.csproj` `USERPROFILE`→`HOME` fallback; **plus** `go2cs-gen`'s OS-dependent hint-name sanitization (r47a), which the original S4 verdict missed |
 | F11 | `.slnx` + `.gitattributes` path casing after (b) | S2 | folded into (b) | ✅ done by rename (b) |
 | F12 | `docs/README.md` dual-platform presentation | S3 | 1 session | open (sequenced last, by design) |
 | F13 | Native AOT on Linux (perf suite) | S3 | 0.5 session | open |
 | F14 | `set-version.ps1` (Windows PE resource) | S4 | ~~doc only~~ | ✅ **done** — `$IsWindows` guard + header note |
-| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ◑ measured, see below |
+| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ✅ **done** — the distro is provisioned (Go 1.23.1, .NET SDK 9.0.316, pwsh 7.5.4, all user-space) and a fresh ext4 clone builds, tests, converts and `dotnet build`s natively; recipe in the r47a execution log |
 
 ### Execution log — Arc 1 + Arc 2 (partial) + Arc 3 (partial), lane r46c-linux
 
@@ -198,11 +200,158 @@ rewrite is running `deploy-core.ps1` — which stages into `%GOPATH%\src\go2cs`,
 location shared with sibling worktrees. A rewrite that cannot be proven is the throwaway the
 nothing-throwaway principle warns about, so it stays open with its remedy unchanged.
 
-**F15 — WSL, measured 2026-08-08.** The distro list has changed since §4's probe: `Ubuntu` (WSL 2,
-kernel 6.18.33.2) and `docker-desktop`; the `Ubuntu-22.04` entry is gone. `dotnet`, `git` and `make`
-are present; **`go` and `pwsh` are still absent**, so a conversion cannot run there (go/packages
-shells out to `go`) and neither can the PowerShell instruments. Installing a toolchain was out of
-scope for this lane.
+### Execution log — Arc 2 completion (F5), lane r47a
+
+**F5 — the ruling, and why it is not per-host.** MSBuild accepts `/` in every path context on
+Windows and normalizes `\` to `/` on Unix, so *both* spellings already build on both hosts and the
+choice of which to emit is free. The only wrong answer is to have two. `/` is emitted **universally**,
+so one converted corpus is correct on Windows, Linux and macOS with no host-conditional emission.
+
+**The emitter inventory** (every producer of a relative path that lands in an emitted MSBuild file):
+
+| Emitter | What moved |
+|:--|:--|
+| `csproj-template.xml` | `OutDir`, the `$(USERPROFILE)` fallback, both `Exists('…\README.md')` probes, the `golib` and `go2cs-gen` fixed `ProjectReference`s |
+| `test-csproj-template.xml` | the same, plus `obj\tests\` / `bin\tests\` (`MSBuildProjectExtensionsPath`, `BaseIntermediateOutputPath`, `BaseOutputPath`) |
+| `projectFileWriter.go` | `validationPackBlock`'s `GoValidationProofFile`; the two `-recurse=nuget` swap match-strings (they must equal the template text); a `filepath.ToSlash` at the emission point |
+| `testConversion.go` | `testProjectFixedReferences` (golib, testing); a `filepath.ToSlash` at the test-project emission point |
+| `importOperations.go` | the three reference-composition sites, collapsed into one helper `emittedProjectReference` = `path.Join` over a `filepath.ToSlash`'d directory |
+| `profiles/*.pubxml` (9) | `PublishDir` |
+| — | `.slnx` generation (`solutionGenerator.go`, `moduleConverter.relSolutionPath`) already emitted forward slashes; nothing to do |
+
+**Scope was decided by grepping consumers, not by reasoning.** Every reader of an emitted reference
+already tolerated `/` (`coreProjectRefRE` matches `[\\/]`, `parseCoreProjectRefs` normalizes, tour's
+`packageIDForProjectReference` normalizes, `filepath.Base` accepts `/` on Windows), and two were
+strictly *better* off: `BehavioralRunner.PreBuildSharedDeps` and `PerformanceRunner` resolve
+`ProjectReference Include=` through `Path.GetFullPath`, which on Linux does not split on `\` either.
+The one deliberate holdout is the shared-project `<Import … go2cs.projitems Label="Shared">` in
+`golib.csproj` / `go2cs-gen.csproj` — Visual Studio bookkeeping, VS round-trips its exact text, and
+MSBuild normalizes it on Unix regardless.
+
+**Corpus footprint** — 891 project files in the rebank commit, plus the 110 test hosts the validated
+sweep re-emits on its own pass. Classified with nothing left over:
+
+| Count | What |
+|--:|:--|
+| 297 | `src/core/*.csproj` re-emitted by a seeded `-stdlib` reconvert — 296 separator-flip-only, **1 (`net/http`) a flip + a REORDER** |
+| 6 | hand-owned `core` projects flipped by hand (`golib`, `testing`, `unsafe`, `internal/godebug`, `internal/concurrent`, `internal/weak`) |
+| 1 | `src/core/Directory.Build.props` |
+| 574 | behavioral `.csproj`, regenerated by CNR — **574/574 separator-only, 0 reordered** |
+| 13 | performance `.csproj`, re-transpiled — zero `.cs` movement |
+| 110 | `.tests.csproj`, re-emitted by the validated sweep |
+| 0 | `.cs` of any kind |
+
+**The reorder is the finding worth carrying.** References are `sort.Strings`-sorted and `/` (0x2F)
+sorts *below* alphanumerics while `\` (0x5C) sorts *above* them, so a pair differing at a separator
+boundary swaps. Over 303 stdlib projects it happened exactly once:
+`vendor/golang.org/x/net/http2/hpack` sorted before `.../http/httpguts` (`2` < `\`) and now sorts
+after it (`/` < `2`). Same set, different order.
+
+**The one guard worth checking by hand** is the validation-pack block, because its path is consumed
+by an MSBuild `Exists()` rather than by a reference resolver, and a silent false there un-ships every
+validated package's proof sheet at the next pack (the "0 8" restore family). Evaluated directly on
+the flipped corpus: `bufio.csproj`'s `GoValidationProofFile` renders
+`…\src\../docs/validation/1.23.1.4/bufio.md`, the `Exists()` fires, and the item materializes with
+`PackagePath="VALIDATION.md"` and a `FullPath` on the real page.
+
+**Gate numbers (Windows).** Seeded reconvert 304/304 in 4m0s; the path-precise marker gate 41
+line-anchored `[module: GoManualConversion]` files → 15 protected by a `.cs.auto` sibling, 26 never
+re-emitted, **0 clobbered**, 0 `DYNTYPE` markers; overlay 49 `.cs` + 1 `README` CRLF phantoms
+(identical CR-stripped, empty `numstat`) restored; `go2cs-stdlib.slnx` **304/304, 0 errors**;
+`check-no-regression` **byte-identical across all behavioral projects** (8m22s);
+`run-behavioral.ps1` **549/549 Transpile+Compile+Target, 523/523 Output, 26 skipped** (673.5s).
+
+---
+
+### Execution log — the first Linux-native conversion and build, lane r47a
+
+**Provisioning (user-authorized, all user-space, no `sudo`, all reversible).** The distro is
+`Ubuntu 22.04.2 LTS` on kernel 6.18.33.2 (WSL 2), 24 CPUs, ext4. It carried `git`, `make`, `gcc`,
+`curl` and the .NET **runtime** only — `dotnet-runtime-9.0`, *no SDK*, so `dotnet build` was
+unavailable and `dotnet --list-sdks` printed "No SDKs were found". Installed:
+
+| Tool | How | Result |
+|:--|:--|:--|
+| Go 1.23.1 | official tarball → `$HOME/golang` | `go version go1.23.1 linux/amd64` |
+| .NET SDK | `dot.net/v1/dotnet-install.sh --channel 9.0 --install-dir $HOME/.dotnet` | `9.0.316` — the **same SDK version as the Windows lane** |
+| PowerShell | `dotnet tool install -g PowerShell --version 7.5.4` | `7.5.4` |
+
+Two notes for whoever repeats this. GOROOT is `$HOME/golang`, **not** `$HOME/go`: the go command
+refuses `GOPATH == GOROOT` and `$HOME/go` is the default GOPATH. And the PowerShell global tool must
+be pinned to **7.5.x**: `dotnet tool install -g powershell` resolves 7.4.x, which targets
+`Microsoft.NETCore.App 8.0.0` and fails to launch against a 9.0-only runtime set.
+
+**The smoke, on a fresh `git clone` onto ext4** (never the Windows mount — that is where a build
+would take the `/mnt` performance and permission model):
+
+| Step | Result |
+|:--|:--|
+| `git status` on the fresh clone | **0 modified files** — F2's pin holds on a real Linux checkout |
+| casing control | `src/tests` exists, `src/Tests` does not (only a case-sensitive filesystem can prove this) |
+| separator audit of the cloned corpus | **1 of 303** `core` production `.csproj` and **1 of 576** behavioral `.csproj` still carry a backslash — `golib.csproj`'s VS shared-project `Import` and the hand-owned `BehavioralTests.csproj`, both deliberate (the latter is F4's harness tier, not corpus) |
+| `go build` the converter | **2.3 s** |
+| `go test ./...` in `src/go2cs` | **GREEN, 0 failures** (was 146 PASS / 55 FAIL at the F15 measurement below) |
+| convert a scratch module importing `fmt` | **exit 0** — the first Linux-native go2cs conversion |
+| separator audit of the Linux-emitted `.csproj` | **0 backslashes**; references read `$(go2csPath)core/fmt/fmt.csproj` (pre-F5 this was `$(go2csPath)core\fmt/\fmt.csproj`) |
+| `dotnet build` the Linux-emitted project | **succeeded, 0 errors** (1m21s cold, whole `fmt` closure) |
+| §A1.1's verification recipe — `dotnet build src/core/fmt/fmt.csproj` | **succeeded, 0 errors, 0 warnings** (5.0 s) |
+
+That answers §A1.1's open question definitively: **the committed corpus's project references resolve
+and compile on Linux.** F1 is unaffected — this is a `GOOS=windows` corpus, so it *compiles* on Linux
+and would throw `DllNotFoundException` at runtime. Compiling was the question; running is Arc 4+.
+
+**One real Linux-only defect was found on the way, and it was not F5.** The first `dotnet build`
+attempt failed with **106 errors** on Linux and **0** on Windows, from identical sources and the same
+SDK 9.0.316 — CS0051/CS0052 accessibility on `ж<T>` parameters, CS8983 struct initializers, CS1929 on
+a `ж` receiver, CS0246 on a missing adapter type. All downstream of:
+
+```
+CSC : warning CS8785: Generator 'RecvGenerator' failed to generate source … ArgumentException …
+'The hintName 'go.sync.atomic_package.Lock.global::go.sync.atomic_package.noCopy.g.cs' contains
+an invalid character ':' at position 34.'
+```
+
+`go2cs-gen`'s `Common.GetValidFileName` sanitized every `AddSource` hint name with
+**`Path.GetInvalidFileNameChars()`, which is OS-dependent**: Windows returns 41 characters (including
+`:` `<` `>` `"` `|` `?` `*`), Unix returns **two** (NUL and `/`). Roslyn validates a hint name
+identically on both, so names carrying `global::` or a `<T>` type argument were scrubbed on Windows
+and passed through on Linux, where `AddSource` throws. Roslyn reports a throwing generator as CS8785
+— a **warning** — so every generator in the assembly silently contributed nothing and the build
+collapsed a layer lower.
+
+**This is a correction to F10**, which scanned `go2cs-gen` for `DllImport`, `RuntimeInformation`,
+`OSPlatform` and `Path.DirectorySeparator` and pronounced it clean. It *is* clean of those.
+`Path.GetInvalidFileNameChars` is the platform coupling that scan had no pattern for, and it was
+load-bearing for the entire corpus. Fixed by replacing the OS query with Roslyn's own rule as an
+allow-list (letters, digits, `. , - _ (space) ( ) [ ]`), which is host-independent by construction.
+Windows-neutral by measurement: the full `go2cs-stdlib.slnx` rebuild after the change reports
+**304/304, 0 errors and exactly 1945 warnings — the same count as before it**, and `Generated/` is
+git-ignored so nothing committed moves either way. Guarded by
+`IdentifierCompositionTests.HintNameSanitizationIsHostIndependent`.
+
+**Two READERS of an emitted reference were fixed in the same pass.** `parseCoreProjectRefs` used
+`filepath.ToSlash` and `isSelfProjectReference` used `filepath.Base`; both replace or split on the
+**host** separator, so off Windows they are the identity for a backslashed reference and a pre-F5
+corpus, a deployed tree or a hand-authored csproj read back as one unmatched string. Both now go
+through `normalizeEmittedPath` (an unconditional `\`→`/` rewrite) and `path.Base`, with fixtures
+carrying both spellings.
+
+**Still open after this lane, on Linux:** F1 (the corpus is `GOOS=windows`, so it compiles but cannot
+run), F4's remaining C#/PowerShell instruments (`BehavioralTestBase`, `PerformanceRunner`,
+`run-validated-sweep`, `run-behavioral-tests`, `mod-init-all`), F7, F8, F9, F12, F13. Nothing in this
+lane's evidence changes their disposition.
+
+---
+
+**F15 — WSL, measured 2026-08-08.** *(Superseded by the r47a execution log above, which provisions
+the distro and runs the real thing. Kept because the cross-compile technique below is still the
+cheapest way to sanity-check a Linux host without installing anything.)* The distro list has changed
+since §4's probe: `Ubuntu` (WSL 2, kernel 6.18.33.2) and `docker-desktop`; the `Ubuntu-22.04` entry is
+gone. `dotnet`, `git` and `make` are present; **`go` and `pwsh` are still absent**, so a conversion
+cannot run there (go/packages shells out to `go`) and neither can the PowerShell instruments.
+Installing a toolchain was out of scope for this lane. ⚠ A later, sharper measurement: the `dotnet`
+that IS present is the **runtime only** (`dotnet-runtime-9.0`), so `dotnet build` was never available
+either — `dotnet --list-sdks` printed "No SDKs were found".
 
 That gap was worked around WITHOUT an install, and the technique is worth keeping: cross-compile
 from Windows (`GOOS=linux GOARCH=amd64 go build`, and `go test -c` for the suite) and run the ELF
@@ -238,7 +387,12 @@ what they were landed for, measured on a real Linux kernel rather than argued.
 The converter is a plain Go program (`src/go2cs/*.go`, ~67 files) with no cgo and no Windows-only imports; it
 cross-builds today. Four seams nonetheless make a Linux *host* wrong.
 
-#### A1.1 — Emitted project-reference separators (F5, S1)
+#### A1.1 — Emitted project-reference separators (F5, S1) — **LANDED**
+
+> **Status.** Closed by lane r47a as a whole-corpus rebank. The remedy below is what landed, generalized:
+> the ruling was `/` **universally**, in every emitted MSBuild file, not only in the `ProjectReference`
+> composition — see the execution log's *Arc 2 completion* entry for the emitter inventory, the gate
+> numbers and the one surprise (a sorted reference block re-orders when the separator changes).
 
 **Evidence.**
 
