@@ -2,10 +2,14 @@
 
 > Measured **2026-08-07** (r46a-warnaudit) against `src/go2cs-stdlib.slnx` at `273f126340`,
 > 304 projects, isolated builds (`MSBUILDDISABLENODEREUSE=1`, `-p:UseSharedCompilation=false`).
-> **Recommendation only** — nothing in this document is applied. The deliverable is the table in §4
-> plus the judgment in §5: which codes are structural to the emission model and will never go away,
-> which are a converter defect wearing a warning's clothes, and which are a build *property* problem
-> that `NoWarn` is the wrong instrument for.
+> The deliverable is the table in §4 plus the judgment in §5: which codes are structural to the
+> emission model and will never go away, which are a converter defect wearing a warning's clothes,
+> and which are a build *property* problem that `NoWarn` is the wrong instrument for.
+>
+> **STATUS: the configuration half is IMPLEMENTED** (r46b-warnsuppress, 2026-08-08) — §10 records
+> what landed and what it measured. The two converter roots (§5.1 `CS0219`, §5.2 `CS8778`) and the
+> golib/`go2cs-gen` items (§7) are deliberately NOT done here; they remain open board rows, and the
+> do-not-suppress rulings in §4 stay binding.
 
 ## 1. The measured baseline
 
@@ -44,6 +48,9 @@ src/go2cs/csproj-template.xml:17       <NoWarn>CS0282;CS0660;CS0661;CS8618;CS898
 src/go2cs/test-csproj-template.xml:34  <NoWarn>CS0282;CS0660;CS0661;CS8618;CS8981;IDE0060;IDE1006;CA2255</NoWarn>
 ```
 
+*(Line numbers as of the audit; both lines moved when §10 landed — `csproj-template.xml:25`,
+`test-csproj-template.xml:33`.)*
+
 It grew by accretion: `CS0660;CS0661;CS8981;IDE0060;IDE1006` (`3805a0551`, 2025-01-16), `+CS0282`
 (`6315d6658`, 2025-01-27), `+CA2255` (`1d2344db4`, 2026-07-11), `+CS8618` (`6411ed09f`, 2026-07-13).
 
@@ -51,10 +58,20 @@ It grew by accretion: `CS0660;CS0661;CS8981;IDE0060;IDE1006` (`3805a0551`, 2025-
 numeric codes and two entries (`1701`/`1702`, assembly-binding redirects) that cannot fire on
 `net9.0`.
 
-Three hand-owned `.csproj` files carry a *copy* of the template list and would need the same edit by
-hand: `src/core/unsafe/unsafe.csproj`, `src/core/internal/godebug/internal.godebug.csproj` (hand-owned
-by consequence — its only Go file is fully hand-owned, so the driver never re-emits its project file),
-and `src/core/testing/testing.csproj` (which carries a *shorter* list, `CS8981;IDE1006`).
+Hand-owned `.csproj` files carry a *copy* of the template list and need the same edit by hand:
+`src/core/unsafe/unsafe.csproj`, `src/core/internal/godebug/internal.godebug.csproj` (hand-owned by
+consequence — its only Go file is fully hand-owned, so `unmarkedFileCount == 0` makes the driver
+`continue` before `writeProjectFile`), and `src/core/testing/testing.csproj` (which carries a *shorter*
+list, `CS8981;IDE1006`).
+
+> **Correction (r46b).** That list of three is **incomplete**, and the audit had no way to see it: the
+> hand-owned set is not a property of the file, it is whichever production `.csproj` a `-stdlib`
+> reconvert does not re-emit — so the only reliable census is to reconvert into a seeded temp root and
+> diff. Doing that found **five**: `internal/weak` and `internal/concurrent` are hand-owned by the same
+> `unmarkedFileCount == 0` consequence as `internal/godebug` (their single Go file is fully hand-owned),
+> and both were silently carrying the old list. Add `golib` (which keeps a deliberately different list,
+> §7) and the by-hand set is six. Do **not** carry this number forward either — it moves whenever a
+> package's last unmarked file acquires a marker; re-measure it the same way.
 
 ## 3. Re-justification of the existing eight entries
 
@@ -253,9 +270,87 @@ overrode.
 
 The template edit regenerates `<NoWarn>` and the `Nullable`/publish properties in **all 304
 `.csproj`** at the next `-stdlib` reconvert — a one-family corpus diff, mechanically verifiable
-(every changed line is inside those two `PropertyGroup`s). Three hand-owned project files need the
-same edit by hand: `src/core/unsafe/unsafe.csproj`,
-`src/core/internal/godebug/internal.godebug.csproj`, `src/core/testing/testing.csproj`. Both
+(every changed line is inside those two `PropertyGroup`s). Hand-owned project files need the same
+edit by hand (see the §2 correction: five under `core/`, plus `golib` with its own list). Both
 templates change together — `csproj-template.xml` and `test-csproj-template.xml` carry the same
 `NoWarn` line and the same `Nullable` property, and `csprojTemplate_test.go` gates that both still
 render well-formed XML.
+
+> The audit under-counted the footprint in one more way: `csproj-template.xml` is rendered for
+> **every** conversion, not just `-stdlib`, so the same delta lands on the 574 behavioral-test and
+> 13 performance-benchmark `.csproj` the moment any transpile gate runs. That is not optional churn
+> to be restored — those project files *are* converter output, and leaving them behind would make
+> every future `check-no-regression.ps1` run dirty the tree. They land with the template.
+
+## 10. What landed — r46b-warnsuppress, 2026-08-08
+
+The configuration half only. Everything §4 marks **F** stays visible, and both converter roots (§5.1,
+§5.2) remain open.
+
+**The edits.** `csproj-template.xml` and `test-csproj-template.xml`: `<Nullable>enable</Nullable>` →
+`<Nullable>annotations</Nullable>`; the six new `NoWarn` entries merged into one numerically-sorted
+list, `CS8618` **retained** for the reason in §6.1; and the publish `PropertyGroup` conditioned
+`'$(OutputType)'!='Library'`.
+
+⚠ **`AllowUnsafeBlocks` had to come out of that group first.** §6.2 named the group by its four
+publish properties, but the fifth element in it is `<AllowUnsafeBlocks>%s</AllowUnsafeBlocks>` — a
+*compile* setting the converted stdlib's library packages cannot build without. Conditioning the group
+as written would have taken `AllowUnsafeBlocks` off every library project in the corpus. It now lives
+in its own unconditional `PropertyGroup` immediately below, and
+`TestPublishPropertiesAreScopedOffLibrariesButAllowUnsafeBlocksIsNot` pins both halves.
+
+**Measured, `src/go2cs-stdlib.slnx`, 304 projects, `-t:Rebuild`, isolated
+(`MSBUILDDISABLENODEREUSE=1`, `-p:UseSharedCompilation=false`):**
+
+| Run | Configuration | Warnings | Errors |
+|---|---|---:|---:|
+| before | `-c Debug` | **4,147** | 0 |
+| before | `-c Release` | **4,147** | 0 |
+| after | `-c Debug` | **1,945** | 0 |
+| after | `-c Release` | **1,945** | 0 |
+
+The before runs reproduce the audit's baseline **code for code**, so the two measurements are
+comparable line by line. Debug and Release stay identical on both sides. **−2,202, or −53.1 %.**
+Against §8's projection of ≈1,941 the measured 1,945 is +4, and the four are named: run D's global
+`-p:NoWarn` also overrode `go2cs-gen`'s own generated files, so the gen-local nullable list is 34
+here rather than 30 (`CS8619` 19, `CS8604` 9, `CS8603` 2, `CS8714` 2, `CS8625` 1, `CS8600` 1).
+
+The residual, in full: `CS0219` 1,219 and `CS8778` 620 (the two converter roots — 94.5 % of what is
+left, and both are *supposed* to be there until §5.1 and §5.2 land), 34 gen-local nullable, `CS8500`
+15, `CS0675` 11, `CS8826` 7, `CS8618` 5 (golib), `CS0252` 4, `CS0649` 3, `CS1522` 1, and 26 `IL####`.
+
+**Every `IL####` warning left in the corpus is golib's** — 127 → 26, and all 26 are attributed to
+`golib.csproj`, which keeps its trim analysis on purpose (§7). That is the §6.2 hypothesis confirmed
+end to end: nothing but `PublishTrimmed` on a library was producing the other 101.
+
+**The nullable family went to zero in converter output.** 1,142 across nine codes → 34, every one of
+them inside a `go2cs-gen`-emitted `.g.cs` (the `#nullable enable` those files carry beats the project
+property). §7's "small, real, gen-local to-do list" is now visible instead of buried.
+
+**golib's own list** was cleaned as §7 asked: `660;661;1701;1702;IDE1006;CA2255;CS8500;CS8981` →
+`CS0660;CS0661;CS8500;CS8981;IDE1006;CA2255`. `CS8618` was **not** added — the five sites
+(`slice.m_array`, `ж.m_val`, one in `GoReflect.ValueMarshalling`) stay visible as the to-do §7 wants;
+the durable fix is `= null!` on the fields, not a suppression.
+
+**Corpus footprint:** 303 `.csproj` under `src/core` (297 regenerated by a seeded reconvert + 6
+hand-edited), 574 behavioral and 13 performance `.csproj` regenerated by their transpile gates, and
+110 `.tests.csproj` regenerated by the validated sweep. One family: every changed line is inside the
+two `PropertyGroup`s, at a uniform +18/−4 per generated project (+5/−2 for a `.tests.csproj`, which
+has no publish group to condition; `unsafe` +15/−4, `testing` +5/−2, `golib` +6/−1, reflecting their
+divergent shapes). The seeded reconvert's 12,520 emitted `.cs`/`.csproj`/`README.md` were
+byte-compared against the committed tree first: **zero** `.cs` or `README.md` content differences (the
+50 that differ raw are pure CRLF phantoms — CR-stripped equality is exact), so the `.csproj` delta is
+provably the whole change.
+
+**Gates.** `go test ./...` green with the two new guards, each proved by negative control. Marker gate
+before the overlay: 41 marked files, 15 with a `.cs.auto` sibling, 0 clobbered.
+`check-no-regression.ps1` 574/574 byte-identical `.cs` (438 s) — a template change cannot move `.cs`,
+and it did not. Behavioral suite 549/549 transpile + compile + golden with 523/523 stdout comparisons
+against `go run`, 0 fail (688 s). Validated sweep **110 pass / 0 fail** over 13,628 expected verdicts
+(3,025 s), every package at its exact banked count. The sweep's remaining aftermath was classified and
+restored, never banked, per the standing families: 20 `-tests`-closure production `.cs`, 7 production
+`.cs` and 16 `*_test.cs` that are pure CRLF phantoms with no numstat at all, 85 `*_test.cs` carrying
+accumulated drift that belongs to a milestone test-source rebank rather than to this arc, 8 `.cs.auto`
+review siblings, and 10 `-text` `testdata` paths verified CR-only by CR-stripped equality against
+`HEAD` (their numstat is non-empty by construction, so `--numstat` is the wrong instrument there).
+Zero unclassified.

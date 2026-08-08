@@ -28,7 +28,12 @@
     <PackageTags>go2cs;Golang;go</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
-    <NoWarn>660;661;1701;1702;IDE1006;CA2255;CS8500;CS8981</NoWarn>
+    <!-- golib is HAND-written and deliberately does NOT inherit the corpus suppression list: it is
+         the reflection/unsafe core, so its trim (IL####) and nullable warnings are a real to-do list
+         with an owner, not emission noise. Only CS8500 is a policy entry — the unsafe machinery lives
+         here on purpose — and the corpus must not inherit it. 1701/1702 were .NET Framework
+         assembly-binding redirects that cannot fire on net9.0; 660/661 were bare numbers. -->
+    <NoWarn>CS0660;CS0661;CS8500;CS8981;IDE1006;CA2255</NoWarn>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 

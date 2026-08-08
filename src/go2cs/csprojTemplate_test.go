@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -132,8 +133,9 @@ func TestCsprojTemplateWithFriendAssemblyAccessEmitsWellFormedXml(t *testing.T) 
 	}
 }
 
-func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
-	// Same substitution as writeTestProject (testConversion.go), which replaces each marker.
+// renderTestCsprojTemplate applies the same marker substitution writeTestProject (testConversion.go)
+// does, so what is validated is what actually reaches disk.
+func renderTestCsprojTemplate() string {
 	contents := string(testCsprojTemplate)
 
 	for marker, value := range map[string]string{
@@ -146,6 +148,12 @@ func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	} {
 		contents = strings.ReplaceAll(contents, marker, value)
 	}
+
+	return contents
+}
+
+func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
+	contents := renderTestCsprojTemplate()
 
 	if strings.Contains(contents, ">>MARKER:") {
 		t.Fatalf("test-csproj-template.xml has an unsubstituted marker; update this guard's marker map")
@@ -178,6 +186,147 @@ func TestProjectReferenceWithXmlSpecialsStaysWellFormed(t *testing.T) {
 	if err := assertWellFormedXml(unescaped); err == nil {
 		t.Fatal("an unescaped reference path parsed as well-formed XML, so this guard proves nothing")
 	}
+}
+
+// structuralNoWarnCodes is the suppression policy ruled in docs/phase4/DESIGN-warning-suppression.md
+// (§3 re-justifies the original eight, §4 classifies the six added at r46b). Every entry is a
+// diagnostic that is STRUCTURAL to the Go emission model — Go type names (CS8981, CS8860), a struct
+// split across its type file and package_info.cs (CS0282), Go comparison operators on value types
+// (CS0660, CS0661), Go zero values (CS8618), generated unreachable code and labels (CS0162, CS0164),
+// the generated named-return self-assignment (CS1717), the NaN idiom (CS1718), a function value in a
+// `map[string]any` (CS8974), `init()` as a module initializer (CA2255), and the two IDE codes that
+// are inert at the CLI but deafening in Visual Studio.
+//
+// The list is asserted EXACTLY, in both templates, for two reasons. Adding a code is a policy
+// decision that belongs in the design doc, and this makes the doc update unskippable. Removing one
+// is almost always wrong: the converter re-creates these on the very next conversion, so a dropped
+// entry does not fix anything, it only makes the corpus build loud again. Codes deliberately left
+// VISIBLE (CS0219, CS8778, CS0675, CS8500, CS8826, CS0252, CS0649, CS1522) are converter or golib
+// defects wearing a warning's clothes — the doc's do-not-suppress rulings — and must never appear here.
+var structuralNoWarnCodes = []string{
+	"CS0162", "CS0164", "CS0282", "CS0660", "CS0661", "CS1717", "CS1718",
+	"CS8618", "CS8860", "CS8974", "CS8981", "IDE0060", "IDE1006", "CA2255",
+}
+
+// The suppression policy is ONE decision applied to TWO templates: csproj-template.xml (production)
+// and test-csproj-template.xml (the -tests host). They are separate files with separate edit paths,
+// so nothing but a guard keeps them in step — and a package under -tests recompiles its production
+// sources into the test assembly, where a divergent list would make the same source warn in one
+// build and not the other.
+func TestBothCsprojTemplatesCarryTheSameSuppressionPolicy(t *testing.T) {
+	production := renderCsprojTemplate("Library", "", "")
+	tests := renderTestCsprojTemplate()
+
+	for name, contents := range map[string]string{
+		"csproj-template.xml":      production,
+		"test-csproj-template.xml": tests,
+	} {
+		properties := propertyGroupsOf(t, name, contents)
+
+		if got := properties.value("Nullable"); got != "annotations" {
+			t.Errorf("%s sets <Nullable>%s</Nullable>; Go has no non-nullable reference type, so the policy is `annotations`", name, got)
+		}
+
+		got := strings.Split(properties.value("NoWarn"), ";")
+		sort.Strings(got)
+
+		want := append([]string(nil), structuralNoWarnCodes...)
+		sort.Strings(want)
+
+		if strings.Join(got, ";") != strings.Join(want, ";") {
+			t.Errorf("%s <NoWarn> is\n  %s\nbut the design ruled\n  %s", name, strings.Join(got, ";"), strings.Join(want, ";"))
+		}
+	}
+}
+
+// The publish properties are scoped off Library projects because PublishTrimmed doubles as
+// EnableTrimAnalyzer at BUILD time — every IL#### warning in the corpus came from that one line, on
+// projects that are never published. AllowUnsafeBlocks shares the group's history but NOT its
+// reasoning: it is a compile setting, and the converted stdlib is full of library packages that do
+// not compile without it. Moving it under the condition would break the corpus in a way no warning
+// count would reveal, so both halves are pinned here.
+func TestPublishPropertiesAreScopedOffLibrariesButAllowUnsafeBlocksIsNot(t *testing.T) {
+	properties := propertyGroupsOf(t, "csproj-template.xml", renderCsprojTemplate("Library", "", ""))
+
+	condition, found := properties.conditionOf("PublishTrimmed")
+
+	if !found {
+		t.Fatal("the rendered project sets no <PublishTrimmed> at all")
+	}
+
+	if !strings.Contains(condition, "'$(OutputType)'!='Library'") {
+		t.Errorf("<PublishTrimmed> is in a PropertyGroup with Condition %q; it must be scoped off Library projects", condition)
+	}
+
+	condition, found = properties.conditionOf("AllowUnsafeBlocks")
+
+	if !found {
+		t.Fatal("the rendered project sets no <AllowUnsafeBlocks> at all")
+	}
+
+	if condition != "" {
+		t.Errorf("<AllowUnsafeBlocks> is in a PropertyGroup with Condition %q; it is a compile setting and must apply to every project", condition)
+	}
+}
+
+// msbuildProperty is one element inside a <PropertyGroup>: its name and its text.
+type msbuildProperty struct {
+	XMLName xml.Name
+	Value   string `xml:",chardata"`
+}
+
+// propertyGroup is a rendered project's <PropertyGroup>, paired with its Condition — enough to
+// answer both "what value is set" and "under what condition".
+type propertyGroup struct {
+	Condition  string            `xml:"Condition,attr"`
+	Properties []msbuildProperty `xml:",any"`
+}
+
+type propertyGroups []propertyGroup
+
+// value returns the LAST value set for name, which is the one MSBuild evaluates; "" when unset.
+func (groups propertyGroups) value(name string) string {
+	value := ""
+
+	for _, group := range groups {
+		for _, property := range group.Properties {
+			if property.XMLName.Local == name {
+				value = property.Value
+			}
+		}
+	}
+
+	return value
+}
+
+// conditionOf returns the Condition of the first group that sets name ("" for an unconditional
+// group), and whether any group sets it at all.
+func (groups propertyGroups) conditionOf(name string) (string, bool) {
+	for _, group := range groups {
+		for _, property := range group.Properties {
+			if property.XMLName.Local == name {
+				return group.Condition, true
+			}
+		}
+	}
+
+	return "", false
+}
+
+// propertyGroupsOf parses a rendered project through encoding/xml — the properties are read from the
+// document MSBuild would load, not from a substring of the template.
+func propertyGroupsOf(t *testing.T, name string, contents string) propertyGroups {
+	t.Helper()
+
+	var document struct {
+		Groups propertyGroups `xml:"PropertyGroup"`
+	}
+
+	if err := xml.Unmarshal([]byte(contents), &document); err != nil {
+		t.Fatalf("%s did not parse: %v", name, err)
+	}
+
+	return document.Groups
 }
 
 // assertWellFormedXml streams the document through encoding/xml, which enforces the comment rules

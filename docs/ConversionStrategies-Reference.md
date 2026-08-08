@@ -98,6 +98,71 @@ Three separate isolation intents were silently defeated by the unconditional pin
 
 Two guards pin this. `TestCsprojTemplateEmitsWellFormedXml` / `TestTestCsprojTemplateEmitsWellFormedXml` (`src/go2cs/csprojTemplate_test.go`) substitute each template exactly as its emitter does and stream the result through `encoding/xml`, which enforces the same comment rules MSBuild's loader does — a malformed template breaks the entire corpus at compile time and is otherwise only visible ~450 s into a full behavioral run. On the measurement side, `PerformanceRunner` reads the JIT binary's `runtimeconfig.json` before timing anything and **fails the run** if it is self-contained or has dynamic code disabled.
 
+### Build-warning suppression: what the emitted `.csproj` silences, and what it deliberately does not
+
+Both templates carry one suppression policy, and it is a policy rather than an accretion: every entry is a
+diagnostic that is **structural to the Go emission model**, and every diagnostic that is *not* is left
+visible on purpose. The full census, code by code, is [`docs/phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md).
+
+```xml
+<Nullable>annotations</Nullable>
+<NoWarn>CS0162;CS0164;CS0282;CS0660;CS0661;CS1717;CS1718;CS8618;CS8860;CS8974;CS8981;IDE0060;IDE1006;CA2255</NoWarn>
+```
+
+The `NoWarn` entries each name an emission the converter re-creates on the very next conversion: Go type
+names are lower-cased ASCII (`CS8981`, and `CS8860` for a Go type literally named `record`); a struct's
+fields are split between its type file and `package_info.cs` (`CS0282`); Go comparison operators are emitted
+on value types without `Equals`/`GetHashCode` (`CS0660`/`CS0661`); Go zero values leave non-nullable fields
+uninitialized (`CS8618`); `if (raceenabled)` bodies and the `break;` appended after a `case` that already
+`throw panic(…)`s are unreachable (`CS0162`), as are the synthetic `continue_<label>:`/`break_<label>:`
+pairs emitted for every labeled Go statement (`CS0164`); the named-return store on the `goto ᒐdone` path
+through a defer frame is a self-assignment (`CS1717`); `return f != f;` is Go's NaN idiom verbatim
+(`CS1718`); a function value in a `map[string]any` looks like a forgotten call (`CS8974`); and Go `init()`
+is modeled as a `[ModuleInitializer]`, which the library-hygiene analyzer objects to by design (`CA2255`).
+`IDE0060`/`IDE1006` never fire at the command line — they exist for Visual Studio's live analysis, where
+every `_`-shaped parameter and every Go identifier would otherwise be flagged.
+
+**`Nullable` is `annotations`, not `enable`.** Go has no non-nullable pointer, interface, map, slice,
+channel or func — every one of them is nil-able by construction — so C#'s nullable *flow analysis* is
+asking a question the source language cannot pose, and the only way to satisfy it would be to annotate the
+whole emitted corpus `?`, burying the Go shape the project exists to preserve. Nor is it protecting a
+semantic go2cs wants: a converted program that dereferences a nil Go value *should* fault, because that is
+Go's nil-pointer panic. `annotations` keeps `?` meaningful (golib's `ж<T>?`, `PanicException?`) and keeps
+`default!` legal while turning the analysis off; `disable` would be wrong, because it makes every `?` in
+the emitted code a fresh `CS8632`. One consequence is load-bearing: `CS8618` stays in `NoWarn` even under
+`annotations`, because `go2cs-gen` emits `#nullable enable` at the top of each generated `.g.cs` and a
+file-level directive beats the project property.
+
+**The publish properties are scoped off `Library`.** `PublishReadyToRun`/`PublishTrimmed`/
+`IncludeNativeLibrariesForSelfExtract`/`EnableCompressionInSingleFile` sit under
+`Condition="'$(OutputType)'!='Library'"`, because the SDK turns `PublishTrimmed` into
+`EnableTrimAnalyzer=true` **at build time** — so on a library, which is never published, that one line was
+the sole source of every `IL####` warning in the corpus while buying nothing. A converted `main` package
+still gets the analysis, and the trimmer re-runs over the whole closure at app publish, where it is
+actionable. `AllowUnsafeBlocks` shares that group's history but **not** its condition: it is a compile
+setting, and the converted stdlib is full of library packages that do not compile without it.
+
+Codes deliberately left **visible** are the other half of the policy — `CS0219` (dead named-return locals,
+the one static signal for a genuinely dropped assignment to a named result), `CS8778` (a live 32-bit
+truncation in `nint`-typed `int64` constants), `CS0675`, `CS8500` (the managed-referent hazard the S1 fork
+ruling is about — golib suppresses it locally, the corpus must not inherit it), `CS8826`, `CS0252`,
+`CS0649`, `CS1522`. Each is a converter or golib defect wearing a warning's clothes; suppressing them would
+delete the signal rather than fix the emission.
+
+Six `.csproj` are hand-owned and carry the policy by hand rather than by emission — `core/unsafe` and
+`core/testing` (skip-listed packages), `core/internal/godebug`, `core/internal/weak` and
+`core/internal/concurrent` (whose only Go file is fully hand-owned, so `unmarkedFileCount == 0` makes the
+driver `continue` before `writeProjectFile`), and `core/golib`. golib keeps a *shorter*, deliberately
+different list: it is hand-written, it is the reflection/unsafe core, and its trim and nullable warnings
+are a real to-do list with an owner rather than emission noise.
+
+Three guards pin all of this in `src/go2cs/csprojTemplate_test.go`:
+`TestBothCsprojTemplatesCarryTheSameSuppressionPolicy` asserts the two templates agree on `Nullable` and on
+the `NoWarn` set *exactly* (so adding a code forces the design-doc update, and dropping one fails), and
+`TestPublishPropertiesAreScopedOffLibrariesButAllowUnsafeBlocksIsNot` parses the rendered project and pins
+both halves of the publish-group split — a regression that moved `AllowUnsafeBlocks` under the condition
+would break the corpus in a way no warning count would reveal.
+
 ### Cross-package imports (importing another package / assembly)
 
 When a package imports another and uses its exported surface, the converter must agree, on both the **producer** side (converting the imported package) and the **consumer** side (resolving the `import`), on the imported package's C# `(namespace, class)` and emit a `ProjectReference` to its generated `.csproj`. The package class is `<packageName>_package` and the namespace is the root `go` plus the import path's leading segments, so the two sides line up when the Go package name equals the import path's last segment (the usual layout: `import "x/y/barlib"` → package `barlib` → `go.x.y.barlib_package`). The consumer emits `using barlib = …barlib_package;` and references members as `barlib.Thing`.
