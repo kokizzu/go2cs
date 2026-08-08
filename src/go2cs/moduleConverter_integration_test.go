@@ -799,6 +799,112 @@ func writeModuleFile(t *testing.T, path, content string) {
 	}
 }
 
+// TestRecurseChannelOfHyphenatedModulePath is issue #33's THIRD report at the recurse altitude: a
+// `-recurse` over a project depending on go.mongodb.org/mongo-driver died with `fatal error: stack
+// overflow` while converting x/mongo/driver/session, on nothing more exotic than
+//
+//	type Pool struct { descChan <-chan description.Topology }
+//
+// convertToCSFullTypeName rewrites an import path to a C# namespace BEFORE the branches that peel a
+// `<-chan ` off the front, and it measured the path from index 0 — so the sanitizer's legal
+// hyphen-to-underscore mapping (`mongo-driver`) also rewrote the `-` of `<-chan`. `<_chan …` matches
+// no channel branch, fell into the array branch, found no `]`-turned-`>` to slice past, and re-entered
+// on the identical string forever. See typeNameResolution.go's importPathStart.
+//
+// The unit half (typeNameResolution_test.go) pins the renderer directly; this pins that a real Go
+// declaration of that shape reaches it and converts. The fixture mirrors the reported path exactly —
+// a HYPHENATED first segment and a MULTI-segment tail, which is the whole trigger: a single-segment
+// path has no slash to enter the rewrite, which is why the standard library's own `<-chan time.Time`
+// fields were always fine. Network-free, via a local replace, like its neighbors.
+func TestRecurseChannelOfHyphenatedModulePath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	libDir := filepath.Join(root, "mongo-driver")
+
+	writeModuleFile(t, filepath.Join(libDir, "go.mod"), "module example.com/mongo-driver\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(libDir, "mongo", "description", "description.go"),
+		"package description\n\ntype Topology struct {\n\tKind int\n}\n")
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire example.com/mongo-driver v1.0.0\n\nreplace example.com/mongo-driver => ../mongo-driver\n")
+
+	// The struct FIELD is the reported shape — it is what reaches the fully-qualified renderer
+	// through visitStructType, and where the run died. The type ALIAS beside it is what makes the
+	// result assertable: a field DECLARATION emits the readable file-local alias
+	// (`description.Topology`), so the fully-qualified render is computed but never written, and a
+	// test that only reads the field cannot tell a correct render from a mangled one. An exported
+	// type alias emits the fully-qualified string verbatim, into both `main.cs` and the
+	// `[GoTypeAlias]` record — the same reason the NestedAliasUser golden is a good sentinel.
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\t\"example.com/mongo-driver/mongo/description\"\n)\n\n"+
+			"type TopoChan = <-chan description.Topology\n\n"+
+			"type Pool struct {\n\tdescChan <-chan description.Topology\n}\n\n"+
+			"func NewPool(descChan <-chan description.Topology) *Pool {\n\treturn &Pool{descChan: descChan}\n}\n\n"+
+			"func main() {\n\tch := make(chan description.Topology, 1)\n\tch <- description.Topology{Kind: 7}\n\tfmt.Println((<-NewPool(ch).descChan).Kind)\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	// Before the fix this call did not return — it exhausted the goroutine stack, and a Go stack
+	// overflow is FATAL, so there was nothing for the driver's per-file recover to catch.
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	appDirOut := filepath.Join(options.recurseOutputRoot, "src", "example.com", "app")
+	mainCs := readGenerated(t, filepath.Join(appDirOut, "main.cs"))
+	packageInfoCs := readGenerated(t, filepath.Join(appDirOut, "package_info.cs"))
+
+	// The fully-qualified render, where the crash lived — the channel constructor intact and the
+	// hyphenated multi-segment path resolved to its namespace.
+	wantAlias := "global using TopoChan = " + RootNamespace +
+		"./*<-*/channel<example.com.mongo_driver.mongo.description" + PackageSuffix + ".Topology>;"
+
+	if !strings.Contains(mainCs, wantAlias) {
+		t.Errorf("app main.cs missing %q:\n%s", wantAlias, mainCs)
+	}
+
+	if !strings.Contains(packageInfoCs, `[assembly: GoTypeAlias("TopoChan", "`+RootNamespace+"./*<-*/channel<") {
+		t.Errorf("package_info.cs did not record the channel alias with its constructor:\n%s", packageInfoCs)
+	}
+
+	// The mangled arrow, stated directly: `-` sanitized to `_` inside the constructor. Naming the
+	// failure mode keeps the diagnosis in the test rather than in whoever reads the diff.
+	for name, generated := range map[string]string{"main.cs": mainCs, "package_info.cs": packageInfoCs} {
+		if strings.Contains(generated, "<_chan") {
+			t.Errorf("%s: the `<-chan` constructor was sanitized as import-path text:\n%s", name, generated)
+		}
+	}
+
+	// The readable form at the declaration site, which is what a reader of the converted code sees.
+	if want := "/*<-*/channel<description.Topology> descChan"; !strings.Contains(mainCs, want) {
+		t.Errorf("app main.cs missing %q:\n%s", want, mainCs)
+	}
+}
+
 func readGenerated(t *testing.T, path string) string {
 	t.Helper()
 

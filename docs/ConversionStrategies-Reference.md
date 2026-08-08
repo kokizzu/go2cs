@@ -8169,6 +8169,89 @@ then sweeping every `using` in the file against the converter's own `keywords` s
 fixture never exercises is covered by the same assertion). Both neuter-proven: restoring the
 whole-string measurement reproduces the reporter's emitted text verbatim.
 
+### The import-path rewrite rewrites only the PATH, not the constructor in front of it
+The string-path type renderer (`convertToCSFullTypeName`) peels a Go type expression one constructor
+at a time — `<-chan `, `chan `, `chan<- `, `*`, `[]`, `[N]`, `map[K]`, `func(…)` — recursing on what
+is left. Its **import-path rewrite runs first**, before any of those branches, because a
+package-qualified element has to become a C# namespace before the name means anything. Until
+2026-08-08 that rewrite measured the path from index 0 of the whole string, constructor included.
+
+`convertImportPathToNamespace` maps a **hyphen to an underscore**, because a Go path element may
+legally contain one (`mongo-driver`, `go-isatty`). Handed the constructor as well, it rewrote the
+`-` of `<-chan` too. The declaration in `go.mongodb.org/mongo-driver/x/mongo/driver/session`
+
+```go
+type Pool struct { descChan <-chan description.Topology }
+```
+
+renders fully-qualified as `<-chan go.mongodb.org/mongo_driver/mongo/description_package.Topology`,
+and came back as `<_chan go.mongodb.org.mongo_driver.…`. No channel branch recognizes `<_chan`, so it
+fell through to the **array** branch, which slices past the `>` that a `[N]` length closes — and with
+no `>` in the string at all, `strings.Index` returned -1 and the slice was `typeName[0:]`. The
+renderer re-entered on the IDENTICAL string, without bound: `fatal error: stack overflow`, taking a
+1,726-package `-recurse` run down at package 1456 (issue #33's third report).
+
+A **single-segment** path never had a slash to enter the rewrite, so `<-chan time_package.Time` was
+always correct. That is the whole reason the standard library — which is nothing but single- and
+multi-segment *stdlib* paths, none of them hyphenated behind a `<-chan` — never saw this, and only a
+module dependency could.
+
+The fix is `importPathStart`: find where the path begins by scanning **backward** from the candidate
+region to the first byte no import path may contain, and rewrite only from there. `-` cannot be that
+delimiter (it would split `mongo-driver` mid-path), but every constructor the renderer emits ends in
+one that can — a space (`<-chan `, `chan `, `chan<- `), `*`, `]` (`[]`, `[2]`, `map[K]`) or `(`
+(`func(`). `<-chan ` then survives for its own branch, which recurses on the bare qualified element
+exactly as it always has, and `descChan` emits
+`/*<-*/channel<go.mongodb.org.mongo_driver.mongo.description_package.Topology>` against the
+`using description = global::go.go.mongodb.org.….description_package;` the same file writes.
+
+Two subtleties the first cut got wrong, both caught by [CNR](Glossary.md#cnr):
+
+- **A non-ASCII byte is a path byte.** Every delimiter this scan looks for is a constructor
+  character and all of them are ASCII, but the converter's own synthetic markers are not (`ᴛ`, `ж`,
+  `Ꮡ`, `ꓸ`, `Δ`). Treating a multi-byte rune as a delimiter stranded the scan *inside* the type
+  name, freezing the path in front of it: `go.main_package/entryᴛ1` for
+  `go.main_package.entryᴛ1`. The `PublicizedInterfaceAnonAlias` and `NestedAliasUser` lifted-alias
+  goldens are what surfaced it.
+- **The scan stops at the generic-argument bracket.** Past it lie type ARGUMENTS whose `,`, space
+  and `]` are not constructor text and would strand the scan at the tail of the string.
+
+**Known residual.** When the OUTERMOST constructor is `[]`, its leading `[` is read as the start of a
+generic argument list and truncates the path scan to nothing, so `[]<-chan <module path>.T` is still
+mangled. Fixing it means no longer treating a *leading* `[` as a generic bracket, which re-routes
+every `[]<pkg>/<sub>.T` in the corpus through the other branch (a `_package`-suffix change) — a
+corpus-wide emission change that does not belong in a crash fix. It no longer crashes, which is the
+part that mattered: see below.
+
+**The crash-proofing is separate from the rendering fix, and is the part that generalizes.** The
+array branch now requires the `>` it slices past. A Go stack overflow is a **fatal** runtime error,
+not a panic, so the conversion driver's per-file `recover` could not contain it and one unrenderable
+type killed the whole run instead of its own package. Bounded, an unrecognized shape is reported by
+name on stderr (`Cannot render a C# type name for the unrecognized type expression "…"`) and the
+package still converts. Every other branch consumes at least one byte before recursing, so bounding
+this one bounds the renderer.
+
+Guarded at both altitudes. `typeNameResolution_test.go` pins the renderer: `TestImportPathStart`
+(each constructor, the marker runes, and the paths that must NOT move),
+`TestConvertToCSFullTypeNameConstructedModulePaths` (the reported field in all three channel
+directions, `*`/`[]`/`[N]`/`map[K]`/nested, plus the single-segment and bare-path cases that must stay
+byte-identical, plus the residual above pinned as a decision), and `TestUnclosedBracketTerminates`,
+which runs in a **child process** with a 4 MB stack because the condition it guards is unrecoverable
+in-process. `TestRecurseChannelOfHyphenatedModulePath`
+(`moduleConverter_integration_test.go`) pins that a real declaration of the reported shape reaches
+that renderer through an actual `-recurse`, over a network-free fixture whose module path mirrors the
+report's — hyphenated first segment, multi-segment tail. Its fixture carries a type **alias** to the
+channel alongside the struct field, deliberately: a field DECLARATION emits the readable file-local
+alias (`description.Topology`), so the fully-qualified render is computed but never written and a
+test reading only the field cannot tell a correct render from a mangled one — while an exported alias
+writes the fully-qualified string verbatim into both `main.cs` and the `[GoTypeAlias]` record.
+
+Neuter-proven three ways: both reverted reproduces the reported `fatal error: stack overflow`; the
+bound alone reverted fails the child test in 0.02 s; the rewrite alone reverted (bound in place)
+makes the converter print the warning, exit 0, and still write every `.cs` — the crash-proofing
+demonstrated independently of the rendering — while the integration test fails on the emitted
+`global using TopoChan = go.<_chan example.com.mongo_driver.…;`.
+
 ### A non-canonically-aliased import renders foreign types via the file's alias
 A file that imports a package under an **explicit alias that differs from the canonical package
 name** must render that package's types through the alias, not the canonical name. cryptobyte's

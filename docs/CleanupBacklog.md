@@ -207,6 +207,21 @@
     has never had a `.cs.auto` at all and `godebug`'s is frozen at whenever the panic started.
 ## Recorded residuals (no work owed unless the surrounding facts change)
 
+21. **A LEADING `[` is still read as a generic bracket, so `[]<-chan <module path>.T` renders
+    mangled.** The r45a fix (issue #33's third report) stopped `convertToCSFullTypeName`'s
+    import-path rewrite from eating the type CONSTRUCTOR in front of the path, which is what turned
+    `<-chan …/mongo-driver/…` into `<_chan …` and then into an unbounded self-recursion. The
+    `<-chan []T` nesting is fixed with it; the `[]<-chan T` nesting is not, because `genericStart`
+    takes the FIRST `[` in the string as the start of a generic argument list and a leading slice
+    constructor truncates the path scan to nothing. The fix is to require a generic bracket to
+    FOLLOW a path byte (a generic `[` always follows the name it instantiates) — which is correct,
+    but re-routes every `[]<pkg>/<sub>.T` in the corpus from the suffix-less `else` branch to the
+    main one, i.e. a `_package`-suffix emission change corpus-wide. That did not belong in an urgent
+    crash fix and is not owed now: the shape needs a slice OF receive-only channels of a
+    module-path type, and the array-branch bound landed in the same change means it produces a named
+    `WARNING` and a finite wrong name rather than killing the run. Pinned as an explicit decision at
+    the end of `TestConvertToCSFullTypeNameConstructedModulePaths`; do this one WITH a corpus
+    reconvert, never on its own.
 14. **The `.ValueSlot` entry-alias residual is now empty — but the arm still exists elsewhere.**
     Retiring the type-selected `.ValueSlot` arm at the pointer ENTRY alias (r37b) was required to
     avoid regressing 9 nil-reachable aliases; `.ValueSlot` stays selected for box-of-pointer LOCALS,
