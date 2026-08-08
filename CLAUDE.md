@@ -339,7 +339,7 @@ ONE stdlib in a build; there is now only one on disk.
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
   | full `go2cs-stdlib.slnx` build | **~92–188s** warm (304 projects; 188s measured r41 and 158s at r40, both with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`) | 600s | cold restore adds a few minutes |
   | full `go2cs.slnx` build | **~87s** `--no-incremental` / **~39s** incremental (573 projects; measured 2026-08-07) | 900s | the ONLY gate that compiles the non-generated solution members (utilities, examples) — run it after any golib/runtime API change. ⚠ Under concurrent-lane load a `go2cs-gen` run can die with `AccessViolationException` inside `TypeGenerator`'s recursive `PromotedStructDeclarations`, reported as an `error` against the package (seen once on `core/runtime`, NOT reproducible in two immediate retries with identical flags): re-run before believing it, exactly as with the Go-toolchain crash above |
-  | `run-validated-sweep.ps1` (full roster) | **~46–53 min (2,736s measured 2026-08-04 SOLO at the 73-package / 2,713-verdict roster; 3,154s on 2026-08-01 at 71 — the old "hours" figure is stale)** | run it BACKGROUNDED | ~37 s for a typical package; use `-Filter` for anything but a final gate |
+  | `run-validated-sweep.ps1` (full roster) | **~46–53 min (3,138s measured 2026-08-07 at the 109-package / 13,611-verdict roster — the roster grew 50 % and the wall time did NOT, because most of the new rows are leaf packages; 2,736s on 2026-08-04 at 73; the old "hours" figure is stale)** | run it BACKGROUNDED | ~29 s for a typical package; use `-Filter` for anything but a final gate |
 
   Materially *past* these means the test host has hung under lock contention, not real work — stop and
   clear it rather than waiting 10–20 min. **Re-measure and update this table when the corpus grows again**;
@@ -461,12 +461,13 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      overlaying — PATH-PRECISE, not a count:** for every `[module: GoManualConversion]`-marked
      committed file, the temp root must NOT contain a freshly-EMITTED plain `.cs` at that path
      (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
-     differ — **40 marked files (re-measured r43e, 2026-08-07) but only 15 produce `.cs.auto`**; the
-     other 25 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
+     differ — **41 marked files (re-measured r44a, 2026-08-07) but only 15 produce `.cs.auto`**; the
+     other 26 are `*_impl.cs` companions and hand-owned packages the converter never re-emits at
      that path, so they need no protection. A same-count assertion is wrong in both directions.
-     ⚠ The 40 is a COINCIDENCE, not stability: it was 40 at r40, fell to **39** when `math/unsafe.cs`
-     shed its marker, and is back at 40 only because `internal/weak/pointer.cs` joined at r43e. This
-     is exactly why the census is re-measured, never carried forward.
+     ⚠ The number is NOT stable: it was 40 at r40, fell to **39** when `math/unsafe.cs` shed its
+     marker, returned to 40 when `internal/weak/pointer.cs` joined at r43e, and is **41** since
+     `internal/cpu/cpu_x86_impl.cs` joined at r44a. This is exactly why the census is re-measured,
+     never carried forward.
      **The marker scan must be LINE-ANCHORED (`^\s*\[module:\s*(go\.)?GoManualConversion\]`)** —
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` reports **63**

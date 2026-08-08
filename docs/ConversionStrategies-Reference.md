@@ -12704,6 +12704,46 @@ driver `continue`s on `unmarkedFileCount == 0` and stops re-emitting `internal.w
 `package_info.cs` and `README.md`, and no `pointer.cs.auto` review sibling is produced — the position
 `internal/godebug` and `internal/concurrent` are already in. The marker census moves **39 → 40**.
 
+### `internal/cpu.getGOAMD64level` — a BUILD constant, so the honest answer is the baseline
+
+Go declares `getGOAMD64level() int32` bodyless and implements it in `cpu_x86.s`, where it is not code at
+all but a compile-time constant selected by the `GOAMD64_vN` define the toolchain sets from
+`go env GOAMD64`:
+
+```asm
+TEXT ·getGOAMD64level(SB),NOSPLIT,$0-4
+#ifdef GOAMD64_v4
+	MOVL $4, ret+0(FP)
+#else
+#ifdef GOAMD64_v3
+	MOVL $3, ret+0(FP)
+#else
+#ifdef GOAMD64_v2
+	MOVL $2, ret+0(FP)
+#else
+	MOVL $1, ret+0(FP)
+#endif
+```
+
+The question it answers is *which amd64 microarchitecture level was this BINARY built for*, never *which
+level does this CPU support* — the two differ constantly, and Go depends on the difference: `doinit`'s
+option table gates the `sse3`/`avx`/`avx512` GODEBUG knobs on `level < 2/3/4`, so a v1 build running on a
+v3 machine keeps them switchable. go2cs emits portable C# with no GOAMD64 define, no
+microarchitecture-gated emission and no instruction-set floor above the amd64 baseline, so the faithful
+answer is the same constant Go's own assembly produces for a build without a `GOAMD64_vN` define: **1**.
+That is a measured property of the emission rather than a placeholder value, and probing the host through
+`System.Runtime.Intrinsics.X86` would answer a *different question* — the inverse-atomic rule's exact
+prohibition, since the returned number would look truthful while meaning something else.
+
+`cpu_x86_impl.cs` returns it under `[module: go.GoManualConversion]`, registered as
+`manualConversionFuncs["internal/cpu"]["getGOAMD64level"]`, so the converter leaves the standard
+placeholder comment where the bodyless partial was. A/B footprint: **one corpus file**. Demonstrated
+consumer: `internal/cpu`'s own `TestDisableSSE3`, whose first statement is
+`if GetGOAMD64level() > 1 { t.Skip(…) }` — against the unimplemented `PartialStubGenerator` stub that
+guard was an infrastructure-error, and it was the package's only divergence (7 of 8). With the constant in
+place the test reads 1, walks on into `runDebugOptionsTest`, and skips exactly where Go does:
+`internal/cpu` validates **8 of 8**.
+
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 
 Go's `(*structType)(unsafe.Pointer(t))` is the **prefix-downcast** idiom: the linker really allocated a

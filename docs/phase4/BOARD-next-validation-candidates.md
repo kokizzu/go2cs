@@ -66,6 +66,15 @@
 > nothing was watching, so **the roster's denominator is limited by who has looked, not by what is
 > broken**. Re-scout the tail after any capability lands, not only the packages that capability names.
 >
+> **Revised again 2026-08-07 (r44a-rescout)**: r43c's own instruction executed — 108 pipeline runs
+> over BOTH r43c's rooted non-validators and the 76 never-measured tail packages. **Twelve bank**,
+> taking the roster **97 → 109 (50.7%)** and past the campaign's 50 % mark; eleven needed nothing,
+> and the twelfth (`internal/cpu`) took a one-declaration hand-own. The re-scout of r43c's OWN roots
+> yielded exactly one package (`expvar`) and every other rooting re-measured verbatim, which sharpens
+> the instruction rather than repealing it: **a rooted non-validator has been looked at; the yield is
+> in what nobody has run.** Eighteen packages are now ONE OR TWO ROWS from banking, and the tail's
+> build blockers are named with their verdict counts — see the r44a section at the end of this file.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -3929,3 +3938,244 @@ lane's commits. Affected: `crypto`, `crypto/aes`, `crypto/des`, `crypto/rc4`, `c
 beneficiaries: the **Go-source position map** (unblocks `log` *and* `log/slog`, ~9 rows across the
 two) and **import-ordered package initialization** (correctness, not just verdicts - any converted
 program that touches `log/slog` before `log` crashes today).
+## The r44a re-scout — r43c's own lesson executed; 12 bank, and the tail's roots are named (2026-08-07)
+
+r43c ended with an instruction rather than a finding: *re-scout the tail after ANY capability lands,
+not just the packages that capability was aimed at.* Five capabilities landed between it and this
+pass — managed weak references (`internal/weak`), per-field `[GoType]` struct equality,
+`runtime.Caller` over a managed frame walk, range-over-every-integer-kind, and the `abi.Type`
+StructType/ArrayType specializations — plus the linkname PUSH direction. This pass ran the pipeline
+over BOTH halves of the tail that instruction names:
+
+- **(a) the 32 still-unbanked packages r43c rooted** — its 34 minus `go/scanner` (banked at r43f) and
+  minus `log`, whose position-map root is a board-documented architectural arc; and
+- **(b) 76 never-measured tail packages** — everything unbanked and testable that is not a
+  board-documented deep wall (`net`, `unique`, `os`) and not sibling-owned (`log/slog` and its
+  subpackages, and `testing/slogtest`, which is a `log/slog` arc).
+
+108 pipeline runs, `-test-action all -test-timeout 4m`, serial, on a corpus prewarmed by one
+`go2cs-stdlib.slnx` build (304/304, 0 errors, 113 s), plus a 12-package re-run (below).
+**Roster 97 → 109 (45.1% → 50.7%), 13,081 → 13,611 matching verdicts, 50 disclosed (unchanged).**
+
+### The re-scout of r43c's own roots yielded exactly one package
+
+`expvar` — r43c's "type-initializer failure inside a generated `ᴛRegisterAdapter` for `ΔStringжVar`"
+— now validates **11 of 11**, with no change of any kind in this lane. **Every other package on
+r43c's list re-measured verbatim**, down to the error code: the eight build blockers are unmoved and
+the runtime roots reproduce their recorded shape.
+
+That is a result, not a null: **the re-scout instruction is right, and its yield on an
+already-rooted list is small.** A rooted non-validator has been looked at. The yield is in the
+packages nobody has run — eleven of the twelve banks came from there.
+
+### The twelve
+
+`crypto/internal/boring` · `crypto/rand` (298) · `database/sql/driver` · `debug/buildinfo` (197) ·
+`debug/plan9obj` · `expvar` · `go/importer` · `internal/cpu` · `internal/sysinfo` ·
+`os/exec/internal/fdtest` · `plugin` · `runtime/internal/sys`
+
+Eleven needed nothing at all. `internal/cpu` is the lane's ONE fix, below. `crypto/rand` (298) and
+`debug/buildinfo` (197) carry the volume; `os/exec/internal/fdtest`'s single verdict is a
+platform-gated **skip on both sides** — the converted run reaches Go's own `runtime.GOOS` guard and
+declines exactly where Go does, which the proof page states plainly rather than dressing up.
+
+### The one fix — `internal/cpu.getGOAMD64level`, and why 1 is a measurement
+
+`TestDisableSSE3` opens `if GetGOAMD64level() > 1 { t.Skip(…) }`. Go reads 1 and walks on to a skip
+inside `runDebugOptionsTest`; the converted run hit an unimplemented `PartialStubGenerator` stub and
+infrastructure-errored, and that one row was the whole gap (7 of 8).
+
+`getGOAMD64level` is declared in `cpu_x86.s` and its body is a **compile-time constant** — the
+`GOAMD64_vN` define the toolchain sets from `go env GOAMD64`, with `#else MOVL $1` as the
+fall-through. It answers *which microarchitecture level was this BINARY built for*, never *which
+does this CPU support*; a v3 machine running a v1 build still reports 1, which is exactly why
+`doinit` keeps the sse3/avx/avx512 GODEBUG knobs switchable at level 1. go2cs emits portable C# with
+no GOAMD64 define and no microarchitecture-gated emission, so **1 is the same constant Go's own
+assembly produces for go2cs's build configuration** — a measured property of the emission, not a
+placeholder, and probing the CPU here would answer a different question. Registered in
+`manualConversionFuncs["internal/cpu"]` with the body in `cpu_x86_impl.cs`. **A/B footprint: one
+corpus file** (`cpu_x86.cs`'s declaration becomes the standard placeholder comment) plus the
+hand-own. Marker census +1.
+
+### ONE ROW AWAY — the list this pass most wants read
+
+Eighteen packages match every verdict but one or two. Each cell is the whole gap.
+
+| Package | Census | The row, and its root |
+|:--|:--:|:--|
+| `runtime/internal/math` | 0 of 1 | the untyped-shift int32 fold, below — one converter rule |
+| `internal/platform` | 0 of 1 | `json: cannot unmarshal array into []platform_test.listEntry` — a converter-LIFTED anonymous struct as a JSON slice element (`crypto/internal/hpke` is the same shape) |
+| `internal/profile` | 0 of 1 | `TestPackedEncoding` encodes empty (`got []`) |
+| `internal/godebugs` | 0 of 1 | `TestAll` reads GOROOT-relative `../../../doc/godebug.md`; the pipeline's working dir has none |
+| `html` | 2 of 3 | the `array<T>` unshaped-instance class, producer (1) |
+| `internal/chacha8rand` | 3 of 4 | the same class, producer (2) |
+| `internal/singleflight` | 4 of 5 | `TestDoAndForgetUnsharedRace` never returns — still the only hang in the tail |
+| ~~`internal/cpu`~~ | ~~7 of 8~~ | **BANKED this arc** |
+| `go/ast` | 8 of 9 | `ast.Fprint` → `reflect.MapKeys` → `mapType.get_MapType()` interface conversion; reflection chip |
+| `debug/gosym` | 8 of 9 | `TestPCLine`'s child process exits 1 |
+| `debug/pe` | 9 of 10 | one row |
+| `net/http/internal` | 9 of 10 | the `AllocsPerRun` byte/count shim, below |
+| `net/http/fcgi` | 11 of 12 | `TestGetValues` byte-stream mismatch in the FCGI_GET_VALUES record |
+| `crypto/cipher` | 13 of 14 | the oracle's build tags, below |
+| `crypto/internal/edwards25519/field` | 13 of 16 | the `array<T>` class, producer (3) |
+| `internal/poll` | 18 of 19 | `runtime_pollServerInit` — the netpoller has no managed body |
+| `net/textproto` | 25 of 26 | `canonicalMIMEHeaderKey allocs = 816; want 0` — a **want-ZERO** assert, ruling #1's third instance after `time`'s and `os`'s |
+| `io/ioutil` | 27 of 28 | `TestReadDir` looks in `..` for the SIBLING package's `io_test.go`; also ORDER-DEPENDENT, since a sweep that ran `io` first leaves that file staged — a reason not to bank it even when it passes |
+| `net/http/cgi` | 36 of 39 | three rows |
+| `syscall` | 61 of 62 | **the pipeline's own path depth** — below |
+
+### `syscall` — 61 of 62, and the one row is a bank the PIPELINE is costing itself
+
+`TestGetwd_DoesNotPanicWhenPathIsLong` (Go issue 60051) calls `t.TempDir()`, then `os.Chdir`, and
+skips itself if the Chdir fails. Go's run succeeds; the converted run's Chdir fails and the test
+skips, because the C# host's temp root is
+`%TEMP%\go2cs-tests\syscall\<32-hex-digest>\syscall\.tmp\<TestName>` — already deep before a test
+whose entire purpose is to build a path past MAX_PATH adds its own. Shorten the staging root (short
+prefix, truncated digest) and 62 verdicts should land. Rooted, not fixed: the staging path feeds the
+input-digest manifest, so it is its own change with its own gate.
+
+### The `array<T>` UNSHAPED-INSTANCE class — three producers, three packages, five rows
+
+`array<T>` carries its Go length `N` in the INSTANCE — golib's own `IGoZeroShaped` says so, because
+`[4]int32` and `[8]int32` are the same C# type. So every path that materializes one from TYPE
+information alone must supply N, and three such paths do not:
+
+1. **a map miss** — `html.unescapeEntity` reads `entity2[name]` over `map[string][2]rune`; the miss
+   yields `default(array<rune>)`, length 0, and `x[0]` throws (`html` 2 of 3). r43c named this one.
+2. **an unsafe reinterpret of an array pointer** — `internal/chacha8rand.setup` reaches
+   `(*[16][4]uint32)(unsafe.Pointer(buf))` over a `*[32]uint64`, and the reinterpreted
+   `ж<array<array<uint32>>>` has length 0 (`internal/chacha8rand` 3 of 4).
+3. **the reflection bridge generating a value** — `testing/quick` → `reflect.Call` hands a
+   zero-length `array<byte>` to a function taking `[32]byte`
+   (`crypto/internal/edwards25519/field` 13 of 16, three rows).
+
+`IGoZeroShaped` cannot serve any of them: it produces a zero value shaped like a value you ALREADY
+have, and none of these three has one. Closing the class banks three packages (23 verdicts); each
+producer is a separate fix and (3) is the reflection chip's.
+
+### An untyped constant SHIFT computed in C# int32 — a silent wrong answer
+
+`runtime/internal/math`'s `TestMulUintptr` reports `MulUintptr(1, 1) = 1, false want 1, true`. The
+row is Go's `{1 << (UintptrSize / 2), 1 << (UintptrSize / 2), true}` with `UintptrSize == 64`; the
+converter emitted `(uintptr)(1 << (int)((UintptrSize / 2)))`, and C# masks an `int` shift count to
+five bits, so `1 << 32` is **1**. The NEIGHBOURING table row folds correctly —
+`1<<(UintptrSize/2) - 1` → `(uintptr)(4294967296L - 1)` — because the shift is then an INNER node
+whose recorded type is `UntypedInt` and `overflowingConstLiteral`'s SIGNED arm folds anything out of
+int32 range. As the OUTERMOST node the shift carries the CONTEXT's `uintptr`, takes the UNSIGNED
+arm, and that arm folds only values beyond int64. Its stated reason — "a TYPED unsigned constant
+shift emits with a width-cast operand from the retype path" — is true for a shift the Go SOURCE
+typed and false for a tree the context typed, which is precisely this case.
+
+Corpus reach, measured: 69 `1 << (int)(<symbolic>)` sites; the counts are constants and nearly all
+are below 32, but `runtime/mpagealloc_64bit.cs:234` is `(uintptr)(1 << (int)(heapAddrBits))` with
+`heapAddrBits == 48` — `1 << 16` where Go computes 2⁴⁸. Latent, and the same silent-wrong-answer
+shape. Deliberately NOT fixed here: `overflowingConstLiteral` already documents six carefully-scoped
+rules and a wrong widening drifts the corpus silently, so this wants its own arc with an A/B.
+
+### Three roots that each hold a whole package
+
+- **`iter` — 0 of 28. `newcoro`/`coroswitch` are unimplemented stubs.** `iter.Pull`/`Pull2` are built
+  on Go's coroutine primitive and every one of the package's tests goes through them. A
+  self-contained arc of exactly the shape `sync`'s Mutex family and `internal/weak` took: the
+  observable contract (a resumable producer, with `stop`, panic propagation and `Goexit`
+  propagation) has a managed answer; Go's mechanism — switching stacks — does not.
+- **`mime/multipart` — 7 of 52. A linkname PULL of an UNEXPORTED cross-package symbol.**
+  `readmimeheader.go` is a bodyless `//go:linkname readMIMEHeader net/textproto.readMIMEHeader` —
+  the PULL direction r43b never had to touch because it already worked, but only for a target the
+  consumer can NAME. `net/textproto.readMIMEHeader` is unexported, so across the assembly boundary
+  it is inaccessible and the declaration falls to the throwing stub. Remedy shape is an
+  accessibility bridge, not a hand-own: the white-box test model already mints an
+  `InternalsVisibleTo` grant for this exact problem.
+- **`crypto/internal/nistec` — 0 of 2,200, build-blocked on four CS0311s**, all the same shape:
+  `ж<P224Point>` (…P256/P384/P521) rejected as the type argument of the generic BENCHMARK helpers
+  `benchmarkScalarMult<P>` / `benchmarkScalarBaseMult<P>`, whose Go constraint is `nistPoint[P]` — a
+  self-referential interface constraint over a pointer receiver. Nothing EXECUTES those helpers;
+  they merely have to compile. `crypto/ecdsa` (82) is blocked in the same family. **The largest
+  single prize on this list.**
+
+### Two findings that are NOT disclosures, and refuse for the same reason
+
+**The differential oracle is not built with the corpus's build tags.** `crypto/cipher` matches on
+every row but `TestGCMAsm`, where Go passes and C# **skips** with Go's own message, *"no assembly
+implementation of GCM"* — the test's first act is `reflect.TypeOf(asm) == reflect.TypeOf(generic)`,
+and under the standing `purego` ruling the converted corpus genuinely has one GCM implementation,
+not two. **The C# side is right.** The oracle is what differs: `compareGoAndConvertedTests` runs
+`go test -json -count=1 -timeout … .` with **no `-tags`**, while every conversion applies
+`defaultStdLibBuildTags = {purego, math_big_pure_go}`. Go under the corpus's own tags would skip
+that row too. It is satisfiable at a layer go2cs owns — one argument on one `exec.Command` — so
+disclosing it would launder a comparison defect as an unsatisfiable assert. But it also changes what
+EVERY roster row claims ("passes Go's tests" → "passes Go's tests as Go builds them for the pure-Go
+configuration"), so it is an arc to design with the user and gate on a full sweep, not something to
+slip in behind a bank.
+
+**`AllocsPerRun` reports BYTES, and it now blocks a second package.** `net/http/internal` matches 9
+of 10; `TestChunkReaderAllocs` reports `mallocs = 640; want 1`. r43g root-caused the same shape in
+`log`'s `TestDiscard` (`got 424 allocs, want at most 1`): the shim measures allocated BYTES per run,
+not allocation COUNT, because the CLR exposes `GC.GetAllocatedBytesForCurrentThread` and no object
+counter. Two packages now stop here, which is the argument for owning it rather than disclosing
+around it — until the shim reports a count, no `alloc-profile` disclosure at these sites can claim
+the CLR *provably cannot satisfy* the assert, because nobody has measured the number the assert is
+about.
+
+### Build roots found in the never-measured tail
+
+| Package | Verdicts | First diagnostic |
+|:--|--:|:--|
+| `crypto/tls` | 3,519 | CS0234 `'vendor' does not exist` — the test half's vendored import |
+| `crypto/internal/nistec` | 2,200 | CS0311, above |
+| `runtime` | 870 | build-blocked |
+| `go/types` | 557 | CS0839 `Argument missing` |
+| `encoding/json` | 491 | CS0050 inconsistent accessibility on a test-local return type |
+| `encoding/xml` | 386 | CS0426 `ΔToken` does not exist in `xml_package` |
+| `crypto/x509` | 335 | CS0102 duplicate definition in `x509_package` |
+| `net/netip` | 266 | CS1525 `Invalid expression term '<'` |
+| `net/http` | 245 | CS1002 `; expected` |
+| `html/template` | 243 | CS0030 on a test-local named type |
+| `sync/atomic` | 108 | CS0103 `ᏑᏑX` — a DOUBLE address-prefix marker |
+| `runtime/pprof` | — | CS0103 `ᏑᏑsalts` — **the same double-`Ꮡ` root** |
+| `crypto/ecdsa` | 82 | the nistec family |
+| `fmt` | 63 | CS0111 `fmt_test_package.SE` already defines `Append` |
+| `text/template` | 52 | CS0030 on a test-local named type |
+| `debug/elf` | 31 | CS8183 cannot infer the type of an implicitly-typed discard |
+| `internal/reflectlite` | 30 | CS0016 could not write to output file |
+| `database/sql` | 25 | CS0029 |
+| `flag` | 24 | CS1929 on `ж<flag_test_package.URLValue>` |
+| `os/exec` | 22 | CS0103 `The name 'var' does not exist` |
+| `internal/concurrent` | 20 | CS0426 `node<,>` — the hand-owned `hashtriemap.cs` does not declare the internal type its WHITE-BOX test half references |
+| `internal/runtime/atomic`, `internal/syscall/windows/registry`, `net/rpc/jsonrpc`, `go/internal/srcimporter`, `testing/fstest`, `internal/types/errors` | — | build-blocked, first diagnostic recorded |
+
+**And one hard CONVERTER failure in 108 packages: `reflect`.** `go2cs.exe: Failed to convert package
+tests in "…\src\reflect": convert test file "…\reflect\all_test.go": 1e+06 not an Int` — a
+float-shaped untyped constant reaching a path that demands `constant.Int`. Every other package in
+the batch CONVERTED; only the C# build or the run failed. This one has a one-line repro.
+
+### Re-baselines this pass owes the board
+
+- **`encoding/gob`: 98 → 99 of 106.** `TestNetIP` now passes (the `internal/weak` hand-own let
+  `net/netip`'s initializer complete and the value render correctly). The seven remaining failures
+  are the same gob-internal set.
+- **`crypto/elliptic` 4 of 82, `math/big` 9 of 226, `go/doc` 24 of 85, `go/parser` 6 of 173,
+  `mime/multipart` 7 of 52, `encoding/asn1` 28 of 38, `net/rpc` 6 of 15, `net/http/httputil` 16 of
+  53, `net/http/httptest` 24 of 55, `net/http/cookiejar` 10 of 17, `debug/dwarf` 7 of 40,
+  `internal/coverage/cfile` 4 of 16, `go/internal/gcimporter` 399 of 583** — first censuses, all
+  recorded here rather than in prose.
+- `net/internal/socktest`, `internal/syscall/unix`, `log/syslog`, `runtime/race` have **no eligible
+  `Test` declarations on windows/amd64** — they are in the naive 215 denominator but cannot bank on
+  this target.
+- `os/user` cannot bank at all: Go's own `TestGroupIds` FAILS in the oracle.
+
+### ⚠ Two self-inflicted traps, both worth the next lane's attention
+
+1. **The corpus is an INPUT to a running batch.** Staging the `cpu_x86_impl.cs` hand-own while the
+   batch was still running made six unrelated packages report
+   `CS0111: Type 'cpu_package' already defines a member called 'getGOAMD64level'` — the impl
+   implements a partial the CURRENTLY-BUILT converter still emits, and the error is reported against
+   the CONSUMER package, not against `internal/cpu`. Never stage a converter-paired corpus file
+   until the batch is idle and the converter is rebuilt.
+2. **Clean the batch's untracked artifacts between passes.** The re-run then failed wholesale with
+   `NuGet.targets(1311,5): error MSB4006: circular dependency … "_GenerateRestoreProjectPathWalk"`
+   against `internal.syscall.windows.csproj`: a package whose run FAILED still leaves a generated
+   `<pkg>.tests.csproj` on disk, and `internal/syscall/windows`'s test half imports
+   `internal/syscall/windows/registry`, which imports `internal/syscall/windows` — a cycle NuGet's
+   restore path walk rejects even though the C# compile would be fine. `git add` the banks, then
+   `git clean -fd -- src/core`, before re-running anything.
