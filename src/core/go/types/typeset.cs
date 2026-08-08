@@ -217,8 +217,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         // have valid interfaces. Mark the interface as complete to avoid
         // infinite recursion if the validType check occurs later for some
         // reason.
-        ityp.tset = Ꮡ(new _TypeSet(terms: allTermlist));
-        // TODO(gri) is this sufficient?
+        ityp.tset = Ꮡ(new _TypeSet(terms: allTermlist)); // TODO(gri) is this sufficient?
         map<ж<Union>, ж<_TypeSet>> unionSets = default!;
         if (Ꮡcheck != nil){
             if (check.unionTypeSets == default!) {
@@ -242,8 +241,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         // position.
         ref var seen = ref heap<objset>(out var Ꮡseen);
         ref var allMethods = ref heap<slice<ж<Func>>>(out var ᏑallMethods);
-        var mpos = new map<ж<Func>, tokenꓸPos>();
-        // method specification or method embedding position, for good error messages
+        var mpos = new map<ж<Func>, tokenꓸPos>(); // method specification or method embedding position, for good error messages
         var mposʗ1 = mpos;
         void addMethod(tokenꓸPos posΔ1, ж<Func> m, bool @explicit) {
             {
@@ -313,19 +311,18 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                 }
                 comparable = tset.Value.comparable;
                 foreach (var (_, m) in (~tset).methods) {
-                    addMethod(posΔ2, m, false);
+                    addMethod(posΔ2, m, false); // use embedding position pos rather than m.pos
                 }
                 terms = tset.Value.terms;
                 break;
             }
             case ж<Union> u: {
-                if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), // use embedding position pos rather than m.pos
- go1_18, "embedding interface element %s"u8, u.OrTypedNil())) {
+                if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), go1_18, "embedding interface element %s"u8, u.OrTypedNil())) {
                     continue;
                 }
                 var tset = computeUnionTypeSet(Ꮡcheck, unionSets, posΔ2, u);
                 if (tset == ᏑinvalidTypeSet) {
-                    continue;
+                    continue; // ignore invalid unions
                 }
                 assert(!(~tset).comparable);
                 assert(len((~tset).methods) == 0);
@@ -335,7 +332,6 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
             default: {
                 var u = switchᴛ16;
                 if (!isValid(u)) {
-                    // ignore invalid unions
                     continue;
                 }
                 if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), go1_18, "embedding non-interface type %s"u8, typ)) {
@@ -388,8 +384,7 @@ internal static (Δtermlist, bool) intersectTermLists(Δtermlist xterms, bool xc
             comp = false;
         }
     }
-    assert(!comp || terms.isAll());
-    // comparable invariant
+    assert(!comp || terms.isAll()); // comparable invariant
     return (terms, comp);
 }
 
@@ -456,9 +451,8 @@ internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Un
                 if ((~t).tilde && !Identical((~t).typ, u)) {
                     // There is no underlying type which is t.typ.
                     // The corresponding type set is empty.
-                    t = default!;
+                    t = default!; // ∅ term
                 }
-                // ∅ term
                 terms = new Δtermlist(new ж<term>[]{t.Reinterpret<ΔTerm, term>()}.slice());
             }
         }

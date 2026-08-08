@@ -95,12 +95,10 @@ internal static @string cleanGlobPath(@string path) {
         return "."u8;
     }
     { /* default: */
-        return path[0..(int)(len(path) - 1)];
+        return path[0..(int)(len(path) - 1)]; // chop off trailing separator
     }
 
 }
-
-// chop off trailing separator
 
 // glob searches for files matching pattern in the directory dir
 // and appends them to matches, returning the updated slice.
@@ -113,9 +111,8 @@ internal static (slice<@string> m, error e) glob(FS fs, @string dir, @string pat
     m = matches;
     var (infos, err) = ReadDir(fs, dir);
     if (err != default!) {
-        return (m, e);
+        return (m, e); // ignore I/O error
     }
-    // ignore I/O error
     foreach (var (_, info) in infos) {
         @string n = info.Name();
         var (matched, errΔ1) = path.Match(pattern, n);

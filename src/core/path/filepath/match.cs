@@ -345,13 +345,12 @@ internal static @string cleanGlobPath(@string path) {
         return path;
     }
     { /* default: */
-        return path[0..(int)(len(path) - 1)];
+        return path[0..(int)(len(path) - 1)]; // chop off trailing separator
     }
 
 }
 
 // do nothing to the path
-// chop off trailing separator
 
 // cleanGlobPathWindows is windows version of cleanGlobPath.
 internal static (nint prefixLen, @string cleaned) cleanGlobPathWindows(@string path) {
@@ -367,22 +366,19 @@ internal static (nint prefixLen, @string cleaned) cleanGlobPathWindows(@string p
         return (vollen + 1, path);
     }
     case {} when vollen == len(path) && len(path) == 2: {
-        return (vollen, path + ".");
+        return (vollen, path + "."); // convert C: into C:.
     }
     default: {
         if (vollen >= len(path)) {
             // /, \, C:\ and C:/
             // do nothing to the path
             // C:
-            // convert C: into C:.
             vollen = len(path) - 1;
         }
-        return (vollen, path[0..(int)(len(path) - 1)]);
+        return (vollen, path[0..(int)(len(path) - 1)]); // chop off trailing separator
     }}
 
 }
-
-// chop off trailing separator
 
 // glob searches for files matching pattern in the directory dir
 // and appends them to matches. If the directory cannot be
@@ -396,18 +392,15 @@ internal static (slice<@string> m, error e) glob(@string dir, @string pattern, s
         m = matches;
         var (fi, err) = os.Stat(dir);
         if (err != default!) {
-            goto ᒐdone;
+            goto ᒐdone; // ignore I/O error
         }
-        // ignore I/O error
         if (!fi.IsDir()) {
-            goto ᒐdone;
+            goto ᒐdone; // ignore I/O error
         }
-        // ignore I/O error
         (var d, err) = os.Open(dir);
         if (err != default!) {
-            goto ᒐdone;
+            goto ᒐdone; // ignore I/O error
         }
-        // ignore I/O error
         var dʗ1 = d;
         defer(() => dʗ1.Close(), ref ᒐ);
         var (names, _) = d.Readdirnames(-1);

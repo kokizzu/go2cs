@@ -483,8 +483,7 @@ internal static void sleep(this ж<scavengerState> Ꮡs, float64 worked) {
         // response, broke down. This may be transient, so temporarily switch to
         // sleeping a fixed, conservative amount.
         s.sleepRatio = startingScavSleepRatio;
-        s.controllerCooldown = 5000000000;
-        // 5 seconds.
+        s.controllerCooldown = 5000000000; // 5 seconds.
         // Signal the scav trace printer to output this.
         Ꮡs.controllerFailed();
     }

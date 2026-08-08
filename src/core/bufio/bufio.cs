@@ -143,9 +143,8 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
     b.lastByte = -1;
     b.lastRuneSize = -1;
     while (b.w - b.r < n && b.w - b.r < len(b.buf) && b.err == default!) {
-        b.fill();
+        b.fill(); // b.w-b.r < len(b.buf) => buffer is not full
     }
-    // b.w-b.r < len(b.buf) => buffer is not full
     if (n > len(b.buf)) {
         return (b.buf[(int)(b.r)..(int)(b.w)], ErrBufferFull);
     }
@@ -268,9 +267,8 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
         if (b.err != default!) {
             return (0, b.readErr());
         }
-        b.fill();
+        b.fill(); // buffer is empty
     }
-    // buffer is empty
     var c = b.buf[b.r];
     b.r++;
     b.lastByte = (nint)c;
@@ -308,9 +306,8 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
     error err = default!;
 
     while (b.r + (nint)utf8.UTFMax > b.w && !utf8.FullRune(b.buf[(int)(b.r)..(int)(b.w)]) && b.err == default! && b.w - b.r < len(b.buf)) {
-        b.fill();
+        b.fill(); // b.w-b.r < len(buf) => buffer is not full
     }
-    // b.w-b.r < len(buf) => buffer is not full
     b.lastRuneSize = -1;
     if (b.r == b.w) {
         return (0, 0, b.readErr());
@@ -358,8 +355,7 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
     slice<byte> line = default!;
     error err = default!;
 
-    nint s = 0;
-    // search start index
+    nint s = 0; // search start index
     while (ᐧ) {
         // Search buffer.
         {
@@ -384,11 +380,9 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
             err = ErrBufferFull;
             break;
         }
-        s = b.w - b.r;
-        // do not rescan area we scanned before
-        b.fill();
+        s = b.w - b.r; // do not rescan area we scanned before
+        b.fill(); // buffer is not full
     }
-    // buffer is not full
     // Handle last byte, if any.
     {
         nint i = len(line) - 1; if (i >= 0) {
@@ -557,9 +551,8 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
         }
     }
     if (b.w - b.r < len(b.buf)) {
-        b.fill();
+        b.fill(); // buffer not full
     }
-    // buffer not full
     while (b.r < b.w) {
         // b.r < b.w => buffer is not empty
         var (m, errΔ3) = b.writeBuf(w);
@@ -567,9 +560,8 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
         if (errΔ3 != default!) {
             return (n, errΔ3);
         }
-        b.fill();
+        b.fill(); // buffer is empty
     }
-    // buffer is empty
     if (AreEqual(b.err, io.EOF)) {
         b.err = default!;
     }

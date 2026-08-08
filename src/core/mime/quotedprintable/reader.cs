@@ -131,7 +131,7 @@ internal static slice<byte> softSuffix = slice<byte>("="u8);
                 }
                 return (n, err);
             }
-            r.line = r.line[2..];
+            r.line = r.line[2..]; // 2 of the 3; other 1 is done below
             break;
         }
         case {} when b == (rune)'\t' || b == (rune)'\r' || b == (rune)'\n': {
@@ -143,8 +143,7 @@ internal static slice<byte> softSuffix = slice<byte>("="u8);
             break;
         }
         case {} when b < (rune)' ' || b > (rune)'~': {
-            return (n, fmt.Errorf("quotedprintable: invalid unescaped byte 0x%02x in body"u8, // 2 of the 3; other 1 is done below
- // As an extension to RFC 2045, we accept
+            return (n, fmt.Errorf("quotedprintable: invalid unescaped byte 0x%02x in body"u8, // As an extension to RFC 2045, we accept
  // values >= 0x80 without complaint. Issue 22597.
  b));
         }}

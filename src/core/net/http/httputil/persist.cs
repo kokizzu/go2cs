@@ -460,8 +460,7 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
         cc.lastbody = resp.Value.Body;
         cc.nread++;
         if ((~resp).Close) {
-            cc.re = new http.ProtocolErrorжerror(ErrPersistEOF);
-            // don't send any more requests
+            cc.re = new http.ProtocolErrorжerror(ErrPersistEOF); // don't send any more requests
             (resp, err) = (resp, cc.re); goto ᒐdone;
         }
     }

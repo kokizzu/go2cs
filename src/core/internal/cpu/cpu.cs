@@ -196,8 +196,7 @@ field:
             continue;
         }
         @string key = field[4..(int)(i)];
-        @string value = field[(int)(i + 1)..];
-        // e.g. "SSE2", "on"
+        @string value = field[(int)(i + 1)..]; // e.g. "SSE2", "on"
         bool enable = default!;
         var exprᴛ1 = value;
         if (exprᴛ1 == "on"u8) {

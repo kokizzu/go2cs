@@ -310,9 +310,7 @@ internal static void prepareForSweep(this ж<mcache> Ꮡc) {
     }
     c.releaseAll();
     stackcache_clear(Ꮡc);
-    Ꮡc.of(mcache.ᏑflushGen).Store(mheap_.sweepgen);
+    Ꮡc.of(mcache.ᏑflushGen).Store(mheap_.sweepgen); // Synchronizes with gcStart
 }
-
-// Synchronizes with gcStart
 
 } // end runtime_package

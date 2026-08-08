@@ -368,10 +368,8 @@ internal static int32 lastcontinuehandler(ж<exceptionrecord> Ꮡinfo, ж<contex
         return _EXCEPTION_CONTINUE_SEARCH;
     }
     winthrow(Ꮡinfo, Ꮡr, Ꮡgp);
-    return 0;
+    return 0; // not reached
 }
-
-// not reached
 
 // Always called on g0. gp is the G where the exception occurred.
 //

@@ -212,9 +212,8 @@ internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
             @string src = default!;
             if (sp == -1){
                 src = srcs;
-                srcs = ""u8;
+                srcs = ""u8; // done
             } else {
-                // done
                 src = srcs[..(int)(sp)];
                 srcs = trimSpace(srcs[(int)(sp + 1)..]);
             }

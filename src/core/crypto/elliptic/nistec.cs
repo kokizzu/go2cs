@@ -164,8 +164,7 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     // Encode the coordinates and let SetBytes reject invalid points.
     nint byteLen = ((~curve.@params).BitSize + 7) / 8;
     var buf = new slice<byte>(1 + 2 * byteLen);
-    buf[0] = 4;
-    // uncompressed point
+    buf[0] = 4; // uncompressed point
     x.FillBytes(buf[1..(int)(1 + byteLen)]);
     y.FillBytes(buf[(int)(1 + byteLen)..(int)(1 + 2 * byteLen)]);
     return curve.newPoint().SetBytes(buf);

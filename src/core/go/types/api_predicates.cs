@@ -35,8 +35,7 @@ public static bool AssertableTo(ж<Interface> ᏑV, ΔType T) {
 public static bool AssignableTo(ΔType V, ΔType T) {
     ref var x = ref heap<operand>(out var Ꮡx);
     x = new operand(mode: value, typ: V);
-    var (ok, _) = Ꮡx.assignableTo(nil, T, nil);
-    // check not needed for non-constant x
+    var (ok, _) = Ꮡx.assignableTo(nil, T, nil); // check not needed for non-constant x
     return ok;
 }
 
@@ -48,10 +47,8 @@ public static bool AssignableTo(ΔType V, ΔType T) {
 public static bool ConvertibleTo(ΔType V, ΔType T) {
     ref var x = ref heap<operand>(out var Ꮡx);
     x = new operand(mode: value, typ: V);
-    return Ꮡx.convertibleTo(nil, T, nil);
+    return Ꮡx.convertibleTo(nil, T, nil); // check not needed for non-constant x
 }
-
-// check not needed for non-constant x
 
 // Implements reports whether type V implements interface T.
 //

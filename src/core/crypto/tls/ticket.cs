@@ -113,12 +113,10 @@ public static (slice<byte>, error) Bytes(this ж<SessionState> Ꮡs) {
     ref var b = ref heap(new cryptobyte.Builder(), out var Ꮡb);
     b.AddUint16(s.version);
     if (s.isClient){
-        b.AddUint8(2);
+        b.AddUint8(2); // client
     } else {
-        // client
-        b.AddUint8(1);
+        b.AddUint8(1); // server
     }
-    // server
     b.AddUint16(s.cipherSuite);
     addUint64(Ꮡb, s.createdAt);
     Ꮡb.AddUint8LengthPrefixed((ж<cryptobyte.Builder> bΔ1) => {
@@ -380,9 +378,8 @@ public static (ж<SessionState>, error) DecryptTicket(this ж<Config> Ꮡc, slic
     }
     var (s, err) = ParseSessionState(stateBytes);
     if (err != default!) {
-        return (default!, default!);
+        return (default!, default!); // drop unparsable tickets on the floor
     }
-    // drop unparsable tickets on the floor
     return (s, default!);
 }
 

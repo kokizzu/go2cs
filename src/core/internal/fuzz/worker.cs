@@ -360,8 +360,7 @@ internal static error /*err*/ start(this ж<worker> Ꮡw) {
         w.termC = default!;
         var cmd = exec.Command(w.binPath, w.args.ꓸꓸꓸ);
         cmd.Value.Dir = w.dir;
-        cmd.Value.Env = w.env.slice(-1, len(w.env), len(w.env));
-        // copy on append to ensure workers don't overwrite each other.
+        cmd.Value.Env = w.env.slice(-1, len(w.env), len(w.env)); // copy on append to ensure workers don't overwrite each other.
         // Create the "fuzz_in" and "fuzz_out" pipes so we can communicate with
         // the worker. We don't use stdin and stdout, since the test binary may
         // do something else with those.
@@ -520,9 +519,8 @@ public static error RunFuzzWorker(context.Context ctx, Func<CorpusEntry, error> 
             GoFrame ᒐ = default;
             try {
                 var timer = time.AfterFunc((time.Duration)(10000000000L), () => {
-                    throw panic("deadlocked!");
+                    throw panic("deadlocked!"); // this error message won't be printed
                 });
-                // this error message won't be printed
                 var timerʗ1 = timer;
                 defer(() => timerʗ1.Stop(), ref ᒐ);
                 var start = time.Now();

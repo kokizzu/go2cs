@@ -85,8 +85,7 @@ internal static (@string, error) toNorm(@string path, Func<@string, (@string, er
         }
         path = path[..(int)(i)];
     }
-    normPath = normPath[..(int)(len(normPath) - 1)];
-    // remove trailing '\'
+    normPath = normPath[..(int)(len(normPath) - 1)]; // remove trailing '\'
     return (volume + normPath, default!);
 }
 

@@ -162,14 +162,12 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
                     }
                 }
                 var sig = makeSig(S, // check general case by creating custom signature
- S, new SliceжΔType(NewSlice(T)));
+ S, new SliceжΔType(NewSlice(T))); // []T required for variadic signature
                 sig.Value.variadic = true;
-                Ꮡcheck.arguments(Ꮡcall, // []T required for variadic signature
- sig, default!, default!, args, default!, default!);
+                Ꮡcheck.arguments(Ꮡcall, sig, default!, default!, args, default!, default!); // discard result (we know the result type)
                 x.mode = value;
                 x.typ = S;
                 if (check.recordTypes()) {
-                    // discard result (we know the result type)
                     // ok to continue even if check.arguments reported errors
                     check.recordBuiltinType(call.Fun, sig);
                 }
@@ -453,9 +451,8 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
             })) {
                 return default!;
             }
-            x = args[1].Value;
-            Ꮡcheck.assignment(Ꮡx, // key
- key, argumentToDeleteˢ);
+            x = args[1].Value; // key
+            Ꮡcheck.assignment(Ꮡx, key, argumentToDeleteˢ);
             if (x.mode == invalid) {
                 return default!;
             }
@@ -568,8 +565,7 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
             var types = new ΔType[]{T}.slice();
             slice<int64> sizes = default!;           // constant integer arguments, if any
             foreach (var (_, arg) in argList[1..]) {
-                var (typ, size) = Ꮡcheck.index(arg, -1);
-                // ok to continue with typ == Typ[Invalid]
+                var (typ, size) = Ꮡcheck.index(arg, -1); // ok to continue with typ == Typ[Invalid]
                 types = append(types, typ);
                 if (size >= 0) {
                     sizes = append(sizes, size);
@@ -924,13 +920,11 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
                 ref var t = ref heap(new operand(), out var Ꮡt);
                 var x1 = Ꮡx;
                 foreach (var (_, arg) in argList) {
-                    Ꮡcheck.rawExpr(nil, x1, arg, default!, false);
-                    // permit trace for types, e.g.: new(trace(T))
+                    Ꮡcheck.rawExpr(nil, x1, arg, default!, false); // permit trace for types, e.g.: new(trace(T))
                     Ꮡcheck.dump("%v: %s"u8, x1.Pos(), x1.OrTypedNil());
-                    x1 = Ꮡt;
+                    x1 = Ꮡt; // use incoming x only for first argument
                 }
                 if (x.mode == invalid) {
-                    // use incoming x only for first argument
                     return default!;
                 }
             } while (false);
@@ -967,16 +961,14 @@ internal static bool /*varSized*/ hasVarSize(ΔType t, map<ж<Named>, bool> seen
                 if (seen == default!) {
                     seen = new map<ж<Named>, bool>();
                 }
-                seen[named] = true;
-                // possibly cyclic until proven otherwise
+                seen[named] = true; // possibly cyclic until proven otherwise
                 var namedʗ1 = named;
                 var seenʗ1 = seen;
                 defer(() => {
-                    seenʗ1[namedʗ1] = varSized;
+                    seenʗ1[namedʗ1] = varSized; // record final determination for named
                 }, ref ᒐ);
             }
         }
-        // record final determination for named
         var switchᴛ3 = under(t);
         switch (switchᴛ3.type()) {
         case ж<Array> u: {
@@ -1060,8 +1052,7 @@ internal static ΔType applyTypeFunc(this ж<Checker> Ꮡcheck, Func<ΔType, ΔT
             // The type parameter is placed in the current package so export/import
             // works as expected.
             var tpar = NewTypeName(nopos, check.pkg, (~(~tp).obj).name, default!);
-            var ptyp = Ꮡcheck.newTypeParam(tpar, new InterfaceжΔType(NewInterfaceType(default!, new ΔType[]{new UnionжΔType(NewUnion(terms))}.slice())));
-            // assigns type to tpar as a side-effect
+            var ptyp = Ꮡcheck.newTypeParam(tpar, new InterfaceжΔType(NewInterfaceType(default!, new ΔType[]{new UnionжΔType(NewUnion(terms))}.slice()))); // assigns type to tpar as a side-effect
             ptyp.Value.index = tp.Value.index;
             return new TypeParamжΔType(ptyp);
         }

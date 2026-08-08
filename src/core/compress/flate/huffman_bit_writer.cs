@@ -196,8 +196,7 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     // a copy of the frequencies, and as the place where we put the result.
     // This is fine because the output is always shorter than the input used
     // so far.
-    var codegen = w.codegen;
-    // cache
+    var codegen = w.codegen; // cache
     // Copy the concatenated code sizes to codegen. Put a marker at the end.
     var cgnl = codegen[..(int)(numLiterals)];
     foreach (var (i, _) in cgnl) {
@@ -651,9 +650,8 @@ internal static ж<huffmanEncoder> huffOffset;
         }
         w.write(w.bytes[..(int)(n)]);
         if (w.err != default!) {
-            return;
+            return; // Return early in the event of write failures
         }
-        // Return early in the event of write failures
         n = 0;
     }
     w.nbytes = n;

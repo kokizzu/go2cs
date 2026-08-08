@@ -1486,8 +1486,7 @@ internal static readonly @string progToPointerMaskˢ = "progToPointerMask: overf
 internal static unsafe bitvector progToPointerMask(ж<byte> Ꮡprog, uintptr size) {
     var n = (size / (uintptr)goarch.PtrSize + 7) / 8;
     var x = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(persistentalloc(n + 1, 1, Ꮡmemstats.of(mstats.Ꮡbuckhash_sys))), (int)(n + 1)));
-    x[len(x) - 1] = 0xa1;
-    // overflow check sentinel
+    x[len(x) - 1] = 0xa1; // overflow check sentinel
     n = runGCProg(Ꮡprog, Ꮡ(x, 0));
     if (x[len(x) - 1] != 0xa1) {
         @throw(progToPointerMaskˢ);
@@ -1575,8 +1574,7 @@ Run:
                 break;
             }
         }
-        c *= n;
-        // now total number of bits to copy
+        c *= n; // now total number of bits to copy
         // If the number of bits being repeated is small, load them
         // into a register and use that register for the entire loop
         // instead of repeatedly reading from memory.
@@ -1661,8 +1659,7 @@ Run:
         // Repeat; n too large to fit in a register.
         // Since nbits <= 7, we know the first few bytes of repeated data
         // are already written to memory.
-        var off = n - nbits;
-        // n > nbits because n > maxBits and nbits <= 7
+        var off = n - nbits; // n > nbits because n > maxBits and nbits <= 7
         // Leading src fragment.
         src = subtractb(src, (off + 7) / 8);
         {

@@ -168,11 +168,9 @@ internal static Word /*c*/ shlVU_g(slice<Word> z, slice<Word> x, nuint s) {
     if (len(z) == 0) {
         return c;
     }
-    s &= (nuint)(_W - 1);
-    // hint to the compiler that shifts by s don't need guard code
+    s &= (nuint)(_W - 1); // hint to the compiler that shifts by s don't need guard code
     nuint ŝ = (nuint)_W - s;
-    ŝ &= (nuint)(_W - 1);
-    // ditto
+    ŝ &= (nuint)(_W - 1); // ditto
     c = (x[len(z) - 1] >> (int)(ŝ));
     for (nint i = len(z) - 1; i > 0; i--) {
         z[i] = (Word)((x[i] << (int)(s)) | (x[i - 1] >> (int)(ŝ)));
@@ -195,11 +193,9 @@ internal static Word /*c*/ shrVU_g(slice<Word> z, slice<Word> x, nuint s) {
         // This is an invariant guaranteed by the caller.
         throw panic("len(x) != len(z)");
     }
-    s &= (nuint)(_W - 1);
-    // hint to the compiler that shifts by s don't need guard code
+    s &= (nuint)(_W - 1); // hint to the compiler that shifts by s don't need guard code
     nuint ŝ = (nuint)_W - s;
-    ŝ &= (nuint)(_W - 1);
-    // ditto
+    ŝ &= (nuint)(_W - 1); // ditto
     c = (x[0] << (int)(ŝ));
     for (nint i = 1; i < len(z); i++) {
         z[i - 1] = (Word)((x[i - 1] >> (int)(s)) | (x[i] << (int)(ŝ)));
@@ -302,8 +298,7 @@ internal static Word reciprocalWord(Word d1) {
     nuint u = (nuint)((d1 << (int)(nlz(d1))));
     nuint x1 = ~u;
     nuint x0 = (nuint)_M;
-    var (rec, _) = bits.Div(x1, x0, u);
-    // (_B^2-1)/U-_B = (_B*(_M-C)+_M)/U
+    var (rec, _) = bits.Div(x1, x0, u); // (_B^2-1)/U-_B = (_B*(_M-C)+_M)/U
     return ((Word)rec);
 }
 

@@ -204,8 +204,7 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
     c.@in.version = c.vers;
     c.@out.version = c.vers;
     if ((~c.config).MinVersion == 0 && c.vers < VersionTLS12) {
-        tls10server.Value();
-        // ensure godebug is initialized
+        tls10server.Value(); // ensure godebug is initialized
         tls10server.IncNonDefault();
     }
     return (clientHello, default!);
@@ -412,13 +411,11 @@ internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
     }
     c.Value.cipherSuite = hs.suite.Value.id;
     if ((~(~c).config).CipherSuites == default! && !needFIPS() && rsaKexCiphers[(~hs.suite).id]) {
-        tlsrsakex.Value();
-        // ensure godebug is initialized
+        tlsrsakex.Value(); // ensure godebug is initialized
         tlsrsakex.IncNonDefault();
     }
     if ((~(~c).config).CipherSuites == default! && !needFIPS() && tdesCiphers[(~hs.suite).id]) {
-        tls3des.Value();
-        // ensure godebug is initialized
+        tls3des.Value(); // ensure godebug is initialized
         tls3des.IncNonDefault();
     }
     foreach (var (_, id) in (~hs.clientHello).cipherSuites) {

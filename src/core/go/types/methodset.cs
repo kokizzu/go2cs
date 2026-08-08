@@ -169,9 +169,8 @@ public static ж<MethodSet> NewMethodSet(ΔType T) {
                 var (_, found) = @base[k, ꟷ]; if (!found) {
                     // Fields collide with methods of the same name at this depth.
                     if (fset[k]) {
-                        m = default!;
+                        m = default!; // collision
                     }
-                    // collision
                     if (@base == default!) {
                         @base = new methodSet(0);
                     }
@@ -187,11 +186,10 @@ public static ж<MethodSet> NewMethodSet(ΔType T) {
                     if (@base == default!) {
                         @base = new methodSet(0);
                     }
-                    @base[k] = default!;
+                    @base[k] = default!; // collision
                 }
             }
         }
-        // collision
         current = consolidateMultiples(next);
     }
     if (len(@base) == 0) {
@@ -246,8 +244,7 @@ internal static methodSet addOne(this methodSet s, ж<Func> Ꮡf, slice<nint> in
             }
         }
     }
-    s[key] = default!;
-    // collision
+    s[key] = default!; // collision
     return s;
 }
 

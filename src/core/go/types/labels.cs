@@ -35,9 +35,8 @@ internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody
             var alt = all.Lookup(name); if (alt != default!){
                 msg = gotoSJumpsIntoBlockˢ;
                 code = JumpIntoBlock;
-                alt._<ж<Label>>().Value.used = true;
+                alt._<ж<Label>>().Value.used = true; // avoid another error
             } else {
-                // avoid another error
                 msg = labelSNotDeclaredˢ;
                 code = UndeclaredLabel;
             }
@@ -123,9 +122,8 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
     // recordVarDecl records them for the given position.
     void recordVarDecl(tokenꓸPos pos) {
         varDeclPos = pos;
-        ᏑbadJumps.ValueSlot = append(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot.ꓸꓸꓸ);
+        ᏑbadJumps.ValueSlot = append(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot.ꓸꓸꓸ); // copy fwdJumps to badJumps
     }
-    // copy fwdJumps to badJumps
     bool jumpsOverVarDecl(ж<ast.BranchStmt> jmp) {
         if (varDeclPos.IsValid()) {
             foreach (var (_, bad) in ᏑbadJumps.ValueSlot) {
@@ -206,7 +204,7 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
         }
         case ж<ast.BranchStmt> sΔ1: {
             if ((~sΔ1).Label == nil) {
-                return;
+                return; // checked in 1st pass (check.stmt)
             }
             @string name = sΔ1.Value.Label.Value.Name;
             var exprᴛ1 = (~sΔ1).Tok;
@@ -214,7 +212,6 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
                 var valid = false;
                 {
                     var t = bʗ2.enclosingTarget(name); if (t != nil) {
-                        // checked in 1st pass (check.stmt)
                         // determine and validate target
                         // spec: "If there is a label, it must be that of an enclosing
                         // "for", "switch", or "select" statement, and that is the one

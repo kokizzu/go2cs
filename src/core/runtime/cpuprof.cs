@@ -228,9 +228,8 @@ internal static (slice<uint64>, slice<@unsafe.Pointer>, bool) runtime_pprof_read
     unlock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));
     profBufReadMode readMode = profBufBlocking;
     if (GOOS == "darwin"u8 || GOOS == "ios"u8) {
-        readMode = profBufNonBlocking;
+        readMode = profBufNonBlocking; // For #61768; on Darwin notes are not async-signal-safe.  See sigNoteSetup in os_darwin.go.
     }
-    // For #61768; on Darwin notes are not async-signal-safe.  See sigNoteSetup in os_darwin.go.
     var (data, tags, eof) = log.read(readMode);
     if (len(data) == 0 && eof) {
         @lock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));

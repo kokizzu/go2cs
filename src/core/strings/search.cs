@@ -107,9 +107,8 @@ internal static nint /*i*/ longestCommonSuffix(@string a, @string b) {
             j--;
         }
         if (j < 0) {
-            return i + 1;
+            return i + 1; // match
         }
-        // match
         i += max(f.badCharSkip[text[i]], f.goodSuffixSkip[j]);
     }
     return -1;

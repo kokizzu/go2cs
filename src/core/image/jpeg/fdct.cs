@@ -96,8 +96,7 @@ internal static void fdct(ж<block> Ꮡb) {
     // Pass 1: process rows.
     for (nint y = 0; y < 8; y++) {
         nint y8 = y * 8;
-        var s = b.Value.slice(y8, y8 + 8, y8 + 8);
-        // Small cap improves performance, see https://golang.org/issue/27857
+        var s = b.Value.slice(y8, y8 + 8, y8 + 8); // Small cap improves performance, see https://golang.org/issue/27857
         var x0 = s[0];
         var x1 = s[1];
         var x2 = s[2];

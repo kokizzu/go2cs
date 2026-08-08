@@ -217,8 +217,7 @@ internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate ca
     // See RFC 4492, Section 5.4.
     var ecdhePublic = key.PublicKey().Bytes();
     var serverECDHEParams = new slice<byte>(1 + 2 + 1 + len(ecdhePublic));
-    serverECDHEParams[0] = 3;
-    // named curve
+    serverECDHEParams[0] = 3; // named curve
     serverECDHEParams[1] = (byte)(uint16)((curveID >> (int)(8)));
     serverECDHEParams[2] = (byte)(uint16)curveID;
     serverECDHEParams[3] = (byte)len(ecdhePublic);

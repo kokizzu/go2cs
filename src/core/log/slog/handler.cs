@@ -285,14 +285,12 @@ internal static error handle(this ж<commonHandler> Ꮡh, Record r) {
         }
         // Built-in attributes. They are not in a group.
         var stateGroups = state.groups;
-        state.groups = default!;
-        // So ReplaceAttrs sees no groups instead of the pre groups.
+        state.groups = default!; // So ReplaceAttrs sees no groups instead of the pre groups.
         var rep = h.opts.ReplaceAttr;
         // time
         if (!r.Time.IsZero()) {
             @string keyΔ1 = TimeKey;
-            var valΔ1 = r.Time.Round(0);
-            // strip monotonic to match Attr behavior
+            var valΔ1 = r.Time.Round(0); // strip monotonic to match Attr behavior
             if (rep == default!){
                 state.appendKey(keyΔ1);
                 Ꮡstate.appendTime(valΔ1);
@@ -321,8 +319,7 @@ internal static error handle(this ж<commonHandler> Ꮡh, Record r) {
         } else {
             Ꮡstate.appendAttr(String(key, msg));
         }
-        state.groups = stateGroups;
-        // Restore groups passed to ReplaceAttrs.
+        state.groups = stateGroups; // Restore groups passed to ReplaceAttrs.
         Ꮡstate.appendNonBuiltIns(r);
         state.buf.WriteByte((rune)'\n');
         h.mu.Lock();
@@ -655,8 +652,7 @@ internal static slice<byte> appendRFC3339Millis(slice<byte> b, time.Time t) {
     nint n = len(b);
     t = t.Truncate(time_package.Millisecond).Add(time_package.Millisecond / 10);
     b = t.AppendFormat(b, time_package.RFC3339Nano);
-    b = builtin.append(b[..(int)(n + prefixLen)], b[(int)(n + prefixLen + 1)..].ꓸꓸꓸ);
-    // drop the 4th digit
+    b = builtin.append(b[..(int)(n + prefixLen)], b[(int)(n + prefixLen + 1)..].ꓸꓸꓸ); // drop the 4th digit
     return b;
 }
 

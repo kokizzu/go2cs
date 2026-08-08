@@ -72,9 +72,8 @@ public static bool ValidPath(@string name) {
             return false;
         }
         if (i == len(name)) {
-            return true;
+            return true; // reached clean ending
         }
-        // reached clean ending
         name = name[(int)(i + 1)..];
     }
 }

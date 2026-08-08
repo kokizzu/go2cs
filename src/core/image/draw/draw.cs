@@ -521,16 +521,14 @@ internal static void drawCopyOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж
         var dpix = dst.Pix[(int)(d0)..];
         var spix = src.Pix[(int)(s0)..];
         for (nint i = i0; i != i1; i += idelta) {
-            var s = spix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var s = spix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var sr = (uint32)s[0] * 0x101;
             var sg = (uint32)s[1] * 0x101;
             var sb = (uint32)s[2] * 0x101;
             var sa = (uint32)s[3] * 0x101;
             // The 0x101 is here for the same reason as in drawRGBA.
             var a = ((uint32)m - sa) * 0x101;
-            var d = dpix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dpix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             d[0] = (uint8)((((uint32)d[0] * a / (uint32)m + sr) >> (int)(8)));
             d[1] = (uint8)((((uint32)d[1] * a / (uint32)m + sg) >> (int)(8)));
             d[2] = (uint8)((((uint32)d[2] * a / (uint32)m + sb) >> (int)(8)));
@@ -583,14 +581,12 @@ internal static void drawNRGBAOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, �
         var spix = src.Pix[(int)(sy * src.Stride)..];
         for ((nint i, nint si) = (i0, si0); i < i1; (i, si) = (i + 4, si + 4)) {
             // Convert from non-premultiplied color to pre-multiplied color.
-            var s = spix.slice(si, si + 4, si + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var s = spix.slice(si, si + 4, si + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var sa = (uint32)s[3] * 0x101;
             var sr = (uint32)s[0] * sa / 0xff;
             var sg = (uint32)s[1] * sa / 0xff;
             var sb = (uint32)s[2] * sa / 0xff;
-            var d = dpix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dpix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var dr = (uint32)d[0];
             var dg = (uint32)d[1];
             var db = (uint32)d[2];
@@ -620,14 +616,12 @@ internal static void drawNRGBASrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж
         var spix = src.Pix[(int)(sy * src.Stride)..];
         for ((nint i, nint si) = (i0, si0); i < i1; (i, si) = (i + 4, si + 4)) {
             // Convert from non-premultiplied color to pre-multiplied color.
-            var s = spix.slice(si, si + 4, si + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var s = spix.slice(si, si + 4, si + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var sa = (uint32)s[3] * 0x101;
             var sr = (uint32)s[0] * sa / 0xff;
             var sg = (uint32)s[1] * sa / 0xff;
             var sb = (uint32)s[2] * sa / 0xff;
-            var d = dpix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dpix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             d[0] = (uint8)((sr >> (int)(8)));
             d[1] = (uint8)((sg >> (int)(8)));
             d[2] = (uint8)((sb >> (int)(8)));
@@ -651,8 +645,7 @@ internal static void drawGray(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<ima
         var spix = src.Pix[(int)(sy * src.Stride)..];
         for ((nint i, nint si) = (i0, si0); i < i1; (i, si) = (i + 4, si + 1)) {
             var p = spix[si];
-            var d = dpix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dpix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             d[0] = p;
             d[1] = p;
             d[2] = p;
@@ -675,8 +668,7 @@ internal static void drawCMYK(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<ima
         var dpix = dst.Pix[(int)(y * dst.Stride)..];
         var spix = src.Pix[(int)(sy * src.Stride)..];
         for ((nint i, nint si) = (i0, si0); i < i1; (i, si) = (i + 4, si + 4)) {
-            var s = spix.slice(si, si + 4, si + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var s = spix.slice(si, si + 4, si + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var d = dpix.slice(i, i + 4, i + 4);
             (d[0], d[1], d[2]) = color.CMYKToRGB(s[0], s[1], s[2], s[3]);
             d[3] = 255;
@@ -702,8 +694,7 @@ internal static void drawGlyphOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, �
             ma |= (uint32)((ma << (int)(8)));
             // The 0x101 is here for the same reason as in drawRGBA.
             var a = ((uint32)m - (sa * ma / (uint32)m)) * 0x101;
-            var d = dst.Pix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dst.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             d[0] = (uint8)((((uint32)d[0] * a + sr * ma) / (uint32)m >> (int)(8)));
             d[1] = (uint8)((((uint32)d[1] * a + sg * ma) / (uint32)m >> (int)(8)));
             d[2] = (uint8)((((uint32)d[2] * a + sb * ma) / (uint32)m >> (int)(8)));
@@ -748,8 +739,7 @@ internal static void drawGrayMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r
             var syΔ1 = (uint32)src.Pix[si];
             syΔ1 |= (uint32)((syΔ1 << (int)(8)));
             var sa = (uint32)0xffff;
-            var d = dst.Pix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dst.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var dr = (uint32)d[0];
             var dg = (uint32)d[1];
             var db = (uint32)d[2];
@@ -808,8 +798,7 @@ internal static void drawRGBAMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r
             sg |= (uint32)((sg << (int)(8)));
             sb |= (uint32)((sb << (int)(8)));
             sa |= (uint32)((sa << (int)(8)));
-            var d = dst.Pix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dst.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var dr = (uint32)d[0];
             var dg = (uint32)d[1];
             var db = (uint32)d[2];
@@ -859,8 +848,7 @@ internal static void drawRGBA64ImageMaskOver(ж<imageꓸRGBA> Ꮡdst, image.Rect
             var ma = (uint32)mask.Pix[mi];
             ma |= (uint32)((ma << (int)(8)));
             var srgba = src.RGBA64At(sx, sy);
-            var d = dst.Pix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dst.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             var dr = (uint32)d[0];
             var dg = (uint32)d[1];
             var db = (uint32)d[2];
@@ -995,8 +983,7 @@ internal static void drawRGBA(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, image.
                 (_, _, _, ma) = mask.At(mx, my).RGBA();
             }
             var (sr, sg, sb, sa) = src.At(sx, sy).RGBA();
-            var d = dst.Pix.slice(i, i + 4, i + 4);
-            // Small cap improves performance, see https://golang.org/issue/27857
+            var d = dst.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
             if (op == Over){
                 var dr = (uint32)d[0];
                 var dg = (uint32)d[1];

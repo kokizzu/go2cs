@@ -118,13 +118,11 @@ internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
         }
     }
     if (nstk > 0) {
-        nstk--;
+        nstk--; // skip runtime.goexit
     }
-    // skip runtime.goexit
     if (nstk > 0 && gp.goid == 1) {
-        nstk--;
+        nstk--; // skip runtime.main
     }
-    // skip runtime.main
     var id = ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstackTab, (nint)(gen % 2)).put(pcBuf[..(int)(nstk)]);
     return id;
 }
@@ -341,14 +339,12 @@ break_outer:;
 internal static uintptr startPCForTrace(uintptr pc) {
     var f = findfunc(pc);
     if (!f.valid()) {
-        return pc;
+        return pc; // may happen for locked g in extra M since its pc is 0.
     }
-    // may happen for locked g in extra M since its pc is 0.
     @unsafe.Pointer w = (uintptr)funcdata(f, abi.FUNCDATA_WrapInfo);
     if (w == nil) {
-        return pc;
+        return pc; // not a wrapper
     }
-    // not a wrapper
     return f.datap.textAddr(~(ж<uint32>)(uintptr)(w));
 }
 

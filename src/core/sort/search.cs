@@ -61,17 +61,14 @@ public static nint Search(nint n, Func<nint, bool> f) {
     nint i = 0;
     nint j = n;
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (!f(h)){
-            i = h + 1;
+            i = h + 1; // preserves f(i-1) == false
         } else {
-            // preserves f(i-1) == false
-            j = h;
+            j = h; // preserves f(j) == true
         }
     }
-    // preserves f(j) == true
     // i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
     return i;
 }
@@ -110,17 +107,14 @@ public static (nint i, bool found) Find(nint n, Func<nint, nint> cmp) {
     i = 0;
     nint j = n;
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (cmp(h) > 0){
-            i = h + 1;
+            i = h + 1; // preserves cmp(i-1) > 0
         } else {
-            // preserves cmp(i-1) > 0
-            j = h;
+            j = h; // preserves cmp(j) <= 0
         }
     }
-    // preserves cmp(j) <= 0
     // i == j, cmp(i-1) > 0 and cmp(j) <= 0
     return (i, i < n && cmp(i) == 0);
 }

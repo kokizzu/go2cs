@@ -590,47 +590,41 @@ public static ΔStateTransition StateTransition(this ΔEvent e) {
     }
     else if (exprᴛ1 == go122.EvGoDestroy) {
         s = goStateTransition(e.ctx.G, GoRunning, GoNotExist);
-        s.Stack = e.Stack();
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoDestroySyscall) {
-        s = goStateTransition(e.ctx.G, // This event references the resource the event happened on.
- GoSyscall, GoNotExist);
+        s = goStateTransition(e.ctx.G, GoSyscall, GoNotExist);
     }
     else if (exprᴛ1 == go122.EvGoStop) {
         s = goStateTransition(e.ctx.G, GoRunning, GoRunnable);
         s.Reason = e.table.of(evTable.Ꮡstrings).mustGet(((stringID)e.@base.args[0]));
-        s.Stack = e.Stack();
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoBlock) {
-        s = goStateTransition(e.ctx.G, // This event references the resource the event happened on.
- GoRunning, GoWaiting);
+        s = goStateTransition(e.ctx.G, GoRunning, GoWaiting);
         s.Reason = e.table.of(evTable.Ꮡstrings).mustGet(((stringID)e.@base.args[0]));
-        s.Stack = e.Stack();
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoUnblock || exprᴛ1 == go122.EvGoSwitch || exprᴛ1 == go122.EvGoSwitchDestroy) {
-        s = goStateTransition(((GoID)(int64)e.@base.args[0]), // This event references the resource the event happened on.
- // N.B. GoSwitch and GoSwitchDestroy both emit additional events, but
+        s = goStateTransition(((GoID)(int64)e.@base.args[0]), // N.B. GoSwitch and GoSwitchDestroy both emit additional events, but
  // the first thing they both do is unblock the goroutine they name,
  // identically to an unblock event (even their arguments match).
  GoWaiting, GoRunnable);
     }
     else if (exprᴛ1 == go122.EvGoSyscallBegin) {
         s = goStateTransition(e.ctx.G, GoRunning, GoSyscall);
-        s.Stack = e.Stack();
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoSyscallEnd) {
-        s = goStateTransition(e.ctx.G, // This event references the resource the event happened on.
- GoSyscall, GoRunning);
-        s.Stack = e.Stack();
+        s = goStateTransition(e.ctx.G, GoSyscall, GoRunning);
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoSyscallEndBlocked) {
-        s = goStateTransition(e.ctx.G, // This event references the resource the event happened on.
- GoSyscall, GoRunnable);
-        s.Stack = e.Stack();
+        s = goStateTransition(e.ctx.G, GoSyscall, GoRunnable);
+        s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoStatus || exprᴛ1 == go122.EvGoStatusStack) {
-        s = goStateTransition(((GoID)(int64)e.@base.args[0]), // This event references the resource the event happened on.
- // N.B. ordering.advance populates e.base.extra.
+        s = goStateTransition(((GoID)(int64)e.@base.args[0]), // N.B. ordering.advance populates e.base.extra.
  ((GoState)(uint8)e.@base.extra(version.Go122)[0]), go122GoStatus2GoState[(nint)(e.@base.args[2])]);
     }
     else { /* default: */
@@ -650,8 +644,7 @@ public static ExperimentalEvent Experimental(this ΔEvent e) {
         throw panic("Experimental called on non-Experimental event");
     }
     var spec = go122.Specs()[e.@base.typ];
-    var argNames = spec.Args[1..];
-    // Skip timestamp; already handled.
+    var argNames = spec.Args[1..]; // Skip timestamp; already handled.
     return new ExperimentalEvent(
         Name: spec.Name,
         ArgNames: argNames,

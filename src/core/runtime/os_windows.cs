@@ -295,14 +295,12 @@ internal static void monitorSuspendResume() {
     uintptr _DEVICE_NOTIFY_CALLBACK = 2;
     var powrprof = windowsLoadSystemLib(powrprofdll[..]);
     if (powrprof == 0) {
-        return;
+        return; // Running on Windows 7, where we don't need it anyway.
     }
-    // Running on Windows 7, where we don't need it anyway.
     stdFunction powerRegisterSuspendResumeNotification = windowsFindfunc(powrprof, slice<byte>("PowerRegisterSuspendResumeNotification\u0000"u8));
     if (powerRegisterSuspendResumeNotification == default!) {
-        return;
+        return; // Running on Windows 7, where we don't need it anyway.
     }
-    // Running on Windows 7, where we don't need it anyway.
     ref var fn = ref heap<any>(out var Ꮡfn);
 
     fn = (uintptr context, uint32 changeType, uintptr setting) => {
@@ -516,9 +514,8 @@ internal static void goenvs() {
         while (Δp[0] != 0) {
             Δp = Δp[1..];
         }
-        Δp = Δp[1..];
+        Δp = Δp[1..]; // skip nil byte
     }
-    // skip nil byte
     stdcall1(_FreeEnvironmentStringsW, (uintptr)strings);
     // We call these all the way here, late in init, so that malloc works
     // for the callback functions these generate.
@@ -705,13 +702,11 @@ internal static int32 semasleep(int64 ns) {
         });
     }
 
-    return -1;
+    return -1; // unreachable
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeSemawakeupˢ = "runtime.semawakeup"u8;
-
-// unreachable
 
 //go:nosplit
 internal static void semawakeup(ж<m> Ꮡmp) {
@@ -976,9 +971,8 @@ internal static uintptr stdcall(stdFunction fn) {
         // sp must be the last, because once async cpu profiler finds
         // all three values to be non-zero, it will use them
         mp.Value.libcallsp = getcallersp();
-        resetLibcall = true;
+        resetLibcall = true; // See comment in sys_darwin.go:libcCall
     }
-    // See comment in sys_darwin.go:libcCall
     asmcgocall(asmstdcallAddr, new @unsafe.Pointer(mp.of(m.Ꮡlibcall)));
     if (resetLibcall) {
         mp.Value.libcallsp = 0;
@@ -1098,8 +1092,7 @@ internal static void osyield() {
 
 //go:nosplit
 internal static void usleep_no_g(uint32 us) {
-    var timeout = (uintptr)us / 1000;
-    // ms units
+    var timeout = (uintptr)us / 1000; // ms units
     ref var args = ref heap<array<uintptr>>(out var Ꮡargs);
     args = new uintptr[]{_INVALID_HANDLE_VALUE, timeout}.array();
     stdcall_no_g(_WaitForSingleObject, len(args), (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡargs.at<uintptr>(0)).Value)));
@@ -1115,15 +1108,13 @@ internal static void usleep(uint32 us) {
         if (haveHighResTimer && (~(~getg()).m).highResTimer != 0){
             h = getg().Value.m.Value.highResTimer;
             ref var dt = ref heap<int64>(out var Ꮡdt);
-            dt = -10 * (int64)us;
-            // relative sleep (negative), 100ns units
+            dt = -10 * (int64)us; // relative sleep (negative), 100ns units
             stdcall6(_SetWaitableTimer, h, (uintptr)Ꮡdt, 0, 0, 0, 0);
             timeout = _INFINITE;
         } else {
             h = _INVALID_HANDLE_VALUE;
-            timeout = (uintptr)us / 1000;
+            timeout = (uintptr)us / 1000; // ms units
         }
-        // ms units
         stdcall2(_WaitForSingleObject, h, timeout);
     });
 }
@@ -1363,7 +1354,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
                     c.set_ip(targetPC);
                 }
                 else if (exprᴛ1 == "arm64"u8) {
-                    var sp = c.sp() - 16;
+                    var sp = c.sp() - 16; // SP needs 16-byte alignment
                     c.set_sp(sp);
                     ((ж<uint64>)(uintptr)((@unsafe.Pointer)sp)).Value = (uint64)c.lr();
                     c.set_lr(newpc);
@@ -1383,7 +1374,6 @@ internal static void preemptM(ж<m> Ꮡmp) {
                 // for restoring LR. gentraceback is aware of
                 // this extra slot. See sigctxt.pushCall in
                 // signal_arm64.go.
-                // SP needs 16-byte alignment
                 stdcall2(_SetThreadContext, thread, (uintptr)c);
             }
         }

@@ -443,8 +443,7 @@ internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
             }
             var smap = makeSubstMap(ytparams, targs);
             ж<Checker> check = default!;               // ok to call subst on a nil *Checker
-            var ctxt = NewContext();
-            // need a non-nil Context for the substitution below
+            var ctxt = NewContext(); // need a non-nil Context for the substitution below
             // Constraints must be pair-wise identical, after substitution.
             foreach (var (i, xtparam) in xtparams) {
                 var ybound = check.subst(nopos, (~ytparams[i]).bound, smap, nil, ctxt);
@@ -516,9 +515,8 @@ internal static bool samePkg(ж<Package> Ꮡa, ж<Package> Ꮡb) {
                     var q = Ꮡ(new ifacePair(xΔ1, yΔ9, Ꮡp));
                     while (Ꮡp != nil) {
                         if (p.identical(q)) {
-                            return true;
+                            return true; // same pair was compared before
                         }
-                        // same pair was compared before
                         Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                     }
                     if (debug) {
@@ -633,7 +631,7 @@ public static ΔType Default(ΔType t) {
                 return new BasicжΔType(Typ[Int]);
             }
             if (exprᴛ1 == UntypedRune) {
-                return universeRune;
+                return universeRune; // use 'rune' name
             }
             if (exprᴛ1 == ΔUntypedFloat) {
                 return new BasicжΔType(Typ[Float64]);
@@ -647,7 +645,6 @@ public static ΔType Default(ΔType t) {
 
         }
     }
-    // use 'rune' name
     return t;
 }
 

@@ -295,11 +295,9 @@ internal static void scanNext(this ж<decodeState> Ꮡd) {
         d.off++;
     } else {
         d.opcode = Ꮡd.of(decodeState.Ꮡscan).eof();
-        d.off = len(d.data) + 1;
+        d.off = len(d.data) + 1; // mark processed EOF with len+1
     }
 }
-
-// mark processed EOF with len+1
 
 // scanWhile processes bytes in d.data[d.off:] until it
 // receives a scan code not equal to op.
@@ -318,8 +316,7 @@ internal static void scanWhile(this ж<decodeState> Ꮡd, nint op) {
             return;
         }
     }
-    d.off = len(data) + 1;
-    // mark processed EOF with len+1
+    d.off = len(data) + 1; // mark processed EOF with len+1
     d.opcode = Ꮡd.of(decodeState.Ꮡscan).eof();
 }
 
@@ -343,11 +340,11 @@ Switch:
             // string
             switch (data[i]) {
             case (rune)'\\': {
-                i++;
+                i++; // escaped char
                 break;
             }
             case (rune)'"': {
-                i++;
+                i++; // tokenize the closing quote too
                 goto break_Switch;
                 break;
             }}
@@ -357,8 +354,6 @@ Switch:
     }
     case (rune)'0' or (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9' or (rune)'-': {
         for (; i < len(data); i++) {
-            // escaped char
-            // tokenize the closing quote too
             // number
             switch (data[i]) {
             case (rune)'0' or (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9' or (rune)'.' or (rune)'e' or (rune)'E' or (rune)'+' or (rune)'-': {
@@ -546,8 +541,7 @@ internal static (Unmarshaler, encoding.TextUnmarshaler, reflectꓸValue) indirec
             }
         }
         if (haveAddr){
-            v = v0;
-            // restore original value after round-trip Value.Addr().Elem()
+            v = v0; // restore original value after round-trip Value.Addr().Elem()
             haveAddr = false;
         } else {
             v = v.Elem();
@@ -644,14 +638,12 @@ Value: "array"u8, Type: v.Type(), Offset: (int64)d.off))));
     if (i < v.Len()) {
         if (v.Kind() == reflect.Array){
             for (; i < v.Len(); i++) {
-                v.Index(i).SetZero();
+                v.Index(i).SetZero(); // zero remainder of array
             }
         } else {
-            // zero remainder of array
-            v.SetLen(i);
+            v.SetLen(i); // truncate the slice
         }
     }
-    // truncate the slice
     if (i == 0 && v.Kind() == reflect.ΔSlice) {
         v.Set(reflect.MakeSlice(v.Type(), 0, 0));
     }
@@ -746,8 +738,7 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
         }
         // Figure out field corresponding to key.
         reflectꓸValue subv = new(nil);
-        var destring = false;
-        // whether the value is wrapped in a string to be decoded first
+        var destring = false; // whether the value is wrapped in a string to be decoded first
         if (v.Kind() == reflect.Map){
             var elemType = t.Elem();
             if (!mapElem.IsValid()){
@@ -879,11 +870,10 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
                     } while (false);
                 }
                 else { /* default: */
-                    throw panic("json: Unexpected key type");
+                    throw panic("json: Unexpected key type"); // should never occur
                 }
 
             }
-            // should never occur
             if (kv.IsValid()) {
                 v.SetMapIndex(kv, subv);
             }
@@ -941,8 +931,7 @@ internal static readonly @string boolˢ = "bool"u8;
         d.saveError(fmt.Errorf("json: invalid use of ,string struct tag, trying to unmarshal %q into %v"u8, item, v.Type()));
         return default!;
     }
-    var isNull = item[0] == (rune)'n';
-    // null
+    var isNull = item[0] == (rune)'n'; // null
     var (u, ut, pv) = indirect(v, isNull);
     if (u != default!) {
         return u.UnmarshalJSON(item);

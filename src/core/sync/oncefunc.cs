@@ -26,14 +26,12 @@ public static Action OnceFunc(Action f) {
                 }
             }, ref ᒐ);
             f();
-            f = default!;
-            // Do not keep f alive after invoking it.
-            valid = true;
+            f = default!; // Do not keep f alive after invoking it.
+            valid = true; // Set only if f does not panic.
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }
     };
-    // Set only if f does not panic.
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);

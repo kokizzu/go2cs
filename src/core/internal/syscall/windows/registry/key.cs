@@ -84,8 +84,7 @@ public static (slice<@string>, error) ReadSubKeyNames(this Key k) {
         var names = new slice<@string>(0);
         // Registry key size limit is 255 bytes and described there:
         // https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-element-size-limits
-        var buf = new slice<uint16>(256);
-        //plus extra room for terminating zero byte
+        var buf = new slice<uint16>(256); //plus extra room for terminating zero byte
 loopItems:
         for (var i = (uint32)0; ᐧ ; i++) {
             ref var l = ref heap<uint32>(out var Ꮡl);

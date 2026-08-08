@@ -253,8 +253,7 @@ internal static slice<byte> /*next*/ nextDecomposed(ж<Iter> Ꮡi) {
             nint sz = (nint)i.info.size; if (sz <= 1){
                 i.rb.ss = 0;
                 nint p = i.p;
-                i.p++;
-                // ASCII or illegal byte.  Either way, advance by 1.
+                i.p++; // ASCII or illegal byte.  Either way, advance by 1.
                 if (i.p >= i.rb.nsrc){
                     i.setDone();
                     return i.returnSlice(p, i.p);
@@ -297,9 +296,8 @@ internal static slice<byte> /*next*/ nextDecomposed(ж<Iter> Ꮡi) {
                     {
                         i.p += sz; if (i.p >= i.rb.nsrc){
                             i.setDone();
-                            i.info = new ΔProperties(nil);
+                            i.info = new ΔProperties(nil); // Force BoundaryBefore to succeed.
                         } else {
-                            // Force BoundaryBefore to succeed.
                             i.info = i.rb.f.info(i.rb.src, i.p);
                         }
                     }
@@ -434,9 +432,8 @@ internal static slice<byte> nextComposed(ж<Iter> Ꮡi) {
         prevCC = i.info.tccc;
         nint sz = (nint)i.info.size;
         if (sz == 0) {
-            sz = 1;
+            sz = 1; // illegal rune: copy byte-by-byte
         }
-        // illegal rune: copy byte-by-byte
         nint p = outp + sz;
         if (p > len(i.buf)) {
             break;
@@ -516,8 +513,7 @@ internal static slice<byte> doNormComposed(ж<Iter> Ꮡi) {
 internal static slice<byte> nextCGJCompose(ж<Iter> Ꮡi) {
     ref var i = ref Ꮡi.DerefOrNull();
 
-    i.rb.ss = 0;
-    // instead of first
+    i.rb.ss = 0; // instead of first
     i.rb.insertCGJ();
     i.next = nextComposed;
     // Note that we treat any rune with nLeadingNonStarters > 0 as a non-starter,

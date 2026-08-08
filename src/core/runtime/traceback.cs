@@ -626,16 +626,14 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
     }
     @unsafe.Pointer liveInfo = (uintptr)funcdata(f, abi.FUNCDATA_ArgLiveInfo);
     var liveIdx = pcdatavalue(f, abi.PCDATA_ArgLiveIndex, pc);
-    var startOffset = (uint8)0xff;
-    // smallest offset that needs liveness info (slots with a lower offset is always live)
+    var startOffset = (uint8)0xff; // smallest offset that needs liveness info (slots with a lower offset is always live)
     if (liveInfo != nil) {
         startOffset = ~(ж<uint8>)(uintptr)(liveInfo);
     }
     bool isLive(uint8 off, uint8 slotIdxΔ1) {
         if (liveInfo == nil || liveIdx <= 0) {
-            return true;
+            return true; // no liveness info, always live
         }
-        // no liveness info, always live
         if (off < startOffset) {
             return true;
         }
@@ -666,8 +664,7 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
         }
     }
     nint pi = 0;
-    var slotIdx = (uint8)0;
-    // register arg spill slot index
+    var slotIdx = (uint8)0; // register arg spill slot index
 printloop:
     while (ᐧ) {
         var o = Δp.Value[pi];
@@ -763,8 +760,7 @@ internal static void printcreatedby1(ΔfuncInfo f, uintptr pc, uint64 goid) {
         print((@string)" in goroutine "u8, goid);
     }
     print((@string)"\n"u8);
-    var tracepc = pc;
-    // back up to CALL instruction for funcline.
+    var tracepc = pc; // back up to CALL instruction for funcline.
     if (pc > f.entry()) {
         tracepc -= sys.PCQuantum;
     }
@@ -1036,8 +1032,7 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
 internal static void printAncestorTraceback(ancestorInfo ancestor) {
     print((@string)"[originating from goroutine "u8, ancestor.goid, (@string)"]:\n"u8);
     foreach (var (fidx, pc) in ancestor.pcs) {
-        var fΔ1 = findfunc(pc);
-        // f previously validated
+        var fΔ1 = findfunc(pc); // f previously validated
         if (showfuncinfo(fΔ1.srcFunc(), fidx == 0, abi.FuncIDNormal)) {
             printAncestorTracebackFuncInfo(fΔ1, pc);
         }
@@ -1164,8 +1159,7 @@ internal static void goroutineheader(ж<g> Ꮡgp) {
     var (level, _, _) = gotraceback();
     var gpstatus = readgstatus(Ꮡgp);
     var isScan = (uint32)(gpstatus & (uint32)_Gscan) != 0;
-    gpstatus &= unchecked((uint32)~(uint32)(_Gscan));
-    // drop the scan bit
+    gpstatus &= unchecked((uint32)~(uint32)(_Gscan)); // drop the scan bit
     // Basic string status
     @string status = default!;
     if (0 <= gpstatus && gpstatus < (uint32)len(gStatusStrings)){

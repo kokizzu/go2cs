@@ -65,8 +65,7 @@ public static Record NewRecord(time.Time t, ΔLevel level, @string msg, uintptr 
 public static Record Clone(this Record r) {
     r = r.ΔClone();
 
-    r.back = slices.Clip<slice<Attr>, Attr>(r.back);
-    // prevent append from mutating shared array
+    r.back = slices.Clip<slice<Attr>, Attr>(r.back); // prevent append from mutating shared array
     return r.ΔClone();
 }
 

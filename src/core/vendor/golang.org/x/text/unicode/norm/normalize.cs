@@ -527,10 +527,9 @@ internal static nint lastBoundary(ж<formInfo> Ꮡfd, slice<byte> b) {
                 // no boundary found
                 return -1;
             }
-            return i;
+            return i; // boundary after an illegal UTF-8 encoding
         }
     }
-    // boundary after an illegal UTF-8 encoding
     return i;
 }
 

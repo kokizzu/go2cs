@@ -288,8 +288,7 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
         if (!z.multistream) {
             return (n, io.EOF);
         }
-        z.err = default!;
-        // Remove io.EOF
+        z.err = default!; // Remove io.EOF
         {
             (_, z.err) = z.readHeader(); if (z.err != default!) {
                 return (n, z.err);

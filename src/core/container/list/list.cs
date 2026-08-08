@@ -126,10 +126,8 @@ internal static ж<Element> insertValue(this ж<List> Ꮡl, any v, ж<Element> �
 
     e.prev.Value.next = e.next;
     e.next.Value.prev = e.prev;
-    e.next = default!;
-    // avoid memory leaks
-    e.prev = default!;
-    // avoid memory leaks
+    e.next = default!; // avoid memory leaks
+    e.prev = default!; // avoid memory leaks
     e.list = default!;
     l.len--;
 }

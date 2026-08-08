@@ -146,8 +146,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
                 files: new map<@string, ж<fileInfo>>()
             )
         );
-        defer(Ꮡp.of(iimporter.Ꮡfake).setLines, ref ᒐ);
-        // set lines for files in fset
+        defer(Ꮡp.of(iimporter.Ꮡfake).setLines, ref ᒐ); // set lines for files in fset
         foreach (var (i, pt) in predeclared) {
             p.typCache[(uint64)i] = pt;
         }
@@ -159,8 +158,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
             var pkgPathOff = r.uint64();
             @string pkgPath = p.stringAt(pkgPathOff);
             @string pkgName = p.stringAt(r.uint64());
-            _ = r.uint64();
-            // package height; unused by go/types
+            _ = r.uint64(); // package height; unused by go/types
             if (pkgPath == ""u8) {
                 pkgPath = path;
             }
@@ -473,12 +471,11 @@ internal static (typesꓸType typ, constant.Value val) value(this ж<importReade
             val = constant.BinaryOp(re, token.ADD, constant.MakeImag(im));
         }
         else { /* default: */
-            errorf("unexpected type %v"u8, typ);
+            errorf("unexpected type %v"u8, typ); // panics
             throw panic("unreachable");
         }
     }
 
-    // panics
     return (typ, val);
 }
 

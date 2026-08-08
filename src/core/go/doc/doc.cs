@@ -160,10 +160,9 @@ public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode m
             @string r = strings.TrimPrefix((~f).Recv, "*"u8);
             {
                 nint i = strings.IndexByte(r, (rune)'['); if (i >= 0) {
-                    r = r[..(int)(i)];
+                    r = r[..(int)(i)]; // remove type parameters
                 }
             }
-            // remove type parameters
             p.syms[r + "."u8 + (~f).Name] = true;
         } else {
             p.syms[(~f).Name] = true;
@@ -252,8 +251,7 @@ public static (ж<Package>, error) NewFromFiles(ж<token.FileSet> Ꮡfset, slice
     // TODO(dmitshur,gri): A relatively high level call to ast.NewPackage with a simpleImporter
     // ast.Importer implementation is made below. It might be possible to short-circuit and simplify.
     // Compute package documentation.
-    var (pkg, _) = ast.NewPackage(Ꮡfset, goFiles, new Func<map<@string, ж<ast.Object>>, @string, (ж<ast.Object>, error)>(simpleImporter), nil);
-    // Ignore errors that can happen due to unresolved identifiers.
+    var (pkg, _) = ast.NewPackage(Ꮡfset, goFiles, new Func<map<@string, ж<ast.Object>>, @string, (ж<ast.Object>, error)>(simpleImporter), nil); // Ignore errors that can happen due to unresolved identifiers.
     var p = New(pkg, importPath, mode);
     classifyExamples(p, Examples(testGoFiles.ꓸꓸꓸ));
     return (p, default!);
@@ -268,8 +266,7 @@ internal static (ж<ast.Object>, error) simpleImporter(map<@string, ж<ast.Objec
     if (pkg == nil) {
         // note that strings.LastIndex returns -1 if there is no "/"
         pkg = ast.NewObj(ast.Pkg, path[(int)(strings.LastIndex(path, "/"u8) + 1)..]);
-        pkg.Value.Data = ast.NewScope(nil).OrTypedNil();
-        // required by ast.NewPackage for dot-import
+        pkg.Value.Data = ast.NewScope(nil).OrTypedNil(); // required by ast.NewPackage for dot-import
         imports[path] = pkg;
     }
     return (pkg, default!);
@@ -303,21 +300,16 @@ internal static (ж<ast.Object>, error) simpleImporter(map<@string, ж<ast.Objec
     {
         var (path, okΔ1) = p.importByName[name, ꟷ]; if (okΔ1) {
             if (path == ""u8) {
-                return ("", false);
+                return ("", false); // multiple imports used the name
             }
-            // multiple imports used the name
-            return (path, true);
+            return (path, true); // found import
         }
     }
-    // found import
     if (p.Name == name) {
-        return ("", true);
+        return ("", true); // allow reference to this package
     }
-    // allow reference to this package
-    return ("", false);
+    return ("", false); // unknown name
 }
-
-// unknown name
 
 // Parser returns a doc comment parser configured
 // for parsing doc comments from package p.

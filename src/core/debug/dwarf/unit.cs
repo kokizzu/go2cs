@@ -100,13 +100,11 @@ internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
         }
         var exprᴛ1 = (~u).utype;
         if (exprᴛ1 == utSkeleton || exprᴛ1 == utSplitCompile) {
-            b.uint64();
+            b.uint64(); // unit ID
         }
         else if (exprᴛ1 == utType || exprᴛ1 == utSplitType) {
-            b.uint64();
+            b.uint64(); // type signature
             if ((~u).is64){
-                // unit ID
-                // type signature
                 // type offset
                 b.uint64();
             } else {

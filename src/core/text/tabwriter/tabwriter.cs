@@ -264,13 +264,11 @@ internal static slice<byte> tabs = slice<byte>("\t\t\t\t\t\t\t\t"u8);
     if (b.padbytes[0] == (rune)'\t' || useTabs) {
         // padding is done with tabs
         if (b.tabwidth == 0) {
-            return;
+            return; // tabs have no width - can't do any padding
         }
-        // tabs have no width - can't do any padding
         // make cellw the smallest multiple of b.tabwidth
         cellw = (cellw + b.tabwidth - 1) / b.tabwidth * b.tabwidth;
-        nint n = cellw - textw;
-        // amount of padding
+        nint n = cellw - textw; // amount of padding
         if (n < 0) {
             throw panic("internal error");
         }
@@ -358,10 +356,8 @@ internal static slice<byte> vbar = new byte[]{(rune)'|'}.slice();
         pos = b.writeLines(pos, line0, @this);
         line0 = @this;
         // column block begin
-        nint width = b.minwidth;
-        // minimal column width
-        var discardable = true;
-        // true if all cells in this column are empty and "soft"
+        nint width = b.minwidth; // minimal column width
+        var discardable = true; // true if all cells in this column are empty and "soft"
         for (; @this < line1; @this++) {
             line = b.lines[@this];
             if (column >= len(line) - 1) {
@@ -387,11 +383,9 @@ internal static slice<byte> vbar = new byte[]{(rune)'|'}.slice();
         }
         // format and print all columns to the right of this column
         // (we know the widths of this column and all columns to the left)
-        b.widths = builtin.append(b.widths, width);
-        // push width
+        b.widths = builtin.append(b.widths, width); // push width
         pos = b.format(pos, line0, @this);
-        b.widths = b.widths[0..(int)(len(b.widths) - 1)];
-        // pop width
+        b.widths = b.widths[0..(int)(len(b.widths) - 1)]; // pop width
         line0 = @this;
     }
     // print unprinted lines until end
@@ -442,18 +436,16 @@ public static UntypedInt Escape => /* '\xff' */ 255;
     if (exprᴛ1 == Escape) {
         b.updateWidth();
         if ((nuint)(b.flags & StripEscape) == 0) {
-            b.cell.width -= 2;
+            b.cell.width -= 2; // don't count the Escape chars
         }
     }
     else if (exprᴛ1 is (rune)'>') {
     }
     else if (exprᴛ1 is (rune)';') {
-        b.cell.width++;
+        b.cell.width++; // entity, count as one rune
     }
 
-    // don't count the Escape chars
     // tag of zero width
-    // entity, count as one rune
     b.pos = len(b.buf);
     b.endChar = 0;
 }
@@ -566,11 +558,10 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
                 if (exprᴛ1 is (rune)'\t' or (rune)'\v' or (rune)'\n' or (rune)'\f') {
                     b.append(buf[(int)(n)..(int)(i)]);
                     b.updateWidth();
-                    n = i + 1;
+                    n = i + 1; // ch consumed
                     nint ncells = b.terminateCell(ch == (rune)'\t');
                     if (ch == (rune)'\n' || ch == (rune)'\f') {
                         // end of cell
-                        // ch consumed
                         // terminate line
                         b.addLine(ch == (rune)'\f');
                         if (ch == (rune)'\f' || ncells == 1) {
@@ -593,13 +584,12 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
                     n = i;
                     if ((nuint)(b.flags & StripEscape) != 0) {
                         // start of escaped sequence
-                        n++;
+                        n++; // strip Escape
                     }
                     b.startEscape(Escape);
                 }
                 else if (exprᴛ1 is (rune)'<' or (rune)'&') {
                     if ((nuint)(b.flags & FilterHTML) != 0) {
-                        // strip Escape
                         // possibly an html tag/entity
                         // begin of tag/entity
                         b.append(buf[(int)(n)..(int)(i)]);
@@ -615,12 +605,10 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
                     // end of tag/entity
                     nint j = i + 1;
                     if (ch == Escape && (nuint)(b.flags & StripEscape) != 0) {
-                        j = i;
+                        j = i; // strip Escape
                     }
-                    // strip Escape
                     b.append(buf[(int)(n)..(int)(j)]);
-                    n = i + 1;
-                    // ch consumed
+                    n = i + 1; // ch consumed
                     b.endEscape();
                 }
             }

@@ -130,13 +130,12 @@ internal static readonly @string reflectMismatchˢ = "reflect mismatch"u8;
                 print((@string)"runtime: confused by "u8, funcname(f), (@string)": no frame (sp="u8, ((Δhex)(uint64)frame.sp), (@string)" fp="u8, ((Δhex)(uint64)frame.fp), (@string)") at entry+"u8, ((Δhex)(uint64)(frame.pc - f.entry())), (@string)"\n"u8);
                 @throw(reflectMismatchˢ);
             }
-            return (new bitvector(nil), false);
+            return (new bitvector(nil), false); // No locals, so also no stack objects
         }
         hasReflectStackObj = true;
         var mv = ~(ж<ж<reflectMethodValue>>)(uintptr)((@unsafe.Pointer)arg0);
         var retValid = ~(ж<bool>)(uintptr)((@unsafe.Pointer)(arg0 + (uintptr)(4 * goarch.PtrSize)));
         if ((~mv).fn != f.entry()) {
-            // No locals, so also no stack objects
             // Figure out whether the return values are valid.
             // Reflect will update this value after it copies
             // in the return values.

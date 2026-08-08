@@ -450,8 +450,7 @@ internal static bool isCookieDomainName(@string s) {
         s = s[1..];
     }
     var last = (byte)(rune)'.';
-    var ok = false;
-    // Ok once we've seen a letter.
+    var ok = false; // Ok once we've seen a letter.
     nint partlen = 0;
     for (nint i = 0; i < builtin.len(s); i++) {
         var c = s[i];

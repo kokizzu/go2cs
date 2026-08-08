@@ -71,9 +71,8 @@ internal static bool representableConst(constant.Value x, ж<Checker> Ꮡcheck, 
     ref var rounded = ref Ꮡrounded.DerefOrNull();
 
     if (x.Kind() == constant.Unknown) {
-        return true;
+        return true; // avoid follow-up errors
     }
-    // avoid follow-up errors
     ж<Config> conf = default!;
     if (Ꮡcheck != nil) {
         conf = check.conf;

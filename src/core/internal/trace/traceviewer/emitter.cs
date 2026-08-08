@@ -139,17 +139,15 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
             var enc = json.NewEncoder(new countingWriterжWriter(Ꮡcw));
             enc.Encode(v.OrTypedNil());
             ref var size = ref heap<SplittingTraceConsumer_eventSz>(out var Ꮡsize);
-            Ꮡsize.Value = new SplittingTraceConsumer_eventSz(Time: (~v).Time, Sz: Ꮡcw.Value.size + 1);
-            // +1 for ",".
+            Ꮡsize.Value = new SplittingTraceConsumer_eventSz(Time: (~v).Time, Sz: Ꮡcw.Value.size + 1); // +1 for ",".
             // Add referenced stack frames. Their size is computed
             // in flush, where we can dedup across events.
             WalkStackFrames(allFramesʗ1, (~v).Stack, (nint id) => {
                 Ꮡsize.Value.Frames = append(Ꮡsize.Value.Frames, id);
             });
             WalkStackFrames(allFramesʗ1, (~v).EndStack, (nint id) => {
-                Ꮡsize.Value.Frames = append(Ꮡsize.Value.Frames, id);
+                Ꮡsize.Value.Frames = append(Ꮡsize.Value.Frames, id); // This may add duplicates. We'll dedup later.
             });
-            // This may add duplicates. We'll dedup later.
             Ꮡsizes.ValueSlot = append(Ꮡsizes.ValueSlot, Ꮡsize.Value);
             Ꮡcw.Value.size = 0;
         },

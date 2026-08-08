@@ -60,8 +60,7 @@ internal const nint marshaledSize = /* len(magic) + 4*4 + BlockSize + 8 */ 92;
     b = byteorder.BeAppendUint32(b, d.s[2]);
     b = byteorder.BeAppendUint32(b, d.s[3]);
     b = append(b, d.x[..(int)(d.nx)].ꓸꓸꓸ);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)];
-    // already zero
+    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
     b = byteorder.BeAppendUint64(b, d.len);
     return (b, default!);
 }
@@ -168,10 +167,8 @@ internal static array<byte> checkSum(this ж<digest> Ꮡd) {
     //
     // 1 byte end marker :: 0-63 padding bytes :: 8 byte length
     var tmp = new byte[]{0x80}.array(72);
-    var pad = (55 - d.len) % 64;
-    // calculate number of padding bytes
-    byteorder.LePutUint64(tmp[(int)(1 + pad)..], (d.len << (int)(3)));
-    // append length in bits
+    var pad = (55 - d.len) % 64; // calculate number of padding bytes
+    byteorder.LePutUint64(tmp[(int)(1 + pad)..], (d.len << (int)(3))); // append length in bits
     Ꮡd.Write(tmp[..(int)(1 + pad + 8)]);
     // The previous write ensures that a whole number of
     // blocks (i.e. a multiple of 64 bytes) have been hashed.

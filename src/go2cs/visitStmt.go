@@ -92,6 +92,19 @@ func getStmtContext[TContext StmtContext](contexts []StmtContext) TContext {
 	return zeroValue.getDefault().(TContext)
 }
 
+// visitListStmt converts one statement of a statement LIST — a block body, a `case` or `select`
+// clause body — where every statement occupies its own emitted line or lines.
+//
+// That is the only slot in which a Go end-of-line comment can be honored as one: the statement's
+// text ends the current output line, so a comment written straight after it trails the statement
+// exactly as it did in the source (writeTrailingComment). The init clause of an `if`/`for`/`switch`
+// is deliberately NOT a list statement — the rest of the header follows it on the same line — which
+// is why those callers keep calling visitStmt directly.
+func (v *Visitor) visitListStmt(stmt ast.Stmt) {
+	v.visitStmt(stmt, []StmtContext{})
+	v.writeTrailingComment(stmt.End())
+}
+
 func (v *Visitor) visitStmt(stmt ast.Stmt, contexts []StmtContext) {
 	v.lastStatementWasReturn = false
 	v.writeTestAliasShadowComment(stmt, contexts)

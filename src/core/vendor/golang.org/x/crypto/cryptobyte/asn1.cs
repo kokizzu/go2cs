@@ -476,10 +476,8 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
             return true;
         }
     }
-    return false;
+    return false; // truncated
 }
-
-// truncated
 
 // ReadASN1ObjectIdentifier decodes an ASN.1 OBJECT IDENTIFIER into out and
 // advances. It reports whether the read was successful.

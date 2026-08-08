@@ -255,9 +255,8 @@ internal static UntypedInt maxPairingDepth => 63;
             continue;
         }
         if (dir == dirEmbed) {
-            return dir;
+            return dir; // type matching embedding direction found
         }
-        // type matching embedding direction found
         dirOpposite = dir;
     }
     // return ON if no strong type found, or class opposite to dirEmbed
@@ -286,9 +285,8 @@ internal static UntypedInt maxPairingDepth => 63;
     // the following logical tests are performed out of order compared to
     // the statement of the rules but yield the same results
     if (dirPair == ON) {
-        return;
+        return; // case "d" - nothing to do
     }
-    // case "d" - nothing to do
     if (dirPair != dirEmbed) {
         // case "c": strong type found, opposite - check before (c.1)
         dirPair = p.classBeforePair(loc);

@@ -148,9 +148,8 @@ public static void StartTestLog(this TestDeps _, io.Writer w) {
         // (which will panic) and also avoids writing the header multiple times.
         log.set = true;
         testlog.SetLogger(new testLogжInterface(Ꮡlog));
-        log.w.WriteString(testLogˢ);
+        log.w.WriteString(testLogˢ); // known to cmd/go/internal/test/test.go
     }
-    // known to cmd/go/internal/test/test.go
     Ꮡlog.of(testLog.Ꮡmu).Unlock();
 }
 

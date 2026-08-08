@@ -235,22 +235,18 @@ internal static bool validateSparseEntries(slice<sparseEntry> sp, int64 size) {
     foreach (var (_, cur) in sp) {
         switch (ᐧ) {
         case {} when cur.Offset < 0 || cur.Length < 0: {
-            return false;
+            return false; // Negative values are never okay
         }
         case {} when cur.Offset > (int64)math.MaxInt64 - cur.Length: {
-            return false;
+            return false; // Integer overflow with large length
         }
         case {} when cur.endOffset() > size: {
-            return false;
+            return false; // Region extends beyond the actual size
         }
         case {} when pre.endOffset() > cur.Offset: {
-            return false;
+            return false; // Regions cannot overlap and must be in order
         }}
 
-        // Negative values are never okay
-        // Integer overflow with large length
-        // Region extends beyond the actual size
-        // Regions cannot overlap and must be in order
         pre = cur;
     }
     return true;
@@ -267,12 +263,10 @@ internal static slice<sparseEntry> alignSparseEntries(slice<sparseEntry> src, in
     var dst = src[..0];
     foreach (var (_, s) in src) {
         var (pos, end) = (s.Offset, s.endOffset());
-        pos += blockPadding(+pos);
-        // Round-up to nearest blockSize
+        pos += blockPadding(+pos); // Round-up to nearest blockSize
         if (end != size) {
-            end -= blockPadding(-end);
+            end -= blockPadding(-end); // Round-down to nearest blockSize
         }
-        // Round-down to nearest blockSize
         if (pos < end) {
             dst = append(dst, new sparseEntry(Offset: pos, Length: end - pos));
         }
@@ -293,18 +287,15 @@ internal static slice<sparseEntry> invertSparseEntries(slice<sparseEntry> src, i
     sparseEntry pre = default!;
     foreach (var (_, cur) in src) {
         if (cur.Length == 0) {
-            continue;
+            continue; // Skip empty fragments
         }
-        // Skip empty fragments
         pre.Length = cur.Offset - pre.Offset;
         if (pre.Length > 0) {
-            dst = append(dst, pre);
+            dst = append(dst, pre); // Only add non-empty fragments
         }
-        // Only add non-empty fragments
         pre.Offset = cur.endOffset();
     }
-    pre.Length = size - pre.Offset;
-    // Possibly the only empty fragment
+    pre.Length = size - pre.Offset; // Possibly the only empty fragment
     return append(dst, pre);
 }
 
@@ -414,9 +405,8 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     var paxHdrsʗ3 = paxHdrs;
     void verifyTime(time.Time ts, nint size, @string name, @string paxKey) {
         if (ts.IsZero()) {
-            return;
+            return; // Always okay
         }
-        // Always okay
         if (!fitsInBase256(size, ts.Unix())) {
             whyNoGNU = fmt.Sprintf("GNU cannot encode %s=%v"u8, name, ts);
             format.mustNotBe(FormatGNU);
@@ -429,8 +419,7 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
         }
         var needsNano = ts.Nanosecond() != 0;
         if (!isMtime || !fitsOctal || needsNano) {
-            preferPAX = true;
-            // USTAR may truncate sub-second measurements
+            preferPAX = true; // USTAR may truncate sub-second measurements
             if (paxKey == paxNone){
                 whyNoPAX = fmt.Sprintf("PAX cannot encode %s=%v"u8, name, ts);
                 format.mustNotBe(FormatPAX);
@@ -501,23 +490,20 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
                 var (_, exists) = paxHdrs[k, ꟷ];
                 switch (ᐧ) {
                 case {} when exists: {
-                    continue;
+                    continue; // Do not overwrite existing records
                     break;
                 }
                 case {} when h.Typeflag == TypeXGlobalHeader: {
-                    paxHdrs[k] = v;
+                    paxHdrs[k] = v; // Copy all records
                     break;
                 }
-                case {} when !basicKeys[k] && !strings.HasPrefix(k, // Do not overwrite existing records
- // Copy all records
- paxGNUSparse): {
-                    paxHdrs[k] = v;
+                case {} when !basicKeys[k] && !strings.HasPrefix(k, paxGNUSparse): {
+                    paxHdrs[k] = v; // Ignore local records that may conflict
                     break;
                 }}
             }
 
         }
-        // Ignore local records that may conflict
         whyOnlyPAX = onlyPaxSupportsˢ2;
         format.mayOnlyBe(FormatPAX);
     }
@@ -552,13 +538,11 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     {
         Format wantFormat = h.Format; if (wantFormat != FormatUnknown) {
             if (wantFormat.has(FormatPAX) && !preferPAX) {
-                wantFormat.mayBe(FormatUSTAR);
+                wantFormat.mayBe(FormatUSTAR); // PAX implies USTAR allowed too
             }
-            // PAX implies USTAR allowed too
-            format.mayOnlyBe(wantFormat);
+            format.mayOnlyBe(wantFormat); // Set union of formats allowed and format wanted
         }
     }
-    // Set union of formats allowed and format wanted
     if (format == FormatUnknown) {
         var exprᴛ2 = h.Format;
         if (exprᴛ2 == FormatUSTAR) {

@@ -25,8 +25,7 @@ public static (ж<User>, error) Current() {
         return (default!, cache.err);
     }
     ref var u = ref heap<User>(out var Ꮡu);
-    u = cache.u.Value;
-    // copy
+    u = cache.u.Value; // copy
     return (Ꮡu, default!);
 }
 

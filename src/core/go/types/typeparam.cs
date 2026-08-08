@@ -145,9 +145,8 @@ public static @string String(this ж<TypeParam> Ꮡt) {
     if (ityp == nil) {
         ityp = NewInterfaceType(default!, new ΔType[]{bound}.slice());
         ityp.Value.@implicit = true;
-        t.bound = new InterfaceжΔType(ityp);
+        t.bound = new InterfaceжΔType(ityp); // update t.bound for next time (optimization)
     }
-    // update t.bound for next time (optimization)
     // compute type set if necessary
     if ((~ityp).tset == nil) {
         // pos is used for tracing output; start with the type parameter position.

@@ -178,10 +178,8 @@ outer:
         }
         // Strategy: shrink all runs of zeros by max. If any runs of zero
         // remain, then we've identified a larger maximum zero run.
-        nuint Δp = most;
-        // number of zeros we still need to shrink by.
-        nuint k = (nuint)1;
-        // current minimum length of runs of ones in x.
+        nuint Δp = most; // number of zeros we still need to shrink by.
+        nuint k = (nuint)1; // current minimum length of runs of ones in x.
         while (ᐧ) {
             // Shrink all runs of zeros by p places (except the top zeros).
             while (Δp > 0) {
@@ -206,26 +204,20 @@ outer:
                 k *= 2;
             }
             // The length of the lowest-order zero run is an increment to our maximum.
-            nuint j = (nuint)sys.TrailingZeros64(~x);
-            // count contiguous trailing ones
-            x >>= (int)((nuint)(j & 63));
-            // remove trailing ones
-            j = (nuint)sys.TrailingZeros64(x);
-            // count contiguous trailing zeros
-            x >>= (int)((nuint)(j & 63));
-            // remove zeros
-            most += j;
-            // we have a new maximum!
+            nuint j = (nuint)sys.TrailingZeros64(~x); // count contiguous trailing ones
+            x >>= (int)((nuint)(j & 63)); // remove trailing ones
+            j = (nuint)sys.TrailingZeros64(x); // count contiguous trailing zeros
+            x >>= (int)((nuint)(j & 63)); // remove zeros
+            most += j; // we have a new maximum!
             if ((uint64)(x & (x + 1)) == 0) {
                 // no more zeros (except at the top).
                 goto continue_outer;
             }
-            Δp = j;
+            Δp = j; // remove j more zeros from each zero run.
         }
 continue_outer:;
     }
 break_outer:;
-    // remove j more zeros from each zero run.
     return packPallocSum(start, most, cur);
 }
 
@@ -256,8 +248,7 @@ internal static (nuint, nuint) find(this ж<pallocBits> Ꮡb, uintptr npages, nu
 internal static nuint find1(this ж<pallocBits> Ꮡb, nuint searchIdx) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    _ = b.Value[0];
-    // lift nil check out of loop
+    _ = b.Value[0]; // lift nil check out of loop
     for (nuint i = searchIdx / 64; i < (nuint)len(b.Value); i++) {
         var x = b.Value[i];
         if (~x == 0) {
@@ -419,10 +410,8 @@ internal static nuint findBitRange64(uint64 c, nuint n) {
     // This implementation is based on shrinking the length of
     // runs of contiguous 1 bits. We remove the top n-1 1 bits
     // from each run of 1s, then look for the first remaining 1 bit.
-    nuint Δp = n - 1;
-    // number of 1s we want to remove.
-    nuint k = (nuint)1;
-    // current minimum width of runs of 0 in c.
+    nuint Δp = n - 1; // number of 1s we want to remove.
+    nuint k = (nuint)1; // current minimum width of runs of 0 in c.
     while (Δp > 0) {
         if (Δp <= k) {
             // Shift p 0s down into the top of each run of 1s.

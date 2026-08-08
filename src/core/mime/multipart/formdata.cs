@@ -198,9 +198,8 @@ internal static (ж<Form>, error err) readForm(this ж<Reader> Ꮡr, int64 maxMe
                     }
                 }
                 if (copyBuf == default!) {
-                    copyBuf = new slice<byte>(32 * 1024);
+                    copyBuf = new slice<byte>(32 * 1024); // same buffer size as io.Copy uses
                 }
-                // same buffer size as io.Copy uses
                 var (remainingSize, errΔ5) = io.CopyBuffer(new readForm_writerOnly(new os.FileжWriter(@file)), new PartжReader(p), copyBuf);
                 if (errΔ5 != default!) {
                     (_ᴛ1, err) = (default!, errΔ5); goto ᒐdone;
@@ -238,8 +237,7 @@ internal static int64 /*size*/ mimeHeaderSize(textproto.MIMEHeader h) {
     size = 400;
     foreach (var (k, vs) in h) {
         size += (int64)len(k);
-        size += 200;
-        // map entry overhead
+        size += 200; // map entry overhead
         foreach (var (_, v) in vs) {
             size += (int64)len(v);
         }

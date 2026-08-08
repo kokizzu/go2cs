@@ -52,8 +52,7 @@ internal static readonly @string chunkedEncodingContainsˢ = "chunked encoding c
     if (cr.err != default!) {
         return;
     }
-    cr.excess += (int64)len(line) + 2;
-    // header, plus \r\n after the chunk data
+    cr.excess += (int64)len(line) + 2; // header, plus \r\n after the chunk data
     line = trimTrailingWhitespace(line);
     (line, cr.err) = removeChunkExtension(line);
     if (cr.err != default!) {

@@ -111,8 +111,7 @@ public static slice<byte> Marshal(Curve curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt>
     panicIfNotOnCurve(curve, Ꮡx, Ꮡy);
     nint byteLen = ((~curve.Params()).BitSize + 7) / 8;
     var ret = new slice<byte>(1 + 2 * byteLen);
-    ret[0] = 4;
-    // uncompressed point
+    ret[0] = 4; // uncompressed point
     x.FillBytes(ret[1..(int)(1 + byteLen)]);
     y.FillBytes(ret[(int)(1 + byteLen)..(int)(1 + 2 * byteLen)]);
     return ret;

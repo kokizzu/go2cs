@@ -40,8 +40,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         // Go to each string and check digest gets appended to and is correct size.
         foreach (var (_, prefix) in prefixes) {
             h.Reset();
-            var sum = getSum(tΔ1, h, prefix);
-            // Append new digest to prefix
+            var sum = getSum(tΔ1, h, prefix); // Append new digest to prefix
             // Check that Sum didn't alter the prefix
             if (!bytes.Equal(sum[0..(int)(len(prefix))], prefix)) {
                 tΔ1.Errorf("Sum alters passed buffer instead of appending; got %x, want %x"u8, sum[0..(int)(len(prefix))], prefix);
@@ -72,10 +71,9 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         // Set of example strings to append digest to
         var slices = new slice<byte>[]{emptySlice, shortSlice, longSlice}.slice();
         foreach (var (_, Δslice) in slices) {
-            writeToHash(tΔ2, h, Δslice);
+            writeToHash(tΔ2, h, Δslice); // Writes and checks Write doesn't error
         }
     });
-    // Writes and checks Write doesn't error
     Ꮡt.Run(resetStateˢ, (ж<testing.T> tΔ3) => {
         var h = mh();
         var rng = newRandReader(tΔ3);
@@ -98,8 +96,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         var msg = new slice<byte>(blockSize);
         rng.Read(msg);
         writeToHash(tΔ4, h, msg);
-        var expectedDigest = getSum(tΔ4, h, default!);
-        // Record control digest
+        var expectedDigest = getSum(tΔ4, h, default!); // Record control digest
         h.Reset();
         // Make a buffer with msg in the middle and data on either end
         var buff = new slice<byte>(blockSize * 3);

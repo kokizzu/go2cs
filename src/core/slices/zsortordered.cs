@@ -137,8 +137,7 @@ internal static (nint newpivot, bool alreadyPartitioned) partitionOrdered<E>(sli
 
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (i <= j && cmp.Less(data[i], data[a])) {
         i++;
     }
@@ -179,8 +178,7 @@ internal static nint /*newpivot*/ partitionEqualOrdered<E>(slice<E> data, nint a
 
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (ᐧ) {
         while (i <= j && !cmp.Less(data[a], data[i])) {
             i++;
@@ -351,8 +349,7 @@ internal static void swapRangeOrdered<E>(slice<E> data, nint a, nint b, nint n)
 internal static void stableOrdered<E>(slice<E> data, nint n)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    nint blockSize = 20;
-    // must be > 0
+    nint blockSize = 20; // must be > 0
     nint a = 0;
     nint b = blockSize;
     while (b <= n) {

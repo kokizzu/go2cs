@@ -185,8 +185,7 @@ internal static void squash(this ж<ΔScope> Ꮡs, Action<Object, Object> err) {
             }
         }
     }
-    nint j = -1;
-    // index of s in p.children
+    nint j = -1; // index of s in p.children
     foreach (var (i, ch) in (~p).children) {
         if (ch == Ꮡs) {
             j = i;

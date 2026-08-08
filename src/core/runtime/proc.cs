@@ -199,8 +199,7 @@ internal static void Main() {
             inittrace.id = getg().Value.goid;
             inittrace.active = true;
         }
-        doInit(runtime_inittasks);
-        // Must be before defer.
+        doInit(runtime_inittasks); // Must be before defer.
         // Defer unlock so that runtime.Goexit during init does the unlock too.
         var needUnlock = true;
         defer(() => {
@@ -259,12 +258,10 @@ internal static void Main() {
             // has a main, but it is not executed.
             return;
         }
-        var fn = main_main;
-        // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
+        var fn = main_main; // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
         fn();
         if (raceenabled) {
-            runExitHooks(0);
-            // run hooks now, since racefini does not return
+            runExitHooks(0); // run hooks now, since racefini does not return
             racefini();
         }
         // Make racy client program work: if panicking on
@@ -399,9 +396,8 @@ internal static readonly @string goparkBadGStatusˢ = "gopark: bad g status"u8;
 //go:linkname gopark
 internal static void gopark(Func<ж<g>, @unsafe.Pointer, bool> unlockf, @unsafe.Pointer @lock, waitReason reason, traceBlockReason traceReason, nint traceskip) {
     if (reason != waitReasonSleep) {
-        checkTimeouts();
+        checkTimeouts(); // timeouts may expire while two goroutines keep the scheduler busy
     }
-    // timeouts may expire while two goroutines keep the scheduler busy
     var mp = acquirem();
     var gp = mp.Value.curg;
     var status = readgstatus(gp);
@@ -516,8 +512,7 @@ internal static void releaseSudog(ж<sudog> Ꮡs) {
     if ((~gp).param != nil) {
         @throw(runtimeReleaseSudogWithˢ);
     }
-    var mp = acquirem();
-    // avoid rescheduling to another P
+    var mp = acquirem(); // avoid rescheduling to another P
     var pp = (~mp).p.ptr();
     if (len((~pp).sudogcache) == cap((~pp).sudogcache)) {
         // Transfer half of local cache to the central cache.
@@ -581,8 +576,7 @@ internal static void badmorestackg0() {
     var gʗ1 = g;
     switchToCrashStack(() => {
         print((@string)"runtime: morestack on g0, stack ["u8, ((Δhex)(uint64)(~gʗ1).stack.lo), (@string)" "u8, ((Δhex)(uint64)(~gʗ1).stack.hi), (@string)"], sp="u8, ((Δhex)(uint64)(~gʗ1).sched.sp), (@string)", called from\n"u8);
-        gʗ1.Value.m.Value.traceback = 2;
-        // include pc and sp in stack trace
+        gʗ1.Value.m.Value.traceback = 2; // include pc and sp in stack trace
         traceback1((~gʗ1).sched.pc, (~gʗ1).sched.sp, (~gʗ1).sched.lr, gʗ1, 0);
         print((@string)"\n"u8);
         @throw(morestackOnG0ˢ);
@@ -628,8 +622,7 @@ internal static readonly @string fatalConcurrentˢ = "fatal: concurrent switchTo
 internal static void switchToCrashStack(Action fn) {
     var me = getg();
     if (ᏑcrashingG.CompareAndSwapNoWB(nil, me)) {
-        switchToCrashStack0(fn);
-        // should never return
+        switchToCrashStack0(fn); // should never return
         abort();
     }
     if (ᏑcrashingG.Load() == me) {
@@ -829,27 +822,19 @@ internal static void schedinit() {
     ᏑcrashFD.Store(~(uintptr)0);
     // The world starts stopped.
     worldStopped();
-    ticks.init();
-    // run as early as possible
+    ticks.init(); // run as early as possible
     moduledataverify();
     stackinit();
     mallocinit();
     @string godebug = getGodebugEarly();
-    cpuinit(godebug);
-    // must run before alginit
-    randinit();
-    // must run before alginit, mcommoninit
-    alginit();
-    // maps, hash, rand must not be used before this call
+    cpuinit(godebug); // must run before alginit
+    randinit(); // must run before alginit, mcommoninit
+    alginit(); // maps, hash, rand must not be used before this call
     mcommoninit((~gp).m, -1);
-    modulesinit();
-    // provides activeModules
-    typelinksinit();
-    // uses maps, activeModules
-    itabsinit();
-    // uses activeModules
-    stkobjinit();
-    // must run before GC starts
+    modulesinit(); // provides activeModules
+    typelinksinit(); // uses maps, activeModules
+    itabsinit(); // uses activeModules
+    stkobjinit(); // must run before GC starts
     sigsave((~gp).m.of(m.Ꮡsigmask));
     initSigmask = gp.Value.m.Value.sigmask;
     goargs();
@@ -1040,8 +1025,7 @@ internal static readonly @string badGStatusInReadyˢ = "bad g->status in ready"u
 internal static void ready(ж<g> Ꮡgp, nint traceskip, bool next) {
     var status = readgstatus(Ꮡgp);
     // Mark runnable.
-    var mp = acquirem();
-    // disable preemption because it can be holding p in a local var
+    var mp = acquirem(); // disable preemption because it can be holding p in a local var
     if ((uint32)(status & ~(uint32)_Gscan) != _Gwaiting) {
         dumpgstatus(Ꮡgp);
         @throw(badGStatusInReadyˢ);
@@ -1109,9 +1093,8 @@ internal static void freezetheworld() {
         Ꮡsched.of(schedt.Ꮡgcwaiting).Store(true);
         // this should stop running goroutines
         if (!preemptall()) {
-            break;
+            break; // no running goroutines
         }
-        // no running goroutines
         usleep(1000);
     }
     // to be sure
@@ -1504,8 +1487,7 @@ internal static worldStop stopTheWorld(stwReason reason) {
         // transition and handles it specially based on the
         // wait reason.
         casGToWaitingForGC(gpʗ1, _Grunning, waitReasonStoppingTheWorld);
-        stopTheWorldContext = stopTheWorldWithSema(reason);
-        // avoid write to stack
+        stopTheWorldContext = stopTheWorldWithSema(reason); // avoid write to stack
         casgstatus(gpʗ1, _Gwaiting, _Grunning);
     });
     return stopTheWorldContext;
@@ -1618,14 +1600,12 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
         @throw(stopTheWorldHoldingLocksˢ);
     }
     @lock(Ꮡsched.of(schedt.Ꮡlock));
-    var start = nanotime();
-    // exclude time waiting for sched.lock from start and total time metrics.
+    var start = nanotime(); // exclude time waiting for sched.lock from start and total time metrics.
     sched.stopwait = gomaxprocs;
     Ꮡsched.of(schedt.Ꮡgcwaiting).Store(true);
     preemptall();
     // stop current P
-    (~(~gp).m).p.ptr().Value.status = _Pgcstop;
-    // Pgcstop is only diagnostic.
+    (~(~gp).m).p.ptr().Value.status = _Pgcstop; // Pgcstop is only diagnostic.
     (~(~gp).m).p.ptr().Value.gcStopTime = start;
     sched.stopwait--;
     // try to retake all P's in Psyscall status
@@ -1726,12 +1706,10 @@ internal static readonly @string startTheWorldˢ = "startTheWorld: inconsistent 
 // stattTheWorldWithSema returns now.
 internal static int64 startTheWorldWithSema(int64 now, worldStop w) {
     assertWorldStopped();
-    var mp = acquirem();
-    // disable preemption because it can be holding p in a local var
+    var mp = acquirem(); // disable preemption because it can be holding p in a local var
     if (netpollinited()) {
         ref var list = ref heap<gList>(out var Ꮡlist);
-        (list, var delta) = netpoll(0);
-        // non-blocking
+        (list, var delta) = netpoll(0); // non-blocking
         injectglist(Ꮡlist);
         netpollAdjustWaiters(delta);
     }
@@ -2220,9 +2198,8 @@ internal static ж<m> allocm(ж<Δp> Ꮡpp, Action fn, int64 id) {
     acquirem();
     var gp = getg();
     if ((~(~gp).m).p == 0) {
-        acquirep(Ꮡpp);
+        acquirep(Ꮡpp); // temporarily borrow p for mallocs in this function
     }
-    // temporarily borrow p for mallocs in this function
     // Release the free M list. We need to do this somewhere and
     // this may free up a stack we can use.
     if (sched.freem != nil) {
@@ -2434,8 +2411,7 @@ internal static void oneNewExtraM() {
     var gp = malg(4096);
     gp.Value.sched.pc = abi.FuncPCABI0(goexit) + (uintptr)sys.PCQuantum;
     gp.Value.sched.sp = gp.Value.stack.hi;
-    gp.Value.sched.sp -= 4 * goarch.PtrSize;
-    // extra space in case of reads slightly beyond frame
+    gp.Value.sched.sp -= 4 * goarch.PtrSize; // extra space in case of reads slightly beyond frame
     gp.Value.sched.lr = 0;
     gp.Value.sched.g = new Δguintptr(gp);
     gp.Value.syscallpc = gp.Value.sched.pc;
@@ -2825,14 +2801,12 @@ internal static void newm1(ж<m> Ꮡmp) {
         if (asanenabled) {
             asanwrite(new @unsafe.Pointer(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
         }
-        ᏑexecLock.rlock();
-        // Prevent process clone.
+        ᏑexecLock.rlock(); // Prevent process clone.
         asmcgocall(_cgo_thread_start, new @unsafe.Pointer(Ꮡts));
         ᏑexecLock.runlock();
         return;
     }
-    ᏑexecLock.rlock();
-    // Prevent process clone.
+    ᏑexecLock.rlock(); // Prevent process clone.
     newosproc(Ꮡmp);
     ᏑexecLock.runlock();
 }
@@ -3618,8 +3592,7 @@ top:
             delay = 0;
         }
         ref var list = ref heap<gList>(out var Ꮡlist);
-        (list, var delta) = netpoll(delay);
-        // block until new work is available
+        (list, var delta) = netpoll(delay); // block until new work is available
         // Refresh now again, after potentially blocking.
         now = nanotime();
         Ꮡsched.of(schedt.ᏑpollUntil).Store(0);
@@ -3945,8 +3918,7 @@ internal static void injectglist(ж<gList> Ꮡglist) {
     glist = new gList(nil);
     void startIdle(nint nΔ1) {
         for (nint i = 0; i < nΔ1; i++) {
-            var mp = acquirem();
-            // See comment in startm.
+            var mp = acquirem(); // See comment in startm.
             @lock(Ꮡsched.of(schedt.Ꮡlock));
             var (ppΔ1, _) = pidlegetSpinning(0);
             if (ppΔ1 == nil) {
@@ -4014,9 +3986,8 @@ internal static void schedule() {
     }
     if ((~mp).lockedg != 0) {
         stoplockedm();
-        execute((~mp).lockedg.ptr(), false);
+        execute((~mp).lockedg.ptr(), false); // Never returns.
     }
-    // Never returns.
     // We should not schedule away from a g that is executing a cgo call,
     // since the cgo call is using the m's g0 stack.
     if ((~mp).incgo) {
@@ -4031,8 +4002,7 @@ top:
     if ((~mp).spinning && ((~pp).runnext != 0 || (~pp).runqhead != (~pp).runqtail)) {
         @throw(scheduleSpinningWithˢ);
     }
-    var (gp, inheritTime, tryWakeP) = findRunnable();
-    // blocks until work is available
+    var (gp, inheritTime, tryWakeP) = findRunnable(); // blocks until work is available
     if (debug.dontfreezetheworld > 0 && Ꮡfreezing.Load()) {
         // See comment in freezetheworld. We don't want to perturb
         // scheduler state, so we didn't gcstopm in findRunnable, but
@@ -4127,11 +4097,10 @@ internal static void park_m(ж<g> Ꮡgp) {
                     traceΔ1.GoUnpark(Ꮡgp, 2);
                     traceRelease(traceΔ1);
                 }
-                execute(Ꮡgp, true);
+                execute(Ꮡgp, true); // Schedule it back, never returns.
             }
         }
     }
-    // Schedule it back, never returns.
     schedule();
 }
 
@@ -4179,9 +4148,8 @@ internal static void goschedguarded_m(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (!canPreemptM(gp.m)) {
-        gogo(Ꮡgp.of(g.Ꮡsched));
+        gogo(Ꮡgp.of(g.Ꮡsched)); // never return
     }
-    // never return
     goschedImpl(Ꮡgp, false);
 }
 
@@ -4328,10 +4296,8 @@ internal static void gdestroy(ж<g> Ꮡgp) {
     mp.Value.lockedg = 0;
     gp.preemptStop = false;
     gp.paniconfault = false;
-    gp._defer = default!;
-    // should be true already but just in case.
-    gp._panic = default!;
-    // non-nil for Goexit during panic. points at stack-allocated data.
+    gp._defer = default!; // should be true already but just in case.
+    gp._panic = default!; // non-nil for Goexit during panic. points at stack-allocated data.
     gp.writebuf = default!;
     gp.waitreason = waitReasonZero;
     gp.param = default!;
@@ -4588,11 +4554,9 @@ internal static readonly @string entersyscallblockˢ = "entersyscallblock"u8;
 //go:nosplit
 internal static void entersyscallblock() {
     var gp = getg();
-    gp.Value.m.Value.locks++;
-    // see comment in entersyscall
+    gp.Value.m.Value.locks++; // see comment in entersyscall
     gp.Value.throwsplit = true;
-    gp.Value.stackguard0 = stackPreempt;
-    // see comment in entersyscall
+    gp.Value.stackguard0 = stackPreempt; // see comment in entersyscall
     gp.Value.m.Value.syscalltick = (~(~gp).m).p.ptr().Value.syscalltick;
     (~(~gp).m).p.ptr().Value.syscalltick++;
     // Leave SP around for GC and traceback.
@@ -4668,8 +4632,7 @@ internal static readonly @string exitsyscallSyscallFrameˢ = "exitsyscall: sysca
 //go:linkname exitsyscall
 internal static void exitsyscall() {
     var gp = getg();
-    gp.Value.m.Value.locks++;
-    // see comment in entersyscall
+    gp.Value.m.Value.locks++; // see comment in entersyscall
     if (getcallersp() > (~gp).syscallsp) {
         @throw(exitsyscallSyscallFrameˢ);
     }
@@ -4867,23 +4830,19 @@ internal static void exitsyscall0(ж<g> Ꮡgp) {
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     if (pp != nil) {
         acquirep(pp);
-        execute(Ꮡgp, false);
+        execute(Ꮡgp, false); // Never returns.
     }
-    // Never returns.
     if (locked) {
         // Wait until another thread schedules gp and so m again.
         //
         // N.B. lockedm must be this M, as this g was running on this M
         // before entersyscall.
         stoplockedm();
-        execute(Ꮡgp, false);
+        execute(Ꮡgp, false); // Never returns.
     }
-    // Never returns.
     stopm();
-    schedule();
+    schedule(); // Never returns.
 }
-
-// Never returns.
 
 // Called from syscall package before fork.
 //
@@ -5049,24 +5008,21 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
     if (Ꮡfn == nil) {
         fatal(goOfNilFuncValueˢ);
     }
-    var mp = acquirem();
-    // disable preemption because we hold M and P in local vars.
+    var mp = acquirem(); // disable preemption because we hold M and P in local vars.
     var pp = (~mp).p.ptr();
     var newg = gfget(pp);
     if (newg == nil) {
         newg = malg(stackMin);
         casgstatus(newg, _Gidle, _Gdead);
-        allgadd(newg);
+        allgadd(newg); // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.
     }
-    // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.
     if ((~newg).stack.hi == 0) {
         @throw(newproc1NewgMissingStackˢ);
     }
     if (readgstatus(newg) != _Gdead) {
         @throw(newproc1NewGIsNotGdeadˢ);
     }
-    var totalSize = (uintptr)(4 * goarch.PtrSize + sys.MinFrameSize);
-    // extra space in case of reads slightly beyond frame
+    var totalSize = (uintptr)(4 * goarch.PtrSize + sys.MinFrameSize); // extra space in case of reads slightly beyond frame
     totalSize = alignUp(totalSize, sys.StackAlign);
     var sp = (~newg).stack.hi - totalSize;
     if (usesLR) {
@@ -5081,8 +5037,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
     memclrNoHeapPointers(new @unsafe.Pointer(newg.of(g.Ꮡsched)), /* unsafe.Sizeof(newg.sched) */ (uintptr)56);
     newg.Value.sched.sp = sp;
     newg.Value.stktopsp = sp;
-    newg.Value.sched.pc = abi.FuncPCABI0(goexit) + (uintptr)sys.PCQuantum;
-    // +PCQuantum so that previous instruction is in same function
+    newg.Value.sched.pc = abi.FuncPCABI0(goexit) + (uintptr)sys.PCQuantum; // +PCQuantum so that previous instruction is in same function
     newg.Value.sched.g = new Δguintptr(newg);
     gostartcallfn(newg.of(g.Ꮡsched), Ꮡfn);
     newg.Value.parentGoid = callergp.goid;
@@ -5325,9 +5280,8 @@ public static void Breakpoint() {
 //go:nosplit
 internal static void dolockOSThread() {
     if (GOARCH == "wasm"u8) {
-        return;
+        return; // no threads on wasm yet
     }
-    // no threads on wasm yet
     var gp = getg();
     (~gp).m.of(m.Ꮡlockedg).set(gp);
     gp.of(g.Ꮡlockedm).set((~gp).m);
@@ -5348,9 +5302,8 @@ internal static void dolockOSThread() {
 //go:nosplit
 internal static void dounlockOSThread() {
     if (GOARCH == "wasm"u8) {
-        return;
+        return; // no threads on wasm yet
     }
-    // no threads on wasm yet
     var gp = getg();
     if ((~(~gp).m).lockedInt != 0 || (~(~gp).m).lockedExt != 0) {
         return;
@@ -5608,9 +5561,8 @@ internal static readonly @string missingMcacheˢ = "missing mcache?"u8;
     if (raceenabled && pp.raceprocctx == 0) {
         if (id == 0){
             pp.raceprocctx = raceprocctx0;
-            raceprocctx0 = 0;
+            raceprocctx0 = 0; // bootstrap
         } else {
-            // bootstrap
             pp.raceprocctx = raceproccreate();
         }
     }
@@ -5998,8 +5950,7 @@ internal static void checkdead() {
     });
     if (grunning == 0) {
         // possible if main goroutine calls runtime·Goexit()
-        unlock(Ꮡsched.of(schedt.Ꮡlock));
-        // unlock so that GODEBUG=scheddetail=1 doesn't hang
+        unlock(Ꮡsched.of(schedt.Ꮡlock)); // unlock so that GODEBUG=scheddetail=1 doesn't hang
         fatal(noGoroutinesMainCalledˢ);
     }
     // Maybe jump time forward for playground.
@@ -6039,8 +5990,7 @@ internal static void checkdead() {
             return;
         }
     }
-    unlock(Ꮡsched.of(schedt.Ꮡlock));
-    // unlock so that GODEBUG=scheddetail=1 doesn't hang
+    unlock(Ꮡsched.of(schedt.Ꮡlock)); // unlock so that GODEBUG=scheddetail=1 doesn't hang
     fatal(allGoroutinesAreAsleepˢ);
 }
 
@@ -6070,8 +6020,7 @@ internal static void sysmon() {
     checkdead();
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     var lasttrace = (int64)0;
-    nint idle = 0;
-    // how many cycles in succession we had not wokeup somebody
+    nint idle = 0; // how many cycles in succession we had not wokeup somebody
     var delay = (uint32)0;
     while (ᐧ) {
         if (idle == 0){
@@ -6149,8 +6098,7 @@ internal static void sysmon() {
         if (netpollinited() && lastpoll != 0 && lastpoll + 10 * 1000 * 1000 < now) {
             Ꮡsched.of(schedt.Ꮡlastpoll).CompareAndSwap(lastpoll, now);
             ref var list = ref heap<gList>(out var Ꮡlist);
-            (list, var delta) = netpoll(0);
-            // non-blocking - returns list of goroutines
+            (list, var delta) = netpoll(0); // non-blocking - returns list of goroutines
             if (!list.empty()) {
                 // Need to decrement number of idle locked M's
                 // (pretending that one more is running) before injectglist.
@@ -6753,13 +6701,11 @@ retryNext:
         Ꮡgp = oldnext.ptr(); gp = ref Ꮡgp.DerefOrNull();
     }
 retry:
-    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
-    // load-acquire, synchronize with consumers
+    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with consumers
     var t = pp.runqtail;
     if (t - h < (uint32)len(pp.runq)) {
         pp.runq[(nint)(t % (uint32)len(pp.runq))].set(Ꮡgp);
-        atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + 1);
-        // store-release, makes the item available for consumption
+        atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + 1); // store-release, makes the item available for consumption
         return;
     }
     if (runqputslow(Ꮡpp, Ꮡgp, h, t)) {
@@ -6863,8 +6809,7 @@ internal static (ж<g> gp, bool inheritTime) runqget(ж<Δp> Ꮡpp) {
         return (next.ptr(), true);
     }
     while (ᐧ) {
-        var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
-        // load-acquire, synchronize with other consumers
+        var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with other consumers
         var t = pp.runqtail;
         if (t == h) {
             return (default!, false);
@@ -6890,8 +6835,7 @@ internal static (gQueue drainQ, uint32 n) runqdrain(ж<Δp> Ꮡpp) {
         n++;
     }
 retry:
-    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
-    // load-acquire, synchronize with other consumers
+    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with other consumers
     var t = pp.runqtail;
     var qn = t - h;
     if (qn == 0) {
@@ -6929,10 +6873,8 @@ internal static uint32 runqgrab(ж<Δp> Ꮡpp, ж<array<Δguintptr>> Ꮡbatch, u
     ref var batch = ref Ꮡbatch.DerefOrNull();
 
     while (ᐧ) {
-        var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
-        // load-acquire, synchronize with other consumers
-        var t = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail));
-        // load-acquire, synchronize with the producer
+        var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with other consumers
+        var t = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail)); // load-acquire, synchronize with the producer
         var n = t - h;
         n = n - n / 2;
         if (n == 0) {
@@ -7004,13 +6946,11 @@ internal static ж<g> runqsteal(ж<Δp> Ꮡpp, ж<Δp> Ꮡp2, bool stealRunNextG
     if (n == 0) {
         return gp;
     }
-    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
-    // load-acquire, synchronize with consumers
+    var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with consumers
     if (t - h + n >= (uint32)len(pp.runq)) {
         @throw(runqstealRunqOverflowˢ);
     }
-    atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + n);
-    // store-release, makes the item available for consumption
+    atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + n); // store-release, makes the item available for consumption
     return gp;
 }
 
@@ -7344,11 +7284,10 @@ internal static void doInit1(ж<initTask> Ꮡt) {
         break;
     }
     default: {
-        t.state = 1;
+        t.state = 1; // initialization in progress
 // fully initialized
 // initialization in progress
 // not initialized yet
-// initialization in progress
         int64 start = default!;
         tracestat before = default!;
         if (inittrace.active) {
@@ -7382,12 +7321,10 @@ internal static void doInit1(ж<initTask> Ꮡt) {
             print(((@string)itoa(sbuf[..], after.allocs - before.allocs)), (@string)" allocs"u8);
             print((@string)"\n"u8);
         }
-        t.state = 2;
+        t.state = 2; // initialization done
         break;
     }}
 
 }
-
-// initialization done
 
 } // end runtime_package

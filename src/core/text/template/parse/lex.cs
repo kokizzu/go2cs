@@ -424,7 +424,7 @@ internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
             return l.errorf("unclosed action"u8);
         }
         if (isSpace(r)) { matchᴛ1 = true;
-            l.backup();
+            l.backup(); // Put space back in case we have " -}}".
             return lexSpace;
         }
         if (r is (rune)'=') { matchᴛ1 = true;
@@ -432,7 +432,6 @@ internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
         }
         if (r is (rune)':') { matchᴛ1 = true;
             if (l.next() != (rune)'=') {
-                // Put space back in case we have " -}}".
                 return l.errorf("expected :="u8);
             }
             return l.emit(itemDeclare);
@@ -459,7 +458,7 @@ internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
                 if (rΔ2 < (rune)'0' || (rune)'9' < rΔ2) {
                     return lexField;
                 }
-            }
+            } // '.' can start a number.
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (r == (rune)'+' || r == (rune)'-' || ((rune)'0' <= r && r <= (rune)'9'))) { matchᴛ1 = true;
@@ -477,7 +476,6 @@ internal static stateFn lexInsideAction(ж<lexer> Ꮡl) {
         if (r is (rune)')') { matchᴛ1 = true;
             l.parenDepth--;
             if (l.parenDepth < 0) {
-                // '.' can start a number.
                 return l.errorf("unexpected right paren"u8);
             }
             return l.emit(itemRightParen);
@@ -512,13 +510,11 @@ internal static stateFn lexSpace(ж<lexer> Ꮡl) {
     // Be careful about a trim-marked closing delimiter, which has a minus
     // after a space. We know there is a space, so check for the '-' that might follow.
     if (hasRightTrimMarker(l.input[(int)(nint)(l.pos - 1)..]) && strings.HasPrefix(l.input[(int)(nint)(l.pos - 1 + trimMarkerLen)..], l.rightDelim)) {
-        l.backup();
-        // Before the space.
+        l.backup(); // Before the space.
         if (numSpaces == 1) {
-            return lexRightDelim;
+            return lexRightDelim; // On the delim, so go right to that.
         }
     }
-    // On the delim, so go right to that.
     return l.emit(itemSpace);
 }
 

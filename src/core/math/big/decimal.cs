@@ -67,9 +67,8 @@ internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
         nuint ntz = m.trailingZeroBits();
         nuint sΔ1 = (nuint)(-shift);
         if (sΔ1 >= ntz) {
-            sΔ1 = ntz;
+            sΔ1 = ntz; // shift at most ntz bits
         }
-        // shift at most ntz bits
         m = ((nat)default!).shr(m, sΔ1);
         shift += (nint)sΔ1;
     }
@@ -104,8 +103,7 @@ internal static void shr(ж<@decimal> Ꮡx, nuint s) {
 
     // Division by 1<<s using shift-and-subtract algorithm.
     // pick up enough leading digits to cover first shift
-    nint r = 0;
-    // read index
+    nint r = 0; // read index
     Word n = default!;
     while ((n >> (int)(s)) == 0 && r < len(x.mant)) {
         Word ch = ((Word)(nuint)x.mant[r]);
@@ -123,15 +121,13 @@ internal static void shr(ж<@decimal> Ꮡx, nuint s) {
     }
     x.exp += 1 - r;
     // read a digit, write a digit
-    nint w = 0;
-    // write index
+    nint w = 0; // write index
     Word mask = (((Word)1) << (int)(s)) - 1;
     while (r < len(x.mant)) {
         Word ch = ((Word)(nuint)x.mant[r]);
         r++;
         Word d = (n >> (int)(s));
-        n &= (Word)(mask);
-        // n -= d << s
+        n &= (Word)(mask); // n -= d << s
         x.mant[w] = (byte)(nuint)(d + (rune)'0');
         w++;
         n = n * 10 + ch - (rune)'0';
@@ -144,8 +140,7 @@ internal static void shr(ж<@decimal> Ꮡx, nuint s) {
         w++;
         n = n * 10;
     }
-    x.mant = x.mant[..(int)(w)];
-    // the number may be shorter (e.g. 1024 >> 10)
+    x.mant = x.mant[..(int)(w)]; // the number may be shorter (e.g. 1024 >> 10)
     // append additional digits that didn't fit
     while (n > 0) {
         Word d = (n >> (int)(s));
@@ -215,9 +210,8 @@ internal static void round(this ж<@decimal> Ꮡx, nint n) {
     ref var x = ref Ꮡx.DerefOrNull();
 
     if (n < 0 || n >= len(x.mant)) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     if (shouldRoundUp(Ꮡx, n)){
         x.roundUp(n);
     } else {
@@ -227,9 +221,8 @@ internal static void round(this ж<@decimal> Ꮡx, nint n) {
 
 [GoRecv] internal static void roundUp(this ref @decimal x, nint n) {
     if (n < 0 || n >= len(x.mant)) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     // 0 <= n < len(x.mant)
     // find first digit < '9'
     while (n > 0 && x.mant[n - 1] >= (rune)'9') {
@@ -237,8 +230,7 @@ internal static void round(this ж<@decimal> Ꮡx, nint n) {
     }
     if (n == 0) {
         // all digits are '9's => round up to '1' and update exponent
-        x.mant[0] = (rune)'1';
-        // ok since len(x.mant) > n
+        x.mant[0] = (rune)'1'; // ok since len(x.mant) > n
         x.mant = x.mant[..1];
         x.exp++;
         return;
@@ -253,9 +245,8 @@ internal static void roundDown(this ж<@decimal> Ꮡx, nint n) {
     ref var x = ref Ꮡx.DerefOrNull();
 
     if (n < 0 || n >= len(x.mant)) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     x.mant = x.mant[..(int)(n)];
     trim(Ꮡx);
 }

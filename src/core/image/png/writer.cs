@@ -172,12 +172,9 @@ internal static readonly @string ihdrˢ = "IHDR"u8;
         e.tmp[9] = ctTrueColorAlpha;
     }
 
-    e.tmp[10] = 0;
-    // default compression method
-    e.tmp[11] = 0;
-    // default filter method
-    e.tmp[12] = 0;
-    // non-interlaced
+    e.tmp[10] = 0; // default compression method
+    e.tmp[11] = 0; // default filter method
+    e.tmp[12] = 0; // non-interlaced
     e.writeChunk(e.tmp[..13], ihdrˢ);
 }
 

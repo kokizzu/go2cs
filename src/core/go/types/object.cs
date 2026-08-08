@@ -388,10 +388,8 @@ public static ж<Var> NewVar(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name, 
 
 // NewParam returns a new variable representing a function parameter.
 public static ж<Var> NewParam(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name, ΔType typ) {
-    return Ꮡ(new Var(@object: new @object(nil, pos, Ꮡpkg, name, typ, 0, colorFor(typ), nopos), used: true));
+    return Ꮡ(new Var(@object: new @object(nil, pos, Ꮡpkg, name, typ, 0, colorFor(typ), nopos), used: true)); // parameters are always 'used'
 }
-
-// parameters are always 'used'
 
 // NewField returns a new variable representing a struct field.
 // For embedded fields, the name is the unqualified type name
@@ -464,9 +462,8 @@ public static ж<Func> NewFunc(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name
 // Signature returns the signature (type) of the function or method.
 [GoRecv] public static ж<ΔSignature> Signature(this ref Func obj) {
     if (obj.typ != default!) {
-        return obj.typ._<ж<ΔSignature>>();
+        return obj.typ._<ж<ΔSignature>>(); // normal case
     }
-    // normal case
     // No signature: Signature was called either:
     // - within go/types, before a FuncDecl's initially
     //   nil Func.Type was lazily populated, indicating

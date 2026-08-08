@@ -88,9 +88,8 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
             // Single type. Ok to return early because all relevant
             // checks have been performed in parseTilde (no need to
             // run through term validity check below).
-            return (~term).typ;
+            return (~term).typ; // typ already recorded through check.typ in parseTilde
         }
-        // typ already recorded through check.typ in parseTilde
         if (len(terms) >= maxTermCount){
             if (isValid(u)) {
                 Ꮡcheck.errorf(new ast_Exprᴠpositioner(x), InvalidUnion, "cannot handle more than %d union terms (implementation limitation)"u8, (nint)(maxTermCount));
@@ -122,9 +121,8 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
             if ((~t).tilde) {
                 if (f != nil) {
                     Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "invalid use of ~ (%s is an interface)"u8, (~t).typ);
-                    continue;
+                    continue; // don't report another error for t
                 }
-                // don't report another error for t
                 if (!Identical(uΔ1, (~t).typ)) {
                     Ꮡcheck.errorf(new ast_Exprᴠpositioner(tlistʗ1[i]), InvalidUnion, "invalid use of ~ (underlying type of %s is %s)"u8, (~t).typ, uΔ1);
                     continue;
@@ -150,9 +148,8 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
                     break;
                 }}
 
-                continue;
+                continue; // terms with interface types are not subject to the no-overlap rule
             }
-            // terms with interface types are not subject to the no-overlap rule
             // Report overlapping (non-disjoint) terms such as
             // a|a, a|~a, ~a|~a, and ~a|A (where under(A) == a).
             {

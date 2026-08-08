@@ -27,9 +27,8 @@ public static Func<ж<Package>, @string> RelativeTo(ж<Package> Ꮡpkg) {
     }
     return (ж<Package> other) => {
         if (Ꮡpkg == other) {
-            return ""u8;
+            return ""u8; // same package; unqualified
         }
-        // same package; unqualified
         return other.Path();
     };
 }
@@ -166,9 +165,8 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
                 if (w.qf == default! && w.pkgInfo && !isExported((~f).name)) {
                     // note for embedded types, type name is field name, and "string" etc are lower case hence unexported.
                     pkgAnnotate = true;
-                    w.pkgInfo = false;
+                    w.pkgInfo = false; // only tag once
                 }
-                // only tag once
                 // This doesn't do the right thing for embedded type
                 // aliases where we should print the alias name, not
                 // the aliased type (see go.dev/issue/44410).
@@ -321,9 +319,8 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
                 // named type identity is pointer identity.
                 w.@string(strconv.Itoa(w.ctxt.getID(new NamedжΔType(t))));
             }
-            w.typeName((~t).obj);
+            w.typeName((~t).obj); // when hashing written for readability of the hash only
             if ((~t).inst != nil){
-                // when hashing written for readability of the hash only
                 // instantiated type
                 Ꮡw.typeList((~(~t).inst).targs.list());
             } else 
@@ -580,8 +577,7 @@ internal static @string subscript(uint64 x) {
     nint i = len(buf);
     while (ᐧ) {
         i -= w;
-        utf8.EncodeRune(buf[(int)(i)..], (rune)'₀' + (rune)(x % 10));
-        // '₀' == U+2080
+        utf8.EncodeRune(buf[(int)(i)..], (rune)'₀' + (rune)(x % 10)); // '₀' == U+2080
         x /= 10;
         if (x == 0) {
             break;

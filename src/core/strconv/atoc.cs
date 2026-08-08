@@ -51,9 +51,8 @@ internal static (error syntax, error range_) convErr(error err, @string s) {
 public static (complex128, error) ParseComplex(@string s, nint bitSize) {
     nint size = 64;
     if (bitSize == 64) {
-        size = 32;
+        size = 32; // complex64 uses float32 parts
     }
-    // complex64 uses float32 parts
     @string orig = s;
     // Remove parentheses, if any.
     if (len(s) >= 2 && s[0] == (rune)'(' && s[len(s) - 1] == (rune)')') {

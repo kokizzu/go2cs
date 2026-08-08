@@ -658,10 +658,9 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
                     return (name, usage);
                 }
             }
-            break;
+            break; // Only one back quote; use type name.
         }
     }
-    // Only one back quote; use type name.
     // No explicit name, so use type if we can find one.
     name = valueˢ;
     switch (flag.Value.type()) {
@@ -707,8 +706,7 @@ public static void PrintDefaults(this ж<FlagSet> Ꮡf) {
     ref var isZeroValueErrs = ref heap<slice<error>>(out var ᏑisZeroValueErrs);
     f.VisitAll((ж<Flag> flag) => {
         ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "  -%s"u8, (~flag).Name);
-        // Two spaces before -; see next two comments.
+        fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "  -%s"u8, (~flag).Name); // Two spaces before -; see next two comments.
         var (name, usage) = UnquoteUsage(flag);
         if (len(name) > 0) {
             Ꮡb.WriteString(" "u8);
@@ -1147,9 +1145,8 @@ public static void BoolFunc(@string name, @string usage, Func<@string, error> fn
         } else {
             msg = f.sprintf("%s flag redefined: %s"u8, f.name, name);
         }
-        throw panic(msg);
+        throw panic(msg); // Happens only if flags are declared with identical names
     }
-    // Happens only if flags are declared with identical names
     {
         @string pos = f.undef[name]; if (pos != ""u8) {
             throw panic(fmt.Sprintf("flag %s set at %s before being defined"u8, name, pos));

@@ -134,9 +134,8 @@ private static readonly @string readˢ = "read"u8;
     foreach (var (i, name) in list) {
         var (nameΔ1, ok) = f.shorten(name);
         if (!ok) {
-            return (default!, errors.New("invalid result from inner fsys Glob: "u8 + nameΔ1 + " not in "u8 + f.dir));
+            return (default!, errors.New("invalid result from inner fsys Glob: "u8 + nameΔ1 + " not in "u8 + f.dir)); // can't use fmt in this package
         }
-        // can't use fmt in this package
         list[i] = nameΔ1;
     }
     return (list, f.fixErr(err));

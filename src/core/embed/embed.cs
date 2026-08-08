@@ -469,17 +469,14 @@ internal static nint sortSearch(nint n, Func<nint, bool> f) {
     nint i = 0;
     nint j = n;
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (!f(h)){
-            i = h + 1;
+            i = h + 1; // preserves f(i-1) == false
         } else {
-            // preserves f(i-1) == false
-            j = h;
+            j = h; // preserves f(j) == true
         }
     }
-    // preserves f(j) == true
     // i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
     return i;
 }

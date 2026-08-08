@@ -280,7 +280,7 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
         if (exprᴛ1 == ver118 || exprᴛ1 == ver120) {
             t.nfunctab = (uint32)offset(0);
             t.nfiletab = (uint32)offset(1);
-            t.textStart = t.PC;
+            t.textStart = t.PC; // use the start PC instead of reading from the table, which may be unrelocated
             t.funcnametab = data(3);
             t.cutab = data(4);
             t.filetab = data(5);
@@ -323,8 +323,6 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
 }
-
-// use the start PC instead of reading from the table, which may be unrelocated
 
 // go12Funcs returns a slice of Funcs derived from the Go 1.2+ pcln table.
 internal static slice<Func> go12Funcs(this ж<LineTable> Ꮡt) {
@@ -542,8 +540,7 @@ internal static uint32 field(this ΔfuncData f, uint32 n) {
     if ((~f.t).version >= ver118) {
         sz0 = 4;
     }
-    var off = sz0 + (n - 1) * 4;
-    // subsequent fields are 4 bytes each
+    var off = sz0 + (n - 1) * 4; // subsequent fields are 4 bytes each
     var data = f.data[(int)(off)..];
     return (~f.t).binary.Uint32(data);
 }

@@ -149,32 +149,29 @@ public static (ж<ΔRat>, bool) SetString(this ж<ΔRat> Ꮡz, @string s) {
         var exprᴛ1 = @base;
         var matchᴛ1 = false;
         if (exprᴛ1 is 10) { matchᴛ1 = true;
-            exp5 = d;
+            exp5 = d; // 10**e == 5**e * 2**e
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 2) { matchᴛ1 = true;
             exp2 = d;
         }
         else if (exprᴛ1 is 8) { matchᴛ1 = true;
-            exp2 = d * 3;
+            exp2 = d * 3; // octal digits are 3 bits each
         }
         else if (exprᴛ1 is 16) {
-            exp2 = d * 4;
+            exp2 = d * 4; // hexadecimal digits are 4 bits each
         }
         else if (!matchᴛ1) { /* default: */
             throw panic("unexpected mantissa base");
         }
 
     }
-    // 10**e == 5**e * 2**e
-    // octal digits are 3 bits each
-    // hexadecimal digits are 4 bits each
     // fcount consumed - not needed anymore
     // take actual exponent into account
     var exprᴛ2 = ebase;
     var matchᴛ2 = false;
     if (exprᴛ2 is 10) { matchᴛ2 = true;
-        exp5 += exp;
+        exp5 += exp; // see fallthrough above
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ2 && exprᴛ2 is 2) {
@@ -184,7 +181,6 @@ public static (ж<ΔRat>, bool) SetString(this ж<ΔRat> Ꮡz, @string s) {
         throw panic("unexpected exponent base");
     }
 
-    // see fallthrough above
     // exp consumed - not needed anymore
     // apply exp5 contributions
     // (start with exp5 so the numbers to multiply are smaller)
@@ -199,11 +195,9 @@ public static (ж<ΔRat>, bool) SetString(this ж<ΔRat> Ꮡz, @string s) {
             }
         }
         if (n > 1000000) {
-            return (default!, false);
+            return (default!, false); // avoid excessively large exponents
         }
-        // avoid excessively large exponents
-        var pow5 = z.b.abs.expNN(natFive, ((nat)default!).setWord(((Word)(nuint)n)), default!, false);
-        // use underlying array of z.b.abs
+        var pow5 = z.b.abs.expNN(natFive, ((nat)default!).setWord(((Word)(nuint)n)), default!, false); // use underlying array of z.b.abs
         if (exp5 > 0){
             z.a.abs = z.a.abs.mul(z.a.abs, pow5);
             z.b.abs = z.b.abs.setWord(1);
@@ -215,17 +209,15 @@ public static (ж<ΔRat>, bool) SetString(this ж<ΔRat> Ꮡz, @string s) {
     }
     // apply exp2 contributions
     if (exp2 < -10000000 || exp2 > 10000000) {
-        return (default!, false);
+        return (default!, false); // avoid excessively large exponents
     }
-    // avoid excessively large exponents
     if (exp2 > 0){
         z.a.abs = z.a.abs.shl(z.a.abs, (nuint)exp2);
     } else 
     if (exp2 < 0) {
         z.b.abs = z.b.abs.shl(z.b.abs, (nuint)(-exp2));
     }
-    z.a.neg = neg && len(z.a.abs) > 0;
-    // 0 has no sign
+    z.a.neg = neg && len(z.a.abs) > 0; // 0 has no sign
     return (Ꮡz.norm(), true);
 }
 
@@ -268,19 +260,16 @@ internal static (int64 exp, nint @base, error err) scanExponent(io.ByteScanner r
         do {
             if (base2ok) {
                 @base = 2;
-                break;
-            }
+                break; // ok
+            } // binary exponent not permitted
             fallthrough = true;
         } while (false);
     }
     if (fallthrough || !matchᴛ1) { /* default: */
-        r.UnreadByte();
+        r.UnreadByte(); // ch does not belong to exponent anymore
         return (0, 10, default!);
     }
 
-    // ok
-    // binary exponent not permitted
-    // ch does not belong to exponent anymore
     // sign
     slice<byte> digits = default!;
     (ch, err) = r.ReadByte();
@@ -309,8 +298,7 @@ internal static (int64 exp, nint @base, error err) scanExponent(io.ByteScanner r
             }
             prev = (rune)'_';
         } else {
-            r.UnreadByte();
-            // ch does not belong to number anymore
+            r.UnreadByte(); // ch does not belong to number anymore
             break;
         }
         (ch, err) = r.ReadByte();
@@ -399,8 +387,7 @@ public static @string FloatString(this ж<ΔRat> Ꮡx, nint prec) {
     if (x.a.neg) {
         buf = append(buf, (byte)((rune)'-'));
     }
-    buf = append(buf, q.utoa(10).ꓸꓸꓸ);
-    // itoa ignores sign if q == 0
+    buf = append(buf, q.utoa(10).ꓸꓸꓸ); // itoa ignores sign if q == 0
     if (prec > 0) {
         buf = append(buf, (byte)((rune)'.'));
         var rs = r.utoa(10);
@@ -441,8 +428,7 @@ public static (nint n, bool exact) FloatPrec(this ж<ΔRat> Ꮡx) {
     //
     // For details see:
     // https://en.wikipedia.org/wiki/Repeating_decimal#Reciprocals_of_integers_not_coprime_to_10
-    var d = Ꮡx.Denom().Value.abs;
-    // d >= 1
+    var d = Ꮡx.Denom().Value.abs; // d >= 1
     // Determine p2 by counting factors of 2.
     // p2 corresponds to the trailing zero bits in d.
     // Do this first to reduce q as much as possible.
@@ -456,21 +442,18 @@ public static (nint n, bool exact) FloatPrec(this ж<ΔRat> Ꮡx) {
     // the power of 5 in q.
     const nuint fp = 13; // f == 5^fp
     slice<nat> tab = default!;                // tab[i] == (5^fp)^(2^i) == 5^(fp·2^i)
-    var f = new nat(new Word[]{1220703125}.slice());
-    // == 5^fp (must fit into a uint32 Word)
+    var f = new nat(new Word[]{1220703125}.slice()); // == 5^fp (must fit into a uint32 Word)
     nat t = default!;                  // temporaries
     nat r = default!;
     while (ᐧ) {
         {
             (_, r) = t.div(r, q, f); if (len(r) != 0) {
-                break;
+                break; // f doesn't divide q evenly
             }
         }
-        // f doesn't divide q evenly
         tab = append(tab, f);
-        f = ((nat)default!).sqr(f);
+        f = ((nat)default!).sqr(f); // nat(nil) to ensure a new f for each table entry
     }
-    // nat(nil) to ensure a new f for each table entry
     // Factor q using the table entries, if any.
     // We start with the largest factor f = tab[len(tab)-1]
     // that evenly divides q. It does so at most once because
@@ -482,8 +465,7 @@ public static (nint n, bool exact) FloatPrec(this ж<ΔRat> Ꮡx) {
     for (nint i = len(tab) - 1; i >= 0; i--) {
         {
             (t, r) = t.div(r, q, tab[i]); if (len(r) == 0) {
-                p5 += fp * (((nuint)1).Lsh((uint64)(i)));
-                // tab[i] == 5^(fp·2^i)
+                p5 += fp * (((nuint)1).Lsh((uint64)(i))); // tab[i] == 5^(fp·2^i)
                 q = q.set(t);
             }
         }

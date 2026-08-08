@@ -763,9 +763,8 @@ internal static (ж<Request> rewound, error err) rewindBody(ж<Request> Ꮡreq) 
 
     ref var req = ref Ꮡreq.DerefOrNull();
     if (req.Body == default! || AreEqual(req.Body, NoBody) || (!(~req.Body._<ж<readTrackingBody>>()).didRead && !(~req.Body._<ж<readTrackingBody>>()).didClose)) {
-        return (Ꮡreq, default!);
+        return (Ꮡreq, default!); // nothing to rewind
     }
-    // nothing to rewind
     if (!(~req.Body._<ж<readTrackingBody>>()).didClose) {
         req.closeBody();
     }
@@ -835,10 +834,8 @@ internal static bool shouldRetryRequest(this ж<persistConn> Ꮡpc, ж<Request> 
         // timeout, just as the client was writing a request.
         return true;
     }
-    return false;
+    return false; // conservatively
 }
-
-// conservatively
 
 // ErrSkipAltProtocol is a sentinel error value defined by Transport.RegisterProtocol.
 public static error ErrSkipAltProtocol = errors.New("net/http: skip alternate protocol"u8);
@@ -886,8 +883,7 @@ public static void CloseIdleConnections(this ж<Transport> Ꮡt) {
     Ꮡt.of(Transport.ᏑidleMu).Lock();
     var m = t.idleConn;
     t.idleConn = default!;
-    t.closeIdle = true;
-    // close newly idle connections
+    t.closeIdle = true; // close newly idle connections
     t.idleLRU = new connLRU(nil);
     Ꮡt.of(Transport.ᏑidleMu).Unlock();
     foreach (var (_, conns) in m) {
@@ -2011,8 +2007,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
  (time.Duration)(60000000000L));
             var cancelʗ1 = cancel;
             defer(() => cancelʗ1(), ref ᒐ);
-            var didReadResponse = new channel<EmptyStruct>(0);
-// closed after CONNECT write+read is done or fails
+            var didReadResponse = new channel<EmptyStruct>(0); // closed after CONNECT write+read is done or fails
             ref var resp = ref heap<ж<Response>>(out var Ꮡresp);
             ref var errΔ10 = ref heap<error>(out var ᏑerrΔ10);      // write or read error
             var connʗ1 = conn;
@@ -2270,10 +2265,9 @@ internal static @string String(this connectMethodKey k) {
             return v;
         }
     }
-    return ((int64)10 << (int)(20));
+    return ((int64)10 << (int)(20)); // conservative default; same as http2
 }
 
-// conservative default; same as http2
 [GoRecv] internal static (nint n, error err) Read(this ref persistConn pc, slice<byte> p) {
     nint n = default!;
     error err = default!;
@@ -2437,8 +2431,7 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
         ref var closeErr = ref heap<error>(out var ᏑcloseErr);
-        closeErr = errReadLoopExiting;
-        // default value, if not changed below
+        closeErr = errReadLoopExiting; // default value, if not changed below
         defer(() => {
             Ꮡpc.close(ᏑcloseErr.ValueSlot);
             Ꮡpc.Value.t.removeIdleConn(Ꮡpc);
@@ -2463,8 +2456,7 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
         // at EOF until this goroutines has (potentially) added the connection
         // back to the idle pool.
         var eofc = new channel<EmptyStruct>(0);
-        defer(ᴛ1 => builtin.close(ᴛ1), eofc, ref ᒐ);
-        // unblock reader on errors
+        defer(ᴛ1 => builtin.close(ᴛ1), eofc, ref ᒐ); // unblock reader on errors
         // Read this once, before loop starts. (to avoid races in tests)
         testHookMu.Lock();
         var testHookReadLoopBeforeNextReadΔ1 = http_package.testHookReadLoopBeforeNextRead;
@@ -2504,8 +2496,7 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 }}
                 return;
             }
-            pc.readLimit = maxInt64;
-            // effectively no limit for response bodies
+            pc.readLimit = maxInt64; // effectively no limit for response bodies
             Ꮡpc.of(persistConn.Ꮡmu).Lock();
             pc.numExpectedResponses--;
             Ꮡpc.of(persistConn.Ꮡmu).Unlock();
@@ -2553,18 +2544,16 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 body: (~resp).Body,
                 earlyCloseFn: () => {
                     waitForBodyReadʗ1.ᐸꟷ(false);
-                    ᐸꟷ(eofcʗ1);
-                    // will be closed by deferred call at the end of the function
+                    ᐸꟷ(eofcʗ1); // will be closed by deferred call at the end of the function
                     return default!;
                 },
                 fn: (error errΔ1) => {
                     var isEOF = AreEqual(errΔ1, io.EOF);
                     waitForBodyReadʗ2.ᐸꟷ(isEOF);
                     if (isEOF){
-                        ᐸꟷ(eofcʗ2);
+                        ᐸꟷ(eofcʗ2); // see comment above eofc declaration
                     } else 
                     if (errΔ1 != default!) {
-                        // see comment above eofc declaration
                         {
                             var cerr = Ꮡpc.canceled(); if (cerr != default!) {
                                 return cerr;
@@ -2676,8 +2665,7 @@ internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx i
             }
         }
     }
-    nint num1xx = 0;
-    // number of informational 1xx headers received
+    nint num1xx = 0; // number of informational 1xx headers received
     const nint max1xxResponses = 5; // arbitrary bound on number of informational responses
     var continueCh = rc.continueCh;
     while (ᐧ) {
@@ -2701,8 +2689,7 @@ internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx i
             if (num1xx > max1xxResponses) {
                 return (default!, errors.New(netHttpTooMany1xxˢ));
             }
-            pc.readLimit = pc.maxHeaderResponseSize();
-            // reset the limit
+            pc.readLimit = pc.maxHeaderResponseSize(); // reset the limit
             if (Ꮡtrace != nil && trace.Got1xxResponse != default!) {
                 {
                     var errΔ2 = trace.Got1xxResponse(resCode, ((textproto.MIMEHeader)(map<@string, slice<@string>>)(~resp).Header)); if (errΔ2 != default!) {
@@ -2731,13 +2718,11 @@ internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx i
         // Given that we'll send the body if ExpectContinueTimeout expires,
         // be consistent and always send it if we aren't closing the connection.
         if ((~resp).Close || (~(~rc.treq).Request).Close){
-            builtin.close(continueCh);
+            builtin.close(continueCh); // don't send the body; the connection will close
         } else {
-            // don't send the body; the connection will close
-            continueCh.ᐸꟷ(new EmptyStruct());
+            continueCh.ᐸꟷ(new EmptyStruct()); // send the body
         }
     }
-    // send the body
     resp.Value.TLS = pc.tlsState;
     return (resp, err);
 }
@@ -2859,11 +2844,9 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) {
                         err = new nothingWrittenError(err);
                     }
                 }
-                pc.writeErrCh.ᐸꟷ(err);
-                wr.ch.ᐸꟷ(err);
+                pc.writeErrCh.ᐸꟷ(err); // to the body reader, which might recycle us
+                wr.ch.ᐸꟷ(err); // to the roundTrip function
                 if (err != default!) {
-                    // to the body reader, which might recycle us
-                    // to the roundTrip function
                     Ꮡpc.close(err);
                     return;
                 }
@@ -3124,8 +3107,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
                         }
                         var timer = time.NewTimer(d);
                         var timerʗ1 = timer;
-                        defer(() => timerʗ1.Stop(), ref ᒐ);
-                        // prevent leaks
+                        defer(() => timerʗ1.Stop(), ref ᒐ); // prevent leaks
                         respHeaderTimer = timer.Value.C;
                     }
                 }

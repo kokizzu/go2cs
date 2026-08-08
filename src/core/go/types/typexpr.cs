@@ -56,19 +56,17 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
     }
     if (AreEqual(exprᴛ1, universeComparable)) {
         if (!Ꮡcheck.verifyVersionf(new ast_Identжpositioner(Ꮡe), go1_18, "predeclared %s"u8, e.Name)) {
-            return;
+            return; // avoid follow-on errors
         }
     }
 
-    // avoid follow-on errors
     // Because the representation of any depends on gotypesalias, we don't check
     // pointer identity here.
     if (obj.Name() == "any"u8 && obj.Parent() == Universe) {
         if (!Ꮡcheck.verifyVersionf(new ast_Identжpositioner(Ꮡe), go1_18, "predeclared %s"u8, e.Name)) {
-            return;
+            return; // avoid follow-on errors
         }
     }
-    // avoid follow-on errors
     check.recordUse(Ꮡe, obj);
     // If we want a type but don't have one, stop right here and avoid potential problems
     // with missing underlying types. This also gives better error messages in some cases
@@ -97,9 +95,8 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
     var typ = obj.Type();
     if (typ == default! || gotType && wantType) {
         Ꮡcheck.objDecl(obj, Ꮡdef);
-        typ = obj.Type();
+        typ = obj.Type(); // type must have been assigned by Checker.objDecl
     }
-    // type must have been assigned by Checker.objDecl
     assert(typ != default!);
     // The object may have been dot-imported.
     // If so, mark the respective package as used.
@@ -207,8 +204,7 @@ internal static void validVarType(this ж<Checker> Ꮡcheck, ast.Expr e, ΔType 
     check.later(() => {
         {
             var (t, _) = under(typ)._<ж<Interface>>(ᐧ); if (t != nil) {
-                var tset = computeInterfaceTypeSet(Ꮡcheck, e.Pos(), t);
-                // TODO(gri) is this the correct position?
+                var tset = computeInterfaceTypeSet(Ꮡcheck, e.Pos(), t); // TODO(gri) is this the correct position?
                 if (!tset.IsMethodSet()) {
                     if ((~tset).comparable){
                         Ꮡcheck.softErrorf(new ast_Exprᴠpositioner(e), MisplacedConstraintIface, "cannot use type %s outside a type constraint: interface is (or embeds) comparable"u8, typ);
@@ -399,9 +395,8 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
         }
         case ж<ast.StarExpr> e: {
             var typΔ8 = @new<Pointer>();
-            typΔ8.Value.@base = new BasicжΔType(Typ[Invalid]);
-            setDefType(Ꮡdef, // avoid nil base in invalid recursive type declaration
- new PointerжΔType(typΔ8));
+            typΔ8.Value.@base = new BasicжΔType(Typ[Invalid]); // avoid nil base in invalid recursive type declaration
+            setDefType(Ꮡdef, new PointerжΔType(typΔ8));
             typΔ8.Value.@base = Ꮡcheck.varType((~e).X);
             T = new PointerжΔType(typΔ8); goto ᒐdone;
         }
@@ -536,9 +531,8 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
             Ꮡcheck.errorf(new ast_Exprᴠpositioner(ix.Orig), NotAGenericType, invalidOp + "%s (%s)", ix.Orig, cause);
         }
         if (!isValid(gtyp)) {
-            res = gtyp; goto ᒐdone;
+            res = gtyp; goto ᒐdone; // error already reported
         }
-        // error already reported
         // evaluate arguments
         var targs = Ꮡcheck.typeList(ix.Indices);
         if (targs == default!) {
@@ -649,8 +643,7 @@ internal static int64 arrayLength(this ж<Checker> Ꮡcheck, ast.Expr e) {
 // typeList provides the list of types corresponding to the incoming expression list.
 // If an error occurred, the result is nil, but all list elements were type-checked.
 internal static slice<ΔType> typeList(this ж<Checker> Ꮡcheck, slice<ast.Expr> list) {
-    var res = new slice<ΔType>(len(list));
-    // res != nil even if len(list) == 0
+    var res = new slice<ΔType>(len(list)); // res != nil even if len(list) == 0
     foreach (var (i, x) in list) {
         var t = Ꮡcheck.varType(x);
         if (!isValid(t)) {

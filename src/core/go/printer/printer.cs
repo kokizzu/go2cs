@@ -210,8 +210,7 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
             }
             return;
         }
-        p.output = append(p.output, (byte)(tabwriter.Escape));
-        // protect '\n' in //line from tabwriter interpretation
+        p.output = append(p.output, (byte)(tabwriter.Escape)); // protect '\n' in //line from tabwriter interpretation
         p.output = append(p.output, fmt.Sprintf("//line %s:%d\n"u8, pos.Filename, pos.Line).ꓸꓸꓸ);
         p.output = append(p.output, (byte)(tabwriter.Escape));
         // p.out must match the //line directive
@@ -224,8 +223,7 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
 [GoRecv] internal static void writeIndent(this ref printer p) {
     // use "hard" htabs - indentation columns
     // must not be discarded by the tabwriter
-    nint n = p.Config.Indent + p.indent;
-    // include base indentation
+    nint n = p.Config.Indent + p.indent; // include base indentation
     for (nint i = 0; i < n; i++) {
         p.output = append(p.output, (byte)((rune)'\t'));
     }
@@ -307,9 +305,8 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
         p.output = append(p.output, (byte)(tabwriter.Escape));
     }
     if (debug) {
-        p.output = append(p.output, fmt.Sprintf("/*%s*/"u8, pos).ꓸꓸꓸ);
+        p.output = append(p.output, fmt.Sprintf("/*%s*/"u8, pos).ꓸꓸꓸ); // do not update p.pos!
     }
-    // do not update p.pos!
     p.output = append(p.output, s.ꓸꓸꓸ);
     // update positions
     nint nlines = 0;
@@ -440,10 +437,9 @@ internal static nint commentSizeBefore(this ж<printer> Ꮡp, tokenꓸPosition n
             }
             else if (exprᴛ2 == newline || exprᴛ2 == formfeed) {
                 p.wsbuf[i] = ignore;
-                droppedLinebreak = Ꮡprev == nil;
+                droppedLinebreak = Ꮡprev == nil; // record only if first comment of a group
             }
 
-            // record only if first comment of a group
             j = i;
             break;
         }
@@ -510,9 +506,8 @@ internal static @string trimRight(@string s) {
 // current indentation.
 internal static void stripCommonPrefix(slice<@string> lines) {
     if (len(lines) <= 1) {
-        return;
+        return; // at most one line - nothing to do
     }
-    // at most one line - nothing to do
     // len(lines) > 1
     // The heuristic in this function tries to handle a few
     // common patterns of /*-style comments: Comments where
@@ -537,9 +532,8 @@ internal static void stripCommonPrefix(slice<@string> lines) {
     if (len(lines) > 2) {
         foreach (var (i, line) in lines[1..(int)(len(lines) - 1)]) {
             if (isBlank(line)){
-                lines[1 + i] = ""u8;
+                lines[1 + i] = ""u8; // range starts with lines[1]
             } else {
-                // range starts with lines[1]
                 if (!prefixSet) {
                     prefix = line;
                     prefixSet = true;
@@ -588,8 +582,7 @@ internal static void stripCommonPrefix(slice<@string> lines) {
             } else {
                 // comment text on the first line
                 var suffix = new slice<byte>(len(first));
-                nint n = 2;
-                // start after opening /*
+                nint n = 2; // start after opening /*
                 while (n < len(first) && first[n] <= (rune)' ') {
                     suffix[n] = first[n];
                     n++;
@@ -613,14 +606,12 @@ internal static void stripCommonPrefix(slice<@string> lines) {
     // lines.
     @string last = lines[len(lines) - 1];
     @string closing = "*/"u8;
-    var (before, _, _) = strings.Cut(last, closing);
-    // closing always present
+    var (before, _, _) = strings.Cut(last, closing); // closing always present
     if (isBlank(before)){
         // last line only contains closing */
         if (lineOfStars) {
-            closing = " */"u8;
+            closing = " */"u8; // add blank to align final star
         }
-        // add blank to align final star
         lines[len(lines) - 1] = prefix + closing;
     } else {
         // last line contains more comment text - assume
@@ -867,8 +858,7 @@ internal static readonly object negativeIndentationˢ = (@string)"negative inden
                     // of lines before the label; effectively leading to wrong
                     // indentation.
                     (p.wsbuf[i], p.wsbuf[i + 1]) = (unindent, formfeed);
-                    i--;
-                    // do it again
+                    i--; // do it again
                     continue;
                 }
                 fallthrough = true;
@@ -897,43 +887,35 @@ internal static bool /*b*/ mayCombine(token.Token prev, byte next) {
 
     var exprᴛ1 = prev;
     if (exprᴛ1 == token.INT) {
-        b = next == (rune)'.';
+        b = next == (rune)'.'; // 1.
     }
     else if (exprᴛ1 == token.ADD) {
-        b = next == (rune)'+';
+        b = next == (rune)'+'; // ++
     }
     else if (exprᴛ1 == token.SUB) {
-        b = next == (rune)'-';
+        b = next == (rune)'-'; // --
     }
     else if (exprᴛ1 == token.QUO) {
-        b = next == (rune)'*';
+        b = next == (rune)'*'; // /*
     }
     else if (exprᴛ1 == token.LSS) {
-        b = next == (rune)'-' || next == (rune)'<';
+        b = next == (rune)'-' || next == (rune)'<'; // <- or <<
     }
     else if (exprᴛ1 == token.AND) {
-        b = next == (rune)'&' || next == (rune)'^';
+        b = next == (rune)'&' || next == (rune)'^'; // && or &^
     }
 
-    // 1.
-    // ++
-    // --
-    // /*
-    // <- or <<
-    // && or &^
     return b;
 }
 
 [GoRecv] internal static void setPos(this ref printer p, tokenꓸPos pos) {
     if (pos.IsValid()) {
-        p.pos = p.posFor(pos);
+        p.pos = p.posFor(pos); // accurate position of next item
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object whitespaceBufferNotEmptyˢ = (@string)"whitespace buffer not empty"u8;
-
-// accurate position of next item
 
 // print prints a list of "items" (roughly corresponding to syntactic
 // tokens, but also including whitespace and formatting information).
@@ -1055,8 +1037,7 @@ internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
             break;
         }}
         // data != ""
-        var next = p.pos;
-        // estimated/accurate position of next item
+        var next = p.pos; // estimated/accurate position of next item
         var (wroteNewline, droppedFF) = Ꮡp.flush(next, p.lastTok);
         // intersperse extra newlines if present in the source and
         // if they don't cause extra semicolons (don't do this in
@@ -1070,9 +1051,8 @@ internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
             if (n > 0) {
                 var ch = (byte)(rune)'\n';
                 if (droppedFF) {
-                    ch = (rune)'\f';
+                    ch = (rune)'\f'; // use formfeed since we dropped one before
                 }
-                // use formfeed since we dropped one before
                 p.writeByte(ch, n);
                 impliedSemi = false;
             }
@@ -1330,9 +1310,8 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
         b = vᴛ1;
 
         if (b == (rune)'\v') {
-            b = (rune)'\t';
+            b = (rune)'\t'; // convert to htab
         }
-        // convert to htab
         var exprᴛ1 = p.state;
         if (exprᴛ1 == inSpace) {
             var exprᴛ2 = b;
@@ -1340,13 +1319,13 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
                 p.space = append(p.space, b);
             }
             else if (exprᴛ2 is (rune)'\n' or (rune)'\f') {
-                p.resetSpace();
+                p.resetSpace(); // discard trailing space
                 (_, err) = p.output.Write(aNewline);
             }
             else if (exprᴛ2 == tabwriter.Escape) {
                 (_, err) = p.output.Write(p.space);
                 p.state = inEscape;
-                m = nΔ1 + 1;
+                m = nΔ1 + 1; // +1: skip tabwriter.Escape
             }
             else { /* default: */
                 (_, err) = p.output.Write(p.space);
@@ -1357,8 +1336,6 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
         }
         else if (exprᴛ1 == inEscape) {
             if (b == tabwriter.Escape) {
-                // discard trailing space
-                // +1: skip tabwriter.Escape
                 (_, err) = p.output.Write(data[(int)(m)..(int)(nΔ1)]);
                 p.resetSpace();
             }
@@ -1380,7 +1357,7 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
             else if (exprᴛ3 == tabwriter.Escape) {
                 (_, err) = p.output.Write(data[(int)(m)..(int)(nΔ1)]);
                 p.state = inEscape;
-                m = nΔ1 + 1;
+                m = nΔ1 + 1; // +1: skip tabwriter.Escape
             }
 
         }
@@ -1388,7 +1365,6 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
             throw panic("unreachable");
         }
 
-        // +1: skip tabwriter.Escape
         if (err != default!) {
             return (nΔ1, err);
         }
@@ -1481,8 +1457,7 @@ internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, �
             }
         }
         // print outstanding comments
-        p.Value.impliedSemi = false;
-        // EOF acts like a newline
+        p.Value.impliedSemi = false; // EOF acts like a newline
         p.flush(new tokenꓸPosition(Offset: infinity, Line: infinity), token.EOF);
         // output is buffered in p.output now.
         // fix //go:build and // +build comments if needed.

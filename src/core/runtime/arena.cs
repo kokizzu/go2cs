@@ -573,8 +573,7 @@ internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer 
 
     var @base = s.@base();
     var h = s.writeUserArenaHeapBits((uintptr)ptr);
-    var Δp = typ.GCData;
-    // start of 1-bit pointer mask (or GC program)
+    var Δp = typ.GCData; // start of 1-bit pointer mask (or GC program)
     uintptr gcProgBits = default!;
     if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         // Expand gc program, using the object itself for storage.
@@ -653,12 +652,9 @@ internal static ΔwriteUserArenaHeapBits write(this ΔwriteUserArenaHeapBits h, 
     }
     // Too many bits to fit in this word. Write the current word
     // out and move on to the next word.
-    var data = (uintptr)(h.mask | bits.Lsh((uint64)(h.valid)));
-    // mask for this word
-    h.mask = bits.Rsh((uint64)(((uintptr)ptrBits - h.valid)));
-    // leftover for next word
-    h.valid += valid - (uintptr)ptrBits;
-    // have h.valid+valid bits, writing ptrBits of them
+    var data = (uintptr)(h.mask | bits.Lsh((uint64)(h.valid))); // mask for this word
+    h.mask = bits.Rsh((uint64)(((uintptr)ptrBits - h.valid))); // leftover for next word
+    h.valid += valid - (uintptr)ptrBits; // have h.valid+valid bits, writing ptrBits of them
     // Flush mask to the memory bitmap.
     var idx = h.offset / (uintptr)(ptrBits * goarch.PtrSize);
     var m = ((uintptr)1).Lsh((uint64)(h.low)) - 1;
@@ -711,10 +707,8 @@ internal static void flush(this ΔwriteUserArenaHeapBits h, ж<mspan> Ꮡs, uint
     var idx = h.offset / (uintptr)(ptrBits * goarch.PtrSize);
     // Write remaining bits.
     if (h.valid != h.low) {
-        var m = ((uintptr)1).Lsh((uint64)(h.low)) - 1;
-        // don't clear existing bits below "low"
-        m |= (uintptr)(~(((uintptr)1).Lsh((uint64)(h.valid)) - 1));
-        // don't clear existing bits above "valid"
+        var m = ((uintptr)1).Lsh((uint64)(h.low)) - 1; // don't clear existing bits below "low"
+        m |= (uintptr)(~(((uintptr)1).Lsh((uint64)(h.valid)) - 1)); // don't clear existing bits above "valid"
         bitmap[(nint)(idx)] = bswapIfBigEndian((uintptr)((uintptr)(bswapIfBigEndian(bitmap[(nint)(idx)]) & m) | h.mask));
     }
     if (zeros == 0) {

@@ -294,10 +294,9 @@ internal static void init(this ж<gcControllerState> Ꮡc, int32 gcPercent, int6
     c.triggered = ~(uint64)0;
     Ꮡc.setGCPercent(gcPercent);
     Ꮡc.setMemoryLimit(memoryLimit);
-    Ꮡc.commit(true);
+    Ꮡc.commit(true); // No sweep phase in the first GC cycle.
 }
 
-// No sweep phase in the first GC cycle.
 // N.B. Don't bother calling traceHeapGoal. Tracing is never enabled at
 // initialization time.
 // N.B. No need to call revise; there's no GC enabled during
@@ -739,8 +738,7 @@ internal static void resetLive(this ж<gcControllerState> Ꮡc, uint64 bytesMark
     Ꮡc.of(gcControllerState.ᏑheapScan).Store((uint64)Ꮡc.of(gcControllerState.ᏑheapScanWork).Load());
     c.lastHeapScan = (uint64)Ꮡc.of(gcControllerState.ᏑheapScanWork).Load();
     Ꮡc.of(gcControllerState.ᏑlastStackScan).Store((uint64)Ꮡc.of(gcControllerState.ᏑstackScanWork).Load());
-    c.triggered = ~(uint64)0;
-    // Reset triggered.
+    c.triggered = ~(uint64)0; // Reset triggered.
     // heapLive was updated, so emit a trace event.
     var Δtrace = traceAcquire();
     if (Δtrace.ok()) {
@@ -884,12 +882,9 @@ internal static uint64 memoryLimitHeapGoal(this ж<gcControllerState> Ꮡc) {
     uint64 heapAlloc = default!;
     uint64 mappedReady = default!;
     while (ᐧ) {
-        heapFree = Ꮡc.of(gcControllerState.ᏑheapFree).load();
-        // Free and unscavenged memory.
-        heapAlloc = Ꮡc.of(gcControllerState.ᏑtotalAlloc).Load() - Ꮡc.of(gcControllerState.ᏑtotalFree).Load();
-        // Heap object bytes in use.
-        mappedReady = Ꮡc.of(gcControllerState.ᏑmappedReady).Load();
-        // Total unreleased mapped memory.
+        heapFree = Ꮡc.of(gcControllerState.ᏑheapFree).load(); // Free and unscavenged memory.
+        heapAlloc = Ꮡc.of(gcControllerState.ᏑtotalAlloc).Load() - Ꮡc.of(gcControllerState.ᏑtotalFree).Load(); // Heap object bytes in use.
+        mappedReady = Ꮡc.of(gcControllerState.ᏑmappedReady).Load(); // Total unreleased mapped memory.
         if (heapFree + heapAlloc <= mappedReady) {
             break;
         }

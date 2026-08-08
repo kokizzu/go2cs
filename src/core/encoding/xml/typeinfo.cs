@@ -58,9 +58,8 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
             ref var f = ref heap<reflect.StructField>(out var Ꮡf);
             f = typ.Field(i);
             if ((!f.IsExported() && !f.Anonymous) || f.Tag.Get(xmlˢ) == "-"u8) {
-                continue;
+                continue; // Private field
             }
-            // Private field
             // For embedded structs, embed its fields.
             if (f.Anonymous) {
                 var t = f.Type;

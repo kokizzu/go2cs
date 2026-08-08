@@ -283,15 +283,13 @@ public static io.WriteCloser NewEncoder(ж<Encoding> Ꮡenc, io.Writer w) {
 // of an input buffer of length n.
 [GoRecv] public static nint EncodedLen(this ref Encoding enc, nint n) {
     if (enc.padChar == NoPadding) {
-        return n / 3 * 4 + (n % 3 * 8 + 5) / 6;
+        return n / 3 * 4 + (n % 3 * 8 + 5) / 6; // minimum # chars at 6 bits per char
     }
-    // minimum # chars at 6 bits per char
-    return (n + 2) / 3 * 4;
+    return (n + 2) / 3 * 4; // minimum # 4-char quanta, 3 bytes each
 }
 
 [GoType("num:int64")] partial struct CorruptInputError;
 
-// minimum # 4-char quanta, 3 bytes each
 /*
  * Decoder
  */

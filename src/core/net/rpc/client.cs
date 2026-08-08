@@ -334,9 +334,8 @@ public static ж<ΔCall> Go(this ж<Client> Ꮡclient, @string serviceMethod, an
     call.Value.Args = args;
     call.Value.Reply = reply;
     if (done == default!){
-        done = new channel<ж<ΔCall>>(10);
+        done = new channel<ж<ΔCall>>(10); // buffered.
     } else {
-        // buffered.
         // If caller passes done != nil, it must arrange that
         // done has enough buffer for the number of simultaneous
         // RPCs that will be using that channel. If the channel

@@ -587,8 +587,7 @@ internal static (ж<os.File>, error) childStdin(this ж<Cmd> Ꮡc) {
     var prʗ1 = pr;
     c.goroutine = append(c.goroutine, () => {
         var (_, errΔ2) = io.Copy(w, new os_FileжReader(prʗ1));
-        prʗ1.Close();
-        // in case io.Copy stopped due to write error
+        prʗ1.Close(); // in case io.Copy stopped due to write error
         return errΔ2;
     });
     return (pw, default!);
@@ -763,9 +762,8 @@ public static error Start(this ж<Cmd> Ꮡc) {
                     }
                 }, fn);
             }
-            c.goroutine = default!;
+            c.goroutine = default!; // Allow the goroutines' closures to be GC'd when they complete.
         }
-        // Allow the goroutines' closures to be GC'd when they complete.
         // If we have anything to do when the command's Context expires,
         // start a goroutine to watch for cancellation.
         //
@@ -989,9 +987,8 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
             Ꮡc.Value.goroutineErr = default!;
         }, ref ᒐ);
         if (c.goroutineErr == default!) {
-            return default!;
+            return default!; // No running goroutines to await.
         }
-        // No running goroutines to await.
         if (Ꮡtimer == nil) {
             if (c.WaitDelay == 0) {
                 return ᐸꟷ(c.goroutineErr);

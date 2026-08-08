@@ -590,15 +590,13 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
                         // Old binaries may have an upper bound instead.
                         (count, ok) = kid.Val(AttrUpperBound)._<int64>(ᐧ);
                         if (ok){
-                            count++;
+                            count++; // Length is one more than upper bound.
                         } else 
                         if (len(dims) == 0) {
-                            // Length is one more than upper bound.
-                            count = -1;
+                            count = -1; // As in x[].
                         }
                     }
-                    dims = append(dims, // As in x[].
- count);
+                    dims = append(dims, count);
                 }
                 else if (exprᴛ2 == TagEnumerationType) {
                     err = new DecodeError(name, (~kid).Offset, "cannot handle enumeration type as array bound"u8);

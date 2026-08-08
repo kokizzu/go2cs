@@ -419,10 +419,9 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
     if (Ꮡh == nil || h.count == 0) {
         {
             var err = mapKeyError(Ꮡt, key); if (err != default!) {
-                throw panic(err);
+                throw panic(err); // see issue 23734
             }
         }
-        // see issue 23734
         return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
@@ -499,10 +498,9 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
     if (Ꮡh == nil || h.count == 0) {
         {
             var err = mapKeyError(Ꮡt, key); if (err != default!) {
-                throw panic(err);
+                throw panic(err); // see issue 23734
             }
         }
-        // see issue 23734
         return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
@@ -664,9 +662,8 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
     // in which case we have not actually done a write.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
-        h.buckets = (uintptr)newobject(t.Bucket);
+        h.buckets = (uintptr)newobject(t.Bucket); // newarray(t.Bucket, 1)
     }
-    // newarray(t.Bucket, 1)
 again:
     var bucket = (uintptr)(hash & bucketMask(h.B));
     if (h.growing()) {
@@ -718,9 +715,8 @@ break_bucketloop:;
     // and we're not already in the middle of growing, start growing.
     if (!h.growing() && (overLoadFactor(h.count + 1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B))) {
         hashGrow(Ꮡt, Ꮡh);
-        goto again;
+        goto again; // Growing the table invalidates everything, so try again
     }
-    // Growing the table invalidates everything, so try again
     if (inserti == nil) {
         // The current bucket and all the overflow buckets connected to it are full, allocate a new one.
         var newb = h.newoverflow(Ꮡt, b);
@@ -780,10 +776,9 @@ internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer 
     if (Ꮡh == nil || h.count == 0) {
         {
             var err = mapKeyError(Ꮡt, key); if (err != default!) {
-                throw panic(err);
+                throw panic(err); // see issue 23734
             }
         }
-        // see issue 23734
         return;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
@@ -851,9 +846,8 @@ search:
                 b.Value.tophash[(nint)(i)] = emptyRest;
                 if (i == 0){
                     if (b == bOrig) {
-                        break;
+                        break; // beginning of initial bucket, we're done.
                     }
-                    // beginning of initial bucket, we're done.
                     // Find previous bucket, continue at its last entry.
                     var c = b;
                     for (b = bOrig; b.overflow(Ꮡt) != c; b = b.overflow(Ꮡt)) {
@@ -921,9 +915,8 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
         return;
     }
     if (/* unsafe.Sizeof(hiter{}) */ (uintptr)96 / (uintptr)goarch.PtrSize != 12) {
-        @throw(hashIterSizeIncorrectˢ);
+        @throw(hashIterSizeIncorrectˢ); // see cmd/compile/internal/reflectdata/reflect.go
     }
-    // see cmd/compile/internal/reflectdata/reflect.go
     it.h = Ꮡh;
     // grab snapshot of bucket state
     it.B = h.B;
@@ -1078,9 +1071,8 @@ next:
             // updated to an equal() but not identical key (e.g. +0.0 vs -0.0).
             var (rk, re) = mapaccessK(t, h, k);
             if (rk == nil) {
-                continue;
+                continue; // key has been deleted
             }
-            // key has been deleted
             it.key = rk;
             it.elem = re;
         }
@@ -1358,25 +1350,20 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
                 if (evacuatedX + 1 != evacuatedY || (UntypedInt)(evacuatedX ^ 1) != evacuatedY) {
                     @throw(badEvacuatedNˢ);
                 }
-                b.Value.tophash[i] = (uint8)((uint8)evacuatedX + useY);
-                // evacuatedX + 1 == evacuatedY
-                var dst = Ꮡxy.at<evacDst>((nint)(useY));
-                // evacuation destination
+                b.Value.tophash[i] = (uint8)((uint8)evacuatedX + useY); // evacuatedX + 1 == evacuatedY
+                var dst = Ꮡxy.at<evacDst>((nint)(useY)); // evacuation destination
                 if ((~dst).i == abi.MapBucketCount) {
                     dst.Value.b = h.newoverflow(Ꮡt, (~dst).b);
                     dst.Value.i = 0;
                     dst.Value.k = (uintptr)add(new @unsafe.Pointer((~dst).b), dataOffset);
                     dst.Value.e = (uintptr)add((~dst).k, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
                 }
-                dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top;
-                // mask dst.i as an optimization, to avoid a bounds check
+                dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top; // mask dst.i as an optimization, to avoid a bounds check
                 if (t.IndirectKey()){
-                    ((ж<@unsafe.Pointer>)(uintptr)((~dst).k)).Value = k2;
+                    ((ж<@unsafe.Pointer>)(uintptr)((~dst).k)).Value = k2; // copy pointer
                 } else {
-                    // copy pointer
-                    typedmemmove(t.Key, (~dst).k, k);
+                    typedmemmove(t.Key, (~dst).k, k); // copy elem
                 }
-                // copy elem
                 if (t.IndirectElem()){
                     ((ж<@unsafe.Pointer>)(uintptr)((~dst).e)).Value = ((ж<@unsafe.Pointer>)(uintptr)(e)).Value;
                 } else {

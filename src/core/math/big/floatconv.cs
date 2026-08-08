@@ -92,32 +92,29 @@ internal static (ж<Float> f, nint b, error err) scan(this ж<Float> Ꮡz, io.By
         var exprᴛ1 = b;
         var matchᴛ1 = false;
         if (exprᴛ1 is 10) { matchᴛ1 = true;
-            exp5 = d;
+            exp5 = d; // 10**e == 5**e * 2**e
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 2) { matchᴛ1 = true;
             exp2 += d;
         }
         else if (exprᴛ1 is 8) { matchᴛ1 = true;
-            exp2 += d * 3;
+            exp2 += d * 3; // octal digits are 3 bits each
         }
         else if (exprᴛ1 is 16) {
-            exp2 += d * 4;
+            exp2 += d * 4; // hexadecimal digits are 4 bits each
         }
         else if (!matchᴛ1) { /* default: */
             throw panic("unexpected mantissa base");
         }
 
     }
-    // 10**e == 5**e * 2**e
-    // octal digits are 3 bits each
-    // hexadecimal digits are 4 bits each
     // fcount consumed - not needed anymore
     // take actual exponent into account
     var exprᴛ2 = ebase;
     var matchᴛ2 = false;
     if (exprᴛ2 is 10) { matchᴛ2 = true;
-        exp5 += exp;
+        exp5 += exp; // see fallthrough above
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ2 && exprᴛ2 is 2) {
@@ -127,7 +124,6 @@ internal static (ж<Float> f, nint b, error err) scan(this ж<Float> Ꮡz, io.By
         throw panic("unexpected exponent base");
     }
 
-    // see fallthrough above
     // exp consumed - not needed anymore
     // apply 2**exp2
     if (MinExp <= exp2 && exp2 <= MaxExp){
@@ -146,8 +142,7 @@ internal static (ж<Float> f, nint b, error err) scan(this ж<Float> Ꮡz, io.By
     }
     // exp5 != 0
     // apply 5**exp5
-    var p = @new<Float>().SetPrec(z.Prec() + 64);
-    // use more bits for p -- TODO(gri) what is the right number?
+    var p = @new<Float>().SetPrec(z.Prec() + 64); // use more bits for p -- TODO(gri) what is the right number?
     if (exp5 < 0){
         Ꮡz.Quo(Ꮡz, p.pow5((uint64)(-exp5)));
     } else {

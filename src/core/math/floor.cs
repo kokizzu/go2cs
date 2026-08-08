@@ -95,14 +95,12 @@ public static float64 Round(float64 x) {
     nuint e = (nuint)((nuint)((bits >> (int)(shift))) & (nuint)mask);
     if (e < bias){
         // Round abs(x) < 1 including denormals.
-        bits &= (uint64)(signMask);
-        // +-0
+        bits &= (uint64)(signMask); // +-0
         if (e == bias - 1) {
-            bits |= (uint64)(uvone);
+            bits |= (uint64)(uvone); // +-1
         }
     } else 
     if (e < bias + shift) {
-        // +-1
         // Round any abs(x) >= 1 containing a fractional component [0,1).
         //
         // Numbers with larger exponents are returned unchanged since they
@@ -147,13 +145,11 @@ public static float64 RoundToEven(float64 x) {
     } else 
     if (e == bias - 1 && (uint64)(bits & (uint64)fracMask) != 0){
         // Round 0.5 < abs(x) < 1.
-        bits = (uint64)((uint64)(bits & (uint64)signMask) | (uint64)uvone);
+        bits = (uint64)((uint64)(bits & (uint64)signMask) | (uint64)uvone); // +-1
     } else {
-        // +-1
         // Round abs(x) <= 0.5 including denormals.
-        bits &= (uint64)(signMask);
+        bits &= (uint64)(signMask); // +-0
     }
-    // +-0
     return Float64frombits(bits);
 }
 

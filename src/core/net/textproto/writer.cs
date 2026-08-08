@@ -53,11 +53,10 @@ public static io.WriteCloser DotWriter(this ж<Writer> Ꮡw) {
 
 [GoRecv] internal static void closeDot(this ref Writer w) {
     if (w.dot != nil) {
-        w.dot.Close();
+        w.dot.Close(); // sets w.dot = nil
     }
 }
 
-// sets w.dot = nil
 [GoType] partial struct dotWriter {
     internal ж<Writer> w;
     internal nint state;

@@ -553,15 +553,13 @@ internal static (uint64 i, slice<byte> remain, error err) readVarInt(byte n, sli
         return (((@string)u.b), default!);
     }
     var buf = ᏑbufPool.Get()._<ж<bytes.Buffer>>();
-    buf.Reset();
-    // don't trust others
+    buf.Reset(); // don't trust others
     @string s = default!;
     var err = huffmanDecode(buf, d.maxStrLen, u.b);
     if (err == default!) {
         s = buf.String();
     }
-    buf.Reset();
-    // be nice to GC
+    buf.Reset(); // be nice to GC
     ᏑbufPool.Put(buf.OrTypedNil());
     return (s, err);
 }

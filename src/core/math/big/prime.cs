@@ -49,9 +49,8 @@ partial class big_package {
         return (uint64)(primeBitMask & (((uint64)1).Lsh(w))) != 0;
     }
     if ((Word)(w & 1) == 0) {
-        return false;
+        return false; // x is even
     }
-    // x is even
     UntypedInt primesA = /* 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 37 */ 4127218095;
     UntypedInt primesB = /* 29 * 31 * 41 * 43 * 47 * 53 */ 3948078067;
     uint32 rA = default!;
@@ -164,8 +163,7 @@ internal static bool probablyPrimeLucas(this nat n) {
     // (which would cause Jacobi(D, n) = 1 for all D not dividing n).
     Word p = ((Word)3);
     var d = new nat(new Word[]{1}.slice());
-    var t1 = ((nat)default!);
-    // temp
+    var t1 = ((nat)default!); // temp
     var intD = Ꮡ(new ΔInt(abs: d));
     var intN = Ꮡ(new ΔInt(abs: n));
     for (; ᐧ ; p++) {
@@ -213,8 +211,7 @@ internal static bool probablyPrimeLucas(this nat n) {
     var s = ((nat)default!).add(n, natOne);
     nint r = (nint)s.trailingZeroBits();
     s = s.shr(s, (nuint)r);
-    var nm2 = ((nat)default!).sub(n, natTwo);
-    // n-2
+    var nm2 = ((nat)default!).sub(n, natTwo); // n-2
     // We apply the "almost extra strong" test, which checks the above conditions
     // except for U_s ≡ 0 mod n, which allows us to avoid computing any U_k values.
     // Jacobsen points out that maybe we should just do the full extra strong test:
@@ -245,8 +242,7 @@ internal static bool probablyPrimeLucas(this nat n) {
     var natP = ((nat)default!).setWord(p);
     var vk = ((nat)default!).setWord(2);
     var vk1 = ((nat)default!).setWord(p);
-    var t2 = ((nat)default!);
-    // temp
+    var t2 = ((nat)default!); // temp
     for (nint i = (nint)s.bitLen(); i >= 0; i--) {
         if (s.bit((nuint)i) != 0){
             // k' = 2k+1
@@ -287,8 +283,7 @@ internal static bool probablyPrimeLucas(this nat n) {
             (t1Δ1, t2Δ1) = (t2Δ1, t1Δ1);
         }
         t1Δ1 = t1Δ1.sub(t1Δ1, t2Δ1);
-        var t3 = vk1;
-        // steal vk1, no longer needed below
+        var t3 = vk1; // steal vk1, no longer needed below
         vk1 = default!;
         _ = vk1;
         (t2Δ1, t3) = t2Δ1.div(t3, t1Δ1, n);

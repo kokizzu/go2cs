@@ -96,7 +96,7 @@ internal static float64 pow(float64 x, float64 y) {
     }
     case {} when IsInf(x, 0): {
         if (IsInf(x, -1)) {
-            return Pow(1D / x, -y);
+            return Pow(1D / x, -y); // Pow(-0, -y)
         }
         switch (ᐧ) {
         case {} when y is < 0D: {
@@ -115,7 +115,6 @@ internal static float64 pow(float64 x, float64 y) {
         return 1D / Sqrt(x);
     }}
 
-    // Pow(-0, -y)
     var (yi, yf) = Modf(Abs(y));
     if (yf != 0D && x < 0D) {
         return NaN();

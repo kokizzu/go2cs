@@ -68,8 +68,7 @@ internal static readonly @string runtimeFixallocSizeTooˢ = "runtime: fixalloc s
     f.list = default!;
     f.chunk = 0;
     f.nchunk = 0;
-    f.nalloc = (uint32)((uintptr)_FixAllocChunk / size * size);
-    // Round _FixAllocChunk down to an exact multiple of size to eliminate tail waste
+    f.nalloc = (uint32)((uintptr)_FixAllocChunk / size * size); // Round _FixAllocChunk down to an exact multiple of size to eliminate tail waste
     f.inuse = 0;
     f.stat = Ꮡstat;
     f.zero = true;

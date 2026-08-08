@@ -275,8 +275,7 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
                         ᏑpanicValue.ValueSlot = goexitPanicValue;
                     }
                 }
-                done = true;
-                // Invalidate iterator
+                done = true; // Invalidate iterator
                 race.Release(new @unsafe.Pointer(Ꮡracer));
             }, ref ᒐ);
             seq(yield);
@@ -291,8 +290,7 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
     next = () => {
         V v1 = default!;
         bool ok1 = default!;
-        race.Write(new @unsafe.Pointer(Ꮡracer));
-        // detect races
+        race.Write(new @unsafe.Pointer(Ꮡracer)); // detect races
         if (done) {
             return (v1, ok1);
         }
@@ -316,8 +314,7 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
     };
     var cʗ2 = c;
     stop = () => {
-        race.Write(new @unsafe.Pointer(Ꮡracer));
-        // detect races
+        race.Write(new @unsafe.Pointer(Ꮡracer)); // detect races
         if (!done) {
             done = true;
             race.Release(new @unsafe.Pointer(Ꮡracer));
@@ -403,8 +400,7 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
                         ᏑpanicValue.ValueSlot = goexitPanicValue;
                     }
                 }
-                done = true;
-                // Invalidate iterator.
+                done = true; // Invalidate iterator.
                 race.Release(new @unsafe.Pointer(Ꮡracer));
             }, ref ᒐ);
             seq(yield);
@@ -421,8 +417,7 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
         K k1 = default!;
         V v1 = default!;
         bool ok1 = default!;
-        race.Write(new @unsafe.Pointer(Ꮡracer));
-        // detect races
+        race.Write(new @unsafe.Pointer(Ꮡracer)); // detect races
         if (done) {
             return (k1, v1, ok1);
         }
@@ -446,8 +441,7 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
     };
     var cʗ2 = c;
     stop = () => {
-        race.Write(new @unsafe.Pointer(Ꮡracer));
-        // detect races
+        race.Write(new @unsafe.Pointer(Ꮡracer)); // detect races
         if (!done) {
             done = true;
             race.Release(new @unsafe.Pointer(Ꮡracer));

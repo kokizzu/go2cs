@@ -437,9 +437,8 @@ internal static (nint num, bool isnum, nint newi) parsenum(@string s, nint start
     }
     for (newi = start; newi < end && (rune)'0' <= s[newi] && s[newi] <= (rune)'9'; newi++) {
         if (tooLarge(num)) {
-            return (0, false, end);
+            return (0, false, end); // Overflow; crazy long number most likely.
         }
-        // Overflow; crazy long number most likely.
         num = num * 10 + (nint)(s[newi] - (rune)'0');
         isnum = true;
     }
@@ -1216,8 +1215,7 @@ internal static (nint num, bool isInt, nint newArgNum) intFromArg(slice<any> a, 
 
     newArgNum = argNum;
     if (argNum < len(a)) {
-        (num, isInt) = a[argNum]._<nint>(ᐧ);
-        // Almost always OK.
+        (num, isInt) = a[argNum]._<nint>(ᐧ); // Almost always OK.
         if (!isInt) {
             // Work harder.
             {
@@ -1274,10 +1272,9 @@ internal static (nint index, nint wid, bool ok) parseArgNumber(@string format) {
             if (!okΔ1 || newi != i) {
                 return (0, i + 1, false);
             }
-            return (width - 1, i + 1, true);
+            return (width - 1, i + 1, true); // arg numbers are one-indexed and skip paren.
         }
     }
-    // arg numbers are one-indexed and skip paren.
     return (0, 1, false);
 }
 
@@ -1317,10 +1314,8 @@ internal static void doPrintf(this ж<pp> Ꮡp, @string format, slice<any> a) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     nint end = len(format);
-    nint argNum = 0;
-    // we process one argument per non-trivial format
-    var afterIndex = false;
-    // previous item in format was an index like [3].
+    nint argNum = 0; // we process one argument per non-trivial format
+    var afterIndex = false; // previous item in format was an index like [3].
     p.reordered = false;
 formatLoop:
     for (nint i = 0; i < end; ) {
@@ -1410,9 +1405,8 @@ break_simpleFormat:;
             if (p.fmt.wid < 0) {
                 p.fmt.wid = -p.fmt.wid;
                 p.fmt.minus = true;
-                p.fmt.zero = false;
+                p.fmt.zero = false; // Do not pad with zeros to the right.
             }
-            // Do not pad with zeros to the right.
             afterIndex = false;
         } else {
             (p.fmt.wid, p.fmt.widPresent, i) = parsenum(format, i, end);

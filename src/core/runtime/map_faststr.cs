@@ -252,9 +252,8 @@ internal static @unsafe.Pointer mapassign_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡ
     // Set hashWriting after calling t.hasher for consistency with mapassign.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
-        h.buckets = (uintptr)newobject(t.Bucket);
+        h.buckets = (uintptr)newobject(t.Bucket); // newarray(t.bucket, 1)
     }
-    // newarray(t.bucket, 1)
 again:
     var bucket = (uintptr)(hash & bucketMask(h.B));
     if (h.growing()) {
@@ -306,17 +305,14 @@ break_bucketloop:;
     // and we're not already in the middle of growing, start growing.
     if (!h.growing() && (overLoadFactor(h.count + 1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B))) {
         hashGrow(Ꮡt, Ꮡh);
-        goto again;
+        goto again; // Growing the table invalidates everything, so try again
     }
-    // Growing the table invalidates everything, so try again
     if (insertb == nil) {
         // The current bucket and all the overflow buckets connected to it are full, allocate a new one.
         insertb = h.newoverflow(Ꮡt, b);
-        inserti = 0;
+        inserti = 0; // not necessary, but avoids needlessly spilling inserti
     }
-    // not necessary, but avoids needlessly spilling inserti
-    insertb.Value.tophash[(nint)((uintptr)(inserti & (uintptr)(abi.MapBucketCount - 1)))] = top;
-    // mask inserti to avoid bounds checks
+    insertb.Value.tophash[(nint)((uintptr)(inserti & (uintptr)(abi.MapBucketCount - 1)))] = top; // mask inserti to avoid bounds checks
     insertk = (uintptr)add(new @unsafe.Pointer(insertb), dataOffset + inserti * 2 * (uintptr)goarch.PtrSize);
     // store new key at insert position
     ((ж<stringStruct>)(uintptr)(insertk)).Value = key.Value;
@@ -390,9 +386,8 @@ search:
                 b.Value.tophash[(nint)(i)] = emptyRest;
                 if (i == 0){
                     if (b == bOrig) {
-                        break;
+                        break; // beginning of initial bucket, we're done.
                     }
-                    // beginning of initial bucket, we're done.
                     // Find previous bucket, continue at its last entry.
                     var c = b;
                     for (b = bOrig; b.overflow(Ꮡt) != c; b = b.overflow(Ꮡt)) {
@@ -479,18 +474,15 @@ internal static void evacuate_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr o
                         useY = 1;
                     }
                 }
-                b.Value.tophash[i] = (uint8)((uint8)evacuatedX + useY);
-                // evacuatedX + 1 == evacuatedY, enforced in makemap
-                var dst = Ꮡxy.at<evacDst>((nint)(useY));
-                // evacuation destination
+                b.Value.tophash[i] = (uint8)((uint8)evacuatedX + useY); // evacuatedX + 1 == evacuatedY, enforced in makemap
+                var dst = Ꮡxy.at<evacDst>((nint)(useY)); // evacuation destination
                 if ((~dst).i == abi.MapBucketCount) {
                     dst.Value.b = h.newoverflow(Ꮡt, (~dst).b);
                     dst.Value.i = 0;
                     dst.Value.k = (uintptr)add(new @unsafe.Pointer((~dst).b), dataOffset);
                     dst.Value.e = (uintptr)add((~dst).k, abi.MapBucketCount * 2 * goarch.PtrSize);
                 }
-                dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top;
-                // mask dst.i as an optimization, to avoid a bounds check
+                dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top; // mask dst.i as an optimization, to avoid a bounds check
                 // Copy key.
                 ((ж<@string>)(uintptr)((~dst).k)).Value = ((ж<@string>)(uintptr)(k)).Value;
                 typedmemmove(t.Elem, (~dst).e, e);

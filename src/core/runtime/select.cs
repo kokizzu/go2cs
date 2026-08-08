@@ -55,9 +55,8 @@ internal static void selunlock(slice<scase> scases, slice<uint16> lockorder) {
     for (nint i = len(lockorder) - 1; i >= 0; i--) {
         var c = scases[lockorder[i]].c;
         if (i > 0 && c == scases[lockorder[i - 1]].c) {
-            continue;
+            continue; // will unlock it on the next iteration
         }
-        // will unlock it on the next iteration
         unlock(c.of(runtime_package.Δhchan.Ꮡlock));
     }
 }
@@ -104,15 +103,13 @@ internal static bool selparkcommit(ж<g> Ꮡgp, @unsafe.Pointer _) {
 }
 
 internal static void block() {
-    gopark(default!, nil, waitReasonSelectNoCases, traceBlockForever, 1);
+    gopark(default!, nil, waitReasonSelectNoCases, traceBlockForever, 1); // forever
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string selectBrokenSortˢ = "select: broken sort"u8;
 internal static readonly @string gpWaitingNilˢ = "gp.waiting != nil"u8;
 internal static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
-
-// forever
 
 // selectgo implements the select statement.
 //
@@ -176,8 +173,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
         var casΔ1 = Ꮡ(scases, i);
         // Omit cases without channels from the poll and lock orders.
         if ((~casΔ1).c == nil) {
-            casΔ1.Value.elem = default!;
-            // allow GC
+            casΔ1.Value.elem = default!; // allow GC
             continue;
         }
         if ((~(~casΔ1).c).timer != nil) {

@@ -57,8 +57,7 @@ internal static (nint proto, error err) getprotobyname(@string name) {
 
 // lookupProtocol looks up IP protocol name and returns correspondent protocol number.
 internal static (nint, error) lookupProtocol(context.Context ctx, @string name) {
-    var ch = new channel<lookupProtocol_result>(0);
-    // unbuffered
+    var ch = new channel<lookupProtocol_result>(0); // unbuffered
     var chʗ1 = ch;
     goǃ(() => {
         GoFrame ᒐ = default;

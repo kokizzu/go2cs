@@ -134,9 +134,8 @@ public static (ж<TextReader>, error) NewTextReader(io.Reader r) {
         @string txt = r.s.Text();
         var (tok, _) = readToken(txt);
         if (tok == ""u8) {
-            continue;
+            continue; // Empty line or comment.
         }
-        // Empty line or comment.
         return (txt, default!);
     }
 }

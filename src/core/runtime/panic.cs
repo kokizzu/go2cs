@@ -591,8 +591,7 @@ internal static void popDefer(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     var d = gp._defer;
-    d.Value.fn = default!;
-    // Can in theory point to the stack
+    d.Value.fn = default!; // Can in theory point to the stack
     // We must not copy the stack between the updating gp._defer and setting
     // d.link to nil. Between these two steps, d is not on any defer list, so
     // stack copying won't adjust stack pointers in it (namely, d.link). Hence,
@@ -846,12 +845,9 @@ internal static void gopanic(any e) {
     // the world, we call preprintpanics to invoke all necessary Error
     // and String methods to prepare the panic strings before startpanic.
     preprintpanics(Ꮡp);
-    fatalpanic(Ꮡp);
-    // should not return
-    (((ж<nint>)nil)).Value = 0;
+    fatalpanic(Ꮡp); // should not return
+    (((ж<nint>)nil)).Value = 0; // not reached
 }
-
-// not reached
 
 // start initializes a panic to start unwinding the stack.
 //
@@ -910,8 +906,7 @@ internal static (Action, bool) nextDefer(this ж<_panic> Ꮡp) {
             @throw(badPanicStackˢ);
         }
         if (Δp.recovered) {
-            mcall(recovery);
-            // does not return
+            mcall(recovery); // does not return
             @throw(recoveryFailedˢ);
         }
     }
@@ -986,21 +981,18 @@ internal static bool /*ok*/ nextFrame(this ж<_panic> Ꮡp) {
         while (ᐧ) {
             if (!u.valid()) {
                 Ꮡp.Value.lr = 0;
-                return;
+                return; // ok == false
             }
-            // ok == false
             // TODO(mdempsky): If we populate u.frame.fn.deferreturn for
             // every frame containing a defer (not just open-coded defers),
             // then we can simply loop until we find the next frame where
             // it's non-zero.
             if (u.frame.sp == limit) {
-                break;
+                break; // found a frame with linked defers
             }
-            // found a frame with linked defers
             if (Ꮡp.Value.initOpenCodedDefers(u.frame.fn, (@unsafe.Pointer)u.frame.varp)) {
-                break;
+                break; // found a frame with open-coded defers
             }
-            // found a frame with open-coded defers
             Ꮡu.next();
         }
         Ꮡp.Value.lr = u.frame.lr;
@@ -1025,9 +1017,8 @@ internal static readonly @string missingDeferreturnˢ = "missing deferreturn"u8;
     (var deferBitsOffset, fd) = readvarintUnsafe(fd);
     var deferBitsPtr = (ж<uint8>)(uintptr)(add(varp, ((uintptr)0 - (uintptr)deferBitsOffset)));
     if (deferBitsPtr.Value == 0) {
-        return false;
+        return false; // has open-coded defers, but none pending
     }
-    // has open-coded defers, but none pending
     (var slotsOffset, fd) = readvarintUnsafe(fd);
     Δp.retpc = fn.entry() + (uintptr)fn.deferreturn;
     Δp.deferBitsPtr = deferBitsPtr;
@@ -1098,8 +1089,7 @@ internal static void @throw(@string s) {
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
         print((@string)"fatal error: "u8);
-        printindented(s);
-        // logically printpanicval(s), but avoids convTstring write barrier
+        printindented(s); // logically printpanicval(s), but avoids convTstring write barrier
         print((@string)"\n"u8);
     });
     fatalthrow(throwTypeRuntime);
@@ -1119,8 +1109,7 @@ internal static void fatal(@string s) {
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
         print((@string)"fatal error: "u8);
-        printindented(s);
-        // logically printpanicval(s), but avoids convTstring write barrier
+        printindented(s); // logically printpanicval(s), but avoids convTstring write barrier
         print((@string)"\n"u8);
     });
     fatalthrow(throwTypeUser);
@@ -1180,8 +1169,7 @@ internal static void recovery(ж<g> Ꮡgp) {
         // worthwhile though.
         if ((~Δp).goexit) {
             (pc, sp) = (Δp.Value.startPC, (uintptr)(~Δp).startSP);
-            saveOpenDeferState = false;
-            // goexit is unwinding the stack anyway
+            saveOpenDeferState = false; // goexit is unwinding the stack anyway
             break;
         }
         ᏑrunningPanicDefers.Add(-1);
@@ -1292,10 +1280,8 @@ internal static void fatalthrow(throwType t) {
         }
         exit(2);
     });
-    (((ж<nint>)nil)).Value = 0;
+    (((ж<nint>)nil)).Value = 0; // not reached
 }
-
-// not reached
 
 // fatalpanic implements an unrecoverable panic. It is like fatalthrow, except
 // that if msgs != nil, fatalpanic also prints panic messages and decrements
@@ -1331,10 +1317,8 @@ internal static void fatalpanic(ж<_panic> Ꮡmsgs) {
     systemstack(() => {
         exit(2);
     });
-    (((ж<nint>)nil)).Value = 0;
+    (((ж<nint>)nil)).Value = 0; // not reached
 }
-
-// not reached
 
 // startpanic_m prepares for an unrecoverable panic.
 //
@@ -1390,7 +1374,7 @@ internal static bool startpanic_m() {
     }
     if (fallthrough || !matchᴛ1) { /* default: */
         exit(5);
-        return false;
+        return false; // Need to return something.
     }
     return default!;
 
@@ -1401,7 +1385,6 @@ internal static bool startpanic_m() {
 // This is a genuine bug in the runtime, we couldn't even
 // print the stack trace successfully.
 // Can't even print! Just exit.
-// Need to return something.
 internal static bool didothers;
 
 internal static ж<mutex> Ꮡdeadlock = new(new mutex(nil));

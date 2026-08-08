@@ -139,9 +139,8 @@ internal static slice<byte> appendLines(slice<byte> x, slice<byte> y) {
     if (len(y) > 0 && isNL(y[0]) && (len(x) == 0 || len(x) >= 2 && isNL(x[len(x) - 1]) && isNL(x[len(x) - 2]))) {
         // y starts in blank line
         // x is empty or ends in blank line
-        y = y[1..];
+        y = y[1..]; // delete y's leading blank line
     }
-    // delete y's leading blank line
     return append(x, y.ꓸꓸꓸ);
 }
 

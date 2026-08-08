@@ -149,8 +149,7 @@ internal static float64 reducePi(float64 x) {
         const float64 PI3 = 1.0780605716316238e-14; // 0x3d08469898cc5170
         var t = x / (float64)math.Pi;
         t += 0.5D;
-        t = (float64)(int64)t;
-        // int64(t) = the multiple
+        t = (float64)(int64)t; // int64(t) = the multiple
         return ((x - t * PI1) - t * PI2) - t * PI3;
     }
     // Must apply Payne-Hanek range reduction

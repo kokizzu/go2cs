@@ -110,7 +110,7 @@ internal static nint encoderune(slice<byte> Δp, rune r) {
             return 1;
         }
         if (i <= rune2Max) { matchᴛ1 = true;
-            _ = Δp[1];
+            _ = Δp[1]; // eliminate bounds checks
             Δp[0] = (byte)((byte)t2 | (byte)((r >> (int)(6))));
             Δp[1] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 2;
@@ -120,14 +120,14 @@ internal static nint encoderune(slice<byte> Δp, rune r) {
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (i <= rune3Max)) {
-            _ = Δp[2];
+            _ = Δp[2]; // eliminate bounds checks
             Δp[0] = (byte)((byte)t3 | (byte)((r >> (int)(12))));
             Δp[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx));
             Δp[2] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 3;
         }
         if (!matchᴛ1) { /* default: */
-            _ = Δp[3];
+            _ = Δp[3]; // eliminate bounds checks
             Δp[0] = (byte)((byte)t4 | (byte)((r >> (int)(18))));
             Δp[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(12))) & (byte)maskx));
             Δp[2] = (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx));
@@ -138,9 +138,5 @@ internal static nint encoderune(slice<byte> Δp, rune r) {
     }
 
 }
-
-// eliminate bounds checks
-// eliminate bounds checks
-// eliminate bounds checks
 
 } // end runtime_package

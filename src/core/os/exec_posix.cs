@@ -127,7 +127,7 @@ public static @string String(this ж<ProcessState> Ꮡp) {
             res = "exit status "u8 + itoa.Uitox((nuint)code);
         } else {
             // unix systems use small decimal integers
-            res = "exit status "u8 + itoa.Itoa(code);
+            res = "exit status "u8 + itoa.Itoa(code); // unix
         }
         break;
     }
@@ -138,7 +138,6 @@ public static @string String(this ж<ProcessState> Ꮡp) {
     case {} when status.Stopped(): {
         res = "stop signal: "u8 + status.StopSignal().String();
         if (status.StopSignal() == syscall.SIGTRAP && status.TrapCause() != 0) {
-            // unix
             res += " (trap "u8 + itoa.Itoa(status.TrapCause()) + ")"u8;
         }
         break;

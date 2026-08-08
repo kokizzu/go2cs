@@ -77,8 +77,7 @@ internal static int64 /*result*/ Alignof(this ж<gcSizes> Ꮡs, ΔType T) {
             throw panic("unreachable");
             break;
         }}
-        var a = Ꮡs.Sizeof(T);
-        // may be 0 or negative
+        var a = Ꮡs.Sizeof(T); // may be 0 or negative
         // spec: "For a variable x of any type: unsafe.Alignof(x) is at least 1."
         if (a < 1) {
             result = 1; goto ᒐdone;
@@ -108,19 +107,16 @@ internal static slice<int64> Offsetsof(this ж<gcSizes> Ꮡs, slice<ж<Var>> fie
         }
         // offs >= 0
         var a = Ꮡs.Alignof((~f).typ);
-        offs = align(offs, a);
-        // possibly < 0 if align overflows
+        offs = align(offs, a); // possibly < 0 if align overflows
         offsets[i] = offs;
         {
             var d = Ꮡs.Sizeof((~f).typ); if (d >= 0 && offs >= 0){
-                offs += d;
+                offs += d; // ok to overflow to < 0
             } else {
-                // ok to overflow to < 0
-                offs = -1;
+                offs = -1; // f.typ or offs is too large
             }
         }
     }
-    // f.typ or offs is too large
     return offsets;
 }
 
@@ -152,19 +148,16 @@ internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
         var esize = Ꮡs.Sizeof((~t).elem);
         if (esize < 0) {
             // n > 0
-            return -1;
+            return -1; // element too large
         }
         if (esize == 0) {
-            // element too large
-            return 0;
+            return 0; // 0-size element
         }
-// 0-size element
-
         // esize > 0
         // Final size is esize * n; and size must be <= maxInt64.
         const int64 maxInt64 = /* 1<<63 - 1 */ 9223372036854775807;
         if (esize > maxInt64 / n) {
-            return -1;
+            return -1; // esize * n overflows
         }
         return esize * n;
     }
@@ -174,23 +167,21 @@ internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
     case ж<Struct> t: {
         nint n = t.NumFields();
         if (n == 0) {
-            // esize * n overflows
             return 0;
         }
         var offsets = Ꮡs.Offsetsof((~t).fields);
         var offs = offsets[n - 1];
         var size = Ꮡs.Sizeof((~(~t).fields[n - 1]).typ);
         if (offs < 0 || size < 0) {
-            return -1;
+            return -1; // type too large
         }
         if (offs > 0 && size == 0) {
-            // type too large
             // gc: The last field of a non-zero-sized struct is not allowed to
             // have size 0.
             size = 1;
         }
         return align(offs + size, // gc: Size includes alignment padding.
- Ꮡs.Alignof(new StructжΔType(t)));
+ Ꮡs.Alignof(new StructжΔType(t))); // may overflow to < 0 which is ok
     }
     case ж<Interface> t: {
         assert(!isTypeParam(T));
@@ -202,13 +193,10 @@ internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
         throw panic("unreachable");
         break;
     }}
-    // may overflow to < 0 which is ok
     // Type parameters lead to variable sizes/alignments;
     // StdSizes.Sizeof won't be called for them.
-    return s.WordSize;
+    return s.WordSize; // catch-all
 }
-
-// catch-all
 
 // gcSizesFor returns the Sizes used by gc for an architecture.
 // The result is a nil *gcSizes pointer (which is not a valid types.Sizes)

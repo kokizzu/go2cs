@@ -344,8 +344,7 @@ internal static Δsliceᴛ reflect_growslice(ж<_type> Ꮡet, Δsliceᴛ old, ni
 
     // Semantically equivalent to slices.Grow, except that the caller
     // is responsible for ensuring that old.len+num > old.cap.
-    num -= old.cap - old.len;
-    // preserve memory of old[old.len:old.cap]
+    num -= old.cap - old.len; // preserve memory of old[old.len:old.cap]
     var @new = growslice(old.Δarray, old.cap + num, old.cap, num, Ꮡet);
     // growslice does not zero out new[old.cap:new.len] since it assumes that
     // the memory will be overwritten by an append() that called growslice.
@@ -356,8 +355,7 @@ internal static Δsliceᴛ reflect_growslice(ж<_type> Ꮡet, Δsliceᴛ old, ni
         var newlenmem = (uintptr)@new.len * et.Size_;
         memclrNoHeapPointers((uintptr)add(@new.Δarray, oldcapmem), newlenmem - oldcapmem);
     }
-    @new.len = old.len;
-    // preserve the old length
+    @new.len = old.len; // preserve the old length
     return @new;
 }
 
@@ -395,9 +393,8 @@ internal static nint slicecopy(@unsafe.Pointer toPtr, nint toLen, @unsafe.Pointe
     if (size == 1){
         // common case worth about 2x to do here
         // TODO: is this still worth it with new memmove impl?
-        ((ж<byte>)(uintptr)(toPtr)).Value = ((ж<byte>)(uintptr)(fromPtr)).Value;
+        ((ж<byte>)(uintptr)(toPtr)).Value = ((ж<byte>)(uintptr)(fromPtr)).Value; // known to be a byte pointer
     } else {
-        // known to be a byte pointer
         memmove(toPtr, fromPtr, size);
     }
     return n;

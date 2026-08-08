@@ -55,8 +55,7 @@ internal static @string lookupError(this ж<Checker> Ꮡcheck, ΔType typ, @stri
     if (obj != default!) {
         alt = obj.Name();
         if (obj.Pkg() == check.pkg){
-            assert(alt != sel);
-            // otherwise there is no lookup error
+            assert(alt != sel); // otherwise there is no lookup error
             e = misspelled;
         } else 
         if (isExported(sel)){

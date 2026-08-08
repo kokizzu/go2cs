@@ -21,8 +21,7 @@ internal static readonly @string getadaptersaddressesˢ = "getadaptersaddresses"
 internal static (slice<ж<windows.IpAdapterAddresses>>, error) adapterAddresses() {
     slice<byte> b = default!;
     ref var l = ref heap<uint32>(out var Ꮡl);
-    l = (uint32)15000;
-    // recommended initial size
+    l = (uint32)15000; // recommended initial size
     while (ᐧ) {
         b = new slice<byte>((nint)(l));
         const uint32 flags = /* windows.GAA_FLAG_INCLUDE_PREFIX | windows.GAA_FLAG_INCLUDE_GATEWAYS */ 144;
@@ -86,10 +85,9 @@ internal static (slice<Interface>, error) interfaceTable(nint ifindex) {
                 ifi.Flags |= (Flags)((Flags)(FlagLoopback | FlagMulticast));
             }
             else if (exprᴛ1 == windows.IF_TYPE_ATM) {
-                ifi.Flags |= (Flags)((Flags)((Flags)(FlagBroadcast | FlagPointToPoint) | FlagMulticast));
+                ifi.Flags |= (Flags)((Flags)((Flags)(FlagBroadcast | FlagPointToPoint) | FlagMulticast)); // assume all services available; LANE, point-to-point and point-to-multipoint
             }
 
-            // assume all services available; LANE, point-to-point and point-to-multipoint
             if ((~aa).Mtu == 0xffffffffU){
                 ifi.MTU = -1;
             } else {

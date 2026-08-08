@@ -180,8 +180,7 @@ internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
         }
     }
     var bs = bb.Bytes();
-    buf.Write(bs[..(int)(len(bs) - 1)]);
-    // remove final newline
+    buf.Write(bs[..(int)(len(bs) - 1)]); // remove final newline
     return default!;
 }
 

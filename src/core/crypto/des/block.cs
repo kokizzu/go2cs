@@ -96,8 +96,7 @@ internal static uint64 permuteInitialBlock(uint64 block) {
     // block = b1 b0 b5 b4 b3 b2 b7 b6
     b1 = (uint64)((block >> (int)(32)) & 0xff00ff);
     b2 = ((uint64)(block & 0xff00ff00U));
-    block ^= (uint64)((uint64)((uint64)((uint64)((b1 << (int)(32)) ^ b2) ^ (b1 << (int)(8))) ^ (b2 << (int)(24))));
-    // exchange b0 b4 with b3 b7
+    block ^= (uint64)((uint64)((uint64)((uint64)((b1 << (int)(32)) ^ b2) ^ (b1 << (int)(8))) ^ (b2 << (int)(24)))); // exchange b0 b4 with b3 b7
     // block is now b1 b3 b5 b7 b0 b2 b4 b6, the permutation:
     //                  ...  8
     //                  ... 24

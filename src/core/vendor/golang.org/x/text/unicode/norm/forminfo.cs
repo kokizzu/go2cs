@@ -119,15 +119,13 @@ internal static bool combinesForward(this ΔProperties p) {
 }
 
 internal static bool combinesBackward(this ΔProperties p) {
-    return (qcInfo)(p.flags & 0x8) != 0;
+    return (qcInfo)(p.flags & 0x8) != 0; // == isMaybe
 }
 
-// == isMaybe
 internal static bool hasDecomposition(this ΔProperties p) {
-    return (qcInfo)(p.flags & 0x4) != 0;
+    return (qcInfo)(p.flags & 0x4) != 0; // == isNoD
 }
 
-// == isNoD
 internal static bool isInert(this ΔProperties p) {
     return (qcInfo)(p.flags & (uint8)qcInfoMask) == 0 && p.ccc == 0;
 }
@@ -207,9 +205,8 @@ internal static void buildRecompMap() {
 internal static rune combine(rune a, rune b) {
     var key = ((uint32)(uint16)a << (int)(16)) + (uint32)(uint16)b;
     if (recompMap == default!) {
-        throw panic("caller error");
+        throw panic("caller error"); // see func comment
     }
-    // see func comment
     return recompMap[key];
 }
 

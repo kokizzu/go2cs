@@ -147,8 +147,7 @@ public static ж<ΔInt> Neg(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx) {
     ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
-    z.neg = len(z.abs) > 0 && !z.neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && !z.neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -173,8 +172,7 @@ public static ж<ΔInt> Add(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
             z.abs = z.abs.sub(y.abs, x.abs);
         }
     }
-    z.neg = len(z.abs) > 0 && neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -199,8 +197,7 @@ public static ж<ΔInt> Sub(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
             z.abs = z.abs.sub(y.abs, x.abs);
         }
     }
-    z.neg = len(z.abs) > 0 && neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -220,8 +217,7 @@ public static ж<ΔInt> Mul(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
         return Ꮡz;
     }
     z.abs = z.abs.mul(x.abs, y.abs);
-    z.neg = len(z.abs) > 0 && x.neg != y.neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && x.neg != y.neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -233,14 +229,12 @@ public static ж<ΔInt> MulRange(this ж<ΔInt> Ꮡz, int64 a, int64 b) {
 
     switch (ᐧ) {
     case {} when a > b: {
-        return Ꮡz.SetInt64(1);
+        return Ꮡz.SetInt64(1); // empty range
     }
     case {} when a <= 0 && b >= 0: {
-        return Ꮡz.SetInt64(0);
+        return Ꮡz.SetInt64(0); // range includes 0
     }}
 
-    // empty range
-    // range includes 0
     // a <= b && (b < 0 || a > 0)
     var neg = false;
     if (a < 0) {
@@ -261,9 +255,8 @@ public static ж<ΔInt> Binomial(this ж<ΔInt> Ꮡz, int64 n, int64 k) {
     }
     // reduce the number of multiplications by reducing k
     if (k > n - k) {
-        k = n - k;
+        k = n - k; // C(n, k) == C(n, n-k)
     }
-    // C(n, k) == C(n, n-k)
     // C(n, k) == n * (n-1) * ... * (n-k+1) / k * (k-1) * ... * 1
     //         == n * (n-1) * ... * (n-k+1) / 1 * (1+1) * ... * k
     //
@@ -309,8 +302,7 @@ public static ж<ΔInt> Quo(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     ref var y = ref Ꮡy.DerefOrNull();
 
     (z.abs, _) = z.abs.div(default!, x.abs, y.abs);
-    z.neg = len(z.abs) > 0 && x.neg != y.neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && x.neg != y.neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -323,8 +315,7 @@ public static ж<ΔInt> Rem(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     ref var y = ref Ꮡy.DerefOrNull();
 
     (_, z.abs) = ((nat)default!).div(z.abs, x.abs, y.abs);
-    z.neg = len(z.abs) > 0 && x.neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && x.neg; // 0 has no sign
     return Ꮡz;
 }
 
@@ -346,8 +337,7 @@ public static (ж<ΔInt>, ж<ΔInt>) QuoRem(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx,
     ref var r = ref Ꮡr.DerefOrNull();
 
     (z.abs, r.abs) = z.abs.div(r.abs, x.abs, y.abs);
-    (z.neg, r.neg) = (len(z.abs) > 0 && x.neg != y.neg, len(r.abs) > 0 && x.neg);
-    // 0 has no sign
+    (z.neg, r.neg) = (len(z.abs) > 0 && x.neg != y.neg, len(r.abs) > 0 && x.neg); // 0 has no sign
     return (Ꮡz, Ꮡr);
 }
 
@@ -358,8 +348,7 @@ public static ж<ΔInt> Div(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     ref var z = ref Ꮡz.DerefOrNull();
     ref var y = ref Ꮡy.DerefOrNull();
 
-    var y_neg = y.neg;
-    // z may be an alias for y
+    var y_neg = y.neg; // z may be an alias for y
     ref var r = ref heap(new ΔInt(), out var Ꮡr);
     Ꮡz.QuoRem(Ꮡx, Ꮡy, Ꮡr);
     if (r.neg) {
@@ -379,8 +368,7 @@ public static ж<ΔInt> Mod(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     ref var z = ref Ꮡz.DerefOrNull();
     ref var y = ref Ꮡy.DerefOrNull();
 
-    var y0 = Ꮡy;
-    // save y
+    var y0 = Ꮡy; // save y
     if (Ꮡz == Ꮡy || alias(z.abs, y.abs)) {
         y0 = @new<ΔInt>().Set(Ꮡy);
     }
@@ -415,8 +403,7 @@ public static (ж<ΔInt>, ж<ΔInt>) DivMod(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx,
     ref var y = ref Ꮡy.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
 
-    var y0 = Ꮡy;
-    // save y
+    var y0 = Ꮡy; // save y
     if (Ꮡz == Ꮡy || alias(z.abs, y.abs)) {
         y0 = @new<ΔInt>().Set(Ꮡy);
     }
@@ -535,8 +522,7 @@ internal static uint64 low64(nat x) {
 public static (float64, Accuracy) Float64(this ж<ΔInt> Ꮡx) {
     ref var x = ref Ꮡx.DerefOrNull();
 
-    nint n = x.abs.bitLen();
-    // NB: still uses slow crypto impl!
+    nint n = x.abs.bitLen(); // NB: still uses slow crypto impl!
     if (n == 0) {
         return (0.0D, Exact);
     }
@@ -591,10 +577,8 @@ internal static (ж<ΔInt>, bool) setFromScanner(this ж<ΔInt> Ꮡz, io.ByteSca
             return (default!, false);
         }
     }
-    return (Ꮡz, true);
+    return (Ꮡz, true); // err == io.EOF => scan consumed all content of r
 }
-
-// err == io.EOF => scan consumed all content of r
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
 // integer, sets z to that value, and returns z.
@@ -682,16 +666,13 @@ internal static ж<ΔInt> exp(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡ
         if (Ꮡz == Ꮡm || alias(z.abs, m.abs)) {
             Ꮡm = @new<ΔInt>().Set(Ꮡm); m = ref Ꮡm.DerefOrNull();
         }
-        mWords = m.abs;
+        mWords = m.abs; // m.abs may be nil for m == 0
     }
-    // m.abs may be nil for m == 0
     z.abs = z.abs.expNN(xWords, yWords, mWords, slow);
-    z.neg = len(z.abs) > 0 && x.neg && len(yWords) > 0 && (Word)(yWords[0] & 1) == 1;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && x.neg && len(yWords) > 0 && (Word)(yWords[0] & 1) == 1; // 0 has no sign
     if (z.neg && len(mWords) > 0) {
         // make modulus result positive
-        z.abs = z.abs.sub(mWords, z.abs);
-        // z == x**y mod |m| && 0 <= z < |m|
+        z.abs = z.abs.sub(mWords, z.abs); // z == x**y mod |m| && 0 <= z < |m|
         z.neg = false;
     }
     return Ꮡz;
@@ -773,10 +754,8 @@ internal static (Word u0, Word u1, Word v0, Word v1, bool even) lehmerSimulate(�
     Word a2 = default!;
     Word u2 = default!;
     Word v2 = default!;
-    nint m = len(B.abs);
-    // m >= 2
-    nint n = len(A.abs);
-    // n >= m >= 2
+    nint m = len(B.abs); // m >= 2
+    nint n = len(A.abs); // n >= m >= 2
     // extract the top Word of bits from A and B
     nuint h = nlz(A.abs[n - 1]);
     a1 = (Word)((A.abs[n - 1] << (int)(h)) | (A.abs[n - 2] >> (int)(((nuint)_W - h))));
@@ -981,8 +960,7 @@ internal static ж<ΔInt> lehmerGCD(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔIn
             B = Ꮡb;
         }
         // y = (z - a*x)/b
-        Ꮡy.Mul(Ꮡa, Ua);
-        // y can safely alias a
+        Ꮡy.Mul(Ꮡa, Ua); // y can safely alias a
         if (negA) {
             y.neg = !y.neg;
         }
@@ -1101,8 +1079,7 @@ public static nint Jacobi(ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy) {
                 j = -j;
             }
         }
-        Ꮡc.Rsh(Ꮡa, s);
-        // a = 2^s*c
+        Ꮡc.Rsh(Ꮡa, s); // a = 2^s*c
         // swap numerator and denominator
         if ((Word)(b.abs[0] & 3) == 3 && (Word)(c.abs[0] & 3) == 3) {
             j = -j;
@@ -1125,12 +1102,9 @@ internal static ж<ΔInt> modSqrt3Mod4Prime(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx,
     ref var x = ref Ꮡx.DerefOrNull();
     ref var p = ref Ꮡp.DerefOrNull();
 
-    var e = @new<ΔInt>().Add(Ꮡp, intOne);
-    // e = p + 1
-    e.Rsh(e, 2);
-    // e = (p + 1) / 4
-    Ꮡz.Exp(Ꮡx, e, Ꮡp);
-    // z = x^e mod p
+    var e = @new<ΔInt>().Add(Ꮡp, intOne); // e = p + 1
+    e.Rsh(e, 2); // e = (p + 1) / 4
+    Ꮡz.Exp(Ꮡx, e, Ꮡp); // z = x^e mod p
     return Ꮡz;
 }
 
@@ -1148,10 +1122,8 @@ internal static ж<ΔInt> modSqrt5Mod8Prime(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx,
 
     // p == 5 mod 8 implies p = e*8 + 5
     // e is the quotient and 5 the remainder on division by 8
-    var e = @new<ΔInt>().Rsh(Ꮡp, 3);
-    // e = (p - 5) / 8
-    var tx = @new<ΔInt>().Lsh(Ꮡx, 1);
-    // tx = 2*x
+    var e = @new<ΔInt>().Rsh(Ꮡp, 3); // e = (p - 5) / 8
+    var tx = @new<ΔInt>().Lsh(Ꮡx, 1); // tx = 2*x
     var alpha = @new<ΔInt>().Exp(tx, e, Ꮡp);
     var beta = @new<ΔInt>().Mul(alpha, alpha);
     beta.Mod(beta, Ꮡp);
@@ -1192,12 +1164,9 @@ internal static ж<ΔInt> modSqrtTonelliShanks(this ж<ΔInt> Ꮡz, ж<ΔInt> �
     ref var t = ref heap(new ΔInt(), out var Ꮡt);
     Ꮡy.Add(Ꮡs, intOne);
     Ꮡy.Rsh(Ꮡy, 1);
-    Ꮡy.Exp(Ꮡx, Ꮡy, Ꮡp);
-    // y = x^((s+1)/2)
-    Ꮡb.Exp(Ꮡx, Ꮡs, Ꮡp);
-    // b = x^s
-    Ꮡg.Exp(Ꮡn, Ꮡs, Ꮡp);
-    // g = n^s
+    Ꮡy.Exp(Ꮡx, Ꮡy, Ꮡp); // y = x^((s+1)/2)
+    Ꮡb.Exp(Ꮡx, Ꮡs, Ꮡp); // b = x^s
+    Ꮡg.Exp(Ꮡn, Ꮡs, Ꮡp); // g = n^s
     nuint r = e;
     while (ᐧ) {
         // find the least m such that ord_p(b) = 2^m
@@ -1212,8 +1181,7 @@ internal static ж<ΔInt> modSqrtTonelliShanks(this ж<ΔInt> Ꮡz, ж<ΔInt> �
         }
         Ꮡt.SetInt64(0).SetBit(Ꮡt, (nint)(r - m - 1), 1).Exp(Ꮡg, Ꮡt, Ꮡp);
         // t = g^(2^(r-m-1)) mod p
-        Ꮡg.Mul(Ꮡt, Ꮡt).Mod(Ꮡg, Ꮡp);
-        // g = g^(2^(r-m)) mod p
+        Ꮡg.Mul(Ꮡt, Ꮡt).Mod(Ꮡg, Ꮡp); // g = g^(2^(r-m)) mod p
         Ꮡy.Mul(Ꮡy, Ꮡt).Mod(Ꮡy, Ꮡp);
         Ꮡb.Mul(Ꮡb, Ꮡg).Mod(Ꮡb, Ꮡp);
         r = m;
@@ -1230,10 +1198,10 @@ public static ж<ΔInt> ModSqrt(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> �
 
     var exprᴛ1 = Jacobi(Ꮡx, Ꮡp);
     if (exprᴛ1 == -1) {
-        return default!;
+        return default!; // x is not a square mod p
     }
     if (exprᴛ1 is 0) {
-        return Ꮡz.SetInt64(0);
+        return Ꮡz.SetInt64(0); // sqrt(0) mod p = 0
     }
     if (exprᴛ1 is 1) {
         do {
@@ -1241,8 +1209,6 @@ public static ж<ΔInt> ModSqrt(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> �
         } while (false);
     }
 
-    // x is not a square mod p
-    // sqrt(0) mod p = 0
     if (x.neg || Ꮡx.Cmp(Ꮡp) >= 0) {
         // ensure 0 <= x < p
         Ꮡx = @new<ΔInt>().Mod(Ꮡx, Ꮡp); x = ref Ꮡx.DerefOrNull();
@@ -1280,12 +1246,10 @@ public static ж<ΔInt> Rsh(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, nuint n) {
 
     if (x.neg) {
         // (-x) >> s == ^(x-1) >> s == ^((x-1) >> s) == -(((x-1) >> s) + 1)
-        var t = z.abs.sub(x.abs, natOne);
-        // no underflow because |x| > 0
+        var t = z.abs.sub(x.abs, natOne); // no underflow because |x| > 0
         t = t.shr(t, n);
         z.abs = t.add(t, natOne);
-        z.neg = true;
-        // z cannot be zero if x is negative
+        z.neg = true; // z cannot be zero if x is negative
         return Ꮡz;
     }
     z.abs = z.abs.shr(x.abs, n);
@@ -1299,9 +1263,8 @@ public static ж<ΔInt> Rsh(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, nuint n) {
     if (i == 0) {
         // optimization for common case: odd/even test of x
         if (len(x.abs) > 0) {
-            return (nuint)((Word)(x.abs[0] & 1));
+            return (nuint)((Word)(x.abs[0] & 1)); // bit 0 is same for -x
         }
-        // bit 0 is same for -x
         return 0;
     }
     if (i < 0) {
@@ -1350,8 +1313,7 @@ public static ж<ΔInt> And(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
             var x1 = ((nat)default!).sub(x.abs, natOne);
             var y1Δ1 = ((nat)default!).sub(y.abs, natOne);
             z.abs = z.abs.add(z.abs.or(x1, y1Δ1), natOne);
-            z.neg = true;
-            // z cannot be zero if x and y are negative
+            z.neg = true; // z cannot be zero if x and y are negative
             return Ꮡz;
         }
         // x & y == x & y
@@ -1361,9 +1323,8 @@ public static ж<ΔInt> And(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     }
     // x.neg != y.neg
     if (x.neg) {
-        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull();
+        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull(); // & is symmetric
     }
-    // & is symmetric
     // x & (-y) == x & ^(y-1) == x &^ (y-1)
     var y1 = ((nat)default!).sub(y.abs, natOne);
     z.abs = z.abs.andNot(x.abs, y1);
@@ -1395,8 +1356,7 @@ public static ж<ΔInt> AndNot(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> �
         // (-x) &^ y == ^(x-1) &^ y == ^(x-1) & ^y == ^((x-1) | y) == -(((x-1) | y) + 1)
         var x1 = ((nat)default!).sub(x.abs, natOne);
         z.abs = z.abs.add(z.abs.or(x1, y.abs), natOne);
-        z.neg = true;
-        // z cannot be zero if x is negative and y is positive
+        z.neg = true; // z cannot be zero if x is negative and y is positive
         return Ꮡz;
     }
     // x &^ (-y) == x &^ ^(y-1) == x & (y-1)
@@ -1418,8 +1378,7 @@ public static ж<ΔInt> Or(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy) 
             var x1 = ((nat)default!).sub(x.abs, natOne);
             var y1Δ1 = ((nat)default!).sub(y.abs, natOne);
             z.abs = z.abs.add(z.abs.and(x1, y1Δ1), natOne);
-            z.neg = true;
-            // z cannot be zero if x and y are negative
+            z.neg = true; // z cannot be zero if x and y are negative
             return Ꮡz;
         }
         // x | y == x | y
@@ -1429,14 +1388,12 @@ public static ж<ΔInt> Or(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy) 
     }
     // x.neg != y.neg
     if (x.neg) {
-        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull();
+        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull(); // | is symmetric
     }
-    // | is symmetric
     // x | (-y) == x | ^(y-1) == ^((y-1) &^ x) == -(^((y-1) &^ x) + 1)
     var y1 = ((nat)default!).sub(y.abs, natOne);
     z.abs = z.abs.add(z.abs.andNot(y1, x.abs), natOne);
-    z.neg = true;
-    // z cannot be zero if one of x or y is negative
+    z.neg = true; // z cannot be zero if one of x or y is negative
     return Ꮡz;
 }
 
@@ -1462,14 +1419,12 @@ public static ж<ΔInt> Xor(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
     }
     // x.neg != y.neg
     if (x.neg) {
-        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull();
+        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull(); // ^ is symmetric
     }
-    // ^ is symmetric
     // x ^ (-y) == x ^ ^(y-1) == ^(x ^ (y-1)) == -((x ^ (y-1)) + 1)
     var y1 = ((nat)default!).sub(y.abs, natOne);
     z.abs = z.abs.add(z.abs.xor(x.abs, y1), natOne);
-    z.neg = true;
-    // z cannot be zero if only one of x or y is negative
+    z.neg = true; // z cannot be zero if only one of x or y is negative
     return Ꮡz;
 }
 
@@ -1486,8 +1441,7 @@ public static ж<ΔInt> Not(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx) {
     }
     // ^x == -x-1 == -(x+1)
     z.abs = z.abs.add(x.abs, natOne);
-    z.neg = true;
-    // z cannot be zero if x is positive
+    z.neg = true; // z cannot be zero if x is positive
     return Ꮡz;
 }
 

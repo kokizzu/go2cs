@@ -88,11 +88,10 @@ internal static Δtermlist norm(this Δtermlist xl) {
                         return allTermlist;
                     }
                     xi = u1;
-                    used[j] = true;
+                    used[j] = true; // xj is now unioned into xi - ignore it in future iterations
                 }
             }
         }
-        // xj is now unioned into xi - ignore it in future iterations
         rl = append(rl, xi);
     }
     return rl;
@@ -157,10 +156,9 @@ internal static bool subsetOf(this Δtermlist xl, Δtermlist yl) {
     // each term x of xl must be a subset of yl
     foreach (var (_, x) in xl) {
         if (!yl.supersetOf(x)) {
-            return false;
+            return false; // x is not a subset yl
         }
     }
-    // x is not a subset yl
     return true;
 }
 

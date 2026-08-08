@@ -20,10 +20,9 @@ partial class net_package {
 internal static partial uint64 runtime_rand();
 
 internal static nint randInt() {
-    return (nint)(((nuint)runtime_rand() >> (int)(1)));
+    return (nint)(((nuint)runtime_rand() >> (int)(1))); // clear sign bit
 }
 
-// clear sign bit
 internal static nint randIntn(nint n) {
     return randInt() % n;
 }
@@ -111,8 +110,7 @@ internal static bool isDomainName(@string s) {
         return false;
     }
     var last = (byte)(rune)'.';
-    var nonNumeric = false;
-    // true once we've seen a letter or hyphen
+    var nonNumeric = false; // true once we've seen a letter or hyphen
     nint partlen = 0;
     for (nint i = 0; i < len(s); i++) {
         var c = s[i];

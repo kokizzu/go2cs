@@ -171,7 +171,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 			}
 
 			for _, stmt := range caseClause.Body {
-				v.visitStmt(stmt, []StmtContext{})
+				v.visitListStmt(stmt)
 			}
 
 			v.outputBuilder.WriteString(v.newline)
@@ -333,7 +333,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					v.lastStatementWasReturn = false
 
 					for _, stmt := range caseClause.Body {
-						v.visitStmt(stmt, []StmtContext{})
+						v.visitListStmt(stmt)
 					}
 
 					v.outputBuilder.WriteString(v.newline)
@@ -390,7 +390,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					v.lastStatementWasReturn = false
 
 					for _, stmt := range caseClause.Body {
-						v.visitStmt(stmt, []StmtContext{})
+						v.visitListStmt(stmt)
 					}
 
 					v.outputBuilder.WriteString(v.newline)

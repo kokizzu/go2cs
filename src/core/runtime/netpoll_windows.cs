@@ -276,10 +276,9 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
     }
     if (fallthrough || !matchᴛ1 && exprᴛ1 == STATUS_SUCCESS) { matchᴛ1 = true;
         ref var dt = ref heap<int64>(out var Ꮡdt);
-        dt = -delay / 100;
+        dt = -delay / 100; // relative sleep (negative), 100ns units
         if (stdcall6(_SetWaitableTimer, // STATUS_CANCELLED is returned when the associated timer has already expired,
  // in which automatically cancels the wait completion packet.
- // relative sleep (negative), 100ns units
  (~mp).waitIocpTimer, (uintptr)Ꮡdt, 0, 0, 0, 0) == 0) {
             println((@string)"runtime: SetWaitableTimer failed; errno="u8, getlasterror());
             @throw(runtimeNetpollFailedˢ);

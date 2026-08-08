@@ -241,8 +241,7 @@ internal static (ΔAddr, error) parseIPv6(@string @in) {
         }
     }
     array<byte> ip = new(16);
-    nint ellipsis = -1;
-    // position of ellipsis in ip
+    nint ellipsis = -1; // position of ellipsis in ip
     // Might have leading ellipsis
     if (len(s) >= 2 && s[0] == (rune)':' && s[1] == (rune)':') {
         ellipsis = 0;
@@ -559,10 +558,8 @@ public static bool IsLinkLocalUnicast(this ΔAddr ip) {
     if (ip.Is6()) {
         return (uint16)(ip.v6u16(0) & 0xffc0) == 0xfe80;
     }
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsLoopback reports whether ip is a loopback address.
 public static bool IsLoopback(this ΔAddr ip) {
@@ -579,10 +576,8 @@ public static bool IsLoopback(this ΔAddr ip) {
     if (ip.Is6()) {
         return ip.addr.hi == 0 && ip.addr.lo == 1;
     }
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsMulticast reports whether ip is a multicast address.
 public static bool IsMulticast(this ΔAddr ip) {
@@ -597,13 +592,10 @@ public static bool IsMulticast(this ΔAddr ip) {
     // IP Version 6 Addressing Architecture (2.4 Address Type Identification)
     // https://datatracker.ietf.org/doc/html/rfc4291#section-2.4
     if (ip.Is6()) {
-        return (ip.addr.hi >> (int)((64 - 8))) == 0xff;
+        return (ip.addr.hi >> (int)((64 - 8))) == 0xff; // ip.v6(0) == 0xff
     }
-    // ip.v6(0) == 0xff
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsInterfaceLocalMulticast reports whether ip is an IPv6 interface-local
 // multicast address.
@@ -613,10 +605,8 @@ public static bool IsInterfaceLocalMulticast(this ΔAddr ip) {
     if (ip.Is6() && !ip.Is4In6()) {
         return (uint16)(ip.v6u16(0) & 0xff0f) == 0xff01;
     }
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsLinkLocalMulticast reports whether ip is a link-local multicast address.
 public static bool IsLinkLocalMulticast(this ΔAddr ip) {
@@ -633,10 +623,8 @@ public static bool IsLinkLocalMulticast(this ΔAddr ip) {
     if (ip.Is6()) {
         return (uint16)(ip.v6u16(0) & 0xff0f) == 0xff02;
     }
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsGlobalUnicast reports whether ip is a global unicast address.
 //
@@ -682,10 +670,8 @@ public static bool IsPrivate(this ΔAddr ip) {
         // subnet.
         return (uint8)(ip.v6(0) & 0xfe) == 0xfc;
     }
-    return false;
+    return false; // zero value
 }
-
-// zero value
 
 // IsUnspecified reports whether ip is an unspecified address, either the IPv4
 // address "0.0.0.0" or the IPv6 address "::".

@@ -141,8 +141,7 @@ public static Encoder NewEncoderRaw(this ж<PkgEncoder> Ꮡpw, RelocKind k) {
     ref var pw = ref Ꮡpw.DerefOrNull();
 
     var idx = ((Index)(int32)len(pw.elems[k]));
-    pw.elems[k] = append(pw.elems[k], ""u8);
-    // placeholder
+    pw.elems[k] = append(pw.elems[k], ""u8); // placeholder
     return new Encoder(
         p: Ꮡpw,
         k: k,
@@ -404,16 +403,13 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
     ref var v = ref Ꮡv.DerefOrNull();
 
     var b = v.Bytes();
-    w.String(((@string)b));
-    // TODO: More efficient encoding.
+    w.String(((@string)b)); // TODO: More efficient encoding.
     w.Bool(v.Sign() < 0);
 }
 
 [GoRecv] internal static void bigFloat(this ref Encoder w, ж<big.Float> Ꮡv) {
     var b = Ꮡv.Append(default!, (rune)'p', -1);
-    w.String(((@string)b));
+    w.String(((@string)b)); // TODO: More efficient encoding.
 }
-
-// TODO: More efficient encoding.
 
 } // end pkgbits_package

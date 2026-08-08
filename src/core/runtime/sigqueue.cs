@@ -88,9 +88,8 @@ internal static bool sigsend(uint32 s) {
         var mask = sig.mask[(nint)(s / 32)];
         if ((uint32)(mask & bit) != 0) {
             Ꮡsig.of(sigᴛ1.Ꮡdelivering).Add(-1);
-            return true;
+            return true; // signal already in queue
         }
-        // signal already in queue
         if (atomic.Cas(Ꮡsig.at(sigᴛ1.Ꮡmask, (nint)(s / 32)), mask, (uint32)(mask | bit))) {
             break;
         }
@@ -211,8 +210,7 @@ internal static void signalWaitUntilIdle() {
 internal static void signal_enable(uint32 s) {
     if (!sig.inuse) {
         // This is the first call to signal_enable. Initialize.
-        sig.inuse = true;
-        // enable reception of signals; cannot disable
+        sig.inuse = true; // enable reception of signals; cannot disable
         if (GOOS == "darwin"u8 || GOOS == "ios"u8){
             sigNoteSetup(Ꮡsig.of(sigᴛ1.Ꮡnote));
         } else {

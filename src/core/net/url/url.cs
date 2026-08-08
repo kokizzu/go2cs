@@ -808,9 +808,8 @@ internal static partial error badSetPath(ж<URL> _Δp0, @string _Δp1);
         }
     }
     if (u.Path == "*"u8) {
-        return "*"u8;
+        return "*"u8; // don't escape (Issue 11202)
     }
-    // don't escape (Issue 11202)
     return escape(u.Path, encodePath);
 }
 

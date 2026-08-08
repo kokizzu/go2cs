@@ -65,8 +65,7 @@ public static uint64 Uint64(this ж<Zipf> Ꮡz) {
     }
     var k = 0.0D;
     while (ᐧ) {
-        var r = z.r.Float64();
-        // r on [0,1]
+        var r = z.r.Float64(); // r on [0,1]
         var ur = z.hxm + r * z.hx0minusHxm;
         var x = z.hinv(ur);
         k = math.Floor(x + 0.5D);

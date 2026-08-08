@@ -115,9 +115,8 @@ public static bool FullRune(slice<byte> p) {
     }
     var x = first[p[0]];
     if (n >= (nint)((uint8)(x & 7))) {
-        return true;
+        return true; // ASCII, invalid or valid.
     }
-    // ASCII, invalid or valid.
     // Must be short or invalid.
     var accept = acceptRanges[(x >> (int)(4))];
     if (n > 1 && (p[1] < accept.lo || accept.hi < p[1])){
@@ -137,9 +136,8 @@ public static bool FullRuneInString(@string s) {
     }
     var x = first[s[0]];
     if (n >= (nint)((uint8)(x & 7))) {
-        return true;
+        return true; // ASCII, invalid, or valid.
     }
-    // ASCII, invalid, or valid.
     // Must be short or invalid.
     var accept = acceptRanges[(x >> (int)(4))];
     if (n > 1 && (s[1] < accept.lo || accept.hi < s[1])){
@@ -173,8 +171,7 @@ public static (rune r, nint size) DecodeRune(slice<byte> p) {
         // The following code simulates an additional check for x == xx and
         // handling the ASCII and invalid cases accordingly. This mask-and-or
         // approach prevents an additional branch.
-        var mask = (((rune)x << (int)(31)) >> (int)(31));
-        // Create 0x0000 or 0xFFFF.
+        var mask = (((rune)x << (int)(31)) >> (int)(31)); // Create 0x0000 or 0xFFFF.
         return ((rune)((rune)((rune)p[0] & ~mask) | (rune)((rune)RuneError & mask)), 1);
     }
     nint sz = (nint)((uint8)(x & 7));
@@ -226,8 +223,7 @@ public static (rune r, nint size) DecodeRuneInString(@string s) {
         // The following code simulates an additional check for x == xx and
         // handling the ASCII and invalid cases accordingly. This mask-and-or
         // approach prevents an additional branch.
-        var mask = (((rune)x << (int)(31)) >> (int)(31));
-        // Create 0x0000 or 0xFFFF.
+        var mask = (((rune)x << (int)(31)) >> (int)(31)); // Create 0x0000 or 0xFFFF.
         return ((rune)((rune)((rune)s[0] & ~mask) | (rune)((rune)RuneError & mask)), 1);
     }
     nint sz = (nint)((uint8)(x & 7));
@@ -382,7 +378,7 @@ public static nint EncodeRune(slice<byte> p, rune r) {
             return 1;
         }
         if (i <= rune2Max) { matchᴛ1 = true;
-            _ = p[1];
+            _ = p[1]; // eliminate bounds checks
             p[0] = (byte)((byte)t2 | (byte)((r >> (int)(6))));
             p[1] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 2;
@@ -392,14 +388,14 @@ public static nint EncodeRune(slice<byte> p, rune r) {
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (i <= rune3Max)) {
-            _ = p[2];
+            _ = p[2]; // eliminate bounds checks
             p[0] = (byte)((byte)t3 | (byte)((r >> (int)(12))));
             p[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx));
             p[2] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 3;
         }
         if (!matchᴛ1) { /* default: */
-            _ = p[3];
+            _ = p[3]; // eliminate bounds checks
             p[0] = (byte)((byte)t4 | (byte)((r >> (int)(18))));
             p[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(12))) & (byte)maskx));
             p[2] = (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx));
@@ -410,10 +406,6 @@ public static nint EncodeRune(slice<byte> p, rune r) {
     }
 
 }
-
-// eliminate bounds checks
-// eliminate bounds checks
-// eliminate bounds checks
 
 // AppendRune appends the UTF-8 encoding of r to the end of p and
 // returns the extended buffer. If the rune is out of range,
@@ -464,14 +456,12 @@ public static nint RuneCount(slice<byte> p) {
         }
         var x = first[c];
         if (x == xx) {
-            i++;
-            // invalid.
+            i++; // invalid.
             continue;
         }
         nint size = (nint)((uint8)(x & 7));
         if (i + size > np) {
-            i++;
-            // Short or invalid.
+            i++; // Short or invalid.
             continue;
         }
         var accept = acceptRanges[(x >> (int)(4))];
@@ -513,14 +503,12 @@ public static nint /*n*/ RuneCountInString(@string s) {
         }
         var x = first[c];
         if (x == xx) {
-            i++;
-            // invalid.
+            i++; // invalid.
             continue;
         }
         nint size = (nint)((uint8)(x & 7));
         if (i + size > ns) {
-            i++;
-            // Short or invalid.
+            i++; // Short or invalid.
             continue;
         }
         var accept = acceptRanges[(x >> (int)(4))];
@@ -584,14 +572,12 @@ public static bool Valid(slice<byte> p) {
         }
         var x = first[pi];
         if (x == xx) {
-            return false;
+            return false; // Illegal starter byte.
         }
-        // Illegal starter byte.
         nint size = (nint)((uint8)(x & 7));
         if (i + size > n) {
-            return false;
+            return false; // Short or invalid.
         }
-        // Short or invalid.
         var accept = acceptRanges[(x >> (int)(4))];
         {
             var c = p[i + 1]; if (c < accept.lo || accept.hi < c){
@@ -642,14 +628,12 @@ public static bool ValidString(@string s) {
         }
         var x = first[si];
         if (x == xx) {
-            return false;
+            return false; // Illegal starter byte.
         }
-        // Illegal starter byte.
         nint size = (nint)((uint8)(x & 7));
         if (i + size > n) {
-            return false;
+            return false; // Short or invalid.
         }
-        // Short or invalid.
         var accept = acceptRanges[(x >> (int)(4))];
         {
             var c = s[i + 1]; if (c < accept.lo || accept.hi < c){

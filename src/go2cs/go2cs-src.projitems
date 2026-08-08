@@ -130,6 +130,7 @@
     <None Include="$(MSBuildThisFileDirectory)testConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)testdata\validationproof\expected.md" />
     <None Include="$(MSBuildThisFileDirectory)ToDo.md" />
+    <None Include="$(MSBuildThisFileDirectory)trailingComments_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeAccessibilityOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)typedNilInterfaceBoxing.go" />
     <None Include="$(MSBuildThisFileDirectory)typeNameResolution.go" />

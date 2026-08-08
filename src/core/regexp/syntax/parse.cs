@@ -236,12 +236,10 @@ internal static UntypedInt runeSize => 4; // rune is int32
             var sub = p.calcSize(re.Sub[0], false);
             if (re.Max == -1) {
                 if (re.Min == 0){
-                    size = 2 + sub;
+                    size = 2 + sub; // x*
                 } else {
-                    // x*
-                    size = 1 + (int64)re.Min * sub;
+                    size = 1 + (int64)re.Min * sub; // xxx+
                 }
-                // xxx+
                 break;
             }
             size = (int64)re.Max * sub + (int64)(re.Max - re.Min);
@@ -354,10 +352,8 @@ internal static UntypedInt runeSize => 4; // rune is int32
     }
     p.stack = p.stack[..(int)(n - 1)];
     p.reuse(re1);
-    return false;
+    return false; // did not push r
 }
-
-// did not push r
 
 // literal pushes a literal regexp for the rune r on the stack.
 [GoRecv] internal static void literal(this ref parser p, rune r) {
@@ -630,8 +626,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
                 sub[j] = p.removeLeadingString(sub[j], len(str));
                 p.checkLimits(sub[j]);
             }
-            var suffix = p.collapse(sub[(int)(start)..(int)(i)], OpAlternate);
-            // recurse
+            var suffix = p.collapse(sub[(int)(start)..(int)(i)], OpAlternate); // recurse
             var re = p.newRegexp(OpConcat);
             re.Value.Sub = builtin.append((~re).Sub[..0], prefix, suffix);
             @out = builtin.append(@out, re);
@@ -681,13 +676,11 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
             // Construct factored form: prefix(suffix1|suffix2|...)
             var prefix = first;
             for (nint j = start; j < i; j++) {
-                var reuse = j != start;
-                // prefix came from sub[start]
+                var reuse = j != start; // prefix came from sub[start]
                 sub[j] = p.removeLeadingRegexp(sub[j], reuse);
                 p.checkLimits(sub[j]);
             }
-            var suffix = p.collapse(sub[(int)(start)..(int)(i)], OpAlternate);
-            // recurse
+            var suffix = p.collapse(sub[(int)(start)..(int)(i)], OpAlternate); // recurse
             var re = p.newRegexp(OpConcat);
             re.Value.Sub = builtin.append((~re).Sub[..0], prefix, suffix);
             @out = builtin.append(@out, re);
@@ -865,8 +858,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
 internal static ж<Regexp> literalRegexp(@string s, Flags flags) {
     var re = Ꮡ(new Regexp(Op: OpLiteral));
     re.Value.Flags = flags;
-    re.Value.Rune = (~re).Rune0[..0];
-    // use local storage for small strings
+    re.Value.Rune = (~re).Rune0[..0]; // use local storage for small strings
     foreach (var (_, c) in s) {
         if (len((~re).Rune) >= builtin.cap((~re).Rune)) {
             // string is too long to fit in Rune0.  let Go handle it
@@ -1253,10 +1245,8 @@ ErrInvalidEscape, t[..2])))); goto ᒐdone;
             return ("", new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidNamedCapture, s))));
         }
         ref var capture = ref heap<@string>(out var Ꮡcapture);
-        capture = t[..(int)(end + 1)];
-        // "(?P<name>" or "(?<name>"
-        @string name = t[(int)(exprStartPos)..(int)(end)];
-        // "name"
+        capture = t[..(int)(end + 1)]; // "(?P<name>" or "(?<name>"
+        @string name = t[(int)(exprStartPos)..(int)(end)]; // "name"
         {
             err = checkUTF8(name); if (err != default!) {
                 return ("", err);
@@ -1274,8 +1264,7 @@ ErrInvalidEscape, t[..2])))); goto ᒐdone;
     }
     // Non-capturing group. Might also twiddle Perl flags.
     rune c = default!;
-    t = t[2..];
-    // skip (?
+    t = t[2..]; // skip (?
     var flags = p.flags;
     nint sign = +1;
     var sawFlag = false;
@@ -1890,8 +1879,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
     error err = default!;
 
     ref var p = ref Ꮡp.DerefOrNull();
-    @string t = s[1..];
-    // chop [
+    @string t = s[1..]; // chop [
     var re = p.newRegexp(OpCharClass);
     re.Value.Flags = p.flags;
     re.Value.Rune = (~re).Rune0[..0];
@@ -1906,8 +1894,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
         }
     }
     var @class = re.Value.Rune;
-    var first = true;
-    // ] and - are okay as first char in class
+    var first = true; // ] and - are okay as first char in class
     while (t == ""u8 || t[0] != (rune)']' || first) {
         // POSIX: - is only okay unescaped as first or last in class.
         // Perl: - is okay anywhere.
@@ -1973,8 +1960,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
             @class = appendFoldedRange(@class, lo, hi);
         }
     }
-    t = t[1..];
-    // chop ]
+    t = t[1..]; // chop ]
     // Use &re.Rune instead of &class to avoid allocation.
     re.Value.Rune = @class;
     @class = cleanClass(re.of(Regexp.ᏑRune));
@@ -1998,8 +1984,7 @@ internal static slice<rune> cleanClass(ж<slice<rune>> Ꮡrp) {
         return r;
     }
     // Merge abutting, overlapping.
-    nint w = 2;
-    // write index
+    nint w = 2; // write index
     for (nint i = 2; i < len(r); i += 2) {
         var (lo, hi) = (r[i], r[i + 1]);
         if (lo <= r[w - 1] + 1) {
@@ -2169,8 +2154,7 @@ internal static slice<rune> appendTable(slice<rune> r, ж<unicode.RangeTable> �
 internal static slice<rune> appendNegatedTable(slice<rune> r, ж<unicode.RangeTable> Ꮡx) {
     ref var x = ref Ꮡx.DerefOrNull();
 
-    var nextLo = (rune)'\u0000';
-    // lo end of next class to add
+    var nextLo = (rune)'\u0000'; // lo end of next class to add
     foreach (var (_, xr) in x.R16) {
         var (lo, hi, stride) = ((rune)xr.Lo, (rune)xr.Hi, (rune)xr.Stride);
         if (stride == 1) {
@@ -2212,10 +2196,8 @@ internal static slice<rune> appendNegatedTable(slice<rune> r, ж<unicode.RangeTa
 // negateClass overwrites r and returns r's negation.
 // It assumes the class r is already clean.
 internal static slice<rune> negateClass(slice<rune> r) {
-    var nextLo = (rune)'\u0000';
-    // lo end of next class to add
-    nint w = 0;
-    // write index
+    var nextLo = (rune)'\u0000'; // lo end of next class to add
+    nint w = 0; // write index
     for (nint i = 0; i < len(r); i += 2) {
         var (lo, hi) = (r[i], r[i + 1]);
         if (nextLo <= lo - 1) {

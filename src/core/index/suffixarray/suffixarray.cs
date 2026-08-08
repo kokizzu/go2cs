@@ -95,8 +95,7 @@ internal static error writeInt(io.Writer w, slice<byte> buf, nint x) {
 
 // readInt reads an int x from r using buf to buffer the read and returns x.
 internal static (int64, error) readInt(io.Reader r, slice<byte> buf) {
-    var (_, err) = io.ReadFull(r, buf[0..(int)(binary.MaxVarintLen64)]);
-    // ok to continue with error
+    var (_, err) = io.ReadFull(r, buf[0..(int)(binary.MaxVarintLen64)]); // ok to continue with error
     var (x, _) = binary.Varint(buf);
     return (x, err);
 }
@@ -357,8 +356,7 @@ public static slice<slice<nint>> /*result*/ FindAllIndex(this ж<Index> Ꮡx, ж
     // the indices of possible complete matches; use these as starting
     // points for anchored searches
     // (regexp "^" matches beginning of input, not beginning of line)
-    Ꮡr = regexp.MustCompile("^"u8 + r.String()); r = ref Ꮡr.DerefOrNull();
-    // compiles because r compiled
+    Ꮡr = regexp.MustCompile("^"u8 + r.String()); r = ref Ꮡr.DerefOrNull(); // compiles because r compiled
     // same comment about Lookup applies here as in the loop above
     for (nint n1 = n; ᐧ ; n1 += 2 * (n - builtin.len(result))) {
         /* overflow ok */
@@ -373,12 +371,10 @@ public static slice<slice<nint>> /*result*/ FindAllIndex(this ж<Index> Ꮡx, ж
             if (builtin.len(result) == n) {
                 break;
             }
-            var m = Ꮡr.FindIndex(x.data[(int)(i)..]);
-            // anchored search - will not run off
+            var m = Ꮡr.FindIndex(x.data[(int)(i)..]); // anchored search - will not run off
             // ignore indices leading to overlapping matches
             if (m != default! && prev <= i) {
-                m[0] = i;
-                // correct m
+                m[0] = i; // correct m
                 m[1] += i;
                 result = append(result, m);
                 prev = m[1];

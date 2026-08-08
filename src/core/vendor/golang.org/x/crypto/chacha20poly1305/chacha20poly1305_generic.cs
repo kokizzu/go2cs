@@ -39,8 +39,7 @@ internal static void writeUint64(ж<poly1305.MAC> Ꮡp, nint n) {
     ref var polyKey = ref heap(new array<byte>(32), out var ᏑpolyKey);
     var (s, _) = chacha20.NewUnauthenticatedCipher(c.key[..], nonce);
     s.XORKeyStream(polyKey[..], polyKey[..]);
-    s.SetCounter(1);
-    // set the counter to 1, skipping 32 bytes
+    s.SetCounter(1); // set the counter to 1, skipping 32 bytes
     s.XORKeyStream(ciphertext, plaintext);
     var p = poly1305.New(ᏑpolyKey);
     writeWithPadding(p, additionalData);
@@ -57,8 +56,7 @@ internal static void writeUint64(ж<poly1305.MAC> Ꮡp, nint n) {
     ref var polyKey = ref heap(new array<byte>(32), out var ᏑpolyKey);
     var (s, _) = chacha20.NewUnauthenticatedCipher(c.key[..], nonce);
     s.XORKeyStream(polyKey[..], polyKey[..]);
-    s.SetCounter(1);
-    // set the counter to 1, skipping 32 bytes
+    s.SetCounter(1); // set the counter to 1, skipping 32 bytes
     var p = poly1305.New(ᏑpolyKey);
     writeWithPadding(p, additionalData);
     writeWithPadding(p, ciphertext);

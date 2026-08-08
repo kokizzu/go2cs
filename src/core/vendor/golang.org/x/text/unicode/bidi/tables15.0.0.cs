@@ -27,22 +27,20 @@ internal static slice<int32> xorMasks = new int32[]{
         return (bidiValues[c0], 1);
     }
     case {} when c0 is < 0xC2: {
-        return (0, 1);
+        return (0, 1); // Illegal UTF-8: not a starter, not ASCII.
     }
     case {} when c0 is < 0xE0: {
         if (len(s) < 2) {
             // is ASCII
-            // Illegal UTF-8: not a starter, not ASCII.
             // 2-byte UTF-8
             return (0, 0);
         }
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c1), 2);
+        return (t.lookupValue((uint32)i, c1), 2);
     }
     case {} when c0 is < 0xF0: {
         if (len(s) < 3) {
@@ -52,17 +50,15 @@ internal static slice<int32> xorMasks = new int32[]{
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
         i = bidiIndex[(nint)(o)];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 2);
+            return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c2), 3);
+        return (t.lookupValue((uint32)i, c2), 3);
     }
     case {} when c0 is < 0xF8: {
         if (len(s) < 4) {
@@ -72,24 +68,21 @@ internal static slice<int32> xorMasks = new int32[]{
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
         i = bidiIndex[(nint)(o)];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 2);
+            return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
         i = bidiIndex[(nint)(o)];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 3);
+            return (0, 3); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c3), 4);
+        return (t.lookupValue((uint32)i, c3), 4);
     }}
 
     // Illegal rune
@@ -135,22 +128,20 @@ internal static slice<int32> xorMasks = new int32[]{
         return (bidiValues[c0], 1);
     }
     case {} when c0 is < 0xC2: {
-        return (0, 1);
+        return (0, 1); // Illegal UTF-8: not a starter, not ASCII.
     }
     case {} when c0 is < 0xE0: {
         if (len(s) < 2) {
             // is ASCII
-            // Illegal UTF-8: not a starter, not ASCII.
             // 2-byte UTF-8
             return (0, 0);
         }
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c1), 2);
+        return (t.lookupValue((uint32)i, c1), 2);
     }
     case {} when c0 is < 0xF0: {
         if (len(s) < 3) {
@@ -160,17 +151,15 @@ internal static slice<int32> xorMasks = new int32[]{
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
         i = bidiIndex[(nint)(o)];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 2);
+            return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c2), 3);
+        return (t.lookupValue((uint32)i, c2), 3);
     }
     case {} when c0 is < 0xF8: {
         if (len(s) < 4) {
@@ -180,24 +169,21 @@ internal static slice<int32> xorMasks = new int32[]{
         var i = bidiIndex[c0];
         var c1 = s[1];
         if (c1 < 0x80 || 0xC0 <= c1) {
-            return (0, 1);
+            return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
         i = bidiIndex[(nint)(o)];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 2);
+            return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
         i = bidiIndex[(nint)(o)];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
-            // Illegal UTF-8: not a continuation byte.
-            return (0, 3);
+            return (0, 3); // Illegal UTF-8: not a continuation byte.
         }
-        return (t.lookupValue((uint32)i, // Illegal UTF-8: not a continuation byte.
- c3), 4);
+        return (t.lookupValue((uint32)i, c3), 4);
     }}
 
     // Illegal rune

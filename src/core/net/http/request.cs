@@ -1341,8 +1341,7 @@ internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
         var maxFormSize = (int64)(9223372036854775807L);
         {
             var (_, ok) = r.Body._<ж<maxBytesReader>>(ᐧ); if (!ok) {
-                maxFormSize = (int64)(((int64)10 << (int)(20)));
-                // 10 MB is a lot of text.
+                maxFormSize = (int64)(((int64)10 << (int)(20))); // 10 MB is a lot of text.
                 reader = io.LimitReader(r.Body, maxFormSize + 1);
             }
         }

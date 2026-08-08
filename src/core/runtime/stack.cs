@@ -435,9 +435,8 @@ internal static void stackfree(Δstack stk) {
     }
     if (stackDebug >= 1) {
         println((@string)"stackfree"u8, v, n);
-        memclrNoHeapPointers(v, n);
+        memclrNoHeapPointers(v, n); // for testing, clobber stack data
     }
-    // for testing, clobber stack data
     if (debug.efence != 0 || stackFromSystem != 0) {
         if (debug.efence != 0 || stackFaultOnFree != 0){
             sysFault(v, n);
@@ -701,12 +700,10 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
         foreach (var (i, _) in objs) {
             var obj = Ꮡ(objs, i);
             var off = obj.Value.off;
-            var @base = frame.varp;
-            // locals base pointer
+            var @base = frame.varp; // locals base pointer
             if (off >= 0) {
-                @base = frame.argp;
+                @base = frame.argp; // arguments and return values base pointer
             }
-            // arguments and return values base pointer
             var Δp = @base + (uintptr)off;
             if (Δp < frame.sp) {
                 // Object hasn't been allocated in the frame yet.
@@ -937,8 +934,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
     }
     // Swap out old stack for new one
     gp.stack = @new;
-    gp.stackguard0 = @new.lo + (uintptr)stackGuard;
-    // NOTE: might clobber a preempt request
+    gp.stackguard0 = @new.lo + (uintptr)stackGuard; // NOTE: might clobber a preempt request
     gp.sched.sp = @new.hi - used;
     gp.stktopsp += adjinfo.delta;
     // Adjust pointers in the new stack.
@@ -1014,8 +1010,7 @@ internal static void newstack() {
             (@string)" sp="u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" stack=["u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)", "u8, ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n"u8,
             (@string)"\tmorebuf={pc:"u8, ((Δhex)(uint64)morebufΔ2.pc), (@string)" sp:"u8, ((Δhex)(uint64)morebufΔ2.sp), (@string)" lr:"u8, ((Δhex)(uint64)morebufΔ2.lr), (@string)"}\n"u8,
             (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, (~gp).sched.ctxt, (@string)"}\n"u8);
-        thisg.Value.m.Value.traceback = 2;
-        // Include runtime frames
+        thisg.Value.m.Value.traceback = 2; // Include runtime frames
         traceback(morebufΔ2.pc, morebufΔ2.sp, morebufΔ2.lr, gp);
         @throw(runtimeStackSplitAtBadˢ);
     }
@@ -1046,10 +1041,9 @@ internal static void newstack() {
             // Let the goroutine keep running for now.
             // gp->preempt is set, so it will be preempted next time.
             gp.Value.stackguard0 = (~gp).stack.lo + (uintptr)stackGuard;
-            gogo(gp.of(g.Ꮡsched));
+            gogo(gp.of(g.Ꮡsched)); // never return
         }
     }
-    // never return
     if ((~gp).stack.lo == 0) {
         @throw(missingStackInNewstackˢ);
     }
@@ -1082,13 +1076,11 @@ internal static void newstack() {
             shrinkstack(gp);
         }
         if ((~gp).preemptStop) {
-            preemptPark(gp);
+            preemptPark(gp); // never returns
         }
-        // never returns
         // Act like goroutine called runtime.Gosched.
-        gopreempt_m(gp);
+        gopreempt_m(gp); // never return
     }
-    // never return
     // Allocate a bigger segment and move the stack.
     var oldsize = (~gp).stack.hi - (~gp).stack.lo;
     var newsize = oldsize * 2;

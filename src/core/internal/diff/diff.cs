@@ -247,8 +247,7 @@ internal static slice<pair> tgs(slice<@string> x, slice<@string> y) {
         }
     }
     var seq = new slice<pair>(2 + k);
-    seq[1 + k] = new pair(len(x), len(y));
-    // sentinel at end
+    seq[1 + k] = new pair(len(x), len(y)); // sentinel at end
     nint lastj = n;
     for (nint i = n - 1; i >= 0; i--) {
         if (L[i] == k && J[i] < lastj) {
@@ -256,8 +255,7 @@ internal static slice<pair> tgs(slice<@string> x, slice<@string> y) {
             k--;
         }
     }
-    seq[0] = new pair(0, 0);
-    // sentinel at start
+    seq[0] = new pair(0, 0); // sentinel at start
     return seq;
 }
 

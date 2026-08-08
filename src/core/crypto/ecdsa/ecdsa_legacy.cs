@@ -107,8 +107,7 @@ internal static (slice<byte> sig, error err) signLegacy(ж<PrivateKey> Ꮡpriv, 
         s = @new<bigꓸInt>().Mul(priv.D, r);
         s.Add(s, e);
         s.Mul(s, kInv);
-        s.Mod(s, N);
-        // N != 0
+        s.Mod(s, N); // N != 0
         if (s.Sign() != 0) {
             break;
         }

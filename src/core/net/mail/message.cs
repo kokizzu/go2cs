@@ -125,17 +125,12 @@ internal static slice<@string> dateLayouts;
 
 internal static void buildDateLayouts() {
     // Generate layouts based on RFC 5322, section 3.3.
-    var dows = new @string[]{""u8, "Mon, "u8}.array();
-    // day-of-week
-    var days = new @string[]{"2"u8, "02"u8}.array();
-    // day = 1*2DIGIT
-    var years = new @string[]{"2006"u8, "06"u8}.array();
-    // year = 4*DIGIT / 2*DIGIT
-    var seconds = new @string[]{":05"u8, ""u8}.array();
-    // second
+    var dows = new @string[]{""u8, "Mon, "u8}.array(); // day-of-week
+    var days = new @string[]{"2"u8, "02"u8}.array(); // day = 1*2DIGIT
+    var years = new @string[]{"2006"u8, "06"u8}.array(); // year = 4*DIGIT / 2*DIGIT
+    var seconds = new @string[]{":05"u8, ""u8}.array(); // second
     // "-0700 (MST)" is not in RFC 5322, but is common.
-    var zones = new @string[]{"-0700"u8, "MST"u8, "UT"u8}.array();
-    // zone = (("+" / "-") 4DIGIT) / "UT" / "GMT" / ...
+    var zones = new @string[]{"-0700"u8, "MST"u8, "UT"u8}.array(); // zone = (("+" / "-") 4DIGIT) / "UT" / "GMT" / ...
     foreach (var (_, dow) in dows) {
         foreach (var (_, day) in days) {
             foreach (var (_, year) in years) {

@@ -24,14 +24,11 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
         return (default!, default!);
     }
     // determine max. space (bytes) required for encoding
-    nint sz = 1 + 1 + 4;
-    // version + mode|acc|form|neg (3+2+2+1bit) + prec
-    nint n = 0;
-    // number of mantissa words
+    nint sz = 1 + 1 + 4; // version + mode|acc|form|neg (3+2+2+1bit) + prec
+    nint n = 0; // number of mantissa words
     if (x.form == finite) {
         // add space for mantissa and exponent
-        n = (nint)((x.prec + (uint32)(_W - 1)) / (uint32)_W);
-        // required mantissa length in words for given precision
+        n = (nint)((x.prec + (uint32)(_W - 1)) / (uint32)_W); // required mantissa length in words for given precision
         // actual mantissa slice could be shorter (trailing 0's) or longer (unused bits):
         // - if shorter, only encode the words present
         // - if longer, cut off unused words when encoding in bytes
@@ -41,9 +38,8 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
             n = len(x.mant);
         }
         // len(x.mant) >= n
-        sz += 4 + n * (nint)_S;
+        sz += 4 + n * (nint)_S; // exp + mant
     }
-    // exp + mant
     var buf = new slice<byte>(sz);
     buf[0] = floatGobVersion;
     var b = (byte)((byte)((byte)((byte)((RoundingMode)(x.mode & 7)) << (int)(5)) | (byte)((byte)(int8)((Accuracy)((x.acc + 1) & 3)) << (int)(3))) | (byte)((byte)((form)(x.form & 3)) << (int)(1)));
@@ -54,9 +50,8 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
     byteorder.BePutUint32(buf[2..], x.prec);
     if (x.form == finite) {
         byteorder.BePutUint32(buf[6..], (uint32)x.exp);
-        x.mant[(int)(len(x.mant) - n)..].bytes(buf[10..]);
+        x.mant[(int)(len(x.mant) - n)..].bytes(buf[10..]); // cut off unused trailing words
     }
-    // cut off unused trailing words
     return (buf, default!);
 }
 

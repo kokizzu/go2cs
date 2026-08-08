@@ -251,14 +251,13 @@ internal static (any, error) parseCorpusValue(slice<byte> line) {
                 if ((~op).Op != token.SUB) {
                     return (default!, fmt.Errorf("unsupported operation on int/float: %v"u8, (~op).Op));
                 }
-                val = (~op).Op.String() + (~lit).Value;
+                val = (~op).Op.String() + (~lit).Value; // e.g. "-" + "124"
                 kind = lit.Value.Kind;
                 break;
             }
             case ж<ast.Ident> lit: {
                 if ((~lit).Name != "Inf"u8) {
                     // Special case for negative numbers.
-                    // e.g. "-" + "124"
                     return (default!, fmt.Errorf("expected operation on int or float type"u8));
                 }
                 if ((~op).Op == token.SUB){

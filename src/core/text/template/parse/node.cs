@@ -511,10 +511,9 @@ internal static readonly @string nilˢ = "nil"u8;
 }
 
 internal static ж<FieldNode> newField(this ж<Tree> Ꮡt, Pos pos, @string ident) {
-    return Ꮡ(new FieldNode(tr: Ꮡt, NodeType: NodeField, Pos: pos, Ident: strings.Split(ident[1..], "."u8)));
+    return Ꮡ(new FieldNode(tr: Ꮡt, NodeType: NodeField, Pos: pos, Ident: strings.Split(ident[1..], "."u8))); // [1:] to drop leading period
 }
 
-// [1:] to drop leading period
 [GoRecv] public static @string String(this ref FieldNode f) {
     ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
     f.writeTo(Ꮡsb);
@@ -556,8 +555,7 @@ internal static ж<ChainNode> newChain(this ж<Tree> Ꮡt, Pos pos, Node node) {
     if (len(field) == 0 || field[0] != (rune)'.') {
         throw panic("no dot in field");
     }
-    field = field[1..];
-    // Remove leading dot.
+    field = field[1..]; // Remove leading dot.
     if (field == ""u8) {
         throw panic("empty field");
     }
@@ -665,14 +663,13 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
         n.Value.IsInt = true;
         n.Value.Uint64 = (uint64)rune;
         n.Value.IsUint = true;
-        n.Value.Float64 = (float64)rune;
+        n.Value.Float64 = (float64)rune; // odd but those are the rules.
         n.Value.IsFloat = true;
         return (n, default!);
     }
     if (exprᴛ1 == itemComplex) {
         {
-            var (_, errΔ4) = fmt.Sscan(text, // odd but those are the rules.
- // fmt.Sscan can parse the pair, so let it do the work.
+            var (_, errΔ4) = fmt.Sscan(text, // fmt.Sscan can parse the pair, so let it do the work.
  n.of(NumberNode.ᏑComplex128)); if (errΔ4 != default!) {
                 return (default!, errΔ4);
             }
@@ -693,8 +690,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
         }
     }
     // Do integer test first so we get 0x123 etc.
-    var (u, err) = strconv.ParseUint(text, 0, 64);
-    // will fail for -0; fixed below.
+    var (u, err) = strconv.ParseUint(text, 0, 64); // will fail for -0; fixed below.
     if (err == default!) {
         n.Value.IsUint = true;
         n.Value.Uint64 = u;
@@ -704,8 +700,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
         n.Value.IsInt = true;
         n.Value.Int64 = i;
         if (i == 0) {
-            n.Value.IsUint = true;
-            // in case of -0.
+            n.Value.IsUint = true; // in case of -0.
             n.Value.Uint64 = u;
         }
     }
@@ -775,8 +770,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
 
 [GoRecv] public static Node Copy(this ref NumberNode n) {
     var nn = @new<NumberNode>();
-    nn.Value = n;
-    // Easy, fast, correct.
+    nn.Value = n; // Easy, fast, correct.
     return new NumberNodeжNode(nn);
 }
 

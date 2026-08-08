@@ -1905,8 +1905,7 @@ internal static UntypedInt edns0DNSSECOKMask => 0x00ff8000;
 //
 // The provided extRCode must be an extended RCode.
 [GoRecv] public static error SetEDNS0(this ref ResourceHeader h, nint udpPayloadLen, RCode extRCode, bool dnssecOK) {
-    h.Name = new Name(Data: new byte[]{(rune)'.'}.array(255), Length: 1);
-    // RFC 6891 section 6.1.2
+    h.Name = new Name(Data: new byte[]{(rune)'.'}.array(255), Length: 1); // RFC 6891 section 6.1.2
     h.Type = TypeOPT;
     h.Class = ((Class)(uint16)udpPayloadLen);
     h.TTL = (((uint32)(uint16)extRCode >> (int)(4)) << (int)(24));
@@ -1918,10 +1917,8 @@ internal static UntypedInt edns0DNSSECOKMask => 0x00ff8000;
 
 // DNSSECAllowed reports whether the DNSSEC OK bit is set.
 [GoRecv] public static bool DNSSECAllowed(this ref ResourceHeader h) {
-    return (uint32)(h.TTL & (uint32)edns0DNSSECOKMask) == edns0DNSSECOK;
+    return (uint32)(h.TTL & (uint32)edns0DNSSECOKMask) == edns0DNSSECOK; // RFC 6891 section 6.1.3
 }
-
-// RFC 6891 section 6.1.3
 
 // ExtendedRCode returns an extended RCode.
 //

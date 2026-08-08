@@ -107,13 +107,12 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
     }
     case bool v: {
         if (m.rand(2) == 1) {
-            vals[i] = !v;
+            vals[i] = !v; // 50% chance of flipping the bool
         }
         break;
     }
     case rune v: {
-        vals[i] = (rune)m.mutateInt((int64)v, // 50% chance of flipping the bool
- // int32
+        vals[i] = (rune)m.mutateInt((int64)v, // int32
  math.MaxInt32);
         break;
     }

@@ -141,90 +141,55 @@ public static ж<Element> Invert(this ж<Element> Ꮡv, ж<Element> Ꮡz) {
     ref var z2_50_0 = ref heap(new Element(), out var Ꮡz2_50_0);
     ref var z2_100_0 = ref heap(new Element(), out var Ꮡz2_100_0);
     ref var t = ref heap(new Element(), out var Ꮡt);
-    Ꮡz2.Square(Ꮡz);
-    // 2
-    Ꮡt.Square(Ꮡz2);
-    // 4
-    Ꮡt.Square(Ꮡt);
-    // 8
-    Ꮡz9.Multiply(Ꮡt, Ꮡz);
-    // 9
-    Ꮡz11.Multiply(Ꮡz9, Ꮡz2);
-    // 11
-    Ꮡt.Square(Ꮡz11);
-    // 22
-    Ꮡz2_5_0.Multiply(Ꮡt, Ꮡz9);
-    // 31 = 2^5 - 2^0
-    Ꮡt.Square(Ꮡz2_5_0);
-    // 2^6 - 2^1
+    Ꮡz2.Square(Ꮡz); // 2
+    Ꮡt.Square(Ꮡz2); // 4
+    Ꮡt.Square(Ꮡt); // 8
+    Ꮡz9.Multiply(Ꮡt, Ꮡz); // 9
+    Ꮡz11.Multiply(Ꮡz9, Ꮡz2); // 11
+    Ꮡt.Square(Ꮡz11); // 22
+    Ꮡz2_5_0.Multiply(Ꮡt, Ꮡz9); // 31 = 2^5 - 2^0
+    Ꮡt.Square(Ꮡz2_5_0); // 2^6 - 2^1
     for (nint i = 0; i < 4; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^10 - 2^5
     }
-    // 2^10 - 2^5
-    Ꮡz2_10_0.Multiply(Ꮡt, Ꮡz2_5_0);
-    // 2^10 - 2^0
-    Ꮡt.Square(Ꮡz2_10_0);
-    // 2^11 - 2^1
+    Ꮡz2_10_0.Multiply(Ꮡt, Ꮡz2_5_0); // 2^10 - 2^0
+    Ꮡt.Square(Ꮡz2_10_0); // 2^11 - 2^1
     for (nint i = 0; i < 9; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^20 - 2^10
     }
-    // 2^20 - 2^10
-    Ꮡz2_20_0.Multiply(Ꮡt, Ꮡz2_10_0);
-    // 2^20 - 2^0
-    Ꮡt.Square(Ꮡz2_20_0);
-    // 2^21 - 2^1
+    Ꮡz2_20_0.Multiply(Ꮡt, Ꮡz2_10_0); // 2^20 - 2^0
+    Ꮡt.Square(Ꮡz2_20_0); // 2^21 - 2^1
     for (nint i = 0; i < 19; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^40 - 2^20
     }
-    // 2^40 - 2^20
-    Ꮡt.Multiply(Ꮡt, Ꮡz2_20_0);
-    // 2^40 - 2^0
-    Ꮡt.Square(Ꮡt);
-    // 2^41 - 2^1
+    Ꮡt.Multiply(Ꮡt, Ꮡz2_20_0); // 2^40 - 2^0
+    Ꮡt.Square(Ꮡt); // 2^41 - 2^1
     for (nint i = 0; i < 9; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^50 - 2^10
     }
-    // 2^50 - 2^10
-    Ꮡz2_50_0.Multiply(Ꮡt, Ꮡz2_10_0);
-    // 2^50 - 2^0
-    Ꮡt.Square(Ꮡz2_50_0);
-    // 2^51 - 2^1
+    Ꮡz2_50_0.Multiply(Ꮡt, Ꮡz2_10_0); // 2^50 - 2^0
+    Ꮡt.Square(Ꮡz2_50_0); // 2^51 - 2^1
     for (nint i = 0; i < 49; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^100 - 2^50
     }
-    // 2^100 - 2^50
-    Ꮡz2_100_0.Multiply(Ꮡt, Ꮡz2_50_0);
-    // 2^100 - 2^0
-    Ꮡt.Square(Ꮡz2_100_0);
-    // 2^101 - 2^1
+    Ꮡz2_100_0.Multiply(Ꮡt, Ꮡz2_50_0); // 2^100 - 2^0
+    Ꮡt.Square(Ꮡz2_100_0); // 2^101 - 2^1
     for (nint i = 0; i < 99; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^200 - 2^100
     }
-    // 2^200 - 2^100
-    Ꮡt.Multiply(Ꮡt, Ꮡz2_100_0);
-    // 2^200 - 2^0
-    Ꮡt.Square(Ꮡt);
-    // 2^201 - 2^1
+    Ꮡt.Multiply(Ꮡt, Ꮡz2_100_0); // 2^200 - 2^0
+    Ꮡt.Square(Ꮡt); // 2^201 - 2^1
     for (nint i = 0; i < 49; i++) {
-        Ꮡt.Square(Ꮡt);
+        Ꮡt.Square(Ꮡt); // 2^250 - 2^50
     }
-    // 2^250 - 2^50
-    Ꮡt.Multiply(Ꮡt, Ꮡz2_50_0);
-    // 2^250 - 2^0
-    Ꮡt.Square(Ꮡt);
-    // 2^251 - 2^1
-    Ꮡt.Square(Ꮡt);
-    // 2^252 - 2^2
-    Ꮡt.Square(Ꮡt);
-    // 2^253 - 2^3
-    Ꮡt.Square(Ꮡt);
-    // 2^254 - 2^4
-    Ꮡt.Square(Ꮡt);
-    // 2^255 - 2^5
-    return Ꮡv.Multiply(Ꮡt, Ꮡz11);
+    Ꮡt.Multiply(Ꮡt, Ꮡz2_50_0); // 2^250 - 2^0
+    Ꮡt.Square(Ꮡt); // 2^251 - 2^1
+    Ꮡt.Square(Ꮡt); // 2^252 - 2^2
+    Ꮡt.Square(Ꮡt); // 2^253 - 2^3
+    Ꮡt.Square(Ꮡt); // 2^254 - 2^4
+    Ꮡt.Square(Ꮡt); // 2^255 - 2^5
+    return Ꮡv.Multiply(Ꮡt, Ꮡz11); // 2^255 - 21
 }
-
-// 2^255 - 21
 
 // Set sets v = a, and returns v.
 public static ж<Element> Set(this ж<Element> Ꮡv, ж<Element> Ꮡa) {
@@ -384,8 +349,7 @@ public static ж<Element> Mult32(this ж<Element> Ꮡv, ж<Element> Ꮡx, uint32
     var (x2lo, x2hi) = mul51(x.l2, y);
     var (x3lo, x3hi) = mul51(x.l3, y);
     var (x4lo, x4hi) = mul51(x.l4, y);
-    v.l0 = x0lo + 19 * x4hi;
-    // carried over per the reduction identity
+    v.l0 = x0lo + 19 * x4hi; // carried over per the reduction identity
     v.l1 = x1lo + x0hi;
     v.l2 = x2lo + x1hi;
     v.l3 = x3lo + x2hi;
@@ -413,84 +377,59 @@ public static ж<Element> Pow22523(this ж<Element> Ꮡv, ж<Element> Ꮡx) {
     ref var t0 = ref heap(new Element(), out var Ꮡt0);
     ref var t1 = ref heap(new Element(), out var Ꮡt1);
     ref var t2 = ref heap(new Element(), out var Ꮡt2);
-    Ꮡt0.Square(Ꮡx);
-    // x^2
-    Ꮡt1.Square(Ꮡt0);
-    // x^4
-    Ꮡt1.Square(Ꮡt1);
-    // x^8
-    Ꮡt1.Multiply(Ꮡx, Ꮡt1);
-    // x^9
-    Ꮡt0.Multiply(Ꮡt0, Ꮡt1);
-    // x^11
-    Ꮡt0.Square(Ꮡt0);
-    // x^22
-    Ꮡt0.Multiply(Ꮡt1, Ꮡt0);
-    // x^31
-    Ꮡt1.Square(Ꮡt0);
-    // x^62
+    Ꮡt0.Square(Ꮡx); // x^2
+    Ꮡt1.Square(Ꮡt0); // x^4
+    Ꮡt1.Square(Ꮡt1); // x^8
+    Ꮡt1.Multiply(Ꮡx, Ꮡt1); // x^9
+    Ꮡt0.Multiply(Ꮡt0, Ꮡt1); // x^11
+    Ꮡt0.Square(Ꮡt0); // x^22
+    Ꮡt0.Multiply(Ꮡt1, Ꮡt0); // x^31
+    Ꮡt1.Square(Ꮡt0); // x^62
     for (nint i = 1; i < 5; i++) {
         // x^992
         Ꮡt1.Square(Ꮡt1);
     }
-    Ꮡt0.Multiply(Ꮡt1, Ꮡt0);
-    // x^1023 -> 1023 = 2^10 - 1
-    Ꮡt1.Square(Ꮡt0);
-    // 2^11 - 2
+    Ꮡt0.Multiply(Ꮡt1, Ꮡt0); // x^1023 -> 1023 = 2^10 - 1
+    Ꮡt1.Square(Ꮡt0); // 2^11 - 2
     for (nint i = 1; i < 10; i++) {
         // 2^20 - 2^10
         Ꮡt1.Square(Ꮡt1);
     }
-    Ꮡt1.Multiply(Ꮡt1, Ꮡt0);
-    // 2^20 - 1
-    Ꮡt2.Square(Ꮡt1);
-    // 2^21 - 2
+    Ꮡt1.Multiply(Ꮡt1, Ꮡt0); // 2^20 - 1
+    Ꮡt2.Square(Ꮡt1); // 2^21 - 2
     for (nint i = 1; i < 20; i++) {
         // 2^40 - 2^20
         Ꮡt2.Square(Ꮡt2);
     }
-    Ꮡt1.Multiply(Ꮡt2, Ꮡt1);
-    // 2^40 - 1
-    Ꮡt1.Square(Ꮡt1);
-    // 2^41 - 2
+    Ꮡt1.Multiply(Ꮡt2, Ꮡt1); // 2^40 - 1
+    Ꮡt1.Square(Ꮡt1); // 2^41 - 2
     for (nint i = 1; i < 10; i++) {
         // 2^50 - 2^10
         Ꮡt1.Square(Ꮡt1);
     }
-    Ꮡt0.Multiply(Ꮡt1, Ꮡt0);
-    // 2^50 - 1
-    Ꮡt1.Square(Ꮡt0);
-    // 2^51 - 2
+    Ꮡt0.Multiply(Ꮡt1, Ꮡt0); // 2^50 - 1
+    Ꮡt1.Square(Ꮡt0); // 2^51 - 2
     for (nint i = 1; i < 50; i++) {
         // 2^100 - 2^50
         Ꮡt1.Square(Ꮡt1);
     }
-    Ꮡt1.Multiply(Ꮡt1, Ꮡt0);
-    // 2^100 - 1
-    Ꮡt2.Square(Ꮡt1);
-    // 2^101 - 2
+    Ꮡt1.Multiply(Ꮡt1, Ꮡt0); // 2^100 - 1
+    Ꮡt2.Square(Ꮡt1); // 2^101 - 2
     for (nint i = 1; i < 100; i++) {
         // 2^200 - 2^100
         Ꮡt2.Square(Ꮡt2);
     }
-    Ꮡt1.Multiply(Ꮡt2, Ꮡt1);
-    // 2^200 - 1
-    Ꮡt1.Square(Ꮡt1);
-    // 2^201 - 2
+    Ꮡt1.Multiply(Ꮡt2, Ꮡt1); // 2^200 - 1
+    Ꮡt1.Square(Ꮡt1); // 2^201 - 2
     for (nint i = 1; i < 50; i++) {
         // 2^250 - 2^50
         Ꮡt1.Square(Ꮡt1);
     }
-    Ꮡt0.Multiply(Ꮡt1, Ꮡt0);
-    // 2^250 - 1
-    Ꮡt0.Square(Ꮡt0);
-    // 2^251 - 2
-    Ꮡt0.Square(Ꮡt0);
-    // 2^252 - 4
-    return Ꮡv.Multiply(Ꮡt0, Ꮡx);
+    Ꮡt0.Multiply(Ꮡt1, Ꮡt0); // 2^250 - 1
+    Ꮡt0.Square(Ꮡt0); // 2^251 - 2
+    Ꮡt0.Square(Ꮡt0); // 2^252 - 4
+    return Ꮡv.Multiply(Ꮡt0, Ꮡx); // 2^252 - 3 -> x^(2^252-3)
 }
-
-// 2^252 - 3 -> x^(2^252-3)
 
 // sqrtM1 is 2^((p-1)/4), which squared is equal to -1 by Euler's Criterion.
 internal static ж<Element> sqrtM1 = Ꮡ(new Element(1718705420411056UL, 234908883556509UL,
@@ -514,18 +453,15 @@ public static (ж<Element> R, nint wasSquare) SqrtRatio(this ж<Element> Ꮡr, �
     var uv3 = @new<Element>().Multiply(Ꮡu, t0.Multiply(v2, Ꮡv));
     var uv7 = @new<Element>().Multiply(uv3, t0.Square(v2));
     var rr = @new<Element>().Multiply(uv3, t0.Pow22523(uv7));
-    var check = @new<Element>().Multiply(Ꮡv, t0.Square(rr));
-    // check = v * r^2
+    var check = @new<Element>().Multiply(Ꮡv, t0.Square(rr)); // check = v * r^2
     var uNeg = @new<Element>().Negate(Ꮡu);
     nint correctSignSqrt = check.Equal(Ꮡu);
     nint flippedSignSqrt = check.Equal(uNeg);
     nint flippedSignSqrtI = check.Equal(t0.Multiply(uNeg, sqrtM1));
-    var rPrime = @new<Element>().Multiply(rr, sqrtM1);
-    // r_prime = SQRT_M1 * r
+    var rPrime = @new<Element>().Multiply(rr, sqrtM1); // r_prime = SQRT_M1 * r
     // r = CT_SELECT(r_prime IF flipped_sign_sqrt | flipped_sign_sqrt_i ELSE r)
     rr.Select(rPrime, rr, (nint)(flippedSignSqrt | flippedSignSqrtI));
-    Ꮡr.Absolute(rr);
-    // Choose the nonnegative square root.
+    Ꮡr.Absolute(rr); // Choose the nonnegative square root.
     return (Ꮡr, (nint)(correctSignSqrt | flippedSignSqrt));
 }
 

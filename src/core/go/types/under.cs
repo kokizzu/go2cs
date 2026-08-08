@@ -59,9 +59,8 @@ internal static ΔType coreString(ΔType t) {
     t = Unalias(t);
     var (tpar, _) = t._<ж<TypeParam>>(ᐧ);
     if (tpar == nil) {
-        return under(t);
+        return under(t); // string or untyped string
     }
-    // string or untyped string
     ref var su = ref heap<ΔType>(out var Ꮡsu);
     var hasString = false;
     if (tpar.underIs((ΔType u) => {

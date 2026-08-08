@@ -467,10 +467,9 @@ public static (ж<Table>, error) NewTable(slice<byte> symtab, ж<LineTable> Ꮡp
                 }
             }
             obj.Value.Paths = t.Syms[(int)(i)..(int)(endΔ1)];
-            i = endΔ1 - 1;
+            i = endΔ1 - 1; // loop will i++
             nint depth = 0;
             foreach (var (j, _) in (~obj).Paths) {
-                // loop will i++
                 // Record file names
                 var s = Ꮡ((~obj).Paths, j);
                 if ((~s).Name == ""u8){
@@ -557,12 +556,11 @@ break_countloop:;
                 }}
 
             }
-            i = end - 1;
+            i = end - 1; // loop will i++
             break;
         }}
 
     }
-    // loop will i++
     if (t.go12line != nil && nf == 0) {
         t.Funcs = t.go12line.go12Funcs();
     }

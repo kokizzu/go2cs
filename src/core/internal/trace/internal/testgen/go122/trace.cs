@@ -398,8 +398,7 @@ internal static ж<ΔBatch> newStructuralBatch(this ж<ΔGeneration> Ꮡg) {
 
     var ev = (~b.gen).trace.createEvent(typ, data, args.ꓸꓸꓸ);
     // Compute the size of the event and add it to the batch.
-    b.size += 1;
-    // One byte for the event header.
+    b.size += 1; // One byte for the event header.
     array<byte> buf = new(10); /* binary.MaxVarintLen64 */
     foreach (var (_, arg) in args) {
         b.size += (uint64)binary.PutUvarint(buf[..], arg);

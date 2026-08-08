@@ -479,9 +479,8 @@ internal static bool compatibleValueTypes(ж<ValueType> Ꮡv1, ж<ValueType> Ꮡ
     ref var v2 = ref Ꮡv2.DerefOrNull();
 
     if (Ꮡv1 == nil || Ꮡv2 == nil) {
-        return true;
+        return true; // No grounds to disqualify.
     }
-    // No grounds to disqualify.
     return v1.Type == v2.Type && v1.Unit == v2.Unit;
 }
 

@@ -372,8 +372,7 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
             return (0, ErrFormat);
         }
     }
-    b = b[22..];
-    // skip over most of the header
+    b = b[22..]; // skip over most of the header
     nint filenameLen = (nint)b.uint16();
     nint extraLen = (nint)b.uint16();
     return ((int64)((nint)fileHeaderLen + filenameLen + extraLen), default!);
@@ -411,8 +410,7 @@ internal static error readDirectoryHeader(ж<File> Ꮡf, io.Reader r) {
     nint filenameLen = (nint)b.uint16();
     nint extraLen = (nint)b.uint16();
     nint commentLen = (nint)b.uint16();
-    b = b[4..];
-    // skipped start disk number and internal attributes (2x uint16)
+    b = b[4..]; // skipped start disk number and internal attributes (2x uint16)
     f.ExternalAttrs = b.uint32();
     f.headerOffset = (int64)b.uint32();
     var d = new slice<byte>(filenameLen + extraLen + commentLen);
@@ -496,9 +494,8 @@ parseExtras:
             if (len(fieldBuf) < 4) {
                 goto continue_parseExtras;
             }
-            fieldBuf.uint32();
+            fieldBuf.uint32(); // reserved (ignored)
             while (len(fieldBuf) >= 4) {
-                // reserved (ignored)
                 // need at least tag and size
                 var attrTag = fieldBuf.uint16();
                 nint attrSize = (nint)fieldBuf.uint16();
@@ -507,12 +504,10 @@ parseExtras:
                 }
                 var attrBuf = fieldBuf.sub(attrSize);
                 if (attrTag != 1 || attrSize != 24) {
-                    continue;
+                    continue; // Ignore irrelevant attributes
                 }
-                // Ignore irrelevant attributes
                 UntypedFloat ticksPerSecond = 1e7; // Windows timestamp resolution
-                var ts = (int64)attrBuf.uint64();
-                // ModTime since Windows epoch
+                var ts = (int64)attrBuf.uint64(); // ModTime since Windows epoch
                 var secs = ts / (int64)ticksPerSecond;
                 var nsecs = (int64)(1e9D / ticksPerSecond) * (ts % (int64)ticksPerSecond);
                 var epoch = time.Date(1601, time.January, 1, 0, 0, 0, 0, time.ΔUTC);
@@ -523,19 +518,16 @@ parseExtras:
             if (len(fieldBuf) < 8) {
                 goto continue_parseExtras;
             }
-            fieldBuf.uint32();
-            var ts = (int64)fieldBuf.uint32();
-            modified = time.Unix(ts, // AcTime (ignored)
- // ModTime since Unix epoch
- 0);
+            fieldBuf.uint32(); // AcTime (ignored)
+            var ts = (int64)fieldBuf.uint32(); // ModTime since Unix epoch
+            modified = time.Unix(ts, 0);
         }
         else if (exprᴛ1 == extTimeExtraID) {
             if (len(fieldBuf) < 5 || (uint8)(fieldBuf.uint8() & 1) == 0) {
                 goto continue_parseExtras;
             }
-            var ts = (int64)fieldBuf.uint32();
-            modified = time.Unix(ts, // ModTime since Unix epoch
- 0);
+            var ts = (int64)fieldBuf.uint32(); // ModTime since Unix epoch
+            modified = time.Unix(ts, 0);
         }
 
 continue_parseExtras:;
@@ -650,8 +642,7 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
         }
     }
     // read header into struct
-    var b = ((readBuf)(buf[4..]));
-    // skip signature
+    var b = ((readBuf)(buf[4..])); // skip signature
     var d = Ꮡ(new directoryEnd(
         diskNbr: (uint32)b.uint16(),
         dirDiskNbr: (uint32)b.uint16(),
@@ -709,9 +700,8 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
 internal static (int64, error) findDirectory64End(io.ReaderAt r, int64 directoryEndOffset) {
     var locOffset = directoryEndOffset - (int64)directory64LocLen;
     if (locOffset < 0) {
-        return (-1, default!);
+        return (-1, default!); // no need to look for a header outside the file
     }
-    // no need to look for a header outside the file
     var buf = new slice<byte>(directory64LocLen);
     {
         var (_, err) = r.ReadAt(buf, locOffset); if (err != default!) {
@@ -726,16 +716,13 @@ internal static (int64, error) findDirectory64End(io.ReaderAt r, int64 directory
     }
     if (b.uint32() != 0) {
         // number of the disk with the start of the zip64 end of central directory
-        return (-1, default!);
+        return (-1, default!); // the file is not a valid zip64-file
     }
-    // the file is not a valid zip64-file
-    var p = b.uint64();
-    // relative offset of the zip64 end of central directory record
+    var p = b.uint64(); // relative offset of the zip64 end of central directory record
     if (b.uint32() != 1) {
         // total number of disks
-        return (-1, default!);
+        return (-1, default!); // the file is not a valid zip64-file
     }
-    // the file is not a valid zip64-file
     return ((int64)p, default!);
 }
 
@@ -757,20 +744,13 @@ internal static error /*err*/ readDirectory64End(io.ReaderAt r, int64 offset, ж
             return ErrFormat;
         }
     }
-    b = b[12..];
-    // skip dir size, version and version needed (uint64 + 2x uint16)
-    d.diskNbr = b.uint32();
-    // number of this disk
-    d.dirDiskNbr = b.uint32();
-    // number of the disk with the start of the central directory
-    d.dirRecordsThisDisk = b.uint64();
-    // total number of entries in the central directory on this disk
-    d.directoryRecords = b.uint64();
-    // total number of entries in the central directory
-    d.directorySize = b.uint64();
-    // size of the central directory
-    d.directoryOffset = b.uint64();
-    // offset of start of central directory with respect to the starting disk number
+    b = b[12..]; // skip dir size, version and version needed (uint64 + 2x uint16)
+    d.diskNbr = b.uint32(); // number of this disk
+    d.dirDiskNbr = b.uint32(); // number of the disk with the start of the central directory
+    d.dirRecordsThisDisk = b.uint64(); // total number of entries in the central directory on this disk
+    d.directoryRecords = b.uint64(); // total number of entries in the central directory
+    d.directorySize = b.uint64(); // size of the central directory
+    d.directoryOffset = b.uint64(); // offset of start of central directory with respect to the starting disk number
     return default!;
 }
 

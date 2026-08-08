@@ -153,8 +153,7 @@ internal static slice<Pod> collectPodsImpl(slice<@string> files, slice<nint> dir
         @string @base = filepath.Base(f);
         {
             var m = counterRE.FindStringSubmatch(@base); if (m != default!) {
-                @string tag = m[1];
-                // meta hash
+                @string tag = m[1]; // meta hash
                 var (pid, err) = strconv.Atoi(m[2]);
                 if (err != default!) {
                     continue;

@@ -524,9 +524,8 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
                 var q = Ꮡ(new ifacePair(xi, yi, Ꮡp));
                 while (Ꮡp != nil) {
                     if (p.identical(q)) {
-                        result = true; goto ᒐdone;
+                        result = true; goto ᒐdone; // same pair was compared before
                     }
-                    // same pair was compared before
                     Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                 }
                 // The method set of x must be a subset of the method set
@@ -698,10 +697,9 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
             break;
         }
         case ж<Interface> xΔ3: {
-            assert(!u.enableInterfaceInference || (unifyMode)(mode & exact) != 0);
+            assert(!u.enableInterfaceInference || (unifyMode)(mode & exact) != 0); // handled before this switch
             {
                 var (yΔ8, ok) = y._<ж<Interface>>(ᐧ); if (ok) {
-                    // handled before this switch
                     // Two interface types unify if they have the same set of methods with
                     // the same names, and corresponding function types unify.
                     // Lower-case method names from different packages are always different.
@@ -742,9 +740,8 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
                         var q = Ꮡ(new ifacePair(xΔ3, yΔ8, Ꮡp));
                         while (Ꮡp != nil) {
                             if (p.identical(q)) {
-                                result = true; goto ᒐdone;
+                                result = true; goto ᒐdone; // same pair was compared before
                             }
-                            // same pair was compared before
                             Ꮡp = p.prev; p = ref Ꮡp.DerefOrNull();
                         }
                         if (debug) {

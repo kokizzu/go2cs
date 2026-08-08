@@ -35,9 +35,8 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
         Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
         defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
         if (d.timer != nil && !d.timer.Stop()) {
-            ᐸꟷ(d.cancel);
+            ᐸꟷ(d.cancel); // Wait for the timer callback to finish and close cancel
         }
-        // Wait for the timer callback to finish and close cancel
         d.timer = default!;
         // Time is zero, then there is no deadline.
         var closed = isClosedChan(d.cancel);
@@ -233,8 +232,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
             (n, err) = (0, os.ErrDeadlineExceeded); goto ᒐdone;
         }}
 
-        Ꮡp.of(pipe.ᏑwrMu).Lock();
-        // Ensure entirety of b is written together
+        Ꮡp.of(pipe.ᏑwrMu).Lock(); // Ensure entirety of b is written together
         defer(Ꮡp.of(pipe.ᏑwrMu).Unlock, ref ᒐ);
         for (var once = true; once || len(b) > 0; once = false) {
             var selᴛ27 = p.wrTx.ᐸꟷ(b, ꓸꓸꓸ);

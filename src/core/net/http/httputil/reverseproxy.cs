@@ -408,9 +408,8 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
         }
         var outreq = req.Clone(ctx);
         if (req.ContentLength == 0) {
-            outreq.Value.Body = default!;
+            outreq.Value.Body = default!; // Issue 16036: nil Body for http.Transport retries
         }
-        // Issue 16036: nil Body for http.Transport retries
         if ((~outreq).Body != default!) {
             // Reading from the request body after returning from a handler is not
             // allowed, and the RoundTrip goroutine that reads the Body can outlive
@@ -422,9 +421,8 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
             defer(() => (~outreqʗ1).Body.Close(), ref ᒐ);
         }
         if ((~outreq).Header == default!) {
-            outreq.Value.Header = new httpꓸHeader(0);
+            outreq.Value.Header = new httpꓸHeader(0); // Issue 33142: historical behavior was to always allocate
         }
-        // Issue 33142: historical behavior was to always allocate
         if ((p.Director != default!) == (p.Rewrite != default!)) {
             Ꮡp.getErrorHandler()(rw, Ꮡreq, errors.New(reverseProxyMustHaveˢ));
             return;
@@ -479,8 +477,7 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
                     // X-Forwarded-For information as a comma+space
                     // separated list and fold multiple headers into one.
                     var (prior, ok) = (~outreq).Header[xForwardedForˢ, ꟷ];
-                    var omit = ok && prior == default!;
-                    // Issue 38079: nil now means don't populate the header
+                    var omit = ok && prior == default!; // Issue 38079: nil now means don't populate the header
                     if (len(prior) > 0) {
                         clientIP = strings.Join(prior, ", "u8) + ", "u8 + clientIP;
                     }
@@ -567,8 +564,7 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
             }
             throw panic(http.ErrAbortHandler);
         }
-        (~res).Body.Close();
-        // close now, instead of defer, to populate res.Trailer
+        (~res).Body.Close(); // close now, instead of defer, to populate res.Trailer
         if (len((~res).Trailer) > 0) {
             // Force chunking if we saw a response trailer.
             // This prevents net/http from calculating the length for short
@@ -651,10 +647,9 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
     // The MIME type is defined in https://www.w3.org/TR/eventsource/#text-event-stream
     {
         var (baseCT, _, _) = mime.ParseMediaType(resCT); if (baseCT == "text/event-stream"u8) {
-            return -1;
+            return -1; // negative means immediately
         }
     }
-    // negative means immediately
     // We might have the case of streaming for which Content-Length might be unset.
     if (res.ContentLength == -1) {
         return -1;
@@ -868,8 +863,7 @@ internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.Resp
         defer(() => connʗ1.Close(), ref ᒐ);
         copyHeader(rw.Header(), res.Header);
         res.Header = rw.Header();
-        res.Body = default!;
-        // so res.Write only writes the headers; we have res.Body in backConn above
+        res.Body = default!; // so res.Write only writes the headers; we have res.Body in backConn above
         {
             var err = res.Write(new bufio_ReadWriterжWriter(brw)); if (err != default!) {
                 Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("response write: %v"u8, err));

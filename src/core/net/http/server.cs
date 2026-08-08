@@ -361,16 +361,14 @@ internal static slice<byte> colonSpace = slice<byte>(": "u8);
         cw.writeHeader(default!);
     }
     if (cw.chunking) {
-        var bw = cw.res.Value.conn.Value.bufw;
-        // conn's bufio writer
+        var bw = cw.res.Value.conn.Value.bufw; // conn's bufio writer
         // zero chunk to mark EOF
         bw.WriteString("0\r\n"u8);
         {
             var trailers = cw.res.finalTrailers(); if (trailers != default!) {
-                trailers.Write(new bufio_WriterжWriter(bw));
+                trailers.Write(new bufio_WriterжWriter(bw)); // the writer handles noting errors
             }
         }
-        // the writer handles noting errors
         // final blank line after the trailers (whether
         // present or not)
         bw.WriteString("\r\n"u8);
@@ -558,10 +556,8 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
                 (n, err) = (n, errΔ1); goto ᒐdone;
             }
         }
-        w.w.Flush();
-        // get rid of any previous writes
-        w.cw.flush();
-        // make sure Header is written; flush data to rwc
+        w.w.Flush(); // get rid of any previous writes
+        w.cw.flush(); // make sure Header is written; flush data to rwc
         // Now that cw has been flushed, its chunking field is guaranteed initialized.
         if (!w.cw.chunking && w.bodyAllowed()) {
             var (n0Δ2, errΔ2) = rf.ReadFrom(src);
@@ -925,10 +921,8 @@ public static UntypedInt DefaultMaxHeaderBytes => /* 1 << 20 */ 1048576; // 1 MB
 }
 
 [GoRecv] internal static int64 initialReadLimitSize(this ref Server srv) {
-    return (int64)srv.maxHeaderBytes() + 4096;
+    return (int64)srv.maxHeaderBytes() + 4096; // bufio slop
 }
-
-// bufio slop
 
 // tlsHandshakeTimeout returns the time limit permitted for the TLS
 // handshake, or zero for unlimited.
@@ -1067,8 +1061,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
         c.r.setReadLimit(c.server.initialReadLimitSize());
         if (c.lastMethod == "POST"u8) {
             // RFC 7230 section 3 tolerance for old buggy clients.
-            var (peek, _) = c.bufr.Peek(4);
-            // ReadRequest will get err below
+            var (peek, _) = c.bufr.Peek(4); // ReadRequest will get err below
             c.bufr.Discard(numLeadingCRorLF(peek));
         }
         (var req, err) = readRequest(c.bufr);
@@ -1584,9 +1577,8 @@ internal static readonly @string chunkedˢ = "chunked"u8;
         // encoding and we don't know the Content-Length so
         // signal EOF by closing connection.
         w.Value.closeAfterReply = true;
-        delHeader(transferEncodingˢ);
+        delHeader(transferEncodingˢ); // in case already set
     }
-    // in case already set
     // Cannot use Content-Length with non-identity Transfer-Encoding.
     if (cw.chunking) {
         delHeader(contentLengthˢ);
@@ -1744,8 +1736,7 @@ internal static (nint n, error err) write(this ж<response> Ꮡw, nint lenData, 
     if (!w.bodyAllowed()) {
         return (0, ErrBodyNotAllowed);
     }
-    w.written += (int64)lenData;
-    // ignoring errors, for errorKludge
+    w.written += (int64)lenData; // ignoring errors, for errorKludge
     if (w.contentLength != -1 && w.written > w.contentLength) {
         return (0, ErrContentLength);
     }
@@ -2125,12 +2116,11 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
                     return;
                 }
                 case {} when isCommonNetReadError(err): {
-                    return;
+                    return; // don't reply
                 }
                 default: {
                     {
                         var (v, ok) = err._<statusError>(ᐧ); if (ok) {
-                            // don't reply
                             fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 %d %s: %s%s%d %s: %s"u8, v.code, StatusText(v.code), v.text, errorHeaders, v.code, StatusText(v.code), v.text);
                             return;
                         }
@@ -2659,9 +2649,8 @@ internal static @string stripHostPort(@string h) {
     }
     var (host, _, err) = net.SplitHostPort(h);
     if (err != default!) {
-        return h;
+        return h; // on error, return unchanged
     }
-    // on error, return unchanged
     return host;
 }
 
@@ -3444,10 +3433,9 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
         ref var l = ref heap(lʗp, out var Ꮡl);
         {
             var fn = testHookServerServe; if (fn != default!) {
-                fn(Ꮡsrv, l);
+                fn(Ꮡsrv, l); // call hook with unwrapped listener
             }
         }
-        // call hook with unwrapped listener
         var origListener = l;
         l = new onceCloseListenerжListener(Ꮡ(new onceCloseListener(Listener: l)));
         defer(() => Ꮡl.ValueSlot.Close(), ref ᒐ);
@@ -3505,8 +3493,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
             }
             tempDelay = 0;
             var c = Ꮡsrv.newConn(rw);
-            c.setState((~c).rwc, StateNew, runHooks);
-            // before Serve can return
+            c.setState((~c).rwc, StateNew, runHooks); // before Serve can return
             var cʗ1 = c;
             goǃ(cʗ1.serve, connCtx);
         }

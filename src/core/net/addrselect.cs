@@ -118,9 +118,8 @@ internal static ipAttr ipAttrOf(netipꓸAddr ip) {
     // prefer DA.  Similarly, if DA is known to be unreachable or if
     // Source(DA) is undefined, then prefer DB.
     if (!SourceDA.IsValid() && !SourceDB.IsValid()) {
-        return false;
+        return false; // "equal"
     }
-    // "equal"
     if (!SourceDB.IsValid()) {
         return preferDA;
     }
@@ -203,10 +202,9 @@ internal static ipAttr ipAttrOf(netipꓸAddr ip) {
     // Rule 10: Otherwise, leave the order unchanged.
     // If DA preceded DB in the original list, prefer DA.
     // Otherwise, prefer DB.
-    return false;
+    return false; // "equal"
 }
 
-// "equal"
 [GoType] partial struct policyTableEntry {
     public netipꓸPrefix Prefix;
     public uint8 Precedence;

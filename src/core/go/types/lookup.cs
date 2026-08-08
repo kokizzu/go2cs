@@ -94,13 +94,12 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
                 (obj, index, indirect) = lookupFieldOrMethodImpl(t, addressable, Ꮡpkg, name, foldCase);
                 {
                     var (_, ok) = obj._<ж<Var>>(ᐧ); if (!ok) {
-                        (obj, index, indirect) = (default!, default!, false);
+                        (obj, index, indirect) = (default!, default!, false); // accept fields (variables) only
                     }
                 }
             }
         }
     }
-    // accept fields (variables) only
     return (obj, index, indirect);
 }
 
@@ -126,9 +125,8 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
     ref var pkg = ref Ꮡpkg.DerefOrNull();
     // WARNING: The code in this function is extremely subtle - do not modify casually!
     if (name == "_"u8) {
-        return (obj, index, indirect);
+        return (obj, index, indirect); // blank fields/methods are never found
     }
-    // blank fields/methods are never found
     // Importantly, we must not call under before the call to deref below (nor
     // does deref call under), as doing so could incorrectly result in finding
     // methods of the pointer base type when T is a (*Named) pointer type.
@@ -177,17 +175,15 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
                             // caution: method may not have a proper signature yet
                             index = concat(e.index, i);
                             if (obj != default! || e.multiples) {
-                                return (default!, index, false);
+                                return (default!, index, false); // collision
                             }
-                            // collision
                             obj = new FuncжObject(m);
                             indirect = e.indirect;
-                            continue;
+                            continue; // we can't have a matching field or interface method
                         }
                     }
                 }
             }
-            // we can't have a matching field or interface method
             switch (under(typΔ1).type()) {
             case ж<Struct> t: {
                 foreach (var (i, f) in (~t).fields) {
@@ -196,14 +192,12 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
                         assert((~f).typ != default!);
                         index = concat(e.index, i);
                         if (obj != default! || e.multiples) {
-                            return (default!, index, false);
+                            return (default!, index, false); // collision
                         }
-                        // collision
                         obj = new VarжObject(f);
                         indirect = e.indirect;
-                        continue;
+                        continue; // we can't have a matching interface method
                     }
-                    // we can't have a matching interface method
                     // Collect embedded struct fields for searching the next
                     // lower depth, but only if we have not seen a match yet
                     // (if we have a match it is either the desired field or
@@ -230,9 +224,8 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
                         assert((~m).typ != default!);
                         index = concat(e.index, i);
                         if (obj != default! || e.multiples) {
-                            return (default!, index, false);
+                            return (default!, index, false); // collision
                         }
-                        // collision
                         obj = new FuncжObject(m);
                         indirect = e.indirect;
                     }
@@ -250,19 +243,16 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
                 var (f, _) = obj._<ж<Func>>(ᐧ); if (f != nil) {
                     // determine if method has a pointer receiver
                     if (f.hasPtrRecv() && !indirect && !addressable) {
-                        return (default!, default!, true);
+                        return (default!, default!, true); // pointer/addressable receiver required
                     }
                 }
             }
-            // pointer/addressable receiver required
             return (obj, index, indirect);
         }
         current = consolidateMultiples(next);
     }
-    return (default!, default!, false);
+    return (default!, default!, false); // not found
 }
-
-// not found
 
 // embeddedType represents an embedded type
 [GoType] partial struct embeddedType {
@@ -277,13 +267,10 @@ internal static (Object obj, slice<nint> index, bool indirect) lookupFieldOrMeth
 // consolidated list.
 internal static slice<embeddedType> consolidateMultiples(slice<embeddedType> list) {
     if (len(list) <= 1) {
-        return list;
+        return list; // at most one entry - nothing to do
     }
-    // at most one entry - nothing to do
-    nint n = 0;
-    // number of entries w/ unique type
-    var prev = new map<ΔType, nint>();
-    // index at which type was previously seen
+    nint n = 0; // number of entries w/ unique type
+    var prev = new map<ΔType, nint>(); // index at which type was previously seen
     foreach (var (_, e) in list) {
         {
             var (i, found) = lookupType(prev, e.typ); if (found){
@@ -380,8 +367,7 @@ internal static (ж<Func> method, bool wrongType) missingMethod(this ж<Checker>
 
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var cause = ref Ꮡcause.DerefOrNull();
-    var methods = under(T)._<ж<Interface>>().typeSet().Value.methods;
-    // T must be an interface
+    var methods = under(T)._<ж<Interface>>().typeSet().Value.methods; // T must be an interface
     if (len(methods) == 0) {
         return (default!, false);
     }

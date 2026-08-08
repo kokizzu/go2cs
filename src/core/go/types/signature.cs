@@ -225,8 +225,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
         // scopePos, there should be no need for scope squashing.
         // Audit to ensure all lookups honor scopePos and simplify.
         var scope = NewScope(check.scope, nopos, nopos, functionBodyTempScopeˢ);
-        tokenꓸPos scopePos = ftyp.End();
-        // all parameters' scopes start after the signature
+        tokenꓸPos scopePos = ftyp.End(); // all parameters' scopes start after the signature
         var (recvList, _) = Ꮡcheck.collectParams(scope, ᏑrecvPar, false, scopePos);
         var (@params, variadic) = Ꮡcheck.collectParams(scope, ftyp.Params, true, scopePos);
         var (results, _) = Ꮡcheck.collectParams(scope, ftyp.Results, false, scopePos);
@@ -246,19 +245,17 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
             var matchᴛ2 = exprᴛ1 is 0 || exprᴛ1 is 1;
             if (exprᴛ1 is 0) {
                 recv = NewParam(nopos, // error reported by resolver
- nil, ""u8, new BasicжΔType(Typ[Invalid]));
+ nil, ""u8, new BasicжΔType(Typ[Invalid])); // ignore recv below
             }
             else if (!matchᴛ2) { /* default: */
-                Ꮡcheck.error(new Varжpositioner(recvList[len(recvList) - 1]), // ignore recv below
- // more than one receiver
- InvalidRecv, methodHasMultipleˢ);
+                Ꮡcheck.error(new Varжpositioner(recvList[len(recvList) - 1]), // more than one receiver
+ InvalidRecv, methodHasMultipleˢ); // continue with first receiver
                 fallthrough = true;
             }
             if (fallthrough || !matchᴛ1 && exprᴛ1 is 1) { matchᴛ1 = true;
                 recv = recvList[0];
             }
 
-            // continue with first receiver
             sig.recv = recv;
             // Delay validation of receiver type as it may cause premature expansion
             // of types the receiver type is dependent on (see issues go.dev/issue/51232, go.dev/issue/51233).
@@ -268,9 +265,8 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                 var (rtyp, _) = deref((~recvʗ1).typ);
                 var atyp = Unalias(rtyp);
                 if (!isValid(atyp)) {
-                    return;
+                    return; // error was reported before
                 }
-                // error was reported before
                 // spec: "The type denoted by T is called the receiver base type; it must not
                 // be a pointer or interface type and it must be declared in the same package
                 // as the method."

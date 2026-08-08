@@ -119,8 +119,7 @@ internal static slice<ast.Stmt> trimTrailingEmptyStmts(slice<ast.Stmt> list) {
 internal static void stmtList(this ж<Checker> Ꮡcheck, stmtContext ctxt, slice<ast.Stmt> list) {
     var ok = (stmtContext)(ctxt & fallthroughOk) != 0;
     stmtContext inner = (stmtContext)(ctxt & ~fallthroughOk);
-    list = trimTrailingEmptyStmts(list);
-    // trailing empty statements are "invisible" to fallthrough analysis
+    list = trimTrailingEmptyStmts(list); // trailing empty statements are "invisible" to fallthrough analysis
     foreach (var (i, s) in list) {
         stmtContext innerΔ1 = inner;
         if (ok && i + 1 == len(list)) {
@@ -281,16 +280,14 @@ L:
         }
         // Order matters: By comparing v against x, error positions are at the case values.
         ref var res = ref heap<operand>(out var Ꮡres);
-        res = v;
-        // keep original v unchanged
+        res = v; // keep original v unchanged
         Ꮡcheck.comparison(Ꮡres, Ꮡx, token.EQL, true);
         if (res.mode == invalid) {
             goto continue_L;
         }
         if (v.mode != constant_) {
-            goto continue_L;
+            goto continue_L; // we're done
         }
-        // we're done
         // look for duplicate values
         {
             var val = goVal(v.val); if (val != default!) {
@@ -340,9 +337,8 @@ L:
         // The spec allows the value nil instead of a type.
         if (check.isNil(e)){
             T = default!;
-            Ꮡcheck.expr(nil, Ꮡdummy, e);
+            Ꮡcheck.expr(nil, Ꮡdummy, e); // run e through expr so we get the usual Info recordings
         } else {
-            // run e through expr so we get the usual Info recordings
             T = Ꮡcheck.varType(e);
             if (!isValid(T)) {
                 goto continue_L;
@@ -556,9 +552,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                 Ꮡcheck.errorf(new ast_Exprᴠpositioner((~sΔ1).X), NonNumericIncDec, invalidOp + "%s%s (non-numeric type %s)", (~sΔ1).X, (~sΔ1).Tok, x.typ);
                 return;
             }
-            var Y = Ꮡ(new ast.BasicLit(ValuePos: (~sΔ1).X.Pos(), Kind: token.INT, Value: "1"u8));
-            Ꮡcheck.binary(Ꮡx, // use x's position
- default!, (~sΔ1).X, new ast_BasicLitжExpr(Y), op, (~sΔ1).TokPos);
+            var Y = Ꮡ(new ast.BasicLit(ValuePos: (~sΔ1).X.Pos(), Kind: token.INT, Value: "1"u8)); // use x's position
+            Ꮡcheck.binary(Ꮡx, default!, (~sΔ1).X, new ast_BasicLitжExpr(Y), op, (~sΔ1).TokPos);
             if (x.mode == invalid) {
                 return;
             }
@@ -639,12 +634,11 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
         case ж<ast.BranchStmt> sΔ1: {
             if ((~sΔ1).Label != nil) {
                 check.hasLabel = true;
-                return;
+                return; // checked in 2nd pass (check.labels)
             }
             var exprᴛ4 = (~sΔ1).Tok;
             if (exprᴛ4 == token.BREAK) {
                 if ((stmtContext)(ctxt & breakOk) == 0) {
-                    // checked in 2nd pass (check.labels)
                     Ꮡcheck.error(new ast_BranchStmtжpositioner(sΔ1), MisplacedBreak, breakNotInForSwitchOrˢ);
                 }
             }
@@ -739,9 +733,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                 x.expr = new ast_IdentжExpr(Ꮡ(new ast.Ident(NamePos: (~(~sΔ1).Body).Lbrace, Name: "true"u8)));
             }
             Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
-            var seen = new valueMap(0);
+            var seen = new valueMap(0); // map of seen case values to positions and types
             foreach (var (i, c) in (~(~sΔ1).Body).List) {
-                // map of seen case values to positions and types
                 var (clause, _) = c._<ж<ast.CaseClause>>(ᐧ);
                 if (clause == nil) {
                     Ꮡcheck.error(new ast_Stmtᴠpositioner(c), InvalidSyntaxTree, incorrectExpressionˢ);
@@ -793,18 +786,16 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                 if ((~lhs).Name == "_"u8){
                     // _ := x.(type) is an invalid short variable declaration
                     Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), NoNewVar, "no new variable on left side of :="u8);
-                    lhs = default!;
+                    lhs = default!; // avoid declared and not used error below
                 } else {
-                    // avoid declared and not used error below
-                    check.recordDef(lhs, default!);
+                    check.recordDef(lhs, default!); // lhs variable is implicitly declared in each cause clause
                 }
                 rhs = (~guard).Rhs[0];
                 break;
             }
             default: {
                 var guard = (~sΔ1).Assign;
-                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), // lhs variable is implicitly declared in each cause clause
- InvalidSyntaxTree, incorrectFormOfTypeˢ);
+                Ꮡcheck.error(new ast_TypeSwitchStmtжpositioner(sΔ1), InvalidSyntaxTree, incorrectFormOfTypeˢ);
                 return;
             }}
             var (expr, _) = rhs._<ж<ast.TypeAssertExpr>>(ᐧ);
@@ -830,9 +821,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
             }
             Ꮡcheck.multipleDefaults((~(~sΔ1).Body).List);
             slice<ж<Var>> lhsVars = default!;                    // list of implicitly declared lhs variables
-            var seen = new map<ΔType, ast.Expr>();
+            var seen = new map<ΔType, ast.Expr>(); // map of seen types to positions
             foreach (var (_, sΔ2) in (~(~sΔ1).Body).List) {
-                // map of seen types to positions
                 var (clause, _) = sΔ2._<ж<ast.CaseClause>>(ᐧ);
                 if (clause == nil) {
                     Ꮡcheck.error(new ast_Stmtᴠpositioner(sΔ2), InvalidSyntaxTree, incorrectTypeSwitchCaseˢ);
@@ -855,8 +845,7 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                         }
                     }
                     var obj = NewVar(lhs.Pos(), check.pkg, (~lhs).Name, T);
-                    tokenꓸPos scopePos = clause.Pos() + ((tokenꓸPos)len("default"));
-                    // for default clause (len(List) == 0)
+                    tokenꓸPos scopePos = clause.Pos() + ((tokenꓸPos)len("default")); // for default clause (len(List) == 0)
                     {
                         nint n = len((~clause).List); if (n > 0) {
                             scopePos = (~clause).List[n - 1].End();
@@ -879,9 +868,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                     if ((~v).used) {
                         used = true;
                     }
-                    v.Value.used = true;
+                    v.Value.used = true; // avoid usage error when checking entire function
                 }
-                // avoid usage error when checking entire function
                 if (!used) {
                     Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), UnusedVar, "%s declared and not used"u8, (~lhs).Name);
                 }
@@ -894,9 +882,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
             foreach (var (_, sΔ3) in (~(~sΔ1).Body).List) {
                 var (clause, _) = sΔ3._<ж<ast.CommClause>>(ᐧ);
                 if (clause == nil) {
-                    continue;
+                    continue; // error reported before
                 }
-                // error reported before
                 // clause.Comm must be a SendStmt, RecvStmt, or default case
                 var valid = false;
                 ast.Expr rhs = default!;               // rhs of RecvStmt, or nil
@@ -959,11 +946,10 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                     // Don't call useLHS here because we want to use the lhs in
                     // this erroneous statement so that we don't get errors about
                     // these lhs variables being declared and not used.
-                    Ꮡcheck.use((~sΔ5).Lhs.ꓸꓸꓸ);
+                    Ꮡcheck.use((~sΔ5).Lhs.ꓸꓸꓸ); // avoid follow-up errors
                 }
             }
-            Ꮡcheck.stmt(inner, // avoid follow-up errors
- new ast_BlockStmtжStmt((~sΔ1).Body));
+            Ꮡcheck.stmt(inner, new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }
         case ж<ast.RangeStmt> sΔ1: {
@@ -1039,10 +1025,8 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         // check assignment to/declaration of iteration variables
         // (irregular assignment, cannot easily map to existing assignment checks)
         // lhs expressions and initialization value (rhs) types
-        var lhs = new Expr[]{sKey, sValue}.array();
-        // sKey, sValue may be nil
-        var rhs = new ΔType[]{key, val}.array();
-        // key, val may be nil
+        var lhs = new Expr[]{sKey, sValue}.array(); // sKey, sValue may be nil
+        var rhs = new ΔType[]{key, val}.array(); // key, val may be nil
         var rangeOverInt = isInteger(x.typ);
         if (isDef){
             // short variable declaration
@@ -1065,33 +1049,28 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
                         }
                     } else {
                         Ꮡcheck.errorf(new ast_Exprᴠpositioner(lhsΔ1), InvalidSyntaxTree, "cannot declare %s"u8, lhsΔ1);
-                        obj = NewVar(lhsΔ1.Pos(), check.pkg, "_"u8, default!);
+                        obj = NewVar(lhsΔ1.Pos(), check.pkg, "_"u8, default!); // dummy variable
                     }
                 }
-                // dummy variable
                 assert((~obj).typ == default!);
                 // initialize lhs iteration variable, if any
                 var typ = rhs[i];
                 if (typ == default! || AreEqual(typ, Typ[Invalid])) {
                     // typ == Typ[Invalid] can happen if allowVersion fails.
                     obj.Value.typ = new BasicжΔType(Typ[Invalid]);
-                    obj.Value.used = true;
-                    // don't complain about unused variable
+                    obj.Value.used = true; // don't complain about unused variable
                     continue;
                 }
                 if (rangeOverInt){
-                    assert(i == 0);
-                    // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
+                    assert(i == 0); // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
                     Ꮡcheck.initVar(obj, Ꮡx, rangeClauseˢ);
                 } else {
                     ref var y = ref heap(new operand(), out var Ꮡy);
                     y.mode = value;
-                    y.expr = lhsΔ1;
-                    // we don't have a better rhs expression to use here
+                    y.expr = lhsΔ1; // we don't have a better rhs expression to use here
                     y.typ = typ;
-                    Ꮡcheck.initVar(obj, Ꮡy, assignmentˢ);
+                    Ꮡcheck.initVar(obj, Ꮡy, assignmentˢ); // error is on variable, use "assignment" not "range clause"
                 }
-                // error is on variable, use "assignment" not "range clause"
                 assert((~obj).typ != default!);
             }
             // declare variables
@@ -1118,8 +1097,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
                     continue;
                 }
                 if (rangeOverInt){
-                    assert(i == 0);
-                    // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
+                    assert(i == 0); // at most one iteration variable (rhs[1] == nil or Typ[Invalid] for rangeOverInt)
                     Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡx, rangeClauseˢ);
                     // If the assignment succeeded, if x was untyped before, it now
                     // has a type inferred via the assignment. It must be an integer.
@@ -1130,15 +1108,13 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
                 } else {
                     ref var y = ref heap(new operand(), out var Ꮡy);
                     y.mode = value;
-                    y.expr = lhsΔ2;
-                    // we don't have a better rhs expression to use here
+                    y.expr = lhsΔ2; // we don't have a better rhs expression to use here
                     y.typ = typ;
-                    Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡy, assignmentˢ);
+                    Ꮡcheck.assignVar(lhsΔ2, default!, Ꮡy, assignmentˢ); // error is on variable, use "assignment" not "range clause"
                 }
             }
         } else 
         if (rangeOverInt) {
-            // error is on variable, use "assignment" not "range clause"
             // If we don't have any iteration variables, we still need to
             // check that a (possibly untyped) integer range expression x
             // is valid.
@@ -1187,10 +1163,9 @@ internal static (ΔType key, ΔType val, @string cause, bool ok) rangeKeyVal(ΔT
     }
     case ж<Basic> typΔ1: {
         if (isString(new BasicжΔType(typΔ1))) {
-            return (new BasicжΔType(Typ[Int]), universeRune, "", true);
+            return (new BasicжΔType(Typ[Int]), universeRune, "", true); // use 'rune' name
         }
         if (isInteger(new BasicжΔType(typΔ1))) {
-            // use 'rune' name
             if (allowVersion != default! && !allowVersion(go1_22)) {
                 return bad(requiresGo122OrLaterˢ);
             }

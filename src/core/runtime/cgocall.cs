@@ -307,8 +307,7 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
         println((@string)"runtime: bad g in cgocallback"u8);
         exit(2);
     }
-    var sp = gp.Value.m.Value.g0.Value.sched.sp;
-    // system sp saved by cgocallback.
+    var sp = gp.Value.m.Value.g0.Value.sched.sp; // system sp saved by cgocallback.
     callbackUpdateSystemStack((~gp).m, sp, false);
     // The call from C is on gp.m's g0 stack, so we must ensure
     // that we stay on that M. We have to do this before calling
@@ -332,8 +331,7 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
     @unsafe.Pointer savedsp = (@unsafe.Pointer)(~gp).syscallsp;
     var savedpc = gp.Value.syscallpc;
     @unsafe.Pointer savedbp = (@unsafe.Pointer)(~gp).syscallbp;
-    exitsyscall();
-    // coming out of cgo call
+    exitsyscall(); // coming out of cgo call
     gp.Value.m.Value.incgo = false;
     if ((~(~gp).m).isextra) {
         gp.Value.m.Value.isExtraInC = false;

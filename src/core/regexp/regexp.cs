@@ -526,10 +526,8 @@ internal const rune endOfText = -1;
 }
 
 [GoRecv] internal static lazyFlag context(this ref inputReader i, nint pos) {
-    return 0;
+    return 0; // not used
 }
-
-// not used
 
 // LiteralPrefix returns a literal string that must begin any match
 // of the regular expression re. It returns the boolean true if the
@@ -634,10 +632,8 @@ public static @string ReplaceAllStringFunc(this ж<Regexp> Ꮡre, @string src, F
 internal static slice<byte> replaceAll(this ж<Regexp> Ꮡre, slice<byte> bsrc, @string src, nint nmatch, Func<slice<byte>, slice<nint>, slice<byte>> repl) {
     ref var re = ref Ꮡre.DerefOrNull();
 
-    nint lastMatchEnd = 0;
-    // end position of the most recent match
-    nint searchPos = 0;
-    // position where we next look for a match
+    nint lastMatchEnd = 0; // end position of the most recent match
+    nint searchPos = 0; // position where we next look for a match
     slice<byte> buf = default!;
     nint endPos = default!;
     if (bsrc != default!){
@@ -652,9 +648,8 @@ internal static slice<byte> replaceAll(this ж<Regexp> Ꮡre, slice<byte> bsrc, 
     while (searchPos <= endPos) {
         var a = Ꮡre.doExecute(default!, bsrc, src, searchPos, nmatch, dstCap[..0]);
         if (len(a) == 0) {
-            break;
+            break; // no more matches
         }
-        // no more matches
         // Copy the unmatched characters before this match.
         if (bsrc != default!){
             buf = append(buf, bsrc[(int)(lastMatchEnd)..(int)(a[0])].ꓸꓸꓸ);

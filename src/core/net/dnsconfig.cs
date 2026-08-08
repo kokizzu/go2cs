@@ -54,9 +54,8 @@ internal static uint32 serverOffset(this ж<dnsConfig> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.rotate) {
-        return atomic.AddUint32(Ꮡc.of(dnsConfig.Ꮡsoffset), 1) - 1;
+        return atomic.AddUint32(Ꮡc.of(dnsConfig.Ꮡsoffset), 1) - 1; // return 0 to start
     }
-    // return 0 to start
     return 0;
 }
 

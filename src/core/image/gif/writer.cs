@@ -157,12 +157,10 @@ internal static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
     e.write(e.buf[..4]);
     {
         var (p, ok) = e.g.Config.ColorModel._<Δcolor.Palette>(ᐧ); if (ok && len(p) > 0){
-            nint paddedSize = log2(len(p));
-            // Size of Global Color Table: 2^(1+n).
+            nint paddedSize = log2(len(p)); // Size of Global Color Table: 2^(1+n).
             e.buf[0] = (byte)((uint8)((uint8)fColorTable | (uint8)paddedSize));
             e.buf[1] = e.g.BackgroundIndex;
-            e.buf[2] = 0x00;
-            // Pixel Aspect Ratio.
+            e.buf[2] = 0x00; // Pixel Aspect Ratio.
             e.write(e.buf[..3]);
             error err = default!;
             (e.globalCT, err) = encodeColorTable(e.globalColorTable[..], p, paddedSize);
@@ -175,35 +173,26 @@ internal static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
             // All frames have a local color table, so a global color table
             // is not needed.
             e.buf[0] = 0x00;
-            e.buf[1] = 0x00;
-            // Background Color Index.
-            e.buf[2] = 0x00;
-            // Pixel Aspect Ratio.
+            e.buf[1] = 0x00; // Background Color Index.
+            e.buf[2] = 0x00; // Pixel Aspect Ratio.
             e.write(e.buf[..3]);
         }
     }
     // Add animation info if necessary.
     if (len(e.g.Image) > 1 && e.g.LoopCount >= 0) {
-        e.buf[0] = 0x21;
-        // Extension Introducer.
-        e.buf[1] = 0xff;
-        // Application Label.
-        e.buf[2] = 0x0b;
-        // Block Size.
+        e.buf[0] = 0x21; // Extension Introducer.
+        e.buf[1] = 0xff; // Application Label.
+        e.buf[2] = 0x0b; // Block Size.
         e.write(e.buf[..3]);
-        var (_, err) = io.WriteString(e.w, netscape20ˢ);
-        // Application Identifier.
+        var (_, err) = io.WriteString(e.w, netscape20ˢ); // Application Identifier.
         if (err != default! && e.err == default!) {
             e.err = err;
             return;
         }
-        e.buf[0] = 0x03;
-        // Block Size.
-        e.buf[1] = 0x01;
-        // Sub-block Index.
+        e.buf[0] = 0x03; // Block Size.
+        e.buf[1] = 0x01; // Sub-block Index.
         byteorder.LePutUint16(e.buf[2..4], (uint16)e.g.LoopCount);
-        e.buf[4] = 0x00;
-        // Block Terminator.
+        e.buf[4] = 0x00; // Block Terminator.
         e.write(e.buf[..5]);
     }
 }
@@ -293,27 +282,22 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
         }
     }
     if (delay > 0 || disposal != 0 || transparentIndex != -1) {
-        e.buf[0] = sExtension;
-        // Extension Introducer.
-        e.buf[1] = gcLabel;
-        // Graphic Control Label.
-        e.buf[2] = gcBlockSize;
-        // Block Size.
+        e.buf[0] = sExtension; // Extension Introducer.
+        e.buf[1] = gcLabel; // Graphic Control Label.
+        e.buf[2] = gcBlockSize; // Block Size.
         if (transparentIndex != -1){
             e.buf[3] = (byte)(0x01 | (byte)(disposal << (int)(2)));
         } else {
             e.buf[3] = (byte)(0x00 | (byte)(disposal << (int)(2)));
         }
-        byteorder.LePutUint16(e.buf[4..6], (uint16)delay);
-        // Delay Time (1/100ths of a second)
+        byteorder.LePutUint16(e.buf[4..6], (uint16)delay); // Delay Time (1/100ths of a second)
         // Transparent color index.
         if (transparentIndex != -1){
             e.buf[6] = (uint8)transparentIndex;
         } else {
             e.buf[6] = 0x00;
         }
-        e.buf[7] = 0x00;
-        // Block Terminator.
+        e.buf[7] = 0x00; // Block Terminator.
         e.write(e.buf[..8]);
     }
     e.buf[0] = sImageDescriptor;
@@ -326,13 +310,11 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
     // global palette, we can check a couple things. First, do they actually
     // point to the same []color.Color? If so, they are equal so long as the
     // frame's palette is not longer than the global palette...
-    nint paddedSize = log2(len(pm.Palette));
-    // Size of Local Color Table: 2^(1+n).
+    nint paddedSize = log2(len(pm.Palette)); // Size of Local Color Table: 2^(1+n).
     {
         var (gp, ok) = e.g.Config.ColorModel._<Δcolor.Palette>(ᐧ); if (ok && len(pm.Palette) <= len(gp) && Ꮡ(gp, 0) == Ꮡ(pm.Palette, 0)){
-            e.writeByte(0);
+            e.writeByte(0); // Use the global color table.
         } else {
-            // Use the global color table.
             var (ct, err) = encodeColorTable(e.localColorTable[..], pm.Palette, paddedSize);
             if (err != default!) {
                 if (e.err == default!) {
@@ -344,9 +326,8 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
             // palette, but it might be a copy, possibly with one value turned into
             // transparency by DecodeAll.
             if (ct <= e.globalCT && e.colorTablesMatch(len(pm.Palette), transparentIndex)){
-                e.writeByte(0);
+                e.writeByte(0); // Use the global color table.
             } else {
-                // Use the global color table.
                 // Use a local color table.
                 e.writeByte((byte)((uint8)((uint8)fColorTable | (uint8)paddedSize)));
                 e.write(e.localColorTable[..(int)(ct)]);
@@ -357,8 +338,7 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
     if (litWidth < 2) {
         litWidth = 2;
     }
-    e.writeByte((uint8)litWidth);
-    // LZW Minimum Code Size.
+    e.writeByte((uint8)litWidth); // LZW Minimum Code Size.
     var bw = new blockWriter(e: Ꮡe);
     bw.setup();
     var lzww = lzw.NewWriter(bw, lzw.LSB, litWidth);
@@ -379,12 +359,9 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
             }
         }
     }
-    lzww.Close();
-    // flush to bw
-    bw.close();
+    lzww.Close(); // flush to bw
+    bw.close(); // flush to e.w
 }
-
-// flush to e.w
 
 // Options are the encoding parameters.
 [GoType] partial struct Options {

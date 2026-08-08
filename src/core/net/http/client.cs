@@ -230,8 +230,7 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
 
     ref var ireq = ref Ꮡireq.DerefOrNull();
     ref var req = ref heap<ж<Request>>(out var Ꮡreq);
-    req = Ꮡireq;
-    // req is either the original request, or a modified fork
+    req = Ꮡireq; // req is either the original request, or a modified fork
     if (rt == default!) {
         req.closeBody();
         return (default!, alwaysFalse, errors.New(httpNoClientTransportOrˢ));
@@ -249,10 +248,9 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
     void forkReq() {
         if (Ꮡireq == Ꮡreq.ValueSlot) {
             Ꮡreq.ValueSlot = @new<Request>();
-            Ꮡreq.ValueSlot.Value = Ꮡireq.Value;
+            Ꮡreq.ValueSlot.Value = Ꮡireq.Value; // shallow clone
         }
     }
-    // shallow clone
     // Most the callers of send (Get, Post, et al) don't need
     // Headers, leaving it uninitialized. We guarantee to the
     // Transport that this has been initialized, though.
@@ -399,8 +397,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
         var deadlineʗ1 = deadline;
         return (cancelCtxΔ1, () => time.Now().After(deadlineʗ1));
     }
-    var initialReqCancel = req.Cancel;
-    // the user's original Request.Cancel, if any
+    var initialReqCancel = req.Cancel; // the user's original Request.Cancel, if any
     Action cancelCtx = default!;
     if (timeBeforeContextDeadline(deadline, oldCtx)) {
         (req.ctx, cancelCtx) = context_package.WithDeadline(oldCtx, deadline);
@@ -683,8 +680,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 Err: errors.New(httpNilRequestUrlˢ)
             )))); goto ᒐdone;
         }
-        _ = c;
-        // panic early if c is nil; see go.dev/issue/53521
+        _ = c; // panic early if c is nil; see go.dev/issue/53521
         time.Time deadline = c.deadline();
         ref var reqs = ref heap<slice<ж<Request>>>(out var Ꮡreqs);
         ref var resp = ref heap<ж<Response>>(out var Ꮡresp);
@@ -842,8 +838,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
         }
     }
     ref var preq = ref heap<ж<Request>>(out var Ꮡpreq);
-    preq = Ꮡireq;
-    // The previous request
+    preq = Ꮡireq; // The previous request
     var icookiesʗ1 = icookies;
     var ireqhdrʗ1 = ireqhdr;
     return (ж<Request> req) => {
@@ -860,8 +855,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
         // See https://golang.org/issue/17494
         if (Ꮡc.Value.Jar != default! && icookiesʗ1 != default!) {
             bool changed = default!;
-            var resp = req.Value.Response;
-            // The response that caused the upcoming redirect
+            var resp = req.Value.Response; // The response that caused the upcoming redirect
             foreach (var (_, cΔ2) in resp.Cookies()) {
                 {
                     var (_, ok) = icookiesʗ1[(~cΔ2).Name, ꟷ]; if (ok) {
@@ -878,8 +872,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
                         ss = append(ss, (~cΔ3).Name + "="u8 + (~cΔ3).Value);
                     }
                 }
-                slices.Sort<slice<@string>, @string>(ss);
-                // Ensure deterministic headers
+                slices.Sort<slice<@string>, @string>(ss); // Ensure deterministic headers
                 ireqhdrʗ1.Set(cookieˢ, strings.Join(ss, "; "u8));
             }
         }
@@ -890,14 +883,13 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
                 req.Value.Header[k] = vv;
             }
         }
-        Ꮡpreq.ValueSlot = req;
+        Ꮡpreq.ValueSlot = req; // Update previous Request with the current request
     };
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string stoppedAfter10Redirectsˢ = "stopped after 10 redirects"u8;
 
-// Update previous Request with the current request
 internal static error defaultCheckRedirect(ж<Request> Ꮡreq, slice<ж<Request>> via) {
     if (builtin.len(via) >= 10) {
         return errors.New(stoppedAfter10Redirectsˢ);

@@ -112,8 +112,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
             throw panic("unreachable");
             break;
         }}
-        var a = Ꮡs.Sizeof(T);
-        // may be 0 or negative
+        var a = Ꮡs.Sizeof(T); // may be 0 or negative
         // spec: "For a variable x of any type: unsafe.Alignof(x) is at least 1."
         if (a < 1) {
             result = 1; goto ᒐdone;
@@ -152,19 +151,16 @@ public static slice<int64> Offsetsof(this ж<StdSizes> Ꮡs, slice<ж<Var>> fiel
         }
         // offs >= 0
         var a = Ꮡs.Alignof((~f).typ);
-        offs = align(offs, a);
-        // possibly < 0 if align overflows
+        offs = align(offs, a); // possibly < 0 if align overflows
         offsets[i] = offs;
         {
             var d = Ꮡs.Sizeof((~f).typ); if (d >= 0 && offs >= 0){
-                offs += d;
+                offs += d; // ok to overflow to < 0
             } else {
-                // ok to overflow to < 0
-                offs = -1;
+                offs = -1; // f.typ or offs is too large
             }
         }
     }
-    // f.typ or offs is too large
     return offsets;
 }
 
@@ -212,29 +208,26 @@ public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
         var esize = Ꮡs.Sizeof((~t).elem);
         if (esize < 0) {
             // n > 0
-            return -1;
+            return -1; // element too large
         }
         if (esize == 0) {
-            // element too large
-            return 0;
+            return 0; // 0-size element
         }
         var a = Ꮡs.Alignof((~t).elem);
-        var ea = align(esize, // 0-size element
- // esize > 0
- a);
+        var ea = align(esize, // esize > 0
+ a); // possibly < 0 if align overflows
         if (ea < 0) {
-            // possibly < 0 if align overflows
             return -1;
         }
-        var n1 = n - 1;
+        var n1 = n - 1; // n1 >= 0
 // ea >= 1
-// n1 >= 0
+
         // Final size is ea*n1 + esize; and size must be <= maxInt64.
         const int64 maxInt64 = /* 1<<63 - 1 */ 9223372036854775807;
         if (n1 > 0 && ea > maxInt64 / n1) {
-            return -1;
+            return -1; // ea*n1 overflows
         }
-        return ea * n1 + esize;
+        return ea * n1 + esize; // may still overflow to < 0 which is ok
     }
     case ж<Slice> t: {
         return s.WordSize * 3;
@@ -242,17 +235,15 @@ public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
     case ж<Struct> t: {
         nint n = t.NumFields();
         if (n == 0) {
-            // ea*n1 overflows
-            // may still overflow to < 0 which is ok
             return 0;
         }
         var offsets = Ꮡs.Offsetsof((~t).fields);
         var offs = offsets[n - 1];
         var size = Ꮡs.Sizeof((~(~t).fields[n - 1]).typ);
         if (offs < 0 || size < 0) {
-            return -1;
+            return -1; // type too large
         }
-        return offs + size;
+        return offs + size; // may overflow to < 0 which is ok
     }
     case ж<Interface> t: {
         assert(!isTypeParam(T));
@@ -264,14 +255,11 @@ public static int64 Sizeof(this ж<StdSizes> Ꮡs, ΔType T) {
         throw panic("unreachable");
         break;
     }}
-    // type too large
-    // may overflow to < 0 which is ok
     // Type parameters lead to variable sizes/alignments;
     // StdSizes.Sizeof won't be called for them.
-    return s.WordSize;
+    return s.WordSize; // catch-all
 }
 
-// catch-all
 // When adding more architectures here,
 // update the doc string of SizesFor below.
 // common architecture word sizes and alignments

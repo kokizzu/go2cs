@@ -418,8 +418,7 @@ internal static void mallocinit() {
             var (a, size) = sysReserveAligned((@unsafe.Pointer)Δp, arenaSize, heapArenaBytes);
             if (a != nil) {
                 Ꮡmheap_.of(mheap.Ꮡarena).init((uintptr)a, size, false);
-                Δp = mheap_.arena.end;
-                // For hint below
+                Δp = mheap_.arena.end; // For hint below
                 break;
             }
         }
@@ -747,8 +746,7 @@ internal static ref uintptr zerobase => ref Ꮡzerobase.Value;
 internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    nint theBit = sys.TrailingZeros64(s.allocCache);
-    // Is there a free object in the allocCache?
+    nint theBit = sys.TrailingZeros64(s.allocCache); // Is there a free object in the allocCache?
     if (theBit < 64) {
         var result = (uint16)(s.freeindex + (uint16)theBit);
         if (result < s.nelems) {
@@ -1107,8 +1105,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
     // x will keep the memory alive.
     if (delayedZeroing) {
         // N.B. size == fullSize always in this case.
-        memclrNoHeapPointersChunked(size, x);
-        // This is a possible preemption point: see #47302
+        memclrNoHeapPointersChunked(size, x); // This is a possible preemption point: see #47302
         // Finish storing the type information for this case.
         if (!noscan) {
             var mpΔ1 = acquirem();

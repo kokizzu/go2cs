@@ -32,10 +32,9 @@ internal static (float64 frac, nint exp) frexp(float64 f) {
     // special cases
     switch (ᐧ) {
     case {} when f is 0D: {
-        return (f, 0);
+        return (f, 0); // correctly return -0
     }
-    case {} when IsInf(f, // correctly return -0
- 0) || IsNaN(f): {
+    case {} when IsInf(f, 0) || IsNaN(f): {
         return (f, 0);
     }}
 

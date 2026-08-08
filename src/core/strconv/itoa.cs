@@ -104,8 +104,7 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
                 // since 64bit division and modulo operations
                 // are calculated by runtime functions on 32bit machines.
                 var q = u / 1000000000;
-                nuint usΔ1 = (nuint)(u - q * 1000000000);
-                // u % 1e9 fits into a uint
+                nuint usΔ1 = (nuint)(u - q * 1000000000); // u % 1e9 fits into a uint
                 for (nint j = 4; j > 0; j--) {
                     nuint isΔ1 = usΔ1 % 100 * 2;
                     usΔ1 /= 100;
@@ -149,8 +148,7 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
         // the compiler to generate better code for the shift operation.
         nuint shift = (nuint)((nuint)bits.TrailingZeros((nuint)@base) & 7);
         var b = (uint64)@base;
-        nuint m = (nuint)@base - 1;
-        // == 1<<shift - 1
+        nuint m = (nuint)@base - 1; // == 1<<shift - 1
         while (u >= b) {
             i--;
             a[i] = digits[(int)((nuint)((nuint)u & m))];

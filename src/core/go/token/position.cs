@@ -369,8 +369,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
                 {
                     nint iΔ1 = searchInts(f.lines, (~alt).Offset); if (iΔ1 >= 0) {
                         // i+1 is the line at which the alternative position was recorded
-                        nint d = line - (iΔ1 + 1);
-                        // line distance from alternative position base
+                        nint d = line - (iΔ1 + 1); // line distance from alternative position base
                         line = (~alt).Line + d;
                         if ((~alt).Column == 0){
                             // alternative column is unknown => relative column is unknown
@@ -515,8 +514,7 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
             throw panic(fmt.Sprintf("invalid size %d (should be >= 0)"u8, size));
         }
         // base >= s.base && size >= 0
-        @base += size + 1;
-        // +1 because EOF also has a position
+        @base += size + 1; // +1 because EOF also has a position
         if (@base < 0) {
             throw panic("token.Pos offset overflow (> 2G of source code in file set)");
         }
@@ -542,23 +540,20 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
         ref var s = ref Ꮡs.DerefOrNull();
         ref var @file = ref Ꮡfile.DerefOrNull();
 
-        Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil);
-        // clear last file cache
+        Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil); // clear last file cache
         Ꮡs.of(FileSet.Ꮡmutex).Lock();
         defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock, ref ᒐ);
         {
             nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
                 var last = Ꮡ(s.files, len(s.files) - 1);
                 s.files = append(s.files[..(int)(i)], s.files[(int)(i + 1)..].ꓸꓸꓸ);
-                last.ValueSlot = default!;
+                last.ValueSlot = default!; // don't prolong lifetime when popping last element
             }
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
 }
-
-// don't prolong lifetime when popping last element
 
 // Iterate calls f for the files in the file set in the order they were added
 // until f returns false.
@@ -672,8 +667,7 @@ internal static nint searchInts(slice<nint> a, nint x) {
     nint i = 0;
     nint j = len(a);
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (a[h] <= x){
             i = h + 1;

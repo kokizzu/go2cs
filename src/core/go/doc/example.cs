@@ -61,10 +61,8 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
 
     slice<ж<Example>> list = default!;
     foreach (var (_, @file) in testFiles) {
-        var hasTests = false;
-        // file contains tests, fuzz test, or benchmarks
-        nint numDecl = 0;
-        // number of non-import declarations in the file
+        var hasTests = false; // file contains tests, fuzz test, or benchmarks
+        nint numDecl = 0; // number of non-import declarations in the file
         slice<ж<Example>> flist = default!;
         foreach (var (_, decl) in (~@file).Decls) {
             {
@@ -88,10 +86,9 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
             }
             {
                 var @params = f.Value.Type.Value.Params; if (len((~@params).List) != 0) {
-                    continue;
+                    continue; // function has params; not a valid example
                 }
             }
-            // function has params; not a valid example
             if ((~f).Body == nil) {
                 // ast.File.Body nil dereference (see issue 28044)
                 continue;
@@ -157,10 +154,8 @@ internal static (@string output, bool unordered, bool ok) exampleOutput(ж<ast.B
             }
         }
     }
-    return ("", false, false);
+    return ("", false, false); // no suitable comment found
 }
-
-// no suitable comment found
 
 // isTest tells whether name looks like a test, example, fuzz test, or
 // benchmark. It is a Test (say) if there is a character after Test that is not
@@ -371,10 +366,8 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
     // referenced by the body.
     var unresolved = new map<@string, bool>();
     ref var depDecls = ref heap<slice<ast.Decl>>(out var ᏑdepDecls);
-    var usedDecls = new map<ast.Decl, bool>();
-    // set of top-level decls reachable from the body
-    var usedObjs = new map<ж<ast.Object>, bool>();
-    // set of objects reachable from the body (each declared by a usedDecl)
+    var usedDecls = new map<ast.Decl, bool>(); // set of top-level decls reachable from the body
+    var usedObjs = new map<ж<ast.Object>, bool>(); // set of objects reachable from the body (each declared by a usedDecl)
     ref var inspectFunc = ref heap<Func<ast.Node, bool>>(out var ᏑinspectFunc);
     var topDeclsʗ1 = topDecls;
     var unresolvedʗ1 = unresolved;
@@ -476,8 +469,7 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
             break;
         }
         case ж<ast.GenDecl> dΔ1: {
-            var containsIota = false;
-// does any spec have iota?
+            var containsIota = false; // does any spec have iota?
             // Collect all Specs that were mentioned in the example.
             slice<ast.Spec> specs = default!;
             foreach (var (_, s) in (~dΔ1).Specs) {
@@ -526,8 +518,7 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
                 } else {
                     // Synthesize a GenDecl with just the Specs we need.
                     ref var nd = ref heap<ast.GenDecl>(out var Ꮡnd);
-                    nd = dΔ1.Value;
-                    // copy the GenDecl
+                    nd = dΔ1.Value; // copy the GenDecl
                     nd.Specs = specs;
                     if (len(specs) == 1) {
                         // Remove grouping parens if there is only one spec.
@@ -696,8 +687,7 @@ internal static void classifyExamples(ж<Package> Ꮡp, slice<ж<Example>> examp
     }
     // Mapping of names for funcs, types, and methods to the example listing.
     var ids = new map<@string, ж<slice<ж<Example>>>>();
-    ids[""u8] = Ꮡp.of(Package.ᏑExamples);
-    // package-level examples have an empty name
+    ids[""u8] = Ꮡp.of(Package.ᏑExamples); // package-level examples have an empty name
     foreach (var (_, f) in p.Funcs) {
         if (!token.IsExported((~f).Name)) {
             continue;

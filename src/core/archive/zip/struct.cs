@@ -271,8 +271,7 @@ internal static (uint16 fDate, uint16 fTime) timeToMsDosTime(time.Time t) {
 //
 // Deprecated: Use [Modified] instead.
 [GoRecv] public static void SetModTime(this ref FileHeader h, time.Time t) {
-    t = t.UTC();
-    // Convert to UTC for compatibility
+    t = t.UTC(); // Convert to UTC for compatibility
     h.Modified = t;
     (h.ModifiedDate, h.ModifiedTime) = timeToMsDosTime(t);
 }

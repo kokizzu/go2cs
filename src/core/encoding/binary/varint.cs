@@ -70,14 +70,12 @@ public static (uint64, nint) Uvarint(slice<byte> buf) {
         if (i == MaxVarintLen64) {
             // Catch byte reads past MaxVarintLen64.
             // See issue https://golang.org/issues/41185
-            return (0, -(i + 1));
+            return (0, -(i + 1)); // overflow
         }
-        // overflow
         if (b < 0x80) {
             if (i == MaxVarintLen64 - 1 && b > 1) {
-                return (0, -(i + 1));
+                return (0, -(i + 1)); // overflow
             }
-            // overflow
             return ((uint64)(x | ((uint64)b).Lsh(s)), i + 1);
         }
         x |= (uint64)(((uint64)((byte)(b & 0x7f))).Lsh(s));
@@ -113,8 +111,7 @@ public static nint PutVarint(slice<byte> buf, int64 x) {
 //   - n < 0: value larger than 64 bits (overflow)
 //     and -n is the number of bytes read.
 public static (int64, nint) Varint(slice<byte> buf) {
-    var (ux, n) = Uvarint(buf);
-    // ok to continue in presence of error
+    var (ux, n) = Uvarint(buf); // ok to continue in presence of error
     var x = (int64)((ux >> (int)(1)));
     if ((uint64)(ux & 1) != 0) {
         x = ~x;
@@ -156,8 +153,7 @@ public static (uint64, error) ReadUvarint(io.ByteReader r) {
 // If an [io.EOF] happens after reading some but not all the bytes,
 // ReadVarint returns [io.ErrUnexpectedEOF].
 public static (int64, error) ReadVarint(io.ByteReader r) {
-    var (ux, err) = ReadUvarint(r);
-    // ok to continue in presence of error
+    var (ux, err) = ReadUvarint(r); // ok to continue in presence of error
     var x = (int64)((ux >> (int)(1)));
     if ((uint64)(ux & 1) != 0) {
         x = ~x;

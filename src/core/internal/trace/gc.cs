@@ -904,9 +904,8 @@ keep:;
                 r = h;
             }
         }
-        pos = l - 1;
+        pos = l - 1; // Non-strict predecessor.
     }
-    // Non-strict predecessor.
     @in.pos = pos;
     totalUtil partial = default!;
     if (time != util[pos].Time) {

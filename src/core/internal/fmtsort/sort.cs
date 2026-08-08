@@ -66,9 +66,8 @@ public static SortedMap Sort(reflectꓸValue mapValue) {
 internal static nint compare(reflectꓸValue aVal, reflectꓸValue bVal) {
     var (aType, bType) = (aVal.Type(), bVal.Type());
     if (!AreEqual(aType, bType)) {
-        return -1;
+        return -1; // No good answer possible, but don't return 0: they're not equal.
     }
-    // No good answer possible, but don't return 0: they're not equal.
     var exprᴛ1 = aVal.Kind();
     if (exprᴛ1 == reflect.ΔInt || exprᴛ1 == reflect.Int8 || exprᴛ1 == reflect.Int16 || exprᴛ1 == reflect.Int32 || exprᴛ1 == reflect.Int64) {
         return cmp.Compare(aVal.Int(), bVal.Int());

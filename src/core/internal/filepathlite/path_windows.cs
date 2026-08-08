@@ -30,8 +30,7 @@ internal static bool isLocal(@string path) {
         // Rejecting any path with a colon is conservative but safe.
         return false;
     }
-    var hasDots = false;
-    // contains . or .. path elements
+    var hasDots = false; // contains . or .. path elements
     for (@string p = path; p != ""u8; ) {
         @string part = default!;
         (part, p, _) = cutPath(p);
@@ -248,11 +247,10 @@ internal static nint volumeNameLen(@string path) {
             // We treat the next component after the \\.\ prefix as
             // part of the volume name, which means Clean(`\\?\c:\`)
             // won't remove the trailing \. (See #64028.)
-            return 3;
+            return 3; // exactly \\.
         }
         var (_, rest, ok) = cutPath(path[4..]);
         if (!ok) {
-            // exactly \\.
             return len(path);
         }
         return len(path) - len(rest) - 1;

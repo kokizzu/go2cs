@@ -498,14 +498,10 @@ internal static (io.Reader, error) mixedCSPRNG(io.Reader rand, ж<PrivateKey> �
     }
     // Initialize an SHA-512 hash context; digest...
     var md = sha512.New();
-    md.Write(priv.D.Bytes());
-    // the private key,
-    md.Write(entropy);
-    // the entropy,
-    md.Write(hash);
-    // and the input hash;
-    var key = md.Sum(default!)[..32];
-    // and compute ChopMD-256(SHA-512),
+    md.Write(priv.D.Bytes()); // the private key,
+    md.Write(entropy); // the entropy,
+    md.Write(hash); // and the input hash;
+    var key = md.Sum(default!)[..32]; // and compute ChopMD-256(SHA-512),
     // which is an indifferentiable MAC.
     // Create an AES-CTR instance to use as a CSPRNG.
     var (block, err) = aes.NewCipher(key);
@@ -684,8 +680,7 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     // Encode the coordinates and let SetBytes reject invalid points.
     nint byteLen = (bitSize + 7) / 8;
     var buf = new slice<byte>(1 + 2 * byteLen);
-    buf[0] = 4;
-    // uncompressed point
+    buf[0] = 4; // uncompressed point
     x.FillBytes(buf[1..(int)(1 + byteLen)]);
     y.FillBytes(buf[(int)(1 + byteLen)..(int)(1 + 2 * byteLen)]);
     return curve.newPoint().SetBytes(buf);

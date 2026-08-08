@@ -78,7 +78,7 @@ func (v *Visitor) visitBlockStmt(blockStmt *ast.BlockStmt, context BlockStmtCont
 			v.emitSStringHoist(hoist)
 		}
 
-		v.visitStmt(stmt, []StmtContext{})
+		v.visitListStmt(stmt)
 
 		lastStmt = stmt
 	}

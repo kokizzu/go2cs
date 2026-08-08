@@ -60,10 +60,8 @@ internal static ref types.Package importing => ref Ꮡimporting.Value;
 
 // Import(path) is a shortcut for ImportFrom(path, ".", 0).
 public static (ж<types.Package>, error) Import(this ж<Importer> Ꮡp, @string path) {
-    return Ꮡp.ImportFrom(path, "."u8, 0);
+    return Ꮡp.ImportFrom(path, "."u8, 0); // use "." rather than "" (see issue #24441)
 }
-
-// use "." rather than "" (see issue #24441)
 
 // ImportFrom imports the package with the given import path resolved from the given srcDir,
 // adds the new package to the set of packages maintained by the importer, and returns the
@@ -87,9 +85,8 @@ public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @str
         }
         var (bp, err) = p.ctxt.Import(path, srcDir, 0);
         if (err != default!) {
-            return (default!, err);
+            return (default!, err); // err may be *build.NoGoError - return as is
         }
-        // err may be *build.NoGoError - return as is
         // package unsafe is known to the type checker
         if ((~bp).ImportPath == "unsafe"u8) {
             return (types.Unsafe, default!);
@@ -162,9 +159,8 @@ public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @str
             // Do not return it (see also #20837, #20855).
             if (firstHardErr != default!) {
                 pkg = default!;
-                err = firstHardErr;
+                err = firstHardErr; // give preference to first hard error over any soft error
             }
-            // give preference to first hard error over any soft error
             return (pkg, fmt.Errorf("type-checking package %q failed (%v)"u8, (~bp).ImportPath, err));
         }
         if (firstHardErr != default!) {
@@ -203,12 +199,11 @@ internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, 
                 defer(Ꮡwg.Done, ref ᒐ);
                 var (src, err) = openʗ1(filepath);
                 if (err != default!) {
-                    errorsʗ1[iΔ1] = err;
-                    // open provides operation and filename in error
+                    errorsʗ1[iΔ1] = err; // open provides operation and filename in error
                     return;
                 }
                 (filesʗ1[iΔ1], errorsʗ1[iΔ1]) = parser.ParseFile(Ꮡp.Value.fset, filepath, src, parser.SkipObjectResolution);
-                src.Close();
+                src.Close(); // ignore Close error - parsing may have succeeded which is all we need
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }

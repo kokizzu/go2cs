@@ -137,14 +137,12 @@ public static (ж<Jar>, error) New(ж<Options> Ꮡo) {
     }
     if (strings.HasPrefix(requestPath, e.Path)) {
         if (e.Path[len(e.Path) - 1] == (rune)'/'){
-            return true;
+            return true; // The "/any/" matches "/any/path" case.
         } else 
         if (requestPath[len(e.Path)] == (rune)'/') {
-            // The "/any/" matches "/any/path" case.
-            return true;
+            return true; // The "/any" matches "/any/path" case.
         }
     }
-    // The "/any" matches "/any/path" case.
     return false;
 }
 
@@ -394,24 +392,19 @@ internal static bool isIP(@string host) {
 // RFC 6265 section 5.1.4.
 internal static @string defaultPath(@string path) {
     if (len(path) == 0 || path[0] != (rune)'/') {
-        return "/"u8;
+        return "/"u8; // Path is empty or malformed.
     }
-    // Path is empty or malformed.
-    nint i = strings.LastIndex(path, "/"u8);
-    // Path starts with "/", so i != -1.
+    nint i = strings.LastIndex(path, "/"u8); // Path starts with "/", so i != -1.
     if (i == 0) {
-        return "/"u8;
+        return "/"u8; // Path has the form "/abc".
     }
-    // Path has the form "/abc".
-    return path[..(int)(i)];
+    return path[..(int)(i)]; // Path is either of form "/abc/xyz" or "/abc/xyz/".
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sameSiteˢ = "SameSite"u8;
 internal static readonly @string sameSiteStrictˢ = "SameSite=Strict"u8;
 internal static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
-
-// Path is either of form "/abc/xyz" or "/abc/xyz/".
 
 // newEntry creates an entry from an http.Cookie c. now is the current time and
 // is compared to c.Expires to determine deletion of c. defPath and host are the

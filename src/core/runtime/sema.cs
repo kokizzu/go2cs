@@ -308,8 +308,7 @@ internal static void queue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr, ж<sud
                 // Substitute s in t's place in treap.
                 pt.ValueSlot = Ꮡs;
                 s.ticket = t.Value.ticket;
-                s.acquiretime = t.Value.acquiretime;
-                // preserve head acquiretime as oldest time
+                s.acquiretime = t.Value.acquiretime; // preserve head acquiretime as oldest time
                 s.parent = t.Value.parent;
                 s.prev = t.Value.prev;
                 s.next = t.Value.next;

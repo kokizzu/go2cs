@@ -63,31 +63,25 @@ internal static (ж<term>, ж<term>) union(this ж<term> Ꮡx, ж<term> Ꮡy) {
     // easy cases
     switch (ᐧ) {
     case {} when Ꮡx == nil && Ꮡy == nil: {
-        return (default!, default!);
+        return (default!, default!); // ∅ ∪ ∅ == ∅
     }
     case {} when Ꮡx == nil: {
-        return (Ꮡy, default!);
+        return (Ꮡy, default!); // ∅ ∪ y == y
     }
     case {} when Ꮡy == nil: {
-        return (Ꮡx, default!);
+        return (Ꮡx, default!); // x ∪ ∅ == x
     }
     case {} when x.typ == default!: {
-        return (Ꮡx, default!);
+        return (Ꮡx, default!); // 𝓤 ∪ y == 𝓤
     }
     case {} when y.typ == default!: {
-        return (Ꮡy, default!);
+        return (Ꮡy, default!); // x ∪ 𝓤 == 𝓤
     }}
 
-    // ∅ ∪ ∅ == ∅
-    // ∅ ∪ y == y
-    // x ∪ ∅ == x
-    // 𝓤 ∪ y == 𝓤
-    // x ∪ 𝓤 == 𝓤
     // ∅ ⊂ x, y ⊂ 𝓤
     if (x.disjoint(Ꮡy)) {
-        return (Ꮡx, Ꮡy);
+        return (Ꮡx, Ꮡy); // x ∪ y == (x, y) if x ∩ y == ∅
     }
-    // x ∪ y == (x, y) if x ∩ y == ∅
     // x.typ == y.typ
     // ~t ∪ ~t == ~t
     // ~t ∪  T == ~t
@@ -107,23 +101,19 @@ internal static ж<term> intersect(this ж<term> Ꮡx, ж<term> Ꮡy) {
     // easy cases
     switch (ᐧ) {
     case {} when Ꮡx == nil || Ꮡy == nil: {
-        return default!;
+        return default!; // ∅ ∩ y == ∅ and ∩ ∅ == ∅
     }
     case {} when x.typ == default!: {
-        return Ꮡy;
+        return Ꮡy; // 𝓤 ∩ y == y
     }
     case {} when y.typ == default!: {
-        return Ꮡx;
+        return Ꮡx; // x ∩ 𝓤 == x
     }}
 
-    // ∅ ∩ y == ∅ and ∩ ∅ == ∅
-    // 𝓤 ∩ y == y
-    // x ∩ 𝓤 == x
     // ∅ ⊂ x, y ⊂ 𝓤
     if (x.disjoint(Ꮡy)) {
-        return default!;
+        return default!; // x ∩ y == ∅ if x ∩ y == ∅
     }
-    // x ∩ y == ∅ if x ∩ y == ∅
     // x.typ == y.typ
     // ~t ∩ ~t == ~t
     // ~t ∩  T ==  T
@@ -142,14 +132,12 @@ internal static bool includes(this ж<term> Ꮡx, ΔType t) {
     // easy cases
     switch (ᐧ) {
     case {} when Ꮡx == nil: {
-        return false;
+        return false; // t ∈ ∅ == false
     }
     case {} when x.typ == default!: {
-        return true;
+        return true; // t ∈ 𝓤 == true
     }}
 
-    // t ∈ ∅ == false
-    // t ∈ 𝓤 == true
     // ∅ ⊂ x ⊂ 𝓤
     var u = t;
     if (x.tilde) {
@@ -166,27 +154,22 @@ internal static bool subsetOf(this ж<term> Ꮡx, ж<term> Ꮡy) {
     // easy cases
     switch (ᐧ) {
     case {} when Ꮡx == nil: {
-        return true;
+        return true; // ∅ ⊆ y == true
     }
     case {} when Ꮡy == nil: {
-        return false;
+        return false; // x ⊆ ∅ == false since x != ∅
     }
     case {} when y.typ == default!: {
-        return true;
+        return true; // x ⊆ 𝓤 == true
     }
     case {} when x.typ == default!: {
-        return false;
+        return false; // 𝓤 ⊆ y == false since y != 𝓤
     }}
 
-    // ∅ ⊆ y == true
-    // x ⊆ ∅ == false since x != ∅
-    // x ⊆ 𝓤 == true
-    // 𝓤 ⊆ y == false since y != 𝓤
     // ∅ ⊂ x, y ⊂ 𝓤
     if (x.disjoint(Ꮡy)) {
-        return false;
+        return false; // x ⊆ y == false if x ∩ y == ∅
     }
-    // x ⊆ y == false if x ∩ y == ∅
     // x.typ == y.typ
     // ~t ⊆ ~t == true
     // ~t ⊆ T == false

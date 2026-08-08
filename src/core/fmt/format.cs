@@ -199,8 +199,7 @@ internal static readonly @string falseˢ = "false"u8;
     // is large enough for integer formatting when no precision or width is set.
     if (f.widPresent || f.precPresent) {
         // Account 3 extra bytes for possible addition of a sign and "0x".
-        nint width = 3 + f.wid + f.prec;
-        // wid and prec are always positive.
+        nint width = 3 + f.wid + f.prec; // wid and prec are always positive.
         if (width > len(buf)) {
             // We're going to need a bigger boat.
             buf = new slice<byte>(width);
@@ -225,10 +224,9 @@ internal static readonly @string falseˢ = "false"u8;
         // Zero padding is allowed only to the left.
         prec = f.wid;
         if (negative || f.plus || f.space) {
-            prec--;
+            prec--; // leave room for sign
         }
     }
-    // leave room for sign
     // Because printing is easier right-to-left: format u into buf, ending at buf[i].
     // We could make things marginally faster by splitting the 32-bit case out
     // into a separate block but it's not worth the duplication, so u has 64 bits.
@@ -433,12 +431,10 @@ internal static readonly @string falseˢ = "false"u8;
             }
         }
         if (b != default!){
-            c = b[i];
+            c = b[i]; // Take a byte from the input byte slice.
         } else {
-            // Take a byte from the input byte slice.
-            c = s[i];
+            c = s[i]; // Take a byte from the input string.
         }
-        // Take a byte from the input string.
         // Encode each byte as two hexadecimal digits.
         buf = append(buf, digits[(c >> (int)(4))], digits[(byte)(c & 0xF)]);
     }

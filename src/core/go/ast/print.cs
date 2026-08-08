@@ -58,11 +58,10 @@ internal static error /*err*/ fprint(io.Writer w, ж<token.FileSet> Ꮡfset, any
         defer(() => {
             {
                 var e = recover(); if (e != default!) {
-                    err = e._<localError>().err;
+                    err = e._<localError>().err; // re-panics if it's not a localError
                 }
             }
         }, ref ᒐ);
-        // re-panics if it's not a localError
         // print x
         if (x == default!) {
             Ꮡp.printf("nil\n"u8);

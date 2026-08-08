@@ -1034,10 +1034,8 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
     const nint gWaiting = 3;
     var gs = new map<uint64, postProcessTrace_gdesc>();
     var ps = new map<int32, postProcessTrace_pdesc>();
-    var tasks = new map<uint64, ж<Event>>();
-    // task id to task creation events
-    var activeRegions = new map<uint64, slice<ж<Event>>>();
-    // goroutine id to stack of regions
+    var tasks = new map<uint64, ж<Event>>(); // task id to task creation events
+    var activeRegions = new map<uint64, slice<ж<Event>>>(); // goroutine id to stack of regions
     gs[0] = new postProcessTrace_gdesc(state: gRunning);
     ж<Event> evGC = default!;
     ref var evSTW = ref heap<ж<Event>>(out var ᏑevSTW);
@@ -1312,10 +1310,9 @@ internal static error postProcessTrace(this ж<parser> Ꮡp, Events events) {
             var regions = activeRegions[(~ev).G];
             if (mode == 0){
                 // region start
-                activeRegions[(~ev).G] = builtin.append(regions, ev);
+                activeRegions[(~ev).G] = builtin.append(regions, ev); // push
             } else 
             if (mode == 1){
-                // push
                 // region end
                 nint n = len(regions);
                 if (n > 0) {
@@ -1397,8 +1394,7 @@ internal static (uint64 v, slice<byte> rem, error err) readValFrom(slice<byte> b
         return narg;
     }
 
-    narg++;
-    // timestamp
+    narg++; // timestamp
     return narg;
 }
 

@@ -260,10 +260,9 @@ imethods:
                 if (tname.IsExported() || pkgPathΔ1 == ipkg) {
                     @unsafe.Pointer ifn = (uintptr)rtyp.textOff((~t).Ifn);
                     if (k == 0){
-                        fun0 = ifn;
+                        fun0 = ifn; // we'll set m.Fun[0] at the end
                     } else 
                     if (firstTime) {
-                        // we'll set m.Fun[0] at the end
                         methods[k] = ifn;
                     }
                     goto continue_imethods;
@@ -556,10 +555,8 @@ internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCa
     // Figure out how big a table we need.
     // We need at least one more slot than the number of entries
     // so that we are guaranteed an empty slot (for termination).
-    nint newN = n * 2;
-    // make it at most 50% full
-    newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1))));
-    // round up to a power of 2
+    nint newN = n * 2; // make it at most 50% full
+    newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1)))); // round up to a power of 2
     // Allocate the new table.
     var newSize = /* unsafe.Sizeof(abi.TypeAssertCache{}) */ (uintptr)24 + (uintptr)(newN - 1) * /* unsafe.Sizeof(abi.TypeAssertCacheEntry{}) */ (uintptr)16;
     var newC = (ж<abi.TypeAssertCache>)(uintptr)(mallocgc(newSize, nil, true));
@@ -657,10 +654,8 @@ internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.In
     // Figure out how big a table we need.
     // We need at least one more slot than the number of entries
     // so that we are guaranteed an empty slot (for termination).
-    nint newN = n * 2;
-    // make it at most 50% full
-    newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1))));
-    // round up to a power of 2
+    nint newN = n * 2; // make it at most 50% full
+    newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1)))); // round up to a power of 2
     // Allocate the new table.
     var newSize = /* unsafe.Sizeof(abi.InterfaceSwitchCache{}) */ (uintptr)32 + (uintptr)(newN - 1) * /* unsafe.Sizeof(abi.InterfaceSwitchCacheEntry{}) */ (uintptr)24;
     var newC = (ж<abi.InterfaceSwitchCache>)(uintptr)(mallocgc(newSize, nil, true));

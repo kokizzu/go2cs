@@ -74,11 +74,9 @@ internal static @string toASCII(@string s) {
     // recorded elsewhere (e.g., via PAX record) contains no trailing slash.
     if (len(s) > len(b) && b[len(b) - 1] == (rune)'/') {
         nint n = len(strings.TrimRight(s[..(int)(len(b) - 1)], "/"u8));
-        b[n] = 0;
+        b[n] = 0; // Replace trailing slash with NUL terminator
     }
 }
-
-// Replace trailing slash with NUL terminator
 
 // fitsInBase256 reports whether x can be encoded into n bytes using base-256
 // encoding. Unlike octal encoding, base-256 encoding does not require that the
@@ -113,22 +111,18 @@ internal static bool fitsInBase256(nint n, int64 x) {
         foreach (var (i, vᴛ1) in b) {
             var c = vᴛ1;
 
-            c ^= (byte)(inv);
-            // Inverts c only if inv is 0xff, otherwise does nothing
+            c ^= (byte)(inv); // Inverts c only if inv is 0xff, otherwise does nothing
             if (i == 0) {
-                c &= (byte)(0x7f);
+                c &= (byte)(0x7f); // Ignore signal bit in first byte
             }
-            // Ignore signal bit in first byte
             if (((x >> (int)(56))) > 0) {
-                p.err = ErrHeader;
-                // Integer overflow
+                p.err = ErrHeader; // Integer overflow
                 return 0;
             }
             x = (uint64)((x << (int)(8)) | (uint64)c);
         }
         if (((x >> (int)(63))) > 0) {
-            p.err = ErrHeader;
-            // Integer overflow
+            p.err = ErrHeader; // Integer overflow
             return 0;
         }
         if (inv == 0xff) {
@@ -152,12 +146,10 @@ internal static bool fitsInBase256(nint n, int64 x) {
             b[i] = (byte)x;
             x >>= (int)(8);
         }
-        b[0] |= (byte)(0x80);
-        // Highest bit indicates binary format
+        b[0] |= (byte)(0x80); // Highest bit indicates binary format
         return;
     }
-    f.formatOctal(b, 0);
-    // Last resort, just write zero
+    f.formatOctal(b, 0); // Last resort, just write zero
     f.err = ErrFieldTooLong;
 }
 
@@ -180,8 +172,7 @@ internal static bool fitsInBase256(nint n, int64 x) {
 
 [GoRecv] internal static void formatOctal(this ref formatter f, slice<byte> b, int64 x) {
     if (!fitsInOctal(len(b), x)) {
-        x = 0;
-        // Last resort, just write zero
+        x = 0; // Last resort, just write zero
         f.err = ErrFieldTooLong;
     }
     @string s = strconv.FormatInt(x, 8);
@@ -214,26 +205,21 @@ internal static (time.Time, error) parsePAXTime(@string s) {
         return (new time.Time(nil), ErrHeader);
     }
     if (len(sn) == 0) {
-        return (time.Unix(secs, 0), default!);
+        return (time.Unix(secs, 0), default!); // No sub-second values
     }
-    // No sub-second values
     // Parse the nanoseconds.
     if (strings.Trim(sn, "0123456789"u8) != ""u8) {
         return (new time.Time(nil), ErrHeader);
     }
     if (len(sn) < maxNanoSecondDigits){
-        sn += strings.Repeat("0"u8, maxNanoSecondDigits - len(sn));
+        sn += strings.Repeat("0"u8, maxNanoSecondDigits - len(sn)); // Right pad
     } else {
-        // Right pad
-        sn = sn[..(int)(maxNanoSecondDigits)];
+        sn = sn[..(int)(maxNanoSecondDigits)]; // Right truncate
     }
-    // Right truncate
-    var (nsecs, _) = strconv.ParseInt(sn, 10, 64);
-    // Must succeed
+    var (nsecs, _) = strconv.ParseInt(sn, 10, 64); // Must succeed
     if (len(ss) > 0 && ss[0] == (rune)'-') {
-        return (time.Unix(secs, -1 * nsecs), default!);
+        return (time.Unix(secs, -1 * nsecs), default!); // Negative correction
     }
-    // Negative correction
     return (time.Unix(secs, nsecs), default!);
 }
 
@@ -250,13 +236,10 @@ internal static @string /*s*/ formatPAXTime(time.Time ts) {
     // If seconds is negative, then perform correction.
     @string sign = ""u8;
     if (secs < 0) {
-        sign = "-"u8;
-        // Remember sign
-        secs = -(secs + 1);
-        // Add a second to secs
-        nsecs = -(nsecs - 1000000000);
+        sign = "-"u8; // Remember sign
+        secs = -(secs + 1); // Add a second to secs
+        nsecs = -(nsecs - 1000000000); // Take that second away from nsecs
     }
-    // Take that second away from nsecs
     return strings.TrimRight(fmt.Sprintf("%s%d.%09d"u8, sign, secs, nsecs), "0"u8);
 }
 
@@ -275,13 +258,11 @@ internal static (@string k, @string v, @string r, error err) parsePAXRecord(@str
         return ("", "", s, ErrHeader);
     }
     // Parse the first token as a decimal integer.
-    var (n, perr) = strconv.ParseInt(nStr, 10, 0);
-    // Intentionally parse as native int
+    var (n, perr) = strconv.ParseInt(nStr, 10, 0); // Intentionally parse as native int
     if (perr != default! || n < 5 || n > (int64)len(s)) {
         return ("", "", s, ErrHeader);
     }
-    n -= (int64)(len(nStr) + 1);
-    // convert from index in s to index in rest
+    n -= (int64)(len(nStr) + 1); // convert from index in s to index in rest
     if (n <= 0) {
         return ("", "", s, ErrHeader);
     }

@@ -121,11 +121,9 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
     // extra shift, the low-order bit of q is logically the
     // high-order bit of r.
     nat q = default!;
-    (q, var r) = q.div(a2, a2, b2);
-    // (recycle a2)
+    (q, var r) = q.div(a2, a2, b2); // (recycle a2)
     var mantissa = low32(q);
-    var haveRem = len(r) > 0;
-    // mantissa&1 && !haveRem => remainder is exactly half
+    var haveRem = len(r) > 0; // mantissa&1 && !haveRem => remainder is exactly half
     // 3. If quotient didn't fit in Msize2 bits, redo division by b2<<1
     // (in effect---we accomplish this incrementally).
     if ((mantissa >> (int)(Msize2)) == 1) {
@@ -141,14 +139,12 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
     // 4. Rounding.
     if (Emin - Msize <= exp && exp <= Emin) {
         // Denormal case; lose 'shift' bits of precision.
-        nuint shift = (nuint)((nint)Emin - (exp - 1));
-        // [1..Esize1)
+        nuint shift = (nuint)((nint)Emin - (exp - 1)); // [1..Esize1)
         var lostbits = (uint32)(mantissa & (((uint32)1).Lsh(shift) - 1));
         haveRem = haveRem || lostbits != 0;
         mantissa >>= (int)(shift);
-        exp = 2 - Ebias;
+        exp = 2 - Ebias; // == exp + shift
     }
-    // == exp + shift
     // Round q using round-half-to-even.
     exact = !haveRem;
     if ((uint32)(mantissa & 1) != 0) {
@@ -163,8 +159,7 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
             }
         }
     }
-    mantissa >>= (int)(1);
-    // discard rounding bit.  Mantissa now scaled by 1<<Msize1.
+    mantissa >>= (int)(1); // discard rounding bit.  Mantissa now scaled by 1<<Msize1.
     f = (float32)math.Ldexp((float64)mantissa, exp - (nint)Msize1);
     if (math.IsInf((float64)f, 0)) {
         exact = false;
@@ -220,11 +215,9 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
     // extra shift, the low-order bit of q is logically the
     // high-order bit of r.
     nat q = default!;
-    (q, var r) = q.div(a2, a2, b2);
-    // (recycle a2)
+    (q, var r) = q.div(a2, a2, b2); // (recycle a2)
     var mantissa = low64(q);
-    var haveRem = len(r) > 0;
-    // mantissa&1 && !haveRem => remainder is exactly half
+    var haveRem = len(r) > 0; // mantissa&1 && !haveRem => remainder is exactly half
     // 3. If quotient didn't fit in Msize2 bits, redo division by b2<<1
     // (in effect---we accomplish this incrementally).
     if ((mantissa >> (int)(Msize2)) == 1) {
@@ -240,14 +233,12 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
     // 4. Rounding.
     if (Emin - Msize <= exp && exp <= Emin) {
         // Denormal case; lose 'shift' bits of precision.
-        nuint shift = (nuint)((nint)Emin - (exp - 1));
-        // [1..Esize1)
+        nuint shift = (nuint)((nint)Emin - (exp - 1)); // [1..Esize1)
         var lostbits = (uint64)(mantissa & (((uint64)1).Lsh(shift) - 1));
         haveRem = haveRem || lostbits != 0;
         mantissa >>= (int)(shift);
-        exp = 2 - Ebias;
+        exp = 2 - Ebias; // == exp + shift
     }
-    // == exp + shift
     // Round q using round-half-to-even.
     exact = !haveRem;
     if ((uint64)(mantissa & 1) != 0) {
@@ -262,8 +253,7 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
             }
         }
     }
-    mantissa >>= (int)(1);
-    // discard rounding bit.  Mantissa now scaled by 1<<Msize1.
+    mantissa >>= (int)(1); // discard rounding bit.  Mantissa now scaled by 1<<Msize1.
     f = math.Ldexp((float64)mantissa, exp - (nint)Msize1);
     if (math.IsInf(f, 0)) {
         exact = false;
@@ -322,9 +312,8 @@ public static ж<ΔRat> SetFrac(this ж<ΔRat> Ꮡz, ж<ΔInt> Ꮡa, ж<ΔInt> �
         throw panic("division by zero");
     }
     if (Ꮡz.of(big_package.ΔRat.Ꮡa) == Ꮡb || alias(z.a.abs, babs)) {
-        babs = ((nat)default!).set(babs);
+        babs = ((nat)default!).set(babs); // make a copy
     }
-    // make a copy
     z.a.abs = z.a.abs.set(a.abs);
     z.b.abs = z.b.abs.set(babs);
     return Ꮡz.norm();
@@ -402,8 +391,7 @@ public static ж<ΔRat> Neg(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
     ref var z = ref Ꮡz.DerefOrNull();
 
     Ꮡz.Set(Ꮡx);
-    z.a.neg = len(z.a.abs) > 0 && !z.a.neg;
-    // 0 has no sign
+    z.a.neg = len(z.a.abs) > 0 && !z.a.neg; // 0 has no sign
     return Ꮡz;
 }
 

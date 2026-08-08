@@ -43,8 +43,7 @@ public static uint64 Bytes(ΔSeed seed, slice<byte> b) {
         throw panic("maphash: use of uninitialized Seed");
     }
     if (len(b) > bufSize) {
-        b = b.slice(-1, len(b), len(b));
-        // merge len and cap calculations when reslicing
+        b = b.slice(-1, len(b), len(b)); // merge len and cap calculations when reslicing
         while (len(b) > bufSize) {
             state = rthash(b[..(int)(bufSize)], state);
             b = b[(int)(bufSize)..];

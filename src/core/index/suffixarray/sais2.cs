@@ -34,9 +34,8 @@ internal static void sais_8_64(slice<byte> text, nint textMax, slice<int64> sa, 
     slice<int64> bucket = default!;
     if (builtin.len(tmp) >= 2 * textMax){
         (freq, bucket) = (tmp[..(int)(textMax)], tmp[(int)(textMax)..(int)(2 * textMax)]);
-        freq[0] = -1;
+        freq[0] = -1; // mark as uninitialized
     } else {
-        // mark as uninitialized
         (freq, bucket) = (default!, tmp[..(int)(textMax)]);
     }
     // The SAIS algorithm.
@@ -94,9 +93,8 @@ internal static void sais_32(slice<int32> text, nint textMax, slice<int32> sa, s
     slice<int32> bucket = default!;
     if (builtin.len(tmp) >= 2 * textMax){
         (freq, bucket) = (tmp[..(int)(textMax)], tmp[(int)(textMax)..(int)(2 * textMax)]);
-        freq[0] = -1;
+        freq[0] = -1; // mark as uninitialized
     } else {
-        // mark as uninitialized
         (freq, bucket) = (default!, tmp[..(int)(textMax)]);
     }
     // The SAIS algorithm.
@@ -154,9 +152,8 @@ internal static void sais_64(slice<int64> text, nint textMax, slice<int64> sa, s
     slice<int64> bucket = default!;
     if (builtin.len(tmp) >= 2 * textMax){
         (freq, bucket) = (tmp[..(int)(textMax)], tmp[(int)(textMax)..(int)(2 * textMax)]);
-        freq[0] = -1;
+        freq[0] = -1; // mark as uninitialized
     } else {
-        // mark as uninitialized
         (freq, bucket) = (default!, tmp[..(int)(textMax)]);
     }
     // The SAIS algorithm.
@@ -195,14 +192,12 @@ internal static void sais_64(slice<int64> text, nint textMax, slice<int64> sa, s
 
 internal static slice<int64> freq_8_64(slice<byte> text, slice<int64> freq, slice<int64> bucket) {
     if (freq != default! && freq[0] >= 0) {
-        return freq;
+        return freq; // already computed
     }
-    // already computed
     if (freq == default!) {
         freq = bucket;
     }
-    freq = freq[..256];
-    // eliminate bounds check for freq[c] below
+    freq = freq[..256]; // eliminate bounds check for freq[c] below
     clear(freq);
     foreach (var (_, c) in text) {
         freq[c]++;
@@ -212,9 +207,8 @@ internal static slice<int64> freq_8_64(slice<byte> text, slice<int64> freq, slic
 
 internal static slice<int32> freq_32(slice<int32> text, slice<int32> freq, slice<int32> bucket) {
     if (freq != default! && freq[0] >= 0) {
-        return freq;
+        return freq; // already computed
     }
-    // already computed
     if (freq == default!) {
         freq = bucket;
     }
@@ -227,9 +221,8 @@ internal static slice<int32> freq_32(slice<int32> text, slice<int32> freq, slice
 
 internal static slice<int64> freq_64(slice<int64> text, slice<int64> freq, slice<int64> bucket) {
     if (freq != default! && freq[0] >= 0) {
-        return freq;
+        return freq; // already computed
     }
-    // already computed
     if (freq == default!) {
         freq = bucket;
     }
@@ -242,10 +235,8 @@ internal static slice<int64> freq_64(slice<int64> text, slice<int64> freq, slice
 
 internal static void bucketMin_8_64(slice<byte> text, slice<int64> freq, slice<int64> bucket) {
     freq = freq_8_64(text, freq, bucket);
-    freq = freq[..256];
-    // establish len(freq) = 256, so 0 ≤ i < 256 below
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[i] below
+    freq = freq[..256]; // establish len(freq) = 256, so 0 ≤ i < 256 below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[i] below
     var total = (int64)0;
     foreach (var (i, n) in freq) {
         bucket[i] = total;
@@ -273,10 +264,8 @@ internal static void bucketMin_64(slice<int64> text, slice<int64> freq, slice<in
 
 internal static void bucketMax_8_64(slice<byte> text, slice<int64> freq, slice<int64> bucket) {
     freq = freq_8_64(text, freq, bucket);
-    freq = freq[..256];
-    // establish len(freq) = 256, so 0 ≤ i < 256 below
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[i] below
+    freq = freq[..256]; // establish len(freq) = 256, so 0 ≤ i < 256 below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[i] below
     var total = (int64)0;
     foreach (var (i, n) in freq) {
         total += n;
@@ -306,8 +295,7 @@ internal static nint placeLMS_8_64(slice<byte> text, slice<int64> sa, slice<int6
     bucketMax_8_64(text, freq, bucket);
     nint numLMS = 0;
     var lastB = (int64)(-1);
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[c1] below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[c1] below
     // The next stanza of code (until the blank line) loop backward
     // over text, stopping to execute a code body at each position i
     // such that text[i] is an L-character and text[i+1] is an S-character.
@@ -493,8 +481,7 @@ internal static nint placeLMS_64(slice<int64> text, slice<int64> sa, slice<int64
 internal static void induceSubL_8_64(slice<byte> text, slice<int64> sa, slice<int64> freq, slice<int64> bucket) {
     // Initialize positions for left side of character buckets.
     bucketMin_8_64(text, freq, bucket);
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[cB] below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[cB] below
     // As we scan the array left-to-right, each sa[i] = j > 0 is a correctly
     // sorted suffix array entry (for text[j:]) for which we know that j-1 is type L.
     // Because j-1 is type L, inserting it into sa now will sort it correctly.
@@ -708,8 +695,7 @@ internal static void induceSubL_64(slice<int64> text, slice<int64> sa, slice<int
 internal static void induceSubS_8_64(slice<byte> text, slice<int64> sa, slice<int64> freq, slice<int64> bucket) {
     // Initialize positions for right side of character buckets.
     bucketMax_8_64(text, freq, bucket);
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[cB] below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[cB] below
     // Analogous to induceSubL_8_64 above,
     // as we scan the array right-to-left, each sa[i] = j > 0 is a correctly
     // sorted suffix array entry (for text[j:]) for which we know that j-1 is type S.
@@ -882,8 +868,7 @@ internal static void induceSubS_64(slice<int64> text, slice<int64> sa, slice<int
 }
 
 internal static void length_8_64(slice<byte> text, slice<int64> sa, nint numLMS) {
-    nint end = 0;
-    // index of current LMS-substring end (0 indicates final LMS-substring)
+    nint end = 0; // index of current LMS-substring end (0 indicates final LMS-substring)
     // The encoding of N text bytes into a “length” word
     // adds 1 to each byte, packs them into the bottom
     // N*8 bits of a word, and then bitwise inverts the result.
@@ -901,15 +886,13 @@ internal static void length_8_64(slice<byte> text, slice<int64> sa, nint numLMS)
     // making it clearly not a valid length (it would be a negative one).
     //
     // cx holds the pre-inverted encoding (the packed incremented bytes).
-    var cx = (uint64)0;
-    // byte-only
+    var cx = (uint64)0; // byte-only
     // This stanza (until the blank line) is the "LMS-substring iterator",
     // described in placeLMS_8_64 above, with one line added to maintain cx.
     var (c0, c1, isTypeS) = ((byte)0, (byte)0, false);
     for (nint i = builtin.len(text) - 1; i >= 0; i--) {
         (c0, c1) = (text[i], c0);
-        cx = (uint64)((cx << (int)(8)) | (uint64)(c1 + 1));
-        // byte-only
+        cx = (uint64)((cx << (int)(8)) | (uint64)(c1 + 1)); // byte-only
         if (c0 < c1){
             isTypeS = true;
         } else 
@@ -925,22 +908,18 @@ internal static void length_8_64(slice<byte> text, slice<int64> sa, nint numLMS)
                 code = (int64)(end - j);
                 if (code <= 64 / 8 && ~cx >= (uint64)builtin.len(text)) {
                     // byte-only
-                    code = (int64)(~cx);
-                }
+                    code = (int64)(~cx); // byte-only
+                } // byte-only
             }
-            // byte-only
-            // byte-only
             sa[(j >> (int)(1))] = code;
             end = j + 1;
-            cx = (uint64)(c1 + 1);
+            cx = (uint64)(c1 + 1); // byte-only
         }
     }
 }
 
-// byte-only
 internal static void length_32(slice<int32> text, slice<int32> sa, nint numLMS) {
-    nint end = 0;
-    // index of current LMS-substring end (0 indicates final LMS-substring)
+    nint end = 0; // index of current LMS-substring end (0 indicates final LMS-substring)
     // The encoding of N text int32s into a “length” word
     // adds 1 to each int32, packs them into the bottom
     // N*8 bits of a word, and then bitwise inverts the result.
@@ -984,8 +963,7 @@ internal static void length_32(slice<int32> text, slice<int32> sa, nint numLMS) 
 }
 
 internal static void length_64(slice<int64> text, slice<int64> sa, nint numLMS) {
-    nint end = 0;
-    // index of current LMS-substring end (0 indicates final LMS-substring)
+    nint end = 0; // index of current LMS-substring end (0 indicates final LMS-substring)
     // The encoding of N text int64s into a “length” word
     // adds 1 to each int64, packs them into the bottom
     // N*8 bits of a word, and then bitwise inverts the result.
@@ -1030,8 +1008,7 @@ internal static void length_64(slice<int64> text, slice<int64> sa, nint numLMS) 
 
 internal static nint assignID_8_64(slice<byte> text, slice<int64> sa, nint numLMS) {
     nint id = 0;
-    var lastLen = (int64)(-1);
-    // impossible
+    var lastLen = (int64)(-1); // impossible
     var lastPos = (int64)0;
     foreach (var (_, j) in sa[(int)(builtin.len(sa) - numLMS)..]) {
         // Is the LMS-substring at index j new, or is it the same as the last one we saw?
@@ -1067,8 +1044,7 @@ Same:
 
 internal static nint assignID_32(slice<int32> text, slice<int32> sa, nint numLMS) {
     nint id = 0;
-    var lastLen = (int32)(-1);
-    // impossible
+    var lastLen = (int32)(-1); // impossible
     var lastPos = (int32)0;
     foreach (var (_, j) in sa[(int)(builtin.len(sa) - numLMS)..]) {
         // Is the LMS-substring at index j new, or is it the same as the last one we saw?
@@ -1104,8 +1080,7 @@ Same:
 
 internal static nint assignID_64(slice<int64> text, slice<int64> sa, nint numLMS) {
     nint id = 0;
-    var lastLen = (int64)(-1);
-    // impossible
+    var lastLen = (int64)(-1); // impossible
     var lastPos = (int64)0;
     foreach (var (_, j) in sa[(int)(builtin.len(sa) - numLMS)..]) {
         // Is the LMS-substring at index j new, or is it the same as the last one we saw?
@@ -1284,8 +1259,7 @@ internal static void unmap_64(slice<int64> text, slice<int64> sa, nint numLMS) {
 
 internal static void expand_8_64(slice<byte> text, slice<int64> freq, slice<int64> bucket, slice<int64> sa, nint numLMS) {
     bucketMax_8_64(text, freq, bucket);
-    bucket = bucket[..256];
-    // eliminate bound check for bucket[c] below
+    bucket = bucket[..256]; // eliminate bound check for bucket[c] below
     // Loop backward through sa, always tracking
     // the next index to populate from sa[:numLMS].
     // When we get to one, populate it.
@@ -1304,8 +1278,7 @@ internal static void expand_8_64(slice<byte> text, slice<int64> freq, slice<int6
         // Load next entry to put down (if any).
         if (x > 0) {
             x--;
-            saX = sa[x];
-            // TODO bounds check
+            saX = sa[x]; // TODO bounds check
             c = text[(nint)(saX)];
             b = bucket[c] - 1;
             bucket[c] = b;
@@ -1333,8 +1306,7 @@ internal static void expand_32(slice<int32> text, slice<int32> freq, slice<int32
         // Load next entry to put down (if any).
         if (x > 0) {
             x--;
-            saX = sa[x];
-            // TODO bounds check
+            saX = sa[x]; // TODO bounds check
             c = text[saX];
             b = bucket[c] - 1;
             bucket[c] = b;
@@ -1362,8 +1334,7 @@ internal static void expand_64(slice<int64> text, slice<int64> freq, slice<int64
         // Load next entry to put down (if any).
         if (x > 0) {
             x--;
-            saX = sa[x];
-            // TODO bounds check
+            saX = sa[x]; // TODO bounds check
             c = text[(nint)(saX)];
             b = bucket[(nint)(c)] - 1;
             bucket[(nint)(c)] = b;
@@ -1374,8 +1345,7 @@ internal static void expand_64(slice<int64> text, slice<int64> freq, slice<int64
 internal static void induceL_8_64(slice<byte> text, slice<int64> sa, slice<int64> freq, slice<int64> bucket) {
     // Initialize positions for left side of character buckets.
     bucketMin_8_64(text, freq, bucket);
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[cB] below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[cB] below
     // This scan is similar to the one in induceSubL_8_64 above.
     // That one arranges to clear all but the leftmost L-type indexes.
     // This scan leaves all the L-type indexes and the original S-type
@@ -1544,8 +1514,7 @@ internal static void induceL_64(slice<int64> text, slice<int64> sa, slice<int64>
 internal static void induceS_8_64(slice<byte> text, slice<int64> sa, slice<int64> freq, slice<int64> bucket) {
     // Initialize positions for right side of character buckets.
     bucketMax_8_64(text, freq, bucket);
-    bucket = bucket[..256];
-    // eliminate bounds check for bucket[cB] below
+    bucket = bucket[..256]; // eliminate bounds check for bucket[cB] below
     var cB = (byte)0;
     var b = bucket[cB];
     for (nint i = builtin.len(sa) - 1; i >= 0; i--) {

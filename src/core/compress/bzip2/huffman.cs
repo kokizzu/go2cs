@@ -39,8 +39,7 @@ internal static UntypedInt invalidNodeValue => 0xffff;
     uint16 v = default!;
 
     ref var br = ref Ꮡbr.DerefOrNull();
-    var nodeIndex = (uint16)0;
-    // node 0 is the root of the tree.
+    var nodeIndex = (uint16)0; // node 0 is the root of the tree.
     while (ᐧ) {
         var node = Ꮡ(t.nodes, nodeIndex);
         uint16 bit = default!;

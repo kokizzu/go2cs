@@ -409,8 +409,7 @@ public static slice<@string> FieldsFunc(@string s, Func<rune, bool> f) {
     // Doing this in a separate pass (rather than slicing the string s
     // and collecting the result substrings right away) is significantly
     // more efficient, possibly due to cache effects.
-    nint start = -1;
-    // valid span start if >= 0
+    nint start = -1; // valid span start if >= 0
     foreach (var (end, rune) in s) {
         if (f(rune)){
             if (start >= 0) {
@@ -756,8 +755,7 @@ public static @string ToValidUTF8(@string s, @string replacement) {
         // didn't call b.Grow above
         return s;
     }
-    var invalid = false;
-    // previous byte was from an invalid UTF-8 sequence
+    var invalid = false; // previous byte was from an invalid UTF-8 sequence
     for (nint i = 0; i < len(s); ) {
         var c = s[i];
         if (c < utf8.RuneSelf) {
@@ -1103,16 +1101,14 @@ public static @string TrimSuffix(@string s, @string suffix) {
 // If n < 0, there is no limit on the number of replacements.
 public static @string Replace(@string s, @string old, @string @new, nint n) {
     if (old == @new || n == 0) {
-        return s;
+        return s; // avoid allocation
     }
-    // avoid allocation
     // Compute number of replacements.
     {
         nint m = Count(s, old); if (m == 0){
-            return s;
+            return s; // avoid allocation
         } else 
         if (n < 0 || m < n) {
-            // avoid allocation
             n = m;
         }
     }

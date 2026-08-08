@@ -422,8 +422,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 
         f.Value.Symbols = append((~f).Symbols, sym);
 skip:
-        i += numaux;
-        // Skip auxiliary entries
+        i += numaux; // Skip auxiliary entries
         {
             var (_, err) = sr.Seek((int64)numaux * (int64)SYMESZ, io.SeekCurrent); if (err != default!) {
                 return (default!, err);
@@ -615,8 +614,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
     // First import file ID is the default LIBPATH value
     @string libpath = cstring(table[(int)(offset)..]);
     f.LibraryPaths = strings.Split(libpath, ":"u8);
-    offset += len(libpath) + 3;
-    // 3 null bytes
+    offset += len(libpath) + 3; // 3 null bytes
     var all = new slice<@string>(0);
     for (nint i = 1; i < (nint)nimpid; i++) {
         @string impidpath = cstring(table[(int)(offset)..]);
@@ -718,11 +716,10 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
                 }
             }
             if ((uint8)((~ldsym).Lsmtype & 0x40) == 0) {
-                continue;
+                continue; // Imported symbols only
             }
             var zeroes = binary.BigEndian.Uint32((~ldsym).Lname[..4]);
             if (zeroes != 0){
-                // Imported symbols only
                 name = cstring((~ldsym).Lname[..]);
             } else {
                 var offset = binary.BigEndian.Uint32((~ldsym).Lname[4..]);
@@ -741,10 +738,9 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
                 }
             }
             if ((uint8)((~ldsym).Lsmtype & 0x40) == 0) {
-                continue;
+                continue; // Imported symbols only
             }
-            (name, ok) = getString(st, // Imported symbols only
- (~ldsym).Loffset);
+            (name, ok) = getString(st, (~ldsym).Loffset);
             if (!ok) {
                 continue;
             }

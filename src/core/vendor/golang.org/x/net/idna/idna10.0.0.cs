@@ -766,8 +766,7 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
     if (!p.checkJoiners) {
         return default!;
     }
-    var trie = p.trie;
-    // p.checkJoiners is only set if trie is set.
+    var trie = p.trie; // p.checkJoiners is only set if trie is set.
     // TODO: merge the use of this in the trie.
     var (v, sz) = trie.lookupString(s);
     var x = ((info)v);

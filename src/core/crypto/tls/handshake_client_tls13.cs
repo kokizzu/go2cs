@@ -914,8 +914,7 @@ internal static error handleNewSessionTicket(this ж<Conn> Ꮡc, ж<newSessionTi
     session.Value.secret = psk;
     session.Value.useBy = (uint64)c.config.time().Add(lifetime).Unix();
     session.Value.ageAdd = msg.ageAdd;
-    session.Value.EarlyData = c.quic != nil && msg.maxEarlyData == 0xffffffffU;
-    // RFC 9001, Section 4.6.1
+    session.Value.EarlyData = c.quic != nil && msg.maxEarlyData == 0xffffffffU; // RFC 9001, Section 4.6.1
     session.Value.ticket = msg.label;
     if (c.quic != nil && (~c.quic).enableSessionEvents) {
         c.quicStoreSession(session);

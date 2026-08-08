@@ -377,9 +377,8 @@ public static (Nodes, locationMap) CreateNodes(ж<Profile> Ꮡprof, ж<Options> 
     foreach (var (_, l) in prof.Location) {
         var lines = l.Value.Line;
         if (len(lines) == 0) {
-            lines = new Line[]{new()}.slice();
+            lines = new Line[]{new()}.slice(); // Create empty line to include location info.
         }
-        // Create empty line to include location info.
         var nodes = new Nodes(len(lines));
         foreach (var (ln, _) in lines) {
             nodes[ln] = nm.findOrInsertLine(l, lines[ln], Ꮡo);

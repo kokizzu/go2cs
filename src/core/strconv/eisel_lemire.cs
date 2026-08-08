@@ -30,9 +30,8 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
     // Exp10 Range.
     if (man == 0) {
         if (neg) {
-            f = Δmath.Float64frombits(0x8000000000000000UL);
+            f = Δmath.Float64frombits(0x8000000000000000UL); // Negative zero.
         }
-        // Negative zero.
         return (f, true);
     }
     if (exp10 < detailedPowersOfTenMinExp10 || detailedPowersOfTenMaxExp10 < exp10) {
@@ -102,9 +101,8 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
     // Exp10 Range.
     if (man == 0) {
         if (neg) {
-            f = Δmath.Float32frombits(0x80000000U);
+            f = Δmath.Float32frombits(0x80000000U); // Negative zero.
         }
-        // Negative zero.
         return (f, true);
     }
     if (exp10 < detailedPowersOfTenMinExp10 || detailedPowersOfTenMaxExp10 < exp10) {

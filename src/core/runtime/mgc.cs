@@ -191,10 +191,8 @@ internal static void gcenable() {
     goǃ(bgscavenge, c);
     ᐸꟷ(c);
     ᐸꟷ(c);
-    memstats.enablegc = true;
+    memstats.enablegc = true; // now that runtime is initialized, GC is okay
 }
-
-// now that runtime is initialized, GC is okay
 
 // Garbage collector phase.
 // Indicates to write barrier and synchronization task to perform.
@@ -637,8 +635,7 @@ internal static void gcStart(gcTrigger trigger) {
     // happen, we want to enable assists as early as
     // possible.
     setGCPhase(_GCmark);
-    gcBgMarkPrepare();
-    // Must happen before assists are enabled.
+    gcBgMarkPrepare(); // Must happen before assists are enabled.
     gcMarkRootPrepare();
     // Mark all active tinyalloc blocks. Since we're
     // allocating from these, they need to be black like
@@ -910,10 +907,8 @@ internal static void gcMarkTermination(worldStop stw) {
     var unixNow = sec * 1000000000 + (int64)nsec;
     work.pauseNS += now - stw.startedStopping;
     work.tEnd = now;
-    atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_unix), (uint64)unixNow);
-    // must be Unix time to make sense to user
-    atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_nanotime), (uint64)now);
-    // monotonic time for us
+    atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_unix), (uint64)unixNow); // must be Unix time to make sense to user
+    atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_nanotime), (uint64)now); // monotonic time for us
     memstats.pause_ns[(nint)(memstats.numgc % (uint32)len(memstats.pause_ns))] = (uint64)work.pauseNS;
     memstats.pause_end[(nint)(memstats.numgc % (uint32)len(memstats.pause_end))] = (uint64)unixNow;
     memstats.pause_total_ns += (uint64)work.pauseNS;
@@ -1127,8 +1122,7 @@ internal static void gcBgMarkStartWorkers() {
     var ready = new channel<EmptyStruct>(1);
     releasem(mp);
     while (gcBgMarkWorkerCount < gomaxprocs) {
-        var mpΔ1 = acquirem();
-        // See above, we allocate a closure here.
+        var mpΔ1 = acquirem(); // See above, we allocate a closure here.
         goǃ(gcBgMarkWorker, ready);
         releasem(mpΔ1);
         // N.B. we intentionally wait on each goroutine individually
@@ -1246,8 +1240,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         // scheduler wants to preempt us, we'll stop draining,
         // dispose the gcw, and then preempt.
         node.of(gcBgMarkWorkerNode.Ꮡm).set(acquirem());
-        var pp = (~(~gp).m).p.ptr();
-        // P can't change with preemption disabled.
+        var pp = (~(~gp).m).p.ptr(); // P can't change with preemption disabled.
         if (gcBlackenEnabled == 0) {
             println((@string)"worker mode"u8, (~pp).gcMarkWorkerMode);
             @throw(gcBgMarkWorkerBlackeningˢ);
@@ -1361,13 +1354,11 @@ internal static bool gcMarkWorkAvailable(ж<Δp> Ꮡp) {
         return true;
     }
     if (!Ꮡwork.of(workType.Ꮡfull).empty()) {
-        return true;
+        return true; // global work available
     }
-    // global work available
     if (work.markrootNext < work.markrootJobs) {
-        return true;
+        return true; // root scan work available
     }
-    // root scan work available
     return false;
 }
 
@@ -1529,8 +1520,7 @@ internal static void gcResetMarkState() {
     // This may be called during a concurrent phase, so lock to make sure
     // allgs doesn't change.
     forEachG((ж<g> gp) => {
-        gp.Value.gcscandone = false;
-        // set to true in gcphasework
+        gp.Value.gcscandone = false; // set to true in gcphasework
         gp.Value.gcAssistBytes = 0;
     });
     // Clear page marks. This is just 1MB per 64GB of heap, so the

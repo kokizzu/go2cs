@@ -55,8 +55,7 @@ internal const nint marshaledSize = /* len(magic) + 5*4 + chunk + 8 */ 96;
     b = byteorder.BeAppendUint32(b, d.h[3]);
     b = byteorder.BeAppendUint32(b, d.h[4]);
     b = append(b, d.x[..(int)(d.nx)].ꓸꓸꓸ);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)];
-    // already zero
+    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
     b = byteorder.BeAppendUint64(b, d.len);
     return (b, default!);
 }
@@ -206,15 +205,11 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
         length[(nint)(i)] = (byte)(l.Rsh((56 - 8 * i)));
     }
     var nx = (byte)d.nx;
-    var t = (byte)(nx - 56);
-    // if nx < 56 then the MSB of t is one
-    var mask1b = (byte)(((int8)t >> (int)(7)));
-    // mask1b is 0xFF iff one block is enough
-    var separator = (byte)0x80;
-    // gets reset to 0x00 once used
+    var t = (byte)(nx - 56); // if nx < 56 then the MSB of t is one
+    var mask1b = (byte)(((int8)t >> (int)(7))); // mask1b is 0xFF iff one block is enough
+    var separator = (byte)0x80; // gets reset to 0x00 once used
     for (var i = (byte)0; i < chunk; i++) {
-        var mask = (byte)(((int8)(i - nx) >> (int)(7)));
-        // 0x00 after the end of data
+        var mask = (byte)(((int8)(i - nx) >> (int)(7))); // 0x00 after the end of data
         // if we reached the end of the data, replace with 0x80 or 0x00
         d.x[i] = (byte)(((byte)(((byte)(~mask)) & separator)) | ((byte)(mask & d.x[i])));
         // zero the separator once used

@@ -502,11 +502,10 @@ public static bool Equal(this Value v, Value w) {
         return v.time().Equal(w.time());
     }
     if (exprᴛ1 == KindAny || exprᴛ1 == KindLogValuer) {
-        return AreEqual(v.any, w.any);
+        return AreEqual(v.any, w.any); // may panic if non-comparable
     }
     if (exprᴛ1 == KindGroup) {
-        return slices.EqualFunc<slice<Attr>, slice<Attr>, Attr, Attr>(v.group(), // may panic if non-comparable
- w.group(), (Func<Attr, Attr, bool>)(Equal));
+        return slices.EqualFunc<slice<Attr>, slice<Attr>, Attr, Attr>(v.group(), w.group(), (Func<Attr, Attr, bool>)(Equal));
     }
     { /* default: */
         throw panic(fmt.Sprintf("bad kind: %s"u8, k1));

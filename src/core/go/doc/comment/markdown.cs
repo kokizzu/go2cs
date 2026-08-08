@@ -91,10 +91,9 @@ internal static void block(this ж<mdPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, Blo
                     @out.WriteString(n);
                     @out.WriteString(". "u8);
                 } else {
-                    @out.WriteString("  - "u8);
+                    @out.WriteString("  - "u8); // SP SP - SP
                 }
             }
-            // SP SP - SP
             foreach (var (iΔ1, blk) in (~item).Content) {
                 @string fourSpace = "    "u8;
                 if (iΔ1 > 0) {

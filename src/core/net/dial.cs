@@ -569,8 +569,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
         }
         var returned = new channel<EmptyStruct>(0);
         defer(ᴛ1 => builtin.close(ᴛ1), returned, ref ᒐ);
-        var results = new channel<dialParallel_dialResult>(0);
-        // unbuffered
+        var results = new channel<dialParallel_dialResult>(0); // unbuffered
         var fallbacksʗ1 = fallbacks;
         var primariesʗ1 = primaries;
         var resultsʗ1 = results;
@@ -756,9 +755,8 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
             (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: raΔ1, Err: new AddrErrorжerror(Ꮡ(new AddrError(Err: "unexpected address type"u8, Addr: sd.address))))))); goto ᒐdone;
         }}
         if (err != default!) {
-            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: ra, Err: err)))); goto ᒐdone;
+            (c, err) = (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: la, Addr: ra, Err: err)))); goto ᒐdone; // c is non-nil interface containing nil pointer
         }
-        // c is non-nil interface containing nil pointer
         (c, err) = (c, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -857,9 +855,8 @@ internal static readonly @string listenˢ = "listen"u8;
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: laΔ1, Err: new AddrErrorжerror(Ꮡ(new AddrError(Err: "unexpected address type"u8, Addr: address)))))));
     }}
     if (err != default!) {
-        return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: la, Err: err))));
+        return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: la, Err: err)))); // l is non-nil interface containing nil pointer
     }
-    // l is non-nil interface containing nil pointer
     return (l, default!);
 }
 
@@ -900,9 +897,8 @@ internal static readonly @string listenˢ = "listen"u8;
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: laΔ1, Err: new AddrErrorжerror(Ꮡ(new AddrError(Err: "unexpected address type"u8, Addr: address)))))));
     }}
     if (err != default!) {
-        return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: la, Err: err))));
+        return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: (~sl).network, Source: default!, Addr: la, Err: err)))); // c is non-nil interface containing nil pointer
     }
-    // c is non-nil interface containing nil pointer
     return (c, default!);
 }
 

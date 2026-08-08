@@ -101,8 +101,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
         if (builtin.len(s) == 0) {
             (_ᴛ1, err) = (default!, errors.New(emptyPatternˢ)); goto ᒐdone;
         }
-        nint off = 0;
-        // offset into string
+        nint off = 0; // offset into string
         defer(() => {
             if (err != default!) {
                 err = fmt.Errorf("at offset %d: %w"u8, off, err);
@@ -147,8 +146,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) {
         if (method != ""u8 && method != "CONNECT"u8 && rest != cleanPath(rest)) {
             (_ᴛ1, err) = (default!, errors.New(nonConnectPatternWithˢ)); goto ᒐdone;
         }
-        var seenNames = new map<@string, bool>{};
-        // remember wildcard names to catch dups
+        var seenNames = new map<@string, bool>{}; // remember wildcard names to catch dups
         while (builtin.len(rest) > 0) {
             // Invariant: rest[0] == '/'.
             rest = rest[1..];

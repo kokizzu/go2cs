@@ -123,10 +123,8 @@ public static void Seed(this ж<Rand> Ꮡr, int64 seed) {
 // Int returns a non-negative pseudo-random int.
 [GoRecv] public static nint Int(this ref Rand r) {
     nuint u = (nuint)r.Int63();
-    return (nint)(((u << (int)(1)) >> (int)(1)));
+    return (nint)(((u << (int)(1)) >> (int)(1))); // clear sign bit if int == int32
 }
-
-// clear sign bit if int == int32
 
 // Int63n returns, as an int64, a non-negative pseudo-random number in the half-open interval [0,n).
 // It panics if n <= 0.
@@ -221,9 +219,8 @@ public static void Seed(this ж<Rand> Ꮡr, int64 seed) {
 again:
     var f = (float64)r.Int63() / (9223372036854775808D);
     if (f == 1D) {
-        goto again;
+        goto again; // resample; this branch is taken O(never)
     }
-    // resample; this branch is taken O(never)
     return f;
 }
 
@@ -235,9 +232,8 @@ again:
 again:
     var f = (float32)r.Float64();
     if (f == 1F) {
-        goto again;
+        goto again; // resample; this branch is taken O(very rarely)
     }
-    // resample; this branch is taken O(very rarely)
     return f;
 }
 

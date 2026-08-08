@@ -368,10 +368,8 @@ internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr,
         wd = 0;
     }
     var data = b.data[(int)(wd)..];
-    data[0] = (uint64)(2 + b.hdrsize + (uintptr)len(stk));
-    // length
-    data[1] = (uint64)now;
-    // time stamp
+    data[0] = (uint64)(2 + b.hdrsize + (uintptr)len(stk)); // length
+    data[1] = (uint64)now; // time stamp
     // header, zero-padded
     nint i = copy(data[2..(int)(2 + b.hdrsize)], hdr);
     builtin.clear(data[(int)(2 + i)..(int)(2 + b.hdrsize)]);
@@ -514,9 +512,8 @@ Read:
     if (len(data) > numData){
         data = data[..(int)(numData)];
     } else {
-        numData -= len(data);
+        numData -= len(data); // available in case of wraparound
     }
-    // available in case of wraparound
     nint skip = 0;
     if (data[0] == 0) {
         // Wraparound record. Go back to the beginning of the ring.

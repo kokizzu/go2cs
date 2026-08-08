@@ -233,8 +233,7 @@ internal static void testRacyRead(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) 
                     var b2 = new slice<byte>(1024);
                     for (nint j = 0; j < 100; j++) {
                         var (_, err) = c1.Read(b1);
-                        copy(b1, b2);
-                        // Mutate b1 to trigger potential race
+                        copy(b1, b2); // Mutate b1 to trigger potential race
                         if (err != default!) {
                             checkForTimeoutError(Ꮡt, err);
                             c1.SetReadDeadline(time.Now().Add(time.Millisecond));
@@ -269,8 +268,7 @@ internal static void testRacyWrite(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2)
                     var b2 = new slice<byte>(1024);
                     for (nint j = 0; j < 100; j++) {
                         var (_, err) = c1.Write(b1);
-                        copy(b1, b2);
-                        // Mutate b1 to trigger potential race
+                        copy(b1, b2); // Mutate b1 to trigger potential race
                         if (err != default!) {
                             checkForTimeoutError(Ꮡt, err);
                             c1.SetWriteDeadline(time.Now().Add(time.Millisecond));
@@ -562,8 +560,7 @@ internal static void testConcurrentMethods(ж<testing.T> Ꮡt, net.Conn c1, net.
             finally { ᒐ.Run(); }
         });
     }
-    Ꮡwg.Wait();
-    // At worst, the deadline is set 10ms into the future
+    Ꮡwg.Wait(); // At worst, the deadline is set 10ms into the future
     resyncConn(Ꮡt, c1);
     testRoundtrip(Ꮡt, c1);
 }

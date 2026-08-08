@@ -68,8 +68,7 @@ internal static void init(this ж<dirInfo> Ꮡd, syscallꓸHandle h) {
     ref var flags = ref heap(new uint32(), out var Ꮡflags);
     var err = windows.GetVolumeInformationByHandle(h, nil, 0, Ꮡd.of(dirInfo.Ꮡvol), nil, Ꮡflags, nil, 0);
     if (err != default!) {
-        d.vol = 0;
-        // Set to zero in case Windows writes garbage to it.
+        d.vol = 0; // Set to zero in case Windows writes garbage to it.
         // If we can't get the volume information, we can't use os.SameFile,
         // but we can still read the directory entries.
         return;

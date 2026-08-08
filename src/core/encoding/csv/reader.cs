@@ -304,14 +304,12 @@ internal static rune nextRune(slice<byte> b) {
         (line, errRead) = r.readLine();
         if (r.Comment != 0 && nextRune(line) == r.Comment) {
             line = default!;
-            continue;
+            continue; // Skip comment lines
         }
-        // Skip comment lines
         if (errRead == default! && len(line) == lengthNL(line)) {
             line = default!;
-            continue;
+            continue; // Skip empty lines
         }
-        // Skip empty lines
         break;
     }
     if (AreEqual(errRead, io.EOF)) {
@@ -322,8 +320,7 @@ internal static rune nextRune(slice<byte> b) {
     const nint quoteLen = /* len(`"`) */ 1;
     nint commaLen = utf8.RuneLen(r.Comma);
     ref var recLine = ref heap<nint>(out var ᏑrecLine);
-    recLine = r.numLine;
-    // Starting line for record
+    recLine = r.numLine; // Starting line for record
     r.recordBuffer = r.recordBuffer[..0];
     r.fieldIndexes = r.fieldIndexes[..0];
     r.fieldPositions = r.fieldPositions[..0];
@@ -455,8 +452,7 @@ break_parseField:;
     }
     // Create a single string and create slices out of it.
     // This pins the memory of the fields together, but allocates once.
-    @string str = ((@string)r.recordBuffer);
-    // Convert to string once to batch allocations
+    @string str = ((@string)r.recordBuffer); // Convert to string once to batch allocations
     dst = dst[..0];
     if (cap(dst) < len(r.fieldIndexes)) {
         dst = new slice<@string>(len(r.fieldIndexes));

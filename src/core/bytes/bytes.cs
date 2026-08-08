@@ -485,8 +485,7 @@ public static slice<slice<byte>> FieldsFunc(slice<byte> s, Func<rune, bool> f) {
     // Doing this in a separate pass (rather than slicing the string s
     // and collecting the result substrings right away) is significantly
     // more efficient, possibly due to cache effects.
-    nint start = -1;
-    // valid span start if >= 0
+    nint start = -1; // valid span start if >= 0
     for (nint i = 0; i < len(s); ) {
         nint size = 1;
         var r = (rune)s[i];
@@ -734,8 +733,7 @@ public static slice<byte> ToTitleSpecial(Δunicode.SpecialCase c, slice<byte> s)
 // representing invalid UTF-8 replaced with the bytes in replacement, which may be empty.
 public static slice<byte> ToValidUTF8(slice<byte> s, slice<byte> replacement) {
     var b = new slice<byte>(0, len(s) + len(replacement));
-    var invalid = false;
-    // previous byte was from an invalid UTF-8 sequence
+    var invalid = false; // previous byte was from an invalid UTF-8 sequence
     for (nint i = 0; i < len(s); ) {
         var c = s[i];
         if (c < utf8.RuneSelf) {

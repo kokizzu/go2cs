@@ -91,8 +91,7 @@ internal static bool hasExportedName(slice<ж<ast.Ident>> list) {
 internal static void removeAnonymousField(@string name, ж<ast.InterfaceType> Ꮡityp) {
     ref var ityp = ref Ꮡityp.DerefOrNull();
 
-    var list = ityp.Methods.Value.List;
-    // we know that ityp.Methods != nil
+    var list = ityp.Methods.Value.List; // we know that ityp.Methods != nil
     nint j = 0;
     foreach (var (_, field) in list) {
         var keepField = true;
@@ -323,10 +322,9 @@ internal static ast.Expr copyConstType(ast.Expr typ, tokenꓸPos pos) {
         }
         break;
     }}
-    return default!;
+    return default!; // shouldn't happen, but be conservative and don't panic
 }
 
-// shouldn't happen, but be conservative and don't panic
 [GoRecv] internal static slice<ast.Spec> filterSpecList(this ref reader r, slice<ast.Spec> list, token.Token tok) {
     if (tok == token.CONST) {
         // Propagate any type information that would get lost otherwise

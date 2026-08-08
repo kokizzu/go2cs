@@ -235,8 +235,7 @@ public static (ж<Matcher>, error) New(@string pattern) {
     var result = true;
     var bits = (uint64)0;
     nint start = 0;
-    nint wid = 1;
-    // 1-bit (binary); sometimes 4-bit (hex)
+    nint wid = 1; // 1-bit (binary); sometimes 4-bit (hex)
     for (nint i = 0; i <= len(p); i++) {
         // Imagine a trailing - at the end of the pattern to flush final suffix
         var c = (byte)(rune)'-';
@@ -627,8 +626,7 @@ public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
     // Construct shortened line.
     // Remove at most one space from around the marker,
     // so that "foo [marker] bar" shortens to "foo bar".
-    j++;
-    // skip ]
+    j++; // skip ]
     if (i > 0 && line[i - 1] == (rune)' '){
         i--;
     } else 

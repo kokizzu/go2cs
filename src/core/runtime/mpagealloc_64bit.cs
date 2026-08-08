@@ -237,9 +237,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
     ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);
     sl = new notInHeapSlice((ж<notInHeap>)(uintptr)(r), (nint)n, (nint)n);
     s.chunks = ~Ꮡsl.Reinterpret<notInHeapSlice, slice<atomicScavChunkData>>();
-    return 0;
+    return 0; // All memory above is mapped Reserved.
 }
-
-// All memory above is mapped Reserved.
 
 } // end runtime_package

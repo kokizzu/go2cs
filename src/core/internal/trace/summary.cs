@@ -179,9 +179,8 @@ internal static GoroutineExecStats /*r*/ clone(this GoroutineExecStats s) {
 
     ret = g.GoroutineExecStats.clone();
     if (g.goroutineSummary == nil) {
-        return ret;
+        return ret; // Already finalized; no pending state.
     }
-    // Already finalized; no pending state.
     // Set the total time if necessary.
     if (g.TotalTime == 0) {
         ret.TotalTime = lastTs.Sub(g.CreationTime);

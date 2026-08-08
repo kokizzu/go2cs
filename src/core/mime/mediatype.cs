@@ -344,8 +344,7 @@ internal static (@string param, @string value, @string rest) consumeMediaParam(@
     if (!strings.HasPrefix(rest, ";"u8)) {
         return ("", "", v);
     }
-    rest = rest[1..];
-    // consume semicolon
+    rest = rest[1..]; // consume semicolon
     rest = strings.TrimLeftFunc(rest, Δunicode.IsSpace);
     (param, rest) = consumeToken(rest);
     param = strings.ToLower(param);
@@ -356,8 +355,7 @@ internal static (@string param, @string value, @string rest) consumeMediaParam(@
     if (!strings.HasPrefix(rest, "="u8)) {
         return ("", "", v);
     }
-    rest = rest[1..];
-    // consume equals sign
+    rest = rest[1..]; // consume equals sign
     rest = strings.TrimLeftFunc(rest, Δunicode.IsSpace);
     (value, var rest2) = consumeValue(rest);
     if (value == ""u8 && rest2 == rest) {

@@ -234,9 +234,8 @@ internal static (@string rel, bool ok) hasSubdir(@string root, @string dir) {
     }
     var (f, err) = os.Open(path);
     if (err != default!) {
-        return (default!, err);
+        return (default!, err); // nil interface
     }
-    // nil interface
     return (new os_FileжReadCloser(f), default!);
 }
 
@@ -379,8 +378,7 @@ internal static Context defaultContext() {
     c.GOPATH = envOr(gopathˢ, defaultGOPATH());
     c.Compiler = runtime.Compiler;
     c.ToolTags = append(c.ToolTags, buildcfg.ToolTags.ꓸꓸꓸ);
-    defaultToolTags = append(new @string[]{}.slice(), c.ToolTags.ꓸꓸꓸ);
-    // our own private copy
+    defaultToolTags = append(new @string[]{}.slice(), c.ToolTags.ꓸꓸꓸ); // our own private copy
     // Each major Go release in the Go 1.x series adds a new
     // "go1.x" release tag. That is, the go1.x tag is present in
     // all releases >= Go 1.x. Code that requires Go 1.x or later
@@ -391,8 +389,7 @@ internal static Context defaultContext() {
     for (nint i = 1; i <= goversion.Version; i++) {
         c.ReleaseTags = append(c.ReleaseTags, "go1."u8 + strconv.Itoa(i));
     }
-    defaultReleaseTags = append(new @string[]{}.slice(), c.ReleaseTags.ꓸꓸꓸ);
-    // our own private copy
+    defaultReleaseTags = append(new @string[]{}.slice(), c.ReleaseTags.ꓸꓸꓸ); // our own private copy
     @string env = os.Getenv(cgoEnabledˢ);
     if (env == ""u8) {
         env = defaultCGO_ENABLED;
@@ -631,8 +628,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
     setPkga();
     var binaryOnly = false;
     if (IsLocalImport(path)){
-        pkga = ""u8;
-        // local imports have no installed path
+        pkga = ""u8; // local imports have no installed path
         if (srcDir == ""u8) {
             return (p, fmt.Errorf("import %q: import relative to unknown directory"u8, path));
         }
@@ -650,8 +646,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                     p.Value.Goroot = true;
                     p.Value.ImportPath = sub;
                     p.Value.Root = ctxt.GOROOT;
-                    setPkga();
-                    // p.ImportPath changed
+                    setPkga(); // p.ImportPath changed
                     goto Found;
                 }
             }
@@ -684,8 +679,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                     // Record it.
                     p.Value.ImportPath = sub;
                     p.Value.Root = root;
-                    setPkga();
-                    // p.ImportPath changed
+                    setPkga(); // p.ImportPath changed
                     goto Found;
                 }
             }
@@ -704,8 +698,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                 return (p, errΔ1);
             }
         }
-        var gopath = ctxt.gopath();
-        // needed twice below; avoid computing many times
+        var gopath = ctxt.gopath(); // needed twice below; avoid computing many times
         // tried records the location of unsuccessful package lookups
         ref var tried = ref heap(new Import_tried(), out var Ꮡtried);
         // Vendor directories get first chance to satisfy import.
@@ -726,8 +719,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                             pʗ2.Value.ImportPath = strings.TrimPrefix(pathpkg.Join(sub, vendorˢ, path), srcˢ2);
                             pʗ2.Value.Goroot = isGoroot;
                             pʗ2.Value.Root = root;
-                            setPkgaʗ1();
-                            // p.ImportPath changed
+                            setPkgaʗ1(); // p.ImportPath changed
                             return true;
                         }
                         Ꮡtried.Value.vendor = append(Ꮡtried.Value.vendor, dir);
@@ -1267,9 +1259,8 @@ internal static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.I
             }
             @string d = filepath.Dir(parent);
             if (len(d) >= len(parent)) {
-                return errNoModules;
+                return errNoModules; // reached top of file system, no go.mod
             }
-            // reached top of file system, no go.mod
             parent = d;
         }
     }
@@ -1539,12 +1530,10 @@ internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @strin
     if (strings.HasSuffix(name, ".go"u8)){
         err = readGoInfo(f, info);
         if (strings.HasSuffix(name, testGoˢ)) {
-            ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull();
+            ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull(); // ignore //go:binary-only-package comments in _test.go files
         }
     } else {
-        // ignore //go:binary-only-package comments in _test.go files
-        ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull();
-        // ignore //go:binary-only-package comments in non-Go sources
+        ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull(); // ignore //go:binary-only-package comments in non-Go sources
         (info.Value.header, err) = readComments(f);
     }
     f.Close();
@@ -1693,10 +1682,8 @@ internal static (slice<byte> trimmed, slice<byte> goBuild, bool sawBinaryOnly, e
 
     nint end = 0;
     var p = content;
-    var ended = false;
-    // found non-blank, non-// line, so stopped accepting //go:build lines
-    var inSlashStar = false;
-    // in /* */ comment
+    var ended = false; // found non-blank, non-// line, so stopped accepting //go:build lines
+    var inSlashStar = false; // in /* */ comment
 Lines:
     while (len(p) > 0) {
         var line = p;
@@ -2081,9 +2068,8 @@ internal static readonly @string goexperimentBoringcryptoˢ = "goexperiment.bori
         return true;
     }
     if (name == "boringcrypto"u8) {
-        name = goexperimentBoringcryptoˢ;
+        name = goexperimentBoringcryptoˢ; // boringcrypto is an old name for goexperiment.boringcrypto
     }
-    // boringcrypto is an old name for goexperiment.boringcrypto
     // other tags
     foreach (var (_, tag) in ctxt.BuildTags) {
         if (tag == name) {
@@ -2131,8 +2117,7 @@ internal static readonly @string goexperimentBoringcryptoˢ = "goexperiment.bori
     if (i < 0) {
         return true;
     }
-    name = name[(int)(i)..];
-    // ignore everything before first _
+    name = name[(int)(i)..]; // ignore everything before first _
     var l = strings.Split(name, "_"u8);
     {
         nint nΔ1 = len(l); if (nΔ1 > 0 && l[nΔ1 - 1] == "test") {

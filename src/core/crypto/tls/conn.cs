@@ -437,8 +437,7 @@ internal static nint roundUp(nint a, nint b) {
             return (default!, 0, alertBadRecordMAC);
         }
         nint n = len(payload) - macSize - paddingLen;
-        n = subtle.ConstantTimeSelect((nint)(((uint32)n >> (int)(31))), 0, n);
-        // if n < 0 { n = 0 }
+        n = subtle.ConstantTimeSelect((nint)(((uint32)n >> (int)(31))), 0, n); // if n < 0 { n = 0 }
         record[3] = (byte)((n >> (int)(8)));
         record[4] = (byte)n;
         var remoteMAC = payload[(int)(n)..(int)(n + macSize)];
@@ -837,8 +836,7 @@ internal static error retryReadRecord(this ж<Conn> Ꮡc, bool expectChangeCiphe
         return (0, io.EOF);
     }
     var (n, err) = r.R.Read(p);
-    r.N -= (int64)n;
-    // won't underflow unless len(p) >= n > 9223372036854775809
+    r.N -= (int64)n; // won't underflow unless len(p) >= n > 9223372036854775809
     if (r.N > 0 && AreEqual(err, io.EOF)) {
         return (n, io.ErrUnexpectedEOF);
     }
@@ -954,16 +952,14 @@ internal static UntypedInt recordSizeBoostThreshold => /* 128 * 1024 */ 131072;
     // The MAC is appended before padding so affects the
     // payload size directly.
     if (c.vers == VersionTLS13) {
-        payloadBytes--;
+        payloadBytes--; // encrypted ContentType
     }
-    // encrypted ContentType
     // Allow packet growth in arithmetic progression up to max.
     var pkt = c.packetsSent;
     c.packetsSent++;
     if (pkt > 1000) {
-        return maxPlaintext;
+        return maxPlaintext; // avoid overflow in multiply below
     }
-    // avoid overflow in multiply below
     nint n = payloadBytes * (nint)(pkt + 1);
     if (n > maxPlaintext) {
         n = maxPlaintext;
@@ -1522,11 +1518,10 @@ public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
         if (n != 0 && c.input.Len() == 0 && c.rawInput.Len() > 0 && ((recordType)c.rawInput.Bytes()[0]) == recordTypeAlert) {
             {
                 var err = Ꮡc.readRecord(); if (err != default!) {
-                    return (n, err);
+                    return (n, err); // will be io.EOF on closeNotify
                 }
             }
         }
-        // will be io.EOF on closeNotify
         return (n, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }

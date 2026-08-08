@@ -854,10 +854,9 @@ internal static slice<byte> appendFormat(this Time t, slice<byte> b, @string lay
                     b = append(b, (byte)((rune)'Z'));
                     break;
                 }
-                nint zone = offset / 60;
+                nint zone = offset / 60; // convert to minutes
                 nint absoffset = offset;
                 if (zone < 0){
-                    // convert to minutes
                     b = append(b, (byte)((rune)'-'));
                     zone = -zone;
                     absoffset = -absoffset;
@@ -886,11 +885,10 @@ internal static slice<byte> appendFormat(this Time t, slice<byte> b, @string lay
                     b = append(b, name.ꓸꓸꓸ);
                     break;
                 }
-                nint zone = offset / 60;
+                nint zone = offset / 60; // convert to minutes
                 if (zone < 0){
                     // No time zone known for this time, but we must print one.
                     // Use the -0700 format.
-                    // convert to minutes
                     b = append(b, (byte)((rune)'-'));
                     zone = -zone;
                 } else {
@@ -938,8 +936,7 @@ internal static UntypedInt runeSelf => 0x80;
 internal static UntypedInt runeError => /* '\uFFFD' */ 65533;
 
 internal static @string quote(@string s) {
-    var buf = new slice<byte>(1, len(s) + 2);
-    // slice will be at least len(s) + quotes
+    var buf = new slice<byte>(1, len(s) + 2); // slice will be at least len(s) + quotes
     buf[0] = (rune)'"';
     foreach (var (i, c) in s) {
         if (c >= runeSelf || c < (rune)' '){
@@ -1141,12 +1138,9 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
 
     @string alayout = layout;
     @string avalue = value;
-    @string rangeErrString = ""u8;
-    // set if a value is out of range
-    var amSet = false;
-    // do we need to subtract 12 from the hour for midnight?
-    var pmSet = false;
-    // do we need to add 12 to the hour?
+    @string rangeErrString = ""u8; // set if a value is out of range
+    var amSet = false; // do we need to subtract 12 from the hour for midnight?
+    var pmSet = false; // do we need to add 12 to the hour?
     // Time being constructed.
     nint year = default!;
     
@@ -1423,7 +1417,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
                 if (ss > 60) {
                     rangeErrString = timeZoneOffsetSecondˢ;
                 }
-                zoneOffset = (hr * 60 + mm) * 60 + ss;
+                zoneOffset = (hr * 60 + mm) * 60 + ss; // offset is in seconds
                 switch (sign[0]) {
                 case (rune)'+': {
                     break;
@@ -1442,7 +1436,6 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
         else if (exprᴛ1 == stdTZ) { matchᴛ1 = true;
             do {
                 if (len(value) >= 3 && value[0..3] == "UTC") {
-                    // offset is in seconds
                     // Does it look like a time zone?
                     z = ΔUTC;
                     value = value[3..];
@@ -1558,8 +1551,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
             return (t, default!);
         }
         // Otherwise create fake zone to record offset.
-        @string zoneNameCopy = stringslite.Clone(zoneName);
-        // avoid leaking the input value
+        @string zoneNameCopy = stringslite.Clone(zoneName); // avoid leaking the input value
         t.setLoc(FixedZone(zoneNameCopy, zoneOffset));
         return (t, default!);
     }
@@ -1575,12 +1567,10 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
         }
         // Otherwise, create fake zone with unknown offset.
         if (len(zoneName) > 3 && zoneName[..3] == "GMT") {
-            (offset, _) = atoi(zoneName[3..]);
-            // Guaranteed OK by parseGMT.
+            (offset, _) = atoi(zoneName[3..]); // Guaranteed OK by parseGMT.
             offset *= 3600;
         }
-        @string zoneNameCopy = stringslite.Clone(zoneName);
-        // avoid leaking the input value
+        @string zoneNameCopy = stringslite.Clone(zoneName); // avoid leaking the input value
         t.setLoc(FixedZone(zoneNameCopy, offset));
         return (t, default!);
     }
@@ -1617,8 +1607,7 @@ internal static (nint length, bool ok) parseTimeZone(@string value) {
     // Special Case 3: Some time zones are not named, but have +/-00 format
     if (value[0] == (rune)'+' || value[0] == (rune)'-') {
         length = parseSignedOffset(value);
-        var okΔ1 = length > 0;
-        // parseSignedOffset returns 0 in case of bad input
+        var okΔ1 = length > 0; // parseSignedOffset returns 0 in case of bad input
         return (length, okΔ1);
     }
     // How many upper-case letters are there? Need at least three, at most five.
@@ -1845,8 +1834,7 @@ public static (Duration, error) ParseDuration(@string s) {
         if (err != default!) {
             return (0, errors.New("time: invalid duration "u8 + quote(orig)));
         }
-        var pre = pl != len(s);
-        // whether we consumed anything before a period
+        var pre = pl != len(s); // whether we consumed anything before a period
         // Consume (\.[0-9]*)?
         var post = false;
         if (s != ""u8 && s[0] == (rune)'.') {

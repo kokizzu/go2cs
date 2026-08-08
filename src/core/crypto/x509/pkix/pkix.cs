@@ -57,9 +57,8 @@ public static @string String(this RDNSequence r) {
                 var (derBytes, err) = asn1.Marshal(tv.Value);
                 if (err == default!) {
                     s += oidString + "=#"u8 + hex.EncodeToString(derBytes);
-                    continue;
+                    continue; // No value escaping necessary.
                 }
-                // No value escaping necessary.
                 typeName = oidString;
             }
             @string valueString = fmt.Sprint(tv.Value);

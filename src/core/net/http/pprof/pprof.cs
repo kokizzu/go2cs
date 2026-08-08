@@ -243,9 +243,8 @@ public static void Symbol(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     while (ᐧ) {
         var (word, err) = b.ReadSlice((rune)'+');
         if (err == default!) {
-            word = word[0..(int)(len(word) - 1)];
+            word = word[0..(int)(len(word) - 1)]; // trim +
         }
-        // trim +
         var (pc, _) = strconv.ParseUint(((@string)word), 0, 64);
         if (pc != 0) {
             var f = runtime.FuncForPC((uintptr)pc);
@@ -369,8 +368,7 @@ internal static void serveDeltaProfile(this handler name, http.ResponseWriter w,
             serveError(w, http.StatusInternalServerError, failedToComputeDeltaˢ);
             return;
         }
-        p1.Value.TimeNanos = ts;
-        // set since we don't know what profile.Merge set for TimeNanos.
+        p1.Value.TimeNanos = ts; // set since we don't know what profile.Merge set for TimeNanos.
         p1.Value.DurationNanos = dur;
         w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
         w.Header().Set(contentDispositionˢ, fmt.Sprintf(@"attachment; filename=""%s-delta"""u8, name));
