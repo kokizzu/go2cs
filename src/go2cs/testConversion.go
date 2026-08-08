@@ -1456,9 +1456,9 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// suppressing test-file hoists in initializer-reachable functions is a pure (and tiny)
 	// allocation pessimization, never a correctness risk, and flipping the flag would drift the
 	// hoist claims of every banked *_test.cs for no behavioral gain.
-	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, nil, true)
+	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, goosOfTarget(options.targetPlatform), nil, true)
 	productionHoistSeed := packageHoistNames
-	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, productionHoistSeed, false)
+	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, goosOfTarget(options.targetPlatform), productionHoistSeed, false)
 
 	// Find test-file package-level var initializers whose Go dependency order C#'s
 	// static-field-initializer order cannot reproduce — the same pass processConversion runs

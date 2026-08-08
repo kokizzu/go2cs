@@ -409,6 +409,12 @@ Two specifics worth carrying forward:
 - **`runtime/lock_sema_impl.cs` needs a sibling, not a port.** `lock_sema.go` is selected on Windows *and*
   macOS; Linux uses `lock_futex.go` instead. The Linux corpus needs its own hand-own at a different
   filename — which the layout in §8 accommodates naturally.
+  **✅ WRITTEN (increment 3.5b, lane r51b), and the sibling is four lines.** The prediction was right and
+  understated *why*: the two flavors differ in their OS primitive (semaphore vs futex) and their key
+  encoding, and the OS primitive is exactly the part that does not survive conversion — so both collapse
+  onto ONE managed model. The shared core moved out of the Windows companion into a flat, platform-neutral
+  `runtime/lock_managed_impl.cs`, and each flavor keeps only the single declaration whose *signature*
+  differs. Not a port, not even really a sibling: a shared core plus two four-line adapters.
   **Increment 3.5 found the GENERAL form of this, and it is a second registry, not a second file.**
   A whole-file hand-own is routed by layout (§12, increment 3.5); a hand-owned *function* is not routed by
   anything, because `manualConversionFuncs` is keyed by **name** and is platform-blind. Every entry in it
@@ -420,6 +426,15 @@ Two specifics worth carrying forward:
   |:--|:--|:--|:--|
   | `runtime` mutex/note | `mutexContended`, `lock2`, `unlock2`, `notewakeup`, `notesleep`, `notetsleep_internal` | `runtime/{windows,darwin}/lock_sema_impl.cs` | **linux** |
   | `os` directory walk | `File.readdir` | `os/windows/dir_windows_impl.cs` | **linux, darwin** |
+
+  **✅ BOTH CLOSED (increment 3.5b, lane r51b) — and the two rows wanted OPPOSITE answers, which is the
+  finding.** The `runtime` row needed the missing implementation written, because both flavors genuinely
+  need hand-owning. The `os` row needed the entry *narrowed*: `dir_unix.go`'s readdir is pure Go over
+  `internal/poll` and converts faithfully, so the "missing on linux" was a gap the name-keyed registry had
+  invented rather than one the Go source has. Scoping Linux out gives that package a real body and leaves
+  nothing owed. Darwin stays in scope on evidence, not by omission: `dir_darwin.go` hands libc's
+  `readdir_r` the ADDRESS of a Go `syscall.Dirent`, the same non-blittable-by-address seam as `syscall`'s
+  wrappers, so its hand-own is owed with macOS at increment 5.
 
   Every other entry is safe for a reason worth stating: `syscall`'s five (`GetTimeZoneInformation`,
   `findFirstFile1`, `findNextFile1`, `Process32First`, `Process32Next`) and `os.readReparseLink` name
@@ -953,11 +968,11 @@ listed because a number measured behind a scaffold must say so:
 
 | # | Scaffold | Stands in for |
 |--:|:--|:--|
-| 1 | `runtime/linux/lock_futex_impl.cs` (throwing) | the missing Linux mutex/note hand-own (§7) |
+| 1 | `runtime/linux/lock_futex_impl.cs` (throwing) | the missing Linux mutex/note hand-own (§7) — **REAL since increment 3.5b; no longer a scaffold** |
 | 2 | `syscall/linux` `_Socklen` made public | bucket **L2** below |
 | 3 | `syscall/linux` `GoImplicitConv` `ValueType` corrected | bucket **L3** below |
 | 4 | `os/linux` duplicate `GoImplement` record removed | bucket **L4** below |
-| 5 | `os/linux/dir_unix_impl.cs` (throwing) | the missing Linux `readdir` hand-own (§7) |
+| 5 | `os/linux/dir_unix_impl.cs` (throwing) | the missing Linux `readdir` hand-own (§7) — **RETIRED at increment 3.5b: the registry entry was narrowed and Linux needs no hand-own** |
 
 **The Linux buckets, with classifications.** Each row is the leaf-most failure of one build; peeling it
 revealed the next. `(a)` = L3-mechanical, `(b)` = hand-own flavor gap, `(c)` = converted-code or generator
@@ -980,7 +995,8 @@ never written for Linux **(b)** or a converted-code/generator defect that Window
 exhibit **(c)**. None is a *layout* question, so increment 4 is not blocked on this document.
 
 **Standing.** 58 packages compile unscaffolded (was 57); **156** compile behind the five scaffolds,
-against 305 of 306 on Windows with zero errors.
+against 305 of 306 on Windows with zero errors. *(Superseded by increment 3.5b below: 143 compile
+unscaffolded, and 307/307 behind four class-(c) scaffolds.)*
 
 *Proofs.*
 
@@ -1037,6 +1053,111 @@ Its cost today is one package's Linux `-tests` path, which nothing validates; it
 increment 4's second build pass. Two facts to carry into that work: `<AllowUnsafeBlocks>` is *already*
 reconciled by a different rule (union, §12 increment 3 note 4), so the axis must not re-open it; and the
 merge's residual report is the instrument that will say when a THIRD such fact appears.
+
+**Increment 3.5b — the class-(b) hand-own flavor gaps close, and the registry grows a platform axis. —
+✅ LANDED 2026-08-08 (lane r51b, against `88c4d082a`).**
+
+Increment 3.5 classified the Linux surface into (a) layout, (b) hand-own flavor gaps and (c) converted-code
+or generator defects, and closed (a). This closes **(b)**, both rows of §7's table — and the two rows wanted
+**opposite** answers, which is the finding worth carrying.
+
+*L1, the `runtime` mutex/note cluster (27 unresolved call sites across `notewakeup`, `notesleep`,
+`notetsleep_internal`, `lock2`, `unlock2`).* §7 said "a sibling, not a port". True, and understated: the two
+flavors differ in their OS primitive (semaphore vs futex) and their key encoding (`{0, locked|*m}` vs
+`{0,1,2}`), and **the OS primitive is exactly the part that does not survive conversion**. Both therefore
+collapse onto the identical managed model — a `{0, keyLocked}` latch driven by `Interlocked` with `SpinWait`
+escalation. So the shared core moved OUT of the Windows companion into a flat, platform-neutral
+`runtime/lock_managed_impl.cs`, and each flavor keeps only the one declaration whose signature differs:
+
+| File | Contents |
+|:--|:--|
+| `runtime/lock_managed_impl.cs` | NEW, flat — `mutexContended`, `lock2`, `unlock2`, `notewakeup`, `notesleep`, `noteSleepDeadline`, `keyLocked` |
+| `runtime/{windows,darwin}/lock_sema_impl.cs` | 4-arg `notetsleep_internal`, delegating (byte-identical copies) |
+| `runtime/linux/lock_futex_impl.cs` | NEW, 2-arg `notetsleep_internal`, delegating |
+
+Flat rather than tripled is increment 3.5's own platform-SET rule applied to a hand-own that *can* be
+shared. The 4-vs-2 arity §7 flagged as inexpressible turns out to need no expression: the registry says
+whether a declaration is hand-owned, the hand-owned file says what it looks like.
+
+*L-os, `File.readdir`.* The opposite. `dir_windows.go` reinterprets the buffer
+`GetFileInformationByHandleEx` fills as a Go struct and must be hand-owned; `dir_unix.go`'s readdir is
+**pure Go** over `internal/poll`'s `ReadDirent` and converts faithfully. The name-keyed entry deleted that
+body too — so the Linux gap was **invented by the registry, not by the Go source**, and the right fix is to
+narrow the entry rather than write a stub. Linux now emits a real 126-line converted `readdir` and owes
+nothing. Darwin stays scoped IN on evidence: `dir_darwin.go` hands libc's `readdir_r` the address of a Go
+`syscall.Dirent` — the same non-blittable-by-address seam — so its hand-own is owed with macOS at
+increment 5.
+
+*The registry's platform axis.* `manualConversionFuncs` entries now carry a `goosScope`, resolved against
+the conversion's target GOOS; the empty scope (`goosAny`) means every target and is what ~120 of the ~126
+entries use. `syscall`'s five generated wrappers and `os.readReparseLink` are scoped to windows too — inert
+there already, so no emission moves, but a future same-named unix declaration can no longer silently
+inherit a Windows hand-own the way `readdir` did. Guarded by `manualConversionScope_test.go`: the
+`lock_sema`/`lock_futex` pair at real arity, the readdir three-way split, and a typo guard, since a scope
+naming an unknown GOOS matches nothing and would turn a hand-own off everywhere — otherwise unreportable,
+because "not hand-owned" is a legitimate answer for every other declaration.
+
+**The bucket table, re-read.** L0 and L1 are gone; every remaining row is class (c) and belongs to the
+converter/generator, not to this document.
+
+| # | Package | Class | State |
+|--:|:--|:--:|:--|
+| L0 | `runtime` companion routing | (a) | **FIXED** increment 3.5 |
+| L1 | `runtime` mutex/note | **(b)** | **FIXED** — this increment, no scaffold |
+| L2 | `syscall` `CS0050` `_Socklen` | (c) | open (lane r51a) |
+| L3 | `syscall` `CS0030` `WaitStatus`↔`ΔSignal` | (c) | open (lane r51a) |
+| L4 | `os` duplicate `GoImplement` record | (c) | open (lane r51a) |
+| L5 | `os` `unixDirentжfs_DirEntry` naming | (c) | open (lane r51a) |
+| L6 | `os` `zero_copy_linux.cs` typed zero string | (c) | open (lane r51a) |
+| — | `os` missing Linux `readdir` | **(b)** | **FIXED** — the entry was narrowed; no hand-own owed |
+
+**Standing.** Scaffolds drop from **five to four**, and all four are class (c). Unscaffolded, the Linux
+build's leaf-most failure moves from `runtime` to `syscall` (L2): **143 of 307 projects compile**, up from
+58, with the other 164 sitting behind `syscall` in the reference graph. Behind r51a's four class-(c)
+scaffolds — **and no hand-own scaffold at all** — the corpus compiles **307 of 307, zero errors** (108 s).
+That is the number this increment exists to produce: with (a) and (b) both closed, *nothing else* in the
+entire Linux corpus is a layout or hand-own question.
+
+*Proofs.*
+
+| Proof | Method | Result |
+|:--|:--|:--|
+| the Linux `runtime` compiles | `-p:GoTargetOS=linux`, no scaffolds | **0 errors** (from 27 `CS0103`) |
+| the Linux `os` compiles | `-p:GoTargetOS=linux`, behind r51a's four class-(c) scaffolds only | **0 errors** — no `readdir` scaffold |
+| the whole Linux corpus | full solution, same four scaffolds | **307/307, 0 errors, 108 s** |
+| …and the flag is really applying | scaffolds reverted, same command | fails at exactly L2, 1 error — a control, not a tautology |
+| the Windows lane did not move | full solution, property ABSENT, `--no-incremental` | **307 projects, 0 errors, 181 s** |
+| `runtime.dll`'s Windows semantics did not move | order-insensitive surface digest (type/member/accessibility/arity/IL-size/locals/EH), `-p:GoTargetOS=windows`, `--no-incremental` both sides | **diff is exactly 4 lines** (below) |
+| the corpus reproduces from a reconvert | seeded 3-target `-stdlib` merge (559 s), path-precise | 6,137 files both sides, **0 new, 0 absent, 1 real content difference** — `os/linux/dir_unix.cs`, the intended one; the other 55 are CR-strip-equal |
+| the hand-owns were not clobbered | marker gate, line-anchored | **44** marked files (was 42), **0** re-emitted as plain `.cs` |
+
+The `runtime.dll` digest is worth quoting, because it is what makes "the body moved" a measurement:
+
+```
+compiler-generated closure classes  1653 -> 1653     (ordinal names shift; count is the test)
+go-derived surface lines          17258 -> 17260     (+2, the two intended additions)
+
+<= METHOD notetsleep_internal  p4  il196
+=> METHOD notetsleep_internal  p4  il13      now a delegation
+=> METHOD noteSleepDeadline    p2  il196     the SAME 196-byte body, relocated
+=> METHOD get_keyLocked        p0  il7
+```
+
+`mutexContended`, `lock2`, `unlock2`, `notewakeup` and `notesleep` do not appear in the diff at all — same
+IL size, locals flag and exception regions after changing file.
+
+⚠ **A raw IL/signature-blob digest cannot serve as the instrument here, and the first attempt proved it.**
+Both signature blobs and IL bodies encode type and member references as *coded indices into the metadata
+tables*, so relocating a member rewrites every one of them without changing any meaning: a byte-hash
+comparison reported **15,408** differing lines for a change that moved five method bodies. That is the same
+effect §12's increment-3 note predicted ("the metadata table order shifts, which shifts the tokens inside
+IL"), and it is the concrete reason the ruled acceptance standard for a layout move is semantic-content
+identity rather than byte identity. An order-insensitive surface digest reports 4.
+
+⚠ **The 55 CR-only differences after the reconvert are the documented mixed-CRLF/LF phantom**, not drift:
+CR-stripped equality holds for every one of them. Worth stating because the count is much larger than a
+single-target reconvert's, and because it is exactly the shape a real regression would hide in — classify
+by CR-stripped comparison, never by file count.
 
 **Increment 4 — packaging (a) for the RID pair `win-x64` / `linux-x64` only.**
 `push-nuget.ps1` grows the second build pass and the asset merge. Validate by restoring `go.fmt` into a

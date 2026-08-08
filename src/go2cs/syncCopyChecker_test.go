@@ -48,11 +48,11 @@ func (c *Cond) Signal() {}
 		}
 	}
 
-	if !isManualFuncDeclInPackage("sync", decls["check"]) {
+	if !isManualFuncDeclInPackage("sync", "windows", decls["check"]) {
 		t.Error("sync copyChecker.check must be hand-owned: the auto conversion CASes a boxed copy, so it never detects a copied Cond")
 	}
 
-	if isManualFuncDeclInPackage("sync", decls["Signal"]) {
+	if isManualFuncDeclInPackage("sync", "windows", decls["Signal"]) {
 		t.Error("only copyChecker.check is hand-owned in sync/cond.go; Cond's own methods must stay auto-converted")
 	}
 }
