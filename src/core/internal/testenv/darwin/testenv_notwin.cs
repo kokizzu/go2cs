@@ -1,0 +1,65 @@
+// Copyright 2016 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//go:build !windows
+namespace go.@internal;
+
+using fmt = fmt_package;
+using os = os_package;
+using filepath = path.filepath_package;
+using Δruntime = runtime_package;
+using fs = io.fs_package;
+using path;
+
+partial class testenv_package {
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testfileTxtˢ = "testfile.txt"u8;
+private static readonly @string testlinkˢ = "testlink"u8;
+
+internal static (bool ok, @string reason) hasSymlink() {
+    bool ok = default!;
+    @string reason = default!;
+    GoFrame ᒐ = default;
+    try {
+        var exprᴛ1 = Δruntime.GOOS;
+        if (exprᴛ1 == "plan9"u8) {
+            (ok, reason) = (false, ""); goto ᒐdone;
+        }
+        if (exprᴛ1 == "android"u8 || exprᴛ1 == "wasip1"u8) {
+            var (dir, err) = os.MkdirTemp(""u8, // For wasip1, some runtimes forbid absolute symlinks,
+ // or symlinks that escape the current working directory.
+ // Perform a simple test to see whether the runtime
+ // supports symlinks or not. If we get a permission
+ // error, the runtime does not support symlinks.
+ ""u8);
+            if (err != default!) {
+                (ok, reason) = (false, ""); goto ᒐdone;
+            }
+            defer(() => {
+                _ = os.RemoveAll(dir);
+            }, ref ᒐ);
+            @string fpath = filepath.Join(dir, testfileTxtˢ);
+            {
+                var errΔ1 = os.WriteFile(fpath, default!, 420); if (errΔ1 != default!) {
+                    (ok, reason) = (false, ""); goto ᒐdone;
+                }
+            }
+            {
+                var errΔ2 = os.Symlink(fpath, filepath.Join(dir, testlinkˢ)); if (errΔ2 != default!) {
+                    if (SyscallIsNotSupported(errΔ2)) {
+                        (ok, reason) = (false, fmt.Sprintf("symlinks unsupported: %s"u8, errΔ2.Error())); goto ᒐdone;
+                    }
+                    (ok, reason) = (false, ""); goto ᒐdone;
+                }
+            }
+        }
+
+        (ok, reason) = (true, "");
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+    ᒐdone: return (ok, reason);
+}
+
+} // end testenv_package

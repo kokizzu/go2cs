@@ -1,0 +1,53 @@
+// Copyright 2022 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//go:build unix
+namespace go;
+
+using atomic = go.sync.atomic_package;
+using go.sync;
+
+partial class syscall_package {
+
+// origRlimitNofile, if non-nil, is the original soft RLIMIT_NOFILE.
+internal static ж<atomic.Pointer<Rlimit>> ᏑorigRlimitNofile = new(default(atomic.Pointer<Rlimit>));
+internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimitNofile.Value;
+
+// Some systems set an artificially low soft limit on open file count, for compatibility
+// with code that uses select and its hard-coded maximum file descriptor
+// (limited by the size of fd_set).
+//
+// Go does not use select, so it should not be subject to these limits.
+// On some systems the limit is 256, which is very easy to run into,
+// even in simple programs like gofmt when they parallelize walking
+// a file tree.
+//
+// After a long discussion on go.dev/issue/46279, we decided the
+// best approach was for Go to raise the limit unconditionally for itself,
+// and then leave old software to set the limit back as needed.
+// Code that really wants Go to leave the limit alone can set the hard limit,
+// which Go of course has no choice but to respect.
+[GoInit] internal static void init() {
+    ref var lim = ref heap(new Rlimit(), out var Ꮡlim);
+    {
+        var err = Getrlimit(RLIMIT_NOFILE, Ꮡlim); if (err == default! && lim.Cur != lim.Max) {
+            ᏑorigRlimitNofile.Store(Ꮡlim);
+            ref var nlim = ref heap<Rlimit>(out var Ꮡnlim);
+            nlim = lim;
+            nlim.Cur = nlim.Max;
+            adjustFileLimit(Ꮡnlim);
+            setrlimit(RLIMIT_NOFILE, Ꮡnlim);
+        }
+    }
+}
+
+public static error Setrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
+    if (resource == RLIMIT_NOFILE) {
+        // Store nil in origRlimitNofile to tell StartProcess
+        // to not adjust the rlimit in the child process.
+        ᏑorigRlimitNofile.Store(nil);
+    }
+    return setrlimit(resource, Ꮡrlim);
+}
+
+} // end syscall_package

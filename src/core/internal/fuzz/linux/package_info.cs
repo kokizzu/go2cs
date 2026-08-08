@@ -1,0 +1,118 @@
+// go2cs code converter defines `global using` statements here for imported type
+// aliases as package references are encountered via `import' statements. Exported
+// type aliases that need a `global using` declaration will be loaded from the
+// referenced package by parsing its 'package_info.cs' source file and reading its
+// defined `GoTypeAlias` attributes.
+
+// Package name separator "dot" used in imported type aliases is extended Unicode
+// character '\uA4F8' which is a valid character in a C# identifier name. This is
+// used to simulate Go's package level type aliases since C# does not yet support
+// importing type aliases at a namespace level.
+
+// <ImportedTypeAliases>
+global using execꓸError = go.os.exec_package.ΔError;
+global using jsonꓸToken = object;
+global using jsonꓸΔToken = object;
+global using osꓸDirEntry = go.io.fs_package.DirEntry;
+global using osꓸFileInfo = go.io.fs_package.FileInfo;
+global using osꓸFileMode = go.io.fs_package.FileMode;
+global using osꓸPathError = go.io.fs_package.PathError;
+global using osꓸSignal = go.os_package.ΔSignal;
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
+global using runtimeꓸError = go.runtime_package.ΔError;
+global using syscallꓸSignal = go.syscall_package.ΔSignal;
+global using timeꓸLocation = go.time_package.ΔLocation;
+global using timeꓸMonth = go.time_package.ΔMonth;
+global using timeꓸWeekday = go.time_package.ΔWeekday;
+global using tokenꓸFile = go.go.token_package.ΔFile;
+global using tokenꓸPos = go.go.token_package.ΔPos;
+global using tokenꓸPosition = go.go.token_package.ΔPosition;
+// </ImportedTypeAliases>
+
+using go;
+using static go.@internal.fuzz_package;
+
+// For encountered type alias declarations, e.g., `type Table = map[string]int`,
+// go2cs code converter will generate a `global using` statement for the alias in
+// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
+// Although scope of `global using` is available to all files in the project, all
+// converted Go code for the project targets the same package, so `global using`
+// statements will effectively have package level scope.
+
+// Additionally, `GoTypeAlias` attributes will be generated here for exported type
+// aliases. This allows the type alias to be imported and used from other packages
+// when referenced.
+
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("CorpusEntry", "go.@internal.fuzz_package.CorpusEntryᴛ1")]
+// </ExportedTypeAliases>
+
+// As types are cast to interfaces in Go source code, the go2cs code converter
+// will generate an assembly level `GoImplement` attribute for each unique cast.
+// This allows the interface to be implemented in the C# source code using source
+// code generation (see go2cs-gen). An alternate interface implementation exists
+// that can resolve duck-typed interfaces at run-time, but handling interface
+// implementations at compile-time results in faster startup times, avoiding
+// reflection-based interface resolution.
+
+// <InterfaceImplementations>
+[assembly: GoImplement<MalformedCorpusError, error>(Pointer = true)]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<contextReader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<crashError, error>(Pointer = true)]
+[assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<pcgRand, mutatorRand>(Pointer = true)]
+[assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]
+// </InterfaceImplementations>
+
+// <ImplicitConversions>
+[assembly: GoImplicitConv<mutator, ж<mutator>>]
+// </ImplicitConversions>
+
+namespace go.@internal;
+
+[GoPackage("fuzz")]
+public static partial class fuzz_package
+{
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
+
+    // <TypeAccessibility>
+    internal partial interface mutatorRand {}
+    internal partial struct call {}
+    internal partial struct contextReader {}
+    internal partial struct coordinator {}
+    internal partial struct corpus {}
+    internal partial struct crashError {}
+    internal partial struct fuzzInput {}
+    internal partial struct fuzzMinimizeInput {}
+    internal partial struct fuzzResponse {}
+    internal partial struct fuzzResult {}
+    internal partial struct minimizeResponse {}
+    internal partial struct mutator {}
+    internal partial struct noCopy {}
+    internal partial struct pcgRand {}
+    internal partial struct pingResponse {}
+    internal partial struct queue {}
+    internal partial struct sharedMem {}
+    internal partial struct sharedMemHeader {}
+    internal partial struct sharedMemSys {}
+    internal partial struct worker {}
+    internal partial struct workerClient {}
+    internal partial struct workerComm {}
+    internal partial struct workerServer {}
+    public partial struct CoordinateFuzzingOpts {}
+    public partial struct CorpusEntryᴛ1 {}
+    public partial struct MalformedCorpusError {}
+    public partial struct fuzzArgs {}
+    public partial struct minimizeArgs {}
+    public partial struct pingArgs {}
+    // </TypeAccessibility>
+}

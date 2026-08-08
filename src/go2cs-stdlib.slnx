@@ -154,6 +154,10 @@
   <Folder Name="/crypto/x509/" Id="ebf9b69e-5782-504a-85e0-3ff490508525">
     <Project Path="core/crypto/x509/crypto.x509.csproj" />
   </Folder>
+  <Folder Name="/crypto/x509/internal/" />
+  <Folder Name="/crypto/x509/internal/macos/" Id="37a1fb0c-6e83-5275-8bb0-6830f734cfca">
+    <Project Path="core/crypto/x509/internal/macos/crypto.x509.internal.macos.csproj" />
+  </Folder>
   <Folder Name="/crypto/x509/pkix/" Id="54723e0e-5d2e-5da3-ac34-d335edd1d8f8">
     <Project Path="core/crypto/x509/pkix/crypto.x509.pkix.csproj" />
   </Folder>
@@ -509,6 +513,9 @@
   </Folder>
   <Folder Name="/internal/runtime/exithook/" Id="660710b4-102a-587e-92e1-842f055bc1a5">
     <Project Path="core/internal/runtime/exithook/internal.runtime.exithook.csproj" />
+  </Folder>
+  <Folder Name="/internal/runtime/syscall/" Id="f87f468e-b61e-543e-ad50-71097d1940a6">
+    <Project Path="core/internal/runtime/syscall/internal.runtime.syscall.csproj" />
   </Folder>
   <Folder Name="/internal/saferio/" Id="01c49cfc-eaa7-55b2-94d6-6d89331a1a8d">
     <Project Path="core/internal/saferio/internal.saferio.csproj" />
@@ -928,6 +935,9 @@
   </Folder>
   <Folder Name="/vendor/golang.org/x/net/nettest/" Id="31be96dc-b027-500c-bb6b-a2da3cc1bdb0">
     <Project Path="core/vendor/golang.org/x/net/nettest/vendor.golang.org.x.net.nettest.csproj" />
+  </Folder>
+  <Folder Name="/vendor/golang.org/x/net/route/" Id="1b4d1c07-9f03-5af2-a7ae-b9ce56c07779">
+    <Project Path="core/vendor/golang.org/x/net/route/vendor.golang.org.x.net.route.csproj" />
   </Folder>
   <Folder Name="/vendor/golang.org/x/sys/" />
   <Folder Name="/vendor/golang.org/x/sys/cpu/" Id="ce20011c-29be-50dc-8476-a9e2d9481ddc">
