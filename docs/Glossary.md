@@ -16,9 +16,14 @@
 
 <a id="cnr"></a>**CNR — check-no-regression** (`src/tests/Behavioral/check-no-regression.ps1`).
 Force-rebuilds `go2cs.exe` from current source, re-transpiles **every** behavioral test project,
-and reports any generated `.cs` that differs from the committed tree. The pass verdict is
+and reports any generated `.cs` **or `.csproj`** that differs from the committed tree (the
+transpile rewrites both; the pathspec was `.cs`-only until 2026-08-08). The pass verdict is
 **"byte-identical"**: the converter change produced exactly the committed output everywhere it
-wasn't intended to change something. Mandatory for any converter (`src/go2cs/*.go`) change.
+wasn't intended to change something. A package whose output the run could not fully regenerate
+(best-effort/untyped conversion, a recovered visitor panic, or a non-zero converter exit) fails
+as **NOT MEASURED** rather than counting toward the green verdict — the byte-identical claim is
+never allowed to be vacuous; other converter WARNINGs are counted as advisory, never fatal.
+Mandatory for any converter (`src/go2cs/*.go`) change.
 Scope caveat: CNR checks *transpile output only* — it cannot see compilation, source-generator
 (`go2cs-gen`) output, or runtime behavior. A new test's own files appearing as untracked (`??`)
 is the expected signature of adding a guard, not a failure.

@@ -320,7 +320,14 @@ ONE stdlib in a build; there is now only one on disk.
   (`[GoTestMatchingConsoleOutput]`) projects are `go build`- and stdout-compared, matching MSTest
   (library-style projects like `Constraints` have no `package main`). For a pure converter no-regression
   check with no compile/run at all, use **`check-no-regression.ps1`** (re-transpiles every behavioral dir
-  and `git status`es the `.cs`).
+  and `git status`es the converter-emitted `.cs` **and `.csproj`** — the transpile rewrites both, and the
+  `.cs`-only pathspec it had until 2026-08-08 made a csproj-emission change invisible on every platform.
+  Converter stderr is captured, not discarded: a package the run could not fully regenerate — best-effort
+  "did not fully type-check", a recovered "visit file error", or a non-zero exit — fails the gate by name
+  as **NOT MEASURED** even with a clean `git status`, so the byte-identical verdict is never vacuous;
+  other WARNINGs are counted as advisory, never fatal. Coordinator ruling 2026-08-08, from lane r48b's
+  Linux `FindFirstFileData` finding — see `docs/PLAN-linux-operation.md`. Until F8 platform-gates the
+  enumeration, a Linux CNR run therefore reports `FindFirstFileData` as NOT MEASURED by design).
 - **Run the behavioral suite via the solution, not the project:** `dotnet test src/go2cs.slnx`. Running
   `dotnet test` on `BehavioralTests.csproj` directly breaks because `$(go2csPath)` (→ `$(SolutionDir)`)
   has no solution context, so the `core\golib` ref fails to resolve. The baseline solution is now an
@@ -345,8 +352,8 @@ ONE stdlib in a build; there is now only one on disk.
   assembly and runs just that project's 4 phases (Transpile/Compile/TargetComparison/OutputComparison) in
   seconds. `--no-build` is valid as long as the `*Tests.cs` files haven't changed (`git status` them).
   Reserve a single full-suite run for final confirmation. Faster still for a pure no-regression check:
-  re-transpile every behavioral dir and `git status` the `.cs` — byte-identical generated code ⟹ identical
-  compile+output ⟹ identical results, with no compile/run at all.
+  re-transpile every behavioral dir and `git status` the `.cs` + `.csproj` — byte-identical generated code
+  ⟹ identical compile+output ⟹ identical results, with no compile/run at all.
 - **Budget each command against its MEASURED baseline — the old flat "~3 min" cap is no longer right for
   the full runs (re-measured 2026-08-04 by r40, corpus at 569 transpiled packages / 571 registered `.csproj`).** The
   corpus keeps growing (371 → 457 → 518 → 543 → 569 packages), and both full instruments

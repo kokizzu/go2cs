@@ -575,6 +575,45 @@ did not previously cover.
 semantics **on Windows too**, and the first would make CNR report this project as drifted on every
 Linux run until F8 lands. Those are coordinator-level calls, not a verification lane's.
 
+**Coordinator ruling (2026-08-08): widen the pathspec AND surface the warnings, in CNR; the
+converter's exit contract does not move; F8 unchanged.** Both repairs are gate-side and land
+together in `check-no-regression.ps1`, because they close different halves of the finding:
+
+- **The drift pathspec now includes `*.csproj`.** The transpile rewrites the csproj on every pass,
+  so it is converter output exactly like the `.cs` beside it — and this half of the blind spot was
+  never Linux-specific: a converter change that dropped a `<ProjectReference>` block corpus-wide
+  would have been invisible to CNR on every platform. `-Revert` restores both patterns; the
+  BehavioralTests/BehavioralRunner hand-written exclusions are unchanged.
+- **Converter stderr is captured and classified, not `Out-Null`'d.** Two warning classes mean the
+  pass did not fully regenerate a package's output, so the byte-identical verdict would be vacuous
+  for it: `did not fully type-check` (best-effort/untyped conversion) and `visit file error` (a
+  recovered visitor panic skipped a file's emission). Those — and a non-zero converter exit, the
+  same hole's previously-unhandled sibling (the loop printed `[transpile FAILED]` but the verdict
+  stayed green) — now fail the gate by name under a **NOT MEASURED** verdict, exit 1, even when
+  `git status` is clean. Every other WARNING stays advisory (a healthy run has them, e.g.
+  `unsafe.Sizeof`): counted in the summary line, never fatal.
+- **Making the converter exit non-zero on a best-effort conversion is rejected.** Exit 0 there is a
+  product decision, not an oversight: converting standalone code that does not fully type-check is
+  a legitimate use, the same deliberately-non-fatal reasoning as the `-go2cspath` self-location
+  warning — and every harness that invokes the converter would inherit a new exit-code contract.
+  The gate can read stderr; the converter's contract does not bend to serve it.
+- **The consequence the lane flagged is accepted, deliberately.** Until F8 lands, a Linux CNR run
+  reports `FindFirstFileData` as NOT MEASURED (and its csproj as drifted) — by name, exit 1. That
+  is the *honest* verdict: the package is not measurable on that host, and a gate that says so
+  loudly is the point of this ruling. The vacuous green it replaces was the defect. F8's
+  platform-gating of the runner enumerations retires the noise when it lands; nothing here
+  preempts or constrains that design.
+
+**Windows-neutrality proof (measured, 2026-08-08).** Full `check-no-regression.ps1` on the Windows
+lane with the ruling implemented: **exit 0 in 433 s** — *"NO REGRESSION: generated C# and .csproj
+are byte-identical across all 574 behavioral packages (4 advisory converter warnings)."* Zero
+packages NOT MEASURED, zero csproj drift under the widened pathspec, and a repo-wide `git status`
+afterwards shows only the four files of this ruling — so the new pathspec is quiet on a healthy
+corpus and the four advisory warnings the old gate silently discarded are now visible in the
+summary. Negative control, also measured on Windows: a scratch package referencing an undefined
+symbol reproduces the exact r48b shape (converter exit 0, `did not fully type-check` on stderr)
+and the new classification catches it as vacuous — the detection is probed, not reasoned.
+
 **Operational note for the next lane driving WSL from Windows.** Do not pass a command containing
 double quotes to `wsl -e bash -lc "…"`: the interop reconstructs the command line and the output is
 silently **truncated** at the first quoted token — `echo "== tools =="` prints `==` and everything
