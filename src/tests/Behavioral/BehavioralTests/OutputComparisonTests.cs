@@ -1609,7 +1609,7 @@ public class D4_OutputComparisonTests : BehavioralTestBase
         // Set stop watch for performance measurement
         Stopwatch stopwatch = new();
 
-        string csExe = Path.Combine(GetCSExecPath(projPath, targetProject), $"{targetProject}.exe");
+        string csExe = GetCSExeFile(projPath, targetProject);
         Assert.IsTrue(File.Exists(csExe), $"Expected C# executable does not exist: {csExe}");
 
         StringBuilder csOutput = new();
@@ -1621,7 +1621,7 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
         TestContext?.WriteLine($"C# execution Time: {stopwatch.ElapsedMilliseconds:N0} ms");
 
-        string goExe = Path.Combine(GetGoExePath(projPath, targetProject), $"{targetProject}.exe");
+        string goExe = GetGoExeFile(projPath, targetProject);
         Assert.IsTrue(File.Exists(goExe), $"Expected Go executable does not exist: {goExe}");
 
         StringBuilder goOutput = new();

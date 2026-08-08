@@ -5,7 +5,7 @@
 // that can be found in the LICENSE file.
 
 // Standalone runner for the go2cs performance comparison suite. For each benchmark project under
-// src\tests\Performance it builds three variants of the same program -- the original Go binary, the
+// src/tests/Performance it builds three variants of the same program -- the original Go binary, the
 // transpiled C# on the normal JIT runtime, and the transpiled C# as a Native AOT self-contained
 // executable -- verifies all three produce identical output (checksums), then measures workload time
 // (in-program, excludes startup), process wall time, and peak working set, reducing the samples to a
@@ -61,6 +61,13 @@ namespace PerformanceRunner
 
         private const string Config = "Release";
         private const string NetVersion = "net9.0";
+
+        // Executable suffix for a built .NET apphost or Go binary. Windows only; empty everywhere
+        // else. Hard-coding ".exe" made every File.Exists probe in Verify/Measure fail off Windows,
+        // which this runner reports as "exe missing" -- a per-variant message, not a failure, so a
+        // run would complete and publish a results table measured from nothing (F4,
+        // docs/PLAN-linux-operation.md).
+        private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
         // Preferred report order; projects not listed are appended alphabetically.
         private static readonly string[] s_reportOrder =
@@ -127,10 +134,13 @@ namespace PerformanceRunner
 
             // ----- resolve paths -----
             // Runner lives at src\tests\Performance\PerformanceRunner; performance dir is its parent.
-            s_perfDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\.."));
-            s_srcRoot = Path.GetFullPath(Path.Combine(s_perfDir, @"..\.."));
+            // Path.Combine with SEGMENTS, not an embedded @"..\..\..\..": .NET does not normalize a
+            // backslash on Unix, so that string is ONE directory name there and GetFullPath yields a
+            // path that exists nowhere -- discovery then finds zero benchmarks. Identical on Windows.
+            s_perfDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+            s_srcRoot = Path.GetFullPath(Path.Combine(s_perfDir, "..", ".."));
             s_converterSrc = Path.Combine(s_srcRoot, "go2cs");
-            s_go2csExe = Path.Combine(s_converterSrc, "bin", "go2cs.exe");
+            s_go2csExe = Path.Combine(s_converterSrc, "bin", $"go2cs{s_exeSuffix}");
 
             // ----- discover projects -----
             // A benchmark project is a folder with Go source; the generated .csproj appears after the
@@ -876,6 +886,31 @@ namespace PerformanceRunner
                 // fall through to the environment variable
             }
 
+            // PROCESSOR_IDENTIFIER is a Windows environment variable, so off Windows the environment
+            // line of the published table read "unknown CPU" -- which is the one field of a
+            // performance report that must never be a shrug, since the numbers mean nothing without
+            // the part that produced them. Linux publishes the same fact in /proc/cpuinfo.
+            try
+            {
+                if (OperatingSystem.IsLinux() && File.Exists("/proc/cpuinfo"))
+                {
+                    foreach (string line in File.ReadLines("/proc/cpuinfo"))
+                    {
+                        if (!line.StartsWith("model name", StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        int colon = line.IndexOf(':');
+
+                        if (colon >= 0 && colon + 1 < line.Length)
+                            return line[(colon + 1)..].Trim();
+                    }
+                }
+            }
+            catch
+            {
+                // fall through to the environment variable
+            }
+
             return Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? "unknown CPU";
         }
 
@@ -918,9 +953,9 @@ namespace PerformanceRunner
 
             return variant switch
             {
-                Variant.Go => Path.Combine(projPath, "bin", Config, "Go", $"{project}.exe"),
-                Variant.Jit => Path.Combine(projPath, "bin", Config, NetVersion, $"{project}.exe"),
-                Variant.Aot => Path.Combine(projPath, "bin", Config, "aot", $"{project}.exe"),
+                Variant.Go => Path.Combine(projPath, "bin", Config, "Go", $"{project}{s_exeSuffix}"),
+                Variant.Jit => Path.Combine(projPath, "bin", Config, NetVersion, $"{project}{s_exeSuffix}"),
+                Variant.Aot => Path.Combine(projPath, "bin", Config, "aot", $"{project}{s_exeSuffix}"),
                 _ => throw new ArgumentOutOfRangeException(nameof(variant))
             };
         }
@@ -1034,7 +1069,7 @@ namespace PerformanceRunner
                   --phase <list>        Comma list of: transpile,build,verify,measure,all (default all).
                   --runs <n>            Measured runs per variant (default 5; +1 discarded warmup).
                   --no-aot              Skip the Native AOT column (much faster builds).
-                  --update-readme       Rewrite the results block in ..\README.md (between the
+                  --update-readme       Rewrite the results block in ../README.md (between the
                                         PERF-RESULTS markers) with this run's tables.
                   --list                List matched projects and exit.
                   -h, --help            Show this help.

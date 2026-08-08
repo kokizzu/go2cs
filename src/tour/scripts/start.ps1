@@ -11,8 +11,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# The executable suffix comes from the shared definition at src\_paths.ps1. start.sh remains the
+# Linux entry point (§A5 of docs/PLAN-linux-operation.md keeps the twin deliberately -- it is 19
+# lines of `go install` + `go run` with no invariants to drift), but there is no reason for THIS
+# script to be the one file in the tree that still cannot run under pwsh.
+. (Join-Path $PSScriptRoot '../../_paths.ps1')
+
 $tourRoot = Split-Path -Parent $PSScriptRoot
-$repoRoot = (Resolve-Path (Join-Path $tourRoot "..\..")).Path
+$repoRoot = (Resolve-Path (Join-Path $tourRoot '../..')).Path
 
 Write-Host "Checking Go..."
 & go version
@@ -21,7 +28,7 @@ Write-Host "Checking .NET..."
 & dotnet --version
 
 $goPath = (& go env GOPATH).Trim()
-$tourBinary = Join-Path $goPath "bin\tour.exe"
+$tourBinary = Join-Path $goPath "bin/tour$ExeSuffix"
 if (-not (Test-Path -LiteralPath $tourBinary)) {
     Write-Host "Installing the official offline Tour of Go..."
     & go install golang.org/x/website/tour@latest

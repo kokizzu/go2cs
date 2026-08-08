@@ -12,6 +12,12 @@
     and revert the deepest-first ordering that closed FALSE-GREEN route #3). See F4 in
     docs/PLAN-linux-operation.md.
 
+    The primitives themselves now live one level up, at src\_paths.ps1, because the sweep, the deploy
+    and the performance wrapper need the same ones and a src-level script should not reach into the
+    test tree for them. This file dot-sources that one and adds what is behavioral-specific, so every
+    variable name a caller already binds ($IsWindowsHost, $ExeSuffix, $SepPattern, $SrcRoot,
+    $RepoRoot, $ConverterSrc, $Go2csExe, Get-PathDepth, Get-RelativeDisplayPath) is unchanged.
+
     Dot-source this file to get one definition of each:
 
         . (Join-Path $PSScriptRoot '_paths.ps1')
@@ -22,54 +28,8 @@
     Requires PowerShell 5.1 (Windows) or PowerShell 7+ (any platform).
 #>
 
-# $IsWindows is an AUTOMATIC variable in PowerShell 6+ only. On Windows PowerShell 5.1 it does not
-# exist, so a bare `if (-not $IsWindows)` reads $null -> falsey -> "not Windows", which is exactly
-# backwards on the one platform where 5.1 runs. Resolve it explicitly.
-$IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction SilentlyContinue)) { $true } else { $IsWindows }
+# Dot-sourcing chains: these land in the caller's scope, exactly as if they were defined here.
+. (Join-Path $PSScriptRoot '../../_paths.ps1')
 
-# Executable suffix for a built .NET apphost or Go binary.
-$ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
-
-# Path separator regex CLASS, for patterns that must match a path boundary on either platform. Use
-# this instead of a literal '\\' in any -match/-split/-notmatch over a filesystem path: Windows
-# accepts both separators in practice and Linux only produces '/'.
-$SepPattern = '[\\/]'
-
-# Roots, each derived from THIS file's location so every caller agrees.
-#
-# NOTE the single forward-slash-joined child path rather than pwsh's multi-argument Join-Path. The
-# multi-argument form is PowerShell 6+ only -- on Windows PowerShell 5.1, which is what the Windows
-# lane actually runs, `Join-Path a b c` is a hard parameter-binding error. Forward slashes inside a
-# single child argument are accepted by Join-Path on BOTH platforms and normalize to the host
-# separator, so this form is the one that is portable in both directions.
+# The one root that is specific to this tree.
 $BehavioralRoot = $PSScriptRoot
-$SrcRoot        = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$RepoRoot       = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-$ConverterSrc   = Join-Path $SrcRoot 'go2cs'
-$Go2csExe       = Join-Path $ConverterSrc "bin/go2cs$ExeSuffix"
-
-# PathDepth counts a path's segments independently of which separator produced them. The behavioral
-# walk sorts by this DESCENDING so a nested sub-library package is transpiled before the parent that
-# reads its generated package_info.cs.
-function Get-PathDepth {
-    param([Parameter(Mandatory)][string] $Path)
-
-    return ($Path -split $SepPattern | Where-Object { $_ -ne '' }).Count
-}
-
-# Renders an absolute path relative to a root, in the forward-slash form used for reporting and for
-# git pathspecs. Trimming BOTH separators is deliberate: a Windows path under a root that was
-# resolved with forward slashes leaves the other one behind.
-function Get-RelativeDisplayPath {
-    param(
-        [Parameter(Mandatory)][string] $Path,
-        [Parameter(Mandatory)][string] $Root
-    )
-
-    $relative = $Path
-    if ($Path.Length -gt $Root.Length -and $Path.StartsWith($Root)) {
-        $relative = $Path.Substring($Root.Length)
-    }
-
-    return $relative.TrimStart('\', '/').Replace('\', '/')
-}

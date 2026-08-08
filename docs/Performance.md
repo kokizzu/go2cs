@@ -58,8 +58,22 @@ cd src/tests/Performance
 ./run-performance.ps1 --runs 10 --update-readme   # refresh the results block below
 ```
 
-Requirements: Go toolchain, .NET 9 SDK, and — for the AOT column — MSVC C++ build tools (Visual
-Studio 2022's "Desktop development with C++" workload, which supplies the `link.exe` ILC needs).
+Requirements: Go toolchain, .NET 9 SDK, and — for the AOT column — a native linker and toolchain,
+which differs by host:
+
+| Host | Native AOT prerequisite |
+|:--|:--|
+| **Windows** | MSVC C++ build tools — Visual Studio 2022's "Desktop development with C++" workload, which supplies the `link.exe` ILC needs. The runner prepends the VS Installer directory to `PATH` so the SDK's `vswhere` probe finds it. |
+| **Linux** | `clang` and `zlib1g-dev` (Debian/Ubuntu: `sudo apt install clang zlib1g-dev`; Fedora: `clang zlib-devel`). ILC shells out to `clang` for the native link step. |
+| **macOS** | The Xcode command line tools (`xcode-select --install`), which supply `clang` and `ld`. |
+
+Deliberately **not** scripted: `run-performance.ps1` does not install any of these. A benchmark
+harness that silently mutates the machine's toolchain is not a harness anyone should trust with a
+performance claim. `--no-aot` drops the whole column and needs none of them (F13,
+[PLAN-linux-operation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/PLAN-linux-operation.md)).
+
+The environment line of the results block reads the CPU name from the registry on Windows and from
+`/proc/cpuinfo` on Linux, so a published table always names the part that produced it.
 
 The runner (`PerformanceRunner`), a dependency-free console app structured like the behavioral suite's
 `BehavioralRunner`, runs **Transpile → Build → Verify → Measure**. Verify requires all three binaries
