@@ -414,32 +414,213 @@ func TestStdLibImportPathComesFromTheSourceDirectory(t *testing.T) {
 	}
 }
 
-// The badge line is the two badges, in order, one space apart — and it collapses to nothing when
-// neither can be composed, which is what keeps a context-less conversion's README as it always was.
-func TestReadmeBadgeLineJoinsTestsThenDocs(t *testing.T) {
+// The Source·Go badge is the reader's route to the Go sources themselves (as distinct from the Docs
+// badge's rendered documentation), so its exact rendering — Go brand blue, the gopher logo, the
+// release-tagged tree link — is pinned here for each shape the corpus contains.
+func TestGoSourceBadgePinsTheReleaseTaggedTree(t *testing.T) {
+	goRoot := goRootWithVendor(t, goRootVendorModules)
+
+	tests := []struct {
+		name       string
+		importPath string
+		expected   string
+	}{
+		{
+			name:       "standard package",
+			importPath: "bufio",
+			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio)",
+		},
+		{
+			name:       "nested standard package",
+			importPath: "path/filepath",
+			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/path/filepath)",
+		},
+		{
+			name:       "internal package",
+			importPath: "internal/abi",
+			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/internal/abi)",
+		},
+		{
+			// The link is the VENDORED tree — literally the directory the converter read — while the
+			// message carries the module pin modules.txt records, since these sources are a
+			// third-party snapshot rather than a Go release artifact. The pseudo-version's dashes are
+			// doubled: a single dash separates shields' three fields.
+			name:       "vendored package",
+			importPath: "vendor/golang.org/x/crypto/chacha20",
+			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/crypto/chacha20)",
+		},
+		{
+			name:       "vendored package with a plain semantic version",
+			importPath: "vendor/golang.org/x/text/unicode/norm",
+			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@v0.16.0-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/text/unicode/norm)",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if badge := readmeGoSourceBadgeLine(test.importPath, "1.23.1", goRoot); badge != test.expected {
+				t.Fatalf("Go source badge mismatch\n got: %s\nwant: %s", badge, test.expected)
+			}
+		})
+	}
+}
+
+// Where the Docs badge must go silent, this one need not: its link's address is the GOROOT tree at
+// the Go release tag, which an unresolvable module pin does not affect. The pin only sharpens the
+// text, so losing it degrades the text and keeps the link.
+func TestGoSourceBadgeFallsBackToTheReleaseWhenTheModulePinIsUnresolvable(t *testing.T) {
+	const importPath = "vendor/golang.org/x/net/idna"
+	const expected = "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/net/idna)"
+
+	// Absent from modules.txt, and a GOROOT with no modules.txt at all: both keep the badge.
+	for name, goRoot := range map[string]string{
+		"absent from modules.txt": goRootWithVendor(t, goRootVendorModules),
+		"no modules.txt at all":   t.TempDir(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			if badge := readmeGoSourceBadgeLine(importPath, "1.23.1", goRoot); badge != expected {
+				t.Fatalf("Go source badge mismatch\n got: %s\nwant: %s", badge, expected)
+			}
+		})
+
+		// The Docs badge, by contrast, composes its ADDRESS from the pin and must say nothing.
+		if badge := readmeDocsBadgeLine(importPath, "1.23.1", goRoot); badge != "" {
+			t.Fatalf("the docs badge should stay silent without a pin, got: %s", badge)
+		}
+	}
+
+	// Nothing to link and nothing to pin the tree with are both silence, not a half-built URL.
+	if badge := readmeGoSourceBadgeLine("", "1.23.1", ""); badge != "" {
+		t.Fatalf("expected no badge without an import path, got: %s", badge)
+	}
+
+	if badge := readmeGoSourceBadgeLine("bufio", "", ""); badge != "" {
+		t.Fatalf("expected no badge without a Go version, got: %s", badge)
+	}
+}
+
+// The Source·C# badge links the converted C# at the RELEASE TAG the reader's package version was
+// published under, with the path taken from where the conversion is writing.
+func TestCSharpSourceBadgePinsTheReleaseTag(t *testing.T) {
+	_, projectPath := badgeTree(t, "io", "1.23.1.2")
+
+	const expected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
+
+	badge := readmeCSharpSourceBadgeLine(projectPath)
+
+	if badge != expected {
+		t.Fatalf("C# source badge mismatch\n got: %s\nwant: %s", badge, expected)
+	}
+
+	// '#' in a URL path opens the fragment, which would truncate the badge at "Source-C" and render
+	// a badge that says something else entirely. It must be percent-encoded, everywhere, always.
+	if strings.Contains(badge, "#") {
+		t.Fatalf("the badge carries an unescaped '#': %s", badge)
+	}
+
+	if !strings.Contains(badge, "badge/Source-C%23_@") {
+		t.Fatalf("the badge does not carry the escaped C%%23 label: %s", badge)
+	}
+
+	// A nested package's link is its nested DIRECTORY (forward-slashed for the URL), not the flat
+	// dot-id the proof pages use.
+	_, nestedPath := badgeTree(t, "path.filepath", "1.23.1.2")
+
+	const nestedExpected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/path/filepath)"
+
+	if badge := readmeCSharpSourceBadgeLine(nestedPath); badge != nestedExpected {
+		t.Fatalf("nested C# source badge mismatch\n got: %s\nwant: %s", badge, nestedExpected)
+	}
+
+	// A vendored package's converted C# sits at the same vendor-prefixed path its Go sources do. Its
+	// directory is built explicitly rather than through badgeTree's dot-id mapping, because a module
+	// path's own dots (`golang.org`) do not survive that round trip.
+	root, _ := badgeTree(t, "io", "1.23.1.2")
+	vendoredPath := filepath.Join(root, "core", "vendor", "golang.org", "x", "crypto", "chacha20")
+	mustMkdirAll(t, vendoredPath)
+
+	const vendoredExpected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/vendor/golang.org/x/crypto/chacha20)"
+
+	if badge := readmeCSharpSourceBadgeLine(vendoredPath); badge != vendoredExpected {
+		t.Fatalf("vendored C# source badge mismatch\n got: %s\nwant: %s", badge, vendoredExpected)
+	}
+}
+
+// The same fallback the Tests badge has, for the same reason: without version.props there is no
+// published version, so there is no release tag to pin and nothing honest to link.
+func TestCSharpSourceBadgeOmittedWithoutAPublishedVersion(t *testing.T) {
+	t.Run("no version.props", func(t *testing.T) {
+		_, projectPath := badgeTree(t, "io", "")
+
+		if badge := readmeCSharpSourceBadgeLine(projectPath); badge != "" {
+			t.Fatalf("expected no badge without version.props, got: %s", badge)
+		}
+	})
+
+	t.Run("no go2cs root", func(t *testing.T) {
+		if badge := readmeCSharpSourceBadgeLine(t.TempDir()); badge != "" {
+			t.Fatalf("expected no badge outside a go2cs root, got: %s", badge)
+		}
+	})
+
+	// Under a go2cs root but NOT beneath its core/ — a -recurse conversion's output — has no place
+	// in the go2cs repository, so there is no path to link.
+	t.Run("outside the root's core directory", func(t *testing.T) {
+		root, _ := badgeTree(t, "io", "1.23.1.2")
+		outside := filepath.Join(root, "app", "mypkg")
+		mustMkdirAll(t, outside)
+
+		if badge := readmeCSharpSourceBadgeLine(outside); badge != "" {
+			t.Fatalf("expected no badge outside core/, got: %s", badge)
+		}
+
+		if badge := readmeCSharpSourceBadgeLine(filepath.Join(root, "core")); badge != "" {
+			t.Fatalf("the core root itself is no package, got: %s", badge)
+		}
+	})
+}
+
+// The badge line is the four badges in order — Tests, Docs, then the Source pair in convert-from →
+// convert-to order — one space apart, and it collapses to nothing when none can be composed, which
+// is what keeps a context-less conversion's README as it always was.
+func TestReadmeBadgeLineJoinsTestsDocsThenBothSources(t *testing.T) {
 	root, projectPath := badgeTree(t, "io", "1.23.1.2")
 
 	addProofPage(t, root, "io", 59, 2)
 	mustWriteFile(t, filepath.Join(projectPath, "io"+testProjectFileSuffix), "<Project />")
 
 	// The source directory doubles as the import-path source, so it has to sit under this fixture's
-	// own GOROOT for the docs badge to resolve.
+	// own GOROOT for the docs and Go source badges to resolve.
 	goRoot := goRootWithVendor(t, goRootVendorModules)
 	sourceDir := filepath.Join(goRoot, "src", "io")
 	mustMkdirAll(t, sourceDir)
-
-	expected := "[![Tests](https://img.shields.io/badge/Tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)" +
-		" " + fmt.Sprintf("[![Docs](https://img.shields.io/badge/Docs-@%s-00ADD8?logo=go)](https://pkg.go.dev/io@go%s)", goVersion(), goVersion())
 
 	if goVersion() == "" {
 		t.Skip("the Go toolchain version is not resolvable")
 	}
 
+	expected := "[![Tests](https://img.shields.io/badge/Tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)" +
+		" " + fmt.Sprintf("[![Docs](https://img.shields.io/badge/Docs-@%s-00ADD8?logo=go)](https://pkg.go.dev/io@go%s)", goVersion(), goVersion()) +
+		" " + fmt.Sprintf("[![Source](https://img.shields.io/badge/Source-Go_@%s-00ADD8?logo=go)](https://github.com/golang/go/tree/go%s/src/io)", goVersion(), goVersion()) +
+		" " + "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
+
 	if line := readmeBadgeLine(projectPath, "io", sourceDir, Options{goRoot: goRoot}); line != expected {
 		t.Fatalf("badge line mismatch\n got: %s\nwant: %s", line, expected)
 	}
 
-	// Neither badge composable — no repository context AND no GOROOT — is an empty line, not a
+	// The repository badges and the toolchain badges fail independently. An unseeded reconvert (no
+	// version.props, no docs tree) keeps Docs and Source·Go and drops Tests and Source·C#.
+	unseeded := readmeBadgeLine(t.TempDir(), "io", sourceDir, Options{goRoot: goRoot})
+
+	if strings.Contains(unseeded, "badge/Tests-") || strings.Contains(unseeded, "Source-C%23") {
+		t.Fatalf("an unseeded root emitted a repository badge: %s", unseeded)
+	}
+
+	if !strings.Contains(unseeded, "badge/Docs-") || !strings.Contains(unseeded, "badge/Source-Go_@") {
+		t.Fatalf("an unseeded root dropped a toolchain badge: %s", unseeded)
+	}
+
+	// No badge composable at all — no repository context AND no GOROOT — is an empty line, not a
 	// stray separator.
 	if line := readmeBadgeLine(t.TempDir(), "io", sourceDir, Options{}); line != "" {
 		t.Fatalf("expected an empty badge line, got: %s", line)

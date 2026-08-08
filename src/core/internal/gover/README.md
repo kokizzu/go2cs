@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/internal.gover.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/internal/gover@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/internal.gover.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/internal/gover@go1.23.1) [![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/internal/gover) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/internal/gover)
 
 Package gover implements support for Go toolchain versions like 1.21.0 and 1.21rc1. (For historical reasons, Go does not use semver for its toolchains.) This package provides the same basic analysis that golang.org/x/mod/semver does for semver.
 

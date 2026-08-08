@@ -97,15 +97,29 @@ sheets, each one `go test` agreeing with the C#, test by test.
   to the version that produced them. It closes the round trip the READMEs were missing: the Tests
   badge proves the conversion behaves like the Go, and the Docs badge is the route to the Go it
   behaves like. Spec below; the vendored-module case and the import-path source are refinements 6–8.
+- **2026-08-08:** **the two Source badges join them** (user ruling, r51c) — the Go sources and the
+  converted C#, one click apart, for the exact version the reader holds. Docs reaches the *rendered
+  documentation*; these reach the *sources themselves*, which is what a reader of a transpiler's
+  output actually wants to compare. Landing them moved the release tag: the C# badge links
+  `nuget-<version>`, so that tag now has to exist before the packages are packed. Spec below;
+  refinements 10–14.
 
-## The badges (Tests implemented 2026-08-02, Docs added 2026-08-08)
+## The badges (Tests 2026-08-02, Docs 2026-08-08, Source pair 2026-08-08)
 
 One badge-only line per package README, its own paragraph between the attribution blockquote and the
-godoc body. No emoji, no trailing text link — **each badge IS its link**. It holds two badges, in
+godoc body. No emoji, no trailing text link — **each badge IS its link**. It holds four badges, in
 this order, separated by a single space so a narrow renderer wraps between them:
 
 1. the **Tests** badge — this package's validation state, linking its proof;
-2. the **Docs** badge — the official Go documentation for the sources it was converted from.
+2. the **Docs** badge — the official Go documentation for the sources it was converted from;
+3. the **Source·Go** badge — those Go sources themselves, in the Go repository;
+4. the **Source·C#** badge — the converted C# beside this README, in the go2cs repository.
+
+**The order is the decision, not an accident.** Tests and Docs come first because they state what the
+package *is* — validated, and what it mirrors. The Source pair comes **last** because it answers the
+reader's *second* question: having been told this C# mirrors that Go, go read both. The pair is
+deliberately adjacent and deliberately in convert-**from** → convert-**to** order, so the line reads
+in the direction the conversion runs.
 
 Tests' label was reduced from `Go_tests` to `Tests` by user ruling 2026-08-03: the `?logo=go` gopher
 already says Go, so the word in the label was redundant.
@@ -117,6 +131,9 @@ already says Go, so the word in the label was redundant.
 | Tests | no tests | `Tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
 | Docs | standard package (`internal/…` included) | `Docs-@<goversion>-00ADD8` | `pkg.go.dev/<import-path>@go<goversion>` |
 | Docs | GOROOT-vendored (`vendor/golang.org/x/…`) | `Docs-@<pin>-00ADD8` | `pkg.go.dev/<module>@<pin>/<subpath>` |
+| Source·Go | standard package | `Source-Go_@<goversion>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/<import-path>` |
+| Source·Go | GOROOT-vendored | `Source-Go_@<pin>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/vendor/<module>/<subpath>` |
+| Source·C# | every package | `Source-C%23_@<version>-512BD4` | `github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg-dir>` |
 
 `<m>` is matched and `<t>` is matched + disclosed, both read off the package's living proof page, so
 the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is
@@ -124,12 +141,15 @@ the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is
 replaced by `.`, the same flat name the proof pages already use.
 
 `<goversion>` is the toolchain's own `go env GOVERSION` without the `go` prefix — the same value the
-README attribution's `> Go version: 1.23.1` line carries, never a literal. `00ADD8` is the Go
-project's own blue, so the Docs badge reads as the Go documentation it points at rather than as
-another go2cs status light. Both badges carry `?logo=go`. The rendered pair, for `bufio`:
+README attribution's `> Go version: 1.23.1` line carries, never a literal. `<version>` is the
+published four-part `<GoStdLibVersion>.<GoBuildNumber>`, and `<pkg-dir>` is the package's directory
+beneath `src/core`. `00ADD8` is the Go project's own blue, so the three Go-facing badges read as the
+Go they point at rather than as go2cs status lights; `512BD4` is .NET's purple, and Source·C# is the
+one badge on the line that is not Go-blue — which is exactly the distinction it carries. The three Go
+badges use `?logo=go`, Source·C# uses `?logo=dotnet`. The rendered line, for `bufio`:
 
 ```markdown
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-80%2F81_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/bufio.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1) [![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/bufio)
 ```
 
 The Tests badge's three states **partition the corpus**, which is what makes it auditable rather than
@@ -142,9 +162,11 @@ decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
   PARSED and searched for a top-level `func Test…` (Go's own naming rule). Comments and string
   literals mentioning `func Test` are everywhere in the standard library's test sources, so a
   lexical scan would over-count.
-- **On disk that is 71 / 143 / 86 = 300 badged READMEs.** `testing` and `unsafe` are hand-owned and
-  carry no converter-emitted README at all, so their classes (orange and grey respectively) exist in
-  the predicate but not on disk.
+- **On disk that is 71 / 143 / 86 = 300 badged READMEs**, the count at that regen. `testing` and
+  `unsafe` are hand-owned and carry no converter-*emitted* README, so they were absent from that
+  figure; their badge lines are maintained by hand (refinement 13). The corpus is at **305 badged
+  READMEs of 308** as of the Source-pair regen — the other three carry no badge line at all: the
+  root attribution README, `golib`'s own, and a verbatim Go `testdata` README.
 
 ### Where the badge implementation refines the spec
 
@@ -210,6 +232,45 @@ decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
 9. **An interim snapshot `docs/validation/1.23.1.2/` was created by hand** (a copy of `current/`, with
    a README saying so) so the badge links resolve from the day they landed. Every later versioned
    directory is written by `push-nuget.ps1` at publication.
+10. **Source·Go keeps its badge where Docs must drop it** (added 2026-08-08). Both resolve a vendored
+    package's pin through the same `modules.txt` reader, but they need it for different things: the
+    Docs link's *address* is composed from the pin (`pkg.go.dev/<module>@<pin>/…`), so an
+    unresolvable one has nowhere honest to point and the badge goes silent; the Source·Go link is the
+    GOROOT tree at `go<goversion>` and is fully pinned by the Go release alone, so the module version
+    only sharpens the badge's TEXT. An unresolvable pin therefore degrades Source·Go's text to the Go
+    release and keeps the link. A badge whose target is perfectly good should not disappear because
+    its label could have been more precise.
+11. **Source·C# links a TAG, and that moved the release flow.** A `master` link would drift away from
+    the package the reader is holding with the very next commit, so the badge pins
+    `tree/nuget-<version>/`. That made the tag a *pre-pack* artifact: `push-nuget.ps1` now mints it
+    (signed, idempotent by check-then-skip) at snapshot time, before anything is built, instead of
+    the flow suggesting `git tag` as a post-push Phase-3 instruction. Tagging afterwards meant every
+    README baked into every package linked a tag that did not exist yet. It sits *before* the
+    write-once proof snapshot so a signing failure costs nothing, and it is gated on the build-number
+    bump so a pack-only inspection run cannot mint a release tag. The tag names the tree the release
+    was built FROM — HEAD there differs from the release commit only by `version.props`, the snapshot
+    and the retargeted README links, and no converted C# moves between them.
+12. **The release retarget had to grow a second half.** Source·C# is version-pinned TWICE (its message
+    and its tag), so a release that moved only the Tests badge's proof link would publish READMEs
+    pointing at the *previous* release's C#. `push-nuget.ps1` retargets both, in its **own block
+    outside the proof-snapshot branch** — this badge is on every package README, validated or not,
+    and gating it on `docs/validation/current/` existing would silently ship stale source links on
+    the one run where the proof pages had gone missing. A verification pass then asserts both pins
+    name the version being published, the same consistency-by-construction the green badges get.
+13. **The hand-owned-README class has EIGHT members, not the one refinement 3 recorded.** A package
+    whose README the converter never re-emits gets its badge line by hand, and the corpus regen found
+    that this is true of `internal/godebug`, `internal/concurrent` and `internal/weak` (zero unmarked
+    files, so the driver `continue`s before `writeProjectFile`), `unsafe` and `testing` (skip-listed,
+    never converted), and `crypto/x509/internal/macos`, `internal/runtime/syscall` and
+    `vendor/golang.org/x/net/route` (nothing eligible emits on this platform). All eight ship a
+    `.csproj` and therefore a NuGet package, so all eight carry the badges.
+14. **Those hand edits were derived, then proved, not typed.** Each package's two Source badges are
+    composed from data already in its own README — the attribution line's Go version and the Docs
+    badge's already-escaped pin, which came from the same `modules.txt` resolution — plus the
+    package's directory. The derivation was run as a CONTROL against the 297 converter-emitted
+    READMEs first and reproduced all 297 byte for byte before being applied to the 8; re-run
+    afterwards it reproduces all 305. "Byte-identical to what the converter emits" is a claim worth
+    making only when something checked it.
 
 ### Where the implementation refines the spec above
 

@@ -5,10 +5,21 @@
 // that can be found in the LICENSE file.
 
 // Every converted standard-library package's NuGet README carries one badge line — the first thing a
-// visitor sees on nuget.org and in the repository. It holds two badges, space separated so a narrow
-// renderer wraps between them: the Tests badge (this package's validation state, below) followed by
-// the Docs badge (the official Go documentation for the very sources it was converted from, pinned
-// to the version that produced them — see readmeDocsBadgeLine).
+// visitor sees on nuget.org and in the repository. It holds four badges, space separated so a narrow
+// renderer wraps between them:
+//
+//	Tests      this package's validation state (below)
+//	Docs       the official Go documentation for the very sources it was converted from, pinned to
+//	           the version that produced them (readmeDocsBadgeLine)
+//	Source·Go  the Go sources themselves, in the Go repository at the release tag that produced them
+//	           (readmeGoSourceBadgeLine)
+//	Source·C#  the converted C# beside this README, in the go2cs repository at the release tag this
+//	           package version was published under (readmeCSharpSourceBadgeLine)
+//
+// The two Source badges come LAST because they answer the reader's second question, not the first:
+// Tests and Docs state what this package IS (validated, and what it mirrors), while the Source pair
+// is the invitation to go read both sides. The pair is deliberately adjacent and deliberately in
+// convert-FROM → convert-TO order, so the line reads as the conversion it describes.
 //
 // The Tests badge is the package's honesty contract:
 //
@@ -79,6 +90,25 @@ const (
 	// points at rather than as another go2cs status light.
 	goBrandColor = "00ADD8"
 
+	// dotnetBrandColor is .NET's own purple. It is the one badge on the line that is NOT Go-blue,
+	// which is exactly the distinction it carries: every other badge points at Go, this one points
+	// at the converted C#.
+	dotnetBrandColor = "512BD4"
+
+	// goRepositoryURL is the Go project's own repository. Its release tags (`go1.23.1`) hold the
+	// exact sources the conversion read, which is what makes a tree link under one reproducible.
+	goRepositoryURL = "https://github.com/golang/go"
+
+	// (go2csRepositoryURL — this project's own repository, which the C# Source badge links — is
+	// declared beside the proof-page renderer that already needed it, in validationProofPages.go.)
+
+	// releaseTagPrefix names a published release's git tag (`nuget-1.23.1.4`). The C# Source badge
+	// links the TAG rather than a branch so the C# a reader lands on is the C# that shipped in the
+	// package they are reading the README of — a `master` link would drift away from it with the
+	// next commit. This is why the release flow mints the tag at SNAPSHOT time, before anything is
+	// packed: see the tag block in push-nuget.ps1.
+	releaseTagPrefix = "nuget-"
+
 	// vendorImportPrefix is what the standard library's own vendored third-party packages carry in
 	// their import path (`vendor/golang.org/x/crypto/chacha20`). It is a GOROOT-internal spelling
 	// pkg.go.dev never serves, so the Docs badge resolves those through modules.txt instead.
@@ -96,26 +126,110 @@ var (
 	goBuildNumberPattern   = regexp.MustCompile(`<GoBuildNumber>([^<]+)</GoBuildNumber>`)
 )
 
-// readmeBadgeLine composes a converted stdlib package's whole badge line: the Tests badge followed
-// by the Docs badge, separated by a single space. Each badge is emitted only when it can be composed
-// honestly, so the line may hold either, both, or — when neither has the inputs it needs — nothing at
-// all, in which case the README carries no badge paragraph, exactly as it did before badges existed.
+// readmeBadgeLine composes a converted stdlib package's whole badge line — Tests, Docs, Source·Go,
+// Source·C# — separated by single spaces. Each badge is emitted only when it can be composed
+// honestly, so the line may hold any subset, or — when none has the inputs it needs — nothing at all,
+// in which case the README carries no badge paragraph, exactly as it did before badges existed.
 //
-// The two badges answer independent questions from independent inputs (the Tests badge reads the
-// repository's version.props and proof pages; the Docs badge reads the Go toolchain and GOROOT), so
-// neither suppresses the other.
+// The badges answer independent questions from independent inputs, so none suppresses another: Tests
+// and Source·C# read the repository (version.props, the proof pages), while Docs and Source·Go read
+// the Go toolchain and GOROOT. That split is what an unseeded reconvert makes visible — it emits the
+// two toolchain badges and neither repository one.
 func readmeBadgeLine(projectPath string, projectName string, sourceDir string, options Options) string {
-	badges := make([]string, 0, 2)
+	badges := make([]string, 0, 4)
+	importPath := stdLibImportPath(sourceDir, options.goRoot)
 
 	if badge := readmeValidationBadgeLine(projectPath, projectName, sourceDir); badge != "" {
 		badges = append(badges, badge)
 	}
 
-	if badge := readmeDocsBadgeLine(stdLibImportPath(sourceDir, options.goRoot), goVersion(), options.goRoot); badge != "" {
+	if badge := readmeDocsBadgeLine(importPath, goVersion(), options.goRoot); badge != "" {
+		badges = append(badges, badge)
+	}
+
+	if badge := readmeGoSourceBadgeLine(importPath, goVersion(), options.goRoot); badge != "" {
+		badges = append(badges, badge)
+	}
+
+	if badge := readmeCSharpSourceBadgeLine(projectPath); badge != "" {
 		badges = append(badges, badge)
 	}
 
 	return strings.Join(badges, " ")
+}
+
+// readmeGoSourceBadgeLine returns the Source·Go badge — the ORIGINAL Go source this package was
+// converted from, in the Go repository at the release tag that produced it, so a reader of the C#
+// can open the Go beside it rather than take the conversion's word for what it says.
+//
+// It is the Docs badge's counterpart, not its duplicate: Docs reaches the rendered documentation,
+// this reaches the sources. An ordinary package links `github.com/golang/go/tree/go1.23.1/src/bufio`.
+// A GOROOT-vendored package links the vendored tree — `.../src/vendor/golang.org/x/crypto/chacha20`,
+// which is literally the directory the converter read — and states the module version GOROOT's own
+// src/vendor/modules.txt records, because "@1.23.1" would name a Go release for sources that are a
+// third-party module's snapshot.
+//
+// An unresolvable vendor pin degrades the badge's TEXT to the Go release rather than dropping the
+// badge, which is where this parts company with the Docs badge. The distinction is what each badge
+// promises: the Docs link's ADDRESS is composed from the pin, so an unpinnable one has nowhere
+// honest to point, whereas this link is the GOROOT tree at `go1.23.1` and is fully pinned by the Go
+// release alone — the module version only makes the text more precise.
+func readmeGoSourceBadgeLine(importPath string, version string, goRoot string) string {
+	if importPath == "" || version == "" {
+		return ""
+	}
+
+	pin := version
+
+	if vendored := strings.TrimPrefix(importPath, vendorImportPrefix); vendored != importPath {
+		if _, modulePin, ok := vendoredModulePin(goRoot, vendored); ok {
+			pin = modulePin
+		}
+	}
+
+	return fmt.Sprintf("[![Source](%s/badge/Source-Go_@%s-%s?logo=go)](%s/tree/go%s/src/%s)",
+		shieldsBadgeHost, shieldsBadgeMessage(pin), goBrandColor, goRepositoryURL, version, importPath)
+}
+
+// readmeCSharpSourceBadgeLine returns the Source·C# badge — the CONVERTED C# this README ships
+// beside, in the go2cs repository at the release tag this version was published under. Paired with
+// the Source·Go badge it is the whole point of the line: the two sides of the conversion, one click
+// apart, for the exact version the reader holds.
+//
+// The link is pinned twice over. `nuget-<version>` names the tag the release flow mints at snapshot
+// time, and the path is the package's own directory beneath the go2cs root's core/ — taken from
+// where the conversion is WRITING, not re-derived from the import path, so the badge cannot name a
+// directory this conversion did not produce.
+//
+// Returns "" on the same terms as the Tests badge: no go2cs root or no version.props means no
+// published version to pin and therefore no honest link, which is what a bare temp -go2cspath
+// reconvert hits. A project path outside the root's core/ (a -recurse conversion that happens to sit
+// under a go2cs root) has no place in the go2cs repository at all, so it says nothing.
+func readmeCSharpSourceBadgeLine(projectPath string) string {
+	root := findGo2CSRootAbove(projectPath)
+
+	if root == "" {
+		return ""
+	}
+
+	version := publishedPackageVersion(root)
+
+	if version == "" {
+		return ""
+	}
+
+	relative, err := filepath.Rel(filepath.Join(root, "core"), projectPath)
+
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return ""
+	}
+
+	// `C#` sits in the badge's MESSAGE field, which is a URL path segment: an unescaped '#' would
+	// start the fragment and truncate the badge at "Source-C". It is written pre-escaped rather than
+	// escaped by shieldsBadgeMessage because it is a fixed label, not data.
+	return fmt.Sprintf("[![Source](%s/badge/Source-C%%23_@%s-%s?logo=dotnet)](%s/tree/%s%s/src/core/%s)",
+		shieldsBadgeHost, shieldsBadgeMessage(version), dotnetBrandColor,
+		go2csRepositoryURL, releaseTagPrefix, version, filepath.ToSlash(relative))
 }
 
 // readmeDocsBadgeLine returns the Docs badge — a link to the official Go documentation for the very

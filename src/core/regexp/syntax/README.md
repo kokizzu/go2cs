@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-12%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/regexp.syntax.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/regexp/syntax@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-12%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/regexp.syntax.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/regexp/syntax@go1.23.1) [![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/regexp/syntax) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/regexp/syntax)
 
 Package syntax parses regular expressions into parse trees and compiles parse trees into programs. Most clients of regular expressions will use the facilities of package [regexp](/regexp) (such as [regexp.Compile](/regexp#Compile) and [regexp.Match](/regexp#Match)) instead of this package.
 
