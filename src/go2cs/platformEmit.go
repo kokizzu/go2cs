@@ -299,6 +299,18 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 
 	written += companionWritten
 
+	// The hand-owned files come last, because their routing READS the layout the two steps above just
+	// finished writing: a companion belongs in the platform set of its principal, and the principal's
+	// placement is only knowable once it has landed (platformHandOwn.go).
+	handOwnPackages, handOwnWritten, handOwnRemoved, err := mergeHandOwnedArtifacts(coreDir, targets, emissions)
+
+	if err != nil {
+		return err
+	}
+
+	written += handOwnWritten
+	removed += handOwnRemoved
+
 	// Every package that ended up with per-GOOS sources needs the conditioned <Compile Include>.
 	// A single-target conversion adds it from the tree's own shape (projectFileWriter), but this
 	// run is what CREATES that shape, so the first time a package becomes L3 the block is applied
@@ -340,11 +352,20 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 	fmt.Printf("Artifacts already current            %6d\n", unchanged)
 	fmt.Printf("Stale copies removed                 %6d\n", removed)
 	fmt.Printf("Project files given the L3 block     %6d\n", blockAdded)
+	fmt.Printf("Packages with routed hand-owns       %6d\n", len(handOwnPackages))
 
 	fmt.Printf("\nPer-GOOS sources:\n")
 
 	for _, pkg := range sortedKeys(layoutPackages) {
 		fmt.Printf("  %s\n", pkg)
+	}
+
+	if len(handOwnPackages) > 0 {
+		fmt.Printf("\nHand-owned files routed to their principal's platform set:\n")
+
+		for _, pkg := range handOwnPackages {
+			fmt.Printf("  %s\n", pkg)
+		}
 	}
 
 	if len(conditioned) > 0 {
