@@ -428,17 +428,17 @@ func TestGoSourceBadgePinsTheReleaseTaggedTree(t *testing.T) {
 		{
 			name:       "standard package",
 			importPath: "bufio",
-			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio)",
+			expected:   "[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio)",
 		},
 		{
 			name:       "nested standard package",
 			importPath: "path/filepath",
-			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/path/filepath)",
+			expected:   "[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/path/filepath)",
 		},
 		{
 			name:       "internal package",
 			importPath: "internal/abi",
-			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/internal/abi)",
+			expected:   "[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/internal/abi)",
 		},
 		{
 			// The link is the VENDORED tree — literally the directory the converter read — while the
@@ -447,12 +447,12 @@ func TestGoSourceBadgePinsTheReleaseTaggedTree(t *testing.T) {
 			// doubled: a single dash separates shields' three fields.
 			name:       "vendored package",
 			importPath: "vendor/golang.org/x/crypto/chacha20",
-			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/crypto/chacha20)",
+			expected:   "[![Source](https://img.shields.io/badge/Source-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/crypto/chacha20)",
 		},
 		{
 			name:       "vendored package with a plain semantic version",
 			importPath: "vendor/golang.org/x/text/unicode/norm",
-			expected:   "[![Source](https://img.shields.io/badge/Source-Go_@v0.16.0-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/text/unicode/norm)",
+			expected:   "[![Source](https://img.shields.io/badge/Source-@v0.16.0-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/text/unicode/norm)",
 		},
 	}
 
@@ -470,7 +470,7 @@ func TestGoSourceBadgePinsTheReleaseTaggedTree(t *testing.T) {
 // text, so losing it degrades the text and keeps the link.
 func TestGoSourceBadgeFallsBackToTheReleaseWhenTheModulePinIsUnresolvable(t *testing.T) {
 	const importPath = "vendor/golang.org/x/net/idna"
-	const expected = "[![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/net/idna)"
+	const expected = "[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/net/idna)"
 
 	// Absent from modules.txt, and a GOROOT with no modules.txt at all: both keep the badge.
 	for name, goRoot := range map[string]string{
@@ -504,7 +504,7 @@ func TestGoSourceBadgeFallsBackToTheReleaseWhenTheModulePinIsUnresolvable(t *tes
 func TestCSharpSourceBadgePinsTheReleaseTag(t *testing.T) {
 	_, projectPath := badgeTree(t, "io", "1.23.1.2")
 
-	const expected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
+	const expected = "[![Source](https://img.shields.io/badge/Source-@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
 
 	badge := readmeCSharpSourceBadgeLine(projectPath)
 
@@ -512,21 +512,22 @@ func TestCSharpSourceBadgePinsTheReleaseTag(t *testing.T) {
 		t.Fatalf("C# source badge mismatch\n got: %s\nwant: %s", badge, expected)
 	}
 
-	// '#' in a URL path opens the fragment, which would truncate the badge at "Source-C" and render
-	// a badge that says something else entirely. It must be percent-encoded, everywhere, always.
+	// The badge carries no language text at all now (the logo alone says .NET, matching the Docs
+	// badge style), so there is no '#' anywhere in the line to open a URL fragment and truncate it.
+	// Kept as a standing check on the whole badge line, not just on the now-vanished "C#" label.
 	if strings.Contains(badge, "#") {
-		t.Fatalf("the badge carries an unescaped '#': %s", badge)
+		t.Fatalf("the badge carries a raw '#': %s", badge)
 	}
 
-	if !strings.Contains(badge, "badge/Source-C%23_@") {
-		t.Fatalf("the badge does not carry the escaped C%%23 label: %s", badge)
+	if !strings.Contains(badge, "badge/Source-@") {
+		t.Fatalf("the badge does not carry the language-less Source label: %s", badge)
 	}
 
 	// A nested package's link is its nested DIRECTORY (forward-slashed for the URL), not the flat
 	// dot-id the proof pages use.
 	_, nestedPath := badgeTree(t, "path.filepath", "1.23.1.2")
 
-	const nestedExpected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/path/filepath)"
+	const nestedExpected = "[![Source](https://img.shields.io/badge/Source-@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/path/filepath)"
 
 	if badge := readmeCSharpSourceBadgeLine(nestedPath); badge != nestedExpected {
 		t.Fatalf("nested C# source badge mismatch\n got: %s\nwant: %s", badge, nestedExpected)
@@ -539,7 +540,7 @@ func TestCSharpSourceBadgePinsTheReleaseTag(t *testing.T) {
 	vendoredPath := filepath.Join(root, "core", "vendor", "golang.org", "x", "crypto", "chacha20")
 	mustMkdirAll(t, vendoredPath)
 
-	const vendoredExpected = "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/vendor/golang.org/x/crypto/chacha20)"
+	const vendoredExpected = "[![Source](https://img.shields.io/badge/Source-@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/vendor/golang.org/x/crypto/chacha20)"
 
 	if badge := readmeCSharpSourceBadgeLine(vendoredPath); badge != vendoredExpected {
 		t.Fatalf("vendored C# source badge mismatch\n got: %s\nwant: %s", badge, vendoredExpected)
@@ -601,22 +602,25 @@ func TestReadmeBadgeLineJoinsTestsDocsThenBothSources(t *testing.T) {
 
 	expected := "[![Tests](https://img.shields.io/badge/Tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)" +
 		" " + fmt.Sprintf("[![Docs](https://img.shields.io/badge/Docs-@%s-00ADD8?logo=go)](https://pkg.go.dev/io@go%s)", goVersion(), goVersion()) +
-		" " + fmt.Sprintf("[![Source](https://img.shields.io/badge/Source-Go_@%s-00ADD8?logo=go)](https://github.com/golang/go/tree/go%s/src/io)", goVersion(), goVersion()) +
-		" " + "[![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
+		" " + fmt.Sprintf("[![Source](https://img.shields.io/badge/Source-@%s-00ADD8?logo=go)](https://github.com/golang/go/tree/go%s/src/io)", goVersion(), goVersion()) +
+		" " + "[![Source](https://img.shields.io/badge/Source-@1.23.1.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.2/src/core/io)"
 
 	if line := readmeBadgeLine(projectPath, "io", sourceDir, Options{goRoot: goRoot}); line != expected {
 		t.Fatalf("badge line mismatch\n got: %s\nwant: %s", line, expected)
 	}
 
 	// The repository badges and the toolchain badges fail independently. An unseeded reconvert (no
-	// version.props, no docs tree) keeps Docs and Source·Go and drops Tests and Source·C#.
+	// version.props, no docs tree) keeps Docs and Source·Go and drops Tests and Source·C#. Both
+	// Source badges now render the identical "Source-@" label (the logo alone carries the language),
+	// so presence/absence is asserted by the unambiguous part of each: the dotnet logo for Source·C#,
+	// the golang.org tree link for Source·Go.
 	unseeded := readmeBadgeLine(t.TempDir(), "io", sourceDir, Options{goRoot: goRoot})
 
-	if strings.Contains(unseeded, "badge/Tests-") || strings.Contains(unseeded, "Source-C%23") {
+	if strings.Contains(unseeded, "badge/Tests-") || strings.Contains(unseeded, "logo=dotnet") {
 		t.Fatalf("an unseeded root emitted a repository badge: %s", unseeded)
 	}
 
-	if !strings.Contains(unseeded, "badge/Docs-") || !strings.Contains(unseeded, "badge/Source-Go_@") {
+	if !strings.Contains(unseeded, "badge/Docs-") || !strings.Contains(unseeded, "github.com/golang/go/tree/go") {
 		t.Fatalf("an unseeded root dropped a toolchain badge: %s", unseeded)
 	}
 

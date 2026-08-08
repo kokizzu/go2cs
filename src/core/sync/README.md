@@ -1,15 +1,13 @@
 # go.sync
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
-> Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-41%2F51_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/sync.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/sync@go1.23.1) [![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/sync) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/sync)
+[![Tests](https://img.shields.io/badge/Tests-41%2F51_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/sync.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/sync@go1.23.1) [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/sync) [![Source](https://img.shields.io/badge/Source-@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/sync)
 
 Package sync provides basic synchronization primitives such as mutual exclusion locks. Other than the \[Once] and \[WaitGroup] types, most are intended for use by low-level library routines. Higher-level synchronization is better done via channels and communication.
 
 Values containing the types defined in this package should not be copied.
 
 ---
-Part of the go2cs converted Go standard library. See the [repository](https://github.com/ritchiecarroll/go2cs) for usage and details.
 
 Copyright 2009 The Go Authors. All rights reserved. This C# package is converted from Go standard library source; use of that source is governed by a BSD-style license that can be found in the [LICENSE](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/LICENSE) file. The go2cs conversion itself is distributed under the MIT license.
