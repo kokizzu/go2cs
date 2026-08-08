@@ -176,17 +176,17 @@
     `DrainBuffer` deliberately does not service parked senders (matching Go's `timerchandrain`), a
     second such send parks forever. Reachable only from source Go itself rejects, so this is the
     general directional-channel-type fidelity gap, recorded at the place it now bites.
-18. **The 16 committed `.cs.auto` review siblings are TRACKED, and 11 are stale.** Found by the
-    r40 rebank. A `.cs.auto` is the converter's "here is what I would emit today" sibling dropped
-    beside a `[module: GoManualConversion]` file, and its whole value is being CURRENT — a stale
-    one misinforms exactly the reviewer deciding whether the hand-own is still needed. They drift
-    because the overlay rule excludes `*.cs.auto`, and that exclusion is not incidental: it is what
-    keeps a regen from clobbering the hand-owned `.cs` beside it. So the rebank deliberately did
-    **not** smuggle them into its bank. Levelling them is a self-contained commit: reconvert into a
-    seeded temp root (the rebank's own ritual), copy only the `*.cs.auto`, confirm no `.cs` moves.
-    Stale as of r40: `crypto/subtle/xor_generic`, `hash/crc32/crc32_amd64`, `runtime/mfinal`,
-    `sync/{mutex,pool,poolqueue,rwmutex,waitgroup}`, `syscall/{dll_windows,exec_windows}`,
-    `time/tick`.
+18. ~~**The 16 committed `.cs.auto` review siblings are TRACKED, and 11 are stale.**~~ — **LEVELLED
+    2026-08-08 (`08fbb564b`, at the r48 train head), exactly by the ritual this item prescribed:**
+    seeded reconvert, marker gate 41 line-anchored hand-owns / 0 clobbered, harvest touched
+    `.cs.auto` files and nothing else — 14 of 16 refreshed, 2 already current. The shape banked is
+    the r48 wave's own fixes arriving in the review siblings (most visibly `sync/atomic/type.cs.auto`
+    shedding all 58 dead named-result locals to the CS0219 fix). The drift MECHANISM is unchanged —
+    the overlay still deliberately excludes `*.cs.auto` to protect the hand-owned `.cs` beside them —
+    so they will drift again; re-level at each rebank head rather than re-opening this item.
+    Original staleness census, for the record: `crypto/subtle/xor_generic`, `hash/crc32/crc32_amd64`,
+    `runtime/mfinal`, `sync/{mutex,pool,poolqueue,rwmutex,waitgroup}`,
+    `syscall/{dll_windows,exec_windows}`, `time/tick`.
 
 19. **`bodyWrappedInDeferContext` no longer HAS to force the direct-`ж` receiver.** A method that
     defers at function level and references its receiver takes `this ж<T> Ꮡx` rather than
