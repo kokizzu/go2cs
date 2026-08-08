@@ -1,7 +1,11 @@
 # PLAN — cross-platform operation (the big three: Windows, Linux, macOS)
 
-> **Status:** plan only. Nothing in this document has been implemented. It is written to stand alone for a
-> session with no memory of the survey that produced it.
+> **Status:** partially executed. Arc 1 is complete (F2, F3), Arc 2 is complete except its
+> whole-corpus item (F6 and F10 done; **F5 open** — it rewrites a line in every emitted `.csproj`, so
+> it must land inside a rebank arc), and Arc 3 has landed its PowerShell tier plus `BehavioralRunner`
+> and `UpdateTestTargets`. Per-finding disposition is the **Status** column of the findings table in
+> §2, and the reasoning behind each is the *Execution log* directly beneath it — read that before
+> re-planning anything here. Everything else stands as originally written: a plan, unimplemented.
 >
 > **Path convention.** Every repository path here uses the **normalized lowercase** folder casing
 > (`src/tests`, `src/archived`, `src/utilities`, `docs/phase3`, `docs/phase4`). The evidence line numbers
@@ -78,23 +82,152 @@ different library.
 
 ## 2. Findings table
 
-| # | Area | Severity | Effort |
-|:--|:--|:--|:--|
-| F1 | Converted stdlib platform identity | S1 | 3–6 arcs |
-| F2 | Line endings / `.gitattributes` determinism | S1 | 0.5 arc |
-| F3 ✅ | `packageInfoWriter` `\r\n` read-back seam | S1 | ~~1 session~~ **done** |
-| F4 | Harness scripts + runners + utilities | S1 | 1 arc |
-| F5 | Converter path emission on a Linux host | S1 | 1 session |
-| F6 | `pathReplace` silent no-match | S2 | 0.5 session |
-| F7 | `deploy-core.ps1` robocopy | S2 | 0.5 session |
-| F8 | Windows-semantic behavioral tests + time zone seam | S2 | 1 session (gate) + carried by F1 |
-| F9 | NuGet strategy for GOOS-pinned content | S2 | plan: this doc; execution 1 session after F1 |
-| F10 | golib / go2cs-gen | S4 | trivial |
-| F11 | `.slnx` + `.gitattributes` path casing after (b) | S2 | folded into (b) |
-| F12 | `docs/README.md` dual-platform presentation | S3 | 1 session |
-| F13 | Native AOT on Linux (perf suite) | S3 | 0.5 session |
-| F14 | `set-version.ps1` (Windows PE resource) | S4 | doc only — no port |
-| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) |
+| # | Area | Severity | Effort | Status |
+|:--|:--|:--|:--|:--|
+| F1 | Converted stdlib platform identity | S1 | 3–6 arcs | open (Arc 4+) |
+| F2 | Line endings / `.gitattributes` determinism | S1 | ~~0.5 arc~~ | ✅ **done** — pin landed, renormalize blast radius measured at **0 files** |
+| F3 ✅ | `packageInfoWriter` `\r\n` read-back seam | S1 | ~~1 session~~ | ✅ **done** — plus the `testConversion` insert and guard tests |
+| F4 | Harness scripts + runners + utilities | S1 | 1 arc | ◑ **partial** — PowerShell tier + `BehavioralRunner` + `UpdateTestTargets` done; `BehavioralTestBase`, `PerformanceRunner`, `run-validated-sweep`, `run-behavioral-tests`, `mod-init-all` remain |
+| F5 | Converter path emission on a Linux host | S1 | 1 session | open — **whole-corpus rebank**, must land with a rebank arc |
+| F6 | `pathReplace` silent no-match | S2 | ~~0.5 session~~ | ✅ **done** — no-match is now loud, plus a fallback-only symlink resolve |
+| F7 | `deploy-core.ps1` robocopy | S2 | 0.5 session | open — deliberately deferred (no safe end-to-end gate; see below) |
+| F8 | Windows-semantic behavioral tests + time zone seam | S2 | 1 session (gate) + carried by F1 | open |
+| F9 | NuGet strategy for GOOS-pinned content | S2 | plan: this doc; execution 1 session after F1 | open |
+| F10 | golib / go2cs-gen | S4 | ~~trivial~~ | ✅ **done** — `golib.csproj` `USERPROFILE`→`HOME` fallback |
+| F11 | `.slnx` + `.gitattributes` path casing after (b) | S2 | folded into (b) | ✅ done by rename (b) |
+| F12 | `docs/README.md` dual-platform presentation | S3 | 1 session | open (sequenced last, by design) |
+| F13 | Native AOT on Linux (perf suite) | S3 | 0.5 session | open |
+| F14 | `set-version.ps1` (Windows PE resource) | S4 | ~~doc only~~ | ✅ **done** — `$IsWindows` guard + header note |
+| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ◑ measured, see below |
+
+### Execution log — Arc 1 + Arc 2 (partial) + Arc 3 (partial), lane r46c-linux
+
+**F2 — what actually landed, and the number that mattered.** The pin is the block at the top of
+`.gitattributes` (`*.cs`, `*.cs.auto`, `*.cs.target`, `*.csproj`, `*.slnx`, `*.props`, `*.targets`,
+`src/core/**/README.md`), ordered ABOVE the `-text` blocks. `*.cs.auto` is an addition to the set
+proposed in §A6.1: the review siblings are converter-emitted CRLF like everything else, and all 17
+are `i/lf attr/` so they carry no risk.
+
+The renormalization risk §A6.1 flags as "check when landing" was measured before committing rather
+than after: `git add --renormalize .` over all **9,380** tracked files stages **exactly one file —
+`.gitattributes` itself**. Zero corpus files, zero index rewrites. The reason is structural and
+worth recording so it need not be re-derived: every blob that is NOT `i/lf` is already `-text`
+(**48** `i/crlf` + **6** `i/mixed` = 54, all inside the four `-text` behavioral projects and the
+`testdata` trees), and no pinned extension is auto-detected as binary. So `text` normalizes nothing
+that was not already normalized, and `eol=crlf` reproduces on checkout exactly what
+`core.autocrlf=true` was already producing. **A whole-tree renormalization commit is therefore NOT
+required** — §A6.1's "land it as its own commit" precaution has nothing to land.
+
+Proven, not reasoned. First as an A/B on Windows: `git -c core.autocrlf=false checkout-index` is
+precisely a Linux clone's conversion, and it yields **LF** for `fmt/print.cs` (1,543 bare LFs),
+`fmt.csproj`, `fmt/README.md`, `go2cs.slnx`, `version.props` and `sync/mutex.cs.auto` WITHOUT the
+pin, **CRLF** for all six WITH it — while `Solitaire.cs` stays mixed (84 CRLF + 11 bare LF, its
+verbatim bytes) and `gettysburg.txt` stays CRLF in both.
+
+Then for real. A genuine `git clone` onto **ext4 inside the WSL distro**, with git's Linux defaults
+(`core.autocrlf` unset → false, `core.ignorecase` unset → false), on the branch carrying the pin:
+
+```
+i/lf    w/crlf  attr/text eol=crlf    src/core/fmt/print.cs          CRLF=1543  bareLF=0
+i/lf    w/crlf  attr/text eol=crlf    src/core/fmt/fmt.csproj        CRLF=144   bareLF=0
+i/lf    w/crlf  attr/text eol=crlf    src/core/fmt/README.md         CRLF=256   bareLF=0
+i/lf    w/crlf  attr/text eol=crlf    src/go2cs.slnx                 CRLF=829   bareLF=0
+i/lf    w/crlf  attr/text eol=crlf    src/version.props              CRLF=28    bareLF=0
+i/lf    w/crlf  attr/text eol=crlf    src/core/sync/mutex.cs.auto    CRLF=251   bareLF=0
+i/mixed w/mixed attr/-text            .../Solitaire/Solitaire.cs     CRLF=84    bareLF=11
+i/crlf  w/crlf  attr/-text            .../compress/testdata/gettysburg.txt      CRLF=29
+```
+
+**`git status` on that fresh Linux clone: 0 modified files.** That is F2 closed — the state §A6.1
+describes as "100 % false-positive on Linux before the first line of converter work" is now a clean
+tree. The `-text` exemption survives untouched, and the casing control passes too: `src/tests`
+exists and `src/Tests` does not, which only a case-sensitive filesystem can actually prove.
+
+One correction to §A6.1's mechanics: a trailing `!eol` does NOT unspecify an `eol` inherited from an
+earlier pattern (measured on git 2.42.0.windows.2), so `git check-attr eol` still echoes `crlf` for
+the `-text` paths. That echo is inert — an explicitly unset `text` suppresses all conversion — and
+the renormalize measurement is the proof. Read `text: unset` as the operative answer.
+
+**F3 remainder.** The `testConversion.go` substring-insert (§A1.3's "Conditionally" row) is closed by
+normalizing the read-back `package_test_info.cs` to CRLF. That file's CRLF-shaped `strings.Contains`
+was the sharper half of the bug: on an LF copy the `[GoPackage]` block is never found and gets
+appended AGAIN on every run. Inert on Windows by measurement — **zero** of the 998 committed
+`package_info.cs`/`package_test_info.cs` files contain a bare LF, so the normalization is the
+identity there and the `contents == string(data)` early-out still short-circuits the write.
+`packageInfoWriter`'s two splits now share the same helpers (`normalizeToLF` / `normalizeToCRLF` /
+`splitLines`, in `writeOperations.go`). Guards live in `src/go2cs/lineEndingSeams_test.go`, each with
+a negative control asserting the pre-fix form would have failed.
+
+**F6 — what was and was NOT done.** Part 2 (loud no-match) landed in full: `pathReplace` returns a
+`matched bool` and the two call sites that KNOW the directory is under GOROOT/src warn once per run.
+Part 1 landed in a deliberately narrower form than §A1.2 proposes. Resolving `goRoot`/`goPath`
+through `EvalSymlinks` at STARTUP would move a value that `go/packages` and `build.Default` also
+read, and on Windows `EvalSymlinks` additionally canonicalizes casing and 8.3 names — so it can
+desynchronize `options.goRoot` from the `pkg.Dir` the loader reports, on a host this lane could not
+test. Instead the symlink resolve is a FALLBACK inside `pathReplace`, reached only when the direct
+replace already failed. That fixes the symlinked-toolchain case and is provably incapable of moving
+emitted bytes, because a run whose direct replace matches never executes it. Startup resolution
+remains available if a real symlinked-GOROOT Linux box ever shows it is needed.
+
+**F4 — the slice that landed.** New `src/tests/Behavioral/_paths.ps1` (dot-sourced) owns
+`$IsWindowsHost`, `$ExeSuffix`, `$SepPattern`, the four roots, `Get-PathDepth` and
+`Get-RelativeDisplayPath`. `check-no-regression.ps1`, `check-solution-integrity.ps1` and
+`run-behavioral.ps1` consume it; `BehavioralRunner/Program.cs` and
+`utilities/UpdateTestTargets/Program.cs` got the equivalent in C#
+(`RuntimeInformation.IsOSPlatform`-derived exe suffix, `Path.DirectorySeparatorChar`-built bin/obj
+fragments, `Path.Combine` segments instead of embedded `@"..\..\.."`).
+
+⚠ **§A5's mechanics rule 1 is wrong as written and was not followed.** It recommends "pwsh's
+multi-argument `Join-Path`" — but the Windows lane runs **Windows PowerShell 5.1**, where
+`Join-Path a b c` is a hard parameter-binding error ("A positional parameter cannot be found that
+accepts argument 'c'"). Adopting it would have broken the platform the corpus is banked from. The
+portable form is a SINGLE child argument containing forward slashes (`Join-Path $root 'a/b/c'`),
+which both 5.1 and 7+ accept on both platforms and normalize to the host separator. Anyone executing
+the rest of §A5 should use that form.
+
+The count-guard assertions §A5 asks for landed as SHAPE assertions rather than pinned counts,
+because CLAUDE.md's standing instruction for this corpus is to measure rather than to decrement: CNR
+fails loudly if fewer than 400 packages enumerate, and separately if every discovered package
+measures the SAME path depth (which is exactly what the `-split '\\'` collapse produces, and the
+condition that silently reverts the deepest-first invariant behind FALSE-GREEN route #3).
+`BehavioralRunner` carries the same floor on an unfiltered run.
+
+**F7 deliberately deferred.** `Invoke-Robocopy` carries directory (`/XD bin obj Generated .vs`) and
+file (`/XF Directory.Build.props *.tests.csproj`) exclusions, and the only end-to-end gate for a
+rewrite is running `deploy-core.ps1` — which stages into `%GOPATH%\src\go2cs`, a machine-global
+location shared with sibling worktrees. A rewrite that cannot be proven is the throwaway the
+nothing-throwaway principle warns about, so it stays open with its remedy unchanged.
+
+**F15 — WSL, measured 2026-08-08.** The distro list has changed since §4's probe: `Ubuntu` (WSL 2,
+kernel 6.18.33.2) and `docker-desktop`; the `Ubuntu-22.04` entry is gone. `dotnet`, `git` and `make`
+are present; **`go` and `pwsh` are still absent**, so a conversion cannot run there (go/packages
+shells out to `go`) and neither can the PowerShell instruments. Installing a toolchain was out of
+scope for this lane.
+
+That gap was worked around WITHOUT an install, and the technique is worth keeping: cross-compile
+from Windows (`GOOS=linux GOARCH=amd64 go build`, and `go test -c` for the suite) and run the ELF
+binaries under WSL. The converter runs natively and prints its usage with Linux-shaped defaults
+(`-go2cspath /home/<user>/go2cs`, `-gopath /home/<user>/go`), confirming §A7.3's claim that the env
+defaults already agree cross-platform.
+
+The cross-compiled test binary on a Linux host: **146 PASS / 55 FAIL / 3 SKIP**, of which **50
+failures are environmental** (`go command required, not found` — the missing toolchain above). The
+**5 real Linux-host findings** are all path-separator ones:
+
+| Test | Cause |
+|:--|:--|
+| `TestParseCoreProjectRefs` | F5 |
+| `TestCollectConvertedProjectsRecoversReferencedManualPackage` | F5 |
+| `TestCollectConvertedProjectsFilteredRunSkipsOutOfFilterRefs` | F5 |
+| `TestIsSelfProjectReference` | F5 |
+| `TestValidationPackBlockSurvivesTestsRewriteOfCorePackage` | **not F5** — the TEST hard-codes Windows absolute paths (`H:\Projects\go2cs\src\core\time\time.csproj`). A fixture-portability defect; fix with the F4 sweep, not with F5 |
+
+The three `TestRecurse*` failures §1's F5 note lists are present but masked here as environmental —
+they need the `go` toolchain before they can reach the separator bug.
+
+**The two CRLF-template failures §1 predicts are GONE.** Every `csprojTemplate_test.go` case passes
+on Linux, as do all seven new line-ending guards. That is the F2 pin plus the F3 fix doing exactly
+what they were landed for, measured on a real Linux kernel rather than argued.
 
 ---
 
@@ -590,8 +723,11 @@ Rationale, in order of weight:
 
 **Mechanics of the parameterization** — three small, uniform rules, applied once:
 
-- Replace every `Join-Path $x "a\b"` with `Join-Path $x 'a' 'b'` (pwsh's multi-argument `Join-Path`) or with
-  forward slashes, which `Join-Path` accepts on Windows.
+- Replace every `Join-Path $x "a\b"` with `Join-Path $x 'a/b'` — a SINGLE child argument carrying
+  forward slashes, which `Join-Path` accepts and normalizes on both platforms.
+  ⚠ **Do NOT use pwsh's multi-argument `Join-Path $x 'a' 'b'`** (this bullet originally recommended
+  it). `-AdditionalChildPath` is PowerShell 6+; the Windows lane runs **Windows PowerShell 5.1**,
+  where the three-argument form is a hard parameter-binding error. Measured 2026-08-08 on 5.1.26100.
 - Introduce one shared `src/tests/behavioral/_paths.ps1` (dot-sourced) defining `$ExeSuffix` (`''` on
   non-Windows), `$Sep`, and the repo/src/behavioral roots — so the four scripts that recompute them stop
   disagreeing.
