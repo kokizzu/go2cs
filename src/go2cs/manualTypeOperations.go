@@ -129,6 +129,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"Type.StructType": true,
 		"Type.ArrayType":  true,
 	},
+	// internal/cpu.getGOAMD64level is declared in cpu_x86.s and its body is a COMPILE-TIME constant:
+	// the GOAMD64_vN define the toolchain sets from `go env GOAMD64`, with `#else MOVL $1` as the
+	// fall-through. It answers "which amd64 microarchitecture level was this BINARY built for", not
+	// "which does this CPU support" — so probing the host would answer a different question. go2cs
+	// emits portable C# with no GOAMD64 define and no microarchitecture-gated emission, which makes
+	// the faithful answer the same constant Go's own assembly produces for a build without one.
+	// cpu_x86_impl.cs returns it. Reached by doinit's option table (whose level < 2/3/4 gates decide
+	// which cpu.* GODEBUG knobs stay switchable) and by internal/cpu's own TestDisableSSE3, whose
+	// first line is `if GetGOAMD64level() > 1 { t.Skip(…) }` — the unimplemented stub turned that
+	// guard into an infrastructure-error where Go reads 1 and walks on to a matching skip.
+	"internal/cpu": {
+		"getGOAMD64level": true,
+	},
 	// reflect.Value's entry + value-reader methods (the reflection bridge, Phase 2). Go reads the
 	// value through v.ptr as flat memory at computed offsets — no managed form. value_impl.cs carries
 	// the boxed managed value directly (a companion `partial struct Value { object boxed }` field) and

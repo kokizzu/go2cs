@@ -16,8 +16,7 @@ internal static partial (uint32 eax, uint32 ebx, uint32 ecx, uint32 edx) cpuid(u
 // xgetbv with ecx = 0 is implemented in cpu_x86.s.
 internal static partial (uint32 eax, uint32 edx) xgetbv();
 
-// getGOAMD64level is implemented in cpu_x86.s. Returns number in [1,4].
-internal static partial int32 getGOAMD64level();
+// go2cs generated this placeholder — func getGOAMD64level is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static UntypedInt cpuid_SSE3 => /* 1 << 0 */ 1;
 internal static UntypedInt cpuid_PCLMULQDQ => /* 1 << 1 */ 2;
