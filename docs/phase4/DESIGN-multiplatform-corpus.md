@@ -409,6 +409,27 @@ Two specifics worth carrying forward:
 - **`runtime/lock_sema_impl.cs` needs a sibling, not a port.** `lock_sema.go` is selected on Windows *and*
   macOS; Linux uses `lock_futex.go` instead. The Linux corpus needs its own hand-own at a different
   filename — which the layout in §8 accommodates naturally.
+  **Increment 3.5 found the GENERAL form of this, and it is a second registry, not a second file.**
+  A whole-file hand-own is routed by layout (§12, increment 3.5); a hand-owned *function* is not routed by
+  anything, because `manualConversionFuncs` is keyed by **name** and is platform-blind. Every entry in it
+  turns its Go declaration into a placeholder on **every** platform, while the implementation exists only
+  where somebody wrote one. Measured over the whole registry, exactly two clusters are affected — the ones
+  whose Go declaration exists on more than one platform:
+
+  | Cluster | Entries | Implemented in | Missing on |
+  |:--|:--|:--|:--|
+  | `runtime` mutex/note | `mutexContended`, `lock2`, `unlock2`, `notewakeup`, `notesleep`, `notetsleep_internal` | `runtime/{windows,darwin}/lock_sema_impl.cs` | **linux** |
+  | `os` directory walk | `File.readdir` | `os/windows/dir_windows_impl.cs` | **linux, darwin** |
+
+  Every other entry is safe for a reason worth stating: `syscall`'s five (`GetTimeZoneInformation`,
+  `findFirstFile1`, `findNextFile1`, `Process32First`, `Process32Next`) and `os.readReparseLink` name
+  functions whose Go declarations are **Windows-only**, so no other platform emits a placeholder to leave
+  unimplemented; and the ~140 in `reflect`, `internal/abi`, `internal/reflectlite`, `sync` and
+  `internal/cpu` sit in platform-neutral packages. ⚠ The Linux sibling cannot be a copy even in its
+  *surface*: `notetsleep_internal` is **four** arguments in `lock_sema.go` (`n, ns, gp, deadline`) and
+  **two** in `lock_futex.go` (`n, ns`) — the same Go name with a different signature per platform, against
+  a registry that cannot express one. The registry's own comment already warned about this in writing; the
+  measurement is what turned the warning into a bounded list.
 - **`time` may need no Linux hand-own at all.** Go's Linux zone loading is `time/zoneinfo_read.go`, pure Go
   that converts cleanly; the Windows hand-own exists only because `GetTimeZoneInformation` is a syscall.
   This is an argument *for* per-platform emission and *against* hand-owning a dispatcher (plan §A7.1).
@@ -866,6 +887,132 @@ counterpart, so it is never emitted, never classified, and stays flat — where 
    question — should L3 grow a *conditioned property* axis alongside its conditioned references? — is a
    design decision, not a measurement.
 
+**Increment 3.5 — the hand-owned files get a platform, and the Linux corpus gets measured. — ✅ LANDED
+2026-08-08 (lane r50a, against `850a85faa`).**
+
+*The layout half.* L3 classifies **emissions**; a hand-owned file is never emitted, so it was never
+classified, so it kept whatever placement it had while its principal moved per-GOOS. The rule L3 was
+missing: **a hand-owned file belongs in exactly the platform builds its PRINCIPAL takes part in**, and then
+L3's own placement rule applies to that set unchanged — every platform ⟹ flat, a subset ⟹ one copy per
+platform in the subset. Stating it as a platform SET rather than "the folder the principal is in" is what
+keeps `os/proc_impl.cs` and `syscall/syscall_impl.cs` flat: their principals are per-GOOS *variants*
+present on all three platforms, so folder-inheritance would triplicate one hand-written file into three
+copies to maintain in lockstep, for no compile benefit. A principal comes in two shapes, both already
+recorded in the tree by the emission itself — an `*_impl.cs` supplements `<name>.cs`; a marked whole-file
+hand-own's principal is its own `<name>.cs.auto` review sibling, which is emitted by exactly the platforms
+that compile the Go file the hand-own replaces.
+
+Census, measured: **33** `*_impl.cs` and **41** line-anchored `[module: GoManualConversion]` files; 20 sit
+in one of the 37 L3 packages; **6 were misplaced**, and the other 14 were correct where they were, for the
+platform-set reason above.
+
+| Hand-own | Principal | Emitted by | Moved to |
+|:--|:--|:--|:--|
+| `os/dir_windows_impl.cs` | `os/dir_windows.cs` | windows | `os/windows/` |
+| `os/file_windows_impl.cs` | `os/file_windows.cs` | windows | `os/windows/` |
+| `runtime/lock_sema_impl.cs` | `runtime/lock_sema.cs` | windows, **darwin** | `runtime/windows/` **and** `runtime/darwin/` |
+| `syscall/zsyscall_windows_impl.cs` | `syscall/zsyscall_windows.cs` | windows | `syscall/windows/` |
+| `syscall/dll_windows.cs` (+`.cs.auto`) | `syscall/dll_windows.cs.auto` | windows | `syscall/windows/` |
+| `syscall/exec_windows.cs` (+`.cs.auto`) | `syscall/exec_windows.cs.auto` | windows | `syscall/windows/` |
+
+The last two are the ones the `.cs.auto` binding buys: whole-file hand-owns of Windows-**only** Go files,
+flat in the corpus and therefore latently in every Linux build for the whole of increment 3 — unreached
+only because the build stopped at `runtime` two layers below. Every moved file keeps its committed bytes
+(8 of 9 are git-detected `R100` renames; the ninth is the second `lock_sema_impl` copy, hash-verified equal
+to the other two). The reconvert side needed no change at all: `conversionDriver` already probes the marker
+and writes the `.cs.auto` through `platformLayoutPath`.
+
+*Guarded by a walk of the REAL corpus*, because the next offender will be a file somebody adds by hand and
+no synthetic tree can see it. Three structural rules: an `*_impl.cs` whose principal is in SOME but not all
+of its package's per-GOOS folders must be in exactly those; a `.cs.auto` lives beside the `.cs` it reviews;
+and a source carrying Go's own GOOS filename constraint is never flat in an L3 package — that third rule is
+the one that sees a *marked* hand-own, whose principal a static walk cannot otherwise find. Neutered-fix
+control: copying `exec_windows.cs` and `lock_sema_impl.cs` back to flat fires rules 3 and 1 respectively.
+
+*The measurement half.* With the layout fixed, `runtime` fails **differently** — and correctly. The
+companion routing removes the Windows note/lock implementation from the Linux build without supplying a
+Linux one, which is exactly §7's "needs a sibling, not a port", now demonstrated rather than predicted.
+So the honest unscaffolded reading is **58 compile, 1 fails, 248 skipped** — barely past increment 3.
+
+To measure the packages *behind* that wall the build was walked forward behind **five throwaway
+scaffolds**, in the same spirit as this document's other throwaway probes (census D, the §13.1 walker).
+None is committed; all five were removed before any gate ran, and every scaffolded body throws. They are
+listed because a number measured behind a scaffold must say so:
+
+| # | Scaffold | Stands in for |
+|--:|:--|:--|
+| 1 | `runtime/linux/lock_futex_impl.cs` (throwing) | the missing Linux mutex/note hand-own (§7) |
+| 2 | `syscall/linux` `_Socklen` made public | bucket **L2** below |
+| 3 | `syscall/linux` `GoImplicitConv` `ValueType` corrected | bucket **L3** below |
+| 4 | `os/linux` duplicate `GoImplement` record removed | bucket **L4** below |
+| 5 | `os/linux/dir_unix_impl.cs` (throwing) | the missing Linux `readdir` hand-own (§7) |
+
+**The Linux buckets, with classifications.** Each row is the leaf-most failure of one build; peeling it
+revealed the next. `(a)` = L3-mechanical, `(b)` = hand-own flavor gap, `(c)` = converted-code or generator
+Linux-flavor defect.
+
+| # | Package | Bucket | Class | Root cause |
+|--:|:--|:--|:--:|:--|
+| L0 | `runtime` | 6× `CS0103` `locked`, 2× `CS7036` | **(a)** | The companion-routing gap itself. **FIXED — this increment.** |
+| L1 | `runtime` | 54× `CS0103` (`notewakeup`, `notesleep`, `notetsleep_internal`, `lock2`, `unlock2`) | **(b)** | `manualConversionFuncs` is name-keyed and platform-blind; the only implementation is `lock_sema_impl.cs`. Needs `runtime/linux/lock_futex_impl.cs`, with `notetsleep_internal` at **two** arguments. §7 |
+| L2 | `syscall` | 1× `CS0050` | **(c)** | `Sockaddr.sockaddr()` returns unexported `_Socklen`. `collectMethodSignatureUnexportedTypes` **does** walk a named interface's underlying methods, but `collectSignatureUnexportedTypes` early-returns on `!method.Exported()` — and a C# interface member is implicitly **public** regardless. One gate, wrong for interfaces. |
+| L3 | `syscall` | 1× `CS0030` | **(c)** | `ImplicitConvGenerator` emits `new WaitStatus((WaitStatus)src.Value)` for the inverse of `WaitStatus`↔`ΔSignal`. The `ValueType` the converter records is the target NAMED type instead of its underlying primitive (`uint32`); harmless while both sides share an underlying, fatal when they do not. Windows never sees it — `WaitStatus` is a struct there, so the pair is never registered. |
+| L4 | `os` | 20× `CS8130`, 12× `CS8183`, 10× `CS0111`/`CS0102`, 4× `CS8646`, `CS0246` | **(c)** | `os/linux/package_info.cs` records `unixDirent → DirEntry` **twice** — once through `os`'s local alias (Go `type DirEntry = fs.DirEntry`) and once through canonical `io/fs.DirEntry` — and both derive the SAME adapter name, so `ImplementGenerator` emits it twice. Type-alias canonicalization is missing from the implement-record path. Windows records only `dirEntry → fs.DirEntry` once, so it never fires. Related and not identical: the converted call site in `file_unix.cs` names a **third** spelling, `unixDirentжfs_DirEntry`, that neither record produces — so converter and generator disagree on adapter naming for an aliased interface. |
+| L5 | `os` | 1× `CS0246` `unixDirentжfs_DirEntry` | **(c)** | The naming disagreement above, isolated once the duplicate is gone. |
+| L6 | `os` | 3× `CS0029`, 3× `CS8716` | **(c)** | `zero_copy_linux.cs` returns `(default!, "")` where the tuple element is the **named string type** `poll.String`; a bare `""` has no conversion to it, and the failed element leaves `default` with no target type. The Go zero value of a named string type is emitted untyped. |
+| — | 150 packages | — | — | still blocked above `os` (`fmt`, `net`, `log`, `testing`, `go/*`, `crypto/*` …) |
+
+**Nothing in the surface is L3-mechanical beyond L0.** That is the finding worth carrying: the layout is
+now correct for every package the build can reach, and everything remaining is either a hand-own that was
+never written for Linux **(b)** or a converted-code/generator defect that Windows structurally cannot
+exhibit **(c)**. None is a *layout* question, so increment 4 is not blocked on this document.
+
+**Standing.** 58 packages compile unscaffolded (was 57); **156** compile behind the five scaffolds,
+against 305 of 306 on Windows with zero errors.
+
+*Proofs.*
+
+| Proof | Method | Result |
+|:--|:--|:--|
+| the Windows lane did not move | `-p:GoTargetOS=windows` over the whole solution | **305/306, 0 errors, 149 s** (the 306th is `crypto/x509/internal/macos`, darwin-exclusive) |
+| the property ABSENT is the same build | SHA-256 of every assembly, property unset vs `-p:GoTargetOS=windows` | **all byte-identical** |
+| the Windows lane reproduces from a reconvert | Seeded single-target `-stdlib` per CLAUDE.md's ritual, compared path-precisely | **0 new, 0 absent, 0 content differences**; marker gate **41** line-anchored, **0** clobbered |
+| §13.1, the IL question, re-taken at full width | see §13.1 | **141 of 141 measurable shared-source packages identical** (was 54) |
+| nothing else in the converter moved | `check-no-regression.ps1` | **byte-identical** |
+| the converter's own suite | `go test ./...` | **green** |
+
+**`log/syslog`'s `InternalsVisibleTo` — a PROPOSAL, deliberately not an implementation.** Increment 3 left
+this as the one project-file difference layout L3 cannot express, and increment 3.5 confirms the shape:
+every emitted `.csproj` carries `<InternalsVisibleTo Include="$(AssemblyName).tests" />`, but `log/syslog`'s
+Go source is excluded on Windows in its entirety, so the Windows emission has no internal-test surface and
+no such item, while the unix emissions do. The merge keeps the Windows remainder and reports it.
+
+The general question — should L3 grow a **conditioned PROPERTY/ITEM axis** beside its conditioned
+references? — has a clean answer in shape:
+
+```xml
+<ItemGroup Condition="'$(GoTargetOS)'=='linux'">
+  <InternalsVisibleTo Include="$(AssemblyName).tests" />
+</ItemGroup>
+```
+
+built by the same `splitPlatformReferenceSets` decomposition the reference axis already uses: intersect the
+targets' item sets, emit the intersection unconditionally, emit one conditioned group per platform for the
+remainder, **and write an EMPTY group for a platform with no delta** — for exactly the reason §4 records
+about references, that a platform which loses its recorded membership takes the next reconvert's
+intersection down to two and promotes a one-platform item into the shared list.
+
+**It is proposed rather than implemented because it is not mechanically trivial, and the bar was that it
+be both trivial and provably Windows-unmoved.** Adding the block to `log/syslog`'s project file is inert
+for the Windows *build* (the condition is false), but it is **not** inert for the Windows *corpus*: a
+single-target Windows reconvert re-emits that `.csproj` from the Windows emission, which has no such item,
+and would strip the block — so the axis only works once `platformProject.go` can round-trip it the way it
+round-trips references, including the empty-group rule. That is a real piece of machinery, not an edit.
+Its cost today is one package's Linux `-tests` path, which nothing validates; its value arrives with
+increment 4's second build pass. Two facts to carry into that work: `<AllowUnsafeBlocks>` is *already*
+reconciled by a different rule (union, §12 increment 3 note 4), so the axis must not re-open it; and the
+merge's residual report is the instrument that will say when a THIRD such fact appears.
+
 **Increment 4 — packaging (a) for the RID pair `win-x64` / `linux-x64` only.**
 `push-nuget.ps1` grows the second build pass and the asset merge. Validate by restoring `go.fmt` into a
 scratch console app on both platforms and running it.
@@ -891,29 +1038,42 @@ Recorded so nobody mistakes a measurement for a guarantee.
    and method-body IL bytes, plus the AssemblyRef set — deliberately included, since a conditioned
    `<ProjectReference>` block is exactly what changes it — with MVID, PDB id and PE stamp excluded).
 
-   | | Packages |
-   |:--|--:|
-   | Compiled under **both** flavors | 57 |
-   | **Semantically identical across flavors** | **54** |
-   | Differing | 3 |
+   **RE-TAKEN AT FULL WIDTH 2026-08-08 (increment 3.5, lane r50a). The answer did not move; the evidence
+   behind it nearly tripled.**
 
-   All three differ because their **source** differs by platform, not their dependencies: `internal/goos`
-   (`IsUnix`, the `GOOS` constant), `internal/runtime/syscall` (Linux-only) and
-   `internal/syscall/windows/sysdll` (Windows-only). **No package with shared source produced different IL
-   against a differently-flavored closure**, so §9(a)'s "265 packages ship one `lib/{tfm}` assembly" holds
-   for everything measurable, and increment 4 owes RID-specific assets only to the packages whose source
+   | | Increment 3 | **Increment 3.5** |
+   |:--|--:|--:|
+   | Compiled under **both** flavors | 57 | **156** |
+   | Semantically identical across flavors | 54 | **142** |
+   | Differing | 3 | 14 |
+   | of those, **shared-source** packages | 54 of 54 | **141 of 141** |
+
+   The decomposition is what makes the row exact. Of the 156 packages that compile under both flavors, **15
+   are L3** — packages whose own source varies by platform — and 141 are shared-source. **All 14 differing
+   packages are L3**, and every one of the 141 shared-source packages is identical. Not one exception.
+   The 15th L3 package, `crypto/x509/internal/macos`, is *identical* for a reason worth stating rather than
+   rounding away: it is darwin-**exclusive**, so neither the Windows nor the Linux build compiles any of its
+   sources and both produce the same assembly — a null reading that behaves exactly as it should.
+
+   So **no package with shared source produced different IL against a differently-flavored closure**, now
+   over 141 packages instead of 54: §9(a)'s "265 packages ship one `lib/{tfm}` assembly" holds for
+   everything measurable, and increment 4 owes RID-specific assets only to the packages whose source
    already varies.
 
-   **The honest limit:** 54 of ~265 shared-source packages. The Linux build stops at `runtime` (§12), so the
-   other ~211 are unmeasurable until increment 3.5 gets the Linux corpus further. The answer should be
-   re-taken then, and it is cheap to re-take — the instrument is a small `System.Reflection.Metadata` walker,
-   throwaway like census D's probe and not committed.
+   **The honest limit, restated:** 141 of ~265. The Linux build stops above `os` (§12), so ~124 remain
+   unmeasurable, and `runtime`/`os`/`syscall` were reached only behind the throwaway scaffolds §12 lists —
+   all three are source-differs packages, so the scaffolds cannot have manufactured any of the 141
+   identical verdicts. The instrument is again a small `System.Reflection.Metadata` walker, throwaway like
+   census D's probe and not committed.
 2. ~~**Whether the Linux corpus compiles is still unmeasured — and cannot be measured today.**~~ **ASKED AND
    ANSWERED 2026-08-08 (increment 3): 57 packages compile, one package fails with 8 errors in 2 buckets, 249
    are skipped as its dependents.** The single failing package is `runtime`, from a single root cause §7 had
    already predicted (`lock_sema` is Windows+macOS; Linux uses `lock_futex`), and the mechanism is a layout
    rule L3 does not yet carry — a hand-owned `*_impl.cs` companion is never *emitted*, so the
    emission-based classifier never routes it into its principal's per-GOOS folder. Detail and buckets in §12.
+   **Increment 3.5 closed that layout gap and re-asked the question: 58 compile unscaffolded, 156 behind five
+   throwaway scaffolds, and the full bucket table with (a)/(b)/(c) classifications is in §12. Nothing left in
+   the surface is a layout question.**
    The prediction below was exactly right about *why* the question needed L3 first, and this is what it looked
    like when it could finally be asked. The original note follows.
 

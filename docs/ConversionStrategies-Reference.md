@@ -178,6 +178,51 @@ source folder never does: `internal/syscall/windows` is a real package whose own
 
 Guarded by `platformLayout_test.go` (`src/go2cs`), that negative case included.
 
+**A HAND-OWNED file has a platform too, and the classifier cannot see it.** L3 decides placement by
+comparing *emissions* — and a hand-owned file is never emitted, so it is never classified, so it silently
+keeps whatever placement it had while the file it belongs to moves per-GOOS. That is invisible on Windows,
+where the compile item set is identical either way, and it took the entire Linux corpus down at increment 3:
+`runtime/lock_sema_impl.cs` supplements `lock_sema.cs`, which Go selects on Windows *and* macOS but never on
+Linux, so the Linux build compiled the flat companion against a principal that was not in its build.
+
+The rule is stated as a platform **set**, not as a folder: *a hand-owned file belongs in exactly the platform
+builds its principal takes part in*, after which L3's ordinary placement rule applies unchanged — every
+platform ⟹ flat, a subset ⟹ one copy per platform in the subset. Read literally as "inherit the principal's
+folder", `os/proc_impl.cs` and `syscall/syscall_impl.cs` would be triplicated: their principals are per-GOOS
+*variants* present on all three platforms, so three copies of one hand-written file would have to be
+maintained in lockstep for no compile benefit. L3 duplicates only what cannot be shared.
+
+A principal comes in two shapes, and both are already recorded in the tree by the emission itself:
+
+| Hand-own | Principal | Why |
+|:--|:--|:--|
+| `<name>_impl.cs` | `<pkg>/<name>.cs` | a companion with no Go counterpart of its own; it *supplements* the converted file |
+| `<name>.cs` carrying `[module: GoManualConversion]` | `<pkg>/<name>.cs.auto` | the conversion still runs and only its EMISSION diverts, to the review sibling — which is therefore emitted by exactly the platforms that compile the Go file this hand-own replaces |
+
+The second binding is the one that catches a whole-file hand-own of a platform-exclusive Go file:
+`syscall/dll_windows.cs` and `syscall/exec_windows.cs` replace Windows-**only** sources and now live in
+`syscall/windows/`. The `.cs.auto` sibling moves with its `.cs` so the pair cannot separate — which is also
+what a single-target reconvert already does, since `conversionDriver` routes both through
+`platformLayoutPath`. A hand-own whose principal no target emitted (`runtime/managed_impl.cs`,
+`internal/poll/runtime_sema_impl.cs` — go2cs machinery with no Go file behind it) has no placement evidence
+and is left alone. Two existing copies of one hand-own that disagree are an **error**, never a first-wins
+choice: a duplicated hand-own is hand-maintained in each folder, so propagating one over the other is how a
+fix applied to a single flavor would disappear.
+
+⚠ **A hand-owned FUNCTION is a different problem with no layout answer.** `manualConversionFuncs` is keyed by
+NAME and is platform-blind, so an entry turns its Go declaration into a placeholder on *every* platform while
+the implementation exists only where one was written — and `notetsleep_internal` is even four arguments in
+`lock_sema.go` against two in `lock_futex.go`. Census and remedy in
+[`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md) §7.
+
+Guarded by `platformHandOwn_test.go`, which walks the **real** `src/core` rather than a synthetic tree —
+the next offender will be a file somebody adds by hand. Three structural rules: an `*_impl.cs` whose
+principal is in some but not all of its package's per-GOOS folders must be in exactly those; a `.cs.auto`
+lives beside the `.cs` it reviews; and a source carrying Go's own GOOS filename constraint (`*_windows.cs`,
+`*_linux.cs`, `*_darwin.cs`, with an `_impl` suffix stripped first) is never flat in an L3 package. That
+third rule exists because a static walk cannot find a *marked* hand-own's principal — it is what would have
+caught `dll_windows.cs`/`exec_windows.cs` a whole increment earlier.
+
 **References are conditioned by the same rule, one level up.** A package's *direct imports* can differ by
 `GOOS` too — measured at **21** packages, `os` being the clearest: it imports `internal/syscall/windows` on
 Windows and `internal/syscall/unix` on Linux and macOS. One flat reference list cannot say that, so the

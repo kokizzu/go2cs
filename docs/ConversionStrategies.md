@@ -119,6 +119,15 @@ once and selects the rest the same way:
 </ItemGroup>
 ```
 
+A **hand-owned** file needs the same treatment and cannot get it from the classifier, which compares
+emissions and never sees a file nothing emits. Such a file belongs in exactly the platform builds its
+*principal* takes part in — `<name>.cs` for an `<name>_impl.cs` companion, the `<name>.cs.auto` review
+sibling for a `[module: GoManualConversion]` whole-file replacement — after which the ordinary rule applies:
+shared by every platform means flat, a subset means one copy per folder. So
+`runtime/lock_sema_impl.cs` lives in `runtime/windows/` **and** `runtime/darwin/` (Linux takes
+`lock_futex.go`), while `os/proc_impl.cs` stays flat even though `proc.cs` is per-GOOS, because every
+platform has one.
+
 **Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
 packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
