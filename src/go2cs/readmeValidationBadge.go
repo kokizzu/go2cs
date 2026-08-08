@@ -187,7 +187,7 @@ func readmeGoSourceBadgeLine(importPath string, version string, goRoot string) s
 		}
 	}
 
-	return fmt.Sprintf("[![Source](%s/badge/Source-Go_@%s-%s?logo=go)](%s/tree/go%s/src/%s)",
+	return fmt.Sprintf("[![Source](%s/badge/Source-@%s-%s?logo=go)](%s/tree/go%s/src/%s)",
 		shieldsBadgeHost, shieldsBadgeMessage(pin), goBrandColor, goRepositoryURL, version, importPath)
 }
 
@@ -224,10 +224,9 @@ func readmeCSharpSourceBadgeLine(projectPath string) string {
 		return ""
 	}
 
-	// `C#` sits in the badge's MESSAGE field, which is a URL path segment: an unescaped '#' would
-	// start the fragment and truncate the badge at "Source-C". It is written pre-escaped rather than
-	// escaped by shieldsBadgeMessage because it is a fixed label, not data.
-	return fmt.Sprintf("[![Source](%s/badge/Source-C%%23_@%s-%s?logo=dotnet)](%s/tree/%s%s/src/core/%s)",
+	// The badge carries no language text (the logo already carries it, matching the Docs badge style),
+	// so there is no '#' in the message field and nothing to pre-escape here.
+	return fmt.Sprintf("[![Source](%s/badge/Source-@%s-%s?logo=dotnet)](%s/tree/%s%s/src/core/%s)",
 		shieldsBadgeHost, shieldsBadgeMessage(version), dotnetBrandColor,
 		go2csRepositoryURL, releaseTagPrefix, version, filepath.ToSlash(relative))
 }

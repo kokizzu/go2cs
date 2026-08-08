@@ -103,6 +103,14 @@ sheets, each one `go test` agreeing with the C#, test by test.
   output actually wants to compare. Landing them moved the release tag: the C# badge links
   `nuget-<version>`, so that tag now has to exist before the packages are packed. Spec below;
   refinements 10–14.
+- **2026-08-08:** **three redundancy cuts to the README body** (user ruling, r51d) — the
+  `> Go version: 1.23.1` attribution line and the `Part of the go2cs converted Go standard
+  library. See the repository for usage and details.` line are both dropped: the badges already
+  carry every version number the first line stated, and the second stated nothing the repository
+  link in the attribution blockquote above it didn't already say. The two Source badges also drop
+  their language text — `Source-Go_@<pin>` becomes `Source-@<pin>`, `Source-C%23_@<version>`
+  becomes `Source-@<version>` — matching the Docs badge, where the logo alone has always carried
+  the language. Refinement 15.
 
 ## The badges (Tests 2026-08-02, Docs 2026-08-08, Source pair 2026-08-08)
 
@@ -131,25 +139,26 @@ already says Go, so the word in the label was redundant.
 | Tests | no tests | `Tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
 | Docs | standard package (`internal/…` included) | `Docs-@<goversion>-00ADD8` | `pkg.go.dev/<import-path>@go<goversion>` |
 | Docs | GOROOT-vendored (`vendor/golang.org/x/…`) | `Docs-@<pin>-00ADD8` | `pkg.go.dev/<module>@<pin>/<subpath>` |
-| Source·Go | standard package | `Source-Go_@<goversion>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/<import-path>` |
-| Source·Go | GOROOT-vendored | `Source-Go_@<pin>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/vendor/<module>/<subpath>` |
-| Source·C# | every package | `Source-C%23_@<version>-512BD4` | `github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg-dir>` |
+| Source·Go | standard package | `Source-@<goversion>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/<import-path>` |
+| Source·Go | GOROOT-vendored | `Source-@<pin>-00ADD8` | `github.com/golang/go/tree/go<goversion>/src/vendor/<module>/<subpath>` |
+| Source·C# | every package | `Source-@<version>-512BD4` | `github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg-dir>` |
 
 `<m>` is matched and `<t>` is matched + disclosed, both read off the package's living proof page, so
 the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is
 `<GoStdLibVersion>.<GoBuildNumber>` from `src/version.props`; `<dot-id>` is the import path with `/`
 replaced by `.`, the same flat name the proof pages already use.
 
-`<goversion>` is the toolchain's own `go env GOVERSION` without the `go` prefix — the same value the
-README attribution's `> Go version: 1.23.1` line carries, never a literal. `<version>` is the
-published four-part `<GoStdLibVersion>.<GoBuildNumber>`, and `<pkg-dir>` is the package's directory
-beneath `src/core`. `00ADD8` is the Go project's own blue, so the three Go-facing badges read as the
-Go they point at rather than as go2cs status lights; `512BD4` is .NET's purple, and Source·C# is the
-one badge on the line that is not Go-blue — which is exactly the distinction it carries. The three Go
-badges use `?logo=go`, Source·C# uses `?logo=dotnet`. The rendered line, for `bufio`:
+`<goversion>` is the toolchain's own `go env GOVERSION` without the `go` prefix — never a literal.
+`<version>` is the published four-part `<GoStdLibVersion>.<GoBuildNumber>`, and `<pkg-dir>` is the
+package's directory beneath `src/core`. `00ADD8` is the Go project's own blue, so the three Go-facing
+badges read as the Go they point at rather than as go2cs status lights; `512BD4` is .NET's purple, and
+Source·C# is the one badge on the line that is not Go-blue — which is exactly the distinction it
+carries. The three Go badges use `?logo=go`, Source·C# uses `?logo=dotnet`. Neither Source badge
+carries language text in its message (refinement 15) — the logo alone says which side of the
+conversion it links, the same convention the Docs badge already used. The rendered line, for `bufio`:
 
 ```markdown
-[![Tests](https://img.shields.io/badge/Tests-80%2F81_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/bufio.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1) [![Source](https://img.shields.io/badge/Source-Go_@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/bufio)
+[![Tests](https://img.shields.io/badge/Tests-80%2F81_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/bufio.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1) [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio) [![Source](https://img.shields.io/badge/Source-@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/bufio)
 ```
 
 The Tests badge's three states **partition the corpus**, which is what makes it auditable rather than
@@ -271,6 +280,22 @@ decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
     READMEs first and reproduced all 297 byte for byte before being applied to the 8; re-run
     afterwards it reproduces all 305. "Byte-identical to what the converter emits" is a claim worth
     making only when something checked it.
+15. **Three redundancy cuts landed together** (user ruling, r51d): the `> Go version: 1.23.1` body
+    line and the `Part of the go2cs converted…` body line are both gone, and the two Source badges
+    lost their language text (`Source-Go_@<pin>` → `Source-@<pin>`, `Source-C%23_@<version>` →
+    `Source-@<version>`). All three are pure redundancy removal, not a new data source: the version
+    numbers the two dropped lines stated are still on the badge line above them, the "see the
+    repository" line repeated the attribution blockquote's own link, and the Source badges' logos
+    (`?logo=go` / `?logo=dotnet`) already said which language each side of the conversion was in —
+    the label text was restating the icon. One consequence worth naming: because both Source badges
+    now render the identical `Source-@<value>` label, differing only in the pinned value, logo and
+    link, a test or a reader that needs to tell them apart can no longer do it from the label alone
+    (the guard tests distinguish them by `logo=dotnet` vs. the `github.com/golang/go` tree link
+    instead). The eight hand-owned READMEs (refinement 13) took the identical three-cut edit by hand
+    in the same commit, each checked line for line against a converter-emitted README already
+    carrying the new form; a corpus-wide search for every dropped string (`Go version:`, `Part of
+    the go2cs converted`, `Source-Go_@`, `Source-C%23`) came back empty afterward, over all 305
+    badged READMEs.
 
 ### Where the implementation refines the spec above
 

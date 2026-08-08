@@ -1,9 +1,8 @@
 # go.vendor.golang.org.x.crypto.internal.poly1305
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
-> Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/crypto@v0.23.1-0.20240603234054-0b431c7de36a/internal/poly1305) [![Source](https://img.shields.io/badge/Source-Go_@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/crypto/internal/poly1305) [![Source](https://img.shields.io/badge/Source-C%23_@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/vendor/golang.org/x/crypto/internal/poly1305)
+[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/crypto@v0.23.1-0.20240603234054-0b431c7de36a/internal/poly1305) [![Source](https://img.shields.io/badge/Source-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/crypto/internal/poly1305) [![Source](https://img.shields.io/badge/Source-@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/vendor/golang.org/x/crypto/internal/poly1305)
 
 Package poly1305 implements Poly1305 one-time message authentication code as specified in [https://cr.yp.to/mac/poly1305-20050329.pdf](https://cr.yp.to/mac/poly1305-20050329.pdf).
 
@@ -12,6 +11,5 @@ Poly1305 is a fast, one-time authentication function. It is infeasible for an at
 Poly1305 was originally coupled with AES in order to make Poly1305-AES. AES was used with a fixed key in order to generate one-time keys from an nonce. However, in this package AES isn't used and the one-time key is specified directly.
 
 ---
-Part of the go2cs converted Go standard library. See the [repository](https://github.com/ritchiecarroll/go2cs) for usage and details.
 
 Copyright 2009 The Go Authors. All rights reserved. This C# package is converted from Go standard library source; use of that source is governed by a BSD-style license that can be found in the [LICENSE](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/LICENSE) file. The go2cs conversion itself is distributed under the MIT license.
