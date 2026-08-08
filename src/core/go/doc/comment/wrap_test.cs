@@ -103,7 +103,6 @@ public static void TestWrap(ж<testing.T> Ꮡt) {
 // sequence has the same score.
 internal static (slice<nint> seq, int64 score) wrapSlow(slice<@string> words, nint max) {
     slice<nint> seq = default!;
-    int64 score = default!;
 
     // Quadratic dynamic programming algorithm for line wrapping problem.
     // best[i] tracks the best score possible for words[:i],

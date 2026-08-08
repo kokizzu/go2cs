@@ -32,9 +32,6 @@ internal static float64 pow2(nint i) {
 // Wrapper around strconv.ParseFloat(x, 64).  Handles dddddp+ddd (binary exponent)
 // itself, passes the rest on to strconv.ParseFloat.
 internal static (float64 f, bool ok) myatof64(@string s) {
-    float64 f = default!;
-    bool ok = default!;
-
     {
         var (mant, exp, okΔ1) = strings.Cut(s, "p"u8); if (okΔ1) {
             var (n, errΔ1) = strconv.ParseInt(mant, 10, 64);
@@ -80,9 +77,6 @@ internal static (float64 f, bool ok) myatof64(@string s) {
 // Wrapper around strconv.ParseFloat(x, 32).  Handles dddddp+ddd (binary exponent)
 // itself, passes the rest on to strconv.ParseFloat.
 internal static (float32 f, bool ok) myatof32(@string s) {
-    float32 f = default!;
-    bool ok = default!;
-
     {
         var (mant, exp, okΔ1) = strings.Cut(s, "p"u8); if (okΔ1) {
             var (n, err) = strconv.Atoi(mant);

@@ -359,8 +359,6 @@ func fibo(n int) {
 [GoType("chan ж<ast.Ident>")] internal partial struct visitor;
 
 internal static ast.Visitor /*w*/ Visit(this visitor v, ast.Node n) {
-    ast.Visitor w = default!;
-
     {
         var (ident, ok) = n._<ж<ast.Ident>>(ᐧ); if (ok) {
             v.ᐸꟷ(ident);

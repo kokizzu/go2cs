@@ -69,7 +69,7 @@ internal static slice<numberTest> numberTests = new numberTest[]{
     new("13+0i"u8, true, true, true, true, 13, 13, 13D, 13D),
     new("0123"u8, true, true, true, false, 83, 83, 83D, 0D),
     new("-0x0"u8, true, true, true, false, 0, 0, 0D, 0D),
-    new("0xdeadbeef"u8, true, true, true, false, (nint)0xdeadbeefL, 0xdeadbeefU, 3735928559D, 0D),
+    new("0xdeadbeef"u8, true, true, true, false, 0xdeadbeefL, 0xdeadbeefU, 3735928559D, 0D),
     new(@"'a'"u8, true, true, true, false, (rune)'a', (rune)'a', (rune)'a', 0D),
     new(@"'\n'"u8, true, true, true, false, (rune)'\n', (rune)'\n', (rune)'\n', 0D),
     new(@"'\\'"u8, true, true, true, false, (rune)'\\', (rune)'\\', (rune)'\\', 0D),

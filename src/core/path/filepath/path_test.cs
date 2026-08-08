@@ -652,8 +652,6 @@ internal static void chdir(ж<testing.T> Ꮡt, @string dir) {
 internal static readonly @string testˢ = "test"u8;
 
 internal static Action /*restore*/ chtmpdir(ж<testing.T> Ꮡt) {
-    Action restore = default!;
-
     var (oldwd, err) = os.Getwd();
     if (err != default!) {
         Ꮡt.Fatalf("chtmpdir: %v"u8, err);

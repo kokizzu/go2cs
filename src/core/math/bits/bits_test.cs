@@ -614,9 +614,9 @@ public static void TestReverseBytes(ж<testing.T> Ꮡt) {
         new(0x0123, ((uint64)0x2301 << (int)(48))),
         new(0x012345, ((uint64)0x452301 << (int)(40))),
         new(0x01234567, ((uint64)0x67452301 << (int)(32))),
-        new(0x0123456789UL, ((uint64)(nint)0x8967452301L << (int)(24))),
-        new(0x0123456789abUL, ((uint64)(nint)0xab8967452301L << (int)(16))),
-        new(0x0123456789abcdUL, ((uint64)(nint)0xcdab8967452301L << (int)(8))),
+        new(0x0123456789UL, ((uint64)unchecked((nint)0x8967452301L) << (int)(24))),
+        new(0x0123456789abUL, ((uint64)unchecked((nint)0xab8967452301L) << (int)(16))),
+        new(0x0123456789abcdUL, ((uint64)unchecked((nint)0xcdab8967452301L) << (int)(8))),
         new(0x0123456789abcdefUL, ((uint64)(nuint)0xefcdab8967452301UL << (int)(0)))
     }.slice()) {
         testReverseBytes(Ꮡt, test.x, test.r);

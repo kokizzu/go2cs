@@ -153,9 +153,6 @@ public static void TestScanWords(ж<Δtesting.T> Ꮡt) {
 }
 
 [GoRecv] internal static (nint n, error err) Read(this ref slowReader sr, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (len(p) > sr.max) {
         p = p[0..(int)(sr.max)];
     }
@@ -334,9 +331,6 @@ public static void TestSplitError(ж<Δtesting.T> Ꮡt) {
     nint numSplits = 0;
     const nint okCount = 7;
     var errorSplit = (nint advance, slice<byte> token, error err) (slice<byte> data, bool atEOF) => {
-        nint advance = default!;
-        slice<byte> token = default!;
-        error errΔ1 = default!;
         if (atEOF) {
             throw panic("didn't get enough data");
         }
@@ -457,10 +451,6 @@ public static void TestScanWordsExcessiveWhiteSpace(ж<Δtesting.T> Ꮡt) {
 // Test that empty tokens, including at end of line or end of file, are found by the scanner.
 // Issue 8672: Could miss final empty token.
 internal static (nint advance, slice<byte> token, error err) commaSplit(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     for (nint i = 0; i < len(data); i++) {
         if (data[i] == (rune)',') {
             return (i + 1, data[..(int)(i)], default!);
@@ -500,10 +490,6 @@ public static void TestWithNoEmptyTokens(ж<Δtesting.T> Ꮡt) {
 }
 
 internal static (nint advance, slice<byte> token, error err) loopAtEOFSplit(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     if (len(data) > 0) {
         return (1, data[..1], default!);
     }
@@ -561,10 +547,6 @@ public static void TestBlankLines(ж<Δtesting.T> Ꮡt) {
 [GoType("num:nint")] partial struct countdown;
 
 [GoRecv] internal static (nint advance, slice<byte> token, error err) split(this ref countdown c, slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     if (c > 0) {
         c--;
         return (1, data[..1], default!);

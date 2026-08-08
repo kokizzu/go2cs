@@ -85,7 +85,7 @@ internal static slice<formatTestsᴛ1> formatTests = new formatTestsᴛ1[]{
     new(
         new formatTest(
             name: "big"u8,
-            size: (nint)0x7fffffffffffffffL,
+            size: 0x7fffffffffffffffL,
             mode: (fs.FileMode)(ModeIrregular | 420),
             modTime: time.Date(1970, time.January, 1, 12, 0, 0, 0, time.ΔUTC),
             isDir: false

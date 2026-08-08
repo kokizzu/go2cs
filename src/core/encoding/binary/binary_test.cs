@@ -45,7 +45,7 @@ internal static ж<Struct> Ꮡs = new(new Struct(
     0x01,
     0x0203,
     0x04050607,
-    (nint)0x08090a0b0c0d0e0fL,
+    0x08090a0b0c0d0e0fL,
     0x10,
     0x1112,
     0x13141516,

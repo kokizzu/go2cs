@@ -825,12 +825,12 @@ public static void TestEncodedLen(ж<testing.T> Ꮡt) {
     // check overflow
     var exprᴛ1 = strconv.IntSize;
     if (exprᴛ1 == 32) {
-        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, (nint)(1152921504606846976L), 429496730));
-        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, (nint)(5764607523034234879L), math.MaxInt));
+        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, unchecked((nint)(1152921504606846976L)), 429496730));
+        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, unchecked((nint)(5764607523034234879L)), math.MaxInt));
     }
     else if (exprᴛ1 == 64) {
-        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, (nint)(1152921504606846976L), (nint)1844674407370955162L));
-        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, (nint)(5764607523034234879L), math.MaxInt));
+        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, unchecked((nint)(1152921504606846976L)), 1844674407370955162L));
+        tests = append(tests, new TestEncodedLen_test(rawStdEncoding, unchecked((nint)(5764607523034234879L)), math.MaxInt));
     }
 
     foreach (var (_, tt) in tests) {
@@ -869,12 +869,12 @@ public static void TestDecodedLen(ж<testing.T> Ꮡt) {
     // check overflow
     var exprᴛ1 = strconv.IntSize;
     if (exprᴛ1 == 32) {
-        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, (nint)(1844674407370955162L), 268435456));
+        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, unchecked((nint)(1844674407370955162L)), 268435456));
         tests = append(tests, new TestDecodedLen_test(rawStdEncoding, math.MaxInt, 1342177279));
     }
     else if (exprᴛ1 == 64) {
-        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, (nint)(1844674407370955162L), (nint)1152921504606846976L));
-        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, math.MaxInt, (nint)5764607523034234879L));
+        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, unchecked((nint)(1844674407370955162L)), 1152921504606846976L));
+        tests = append(tests, new TestDecodedLen_test(rawStdEncoding, math.MaxInt, 5764607523034234879L));
     }
 
     foreach (var (_, tt) in tests) {

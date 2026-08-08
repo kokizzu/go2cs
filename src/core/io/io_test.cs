@@ -216,9 +216,6 @@ public static void BenchmarkCopyNLarge(ж<testing.B> Ꮡb) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref noReadFrom w, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return w.w.Write(p);
 }
 

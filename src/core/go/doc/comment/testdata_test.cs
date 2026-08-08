@@ -36,15 +36,12 @@ public static void TestTestdata(ж<testing.T> Ꮡt) {
         ["linkedword"u8] = "https://example.com/linkedword"u8
     };
     p.LookupPackage = (@string importPath, bool ok) (@string name) => {
-        @string importPath = default!;
-        bool ok = default!;
         if (name == "comment"u8) {
             return (goDocCommentˢ, true);
         }
         return DefaultLookupPackage(name);
     };
     p.LookupSym = (@string recv, @string name) => {
-        bool ok = default!;
         if (recv == "Parser"u8 && name == "Parse"u8 || recv == ""u8 && name == "Doc"u8 || recv == ""u8 && name == "NoURL"u8) {
             return true;
         }

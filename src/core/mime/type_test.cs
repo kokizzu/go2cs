@@ -12,8 +12,6 @@ using static go.mime_package;
 partial class mime_internal_test_package {
 
 internal static Action /*cleanup*/ setMimeInit(Action fn) {
-    Action cleanup = default!;
-
     once = new Δsync.Once(nil);
     testInitMime = fn;
     return () => {

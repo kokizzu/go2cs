@@ -35,8 +35,6 @@ internal static slice<@string> origPlatformZoneSources;
 internal static void initᴛorigPlatformZoneSources() { origPlatformZoneSources = platformZoneSources; }
 
 internal static Action /*undo*/ disablePlatformSources() {
-    Action undo = default!;
-
     platformZoneSources = default!;
     return () => {
         platformZoneSources = origPlatformZoneSources;

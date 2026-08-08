@@ -315,13 +315,13 @@ public static void TestTzset(ж<Δtesting.T> Ꮡt) {
 
     foreach (var (_, test) in new TestTzset_type[]{
         new(""u8, 0, 0, ""u8, 0, 0, 0, false, false),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2159200800L, "PDT"u8, -7 * 60 * 60, (nint)2152173600L, (nint)2172733200L, true, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2152173599L, "PST"u8, -8 * 60 * 60, 2145916800, (nint)2152173600L, false, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2152173600L, "PDT"u8, -7 * 60 * 60, (nint)2152173600L, (nint)2172733200L, true, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2152173601L, "PDT"u8, -7 * 60 * 60, (nint)2152173600L, (nint)2172733200L, true, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2172733199L, "PDT"u8, -7 * 60 * 60, (nint)2152173600L, (nint)2172733200L, true, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2172733200L, "PST"u8, -8 * 60 * 60, (nint)2172733200L, (nint)2177452800L, false, true),
-        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, (nint)2172733201L, "PST"u8, -8 * 60 * 60, (nint)2172733200L, (nint)2177452800L, false, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2159200800L, "PDT"u8, -7 * 60 * 60, 2152173600L, 2172733200L, true, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2152173599L, "PST"u8, -8 * 60 * 60, 2145916800, 2152173600L, false, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2152173600L, "PDT"u8, -7 * 60 * 60, 2152173600L, 2172733200L, true, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2152173601L, "PDT"u8, -7 * 60 * 60, 2152173600L, 2172733200L, true, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2172733199L, "PDT"u8, -7 * 60 * 60, 2152173600L, 2172733200L, true, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2172733200L, "PST"u8, -8 * 60 * 60, 2172733200L, 2177452800L, false, true),
+        new("PST8PDT,M3.2.0,M11.1.0"u8, 0, 2172733201L, "PST"u8, -8 * 60 * 60, 2172733200L, 2177452800L, false, true),
         new("KST-9"u8, 592333200, 1677246697, "KST"u8, 9 * 60 * 60, 592333200, 9223372036854775807L, false, true)
     }.slice()) {
         var (name, off, start, end, isDST, ok) = time_internal_test_package.Tzset(test.inStr, test.inEnd, test.inSec);

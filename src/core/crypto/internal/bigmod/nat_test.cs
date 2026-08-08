@@ -32,7 +32,7 @@ partial class bigmod_internal_test_package {
 
     var limbs = new slice<nuint>(size);
     for (nint i = 0; i < size; i++) {
-        limbs[i] = (nuint)((nuint)r.Uint64() & (nuint)((nuint)(18446744073709551614UL)));
+        limbs[i] = (nuint)((nuint)r.Uint64() & (nuint)(unchecked((nuint)(18446744073709551614UL))));
     }
     return reflect.ValueOf(Ꮡ(new ΔNat(limbs)));
 }

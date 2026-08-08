@@ -1607,8 +1607,8 @@ internal static slice<fi> vfldexpSC = new fi[]{
     new(Inf(-1), 0),
     new(Inf(-1), -1024),
     new(NaN(), -1024),
-    new(10D, (nint)(72057594037927936L)),
-    new(10D, (nint)(-((nint)(72057594037927936L))))
+    new(10D, unchecked((nint)(72057594037927936L))),
+    new(10D, (nint)(-(unchecked((nint)(72057594037927936L)))))
 }.slice();
 
 internal static slice<float64> ldexpSC = new float64[]{

@@ -26,9 +26,6 @@ partial class tabwriter_test_package {
 }
 
 [GoRecv] internal static (nint written, error err) Write(this ref buffer b, slice<byte> buf) {
-    nint written = default!;
-    error err = default!;
-
     nint n = len(b.a);
     nint m = len(buf);
     if (n + m <= cap(b.a)){

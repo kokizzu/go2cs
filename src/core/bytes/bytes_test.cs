@@ -855,7 +855,7 @@ internal static slice<SplitTest> splittests = new SplitTest[]{
     new("1 2"u8, " "u8, 3, new @string[]{"1"u8, "2"u8}.slice()),
     new("123"u8, ""u8, 2, new @string[]{"1"u8, "23"u8}.slice()),
     new("123"u8, ""u8, 17, new @string[]{"1"u8, "2"u8, "3"u8}.slice()),
-    new("bT"u8, "T"u8, (nint)(2305843009213693951L), new @string[]{"b"u8, ""u8}.slice()),
+    new("bT"u8, "T"u8, unchecked((nint)(2305843009213693951L)), new @string[]{"b"u8, ""u8}.slice()),
     new(((@string)(new byte[]{0xff, 0x2d, 0xff})), ""u8, -1, new @string[]{((@string)(new byte[]{0xff})), "-"u8, ((@string)(new byte[]{0xff}))}.slice()),
     new(((@string)(new byte[]{0xff, 0x2d, 0xff})), "-"u8, -1, new @string[]{((@string)(new byte[]{0xff})), ((@string)(new byte[]{0xff}))}.slice())
 }.slice();

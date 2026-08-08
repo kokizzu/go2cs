@@ -181,7 +181,7 @@ internal static slice<FormatTest> formatTests = new FormatTest[]{
 
 public static void TestFormat(ж<Δtesting.T> Ꮡt) {
     // The numeric time represents Thu Feb  4 21:00:57.012345600 PST 2009
-    var time = Unix(0, (nint)1233810057012345600L);
+    var time = Unix(0, 1233810057012345600L);
     foreach (var (_, test) in formatTests) {
         @string result = time.Format(test.format);
         if (result != test.result) {
@@ -1020,7 +1020,7 @@ public static void TestFormatFractionalSecondSeparators(ж<Δtesting.T> Ꮡt) {
         new(@"15:04:05,999"u8, @"21:00:57,012"u8)
     }.slice();
     // The numeric time represents Thu Feb  4 21:00:57.012345600 PST 2009
-    var time = Unix(0, (nint)1233810057012345600L);
+    var time = Unix(0, 1233810057012345600L);
     foreach (var (_, tt) in tests) {
         {
             @string q = time.Format(tt.s); if (q != tt.want) {
@@ -1083,11 +1083,11 @@ public static void FuzzFormatRFC3339(ж<Δtesting.F> Ꮡf) {
     foreach (var (_, vᴛ1) in new array<int64>[]{
         new int64[]{Δmath.MinInt64, Δmath.MinInt64}.array(), // 292277026304-08-26T15:42:51Z
 
-        new int64[]{-(nint)62167219200L, 0}.array(), // 0000-01-01T00:00:00Z
+        new int64[]{-62167219200L, 0}.array(), // 0000-01-01T00:00:00Z
 
         new int64[]{1661201140, 676836973}.array(), // 2022-08-22T20:45:40.676836973Z
 
-        new int64[]{(nint)253402300799L, 999999999}.array(), // 9999-12-31T23:59:59.999999999Z
+        new int64[]{253402300799L, 999999999}.array(), // 9999-12-31T23:59:59.999999999Z
 
         new int64[]{Δmath.MaxInt64, Δmath.MaxInt64}.array()
     }.slice()) {

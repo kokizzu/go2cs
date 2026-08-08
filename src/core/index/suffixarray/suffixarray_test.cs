@@ -584,8 +584,6 @@ internal static (slice<byte>, error) makeText(@string name) {
 }
 
 internal static Action /*cleanup*/ setBits(nint bits) {
-    Action cleanup = default!;
-
     if (bits == 32){
         maxData32 = realMaxData32;
     } else {

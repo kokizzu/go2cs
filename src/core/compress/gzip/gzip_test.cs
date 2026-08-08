@@ -269,9 +269,6 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref limitedWriter l, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     {
         nint nΔ1 = l.N; if (nΔ1 < len(p)) {
             l.N = 0;

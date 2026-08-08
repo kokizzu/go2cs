@@ -139,17 +139,11 @@ public static void TestMultiWriter_WriteStringSingleAlloc(ж<testing.T> Ꮡt) {
 }
 
 [GoRecv] internal static (nint n, error err) ΔWriteString(this ref writeStringChecker c, @string s) {
-    nint n = default!;
-    error err = default!;
-
     c.called = true;
     return (len(s), default!);
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref writeStringChecker c, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return (len(p), default!);
 }
 
@@ -325,9 +319,6 @@ public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
 [GoType("num:byte")] partial struct byteAndEOFReader;
 
 internal static (nint n, error err) Read(this byteAndEOFReader b, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (len(p) == 0) {
         // Read(0 bytes) is useless. We expect no such useless
         // calls in this test.

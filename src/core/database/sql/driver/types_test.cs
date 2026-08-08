@@ -98,12 +98,8 @@ public static void TestValueConverters(ж<testing.T> Ꮡt) {
 }
 
 internal static (byte form, bool negative, slice<byte> coefficient, int32 exponent) Decompose(this dec d, slice<byte> buf) {
-    byte form = default!;
-    bool negative = default!;
-    slice<byte> coefficient = default!;
-    int32 exponent = default!;
-
     d = d.ΔClone();
+
     var coef = new slice<byte>(16);
     copy(coef, d.coefficient[..]);
     return (d.form, d.neg, coef, d.exponent);

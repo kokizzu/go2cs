@@ -322,9 +322,6 @@ public static void TestPickAlgorithm(ж<testing.T> Ꮡt) {
 }
 
 internal static (nint n, error err) Write(this errWriter _, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return (0, fmt.Errorf("unwritable"u8));
 }
 

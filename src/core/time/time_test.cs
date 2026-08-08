@@ -65,7 +65,7 @@ internal static slice<TimeTest> utctests = new TimeTest[]{
     new(0, new parsedTime(1970, January, 1, 0, 0, 0, 0, Thursday, 0, "UTC"u8)),
     new(1221681866, new parsedTime(2008, September, 17, 20, 4, 26, 0, Wednesday, 0, "UTC"u8)),
     new(-1221681866, new parsedTime(1931, April, 16, 3, 55, 34, 0, Thursday, 0, "UTC"u8)),
-    new(-(nint)11644473600L, new parsedTime(1601, January, 1, 0, 0, 0, 0, Monday, 0, "UTC"u8)),
+    new(-11644473600L, new parsedTime(1601, January, 1, 0, 0, 0, 0, Monday, 0, "UTC"u8)),
     new(599529660, new parsedTime(1988, December, 31, 0, 1, 0, 0, Saturday, 0, "UTC"u8)),
     new(978220860, new parsedTime(2000, December, 31, 0, 1, 0, 0, Sunday, 0, "UTC"u8))
 }.slice();
@@ -78,13 +78,13 @@ internal static slice<TimeTest> nanoutctests = new TimeTest[]{
 internal static slice<TimeTest> localtests = new TimeTest[]{
     new(0, new parsedTime(1969, December, 31, 16, 0, 0, 0, Wednesday, -8 * 60 * 60, "PST"u8)),
     new(1221681866, new parsedTime(2008, September, 17, 13, 4, 26, 0, Wednesday, -7 * 60 * 60, "PDT"u8)),
-    new((nint)2159200800L, new parsedTime(2038, June, 3, 11, 0, 0, 0, Thursday, -7 * 60 * 60, "PDT"u8)),
-    new((nint)2152173599L, new parsedTime(2038, March, 14, 1, 59, 59, 0, Sunday, -8 * 60 * 60, "PST"u8)),
-    new((nint)2152173600L, new parsedTime(2038, March, 14, 3, 0, 0, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
-    new((nint)2152173601L, new parsedTime(2038, March, 14, 3, 0, 1, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
-    new((nint)2172733199L, new parsedTime(2038, November, 7, 1, 59, 59, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
-    new((nint)2172733200L, new parsedTime(2038, November, 7, 1, 0, 0, 0, Sunday, -8 * 60 * 60, "PST"u8)),
-    new((nint)2172733201L, new parsedTime(2038, November, 7, 1, 0, 1, 0, Sunday, -8 * 60 * 60, "PST"u8))
+    new(2159200800L, new parsedTime(2038, June, 3, 11, 0, 0, 0, Thursday, -7 * 60 * 60, "PDT"u8)),
+    new(2152173599L, new parsedTime(2038, March, 14, 1, 59, 59, 0, Sunday, -8 * 60 * 60, "PST"u8)),
+    new(2152173600L, new parsedTime(2038, March, 14, 3, 0, 0, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
+    new(2152173601L, new parsedTime(2038, March, 14, 3, 0, 1, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
+    new(2172733199L, new parsedTime(2038, November, 7, 1, 59, 59, 0, Sunday, -7 * 60 * 60, "PDT"u8)),
+    new(2172733200L, new parsedTime(2038, November, 7, 1, 0, 0, 0, Sunday, -8 * 60 * 60, "PST"u8)),
+    new(2172733201L, new parsedTime(2038, November, 7, 1, 0, 1, 0, Sunday, -8 * 60 * 60, "PST"u8))
 }.slice();
 
 internal static slice<TimeTest> nanolocaltests = new TimeTest[]{
@@ -264,9 +264,6 @@ internal static UntypedInt unixToZero => /* -978307200 + 63113904000 */ 62135596
 
 // abs returns the absolute time stored in t, as seconds and nanoseconds.
 internal static (int64 sec, int64 nsec) abs(Δtime.Time t) {
-    int64 sec = default!;
-    int64 nsec = default!;
-
     var unix = t.Unix();
     nint nano = t.Nanosecond();
     return (unix + (int64)unixToZero, (int64)nano);
@@ -298,7 +295,7 @@ internal static slice<truncateRoundTestsᴛ1> truncateRoundTests = new truncateR
     new(Date(-1, January, 1, 12, 15, 31, 500000000, ΔUTC), 3),
     new(Date(2012, January, 1, 12, 15, 30, 500000000, ΔUTC), ΔSecond),
     new(Date(2012, January, 1, 12, 15, 31, 500000000, ΔUTC), ΔSecond),
-    new(Unix(-(nint)19012425939L, 649146258), (nint)7435029458905025217L)
+    new(Unix(-19012425939L, 649146258), 7435029458905025217L)
 }.slice();
 
 public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
@@ -423,7 +420,7 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
     // halfway cases
     var testOneʗ3 = testOne;
     var f3 = (int64 tns, int64 di) => {
-        di &= (int64)((nint)0xfffffffeL);
+        di &= (int64)(0xfffffffeL);
         if (di == 0) {
             di = 2;
         }
@@ -788,7 +785,7 @@ internal static bool equalTimeAndZone(Δtime.Time a, Δtime.Time b) {
 internal static slice<Δtime.Time> gobTests = new Δtime.Time[]{
     Date(0, 1, 2, 3, 4, 5, 6, ΔUTC),
     Date(7, 8, 9, 10, 11, 12, 13, FixedZone(""u8, 0)),
-    Unix((nint)81985467080890095L, 0x76543210),
+    Unix(81985467080890095L, 0x76543210),
     new(),
     Date(1, 2, 3, 4, 5, 6, 7, FixedZone(""u8, 32767 * 60)),
     Date(1, 2, 3, 4, 5, 6, 7, FixedZone(""u8, -32768 * 60))
@@ -1226,7 +1223,7 @@ internal static slice<subTestsᴛ1> subTests = new subTestsᴛ1[]{
     new(Date(2300, 1, 1, 0, 0, 0, 0, ΔUTC), Date(2000, 1, 1, 0, 0, 0, 0, ΔUTC), maxDuration),
     new(Date(2000, 1, 1, 0, 0, 0, 0, ΔUTC), Date(2290, 1, 1, 0, 0, 0, 0, ΔUTC), (Δtime.Duration)(-9151574400000000000L)),
     new(Date(2000, 1, 1, 0, 0, 0, 0, ΔUTC), Date(2300, 1, 1, 0, 0, 0, 0, ΔUTC), minDuration),
-    new(Date(2311, 11, 26, 2, 16, 47, 63535996, ΔUTC), Date(2019, 8, 16, 2, 29, 30, 268436582, ΔUTC), (nint)9223372036795099414L),
+    new(Date(2311, 11, 26, 2, 16, 47, 63535996, ΔUTC), Date(2019, 8, 16, 2, 29, 30, 268436582, ΔUTC), 9223372036795099414L),
     new(time_internal_test_package.MinMonoTime, time_internal_test_package.MaxMonoTime, minDuration),
     new(time_internal_test_package.MaxMonoTime, time_internal_test_package.MinMonoTime, maxDuration)
 }.slice();
@@ -1329,10 +1326,10 @@ public static void TestDurationSeconds(ж<Δtesting.T> Ꮡt) {
     internal float64 want;
 }
 internal static slice<minDurationTestsᴛ1> minDurationTests = new minDurationTestsᴛ1[]{
-    new(((Δtime.Duration)(-(nint)60000000000L)), -1D),
+    new(((Δtime.Duration)(-60000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 60e9D),
     new(((Δtime.Duration)1), 1D / 60e9D),
-    new(((Δtime.Duration)(nint)60000000000L), 1D),
+    new(((Δtime.Duration)60000000000L), 1D),
     new(((Δtime.Duration)3000), 5e-8D)
 }.slice();
 
@@ -1352,10 +1349,10 @@ public static void TestDurationMinutes(ж<Δtesting.T> Ꮡt) {
     internal float64 want;
 }
 internal static slice<hourDurationTestsᴛ1> hourDurationTests = new hourDurationTestsᴛ1[]{
-    new(((Δtime.Duration)(-(nint)3600000000000L)), -1D),
+    new(((Δtime.Duration)(-3600000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 3600e9D),
     new(((Δtime.Duration)1), 1D / 3600e9D),
-    new(((Δtime.Duration)(nint)3600000000000L), 1D),
+    new(((Δtime.Duration)3600000000000L), 1D),
     new(((Δtime.Duration)36), 1e-11D)
 }.slice();
 
@@ -2169,12 +2166,12 @@ public static void TestZoneBounds(ж<Δtesting.T> Ꮡt) {
 
             [15] = new(makeLocalTime(0), makeLocalTime(-5756400), makeLocalTime(9972000)),
             [16] = new(makeLocalTime(1221681866), makeLocalTime(1205056800), makeLocalTime(1225616400)),
-            [17] = new(makeLocalTime((nint)2152173599L), makeLocalTime(2145916800), makeLocalTime((nint)2152173600L)),
-            [18] = new(makeLocalTime((nint)2152173600L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-            [19] = new(makeLocalTime((nint)2152173601L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-            [20] = new(makeLocalTime((nint)2159200800L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-            [21] = new(makeLocalTime((nint)2172733199L), makeLocalTime((nint)2152173600L), makeLocalTime((nint)2172733200L)),
-            [22] = new(makeLocalTime((nint)2172733200L), makeLocalTime((nint)2172733200L), makeLocalTime((nint)2177452800L))
+            [17] = new(makeLocalTime(2152173599L), makeLocalTime(2145916800), makeLocalTime(2152173600L)),
+            [18] = new(makeLocalTime(2152173600L), makeLocalTime(2152173600L), makeLocalTime(2172733200L)),
+            [19] = new(makeLocalTime(2152173601L), makeLocalTime(2152173600L), makeLocalTime(2172733200L)),
+            [20] = new(makeLocalTime(2159200800L), makeLocalTime(2152173600L), makeLocalTime(2172733200L)),
+            [21] = new(makeLocalTime(2172733199L), makeLocalTime(2152173600L), makeLocalTime(2172733200L)),
+            [22] = new(makeLocalTime(2172733200L), makeLocalTime(2172733200L), makeLocalTime(2177452800L))
         };
         foreach (var (i, tt) in realTests) {
             var (startΔ2, endΔ2) = tt.giveTime.ZoneBounds();

@@ -84,13 +84,13 @@ public static void TestHasMonotonicClock(ж<Δtesting.T> Ꮡt) {
 public static void TestMonotonicAdd(ж<Δtesting.T> Ꮡt) {
     ref var tm = ref heap<Δtime.Time>(out var Ꮡtm);
     tm = Unix(1486057371, 123456);
-    time_internal_test_package.SetMono(Ꮡtm, (nint)123456789012345L);
+    time_internal_test_package.SetMono(Ꮡtm, 123456789012345L);
     ref var t2 = ref heap<Δtime.Time>(out var Ꮡt2);
     t2 = tm.Add(100000000);
     if (t2.Nanosecond() != 100123456) {
         Ꮡt.Errorf("t2.Nanosecond() = %d, want 100123456"u8, t2.Nanosecond());
     }
-    if (time_internal_test_package.GetMono(Ꮡt2) != (nint)123456889012345L) {
+    if (time_internal_test_package.GetMono(Ꮡt2) != 123456889012345L) {
         Ꮡt.Errorf("t2.mono = %d, want 123456889012345"u8, time_internal_test_package.GetMono(Ꮡt2));
     }
     ref var t3 = ref heap<Δtime.Time>(out var Ꮡt3);
@@ -148,7 +148,7 @@ public static void TestMonotonicSub(ж<Δtesting.T> Ꮡt) {
 
     ref var t1 = ref heap<Δtime.Time>(out var Ꮡt1);
     t1 = Unix(1483228799, 995000000);
-    time_internal_test_package.SetMono(Ꮡt1, (nint)123456789012345L);
+    time_internal_test_package.SetMono(Ꮡt1, 123456789012345L);
     ref var t2 = ref heap<Δtime.Time>(out var Ꮡt2);
     t2 = Unix(1483228799, 5000000);
     time_internal_test_package.SetMono(Ꮡt2, 123456799012345L);
@@ -285,8 +285,8 @@ internal static slice<monotonicStringTestsᴛ1> monotonicStringTests = new monot
     new(0, "m=+0.000000000"u8),
     new(123456789, "m=+0.123456789"u8),
     new(-123456789, "m=-0.123456789"u8),
-    new((nint)123456789000L, "m=+123.456789000"u8),
-    new(-(nint)123456789000L, "m=-123.456789000"u8),
+    new(123456789000L, "m=+123.456789000"u8),
+    new(-123456789000L, "m=-123.456789000"u8),
     new(9000000000000000000, "m=+9000000000.000000000"u8),
     new(-9000000000000000000, "m=-9000000000.000000000"u8),
     new(-9223372036854775808L, "m=-9223372036.854775808"u8)

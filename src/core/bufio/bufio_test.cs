@@ -1854,8 +1854,6 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
         new(
             name: "fill error, discard less"u8,
             r: newScriptedReader((slice<byte> p) => {
-                nint n = default!;
-                error err = default!;
                 if (len(p) < 5) {
                     throw panic("unexpected small read");
                 }
@@ -1869,8 +1867,6 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
         new(
             name: "fill error, discard equal"u8,
             r: newScriptedReader((slice<byte> p) => {
-                nint n = default!;
-                error err = default!;
                 if (len(p) < 5) {
                     throw panic("unexpected small read");
                 }
@@ -1884,8 +1880,6 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
         new(
             name: "fill error, discard more"u8,
             r: newScriptedReader((slice<byte> p) => {
-                nint n = default!;
-                error err = default!;
                 if (len(p) < 5) {
                     throw panic("unexpected small read");
                 }
@@ -1988,9 +1982,6 @@ public static void TestWriterSize(ж<Δtesting.T> Ꮡt) {
 [GoType("[]Func<slice<byte>, (nint n, error err)>")] partial struct scriptedReader;
 
 [GoRecv] internal static (nint n, error err) Read(this ref scriptedReader sr, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (len(sr) == 0) {
         throw panic("too many Read calls on scripted Reader. No steps remain.");
     }
@@ -2074,9 +2065,6 @@ internal static (int64, error) ReadFrom(this writerWithReadFromError w, Δio.Rea
 }
 
 internal static (nint n, error err) Write(this writerWithReadFromError w, slice<byte> b) {
-    nint n = default!;
-    error err = default!;
-
     return (10, default!);
 }
 
@@ -2106,9 +2094,6 @@ public static void TestWriterReadFromMustSetUnderlyingError(ж<Δtesting.T> Ꮡt
 internal static readonly @string writeErrorOnlyWriterˢ = "writeErrorOnlyWriter error"u8;
 
 internal static (nint n, error err) Write(this writeErrorOnlyWriter w, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return (0, errors.New(writeErrorOnlyWriterˢ));
 }
 
