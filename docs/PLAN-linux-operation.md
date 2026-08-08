@@ -460,7 +460,7 @@ paths. The `_AddGeneratorToPackage` target packs to `analyzers/dotnet/cs` — RI
 ```
 
 **without** the `USERPROFILE`→`HOME` fallback that the converter's templates emit
-(`src/go2cs/csproj-template.xml:27-28`, `test-csproj-template.xml:49-50`). A non-Debug build of `golib`
+(`src/go2cs/csproj-template.xml:35-36`, `test-csproj-template.xml:52-53`). A non-Debug build of `golib`
 outside a solution context resolves `$(go2csPath)` to `\go2cs\` on Linux. Add the same two-line fallback.
 `go2cs-gen.csproj` needs nothing (it never reads `$(go2csPath)`).
 
@@ -727,7 +727,7 @@ Beyond the stdlib itself (§A2), five smaller runtime concerns:
 3. **Env defaults already agree.** The converter defaults `-go2cspath` to
    `filepath.Join(os.UserHomeDir(), "go2cs")` (`main.go:71-80`) → `~/go2cs` on Linux. The csproj template
    defaults `$(go2csPath)` to `$(USERPROFILE)\go2cs\` **with** `<USERPROFILE>$(HOME)</USERPROFILE>` when
-   `USERPROFILE` is empty (`csproj-template.xml:27-33`) → `$HOME/go2cs/`. The pair is already coherent
+   `USERPROFILE` is empty (`csproj-template.xml:35-41`) → `$HOME/go2cs/`. The pair is already coherent
    cross-platform; only `golib.csproj` is missing the fallback (§A3).
 
 4. **`GOPATH`.** `deploy-core.ps1` derives the deploy root from `go env GOPATH` (`:74-78`) →
