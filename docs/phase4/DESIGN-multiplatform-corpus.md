@@ -859,6 +859,12 @@ counterpart, so it is never emitted, never classified, and stays flat — where 
    order is unspecified in C# but is observable through reflection enumeration and through the relative order
    of `[GoInit]` module initializers, so if any of that is load-bearing, an explicit sorted `<Compile>` list
    is the only remedy — at the cost of every project file naming every file.
+   **RULED (user, 2026-08-08): semantic-content identity IS the acceptance standard for layout changes** —
+   types, members, signatures, constants and method-body IL, as increment 3's dump measures them — with the
+   full 110-package validated sweep run against the L3 corpus as the empirical check that nothing
+   order-sensitive (package init sequencing above all) actually moved. The explicit sorted `<Compile>`-list
+   remedy is rejected as machinery no observable behavior demands; if a future defect is ever traced to
+   member-enumeration or `[GoInit]` relative order, that evidence reopens this ruling, not silently.
 2. **`log/syslog`'s `InternalsVisibleTo`.** Its Go source is entirely excluded on Windows, so there are no
    sibling internal test files and the block is absent there while present on the unix side. Taking the union
    would add an assembly-level attribute to a shipped Windows assembly, so the merge keeps the Windows
