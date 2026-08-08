@@ -485,16 +485,23 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
      item 18).
   1a. **⚠ SEED `version.props` AND `docs/validation` TOO, and MIRROR THE `src/` LAYOUT** (added
-     2026-08-02 with the README validation badges). The badge each package README carries is composed
-     from two REPOSITORY files, not from the conversion: `src/version.props` (the published version
-     that pins the proof URL) and `docs/validation/current/<dot-id>.md` (the matched/disclosed counts).
+     2026-08-02 with the README validation badges). Each package README's badge LINE carries two
+     badges, and the **Tests** one is composed from two REPOSITORY files, not from the conversion:
+     `src/version.props` (the published version that pins the proof URL) and
+     `docs/validation/current/<dot-id>.md` (the matched/disclosed counts).
      The converter finds both by the same upward walk it uses for `$(go2csPath)` — version.props at the
-     root holding `core/golib`, `docs/` as that root's SIBLING — and emits **no badge line at all**
+     root holding `core/golib`, `docs/` as that root's SIBLING — and emits **no Tests badge at all**
      when either is missing, which is a silent, corpus-wide README diff on overlay. So seed
      `<tmp>/src/core`, `<tmp>/src/version.props` and `<tmp>/docs/validation`, and convert with
      `-go2cspath <tmp>/src` so the temp root mirrors the repository. (Seeding a versioned
      `docs/validation/<version>/` is NOT needed — the badge reads `current/`; the versioned directory
      is only the link target and the `Exists`-guarded pack input.)
+     ⚠ The **Docs** badge beside it (added 2026-08-08) reads the TOOLCHAIN, not the repository —
+     `go env GOVERSION` and, for the 19 GOROOT-vendored `golang.org/x/*` packages, GOROOT's own
+     `src/vendor/modules.txt` — so it needs no seeding and survives an unseeded root. That is why an
+     unseeded reconvert no longer produces a README with NO badge line: it produces one carrying the
+     Docs badge alone, which is a subtler diff to spot. Seed anyway; the rule is unchanged, only the
+     symptom is.
   1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>/src` → output lands in **`<tmp>/src/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`

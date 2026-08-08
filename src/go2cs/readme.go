@@ -71,11 +71,12 @@ func goVersion() string {
 // idempotent via needToWriteFile, mirroring how the icon and .csproj files are written, and uses
 // CRLF line endings to match the converter's other generated text output (and avoid autocrlf churn).
 //
-// Between the attribution blockquote and the package's own documentation sits the validation badge —
-// its own paragraph, green/orange/grey per readmeValidationBadgeLine, omitted entirely when this
-// conversion cannot compose an honest one. sourceDir is the package's Go source directory, which the
-// badge needs to see the `_test.go` files the conversion itself never compiles.
-func writeReadmeFile(projectPath string, projectName string, packageDoc string, sourceDir string) error {
+// Between the attribution blockquote and the package's own documentation sits the badge line — its
+// own paragraph, holding the validation badge and the Go-documentation badge per readmeBadgeLine,
+// each omitted when this conversion cannot compose an honest one. sourceDir is the package's Go
+// source directory, which both badges read: the validation badge to see the `_test.go` files the
+// conversion itself never compiles, the docs badge to recover the package's Go import path.
+func writeReadmeFile(projectPath string, projectName string, packageDoc string, sourceDir string, options Options) error {
 	projectPath = strings.TrimRight(projectPath, string(filepath.Separator)) + string(filepath.Separator)
 	readmeFileName := projectPath + "README.md"
 
@@ -90,8 +91,8 @@ func writeReadmeFile(projectPath string, projectName string, packageDoc string, 
 
 	builder.WriteString("\n")
 
-	if badge := readmeValidationBadgeLine(projectPath, projectName, sourceDir); badge != "" {
-		builder.WriteString(badge)
+	if badges := readmeBadgeLine(projectPath, projectName, sourceDir, options); badges != "" {
+		builder.WriteString(badges)
 		builder.WriteString("\n\n")
 	}
 

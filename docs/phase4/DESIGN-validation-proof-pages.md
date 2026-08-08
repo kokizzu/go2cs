@@ -92,26 +92,47 @@ sheets, each one `go test` agreeing with the C#, test by test.
   Every converted stdlib README now carries a standalone validation badge; the release scripts freeze
   and retarget the proof it links; validated packages pack that proof as `VALIDATION.md`. Detail and
   the places reality corrected the plan are in the next section.
+- **2026-08-08:** **the Docs badge joins it** (user ruling) — a second badge beside Tests on the same
+  line, linking the official Go documentation for the sources each package was converted from, pinned
+  to the version that produced them. It closes the round trip the READMEs were missing: the Tests
+  badge proves the conversion behaves like the Go, and the Docs badge is the route to the Go it
+  behaves like. Spec below; the vendored-module case and the import-path source are refinements 6–8.
 
-## The badge (implemented 2026-08-02)
+## The badges (Tests implemented 2026-08-02, Docs added 2026-08-08)
 
 One badge-only line per package README, its own paragraph between the attribution blockquote and the
-godoc body. No emoji, no trailing text link — **the badge IS the proof link**. Label reduced from
-`Go_tests` to `Tests` by user ruling 2026-08-03: the `?logo=go` gopher already says Go, so the word
-in the label was redundant.
+godoc body. No emoji, no trailing text link — **each badge IS its link**. It holds two badges, in
+this order, separated by a single space so a narrow renderer wraps between them:
 
-| State | Badge | Links |
-|:--|:--|:--|
-| validated | `Tests-<m>%2F<t>_validated-brightgreen` | `go2cs.net/validation/<version>/<dot-id>.html` |
-| has tests, not yet validated | `Tests-not_yet_validated-orange` | `go2cs.net/ValidatedTestPackages.html` |
-| no tests | `Tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
+1. the **Tests** badge — this package's validation state, linking its proof;
+2. the **Docs** badge — the official Go documentation for the sources it was converted from.
+
+Tests' label was reduced from `Go_tests` to `Tests` by user ruling 2026-08-03: the `?logo=go` gopher
+already says Go, so the word in the label was redundant.
+
+| Badge | State | Message | Links |
+|:--|:--|:--|:--|
+| Tests | validated | `Tests-<m>%2F<t>_validated-brightgreen` | `go2cs.net/validation/<version>/<dot-id>.html` |
+| Tests | has tests, not yet validated | `Tests-not_yet_validated-orange` | `go2cs.net/ValidatedTestPackages.html` |
+| Tests | no tests | `Tests-none_to_validate-lightgrey` | `go2cs.net/ValidatedTestPackages.html` |
+| Docs | standard package (`internal/…` included) | `Docs-@<goversion>-00ADD8` | `pkg.go.dev/<import-path>@go<goversion>` |
+| Docs | GOROOT-vendored (`vendor/golang.org/x/…`) | `Docs-@<pin>-00ADD8` | `pkg.go.dev/<module>@<pin>/<subpath>` |
 
 `<m>` is matched and `<t>` is matched + disclosed, both read off the package's living proof page, so
 the denominator counts every test the suite ran (io: `59%2F61`). `<version>` is
 `<GoStdLibVersion>.<GoBuildNumber>` from `src/version.props`; `<dot-id>` is the import path with `/`
 replaced by `.`, the same flat name the proof pages already use.
 
-The three states **partition the corpus**, which is what makes the badge auditable rather than
+`<goversion>` is the toolchain's own `go env GOVERSION` without the `go` prefix — the same value the
+README attribution's `> Go version: 1.23.1` line carries, never a literal. `00ADD8` is the Go
+project's own blue, so the Docs badge reads as the Go documentation it points at rather than as
+another go2cs status light. Both badges carry `?logo=go`. The rendered pair, for `bufio`:
+
+```markdown
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1)
+```
+
+The Tests badge's three states **partition the corpus**, which is what makes it auditable rather than
 decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
 
 - **71 green** — exactly the roster of [`ValidatedTestPackages.md`](../ValidatedTestPackages.md),
@@ -158,7 +179,35 @@ decorative. Census at the landing regen (`src/version.props` = 1.23.1.2):
    snapshot and retarget, `push-nuget.ps1` re-derives each green badge from the frozen proof page and
    compares it to the README byte for byte. That is the same equality a converter re-emission would
    assert, without a Go toolchain or a 4-minute reconvert in the middle of a release.
-6. **An interim snapshot `docs/validation/1.23.1.2/` was created by hand** (a copy of `current/`, with
+6. **The Docs badge pins what it links, which makes GOROOT-vendored packages a separate case**
+   (added 2026-08-08). An ordinary package — `internal/…` included, pkg.go.dev serves those like any
+   other std package — links `pkg.go.dev/<import-path>@go<goversion>`, so the reader lands on the
+   documentation for the exact Go release the C# beside it was converted from. A GOROOT-vendored
+   package is not a Go release artifact at all: it is a snapshot of a third-party module, and its
+   `vendor/`-prefixed path exists only inside GOROOT (`pkg.go.dev/vendor/golang.org/…` is not a page).
+   Those resolve through **GOROOT's own `src/vendor/modules.txt`** — the file `go mod vendor` writes
+   and the only place the real version survives, since the vendored tree carries no `go.mod` — to
+   `pkg.go.dev/<module>@<pin>/<subpath>`. The badge's MESSAGE states that pin rather than the Go
+   version, because the badge names the documentation it actually links: `@1.23.1` over a link to
+   `x/crypto@v0.23.1-0.20240603234054-0b431c7de36a` would name documentation that does not exist. A
+   pin that cannot be resolved emits **no Docs badge**, on the same reasoning as the Tests badge's
+   fallback — an unpinned docs link resolves to whatever is current rather than to the sources this
+   package holds, which is the one thing the badge promises.
+7. **The import path comes from the source DIRECTORY, not from the loader's `PkgPath`.** `PkgPath` is
+   not stable across load configurations for exactly the two shapes that matter here: the same
+   vendored package reports `golang.org/x/crypto/chacha20` under one configuration and
+   `vendor/golang.org/x/crypto/chacha20` under another, and `internal/abi` can come back as
+   `std/internal/abi`. `stdLibImportPath` strips the `GOROOT/src` prefix with the same
+   case-insensitive `pathReplace` `getProjectName` uses, so the Docs badge's import path and the
+   project's dotted name are guaranteed by construction to name the same package.
+8. **Pairing the two badges on one line is safe for `push-nuget.ps1` because of a tightening made for
+   an unrelated reason.** Its retarget pattern's segment class `[^/\s)]+` excludes whitespace (added
+   when a prose link in `testing`'s hand-owned README was eaten by a looser `[^/]+`), so the space
+   between the badges terminates the segment and a retarget cannot run past the proof link into the
+   `pkg.go.dev` link beside it. The verification pass is anchored on `badge/Tests-`, which a
+   `badge/Docs-` badge cannot satisfy. Both were checked against a green and a vendored README before
+   the badge landed; the note lives beside the pattern in the script.
+9. **An interim snapshot `docs/validation/1.23.1.2/` was created by hand** (a copy of `current/`, with
    a README saying so) so the badge links resolve from the day they landed. Every later versioned
    directory is written by `push-nuget.ps1` at publication.
 

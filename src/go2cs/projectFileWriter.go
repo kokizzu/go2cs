@@ -340,7 +340,7 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 		if options.convertStdLib {
 			projectName := strings.TrimSuffix(filepath.Base(projectFileName), ".csproj")
 
-			if err := writeReadmeFile(outputFilePath, projectName, packageDoc, packageSourceDir); err != nil {
+			if err := writeReadmeFile(outputFilePath, projectName, packageDoc, packageSourceDir, options); err != nil {
 				return fmt.Errorf("failed to write README file for project \"%s\": %s", outputFilePath, err)
 			}
 		}

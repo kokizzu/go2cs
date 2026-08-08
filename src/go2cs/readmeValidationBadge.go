@@ -4,9 +4,13 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Every converted standard-library package's NuGet README carries exactly ONE validation badge, and
-// that badge is the package's honesty contract — the first thing a visitor sees on nuget.org and in
-// the repository:
+// Every converted standard-library package's NuGet README carries one badge line — the first thing a
+// visitor sees on nuget.org and in the repository. It holds two badges, space separated so a narrow
+// renderer wraps between them: the Tests badge (this package's validation state, below) followed by
+// the Docs badge (the official Go documentation for the very sources it was converted from, pinned
+// to the version that produced them — see readmeDocsBadgeLine).
+//
+// The Tests badge is the package's honesty contract:
 //
 //	green   <m>/<t> validated   Go's own test suite for this package was converted, run under the
 //	                            Go-semantics test host and compared verdict for verdict against
@@ -22,13 +26,16 @@
 // over the emitted READMEs must reproduce the roster's own denominator (the packages whose Go
 // sources define Test functions) with no package left unclassified.
 //
-// FALLBACK (load-bearing for reproducibility): the badge is composed from two things that live in
-// the REPOSITORY, not in the conversion — src/version.props (the published version, which pins the
+// FALLBACK (load-bearing for reproducibility): the Tests badge is composed from two things that live
+// in the REPOSITORY, not in the conversion — src/version.props (the published version, which pins the
 // proof URL) and docs/validation/current/ (the counts). A conversion rooted anywhere else — a bare
-// temp -go2cspath root, a deployed GOPATH runtime root — can locate neither and emits NO badge line
+// temp -go2cspath root, a deployed GOPATH runtime root — can locate neither and emits NO Tests badge
 // at all rather than a half-composed URL. This is why a reconvert that must reproduce the committed
 // READMEs byte-identically has to seed version.props and docs/validation alongside src/core; see
-// CLAUDE.md's corpus-mechanics seed step.
+// CLAUDE.md's corpus-mechanics seed step. The Docs badge reads the TOOLCHAIN instead (go env
+// GOVERSION, and GOROOT's own src/vendor/modules.txt for the vendored packages), so it survives an
+// unseeded root — which is why an unseeded reconvert's READMEs now carry a Docs-only badge line
+// rather than none at all. Seed anyway; only the symptom moved.
 
 package main
 
@@ -61,6 +68,25 @@ const (
 	// the validated-package commit policy banks beside the production code, and therefore the
 	// on-disk signal that this package's suite has been through the pipeline.
 	testProjectFileSuffix = ".tests.csproj"
+
+	// shieldsBadgeHost renders both badges; the path form is `/badge/<label>-<message>-<color>`.
+	shieldsBadgeHost = "https://img.shields.io"
+
+	// goPackageDocsURL is the official Go package documentation site the Docs badge links.
+	goPackageDocsURL = "https://pkg.go.dev"
+
+	// goBrandColor is the Go project's own blue, so the Docs badge reads as the Go documentation it
+	// points at rather than as another go2cs status light.
+	goBrandColor = "00ADD8"
+
+	// vendorImportPrefix is what the standard library's own vendored third-party packages carry in
+	// their import path (`vendor/golang.org/x/crypto/chacha20`). It is a GOROOT-internal spelling
+	// pkg.go.dev never serves, so the Docs badge resolves those through modules.txt instead.
+	vendorImportPrefix = "vendor/"
+
+	// vendorModulesFileName is GOROOT's own record — src/vendor/modules.txt — of which module and
+	// which exact version each vendored package was drawn from.
+	vendorModulesFileName = "modules.txt"
 )
 
 // The published version lives in version.props as two elements; these mirror push-nuget.ps1's own
@@ -69,6 +95,150 @@ var (
 	goStdLibVersionPattern = regexp.MustCompile(`<GoStdLibVersion>([^<]+)</GoStdLibVersion>`)
 	goBuildNumberPattern   = regexp.MustCompile(`<GoBuildNumber>([^<]+)</GoBuildNumber>`)
 )
+
+// readmeBadgeLine composes a converted stdlib package's whole badge line: the Tests badge followed
+// by the Docs badge, separated by a single space. Each badge is emitted only when it can be composed
+// honestly, so the line may hold either, both, or — when neither has the inputs it needs — nothing at
+// all, in which case the README carries no badge paragraph, exactly as it did before badges existed.
+//
+// The two badges answer independent questions from independent inputs (the Tests badge reads the
+// repository's version.props and proof pages; the Docs badge reads the Go toolchain and GOROOT), so
+// neither suppresses the other.
+func readmeBadgeLine(projectPath string, projectName string, sourceDir string, options Options) string {
+	badges := make([]string, 0, 2)
+
+	if badge := readmeValidationBadgeLine(projectPath, projectName, sourceDir); badge != "" {
+		badges = append(badges, badge)
+	}
+
+	if badge := readmeDocsBadgeLine(stdLibImportPath(sourceDir, options.goRoot), goVersion(), options.goRoot); badge != "" {
+		badges = append(badges, badge)
+	}
+
+	return strings.Join(badges, " ")
+}
+
+// readmeDocsBadgeLine returns the Docs badge — a link to the official Go documentation for the very
+// sources this package was converted from, PINNED to the version that produced them, so a reader of
+// the C# can always reach the Go it mirrors.
+//
+// An ordinary standard-library package pins the Go release: `https://pkg.go.dev/bufio@go1.23.1`.
+// `internal/...` packages are included and need no special case — pkg.go.dev serves them like any
+// other std package.
+//
+// A GOROOT-VENDORED package (`vendor/golang.org/x/crypto/chacha20`) is not a Go release artifact at
+// all; it is a snapshot of a third-party module, and its `vendor/`-prefixed path exists only inside
+// GOROOT. It therefore pins the module version GOROOT's own src/vendor/modules.txt records, and the
+// badge's MESSAGE states that pin rather than the Go version: the badge names the documentation it
+// actually links, and "@1.23.1" over a link to x/crypto@v0.23.1-0.20240603234054-0b431c7de36a would
+// name documentation that does not exist.
+//
+// Returns "" when the version or the import path is unknown, or when a vendored package has no
+// modules.txt entry — an UNPINNED docs link would resolve to whatever is current rather than to the
+// sources this package actually holds, which is the one thing the badge exists to promise.
+func readmeDocsBadgeLine(importPath string, version string, goRoot string) string {
+	if importPath == "" || version == "" {
+		return ""
+	}
+
+	message := version
+	target := fmt.Sprintf("%s/%s@go%s", goPackageDocsURL, importPath, version)
+
+	if vendored := strings.TrimPrefix(importPath, vendorImportPrefix); vendored != importPath {
+		modulePath, pin, ok := vendoredModulePin(goRoot, vendored)
+
+		if !ok {
+			return ""
+		}
+
+		message = pin
+		target = fmt.Sprintf("%s/%s@%s", goPackageDocsURL, modulePath, pin)
+
+		if subPath := strings.TrimPrefix(strings.TrimPrefix(vendored, modulePath), "/"); subPath != "" {
+			target += "/" + subPath
+		}
+	}
+
+	return fmt.Sprintf("[![Docs](%s/badge/Docs-@%s-%s?logo=go)](%s)", shieldsBadgeHost, shieldsBadgeMessage(message), goBrandColor, target)
+}
+
+// vendoredModulePin resolves the module path and the exact version a GOROOT-vendored package was
+// drawn from, by reading the src/vendor/modules.txt the Go distribution ships beside those sources —
+// the same file `go mod vendor` writes, and the only place the real version survives (the vendored
+// tree itself carries no go.mod).
+//
+// The shape it reads is that file's stable core: `# <module> <version>` opens a module block, `##`
+// annotates it, and every other non-blank line is one package path belonging to the open block.
+// Anything it cannot resolve returns not-ok, which suppresses the badge rather than guessing a pin.
+func vendoredModulePin(goRoot string, packagePath string) (string, string, bool) {
+	contents, err := os.ReadFile(filepath.Join(goRoot, "src", "vendor", vendorModulesFileName))
+
+	if err != nil {
+		return "", "", false
+	}
+
+	var modulePath, pin string
+
+	for _, line := range strings.Split(string(contents), "\n") {
+		line = strings.TrimSpace(line)
+
+		if line == "" || strings.HasPrefix(line, "##") {
+			continue
+		}
+
+		if strings.HasPrefix(line, "#") {
+			modulePath, pin = "", ""
+
+			if fields := strings.Fields(strings.TrimPrefix(line, "#")); len(fields) >= 2 {
+				modulePath, pin = fields[0], fields[1]
+			}
+
+			continue
+		}
+
+		if line == packagePath && modulePath != "" && pin != "" {
+			return modulePath, pin, true
+		}
+	}
+
+	return "", "", false
+}
+
+// stdLibImportPath is a standard-library package's Go import path, taken from the one thing that is
+// unambiguous about it: where its sources sit under GOROOT/src.
+//
+// The loader's own PkgPath is NOT usable here. The same vendored package reports
+// `golang.org/x/crypto/chacha20` under one load configuration and
+// `vendor/golang.org/x/crypto/chacha20` under another, and `internal/abi` can come back as
+// `std/internal/abi`. The directory says exactly one thing — and this strips the GOROOT prefix with
+// the same case-insensitive pathReplace getProjectName uses, so the Docs badge's import path and the
+// project's dotted name are guaranteed by construction to name the same package.
+func stdLibImportPath(sourceDir string, goRoot string) string {
+	if sourceDir == "" || goRoot == "" {
+		return ""
+	}
+
+	sourceDir = filepath.Clean(sourceDir)
+	trimmed := pathReplace(sourceDir, filepath.Join(goRoot, "src"), "")
+
+	if trimmed == sourceDir {
+		return ""
+	}
+
+	return strings.TrimPrefix(filepath.ToSlash(trimmed), "/")
+}
+
+// shieldsBadgeMessage escapes a message for shields.io's path form, where the three fields are
+// dash-separated and an underscore renders as a space: a literal dash or underscore is doubled, a
+// space becomes an underscore, and a slash is percent-encoded so it cannot end the path segment.
+// (The `@` the messages open with needs no encoding — shields serves it raw.)
+func shieldsBadgeMessage(value string) string {
+	value = strings.ReplaceAll(value, "_", "__")
+	value = strings.ReplaceAll(value, "-", "--")
+	value = strings.ReplaceAll(value, " ", "_")
+
+	return strings.ReplaceAll(value, "/", "%2F")
+}
 
 // readmeValidationBadgeLine returns the one-line validation badge for a converted stdlib package, or
 // "" when this conversion has no repository context to compose an honest badge from.
@@ -125,7 +295,7 @@ func readmeValidationBadgeLine(projectPath string, projectName string, sourceDir
 // validationBadge renders one shields.io badge as a Markdown image link. The message is already
 // shields-encoded by the caller (spaces as underscores, "/" as %2F).
 func validationBadge(message string, color string, target string) string {
-	return fmt.Sprintf("[![Tests](https://img.shields.io/badge/Tests-%s-%s?logo=go)](%s)", message, color, target)
+	return fmt.Sprintf("[![Tests](%s/badge/Tests-%s-%s?logo=go)](%s)", shieldsBadgeHost, message, color, target)
 }
 
 // publishedPackageVersion reads the four-part published version (`1.23.1.2`) from the go2cs root's

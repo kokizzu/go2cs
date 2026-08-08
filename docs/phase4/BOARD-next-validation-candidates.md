@@ -3934,6 +3934,15 @@ lane's commits. Affected: `crypto`, `crypto/aes`, `crypto/des`, `crypto/rc4`, `c
 `internal/coverage/cmerge`, `internal/coverage/pods`, `internal/dag`, `internal/diff`,
 `mime/quotedprintable`, `net/url`, `testing/iotest`, `text/template/parse`.
 
+**Resolved, and the CAUSE is standing (2026-08-08, r45b).** Those 24 were leveled by a later regen,
+and r45b's Docs-badge overlay leveled the next batch — 12 of r44a/r44b's banks, plus
+`internal/concurrent`'s label, which had frozen on the pre-2026-08-03 `Go_tests` spelling because the
+package is hand-owned by consequence. The mechanism that creates them has not changed: a bank writes
+`docs/validation/current/<dot-id>.md` and never re-emits the README the converter composes from it,
+so **every bank leaves its own badge stale until the next corpus README overlay**. Treat a handful of
+stale Tests badges as the EXPECTED state between overlays, not as a finding — and level them whenever
+a lane is regenerating the corpus anyway.
+
 **Recorded next candidates out of this lane.** Two architectural arcs, both now with named
 beneficiaries: the **Go-source position map** (unblocks `log` *and* `log/slog`, ~9 rows across the
 two) and **import-ordered package initialization** (correctness, not just verdicts - any converted
