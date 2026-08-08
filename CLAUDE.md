@@ -533,7 +533,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      `internal/weak/pointer.cs` joined at r43e. Benign in that instance, but a hand-own disappeared
      under an overlay while the commit reported its marker gate "40/0": so re-measure the census,
      never assert last session's number, and treat a SHRINK as something to explain rather than to
-     copy forward.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
+     copy forward. ⚠ Since r50a the census counts **42**, and for a NEW reason: layout L3 routes a
+     hand-owned file into its principal's per-GOOS folders, and `runtime/lock_sema_impl.cs`'s
+     principal is selected on Windows *and* macOS — so one hand-own now exists as TWO files. The
+     count of marked FILES is no longer the count of distinct hand-owns; both numbers are fine and
+     the gate is still per-PATH.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
      overlay**: the same exclusion that protects the hand-owned `.cs` beside them also freezes
      them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
      item 18).

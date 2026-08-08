@@ -975,11 +975,24 @@ against 305 of 306 on Windows with zero errors.
 | Proof | Method | Result |
 |:--|:--|:--|
 | the Windows lane did not move | `-p:GoTargetOS=windows` over the whole solution | **305/306, 0 errors, 149 s** (the 306th is `crypto/x509/internal/macos`, darwin-exclusive) |
-| the property ABSENT is the same build | SHA-256 of every assembly, property unset vs `-p:GoTargetOS=windows` | **all byte-identical** |
-| the Windows lane reproduces from a reconvert | Seeded single-target `-stdlib` per CLAUDE.md's ritual, compared path-precisely | **0 new, 0 absent, 0 content differences**; marker gate **41** line-anchored, **0** clobbered |
+| the property ABSENT is the same build | SHA-256 of every assembly, property unset vs `-p:GoTargetOS=windows`, **both `--no-incremental`** | **305/305 byte-identical** |
+| …and the byte compare is a real instrument | Same flags, two full recompiles | **305/305 byte-identical** — the build IS byte-reproducible, so the row above is a measurement rather than a tautology |
+| the Windows lane reproduces from a reconvert | Seeded single-target `-stdlib` per CLAUDE.md's ritual (304 packages, 192 s), compared path-precisely | **4,540 files both sides, 0 new, 0 absent, 0 content differences.** Layout adoption reproduced all 37 L3 packages *including the newly routed hand-owns*, and re-emitted `dll_windows.cs.auto` / `exec_windows.cs.auto` into `syscall/windows/` on its own |
+| the hand-owns were not clobbered | Marker gate, line-anchored | **42** marked files, **0** re-emitted as a plain `.cs` |
 | §13.1, the IL question, re-taken at full width | see §13.1 | **141 of 141 measurable shared-source packages identical** (was 54) |
-| nothing else in the converter moved | `check-no-regression.ps1` | **byte-identical** |
-| the converter's own suite | `go test ./...` | **green** |
+| nothing else in the converter moved | `check-no-regression.ps1` (574 behavioral packages, 439 s) | **byte-identical**, `.csproj` included; solution integrity 576/576, path casing 4,142/4,142 |
+| the behavioral corpus still passes | `run-behavioral.ps1` (613 s) | **549/549** transpile+compile+golden, **523/523** stdout vs `go run`, 26 skipped |
+| the converter's own suite | `go test ./...` | **green**, 56 s |
+
+⚠ **Two measurement traps this increment walked into, both worth inheriting.** *First:* the marker census
+reads **42**, not 41, and that is correct — `runtime/lock_sema_impl.cs` now exists in **two** folders, so the
+count of marked FILES exceeds the count of distinct hand-owns for the first time. CLAUDE.md's standing rule
+(re-measure, never assert last session's number, explain a move in either direction) covers it exactly.
+*Second:* `--no-incremental` is **not byte-neutral**. Comparing an incremental build against a
+`--no-incremental` one reported all 305 assemblies as differing, which reads exactly like a broken
+determinism guarantee; holding the flag constant reports 305/305 identical, and the same-flags control above
+is what tells those two readings apart. **An A/B byte compare must hold `--no-incremental` constant**, and a
+byte compare that skips the control can only ever be trusted downward.
 
 **`log/syslog`'s `InternalsVisibleTo` — a PROPOSAL, deliberately not an implementation.** Increment 3 left
 this as the one project-file difference layout L3 cannot express, and increment 3.5 confirms the shape:
