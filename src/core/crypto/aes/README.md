@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-13%2F13_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.aes.html)
+[![Tests](https://img.shields.io/badge/Tests-13%2F13_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.aes.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/aes@go1.23.1)
 
 Package aes implements AES encryption (formerly Rijndael), as defined in U.S. Federal Information Processing Standards Publication 197.
 

@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-12%2F13_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.sha1.html)
+[![Tests](https://img.shields.io/badge/Tests-12%2F13_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.sha1.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/sha1@go1.23.1)
 
 Package sha1 implements the SHA-1 hash algorithm as defined in RFC 3174.
 

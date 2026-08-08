@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-11%2F11_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.scanner.html)
+[![Tests](https://img.shields.io/badge/Tests-11%2F11_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.scanner.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/scanner@go1.23.1)
 
 Package scanner implements a scanner for Go source text. It takes a \[]byte as source which can then be tokenized through repeated calls to the Scan method.
 

@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-9%2F9_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/path.html)
+[![Tests](https://img.shields.io/badge/Tests-9%2F9_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/path.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/path@go1.23.1)
 
 Package path implements utility routines for manipulating slash-separated paths.
 

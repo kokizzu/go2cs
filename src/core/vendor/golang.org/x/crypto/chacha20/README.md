@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/crypto@v0.23.1-0.20240603234054-0b431c7de36a/chacha20)
 
 Package chacha20 implements the ChaCha20 and XChaCha20 encryption algorithms as specified in RFC 8439 and draft-irtf-cfrg-xchacha-01.
 

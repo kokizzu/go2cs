@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/internal.fmtsort.html)
+[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/internal.fmtsort.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/internal/fmtsort@go1.23.1)
 
 Package fmtsort provides a general stable ordering mechanism for maps, on behalf of the fmt and text/template packages. It is not guaranteed to be efficient and works only for types that are valid map keys.
 

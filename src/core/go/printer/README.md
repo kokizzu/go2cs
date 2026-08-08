@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-45%2F45_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.printer.html)
+[![Tests](https://img.shields.io/badge/Tests-45%2F45_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.printer.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/printer@go1.23.1)
 
 Package printer implements printing of AST nodes.
 
