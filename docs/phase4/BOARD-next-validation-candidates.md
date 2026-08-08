@@ -87,6 +87,46 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## OPEN — `-recurse` emission is covered by NO standing gate, and issue #35 proves what that costs (2026-08-08)
+
+**Every standing gate measures the behavioral corpus or the standard library. Neither can see a
+`-recurse`-only defect, so an end-user conversion is guarded solely by hand-authored synthetic fixtures —
+one per past issue.** Issue #35 is the demonstration: a truncated project name put **175 duplicate
+`.csproj` names** into a user's 1,727-project solution (Visual Studio then refuses to open it and says
+nothing), and *every gate stayed green through it*. `check-no-regression` reported byte-identical C# and
+`.csproj` across all 574 behavioral packages, and `-stdlib` cannot reach the code at all — it returns on
+the GOROOT branch before the module walk. See [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md),
+*A project name is the package's FULL import path*.
+
+That is structural, not bad luck. `-recurse` is one of the two end-user use cases
+([`DESIGN-recursive-enduser-conversion.md`](../phase3/DESIGN-recursive-enduser-conversion.md)), and
+the only thing exercising it is the **nine** fixtures in `moduleConverter_integration_test.go` — three that
+cover a mode (`TestRecurseSyntheticModule`, `…NuGetReferences`, `…ModuleOnly`) and **six written after the
+defect they cover** (`TestModuleCachePoisonedGoWorkLoad`, `TestModuleCacheVestigialReplaceLoad`,
+`TestRecurseQuotedModulePath`, `…KeywordNamespaceSegment`, `…ChannelOfHyphenatedModulePath`,
+`…GoFileFreeContainerDirsKeepDistinctProjectNames`). That is precisely the "enumerate the shapes we have
+SEEN rather than state the property we need" tell this file already names as the recurring signature of a
+point repair: the six shapes are the ones issues #32, #33 (×3) and #35 happened to hit.
+
+**Two increments, the first nearly free:**
+
+1. **State the property.** After any `-recurse` run the emitted project names must be *distinct* and each
+   must equal its package's import path, dotted. That is one assertion over `convertedCsproj`, it closes
+   the whole class rather than one shape, and it costs nothing to add to the existing fixtures. (Deliberately
+   as a TEST assertion, not a converter runtime check — post-fix the name IS the import path by
+   construction, so a runtime guard would be machinery for an unreachable state. The value is in pinning the
+   invariant, which is a test's job.)
+2. **One adversarial fixture instead of seven incidental ones.** A checked-in, network-free module whose
+   layout is the *union* of every shape that has bitten: go-file-free container directories, `internal/`, a
+   `/vN` submodule, a quoted `module` directive, a C#-keyword path element, a hyphenated path, same-named
+   leaf packages, a co-located `replace`, a `go.work`. Convert it and golden-compare the emitted
+   `.csproj`/`.slnx`/`.cs` the way the behavioral corpus is compared — which gives `-recurse` the drift
+   detection it has never had, and makes the next shape a few lines of fixture rather than a new test.
+
+Worth doing before the next end-user report rather than after it: the class has now produced four issues
+(#33 ×2, #35, and #32's loader shape), and each arrived from a user rather than from a gate. The
+derivation's own recurring-defect row is in the *Recurring classes* section below.
+
 ## CLOSED — the ARGUMENT-path exponential is fixed, and the corpus paid its 29-file debt in the same change (2026-08-07, r43a-argexp)
 
 **Same bug class as the chained-call exponential closed directly below, one code path over, and closed the
@@ -2841,6 +2881,31 @@ kernel by address must be blittable*.
 
 ## Recurring classes worth a general fix rather than another point repair
 
+- **The import-path → C#-identity derivation. THREE sightings, each fix covering exactly ONE shape.**
+  `getProjectName` (`importOperations.go`) mints **four** identities from one string — the `.csproj`
+  filename, the library `<AssemblyName>`, the NuGet `PackageId`, and (minus the last segment) the C#
+  **namespace** — all of which must be unique across the package graph. It has now been wrong three times:
+  (i) a **quoted** `module "gopkg.in/yaml.v3"` directive carried its quotes into the csproj filename, which
+  Windows rejects outright (#33); (ii) a path element containing a C# **keyword** was escaped on the
+  declaration side and not by consumers, so the two sides of one namespace disagreed (#33); (iii) the
+  upward walk for `go.mod` treated the first ancestor holding **no `.go` files** as the module boundary and
+  truncated the name to its leaf segment (#35, 2026-08-08) — 743 of 1,727 names in one user's conversion,
+  175 of them colliding, and 531 collapsed into the bare `go` namespace where 12 landed on converted-stdlib
+  classes (`errors`, `strings`, `runtime`, `os`, …). Note the escalation: the third one is not merely a
+  naming nuisance, it silently aliases third-party packages onto the standard library's own classes.
+
+  **The shape to check for the next one:** the derivation still *reconstructs* the import path by walking
+  the filesystem, even though the loader's canonical path is in hand at every call site —
+  `options.packageImportPath` on the declaration side (`conversionDriver.go`), the `importPath` key on all
+  three reference sides (`getLocalModulePackageInfo`, `getRecurseDependencyInfo`, and the stdlib arm of
+  `getImportPackageInfo`, which already does exactly this and has never been wrong). Reconstruction was
+  left standing after #35 because it now *provably* yields the import path for any module package (module
+  path + relative path is the definition of one), and `pkg.PkgPath` risks `command-line-arguments` for a
+  bare-directory conversion. But a fourth mangling means plumbing the canonical path through is the general
+  fix and the heuristic is the point repair. Full rule:
+  [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A project name is the
+  package's FULL import path*. ⚠ Every one of these passed all standing gates — see the `-recurse` gate
+  gap at the top of this file.
 - **Zero-value construction for a type that needs one.** Fixed **four** times now in four different
   emission paths: a heap-boxed local fixed array, `new([N]T)` dropping its length, `make([]S, n)`
   where `S` carries a fixed-array field, and (2026-07-27) `make` of a **defined** slice type, whose
