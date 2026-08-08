@@ -29,8 +29,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$runnerProj = Join-Path $PSScriptRoot "BehavioralRunner\BehavioralRunner.csproj"
-$runnerExe  = Join-Path $PSScriptRoot "BehavioralRunner\bin\Debug\net9.0\BehavioralRunner.exe"
+. (Join-Path $PSScriptRoot '_paths.ps1')
+
+$runnerProj = Join-Path $PSScriptRoot 'BehavioralRunner/BehavioralRunner.csproj'
+$runnerExe  = Join-Path $PSScriptRoot "BehavioralRunner/bin/Debug/net9.0/BehavioralRunner$ExeSuffix"
 
 Write-Host "==> building BehavioralRunner..." -ForegroundColor Cyan
 & dotnet build $runnerProj -c Debug -clp:ErrorsOnly --nologo | Out-Null

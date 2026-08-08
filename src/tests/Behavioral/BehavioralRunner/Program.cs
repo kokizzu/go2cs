@@ -10,6 +10,7 @@
 // "dotnet build" churn (180 invocations) into a single parallel MSBuild call (Tier 2a).
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using BehavioralRunner;
 
@@ -41,6 +42,18 @@ namespace BehavioralRunner
 
         private const string Config = "Release";
         private const string NetVersion = "net9.0";
+
+        // Executable suffix for a built .NET apphost or Go binary. Windows only; empty everywhere else.
+        // Hard-coding ".exe" made every File.Exists probe below fail on Linux, which the Output phase
+        // reports as "missing C# or Go exe" -- a SKIP, not a failure, so the run stays green while
+        // comparing nothing (F4, docs/PLAN-linux-operation.md).
+        private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
+
+        // A path fragment matching a build-output directory at any depth, built from the host's own
+        // separator. The literal @"\bin\" this replaced does not ERROR off Windows -- it simply never
+        // matches, so bin/ and obj/ enumerate as behavioral packages and get transpiled.
+        private static readonly string s_binFragment = $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}";
+        private static readonly string s_objFragment = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
 
         private static string s_repoRoot = null!;
         private static string s_srcRoot = null!;
@@ -94,11 +107,15 @@ namespace BehavioralRunner
 
             // ----- resolve paths -----
             // Runner lives at src\tests\Behavioral\BehavioralRunner; behavioral dir is its parent.
-            s_behavioralDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\.."));
-            s_srcRoot = Path.GetFullPath(Path.Combine(s_behavioralDir, @"..\.."));
+            // Path.Combine with SEGMENTS, not an embedded @"..\..\..\..": .NET does not normalize a
+            // backslash on Unix, so that string is ONE directory name there and GetFullPath yields a
+            // path that exists nowhere -- discovery then finds zero projects and every phase reports
+            // vacuously. Segment form is identical on Windows and correct on both.
+            s_behavioralDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+            s_srcRoot = Path.GetFullPath(Path.Combine(s_behavioralDir, "..", ".."));
             s_repoRoot = Path.GetFullPath(Path.Combine(s_srcRoot, ".."));
             s_converterSrc = Path.Combine(s_srcRoot, "go2cs");
-            s_go2csExe = Path.Combine(s_converterSrc, "bin", "go2cs.exe");
+            s_go2csExe = Path.Combine(s_converterSrc, "bin", $"go2cs{s_exeSuffix}");
 
             // ----- discover projects -----
             // A behavioral test project is a folder with both a .csproj and Go source. This naturally
@@ -123,6 +140,19 @@ namespace BehavioralRunner
             if (projects.Count == 0)
             {
                 Console.Error.WriteLine("No behavioral projects matched.");
+                return 2;
+            }
+
+            // Enumeration shape guard. An UNFILTERED run walks the whole corpus, which has been in the
+            // 500s since 2026-08 and only ever grows; a collapse to a handful means path construction is
+            // broken (a separator baked for the wrong host), not that tests were deleted. Without this,
+            // that failure is silent -- the run reports "3 project(s)" and passes, which is the shape of
+            // a false green rather than a fault. A floor rather than a pinned count, because CLAUDE.md's
+            // standing instruction for this corpus is to measure, never to decrement.
+            if (filter is null && projects.Count < 400)
+            {
+                Console.Error.WriteLine($"Behavioral discovery found only {projects.Count} projects under {s_behavioralDir}.");
+                Console.Error.WriteLine("That is far below the corpus size; discovery is broken, so this run would prove nothing.");
                 return 2;
             }
 
@@ -275,8 +305,8 @@ namespace BehavioralRunner
         private static string[] GoPackageDirs(string projPath) =>
             new[] { projPath }
                 .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
-                    .Where(d => !d.Contains(@"\bin\", StringComparison.OrdinalIgnoreCase) &&
-                                !d.Contains(@"\obj\", StringComparison.OrdinalIgnoreCase))
+                    .Where(d => !d.Contains(s_binFragment, StringComparison.OrdinalIgnoreCase) &&
+                                !d.Contains(s_objFragment, StringComparison.OrdinalIgnoreCase))
                     .Where(d => ProductionGoFiles(d).Length > 0))
                 .OrderByDescending(d => d.Count(c => c == Path.DirectorySeparatorChar))
                 .ThenBy(d => d, StringComparer.OrdinalIgnoreCase)
@@ -563,8 +593,8 @@ namespace BehavioralRunner
                 }
 
                 string projPath = Path.Combine(s_behavioralDir, p);
-                string csExe = Path.Combine(projPath, "bin", Config, NetVersion, $"{p}.exe");
-                string goExe = Path.Combine(projPath, "bin", Config, "Go", $"{p}.exe");
+                string csExe = Path.Combine(projPath, "bin", Config, NetVersion, $"{p}{s_exeSuffix}");
+                string goExe = Path.Combine(projPath, "bin", Config, "Go", $"{p}{s_exeSuffix}");
                 string workDir = Path.GetDirectoryName(projPath)!;
 
                 if (!File.Exists(csExe) || !File.Exists(goExe))

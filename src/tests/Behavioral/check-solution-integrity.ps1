@@ -37,8 +37,10 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-$behavioral = $PSScriptRoot
-$srcRoot    = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+. (Join-Path $PSScriptRoot '_paths.ps1')
+
+$behavioral = $BehavioralRoot
+$srcRoot    = $SrcRoot
 $slnxPath   = (Resolve-Path (Join-Path $srcRoot "go2cs.slnx")).Path
 
 # 1. Every .csproj physically under tests\Behavioral. -Recurse descends into sibling library folders
@@ -47,7 +49,7 @@ $slnxPath   = (Resolve-Path (Join-Path $srcRoot "go2cs.slnx")).Path
 #    (BehavioralTests, BehavioralRunner) -- they are legitimate solution members, so they appear on
 #    both sides and cancel.
 $onDisk = Get-ChildItem -Path $behavioral -Recurse -Filter *.csproj -File |
-    ForEach-Object { $_.FullName.Substring($srcRoot.Length + 1).Replace('\', '/') } |
+    ForEach-Object { Get-RelativeDisplayPath $_.FullName $srcRoot } |
     Sort-Object
 
 # 2. Every tests/Behavioral/*.csproj registered in go2cs.slnx. Folder elements use Name="..." (not

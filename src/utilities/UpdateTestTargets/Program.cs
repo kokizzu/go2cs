@@ -4,11 +4,25 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Move up from here: "go2cs\src\utilities\UpdateTestTargets\bin\Debug\net9.0"
-const string RootPath = @"..\..\..\..\..\";
+// Move up from the working directory this is run from -- "go2cs/src/utilities/UpdateTestTargets/
+// bin/Debug/net9.0" -- to "go2cs/src". Built from Path.Combine SEGMENTS rather than an embedded
+// @"..\..\..\..\..\": .NET does not normalize backslashes on Unix, so that literal is a single
+// directory NAME there and every path below resolves to somewhere that does not exist. Identical
+// bytes on Windows, correct on both (F4, docs/PLAN-linux-operation.md).
+string rootPath = Path.Combine("..", "..", "..", "..", "..");
+
+// Behavioral tree, relative to that root.
+string behavioralRoot = Path.Combine(rootPath, "tests", "Behavioral");
+
+// The generated blocks below are written with explicit CRLF, matching every other emitted artifact
+// in this repository (and the eol=crlf pin in .gitattributes). File.WriteAllLines would otherwise
+// use Environment.NewLine and emit LF-terminated *Tests.cs on a non-Windows host while the injected
+// test-method lines kept their own "\r\n" -- a mixed file, from the one utility the documented
+// add-a-test flow requires.
+const string NewLine = "\r\n";
 
 // Scan all behavioral test folders
-string[] behavioralTestDirs = Directory.GetDirectories(RootPath + @"tests\Behavioral");
+string[] behavioralTestDirs = Directory.GetDirectories(behavioralRoot);
 
 List<string> targetTests = [];
 
@@ -38,7 +52,7 @@ foreach (string testDir in behavioralTestDirs)
 
 foreach ((string testClass, Func<string, bool>? filter) in testClasses)
 {
-    string testFile = Path.GetFullPath($@"{RootPath}tests\Behavioral\BehavioralTests\{testClass}.cs");
+    string testFile = Path.GetFullPath(Path.Combine(behavioralRoot, "BehavioralTests", $"{testClass}.cs"));
     string[] testFileLines = File.ReadAllLines(testFile);
     int startLineIndex = -1;
     int endLineIndex = -1;
@@ -67,15 +81,15 @@ foreach ((string testClass, Func<string, bool>? filter) in testClasses)
         Func<string, bool> includeTestTarget = filter ?? (_ => true);
 
         // Add new test methods for each target test
-        lines.AddRange(targetTests.Where(includeTestTarget).Select(targetTest => 
-            $"\r\n    [TestMethod]\r\n    public void Check{targetTest}() => CheckTarget(\"{targetTest}\");"));
+        lines.AddRange(targetTests.Where(includeTestTarget).Select(targetTest =>
+            $"{NewLine}    [TestMethod]{NewLine}    public void Check{targetTest}() => CheckTarget(\"{targetTest}\");"));
 
         lines.Add("");
 
         // Add all lines after the end of the test methods
         lines.AddRange(testFileLines[endLineIndex..]);
 
-        File.WriteAllLines(testFile, lines);
+        File.WriteAllText(testFile, string.Join(NewLine, lines) + NewLine);
     }
     else
     {
@@ -88,7 +102,7 @@ if (args.Length > 0 && args[0] == "--createTargetFiles")
     // For each Go file converted to C#, create a target file for regression testing comparisons
     foreach (string targetTest in targetTests)
     {
-        string projPath = Path.GetFullPath($"{RootPath}tests\\Behavioral\\{targetTest}");
+        string projPath = Path.GetFullPath(Path.Combine(behavioralRoot, targetTest));
 
         // Iterate over each PRODUCTION .go file in project path. `_test.go` is excluded from a
         // production transpile by go/packages, so an in-package test file legitimately has no .cs and
@@ -98,7 +112,7 @@ if (args.Length > 0 && args[0] == "--createTargetFiles")
             if (goSrcFile.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            string transpiledFile = $@"{projPath}\{Path.GetFileNameWithoutExtension(goSrcFile)}.cs";
+            string transpiledFile = Path.Combine(projPath, $"{Path.GetFileNameWithoutExtension(goSrcFile)}.cs");
             string targetFile = $"{transpiledFile}.target";
 
             if (!File.Exists(transpiledFile))
@@ -113,8 +127,10 @@ return;
 
 static bool MatchConsoleOutput(string targetTest)
 {
-    // Access "package_info.cs" file for the target test project
-    string packageInfoFile = Path.GetFullPath($@"{RootPath}tests\Behavioral\{targetTest}\package_info.cs");
+    // Access "package_info.cs" file for the target test project. Recomputed from Path.Combine
+    // segments rather than captured, because a local function cannot close over a top-level local.
+    string packageInfoFile = Path.GetFullPath(
+        Path.Combine("..", "..", "..", "..", "..", "tests", "Behavioral", targetTest, "package_info.cs"));
 
     if (!File.Exists(packageInfoFile))
         return false;

@@ -36,6 +36,15 @@
     <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
   </PropertyGroup>
 
+  <!-- USERPROFILE is a Windows-only environment variable; HOME is its POSIX counterpart. Every
+       CONVERTED project inherits this fallback from csproj-template.xml, but golib.csproj is
+       hand-written and never regenerated, so it was the one project in the tree without it: a
+       non-Debug build outside a solution context resolves $(go2csPath) to "\go2cs\" on Linux and
+       macOS (F10, docs/PLAN-linux-operation.md). Kept in the template's exact form. -->
+  <PropertyGroup Condition="'$(USERPROFILE)'==''">
+    <USERPROFILE>$(HOME)</USERPROFILE>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(go2csPath)'==''">
     <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)\go2cs\</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug'">$(SolutionDir)</go2csPath>

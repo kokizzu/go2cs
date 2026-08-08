@@ -27,10 +27,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot     = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
-$converterSrc = Join-Path $repoRoot "src\go2cs"
-$go2csExe     = Join-Path $converterSrc "bin\go2cs.exe"
-$behavioral   = $PSScriptRoot
+# Roots, the executable suffix and the separator-agnostic path helpers come from one shared
+# definition so this script, run-behavioral.ps1 and check-solution-integrity.ps1 cannot disagree --
+# and so none of them carries a backslash literal, which off Windows fails SILENTLY rather than
+# loudly (F4, docs/PLAN-linux-operation.md).
+. (Join-Path $PSScriptRoot '_paths.ps1')
+
+$repoRoot     = $RepoRoot
+$converterSrc = $ConverterSrc
+$go2csExe     = $Go2csExe
+$behavioral   = $BehavioralRoot
 
 # The converter's -go2cspath (env GO2CSPATH, default ~/go2cs) is the root it reads an imported
 # package's package_info.cs from to mint the emitted <ImportedTypeAliases> block -- NOT the MSBuild
@@ -51,8 +57,8 @@ Write-Host "==> solution-integrity preflight" -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot "check-solution-integrity.ps1")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# 1. Build a current go2cs.exe (cheap; only relinks if the Go sources changed).
-Write-Host "==> go build -o bin\go2cs.exe" -ForegroundColor Cyan
+# 1. Build a current converter binary (cheap; only relinks if the Go sources changed).
+Write-Host "==> go build -o $go2csExe" -ForegroundColor Cyan
 Push-Location $converterSrc
 try {
     & go build -o $go2csExe
@@ -76,12 +82,36 @@ finally { Pop-Location }
 #    guards specifically. Order is DEEPEST-FIRST so a sub-library is regenerated before its parent
 #    consumes it.
 $projects = Get-ChildItem -Path $behavioral -Directory -Recurse |
-    Where-Object { $_.FullName -notmatch '\\(bin|obj)(\\|$)' } |
+    Where-Object { $_.FullName -notmatch "$SepPattern(bin|obj)($SepPattern|`$)" } |
     Where-Object { Get-ChildItem $_.FullName -Filter *.go -File } |
-    Sort-Object -Property @{ Expression = { ($_.FullName -split '\\').Count }; Descending = $true },
+    Sort-Object -Property @{ Expression = { Get-PathDepth $_.FullName }; Descending = $true },
                           @{ Expression = { $_.FullName }; Descending = $false }
 
-Write-Host "==> transpiling $($projects.Count) behavioral packages (deepest-first)..." -ForegroundColor Cyan
+# Both filters above used to be anchored on a literal '\'. Off Windows neither ERRORS -- the bin/obj
+# exclusion matches nothing (so build output gets transpiled) and the depth split returns 1 for every
+# path (so the deepest-first order collapses to alphabetical, silently reverting the fix that closed
+# FALSE-GREEN route #3: a nested sub-library must be regenerated BEFORE the parent that reads its
+# package_info.cs). Neither would fail this gate; it would just quietly stop proving what it claims.
+# These two assertions make that impossible. Both are shape assertions rather than pinned counts --
+# the corpus grows continuously and CLAUDE.md's standing instruction is to measure, not to decrement.
+$depths = $projects | ForEach-Object { Get-PathDepth $_.FullName }
+
+if ($projects.Count -lt 400) {
+    Write-Host "==> ENUMERATION BROKEN: found only $($projects.Count) behavioral packages under $behavioral." -ForegroundColor Red
+    Write-Host "    The corpus has been in the 500s since 2026-08; a collapse this large means the walk" -ForegroundColor Red
+    Write-Host "    or its bin/obj filter is matching on the wrong path separator, not that tests vanished." -ForegroundColor Red
+    exit 1
+}
+
+if (($depths | Sort-Object -Unique).Count -lt 2) {
+    Write-Host "==> DEPTH SORT BROKEN: every one of the $($projects.Count) packages measured the same depth." -ForegroundColor Red
+    Write-Host "    The tree has nested sub-library packages (IoLike/FsLike, VersionedImport/vlib, ...), so" -ForegroundColor Red
+    Write-Host "    a uniform depth means Get-PathDepth is not splitting on this platform's separator and" -ForegroundColor Red
+    Write-Host "    the deepest-first invariant is not being applied." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "==> transpiling $($projects.Count) behavioral packages (deepest-first, depths $(($depths | Measure-Object -Minimum).Minimum)-$(($depths | Measure-Object -Maximum).Maximum))..." -ForegroundColor Cyan
 # go2cs writes advisory WARNINGs to stderr (e.g. unsafe.Sizeof usage). Under $ErrorActionPreference='Stop'
 # native-command stderr surfaces as a terminating NativeCommandError and aborts the loop, so relax it here
 # and gate purely on the exit code; merge stderr into the pipeline so warnings are swallowed by Out-Null.
@@ -93,7 +123,7 @@ try {
         # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
         # sub-libraries (three of them are called "inner", two "latelib").
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "    [transpile FAILED] $($proj.FullName.Substring($behavioral.Length).TrimStart('\'))" -ForegroundColor Red
+            Write-Host "    [transpile FAILED] $(Get-RelativeDisplayPath $proj.FullName $behavioral)" -ForegroundColor Red
         }
     }
 }
