@@ -1333,6 +1333,19 @@ on-disk build that holds them all.
 there): the unshipped-RID fallback in §9(a) point 1 — a `runtimes/linux/…` arch-agnostic RID would cover
 linux-arm64, and is the natural place to take it up alongside §5's arch axis.
 
+**Increment 4.5 — the run layer, opened and walled. — 📄 RECORDED 2026-08-08 (lane r52b)**
+Increment 4's first Linux run got as far as `NotImplementedException: runtime_envs` inside `syscall`'s type
+initializer. That was **not** a per-GOOS-layout defect, which is what it looked like from here: it was a
+converter shape gap in the `//go:linkname` PUSH matcher, which accepted only the modern one-arg-handle
+consumer and not the bare bodyless shape `syscall` and `os` still use. Fixed, guarded, and A/B'd at five
+emitted files. The loop then advanced one step and hit its real wall — `internal/runtime/syscall.Syscall6`,
+the raw kernel boundary every Linux syscall funnels through, and the single implementation-class item
+between this corpus and a running Linux program. Full measurement log, the catalog for that one
+declaration, and the harness that makes the loop cheap to resume:
+**[`FINDING-linux-run-layer.md`](FINDING-linux-run-layer.md)**. Read its §1 warning before iterating — a
+single-package conversion into an L3 corpus regenerates its `.csproj` from a single-platform view and must
+not be banked.
+
 **Increment 5 — macOS, then the second architecture.**
 §4 measures macOS as 20 packages' distance from Linux, and §5 measures the arch axis at 16 packages; both
 are additions *by value* to a mechanism already proven, exactly as the big-three ruling intends.
