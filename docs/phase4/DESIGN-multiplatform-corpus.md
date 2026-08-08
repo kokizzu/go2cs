@@ -598,6 +598,41 @@ go.os/
 - **Pack cost:** `push-nuget.ps1` grows from one build+pack pass to N build passes (one per RID, differing
   only by `-p:GoTargetOS=`) plus an asset-merge step before `dotnet pack`.
 
+**Built in increment 4** (win-x64 / linux-x64; §12). Four things the sketch above left open, each decided
+against NuGet's documented asset selection rather than by preference:
+
+1. **`lib/` carries a flavor; there is no `ref/`.** `lib/{tfm}/` supplies both the `compile` and the
+   `runtime` asset role, `ref/{tfm}/` only `compile`, and `runtimes/{rid}/lib/{tfm}/` only `runtime` —
+   and the last *requires* a compile asset elsewhere in the package. So this is always a two-part shape
+   and the only real question is what the compile half is. `ref/` carrying a neutral surface would turn
+   an unshipped RID's silent wrong-flavor fallback into a loud missing-assembly failure, which is
+   better — but **there is no neutral surface to put there**: §6 measures `syscall` at 270 names in
+   common out of 992/2,186/1,899, and `log/syslog` exports nothing at all on Windows, so `ref/` would
+   have to hold a synthesised intersection nothing in this repository produces, or one flavor again,
+   which is `lib/` minus the fallback. **The cost of the choice, stated: on a RID this release does not
+   ship (linux-arm64, say) the `lib/` assembly is what loads, so such a consumer silently gets Windows
+   behaviour.** That is why the shipped RID set is declared in this document rather than inferred, and
+   it is the argument for `runtimes/linux/…` (arch-agnostic RID) when §5's arch axis is taken up.
+2. **The reference flavor is Windows,** so the compile surface a consumer binds against is exactly the
+   one today's single-platform packages present. This is §11 seam 1's option (i) — "let
+   `lib/net9.0/syscall.dll` carry the host-of-record flavor" — arrived at as a consequence rather than a
+   separate decision; it still wants the ruling §11 asks for, because it is a public promise.
+3. **Every shipped RID is stated explicitly**, including the reference one: the reference flavor's
+   assembly is written to `runtimes/win-x64/` *as well as* `lib/`, rather than relying on "no RID
+   matched, fall back to `lib/`". Which assembly a RID gets then never depends on which flavor `lib/`
+   happens to carry — which is what makes changing the reference flavor, or introducing a `ref/`, a
+   local edit later.
+4. **The RID-split set is derived from the corpus, never listed.** L3's own rule read back off the
+   tree: a directory named after a GOOS holding no project file is a per-GOOS source folder, and its
+   parent is a platform-varying package. The "no project file" test is what keeps
+   `internal/syscall/windows` — a real package whose own name is a GOOS — from being read as
+   `internal/syscall`'s Windows variants. It reports **37**, which is §4's measured count.
+
+And one correction to the sizing above: a package varying only on **darwin** (`crypto/x509/internal/macos`,
+`vendor/golang.org/x/net/route`) produces identical win/linux assemblies, yet still ships RID assets here.
+Shipping by *structure* rather than by a byte compare keeps the package shape a predictable function of the
+corpus — and §12's increment-4 record explains why a byte compare cannot be the decision procedure at all.
+
 ### (b) TFM per OS (`net9.0-windows` + `net9.0`) — *the current N2 ruling; the measurement contradicts it*
 
 This is what `PLAN-linux-operation.md` §A4 records as the user-ruled destination, on the reasoning that
@@ -1185,9 +1220,118 @@ CR-stripped equality holds for every one of them. Worth stating because the coun
 single-target reconvert's, and because it is exactly the shape a real regression would hide in — classify
 by CR-stripped comparison, never by file count.
 
-**Increment 4 — packaging (a) for the RID pair `win-x64` / `linux-x64` only.**
-`push-nuget.ps1` grows the second build pass and the asset merge. Validate by restoring `go.fmt` into a
-scratch console app on both platforms and running it.
+**Increment 4 — packaging (a) for the RID pair `win-x64` / `linux-x64` only. — ✅ LANDED 2026-08-08
+(lane r52a, against `a3fb17170`).**
+
+`push-nuget.ps1` builds and packs `go2cs-stdlib.slnx` once per RID and merges the flavors into a single
+nupkg per package. **307 packages packed: 37 merged with RID-specific assets, 270 copied verbatim from the
+reference pass.** Package IDs are unchanged and so is everything a consumer writes. The layout decisions and
+their justification against NuGet's asset selection are recorded in §9(a) above; this section is what was
+measured. **No corpus file moves — the whole increment is the script layer.**
+
+```
+go.os/
+  lib/net9.0/os.dll                       459,776 bytes   compile asset (Windows flavor)
+  runtimes/win-x64/lib/net9.0/os.dll      459,776 bytes
+  runtimes/linux-x64/lib/net9.0/os.dll    464,896 bytes
+```
+
+*The two platforms, run.* A portable framework-dependent console app — no `RuntimeIdentifier` anywhere —
+with a single `<PackageReference Include="go.fmt" />`, restored from a folder feed with nuget.org cleared and
+`NUGET_PACKAGES` redirected (version 1.23.1.4 is already published, so without both a restore would
+silently satisfy `go.fmt` from the public feed or the machine cache and prove nothing):
+
+| | Windows | Linux (WSL, Ubuntu 22.04, SDK 9.0.316) |
+|:--|:--|:--|
+| restore | ✔ 59 packages | ✔ 59 packages |
+| build | ✔ 0 warnings, 0 errors | ✔ 0 warnings, 0 errors |
+| **run** | **✔ byte-exact vs `go run`** — `48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21 0A` on both sides | **✘ throws in a module initializer** — see below |
+
+**The RID mechanism itself is proven, and by measurement rather than by inference.** Under `COREHOST_TRACE`
+the Linux host resolved **13 of 13** RID-split assemblies in `fmt`'s closure — `os`, `syscall`, `runtime`,
+`internal.poll`, `internal.goos`, `internal.filepathlite`, `internal.runtime.syscall` and the rest — from
+`runtimes/linux-x64/lib/net9.0/`, overriding the RID-agnostic Windows assembly sitting in the application
+root. So option (a) does what §9 says it does on a consumer that names no platform.
+
+**The Linux run failure is the opening data point of the run-layer campaign, and it is a clean one.**
+
+```
+System.TypeInitializationException: The type initializer for 'go.syscall_package' threw an exception.
+ ---> System.NotImplementedException: runtime_envs: external (assembly or cgo) function is not implemented
+   at go.syscall_package.runtime_envs()
+   at go.syscall_package..cctor()      <- syscall.init()
+   at go.os_package..cctor()           <- os.init()
+   at go.fmt_package.os_FileжReader.ᴛRegisterAdapter()
+   at go.Program.Main()
+```
+
+- **Bottommost frame's package: `syscall`, Linux flavor** — and that is a second, independent proof that the
+  RID-matched assembly loaded, because `runtime_envs` is declared *only* in `syscall/{linux,darwin}/env_unix.cs`.
+  Windows has no such declaration at all, so this failure is unreachable from the Windows flavor.
+- **Not a missing implementation — a missing wiring.** `syscall/linux/env_unix.cs` declares
+  `internal static partial slice<@string> runtime_envs();` and `PartialStubGenerator` fills the bodyless
+  partial with a throw, while `runtime/linux/runtime.cs:120` already carries the implementation
+  `syscall_runtime_envs()` under `//go:linkname syscall_runtime_envs syscall.runtime_envs`. What is absent is
+  the cross-package `//go:linkname` binding between them.
+- **It is the first thing any program touching `os` or `fmt` does** — `envs` is a package-level variable of
+  `syscall`, so this fires during package init, before any user code runs. It is a gate, not a leaf.
+- The failure is **not** any of the shapes the increment was told to watch for: no `DllNotFoundException`, no
+  `PlatformNotSupportedException`, no hang. The Linux corpus loads, initializes, and stops at one named
+  declaration.
+
+*Proofs.*
+
+| Proof | Method | Result |
+|:--|:--|:--|
+| **the Windows lane did not move** | Pre-change single-pass pack (property absent) vs the merged feed, **at the same commit**, compared entry-by-entry by content hash over all 307 packages | **270 platform-neutral packages differ in `_rels/.rels` and nothing else**; the 37 L3 packages gain `runtimes/<rid>/…` and 15 gain nuspec dependencies. **`lib/` assemblies changed: 0.** README/VALIDATION/icons changed: 0 |
+| …and `_rels/.rels` is not a payload difference | It is the OPC part reference naming `…/core-properties/<guid>.psmdcp`, whose file name is a fresh GUID on every pack | Differs between *any* two pack runs, including two runs of the unmodified script |
+| the corpus still builds | `dotnet build src/go2cs-stdlib.slnx -c Release`, `$(GoTargetOS)` unset | **307 projects, 0 errors, 164 s** |
+| the derived RID-split set is the measured one | L3 tree scan (per-GOOS folder without a project file) | **37**, matching §4 |
+| the dependency union is real | `go.os.nuspec`, merged | 19 shared + `internal.byteorder`, `internal.goarch`, `internal.stringslite`, `internal.syscall.unix` — **both `internal/syscall` flavors in one nuspec**, as §9(a) requires |
+| …and the union count is explained | 21 packages carry conditioned `<ProjectReference>` groups (§12 increment 3); 15 of them have at least one Linux-only reference | **15 nuspecs change**; the other 6 (`internal/filepathlite`, `internal/syscall/execenv`, `internal/testpty`, `net/internal/socktest`, `runtime/pprof`, `time`) have Linux groups that are subsets of their Windows set |
+| §11 seam 2 is visible in the artifact | `go.log.syslog` | `lib/net9.0` and `runtimes/win-x64` carry the 322,560-byte Windows assembly with no Go source in it; `runtimes/linux-x64` carries the real 346,112-byte one |
+| the merge does not corrupt the package | `.nuspec` re-read after rewrite | well-formed XML, UTF-8 BOM preserved byte for byte |
+
+⚠ **Two measurement traps, both new, both worth inheriting.**
+
+*First: a BYTE COMPARE CANNOT TEST FOR A PLATFORM DIFFERENCE, and the first implementation of the
+neutral-package fail-safe proved it by calling **216 of 270** platform-neutral packages "different".* Roslyn's
+deterministic identity fields — PE timestamp, MVID, PDB id, PDB content checksum — are hashes of the
+compilation, and they **cascade**: an assembly whose identity moved shifts every dependent's identity too,
+with no source file and no semantic byte changed. `internal/oserror`, whose only converted dependency is
+`errors`, moves because `errors` moved. Measured: **~72 bytes of a ~340 KB assembly, in four runs, with the
+assembly LENGTH unchanged** — the same signature §12's increment-3 proof recorded for a path-hash shift.
+Meanwhile two *same-flavor* packs at the same commit (property absent vs `-p:GoTargetOS=windows`) agree on
+**every `lib/` assembly of all 307 packages**, so the build is reproducible and the cascade is the whole
+explanation. The sound discriminator is therefore **the entry set plus the assembly
+length**: identity fields are fixed-size, so a pure identity difference can never move it, and the test has no
+false positives — which is what a release gate needs. It is a smoke alarm, not a semantic digest; §13.1's
+digest remains the instrument that answers the IL question in full, and it is a per-increment measurement
+rather than a per-release one.
+
+*Second: THE PACK EMBEDS THE GIT COMMIT, so a packed-output byte A/B is only valid WITHIN ONE COMMIT.* The
+SDK's built-in SourceLink writes `<repository … commit="…"/>` into every `.nuspec` and the commit into every
+assembly's debug data, so an A/B taken across the increment's own commit reported all 307 packages' `lib/`
+assemblies as differing — indistinguishable at a glance from a real regression. The Windows-lane proof above
+was re-taken with both sides built at the same HEAD. Same lesson as increment 3.5's `--no-incremental` trap,
+one layer out: **hold everything that feeds the hash constant, including the commit.**
+
+⚠ **A release-time cost worth knowing: `-p:UseSharedCompilation=false` is a MEASURED necessity, not
+concurrency hygiene.** `go2cs-gen` runs inside the compiler, and with the shared VBCSCompiler every project's
+generator work funnels through one server process: the same clean Release build of this solution measures
+**~165 s** with csc per project and **had not finished after 14 minutes** without it (one core busy, 24
+MSBuild nodes idle). Two RID passes make that the difference between a 6-minute release and an hour-long one.
+`--no-incremental` joins it on every pass — both so pass N cannot inherit pass N-1's assembly from the shared
+`obj\` (what differs between passes is the `<Compile>` ITEM SET, not any source timestamp) and because that
+flag is not byte-neutral. The passes also run in **reverse** order so the reference flavor is built last and a
+developer's tree is left holding the same assemblies a plain property-absent build produces.
+
+`-SkipBuild` is now rejected with an explanation rather than silently packing one flavor: there is no single
+on-disk build that holds them all.
+
+**Owed to increment 5, beyond adding `osx-arm64` to the RID map** (which is a one-line change, and only
+there): the unshipped-RID fallback in §9(a) point 1 — a `runtimes/linux/…` arch-agnostic RID would cover
+linux-arm64, and is the natural place to take it up alongside §5's arch axis.
 
 **Increment 5 — macOS, then the second architecture.**
 §4 measures macOS as 20 packages' distance from Linux, and §5 measures the arch axis at 16 packages; both
