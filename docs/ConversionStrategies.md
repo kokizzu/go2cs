@@ -106,11 +106,18 @@ import _ "image/png"    // registers the PNG decoder with image.Decode
 [GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
 ```
 
+A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
+`.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
+`windows`. Files identical on every platform stay flat, so this touches only the packages that genuinely
+vary (`internal/goos` is the first).
+
 **Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
 packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
 [blank-import initialization](ConversionStrategies-Reference.md#a-blank-import-forces-the-imported-packages-init-to-run),
-build-tag/`GOOS`/`GOARCH` file selection, and the auto-generated `.slnx` solutions (the stdlib solution, and
+build-tag/`GOOS`/`GOARCH` file selection,
+[per-`GOOS` source folders](ConversionStrategies-Reference.md#per-goos-sources-layout-l3-and-gotargetos),
+and the auto-generated `.slnx` solutions (the stdlib solution, and
 the `-recurse` per-project solutions grouped into `src`/`pkg`/`core` folders).
 
 ---

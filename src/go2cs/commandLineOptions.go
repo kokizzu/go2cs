@@ -38,6 +38,7 @@ type Options struct {
 	targetPlatform      string   // the ONE os/arch a conversion emits for; every pass reads this
 	targetPlatforms     []string // -platforms: the full requested list (len 1 for every ordinary run); targetPlatform is its first entry
 	platformCensusDir   string   // -platform-census: staging + manifest directory for a multi-target emission census (no corpus output)
+	platformStageDir    string   // -platform-stage: where a multi-target EMISSION stages its per-target conversions; a temporary directory this run owns and removes when empty
 	buildTags           []string // -tags: build tags applied to package loading AND constraint evaluation
 	tagsExplicit        bool     // whether -tags was passed on the command line (vs. the -stdlib purego default)
 	indentSpaces        int

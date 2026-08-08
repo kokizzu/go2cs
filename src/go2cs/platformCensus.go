@@ -130,10 +130,29 @@ func platformTargetTag(target string) string {
 // rewrites the in-string LFs the converter deliberately preserves inside multi-line string literals,
 // so a committed file and its own re-emission legitimately differ by line endings alone (CLAUDE.md's
 // CRLF phantom; the behavioral golden comparison normalizes for the same reason).
+// `logical` is the artifact's path with any per-GOOS folder segment folded away — `<pkg>/<file>`
+// whether the tree it was snapshotted from is flat or already in layout L3 (platformLayout.go). The
+// CLASSIFICATION is keyed by it, so a census of an L3 corpus reproduces the census of the flat one
+// it was built from; the seed comparison and the hand-own marker gate stay on the RAW path, because
+// those ask about a file at a location.
 type artifactState struct {
 	hash           string
 	normalizedHash string
+	logical        string
 	emitted        bool
+}
+
+// logicalPath returns the artifact's folded `<pkg>/<file>` path, falling back to the raw path it is
+// keyed by. Only snapshotConvertedRoot folds — it is the one producer that can see the whole tree,
+// which is what the fold needs to tell a per-GOOS source folder from a nested package. A state built
+// anywhere else (the seed census, a synthetic corpus in a test) describes a flat tree, and there the
+// raw path IS the logical one.
+func (s artifactState) logicalPath(rawPath string) string {
+	if len(s.logical) == 0 {
+		return rawPath
+	}
+
+	return s.logical
 }
 
 // hashPair returns the exact and carriage-return-stripped digests of a file's contents.
@@ -612,6 +631,8 @@ func snapshotConvertedRoot(coreDir string) (map[string]artifactState, error) {
 
 		return nil
 	})
+
+	normalizeArtifactLogicalPaths(artifacts)
 
 	return artifacts, err
 }

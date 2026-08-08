@@ -310,6 +310,16 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	// Replace the project reference marker with the actual project references
 	newContents = []byte(strings.ReplaceAll(string(newContents), ProjectReferenceMarker, projectReferences.String()))
 
+	// Layout L3 (docs/phase4/DESIGN-multiplatform-corpus.md §8): a package whose output directory
+	// carries per-GOOS source folders gets the $(GoTargetOS) default and the conditioned
+	// <Compile Include> that selects one of them. Asked of the OUTPUT TREE rather than of this
+	// conversion, for the reason platformLayout.go's header gives: one target's emission cannot see
+	// the platform axis, but it can honor a layout the tree already carries — which is also what
+	// keeps a -tests rewrite of an L3 package's production .csproj from stripping the block.
+	if packageCarriesPlatformLayout(outputFilePath) {
+		newContents = []byte(applyPlatformLayoutBlocks(string(newContents), projectFileName))
+	}
+
 	// Check if project file needs to be written
 	if needToWriteFile(projectFileName, newContents) {
 		// Write project file atomically

@@ -3,7 +3,10 @@
 > **STATUS: ACCEPTED** (user ruling 2026-08-08: recommendations accepted as written — layout L3 + packaging option (a) RID assemblies; increments proceed in order).
 > **Increment 1 LANDED 2026-08-08** — the converter now takes the census itself (`-platforms` list +
 > `-platform-census`), and it reproduces every number below; see §12. It changes no
-> emitter, no corpus, and no packaging. Everything below is **measured** — four seeded full-standard-library
+> emitter, no corpus, and no packaging.
+> **Increment 2 LANDED 2026-08-08** — layout L3 is real for `internal/goos`: a `-platforms` LIST with
+> `-stdlib` now merges the per-target emissions into one tree, and a single-target reconvert honors the
+> result (§8, "layout adoption"). Everything below is **measured** — four seeded full-standard-library
 > conversions, three `go list` censuses and a `go/types` API-surface probe, run 2026-08-08 in lane
 > `r47c-goosdesign` against `739f3606ad`. Where a measurement contradicts an earlier ruling
 > ([`PLAN-linux-operation.md`](../PLAN-linux-operation.md) §A4 **N2**), it is flagged as such in §7 rather
@@ -444,17 +447,55 @@ directory:
 flat, varying ones land in the per-GOOS folder (27 and 4 respectively). The `<ProjectReference>` block
 gains conditioned `ItemGroup`s for the **24** packages whose direct imports differ (§4, as corrected).
 
-**Converter work L3 implies** — this is the whole feature, and it is bounded:
+**Converter work L3 implies** — this is the whole feature, and it is bounded. Increment 2 landed items
+1–4 for the emission path (`platformLayout.go` + `platformEmit.go`); the annotations record what was
+actually built:
 
 1. `-platforms` accepts a **list** (`-platforms windows/amd64,linux/amd64,darwin/arm64`). The loader
    plumbing is already per-target; what is new is running the pipeline N times in one process and holding
-   the N emissions.
+   the N emissions. — **Landed in increment 1.** The N emissions are held on disk, in seeded staging
+   roots, rather than in memory: the seeding is what the hand-own detector and the README badge composer
+   need to see, and a root that is a real go2cs tree is also what each target's dependency
+   `package_info.cs` reads are resolved against. Holding them in memory would have meant rewriting every
+   writer to emit into a buffer, for no gain.
 2. A **three-way comparison** at write time decides flat vs per-GOOS. §4.2 is the reason this must be a
-   comparison of *emissions*, not of Go file sets.
-3. `writeProjectFile` emits the conditioned `Compile` line and per-GOOS `ProjectReference` groups.
+   comparison of *emissions*, not of Go file sets. — **Landed as increment 1's classifier, reused
+   verbatim.** `-platforms <list>` with `-stdlib` now runs the census's staging and
+   `classifyPlatformEmissions`, then MERGES: `identical` → flat, `variant`/`partial`/`exclusive` → one
+   copy per emitting target's `<goos>/` folder. The merge is additive plus targeted removal (only the
+   other candidate location of an artifact it is placing), so nothing else in the corpus is touched.
+3. `writeProjectFile` emits the conditioned `Compile` line and per-GOOS `ProjectReference` groups. —
+   **The `Compile` line landed; the `ProjectReference` groups are increment 3.** An emission run whose
+   targets disagree about a package's project file reports those packages by name rather than silently
+   merging the first target's import set.
 4. `$(GoTargetOS)` needs a default. Proposal: default to the *host* OS in a plain `dotnet build`, so a
-   Windows developer's `go2cs.slnx` build is unchanged, and set it explicitly per pack pass.
-5. `solutionGenerator.go` is unaffected — the project set is the union, which it already computes.
+   Windows developer's `go2cs.slnx` build is unchanged, and set it explicitly per pack pass. —
+   **Landed as `windows`, declared in the L3 package's own `.csproj`.** Host defaulting is the right
+   destination but not yet a truthful one: it would make a plain `dotnet build` on Linux select a corpus
+   nothing has ever compiled. It becomes a one-line change to that `PropertyGroup` at increment 3, where
+   the Linux corpus's error buckets are first measurable. Declaring it in the package rather than in
+   `src/core/Directory.Build.props` keeps the package self-describing — the same `.csproj` is correct in
+   the repository, in a `deploy-core` staging root, and in a pack pass.
+5. `solutionGenerator.go` is unaffected — the project set is the union, which it already computes. —
+   **Confirmed:** the emission run regenerated a 304-project `go2cs-stdlib.slnx`, unchanged.
+
+**The mechanism this section did not specify: how a SINGLE-target conversion behaves against an L3 tree
+(increment 2's one design choice).** A conversion emits for one target, so it cannot compute the platform
+axis — that axis is the comparison above. Left there, the documented single-target reconvert ritual would
+lay a flat `zgoos_windows.cs` beside the `windows/zgoos_windows.cs` the `.csproj` is already compiling: a
+duplicate-member build break, arrived at silently, and one that grows to 37 packages at increment 3. The
+resolution is **layout adoption**: what one target cannot compute, it can *honor*. If the package
+directory already holds `<goos>/<name>.cs`, that is where this target's `<name>.cs` is written; and a
+package directory that holds any per-GOOS source folder gets the conditioned `<Compile Include>`. Both are
+pure functions of the output tree — precise (the file must already be there), idempotent, and the same
+class of rule as the `[module: GoManualConversion]` hand-own detector that sits directly above them in the
+conversion driver. A per-GOOS folder is told from a nested package by the project file every converted
+package directory holds and a source folder never does, which is what keeps `internal/syscall/windows` —
+a real package whose own name is a GOOS — from being read as `internal/syscall`'s Windows variants.
+
+The measured consequence is the one worth having: a seeded single-target `-stdlib` reconvert reproduces
+the L3 corpus **file for file**, so the ritual in CLAUDE.md keeps working unchanged and the "Windows lane
+must not move" gate reads empty rather than "empty except the L3 packages".
 
 ### L4 — per-GOOS **filename suffixes** instead of subfolders
 
@@ -677,13 +718,47 @@ into a census increment.
 Cost, for the record: two new converter files and three edited lines of flag plumbing — no emitter, no
 corpus file, no golden.
 
-**Increment 2 — L3 for one package: `internal/goos`.**
+**Increment 2 — L3 for one package: `internal/goos`. — ✅ LANDED 2026-08-08 (lane r48a).**
 Four files, no dependents' *surface* change (§6: 20 exported names, identical on all three), and it is the
 clearest possible illustration. `src/core/internal/goos/{goos.cs, package_info.cs}` stay flat;
 `{windows,linux,darwin}/` gain `zgoos_*.cs` and `unix.cs`/`nonunix.cs`. The conditioned `<Compile Include>`
 line is exercised for real.
-*Proof:* `dotnet build` of the package at `-p:GoTargetOS=windows` produces IL identical to today's; at
-`linux` it compiles and `GOOS` reads `"linux"`.
+
+The corpus change is produced by the converter, not by hand:
+
+```powershell
+go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 `
+      -go2cspath <repo>\src internal/goos          # 156 s; -platform-stage <dir> keeps the staging roots
+```
+
+That run seeded three staging roots from the corpus, converted the package once per target (marker gate
+0/0/0, and the Windows control's 4 emitted `.cs` **all four reproduced the seed** — the same null reading
+that certifies increment 1's instrument), classified the emissions, and merged: 6 artifacts written into
+`{windows,linux,darwin}/`, 2 left flat unchanged, 2 stale flat copies removed, 1 project file given the L3
+block. It reported no per-target `.csproj` disagreement, which §4's own census predicts — `internal/goos`
+imports nothing.
+
+*Proofs.* Method and blind spots stated, because "identical IL" is not a thing a byte compare can say on
+its own:
+
+| Proof | Method | Result |
+|:--|:--|:--|
+| `-p:GoTargetOS=windows` produces what today's package does | Symmetric A/B: the flat package with its pre-change `.csproj` and the L3 package built from equal-depth scratch roots, then a sorted reflection dump of each assembly — every type, every member, every **static member's runtime value**, and **every method body's IL bytes** | **Identical.** 56/56 dump lines match, IL included |
+| …at the binary level | SHA-256 of the two `.dll` | **74 of 324,096 bytes differ (0.023 %)**, in 6 runs confined to the deterministic-identity fields — PE stamp, two 16-byte GUIDs (MVID and PDB), and the 32-byte PDB content checksum. Those hash the compilation inputs *including each source document's path*, and the L3 path carries a `windows\` segment. No IL, metadata or member ordering moved — the dump above is what proves that, and it would have caught a token shift |
+| the property ABSENT is the same build | SHA-256 of the `.dll` | **byte-identical** to `-p:GoTargetOS=windows`. The default is exactly `windows`, not merely equivalent |
+| `-p:GoTargetOS=linux` compiles and `GOOS` reads `"linux"` | Build, then read the built assembly at RUNTIME through the reflection probe (the field is `static readonly`, so the value comes from the executed `.cctor`, not from the source) | **`GOOS = linux`, `IsUnix = True`, `IsLinux = 1`, `IsWindows = 0`** |
+| the Windows lane did not move | Seeded full single-target reconvert per CLAUDE.md's ritual (304/304 packages, 276 s), classified path-precisely against the committed corpus | **4,063 files both sides, 0 new, 0 absent, 12 content differences — all 12 the `.cs.auto` review siblings the overlay rule freezes** (CleanupBacklog item 18; the same 12 §2's control reports). Marker gate: 41 line-anchored hand-owns, **0** violations. `internal/goos` does not appear: layout adoption reproduced it file for file |
+| the corpus still builds | `dotnet build src/go2cs-stdlib.slnx -c Debug` with `$(GoTargetOS)` unset | **304/304, 0 errors, 176 s** |
+| nothing else in the converter moved | `check-no-regression.ps1` (574 behavioral packages, 493 s) plus a `git status` of the behavioral tree for `.csproj` | **byte-identical**, and no project-file drift |
+
+*Blind spot, named:* the reflection dump reads a loaded assembly, so it proves surface, values and IL
+bodies but not the metadata table ORDER those bodies are laid out in. Here the order provably did not
+move — a reordering shifts metadata tokens, and the tokens are inside the IL bytes the dump compares.
+
+One measurement artifact to expect from here on: a package in layout L3 is a package a single-target run
+reproduces only *because* of adoption, so the census's `.csproj`-rewritten column stays at zero (the
+seeded project file already carries the block, and `writeProjectFile` re-adds it) — but a census taken
+against a root that was NOT seeded would now differ for that package. Seed, as the ritual already says.
 
 **Increment 3 — L3 for the 37 measured packages, plus the conditioned `ProjectReference` blocks (22 of
 them), plus per-GOOS `package_info`/`package_init`.**

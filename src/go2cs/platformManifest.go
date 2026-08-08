@@ -283,8 +283,11 @@ func buildPlatformManifest(options Options, seedRoot, censusDir string, emission
 
 		hashes := make(map[string]string, len(csFiles))
 
+		// Keyed by the LOGICAL path, so a package already in layout L3 classifies under its package
+		// directory rather than under `<pkg>/<goos>` — the census of an L3 corpus reproduces the
+		// census of the flat corpus it was built from.
 		for _, name := range csFiles {
-			hashes[name] = emission.artifacts[name].hash
+			hashes[emission.artifacts[name].logicalPath(name)] = emission.artifacts[name].hash
 		}
 
 		csEmissions = append(csEmissions, hashes)
