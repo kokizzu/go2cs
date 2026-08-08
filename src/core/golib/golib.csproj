@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The shared NuGet version stamp (src\version.props) arrives via src\core\Directory.Build.props;
+  <!-- The shared NuGet version stamp (src/version.props) arrives via src/core/Directory.Build.props;
        a direct import here would double-import it (MSB4011). Deployed trees exclude that props file
        and never pack, so golib needs no version stamp there. -->
 
@@ -17,7 +17,7 @@
     <Company>The go2cs Authors</Company>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <ApplicationIcon>..\go2cs.ico</ApplicationIcon>
+    <ApplicationIcon>../go2cs.ico</ApplicationIcon>
     <Title>go2cs core library</Title>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>go.lib</PackageId>
@@ -38,20 +38,20 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(OutDir)'==''">
-    <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
+    <OutDir>bin/$(Configuration)/$(TargetFramework)/</OutDir>
   </PropertyGroup>
 
   <!-- USERPROFILE is a Windows-only environment variable; HOME is its POSIX counterpart. Every
        CONVERTED project inherits this fallback from csproj-template.xml, but golib.csproj is
        hand-written and never regenerated, so it was the one project in the tree without it: a
-       non-Debug build outside a solution context resolves $(go2csPath) to "\go2cs\" on Linux and
+       non-Debug build outside a solution context resolves $(go2csPath) to "/go2cs/" on Linux and
        macOS (F10, docs/PLAN-linux-operation.md). Kept in the template's exact form. -->
   <PropertyGroup Condition="'$(USERPROFILE)'==''">
     <USERPROFILE>$(HOME)</USERPROFILE>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(go2csPath)'==''">
-    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)\go2cs\</go2csPath>
+    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug'">$(SolutionDir)</go2csPath>
   </PropertyGroup>
 
@@ -64,8 +64,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\go2cs.ico" Pack="true" PackagePath="" Visible="false" />
-    <None Include="..\go2cs.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="../go2cs.ico" Pack="true" PackagePath="" Visible="false" />
+    <None Include="../go2cs.png" Pack="true" PackagePath="" Visible="false" />
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
@@ -93,6 +93,11 @@
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
 
+  <!-- Deliberately keeps BACKSLASHES where the rest of this file moved to forward slashes (F5):
+       this is Visual Studio's shared-project bookkeeping, not a converter-emitted reference. VS
+       owns the Import's exact text and go2cs-gen.csproj carries the identical backslash form, so
+       re-spelling it here would buy nothing and risk perpetual VS round-trip drift. MSBuild
+       normalizes it on Unix regardless, so it is not a portability seam. -->
   <Import Project="..\go2cs\go2cs.projitems" Label="Shared" />
 
 </Project>

@@ -34,7 +34,7 @@
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
        $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
-    <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
+    <OutDir>bin/$(Configuration)/$(TargetFramework)/</OutDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(USERPROFILE)'==''">
@@ -42,7 +42,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(go2csPath)'==''">
-    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)\go2cs\</go2csPath>
+    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug'">$(SolutionDir)</go2csPath>
   </PropertyGroup>
 
@@ -78,16 +78,16 @@
   </ItemGroup>
 
   <!-- Include the per-package README (emitted by the converter) in the NuGet package -->
-  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->
   <PropertyGroup>
-    <GoValidationProofFile>$(go2csPath)..\docs\validation\$(GoStdLibVersion).$(GoBuildNumber)\crypto.tls.md</GoValidationProofFile>
+    <GoValidationProofFile>$(go2csPath)../docs/validation/$(GoStdLibVersion).$(GoBuildNumber)/crypto.tls.md</GoValidationProofFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')">
     <None Include="$(GoValidationProofFile)" Pack="true" PackagePath="VALIDATION.md" Visible="false" />
@@ -101,7 +101,7 @@
 
   <ItemGroup>
     <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-    <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
+    <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- Define Go type aliases -->
@@ -141,54 +141,54 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
-    <ProjectReference Include="$(go2csPath)core\bytes\bytes.csproj" />
-    <ProjectReference Include="$(go2csPath)core\container\list\container.list.csproj" />
-    <ProjectReference Include="$(go2csPath)core\context\context.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\aes\crypto.aes.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\cipher\crypto.cipher.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\crypto.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\des\crypto.des.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\ecdh\crypto.ecdh.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\ecdsa\crypto.ecdsa.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\ed25519\crypto.ed25519.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\elliptic\crypto.elliptic.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\hmac\crypto.hmac.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\internal\boring\crypto.internal.boring.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\internal\hpke\crypto.internal.hpke.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\internal\mlkem768\crypto.internal.mlkem768.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\md5\crypto.md5.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\rand\crypto.rand.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\rc4\crypto.rc4.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\rsa\crypto.rsa.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\sha1\crypto.sha1.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\sha256\crypto.sha256.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\sha512\crypto.sha512.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\subtle\crypto.subtle.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\x509\crypto.x509.csproj" />
-    <ProjectReference Include="$(go2csPath)core\encoding\pem\encoding.pem.csproj" />
-    <ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />
-    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)core\hash\hash.csproj" />
-    <ProjectReference Include="$(go2csPath)core\internal\byteorder\internal.byteorder.csproj" />
-    <ProjectReference Include="$(go2csPath)core\internal\cpu\internal.cpu.csproj" />
-    <ProjectReference Include="$(go2csPath)core\internal\godebug\internal.godebug.csproj" />
-    <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
-    <ProjectReference Include="$(go2csPath)core\net\net.csproj" />
-    <ProjectReference Include="$(go2csPath)core\os\os.csproj" />
-    <ProjectReference Include="$(go2csPath)core\runtime\runtime.csproj" />
-    <ProjectReference Include="$(go2csPath)core\slices\slices.csproj" />
-    <ProjectReference Include="$(go2csPath)core\strconv\strconv.csproj" />
-    <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
-    <ProjectReference Include="$(go2csPath)core\sync\atomic\sync.atomic.csproj" />
-    <ProjectReference Include="$(go2csPath)core\sync\sync.csproj" />
-    <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
-    <ProjectReference Include="$(go2csPath)core\unsafe\unsafe.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\chacha20poly1305\vendor.golang.org.x.crypto.chacha20poly1305.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\cryptobyte\vendor.golang.org.x.crypto.cryptobyte.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\hkdf\vendor.golang.org.x.crypto.hkdf.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\sha3\vendor.golang.org.x.crypto.sha3.csproj" />
+    <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/container/list/container.list.csproj" />
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/aes/crypto.aes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/cipher/crypto.cipher.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/crypto.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/des/crypto.des.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/ecdh/crypto.ecdh.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/ecdsa/crypto.ecdsa.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/ed25519/crypto.ed25519.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/elliptic/crypto.elliptic.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/hmac/crypto.hmac.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/boring/crypto.internal.boring.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/hpke/crypto.internal.hpke.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/mlkem768/crypto.internal.mlkem768.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/md5/crypto.md5.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/rand/crypto.rand.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/rc4/crypto.rc4.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/rsa/crypto.rsa.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha1/crypto.sha1.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha256/crypto.sha256.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha512/crypto.sha512.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/subtle/crypto.subtle.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/x509/crypto.x509.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/pem/encoding.pem.csproj" />
+    <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
+    <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core/hash/hash.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/byteorder/internal.byteorder.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/cpu/internal.cpu.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/godebug/internal.godebug.csproj" />
+    <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/net.csproj" />
+    <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
+    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
+    <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
+    <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/chacha20poly1305/vendor.golang.org.x.crypto.chacha20poly1305.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/cryptobyte/vendor.golang.org.x.crypto.cryptobyte.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/hkdf/vendor.golang.org.x.crypto.hkdf.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/sha3/vendor.golang.org.x.crypto.sha3.csproj" />
   </ItemGroup>
 
 </Project>

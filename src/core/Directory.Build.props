@@ -1,15 +1,15 @@
 <Project>
 
   <!--
-    Pins $(go2csPath) for every project in the converted standard library (src\core\) to the
+    Pins $(go2csPath) for every project in the converted standard library (src/core/) to the
     repository's src root — this file's parent directory.
 
     Why this is needed:
-      The shared runtime (core\golib) lives inside this tree, but the source generators
-      (gen\go2cs-gen) live under src\, NOT under core\. Each converted .csproj references them
-      via $(go2csPath)core\golib\... and $(go2csPath)gen\go2cs-gen\... (an Analyzer reference),
+      The shared runtime (core/golib) lives inside this tree, but the source generators
+      (gen/go2cs-gen) live under src/, NOT under core/. Each converted .csproj references them
+      via $(go2csPath)core/golib/... and $(go2csPath)gen/go2cs-gen/... (an Analyzer reference),
       where $(go2csPath) otherwise defaults to $(SolutionDir) — correct only when the build is
-      driven from a solution rooted at src\. Building a package directly (dotnet build
+      driven from a solution rooted at src/. Building a package directly (dotnet build
       <pkg>.csproj) has no SolutionDir at all, so the references dangle and the build fails with
       a flood of "type 'slice<>' / 'GoType' could not be found" errors that look like real
       defects but are pure reference-resolution noise.
@@ -28,7 +28,7 @@
     <go2csPath>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))))</go2csPath>
   </PropertyGroup>
 
-  <!-- Shared NuGet version for every converted stdlib package (single source: src\version.props) -->
-  <Import Project="$(MSBuildThisFileDirectory)..\version.props" />
+  <!-- Shared NuGet version for every converted stdlib package (single source: src/version.props) -->
+  <Import Project="$(MSBuildThisFileDirectory)../version.props" />
 
 </Project>
