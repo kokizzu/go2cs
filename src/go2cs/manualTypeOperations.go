@@ -36,26 +36,84 @@ var manualConversionTypes = map[string]map[string]bool{
 	},
 }
 
+// goosScope names the target operating systems a manual-conversion entry applies to. The EMPTY
+// scope (goosAny) means every target, which is what all but a handful of entries want.
+//
+// The scope exists because the registry is keyed by NAME, and a Go name is not unique across
+// platforms: Go selects one of several files declaring the same function by build constraint, and
+// those declarations are not interchangeable. Name-keyed alone, one entry silently spoke for all of
+// them — turning every flavor's declaration into a placeholder while an implementation existed for
+// only the one somebody hand-wrote. That is load-bearing in both directions:
+//
+//   - A declaration only Go's Windows sources carry (syscall's generated wrappers,
+//     os.readReparseLink) is inert on other targets today, so scoping it moves no emission — but it
+//     records WHY, instead of leaving the next reader to re-derive it from Go's file set.
+//   - A declaration EVERY target carries, where only some flavors need hand-owning, cannot be
+//     expressed at all without a scope. os.(*File).readdir is that case: the windows and darwin
+//     flavors hand OS memory to a Go struct and must be hand-owned, while dir_unix.go's is pure Go
+//     over internal/poll and converts faithfully — yet the unscoped entry deleted its body too, and
+//     left every Linux os build with a placeholder and nothing to link against.
+//
+// What a scope deliberately does NOT express is a per-platform SIGNATURE. runtime's
+// notetsleep_internal is four parameters in lock_sema.go and two in lock_futex.go; the answer is one
+// goosAny entry — both flavors need hand-owning — with each flavor's own *_impl.cs declaring its own
+// signature, which layout L3 already routes per GOOS. The registry decides WHETHER a declaration is
+// hand-owned; the hand-owned file decides what it looks like.
+type goosScope []string
+
+// goosAny scopes an entry to every target — the common case, and the zero value, so an entry that
+// says nothing keeps the registry's original name-keyed behavior.
+var goosAny goosScope
+
+// goosWindows scopes an entry to Windows alone.
+var goosWindows = goosScope{"windows"}
+
+// goosWindowsDarwin scopes an entry to the two targets whose Go flavor reinterprets or hands OS
+// memory to a Go struct — the raw-metal-on-non-native-types fork — where the third does not.
+var goosWindowsDarwin = goosScope{"windows", "darwin"}
+
+// includes reports whether the scope covers the named target operating system.
+func (scope goosScope) includes(goos string) bool {
+	if len(scope) == 0 {
+		return true
+	}
+
+	for _, name := range scope {
+		if name == goos {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
-var manualConversionFuncs = map[string]map[string]bool{
+var manualConversionFuncs = map[string]map[string]goosScope{
 	"runtime": {
-		"g.guintptr": true,
-		"setGNoWB":   true,
-		"setMNoWB":   true,
-		// lock_sema.go (lock_sema_impl.cs): the mutex/note key-slot protocol smuggles an *m
-		// address through the uintptr slot and parks on OS semaphores — the managed model is a
-		// {0, locked} spinlock/latch. Thin wrappers (lock/unlock/noteclear/notetsleep[g]) and
-		// the consts stay auto. ⚠ These entries encode lock_SEMA semantics (the windows/darwin/
-		// plan9 family — the default host platform): a futex-platform conversion (-platforms
-		// linux/amd64) includes lock_futex.go instead, whose notetsleep_internal is 2-parameter
-		// and whose key protocol is {0,1,2} — the name-keyed skip would mismatch (CS7036).
-		"mutexContended":      true,
-		"lock2":               true,
-		"unlock2":             true,
-		"notewakeup":          true,
-		"notesleep":           true,
-		"notetsleep_internal": true,
+		"g.guintptr": goosAny,
+		"setGNoWB":   goosAny,
+		"setMNoWB":   goosAny,
+		// The mutex/note key-slot protocol. Go has TWO flavors of it and selects one per GOOS:
+		// lock_sema.go (windows, darwin, plan9, aix …) smuggles an *m address through the uintptr
+		// slot and parks waiters on OS semaphores; lock_futex.go (linux, freebsd, dragonfly) uses a
+		// {0,1,2} slot and parks on a futex. Neither OS primitive has a managed realization, so BOTH
+		// flavors need hand-owning and both converge on the same managed model — a {0, keyLocked}
+		// latch with SpinWait escalation — which is why the scope is goosAny and why the managed
+		// core is ONE flat file (runtime/lock_managed_impl.cs) rather than a copy per flavor. Thin
+		// wrappers (lock/unlock/noteclear/notetsleep[g]) and the consts stay auto on both.
+		//
+		// The flavors DO differ in one signature: notetsleep_internal is (n, ns, gp, deadline) in
+		// lock_sema.go and (n, ns) in lock_futex.go. A name-keyed registry cannot express that and
+		// does not try — each flavor's own *_impl.cs declares its own, delegating to the shared core
+		// (windows/darwin/lock_sema_impl.cs, linux/lock_futex_impl.cs), and layout L3 routes each to
+		// exactly the platforms its principal is built on.
+		"mutexContended":      goosAny,
+		"lock2":               goosAny,
+		"unlock2":             goosAny,
+		"notewakeup":          goosAny,
+		"notesleep":           goosAny,
+		"notetsleep_internal": goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
@@ -64,29 +122,29 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// way sync's Mutex/notifyList were: honor the observable contract, never emulate the
 		// mechanism. Everything BELOW them (the scheduler, the pacer, the mark/sweep engine) stays
 		// auto-converted and simply becomes unreachable.
-		"GC":         true,
-		"GOMAXPROCS": true,
-		"Gosched":    true,
+		"GC":         goosAny,
+		"GOMAXPROCS": goosAny,
+		"Gosched":    goosAny,
 		// Goexit belongs to the same surface for the same reason: its converted body drives Go's
 		// own _panic record and stack unwinder (p.start(getcallerpc(), getcallersp()) → nextDefer →
 		// goexit1), all of it assembly. The managed shape unwinds the calling goroutine with a
 		// golib GoexitException, which the defer machinery and the goroutine root already handle —
 		// see managed_impl.cs and docs/phase4/DESIGN-goexit.md.
-		"Goexit":         true,
-		"Stack":          true,
-		"ReadMemStats":   true,
-		"LockOSThread":   true,
-		"UnlockOSThread": true,
+		"Goexit":         goosAny,
+		"Stack":          goosAny,
+		"ReadMemStats":   goosAny,
+		"LockOSThread":   goosAny,
+		"UnlockOSThread": goosAny,
 		// The lower-case pair is the runtime-internal variant of the same contract (syscall and
 		// mime's registry reader reach it through startTemplateThread); it takes the same body.
-		"lockOSThread":   true,
-		"unlockOSThread": true,
+		"lockOSThread":   goosAny,
+		"unlockOSThread": goosAny,
 		// Pinner: the "address is stable while pinned" contract already holds for managed ж<T>
 		// boxes (the GC tracks them through moves), so the pin set is a no-op by construction —
 		// the auto bodies walk the scheduler (acquirem) and span table (setPinned → findObject).
 		// internal/fmtsort's test init is the demonstrated consumer.
-		"Pinner.Pin":   true,
-		"Pinner.Unpin": true,
+		"Pinner.Pin":   goosAny,
+		"Pinner.Unpin": goosAny,
 		// The traceback surface (managed_impl.cs). Callers' auto body enters the raw-metal
 		// unwinder on its first step (callers → getcallersp, an assembly stub), and Frames.Next
 		// reads linker funcInfo tables (findfunc) that have no managed form. Both API contracts —
@@ -98,8 +156,8 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// here, at the semantic boundary that does (the reflection bridge's methodName pattern).
 		// io's TestMultiReaderFlatten / TestMultiWriterSingleChainFlatten (relative stack-depth
 		// asserts over runtime.Callers) are the demonstrated consumers.
-		"Callers":     true,
-		"Frames.Next": true,
+		"Callers":     goosAny,
+		"Frames.Next": goosAny,
 		// The lower-case `callers` is the FUNNEL every other traceback entry point goes through
 		// (Caller, mprof's profile recorders, proc's createstack, tracestack) and the one that
 		// actually reaches getcallersp — so severing it here, one level below Callers, is what
@@ -109,7 +167,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// ecosystem, do not change the signature) says the same thing: it is an API boundary with
 		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
 		// Caller(1) are the demonstrated consumers.
-		"callers": true,
+		"callers": goosAny,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs
@@ -125,9 +183,9 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// the same garbage. type_impl.cs synthesizes both specializations from the descriptor's
 	// carried System.Type over the same golib layout machinery that stamps Size_/Align_.
 	"internal/abi": {
-		"TypeOf":          true,
-		"Type.StructType": true,
-		"Type.ArrayType":  true,
+		"TypeOf":          goosAny,
+		"Type.StructType": goosAny,
+		"Type.ArrayType":  goosAny,
 	},
 	// internal/cpu.getGOAMD64level is declared in cpu_x86.s and its body is a COMPILE-TIME constant:
 	// the GOAMD64_vN define the toolchain sets from `go env GOAMD64`, with `#else MOVL $1` as the
@@ -140,7 +198,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// first line is `if GetGOAMD64level() > 1 { t.Skip(…) }` — the unimplemented stub turned that
 	// guard into an infrastructure-error where Go reads 1 and walks on to a matching skip.
 	"internal/cpu": {
-		"getGOAMD64level": true,
+		"getGOAMD64level": goosAny,
 	},
 	// reflect.Value's entry + value-reader methods (the reflection bridge, Phase 2). Go reads the
 	// value through v.ptr as flat memory at computed offsets — no managed form. value_impl.cs carries
@@ -149,41 +207,41 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// hand-owned; Kind/Type/IsValid/CanAddr work from the flag/typ_ the entry sets. Increment 1
 	// (scalars, slices, arrays, pointers); struct Field/NumField + map MapRange land next.
 	"reflect": {
-		"ValueOf":             true,
-		"unpackEface":         true,
-		"valueInterface":      true, // a free function `valueInterface(v Value, safe bool)`, not a method
-		"Value.Interface":     true,
-		"Value.Bool":          true,
-		"Value.Int":           true,
-		"Value.Uint":          true,
-		"Value.Float":         true,
-		"Value.Complex":       true,
-		"Value.String":        true,
-		"Value.IsNil":         true,
-		"Value.Len":           true,
-		"Value.Index":         true,
-		"Value.Elem":          true,
-		"Value.Bytes":         true,
-		"Value.NumField":      true,
-		"Value.Field":         true,
-		"Value.UnsafePointer": true,
-		"Value.Pointer":       true,
-		"Value.MapRange":      true,
-		"MapIter.Next":        true,
-		"MapIter.Key":         true,
-		"MapIter.Value":       true,
+		"ValueOf":             goosAny,
+		"unpackEface":         goosAny,
+		"valueInterface":      goosAny, // a free function `valueInterface(v Value, safe bool)`, not a method
+		"Value.Interface":     goosAny,
+		"Value.Bool":          goosAny,
+		"Value.Int":           goosAny,
+		"Value.Uint":          goosAny,
+		"Value.Float":         goosAny,
+		"Value.Complex":       goosAny,
+		"Value.String":        goosAny,
+		"Value.IsNil":         goosAny,
+		"Value.Len":           goosAny,
+		"Value.Index":         goosAny,
+		"Value.Elem":          goosAny,
+		"Value.Bytes":         goosAny,
+		"Value.NumField":      goosAny,
+		"Value.Field":         goosAny,
+		"Value.UnsafePointer": goosAny,
+		"Value.Pointer":       goosAny,
+		"Value.MapRange":      goosAny,
+		"MapIter.Next":        goosAny,
+		"MapIter.Key":         goosAny,
+		"MapIter.Value":       goosAny,
 		// Type side: reflect.rtype's ΔType methods over the abi.Type's System.Type (%T, %+v names).
-		"rtype.String": true,
-		"rtype.Name":   true,
+		"rtype.String": goosAny,
+		"rtype.Name":   goosAny,
 		// rtype.PkgPath reads the descriptor's TFlagNamed bit and uncommon().PkgPath name-offset —
 		// sub-records a synthesized abi.Type never populates, so it answered "" for every type and
 		// gob's Register keyed its registry on the bare "N2" instead of "encoding/gob.N2"
 		// (TestRegistrationNaming). The managed nesting carries the package identity
 		// (GoReflect.GoPackagePath).
-		"rtype.PkgPath":  true,
-		"rtype.Elem":     true,
-		"rtype.Field":    true,
-		"rtype.NumField": true,
+		"rtype.PkgPath":  goosAny,
+		"rtype.Elem":     goosAny,
+		"rtype.Field":    goosAny,
+		"rtype.NumField": goosAny,
 		// rtype.NumMethod reads uncommon() method tables a synthesized descriptor never
 		// populates, so it answered 0 for every concrete type — and encoding/json's indirect()
 		// gates its Unmarshaler/TextUnmarshaler discovery on NumMethod() > 0, so no custom
@@ -197,32 +255,32 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// math/rand and math/rand/v2's TestRegress) where the count failed silently. Value.Method
 		// binds the receiver into a managed delegate, so the method VALUE is an ordinary Kind-Func
 		// Value and Type()/NumIn/In/Out/Call are the existing bridge surface unchanged.
-		"rtype.NumMethod":    true,
-		"rtype.Method":       true,
-		"rtype.MethodByName": true,
-		"Value.Method":       true,
+		"rtype.NumMethod":    goosAny,
+		"rtype.Method":       goosAny,
+		"rtype.MethodByName": goosAny,
+		"Value.Method":       goosAny,
 		// reflect.Type must be CANONICAL (Go interns type descriptors so `aType == bType` holds for
 		// equal types — internal/fmtsort.compare relies on `aType != bType`). The auto Value.Type()
 		// and toType() mint a fresh wrapper per call over a fresh abi.Type box, so identity-equality
 		// never matched → map-key sorting reversed. The hand-owned forms in value_impl.cs intern the
 		// ΔType wrapper by the underlying System.Type (canonType). See docs/phase4/DESIGN-reflection-bridge.md.
-		"Value.Type": true,
-		"toType":     true,
+		"Value.Type": goosAny,
+		"toType":     goosAny,
 		// deepValueEqual keys its cycle-detection visited map on the values' internal data words
 		// (v.ptr / v.pointer()) — eface addresses the bridge never populates, so the auto form NREs
 		// converting the null unsafe.Pointer slot (strings/bytes TestSplit/TestSplitAfter, R5).
 		// deepequal_impl.cs recurses over the bridge's boxed values and keys cycle detection on
 		// managed reference identity. DeepEqual itself stays auto (it only uses the bridged
 		// ValueOf/Type/AreEqual).
-		"deepValueEqual": true,
+		"deepValueEqual": goosAny,
 		// Phase-3 write-back (the chip): Set writes through the addressable Value's aliased ж box
 		// (Go's assignTo semantics over the golib assert machinery); Zero builds valid zero Values
 		// (a pointer kind yields the canonical typed-nil box); methodName walks the managed stack
 		// (runtime.Caller has no managed form — its getcallersp chain NotImplementedException'd
 		// every mustBe* panic path, errors TestAs's first operational hit).
-		"Value.Set":  true,
-		"Zero":       true,
-		"methodName": true,
+		"Value.Set":  goosAny,
+		"Zero":       goosAny,
+		"methodName": goosAny,
 		// Phase-3 increment 2 (the chip): the call & construction half. Value.Call invokes the
 		// boxed delegate (DynamicInvoke; results typed by the STATIC out types); the Set* family
 		// coerces through GoReflect.TryConvertTo and writes through the aliased box; New/
@@ -230,30 +288,30 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// ISupportMake); Slice windows the shared backing; the rtype func-introspection methods
 		// derive from the delegate Invoke signature; Key/Len read GoReflect/descriptor cargo.
 		// See docs/phase4/DESIGN-reflection-bridge-phase3-plan.md (INCREMENT 2).
-		"Value.Call":        true,
-		"Value.CallSlice":   true,
-		"Value.Slice":       true,
-		"Value.SetBool":     true,
-		"Value.SetInt":      true,
-		"Value.SetUint":     true,
-		"Value.SetFloat":    true,
-		"Value.SetComplex":  true,
-		"Value.SetString":   true,
-		"Value.SetZero":     true,
-		"Value.SetMapIndex": true,
-		"New":               true,
-		"MakeSlice":         true,
-		"MakeMap":           true,
-		"MakeMapWithSize":   true,
+		"Value.Call":        goosAny,
+		"Value.CallSlice":   goosAny,
+		"Value.Slice":       goosAny,
+		"Value.SetBool":     goosAny,
+		"Value.SetInt":      goosAny,
+		"Value.SetUint":     goosAny,
+		"Value.SetFloat":    goosAny,
+		"Value.SetComplex":  goosAny,
+		"Value.SetString":   goosAny,
+		"Value.SetZero":     goosAny,
+		"Value.SetMapIndex": goosAny,
+		"New":               goosAny,
+		"MakeSlice":         goosAny,
+		"MakeMap":           goosAny,
+		"MakeMapWithSize":   goosAny,
 		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
-		"valueMethodName":  true,
-		"rtype.Key":        true,
-		"rtype.Len":        true,
-		"rtype.NumIn":      true,
-		"rtype.In":         true,
-		"rtype.NumOut":     true,
-		"rtype.Out":        true,
-		"rtype.IsVariadic": true,
+		"valueMethodName":  goosAny,
+		"rtype.Key":        goosAny,
+		"rtype.Len":        goosAny,
+		"rtype.NumIn":      goosAny,
+		"rtype.In":         goosAny,
+		"rtype.NumOut":     goosAny,
+		"rtype.Out":        goosAny,
+		"rtype.IsVariadic": goosAny,
 		// Phase-3 continuation: the type-relation mirrors + conversion. The auto forms walk
 		// descriptor sub-records that only exist in Go's runtime layout: implements() does
 		// Reinterpret<abi.Type, interfaceType> and reads .Methods off a promoted-embed box that
@@ -263,39 +321,39 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// table, R-13/R-14). All four are bridged in value_impl.cs over the shared golib
 		// machinery (GoReflect.GoImplements / TryConvertTo) — one method-set/convertibility
 		// rule everywhere.
-		"rtype.Implements":   true,
-		"rtype.AssignableTo": true,
-		"PointerTo":          true,
-		"Value.Convert":      true,
+		"rtype.Implements":   goosAny,
+		"rtype.AssignableTo": goosAny,
+		"PointerTo":          goosAny,
+		"Value.Convert":      goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
 		// the default promoted-embed box (gob's compileDec matching wire fields to the local
 		// struct). Bridged over the shared GoFields projection — the SAME field table
 		// NumField/Field/the value side use, single-hop Index included.
-		"rtype.FieldByName": true,
+		"rtype.FieldByName": goosAny,
 		// Value.Cap reads the never-populated v.ptr slice header (gob's decodeSlice probes
 		// `value.Cap() < n`); Value.SetLen writes a new header length through it. Bridged over
 		// the golib container interfaces; SetLen re-windows the live slice (same backing/cap,
 		// Go's s[:n]) and writes it back through the aliased box.
-		"Value.Cap":    true,
-		"Value.SetLen": true,
+		"Value.Cap":    goosAny,
+		"Value.SetLen": goosAny,
 		// Value.Grow reads a *unsafeheader.Slice off the same never-populated v.ptr, so it
 		// nil-deref'd for every caller (gob's decUint8Slice / decodeArrayHelper Grow(1) in a
 		// loop past internal/saferio's 10 MiB chunk). Bridged as an ordinary managed
 		// reallocation written back through the aliased box, exactly like SetLen.
-		"Value.Grow": true,
+		"Value.Grow": goosAny,
 		// Value.IsZero is three descriptor reads a synthesized descriptor never populates —
 		// an Equal function pointer against the shared zeroVal buffer, a TFlagRegularMemory
 		// all-bits-zero scan, and `v.ptr == nil` for a non-indirect value. The Array and
 		// Struct arms both fell to that last one, so EVERY array and EVERY struct reported
 		// itself zero whatever it held — silently, `true` being right for the zero value.
 		// Bridged as Go's own recursive definition with the memory shortcuts removed.
-		"Value.IsZero": true,
+		"Value.IsZero": goosAny,
 		// Value.Addr derives the pointer type through ptrTo → typesByString → the typelinks()
 		// runtime stub (the linker-built type table has no managed form), so every Addr threw.
 		// The bridge already holds the address: an addressable Value ALIASES the ж<T> box its
 		// storage lives in, so Addr surfaces that box (gob's gobEncodeOpFor/gobDecodeOpFor climb
 		// one level with Addr for every GobEncoder-implementing field).
-		"Value.Addr": true,
+		"Value.Addr": goosAny,
 	},
 	// internal/reflectlite mirrors the reflect bridge for the mini-surface sort.Slice
 	// exercises (ValueOf → Len, Swapper — sort's TestSlice was the first operational hit):
@@ -305,28 +363,28 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// synthetic abi.Type, so Kind()/IsValid() work from value.cs unchanged); swapper_impl.cs
 	// swaps through golib's non-generic ISlice indexer. See docs/phase4/DESIGN-reflection-bridge.md.
 	"internal/reflectlite": {
-		"ValueOf":     true,
-		"unpackEface": true,
-		"Value.Len":   true,
-		"Swapper":     true,
+		"ValueOf":     goosAny,
+		"unpackEface": goosAny,
+		"Value.Len":   goosAny,
+		"Swapper":     goosAny,
 		// Phase-3 write-back — the errors.As surface. The auto forms read the never-populated
 		// v.ptr eface word (IsNil answered TRUE for every pointer; Elem returned the invalid
 		// Value) or descriptor sub-records synthType never populates (rtype.Elem panicked;
 		// implements() reinterpreted the descriptor). Bridged in value_impl.cs / type_impl.cs
 		// over the carried System.Type + the golib method-set machinery.
-		"Value.Elem":         true,
-		"Value.IsNil":        true,
-		"Value.Set":          true,
-		"rtype.Elem":         true,
-		"rtype.Implements":   true,
-		"rtype.AssignableTo": true,
-		"methodName":         true,
+		"Value.Elem":         goosAny,
+		"Value.IsNil":        goosAny,
+		"Value.Set":          goosAny,
+		"rtype.Elem":         goosAny,
+		"rtype.Implements":   goosAny,
+		"rtype.AssignableTo": goosAny,
+		"methodName":         goosAny,
 		// rtype.String reads a type-descriptor NAME OFFSET into the linker-built name blob
 		// (`t.nameOff(t.Str).Name()`) that a synthesized descriptor never populates, so it
 		// answered "" for EVERY type — silently, since the empty string is a legal name for an
 		// unnamed type. reflect's own rtype.String is already hand-owned over GoReflect.GoTypeName;
 		// this is the same answer for the mini-bridge, so the two can never disagree.
-		"rtype.String": true,
+		"rtype.String": goosAny,
 	},
 	// os.(*File).readdir walks the raw buffer GetFileInformationByHandleEx fills by REINTERPRETING
 	// it as a Go struct — `(*windows.FILE_ID_BOTH_DIR_INFO)(entry)`. That struct is managed-referent
@@ -337,9 +395,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// the reinterpreted struct hands the GC a fabricated object reference. This is the raw-metal-on-
 	// non-native-types fork: dir_windows_impl.cs decodes the entry fields from the byte slice at
 	// their documented offsets and never materializes a managed struct over OS memory.
-	// ⚠ Name-keyed, so this entry also matches os.(*File).readdir in dir_unix.go — a
-	// `-platforms linux/amd64` conversion of os would drop its (perfectly convertible) unix readdir
-	// and fail to link. Same platform caveat as runtime's lock_sema entries above.
+	// The DARWIN flavor is the same fork at a third site and is scoped in for it: dir_darwin.go's
+	// readdir hands libc's readdir_r the ADDRESS of a Go `syscall.Dirent` (`readdir_r(d.dir,
+	// &dirent, &entptr)`), whose converted form carries a managed `array<uint8>` reference where the
+	// C struct has inline storage — the same non-blittable-struct-by-address seam as syscall's
+	// wrappers below. Its hand-own is owed with macOS (increment 5); until then darwin emits a
+	// placeholder, exactly as it did before this entry carried a scope.
+	//
+	// LINUX is scoped OUT, and that is what the scope bought: dir_unix.go's readdir is pure Go over
+	// internal/poll's ReadDirent and the dirent_linux.go accessors, so it converts faithfully and
+	// needs no hand-own at all. Name-keyed, this entry deleted that body too and left every Linux
+	// `os` build with a placeholder and nothing to link against (54 CS0103 two layers below, then 1
+	// here) — a hand-own gap invented by the registry rather than by the Go source.
+	//
 	// os.readReparseLink (file_windows.go) is the SAME fork at a second site: it reinterprets the
 	// byte buffer DeviceIoControl fills as windows.{SymbolicLink,MountPoint}ReparseBuffer, both of
 	// which end in `PathBuffer [1]uint16` — a Go inline array standing in for the variable-length
@@ -351,8 +419,8 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// after it. file_windows_impl.cs decodes the record from the byte slice at its documented
 	// offsets. openSymlink and normaliseLinkPath stay auto — they pass scalars, handles and strings.
 	"os": {
-		"File.readdir":    true,
-		"readReparseLink": true,
+		"File.readdir":    goosWindowsDarwin,
+		"readReparseLink": goosWindows,
 	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.
@@ -365,7 +433,7 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// stable across GC moves and is the managed spelling of the same question. Only this one method
 	// is hand-owned; the copyChecker type and every Cond method stay auto.
 	"sync": {
-		"copyChecker.check": true,
+		"copyChecker.check": goosAny,
 	},
 	// syscall's generated GetTimeZoneInformation wrapper hands the native call the ADDRESS of the
 	// managed Timezoneinformation box — `Syscall(…, uintptr(unsafe.Pointer(tzi)), …)`. Go's struct
@@ -382,10 +450,13 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// (zsyscall_windows_impl.cs). ONLY this one wrapper is hand-owned; every other declaration in
 	// the generated file stays auto — they pass scalars and handles, which convert faithfully.
 	//
-	// ⚠ Name-keyed like the entries above: `zsyscall_windows.go` is the Windows generated file, so
-	// a non-Windows -platforms conversion never sees this declaration and the entry is inert there.
+	// All five are declared ONLY in Go's Windows sources (zsyscall_windows.go / syscall_windows.go),
+	// so a non-Windows conversion never sees the declaration and the entries were already inert
+	// there. The scope changes no emission; it states the fact instead of leaving it to be
+	// re-derived from Go's file set, and it is what keeps a future same-named unix declaration from
+	// silently inheriting a Windows hand-own the way os.(*File).readdir did.
 	"syscall": {
-		"GetTimeZoneInformation": true,
+		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
 		// cAlternateFileName[14] are 520 and 28 bytes of INLINE storage where the converted
@@ -397,16 +468,16 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// puts the native-layout boundary at win32finddata1 (syscall_windows.go's FindFirstFile
 		// allocates one, calls the wrapper, then copies out), so the public FindFirstFile /
 		// FindNextFile and copyFindData above them are pure Go logic and convert faithfully.
-		"findFirstFile1": true,
-		"findNextFile1":  true,
+		"findFirstFile1": goosWindows,
+		"findNextFile1":  goosWindows,
 		// The third member, and the one that fails SILENTLY: PROCESSENTRY32W is 568 bytes ending in
 		// szExeFile[260] INLINE, where the converted ProcessEntry32 holds that as one
 		// `array<uint16>` reference — the record is ~56 bytes, every field past th32DefaultHeapID
 		// reads from the wrong offset, and nothing faults. syscall.Getppid therefore answered 0,
 		// which os's TestGetppid is the demonstrated consumer of. dwSize is an INPUT the mirror has
 		// to own as well: Go sets it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here.
-		"Process32First": true,
-		"Process32Next":  true,
+		"Process32First": goosWindows,
+		"Process32Next":  goosWindows,
 	},
 }
 
@@ -431,7 +502,7 @@ func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 		return false
 	}
 
-	funcNames, ok := manualConversionFuncs[fn.Pkg().Path()]
+	funcScopes, ok := manualConversionFuncs[fn.Pkg().Path()]
 
 	if !ok {
 		return false
@@ -455,21 +526,27 @@ func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 		return false
 	}
 
-	return funcNames[named.Obj().Name()+"."+fn.Name()]
+	scope, listed := funcScopes[named.Obj().Name()+"."+fn.Name()]
+
+	return listed && scope.includes(goosOfTarget(v.options.targetPlatform))
 }
 
 // isManualFuncDecl reports whether the function declaration is owned by a manual conversion:
 // either any method whose receiver base type is a manual type, or an explicitly listed
 // free function / foreign-receiver method.
 func (v *Visitor) isManualFuncDecl(funcDecl *ast.FuncDecl) bool {
-	return isManualFuncDeclInPackage(v.pkg.Path(), funcDecl)
+	return isManualFuncDeclInPackage(v.pkg.Path(), goosOfTarget(v.options.targetPlatform), funcDecl)
 }
 
 // isManualFuncDeclInPackage is isManualFuncDecl's package-path-keyed core, callable from the
 // whole-package ANALYSIS passes that run before any Visitor exists (the hoisted-literal pre-pass
 // must know which declarations emit only a placeholder comment — such a function never renders a
 // FunctionPrefixMarker, so it can never carry a hoisted field declaration).
-func isManualFuncDeclInPackage(pkgPath string, funcDecl *ast.FuncDecl) bool {
+//
+// `goos` is the conversion's TARGET operating system, which decides whether a scoped entry applies
+// here at all — see goosScope. The analysis passes must pass the same value emission will, or a
+// declaration would be hoisted-into and then emitted as a placeholder (or the reverse).
+func isManualFuncDeclInPackage(pkgPath string, goos string, funcDecl *ast.FuncDecl) bool {
 	if funcDecl == nil || funcDecl.Name == nil {
 		return false
 	}
@@ -495,12 +572,16 @@ func isManualFuncDeclInPackage(pkgPath string, funcDecl *ast.FuncDecl) bool {
 		}
 	}
 
-	if funcNames, ok := manualConversionFuncs[pkgPath]; ok {
+	if funcScopes, ok := manualConversionFuncs[pkgPath]; ok {
+		key := funcName
+
 		if recvName != "" {
-			return funcNames[recvName+"."+funcName]
+			key = recvName + "." + funcName
 		}
 
-		return funcNames[funcName]
+		scope, listed := funcScopes[key]
+
+		return listed && scope.includes(goos)
 	}
 
 	return false

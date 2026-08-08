@@ -162,9 +162,13 @@ ONE stdlib in a build; there is now only one on disk.
     `-go2cspath <repo>\src` computed from its own location, so no gate's verdict can move with the ambient
     variable again.
   - `-platforms os/arch` — the ONE target a conversion emits for (default: the host). It also accepts a
-    comma-separated **list** (`-platforms windows/amd64,linux/amd64,darwin/amd64`), which today is only
-    meaningful with `-platform-census`; a list without it is rejected rather than silently converting the
-    first target (multi-platform *emission* is increment 3 of the multiplatform-corpus design).
+    comma-separated **list** (`-platforms windows/amd64,linux/amd64,darwin/amd64`). With `-stdlib` a list
+    now performs the multi-platform **EMISSION** (`platformEmit.go`): it converts once per target into a
+    seeded staging root (`-platform-stage <dir>`) and MERGES the emissions into the `-go2cspath` corpus as
+    layout L3 — shared files flat, platform-varying ones in per-GOOS folders, hand-owns routed to their
+    principal's platform set. ~560 s for three targets (measured r51b). `-platform-census` remains the
+    READ-ONLY instrument over the same staging (a manifest, no corpus output). A list without `-stdlib`
+    is rejected rather than silently converting the first target.
   - `-platform-census <dir>` — the **multi-platform emission census** (increment 1, landed 2026-08-08).
     With `-stdlib` and ≥2 `-platforms` targets it converts once per target into `<dir>\<goos>-<goarch>\src`
     — each staging root SEEDED from `-go2cspath` per the reconvert ritual below, wiped and re-seeded per
@@ -537,7 +541,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      hand-owned file into its principal's per-GOOS folders, and `runtime/lock_sema_impl.cs`'s
      principal is selected on Windows *and* macOS — so one hand-own now exists as TWO files. The
      count of marked FILES is no longer the count of distinct hand-owns; both numbers are fine and
-     the gate is still per-PATH.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
+     the gate is still per-PATH. Since **r51b it is 44**: `runtime/lock_managed_impl.cs` (the flat,
+     platform-neutral managed core of the mutex/note protocol) and `runtime/linux/lock_futex_impl.cs`
+     (the futex flavor's 2-arg `notetsleep_internal`) both carry the marker. Multiple `[module:
+     GoManualConversion]` attributes in ONE assembly are legal and already normal — `runtime` alone
+     carries eight — so a new marked file never needs to displace an existing one.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
      overlay**: the same exclusion that protects the hand-owned `.cs` beside them also freezes
      them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
      item 18).
