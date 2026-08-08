@@ -97,6 +97,9 @@
     <None Include="$(MSBuildThisFileDirectory)packageGlobalState.go" />
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />
     <None Include="$(MSBuildThisFileDirectory)packageStateOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)platformCensus.go" />
+    <None Include="$(MSBuildThisFileDirectory)platformCensus_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)platformManifest.go" />
     <None Include="$(MSBuildThisFileDirectory)profiles\linux-arm.pubxml" />
     <None Include="$(MSBuildThisFileDirectory)profiles\linux-arm64.pubxml" />
     <None Include="$(MSBuildThisFileDirectory)profiles\linux-x64.pubxml" />

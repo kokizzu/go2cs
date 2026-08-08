@@ -99,7 +99,8 @@ func main() {
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
 	var recurseVal recurseMode
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
-	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform for conversion, format: os/arch")
+	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which today requires -platform-census")
+	platformCensusCmd := commandLine.String("platform-census", "", "With -stdlib and two or more -platforms targets: convert once per target into an isolated seeded staging root under this directory, classify the emissions (shared/variant/partial/exclusive) and write platform-manifest.json there. Emits NO corpus output")
 	buildTagsCmd := commandLine.String("tags", "", "Comma-separated build tags applied when loading packages, e.g. -tags purego to select the portable Go implementations over assembly ones (with -stdlib, purego is applied by default and any explicit -tags value replaces it)")
 	indentSpacesCmd := commandLine.Int("indent", 4, "Number of spaces for indentation")
 	preferVarDeclCmd := commandLine.Bool("var", true, "Prefer \"var\" declarations")
@@ -186,8 +187,40 @@ Examples:
   go2cs -recurse=module,nuget module_dir  # Values combine: module-only scope with NuGet references
   go2cs -stdlib -comments -tags purego    # Explicit form of the default: the portable Go crypto over the assembly ones
   go2cs -stdlib -tags=                    # Opt OUT of the purego default (reproduce the asm-backed default build)
+  go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -platform-census out
+                                          # Emission census: convert once per target into out\<goos>-<goarch>,
+                                          # write out\platform-manifest.json; no corpus output
  `)
 		os.Exit(1)
+	}
+
+	// -platforms is a LIST as of the multiplatform-corpus design's increment 1. Every conversion pass
+	// still emits for exactly ONE target, so targetPlatform stays the first entry and single-platform
+	// behavior is unchanged; the list is consumed only by the -platform-census instrument, which runs
+	// the pipeline once per target into its own staging root and compares the emissions. Emitting a
+	// multi-platform corpus from one run is increment 3, so a list without -platform-census is
+	// rejected rather than silently converting only the first target.
+	targetPlatforms, err := parsePlatformList(*targetPlatformCmd)
+
+	if err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	platformCensusDir := strings.TrimSpace(*platformCensusCmd)
+
+	if platformCensusDir != "" {
+		if !convertStdLib {
+			log.Fatalln("-platform-census requires -stdlib: the census converts the standard library once per target")
+		}
+
+		if len(targetPlatforms) < 2 {
+			log.Fatalf("-platform-census needs at least two -platforms targets to compare (got %d: %s)\n",
+				len(targetPlatforms), strings.Join(targetPlatforms, ", "))
+		}
+	} else if len(targetPlatforms) > 1 {
+		log.Fatalf("-platforms lists %d targets (%s) but multi-platform emission is not implemented yet; "+
+			"pass -platform-census <dir> to take the emission census, or name a single target\n",
+			len(targetPlatforms), strings.Join(targetPlatforms, ", "))
 	}
 
 	options := Options{
@@ -201,7 +234,9 @@ Examples:
 		recurse:             recurseVal.enabled,
 		moduleOnly:          recurseVal.moduleOnly,
 		nugetRefs:           recurseVal.nuget,
-		targetPlatform:      *targetPlatformCmd,
+		targetPlatform:      targetPlatforms[0],
+		targetPlatforms:     targetPlatforms,
+		platformCensusDir:   platformCensusDir,
 		buildTags:           buildTags,
 		tagsExplicit:        tagsExplicit,
 		indentSpaces:        *indentSpacesCmd,
@@ -248,9 +283,6 @@ Examples:
 		// dependencies back from the same place), so an absent core\golib is the normal state of a
 		// first conversion into a fresh root — neither a thing to relocate nor a thing to warn about.
 
-		// Initialize standard library converter
-		converter := NewStdLibConverter(options)
-
 		// Check if specific packages are specified
 		var packageFilter []string
 
@@ -263,6 +295,20 @@ Examples:
 
 			fmt.Printf("Only converting specified packages: %s\n", strings.Join(packageFilter, ", "))
 		}
+
+		if options.platformCensusDir != "" {
+			// Multi-platform EMISSION CENSUS: the -go2cspath root is read as the SEED every staging
+			// root is copied from and is never written to; each target converts into its own root
+			// under the census directory, and the only artifact produced is the manifest.
+			if err := runPlatformCensus(options, options.platformCensusDir, packageFilter); err != nil {
+				log.Fatalf("Multi-platform census failed: %v", err)
+			}
+
+			return
+		}
+
+		// Initialize standard library converter
+		converter := NewStdLibConverter(options)
 
 		// Run the conversion process
 		if err := converter.ScanAndConvertFiltered(packageFilter); err != nil {
