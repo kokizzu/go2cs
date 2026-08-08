@@ -589,7 +589,7 @@ func (v *Visitor) loadImportedTypeAliases(projectImport string) {
 
 	for _, info := range packageInfoMap {
 		// Load imported type aliases for the target project import, if not already loaded
-		loadImportedTypeAliases(info)
+		loadImportedTypeAliases(info, v.options)
 	}
 }
 
@@ -606,8 +606,13 @@ func isCSharpBuiltinTypeName(name string) bool {
 	return false
 }
 
-func loadImportedTypeAliases(info PackageInfo) {
-	packageInfoFile := filepath.Join(info.TargetDir, PackageInfoFileName)
+func loadImportedTypeAliases(info PackageInfo, options Options) {
+	// Layout L3 routes a package's platform-varying artifacts into per-GOOS folders, and
+	// `package_info.cs` is one of them (design §4.3) — so ask for the copy that describes the
+	// platform THIS conversion is emitting for. Flat wins when the dependency's metadata is shared,
+	// which it is for the overwhelming majority of the corpus; see platformPackageInfoPath for what
+	// asking flat unconditionally would silently cost.
+	packageInfoFile := platformPackageInfoPath(info.TargetDir, goosOfTarget(options.targetPlatform))
 
 	packageLock.Lock()
 
@@ -842,7 +847,7 @@ func preloadImportedTypeAliases(files []FileEntry, options Options) {
 			}
 
 			for _, info := range getImportPackageInfo([]string{importPath}, options) {
-				loadImportedTypeAliases(info)
+				loadImportedTypeAliases(info, options)
 			}
 		}
 	}

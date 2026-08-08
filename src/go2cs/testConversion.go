@@ -495,7 +495,7 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	referenceImports = append(referenceImports, declarationClosureImports(
 		[]*packages.Package{production, internal, external}, compileExcluded,
 		append([]string{production.PkgPath}, referenceImports...),
-		packageImplementBases(filepath.Join(outputPath, PackageInfoFileName)))...)
+		packageImplementBases(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))))...)
 
 	testProjectName := projectName + ".tests.csproj"
 	if err := writeTestProject(filepath.Join(outputPath, testProjectName), projectName, projectNamespace, model, productionFiles, outputFiles, fixtures, referenceImports, options); err != nil {
@@ -679,7 +679,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		// then merged in by the shared writePackageInfoFile (identical emission semantics to
 		// production — pointer-form unwrapping, dedup, pruning — because it IS the production
 		// writer).
-		productionInfoPath := filepath.Join(outputPath, PackageInfoFileName)
+		// Layout L3: an L3 package's production package_info.cs lives in its per-GOOS folder, and it
+		// is the SEED this test conversion's own metadata is merged into — asking flat would fail
+		// the "convert the package itself before its tests" check on a package that HAS been
+		// converted (design §4.3).
+		productionInfoPath := platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))
 		productionInfo, err := os.ReadFile(productionInfoPath)
 		if err != nil {
 			return result, fmt.Errorf("read production package metadata (convert the package itself before its tests): %w", err)
@@ -1338,7 +1342,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	}
 
 	if productionName != "" {
-		loadPackageImplements(filepath.Join(outputPath, PackageInfoFileName), productionName)
+		loadPackageImplements(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform)), productionName)
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))

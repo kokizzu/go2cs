@@ -291,7 +291,7 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 		}
 	}
 
-	projectFiles, companionWritten, err := mergeCompanionArtifacts(coreDir, emissions)
+	conditioned, residual, companionWritten, err := mergeCompanionArtifacts(coreDir, targets, emissions)
 
 	if err != nil {
 		return err
@@ -317,24 +317,60 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 		}
 	}
 
+	// A multi-platform emission is the one run that can produce the UNION project set: the
+	// platform-exclusive packages (internal/syscall/windows on Windows, internal/syscall/unix and
+	// internal/runtime/syscall on the unix side, crypto/x509/internal/macos on macOS …) exist in
+	// only one target's tree, so a single-target solution can never list them all. Regenerating from
+	// the MERGED corpus — after every source and project file has landed — is what makes
+	// `dotnet build go2cs-stdlib.slnx -p:GoTargetOS=linux` able to resolve a Linux-only reference at
+	// all. The generator is reused unchanged: it already derives its project list from the tree.
+	// graph stays nil on purpose: with no convert-set graph, collectConvertedProjects recovers every
+	// referenced-but-unemitted package (the hand-owned `unsafe`/`testing` case), which is exactly
+	// right when the tree being scanned IS the finished corpus rather than one run's output.
+	solutionConverter := &StdLibConverter{go2csPath: rootPath}
+
+	if err := solutionConverter.GenerateSolutionFile(); err != nil {
+		return err
+	}
+
 	fmt.Printf("\n=== Layout L3 merge ===\n\n")
 	fmt.Printf("Packages carrying per-GOOS sources   %6d\n", len(layoutPackages))
+	fmt.Printf("Packages with conditioned references %6d\n", len(conditioned))
 	fmt.Printf("Artifacts written                    %6d\n", written)
 	fmt.Printf("Artifacts already current            %6d\n", unchanged)
 	fmt.Printf("Stale copies removed                 %6d\n", removed)
 	fmt.Printf("Project files given the L3 block     %6d\n", blockAdded)
 
+	fmt.Printf("\nPer-GOOS sources:\n")
+
 	for _, pkg := range sortedKeys(layoutPackages) {
 		fmt.Printf("  %s\n", pkg)
 	}
 
-	if len(projectFiles) > 0 {
-		fmt.Printf("\n⚠ %d package(s) emitted a project file that DIFFERS across targets. The per-GOOS\n", len(projectFiles))
-		fmt.Printf("  <ProjectReference> blocks those need are increment 3; the first target's project file\n")
-		fmt.Printf("  was merged, so their non-%s builds will reference the wrong import set:\n", goosOfTarget(targets[0]))
+	if len(conditioned) > 0 {
+		fmt.Printf("\nConditioned <ProjectReference> groups (direct import set differs by GOOS):\n")
 
-		for _, pkg := range projectFiles {
+		for _, pkg := range conditioned {
 			fmt.Printf("  %s\n", pkg)
+		}
+	}
+
+	// A project file that differs across targets in something OTHER than its reference list is
+	// outside what layout L3 expresses (the design measured the .csproj delta as reference lists —
+	// §4). The merge still lands the first target's remainder, but the difference is named rather
+	// than absorbed: it is either a genuine design gap or a measurement worth recording.
+	if len(residual) > 0 {
+		fmt.Printf("\n⚠ %d package(s) emitted project files that differ OUTSIDE their <ProjectReference>\n", len(residual))
+		fmt.Printf("  lists. Layout L3 conditions references only, so %s's remainder was kept:\n", goosOfTarget(targets[0]))
+
+		for _, pkg := range sortedKeys(func() map[string]bool {
+			keys := map[string]bool{}
+			for pkg := range residual {
+				keys[pkg] = true
+			}
+			return keys
+		}()) {
+			fmt.Printf("  %s — %s\n", pkg, residual[pkg])
 		}
 	}
 
@@ -354,9 +390,16 @@ func countWrite(changed bool, written *int, unchanged *int) {
 // per-package README, the packaging icons, and the `.cs.auto` review siblings. These stay FLAT: one
 // package has one project file, one README and one icon regardless of platform.
 //
-// Returns the packages whose project file differs across targets (the conditioned
-// <ProjectReference> work increment 3 owns) and the number of files written.
-func mergeCompanionArtifacts(coreDir string, emissions []*platformEmission) ([]string, int, error) {
+// The project file is the one that can genuinely disagree between targets, because a package's
+// DIRECT IMPORT SET can differ by GOOS (design §4: 24 packages). Such a file is not copied from one
+// target — it is COMPOSED, by reading every target's reference set and splitting it into the shared
+// list plus per-GOOS conditioned groups (platformProject.go). That composition goes through the same
+// renderer a single-target reconvert uses, which is what makes the reconvert reproduce it.
+//
+// Returns the packages given conditioned reference groups, any package whose project files differ
+// OUTSIDE their reference lists (mapped to a description — layout L3 does not express that, so it
+// is reported rather than absorbed), and the number of files written.
+func mergeCompanionArtifacts(coreDir string, targets []string, emissions []*platformEmission) ([]string, map[string]string, int, error) {
 	names := map[string]bool{}
 	written := 0
 
@@ -368,9 +411,40 @@ func mergeCompanionArtifacts(coreDir string, emissions []*platformEmission) ([]s
 		}
 	}
 
-	differing := map[string]bool{}
+	conditioned := map[string]bool{}
+	residual := map[string]string{}
 
 	for _, rawPath := range sortedKeys(names) {
+		destination := filepath.Join(coreDir, filepath.FromSlash(rawPath))
+
+		if strings.EqualFold(filepath.Ext(rawPath), ".csproj") && companionDiffersAcrossTargets(rawPath, emissions) {
+			merged, note, err := mergePlatformProjectFile(rawPath, targets, emissions)
+
+			if err != nil {
+				return nil, nil, written, err
+			}
+
+			if len(note) > 0 {
+				residual[artifactPackage(rawPath)] = note
+			}
+
+			if strings.Contains(merged, platformReferenceBlockHeader) {
+				conditioned[artifactPackage(rawPath)] = true
+			}
+
+			changed, err := writeMergedContents(destination, merged)
+
+			if err != nil {
+				return nil, nil, written, err
+			}
+
+			if changed {
+				written++
+			}
+
+			continue
+		}
+
 		source := ""
 
 		for _, emission := range emissions {
@@ -384,14 +458,10 @@ func mergeCompanionArtifacts(coreDir string, emissions []*platformEmission) ([]s
 			continue
 		}
 
-		if strings.EqualFold(filepath.Ext(rawPath), ".csproj") && companionDiffersAcrossTargets(rawPath, emissions) {
-			differing[artifactPackage(rawPath)] = true
-		}
-
-		changed, err := copyMergedFile(source, filepath.Join(coreDir, filepath.FromSlash(rawPath)))
+		changed, err := copyMergedFile(source, destination)
 
 		if err != nil {
-			return nil, written, err
+			return nil, nil, written, err
 		}
 
 		if changed {
@@ -399,7 +469,98 @@ func mergeCompanionArtifacts(coreDir string, emissions []*platformEmission) ([]s
 		}
 	}
 
-	return sortedKeys(differing), written, nil
+	return sortedKeys(conditioned), residual, written, nil
+}
+
+// mergePlatformProjectFile composes ONE project file out of the several a package's targets emitted,
+// expressing their differing import sets as layout L3's conditioned <ProjectReference> groups.
+//
+// The second result is a note (empty when there is nothing to say) describing a difference the
+// merge could NOT express — two targets' project files disagreeing outside their reference lists.
+func mergePlatformProjectFile(rawPath string, targets []string, emissions []*platformEmission) (string, string, error) {
+	sets := map[string][]string{}
+
+	base, baseTarget, baseRemainder, note := "", "", "", ""
+
+	for i, target := range targets {
+		if _, ok := emissions[i].artifacts[rawPath]; !ok {
+			// This target has no such package at all (a platform-exclusive one). Nothing to read,
+			// and nothing to condition — its absence is expressed by the exclusive package's own
+			// sources living in a per-GOOS folder, not by this file.
+			continue
+		}
+
+		contents, err := os.ReadFile(filepath.Join(emissions[i].root, "core", filepath.FromSlash(rawPath)))
+
+		if err != nil {
+			return "", "", fmt.Errorf("failed to read staged project file %q for target %s: %w", rawPath, target, err)
+		}
+
+		goos := goosOfTarget(target)
+		references, ok := platformFullReferenceSet(string(contents), goos)
+
+		if !ok {
+			// Not a project file this machinery recognizes (a hand-owned one, or a template without
+			// the golib anchor). Merging it would be guesswork; copy the first target's verbatim.
+			if len(base) == 0 {
+				base = string(contents)
+			}
+
+			return base, fmt.Sprintf("project file has no recognizable <ProjectReference> group; %s's copy was kept", goosOfTarget(targets[0])), nil
+		}
+
+		sets[goos] = references
+		remainder := stripPlatformReferences(string(contents))
+
+		if len(base) == 0 {
+			base, baseTarget, baseRemainder = string(contents), target, remainder
+			continue
+		}
+
+		if remainder != baseRemainder && len(note) == 0 {
+			note = fmt.Sprintf("%s and %s disagree outside their reference lists", baseTarget, target)
+		}
+	}
+
+	shared, deltas, _ := splitPlatformReferenceSets(sets)
+	merged, err := renderPlatformReferences(base, shared, deltas)
+
+	if err != nil {
+		return base, note, fmt.Errorf("failed to compose conditioned references for %q: %w", rawPath, err)
+	}
+
+	return merged, note, nil
+}
+
+// stripPlatformReferences returns a project file with every reference removed — the unconditioned
+// list emptied and the conditioned block dropped — so two targets' project files can be compared for
+// differences that are NOT about references.
+func stripPlatformReferences(contents string) string {
+	stripped, err := renderPlatformReferences(contents, nil, nil)
+
+	if err != nil {
+		return contents
+	}
+
+	return stripped
+}
+
+// writeMergedContents writes composed (rather than copied) project-file bytes to their merged
+// destination, skipping the write when they are already there. Reports whether anything was written.
+func writeMergedContents(destination string, contents string) (bool, error) {
+	if !needToWriteFile(destination, []byte(contents)) {
+		return false, nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+		return false, fmt.Errorf("failed to create output directory %q: %w", filepath.Dir(destination), err)
+	}
+
+	if err := os.WriteFile(destination, []byte(contents), 0644); err != nil {
+		return false, fmt.Errorf("failed to write merged project file %q: %w", destination, err)
+	}
+
+	return true, nil
 }
 
 // companionDiffersAcrossTargets reports whether the targets that hold this artifact hold different
