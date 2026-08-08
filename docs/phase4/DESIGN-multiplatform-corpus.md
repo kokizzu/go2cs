@@ -1417,7 +1417,14 @@ Recorded so nobody mistakes a measurement for a guarantee.
    **RULED (user, 2026-08-08): option (i) — the neutral `lib/net9.0/` slot carrying the Windows
    host-of-record assembly is an acceptable default.** Increment 4's de-facto layout is ratified as the
    design; the silent-fallback consequence for unshipped RIDs remains increment 5's arch-agnostic
-   `runtimes/linux` item, softened rather than reopened by this ruling. **Same day, the run-layer ruling:
+   `runtimes/linux` item, softened rather than reopened by this ruling.
+   **Refined same day: the fallback must be LOUD.** A one-time stderr warning fires when the loaded
+   flavor's baked `GOOS` constant disagrees with the actual host OS — which is true exactly and only in
+   the unshipped-RID case (a resolved RID asset always matches its host; Windows-on-Windows always
+   matches). Mechanism: a golib helper taking the baked constant, called from a flat platform-neutral
+   file in `runtime`'s init path so every flavor carries the identical check and the neutral `lib/` slot
+   stays byte-identical to `runtimes/win-x64`. Implementation queued directly behind the in-flight
+   Syscall6 lane (same package — sequenced, not raced). **Same day, the run-layer ruling:
    `internal/runtime/syscall.Syscall6` is implemented as the libc `syscall(2)` keystone P/Invoke**
    (FINDING-linux-run-layer.md option A) — one gate lighting the whole generated surface, mirroring Go's
    own single-funnel asm architecture, with the errno-convention conversion inside the shim.
