@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-89%2F89_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.build.constraint.html)
+[![Tests](https://img.shields.io/badge/Tests-89%2F89_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.build.constraint.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/build/constraint@go1.23.1)
 
 Package constraint implements parsing and evaluation of build constraint lines. See [https://golang.org/cmd/go/#hdr-Build\_constraints](https://golang.org/cmd/go/#hdr-Build_constraints) for documentation about build constraints themselves.
 

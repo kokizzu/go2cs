@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html)
+[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/crypto@v0.23.1-0.20240603234054-0b431c7de36a/internal/poly1305)
 
 Package poly1305 implements Poly1305 one-time message authentication code as specified in [https://cr.yp.to/mac/poly1305-20050329.pdf](https://cr.yp.to/mac/poly1305-20050329.pdf).
 

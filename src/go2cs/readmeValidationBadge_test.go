@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -231,6 +232,217 @@ func TestValidationBadgeRequiresBothGreenSignals(t *testing.T) {
 
 	if !strings.Contains(badge, "not_yet_validated") {
 		t.Fatalf("expected the honest orange fallback, got: %s", badge)
+	}
+}
+
+// goRootWithVendor builds a GOROOT-shaped tree holding just the src/vendor/modules.txt the Docs
+// badge reads, in the exact shape the Go distribution ships it (module header, `##` annotation, then
+// one package path per line).
+func goRootWithVendor(t *testing.T, modules string) string {
+	t.Helper()
+
+	goRoot := t.TempDir()
+	vendorDir := filepath.Join(goRoot, "src", "vendor")
+	mustMkdirAll(t, vendorDir)
+	mustWriteFile(t, filepath.Join(vendorDir, vendorModulesFileName), modules)
+
+	return goRoot
+}
+
+const goRootVendorModules = "# golang.org/x/crypto v0.23.1-0.20240603234054-0b431c7de36a\n" +
+	"## explicit; go 1.18\n" +
+	"golang.org/x/crypto/chacha20\n" +
+	"golang.org/x/crypto/internal/poly1305\n" +
+	"# golang.org/x/text v0.16.0\n" +
+	"## explicit; go 1.18\n" +
+	"golang.org/x/text/transform\n" +
+	"golang.org/x/text/unicode/norm\n"
+
+// The Docs badge is the reader's route from the converted C# back to the Go it mirrors, so its exact
+// rendering — Go brand blue, the gopher logo, the version-pinned pkg.go.dev link — is pinned here for
+// each of the three shapes the corpus contains.
+func TestDocsBadgePinsEachImportPathShape(t *testing.T) {
+	goRoot := goRootWithVendor(t, goRootVendorModules)
+
+	tests := []struct {
+		name       string
+		importPath string
+		expected   string
+	}{
+		{
+			name:       "standard package",
+			importPath: "bufio",
+			expected:   "[![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1)",
+		},
+		{
+			name:       "nested standard package",
+			importPath: "path/filepath",
+			expected:   "[![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/path/filepath@go1.23.1)",
+		},
+		{
+			// pkg.go.dev serves the standard library's internal packages like any other std
+			// package, so they need no special case and get a normal release-pinned link.
+			name:       "internal package",
+			importPath: "internal/abi",
+			expected:   "[![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/internal/abi@go1.23.1)",
+		},
+		{
+			// A vendored package pins the MODULE version modules.txt records, in both the link and
+			// the message, because that is the documentation the link actually reaches. The
+			// pseudo-version's dashes are doubled: a single dash separates shields' three fields.
+			name:       "vendored package",
+			importPath: "vendor/golang.org/x/crypto/chacha20",
+			expected:   "[![Docs](https://img.shields.io/badge/Docs-@v0.23.1--0.20240603234054--0b431c7de36a-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/crypto@v0.23.1-0.20240603234054-0b431c7de36a/chacha20)",
+		},
+		{
+			name:       "vendored package with a plain semantic version",
+			importPath: "vendor/golang.org/x/text/unicode/norm",
+			expected:   "[![Docs](https://img.shields.io/badge/Docs-@v0.16.0-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/text@v0.16.0/unicode/norm)",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if badge := readmeDocsBadgeLine(test.importPath, "1.23.1", goRoot); badge != test.expected {
+				t.Fatalf("docs badge mismatch\n got: %s\nwant: %s", badge, test.expected)
+			}
+		})
+	}
+}
+
+// An unpinnable link would point at whatever is current rather than at the sources this package
+// holds, which is the one thing the badge promises — so every unresolvable input says nothing.
+func TestDocsBadgeOmittedWhenItCannotBePinned(t *testing.T) {
+	goRoot := goRootWithVendor(t, goRootVendorModules)
+
+	tests := []struct {
+		name       string
+		importPath string
+		goVersion  string
+		goRoot     string
+	}{
+		{name: "no import path", importPath: "", goVersion: "1.23.1", goRoot: goRoot},
+		{name: "no Go version", importPath: "bufio", goVersion: "", goRoot: goRoot},
+		{name: "vendored package absent from modules.txt", importPath: "vendor/golang.org/x/net/idna", goVersion: "1.23.1", goRoot: goRoot},
+		{name: "vendored package with no modules.txt at all", importPath: "vendor/golang.org/x/crypto/chacha20", goVersion: "1.23.1", goRoot: t.TempDir()},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if badge := readmeDocsBadgeLine(test.importPath, test.goVersion, test.goRoot); badge != "" {
+				t.Fatalf("expected no docs badge, got: %s", badge)
+			}
+		})
+	}
+}
+
+// The real distribution is the format's authority, so the parser is exercised against the actual
+// modules.txt this toolchain ships rather than only against the fixture shaped like it. No version
+// is asserted (it moves with the Go release) — only that a known vendored package resolves to its
+// module with a pin.
+func TestVendoredModulePinReadsTheRealGoRoot(t *testing.T) {
+	goRoot, err := getGoEnv("GOROOT")
+
+	if err != nil || strings.TrimSpace(goRoot) == "" {
+		t.Skip("GOROOT is not resolvable")
+	}
+
+	goRoot = strings.TrimSpace(goRoot)
+
+	if _, err := os.Stat(filepath.Join(goRoot, "src", "vendor", vendorModulesFileName)); err != nil {
+		t.Skip("this GOROOT ships no vendored modules")
+	}
+
+	modulePath, pin, ok := vendoredModulePin(goRoot, "golang.org/x/text/transform")
+
+	if !ok {
+		t.Fatal("golang.org/x/text/transform did not resolve against the real GOROOT modules.txt")
+	}
+
+	if modulePath != "golang.org/x/text" {
+		t.Fatalf("resolved module %q, want golang.org/x/text", modulePath)
+	}
+
+	if !strings.HasPrefix(pin, "v") {
+		t.Fatalf("resolved pin %q does not look like a module version", pin)
+	}
+}
+
+// The import path the Docs badge pins comes from the package's source DIRECTORY, because the
+// loader's PkgPath is not stable across load configurations for exactly the two shapes that matter.
+func TestStdLibImportPathComesFromTheSourceDirectory(t *testing.T) {
+	goRoot := filepath.FromSlash("C:/Program Files/Go")
+	goRootSrc := filepath.Join(goRoot, "src")
+
+	tests := []struct {
+		name      string
+		sourceDir string
+		goRoot    string
+		expected  string
+	}{
+		{name: "standard package", sourceDir: filepath.Join(goRootSrc, "bufio"), goRoot: goRoot, expected: "bufio"},
+		{name: "nested package", sourceDir: filepath.Join(goRootSrc, "path", "filepath"), goRoot: goRoot, expected: "path/filepath"},
+		{name: "internal package", sourceDir: filepath.Join(goRootSrc, "internal", "abi"), goRoot: goRoot, expected: "internal/abi"},
+		{
+			name:      "vendored package keeps its vendor prefix",
+			sourceDir: filepath.Join(goRootSrc, "vendor", "golang.org", "x", "crypto", "chacha20"),
+			goRoot:    goRoot,
+			expected:  "vendor/golang.org/x/crypto/chacha20",
+		},
+		{name: "the src root itself is no package", sourceDir: goRootSrc, goRoot: goRoot, expected: ""},
+		{name: "outside GOROOT", sourceDir: filepath.FromSlash("D:/work/app/lib"), goRoot: goRoot, expected: ""},
+		{name: "no source directory", sourceDir: "", goRoot: goRoot, expected: ""},
+		{name: "no GOROOT", sourceDir: filepath.Join(goRootSrc, "bufio"), goRoot: "", expected: ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if actual := stdLibImportPath(test.sourceDir, test.goRoot); actual != test.expected {
+				t.Fatalf("stdLibImportPath = %q, want %q", actual, test.expected)
+			}
+		})
+	}
+
+	// Windows reports GOROOT's casing differently between `go env` and the loader, and the whole
+	// corpus's import paths would move if that decided anything.
+	if runtime.GOOS == "windows" {
+		lowered := filepath.Join(strings.ToLower(goRootSrc), "bufio")
+
+		if actual := stdLibImportPath(lowered, goRoot); actual != "bufio" {
+			t.Fatalf("a case-differing GOROOT produced %q, want bufio", actual)
+		}
+	}
+}
+
+// The badge line is the two badges, in order, one space apart — and it collapses to nothing when
+// neither can be composed, which is what keeps a context-less conversion's README as it always was.
+func TestReadmeBadgeLineJoinsTestsThenDocs(t *testing.T) {
+	root, projectPath := badgeTree(t, "io", "1.23.1.2")
+
+	addProofPage(t, root, "io", 59, 2)
+	mustWriteFile(t, filepath.Join(projectPath, "io"+testProjectFileSuffix), "<Project />")
+
+	// The source directory doubles as the import-path source, so it has to sit under this fixture's
+	// own GOROOT for the docs badge to resolve.
+	goRoot := goRootWithVendor(t, goRootVendorModules)
+	sourceDir := filepath.Join(goRoot, "src", "io")
+	mustMkdirAll(t, sourceDir)
+
+	expected := "[![Tests](https://img.shields.io/badge/Tests-59%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.2/io.html)" +
+		" " + fmt.Sprintf("[![Docs](https://img.shields.io/badge/Docs-@%s-00ADD8?logo=go)](https://pkg.go.dev/io@go%s)", goVersion(), goVersion())
+
+	if goVersion() == "" {
+		t.Skip("the Go toolchain version is not resolvable")
+	}
+
+	if line := readmeBadgeLine(projectPath, "io", sourceDir, Options{goRoot: goRoot}); line != expected {
+		t.Fatalf("badge line mismatch\n got: %s\nwant: %s", line, expected)
+	}
+
+	// Neither badge composable — no repository context AND no GOROOT — is an empty line, not a
+	// stray separator.
+	if line := readmeBadgeLine(t.TempDir(), "io", sourceDir, Options{}); line != "" {
+		t.Fatalf("expected an empty badge line, got: %s", line)
 	}
 }
 

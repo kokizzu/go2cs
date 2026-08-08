@@ -189,6 +189,13 @@ if (-not (Test-Path $currentProofs)) {
     # everything up to the next stray slash -- collapsing four lines of prose into a broken URL on
     # the 1.23.1.3 release run. A green badge's versioned link always terminates its segment with
     # '/', so the tightened class changes nothing for the links this retarget exists to move.
+    #
+    # That same class is what lets the Tests badge share its LINE with the Docs badge (added
+    # 2026-08-08): the space between the two badges terminates the segment, so a retarget can never
+    # run past the proof link into the pkg.go.dev link beside it. The Docs badge is otherwise
+    # invisible to every pattern in this block -- it is anchored on 'go2cs.net/validation/', and the
+    # verification below on 'badge/Tests-', neither of which a 'badge/Docs-' / 'pkg.go.dev' badge
+    # can satisfy. Verified against both a green and a vendored README before the badge landed.
     $badgeLinkPattern = '(https://go2cs\.net/validation/)[^/\s)]+(/)'
     $retargeted = 0
 
