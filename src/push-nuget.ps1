@@ -9,6 +9,14 @@
     infrastructure projects core\golib (go.lib) and gen\go2cs-gen (go.gen). It deliberately never
     packs src\go2cs.slnx, whose behavioral-test and example projects are not publishable.
 
+    MULTIPLATFORM (docs\phase4\DESIGN-multiplatform-corpus.md section 9(a), increment 4). The converted corpus
+    is one tree whose platform-varying packages keep per-GOOS sources selected by $(GoTargetOS), so the
+    solution is built and packed ONCE PER RID and the flavors are merged into a single nupkg per
+    package: lib\net9.0 carries the reference (Windows) flavor as the compile-time asset, and
+    runtimes\<rid>\lib\net9.0 carries each shipped RID's runtime assembly. Package IDs, and everything a
+    consumer writes, are unchanged. Platform-neutral packages -- the large majority -- are copied
+    verbatim from the reference pass and are byte-for-byte what a single-pass release produced.
+
     All packages share one version, sourced from src\version.props: <GoStdLibVersion>.<GoBuildNumber>
     (base tracks the converted Go release, e.g. 1.23.1; the 4th part is the build/publish counter).
     -Push increments GoBuildNumber by default so every publish is a new version (commit version.props
@@ -41,11 +49,12 @@
     Build configuration to pack. Defaults to Release.
 
 .PARAMETER OutDir
-    Directory to collect the .nupkg files. Defaults to src\artifacts\nupkg.
+    Directory to collect the merged .nupkg files. Defaults to src\artifacts\nupkg. Each RID's
+    unmerged pack is kept beside them under _flavors\<rid>\ for inspection.
 
 .PARAMETER SkipBuild
-    Skip the Release build and pack the output already on disk (e.g. a build from Visual Studio).
-    By default the script does a fresh Release build first and aborts if it fails.
+    NO LONGER SUPPORTED, and rejected with an explanation. A multiplatform release is built once per
+    RID with a different $(GoTargetOS) each time, so there is no single on-disk build to pack.
 
 .PARAMETER BumpBuild
     Force or suppress the GoBuildNumber increment in src\version.props (then commit it). Defaults to
@@ -358,27 +367,432 @@ foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -R
 
 Write-Step "Verified $sourceVerified C# Source badge(s) pin $fullVersion and its release tag"
 
-# --- Fresh Release pack -------------------------------------------------------------------------
+# --- Multiplatform pack: ONE nupkg per package, carrying RID-specific assemblies ------------------
+# docs\phase4\DESIGN-multiplatform-corpus.md section 9 option (a), staged as section 12 increment 4.
+#
+# The converted corpus is ONE tree in layout L3: a package whose C# varies by GOOS keeps its
+# platform-selected sources in per-GOOS subfolders and $(GoTargetOS) admits exactly one of them to the
+# compilation. A PUBLISHED package must nevertheless work on every supported platform without the
+# consumer choosing anything, so the solution is built once per RID and the flavors are merged into a
+# single nupkg per package:
+#
+#   go.os/
+#     lib/net9.0/os.dll                       compile-time asset + RID-agnostic runtime fallback
+#     runtimes/win-x64/lib/net9.0/os.dll      runtime asset, selected on win-x64
+#     runtimes/linux-x64/lib/net9.0/os.dll    runtime asset, selected on linux-x64
+#
+# WHY lib/ RATHER THAN ref/, against NuGet's documented asset selection. NuGet gives `lib/{tfm}/` both
+# the `compile` and the `runtime` asset roles; `ref/{tfm}/` gives only `compile`; and
+# `runtimes/{rid}/lib/{tfm}/` gives only `runtime`, RID-selected, and REQUIRES a compile asset to exist
+# elsewhere in the package. A RID-specific managed assembly is therefore always a two-part shape, and
+# the only question is what the compile half is:
+#
+#   * lib/ carrying the REFERENCE flavor (chosen). Compile-time binding is the reference flavor's
+#     surface; at run time the host reads the `runtimeTargets` entries NuGet writes into deps.json for
+#     the runtimes/ assets and, when one matches the running RID, uses it INSTEAD of the RID-agnostic
+#     lib/ assembly of the same name -- so a portable framework-dependent app resolves the right
+#     flavor with no RuntimeIdentifier anywhere in the consumer's project. On a RID this release does
+#     not ship, the lib/ assembly is what loads: a Linux-arm64 consumer would silently get Windows
+#     behaviour. That is the honest cost of this choice and it is why the shipped RID set is stated in
+#     the design rather than inferred.
+#   * ref/ carrying a neutral surface (not chosen). It would turn that silent wrong-flavor fallback
+#     into a loud missing-assembly failure, which is better -- but there IS no neutral surface to put
+#     there: section 6 measures `syscall` at 270 names in common out of 992/2,186/1,899 and `log/syslog` as
+#     exporting nothing at all on Windows, so a ref/ assembly would have to be either a synthesised
+#     intersection (a build artifact nothing in this repository produces) or one flavor again, which
+#     is what lib/ already is, minus the fallback. section 11 records that seam as open.
+#
+# The reference flavor is the FIRST entry below, and it is Windows: that keeps the compile surface a
+# consumer binds against exactly the one today's single-platform packages present, and it matches section 11's
+# "let lib/net9.0/syscall.dll carry the host-of-record flavor".
+#
+# DEPENDENCIES ARE PER TARGET FRAMEWORK, NEVER PER RID (section 9). A package whose imports differ by GOOS --
+# 21 of them carry conditioned <ProjectReference> groups -- therefore declares the UNION of its
+# flavors' dependencies, and the merge below computes that union. Both sets restore everywhere; only
+# the RID-matched assemblies ever load.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+# --- nupkg surgery helpers ------------------------------------------------------------------------
+# A .nupkg is an ordinary zip, so the merge below is entry-level: no repack, no re-sign, no NuGet
+# authoring API. It runs at PACK time, before the offline signing step a release performs, so it can
+# never invalidate a signature.
+function Add-GoZipEntry([System.IO.Compression.ZipArchive]$Zip, [string]$Name, [byte[]]$Bytes) {
+    if ($Zip.GetEntry($Name)) { throw "Package already contains an entry named $Name" }
+    $entry = $Zip.CreateEntry($Name, [System.IO.Compression.CompressionLevel]::Optimal)
+    $s = $entry.Open()
+    try { $s.Write($Bytes, 0, $Bytes.Length) } finally { $s.Dispose() }
+}
+
+function Get-GoZipEntryText([System.IO.Compression.ZipArchiveEntry]$Entry) {
+    $ms = New-Object System.IO.MemoryStream
+    $s = $Entry.Open()
+    try { $s.CopyTo($ms) } finally { $s.Dispose() }
+    # Decoding with a BOM-less UTF8Encoding leaves any byte-order mark in the string as a leading
+    # U+FEFF, so re-encoding with the same object reproduces the original preamble exactly rather
+    # than silently adding or dropping one.
+    return (New-Object System.Text.UTF8Encoding($false)).GetString($ms.ToArray())
+}
+
+function Set-GoZipEntryText([System.IO.Compression.ZipArchive]$Zip, [string]$Name, [string]$Text) {
+    $existing = $Zip.GetEntry($Name)
+    if ($existing) { $existing.Delete() }
+    Add-GoZipEntry $Zip $Name ((New-Object System.Text.UTF8Encoding($false)).GetBytes($Text))
+}
+
+function Test-GoXmlWhitespace($Node) {
+    if (-not $Node) { return $false }
+    if (@('Whitespace', 'SignificantWhitespace') -contains [string]$Node.NodeType) { return $true }
+    return ([string]$Node.NodeType -eq 'Text' -and $Node.Value -match '^\s*$')
+}
+
+# Union the flavor's <dependencies> into the base .nuspec's. NuGet declares dependencies per target
+# framework only -- never per RID (section 9) -- so a package whose imports differ by GOOS must declare every
+# flavor's, and let the RID decide which assemblies actually load. Matching is by id: the version is
+# one value across the whole release, so two flavors can only ever disagree about PRESENCE.
+function Merge-GoNuspecDependencies([string]$BaseText, [string]$FlavorText, [string]$Id, [string]$Rid) {
+    # `dotnet pack` writes the .nuspec with a UTF-8 BOM, which Get-GoZipEntryText deliberately keeps
+    # as a leading U+FEFF so the rewrite reproduces it. XmlDocument.LoadXml takes a STRING, where a
+    # U+FEFF is an ordinary character and not a legal document prefix ("Data at the root level is
+    # invalid. Line 1, position 1."), so it is peeled off here and put back on the way out.
+    $bom = ''
+    if ($BaseText.Length -and $BaseText[0] -eq [char]0xFEFF) { $bom = [string][char]0xFEFF; $BaseText = $BaseText.Substring(1) }
+    if ($FlavorText.Length -and $FlavorText[0] -eq [char]0xFEFF) { $FlavorText = $FlavorText.Substring(1) }
+
+    $baseDoc = New-Object System.Xml.XmlDocument
+    $baseDoc.PreserveWhitespace = $true
+    $baseDoc.LoadXml($BaseText)
+
+    $flavorDoc = New-Object System.Xml.XmlDocument
+    $flavorDoc.PreserveWhitespace = $true
+    $flavorDoc.LoadXml($FlavorText)
+
+    # local-name() throughout: the .nuspec's default namespace varies by schema revision and none of
+    # this cares which one it is.
+    $flavorDeps = $flavorDoc.SelectSingleNode("//*[local-name()='dependencies']")
+    if (-not $flavorDeps) { return ($bom + $BaseText) }
+
+    $baseDeps = $baseDoc.SelectSingleNode("//*[local-name()='dependencies']")
+    if (-not $baseDeps) {
+        # The reference flavor declares nothing and this one does. Import the whole block rather than
+        # dropping it -- a dependency that exists on only one platform is exactly the case (a) exists for.
+        $metadata = $baseDoc.SelectSingleNode("//*[local-name()='metadata']")
+        if (-not $metadata) { throw "No <metadata> in the .nuspec of $Id" }
+        [void]$metadata.AppendChild($baseDoc.ImportNode($flavorDeps, $true))
+        return ($bom + $baseDoc.OuterXml)
+    }
+
+    # Modern `dotnet pack` always emits <group targetFramework=...>; the flat form is handled so this
+    # cannot quietly become a no-op if that ever changes.
+    $flavorGroups = @($flavorDeps.SelectNodes("*[local-name()='group']"))
+    if ($flavorGroups.Count -eq 0) { $flavorGroups = @($flavorDeps) }
+
+    foreach ($fg in $flavorGroups) {
+        $tfm = ''
+        if ($fg.Attributes -and $fg.Attributes['targetFramework']) { $tfm = $fg.Attributes['targetFramework'].Value }
+
+        $baseGroups = @($baseDeps.SelectNodes("*[local-name()='group']"))
+        if ($baseGroups.Count -eq 0) { $baseGroups = @($baseDeps) }
+
+        $bg = $null
+        foreach ($g in $baseGroups) {
+            $gTfm = ''
+            if ($g.Attributes -and $g.Attributes['targetFramework']) { $gTfm = $g.Attributes['targetFramework'].Value }
+            if ($gTfm -eq $tfm) { $bg = $g; break }
+        }
+
+        if (-not $bg) { [void]$baseDeps.AppendChild($baseDoc.ImportNode($fg, $true)); continue }
+
+        $existing = @($bg.SelectNodes("*[local-name()='dependency']"))
+        $have = @($existing | ForEach-Object { $_.Attributes['id'].Value })
+        $anchor = $null
+        if ($existing.Count) { $anchor = $existing[$existing.Count - 1] }
+
+        foreach ($fd in @($fg.SelectNodes("*[local-name()='dependency']"))) {
+            if ($have -contains $fd.Attributes['id'].Value) { continue }
+
+            $imported = $baseDoc.ImportNode($fd, $true)
+            if ($anchor -and (Test-GoXmlWhitespace $anchor.PreviousSibling)) {
+                # Reproduce the indentation of the line above, so the merged .nuspec stays readable.
+                $ws = $anchor.PreviousSibling.CloneNode($true)
+                [void]$bg.InsertAfter($ws, $anchor)
+                [void]$bg.InsertAfter($imported, $ws)
+            }
+            else {
+                [void]$bg.AppendChild($imported)
+            }
+            $anchor = $imported
+        }
+    }
+
+    return ($bom + $baseDoc.OuterXml)
+}
+
+# RID -> $(GoTargetOS). ORDER IS SIGNIFICANT: the first entry is the reference flavor (see above).
+# Increment 5 adds macOS here, and only here.
+$ridFlavors = [ordered]@{
+    'win-x64'   = 'windows'
+    'linux-x64' = 'linux'
+}
+$referenceRid = @($ridFlavors.Keys)[0]
+
+if ($SkipBuild) {
+    throw ("-SkipBuild cannot produce a multiplatform release. The RID-specific assemblies come from one " +
+           "build pass per RID ($(@($ridFlavors.Keys) -join ', ')), each with a different `$(GoTargetOS), " +
+           "so no single on-disk build holds them all. Re-run without -SkipBuild.")
+}
+
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 Get-ChildItem $OutDir -Filter *.nupkg -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
-# Fresh Release build first (default) so a compile error fails the run BEFORE anything is packed or
-# pushed. -SkipBuild packs whatever is already built on disk (e.g. a Release build from Visual Studio).
-# The explicit GeneratePackageOnBuild=false is a guard: csprojs default it off, and this keeps a
-# future regression from scattering .nupkg into every project's bin\ during the release build.
-if ($SkipBuild) {
-    Write-Step "Skipping build (-SkipBuild): packing existing $Configuration output"
-} else {
-    Write-Step "Building $Configuration (compiles the whole stdlib; several minutes)"
-    & dotnet build $slnx -c $Configuration -p:GeneratePackageOnBuild=false --nologo -v m
-    if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE) -- fix build errors before packing" }
+# --- Which packages need RID-specific assets, derived from the corpus itself ----------------------
+# Never a hardcoded list. Layout L3's own rule, read back off the tree: a directory named after a GOOS
+# that holds NO project file is a per-GOOS SOURCE folder, and its parent is a platform-varying package.
+# The "no project file" test is what keeps `internal/syscall/windows` -- a real package whose own name
+# is a GOOS -- from being read as `internal/syscall`'s Windows variants, exactly as section 8 specifies for
+# the converter's layout-adoption rule.
+#
+# Every such package ships RID-specific assets whether or not this RID PAIR happens to change its
+# emission (a package varying only on darwin, say, produces identical win/linux assemblies). Shipping
+# by structure rather than by a byte compare keeps the package shape a predictable function of the
+# corpus; the byte compare below is the verification, not the decision.
+$coreDir = Join-Path $src 'core'
+$goosNames = @('windows', 'linux', 'darwin')
+$ridSplitIds = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+
+foreach ($dir in Get-ChildItem $coreDir -Recurse -Directory) {
+    if ($goosNames -notcontains $dir.Name) { continue }
+    if (@(Get-ChildItem $dir.FullName -Filter *.csproj -File).Count -gt 0) { continue }
+
+    $projs = @(Get-ChildItem $dir.Parent.FullName -Filter *.csproj -File | Where-Object { $_.Name -notlike '*.tests.csproj' })
+    if ($projs.Count -ne 1) { throw "Expected exactly one library project beside per-GOOS folder $($dir.FullName); found $($projs.Count)" }
+
+    $projText = [System.IO.File]::ReadAllText($projs[0].FullName)
+    if ($projText -notmatch '<AssemblyName>([^<]+)</AssemblyName>') { throw "No <AssemblyName> in $($projs[0].FullName)" }
+    [void]$ridSplitIds.Add("go.$($Matches[1])")
 }
 
-# Pack from the built output. --no-build honors -SkipBuild and avoids a redundant second build;
-# GeneratePackageOnBuild=false leaves packaging to 'dotnet pack' -> $OutDir only (mirrors deploy-core.ps1).
-Write-Step "Packing $Configuration -> $OutDir"
-& dotnet pack $slnx -c $Configuration -o $OutDir -p:GeneratePackageOnBuild=false --no-build --nologo -v m
-if ($LASTEXITCODE -ne 0) { throw "dotnet pack failed ($LASTEXITCODE)" }
+Write-Step "Layout L3: $($ridSplitIds.Count) package(s) carry per-GOOS sources -> RID-specific assemblies"
+
+# --- One build + pack pass per RID ---------------------------------------------------------------
+$flavorRoot = Join-Path $OutDir '_flavors'
+if (Test-Path $flavorRoot) { Remove-Item $flavorRoot -Recurse -Force }
+
+# REVERSED deliberately, so the REFERENCE flavor is the last pass. Every pass writes the same
+# bin\/obj\, so whichever runs last is what a developer's tree is left holding; ending on the
+# reference flavor leaves it in exactly the state a plain property-absent build produces, instead of
+# silently leaving Linux assemblies behind for the next local run to pick up.
+$buildOrder = @($ridFlavors.Keys)
+[array]::Reverse($buildOrder)
+
+foreach ($rid in $buildOrder) {
+    $goos = $ridFlavors[$rid]
+    $flavorOut = Join-Path $flavorRoot $rid
+    New-Item -ItemType Directory -Force $flavorOut | Out-Null
+
+    # --no-incremental on EVERY pass, for two independent reasons. (1) The passes share one obj\/bin\,
+    # and what differs between them is the <Compile> ITEM SET, not any source timestamp -- a clean
+    # compile is the cheap way to be certain pass N never inherits pass N-1's assembly. (2) The flag is
+    # not byte-neutral (section 12 increment 3.5's second measurement trap), so a byte comparison between the
+    # flavors -- which this script performs below -- is only an instrument if it is held constant.
+    #
+    # UseSharedCompilation=false is a MEASURED necessity here, not the usual concurrency hygiene.
+    # go2cs-gen runs inside the compiler, and with the shared VBCSCompiler every project's generator
+    # work funnels through one server process: the same clean Release build of this solution measures
+    # ~160 s with csc per project and had not finished after 14 minutes without it (one core busy, 24
+    # MSBuild nodes idle). Two RID passes make that the difference between a 6-minute release and an
+    # hour-long one.
+    Write-Step "[$rid] Building $Configuration at -p:GoTargetOS=$goos (compiles the whole stdlib; several minutes)"
+    & dotnet build $slnx -c $Configuration -p:GoTargetOS=$goos -p:GeneratePackageOnBuild=false --no-incremental -p:UseSharedCompilation=false --nologo -v m
+    if ($LASTEXITCODE -ne 0) { throw "[$rid] dotnet build failed ($LASTEXITCODE) at -p:GoTargetOS=$goos -- fix build errors before packing" }
+
+    # --no-build packs exactly what the pass above produced; the same -p:GoTargetOS is required here
+    # too, because it selects the conditioned <ProjectReference> groups the .nuspec is derived from.
+    Write-Step "[$rid] Packing -> $flavorOut"
+    & dotnet pack $slnx -c $Configuration -o $flavorOut -p:GoTargetOS=$goos -p:GeneratePackageOnBuild=false --no-build --nologo -v m
+    if ($LASTEXITCODE -ne 0) { throw "[$rid] dotnet pack failed ($LASTEXITCODE)" }
+}
+
+# --- Asset merge ----------------------------------------------------------------------------------
+function Read-GoPackageFacts([string]$Path) {
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        $nuspec = @($zip.Entries | Where-Object { $_.FullName -notlike '*/*' -and $_.FullName -like '*.nuspec' })
+        if ($nuspec.Count -ne 1) { throw "Expected exactly one root .nuspec in $Path; found $($nuspec.Count)" }
+
+        $reader = New-Object System.IO.StreamReader($nuspec[0].Open())
+        try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }
+        if ($text -notmatch '<id>([^<]+)</id>') { throw "No <id> in the .nuspec of $Path" }
+        $id = $Matches[1]
+
+        # Hash the compile/runtime payload only. README.md, VALIDATION.md, the icons and the .nuspec
+        # are flavor-independent by construction, and the OPC bookkeeping parts (.psmdcp) carry a
+        # freshly minted identifier on every pack, so including them would make every comparison differ.
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        $lib = @{}
+        $size = @{}
+        try {
+            foreach ($e in $zip.Entries) {
+                if ($e.FullName -notlike 'lib/*') { continue }
+                $size[$e.FullName] = $e.Length
+                $s = $e.Open()
+                try { $lib[$e.FullName] = [BitConverter]::ToString($sha.ComputeHash($s)) } finally { $s.Dispose() }
+            }
+        } finally { $sha.Dispose() }
+
+        return [pscustomobject]@{ Id = $id; Path = $Path; Lib = $lib; Size = $size }
+    }
+    finally { $zip.Dispose() }
+}
+
+Write-Step "Reading packed flavors"
+$facts = @{}
+foreach ($rid in $ridFlavors.Keys) {
+    $byId = @{}
+    foreach ($f in Get-ChildItem (Join-Path $flavorRoot $rid) -Filter *.nupkg) {
+        $fact = Read-GoPackageFacts $f.FullName
+        if ($byId.ContainsKey($fact.Id)) { throw "[$rid] Two .nupkg claim package id $($fact.Id)" }
+        $byId[$fact.Id] = $fact
+    }
+    $facts[$rid] = $byId
+    Write-Step "  [$rid] $($byId.Count) package(s)"
+}
+
+$refFacts = $facts[$referenceRid]
+$otherRids = @($ridFlavors.Keys | Where-Object { $_ -ne $referenceRid })
+
+# The flavors must agree on the package-ID SET. They do today because every project is in the union
+# solution and a platform-exclusive package still builds (to an assembly with no types) everywhere --
+# but that is a property of the corpus, not a guarantee, and a package that appeared in only one
+# flavor would otherwise be published as a silently single-platform package.
+foreach ($rid in $otherRids) {
+    $missing = @($refFacts.Keys | Where-Object { -not $facts[$rid].ContainsKey($_) })
+    $extra = @($facts[$rid].Keys | Where-Object { -not $refFacts.ContainsKey($_) })
+    if ($missing.Count -or $extra.Count) {
+        throw "[$rid] package-id set differs from [$referenceRid]: $($missing.Count) missing ($($missing -join ', ')), $($extra.Count) extra ($($extra -join ', '))"
+    }
+}
+
+# Verification. A package the corpus says is platform-neutral should produce an EQUIVALENT assembly
+# under every flavor -- that is section 13.1's finding, re-checked here against the artifacts actually
+# being shipped rather than against a build tree. One that does not is promoted to RID-specific
+# (correctness first) and reported loudly. The converse -- an L3 package whose flavors happen to match
+# for this RID pair -- is only a measurement, and is reported as one.
+#
+# WHAT "EQUIVALENT" HAS TO MEAN HERE, and why a byte compare cannot be the test. Roslyn's
+# deterministic identity fields -- the PE timestamp, the MVID, the PDB id and the PDB content
+# checksum -- are hashes OF THE COMPILATION, and they CASCADE: an assembly whose identity moved shifts
+# every dependent's identity too, even when every source file and every semantic byte is unchanged.
+# Measured on this corpus (increment 4): a byte compare called 216 of 270 platform-neutral packages
+# "different", and the difference was ~72 bytes of a ~340 KB assembly in four runs, with the assembly
+# LENGTH unchanged -- the same signature section 12's increment-3 proof recorded. Meanwhile the same
+# comparison between two SAME-flavor packs reports every assembly byte-identical, so the build is
+# reproducible and the cascade is the whole explanation.
+#
+# So the discriminator is the entry set plus the assembly LENGTH. Identity fields are fixed-size, so a
+# pure identity difference can never move it: this test has no false positives, which is what a
+# release gate needs. It is a smoke alarm, not a semantic digest -- section 13.1's digest remains the
+# instrument that answers the IL question in full, and it is a per-increment measurement rather than a
+# per-release one.
+$promoted = @()
+$variesOnThisPair = 0
+$identityOnly = 0
+$l3Count = $ridSplitIds.Count   # captured before any promotion below can inflate it
+
+foreach ($id in @($refFacts.Keys | Sort-Object)) {
+    $material = $false      # entry set or assembly length differs: a real difference
+    $anyByte = $false       # any byte differs at all: includes the identity cascade above
+
+    foreach ($rid in $otherRids) {
+        $a = $refFacts[$id]
+        $b = $facts[$rid][$id]
+        if ($a.Lib.Count -ne $b.Lib.Count) { $material = $true; $anyByte = $true; break }
+
+        foreach ($k in $a.Lib.Keys) {
+            if (-not $b.Lib.ContainsKey($k)) { $material = $true; $anyByte = $true; break }
+            if ($a.Size[$k] -ne $b.Size[$k]) { $material = $true }
+            if ($a.Lib[$k] -ne $b.Lib[$k]) { $anyByte = $true }
+        }
+        if ($material) { break }
+    }
+
+    if ($ridSplitIds.Contains($id)) {
+        if ($anyByte) { $variesOnThisPair++ }
+    }
+    elseif ($material) {
+        $promoted += $id
+        [void]$ridSplitIds.Add($id)
+    }
+    elseif ($anyByte) { $identityOnly++ }
+}
+
+Write-Step ("Flavor comparison across {0}: {1} of {2} L3 package(s) differ" -f `
+            ($ridFlavors.Keys -join '/'), $variesOnThisPair, $l3Count)
+Write-Step ("  of {0} platform-neutral package(s): {1} differ materially, {2} differ only in the deterministic-identity fields (expected -- see the note above)" -f `
+            ($refFacts.Count - $l3Count), $promoted.Count, $identityOnly)
+
+if ($promoted.Count) {
+    Write-Warning ("These packages carry NO per-GOOS sources yet their assemblies differ in LENGTH between flavors, " +
+                   "which the identity cascade cannot explain, so they are being shipped with RID-specific assets: " +
+                   "$($promoted -join ', '). Investigate before publishing -- the corpus has most likely gained a " +
+                   "platform axis this script's L3 derivation cannot see " +
+                   "(see docs\phase4\DESIGN-multiplatform-corpus.md section 13.1).")
+}
+
+# The merge itself. A neutral package is copied VERBATIM from the reference flavor -- byte for byte the
+# package today's single-pass release produced -- so the Windows lane cannot regress through this
+# script. Only a RID-specific package is rewritten.
+Write-Step "Merging RID assets -> $OutDir"
+$merged = 0
+$copied = 0
+
+foreach ($id in @($refFacts.Keys | Sort-Object)) {
+    $refPath = $refFacts[$id].Path
+    $target = Join-Path $OutDir (Split-Path $refPath -Leaf)
+    Copy-Item $refPath $target -Force
+
+    if (-not $ridSplitIds.Contains($id)) { $copied++; continue }
+
+    $zip = [System.IO.Compression.ZipFile]::Open($target, 'Update')
+    try {
+        # The reference flavor's own assets move from lib/ to its RID folder as well as staying in
+        # lib/. Duplicating rather than relying on "no RID matched, fall back to lib/" is deliberate:
+        # it states each shipped RID's flavor explicitly in the package, so which assembly a RID gets
+        # never depends on which flavor lib/ happens to carry.
+        $libEntries = @($zip.Entries | Where-Object { $_.FullName -like 'lib/*' })
+        foreach ($e in $libEntries) {
+            $ms = New-Object System.IO.MemoryStream
+            $s = $e.Open()
+            try { $s.CopyTo($ms) } finally { $s.Dispose() }
+            Add-GoZipEntry $zip ("runtimes/$referenceRid/" + $e.FullName) $ms.ToArray()
+        }
+
+        $nuspecEntry = @($zip.Entries | Where-Object { $_.FullName -notlike '*/*' -and $_.FullName -like '*.nuspec' })[0]
+        $nuspecText = Get-GoZipEntryText $nuspecEntry
+
+        foreach ($rid in $otherRids) {
+            $src2 = [System.IO.Compression.ZipFile]::OpenRead($facts[$rid][$id].Path)
+            try {
+                foreach ($e in @($src2.Entries | Where-Object { $_.FullName -like 'lib/*' })) {
+                    $ms = New-Object System.IO.MemoryStream
+                    $s = $e.Open()
+                    try { $s.CopyTo($ms) } finally { $s.Dispose() }
+                    Add-GoZipEntry $zip ("runtimes/$rid/" + $e.FullName) $ms.ToArray()
+                }
+
+                $flavorNuspec = @($src2.Entries | Where-Object { $_.FullName -notlike '*/*' -and $_.FullName -like '*.nuspec' })[0]
+                $nuspecText = Merge-GoNuspecDependencies $nuspecText (Get-GoZipEntryText $flavorNuspec) $id $rid
+            }
+            finally { $src2.Dispose() }
+        }
+
+        Set-GoZipEntryText $zip $nuspecEntry.FullName $nuspecText
+    }
+    finally { $zip.Dispose() }
+
+    $merged++
+}
+
+Write-Step "Merged $merged RID-specific package(s); copied $copied platform-neutral package(s) verbatim"
 
 $pkgs = @(Get-ChildItem $OutDir -Filter *.nupkg)
 Write-Step "Packed $($pkgs.Count) package(s)"
