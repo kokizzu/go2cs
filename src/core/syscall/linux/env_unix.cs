@@ -17,7 +17,9 @@ internal static ref Δsync.RWMutex envLock => ref ᏑenvLock.Value;
 internal static map<@string, nint> env;
 internal static slice<@string> envs = runtime_envs();
 
-internal static partial slice<@string> runtime_envs();
+internal static slice<@string> runtime_envs() {
+    return Δruntime.syscall_runtime_envs();
+}
 
 // in package runtime
 internal static void copyenv() {
