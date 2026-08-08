@@ -6,7 +6,13 @@
 > emitter, no corpus, and no packaging.
 > **Increment 2 LANDED 2026-08-08** — layout L3 is real for `internal/goos`: a `-platforms` LIST with
 > `-stdlib` now merges the per-target emissions into one tree, and a single-target reconvert honors the
-> result (§8, "layout adoption"). Everything below is **measured** — four seeded full-standard-library
+> result (§8, "layout adoption").
+> **Increment 3 LANDED 2026-08-08** — L3 now covers all **37** platform-varying packages, with conditioned
+> `<ProjectReference>` groups on the **21** whose imports differ and per-GOOS `package_info`/`package_init`;
+> the solution is the union (307 projects). The Windows lane is proven unmoved semantically, §13.1's IL
+> question is answered (identical), and **the Linux corpus compiled for the first time** — 57 packages, one
+> failing package, 8 errors. See §12.
+> Everything below is **measured** — four seeded full-standard-library
 > conversions, three `go list` censuses and a `go/types` API-surface probe, run 2026-08-08 in lane
 > `r47c-goosdesign` against `739f3606ad`. Where a measurement contradicts an earlier ruling
 > ([`PLAN-linux-operation.md`](../PLAN-linux-operation.md) §A4 **N2**), it is flagged as such in §7 rather
@@ -157,6 +163,18 @@ from the Windows control, plus the one Linux-exclusive package), the macOS run *
 exclusives), and the Windows control **0**. Those are the `<ProjectReference>` lists — **24 packages have a
 different direct import set** across the three (21 emitted everywhere whose reference list differs, plus the
 3 platform-exclusive packages), which is exactly what a conditioned reference block must express.
+
+> **Corrected again on 2026-08-08 by increment 3's emission** (lane r49a), which is the first run to
+> *build* the conditioned reference blocks rather than count `.csproj` rewrites. The measured decomposition,
+> taken from the merged tree: **21** packages are emitted on every platform and have a differing direct
+> import set — these get conditioned `<ProjectReference>` groups — plus **6** platform-exclusive packages
+> (`internal/syscall/windows`, `.../registry`, `.../sysdll`; `internal/runtime/syscall`;
+> `crypto/x509/internal/macos`, `vendor/golang.org/x/net/route`) whose entire source set is per-GOOS and
+> which need no conditioning at all. Total packages whose direct import set is not identical across all
+> three: **27**, not 24. The **21** is exactly what this section's own prose already said ("21 emitted
+> everywhere whose reference list differs"); the 24 came from counting `.csproj` REWRITES against a
+> Windows-seeded control, which by construction never rewrites a *Windows*-exclusive package's project file
+> and so cannot see those three. No `.cs` number moves, and 37 packages-with-any-delta is reproduced exactly.
 
 > **Two numbers in this paragraph were corrected on 2026-08-08 by increment 1's census** (lane r47d), which
 > re-measures every table in §3–§5 from the converter's own emission. It reproduced all of them exactly
@@ -760,12 +778,93 @@ reproduces only *because* of adoption, so the census's `.csproj`-rewritten colum
 seeded project file already carries the block, and `writeProjectFile` re-adds it) — but a census taken
 against a root that was NOT seeded would now differ for that package. Seed, as the ritual already says.
 
-**Increment 3 — L3 for the 37 measured packages, plus the conditioned `ProjectReference` blocks (22 of
-them), plus per-GOOS `package_info`/`package_init`.**
-*Proof:* `dotnet build src/go2cs-stdlib.slnx -p:GoTargetOS=windows` is byte-for-byte the corpus we ship
-today (this is the real gate — the Windows lane must not move); `-p:GoTargetOS=linux` compiles, with its
-error buckets reported. **This is the first point at which "does a Linux corpus compile?" can even be
-asked** — see §13.
+**Increment 3 — L3 for the 37 measured packages, plus the conditioned `ProjectReference` blocks, plus
+per-GOOS `package_info`/`package_init`. — ✅ LANDED 2026-08-08 (lane r49a, against `ae8c07f2d`).**
+
+One command, three real conversions, 555 s:
+
+```powershell
+go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -go2cspath <repo>\src
+```
+
+**37** packages carry per-GOOS sources, **21** carry conditioned `<ProjectReference>` groups (not 22 — see
+§4's correction), 36 project files gain the `$(GoTargetOS)` block (`internal/goos` already had it), and the
+solution grows **304 → 307**: the three platform-exclusive packages no single-target run could ever list.
+Nothing in the bank is a content change to converted C# — 174 flat `.cs` MOVE into `<pkg>/<goos>/`, 94 files
+are new, 33 `.csproj` gain their blocks, and that is the entire set of real hunks. Each of the 174 was
+checked against its committed bytes at its new `<pkg>/windows/` path: **174 preserved, 0 mismatched**.
+
+Four mechanisms this increment had to add that §8's list did not name, each because the corpus reads itself:
+
+1. **`package_info.cs` has READERS.** It is closure-derived, so L3 routes it per-GOOS in **33** packages —
+   the **27** whose content varies (§4.3) plus the **6** platform-exclusive ones, whose every artifact is
+   per-GOOS by definition; `package_init.cs` lands per-GOOS in **7**. And the converter
+   reads its dependencies' copies to mint `<ImportedTypeAliases>` and to learn their `[assembly: GoImplement]`
+   records. Asking flat would have found nothing and fallen through to the derived-alias path: no error, no
+   warning, a quietly different closure in every dependent. `platformPackageInfoPath` mirrors
+   `platformLayoutDir` for readers (flat wins; the other 275 pay one `os.Stat`).
+2. **`stdlibmeta.Collect`** keys sections by directory, so per-GOOS copies would have arrived as `os.windows`
+   with no `os` at all, silently emptying the record `-recurse=nuget` depends on. It now folds the GOOS
+   segment away and keeps the `ReferenceGOOS` flavor, since that asset describes a *published* assembly and a
+   published assembly presents one compile surface (§9(a)). Proven by the existing sync test, which
+   regenerates from the L3 tree and still matches the committed asset byte for byte.
+3. **The union solution**, regenerated from the merged corpus — without it `-p:GoTargetOS=linux` cannot
+   resolve a Linux-only reference at all.
+4. **Facts that are not references still need reconciling**, because one `.csproj` serves every platform:
+   `<AllowUnsafeBlocks>` is the **union** (it differs in `os/user` and `syscall`, permissive on Windows in
+   both, so the rule is byte-neutral here — and it is the polarity the corpus does *not* have that would
+   break a Linux build), and every other companion is taken from the **first target in `-platforms` order**
+   rather than the first that re-emitted, which was silently landing `os/exec/internal/fdtest/README.md` in
+   its Linux flavor.
+
+*Proofs.*
+
+| Proof | Method | Result |
+|:--|:--|:--|
+| the property ABSENT is the same build | SHA-256 of every assembly | **All 306 byte-identical** to `-p:GoTargetOS=windows`, generator output included |
+| **the Windows lane did not move** | The pre-L3 corpus restored IN PLACE (same paths — a different root would change the PDB/MVID path hashes and prove nothing), built, and compared to the L3 `-p:GoTargetOS=windows` build by a semantic digest: assembly identity + assembly-level attributes + every AssemblyRef + every type, field, method, signature, **constant** and **method-body IL**, with MVID/PDB/PE-stamp excluded | **286 of 303 semantically identical.** The 17 that differ are all L3 packages, and for every one the compile inputs are the identical file set with identical bytes and the generated code is identical as a multiset — 15 byte-for-byte, and `os`/`runtime` identical as sorted content, the same promotions landing in differently-named generated files. What moved is **declaration ORDER** — see the seam below |
+| the corpus still builds | `dotnet build src/go2cs-stdlib.slnx -c Debug`, property unset | **307/307, 0 errors, 149 s** |
+| §13.1, the IL question | see §13.1 | **54 of 54 measurable shared-source packages identical** |
+| **the first Linux corpus compile** | `dotnet build … -p:GoTargetOS=linux` | **8 errors, 2 buckets, ONE package** — see below |
+| the Windows lane reproduces from a reconvert | Seeded single-target `-stdlib` per CLAUDE.md's ritual (307 projects, 202 s), compared path-precisely | **3,576 files both sides, 0 new, 0 absent, 0 content differences.** Layout adoption reproduced all 37 L3 packages file for file. Marker gate: **41** line-anchored hand-owns, **0** violations |
+| nothing else in the converter moved | `check-no-regression.ps1` (574 behavioral packages, 419 s) | **byte-identical**; solution integrity 576/576, path casing 4,142/4,142 |
+| the behavioral corpus still passes | `run-behavioral.ps1` (649 s) | **549/549** transpile+compile+golden, **523/523** stdout vs `go run`, 26 skipped |
+| the converter's own suite | `go test ./...` | **green**, 52 s |
+
+**The Linux buckets, honestly.** The build reaches **57** packages and stops at exactly one: `runtime`.
+
+| Bucket | Count | Where |
+|:--|--:|:--|
+| `CS0103` — `The name 'locked' does not exist` | 6 | `runtime/lock_sema_impl.cs` |
+| `CS7036` — missing argument for `Ꮡgp` of `notetsleep_internal` | 2 | `runtime/linux/lock_futex.cs` |
+
+The remaining 249 packages are **skipped as dependents**, not errored — the standard bucketing reading. Both
+buckets are ONE root cause, and it is the one **§7 predicted in writing**: `lock_sema.go` is selected on
+Windows *and* macOS while Linux uses `lock_futex.go`, so "`runtime/lock_sema_impl.cs` needs a sibling, not a
+port." The measurement adds the mechanism §7 could not know: **a hand-owned `*_impl.cs` companion of a
+per-GOOS file is not routed by L3 at all.** The classifier works on *emissions*, and an `*_impl.cs` has no Go
+counterpart, so it is never emitted, never classified, and stays flat — where Linux compiles it against a
+`lock_sema.cs` that is not in its build. That is increment 3.5's first item, and it is a layout rule
+(hand-owned companions inherit their principal's folder), not a Go-conversion defect.
+
+**Two seams this increment names rather than closes.**
+
+1. **L3 changes compile-item ORDER, and metadata order is observable.** One alphabetical `*.cs` glob becomes
+   `*.cs` followed by `$(GoTargetOS)/*.cs`, so a package's platform files now sort after its shared ones
+   instead of interleaving. No code changes — but the source-generator hint-name disambiguation suffix can
+   attach to the other member of a case-colliding pair, and the metadata table order shifts, which shifts the
+   tokens inside IL. 17 packages are affected; 20 of the 37 L3 packages are unaffected. This is **not fixable
+   within L3** — no MSBuild glob can interleave two directories alphabetically — so the honest acceptance
+   standard for a layout change is *semantic content* identity, not byte identity. Worth a ruling: member
+   order is unspecified in C# but is observable through reflection enumeration and through the relative order
+   of `[GoInit]` module initializers, so if any of that is load-bearing, an explicit sorted `<Compile>` list
+   is the only remedy — at the cost of every project file naming every file.
+2. **`log/syslog`'s `InternalsVisibleTo`.** Its Go source is entirely excluded on Windows, so there are no
+   sibling internal test files and the block is absent there while present on the unix side. Taking the union
+   would add an assembly-level attribute to a shipped Windows assembly, so the merge keeps the Windows
+   remainder and reports it. It costs the Linux `-tests` path for one package nothing validates. The general
+   question — should L3 grow a *conditioned property* axis alongside its conditioned references? — is a
+   design decision, not a measurement.
 
 **Increment 4 — packaging (a) for the RID pair `win-x64` / `linux-x64` only.**
 `push-nuget.ps1` grows the second build pass and the asset merge. Validate by restoring `go.fmt` into a
@@ -781,14 +880,44 @@ are additions *by value* to a mechanism already proven, exactly as the big-three
 
 Recorded so nobody mistakes a measurement for a guarantee.
 
-1. **IL identity is assumed, not measured.** §4 measures the *converter's* output. Two packages with
-   byte-identical C# could still produce different IL if `go2cs-gen` generates differently against a
-   Windows- vs Linux-flavored dependency (the generators read `[assembly: GoImplement]` records from
-   referenced `package_info` assemblies, and 27 `package_info.cs` files vary). The "265 packages ship one
-   assembly" claim in §9(a) therefore needs a **build-level check**: compile the same source against both
-   flavors and compare IL. This should be the first verification inside Increment 3, and if it fails the
-   only consequence is that more packages get RID-specific assets — the design shape does not change.
-2. **Whether the Linux corpus compiles is still unmeasured — and cannot be measured today.** A seeded
+1. ~~**IL identity is assumed, not measured.**~~ **MEASURED 2026-08-08 (increment 3, lane r49a): identical,
+   for every package the Linux build can currently reach.** §4 measures the *converter's* output; the worry
+   was that `go2cs-gen` might generate differently against a Windows- vs Linux-flavored dependency, since the
+   generators read `[assembly: GoImplement]` records from referenced `package_info` assemblies and 27 of
+   those vary.
+
+   Method: build the whole solution at `-p:GoTargetOS=windows` and at `-p:GoTargetOS=linux`, then compare
+   each package's assembly with the semantic digest described in §12 (types, members, signatures, constants
+   and method-body IL bytes, plus the AssemblyRef set — deliberately included, since a conditioned
+   `<ProjectReference>` block is exactly what changes it — with MVID, PDB id and PE stamp excluded).
+
+   | | Packages |
+   |:--|--:|
+   | Compiled under **both** flavors | 57 |
+   | **Semantically identical across flavors** | **54** |
+   | Differing | 3 |
+
+   All three differ because their **source** differs by platform, not their dependencies: `internal/goos`
+   (`IsUnix`, the `GOOS` constant), `internal/runtime/syscall` (Linux-only) and
+   `internal/syscall/windows/sysdll` (Windows-only). **No package with shared source produced different IL
+   against a differently-flavored closure**, so §9(a)'s "265 packages ship one `lib/{tfm}` assembly" holds
+   for everything measurable, and increment 4 owes RID-specific assets only to the packages whose source
+   already varies.
+
+   **The honest limit:** 54 of ~265 shared-source packages. The Linux build stops at `runtime` (§12), so the
+   other ~211 are unmeasurable until increment 3.5 gets the Linux corpus further. The answer should be
+   re-taken then, and it is cheap to re-take — the instrument is a small `System.Reflection.Metadata` walker,
+   throwaway like census D's probe and not committed.
+2. ~~**Whether the Linux corpus compiles is still unmeasured — and cannot be measured today.**~~ **ASKED AND
+   ANSWERED 2026-08-08 (increment 3): 57 packages compile, one package fails with 8 errors in 2 buckets, 249
+   are skipped as its dependents.** The single failing package is `runtime`, from a single root cause §7 had
+   already predicted (`lock_sema` is Windows+macOS; Linux uses `lock_futex`), and the mechanism is a layout
+   rule L3 does not yet carry — a hand-owned `*_impl.cs` companion is never *emitted*, so the
+   emission-based classifier never routes it into its principal's per-GOOS folder. Detail and buckets in §12.
+   The prediction below was exactly right about *why* the question needed L3 first, and this is what it looked
+   like when it could finally be asked. The original note follows.
+
+   A seeded
    reconvert produces a *union* tree (the Linux emission laid over a seeded Windows tree), and the emitted
    csproj globs `*.cs` flat, so building it would compile both platforms' files and fail on duplicate
    definitions. Pruning it correctly *is* the layout question this document answers. That is why the
