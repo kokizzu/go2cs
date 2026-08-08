@@ -135,7 +135,7 @@ public static void Put(this ж<Pool> Ꮡp, any x) {
 // If Get would otherwise return nil and p.New is non-nil, Get returns
 // the result of calling p.New.
 public static any Get(this ж<Pool> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     if (race.Enabled) {
         race.Disable();
@@ -166,13 +166,11 @@ public static any Get(this ж<Pool> Ꮡp) {
 }
 
 internal static any getSlow(this ж<Pool> Ꮡp, nint pid) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // See the comment in pin regarding ordering of the loads.
-    var size = runtime_LoadAcquintptr(Ꮡp.of(Pool.ᏑlocalSize));
-    // load-acquire
-    @unsafe.Pointer locals = p.local;
-    // load-consume
+    var size = runtime_LoadAcquintptr(Ꮡp.of(Pool.ᏑlocalSize)); // load-acquire
+    @unsafe.Pointer locals = p.local; // load-consume
     // Try to steal one element from other procs.
     for (nint i = 0; i < (nint)size; i++) {
         var lΔ1 = indexLocal(locals, (pid + i + 1) % (nint)size);
@@ -215,7 +213,7 @@ internal static any getSlow(this ж<Pool> Ꮡp, nint pid) {
 // returns poolLocal pool for the P and the P's id.
 // Caller must call runtime_procUnpin() when done with the pool.
 internal static (ж<poolLocal>, nint) pin(this ж<Pool> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNil();
+    ref var p = ref Ꮡp.DerefOrNull();
 
     // Check whether p is nil to get a panic.
     // Otherwise the nil dereference happens while the m is pinned,
@@ -228,43 +226,44 @@ internal static (ж<poolLocal>, nint) pin(this ж<Pool> Ꮡp) {
     // Since we've disabled preemption, GC cannot happen in between.
     // Thus here we must observe local at least as large localSize.
     // We can observe a newer/larger local, it is fine (we must observe its zero-initialized-ness).
-    var s = runtime_LoadAcquintptr(Ꮡp.of(Pool.ᏑlocalSize));
-    // load-acquire
-    @unsafe.Pointer l = p.local;
-    // load-consume
+    var s = runtime_LoadAcquintptr(Ꮡp.of(Pool.ᏑlocalSize)); // load-acquire
+    @unsafe.Pointer l = p.local; // load-consume
     if ((uintptr)pid < s) {
         return (indexLocal(l, pid), pid);
     }
     return Ꮡp.pinSlow();
 }
 
-internal static (ж<poolLocal>, nint) pinSlow(this ж<Pool> Ꮡp) => func((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+internal static (ж<poolLocal>, nint) pinSlow(this ж<Pool> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    // Retry under the mutex.
-    // Can not lock the mutex while pinned.
-    runtime_procUnpin();
-    ᏑallPoolsMu.Lock();
-    defer(ᏑallPoolsMu.Unlock);
-    nint pid = runtime_procPin();
-    // poolCleanup won't be called while we are pinned.
-    var s = p.localSize;
-    @unsafe.Pointer l = p.local;
-    if ((uintptr)pid < s) {
-        return (indexLocal(l, pid), pid);
+        // Retry under the mutex.
+        // Can not lock the mutex while pinned.
+        runtime_procUnpin();
+        ᏑallPoolsMu.Lock();
+        defer(ᏑallPoolsMu.Unlock, ref ᒐ);
+        nint pid = runtime_procPin();
+        // poolCleanup won't be called while we are pinned.
+        var s = p.localSize;
+        @unsafe.Pointer l = p.local;
+        if ((uintptr)pid < s) {
+            return (indexLocal(l, pid), pid);
+        }
+        if (p.local == nil) {
+            allPools = append(allPools, Ꮡp);
+        }
+        // If GOMAXPROCS changes between GCs, we re-allocate the array and lose the old one.
+        nint size = Δruntime.GOMAXPROCS(0);
+        var local = new slice<poolLocal>(size, () => new(nil));
+        atomic.StorePointer(Ꮡp.of(Pool.Ꮡlocal), new @unsafe.Pointer(Ꮡ(local, 0))); // store-release
+        runtime_StoreReluintptr(Ꮡp.of(Pool.ᏑlocalSize), (uintptr)size); // store-release
+        return (Ꮡ(local, pid), pid);
     }
-    if (p.local == nil) {
-        allPools = append(allPools, Ꮡp);
-    }
-    // If GOMAXPROCS changes between GCs, we re-allocate the array and lose the old one.
-    nint size = Δruntime.GOMAXPROCS(0);
-    var local = new slice<poolLocal>(size, () => new(nil));
-    atomic.StorePointer(Ꮡp.of(Pool.Ꮡlocal), new @unsafe.Pointer(Ꮡ(local, 0)));
-    // store-release
-    runtime_StoreReluintptr(Ꮡp.of(Pool.ᏑlocalSize), (uintptr)size);
-    // store-release
-    return (Ꮡ(local, pid), pid);
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // poolCleanup should be an internal detail,
 // but widely used packages access it using linkname.

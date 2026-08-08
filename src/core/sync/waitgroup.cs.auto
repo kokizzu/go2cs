@@ -48,49 +48,54 @@ partial class sync_package {
 // If a WaitGroup is reused to wait for several independent sets of events,
 // new Add calls must happen after all previous Wait calls have returned.
 // See the WaitGroup example.
-public static void Add(this ж<WaitGroup> Ꮡwg, nint delta) => func((defer, recover) => {
-    ref var wg = ref Ꮡwg.Value;
+public static void Add(this ж<WaitGroup> Ꮡwg, nint delta) {
+    GoFrame ᒐ = default;
+    try {
+        ref var wg = ref Ꮡwg.DerefOrNull();
 
-    if (race.Enabled) {
-        if (delta < 0) {
-            // Synchronize decrements with Wait.
-            race.ReleaseMerge((uintptr)@unsafe.Pointer.FromRef(ref wg));
+        if (race.Enabled) {
+            if (delta < 0) {
+                // Synchronize decrements with Wait.
+                race.ReleaseMerge((uintptr)@unsafe.Pointer.FromRef(ref wg));
+            }
+            race.Disable();
+            defer(race.Enable, ref ᒐ);
         }
-        race.Disable();
-        defer(race.Enable);
+        var state = Ꮡwg.of(WaitGroup.Ꮡstate).Add(((uint64)delta << (int)(32)));
+        var v = (int32)((state >> (int)(32)));
+        var w = (uint32)state;
+        if (race.Enabled && delta > 0 && v == (int32)delta) {
+            // The first increment must be synchronized with Wait.
+            // Need to model this as a read, because there can be
+            // several concurrent wg.counter transitions from 0.
+            race.Read(new @unsafe.Pointer(Ꮡwg.of(WaitGroup.Ꮡsema)));
+        }
+        if (v < 0) {
+            throw panic("sync: negative WaitGroup counter");
+        }
+        if (w != 0 && delta > 0 && v == (int32)delta) {
+            throw panic("sync: WaitGroup misuse: Add called concurrently with Wait");
+        }
+        if (v > 0 || w == 0) {
+            return;
+        }
+        // This goroutine has set counter to 0 when waiters > 0.
+        // Now there can't be concurrent mutations of state:
+        // - Adds must not happen concurrently with Wait,
+        // - Wait does not increment waiters if it sees counter == 0.
+        // Still do a cheap sanity check to detect WaitGroup misuse.
+        if (Ꮡwg.of(WaitGroup.Ꮡstate).Load() != state) {
+            throw panic("sync: WaitGroup misuse: Add called concurrently with Wait");
+        }
+        // Reset waiters count to 0.
+        Ꮡwg.of(WaitGroup.Ꮡstate).Store(0);
+        for (; w != 0; w--) {
+            runtime_Semrelease(Ꮡwg.of(WaitGroup.Ꮡsema), false, 0);
+        }
     }
-    var state = Ꮡwg.of(WaitGroup.Ꮡstate).Add(((uint64)delta << (int)(32)));
-    var v = (int32)((state >> (int)(32)));
-    var w = (uint32)state;
-    if (race.Enabled && delta > 0 && v == (int32)delta) {
-        // The first increment must be synchronized with Wait.
-        // Need to model this as a read, because there can be
-        // several concurrent wg.counter transitions from 0.
-        race.Read(new @unsafe.Pointer(Ꮡwg.of(WaitGroup.Ꮡsema)));
-    }
-    if (v < 0) {
-        throw panic("sync: negative WaitGroup counter");
-    }
-    if (w != 0 && delta > 0 && v == (int32)delta) {
-        throw panic("sync: WaitGroup misuse: Add called concurrently with Wait");
-    }
-    if (v > 0 || w == 0) {
-        return;
-    }
-    // This goroutine has set counter to 0 when waiters > 0.
-    // Now there can't be concurrent mutations of state:
-    // - Adds must not happen concurrently with Wait,
-    // - Wait does not increment waiters if it sees counter == 0.
-    // Still do a cheap sanity check to detect WaitGroup misuse.
-    if (Ꮡwg.of(WaitGroup.Ꮡstate).Load() != state) {
-        throw panic("sync: WaitGroup misuse: Add called concurrently with Wait");
-    }
-    // Reset waiters count to 0.
-    Ꮡwg.of(WaitGroup.Ꮡstate).Store(0);
-    for (; w != 0; w--) {
-        runtime_Semrelease(Ꮡwg.of(WaitGroup.Ꮡsema), false, 0);
-    }
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // Done decrements the [WaitGroup] counter by one.
 public static void Done(this ж<WaitGroup> Ꮡwg) {
@@ -99,7 +104,7 @@ public static void Done(this ж<WaitGroup> Ꮡwg) {
 
 // Wait blocks until the [WaitGroup] counter is zero.
 public static void Wait(this ж<WaitGroup> Ꮡwg) {
-    ref var wg = ref Ꮡwg.Value;
+    ref var wg = ref Ꮡwg.DerefOrNull();
 
     if (race.Enabled) {
         race.Disable();

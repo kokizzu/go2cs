@@ -82,7 +82,7 @@ internal static UntypedInt dequeueLimit => /* (1 << dequeueBits) / 4 */ 10737418
 // pushHead adds val at the head of the queue. It returns false if the
 // queue is full. It must only be called by a single producer.
 internal static bool pushHead(this ж<poolDequeue> Ꮡd, any val) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     var ptrs = Ꮡd.of(poolDequeue.ᏑheadTail).Load();
     var (head, tail) = d.unpack(ptrs);
@@ -113,7 +113,7 @@ internal static bool pushHead(this ж<poolDequeue> Ꮡd, any val) {
 // It returns false if the queue is empty. It must only be called by a
 // single producer.
 internal static (any, bool) popHead(this ж<poolDequeue> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     ж<eface> slot = default!;
     while (ᐧ) {
@@ -148,7 +148,7 @@ internal static (any, bool) popHead(this ж<poolDequeue> Ꮡd) {
 // It returns false if the queue is empty. It may be called by any
 // number of consumers.
 internal static (any, bool) popTail(this ж<poolDequeue> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     ж<eface> slot = default!;
     while (ᐧ) {
@@ -217,7 +217,7 @@ internal static (any, bool) popTail(this ж<poolDequeue> Ꮡd) {
 }
 
 internal static void pushHead(this ж<poolChain> Ꮡc, any val) {
-    ref var c = ref Ꮡc.Value;
+    ref var c = ref Ꮡc.DerefOrNull();
 
     var d = c.head;
     if (d == nil) {

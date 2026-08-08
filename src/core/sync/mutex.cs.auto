@@ -63,7 +63,7 @@ internal static UntypedFloat starvationThresholdNs => 1e6;
 // If the lock is already in use, the calling goroutine
 // blocks until the mutex is available.
 public static void Lock(this ж<Mutex> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     // Fast path: grab unlocked mutex.
     if (atomic.CompareAndSwapInt32(Ꮡm.of(Mutex.Ꮡstate), 0, mutexLocked)) {
@@ -82,7 +82,7 @@ public static void Lock(this ж<Mutex> Ꮡm) {
 // and use of TryLock is often a sign of a deeper problem
 // in a particular use of mutexes.
 public static bool TryLock(this ж<Mutex> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     var old = m.state;
     if ((int32)(old & ((int32)((int32)mutexLocked | (int32)mutexStarving))) != 0) {
@@ -101,7 +101,7 @@ public static bool TryLock(this ж<Mutex> Ꮡm) {
 }
 
 internal static void lockSlow(this ж<Mutex> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     int64 waitStartTime = default!;
     var starving = false;
@@ -148,9 +148,8 @@ internal static void lockSlow(this ж<Mutex> Ꮡm) {
         }
         if (atomic.CompareAndSwapInt32(Ꮡm.of(Mutex.Ꮡstate), old, @new)){
             if ((int32)(old & ((int32)((int32)mutexLocked | (int32)mutexStarving))) == 0) {
-                break;
+                break; // locked the mutex with CAS
             }
-            // locked the mutex with CAS
             // If we were already waiting before, queue at the front of the queue.
             var queueLifo = waitStartTime != 0;
             if (waitStartTime == 0) {
@@ -197,7 +196,7 @@ internal static void lockSlow(this ж<Mutex> Ꮡm) {
 // It is allowed for one goroutine to lock a Mutex and then
 // arrange for another goroutine to unlock it.
 public static void Unlock(this ж<Mutex> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if (race.Enabled) {
         _ = m.state;
@@ -213,7 +212,7 @@ public static void Unlock(this ж<Mutex> Ꮡm) {
 }
 
 internal static void unlockSlow(this ж<Mutex> Ꮡm, int32 @new) {
-    ref var m = ref Ꮡm.Value;
+    ref var m = ref Ꮡm.DerefOrNull();
 
     if ((int32)((@new + (int32)mutexLocked) & (int32)mutexLocked) == 0) {
         fatal("sync: unlock of unlocked mutex"u8);

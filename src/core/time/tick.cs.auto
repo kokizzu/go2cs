@@ -57,7 +57,7 @@ public static ж<Ticker> NewTicker(Duration d) {
 // Stop does not close the channel, to prevent a concurrent goroutine
 // reading from the channel from seeing an erroneous "tick".
 public static void Stop(this ж<Ticker> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (!t.initTicker) {
         // This is misuse, and the same for time.Timer would panic,
@@ -72,7 +72,7 @@ public static void Stop(this ж<Ticker> Ꮡt) {
 // The next tick will arrive after the new period elapses. The duration d
 // must be greater than zero; if not, Reset will panic.
 public static void Reset(this ж<Ticker> Ꮡt, Duration d) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.DerefOrNull();
 
     if (d <= 0) {
         throw panic("non-positive interval for Ticker.Reset");

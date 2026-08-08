@@ -1013,14 +1013,11 @@ internal const bool framepointer_enabled = /* GOARCH == "amd64" || GOARCH == "ar
 //go:nosplit
 //go:noinline
 internal static uintptr getcallerfp() {
-    var fp = getfp();
-    // This frame's FP.
+    var fp = getfp(); // This frame's FP.
     if (fp != 0) {
-        fp = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)fp);
-        // The caller's FP.
-        fp = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)fp);
+        fp = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)fp); // The caller's FP.
+        fp = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)fp); // The caller's caller's FP.
     }
-    // The caller's caller's FP.
     return fp;
 }
 

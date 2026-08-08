@@ -146,10 +146,9 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @newʗp) {
 // concrete type. CompareAndSwap of an inconsistent type panics, as does
 // CompareAndSwap(old, nil).
 public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any oldʗp, any @newʗp) {
-    bool swapped = default!;
-
     ref var old = ref heap(oldʗp, out var Ꮡold);
     ref var @new = ref heap(@newʗp, out var Ꮡnew);
+
     if (@new == default!) {
         throw panic("sync/atomic: compare and swap of nil value into Value");
     }

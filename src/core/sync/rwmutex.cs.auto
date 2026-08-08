@@ -70,7 +70,7 @@ internal static UntypedInt rwmutexMaxReaders => /* 1 << 30 */ 1073741824;
 // call excludes new readers from acquiring the lock. See the
 // documentation on the [RWMutex] type.
 public static void RLock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -92,7 +92,7 @@ public static void RLock(this ж<RWMutex> Ꮡrw) {
 // and use of TryRLock is often a sign of a deeper problem
 // in a particular use of mutexes.
 public static bool TryRLock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -121,7 +121,7 @@ public static bool TryRLock(this ж<RWMutex> Ꮡrw) {
 // It is a run-time error if rw is not locked for reading
 // on entry to RUnlock.
 public static void RUnlock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -155,7 +155,7 @@ internal static void rUnlockSlow(this ж<RWMutex> Ꮡrw, int32 r) {
 // If the lock is already locked for reading or writing,
 // Lock blocks until the lock is available.
 public static void Lock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -182,7 +182,7 @@ public static void Lock(this ж<RWMutex> Ꮡrw) {
 // and use of TryLock is often a sign of a deeper problem
 // in a particular use of mutexes.
 public static bool TryLock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -216,7 +216,7 @@ public static bool TryLock(this ж<RWMutex> Ꮡrw) {
 // goroutine. One goroutine may [RWMutex.RLock] ([RWMutex.Lock]) a RWMutex and then
 // arrange for another goroutine to [RWMutex.RUnlock] ([RWMutex.Unlock]) it.
 public static void Unlock(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
+    ref var rw = ref Ꮡrw.DerefOrNull();
 
     if (race.Enabled) {
         _ = rw.w.state;
@@ -256,23 +256,17 @@ internal static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
 // RLocker returns a [Locker] interface that implements
 // the [Locker.Lock] and [Locker.Unlock] methods by calling rw.RLock and rw.RUnlock.
 public static Locker RLocker(this ж<RWMutex> Ꮡrw) {
-    ref var rw = ref Ꮡrw.Value;
-
-    return new rlockerжLocker(Ꮡ((rlocker)(rw)));
+    return new rlockerжLocker(Ꮡrw.Reinterpret<RWMutex, rlocker>());
 }
 
 [GoType("RWMutex")] partial struct rlocker;
 
 internal static void Lock(this ж<rlocker> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
-
-    (Ꮡ((RWMutex)(r))).RLock();
+    (Ꮡr.Reinterpret<rlocker, RWMutex>()).RLock();
 }
 
 internal static void Unlock(this ж<rlocker> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
-
-    (Ꮡ((RWMutex)(r))).RUnlock();
+    (Ꮡr.Reinterpret<rlocker, RWMutex>()).RUnlock();
 }
 
 } // end sync_package

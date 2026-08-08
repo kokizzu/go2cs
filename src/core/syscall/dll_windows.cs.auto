@@ -114,10 +114,9 @@ public static ж<DLL> MustLoadDLL(@string name) {
 // FindProc searches [DLL] d for procedure named name and returns [*Proc]
 // if found. It returns an error if search fails.
 public static (ж<Proc> proc, error err) FindProc(this ж<DLL> Ꮡd, @string name) {
-    ж<Proc> proc = default!;
     error err = default!;
 
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
     (var namep, err) = BytePtrFromString(name);
     if (err != default!) {
         return (default!, err);
@@ -151,8 +150,6 @@ public static ж<Proc> MustFindProc(this ж<DLL> Ꮡd, @string name) {
 
 // Release unloads [DLL] d from memory.
 [GoRecv] public static error /*err*/ Release(this ref DLL d) {
-    error err = default!;
-
     return FreeLibrary(d.Handle);
 }
 
@@ -210,26 +207,31 @@ public static ж<Proc> MustFindProc(this ж<DLL> Ꮡd, @string name) {
 
 // Load loads DLL file d.Name into memory. It returns an error if fails.
 // Load will not try to load DLL, if it is already loaded into memory.
-public static error Load(this ж<LazyDLL> Ꮡd) => func<error>((defer, recover) => {
-    ref var d = ref Ꮡd.Value;
+public static error Load(this ж<LazyDLL> Ꮡd) {
+    GoFrame ᒐ = default;
+    try {
+        ref var d = ref Ꮡd.DerefOrNull();
 
-    // Non-racy version of:
-    // if d.dll == nil {
-    if (atomic.LoadPointer(Ꮡd.of(LazyDLL.Ꮡdll)) == nil) {
-        Ꮡd.of(LazyDLL.Ꮡmu).Lock();
-        defer(Ꮡd.of(LazyDLL.Ꮡmu).Unlock);
-        if (d.dll == nil) {
-            var (dll, e) = LoadDLL(d.Name);
-            if (e != default!) {
-                return e;
+        // Non-racy version of:
+        // if d.dll == nil {
+        if (atomic.LoadPointer(Ꮡd.of(LazyDLL.Ꮡdll)) == nil) {
+            Ꮡd.of(LazyDLL.Ꮡmu).Lock();
+            defer(Ꮡd.of(LazyDLL.Ꮡmu).Unlock, ref ᒐ);
+            if (d.dll == nil) {
+                var (dll, e) = LoadDLL(d.Name);
+                if (e != default!) {
+                    return e;
+                }
+                // Non-racy version of:
+                // d.dll = dll
+                atomic.StorePointer(Ꮡd.of(LazyDLL.Ꮡdll), dll);
             }
-            // Non-racy version of:
-            // d.dll = dll
-            atomic.StorePointer(Ꮡd.of(LazyDLL.Ꮡdll), dll);
         }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // mustLoad is like Load but panics if search fails.
 internal static void mustLoad(this ж<LazyDLL> Ꮡd) {
@@ -241,7 +243,7 @@ internal static void mustLoad(this ж<LazyDLL> Ꮡd) {
 
 // Handle returns d's module handle.
 public static uintptr Handle(this ж<LazyDLL> Ꮡd) {
-    ref var d = ref Ꮡd.Value;
+    ref var d = ref Ꮡd.DerefOrNull();
 
     Ꮡd.mustLoad();
     return (uintptr)(~d.dll).Handle;
@@ -269,30 +271,35 @@ public static ж<LazyDLL> NewLazyDLL(@string name) {
 // Find searches [DLL] for procedure named p.Name. It returns
 // an error if search fails. Find will not search procedure,
 // if it is already found and loaded into memory.
-public static error Find(this ж<LazyProc> Ꮡp) => func<error>((defer, recover) => {
-    ref var p = ref Ꮡp.Value;
+public static error Find(this ж<LazyProc> Ꮡp) {
+    GoFrame ᒐ = default;
+    try {
+        ref var p = ref Ꮡp.DerefOrNull();
 
-    // Non-racy version of:
-    // if p.proc == nil {
-    if (atomic.LoadPointer(Ꮡp.of(LazyProc.Ꮡproc)) == nil) {
-        Ꮡp.of(LazyProc.Ꮡmu).Lock();
-        defer(Ꮡp.of(LazyProc.Ꮡmu).Unlock);
-        if (p.proc == nil) {
-            var e = p.l.Load();
-            if (e != default!) {
-                return e;
+        // Non-racy version of:
+        // if p.proc == nil {
+        if (atomic.LoadPointer(Ꮡp.of(LazyProc.Ꮡproc)) == nil) {
+            Ꮡp.of(LazyProc.Ꮡmu).Lock();
+            defer(Ꮡp.of(LazyProc.Ꮡmu).Unlock, ref ᒐ);
+            if (p.proc == nil) {
+                var e = p.l.Load();
+                if (e != default!) {
+                    return e;
+                }
+                (var proc, e) = (~p.l).dll.FindProc(p.Name);
+                if (e != default!) {
+                    return e;
+                }
+                // Non-racy version of:
+                // p.proc = proc
+                atomic.StorePointer(Ꮡp.of(LazyProc.Ꮡproc), proc);
             }
-            (var proc, e) = (~p.l).dll.FindProc(p.Name);
-            if (e != default!) {
-                return e;
-            }
-            // Non-racy version of:
-            // p.proc = proc
-            atomic.StorePointer(Ꮡp.of(LazyProc.Ꮡproc), proc);
         }
+        return default!;
     }
-    return default!;
-});
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 // mustFind is like Find but panics if search fails.
 internal static void mustFind(this ж<LazyProc> Ꮡp) {
@@ -305,7 +312,7 @@ internal static void mustFind(this ж<LazyProc> Ꮡp) {
 // Addr returns the address of the procedure represented by p.
 // The return value can be passed to Syscall to run the procedure.
 public static uintptr Addr(this ж<LazyProc> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
 
     Ꮡp.mustFind();
     return p.proc.Addr();
@@ -316,12 +323,9 @@ public static uintptr Addr(this ж<LazyProc> Ꮡp) {
 //
 //go:uintptrescapes
 public static (uintptr r1, uintptr r2, error lastErr) Call(this ж<LazyProc> Ꮡp, params ꓸꓸꓸuintptr aʗp) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    error lastErr = default!;
     var a = aʗp.slice();
 
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNull();
     Ꮡp.mustFind();
     return p.proc.Call(a.ꓸꓸꓸ);
 }

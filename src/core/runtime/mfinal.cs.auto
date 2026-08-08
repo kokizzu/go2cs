@@ -109,9 +109,9 @@ internal static void lockRankMayQueueFinalizer() {
 }
 
 internal static void queuefinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡfn, uintptr nret, ж<_type> Ꮡfint, ж<ptrtype> Ꮡot) {
-    ref var fn = ref Ꮡfn.Value;
-    ref var fint = ref Ꮡfint.Value;
-    ref var ot = ref Ꮡot.Value;
+    ref var fn = ref Ꮡfn.DerefOrNull();
+    ref var fint = ref Ꮡfint.DerefOrNull();
+    ref var ot = ref Ꮡot.DerefOrNull();
 
     if (gcphase != _GCoff) {
         // Currently we assume that the finalizer queue won't
@@ -145,8 +145,7 @@ internal static void queuefinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡfn, uint
         finq = block;
     }
     var f = finq.at(finblock.Ꮡfin, (nint)((~finq).cnt));
-    atomic.Xadd(finq.of(finblock.Ꮡcnt), +1);
-    // Sync with markroots
+    atomic.Xadd(finq.of(finblock.Ꮡcnt), +1); // Sync with markroots
     f.Value.fn = Ꮡfn;
     f.Value.nret = nret;
     f.Value.fint = Ꮡfint;
@@ -313,7 +312,7 @@ internal static bool isGoPointerWithoutSpan(@unsafe.Pointer Δp) {
 // queue is emptied (and the finalizers have executed) or the timeout
 // is reached. Returns true if the finalizer queue was emptied.
 // This is used by the runtime and sync tests.
-internal static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
+public static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
     var start = nanotime();
     while (nanotime() - start < timeout) {
         @lock(Ꮡfinlock);
@@ -521,12 +520,12 @@ okarg:
     nret = alignUp(nret, goarch.PtrSize);
     // make sure we have a finalizer goroutine
     createfing();
-    var eʗ3 = e;
+    var eʗ2 = e;
     var fʗ1 = f;
     var fintʗ1 = fint;
     var otʗ1 = ot;
     systemstack(() => {
-        if (!addfinalizer((~eʗ3).data, (ж<funcval>)(uintptr)((~fʗ1).data), nret, fintʗ1, otʗ1)) {
+        if (!addfinalizer((~eʗ2).data, (ж<funcval>)(uintptr)((~fʗ1).data), nret, fintʗ1, otʗ1)) {
             @throw("runtime.SetFinalizer: finalizer already set"u8);
         }
     });
