@@ -76,16 +76,45 @@ func getProjectName(importPath string, options Options) (string, string) {
 			} else {
 				// At this point, current folder has go files, but no go.mod or main.go
 				// Keep traversing up the directory tree until we find go.mod or main.go
-				// or no go files or we reach the root directory
+				// or we reach the root directory
 				currentPath := importPath
 				lastGoFilePath := currentPath // Keep track of the last path with Go files
+
+				// An ancestor directory holding no .go files of its own is a FALLBACK name, never a
+				// stop — issue #35. Go modules are full of pure container directories: `internal/`,
+				// a service tree's `endpoints/` parent, a proto grouping like `xds/core/`, the
+				// `datatransfer/` above an `apiv1/`. Treating the first one as the module boundary
+				// truncated the name to the leaf segment alone, so cloud.google.com/go/bigquery's
+				// datatransfer/apiv1 and storage/apiv1 both emitted `apiv1.csproj` — and Visual
+				// Studio refuses to open a solution containing two projects of the same name,
+				// without saying why, so the entire generated .slnx failed to load. That one
+				// conversion had 175 such projects across 49 colliding names.
+				//
+				// The truncation also loses the namespace (the collapse joins its segments with "."
+				// before the separator split that builds one), so a truncated `internal/errors`
+				// lands on go.errors_package — the converted standard library's own class.
+				//
+				// Walking up to the module root instead is what the go command itself does to find
+				// the main module, and it makes the name the package's import path by construction
+				// (module path + relative path), which is what the GOROOT branch above already
+				// produces for the standard library. The fallback still applies when there is
+				// genuinely no module root anywhere above — a GOPATH-style tree — which is the only
+				// case it was ever needed for.
+				truncatedFallback := ""
 
 				for {
 					parentDir := filepath.Dir(currentPath)
 
 					if parentDir == currentPath {
-						// Reached the root directory
-						importPath = filepath.Base(importPath)
+						// Reached the root directory with no module root above it, so there is no
+						// import path to recover; the leaf-relative name composed on the way up is
+						// the best available.
+						if truncatedFallback != "" {
+							importPath = truncatedFallback
+						} else {
+							importPath = filepath.Base(importPath)
+						}
+
 						break
 					}
 
@@ -119,22 +148,25 @@ func getProjectName(importPath string, options Options) (string, string) {
 
 						break
 					} else if !hasGoFiles(currentPath) {
-						// No Go files in this directory, use the last directory with Go files
-						relPath := getRelativePath(importPath, lastGoFilePath)
-
-						if relPath != "" {
-							importPath = filepath.Base(lastGoFilePath) + "." + relPath
-						} else {
-							importPath = filepath.Base(lastGoFilePath)
+						// No Go files in this directory: record the last directory that had them as
+						// the fallback name and keep looking for the module root above. Frozen at
+						// the FIRST crossing, because directories past it are not part of this
+						// package's own chain and must not extend the fallback — so it is exactly
+						// the name this arm produced before it stopped being a stop.
+						if truncatedFallback == "" {
+							if relPath := getRelativePath(importPath, lastGoFilePath); relPath != "" {
+								truncatedFallback = filepath.Base(lastGoFilePath) + "." + relPath
+							} else {
+								truncatedFallback = filepath.Base(lastGoFilePath)
+							}
 						}
 
-						break
+						continue
 					}
 
-					// Update last path with Go files if current directory has Go files
-					if hasGoFiles(currentPath) {
-						lastGoFilePath = currentPath
-					}
+					// Reached only when the directory HAS Go files (the arm above continues past the
+					// ones that do not), so no second probe is needed to decide.
+					lastGoFilePath = currentPath
 				}
 			}
 		}

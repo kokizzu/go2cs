@@ -76,6 +76,54 @@ Go projects that contain a `main` function are converted into a standard C# exec
 
 An executable's **`<AssemblyName>` is the last element of its import path**, mirroring `go build`, which names a binary after the module/directory's final segment — so `module example.com/colordemo` produces `colordemo.exe`, not `example.com.colordemo.exe` (the full dotted project name). Only the `Exe` assembly name is shortened; the `.csproj` filename keeps the full dotted path (its identity in the solution and in `ProjectReference`s), and **library** assemblies keep the full dotted `<AssemblyName>` — their DLL and NuGet `PackageId` (`go.$(AssemblyName)`) must stay unique across the package graph (e.g. `github.com.fatih.color`).
 
+### A project name is the package's FULL import path — a go-file-free container directory does not truncate it
+
+The dotted project name above is the package's **import path**, every segment of it, joined with `.`
+(`getProjectName`, `importOperations.go`). That is not a formatting preference: the name is the `.csproj`
+filename, the library `<AssemblyName>`, the NuGet `PackageId`, and — minus its last segment — the C#
+**namespace**. All four have to be unique across the package graph, and the import path is the only thing
+about a package that is unique by construction.
+
+For the standard library the path is read straight off `GOROOT/src`. For everything else the converter has
+only a directory, so it recovers the import path the way the go command itself finds the main module:
+**walk up to the nearest `go.mod`**, then join that module's declared path with the package's path relative
+to it. The result is the import path by definition.
+
+The walk used to stop early. Alongside `go.mod` and `main.go` it treated *the first ancestor directory
+holding no `.go` files of its own* as a boundary and named the project after the leaf segment alone. Go
+modules are made of such pure container directories — `internal/`, a proto grouping like `xds/core/`, the
+`datatransfer/` above an `apiv1/`, a service tree's `endpoints/` parent — so the truncation was routine
+rather than exotic, and it cost two things:
+
+* **Duplicate project names.** `cloud.google.com/go/bigquery`'s `datatransfer/apiv1` and `storage/apiv1`
+  both emitted `apiv1.csproj`. Visual Studio refuses to open a solution containing two projects of the
+  same name and reports no reason — silently doing nothing from a file dialog, offering to forget the
+  entry from the recent list — so **the entire generated `.slnx` failed to load** ([issue #35]). One
+  reported `-recurse` conversion had **175 such projects across 49 colliding names** out of 1,727.
+* **A collapsed namespace.** The truncated arm joins its segments with `.` *before* the separator split
+  that builds the namespace, so the qualification never reached it: a truncated `internal/errors` landed
+  on `go.errors_package` — the converted standard library's own class.
+
+A go-file-free ancestor is therefore a **fallback, never a stop**: the walk records the leaf-relative name
+it would have produced and keeps climbing. The fallback applies only when there is genuinely no module
+root anywhere above — a GOPATH-style tree, which is the one case it was ever needed for. Because both the
+declaring package and every importer derive the name from the same call, the two sides move together.
+
+One consequence worth knowing when re-converting: recovering the full path **renames** every package that
+was previously truncated (743 of the 1,727 above), so a re-conversion into an existing output root leaves
+the old, wrongly-named `.csproj` files behind as orphans that a solution may still list. Convert into a
+fresh output directory, or clear the old one first.
+
+Guarded by `TestProjectNameSurvivesGoFileFreeContainerDir` and
+`TestProjectNameFallsBackWhenNoModuleRoot` (the unit invariant, including the fallback arm) and
+`TestRecurseGoFileFreeContainerDirsKeepDistinctProjectNames` (the whole `-recurse` conversion: distinct
+`.csproj` files, a `.slnx` with no repeated project name, and matching qualification in the importer's
+converted code). That last one also exercises `internal` as a **namespace** segment, which only the
+recovered path produces — `go.example.com.app.@internal.web.api_package`, keyword-escaped on both the
+declaration and reference sides.
+
+[issue #35]: https://github.com/ritchiecarroll/go2cs/issues/35
+
 ### Path separators in emitted MSBuild files: forward slashes, on every host
 
 **Every path the converter writes into a `.csproj`, `.slnx`, `.pubxml` or `Directory.Build.props` uses `/`, on every host.** There is no per-host emission and no host-conditional spelling: one converted corpus is correct on Windows, Linux and macOS.

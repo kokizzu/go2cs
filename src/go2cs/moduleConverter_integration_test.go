@@ -10,7 +10,9 @@ import (
 	"go/build"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -787,6 +789,141 @@ func TestRecurseKeywordNamespaceSegment(t *testing.T) {
 			if keywords.Contains(level) {
 				t.Errorf("using target %q names the C# keyword %q unescaped (line %q)", target, level, line)
 			}
+		}
+	}
+}
+
+// TestRecurseGoFileFreeContainerDirsKeepDistinctProjectNames is issue #35 end to end: a generated .slnx
+// carried two projects named `apiv1.csproj`, and Visual Studio refuses to open a solution holding two
+// projects of the same name — silently from a file dialog, with an undiagnosed failure from the recent
+// list. The reporter's conversion had 175 such projects across 49 colliding names.
+//
+// The cause was upstream of the solution writer: getProjectName walked up from the package directory
+// looking for the module root and treated the first ancestor holding no .go files as the boundary, so
+// cloud.google.com/go/bigquery's datatransfer/apiv1 and storage/apiv1 both collapsed to the leaf segment
+// `apiv1`. Go modules are made of such container directories, which is why the collision was routine
+// rather than exotic. Nothing in the solution writer could recover from it — deduplicating there would
+// only have renamed one of two projects whose namespaces had ALSO collapsed onto each other.
+//
+// The fixture is the reporter's shape, deterministic and network-free: a dependency module with two
+// go-file-free container directories over same-named leaf packages, plus the same shape inside the app's
+// OWN tree (internal/web/api), imported so both sides of every emitted name are exercised.
+func TestRecurseGoFileFreeContainerDirsKeepDistinctProjectNames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	libDir := filepath.Join(root, "cloud")
+
+	// The dependency: datatransfer/ and storage/ hold no .go files of their own, only an apiv1 package.
+	writeModuleFile(t, filepath.Join(libDir, "go.mod"), "module example.com/cloud\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(libDir, "datatransfer", "apiv1", "client.go"),
+		"package apiv1\n\nfunc Name() string {\n\treturn \"datatransfer\"\n}\n")
+	writeModuleFile(t, filepath.Join(libDir, "storage", "apiv1", "client.go"),
+		"package apiv1\n\nfunc Name() string {\n\treturn \"storage\"\n}\n")
+
+	// The app: internal/web/ holds no .go files either, so its own package collapsed the same way.
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module example.com/app\n\ngo 1.23\n\nrequire example.com/cloud v1.0.0\n\nreplace example.com/cloud => ../cloud\n")
+	writeModuleFile(t, filepath.Join(appDir, "internal", "web", "api", "api.go"),
+		"package api\n\nfunc Route() string {\n\treturn \"/api\"\n}\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\tdt \"example.com/cloud/datatransfer/apiv1\"\n"+
+			"\tst \"example.com/cloud/storage/apiv1\"\n\t\"example.com/app/internal/web/api\"\n)\n\n"+
+			"func main() {\n\tfmt.Println(dt.Name(), st.Name(), api.Route())\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	// getImportPackageInfo resolves stdlib references through build.Default; pin it as main() does.
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	// Each package's project is named for its full import path. Before the fix the two apiv1 projects
+	// were both `apiv1.csproj` and the app's own package was `api.csproj`.
+	wantProjects := map[string]string{
+		filepath.Join("pkg", "example.com", "cloud", "datatransfer", "apiv1"): "example.com.cloud.datatransfer.apiv1.csproj",
+		filepath.Join("pkg", "example.com", "cloud", "storage", "apiv1"):      "example.com.cloud.storage.apiv1.csproj",
+		filepath.Join("src", "example.com", "app", "internal", "web", "api"):  "example.com.app.internal.web.api.csproj",
+	}
+
+	for dir, name := range wantProjects {
+		if _, err := os.Stat(filepath.Join(options.recurseOutputRoot, dir, name)); err != nil {
+			t.Errorf("project file not written at %s: %v", filepath.Join(dir, name), err)
+		}
+	}
+
+	appProjectDir := filepath.Join(options.recurseOutputRoot, "src", "example.com", "app")
+	appSlnx := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.slnx"))
+
+	// The invariant the issue is actually about: no two projects in the solution share a name.
+	seen := make(map[string]string)
+
+	for _, match := range regexp.MustCompile(`<Project Path="([^"]+)"`).FindAllStringSubmatch(appSlnx, -1) {
+		project := match[1]
+		name := path.Base(project)
+
+		if prior, dup := seen[name]; dup {
+			t.Errorf("solution lists two projects named %q (%q and %q) — Visual Studio will not open it:\n%s",
+				name, prior, project, appSlnx)
+		}
+
+		seen[name] = project
+	}
+
+	for _, name := range wantProjects {
+		if _, ok := seen[name]; !ok {
+			t.Errorf("app per-project solution missing %q:\n%s", name, appSlnx)
+		}
+	}
+
+	// The reference side agrees with the declaration side: the app's csproj names both dependencies by
+	// their qualified project names, and its converted code qualifies the two same-named Go packages
+	// onto DISTINCT C# classes. When the names collapsed, both rendered as go.apiv1_package.
+	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
+
+	for _, name := range wantProjects {
+		if !strings.Contains(appCsproj, "/"+name+`" />`) {
+			t.Errorf("app csproj missing a ProjectReference to %q:\n%s", name, appCsproj)
+		}
+	}
+
+	mainCs := readGenerated(t, filepath.Join(appProjectDir, "main.cs"))
+
+	for _, want := range []string{
+		"go.example.com.cloud.datatransfer.apiv1_package",
+		"go.example.com.cloud.storage.apiv1_package",
+		// `internal` is a C# keyword, escaped by getCoreSanitizedIdentifier on BOTH the declaration
+		// and reference sides (issue #33's second wall). Worth asserting in the escaped form rather
+		// than working around: recovering the full import path is what puts Go's most common
+		// directory name into a namespace at all, so this fix is what exposes that path broadly.
+		"go.example.com.app.@internal.web.api_package",
+	} {
+		if !strings.Contains(mainCs, want) {
+			t.Errorf("main.cs does not qualify against %q:\n%s", want, mainCs)
 		}
 	}
 }
