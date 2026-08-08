@@ -367,9 +367,6 @@ internal static uint64 f32to64(uint32 f) {
 }
 
 internal static (int32 cmp, bool isnan) fcmp64(uint64 f, uint64 g) {
-    int32 cmp = default!;
-    bool isnan = default!;
-
     var (fs, fm, _, fi, fn) = funpack64(f);
     var (gs, gm, _, gi, gn) = funpack64(g);
     switch (ᐧ) {
@@ -405,7 +402,6 @@ internal static (int32 cmp, bool isnan) fcmp64(uint64 f, uint64 g) {
 
 internal static (int64 val, bool ok) f64toint(uint64 f) {
     int64 val = default!;
-    bool ok = default!;
 
     var (fs, fm, fe, fi, fn) = funpack64(f);
     switch (ᐧ) {
@@ -445,8 +441,6 @@ internal static (int64 val, bool ok) f64toint(uint64 f) {
 }
 
 internal static uint64 /*f*/ fintto64(int64 val) {
-    uint64 f = default!;
-
     var fs = (uint64)((uint64)val & (((uint64)1 << (int)(63))));
     var mant = (uint64)val;
     if (fs != 0) {
@@ -456,8 +450,6 @@ internal static uint64 /*f*/ fintto64(int64 val) {
 }
 
 internal static uint32 /*f*/ fintto32(int64 val) {
-    uint32 f = default!;
-
     var fs = (uint64)((uint64)val & (((uint64)1 << (int)(63))));
     var mant = (uint64)val;
     if (fs != 0) {
@@ -479,9 +471,6 @@ internal static uint32 /*f*/ fintto32(int64 val) {
 // 64x64 -> 128 multiply.
 // adapted from hacker's delight.
 internal static (uint64 lo, uint64 hi) mullu(uint64 u, uint64 v) {
-    uint64 lo = default!;
-    uint64 hi = default!;
-
     UntypedInt s = 32;
     const uint64 mask = /* 1<<s - 1 */ 4294967295;
     var u0 = (uint64)(u & mask);
@@ -499,9 +488,6 @@ internal static (uint64 lo, uint64 hi) mullu(uint64 u, uint64 v) {
 // 128/64 -> 64 quotient, 64 remainder.
 // adapted from hacker's delight
 internal static (uint64 q, uint64 r) divlu(uint64 u1, uint64 u0, uint64 v) {
-    uint64 q = default!;
-    uint64 r = default!;
-
     const uint64 b = /* 1 << 32 */ 4294967296;
     if (u1 >= v) {
         return (18446744073709551615UL, 18446744073709551615UL);

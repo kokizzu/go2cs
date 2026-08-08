@@ -605,7 +605,15 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// Declare plain named results at the top of the literal's block (the litNamedDefer arm
 	// below declares its own, outside the func() wrapper).
 	if litHasNamedResults && !litNamedDefer && strings.HasPrefix(body, "{") {
-		body = "{" + v.namedReturnDeclLines(litSig, bodyIndent, false) + strings.TrimPrefix(body, "{")
+		// Liveness applies only OUTSIDE a frame: a literal frame's named exit reads the locals
+		// from generated code, exactly as a function's does.
+		livenessBody := funcLit.Body
+
+		if useLitFrame {
+			livenessBody = nil
+		}
+
+		body = "{" + v.namedReturnDeclLines(litSig, bodyIndent, false, livenessBody) + strings.TrimPrefix(body, "{")
 	}
 
 	// Build the lambda body (what follows `=>`). A function literal that uses defer/recover gets
@@ -632,7 +640,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		if litNamedDefer {
 			// §4.4 in a literal: results declared before the try, mutated by the deferred calls,
 			// read back after the finally through the label the body's exits jump to.
-			namedDecls = v.namedReturnDeclLines(litSig, v.indentLevel+1, true)
+			// nil body: these are the litNamedDefer declarations the deferred calls mutate and
+			// the post-finally read consumes — never liveness-eligible.
+			namedDecls = v.namedReturnDeclLines(litSig, v.indentLevel+1, true, nil)
 
 			returnNames := v.namedReturnBoxReadNames(litSig, litNamedNames)
 			returnExpr := strings.Join(returnNames, ", ")

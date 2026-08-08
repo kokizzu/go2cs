@@ -43,7 +43,6 @@ partial class os_package {
 // newFileStatFromGetFileInformationByHandle calls GetFileInformationByHandle
 // to gather all required information about the file handle h.
 internal static (ж<fileStat> fs, error err) newFileStatFromGetFileInformationByHandle(@string path, syscallꓸHandle h) {
-    ж<fileStat> fs = default!;
     error err = default!;
 
     ref var d = ref heap(new syscall.ByHandleFileInformation(), out var Ꮡd);

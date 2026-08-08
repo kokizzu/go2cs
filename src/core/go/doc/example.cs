@@ -130,9 +130,7 @@ internal static ж<lazyregexp.Regexp> outputPrefix = lazyregexp.New(@"(?i)^[[:sp
 
 // Extracts the expected output and whether there was a valid output comment.
 internal static (@string output, bool unordered, bool ok) exampleOutput(ж<ast.BlockStmt> Ꮡb, slice<ж<ast.CommentGroup>> comments) {
-    @string output = default!;
     bool unordered = default!;
-    bool ok = default!;
 
     {
         var (_, last) = lastComment(Ꮡb, comments); if (last != nil) {
@@ -767,7 +765,6 @@ internal static @string nameWithoutInst(@string name) {
 internal static (@string prefix, @string suffix, bool ok) splitExampleName(@string s, nint i) {
     @string prefix = default!;
     @string suffix = default!;
-    bool ok = default!;
 
     if (i == len(s)) {
         return (s, "", true);

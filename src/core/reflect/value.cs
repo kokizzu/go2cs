@@ -1818,9 +1818,6 @@ public static bool OverflowUint(this ΔValue v, uint64 x) {
 // The boolean value ok is true if the value x corresponds to a send
 // on the channel, false if it is a zero value received because the channel is closed.
 public static (ΔValue x, bool ok) Recv(this ΔValue v) {
-    ΔValue x = new(nil);
-    bool ok = default!;
-
     v.mustBe(Chan);
     v.mustBeExported();
     return v.recv(false);
@@ -1868,9 +1865,8 @@ internal static readonly @string reflectValueSendˢ = "reflect.Value.Send"u8;
 // internal send, possibly non-blocking.
 // v is known to be a channel.
 internal static bool /*selected*/ send(this ΔValue v, ΔValue xʗp, bool nb) {
-    bool selected = default!;
-
     ref var x = ref heap(xʗp, out var Ꮡx);
+
     var tt = v.typ().Reinterpret<abi.Type, chanType>();
     if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
         throw panic("reflect: send on recv-only channel");
@@ -2029,9 +2025,6 @@ internal static @string stringNonString(this ΔValue v) {
 // If the receive cannot finish without blocking, x is the zero Value and ok is false.
 // If the channel is closed, x is the zero value for the channel's element type and ok is false.
 public static (ΔValue x, bool ok) TryRecv(this ΔValue v) {
-    ΔValue x = new(nil);
-    bool ok = default!;
-
     v.mustBe(Chan);
     v.mustBeExported();
     return v.recv(true);

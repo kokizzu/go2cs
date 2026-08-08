@@ -904,7 +904,6 @@ internal static nint lastIndexFunc(@string s, Func<rune, bool> f, bool truth) {
 // characters in chars are ASCII.
 internal static (asciiSet @as, bool ok) makeASCIISet(@string chars) {
     asciiSet @as = default!;
-    bool ok = default!;
 
     for (nint i = 0; i < len(chars); i++) {
         var c = chars[i];
@@ -1231,10 +1230,6 @@ public static nint Index(@string s, @string substr) {
 // The found result reports whether sep appears in s.
 // If sep does not appear in s, cut returns s, "", false.
 public static (@string before, @string after, bool found) Cut(@string s, @string sep) {
-    @string before = default!;
-    @string after = default!;
-    bool found = default!;
-
     return stringslite.Cut(s, sep);
 }
 
@@ -1243,9 +1238,6 @@ public static (@string before, @string after, bool found) Cut(@string s, @string
 // If s doesn't start with prefix, CutPrefix returns s, false.
 // If prefix is the empty string, CutPrefix returns s, true.
 public static (@string after, bool found) CutPrefix(@string s, @string prefix) {
-    @string after = default!;
-    bool found = default!;
-
     return stringslite.CutPrefix(s, prefix);
 }
 
@@ -1254,9 +1246,6 @@ public static (@string after, bool found) CutPrefix(@string s, @string prefix) {
 // If s doesn't end with suffix, CutSuffix returns s, false.
 // If suffix is the empty string, CutSuffix returns s, true.
 public static (@string before, bool found) CutSuffix(@string s, @string suffix) {
-    @string before = default!;
-    bool found = default!;
-
     return stringslite.CutSuffix(s, suffix);
 }
 

@@ -23,8 +23,6 @@ partial class httputil_package {
 // It returns an error if the initial slurp of all bytes fails. It does not attempt
 // to make the returned ReadClosers have identical error-matching behavior.
 internal static (io.ReadCloser r1, io.ReadCloser r2, error err) drainBody(io.ReadCloser b) {
-    io.ReadCloser r1 = default!;
-    io.ReadCloser r2 = default!;
     error err = default!;
 
     if (b == default! || AreEqual(b, http.NoBody)) {
@@ -78,9 +76,6 @@ internal static (io.ReadCloser r1, io.ReadCloser r2, error err) drainBody(io.Rea
 [GoType("num:byte")] partial struct neverEnding;
 
 internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     foreach (var (i, _) in p) {
         p[i] = (byte)b;
     }

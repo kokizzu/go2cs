@@ -585,6 +585,22 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 						param := resultParams.At(paramIndex)
 						paramName := getSanitizedIdentifier(v.getIdentName(ident))
 
+						// A named result the body never touches needs no local at all — the name
+						// still reads off the C# tuple return type. Checked BEFORE the newline is
+						// reserved, so the prologue does not keep a blank line where the
+						// declaration was. A nil body switches liveness OFF for the two lowerings
+						// whose generated code reads the locals (see namedResultNeedsDeclaration).
+						livenessBody := funcDecl.Body
+
+						if v.namedReturnDeferMode || useGoFrame {
+							livenessBody = nil
+						}
+
+						if !v.namedResultNeedsDeclaration(livenessBody, param) {
+							paramIndex++
+							continue
+						}
+
 						resultDeclTarget.WriteString(v.newline)
 
 						// A heap-box-backed named result (routed to shared storage by the

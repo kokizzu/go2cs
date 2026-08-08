@@ -20,11 +20,6 @@ public static ж<Uniform> ΔOpaque = NewUniform(color.Opaque);
 }
 
 [GoRecv] public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this ref Uniform c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
-    uint32 a = default!;
-
     return c.C.RGBA();
 }
 

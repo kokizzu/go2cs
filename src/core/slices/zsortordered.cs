@@ -132,9 +132,6 @@ internal static void pdqsortOrdered<E>(slice<E> data, nint a, nint b, nint limit
 internal static (nint newpivot, bool alreadyPartitioned) partitionOrdered<E>(slice<E> data, nint a, nint b, nint pivot)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    nint newpivot = default!;
-    bool alreadyPartitioned = default!;
-
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
     nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
@@ -174,8 +171,6 @@ internal static (nint newpivot, bool alreadyPartitioned) partitionOrdered<E>(sli
 internal static nint /*newpivot*/ partitionEqualOrdered<E>(slice<E> data, nint a, nint b, nint pivot)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    nint newpivot = default!;
-
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
     nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
@@ -263,9 +258,6 @@ internal static void breakPatternsOrdered<E>(slice<E> data, nint a, nint b)
 internal static (nint pivot, sortedHint hint) choosePivotOrdered<E>(slice<E> data, nint a, nint b)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    nint pivot = default!;
-    sortedHint hint = default!;
-
     const nint shortestNinther = 50;
     const nint maxSwaps = /* 4 * 3 */ 12;
     nint l = b - a;

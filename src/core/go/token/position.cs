@@ -422,8 +422,6 @@ public static ΔPosition /*pos*/ PositionFor(this ж<ΔFile> Ꮡf, ΔPos p, bool
 // If p is out of bounds, it is adjusted to match the File.Offset behavior.
 // Calling f.Position(p) is equivalent to calling f.PositionFor(p, true).
 public static ΔPosition /*pos*/ Position(this ж<ΔFile> Ꮡf, ΔPos p) {
-    ΔPosition pos = default!;
-
     return Ꮡf.PositionFor(p, true);
 }
 
@@ -647,8 +645,6 @@ public static ΔPosition /*pos*/ PositionFor(this ж<FileSet> Ꮡs, ΔPos p, boo
 // Position converts a [Pos] p in the fileset into a Position value.
 // Calling s.Position(p) is equivalent to calling s.PositionFor(p, true).
 public static ΔPosition /*pos*/ Position(this ж<FileSet> Ꮡs, ΔPos p) {
-    ΔPosition pos = default!;
-
     return Ꮡs.PositionFor(p, true);
 }
 

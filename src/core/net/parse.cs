@@ -76,8 +76,6 @@ partial class net_package {
 }
 
 [GoRecv] internal static (time.Time mtime, int64 size, error err) stat(this ref Δfile f) {
-    time.Time mtime = default!;
-    int64 size = default!;
     error err = default!;
 
     (var st, err) = f.ΔΔfile.Stat();
@@ -96,8 +94,6 @@ internal static (ж<Δfile>, error) open(@string name) {
 }
 
 internal static (time.Time mtime, int64 size, error err) stat(@string name) {
-    time.Time mtime = default!;
-    int64 size = default!;
     error err = default!;
 
     (var st, err) = os.Stat(name);
@@ -151,7 +147,6 @@ internal static UntypedInt big => 0xFFFFFF;
 internal static (nint n, nint i, bool ok) dtoi(@string s) {
     nint n = default!;
     nint i = default!;
-    bool ok = default!;
 
     n = 0;
     for (i = 0; i < len(s) && (rune)'0' <= s[i] && s[i] <= (rune)'9'; i++) {
@@ -171,7 +166,6 @@ internal static (nint n, nint i, bool ok) dtoi(@string s) {
 internal static (nint n, nint i, bool ok) xtoi(@string s) {
     nint n = default!;
     nint i = default!;
-    bool ok = default!;
 
     n = 0;
     for (i = 0; i < len(s); i++) {

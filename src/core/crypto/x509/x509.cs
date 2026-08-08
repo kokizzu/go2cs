@@ -96,9 +96,6 @@ internal static readonly @string x509TrailingDataAfterAsnˢ = "x509: trailing da
 //
 // This kind of key is commonly encoded in PEM blocks of type "PUBLIC KEY".
 public static (any pub, error err) ParsePKIXPublicKey(slice<byte> derBytes) {
-    any pub = default!;
-    error err = default!;
-
     ref var pki = ref heap(new publicKeyInfo(), out var Ꮡpki);
     {
         var (rest, errΔ1) = asn1.Unmarshal(derBytes, Ꮡpki); if (errΔ1 != default!){
@@ -1138,9 +1135,6 @@ internal static bool oidInExtensions(asn1.ObjectIdentifier oid, slice<pkix.Exten
 // marshalSANs marshals a list of addresses into a the contents of an X.509
 // SubjectAlternativeName extension.
 internal static (slice<byte> derBytes, error err) marshalSANs(slice<@string> dnsNames, slice<@string> emailAddresses, slice<net.IP> ipAddresses, slice<ж<url.URL>> uris) {
-    slice<byte> derBytes = default!;
-    error err = default!;
-
     slice<asn1.RawValue> rawValues = default!;
     foreach (var (_, name) in dnsNames) {
         {
@@ -1288,7 +1282,6 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ж<Ce
         }
         var ipAndMaskʗ1 = ipAndMask;
         (slice<byte> der, error err) serialiseConstraints(slice<@string> dns, slice<ж<net.IPNet>> ips, slice<@string> emails, slice<@string> uriDomains) {
-            slice<byte> der = default!;
             error errΔ1 = default!;
             ref var bΔ1 = ref heap(new cryptobyte.Builder(), out var ᏑbΔ1);
             foreach (var (_, name) in dns) {
@@ -1826,7 +1819,6 @@ public static (ж<pkix.CertificateList>, error) ParseDERCRL(slice<byte> derBytes
 // Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL.
 // To generate a standards compliant CRL, use [CreateRevocationList] instead.
 [GoRecv] public static (slice<byte> crlBytes, error err) CreateCRL(this ref Certificate c, io.Reader rand, any priv, slice<pkix.RevokedCertificate> revokedCerts, time.Time now, time.Time expiry) {
-    slice<byte> crlBytes = default!;
     error err = default!;
 
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
@@ -2044,7 +2036,6 @@ internal static (slice<pkix.Extension>, error) parseCSRExtensions(slice<asn1.Raw
 //
 // The returned slice is the certificate request in DER encoding.
 public static (slice<byte> csr, error err) CreateCertificateRequest(io.Reader rand, ж<CertificateRequest> Ꮡtemplate, any priv) {
-    slice<byte> csr = default!;
     error err = default!;
 
     ref var template = ref Ꮡtemplate.DerefOrNull();

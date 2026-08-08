@@ -94,6 +94,9 @@
     <None Include="$(MSBuildThisFileDirectory)moduleConverter_integration_test.go" />
     <None Include="$(MSBuildThisFileDirectory)moduleConverter_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nameCollisionAnalysisOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)namedResultLiveness.go" />
+    <None Include="$(MSBuildThisFileDirectory)namedResultLiveness_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)nativeIntConstWidth_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nestedArgScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)packageGlobalState.go" />
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />

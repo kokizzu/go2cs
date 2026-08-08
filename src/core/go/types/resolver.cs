@@ -624,7 +624,6 @@ break_L:;
 // name exists, the returned base is nil.
 [GoRecv] internal static (bool ptr, ж<TypeName> @base) resolveBaseTypeName(this ref Checker check, bool seenPtr, ast.Expr typ, slice<ж<ΔScope>> fileScopes) {
     bool ptr = default!;
-    ж<TypeName> @base = default!;
 
     // Algorithm: Starting from a type expression, which may be a name,
     // we follow that type through alias declarations until we reach a

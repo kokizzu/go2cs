@@ -417,9 +417,6 @@ public static @string FloatString(this ж<ΔRat> Ꮡx, nint prec) {
 //	1/4    2    true     0.25
 //	1/6    1    false    0.2     (0.166... rounded)
 public static (nint n, bool exact) FloatPrec(this ж<ΔRat> Ꮡx) {
-    nint n = default!;
-    bool exact = default!;
-
     // Determine q and largest p2, p5 such that d = q·2^p2·5^p5.
     // The results n, exact are:
     //

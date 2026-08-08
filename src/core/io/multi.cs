@@ -52,9 +52,6 @@ internal static (nint, error) Read(this eofReader _Δp0, slice<byte> _Δp1) {
 }
 
 [GoRecv] internal static (int64 sum, error err) WriteTo(this ref multiReader mr, Writer w) {
-    int64 sum = default!;
-    error err = default!;
-
     return mr.writeToWithBuffer(w, new slice<byte>(1024 * 32));
 }
 

@@ -18,9 +18,6 @@ internal static slice<int32> xorMasks = new int32[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint8 v, nint sz) lookup(this ref bidiTrie t, slice<byte> s) {
-    uint8 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -119,9 +116,6 @@ internal static slice<int32> xorMasks = new int32[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint8 v, nint sz) lookupString(this ref bidiTrie t, @string s) {
-    uint8 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {

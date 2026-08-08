@@ -27,7 +27,6 @@ public static ΔSignal ΔKill = new syscall_ΔSignalᴠΔSignal(((syscallꓸSign
 internal static readonly @string chdirˢ = "chdir"u8;
 
 internal static (ж<Process> p, error err) startProcess(@string name, slice<@string> argv, ж<ProcAttr> Ꮡattr) {
-    ж<Process> p = default!;
     error err = default!;
 
     ref var attr = ref Ꮡattr.DerefOrNull();

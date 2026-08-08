@@ -61,9 +61,6 @@ internal static void Main() {
     fmt.Println(pad("v"u8, true));
     fmt.Println(pad("v"u8, false));
     (nint dur, slice<byte> cov, @string errMsg) fuzzish(nint entry) {
-        nint dur = default!;
-        slice<byte> cov = default!;
-        @string errMsg = default!;
         if (entry < 0) {
             @string msg = fmt.Sprintf("bad entry %d"u8, entry);
             return (entry, default!, msg);

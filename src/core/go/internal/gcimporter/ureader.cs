@@ -292,9 +292,8 @@ internal static typesꓸType typIdx(this ж<pkgReader> Ꮡpr, typeInfo info, ж<
 }
 
 internal static typesꓸType /*res*/ doTyp(this ж<reader> Ꮡr) {
-    typesꓸType res = default!;
-
     ref var r = ref Ꮡr.DerefOrNull();
+
     {
         pkgbits.CodeType tag = ((pkgbits.CodeType)Ꮡr.of(reader.ᏑDecoder).Code(pkgbits.SyncType));
         var exprᴛ1 = tag;

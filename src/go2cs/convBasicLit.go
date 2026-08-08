@@ -442,6 +442,41 @@ func (v *Visitor) intLiteralFloatKind(basicLit *ast.BasicLit) (types.BasicKind, 
 	return 0, false
 }
 
+// intLiteralResolvedInteger returns the concrete INTEGER basic type an integer literal resolved
+// to, or nil when it stayed untyped with no recoverable context. It is what decides whether a
+// beyond-int32 literal is a C# `long` (Go int64 — no cast needed) or a C# `nint` (Go int — cast
+// needed), and it must consult BOTH routes for the same reason intLiteralFloatKind does:
+//
+//	(1) go/types typed it DIRECTLY — a composite-literal element, typed const, argument, return
+//	    or assignment records the concrete type in info.Types (a NAMED type over int64 resolves
+//	    through Underlying to its int64 Kind).
+//	(2) go/types deliberately left it UNTYPED because it is an operand of a CONSTANT expression.
+//	    updateExprType0 short-circuits on `if x is a constant, the operands were constants` —
+//	    those operands never materialize at runtime in Go, so it does not descend into them. The
+//	    consequence is invisible until you look: in `[...]int64{-4181792142133755926, 1395769623340756751}`
+//	    the NEGATED element records `untyped int` while its positive sibling records `int64`,
+//	    purely because the first is wrapped in a unary minus. The propagated context
+//	    (markUntypedConstContexts, which already pushes an integer context through unary +/-/^ and
+//	    arithmetic operands) carries the type go/types dropped.
+//
+// Route (2) is what made all 607 of math/rand's `rngCooked` elements — every one of them
+// negative — emit an `int`-typed `(nint)` cast inside a `new int64[]{…}`, a value that TRUNCATES
+// on a 32-bit target (CS8778).
+func (v *Visitor) intLiteralResolvedInteger(basicLit *ast.BasicLit) *types.Basic {
+	if tv, ok := v.info.Types[basicLit]; ok && tv.Type != nil {
+		if basic, ok := tv.Type.Underlying().(*types.Basic); ok &&
+			basic.Info()&types.IsUntyped == 0 && basic.Info()&types.IsInteger != 0 {
+			return basic
+		}
+	}
+
+	if cc := v.untypedConstContext(basicLit); cc != nil && cc.Info()&types.IsInteger != 0 {
+		return cc
+	}
+
+	return nil
+}
+
 func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) string {
 	result := &strings.Builder{}
 	value := basicLit.Value
@@ -508,10 +543,25 @@ func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) 
 					} else {
 						result.WriteRune('U')
 					}
-				} else {
-					result.WriteString("(nint)")
+				} else if resolved := v.intLiteralResolvedInteger(basicLit); resolved != nil && resolved.Kind() == types.Int64 {
+					// Go int64 IS C# long, so the literal alone denotes it exactly — `4181792142133755926L`.
+					// The `(nint)` cast this branch used to emit unconditionally was the untyped-int
+					// DEFAULT type leaking through (see intLiteralResolvedInteger): wrong for the
+					// declared element type, and a 32-bit truncation the compiler flags as CS8778.
+					// Dropping it also reads closer to the Go source, which is the point.
 					result.WriteString(value)
 					result.WriteRune('L')
+				} else {
+					// Go `int` (and the untyped-int default, which is `int`) is C# `nint`, which has
+					// NO implicit conversion from `long` — the cast stays, and it must stay for
+					// boxing too (an `any` slot holding a Go int has to box as nint so a later
+					// `x.(int)` succeeds). `unchecked` is what makes the beyond-int32 CONSTANT
+					// conversion legal without a warning; nint is 64-bit on every platform go2cs
+					// targets, so the value is exact at runtime. Same form visitValueSpec already
+					// emits for a beyond-int32 native-int const.
+					result.WriteString("unchecked((nint)")
+					result.WriteString(value)
+					result.WriteString("L)")
 				}
 			} else {
 				result.WriteString(value)

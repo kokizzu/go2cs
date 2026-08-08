@@ -13,9 +13,6 @@ partial class os_package {
 internal static readonly @string computerNameExˢ = "ComputerNameEx"u8;
 
 internal static (@string name, error err) hostname() {
-    @string name = default!;
-    error err = default!;
-
     // Use PhysicalDnsHostname to uniquely identify host in a cluster
     const uint32 format = /* windows.ComputerNamePhysicalDnsHostname */ 5;
     ref var n = ref heap<uint32>(out var Ꮡn);

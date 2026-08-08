@@ -147,9 +147,6 @@ internal static ж<strings.Replacer> headerNewlineToSpace = strings.NewReplacer(
 }
 
 internal static (nint n, error err) WriteString(this stringWriter w, @string s) {
-    nint n = default!;
-    error err = default!;
-
     return w.w.Write(slice<byte>(s));
 }
 

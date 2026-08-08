@@ -190,9 +190,6 @@ partial class build_package {
 
 // hasSubdir reports if dir is within root by performing lexical analysis only.
 internal static (@string rel, bool ok) hasSubdir(@string root, @string dir) {
-    @string rel = default!;
-    bool ok = default!;
-
     @string sep = "\\";
     root = filepath.Clean(root);
     if (!strings.HasSuffix(root, sep)) {
@@ -1338,7 +1335,6 @@ internal static bool hasGoFiles(ж<Context> Ꮡctxt, @string dir) {
 }
 
 internal static (@string s, nint line) findImportComment(slice<byte> data) {
-    @string s = default!;
     nint line = default!;
 
     // expect keyword package
@@ -1454,7 +1450,6 @@ internal static (slice<byte> word, slice<byte> rest) parseWord(slice<byte> data)
 // MatchFile considers the name of the file and may use ctxt.OpenFile to
 // read some or all of the file's content.
 public static (bool match, error err) MatchFile(this ж<Context> Ꮡctxt, @string dir, @string name) {
-    bool match = default!;
     error err = default!;
 
     (var info, err) = Ꮡctxt.matchFile(dir, name, default!, nil, nil);
@@ -1610,7 +1605,6 @@ internal static slice<byte> binaryOnlyComment = slice<byte>("//go:binary-only-pa
 // and whether a //go:binary-only-package comment was found.
 internal static (bool shouldBuild, bool binaryOnly, error err) shouldBuild(this ж<Context> Ꮡctxt, slice<byte> content, map<@string, bool> allTags) {
     bool shouldBuild = default!;
-    bool binaryOnly = default!;
     error err = default!;
 
     // Identify leading run of // comments and blank lines,
@@ -1675,10 +1669,8 @@ internal static (bool shouldBuild, bool binaryOnly, error err) shouldBuild(this 
 //
 //go:linkname parseFileHeader
 internal static (slice<byte> trimmed, slice<byte> goBuild, bool sawBinaryOnly, error err) parseFileHeader(slice<byte> content) {
-    slice<byte> trimmed = default!;
     slice<byte> goBuild = default!;
     bool sawBinaryOnly = default!;
-    error err = default!;
 
     nint end = 0;
     var p = content;
@@ -1946,7 +1938,6 @@ internal static readonly @string unfinishedEscapingˢ = "unfinished escaping"u8;
 //
 //	[]string{"a", "b:c d", "ef", `g"`}
 internal static (slice<@string> r, error err) splitQuoted(@string s) {
-    slice<@string> r = default!;
     error err = default!;
 
     slice<@string> args = default!;

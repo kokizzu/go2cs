@@ -762,8 +762,6 @@ internal static bool validHeaderValueByte(byte c) {
 // ReadMIMEHeader accepts header keys containing spaces, but does not
 // canonicalize them.
 internal static (@string, bool ok) canonicalMIMEHeaderKey(slice<byte> a) {
-    bool ok = default!;
-
     if (len(a) == 0) {
         return ("", false);
     }

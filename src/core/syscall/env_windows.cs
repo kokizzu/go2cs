@@ -9,9 +9,6 @@ using @unsafe = unsafe_package;
 partial class syscall_package {
 
 public static (@string value, bool found) Getenv(@string key) {
-    @string value = default!;
-    bool found = default!;
-
     var (keyp, err) = UTF16PtrFromString(key);
     if (err != default!) {
         return ("", false);

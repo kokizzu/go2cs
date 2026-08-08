@@ -630,9 +630,6 @@ internal static reflectꓸType valuerReflectType = reflect.TypeFor<driver.Valuer
 //
 // This function is mirrored in the database/sql/driver package.
 internal static (driverꓸValue v, error err) callValuerValue(driver.Valuer vr) {
-    driverꓸValue v = default!;
-    error err = default!;
-
     {
         var rv = reflect.ValueOf(vr); if (rv.Kind() == reflect.ΔPointer && rv.IsNil() && rv.Type().Elem().Implements(valuerReflectType)) {
             return (default!, default!);

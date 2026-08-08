@@ -321,7 +321,7 @@ internal static void mallocinit() {
             switch (ᐧ) {
             case {} when raceenabled: {
                 Δp = (uintptr)(((uintptr)i << (int)(32)) | (uintptr)(uintptr)((uintptr)uintptrMask & (uintptr)(824633720832L)));
-                if (Δp >= (uintptr)((uintptr)uintptrMask & (uintptr)(nint)0x00e000000000L)) {
+                if (Δp >= (uintptr)((uintptr)uintptrMask & (uintptr)unchecked((nint)0x00e000000000L))) {
                     // The TSAN runtime requires the heap
                     // to be in the range [0x00c000000000,
                     // 0x00e000000000).

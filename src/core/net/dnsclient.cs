@@ -31,9 +31,6 @@ internal static nint randIntn(nint n) {
 // address addr suitable for rDNS (PTR) record lookup or an error if it fails
 // to parse the IP address.
 internal static (@string arpa, error err) reverseaddr(@string addr) {
-    @string arpa = default!;
-    error err = default!;
-
     var ip = ParseIP(addr);
     if (ip == default!) {
         return ("", new DNSErrorжerror(Ꮡ(new DNSError(Err: "unrecognized address"u8, Name: addr))));

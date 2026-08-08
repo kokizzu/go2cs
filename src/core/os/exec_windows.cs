@@ -128,9 +128,6 @@ internal static error release(this ж<Process> Ꮡp) {
 internal static readonly @string openProcessˢ = "OpenProcess"u8;
 
 internal static (ж<Process> p, error err) findProcess(nint pid) {
-    ж<Process> p = default!;
-    error err = default!;
-
     const uint32 da = /* syscall.STANDARD_RIGHTS_READ |
 	syscall.PROCESS_QUERY_INFORMATION | syscall.SYNCHRONIZE */ 1180672;
     var (h, e) = syscall.OpenProcess(da, false, (uint32)pid);
@@ -161,9 +158,6 @@ internal static slice<byte> appendBSBytes(slice<byte> b, nint n) {
 // readNextArg splits command line string cmd into next
 // argument and command line remainder.
 internal static (slice<byte> arg, @string rest) readNextArg(@string cmd) {
-    slice<byte> arg = default!;
-    @string rest = default!;
-
     slice<byte> b = default!;
     bool inquote = default!;
     nint nslash = default!;

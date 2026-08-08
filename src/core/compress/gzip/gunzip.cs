@@ -257,7 +257,6 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
 // Read implements [io.Reader], reading uncompressed bytes from its underlying [Reader].
 [GoRecv] public static (nint n, error err) Read(this ref Reader z, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     if (z.err != default!) {
         return (0, z.err);

@@ -1265,9 +1265,6 @@ internal static (nint, slice<byte>) intDataSize(any data) {
 // ensure grows buf to length len(buf) + n and returns the grown buffer
 // and a slice starting at the original length of buf (that is, buf2[len(buf):]).
 internal static (slice<byte> buf2, slice<byte> pos) ensure(slice<byte> buf, nint n) {
-    slice<byte> buf2 = default!;
-    slice<byte> pos = default!;
-
     nint l = len(buf);
     buf = slices.Grow<slice<byte>, byte>(buf, n)[..(int)(l + n)];
     return (buf, buf[(int)(l)..]);

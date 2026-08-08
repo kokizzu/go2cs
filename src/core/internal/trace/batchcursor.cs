@@ -23,7 +23,6 @@ partial class trace_package {
 }
 
 internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<batch> batches, frequency freq) {
-    bool ok = default!;
     error err = default!;
 
     ref var b = ref Ꮡb.DerefOrNull();

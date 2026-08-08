@@ -2769,9 +2769,6 @@ internal static array<byte> decomps = new byte[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookup(this ref nfcTrie t, slice<byte> s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -2870,9 +2867,6 @@ internal static array<byte> decomps = new byte[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookupString(this ref nfcTrie t, @string s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -4519,9 +4513,6 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookup(this ref nfkcTrie t, slice<byte> s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -4620,9 +4611,6 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookupString(this ref nfkcTrie t, @string s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {

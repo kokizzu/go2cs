@@ -9,9 +9,6 @@ partial class cmplx_package {
 // such that x = r * e**θi.
 // The phase is in the range [-Pi, Pi].
 public static (float64 r, float64 θ) Polar(complex128 x) {
-    float64 r = default!;
-    float64 θ = default!;
-
     return (Abs(x), Phase(x));
 }
 

@@ -155,8 +155,6 @@ internal static bool hasDotSuffix(@string s, @string suffix) {
 //
 // It returns an empty slice if the URL's scheme is not HTTP or HTTPS.
 public static slice<ж<httpꓸCookie>> /*cookies*/ Cookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu) {
-    slice<ж<httpꓸCookie>> cookies = default!;
-
     return Ꮡj.cookies(Ꮡu, time.Now());
 }
 
@@ -417,7 +415,6 @@ internal static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
 // A malformed c.Domain will result in an error.
 [GoRecv] internal static (entry e, bool remove, error err) newEntry(this ref Jar j, ж<httpꓸCookie> Ꮡc, time.Time now, @string defPath, @string host) {
     entry e = default!;
-    bool remove = default!;
     error err = default!;
 
     ref var c = ref Ꮡc.DerefOrNull();

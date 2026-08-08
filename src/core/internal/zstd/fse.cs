@@ -28,11 +28,8 @@ internal static readonly @string tooManySymbolsInFseTableˢ = "too many symbols 
 // This returns the number of bits in the FSE table and the new offset.
 // RFC 4.1.1.
 internal static (nint tableBits, nint roff, error err) readFSE(this ж<Reader> Ꮡr, block data, nint off, nint maxSym, nint maxBits, slice<fseEntry> table) {
-    nint tableBits = default!;
-    nint roff = default!;
-    error err = default!;
-
     ref var r = ref Ꮡr.DerefOrNull();
+
     var br = Ꮡr.makeBitReader(data, off);
     {
         var errΔ1 = br.moreBits(); if (errΔ1 != default!) {

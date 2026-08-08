@@ -441,12 +441,10 @@ internal static ж<Element> sqrtM1 = Ꮡ(new Element(1718705420411056UL, 2349088
 // sets r according to Section 4.3 of draft-irtf-cfrg-ristretto255-decaf448-00,
 // and returns r and 0.
 public static (ж<Element> R, nint wasSquare) SqrtRatio(this ж<Element> Ꮡr, ж<Element> Ꮡu, ж<Element> Ꮡv) {
-    ж<Element> R = default!;
-    nint wasSquare = default!;
-
     ref var r = ref Ꮡr.DerefOrNull();
     ref var u = ref Ꮡu.DerefOrNull();
     ref var v = ref Ꮡv.DerefOrNull();
+
     var t0 = @new<Element>();
     // r = (u * v3) * (u * v7)^((p-5)/8)
     var v2 = @new<Element>().Square(Ꮡv);

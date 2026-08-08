@@ -76,7 +76,6 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
 }
 
 internal static (slice<byte> sig, error err) signLegacy(ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash) {
-    slice<byte> sig = default!;
     error err = default!;
 
     ref var priv = ref Ꮡpriv.DerefOrNull();

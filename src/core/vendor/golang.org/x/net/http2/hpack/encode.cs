@@ -115,8 +115,6 @@ internal static (uint64 i, bool nameValueMatch) searchTable(this ж<Encoder> Ꮡ
 
 // MaxDynamicTableSize returns the current dynamic header table size.
 [GoRecv] public static uint32 /*v*/ MaxDynamicTableSize(this ref Encoder e) {
-    uint32 v = default!;
-
     return e.dynTab.maxSize;
 }
 

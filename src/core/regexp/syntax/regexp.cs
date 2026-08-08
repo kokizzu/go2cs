@@ -125,11 +125,9 @@ internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags
 // calcFlags also calculates the flags that must be active or can't be active
 // around re and returns those flags.
 internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, ж<map<ж<Regexp>, printFlags>> Ꮡflags) {
-    printFlags must = default!;
-    printFlags cant = default!;
-
     ref var re = ref Ꮡre.DerefOrNull();
     ref var flags = ref Ꮡflags.DerefOrNull();
+
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
         foreach (var (_, r) in re.Rune) {

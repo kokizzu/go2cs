@@ -44,10 +44,6 @@ internal static readonly @string nanˢ = "nan"u8;
 // of these representations and n is the length of that prefix.
 // The character case is ignored.
 internal static (float64 f, nint n, bool ok) special(@string s) {
-    float64 f = default!;
-    nint n = default!;
-    bool ok = default!;
-
     if (len(s) == 0) {
         return (0D, 0, false);
     }
@@ -352,7 +348,6 @@ break_loop:;
 internal static slice<nint> powtab = new nint[]{1, 3, 6, 9, 13, 16, 19, 23, 26}.slice();
 
 internal static (uint64 b, bool overflow) floatBits(this ж<@decimal> Ꮡd, ж<floatInfo> Ꮡflt) {
-    uint64 b = default!;
     bool overflow = default!;
 
     ref var d = ref Ꮡd.DerefOrNull();

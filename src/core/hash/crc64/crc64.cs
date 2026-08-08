@@ -188,9 +188,6 @@ public static uint64 Update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref digest d, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     d.crc = update(d.crc, d.tab, p);
     return (len(p), default!);
 }

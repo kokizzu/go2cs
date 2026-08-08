@@ -328,7 +328,6 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
     @string path = default!;
     uint64 mtime = default!;
     uint64 size = default!;
-    error err = default!;
 
     @string dir = default!;
     foreach (var (_, lf) in s) {
@@ -859,9 +858,6 @@ internal static @string pathJoin(@string dirname, @string filename) {
 // splitDrive splits the DOS drive letter or UNC share point from
 // path, if any. path == drive + rest
 internal static (@string drive, @string rest) splitDrive(@string path) {
-    @string drive = default!;
-    @string rest = default!;
-
     if (len(path) >= 2 && path[1] == (rune)':') {
         {
             var c = path[0]; if ((rune)'a' <= c && c <= (rune)'z' || (rune)'A' <= c && c <= (rune)'Z') {

@@ -3443,7 +3443,9 @@ func csNintLiteral(value int64) string {
 		return strconv.FormatInt(value, 10)
 	}
 
-	return fmt.Sprintf("(nint)%d", value)
+	// A beyond-int32 CONSTANT conversion to `nint` is CS8778 unless it is unchecked. The value is a
+	// Go array length and nint is 64-bit on every platform go2cs targets, so it is exact at runtime.
+	return fmt.Sprintf("unchecked((nint)%d)", value)
 }
 
 // pointerConversionSource peels a `(*U)(…)` pointer CONVERSION down to its source pointer

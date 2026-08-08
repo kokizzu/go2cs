@@ -158,9 +158,6 @@ public static bool FullRuneInString(@string s) {
 // out of range, or is not the shortest possible UTF-8 encoding for the
 // value. No other validation is performed.
 public static (rune r, nint size) DecodeRune(slice<byte> p) {
-    rune r = default!;
-    nint size = default!;
-
     nint n = len(p);
     if (n < 1) {
         return (RuneError, 0);
@@ -210,9 +207,6 @@ public static (rune r, nint size) DecodeRune(slice<byte> p) {
 // out of range, or is not the shortest possible UTF-8 encoding for the
 // value. No other validation is performed.
 public static (rune r, nint size) DecodeRuneInString(@string s) {
-    rune r = default!;
-    nint size = default!;
-
     nint n = len(s);
     if (n < 1) {
         return (RuneError, 0);

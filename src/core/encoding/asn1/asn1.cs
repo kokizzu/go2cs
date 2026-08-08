@@ -403,9 +403,6 @@ internal static (time.Time ret, error err) parseGeneralizedTime(slice<byte> byte
 // parseNumericString parses an ASN.1 NumericString from the given byte array
 // and returns it.
 internal static (@string ret, error err) parseNumericString(slice<byte> bytes) {
-    @string ret = default!;
-    error err = default!;
-
     foreach (var (_, b) in bytes) {
         if (!isNumeric(b)) {
             return ("", new SyntaxError("NumericString contains invalid character"u8));
@@ -483,9 +480,6 @@ internal static (@string ret, error err) parseIA5String(slice<byte> bytes) {
 // parseT61String parses an ASN.1 T61String (8-bit clean string) from the given
 // byte slice and returns it.
 internal static (@string ret, error err) parseT61String(slice<byte> bytes) {
-    @string ret = default!;
-    error err = default!;
-
     return (((@string)bytes), default!);
 }
 
@@ -497,9 +491,6 @@ internal static readonly @string asn1InvalidUtf8Stringˢ = "asn1: invalid UTF-8 
 // parseUTF8String parses an ASN.1 UTF8String (raw UTF-8) from the given byte
 // array and returns it.
 internal static (@string ret, error err) parseUTF8String(slice<byte> bytes) {
-    @string ret = default!;
-    error err = default!;
-
     if (!utf8.Valid(bytes)) {
         return ("", errors.New(asn1InvalidUtf8Stringˢ));
     }
@@ -1144,9 +1135,6 @@ internal static bool /*ok*/ setDefaultValue(reflectꓸValue v, fieldParameters @
 // Other ASN.1 types are not supported; if it encounters them,
 // Unmarshal returns a parse error.
 public static (slice<byte> rest, error err) Unmarshal(slice<byte> b, any val) {
-    slice<byte> rest = default!;
-    error err = default!;
-
     return UnmarshalWithParams(b, val, ""u8);
 }
 
@@ -1172,7 +1160,6 @@ internal static readonly @string asn1UnmarshalRecipientˢ = "asn1: Unmarshal rec
 // UnmarshalWithParams allows field parameters to be specified for the
 // top-level element. The form of the params is the same as the field tags.
 public static (slice<byte> rest, error err) UnmarshalWithParams(slice<byte> b, any val, @string @params) {
-    slice<byte> rest = default!;
     error err = default!;
 
     var v = reflect.ValueOf(val);

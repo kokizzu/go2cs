@@ -99,7 +99,6 @@ internal static slice<byte> markerEnd = slice<byte>(" --"u8);
 // the file name, and the data after the marker.
 // If there is no next marker, findFileMarker returns before = fixNL(data), name = "", after = nil.
 internal static (slice<byte> before, @string name, slice<byte> after) findFileMarker(slice<byte> data) {
-    slice<byte> before = default!;
     @string name = default!;
     slice<byte> after = default!;
 
@@ -122,7 +121,6 @@ internal static (slice<byte> before, @string name, slice<byte> after) findFileMa
 // If so, it returns the name from the line and the data after the line.
 // Otherwise it returns name == "" with an unspecified after.
 internal static (@string name, slice<byte> after) isMarker(slice<byte> data) {
-    @string name = default!;
     slice<byte> after = default!;
 
     if (!bytes.HasPrefix(data, marker)) {

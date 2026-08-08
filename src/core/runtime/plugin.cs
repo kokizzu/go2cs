@@ -17,10 +17,7 @@ internal static readonly @string pluginNewModuleDataˢ = "plugin: new module dat
 
 //go:linkname plugin_lastmoduleinit plugin.lastmoduleinit
 internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initTasks, @string errstr) plugin_lastmoduleinit() {
-    @string path = default!;
     map<@string, any> syms = default!;
-    slice<ж<initTask>> initTasks = default!;
-    @string errstr = default!;
 
     ж<moduledata> md = default!;
     for (var pmd = firstmoduledata.next; pmd != nil; pmd = pmd.Value.next) {

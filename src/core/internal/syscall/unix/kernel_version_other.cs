@@ -7,9 +7,6 @@ namespace go.@internal.syscall;
 partial class unix_package {
 
 public static (nint major, nint minor) KernelVersion() {
-    nint major = default!;
-    nint minor = default!;
-
     return (0, 0);
 }
 

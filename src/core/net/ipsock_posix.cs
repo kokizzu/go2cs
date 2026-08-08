@@ -146,9 +146,6 @@ internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
 //
 //go:linkname favoriteAddrFamily
 internal static (nint family, bool ipv6only) favoriteAddrFamily(@string network, Δsockaddr laddr, Δsockaddr raddr, @string mode) {
-    nint family = default!;
-    bool ipv6only = default!;
-
     switch (network[len(network) - 1]) {
     case (rune)'4': {
         return (syscall.AF_INET, false);
@@ -173,9 +170,6 @@ internal static (nint family, bool ipv6only) favoriteAddrFamily(@string network,
 }
 
 internal static (ж<netFD> fd, error err) internetSocket(context.Context ctx, @string net, Δsockaddr laddr, Δsockaddr raddr, nint sotype, nint proto, @string mode, Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn) {
-    ж<netFD> fd = default!;
-    error err = default!;
-
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "aix"u8 || exprᴛ1 == "windows"u8 || exprᴛ1 == "openbsd"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
         if (mode == "dial"u8 && raddr.isWildcard()) {

@@ -658,7 +658,6 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Cer
         slice<ж<net.IPNet>> ips = default!;
         slice<@string> emails = default!;
         slice<@string> uriDomains = default!;
-        error errΔ1 = default!;
         while (!subtrees.Empty()) {
             ref var seq = ref heap<cryptobyte.String>(out var Ꮡseq);
             ref var value = ref heap<cryptobyte.String>(out var Ꮡvalue);

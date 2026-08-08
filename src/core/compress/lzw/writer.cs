@@ -124,7 +124,6 @@ internal static readonly @string lzwInputByteTooLargeForˢ = "lzw: input byte to
 // Write writes a compressed representation of p to w's underlying writer.
 public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     ref var w = ref Ꮡw.DerefOrNull();
     if (w.err != default!) {

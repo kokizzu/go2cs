@@ -583,7 +583,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		// wrapper over uintptr alike, so one spelling covers uint, uintptr and named types over
 		// either without the fold having to name the target.
 		if csType != "uint64" {
-			return "(nuint)(" + lit + ")"
+			return uncheckedIfBeyond32Bit("nuint", lit, u > math.MaxUint32)
 		}
 
 		return lit
@@ -619,7 +619,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 	// An UNTYPED-int subtree keeps the bare `L` form (kind UntypedInt — its enclosing context
 	// supplies the conversion), as does an int64 target (`long` is already exact).
 	if basic.Kind() == types.Int {
-		return "(nint)(" + lit + ")"
+		return uncheckedIfBeyond32Bit("nint", lit, i > math.MaxInt32 || i < math.MinInt32)
 	}
 
 	// A constant of a NAMED integer type folds to a bare basic literal, which DROPS the Go type:
@@ -635,6 +635,24 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 	}
 
 	return lit
+}
+
+// uncheckedIfBeyond32Bit renders a folded constant's narrowing cast to a native-width C# target
+// (`nint`/`nuint`), adding an `unchecked` wrapper when the folded value falls OUTSIDE that
+// target's 32-bit range. Only then is the conversion CS8778 ("constant value may overflow at
+// runtime"): nint/nuint are 32-bit on a 32-bit platform, which go2cs does not target, so the
+// value is exact and `unchecked` merely states it. The parenthesized `(T)(…)` body is preserved
+// either way — wholeExprIsCastOfType peels an `unchecked(` wrapper, so the enclosing redundancy
+// guards still recognize the cast and do not re-wrap it — and an in-range fold stays
+// byte-identical to the pre-fix emission.
+func uncheckedIfBeyond32Bit(csType, lit string, beyond32Bit bool) string {
+	cast := "(" + csType + ")(" + lit + ")"
+
+	if !beyond32Bit {
+		return cast
+	}
+
+	return "unchecked(" + cast + ")"
 }
 
 // constExprHasBeyondInt64UntypedOperatorSubexpr reports whether any PROPER subexpression of the

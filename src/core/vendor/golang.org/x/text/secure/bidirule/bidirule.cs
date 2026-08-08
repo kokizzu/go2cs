@@ -205,8 +205,6 @@ public static ж<Transformer> New() {
 // Transform implements transform.Transformer. This Transformer has state and
 // needs to be reset between uses.
 [GoRecv] public static (nint nDst, nint nSrc, error err) Transform(this ref Transformer t, slice<byte> dst, slice<byte> src, bool atEOF) {
-    nint nDst = default!;
-    nint nSrc = default!;
     error err = default!;
 
     if (len(dst) < len(src)) {
@@ -265,7 +263,6 @@ internal static array<bidi.Properties> asciiTable = new(128);
 
 [GoRecv] internal static (nint n, bool ok) advance(this ref Transformer t, slice<byte> s) {
     nint n = default!;
-    bool ok = default!;
 
     bidi.Properties e = default!;
     nint sz = default!;
@@ -319,7 +316,6 @@ internal static array<bidi.Properties> asciiTable = new(128);
 
 [GoRecv] internal static (nint n, bool ok) advanceString(this ref Transformer t, @string s) {
     nint n = default!;
-    bool ok = default!;
 
     bidi.Properties e = default!;
     nint sz = default!;

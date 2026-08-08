@@ -38,7 +38,7 @@ internal static uint64 smallHigh(byte c) {
 internal static uintptr nativeWidth(byte c) {
     GoBigConst mask = /* 1<<126 | 1<<65 | 1<<7 */
             GoBigConst.Parse("85070591730234615902737140005361156224");
-    return (uintptr)((uintptr)((((uintptr)1).Lsh((uint64)(c))) & (uintptr)((nuint)(128UL))) | (uintptr)((((uintptr)1).Lsh((uint64)((c - 64)))) & (uintptr)((nuint)(4611686018427387906UL))));
+    return (uintptr)((uintptr)((((uintptr)1).Lsh((uint64)(c))) & (uintptr)((nuint)(128UL))) | (uintptr)((((uintptr)1).Lsh((uint64)((c - 64)))) & (uintptr)(unchecked((nuint)(4611686018427387906UL)))));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

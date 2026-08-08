@@ -149,10 +149,6 @@ public static (syscall.RawConn, error) SyscallConn(this ж<UDPConn> Ꮡc) {
 
 // ReadFromUDP acts like ReadFrom but returns a UDPAddr.
 public static (nint n, ж<UDPAddr> addr, error err) ReadFromUDP(this ж<UDPConn> Ꮡc, slice<byte> b) {
-    nint n = default!;
-    ж<UDPAddr> addr = default!;
-    error err = default!;
-
     // This function is designed to allow the caller to control the lifetime
     // of the returned *UDPAddr and thereby prevent an allocation.
     // See https://blog.filippo.io/efficient-go-apis-with-the-inliner/.

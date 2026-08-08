@@ -1083,7 +1083,6 @@ internal static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u
 // Write implements io.Writer
 [GoRecv] internal static (nint n, error err) Write(this ref printer p, slice<byte> b) {
     nint n = default!;
-    error err = default!;
 
     if (p.closed && p.err == default!) {
         p.err = errors.New(useOfClosedEncoderˢ);
@@ -1097,7 +1096,6 @@ internal static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u
 // WriteString implements io.StringWriter
 [GoRecv] internal static (nint n, error err) WriteString(this ref printer p, @string s) {
     nint n = default!;
-    error err = default!;
 
     if (p.closed && p.err == default!) {
         p.err = errors.New(useOfClosedEncoderˢ);

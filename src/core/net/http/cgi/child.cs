@@ -199,9 +199,6 @@ public static error Serve(httpꓸHandler handler) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref response r, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (!r.wroteHeader) {
         r.WriteHeader(http.StatusOK);
     }

@@ -159,7 +159,6 @@ public static io.Writer NewEncoder(io.Writer w) {
 
 [GoRecv] internal static (nint n, error err) Write(this ref encoder e, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     while (len(p) > 0 && e.err == default!) {
         nint chunkSize = bufferSize / 2;
@@ -189,7 +188,6 @@ public static io.Reader NewDecoder(io.Reader r) {
 }
 
 [GoRecv] internal static (nint n, error err) Read(this ref decoder d, slice<byte> p) {
-    nint n = default!;
     error err = default!;
 
     // Fill internal buffer with sufficient bytes to decode

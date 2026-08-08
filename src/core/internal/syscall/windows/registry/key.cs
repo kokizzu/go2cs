@@ -121,8 +121,6 @@ break_loopItems:;
 // The access parameter specifies the access rights for the key
 // to be created.
 public static (Key newk, bool openedExisting, error err) CreateKey(Key k, @string path, uint32 access) {
-    Key newk = default!;
-    bool openedExisting = default!;
     error err = default!;
 
     ref var h = ref heap(new syscallꓸHandle(), out var Ꮡh);

@@ -114,8 +114,6 @@ internal static nint stripIPv4Header(nint n, slice<byte> b) {
 }
 
 [GoRecv] internal static (nint n, nint oobn, error err) writeMsg(this ref IPConn c, slice<byte> b, slice<byte> oob, ж<IPAddr> Ꮡaddr) {
-    nint n = default!;
-    nint oobn = default!;
     error err = default!;
 
     if ((~c.fd).isConnected) {

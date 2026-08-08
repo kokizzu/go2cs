@@ -101,10 +101,8 @@ internal static readonly @string x509InvalidPrivateKeyˢ = "x509: invalid privat
 // the PKCS8 container) - if it is provided then use this instead of the OID
 // that may exist in the EC private key structure.
 internal static (ж<ecdsa.PrivateKey> key, error err) parseECPrivateKey(ж<asn1.ObjectIdentifier> ᏑnamedCurveOID, slice<byte> der) {
-    ж<ecdsa.PrivateKey> key = default!;
-    error err = default!;
-
     ref var namedCurveOID = ref ᏑnamedCurveOID.DerefOrNull();
+
     ref var privKey = ref heap(new ecPrivateKey(), out var ᏑprivKey);
     {
         var (_, errΔ1) = asn1.Unmarshal(der, ᏑprivKey); if (errΔ1 != default!) {

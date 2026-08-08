@@ -254,9 +254,6 @@ public static Context TODO() {
 // Canceling this context releases resources associated with it, so code should
 // call cancel as soon as the operations running in this [Context] complete.
 public static (Context ctx, Action cancel) WithCancel(Context parent) {
-    Context ctx = default!;
-    Action cancel = default!;
-
     var c = withCancel(parent);
     var cʗ1 = c;
     return (new cancelCtxжContext(c), () => {
@@ -278,9 +275,6 @@ public static (Context ctx, Action cancel) WithCancel(Context parent) {
 //	ctx.Err() // returns context.Canceled
 //	context.Cause(ctx) // returns myError
 public static (Context ctx, Action<error> cancel) WithCancelCause(Context parent) {
-    Context ctx = default!;
-    Action<error> cancel = default!;
-
     var c = withCancel(parent);
     var cʗ1 = c;
     return (new cancelCtxжContext(c), (error cause) => {
@@ -344,8 +338,6 @@ public static error Cause(Context c) {
 // If ctx has a "AfterFunc(func()) func() bool" method,
 // AfterFunc will use it to schedule the call.
 public static Func<bool> /*stop*/ AfterFunc(Context ctx, Action f) {
-    Func<bool> stop = default!;
-
     var a = Ꮡ(new afterFuncCtx(
         f: f
     ));
@@ -730,9 +722,6 @@ public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, e
 }
 
 [GoRecv] internal static (time.Time deadline, bool ok) Deadline(this ref timerCtx c) {
-    time.Time deadline = default!;
-    bool ok = default!;
-
     return (c.deadline, true);
 }
 

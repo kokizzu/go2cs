@@ -101,7 +101,6 @@ internal static readonly @string malformedChunkedEncodingˢ = "malformed chunked
 
 [GoRecv] internal static (nint n, error err) Read(this ref chunkedReader cr, slice<uint8> b) {
     nint n = default!;
-    error err = default!;
 
     while (cr.err == default!) {
         if (cr.checkEnd) {

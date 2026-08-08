@@ -43,10 +43,6 @@ partial class types_package {
 //     but there was no pointer on the path from the actual receiver type to
 //     the method's formal receiver base type, nor was the receiver addressable.
 public static (Object obj, slice<nint> index, bool indirect) LookupFieldOrMethod(ΔType T, bool addressable, ж<Package> Ꮡpkg, @string name) {
-    Object obj = default!;
-    slice<nint> index = default!;
-    bool indirect = default!;
-
     if (T == default!) {
         throw panic("LookupFieldOrMethod on nil type");
     }
@@ -346,9 +342,6 @@ internal static (nint, bool) lookupType(map<ΔType, nint> m, ΔType typ) {
 // present in V have matching types (e.g., for a type assertion x.(T) where
 // x is of interface type V).
 public static (ж<Func> method, bool wrongType) MissingMethod(ΔType V, ж<Interface> ᏑT, bool @static) {
-    ж<Func> method = default!;
-    bool wrongType = default!;
-
     return (((ж<Checker>)nil)).missingMethod(V, new InterfaceжΔType(ᏑT), @static, Identical, nil);
 }
 
@@ -362,11 +355,9 @@ public static (ж<Func> method, bool wrongType) MissingMethod(ΔType V, ж<Inter
 // The comparator is used to compare signatures.
 // If a method is missing and cause is not nil, *cause describes the error.
 internal static (ж<Func> method, bool wrongType) missingMethod(this ж<Checker> Ꮡcheck, ΔType V, ΔType T, bool @static, Func<ΔType, ΔType, bool> equivalent, ж<@string> Ꮡcause) {
-    ж<Func> method = default!;
-    bool wrongType = default!;
-
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var cause = ref Ꮡcause.DerefOrNull();
+
     var methods = under(T)._<ж<Interface>>().typeSet().Value.methods; // T must be an interface
     if (len(methods) == 0) {
         return (default!, false);

@@ -1176,10 +1176,8 @@ internal static readonly @string execStderrPipeAfterˢ = "exec: StderrPipe after
 // suffix when Bytes() is called, but it doesn't seem worth it for
 // now just for error messages. It's only ~64KB anyway.
 internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     ref var w = ref Ꮡw.DerefOrNull();
+
     nint lenp = len(p);
     p = w.fill(Ꮡw.of(prefixSuffixSaver.Ꮡprefix), p);
     // Only keep the last w.N bytes of suffix data.
@@ -1207,9 +1205,8 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
 // fill appends up to len(p) bytes of p to *dst, such that *dst does not
 // grow larger than w.N. It returns the un-appended suffix of p.
 [GoRecv] internal static slice<byte> /*pRemain*/ fill(this ref prefixSuffixSaver w, ж<slice<byte>> Ꮡdst, slice<byte> p) {
-    slice<byte> pRemain = default!;
-
     ref var dst = ref Ꮡdst.DerefOrNull();
+
     {
         nint remain = w.N - len(dst); if (remain > 0) {
             nint add = min(len(p), remain);

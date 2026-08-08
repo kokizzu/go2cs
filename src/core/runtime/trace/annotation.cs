@@ -38,9 +38,6 @@ partial class trace_package {
 //	    trace.WithRegion(ctx, "remainingWork", remainingWork)
 //	}()
 public static (context.Context ctx, ж<Task> task) NewTask(context.Context pctx, @string taskType) {
-    context.Context ctx = default!;
-    ж<Task> task = default!;
-
     var pid = fromContext(pctx).Value.id;
     ref var id = ref heap<uint64>(out var Ꮡid);
     id = newID();

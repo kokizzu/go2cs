@@ -22,11 +22,10 @@ internal static readonly @string mapIndexˢ = "map index"u8;
 // In that case x represents the uninstantiated function value and
 // it is the caller's responsibility to instantiate the function.
 internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<typeparams.IndexExpr> Ꮡe) {
-    bool isFuncInst = default!;
-
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var x = ref Ꮡx.DerefOrNull();
     ref var e = ref Ꮡe.DerefOrNull();
+
     Ꮡcheck.exprOrType(Ꮡx, e.X, true);
     // x may be generic
     var exprᴛ1 = x.mode;

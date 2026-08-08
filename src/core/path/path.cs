@@ -155,9 +155,6 @@ public static @string Clean(@string path) {
 // file set to path.
 // The returned values have the property that path = dir+file.
 public static (@string dir, @string @file) Split(@string path) {
-    @string dir = default!;
-    @string @file = default!;
-
     nint i = bytealg.LastIndexByteString(path, (rune)'/');
     return (path[..(int)(i + 1)], path[(int)(i + 1)..]);
 }

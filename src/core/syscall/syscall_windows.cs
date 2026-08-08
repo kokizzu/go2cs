@@ -139,9 +139,6 @@ internal static uint32 langid(uint16 pri, uint16 sub) {
 //
 // Deprecated: Use FormatMessage from golang.org/x/sys/windows instead.
 public static (uint32 n, error err) FormatMessage(uint32 flags, uint32 msgsrc, uint32 msgid, uint32 langid, slice<uint16> buf, ж<byte> Ꮡargs) {
-    uint32 n = default!;
-    error err = default!;
-
     return formatMessage(flags, (uintptr)msgsrc, msgid, langid, buf, Ꮡargs);
 }
 
@@ -333,7 +330,6 @@ internal static ж<SecurityAttributes> makeInheritSa() {
 }
 
 public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm) {
-    ΔHandle fd = default!;
     error err = default!;
 
     if (len(path) == 0) {
@@ -428,9 +424,6 @@ public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm
 }
 
 public static (nint n, error err) Read(ΔHandle fd, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     ref var done = ref heap(new uint32(), out var Ꮡdone);
     var e = ReadFile(fd, p, Ꮡdone, nil);
     if (e != default!) {
@@ -444,9 +437,6 @@ public static (nint n, error err) Read(ΔHandle fd, slice<byte> p) {
 }
 
 public static (nint n, error err) Write(ΔHandle fd, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     ref var done = ref heap(new uint32(), out var Ꮡdone);
     var e = WriteFile(fd, p, Ꮡdone, nil);
     if (e != default!) {
@@ -554,8 +544,6 @@ public static (int64 newoffset, error err) Seek(ΔHandle fd, int64 offset, nint 
 }
 
 public static error /*err*/ Close(ΔHandle fd) {
-    error err = default!;
-
     return CloseHandle(fd);
 }
 
@@ -567,8 +555,6 @@ public static ΔHandle Stderr;
 internal static void initᴛStderr() { Stderr = getStdHandle(STD_ERROR_HANDLE); }
 
 internal static ΔHandle /*fd*/ getStdHandle(nint h) {
-    ΔHandle fd = default!;
-
     var (r, _) = GetStdHandle(h);
     return r;
 }
@@ -576,9 +562,6 @@ internal static ΔHandle /*fd*/ getStdHandle(nint h) {
 public const bool ImplementsGetwd = true;
 
 public static (@string wd, error err) Getwd() {
-    @string wd = default!;
-    error err = default!;
-
     var b = new slice<uint16>(300);
     // The path of the current directory may not fit in the initial 300-word
     // buffer when long path support is enabled. The current directory may also
@@ -652,9 +635,6 @@ public static error /*err*/ Rename(@string oldpath, @string newpath) {
 }
 
 public static (@string name, error err) ComputerName() {
-    @string name = default!;
-    error err = default!;
-
     ref var n = ref heap(new uint32(), out var Ꮡn);
     n = MAX_COMPUTERNAME_LENGTH + 1;
     var b = new slice<uint16>((nint)(n));
@@ -690,9 +670,8 @@ public static error /*err*/ Ftruncate(ΔHandle fd, int64 length) {
 }
 
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
-    error err = default!;
-
     ref var tv = ref Ꮡtv.DerefOrNull();
+
     ref var ft = ref heap(new Filetime(), out var Ꮡft);
     GetSystemTimeAsFileTime(Ꮡft);
     tv = NsecToTimeval(ft.Nanoseconds());
@@ -700,8 +679,6 @@ public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
 }
 
 public static error /*err*/ Pipe(slice<ΔHandle> p) {
-    error err = default!;
-
     if (len(p) != 2) {
         return EINVAL;
     }
@@ -790,14 +767,10 @@ public static error /*err*/ UtimesNano(@string path, slice<Timespec> ts) {
 }
 
 public static error /*err*/ Fsync(ΔHandle fd) {
-    error err = default!;
-
     return FlushFileBuffers(fd);
 }
 
 public static error /*err*/ Chmod(@string path, uint32 mode) {
-    error err = default!;
-
     var (p, e) = UTF16PtrFromString(path);
     if (e != default!) {
         return e;
@@ -1021,9 +994,6 @@ public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
 }
 
 public static (ΔHandle fd, error err) Socket(nint domain, nint typ, nint proto) {
-    ΔHandle fd = default!;
-    error err = default!;
-
     if (domain == AF_INET6 && SocketDisableIPv6) {
         return (InvalidHandle, EAFNOSUPPORT);
     }
@@ -1031,8 +1001,6 @@ public static (ΔHandle fd, error err) Socket(nint domain, nint typ, nint proto)
 }
 
 public static error /*err*/ SetsockoptInt(ΔHandle fd, nint level, nint opt, nint value) {
-    error err = default!;
-
     ref var v = ref heap<int32>(out var Ꮡv);
     v = (int32)value;
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡv.Reinterpret<int32, byte>(), (int32)/* unsafe.Sizeof(v) */ (uintptr)4);
@@ -1089,14 +1057,10 @@ public static (ΔSockaddr sa, error err) Getpeername(ΔHandle fd) {
 }
 
 public static error /*err*/ Listen(ΔHandle s, nint n) {
-    error err = default!;
-
     return listen(s, (int32)n);
 }
 
 public static error /*err*/ Shutdown(ΔHandle fd, nint how) {
-    error err = default!;
-
     return shutdown(fd, (int32)how);
 }
 
@@ -1291,30 +1255,18 @@ public static Timespec /*ts*/ NsecToTimespec(int64 nsec) {
 
 // TODO(brainman): fix all needed for net
 public static (ΔHandle nfd, ΔSockaddr sa, error err) Accept(ΔHandle fd) {
-    ΔHandle nfd = default!;
-    ΔSockaddr sa = default!;
-    error err = default!;
-
     return (0, default!, EWINDOWS);
 }
 
 public static (nint n, ΔSockaddr from, error err) Recvfrom(ΔHandle fd, slice<byte> p, nint flags) {
-    nint n = default!;
-    ΔSockaddr from = default!;
-    error err = default!;
-
     return (0, default!, EWINDOWS);
 }
 
 public static error /*err*/ Sendto(ΔHandle fd, slice<byte> p, nint flags, ΔSockaddr to) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ SetsockoptTimeval(ΔHandle fd, nint level, nint opt, ж<Timeval> Ꮡtv) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
@@ -1353,37 +1305,30 @@ public static (nint, error) GetsockoptInt(ΔHandle fd, nint level, nint opt) {
 }
 
 public static error /*err*/ SetsockoptLinger(ΔHandle fd, nint level, nint opt, ж<Linger> Ꮡl) {
-    error err = default!;
-
     ref var l = ref Ꮡl.DerefOrNull();
+
     ref var sys = ref heap<sysLinger>(out var Ꮡsys);
     sys = new sysLinger(Onoff: (uint16)l.Onoff, Linger: (uint16)l.ΔLinger);
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)/* unsafe.Sizeof(sys) */ (uintptr)4);
 }
 
 public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, array<byte> valueʗp) {
-    error err = default!;
-
     ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
+
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡvalue.at<byte>(0), 4);
 }
 
 public static error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
-    error err = default!;
-
     ref var mreq = ref Ꮡmreq.DerefOrNull();
+
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)/* unsafe.Sizeof(*mreq) */ (uintptr)8);
 }
 
 public static error /*err*/ SetsockoptIPv6Mreq(ΔHandle fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static nint /*pid*/ Getpid() {
-    nint pid = default!;
-
     return (nint)getCurrentProcessId();
 }
 
@@ -1448,8 +1393,6 @@ internal static (ж<ProcessEntry32>, error) getProcessEntry(nint pid) {
 }
 
 public static nint /*ppid*/ Getppid() {
-    nint ppid = default!;
-
     var (pe, err) = getProcessEntry(Getpid());
     if (err != default!) {
         return -1;
@@ -1499,69 +1442,46 @@ public static error /*err*/ Fchdir(ΔHandle fd) {
 
 // TODO(brainman): fix all needed for os
 public static error /*err*/ Link(@string oldpath, @string newpath) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ Symlink(@string path, @string link) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ Fchmod(ΔHandle fd, uint32 mode) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ Chown(@string path, nint uid, nint gid) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ Lchown(@string path, nint uid, nint gid) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static error /*err*/ Fchown(ΔHandle fd, nint uid, nint gid) {
-    error err = default!;
-
     return EWINDOWS;
 }
 
 public static nint /*uid*/ Getuid() {
-    nint uid = default!;
-
     return -1;
 }
 
 public static nint /*euid*/ Geteuid() {
-    nint euid = default!;
-
     return -1;
 }
 
 public static nint /*gid*/ Getgid() {
-    nint gid = default!;
-
     return -1;
 }
 
 public static nint /*egid*/ Getegid() {
-    nint egid = default!;
-
     return -1;
 }
 
 public static (slice<nint> gids, error err) Getgroups() {
-    slice<nint> gids = default!;
-    error err = default!;
-
     return (default!, EWINDOWS);
 }
 
@@ -1740,8 +1660,6 @@ internal static (ж<_PROC_THREAD_ATTRIBUTE_LIST>, error) newProcThreadAttributeL
 // Successive calls to this API must happen on the same OS thread,
 // so call [runtime.LockOSThread] before calling this function.
 public static error /*regerrno*/ RegEnumKeyEx(ΔHandle key, uint32 index, ж<uint16> Ꮡname, ж<uint32> ᏑnameLen, ж<uint32> Ꮡreserved, ж<uint16> Ꮡclass, ж<uint32> ᏑclassLen, ж<Filetime> ᏑlastWriteTime) {
-    error regerrno = default!;
-
     return regEnumKeyEx(key, index, Ꮡname, ᏑnameLen, Ꮡreserved, Ꮡclass, ᏑclassLen, ᏑlastWriteTime);
 }
 

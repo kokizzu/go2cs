@@ -100,9 +100,6 @@ public static error UnmarshalBinary(this ж<ChaCha8> Ꮡc, slice<byte> data) {
 }
 
 internal static (slice<byte> after, bool found) cutPrefix(slice<byte> s, slice<byte> prefix) {
-    slice<byte> after = default!;
-    bool found = default!;
-
     if (len(s) < len(prefix) || ((sstring)(s[..(int)(len(prefix))])) != ((sstring)prefix)) {
         return (s, false);
     }
@@ -110,10 +107,6 @@ internal static (slice<byte> after, bool found) cutPrefix(slice<byte> s, slice<b
 }
 
 internal static (slice<byte> buf, slice<byte> rest, bool ok) readUint8LengthPrefixed(slice<byte> b) {
-    slice<byte> buf = default!;
-    slice<byte> rest = default!;
-    bool ok = default!;
-
     if (len(b) == 0 || len(b) < (nint)(1 + b[0])) {
         return (default!, default!, false);
     }

@@ -181,7 +181,6 @@ internal static readonly @string cryptoRsaInvalidOptionsˢ = "crypto/rsa: invali
 // opts must have type *[OAEPOptions] and OAEP decryption is done.
 public static (slice<byte> plaintext, error err) Decrypt(this ж<PrivateKey> Ꮡpriv, io.Reader rand, slice<byte> ciphertext, cryptoꓸDecrypterOpts opts) {
     slice<byte> plaintext = default!;
-    error err = default!;
 
     if (opts == default!) {
         return DecryptPKCS1v15(rand, Ꮡpriv, ciphertext);

@@ -1702,9 +1702,6 @@ internal static readonly @string lengthOfDynamicSectionIsˢ = "length of dynamic
 internal static readonly @string unexpectedReadFromShtˢ = "unexpected read from SHT_NOBITS section"u8;
 
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
-    nint n = default!;
-    error err = default!;
-
     return (0, errors.New(unexpectedReadFromShtˢ));
 }
 

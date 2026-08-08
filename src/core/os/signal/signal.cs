@@ -283,7 +283,6 @@ internal static void process(osꓸSignal sig) {
 // signals no longer need to be diverted to the context.
 public static (context.Context ctx, Action stop) NotifyContext(context.Context parent, params ꓸꓸꓸosꓸSignal signalsʗp) {
     context.Context ctx = default!;
-    Action stop = default!;
     var signals = signalsʗp.slice();
 
     (ctx, var cancel) = context.WithCancel(parent);

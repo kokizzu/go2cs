@@ -101,8 +101,6 @@ internal static slice<byte> ExtractAndExpand(this ж<dhKEM> Ꮡdh, slice<byte> d
 }
 
 internal static (slice<byte> sharedSecret, slice<byte> encapPub, error err) Encap(this ж<dhKEM> Ꮡdh, ж<ecdhꓸPublicKey> ᏑpubRecipient) {
-    slice<byte> sharedSecret = default!;
-    slice<byte> encapPub = default!;
     error err = default!;
 
     ref var dh = ref Ꮡdh.DerefOrNull();

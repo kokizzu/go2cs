@@ -573,8 +573,6 @@ internal static (nat q, Word r) divW(this nat z, nat x, Word y) {
 
 // modW returns x % d.
 internal static Word /*r*/ modW(this nat x, Word d) {
-    Word r = default!;
-
     // TODO(agl): we don't actually need to store the q value.
     nat q = default!;
     q = q.make(len(x));

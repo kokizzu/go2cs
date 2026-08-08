@@ -815,10 +815,6 @@ internal static readonly @string httpˢ2 = "HTTP/"u8;
 // "HTTP/1.0" returns (1, 0, true). Note that strings without
 // a minor version, such as "HTTP/2", are not valid.
 public static (nint major, nint minor, bool ok) ParseHTTPVersion(@string vers) {
-    nint major = default!;
-    nint minor = default!;
-    bool ok = default!;
-
     var exprᴛ1 = vers;
     if (exprᴛ1 == "HTTP/1.1"u8) {
         return (1, 1, true);
@@ -994,10 +990,6 @@ public static (ж<Request>, error) NewRequestWithContext(context.Context ctx, @s
 // Authorization header, if the request uses HTTP Basic Authentication.
 // See RFC 2617, Section 2.
 [GoRecv] public static (@string username, @string password, bool ok) BasicAuth(this ref Request r) {
-    @string username = default!;
-    @string password = default!;
-    bool ok = default!;
-
     @string auth = r.Header.Get(authorizationˢ);
     if (auth == ""u8) {
         return ("", "", false);
@@ -1059,7 +1051,6 @@ internal static (@string method, @string requestURI, @string proto, bool ok) par
     @string method = default!;
     @string requestURI = default!;
     @string proto = default!;
-    bool ok = default!;
 
     (method, var rest, var ok1) = strings.Cut(line, " "u8);
     (requestURI, proto, var ok2) = strings.Cut(rest, " "u8);

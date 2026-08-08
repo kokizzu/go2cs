@@ -91,9 +91,6 @@ internal static @string takeSplit(Func<slice<byte>, bool, (nint, slice<byte>, er
 
 internal static @string mixedIntArms(slice<byte> data, bool atEOF) {
     var onComma = (nint advance, slice<byte> token, error err) (slice<byte> dataΔ1, bool atEOFΔ1) => {
-        nint advance = default!;
-        slice<byte> token = default!;
-        error err = default!;
         for (nint i = 0; i < len(dataΔ1); i++) {
             if (dataΔ1[i] == (rune)',') {
                 return (i + 1, dataΔ1[..(int)(i)], default!);

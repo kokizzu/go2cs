@@ -40,7 +40,6 @@ public static error ErrUnexpectedType = errors.New("unexpected key value type"u8
 // GetValue is a low level function. If value's type is known, use the appropriate
 // Get*Value function instead.
 public static (nint n, uint32 valtype, error err) GetValue(this Key k, @string name, slice<byte> buf) {
-    nint n = default!;
     ref var valtype = ref heap(new uint32(), out var Ꮡvaltype);
     error err = default!;
 
@@ -62,8 +61,6 @@ public static (nint n, uint32 valtype, error err) GetValue(this Key k, @string n
 }
 
 internal static (slice<byte> date, uint32 valtype, error err) getValue(this Key k, @string name, slice<byte> buf) {
-    slice<byte> date = default!;
-    uint32 valtype = default!;
     error err = default!;
 
     (var p, err) = syscall.UTF16PtrFromString(name);
@@ -94,10 +91,6 @@ internal static (slice<byte> date, uint32 valtype, error err) getValue(this Key 
 // If value is not SZ or EXPAND_SZ, it will return the correct value
 // type and ErrUnexpectedType.
 public static unsafe (@string val, uint32 valtype, error err) GetStringValue(this Key k, @string name) {
-    @string val = default!;
-    uint32 valtype = default!;
-    error err = default!;
-
     var (data, typ, err2) = k.getValue(name, new slice<byte>(64));
     if (err2 != default!) {
         return ("", typ, err2);
@@ -195,8 +188,6 @@ public static (@string, error) ExpandString(@string value) {
 // type and ErrUnexpectedType.
 public static unsafe (slice<@string> val, uint32 valtype, error err) GetStringsValue(this Key k, @string name) {
     slice<@string> val = default!;
-    uint32 valtype = default!;
-    error err = default!;
 
     var (data, typ, err2) = k.getValue(name, new slice<byte>(64));
     if (err2 != default!) {
@@ -236,10 +227,6 @@ internal static readonly @string qwordValueIsNot8Bytesˢ = "QWORD value is not 8
 // If value is not DWORD or QWORD, it will return the correct value
 // type and ErrUnexpectedType.
 public static (uint64 val, uint32 valtype, error err) GetIntegerValue(this Key k, @string name) {
-    uint64 val = default!;
-    uint32 valtype = default!;
-    error err = default!;
-
     var (data, typ, err2) = k.getValue(name, new slice<byte>(8));
     if (err2 != default!) {
         return (0, typ, err2);
@@ -269,10 +256,6 @@ public static (uint64 val, uint32 valtype, error err) GetIntegerValue(this Key k
 // If value is not BINARY, it will return the correct value
 // type and ErrUnexpectedType.
 public static (slice<byte> val, uint32 valtype, error err) GetBinaryValue(this Key k, @string name) {
-    slice<byte> val = default!;
-    uint32 valtype = default!;
-    error err = default!;
-
     var (data, typ, err2) = k.getValue(name, new slice<byte>(64));
     if (err2 != default!) {
         return (default!, typ, err2);

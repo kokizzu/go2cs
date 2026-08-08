@@ -39,18 +39,12 @@ internal static UntypedInt _M => /* _B - 1 */ 18446744073709551615; // digit mas
 
 // z1<<_W + z0 = x*y
 internal static (Word z1, Word z0) mulWW(Word x, Word y) {
-    Word z1 = default!;
-    Word z0 = default!;
-
     var (hi, lo) = bits.Mul((nuint)x, (nuint)y);
     return (((Word)hi), ((Word)lo));
 }
 
 // z1<<_W + z0 = x*y + c
 internal static (Word z1, Word z0) mulAddWWW_g(Word x, Word y, Word c) {
-    Word z1 = default!;
-    Word z0 = default!;
-
     var (hi, lo) = bits.Mul((nuint)x, (nuint)y);
     nuint cc = default!;
     (lo, cc) = bits.Add(lo, (nuint)c, 0);
@@ -232,9 +226,6 @@ internal static Word /*c*/ addMulVVW_g(slice<Word> z, slice<Word> x, Word y) {
 // An approximate reciprocal with a reference to "Improved Division by Invariant Integers
 // (IEEE Transactions on Computers, 11 Jun. 2010)"
 internal static (Word q, Word r) divWW(Word x1, Word x0, Word y, Word m) {
-    Word q = default!;
-    Word r = default!;
-
     nuint s = nlz(y);
     if (s != 0) {
         x1 = (Word)((x1 << (int)(s)) | (x0 >> (int)(((nuint)_W - s))));

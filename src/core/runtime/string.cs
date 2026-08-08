@@ -290,9 +290,6 @@ internal static @string /*s*/ intstring(ж<array<byte>> Ꮡbuf, int64 v) {
 // The storage is not zeroed. Callers should use
 // b to set the string contents and then drop b.
 internal static (@string s, slice<byte> b) rawstring(nint size) {
-    @string s = default!;
-    slice<byte> b = default!;
-
     @unsafe.Pointer Δp = (uintptr)mallocgc((uintptr)size, nil, false);
     return (@unsafe.String((ж<byte>)(uintptr)(Δp), size), @unsafe.Slice((ж<byte>)(uintptr)(Δp), size));
 }
@@ -549,7 +546,7 @@ internal static nint findnull(ж<byte> Ꮡs) {
     // on x86 machines, and those are classified as floating point instructions,
     // which are illegal in a note handler.
     if (GOOS == "plan9"u8) {
-        var Δp = array<byte>.AliasPointer(Ꮡs, (nint)140737488355327);
+        var Δp = array<byte>.AliasPointer(Ꮡs, unchecked((nint)140737488355327));
         nint l = 0;
         while (Δp.Value[l] != 0) {
             l++;
@@ -588,7 +585,7 @@ internal static nint findnullw(ж<uint16> Ꮡs) {
     if (Ꮡs == nil) {
         return 0;
     }
-    var Δp = array<uint16>.AliasPointer(Ꮡs, (nint)70368744177663);
+    var Δp = array<uint16>.AliasPointer(Ꮡs, unchecked((nint)70368744177663));
     nint l = 0;
     while (Δp.Value[l] != 0) {
         l++;
@@ -606,7 +603,7 @@ internal static @string gostringnocopy(ж<byte> Ꮡstr) {
 
 internal static @string gostringw(ж<uint16> Ꮡstrw) {
     array<byte> buf = new(8);
-    var str = array<uint16>.AliasPointer(Ꮡstrw, (nint)70368744177663);
+    var str = array<uint16>.AliasPointer(Ꮡstrw, unchecked((nint)70368744177663));
     nint n1 = 0;
     for (nint i = 0; str.Value[i] != 0; i++) {
         n1 += encoderune(buf[..], (rune)str.Value[i]);

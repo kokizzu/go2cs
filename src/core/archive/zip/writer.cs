@@ -242,7 +242,6 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
 // must be considered UTF-8 encoding (i.e., not compatible with CP-437, ASCII,
 // or any other common encoding).
 internal static (bool valid, bool require) detectUTF8(@string s) {
-    bool valid = default!;
     bool require = default!;
 
     for (nint i = 0; i < len(s); ) {

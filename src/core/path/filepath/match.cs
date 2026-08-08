@@ -45,9 +45,6 @@ public static error ErrBadPattern = errors.New("syntax error in pattern"u8);
 // On Windows, escaping is disabled. Instead, '\\' is treated as
 // path separator.
 public static (bool matched, error err) Match(@string pattern, @string name) {
-    bool matched = default!;
-    error err = default!;
-
 Pattern:
     while (len(pattern) > 0) {
         bool star = default!;
@@ -98,8 +95,6 @@ break_Pattern:;
 // possibly preceded by a star.
 internal static (bool star, @string chunk, @string rest) scanChunk(@string pattern) {
     bool star = default!;
-    @string chunk = default!;
-    @string rest = default!;
 
     while (len(pattern) > 0 && pattern[0] == (rune)'*') {
         pattern = pattern[1..];
@@ -144,8 +139,6 @@ break_Scan:;
 // If so, it returns the remainder of s (after the match).
 // Chunk is all single-character operators: literals, char classes, and ?.
 internal static (@string rest, bool ok, error err) matchChunk(@string chunk, @string s) {
-    @string rest = default!;
-    bool ok = default!;
     error err = default!;
 
     // failed records whether the match has failed.
@@ -278,9 +271,6 @@ internal static (rune r, @string nchunk, error err) getEsc(@string chunk) {
 // The only possible returned error is [ErrBadPattern], when pattern
 // is malformed.
 public static (slice<@string> matches, error err) Glob(@string pattern) {
-    slice<@string> matches = default!;
-    error err = default!;
-
     return globWithLimit(pattern, 0);
 }
 
@@ -354,9 +344,6 @@ internal static @string cleanGlobPath(@string path) {
 
 // cleanGlobPathWindows is windows version of cleanGlobPath.
 internal static (nint prefixLen, @string cleaned) cleanGlobPathWindows(@string path) {
-    nint prefixLen = default!;
-    @string cleaned = default!;
-
     nint vollen = filepathlite.VolumeNameLen(path);
     switch (ᐧ) {
     case {} when path == ""u8: {

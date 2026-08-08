@@ -13,9 +13,6 @@ internal static readonly @string fnParseComplex = "ParseComplex"u8;
 // convErr splits an error returned by parseFloatPrefix
 // into a syntax or range error for ParseComplex.
 internal static (error syntax, error range_) convErr(error err, @string s) {
-    error syntax = default!;
-    error range_ = default!;
-
     {
         var (x, ok) = err._<ж<NumError>>(ᐧ); if (ok) {
             x.Value.Func = fnParseComplex;

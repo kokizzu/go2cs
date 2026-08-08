@@ -611,9 +611,7 @@ internal static error readDataDescriptor(io.Reader r, ж<File> Ꮡf) {
 internal static readonly @string zipInvalidCommentLengthˢ = "zip: invalid comment length"u8;
 
 internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirectoryEnd(io.ReaderAt r, int64 size) {
-    ж<directoryEnd> dir = default!;
     int64 baseOffset = default!;
-    error err = default!;
 
     // look for directoryEndSignature in the last 1k, then in the last 65k
     slice<byte> buf = default!;
@@ -729,9 +727,8 @@ internal static (int64, error) findDirectory64End(io.ReaderAt r, int64 directory
 // readDirectory64End reads the zip64 directory end and updates the
 // directory end with the zip64 directory end values.
 internal static error /*err*/ readDirectory64End(io.ReaderAt r, int64 offset, ж<directoryEnd> Ꮡd) {
-    error err = default!;
-
     ref var d = ref Ꮡd.DerefOrNull();
+
     var buf = new slice<byte>(directory64EndLen);
     {
         var (_, errΔ1) = r.ReadAt(buf, offset); if (errΔ1 != default!) {
@@ -986,8 +983,6 @@ public static (fs.File, error) Open(this ж<Reader> Ꮡr, @string name) {
 }
 
 internal static (@string dir, @string elem, bool isDir) split(@string name) {
-    @string dir = default!;
-    @string elem = default!;
     bool isDir = default!;
 
     if (len(name) > 0 && name[len(name) - 1] == (rune)'/') {
@@ -1013,7 +1008,6 @@ internal static ж<fileListEntry> dotFile = Ꮡ(new fileListEntry(name: "./"u8, 
     var (dir, elem, _) = split(name);
     var files = r.fileList;
     var (i, _) = slices.BinarySearchFunc(files, dir, (fileListEntry a, @string dirΔ1) => {
-        nint ret = default!;
         var (idir, ielem, _) = split(a.name);
         if (dirΔ1 != idir) {
             return strings.Compare(idir, dirΔ1);

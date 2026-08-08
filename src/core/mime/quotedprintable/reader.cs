@@ -44,7 +44,6 @@ internal static (byte, error) fromHex(byte b) {
 }
 
 internal static (byte b, error err) readHexByte(slice<byte> v) {
-    byte b = default!;
     error err = default!;
 
     if (len(v) < 2) {

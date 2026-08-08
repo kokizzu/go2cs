@@ -218,9 +218,6 @@ internal static @string replaceStringByte(@string s, byte old, byte @new) {
 
 // Split is filepath.Split.
 public static (@string dir, @string @file) Split(@string path) {
-    @string dir = default!;
-    @string @file = default!;
-
     @string vol = VolumeName(path);
     nint i = len(path) - 1;
     while (i >= len(vol) && !IsPathSeparator(path[i])) {

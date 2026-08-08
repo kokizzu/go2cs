@@ -45,11 +45,8 @@ partial class singleflight_package {
 // original to complete and receives the same results.
 // The return value shared indicates whether v was given to multiple callers.
 public static (any v, error err, bool shared) Do(this ж<Group> Ꮡg, @string key, Func<(any, error)> fn) {
-    any v = default!;
-    error err = default!;
-    bool shared = default!;
-
     ref var g = ref Ꮡg.DerefOrNull();
+
     Ꮡg.of(Group.Ꮡmu).Lock();
     if (g.m == default!) {
         g.m = new map<@string, ж<call>>();

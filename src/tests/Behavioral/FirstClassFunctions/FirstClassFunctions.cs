@@ -129,15 +129,12 @@ internal static void Main() {
     }
     var res = new resolver(
         lookupPackage: (@string name) => {
-            @string importPath = default!;
-            bool ok = default!;
             if (name == "fmt"u8) {
                 return (pkgFmtˢ, true);
             }
             return ("", false);
         },
         lookupSym: (@string recv, @string name) => {
-            bool ok = default!;
             return recv == ""u8 && name == "Printf"u8;
         }
     );
@@ -205,8 +202,6 @@ internal static nint fillFast(this ж<worker> Ꮡw, slice<byte> b) {
 }
 
 [GoRecv] internal static error /*err*/ initWorker(this ref worker w, nint level) {
-    error err = default!;
-
     switch (ᐧ) {
     case {} when level is 0: {
         w.fill = (Func<ж<worker>, slice<byte>, nint>)(fillFast);

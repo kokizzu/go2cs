@@ -225,9 +225,6 @@ public static uint32 Update(uint32 crc, ж<Table> Ꮡtab, slice<byte> p) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref digest d, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     // We only create digest objects through New() which takes care of
     // initialization in this case.
     d.crc = update(d.crc, d.tab, p, false);

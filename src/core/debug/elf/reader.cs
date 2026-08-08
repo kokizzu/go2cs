@@ -14,16 +14,10 @@ partial class elf_package {
 }
 
 internal static (nint n, error err) Read(this errorReader r, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return (0, r.error);
 }
 
 internal static (nint n, error err) ReadAt(this errorReader r, slice<byte> p, int64 off) {
-    nint n = default!;
-    error err = default!;
-
     return (0, r.error);
 }
 

@@ -53,9 +53,6 @@ public static bool Is(@string s) {
 
 // ToLower returns the lowercase version of s if s is ASCII and printable.
 public static (@string lower, bool ok) ToLower(@string s) {
-    @string lower = default!;
-    bool ok = default!;
-
     if (!IsPrint(s)) {
         return ("", false);
     }

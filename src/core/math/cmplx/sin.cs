@@ -210,9 +210,6 @@ public static complex128 Cosh(complex128 x) {
 
 // calculate sinh and cosh.
 internal static (float64 sh, float64 ch) sinhcosh(float64 x) {
-    float64 sh = default!;
-    float64 ch = default!;
-
     if (math.Abs(x) <= 0.5D) {
         return (math.Sinh(x), math.Cosh(x));
     }

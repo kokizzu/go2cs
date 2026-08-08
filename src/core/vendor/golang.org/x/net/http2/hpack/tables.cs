@@ -99,10 +99,8 @@ partial class hpack_package {
 //
 // See Section 2.3.3.
 internal static (uint64 i, bool nameValueMatch) search(this ж<headerFieldTable> Ꮡt, HeaderField f) {
-    uint64 i = default!;
-    bool nameValueMatch = default!;
-
     ref var t = ref Ꮡt.DerefOrNull();
+
     if (!f.Sensitive) {
         {
             var id = t.byNameValue[new pairNameValue(f.Name, f.Value)]; if (id != 0) {

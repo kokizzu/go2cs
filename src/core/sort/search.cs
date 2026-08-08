@@ -99,7 +99,6 @@ public static nint Search(nint n, Func<nint, bool> f) {
 //	}
 public static (nint i, bool found) Find(nint n, Func<nint, nint> cmp) {
     nint i = default!;
-    bool found = default!;
 
     // The invariants here are similar to the ones in Search.
     // Define cmp(-1) > 0 and cmp(n) <= 0

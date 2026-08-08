@@ -106,7 +106,6 @@ internal static void handleFunc(this ж<serveMux121> Ꮡmux, @string pattern, Ac
 
 // Formerly ServeMux.Handler.
 internal static (ΔHandler h, @string pattern) findHandler(this ж<serveMux121> Ꮡmux, ж<Request> Ꮡr) {
-    ΔHandler h = default!;
     @string pattern = default!;
 
     ref var mux = ref Ꮡmux.DerefOrNull();
@@ -173,9 +172,6 @@ internal static (ΔHandler h, @string pattern) handler(this ж<serveMux121> Ꮡm
 // Find a handler on a handler map given a path string.
 // Most-specific (longest) pattern wins.
 [GoRecv] internal static (ΔHandler h, @string pattern) match(this ref serveMux121 mux, @string path) {
-    ΔHandler h = default!;
-    @string pattern = default!;
-
     // Check for exact match first.
     var (v, ok) = mux.m[path, ꟷ];
     if (ok) {

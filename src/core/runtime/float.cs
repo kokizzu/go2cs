@@ -11,8 +11,6 @@ internal static float64 inf = float64frombits(0x7FF0000000000000UL);
 
 // isNaN reports whether f is an IEEE 754 “not-a-number” value.
 internal static bool /*is*/ isNaN(float64 f) {
-    bool @is = default!;
-
     // IEEE 754 says that only NaNs satisfy f != f.
     return f != f;
 }

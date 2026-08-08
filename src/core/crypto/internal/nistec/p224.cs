@@ -468,8 +468,6 @@ public static (ж<P224Point>, error) ScalarBaseMult(this ж<P224Point> Ꮡp, sli
 // p224Sqrt sets e to a square root of x. If x is not a square, p224Sqrt returns
 // false and e is unchanged. e and x can overlap.
 internal static bool /*isSquare*/ p224Sqrt(ж<fiat.P224Element> Ꮡe, ж<fiat.P224Element> Ꮡx) {
-    bool isSquare = default!;
-
     var candidate = @new<fiat.P224Element>();
     p224SqrtCandidate(candidate, Ꮡx);
     var square = @new<fiat.P224Element>().Square(candidate);

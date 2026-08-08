@@ -371,9 +371,8 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
 //
 // It may emit to b.pb, so there must be no message encoding in progress.
 internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuilder> Ꮡb, slice<uint64> locs, slice<uintptr> stk) {
-    slice<uint64> newLocs = default!;
-
     ref var b = ref Ꮡb.DerefOrNull();
+
     b.deck.reset();
     // The last frame might be truncated. Recover lost inline frames.
     stk = runtime_expandFinalInlineFrame(stk);
@@ -528,8 +527,6 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // since the stack trace is already fully expanded) and the symbolizeResult
 // to the deck. If it fails the caller needs to flush the deck and retry.
 [GoRecv] internal static bool /*success*/ tryAdd(this ref pcDeck d, uintptr pc, slice<runtime.Frame> frames, symbolizeFlag symbolizeResult) {
-    bool success = default!;
-
     {
         nint existing = len(d.frames); if (existing > 0) {
             // 'd.frames' are all expanded from one 'pc' and represent all

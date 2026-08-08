@@ -187,9 +187,6 @@ internal static (@string arg, uint64 value, @string rest, error err) readArg(@st
 }
 
 internal static (@string token, @string rest) readToken(@string s) {
-    @string token = default!;
-    @string rest = default!;
-
     nint tkStart = -1;
     foreach (var (i, r) in s) {
         if (r == (rune)'#') {

@@ -137,7 +137,6 @@ internal static partial ΔsrcFunc badSrcFunc(ж<inlineUnwinder> _Δp0, inlineFra
 // It returns "?", 0 if something goes wrong.
 [GoRecv] internal static (@string @file, nint line) fileLine(this ref inlineUnwinder u, inlineFrame uf) {
     @string @file = default!;
-    nint line = default!;
 
     (@file, var line32) = funcline1(u.f, uf.pc, false);
     return (@file, (nint)line32);

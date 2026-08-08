@@ -68,8 +68,6 @@ internal static bitReader newBitReader(io.Reader r) {
 }
 
 [GoRecv] internal static nint /*n*/ ReadBits(this ref bitReader br, nuint bits) {
-    nint n = default!;
-
     var n64 = br.ReadBits64(bits);
     return (nint)n64;
 }

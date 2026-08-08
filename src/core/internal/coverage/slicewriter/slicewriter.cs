@@ -19,9 +19,6 @@ partial class slicewriter_package {
 }
 
 [GoRecv] public static (nint n, error err) Write(this ref WriteSeeker sws, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     nint amt = len(p);
     var towrite = sws.payload[(int)(sws.off)..];
     if (len(towrite) < amt) {
@@ -74,9 +71,6 @@ partial class slicewriter_package {
 }
 
 [GoRecv] public static (nint n, error err) Read(this ref WriteSeeker sws, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     nint amt = len(p);
     var toread = sws.payload[(int)(sws.off)..];
     if (len(toread) < amt) {

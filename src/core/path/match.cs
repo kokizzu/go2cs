@@ -36,9 +36,6 @@ public static error ErrBadPattern = errors.New("syntax error in pattern"u8);
 // The only possible returned error is [ErrBadPattern], when pattern
 // is malformed.
 public static (bool matched, error err) Match(@string pattern, @string name) {
-    bool matched = default!;
-    error err = default!;
-
 Pattern:
     while (len(pattern) > 0) {
         bool star = default!;
@@ -99,8 +96,6 @@ break_Pattern:;
 // possibly preceded by a star.
 internal static (bool star, @string chunk, @string rest) scanChunk(@string pattern) {
     bool star = default!;
-    @string chunk = default!;
-    @string rest = default!;
 
     while (len(pattern) > 0 && pattern[0] == (rune)'*') {
         pattern = pattern[1..];
@@ -143,8 +138,6 @@ break_Scan:;
 // If so, it returns the remainder of s (after the match).
 // Chunk is all single-character operators: literals, char classes, and ?.
 internal static (@string rest, bool ok, error err) matchChunk(@string chunk, @string s) {
-    @string rest = default!;
-    bool ok = default!;
     error err = default!;
 
     // failed records whether the match has failed.

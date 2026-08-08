@@ -143,9 +143,6 @@ internal static @string String(this anyType t) {
 
 // See cmd/compile/internal/types.SplitVargenSuffix.
 internal static (@string @base, @string suffix) splitVargenSuffix(@string name) {
-    @string @base = default!;
-    @string suffix = default!;
-
     nint i = len(name);
     while (i > 0 && name[i - 1] >= (rune)'0' && name[i - 1] <= (rune)'9') {
         i--;

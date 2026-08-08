@@ -787,8 +787,6 @@ internal static error writeThreadCreate(io.Writer w, nint debug) {
     // ThreadCreateProfile because there's no point in tracking labels when we
     // don't get any stack-traces.
     return writeRuntimeProfile(w, debug, threadcreateˢ, (slice<profilerecord.StackRecord> p, slice<@unsafe.Pointer> _) => {
-        nint n = default!;
-        bool ok = default!;
         return pprof_threadCreateInternal(p);
     });
 }

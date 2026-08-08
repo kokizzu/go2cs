@@ -109,9 +109,6 @@ internal static bool http2isASCIIPrint(@string s) {
 // asciiToLower returns the lowercase version of s if s is ASCII and printable,
 // and whether or not it was.
 internal static (@string lower, bool ok) http2asciiToLower(@string s) {
-    @string lower = default!;
-    bool ok = default!;
-
     if (!http2isASCIIPrint(s)) {
         return ("", false);
     }
@@ -612,10 +609,8 @@ internal static ж<http2dialCall> getStartDialLocked(this ж<http2clientConnPool
 // The return value used is whether c was used.
 // c is never closed.
 internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPool> Ꮡp, @string key, ж<http2Transport> Ꮡt, ж<tls.Conn> Ꮡc) {
-    bool used = default!;
-    error err = default!;
-
     ref var p = ref Ꮡp.DerefOrNull();
+
     Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
     foreach (var (_, cc) in p.conns[key]) {
         if (cc.CanTakeNewRequest()) {
@@ -1100,8 +1095,6 @@ internal static UntypedInt http2inflowMinRefresh => /* 4 << 10 */ 4096;
 // Window updates are accumulated and sent when the unsent capacity
 // is at least inflowMinRefresh or will at least double the peer's available window.
 [GoRecv] internal static int32 /*connAdd*/ add(this ref http2inflow f, nint n) {
-    int32 connAdd = default!;
-
     if (n < 0) {
         throw panic("negative update");
     }
@@ -1957,9 +1950,6 @@ internal static (http2Frame, error) http2parseSettingsFrame(ж<http2frameCache> 
 }
 
 [GoRecv] internal static (uint32 v, bool ok) Value(this ref http2SettingsFrame f, http2SettingID id) {
-    uint32 v = default!;
-    bool ok = default!;
-
     f.http2FrameHeader.checkValid();
     for (nint i = 0; i < f.NumSettings(); i++) {
         {
@@ -2666,10 +2656,6 @@ internal static error WriteRawFrame(this ж<http2Framer> Ꮡf, http2FrameType t,
 }
 
 internal static (slice<byte> remain, byte b, error err) http2readByte(slice<byte> p) {
-    slice<byte> remain = default!;
-    byte b = default!;
-    error err = default!;
-
     if (builtin.len(p) == 0) {
         return (default!, 0, io.ErrUnexpectedEOF);
     }
@@ -2677,10 +2663,6 @@ internal static (slice<byte> remain, byte b, error err) http2readByte(slice<byte
 }
 
 internal static (slice<byte> remain, uint32 v, error err) http2readUint32(slice<byte> p) {
-    slice<byte> remain = default!;
-    uint32 v = default!;
-    error err = default!;
-
     if (builtin.len(p) < 4) {
         return (default!, 0, io.ErrUnexpectedEOF);
     }
@@ -3249,9 +3231,6 @@ internal static void http2buildCommonHeaderMaps() {
 }
 
 internal static (@string lower, bool ascii) http2lowerHeader(@string v) {
-    @string lower = default!;
-    bool ascii = default!;
-
     http2buildCommonHeaderMapsOnce();
     {
         var (s, ok) = http2commonLowerHeader[v, ꟷ]; if (ok) {
@@ -3491,9 +3470,6 @@ internal static ref sync.Pool http2bufWriterPool => ref Ꮡhttp2bufWriterPool.Va
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref http2bufferedWriter w, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (w.bw == nil) {
         var bw = Ꮡhttp2bufWriterPool.Get()._<ж<bufio.Writer>>();
         bw.Reset(w.w);
@@ -6857,7 +6833,6 @@ internal static readonly @string connectionˢ = "Connection"u8;
 // writeChunk is also responsible (on the first chunk) for sending the
 // HEADER response.
 internal static (nint n, error err) writeChunk(this ж<http2responseWriterState> Ꮡrws, slice<byte> p) {
-    nint n = default!;
     error err = default!;
 
     ref var rws = ref Ꮡrws.DerefOrNull();
@@ -7222,16 +7197,10 @@ internal static ΔHeader http2cloneHeader(ΔHeader h) {
 // * -> responseWriterState.writeChunk(p []byte)
 // * -> responseWriterState.writeChunk (most of the magic; see comment there)
 [GoRecv] internal static (nint n, error err) Write(this ref http2responseWriter w, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return w.write(builtin.len(p), p, ""u8);
 }
 
 [GoRecv] internal static (nint n, error err) WriteString(this ref http2responseWriter w, @string s) {
-    nint n = default!;
-    error err = default!;
-
     return w.write(builtin.len(s), default!, s);
 }
 
@@ -7240,9 +7209,6 @@ internal static readonly @string http2HandlerWroteMoreˢ = "http2: handler wrote
 
 // either dataB or dataS is non-zero.
 [GoRecv] internal static (nint n, error err) write(this ref http2responseWriter w, nint lenData, slice<byte> dataB, @string dataS) {
-    nint n = default!;
-    error err = default!;
-
     var rws = w.rws;
     if (rws == nil) {
         throw panic("Write called after Handler finished");
@@ -8065,7 +8031,6 @@ internal static void closeReqBodyLocked(this ж<http2clientStream> Ꮡcs) {
 
 internal static (nint n, error err) Write(this http2stickyErrWriter sew, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     if (sew.err.ValueSlot != default!) {
         return (0, sew.err.ValueSlot);
@@ -8137,8 +8102,6 @@ internal static (ж<Response>, error) RoundTrip(this ж<http2Transport> Ꮡt, ж
 // authorityAddr returns a given authority (a host/IP, or host:port / ip:port)
 // and returns a host:port. The port 443 is added if needed.
 internal static @string /*addr*/ http2authorityAddr(@string scheme, @string authority) {
-    @string addr = default!;
-
     var (host, port, err) = net.SplitHostPort(authority);
     if (err != default!) {
         // authority didn't have a port
@@ -11261,7 +11224,6 @@ internal static (ж<Response>, error) RoundTrip(this http2erringRoundTripper rt,
 }
 
 [GoRecv] internal static (nint n, error err) Read(this ref http2gzipReader gz, slice<byte> p) {
-    nint n = default!;
     error err = default!;
 
     if (gz.zerr != default!) {

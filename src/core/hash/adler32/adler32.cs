@@ -107,9 +107,6 @@ internal static digest update(digest d, slice<byte> p) {
 }
 
 [GoRecv] internal static (nint nn, error err) Write(this ref digest d, slice<byte> p) {
-    nint nn = default!;
-    error err = default!;
-
     d = update(d, p);
     return (len(p), default!);
 }

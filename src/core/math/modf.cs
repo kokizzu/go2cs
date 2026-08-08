@@ -13,9 +13,6 @@ partial class math_package {
 //	Modf(±Inf) = ±Inf, NaN
 //	Modf(NaN) = NaN, NaN
 public static (float64 @int, float64 frac) Modf(float64 f) {
-    float64 @int = default!;
-    float64 frac = default!;
-
     if (haveArchModf) {
         return archModf(f);
     }

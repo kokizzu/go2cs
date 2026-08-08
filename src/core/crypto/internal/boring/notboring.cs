@@ -98,11 +98,6 @@ public static (cipher.AEAD, error) NewGCMTLS(cipher.Block _) {
 }
 
 public static (BigInt X, BigInt Y, BigInt D, error err) GenerateKeyECDSA(@string curve) {
-    BigInt X = default!;
-    BigInt Y = default!;
-    BigInt D = default!;
-    error err = default!;
-
     throw panic("boringcrypto: not available");
 }
 
@@ -155,16 +150,6 @@ public static (slice<byte>, error) EncryptRSANoPadding(ж<PublicKeyRSA> Ꮡpub, 
 }
 
 public static (BigInt N, BigInt E, BigInt D, BigInt P, BigInt Q, BigInt Dp, BigInt Dq, BigInt Qinv, error err) GenerateKeyRSA(nint bits) {
-    BigInt N = default!;
-    BigInt E = default!;
-    BigInt D = default!;
-    BigInt P = default!;
-    BigInt Q = default!;
-    BigInt Dp = default!;
-    BigInt Dq = default!;
-    BigInt Qinv = default!;
-    error err = default!;
-
     throw panic("boringcrypto: not available");
 }
 

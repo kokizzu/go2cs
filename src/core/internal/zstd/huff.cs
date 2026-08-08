@@ -28,8 +28,6 @@ internal static readonly @string huffmanTableTooSmallˢ = "Huffman table too sma
 // RFC 4.2.1.
 internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> Ꮡr, block data, nint off, slice<uint16> table) {
     nint tableBits = default!;
-    nint roff = default!;
-    error err = default!;
 
     ref var r = ref Ꮡr.DerefOrNull();
     if (off >= builtin.len(data)) {

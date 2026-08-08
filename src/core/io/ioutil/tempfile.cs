@@ -21,9 +21,6 @@ partial class ioutil_package {
 //
 // Deprecated: As of Go 1.17, this function simply calls [os.CreateTemp].
 public static (ж<os.File> f, error err) TempFile(@string dir, @string pattern) {
-    ж<os.File> f = default!;
-    error err = default!;
-
     return os.CreateTemp(dir, pattern);
 }
 
@@ -39,9 +36,6 @@ public static (ж<os.File> f, error err) TempFile(@string dir, @string pattern) 
 //
 // Deprecated: As of Go 1.17, this function simply calls [os.MkdirTemp].
 public static (@string name, error err) TempDir(@string dir, @string pattern) {
-    @string name = default!;
-    error err = default!;
-
     return os.MkdirTemp(dir, pattern);
 }
 

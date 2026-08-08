@@ -1068,10 +1068,6 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
         quantErrorNext = new slice<array<int32>>(r.Dx() + 2, () => new(4));
     }
     var pxRGBA = (nint x, nint y) => {
-        uint32 rΔ2 = default!;
-        uint32 g = default!;
-        uint32 b = default!;
-        uint32 a = default!;
         return src.At(x, y).RGBA();
     };
     // Fast paths for special cases to avoid excessive use of the color.Color
@@ -1080,30 +1076,18 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
     switch (src.type()) {
     case ж<imageꓸRGBA> src0: {
         pxRGBA = (nint x, nint y) => {
-            uint32 rΔ3 = default!;
-            uint32 g = default!;
-            uint32 b = default!;
-            uint32 a = default!;
             return src0.RGBAAt(x, y).RGBA();
         };
         break;
     }
     case ж<image.NRGBA> src0: {
         pxRGBA = (nint x, nint y) => {
-            uint32 rΔ4 = default!;
-            uint32 g = default!;
-            uint32 b = default!;
-            uint32 a = default!;
             return src0.NRGBAAt(x, y).RGBA();
         };
         break;
     }
     case ж<image.YCbCr> src0: {
         pxRGBA = (nint x, nint y) => {
-            uint32 rΔ5 = default!;
-            uint32 g = default!;
-            uint32 b = default!;
-            uint32 a = default!;
             return src0.YCbCrAt(x, y).RGBA();
         };
         break;

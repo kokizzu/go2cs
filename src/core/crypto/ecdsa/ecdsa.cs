@@ -338,7 +338,6 @@ internal static readonly @string ecdsaInternalErrorSIsˢ = "ecdsa: internal erro
 internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash)
     where Point : nistPoint<Point>
 {
-    slice<byte> sig = default!;
     error err = default!;
 
     ref var c = ref Ꮡc.DerefOrNull();
@@ -524,9 +523,6 @@ internal static zr zeroReader = new zr(nil);
 
 // Read replaces the contents of dst with zeros. It is safe for concurrent use.
 internal static (nint n, error err) Read(this zr _, slice<byte> dst) {
-    nint n = default!;
-    error err = default!;
-
     clear(dst);
     return (len(dst), default!);
 }
@@ -627,7 +623,6 @@ internal static readonly @string invalidAsn1ˢ = "invalid ASN.1"u8;
 internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<byte> sig) {
     ref var r = ref heap<slice<byte>>(out var Ꮡr);
     ref var s = ref heap<slice<byte>>(out var Ꮡs);
-    error err = default!;
 
     ref var inner = ref heap<cryptobyte.String>(out var Ꮡinner);
     var input = ((cryptobyte.String)sig);
@@ -665,7 +660,6 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     where Point : nistPoint<Point>
 {
     Point p = default!;
-    error err = default!;
 
     ref var x = ref Ꮡx.DerefOrNull();
     ref var y = ref Ꮡy.DerefOrNull();
@@ -695,7 +689,6 @@ internal static readonly @string ecdsaPublicKeyPointIsTheˢ = "ecdsa: public key
 {
     ж<bigꓸInt> x = default!;
     ж<bigꓸInt> y = default!;
-    error err = default!;
 
     var @out = p.Bytes();
     if (len(@out) == 1 && @out[0] == 0) {

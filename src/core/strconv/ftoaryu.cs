@@ -507,10 +507,6 @@ internal static void ryuDigits32(ж<decimalSlice> Ꮡd, uint32 lower, uint32 cen
 //	m*2^e2 * round(10^q) = resM * 2^resE + ε
 //	exact = ε == 0
 internal static (uint32 resM, nint resE, bool exact) mult64bitPow10(uint32 m, nint e2, nint q) {
-    uint32 resM = default!;
-    nint resE = default!;
-    bool exact = default!;
-
     if (q == 0) {
         // P == 1<<63
         return ((m << (int)(6)), e2 - 6, true);
@@ -540,10 +536,6 @@ internal static (uint32 resM, nint resE, bool exact) mult64bitPow10(uint32 m, ni
 //	m*2^e2 * round(10^q) = resM * 2^resE + ε
 //	exact = ε == 0
 internal static (uint64 resM, nint resE, bool exact) mult128bitPow10(uint64 m, nint e2, nint q) {
-    uint64 resM = default!;
-    nint resE = default!;
-    bool exact = default!;
-
     if (q == 0) {
         // P == 1<<127
         return ((m << (int)(8)), e2 - 8, true);

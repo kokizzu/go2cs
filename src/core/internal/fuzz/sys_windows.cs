@@ -122,7 +122,6 @@ internal static readonly @string fuzzMemˢ = "fuzz_mem"u8;
 
 // getWorkerComm returns communication channels in the worker process.
 internal static (workerComm comm, error err) getWorkerComm() {
-    workerComm comm = default!;
     error err = default!;
 
     @string v = os.Getenv(goTestFuzzWorkerHandlesˢ);

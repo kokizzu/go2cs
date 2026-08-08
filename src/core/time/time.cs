@@ -548,7 +548,6 @@ internal static ΔWeekday absWeekday(uint64 abs) {
 // of year n+1.
 public static (nint year, nint week) ISOWeek(this Time t) {
     nint year = default!;
-    nint week = default!;
 
     // According to the rule that the first calendar week of a calendar year is
     // the week including the first Thursday of that year, and that the last one is
@@ -573,10 +572,6 @@ public static (nint year, nint week) ISOWeek(this Time t) {
 
 // Clock returns the hour, minute, and second within the day specified by t.
 public static (nint hour, nint min, nint sec) Clock(this Time t) {
-    nint hour = default!;
-    nint min = default!;
-    nint sec = default!;
-
     return absClock(t.abs());
 }
 
@@ -754,9 +749,6 @@ internal static nint format(this Duration d, ж<array<byte>> Ꮡbuf) {
 // point too when the fraction is 0. It returns the index where the
 // output bytes begin and the value v/10**prec.
 internal static (nint nw, uint64 nv) fmtFrac(slice<byte> buf, uint64 v, nint prec) {
-    nint nw = default!;
-    uint64 nv = default!;
-
     // Omit trailing zeros up to and including decimal point.
     nint w = len(buf);
     var print = false;
@@ -1017,11 +1009,6 @@ internal static UntypedInt daysPer4Years => /* 365*4 + 1 */ 1461;
 // date computes the year, day of year, and when full=true,
 // the month and day in which t occurs.
 internal static (nint year, ΔMonth month, nint day, nint yday) date(this Time t, bool full) {
-    nint year = default!;
-    ΔMonth month = default!;
-    nint day = default!;
-    nint yday = default!;
-
     return absDate(t.abs(), full);
 }
 
@@ -1517,9 +1504,6 @@ internal static bool isLeap(nint year) {
 //	hi * base + lo == nhi * base + nlo
 //	0 <= nlo < base
 internal static (nint nhi, nint nlo) norm(nint hi, nint lo, nint @base) {
-    nint nhi = default!;
-    nint nlo = default!;
-
     if (lo < 0) {
         nint n = (-lo - 1) / @base + 1;
         hi -= n;

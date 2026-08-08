@@ -78,10 +78,8 @@ internal static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
 public static (slice<byte> text, error err) MarshalText(this ж<ΔRat> Ꮡx) {
-    slice<byte> text = default!;
-    error err = default!;
-
     ref var x = ref Ꮡx.DerefOrNull();
+
     if (x.IsInt()) {
         return Ꮡx.of(big_package.ΔRat.Ꮡa).MarshalText();
     }

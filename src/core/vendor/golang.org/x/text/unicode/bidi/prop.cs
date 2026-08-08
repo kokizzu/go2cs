@@ -74,9 +74,6 @@ internal static array<ΔClass> controlByteToClass = new array<ΔClass>(16){
 
 // LookupRune returns properties for r.
 public static (Properties p, nint size) LookupRune(rune r) {
-    Properties p = default!;
-    nint size = default!;
-
     array<byte> buf = new(4);
     nint n = utf8.EncodeRune(buf[..], r);
     return Lookup(buf[..(int)(n)]);
@@ -101,9 +98,6 @@ public static (Properties p, nint size) LookupRune(rune r) {
 // its encoding. The size will be 0 if s does not hold enough bytes to complete
 // the encoding.
 public static (Properties p, nint sz) Lookup(slice<byte> s) {
-    Properties p = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -176,9 +170,6 @@ entry: bidiValues[c0]), 1);
 // bytes of its encoding. The size will be 0 if s does not hold enough bytes to
 // complete the encoding.
 public static (Properties p, nint sz) LookupString(@string s) {
-    Properties p = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {

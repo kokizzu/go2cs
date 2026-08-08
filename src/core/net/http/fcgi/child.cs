@@ -97,9 +97,6 @@ internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref response r, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (!r.wroteHeader) {
         r.WriteHeader(http.StatusOK);
     }

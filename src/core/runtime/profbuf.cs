@@ -436,7 +436,6 @@ internal static readonly @string runtimeMalformedProfBufˢ2 = "runtime: malforme
 internal static (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) read(this ж<profBuf> Ꮡb, profBufReadMode mode) {
     slice<uint64> data = default!;
     slice<@unsafe.Pointer> tags = default!;
-    bool eof = default!;
 
     ref var b = ref Ꮡb.DerefOrNull();
     if (Ꮡb == nil) {

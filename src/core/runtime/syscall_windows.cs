@@ -276,8 +276,6 @@ internal static readonly @string tooManyCallbackFunctionsˢ = "too many callback
 //
 //go:linkname compileCallback syscall.compileCallback
 internal static uintptr /*code*/ compileCallback(eface fn, bool cdecl) {
-    uintptr code = default!;
-
     if (GOARCH != "386"u8) {
         // cdecl is only meaningful on 386.
         cdecl = false;
@@ -472,10 +470,6 @@ internal static (uintptr outhandle, uintptr err) syscall_getprocaddress(uintptr 
 //go:linkname syscall_Syscall syscall.Syscall
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -483,10 +477,6 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall(uintptr fn
 //go:linkname syscall_Syscall6 syscall.Syscall6
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall6(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3, a4, a5, a6}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -494,10 +484,6 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall6(uintptr f
 //go:linkname syscall_Syscall9 syscall.Syscall9
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall9(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -505,10 +491,6 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall9(uintptr f
 //go:linkname syscall_Syscall12 syscall.Syscall12
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall12(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -516,10 +498,6 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall12(uintptr 
 //go:linkname syscall_Syscall15 syscall.Syscall15
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall15(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12, uintptr a13, uintptr a14, uintptr a15) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -527,10 +505,6 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall15(uintptr 
 //go:linkname syscall_Syscall18 syscall.Syscall18
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall18(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12, uintptr a13, uintptr a14, uintptr a15, uintptr a16, uintptr a17, uintptr a18) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
-
     var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18}.array();
     return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
 }
@@ -545,9 +519,6 @@ internal static UntypedInt maxArgs => 42;
 //go:linkname syscall_SyscallN syscall.SyscallN
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_SyscallN(uintptr fn, params ꓸꓸꓸuintptr argsʗp) {
-    uintptr r1 = default!;
-    uintptr r2 = default!;
-    uintptr err = default!;
     var args = argsʗp.slice();
 
     if (len(args) > maxArgs) {

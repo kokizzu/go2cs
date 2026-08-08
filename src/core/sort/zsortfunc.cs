@@ -120,9 +120,6 @@ internal static void pdqsort_func(lessSwap data, nint a, nint b, nint limit) {
 // Moves elements in data[a:b] around, so that data[i]<p and data[j]>=p for i<newpivot and j>newpivot.
 // On return, data[newpivot] = p
 internal static (nint newpivot, bool alreadyPartitioned) partition_func(lessSwap data, nint a, nint b, nint pivot) {
-    nint newpivot = default!;
-    bool alreadyPartitioned = default!;
-
     data.Swap(a, pivot);
     nint i = a + 1;
     nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
@@ -160,8 +157,6 @@ internal static (nint newpivot, bool alreadyPartitioned) partition_func(lessSwap
 // partitionEqual_func partitions data[a:b] into elements equal to data[pivot] followed by elements greater than data[pivot].
 // It assumed that data[a:b] does not contain elements smaller than the data[pivot].
 internal static nint /*newpivot*/ partitionEqual_func(lessSwap data, nint a, nint b, nint pivot) {
-    nint newpivot = default!;
-
     data.Swap(a, pivot);
     nint i = a + 1;
     nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
@@ -243,9 +238,6 @@ internal static void breakPatterns_func(lessSwap data, nint a, nint b) {
 // [8,shortestNinther): uses the simple median-of-three method.
 // [shortestNinther,∞): uses the Tukey ninther method.
 internal static (nint pivot, sortedHint hint) choosePivot_func(lessSwap data, nint a, nint b) {
-    nint pivot = default!;
-    sortedHint hint = default!;
-
     const nint shortestNinther = 50;
     const nint maxSwaps = /* 4 * 3 */ 12;
     nint l = b - a;

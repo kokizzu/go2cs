@@ -389,7 +389,6 @@ internal static void queue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr, ж<sud
 // returns tailtime set to the last entry's acquiretime.
 // Otherwise tailtime is found.acquiretime.
 internal static (ж<sudog> found, int64 now, int64 tailtime) dequeue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr) {
-    ж<sudog> found = default!;
     int64 now = default!;
     int64 tailtime = default!;
 

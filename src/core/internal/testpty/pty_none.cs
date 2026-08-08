@@ -9,10 +9,6 @@ using os = os_package;
 partial class testpty_package {
 
 internal static (ж<os.File> pty, @string processTTY, error err) open() {
-    ж<os.File> pty = default!;
-    @string processTTY = default!;
-    error err = default!;
-
     return (default!, "", ErrNotSupported);
 }
 

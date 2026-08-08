@@ -34,9 +34,6 @@ internal static void cryptBlock(slice<uint64> subkeys, slice<byte> dst, slice<by
 // DES Feistel function. feistelBox must be initialized via
 // feistelBoxOnce.Do(initFeistelBox) first.
 internal static (uint32 lout, uint32 rout) feistel(uint32 l, uint32 r, uint64 k0, uint64 k1) {
-    uint32 lout = default!;
-    uint32 rout = default!;
-
     uint32 t = default!;
     t = (uint32)(r ^ (uint32)((k0 >> (int)(32))));
     l ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[7][(nint)((uint32)(t & 0x3f))] ^ feistelBox[5][(nint)((uint32)(((t >> (int)(8))) & 0x3f))]) ^ feistelBox[3][(nint)((uint32)(((t >> (int)(16))) & 0x3f))]) ^ feistelBox[1][(nint)((uint32)(((t >> (int)(24))) & 0x3f))]));

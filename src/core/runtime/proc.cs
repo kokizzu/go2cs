@@ -2664,7 +2664,6 @@ internal static void unlockextra(ж<m> Ꮡmp, int32 delta) {
 //go:nosplit
 internal static (ж<m> mp, bool last) getExtraM() {
     ж<m> mp = default!;
-    bool last = default!;
 
     mp = lockextra(false);
     ᏑextraMInUse.Add(1);
@@ -3277,8 +3276,6 @@ internal static readonly @string findrunnableNetpollWithˢ = "findrunnable: netp
 // reader) so the caller should try to wake a P.
 internal static (ж<g> gp, bool inheritTime, bool tryWakeP) findRunnable() {
     ж<g> gp = default!;
-    bool inheritTime = default!;
-    bool tryWakeP = default!;
 
     var mp = getg().Value.m;
     // The conditions here and in handoffp must agree: if
@@ -3671,11 +3668,7 @@ internal static bool pollWork() {
 // If now is not 0 it is the current time. stealWork returns the passed time or
 // the current time if now was passed as 0.
 internal static (ж<g> gp, bool inheritTime, int64 rnow, int64 pollUntil, bool newWork) stealWork(int64 now) {
-    ж<g> gp = default!;
-    bool inheritTime = default!;
-    int64 rnow = default!;
     int64 pollUntil = default!;
-    bool newWork = default!;
 
     var pp = (~(~getg()).m).p.ptr();
     var ranTimer = false;
@@ -6796,10 +6789,8 @@ internal static void runqputbatch(ж<Δp> Ꮡpp, ж<gQueue> Ꮡq, nint qsize) {
 // current time slice. Otherwise, it should start a new time slice.
 // Executed only by the owner P.
 internal static (ж<g> gp, bool inheritTime) runqget(ж<Δp> Ꮡpp) {
-    ж<g> gp = default!;
-    bool inheritTime = default!;
-
     ref var pp = ref Ꮡpp.DerefOrNull();
+
     // If there's a runnext, it's the next G to run.
     var next = pp.runnext;
     // If the runnext is non-0 and the CAS fails, it could only have been stolen by another P,

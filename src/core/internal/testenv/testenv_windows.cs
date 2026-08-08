@@ -48,9 +48,6 @@ private static readonly @string symlinksAreNotSupportedˢ = ": symlinks are not 
 private static readonly @string youDonTHaveEnoughˢ = ": you don't have enough privileges to create symlinks"u8;
 
 internal static (bool ok, @string reason) hasSymlink() {
-    bool ok = default!;
-    @string reason = default!;
-
     ᏑsymlinkOnce.Do(initWinHasSymlink);
     var exprᴛ1 = winSymlinkErr;
     if (AreEqual(exprᴛ1, default!)) {

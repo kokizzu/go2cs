@@ -168,16 +168,10 @@ internal static readonly object unexpectedEofˢ = (@string)"unexpected EOF"u8;
 }
 
 [GoRecv] internal static (@string path, @string name) parseQualifiedName(this ref parser p) {
-    @string path = default!;
-    @string name = default!;
-
     return p.parseQualifiedNameStr(p.parseString());
 }
 
 [GoRecv] internal static (@string path, @string name) parseUnquotedQualifiedName(this ref parser p) {
-    @string path = default!;
-    @string name = default!;
-
     return p.parseQualifiedNameStr(p.parseUnquotedString());
 }
 

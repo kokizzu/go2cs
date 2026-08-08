@@ -197,9 +197,6 @@ internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 
 // Read reads the body of a part, after its headers and before the
 // next part (if any) begins.
 [GoRecv] public static (nint n, error err) Read(this ref Part p, slice<byte> d) {
-    nint n = default!;
-    error err = default!;
-
     return p.r.Read(d);
 }
 
@@ -470,8 +467,6 @@ internal static (ж<Part>, error) nextPart(this ж<Reader> Ꮡr, bool rawPart, i
 }
 
 [GoRecv] internal static bool /*ret*/ isBoundaryDelimiterLine(this ref Reader r, slice<byte> line) {
-    bool ret = default!;
-
     // https://tools.ietf.org/html/rfc2046#section-5.1
     //   The boundary delimiter line is then defined as a line
     //   consisting entirely of two hyphen characters ("-",

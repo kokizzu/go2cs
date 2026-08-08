@@ -470,9 +470,6 @@ internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string na
 // the ETag and remaining text after consuming ETag is returned. Otherwise,
 // it returns "", "".
 internal static (@string etag, @string remain) scanETag(@string s) {
-    @string etag = default!;
-    @string remain = default!;
-
     s = textproto.TrimString(s);
     nint start = 0;
     if (strings.HasPrefix(s, "W/"u8)) {
@@ -716,7 +713,6 @@ internal static readonly @string rangeˢ = "Range"u8;
 // checkPreconditions evaluates request preconditions and reports whether a precondition
 // resulted in sending StatusNotModified or StatusPreconditionFailed.
 internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWriter w, ж<Request> Ꮡr, time.Time modtime) {
-    bool done = default!;
     @string rangeHeader = default!;
 
     ref var r = ref Ꮡr.DerefOrNull();
@@ -856,9 +852,6 @@ internal static readonly @string internalServerErrorˢ = "500 Internal Server Er
 // and historically Go's ServeContent always returned just "404 Not Found" for
 // all errors. We don't want to start leaking information in error messages.
 internal static (@string msg, nint httpStatus) toHTTPError(error err) {
-    @string msg = default!;
-    nint httpStatus = default!;
-
     if (errors.Is(err, fs.ErrNotExist)) {
         return (pageNotFoundˢ, StatusNotFound);
     }
@@ -1206,9 +1199,6 @@ internal static (slice<httpRange>, error) parseRange(@string s, int64 size) {
 [GoType("num:int64")] partial struct countingWriter;
 
 [GoRecv] internal static (nint n, error err) Write(this ref countingWriter w, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     w += ((countingWriter)(int64)builtin.len(p));
     return (builtin.len(p), default!);
 }

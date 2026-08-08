@@ -264,7 +264,6 @@ internal static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
 internal static readonly @string dnsˢ = "dns"u8;
 
 [GoRecv] internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) lookupOrder(this ref conf c, ж<Resolver> Ꮡr, @string hostname) {
-    ΔhostLookupOrder ret = default!;
     ж<dnsConfig> dnsConf = default!;
 
     // fallbackOrder is the order we return if we can't figure it out.

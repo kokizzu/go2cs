@@ -378,9 +378,6 @@ public static nint /*n*/ Len64(uint64 x) {
 //
 // This function's execution time does not depend on the inputs.
 public static (nuint sum, nuint carryOut) Add(nuint x, nuint y, nuint carry) {
-    nuint sum = default!;
-    nuint carryOut = default!;
-
     if (UintSize == 32) {
         var (s32, c32) = Add32((uint32)x, (uint32)y, (uint32)carry);
         return ((nuint)s32, (nuint)c32);
@@ -429,9 +426,6 @@ public static (uint64 sum, uint64 carryOut) Add64(uint64 x, uint64 y, uint64 car
 //
 // This function's execution time does not depend on the inputs.
 public static (nuint diff, nuint borrowOut) Sub(nuint x, nuint y, nuint borrow) {
-    nuint diff = default!;
-    nuint borrowOut = default!;
-
     if (UintSize == 32) {
         var (d32, b32) = Sub32((uint32)x, (uint32)y, (uint32)borrow);
         return ((nuint)d32, (nuint)b32);
@@ -481,9 +475,6 @@ public static (uint64 diff, uint64 borrowOut) Sub64(uint64 x, uint64 y, uint64 b
 //
 // This function's execution time does not depend on the inputs.
 public static (nuint hi, nuint lo) Mul(nuint x, nuint y) {
-    nuint hi = default!;
-    nuint lo = default!;
-
     if (UintSize == 32) {
         var (hΔ1, lΔ1) = Mul32((uint32)x, (uint32)y);
         return ((nuint)hΔ1, (nuint)lΔ1);
@@ -537,9 +528,6 @@ public static (uint64 hi, uint64 lo) Mul64(uint64 x, uint64 y) {
 // half in parameter hi and the lower half in parameter lo.
 // Div panics for y == 0 (division by zero) or y <= hi (quotient overflow).
 public static (nuint quo, nuint rem) Div(nuint hi, nuint lo, nuint y) {
-    nuint quo = default!;
-    nuint rem = default!;
-
     if (UintSize == 32) {
         var (qΔ1, rΔ1) = Div32((uint32)hi, (uint32)lo, (uint32)y);
         return ((nuint)qΔ1, (nuint)rΔ1);
@@ -569,9 +557,6 @@ public static (uint32 quo, uint32 rem) Div32(uint32 hi, uint32 lo, uint32 y) {
 // half in parameter hi and the lower half in parameter lo.
 // Div64 panics for y == 0 (division by zero) or y <= hi (quotient overflow).
 public static (uint64 quo, uint64 rem) Div64(uint64 hi, uint64 lo, uint64 y) {
-    uint64 quo = default!;
-    uint64 rem = default!;
-
     if (y == 0) {
         throw panic(divideError);
     }

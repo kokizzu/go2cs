@@ -198,16 +198,10 @@ internal static void free(this ж<pp> Ꮡp) {
 }
 
 [GoRecv] internal static (nint wid, bool ok) Width(this ref pp p) {
-    nint wid = default!;
-    bool ok = default!;
-
     return (p.fmt.wid, p.fmt.widPresent);
 }
 
 [GoRecv] internal static (nint prec, bool ok) Precision(this ref pp p) {
-    nint prec = default!;
-    bool ok = default!;
-
     return (p.fmt.prec, p.fmt.precPresent);
 }
 
@@ -235,9 +229,6 @@ internal static void free(this ж<pp> Ꮡp) {
 // Implement Write so we can call [Fprintf] on a pp (through [State]), for
 // recursive use in custom verbs.
 [GoRecv] internal static (nint ret, error err) Write(this ref pp p, slice<byte> b) {
-    nint ret = default!;
-    error err = default!;
-
     p.buf.write(b);
     return (len(b), default!);
 }
@@ -245,9 +236,6 @@ internal static void free(this ж<pp> Ꮡp) {
 // Implement WriteString so that we can call [io.WriteString]
 // on a pp (through state), for efficiency.
 [GoRecv] internal static (nint ret, error err) WriteString(this ref pp p, @string s) {
-    nint ret = default!;
-    error err = default!;
-
     p.buf.writeString(s);
     return (len(s), default!);
 }
@@ -271,8 +259,6 @@ public static (nint n, error err) Fprintf(Δio.Writer w, @string format, params 
 // Printf formats according to a format specifier and writes to standard output.
 // It returns the number of bytes written and any write error encountered.
 public static (nint n, error err) Printf(@string format, params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fprintf(new os.FileжWriter(os.Stdout), format, a.ꓸꓸꓸ);
@@ -322,8 +308,6 @@ public static (nint n, error err) Fprint(Δio.Writer w, params ꓸꓸꓸany aʗp
 // Spaces are added between operands when neither is a string.
 // It returns the number of bytes written and any write error encountered.
 public static (nint n, error err) Print(params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fprint(new os.FileжWriter(os.Stdout), a.ꓸꓸꓸ);
@@ -376,8 +360,6 @@ public static (nint n, error err) Fprintln(Δio.Writer w, params ꓸꓸꓸany a�
 // Spaces are always added between operands and a newline is appended.
 // It returns the number of bytes written and any write error encountered.
 public static (nint n, error err) Println(params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fprintln(new os.FileжWriter(os.Stdout), a.ꓸꓸꓸ);
@@ -1257,10 +1239,6 @@ internal static (nint num, bool isInt, nint newArgNum) intFromArg(slice<any> a, 
 // up to the closing paren, if present, and whether the number parsed
 // ok. The bytes to consume will be 1 if no closing paren is present.
 internal static (nint index, nint wid, bool ok) parseArgNumber(@string format) {
-    nint index = default!;
-    nint wid = default!;
-    bool ok = default!;
-
     // There must be at least 3 bytes: [n].
     if (len(format) < 3) {
         return (0, 1, false);
@@ -1282,10 +1260,6 @@ internal static (nint index, nint wid, bool ok) parseArgNumber(@string format) {
 // argNum or the value of the bracketed integer that begins format[i:]. It also returns
 // the new value of i, that is, the index of the next byte of the format to process.
 [GoRecv] internal static (nint newArgNum, nint newi, bool found) argNumber(this ref pp p, nint argNum, @string format, nint i, nint numArgs) {
-    nint newArgNum = default!;
-    nint newi = default!;
-    bool found = default!;
-
     if (len(format) <= i || format[i] != (rune)'[') {
         return (argNum, i, false);
     }

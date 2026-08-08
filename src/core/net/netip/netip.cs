@@ -213,7 +213,6 @@ internal static error parseIPv4Fields(@string @in, nint off, nint end, slice<uin
 
 // parseIPv4 parses s as an IPv4 address (in form "192.168.0.1").
 internal static (ΔAddr ip, error err) parseIPv4(@string s) {
-    ΔAddr ip = default!;
     error err = default!;
 
     array<uint8> fields = new(4);
@@ -363,9 +362,6 @@ internal static (ΔAddr, error) parseIPv6(@string @in) {
 // Note that a [net.IP] can be passed directly as the []byte argument.
 // If slice's length is not 4 or 16, AddrFromSlice returns [Addr]{}, false.
 public static (ΔAddr ip, bool ok) AddrFromSlice(slice<byte> Δslice) {
-    ΔAddr ip = default!;
-    bool ok = default!;
-
     switch (len(Δslice)) {
     case 4: {
         return (AddrFrom4(new array<byte>(Δslice, 4)), true);
@@ -1134,7 +1130,6 @@ internal static (@string ip, @string port, bool v6, error err) splitAddrPort(@st
     @string ip = default!;
     @string port = default!;
     bool v6 = default!;
-    error err = default!;
 
     nint i = bytealg.LastIndexByteString(s, (rune)':');
     if (i == -1) {

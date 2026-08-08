@@ -27,8 +27,6 @@ internal static void Main() {
             return (v * 10, err);
         },
         lookup: (@string name) => {
-            @string val = default!;
-            bool okΔ1 = default!;
             return (name + "!", true);
         }
     );

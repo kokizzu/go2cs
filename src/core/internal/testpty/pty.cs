@@ -36,10 +36,6 @@ public static error ErrNotSupported = errors.New("testpty.Open not implemented o
 //
 // If Open is not implemented on this platform, it returns ErrNotSupported.
 public static (ж<os.File> pty, @string processTTY, error err) Open() {
-    ж<os.File> pty = default!;
-    @string processTTY = default!;
-    error err = default!;
-
     return open();
 }
 

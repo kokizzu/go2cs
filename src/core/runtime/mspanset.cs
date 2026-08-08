@@ -338,9 +338,6 @@ internal static uint32 tail(this headTailIndex h) {
 
 // split splits the headTailIndex value into its parts.
 internal static (uint32 head, uint32 tail) split(this headTailIndex h) {
-    uint32 head = default!;
-    uint32 tail = default!;
-
     return (h.head(), h.tail());
 }
 

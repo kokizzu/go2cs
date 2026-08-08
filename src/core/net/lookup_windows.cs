@@ -38,7 +38,6 @@ internal static error winError(@string call, error err) {
 internal static readonly @string getprotobynameˢ = "getprotobyname"u8;
 
 internal static (nint proto, error err) getprotobyname(@string name) {
-    nint proto = default!;
     error err = default!;
 
     (var p, err) = syscall.GetProtoByName(name);

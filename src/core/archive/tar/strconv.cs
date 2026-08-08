@@ -226,8 +226,6 @@ internal static (time.Time, error) parsePAXTime(@string s) {
 // formatPAXTime converts ts into a time of the form %d.%d as described in the
 // PAX specification. This function is capable of negative timestamps.
 internal static @string /*s*/ formatPAXTime(time.Time ts) {
-    @string s = default!;
-
     var secs = ts.Unix();
     nint nsecs = ts.Nanosecond();
     if (nsecs == 0) {
@@ -249,8 +247,6 @@ internal static @string /*s*/ formatPAXTime(time.Time ts) {
 internal static (@string k, @string v, @string r, error err) parsePAXRecord(@string s) {
     @string k = default!;
     @string v = default!;
-    @string r = default!;
-    error err = default!;
 
     // The size field ends at the first space.
     var (nStr, rest, ok) = strings.Cut(s, " "u8);

@@ -475,8 +475,6 @@ internal static DecodingError errVarintOverflow = new DecodingError(errors.New("
 // The error is errNeedMore if p doesn't contain a complete integer.
 internal static (uint64 i, slice<byte> remain, error err) readVarInt(byte n, slice<byte> p) {
     uint64 i = default!;
-    slice<byte> remain = default!;
-    error err = default!;
 
     if (n < 1 || n > 8) {
         throw panic("bad n");
@@ -516,7 +514,6 @@ internal static (uint64 i, slice<byte> remain, error err) readVarInt(byte n, sli
 // until after the caller verifies all data is present.
 [GoRecv] internal static (undecodedString u, slice<byte> remain, error err) readString(this ref Decoder d, slice<byte> p) {
     undecodedString u = default!;
-    slice<byte> remain = default!;
     error err = default!;
 
     if (builtin.len(p) == 0) {

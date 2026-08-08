@@ -82,10 +82,8 @@ public static ж<MAC> New(ж<array<byte>> Ꮡkey) {
 //
 // It must not be called after the first call of Sum or Verify.
 public static (nint n, error err) Write(this ж<MAC> Ꮡh, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     ref var h = ref Ꮡh.DerefOrNull();
+
     if (h.finalized) {
         throw panic("poly1305: write to MAC after Sum or Verify");
     }

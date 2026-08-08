@@ -146,7 +146,6 @@ public static ж<Tree> New(@string name, params Span<map<@string, any>> funcsʗp
 // The receiver is only used when the node does not have a pointer to the tree inside,
 // which can occur in old code.
 public static (@string location, @string context) ErrorContext(this ж<Tree> Ꮡt, Node n) {
-    @string location = default!;
     @string context = default!;
 
     nint pos = (nint)n.Position();
@@ -490,9 +489,8 @@ internal static readonly @string commandˢ = "command"u8;
 // Left delim is past. Now get actions.
 // First word could be a keyword such as range.
 internal static Node /*n*/ action(this ж<Tree> Ꮡt) {
-    Node n = default!;
-
     ref var t = ref Ꮡt.DerefOrNull();
+
     {
         var tokenΔ1 = t.nextNonSpace();
         var exprᴛ1 = tokenΔ1.typ;

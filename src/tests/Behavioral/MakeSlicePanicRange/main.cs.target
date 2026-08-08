@@ -29,8 +29,8 @@ internal static void Main() {
     fmt.Println(tryMake(4, -1));
     fmt.Println(tryMake(0, -1));
     fmt.Println(tryMake(-1, -1));
-    fmt.Println(tryMake((nint)(4611686018427387904L), -1));
-    fmt.Println(tryMake(1, (nint)(4611686018427387904L)));
+    fmt.Println(tryMake(unchecked((nint)(4611686018427387904L)), -1));
+    fmt.Println(tryMake(1, unchecked((nint)(4611686018427387904L))));
 }
 
 } // end main_package

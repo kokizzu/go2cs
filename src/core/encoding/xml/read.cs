@@ -648,8 +648,6 @@ break_Loop:;
 }
 
 internal static error /*err*/ copyValue(reflectꓸValue dst, slice<byte> src) {
-    error err = default!;
-
     var dst0 = dst;
     if (dst.Kind() == reflect.ΔPointer) {
         if (dst.IsNil()) {
@@ -729,7 +727,6 @@ internal static error /*err*/ copyValue(reflectꓸValue dst, slice<byte> src) {
 // from the Decoder until start's matching end element, or if it's
 // still untouched because start is uninteresting for sv's fields.
 internal static (bool consumed, error err) unmarshalPath(this ж<Decoder> Ꮡd, ж<typeInfo> Ꮡtinfo, reflectꓸValue sv, slice<@string> parents, ж<StartElement> Ꮡstart, nint depth) {
-    bool consumed = default!;
     error err = default!;
 
     ref var d = ref Ꮡd.DerefOrNull();
