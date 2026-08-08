@@ -292,6 +292,18 @@ func (v *Visitor) narrowComparisonOperand(operand ast.Expr, converted string) st
 // having its first operand cast (the binary result still needs the cast). Balance-counts parentheses,
 // skipping any inside a char/string literal (`(rune)'('`) so a paren character does not perturb the depth.
 func wholeExprIsCastOfType(expr, castType string) bool {
+	// An `unchecked(…)` wrapper does not change WHAT the expression is. A beyond-int32 constant
+	// folded to a native-width target carries one so the CONSTANT conversion does not warn
+	// (CS8778 — see convBinaryExpr's fold), and every caller here is asking "is this already a
+	// whole-expression cast of that type?", to which the answer is still yes. Peel it first, or
+	// the guards re-wrap and emit `(nint)(unchecked((nint)(…)))`.
+	const uncheckedPrefix = "unchecked("
+
+	if strings.HasPrefix(expr, uncheckedPrefix) &&
+		balancedCloseIndex(expr, len(uncheckedPrefix)-1) == len(expr)-1 {
+		expr = expr[len(uncheckedPrefix) : len(expr)-1]
+	}
+
 	prefix := fmt.Sprintf("(%s)(", castType)
 
 	if !strings.HasPrefix(expr, prefix) {
@@ -299,13 +311,20 @@ func wholeExprIsCastOfType(expr, castType string) bool {
 	}
 
 	// Balance from the opening paren of the cast body (the final '(' of the prefix).
+	return balancedCloseIndex(expr, len(prefix)-1) == len(expr)-1
+}
+
+// balancedCloseIndex returns the index of the `)` closing the `(` at openIdx, or -1 when the
+// parentheses do not balance before the end of expr. Parens inside a char/string literal
+// (`(rune)'('`) are skipped so a paren CHARACTER does not perturb the depth.
+func balancedCloseIndex(expr string, openIdx int) int {
 	depth := 0
 
-	for i := len(prefix) - 1; i < len(expr); i++ {
+	for i := openIdx; i < len(expr); i++ {
 		switch expr[i] {
 		case '\'', '"':
-			// Skip the literal's contents so a `(`/`)` byte inside a char/string literal is not
-			// counted. C# escapes an embedded quote as `\'`/`\"`, so honor the backslash escape.
+			// Skip the literal's contents. C# escapes an embedded quote as `\'`/`\"`, so honor
+			// the backslash escape.
 			quote := expr[i]
 
 			for i++; i < len(expr); i++ {
@@ -324,12 +343,12 @@ func wholeExprIsCastOfType(expr, castType string) bool {
 			depth--
 
 			if depth == 0 {
-				return i == len(expr)-1
+				return i
 			}
 		}
 	}
 
-	return false
+	return -1
 }
 
 // nativeIntConstCastType returns the C# native-integer type (`uintptr`/`nuint`/`nint`) a computed

@@ -7,9 +7,12 @@
 > and which are a build *property* problem that `NoWarn` is the wrong instrument for.
 >
 > **STATUS: the configuration half is IMPLEMENTED** (r46b-warnsuppress, 2026-08-08) — §10 records
-> what landed and what it measured. The two converter roots (§5.1 `CS0219`, §5.2 `CS8778`) and the
-> golib/`go2cs-gen` items (§7) are deliberately NOT done here; they remain open board rows, and the
-> do-not-suppress rulings in §4 stay binding.
+> what landed and what it measured. **Both converter roots are now IMPLEMENTED too**
+> (r48c-warnroots, 2026-08-08) — §11 records what landed, what it measured, and what is retained by
+> design. §5.1/§5.2 are kept as written: they are the diagnosis the fixes were built from, and §11
+> corrects the one place the diagnosis was incomplete. The golib/`go2cs-gen` items (§7) remain open
+> board rows, and the do-not-suppress rulings in §4 stay binding — the point of fixing these two
+> rather than suppressing them was to keep both codes alive as signals.
 
 ## 1. The measured baseline
 
@@ -256,6 +259,10 @@ warning is actionable.
 | \+ publish properties conditioned to non-`Library` (golib keeps trim analysis) | **≈1,941** | −101 |
 | \+ converter fix §5.1 (dead named-return locals) | ≈722 | −1,219 |
 | \+ converter fix §5.2 (`nint` constants) | **≈102** | −620 |
+
+*Measured outcome (§11): 1,945 → **158**. The §5.2 projection was exact (−620, to zero). The §5.1
+projection was optimistic by 52 — see §11.3 for the three shapes that legitimately remain, none of
+them the named-return prologue this arc was about.*
 
 The residual ~100 is the honest signal: golib's 26 trim warnings and its own 6 nullable ones, the 30
 gen-local nullable items, 15 `CS8500`, 11 `CS0675`, 7 `CS8826`, 4 `CS0252`, 3 `CS0649`, 1 `CS1522` —

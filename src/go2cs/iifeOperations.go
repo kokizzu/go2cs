@@ -536,12 +536,20 @@ func (v *Visitor) namedReturnAssignTargets(signature *types.Signature) []string 
 // (declsOutsideWrapper — the litNamedDefer form), only the box is created here (`heap<T>(out var
 // Ꮡname);`) because the wrapper lambda cannot capture the ref-local alias (CS8175); otherwise the
 // full boxed-alias form is used, matching an escaping local's declaration.
-func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, declsOutsideWrapper bool) string {
+//
+// livenessBody is the literal's own body when a declaration the body never touches may be dropped,
+// and nil when it may not — the same opt-out the function path uses (see
+// namedResultNeedsDeclaration).
+func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, declsOutsideWrapper bool, livenessBody *ast.BlockStmt) string {
 	results := sig.Results()
 	decls := strings.Builder{}
 
 	for i := range results.Len() {
 		param := results.At(i)
+
+		if !v.namedResultNeedsDeclaration(livenessBody, param) {
+			continue
+		}
 
 		if ident := v.namedResultHeapBoxIdent(param); ident != nil {
 			if declsOutsideWrapper {
