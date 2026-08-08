@@ -553,12 +553,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      `-go2cspath <tmp>/src` so the temp root mirrors the repository. (Seeding a versioned
      `docs/validation/<version>/` is NOT needed — the badge reads `current/`; the versioned directory
      is only the link target and the `Exists`-guarded pack input.)
-     ⚠ The **Docs** badge beside it (added 2026-08-08) reads the TOOLCHAIN, not the repository —
-     `go env GOVERSION` and, for the 19 GOROOT-vendored `golang.org/x/*` packages, GOROOT's own
-     `src/vendor/modules.txt` — so it needs no seeding and survives an unseeded root. That is why an
+     ⚠ The badge line holds FOUR badges and they split two-and-two on this exact question. **Docs**
+     (2026-08-08) and **Source·Go** (2026-08-08) read the TOOLCHAIN, not the repository — `go env
+     GOVERSION` and, for the 19 GOROOT-vendored `golang.org/x/*` packages, GOROOT's own
+     `src/vendor/modules.txt` — so they need no seeding and survive an unseeded root. **Tests** and
+     **Source·C#** read the repository's `version.props`, so both vanish without it. That is why an
      unseeded reconvert no longer produces a README with NO badge line: it produces one carrying the
-     Docs badge alone, which is a subtler diff to spot. Seed anyway; the rule is unchanged, only the
-     symptom is.
+     two toolchain badges alone, which is a subtler diff to spot. Seed anyway; the rule is unchanged,
+     only the symptom is.
   1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>/src` → output lands in **`<tmp>/src/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
