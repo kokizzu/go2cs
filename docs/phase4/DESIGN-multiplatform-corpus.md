@@ -1,6 +1,8 @@
 # DESIGN — one corpus, three platforms: what a multiplatform standard library costs, and how it ships
 
-> **STATUS: ACCEPTED** (user ruling 2026-08-08: recommendations accepted as written — layout L3 + packaging option (a) RID assemblies; increments proceed in order). It changes no
+> **STATUS: ACCEPTED** (user ruling 2026-08-08: recommendations accepted as written — layout L3 + packaging option (a) RID assemblies; increments proceed in order).
+> **Increment 1 LANDED 2026-08-08** — the converter now takes the census itself (`-platforms` list +
+> `-platform-census`), and it reproduces every number below; see §12. It changes no
 > emitter, no corpus, and no packaging. Everything below is **measured** — four seeded full-standard-library
 > conversions, three `go list` censuses and a `go/types` API-surface probe, run 2026-08-08 in lane
 > `r47c-goosdesign` against `739f3606ad`. Where a measurement contradicts an earlier ruling
@@ -147,9 +149,19 @@ Three-way at fixed `amd64` (Windows / Linux / macOS):
 | Platform-exclusive (exactly one) | 282 |
 | **Packages with any delta** | **37** |
 
-Project files track the same shape: the Linux run rewrote **21** `.csproj` (20 differing), the macOS run 26,
-the Windows control **0**. Those are the `<ProjectReference>` lists — **22 packages have a different direct
-import set** per platform, which is exactly what a conditioned reference block must express.
+Project files track the same shape. At fixed `amd64` the Linux run rewrote **21** `.csproj` (20 differing
+from the Windows control, plus the one Linux-exclusive package), the macOS run **22** (20 + its two
+exclusives), and the Windows control **0**. Those are the `<ProjectReference>` lists — **24 packages have a
+different direct import set** across the three (21 emitted everywhere whose reference list differs, plus the
+3 platform-exclusive packages), which is exactly what a conditioned reference block must express.
+
+> **Two numbers in this paragraph were corrected on 2026-08-08 by increment 1's census** (lane r47d), which
+> re-measures every table in §3–§5 from the converter's own emission. It reproduced all of them exactly
+> except here: this paragraph read "the macOS run 26 … 22 packages". The **26** is `darwin/arm64`'s rewrite
+> count — run C, not run B — which §5's own two-target census reproduces exactly (`darwin/amd64` 22,
+> `darwin/arm64` 26); §4 is fixed at `amd64`, so 22 is its number. The **22 packages** is not reproducible as
+> a set from any run: the measured union across the three `amd64` targets is 24. Nothing else moved, and no
+> `.cs` number did.
 
 **Linux and macOS are close to each other and far from Windows** — the fact that makes the third platform
 cheap:
@@ -430,7 +442,7 @@ directory:
 
 `package_info.cs` and `package_init.cs` fall out of the same rule with no special case: identical ones stay
 flat, varying ones land in the per-GOOS folder (27 and 4 respectively). The `<ProjectReference>` block
-gains conditioned `ItemGroup`s for the **22** packages whose direct imports differ.
+gains conditioned `ItemGroup`s for the **24** packages whose direct imports differ (§4, as corrected).
 
 **Converter work L3 implies** — this is the whole feature, and it is bounded:
 
@@ -608,13 +620,62 @@ Honest trade-offs:
 
 Each stage lands green on its own and is gated by an instrument that already exists.
 
-**Increment 1 — a three-target census the converter itself produces. No emission change.**
-Teach `-platforms` to accept a list, run the pipeline per target, and emit **only a manifest** describing
-which artifacts are shared / variant / pair / exclusive. Nothing is written into `src/core`; no `.cs`
-changes; CNR is green by construction because the emission path is untouched.
-*Proof:* the manifest must reproduce this document's numbers exactly — 1,489 shared, 69 variant, 88 pair,
-282 exclusive, 37 packages. A mismatch means the feature is wrong, and it is caught before a single corpus
-file moves. This is the whole risk-reduction step, and it costs one small converter change.
+**Increment 1 — a three-target census the converter itself produces. No emission change. — ✅ LANDED
+2026-08-08 (lane r47d, against `223e4ffd3`).**
+`-platforms` now accepts a comma-separated **list**, and the new `-platform-census <dir>` runs the pipeline
+once per target into its own staging root, classifies every emitted artifact (shared / variant / partial /
+exclusive) and writes `<dir>/platform-manifest.json`. Nothing is written into `src/core`: `-go2cspath` is
+read as the SEED each staging root is copied from and never as an output, and no emitter was touched — CNR
+is byte-identical across all 574 behavioral packages. A `-platforms` list *without* `-platform-census` is
+rejected rather than silently converting the first target; multi-platform **emission** is increment 3.
+
+Three mechanisms carry this document's own reasoning into the code:
+
+- the classification compares **emissions**, never Go file sets (§4.2 is the reason);
+- every staging root is **seeded** — `core` + `version.props` + `docs/validation`, mirroring `src/` — and is
+  wiped and re-seeded per run, so CLAUDE.md's reconvert ritual and r41's never-convert-twice-into-one-root
+  rule are mechanical rather than remembered. The manifest carries the **marker gate** per target (the
+  hand-owned files the seed held, and any the run emitted as a plain `.cs` — which must be zero), so a
+  seeding that did not take cannot be mistaken for a platform finding;
+- emitted-vs-seeded is decided by a sentinel **modification time**, not by a content diff: the control
+  target's emission is *supposed* to reproduce the seed byte for byte, so a content discriminator would
+  report the control as having emitted nothing.
+
+*Proof — the manifest reproduces this document's numbers.* Two censuses, five conversions (859 s + 522 s),
+`-platforms windows/amd64,linux/amd64,darwin/amd64` and `-platforms darwin/amd64,darwin/arm64`:
+
+| Measured here | § | Manifest | |
+|:--|:--|:--|:--|
+| Union of emitted `.cs` names 1,928 | §4 | 1,928 | ✔ |
+| Byte-identical on all three 1,489 | §4 | 1,489 | ✔ |
+| Same name, different content 69 | §4 | 69 | ✔ |
+| Emitted by exactly two 88 | §4 | 88 | ✔ |
+| Platform-exclusive 282 | §4 | 282 | ✔ |
+| Packages with any delta 37 | §4 | 37 | ✔ |
+| The 69 split 38 source / 27 `package_info.cs` / 4 `package_init.cs` | §4.3 | 38 / 27 / 4 | ✔ |
+| Windows emitted 1,665 · Linux emitted 1,734 | §4 | 1,665 · 1,734 | ✔ |
+| W↔L 1,563 both / 1,498 identical / 65 differ / 102 W-only / 171 L-only / 34 packages | §4 | all six | ✔ |
+| W↔D 1,566 / 1,499 / 67 / 35 packages | §4 | all four | ✔ |
+| L↔D 1,633 / 1,597 / 36 / 20 packages | §4 | all four | ✔ |
+| L3 pricing: flat 1,489 + per-GOOS 665 = 2,154, against 1,665 (+29.4 %) | §8 | all five | ✔ |
+| Packages queued 304 / 302 / 303 / 301, **zero** failures in every run | §2 | all four | ✔ |
+| Arch axis 1,701 both / 1,687 identical / 14 differ / 32 + 31 exclusive / 16 packages | §5 | all six | ✔ |
+| `.csproj` rewritten: Windows 0, Linux 21 | §4 | 0, 21 | ✔ |
+| `.csproj` rewritten: "the macOS run 26" | §4 | **22** at `darwin/amd64`; 26 is `darwin/arm64` | corrected |
+| "22 packages have a different direct import set" | §4 | **24** | corrected |
+
+The two corrections are recorded in §4 with their evidence; both are `.csproj` counts and neither touches a
+`.cs` number or any conclusion. One further disagreement is worth naming: §7 counts **41** files carrying a
+line-anchored `[module: GoManualConversion]`, while the census — which asks the question with the
+converter's *own* predicate, the one that actually decides whether a file's emission is diverted — counts
+**40**. The odd file is `runtime/runtime2_impl.cs`, whose marker the predicate cannot see because an earlier
+`//` comment line contains `*g/*p`, and `/*` opens a phantom block comment the file never closes. It is
+inert today (an `*_impl.cs` companion has no Go counterpart, so that path is never probed) but it is the
+exact shape that would silently clobber a whole-file hand-own; filed as its own fix rather than smuggled
+into a census increment.
+
+Cost, for the record: two new converter files and three edited lines of flag plumbing — no emitter, no
+corpus file, no golden.
 
 **Increment 2 — L3 for one package: `internal/goos`.**
 Four files, no dependents' *surface* change (§6: 20 exported names, identical on all three), and it is the
@@ -670,6 +731,22 @@ Recorded so nobody mistakes a measurement for a guarantee.
 
 ## Appendix — reproducing the measurements
 
+**Censuses B and C are now one command each** (increment 1). The converter does the seeding, runs the
+targets sequentially into isolated staging roots, and writes the manifest every number in §4, §5 and §8
+above is read from:
+
+```powershell
+go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 `
+      -go2cspath <repo>\src -platform-census <scratch>\three-way   # census B (§4)
+
+go2cs -stdlib -comments -platforms darwin/amd64,darwin/arm64 `
+      -go2cspath <repo>\src -platform-census <scratch>\arch        # census C (§5)
+```
+
+`-go2cspath` is the SEED and is never written to; the manifest lands at
+`<scratch>\<name>\platform-manifest.json`. The hand-rolled form the original measurements used is kept
+below, since census A still needs it:
+
 ```powershell
 # Four seeded conversions (sequential; never two converter processes at once).
 # Seed each root with src/core + src/version.props + docs/validation, mirroring src/.
@@ -687,6 +764,8 @@ GOOS=$OS GOARCH=amd64 CGO_ENABLED=0 GO111MODULE=off \
 ```
 
 Censuses B/C compare the emitted `.cs` of two roots, discriminating emitted from seeded files by
-modification time. Census D enumerates `types.Package.Scope()` exported names via `go/packages` under each
-`GOOS`. The probe sources are throwaway and were not committed; the commands above are sufficient to
-regenerate every number in this document.
+modification time — that comparison is no longer a throwaway probe but `src/go2cs/platformCensus.go` +
+`platformManifest.go`, which stamp the seed with a sentinel time so "emitted" is exact rather than
+inferred. Census D enumerates `types.Package.Scope()` exported names via `go/packages` under each `GOOS`;
+its probe source was throwaway and was not committed. The commands above are sufficient to regenerate every
+number in this document.

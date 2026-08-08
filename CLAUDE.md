@@ -161,7 +161,21 @@ ONE stdlib in a build; there is now only one on disk.
     `BehavioralTestBase`, `PerformanceRunner`, `run-validated-sweep.ps1` — now passes an EXPLICIT
     `-go2cspath <repo>\src` computed from its own location, so no gate's verdict can move with the ambient
     variable again.
-  - `-goroot` / `-gopath`, `-platforms os/arch`, `-indent 4`, `-var` (default on),
+  - `-platforms os/arch` — the ONE target a conversion emits for (default: the host). It also accepts a
+    comma-separated **list** (`-platforms windows/amd64,linux/amd64,darwin/amd64`), which today is only
+    meaningful with `-platform-census`; a list without it is rejected rather than silently converting the
+    first target (multi-platform *emission* is increment 3 of the multiplatform-corpus design).
+  - `-platform-census <dir>` — the **multi-platform emission census** (increment 1, landed 2026-08-08).
+    With `-stdlib` and ≥2 `-platforms` targets it converts once per target into `<dir>\<goos>-<goarch>\src`
+    — each staging root SEEDED from `-go2cspath` per the reconvert ritual below, wiped and re-seeded per
+    run so the r41 "never convert twice into one root" rule is mechanical rather than remembered — then
+    classifies every emitted artifact (shared / variant / partial / exclusive) and writes
+    `<dir>\platform-manifest.json`. It writes **nothing** into the corpus: `-go2cspath` is read as the seed
+    and never as an output. Emitted-vs-seeded is decided by a sentinel modification time, not by content,
+    because the control target's emission is *supposed* to reproduce the seed byte for byte. The manifest
+    carries the marker gate per target (hand-owned files the seed held, and any the run emitted as a plain
+    `.cs` — must be zero) so a failed seeding cannot be mistaken for a platform finding.
+  - `-goroot` / `-gopath`, `-indent 4`, `-var` (default on),
     `-uco` (channel operators, default on), `-comments`, `-cgo`, `-tree`, `-csproj <tmpl>`, `-debug`.
   - Single project/file: `go2cs package_dir` or `go2cs example.go [out.cs]`.
   - **Always pass `-comments` when converting the Go stdlib.** It defaults **off**, but the converted C#
