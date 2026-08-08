@@ -45,7 +45,7 @@ the last build scripts that referenced it (`convert-gosrc.*`) were removed 2026-
 
 **Two solutions, one tree:** `src/go2cs.slnx` = converter-dev workspace (golib + `go2cs-gen` + all
 tests/examples/utilities + the ~61 `core/` packages their closure reaches) — **builds green**.
-`src/go2cs-stdlib.slnx` = every `core/` package (304 projects), the converter's own generated output,
+`src/go2cs-stdlib.slnx` = every `core/` package (**307** projects since layout L3 — the three platform-exclusive
 adopted verbatim; it is what `push-nuget.ps1` packs. They overlap deliberately — same tree, same paths,
 different scope — so a project can be opened from either. (A third, classic-format
 `src/go2cs-examples.sln` covers the samples; the old hand-maintained classic `.sln` files are retired.)
@@ -374,9 +374,9 @@ ONE stdlib in a build; there is now only one on disk.
   | `run-behavioral.ps1` (full, 4 phases) | **~370–1575s (6–26 min; 642s measured 2026-08-07 at 549 projects with a sibling lane converting; 416–957s on 2026-08-05 SOLO at 545 across four r41 stage gates — the spread is warm-vs-cold C# build state, not load; 626s on 2026-08-04 at 544, 1575s on 2026-08-02 with THREE sibling worktrees running pipelines)** | 2100s | 549/549 Transpile+Compile+Target; 523 Output-compared, 26 skipped (no `package main`); the top of the range is concurrent-lane load — budget for it. ⚠ At that load the **Go toolchain itself** can crash building one project (`panic: … compress/flate.(*huff…` inside `go build`) and the runner reports it as a Go build failure; re-run that one project filtered before believing it |
   | `check-no-regression.ps1` (full) | **~350–510s (6–9 min; 502s measured 2026-08-08 at **574 packages** with two sibling lanes active; 463s on 2026-08-07 with one; 358s and 366s on 2026-08-04 at 569; top of range is concurrent-lane load)** | 700s | transpile-only, no compile/run; re-transpiles unconditionally |
   | `run-behavioral.ps1 --filter <Name>` | **~10–20s** (8 projects) | default | the iteration loop — use this, not the full suite |
-  | `go2cs -stdlib -comments` (full reconvert) | **~195–240s (240s measured r47a 2026-08-08 with two sibling lanes; 223s at r41, 2026-08-05)** | 600s | 304 projects; per-file work is sub-second, the cost is `go/packages` |
+  | `go2cs -stdlib -comments` (full reconvert) | **~195–240s (240s measured r47a 2026-08-08 with two sibling lanes; 223s at r41, 2026-08-05)** | 600s | 307 projects; per-file work is sub-second, the cost is `go/packages`. A three-target `-platforms` merge is ~3x this (545s measured r50a) |
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
-  | full `go2cs-stdlib.slnx` build | **~92–188s** warm (304 projects; 188s measured r41 and 158s at r40, both with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`) | 600s | cold restore adds a few minutes |
+  | full `go2cs-stdlib.slnx` build | **~92–188s** warm (307 projects; 149s measured r50a at `-p:GoTargetOS=windows`, 188s at r41 and 158s at r40, all with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`) | 600s | cold restore adds a few minutes. `-p:GoTargetOS=linux` is a DIFFERENT build and does not yet complete — see `docs/phase4/DESIGN-multiplatform-corpus.md` §12 |
   | full `go2cs.slnx` build | **~87s** `--no-incremental` / **~39s** incremental (573 projects; measured 2026-08-07) | 900s | the ONLY gate that compiles the non-generated solution members (utilities, examples) — run it after any golib/runtime API change. ⚠ Under concurrent-lane load a `go2cs-gen` run can die with `AccessViolationException` inside `TypeGenerator`'s recursive `PromotedStructDeclarations`, reported as an `error` against the package (seen once on `core/runtime`, NOT reproducible in two immediate retries with identical flags): re-run before believing it, exactly as with the Go-toolchain crash above |
   | `run-validated-sweep.ps1` (full roster) | **~46–53 min solo (3,138s measured 2026-08-07 at 109 packages / 13,611 verdicts; the roster is 110 / 13,628 since r47a; ~90+ min under two concurrent lane loads — both r47 attempts were killed externally before finishing, so no clean loaded figure exists)** | run it BACKGROUNDED from the COORDINATOR session only — ⚠ a LANE parking a detached sweep and ending its turn gets it KILLED (the lane's process tree is reaped; happened twice on 2026-08-08 at 106/110 and 98/110, log ends between packages with no summary — recovery: re-run `roster − logged` inline and check the verdict arithmetic closes) | ~29 s for a typical package; use `-Filter` for anything but a final gate |
 
@@ -486,6 +486,20 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
    commit that lands a notable conversion decision.)
 
 ### Corpus mechanics — measuring/iterating the converted stdlib (`src/core`)
+- **⚠ 37 packages are in LAYOUT L3 and the ritual below is UNCHANGED because of it, not despite it.**
+  Since 2026-08-08 a package whose emitted C# varies by `GOOS` keeps the varying files in per-GOOS
+  subfolders (`<pkg>/{windows,linux,darwin}/`) and its `.csproj` carries a `$(GoTargetOS)` block that
+  compiles exactly one of them, defaulting to **`windows`** — so a plain `dotnet build` and a plain
+  `-stdlib` reconvert both still mean "the Windows corpus", byte for byte. That default is what keeps
+  the seeded-reconvert control honest: a SINGLE-target run **honors** an L3 tree (it writes
+  `<name>.cs` back to the `<goos>/` folder the tree already holds it in) rather than laying a flat
+  duplicate beside it, so a seeded reconvert of an L3 corpus is still 0 new / 0 absent / 0 content
+  differences. Nothing about seeding, the marker gate, the overlay rule or the phantom classification
+  changes. What DOES change: an **unseeded** root now breaks layout adoption as well as the marker
+  gate (there is no `<goos>/` folder to route into, so every varying file lands flat and the next
+  build compiles two copies) — one more reason the seeding is non-negotiable. Hand-owned files are
+  routed too, by their principal's platform set; the invariant is guarded by `platformHandOwn_test.go`
+  under the plain `go test ./...`. Design: `docs/phase4/DESIGN-multiplatform-corpus.md`.
 - **The on-disk corpus can be stale** relative to converter changes made since the last regen; building
   the committed tree measures *that* output, not today's. To measure the current converter you reconvert.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
@@ -519,7 +533,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      `internal/weak/pointer.cs` joined at r43e. Benign in that instance, but a hand-own disappeared
      under an overlay while the commit reported its marker gate "40/0": so re-measure the census,
      never assert last session's number, and treat a SHRINK as something to explain rather than to
-     copy forward.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
+     copy forward. ⚠ Since r50a the census counts **42**, and for a NEW reason: layout L3 routes a
+     hand-owned file into its principal's per-GOOS folders, and `runtime/lock_sema_impl.cs`'s
+     principal is selected on Windows *and* macOS — so one hand-own now exists as TWO files. The
+     count of marked FILES is no longer the count of distinct hand-owns; both numbers are fine and
+     the gate is still per-PATH.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
      overlay**: the same exclusion that protects the hand-owned `.cs` beside them also freezes
      them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
      item 18).
@@ -568,7 +586,7 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      `README.md`** are hand-owned by consequence and never re-emitted.
   3. Build single packages with **`dotnet build <pkg>.csproj -c Debug`** — `src/core/Directory.Build.props`
      pins `$(go2csPath)` to the src root, so `core\golib` + the `go2cs-gen` analyzer resolve to live source
-     with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92 s warm, 303 assemblies).
+     with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92–150 s warm, 305 assemblies — the 306th, `crypto/x509/internal/macos`, is darwin-exclusive and compiles nothing under the default `$(GoTargetOS)`).
      (If you ever do pass the flag explicitly, use forward slashes —
      `-p:go2csPath=H:/Projects/go2cs/src/` — a trailing `\` escapes the closing quote and mangles the path
      into phantom golib-not-found errors.)
@@ -597,7 +615,7 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   crash the stub had hidden: `time.Now().Weekday()` → `initLocal()` → `syscall.GetTimeZoneInformation`
   access-violated, because the wrapper hands the kernel the address of a managed `Timezoneinformation`
   whose `array<uint16>` name fields are managed references where Windows expects inline `WCHAR[32]`. That
-  wrapper is now hand-owned against a blittable mirror (`core/syscall/zsyscall_windows_impl.cs`), guarded
+  wrapper is now hand-owned against a blittable mirror (`core/syscall/windows/zsyscall_windows_impl.cs` — per-GOOS since r50a), guarded
   by the `LocalTimeZone` behavioral test — which compares real zone abbreviations and offsets against
   `go run`, not merely the absence of a fault. **The CLASS is still open:** 9 more syscall wrappers pass a
   non-blittable struct by address (census, per-member remedy and why they are deliberately NOT fixed

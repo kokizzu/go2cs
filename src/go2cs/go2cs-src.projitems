@@ -102,6 +102,8 @@
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />
     <None Include="$(MSBuildThisFileDirectory)packageStateOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)platformEmit.go" />
+    <None Include="$(MSBuildThisFileDirectory)platformHandOwn.go" />
+    <None Include="$(MSBuildThisFileDirectory)platformHandOwn_test.go" />
     <None Include="$(MSBuildThisFileDirectory)platformCensus.go" />
     <None Include="$(MSBuildThisFileDirectory)platformCensus_test.go" />
     <None Include="$(MSBuildThisFileDirectory)platformLayout.go" />
