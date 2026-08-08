@@ -94,8 +94,8 @@ func main() {
 	// (1) The int64 routes take the bare `L` literal — no cast at all. The NEGATED composite-literal
 	// element is the regression that motivated this: it must read exactly like the Go source.
 	for _, want := range []string{
-		"-4181792142133755926L",  // negated int64 element (context-resolved) and the int64 var
-		"1395769623340756751L",   // its positive sibling (directly typed by go/types)
+		"-4181792142133755926L", // negated int64 element (context-resolved) and the int64 var
+		"1395769623340756751L",  // its positive sibling (directly typed by go/types)
 	} {
 		if !strings.Contains(mainCs, want) {
 			t.Errorf("missing bare int64 literal %s:\n%s", want, mainCs)
