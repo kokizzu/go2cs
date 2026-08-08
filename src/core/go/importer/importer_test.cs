@@ -65,8 +65,7 @@ public static void TestForCompiler(ж<testing.T> Ꮡt) {
         // Check that the fileset positions are accurate.
         // https://github.com/golang/go#28995
         var mathBigInt = pkg.Scope().Lookup(intˢ);
-        var posn = fsetʗ1.Position(mathBigInt.Pos());
-        // "$GOROOT/src/math/big/int.go:25:1"
+        var posn = fsetʗ1.Position(mathBigInt.Pos()); // "$GOROOT/src/math/big/int.go:25:1"
         @string filename = strings.Replace(posn.Filename, gorootˢ, testenv.GOROOT(new importer_internal_test_package.testing_TжTB(tΔ1)), 1);
         (var data, errΔ1) = os.ReadFile(filename);
         if (errΔ1 != default!) {

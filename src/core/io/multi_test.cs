@@ -60,16 +60,16 @@ public static void TestMultiReader(ж<testing.T> Ꮡt) {
         expectReadʗ1(5, barˢ, default!);
         expectReadʗ1(5, ""u8, EOF);
     });
+    var expectReadʗ2 = expectRead;
+    withFooBar(() => {
+        expectReadʗ2(4, fooˢ2, default!);
+        expectReadʗ2(1, "b"u8, default!);
+        expectReadʗ2(3, "ar"u8, default!);
+        expectReadʗ2(1, ""u8, EOF);
+    });
     var expectReadʗ3 = expectRead;
     withFooBar(() => {
-        expectReadʗ3(4, fooˢ2, default!);
-        expectReadʗ3(1, "b"u8, default!);
-        expectReadʗ3(3, "ar"u8, default!);
-        expectReadʗ3(1, ""u8, EOF);
-    });
-    var expectReadʗ5 = expectRead;
-    withFooBar(() => {
-        expectReadʗ5(5, fooˢ2, default!);
+        expectReadʗ3(5, fooˢ2, default!);
     });
 }
 
@@ -206,8 +206,7 @@ internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
 public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    var pc = new slice<uintptr>(1000);
-    // 1000 should fit the full stack
+    var pc = new slice<uintptr>(1000); // 1000 should fit the full stack
     nint n = Δruntime.Callers(0, pc);
     nint myDepth = callDepth(pc[..(int)(n)]);
     nint writeDepth = default!; // will contain the depth from which writerFunc.Writer was called
@@ -224,8 +223,7 @@ public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
         mw = MultiWriter(w);
     }
     mw = MultiWriter(w, mw, w, mw);
-    mw.Write(default!);
-    // don't care about errors, just want to check the call-depth for Write
+    mw.Write(default!); // don't care about errors, just want to check the call-depth for Write
     if (writeDepth != 4 * (myDepth + 2)) {
         // 2 should be multiWriter.Write and writerFunc.Write
         Ꮡt.Errorf("multiWriter did not flatten chained multiWriters: expected writeDepth %d, got %d"u8,
@@ -301,8 +299,7 @@ internal static readonly @string irrelevantˢ = "irrelevant"u8;
 public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    var pc = new slice<uintptr>(1000);
-    // 1000 should fit the full stack
+    var pc = new slice<uintptr>(1000); // 1000 should fit the full stack
     nint n = Δruntime.Callers(0, pc);
     nint myDepth = callDepth(pc[..(int)(n)]);
     nint readDepth = default!; // will contain the depth from which fakeReader.Read was called
@@ -317,8 +314,7 @@ public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < 100; i++) {
         r = MultiReader(r);
     }
-    r.Read(default!);
-    // don't care about errors, just want to check the call-depth for Read
+    r.Read(default!); // don't care about errors, just want to check the call-depth for Read
     if (readDepth != myDepth + 2) {
         // 2 should be multiReader.Read and fakeReader.Read
         Ꮡt.Errorf("multiReader did not flatten chained multiReaders: expected readDepth %d, got %d"u8,

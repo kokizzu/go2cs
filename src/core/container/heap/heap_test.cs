@@ -59,9 +59,8 @@ internal static void verify(this myHeap h, ж<testing.T> Ꮡt, nint i) {
 public static void TestInit0(ж<testing.T> Ꮡt) {
     var h = @new<myHeap>();
     for (nint i = 20; i > 0; i--) {
-        h.Push((nint)(0));
+        h.Push((nint)(0)); // all elements are the same
     }
-    // all elements are the same
     Init(new heap_internal_test_package.myHeapжInterface(h));
     (~h).verify(Ꮡt, 0);
     for (nint i = 1; h.Len() > 0; i++) {
@@ -76,9 +75,8 @@ public static void TestInit0(ж<testing.T> Ꮡt) {
 public static void TestInit1(ж<testing.T> Ꮡt) {
     var h = @new<myHeap>();
     for (nint i = 20; i > 0; i--) {
-        h.Push(i);
+        h.Push(i); // all elements are different
     }
-    // all elements are different
     Init(new heap_internal_test_package.myHeapжInterface(h));
     (~h).verify(Ꮡt, 0);
     for (nint i = 1; h.Len() > 0; i++) {
@@ -177,9 +175,8 @@ public static void BenchmarkDup(ж<testing.B> Ꮡb) {
     h = new myHeap(0, n);
     for (nint i = 0; i < b.N; i++) {
         for (nint j = 0; j < n; j++) {
-            go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(Ꮡh), (nint)(0));
+            go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(Ꮡh), (nint)(0)); // all elements are the same
         }
-        // all elements are the same
         while (h.Len() > 0) {
             go.container.heap_package.Pop(new heap_internal_test_package.myHeapжInterface(Ꮡh));
         }

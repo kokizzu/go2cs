@@ -123,8 +123,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
 public static void TestLarge(ж<testing.T> Ꮡt) {
     const nint N = 10000;
-    @string ok = "2bb571599a4180e1d542f76904adc3df"u8;
-    // md5sum of "0123456789" * 1000
+    @string ok = "2bb571599a4180e1d542f76904adc3df"u8; // md5sum of "0123456789" * 1000
     var block = new slice<byte>(10004);
     var c = New();
     for (nint offset = 0; offset < 4; offset++) {
@@ -152,8 +151,7 @@ internal static readonly object blockAndBlockGenericˢ = (@string)"block and blo
 // Tests that blockGeneric (pure Go) and block (in assembly for amd64, 386, arm) match.
 public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
     var (gen, asm) = (New()._<ж<global::go.crypto.md5_package.digest>>(), New()._<ж<global::go.crypto.md5_package.digest>>());
-    var buf = new slice<byte>(ΔBlockSize * 20);
-    // arbitrary factor
+    var buf = new slice<byte>(ΔBlockSize * 20); // arbitrary factor
     rand.Read(buf);
     blockGeneric(gen, buf);
     block(asm, buf);

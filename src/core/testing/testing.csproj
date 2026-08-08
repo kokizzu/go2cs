@@ -55,17 +55,17 @@
          the runtime; `time` is here for exactly one member, testing.T.Deadline, whose Go signature
          returns a real time.Time and which no primitive or golib stand-in can satisfy (see
          testing.cs). Notably ABSENT: fmt — the host formats with its own TestFormat instead. -->
-    <ProjectReference Include="..\golib\golib.csproj" />
-    <ProjectReference Include="..\time\time.csproj" />
-    <ProjectReference Include="..\..\gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
+    <ProjectReference Include="../golib/golib.csproj" />
+    <ProjectReference Include="../time/time.csproj" />
+    <ProjectReference Include="../../gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- Include the per-package README (hand-owned, like this whole package) in the NuGet package —
        the same Exists-conditioned shape the converter's csproj template emits for converted packages. -->
-  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 

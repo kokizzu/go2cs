@@ -427,8 +427,7 @@ internal static void test(ж<testing.T> Ꮡt, Func<slice<byte>, slice<nint>> bui
                 }
             }
         }
-        x[..(int)(cap(x))][builtin.len(x)] = 0;
-        // for sais.New
+        x[..(int)(cap(x))][builtin.len(x)] = 0; // for sais.New
         testSA(tΔ2, x, build);
     });
     Ꮡt.Run(exhaustive2ˢ, (ж<testing.T> tΔ3) => {
@@ -441,8 +440,7 @@ internal static void test(ж<testing.T> Ꮡt, Func<slice<byte>, slice<nint>> bui
             if (n > 12 && testing.Short()) {
                 break;
             }
-            x[n] = 0;
-            // for sais.New
+            x[n] = 0; // for sais.New
             testRec(tΔ3, x[..(int)(n)], 0, 2, ᏑnumFail, build);
         }
     });
@@ -456,8 +454,7 @@ internal static void test(ж<testing.T> Ꮡt, Func<slice<byte>, slice<nint>> bui
             if (n > 8 && testing.Short()) {
                 break;
             }
-            x[n] = 0;
-            // for sais.New
+            x[n] = 0; // for sais.New
             testRec(tΔ4, x[..(int)(n)], 0, 3, ᏑnumFail, build);
         }
     });
@@ -592,9 +589,8 @@ internal static Action /*cleanup*/ setBits(nint bits) {
     if (bits == 32){
         maxData32 = realMaxData32;
     } else {
-        maxData32 = -1;
+        maxData32 = -1; // force use of 64-bit code
     }
-    // force use of 64-bit code
     return () => {
         maxData32 = realMaxData32;
     };
@@ -649,10 +645,8 @@ public static void BenchmarkNew(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkSaveRestore(ж<testing.B> Ꮡb) {
-    var r = rand.New(rand.NewSource(0x5a77a1));
-    // guarantee always same sequence
-    var data = new slice<byte>((1 << (int)(20)));
-    // 1MB of data to index
+    var r = rand.New(rand.NewSource(0x5a77a1)); // guarantee always same sequence
+    var data = new slice<byte>((1 << (int)(20))); // 1MB of data to index
     foreach (var (i, _) in data) {
         data[i] = (byte)r.Intn(256);
     }
@@ -669,10 +663,8 @@ public static void BenchmarkSaveRestore(ж<testing.B> Ꮡb) {
                 defer(cleanupʗ1, ref ᒐ);
                 bΔ1.StopTimer();
                 var x = New(dataʗ1);
-                nint size = testSaveRestore(nil, nil, x);
-                // verify correctness
-                var buf = bytes.NewBuffer(new slice<byte>(size));
-                // avoid growing
+                nint size = testSaveRestore(nil, nil, x); // verify correctness
+                var buf = bytes.NewBuffer(new slice<byte>(size)); // avoid growing
                 bΔ1.SetBytes((int64)size);
                 bΔ1.StartTimer();
                 bΔ1.ReportAllocs();

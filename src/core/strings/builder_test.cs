@@ -132,8 +132,7 @@ public static void TestBuilderGrow(ж<testing.T> Ꮡt) {
             var pʗ1 = p;
             var allocs = testing.AllocsPerRun(100, () => {
                 ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-                Ꮡb.Grow(growLen);
-                // should be only alloc, when growLen > 0
+                Ꮡb.Grow(growLen); // should be only alloc, when growLen > 0
                 if (b.Cap() < growLen) {
                     Ꮡt.Fatalf("growLen=%d: Cap() is lower than growLen"u8, growLen);
                 }
@@ -279,9 +278,8 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
                 ref var a = ref heap(new strings.Builder(), out var Ꮡa);
                 Ꮡa.WriteByte((rune)'x');
                 var b = a;
-                _ = b.String();
-            } // appease vet
-
+                _ = b.String(); // appease vet
+            }
         ),
         new(
             name: "Len"u8,

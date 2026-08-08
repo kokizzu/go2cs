@@ -32,16 +32,16 @@ public static void TestReadData(ж<testing.T> Ꮡt) {
             tΔ1.Errorf("got %v, want %v"u8, got, inputʗ1);
         }
     });
-    var inputʗ3 = input;
+    var inputʗ2 = input;
     Ꮡt.Run(largeˢ, (ж<testing.T> tΔ2) => {
-        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)));
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ2)), ((uint64)10 << (int)(30)));
         if (err == default!) {
             tΔ2.Error(largeReadSucceededˢ);
         }
     });
-    var inputʗ5 = input;
+    var inputʗ3 = input;
     Ꮡt.Run(maxintˢ, (ж<testing.T> tΔ3) => {
-        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)));
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)1 << (int)(62)));
         if (err == default!) {
             tΔ3.Error(largeReadSucceededˢ);
         }
@@ -82,26 +82,26 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
             tΔ1.Errorf("got %v, want %v"u8, got, inputʗ1);
         }
     });
-    var inputʗ3 = input;
+    var inputʗ2 = input;
     Ꮡt.Run(largeˢ, (ж<testing.T> tΔ2) => {
-        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)), 0);
+        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ2)), ((uint64)10 << (int)(30)), 0);
         if (err == default!) {
             tΔ2.Error(largeReadSucceededˢ);
         }
     });
-    var inputʗ5 = input;
+    var inputʗ3 = input;
     Ꮡt.Run(maxintˢ, (ж<testing.T> tΔ3) => {
-        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)), 0);
+        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)1 << (int)(62)), 0);
         if (err == default!) {
             tΔ3.Error(largeReadSucceededˢ);
         }
     });
-    var inputʗ7 = input;
+    var inputʗ4 = input;
     Ꮡt.Run(sectionReaderˢ, (ж<testing.T> tΔ4) => {
         // Reading 0 bytes from an io.SectionReader at the end
         // of the section will return EOF, but ReadDataAt
         // should succeed and return 0 bytes.
-        var sr = io.NewSectionReader(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ7)), 0, 0);
+        var sr = io.NewSectionReader(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ4)), 0, 0);
         var (got, err) = ReadDataAt(new saferio_internal_test_package.io_SectionReaderжReaderAt(sr), 0, 0);
         if (err != default!) {
             tΔ4.Fatal(err);

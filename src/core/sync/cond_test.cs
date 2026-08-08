@@ -35,9 +35,8 @@ public static void TestCondSignal(ж<Δtesting.T> Ꮡt) {
         });
     }
     for (nint i = 0; i < n; i++) {
-        ᐸꟷ(running);
+        ᐸꟷ(running); // Wait for everyone to run.
     }
-    // Wait for everyone to run.
     while (n > 0) {
         var selᴛ1 = awake;
         switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
@@ -51,8 +50,7 @@ public static void TestCondSignal(ж<Δtesting.T> Ꮡt) {
         Ꮡm.Lock();
         c.Signal();
         Ꮡm.Unlock();
-        ᐸꟷ(awake);
-        // Will deadlock if no goroutine wakes up
+        ᐸꟷ(awake); // Will deadlock if no goroutine wakes up
         var selᴛ2 = awake;
         switch (trySelect(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
         case 0 when selᴛ2.ꟷᐳ(out _): {
@@ -124,9 +122,8 @@ public static void TestCondBroadcast(ж<Δtesting.T> Ꮡt) {
     }
     for (nint i = 0; i < n; i++) {
         for (nint iΔ1 = 0; iΔ1 < n; iΔ1++) {
-            ᐸꟷ(running);
+            ᐸꟷ(running); // Will deadlock unless n are running.
         }
-        // Will deadlock unless n are running.
         if (i == n - 1) {
             Ꮡm.Lock();
             exit = true;
@@ -297,8 +294,7 @@ public static void TestCondCopy(ж<Δtesting.T> Ꮡt) {
         c = new Cond(L: new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
         Ꮡc.Signal();
         ref var c2 = ref heap(new Δsync.Cond(), out var Ꮡc2);
-        reflect.ValueOf(Ꮡc2).Elem().Set(reflect.ValueOf(Ꮡc).Elem());
-        // c2 := c, hidden from vet
+        reflect.ValueOf(Ꮡc2).Elem().Set(reflect.ValueOf(Ꮡc).Elem()); // c2 := c, hidden from vet
         Ꮡc2.Signal();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

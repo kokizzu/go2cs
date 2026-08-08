@@ -276,8 +276,7 @@ internal static slice<@string> opTests = new @string[]{
 public static void TestOps(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in opTests) {
         var a = strings.Split(test, " "u8);
-        nint i = 0;
-        // operator index
+        nint i = 0; // operator index
         global::go.go.constant_package.Value x = default!;
         global::go.go.constant_package.Value x0 = default!;
         switch (len(a)) {

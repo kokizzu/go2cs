@@ -502,8 +502,7 @@ public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) {
         panicWriter p = default!;
         var w = @new<tabwriter.Writer>();
         w.Init(p, 0, 0, 5, (rune)' ', 0);
-        io.WriteString(new tabwriter.WriterжWriter(w), "a\n\n"u8);
-        // the second \n triggers a call to w.Write and thus a panic
+        io.WriteString(new tabwriter.WriterжWriter(w), "a\n\n"u8); // the second \n triggers a call to w.Write and thus a panic
         Ꮡt.Errorf("failed to panic during Write"u8);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -525,8 +524,7 @@ public static void BenchmarkTable(ж<testing.B> Ꮡb) {
                 bΔ1.Run(newˢ, (ж<testing.B> bΔ2) => {
                     bΔ2.ReportAllocs();
                     for (nint i = 0; i < (~bΔ2).N; i++) {
-                        var wΔ1 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
-                        // no particular reason for these settings
+                        var wΔ1 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0); // no particular reason for these settings
                         // Write the line h times.
                         for (nint j = 0; j < h; j++) {
                             wΔ1.Write(Ꮡline.ValueSlot);
@@ -536,8 +534,7 @@ public static void BenchmarkTable(ж<testing.B> Ꮡb) {
                 });
                 bΔ1.Run(reuseˢ, (ж<testing.B> bΔ3) => {
                     bΔ3.ReportAllocs();
-                    var wΔ2 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
-                    // no particular reason for these settings
+                    var wΔ2 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0); // no particular reason for these settings
                     for (nint i = 0; i < (~bΔ3).N; i++) {
                         // Write the line h times.
                         for (nint j = 0; j < h; j++) {
@@ -559,8 +556,7 @@ public static void BenchmarkPyramid(ж<testing.B> Ꮡb) {
         Ꮡb.Run(fmt.Sprintf("%d"u8, x), (ж<testing.B> bΔ1) => {
             bΔ1.ReportAllocs();
             for (nint i = 0; i < (~bΔ1).N; i++) {
-                var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
-                // no particular reason for these settings
+                var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0); // no particular reason for these settings
                 // Write increasing prefixes of that line.
                 for (nint j = 0; j < x; j++) {
                     w.Write(lineʗ1[..(int)(j * 2)]);
@@ -583,8 +579,7 @@ public static void BenchmarkRagged(ж<testing.B> Ꮡb) {
         Ꮡb.Run(fmt.Sprintf("%d"u8, h), (ж<testing.B> bΔ1) => {
             bΔ1.ReportAllocs();
             for (nint i = 0; i < (~bΔ1).N; i++) {
-                var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
-                // no particular reason for these settings
+                var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0); // no particular reason for these settings
                 // Write the lines in turn h times.
                 for (nint j = 0; j < h; j++) {
                     w.Write(linesʗ1[j % len(linesʗ1)]);
@@ -616,8 +611,7 @@ public static void BenchmarkCode(ж<testing.B> Ꮡb) {
 
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {
-        var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
-        // no particular reason for these settings
+        var w = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0); // no particular reason for these settings
         // The code is small, so it's reasonable for the tabwriter user
         // to write it all at once, or buffer the writes.
         w.Write(slice<byte>(codeSnippet));

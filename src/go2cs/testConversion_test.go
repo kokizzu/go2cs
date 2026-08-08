@@ -347,9 +347,10 @@ func TestStdLibConversionSkipsHandOwnedAndToolchainPackages(t *testing.T) {
 }
 
 // Every converted test project carries the shared runtime and the hand-owned testing package as
-// fixed references, both rooted in the one converted-standard-library tree.
+// fixed references, both rooted in the one converted-standard-library tree — and, since F5, spelled
+// with FORWARD slashes like every other emitted reference, so one corpus form serves every host.
 func TestTestProjectFixedReferencesRootedInCore(t *testing.T) {
-	want := []string{`$(go2csPath)core\golib\golib.csproj`, `$(go2csPath)core\testing\testing.csproj`}
+	want := []string{`$(go2csPath)core/golib/golib.csproj`, `$(go2csPath)core/testing/testing.csproj`}
 
 	if !reflect.DeepEqual(testProjectFixedReferences, want) {
 		t.Fatalf("test project fixed references = %v, want %v", testProjectFixedReferences, want)
@@ -2706,12 +2707,22 @@ func TestAmbiguousVariantTypeNamesAreClassQualified(t *testing.T) {
 // TestIsSelfProjectReference pins the base-name comparison: a raw suffix test dropped any
 // dependency whose project file name merely ends with the target's — converting "time" lost
 // its runtime reference because "runtime.csproj" ends with "time.csproj" (B7).
+//
+// BOTH separators are cases, and that is the point. Emission is forward-slash since F5, but a
+// reference still arrives backslashed from a pre-F5 corpus, a deployed tree or a hand-authored
+// project — and filepath.Base off Windows does not split on a backslash, so on Linux and macOS
+// every `\` case returned the whole string and matched nothing.
 func TestIsSelfProjectReference(t *testing.T) {
 	cases := []struct {
 		reference   string
 		projectName string
 		want        bool
 	}{
+		{`$(go2csPath)core/time/time.csproj`, "time", true},
+		{`$(go2csPath)core/runtime/runtime.csproj`, "time", false},
+		{`$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj`, "math", false},
+		{`$(go2csPath)core/math/math.csproj`, "math", true},
+		{`$(go2csPath)core/time/TIME.CSPROJ`, "time", true},
 		{`$(go2csPath)core\time\time.csproj`, "time", true},
 		{`$(go2csPath)core\runtime\runtime.csproj`, "time", false},
 		{`$(go2csPath)core\runtime\internal\math\runtime.internal.math.csproj`, "math", false},

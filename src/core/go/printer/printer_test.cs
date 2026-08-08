@@ -50,11 +50,9 @@ internal static (slice<byte>, error) format(slice<byte> src, checkMode mode) {
     }
     // filter exports if necessary
     if ((checkMode)(mode & export) != 0) {
-        ast.FileExports(f);
-        // ignore result
-        f.Value.Comments = default!;
+        ast.FileExports(f); // ignore result
+        f.Value.Comments = default!; // don't print comments that are not in AST
     }
-    // don't print comments that are not in AST
     // determine printer configuration
     ref var cfg = ref heap<global::go.go.printer_package.Config>(out var Ꮡcfg);
     cfg = new Config(Tabwidth: tabwidth);
@@ -233,12 +231,10 @@ public static void TestLineComments(ж<testing.T> Ꮡt) {
     var fset = token.NewFileSet();
     var (f, err) = parser.ParseFile(fset, ""u8, src, parser.ParseComments);
     if (err != default!) {
-        throw panic(err);
+        throw panic(err); // error in test
     }
-    // error in test
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    fset = token.NewFileSet();
-    // use the wrong file set
+    fset = token.NewFileSet(); // use the wrong file set
     Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, f.OrTypedNil());
     nint nlines = 0;
     foreach (var (_, ch) in buf.Bytes()) {
@@ -259,10 +255,9 @@ public static void TestLineComments(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     {
         var err = Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, Ꮡ(new ast.Ident(Name: name))); if (err != default!) {
-            throw panic(err);
+            throw panic(err); // error in test
         }
     }
-    // error in test
     // in debug mode, the result contains additional information;
     // ignore it
     {
@@ -281,9 +276,8 @@ public static void TestBadNodes(ж<testing.T> Ꮡt) {
     @string res = "package p\nBadDecl\n"u8;
     var (f, err) = parser.ParseFile(fset, ""u8, src, parser.ParseComments);
     if (err == default!) {
-        Ꮡt.Error(expectedIllegalProgramˢ);
+        Ꮡt.Error(expectedIllegalProgramˢ); // error in test
     }
-    // error in test
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, f.OrTypedNil());
     if (Ꮡbuf.String() != res) {
@@ -347,17 +341,15 @@ func fibo(n int) {
 """u8;
     var (f, err) = parser.ParseFile(fset, ""u8, src, parser.ParseComments);
     if (err != default!) {
-        Ꮡt.Error(err);
+        Ꮡt.Error(err); // error in test
     }
-    // error in test
     var comment = (~(~f).Comments[0]).List[0];
     ref var pos = ref heap<tokenꓸPos>(out var Ꮡpos);
     pos = comment.Pos();
     if (fset.PositionFor(pos, false).Offset != 1) {
         /* absolute position */
-        Ꮡt.Error(expectedOffset1ˢ);
+        Ꮡt.Error(expectedOffset1ˢ); // error in test
     }
-    // error in test
     testComment(Ꮡt, f, len(src), Ꮡ(new ast.Comment(Slash: pos, Text: "//-style comment"u8)));
     testComment(Ꮡt, f, len(src), Ꮡ(new ast.Comment(Slash: pos, Text: "/*-style comment */"u8)));
     testComment(Ꮡt, f, len(src), Ꮡ(new ast.Comment(Slash: pos, Text: "/*-style \n comment */"u8)));
@@ -528,16 +520,13 @@ public static void TestDeclLists(ж<testing.T> Ꮡt) {
     foreach (var (_, src) in decls) {
         var (@file, err) = parser.ParseFile(fset, ""u8, "package p;" + src, parser.ParseComments);
         if (err != default!) {
-            throw panic(err);
+            throw panic(err); // error in test
         }
-        // error in test
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-        err = Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, (~@file).Decls);
-        // only print declarations
+        err = Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, (~@file).Decls); // only print declarations
         if (err != default!) {
-            throw panic(err);
+            throw panic(err); // error in test
         }
-        // error in test
         @string @out = Ꮡbuf.String();
         if (@out != src) {
             Ꮡt.Errorf("\ngot : %q\nwant: %q\n"u8, @out, src);
@@ -555,16 +544,13 @@ public static void TestStmtLists(ж<testing.T> Ꮡt) {
     foreach (var (_, src) in stmts) {
         var (@file, err) = parser.ParseFile(fset, ""u8, "package p; func _() {" + src + "}", parser.ParseComments);
         if (err != default!) {
-            throw panic(err);
+            throw panic(err); // error in test
         }
-        // error in test
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-        err = Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, (~(~(~@file).Decls[0]._<ж<ast.FuncDecl>>()).Body).List);
-        // only print statements
+        err = Fprint(new printer_test_package.bytes_BufferжWriter(Ꮡbuf), fset, (~(~(~@file).Decls[0]._<ж<ast.FuncDecl>>()).Body).List); // only print statements
         if (err != default!) {
-            throw panic(err);
+            throw panic(err); // error in test
         }
-        // error in test
         @string @out = Ꮡbuf.String();
         if (@out != src) {
             Ꮡt.Errorf("\ngot : %q\nwant: %q\n"u8, @out, src);
@@ -582,14 +568,12 @@ public static void TestBaseIndent(ж<testing.T> Ꮡt) {
     @string filename = "printer.go"u8;
     var (src, err) = os.ReadFile(filename);
     if (err != default!) {
-        throw panic(err);
+        throw panic(err); // error in test
     }
-    // error in test
     (var @file, err) = parser.ParseFile(fset, filename, src, 0);
     if (err != default!) {
-        throw panic(err);
+        throw panic(err); // error in test
     }
-    // error in test
     for (nint indent = 0; indent < 4; indent++) {
         ref var indentΔ1 = ref heap<nint>(out var ᏑindentΔ1);
         indentΔ1 = indent;
@@ -603,9 +587,8 @@ public static void TestBaseIndent(ж<testing.T> Ꮡt) {
             var lines = bytes.Split(buf.Bytes(), new byte[]{(rune)'\n'}.slice());
             foreach (var (i, line) in lines) {
                 if (len(line) == 0) {
-                    continue;
+                    continue; // empty lines don't have indentation
                 }
-                // empty lines don't have indentation
                 nint n = 0;
                 foreach (var (j, b) in line) {
                     if (b != (rune)'\t') {
@@ -711,14 +694,12 @@ public static void TestWriteErrors(ж<testing.T> Ꮡt) {
     @string filename = "printer.go"u8;
     var (src, err) = os.ReadFile(filename);
     if (err != default!) {
-        throw panic(err);
+        throw panic(err); // error in test
     }
-    // error in test
     (var @file, err) = parser.ParseFile(fset, filename, src, 0);
     if (err != default!) {
-        throw panic(err);
+        throw panic(err); // error in test
     }
-    // error in test
     for (nint iᴛ1 = 0; iᴛ1 < 20; iᴛ1++) {
         ref var i = ref heap<nint>(out var Ꮡi);
         i = iᴛ1;

@@ -280,8 +280,7 @@ public static void TestReaderEarlyEOF(ж<testing.T> Ꮡt) {
             continue;
         }
         foreach (var (_, flush) in new bool[]{true, false}.slice()) {
-            var earlyEOF = true;
-            // Do we expect early io.EOF?
+            var earlyEOF = true; // Do we expect early io.EOF?
             ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
             var (w, _) = NewWriter(new flate_test_package.bytes_BufferжWriter(Ꮡbuf), 5);
             w.Write(data[..(int)(sz)]);

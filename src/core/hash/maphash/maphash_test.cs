@@ -160,8 +160,7 @@ public static void TestSeedFromSum64(ж<testing.T> Ꮡt) {
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
-    var x = h1.Sum64();
-    // seed generated here
+    var x = h1.Sum64(); // seed generated here
     var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.WriteString(fooˢ);
@@ -176,8 +175,7 @@ public static void TestSeedFromSeed(ж<testing.T> Ꮡt) {
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
-    _ = h1.Seed();
-    // seed generated here
+    _ = h1.Seed(); // seed generated here
     var x = h1.Sum64();
     var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
@@ -193,8 +191,7 @@ public static void TestSeedFromFlush(ж<testing.T> Ꮡt) {
 
     var b = new slice<byte>(65);
     var h1 = @new<global::go.hash.maphash_package.Hash>();
-    h1.Write(b);
-    // seed generated here
+    h1.Write(b); // seed generated here
     var x = h1.Sum64();
     var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
@@ -210,8 +207,7 @@ public static void TestSeedFromReset(ж<testing.T> Ꮡt) {
 
     var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
-    h1.Reset();
-    // seed generated here
+    h1.Reset(); // seed generated here
     h1.WriteString(fooˢ);
     var x = h1.Sum64();
     var h2 = @new<global::go.hash.maphash_package.Hash>();
@@ -247,19 +243,19 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
             hʗ1.Sum64();
         }
     });
-    var bufʗ3 = buf;
-    var hʗ3 = h;
+    var bufʗ2 = buf;
+    var hʗ2 = h;
     Ꮡb.Run(bytesˢ, (ж<testing.B> bΔ2) => {
         bΔ2.SetBytes((int64)size);
-        var seed = hʗ3.Seed();
+        var seed = hʗ2.Seed();
         for (nint i = 0; i < (~bΔ2).N; i++) {
-            Bytes(seed, bufʗ3);
+            Bytes(seed, bufʗ2);
         }
     });
-    var hʗ5 = h;
+    var hʗ3 = h;
     Ꮡb.Run(stringˢ, (ж<testing.B> bΔ3) => {
         bΔ3.SetBytes((int64)size);
-        var seed = hʗ5.Seed();
+        var seed = hʗ3.Seed();
         for (nint i = 0; i < (~bΔ3).N; i++) {
             String(seed, s);
         }

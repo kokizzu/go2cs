@@ -89,11 +89,12 @@ func (c *StdLibConverter) GenerateSolutionFile() error {
 	return nil
 }
 
-// coreProjectRefRE matches an inter-package `<ProjectReference Include="$(go2csPath)core\...csproj">`
+// coreProjectRefRE matches an inter-package `<ProjectReference Include="$(go2csPath)core/...csproj">`
 // as emitted for a converted stdlib import (writeProjectFile / getImportPackageInfo always root such
-// references at `$(go2csPath)core\` with OS-native separators). The captured group is the reference's
-// solution-relative path; parseCoreProjectRefs normalizes it to forward slashes. The analyzer
-// reference is rooted at `$(go2csPath)gen\` and golib at `core\golib\`, so both are handled elsewhere.
+// references at `$(go2csPath)core/`). Both separators are accepted so a corpus emitted by a pre-F5
+// binary, a deployed tree, or a hand-authored project still reads; the captured group is the
+// reference's solution-relative path, which parseCoreProjectRefs normalizes to forward slashes. The
+// analyzer reference is rooted at `$(go2csPath)gen/` and golib at `core/golib/`, both handled elsewhere.
 var coreProjectRefRE = regexp.MustCompile(`Include="\$\(go2csPath\)(core[\\/][^"]+\.csproj)"`)
 
 // parseCoreProjectRefs returns the solution-relative (forward-slash) path of every core\ package a
@@ -106,7 +107,9 @@ func parseCoreProjectRefs(csprojContent string) []string {
 	refs := make([]string, 0, len(matches))
 
 	for _, m := range matches {
-		refs = append(refs, filepath.ToSlash(m[1]))
+		// NOT filepath.ToSlash: that replaces the HOST separator, so on Linux/macOS a backslashed
+		// reference passes through unchanged and every downstream path comparison misses.
+		refs = append(refs, normalizeEmittedPath(m[1]))
 	}
 
 	return refs

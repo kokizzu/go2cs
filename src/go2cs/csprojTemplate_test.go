@@ -121,20 +121,29 @@ func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
 // un-shipped every validated package's proof sheet at the next NuGet pack. The -tests arm is
 // structural — output under the runtime root's core\ tree — so a fixture or end-user module
 // still collapses to the historical blank line.
+// The fixture paths are composed with filepath.Join rather than written as Windows literals: the
+// predicate under test is a real path-prefix comparison (filepath.Clean over a separator-joined
+// root), so a `H:\…\src\core\time\time.csproj` literal is ONE filename on Linux and macOS and the
+// prefix never matches — the guard failed there for a reason that has nothing to do with what it
+// guards. Built from segments it asserts the same property on every host.
 func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
-	testsOverCore := Options{convertTests: true, go2csPath: fixtureSrcRoot()}
+	root := filepath.Join(t.TempDir(), "src")
+	testsOverCore := Options{convertTests: true, go2csPath: root}
 
-	block := validationPackBlock(fixturePath("core", "time", "time.csproj"), testsOverCore)
+	corePackage := filepath.Join(root, "core", "time", "time.csproj")
+	block := validationPackBlock(corePackage, testsOverCore)
 
 	if !strings.Contains(block, `time.md`) || !strings.Contains(block, `PackagePath="VALIDATION.md"`) {
 		t.Fatalf("a -tests rewrite of a core package's production .csproj lost the validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(fixturePath("tests", "PackageTests", "ConvertedTestHarness", "value.csproj"), testsOverCore); block != "" {
+	outsideCore := filepath.Join(root, "tests", "PackageTests", "ConvertedTestHarness", "value.csproj")
+
+	if block := validationPackBlock(outsideCore, testsOverCore); block != "" {
 		t.Fatalf("a -tests conversion outside the core tree emitted a validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(fixturePath("core", "time", "time.csproj"), Options{convertTests: true}); block != "" {
+	if block := validationPackBlock(corePackage, Options{convertTests: true}); block != "" {
 		t.Fatalf("a -tests conversion with no resolved runtime root emitted a validation pack block: %q", block)
 	}
 }
@@ -186,6 +195,57 @@ func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	if err := assertWellFormedXml(contents); err != nil {
 		t.Fatalf("test-csproj-template.xml does not emit well-formed XML: %v", err)
 	}
+}
+
+// F5 guard — the emitted corpus has ONE separator form, and it is `/`.
+//
+// MSBuild accepts forward slashes in every path context on Windows, and normalizes backslashes to
+// forward ones on Unix, so BOTH forms build on both hosts. What does not survive the round trip is
+// the converter's own hand-rolled path arithmetic (filepath.Join treats `\` as an ordinary filename
+// character on Unix) and every consumer of an emitted reference that is NOT MSBuild —
+// BehavioralRunner/PerformanceRunner resolve `ProjectReference Include=` through
+// Path.GetFullPath, which on Linux does not split on `\` either. Emitting `/` universally is what
+// makes one corpus correct for every host; see docs/PLAN-linux-operation.md §A1.1.
+//
+// The templates carry no backslash for any other purpose, so the assertion can be the whole file:
+// anything a future edit adds — an OutDir, an Exists() probe, a fixed reference — is covered without
+// this guard needing to enumerate it.
+func TestEmbeddedCsprojTemplatesUseForwardSlashesOnly(t *testing.T) {
+	for name, contents := range map[string]string{
+		"csproj-template.xml":      string(csprojTemplate),
+		"test-csproj-template.xml": string(testCsprojTemplate),
+	} {
+		if idx := strings.IndexByte(contents, '\\'); idx >= 0 {
+			t.Errorf("%s carries a backslash at offset %d (%q); emitted MSBuild paths must use forward slashes",
+				name, idx, lineAround(contents, idx))
+		}
+	}
+}
+
+// The VALIDATION.md pack block is composed in Go rather than in the template, so it needs the same
+// assertion applied where it is built.
+func TestValidationPackBlockUsesForwardSlashesOnly(t *testing.T) {
+	block := validationPackBlock(filepath.Join("root", "core", "fmt", "fmt.csproj"), Options{convertStdLib: true})
+
+	if block == "" {
+		t.Fatal("validationPackBlock returned empty for a stdlib conversion")
+	}
+
+	if strings.Contains(block, `\`) {
+		t.Errorf("validation pack block carries a backslash:\n%s", block)
+	}
+}
+
+// lineAround returns the line containing idx, for a legible failure message.
+func lineAround(contents string, idx int) string {
+	start := strings.LastIndexByte(contents[:idx], '\n') + 1
+	end := strings.IndexByte(contents[idx:], '\r')
+
+	if end < 0 {
+		return contents[start:]
+	}
+
+	return contents[start : idx+end]
 }
 
 // A reference path is the one part of a rendered csproj built from user-controlled text rather than

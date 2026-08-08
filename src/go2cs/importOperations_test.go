@@ -116,3 +116,39 @@ func TestProjectNameFromModuleDirective(t *testing.T) {
 		})
 	}
 }
+
+// TestEmittedProjectReferenceIsHostIndependent is the F5 unit: the reference string that lands in a
+// <ProjectReference Include="…"> must be the SAME on every host, and it must be forward-slashed.
+//
+// The pre-fix code hand-rolled the join: it replaced every "/" with a backslash and then called
+// filepath.Join with a backslash-prefixed second element. On Windows filepath.Clean folded those
+// injected separators into a well-formed path; on Unix filepath.Join treats a backslash as an
+// ordinary filename character, so the same call emitted `$(go2csPath)core\fmt/\fmt.csproj` — silent
+// at emission, a restore failure later.
+//
+// pathReplace hands back whichever separator the HOST produced, so the input spelling is exercised
+// per-host: the Unix spelling always (filepath.ToSlash is the identity there), the Windows spelling
+// only where it can actually arise.
+func TestEmittedProjectReferenceIsHostIndependent(t *testing.T) {
+	const want = "$(go2csPath)core/unicode/utf8/unicode.utf8.csproj"
+
+	if got := emittedProjectReference("$(go2csPath)core/unicode/utf8", "unicode.utf8.csproj"); got != want {
+		t.Errorf("emittedProjectReference(unix spelling) = %q, want %q", got, want)
+	}
+
+	if runtime.GOOS == "windows" {
+		if got := emittedProjectReference(`$(go2csPath)core\unicode\utf8`, "unicode.utf8.csproj"); got != want {
+			t.Errorf("emittedProjectReference(windows spelling) = %q, want %q", got, want)
+		}
+	}
+}
+
+// The recurse module-cache branch composes its own $(go2csPath)pkg reference from the version-free
+// import path, so it is a second emission site with the same invariant.
+func TestEmittedProjectReferenceForModuleCachePath(t *testing.T) {
+	got := emittedProjectReference("$(go2csPath)pkg/"+"github.com/google/uuid", "github.com.google.uuid.csproj")
+
+	if want := "$(go2csPath)pkg/github.com/google/uuid/github.com.google.uuid.csproj"; got != want {
+		t.Errorf("emittedProjectReference = %q, want %q", got, want)
+	}
+}

@@ -72,7 +72,10 @@ func main() {
 	if !strings.Contains(result.CSharp, "tourhelper.Message") {
 		t.Fatalf("submitted app C# missing dependency call:\n%s", result.CSharp)
 	}
-	if !strings.Contains(result.Project, `pkg\example.com\tourhelper\example.com.tourhelper.csproj`) {
+	// Forward slashes: since F5 (docs/PLAN-linux-operation.md) every path the converter writes into
+	// an MSBuild file is spelled the same way on every host, including a `-recurse` reference that
+	// filepath.Rel produced OS-natively and writeProjectFile then normalized.
+	if !strings.Contains(result.Project, `pkg/example.com/tourhelper/example.com.tourhelper.csproj`) {
 		t.Fatalf("app project missing relative dependency reference:\n%s", result.Project)
 	}
 	if strings.Contains(result.Project, `$(go2csPath)pkg`) {

@@ -369,8 +369,7 @@ public static void TestWindowsGlob(ж<testing.T> Ꮡt) {
             if (errΔ7 != default!) {
                 Ꮡt.Error(errΔ7);
             }
-            errΔ7 = test.globRel(tmpDir[..2]);
-            // C:
+            errΔ7 = test.globRel(tmpDir[..2]); // C:
             if (errΔ7 != default!) {
                 Ꮡt.Error(errΔ7);
             }

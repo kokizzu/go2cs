@@ -152,7 +152,7 @@ func validationPackBlock(projectFileName string, options Options) string {
 	return "\r\n" +
 		"  <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->\r\n" +
 		"  <PropertyGroup>\r\n" +
-		"    <GoValidationProofFile>$(go2csPath)..\\docs\\validation\\$(GoStdLibVersion).$(GoBuildNumber)\\" + dotID + ".md</GoValidationProofFile>\r\n" +
+		"    <GoValidationProofFile>$(go2csPath)../docs/validation/$(GoStdLibVersion).$(GoBuildNumber)/" + dotID + ".md</GoValidationProofFile>\r\n" +
 		"  </PropertyGroup>\r\n" +
 		"  <ItemGroup Condition=\"'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')\">\r\n" +
 		"    <None Include=\"$(GoValidationProofFile)\" Pack=\"true\" PackagePath=\"VALIDATION.md\" Visible=\"false\" />\r\n" +
@@ -215,10 +215,10 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	// analyzer package, delivered under analyzers/dotnet/cs — analyzer-only, no compile/runtime asset).
 	if emitNuGet {
 		newContents = []byte(strings.ReplaceAll(string(newContents),
-			`<ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />`,
+			`<ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />`,
 			`<PackageReference Include="go.lib" Version="$(GoStdLibVersion)" />`))
 		newContents = []byte(strings.ReplaceAll(string(newContents),
-			`<ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />`,
+			`<ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />`,
 			`<PackageReference Include="go.gen" Version="$(GoStdLibVersion)" PrivateAssets="all" />`))
 	}
 
@@ -277,8 +277,11 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 			}
 		}
 
-		// Track project references
-		references = append(references, reference)
+		// Track project references, in the corpus's one separator form. filepath.Rel returns an
+		// OS-NATIVE relative path, so on Windows a sibling reference arrives here as `..\lib\x.csproj`;
+		// every other producer already emits forward slashes (emittedProjectReference). ToSlash is the
+		// single point that makes the emitted line host-independent — see F5.
+		references = append(references, filepath.ToSlash(reference))
 	}
 
 	sort.Strings(references)

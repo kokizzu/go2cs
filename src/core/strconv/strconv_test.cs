@@ -132,41 +132,41 @@ public static void TestAllocationsFromBytes(ж<testing.T> Ꮡt) {
     Ꮡt.Run(atoiˢ, checkNoAllocs(() => {
         (Sink.Int, Sink.Error) = Atoi(((@string)bytesʗ1.Number));
     }));
-    var bytesʗ5 = bytes;
+    var bytesʗ2 = bytes;
     Ꮡt.Run(parseBoolˢ, checkNoAllocs(() => {
-        (Sink.Bool, Sink.Error) = ParseBool(((@string)bytesʗ5.Bool));
+        (Sink.Bool, Sink.Error) = ParseBool(((@string)bytesʗ2.Bool));
+    }));
+    var bytesʗ3 = bytes;
+    Ꮡt.Run(parseIntˢ, checkNoAllocs(() => {
+        (Sink.Int64, Sink.Error) = ParseInt(((@string)bytesʗ3.Number), 10, 64);
+    }));
+    var bytesʗ4 = bytes;
+    Ꮡt.Run(parseUintˢ, checkNoAllocs(() => {
+        (Sink.Uint64, Sink.Error) = ParseUint(((@string)bytesʗ4.Number), 10, 64);
+    }));
+    var bytesʗ5 = bytes;
+    Ꮡt.Run(parseFloatˢ, checkNoAllocs(() => {
+        (Sink.Float64, Sink.Error) = ParseFloat(((@string)bytesʗ5.Number), 64);
+    }));
+    var bytesʗ6 = bytes;
+    Ꮡt.Run(parseComplexˢ, checkNoAllocs(() => {
+        (Sink.Complex128, Sink.Error) = ParseComplex(((@string)bytesʗ6.Number), 128);
+    }));
+    var bytesʗ7 = bytes;
+    Ꮡt.Run(canBackquoteˢ, checkNoAllocs(() => {
+        Sink.Bool = CanBackquote(((@string)bytesʗ7.String));
+    }));
+    var bytesʗ8 = bytes;
+    Ꮡt.Run(appendQuoteˢ, checkNoAllocs(() => {
+        Sink.Bytes = AppendQuote(bytesʗ8.Buffer[..0], ((@string)bytesʗ8.String));
     }));
     var bytesʗ9 = bytes;
-    Ꮡt.Run(parseIntˢ, checkNoAllocs(() => {
-        (Sink.Int64, Sink.Error) = ParseInt(((@string)bytesʗ9.Number), 10, 64);
-    }));
-    var bytesʗ13 = bytes;
-    Ꮡt.Run(parseUintˢ, checkNoAllocs(() => {
-        (Sink.Uint64, Sink.Error) = ParseUint(((@string)bytesʗ13.Number), 10, 64);
-    }));
-    var bytesʗ17 = bytes;
-    Ꮡt.Run(parseFloatˢ, checkNoAllocs(() => {
-        (Sink.Float64, Sink.Error) = ParseFloat(((@string)bytesʗ17.Number), 64);
-    }));
-    var bytesʗ21 = bytes;
-    Ꮡt.Run(parseComplexˢ, checkNoAllocs(() => {
-        (Sink.Complex128, Sink.Error) = ParseComplex(((@string)bytesʗ21.Number), 128);
-    }));
-    var bytesʗ25 = bytes;
-    Ꮡt.Run(canBackquoteˢ, checkNoAllocs(() => {
-        Sink.Bool = CanBackquote(((@string)bytesʗ25.String));
-    }));
-    var bytesʗ29 = bytes;
-    Ꮡt.Run(appendQuoteˢ, checkNoAllocs(() => {
-        Sink.Bytes = AppendQuote(bytesʗ29.Buffer[..0], ((@string)bytesʗ29.String));
-    }));
-    var bytesʗ33 = bytes;
     Ꮡt.Run(appendQuoteToASCIIˢ, checkNoAllocs(() => {
-        Sink.Bytes = AppendQuoteToASCII(bytesʗ33.Buffer[..0], ((@string)bytesʗ33.String));
+        Sink.Bytes = AppendQuoteToASCII(bytesʗ9.Buffer[..0], ((@string)bytesʗ9.String));
     }));
-    var bytesʗ37 = bytes;
+    var bytesʗ10 = bytes;
     Ꮡt.Run(appendQuoteToGraphicˢ, checkNoAllocs(() => {
-        Sink.Bytes = AppendQuoteToGraphic(bytesʗ37.Buffer[..0], ((@string)bytesʗ37.String));
+        Sink.Bytes = AppendQuoteToGraphic(bytesʗ10.Buffer[..0], ((@string)bytesʗ10.String));
     }));
 }
 

@@ -34,7 +34,7 @@
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
        $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
-    <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
+    <OutDir>bin/$(Configuration)/$(TargetFramework)/</OutDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(USERPROFILE)'==''">
@@ -42,7 +42,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(go2csPath)'==''">
-    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)\go2cs\</go2csPath>
+    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug'">$(SolutionDir)</go2csPath>
   </PropertyGroup>
 
@@ -78,16 +78,16 @@
   </ItemGroup>
 
   <!-- Include the per-package README (emitted by the converter) in the NuGet package -->
-  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <PropertyGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(MSBuildProjectDirectory)/README.md')">
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->
   <PropertyGroup>
-    <GoValidationProofFile>$(go2csPath)..\docs\validation\$(GoStdLibVersion).$(GoBuildNumber)\crypto.internal.hpke.md</GoValidationProofFile>
+    <GoValidationProofFile>$(go2csPath)../docs/validation/$(GoStdLibVersion).$(GoBuildNumber)/crypto.internal.hpke.md</GoValidationProofFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')">
     <None Include="$(GoValidationProofFile)" Pack="true" PackagePath="VALIDATION.md" Visible="false" />
@@ -101,7 +101,7 @@
 
   <ItemGroup>
     <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-    <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
+    <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- Define Go type aliases -->
@@ -141,18 +141,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
-    <ProjectReference Include="$(go2csPath)core\crypto\aes\crypto.aes.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\cipher\crypto.cipher.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\crypto.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\ecdh\crypto.ecdh.csproj" />
-    <ProjectReference Include="$(go2csPath)core\crypto\rand\crypto.rand.csproj" />
-    <ProjectReference Include="$(go2csPath)core\encoding\binary\encoding.binary.csproj" />
-    <ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />
-    <ProjectReference Include="$(go2csPath)core\math\bits\math.bits.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\chacha20poly1305\vendor.golang.org.x.crypto.chacha20poly1305.csproj" />
-    <ProjectReference Include="$(go2csPath)core\vendor\golang.org\x\crypto\hkdf\vendor.golang.org.x.crypto.hkdf.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/aes/crypto.aes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/cipher/crypto.cipher.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/crypto.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/ecdh/crypto.ecdh.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/rand/crypto.rand.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/binary/encoding.binary.csproj" />
+    <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
+    <ProjectReference Include="$(go2csPath)core/math/bits/math.bits.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/chacha20poly1305/vendor.golang.org.x.crypto.chacha20poly1305.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/hkdf/vendor.golang.org.x.crypto.hkdf.csproj" />
   </ItemGroup>
 
 </Project>

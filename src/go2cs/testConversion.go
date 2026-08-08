@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -2551,8 +2552,8 @@ func writeTestHost(outputPath, namespace, importPath string, declarations []test
 // that hosts the run. Both are rooted in the one converted-standard-library tree at
 // $(go2csPath)core — the same root every resolved dependency reference uses.
 var testProjectFixedReferences = []string{
-	`$(go2csPath)core\golib\golib.csproj`,
-	`$(go2csPath)core\testing\testing.csproj`,
+	`$(go2csPath)core/golib/golib.csproj`,
+	`$(go2csPath)core/testing/testing.csproj`,
 }
 
 func writeTestProject(projectFile, projectName, namespace string, model testProjectModel, productionFiles, testFiles, fixtures, dependencies []string, options Options) error {
@@ -2635,7 +2636,10 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	refs := references.Keys()
 	sort.Strings(refs)
 	for _, reference := range refs {
-		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(reference)))
+		// Forward slashes on every host, matching the production writer (see F5): a resolved
+		// dependency arrives already slashed from emittedProjectReference, but an ABSOLUTE
+		// reference (a local module) is OS-native.
+		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(filepath.ToSlash(reference))))
 	}
 
 	contents := []byte(strings.NewReplacer(
@@ -3528,8 +3532,13 @@ func implementedInterfaceCandidates(named *types.Named) []*types.Named {
 // production csproj. The comparison must be on the path's BASE NAME: a raw suffix test drops
 // any dependency whose project file name merely ENDS with the target's ("runtime.csproj" ends
 // with "time.csproj", so converting time silently lost its runtime reference — 5x CS0234).
+//
+// The reference is normalized first, and with path.Base rather than filepath.Base, so the base name
+// is taken the same way on every host: filepath.Base off Windows does not split on a backslash, so a
+// `\`-spelled reference (a pre-F5 corpus, a deployed tree, a hand-authored project) came back whole
+// and matched nothing.
 func isSelfProjectReference(reference, projectName string) bool {
-	return strings.EqualFold(filepath.Base(reference), projectName+".csproj")
+	return strings.EqualFold(path.Base(normalizeEmittedPath(reference)), projectName+".csproj")
 }
 
 func productionCSFiles(outputPath string) ([]string, error) {

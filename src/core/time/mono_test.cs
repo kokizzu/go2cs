@@ -94,8 +94,7 @@ public static void TestMonotonicAdd(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Errorf("t2.mono = %d, want 123456889012345"u8, time_internal_test_package.GetMono(Ꮡt2));
     }
     ref var t3 = ref heap<Δtime.Time>(out var Ꮡt3);
-    t3 = tm.Add(-9000000000000000000);
-    // wall now out of range
+    t3 = tm.Add(-9000000000000000000); // wall now out of range
     if (t3.Nanosecond() != 123456) {
         Ꮡt.Errorf("t3.Nanosecond() = %d, want 123456"u8, t3.Nanosecond());
     }
@@ -103,8 +102,7 @@ public static void TestMonotonicAdd(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Errorf("t3.mono = %d, want 0 (wall time out of range for monotonic reading)"u8, time_internal_test_package.GetMono(Ꮡt3));
     }
     ref var t4 = ref heap<Δtime.Time>(out var Ꮡt4);
-    t4 = tm.Add(+9000000000000000000);
-    // wall now out of range
+    t4 = tm.Add(+9000000000000000000); // wall now out of range
     if (t4.Nanosecond() != 123456) {
         Ꮡt.Errorf("t4.Nanosecond() = %d, want 123456"u8, t4.Nanosecond());
     }

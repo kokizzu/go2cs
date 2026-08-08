@@ -865,12 +865,9 @@ public static void BenchmarkBufferAppendNoCopy(ж<testing.B> Ꮡb) {
     for (nint i = 0; i < b.N; i++) {
         bb.Reset();
         var bΔ1 = bb.AvailableBuffer();
-        bΔ1 = bΔ1[..(int)(cap(bΔ1))];
-        // use max capacity to simulate a large append operation
-        bb.Write(bΔ1);
+        bΔ1 = bΔ1[..(int)(cap(bΔ1))]; // use max capacity to simulate a large append operation
+        bb.Write(bΔ1); // should be nearly infinitely fast
     }
 }
-
-// should be nearly infinitely fast
 
 } // end bytes_test_package

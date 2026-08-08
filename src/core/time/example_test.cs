@@ -437,7 +437,7 @@ public static void ExampleParse() {
     (t, _) = Δtime.Parse(Δtime.RFC3339, "2006-01-02T15:04:05+07:00"u8);
     fmt.Println(t);
     var (_, err) = Δtime.Parse(Δtime.RFC3339, Δtime.RFC3339);
-    fmt.Println(errorˢ, err);
+    fmt.Println(errorˢ, err); // Returns an error as the layout is not a valid time value
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -445,7 +445,6 @@ internal static readonly @string europeBerlinˢ = "Europe/Berlin"u8;
 internal static readonly @string jul92012At502amCestˢ = "Jul 9, 2012 at 5:02am (CEST)"u8;
 internal static readonly @string jul09ˢ = "2012-Jul-09"u8;
 
-// Returns an error as the layout is not a valid time value
 // Output:
 // 2013-02-03 19:54:00 -0800 PST
 // 2013-02-03 00:00:00 +0000 UTC
@@ -499,19 +498,14 @@ public static void ExampleUnixMilli() {
 // 2009-11-10 23:00:00 +0000 UTC
 public static void ExampleTime_Unix() {
     // 1 billion seconds of Unix, three ways.
-    fmt.Println(Δtime.Unix(1000000000, 0).UTC());
-    // 1e9 seconds
-    fmt.Println(Δtime.Unix(0, 1000000000000000000).UTC());
-    // 1e18 nanoseconds
-    fmt.Println(Δtime.Unix(2000000000, -1000000000000000000).UTC());
-    // 2e9 seconds - 1e18 nanoseconds
+    fmt.Println(Δtime.Unix(1000000000, 0).UTC()); // 1e9 seconds
+    fmt.Println(Δtime.Unix(0, 1000000000000000000).UTC()); // 1e18 nanoseconds
+    fmt.Println(Δtime.Unix(2000000000, -1000000000000000000).UTC()); // 2e9 seconds - 1e18 nanoseconds
     var t = Δtime.Date(2001, Δtime.September, 9, 1, 46, 40, 0, Δtime.ΔUTC);
-    fmt.Println(t.Unix());
-    // seconds since 1970
-    fmt.Println(t.UnixNano());
+    fmt.Println(t.Unix()); // seconds since 1970
+    fmt.Println(t.UnixNano()); // nanoseconds since 1970
 }
 
-// nanoseconds since 1970
 // Output:
 // 2001-09-09 01:46:40 +0000 UTC
 // 2001-09-09 01:46:40 +0000 UTC
@@ -661,10 +655,8 @@ public static void ExampleTime_AddDate() {
 public static void ExampleTime_After() {
     var year2000 = Δtime.Date(2000, 1, 1, 0, 0, 0, 0, Δtime.ΔUTC);
     var year3000 = Δtime.Date(3000, 1, 1, 0, 0, 0, 0, Δtime.ΔUTC);
-    var isYear3000AfterYear2000 = year3000.After(year2000);
-    // True
-    var isYear2000AfterYear3000 = year2000.After(year3000);
-    // False
+    var isYear3000AfterYear2000 = year3000.After(year2000); // True
+    var isYear2000AfterYear3000 = year2000.After(year3000); // False
     fmt.Printf("year3000.After(year2000) = %v\n"u8, isYear3000AfterYear2000);
     fmt.Printf("year2000.After(year3000) = %v\n"u8, isYear2000AfterYear3000);
 }
@@ -675,10 +667,8 @@ public static void ExampleTime_After() {
 public static void ExampleTime_Before() {
     var year2000 = Δtime.Date(2000, 1, 1, 0, 0, 0, 0, Δtime.ΔUTC);
     var year3000 = Δtime.Date(3000, 1, 1, 0, 0, 0, 0, Δtime.ΔUTC);
-    var isYear2000BeforeYear3000 = year2000.Before(year3000);
-    // True
-    var isYear3000BeforeYear2000 = year3000.Before(year2000);
-    // False
+    var isYear2000BeforeYear3000 = year2000.Before(year3000); // True
+    var isYear3000BeforeYear2000 = year3000.Before(year2000); // False
     fmt.Printf("year2000.Before(year3000) = %v\n"u8, isYear2000BeforeYear3000);
     fmt.Printf("year3000.Before(year2000) = %v\n"u8, isYear3000BeforeYear2000);
 }

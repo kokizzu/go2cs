@@ -103,4 +103,41 @@ public class IdentifierCompositionTests
         Assert.AreEqual("Temporary", EscapeCsKeyword("Temporary"));
         Assert.AreEqual("@private", EscapeCsKeyword("@private"));
     }
+
+    /// <summary>
+    /// A composed AddSource hint name must be scrubbed by Roslyn's rule, which is the same on every
+    /// host — NOT by <c>Path.GetInvalidFileNameChars()</c>, which is not.
+    /// </summary>
+    /// <remarks>
+    /// Windows returns 41 invalid characters (<c>: &lt; &gt; " | ? *</c> among them); Unix returns two
+    /// (NUL and <c>/</c>). Sanitizing with the OS list therefore left <c>:</c> and <c>&lt;</c> intact on
+    /// Linux and macOS, where <c>AddSource</c> throws <see cref="System.ArgumentException"/>. Roslyn
+    /// reports a throwing generator as CS8785 — a WARNING — so the generator simply contributed nothing
+    /// and the build failed with a flood of errors in code that was never generated: 106 of them
+    /// building core/fmt's closure on Linux, zero on Windows, from identical sources.
+    ///
+    /// Both real hint names below are taken verbatim from that Linux failure.
+    /// </remarks>
+    [TestMethod]
+    public void HintNameSanitizationIsHostIndependent()
+    {
+        Assert.AreEqual(
+            "go.sync.atomic_package.Lock.global__go.sync.atomic_package.noCopy.g.cs",
+            GetValidFileName("go.sync.atomic_package.Lock.global::go.sync.atomic_package.noCopy.g.cs"));
+
+        Assert.AreEqual(
+            "go.sync.atomic_package.Pointer_T_.g.cs",
+            GetValidFileName("go.sync.atomic_package.Pointer<T>.g.cs"));
+
+        // Every character Roslyn rejects is scrubbed, on any host...
+        foreach (char c in ":<>\"|?*\\/{}+=!#$%^&'`;~")
+        {
+            Assert.AreEqual("a_b", GetValidFileName($"a{c}b"), $"U+{(int)c:X4}");
+        }
+
+        // ...and the ones it allows — including the Go emission markers, which are Unicode letters —
+        // survive untouched, so generated file names do not churn.
+        Assert.AreEqual("a.b,c-d_e f(g)h[i]", GetValidFileName("a.b,c-d_e f(g)h[i]"));
+        Assert.AreEqual($"{PointerPrefix}T{TempVarMarker}1", GetValidFileName($"{PointerPrefix}T{TempVarMarker}1"));
+    }
 }

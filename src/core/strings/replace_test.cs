@@ -426,8 +426,7 @@ public static void BenchmarkGenericNoMatch(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     @string str = Repeat("A"u8, 100) + Repeat("B"u8, 100);
-    var generic = NewReplacer("a"u8, "A", "b", "B", "12", "123");
-    // varying lengths forces generic
+    var generic = NewReplacer("a"u8, "A", "b", "B", "12", "123"); // varying lengths forces generic
     for (nint i = 0; i < b.N; i++) {
         generic.Replace(str);
     }
@@ -631,15 +630,15 @@ public static void BenchmarkMap(ж<testing.B> Ꮡb) {
     };
     var mapchangeʗ1 = mapchange;
     Ꮡb.Run(changeˢ, (ж<testing.B> bΔ3) => {
-        foreach (var (_, vᴛ3) in mapdata) {
+        foreach (var (_, vᴛ2) in mapdata) {
             ref var md = ref heap(new mapdataᴛ1(), out var Ꮡmd);
-            md = vᴛ3;
+            md = vᴛ2;
 
             var mapchangeʗ2 = mapchangeʗ1;
-            var mdʗ5 = md;
+            var mdʗ2 = md;
             bΔ3.Run(md.name, (ж<testing.B> bΔ4) => {
                 for (nint i = 0; i < (~bΔ4).N; i++) {
-                    Map(mapchangeʗ2, mdʗ5.data);
+                    Map(mapchangeʗ2, mdʗ2.data);
                 }
             });
         }

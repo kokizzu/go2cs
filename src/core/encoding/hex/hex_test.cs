@@ -144,8 +144,7 @@ public static void TestEncoderDecoder(ж<testing.T> Ꮡt) {
             @string output = strings.Repeat(test.enc, multiplier);
             ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
             var enc = NewEncoder(new hex_test_package.bytes_BufferжWriter(Ꮡbuf));
-            var r = new TestEncoderDecoder_r(new hex_test_package.bytes_ReaderжReader(bytes.NewReader(input)));
-            // io.Reader only; not io.WriterTo
+            var r = new TestEncoderDecoder_r(new hex_test_package.bytes_ReaderжReader(bytes.NewReader(input))); // io.Reader only; not io.WriterTo
             {
                 var (n, err) = io.CopyBuffer(enc, r, new slice<byte>(7)); if (n != (int64)len(input) || err != default!) {
                     Ꮡt.Errorf("encoder.Write(%q*%d) = (%d, %v), want (%d, nil)"u8, test.dec, multiplier, n, err, len(input));
@@ -160,8 +159,7 @@ public static void TestEncoderDecoder(ж<testing.T> Ꮡt) {
             }
             var dec = NewDecoder(new hex_test_package.bytes_BufferжReader(Ꮡbuf));
             ref var decBuf = ref heap(new bytes.Buffer(), out var ᏑdecBuf);
-            var w = new TestEncoderDecoder_w(new hex_test_package.bytes_BufferжWriter(ᏑdecBuf));
-            // io.Writer only; not io.ReaderFrom
+            var w = new TestEncoderDecoder_w(new hex_test_package.bytes_BufferжWriter(ᏑdecBuf)); // io.Writer only; not io.ReaderFrom
             {
                 var (_, err) = io.CopyBuffer(w, dec, new slice<byte>(7)); if (err != default! || decBuf.Len() != len(input)) {
                     Ꮡt.Errorf("decoder.Read(%q*%d) = (%d, %v), want (%d, nil)"u8, test.enc, multiplier, decBuf.Len(), err, len(input));

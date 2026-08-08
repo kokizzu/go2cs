@@ -92,8 +92,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                     }
                     var big = uint64s[repeat % len(uint64s)];
                     if ((uint64)(nuint)big != big) {
-                        r.Uint64N(big);
-                        // what would happen on 64-bit machine, to keep stream in sync
+                        r.Uint64N(big); // what would happen on 64-bit machine, to keep stream in sync
                         if (update.Value) {
                             Ꮡt.Fatalf("must run -update on 64-bit machine"u8);
                         }

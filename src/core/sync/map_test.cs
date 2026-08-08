@@ -346,8 +346,7 @@ public static void TestConcurrentClear(ж<Δtesting.T> Ꮡt) {
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
     ref var wg = ref heap<Δsync.WaitGroup>(out var Ꮡwg);
     wg = new Δsync.WaitGroup(nil);
-    Ꮡwg.Add(30);
-    // 10 goroutines for writing, 10 goroutines for reading, 10 goroutines for waiting
+    Ꮡwg.Add(30); // 10 goroutines for writing, 10 goroutines for reading, 10 goroutines for waiting
     // Writing data to the map concurrently
     for (nint i = 0; i < 10; i++) {
         goǃ((nint k, nint v) => {

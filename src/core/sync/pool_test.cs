@@ -321,14 +321,14 @@ public static void TestNilPool(ж<Δtesting.T> Ꮡt) {
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }
     });
-    var catchʗ5 = @catch;
-    var pʗ3 = p;
+    var catchʗ3 = @catch;
+    var pʗ2 = p;
     Ꮡt.Run(putˢ, (ж<Δtesting.T> tΔ2) => {
         GoFrame ᒐ = default;
         try {
-            var catchʗ6 = catchʗ5;
-            defer(catchʗ6, ref ᒐ);
-            pʗ3.Put((@string)"a"u8);
+            var catchʗ4 = catchʗ3;
+            defer(catchʗ4, ref ᒐ);
+            pʗ2.Put((@string)"a"u8);
             tΔ2.Error(shouldHavePanickedˢ);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

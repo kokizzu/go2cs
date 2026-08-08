@@ -387,8 +387,7 @@ public static void TestPipeConcurrent(ж<testing.T> Ꮡt) {
         for (nint i = 0; i < count; i++) {
             var wʗ1 = w;
             goǃ(() => {
-                time.Sleep(time.Millisecond);
-                // Increase probability of race
+                time.Sleep(time.Millisecond); // Increase probability of race
                 {
                     var (n, err) = wʗ1.Write(slice<byte>(input)); if (n != len(input) || err != default!) {
                         tΔ1.Errorf("Write() = (%d, %v); want (%d, nil)"u8, n, err, len(input));
@@ -419,8 +418,7 @@ public static void TestPipeConcurrent(ж<testing.T> Ꮡt) {
             var cʗ1 = c;
             var rʗ1 = r;
             goǃ(() => {
-                time.Sleep(time.Millisecond);
-                // Increase probability of race
+                time.Sleep(time.Millisecond); // Increase probability of race
                 var buf = new slice<byte>(readSize);
                 {
                     var (n, err) = rʗ1.Read(buf); if (n != readSize || err != default!) {

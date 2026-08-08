@@ -618,15 +618,13 @@ public static void TestSwitchBacktrack(ж<testing.T> Ꮡt) {
     var re = MustCompile(@"a|b"u8);
     var @long = new slice<byte>(maxBacktrackVector + 1);
     // The following sequence of Match calls used to panic. See issue #10319.
-    re.Match(@long);
-    // triggers standard matcher
-    re.Match(@long[..1]);
+    re.Match(@long); // triggers standard matcher
+    re.Match(@long[..1]); // triggers backtracker
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string aaabbˢ = "aaabb"u8;
 
-// triggers backtracker
 public static void BenchmarkFind(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 

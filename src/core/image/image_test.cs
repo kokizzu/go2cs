@@ -198,8 +198,7 @@ public static void Test16BitsPerColorChannel(ж<testing.T> Ꮡt) {
     var testColorModel = new color.Model[]{color.RGBA64Model, color.NRGBA64Model, color.Alpha16Model, color.Gray16Model
     }.slice();
     foreach (var (_, cm) in testColorModel) {
-        var c = cm.Convert(new color.RGBA64(0x1234, 0x1234, 0x1234, 0x1234));
-        // Premultiplied alpha.
+        var c = cm.Convert(new color.RGBA64(0x1234, 0x1234, 0x1234, 0x1234)); // Premultiplied alpha.
         var (r, _, _, _) = c.RGBA();
         if (r != 0x1234) {
             Ꮡt.Errorf("%T: want red value 0x%04x got 0x%04x"u8, c, (nint)(0x1234), r);
@@ -209,8 +208,7 @@ public static void Test16BitsPerColorChannel(ж<testing.T> Ꮡt) {
     var testImage = new image[]{new image_internal_test_package.image_RGBA64жimage(NewRGBA64(Rect(0, 0, 10, 10))), new image_internal_test_package.image_NRGBA64жimage(NewNRGBA64(Rect(0, 0, 10, 10))), new image_internal_test_package.image_Alpha16жimage(NewAlpha16(Rect(0, 0, 10, 10))), new image_internal_test_package.image_Gray16жimage(NewGray16(Rect(0, 0, 10, 10)))
     }.slice();
     foreach (var (_, m) in testImage) {
-        m.Set(1, 2, new color.NRGBA64(0xffff, 0xffff, 0xffff, 0x1357));
-        // Non-premultiplied alpha.
+        m.Set(1, 2, new color.NRGBA64(0xffff, 0xffff, 0xffff, 0x1357)); // Non-premultiplied alpha.
         var (r, _, _, _) = m.At(1, 2).RGBA();
         if (r != 0x1357) {
             Ꮡt.Errorf("%T: want red value 0x%04x got 0x%04x"u8, m, (nint)(0x1357), r);

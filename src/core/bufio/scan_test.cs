@@ -218,8 +218,7 @@ public static void TestScanLongLines(ж<Δtesting.T> Ꮡt) {
         } else {
             j--;
         }
-        @string line = tmp.String();
-        // We use the string-valued token here, for variety.
+        @string line = tmp.String(); // We use the string-valued token here, for variety.
         if (s.Text() != line) {
             Ꮡt.Errorf("%d: bad line: %d %d\n%.100q\n%.100q\n"u8, lineNumΔ1, len(s.Bytes()), len(line), s.Text(), line);
         }

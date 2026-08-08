@@ -37,9 +37,8 @@ internal static uint32 mul(uint32 b, uint32 c) {
         if ((uint32)(j & k) != 0) {
             // s += i in GF(2); xor in binary
             s ^= (uint32)(i);
-            j ^= (uint32)(k);
+            j ^= (uint32)(k); // turn off bit to end loop early
         }
-        // turn off bit to end loop early
         // i *= x in GF(2) modulo the polynomial
         i <<= (int)(1);
         if ((uint32)(i & 0x100) != 0) {
@@ -346,30 +345,30 @@ public static void TestShortBlocks(ж<testing.T> Ꮡt) {
     mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
         cʗ1.Encrypt(bytesʗ1(1), bytesʗ1(1));
     });
+    var bytesʗ2 = bytes;
+    var cʗ2 = c;
+    mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
+        cʗ2.Decrypt(bytesʗ2(1), bytesʗ2(1));
+    });
     var bytesʗ3 = bytes;
     var cʗ3 = c;
     mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
-        cʗ3.Decrypt(bytesʗ3(1), bytesʗ3(1));
+        cʗ3.Encrypt(bytesʗ3(100), bytesʗ3(1));
+    });
+    var bytesʗ4 = bytes;
+    var cʗ4 = c;
+    mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
+        cʗ4.Decrypt(bytesʗ4(100), bytesʗ4(1));
     });
     var bytesʗ5 = bytes;
     var cʗ5 = c;
-    mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
-        cʗ5.Encrypt(bytesʗ5(100), bytesʗ5(1));
-    });
-    var bytesʗ7 = bytes;
-    var cʗ7 = c;
-    mustPanic(Ꮡt, cryptoAesInputNotFullˢ, () => {
-        cʗ7.Decrypt(bytesʗ7(100), bytesʗ7(1));
-    });
-    var bytesʗ9 = bytes;
-    var cʗ9 = c;
     mustPanic(Ꮡt, cryptoAesOutputNotFullˢ, () => {
-        cʗ9.Encrypt(bytesʗ9(1), bytesʗ9(100));
+        cʗ5.Encrypt(bytesʗ5(1), bytesʗ5(100));
     });
-    var bytesʗ11 = bytes;
-    var cʗ11 = c;
+    var bytesʗ6 = bytes;
+    var cʗ6 = c;
     mustPanic(Ꮡt, cryptoAesOutputNotFullˢ, () => {
-        cʗ11.Decrypt(bytesʗ11(1), bytesʗ11(100));
+        cʗ6.Decrypt(bytesʗ6(1), bytesʗ6(100));
     });
 }
 

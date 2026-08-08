@@ -100,8 +100,8 @@ public static void TestSlice(ж<testing.T> Ꮡt) {
     data = stringsData.Clone();
     var dataʗ1 = data;
     Slice(data[..], (nint i, nint j) => dataʗ1[i] < dataʗ1[j]);
-    var dataʗ3 = data;
-    if (!SliceIsSorted(data[..], (nint i, nint j) => dataʗ3[i] < dataʗ3[j])) {
+    var dataʗ2 = data;
+    if (!SliceIsSorted(data[..], (nint i, nint j) => dataʗ2[i] < dataʗ2[j])) {
         Ꮡt.Errorf("sorted %v"u8, stringsData);
         Ꮡt.Errorf("   got %v"u8, data);
     }
@@ -640,11 +640,9 @@ internal static ж<adversaryTestingData> newAdversaryTestingData(ж<testing.T> �
 
 public static void TestAdversary(ж<testing.T> Ꮡt) {
     const nint size = 10000;   // large enough to distinguish between O(n^2) and O(n*log(n))
-    nint maxcmp = size * lg(size) * 4;
-    // the factor 4 was found by trial and error
+    nint maxcmp = size * lg(size) * 4; // the factor 4 was found by trial and error
     var d = newAdversaryTestingData(Ꮡt, size, maxcmp);
-    Sort(new sort_test_package.adversaryTestingDataжInterface(d));
-    // This should degenerate to heapsort.
+    Sort(new sort_test_package.adversaryTestingDataжInterface(d)); // This should degenerate to heapsort.
     // Check data is fully populated and sorted.
     foreach (var (i, v) in (~d).data) {
         if (v != i) {

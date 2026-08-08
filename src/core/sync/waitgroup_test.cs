@@ -42,11 +42,10 @@ internal static void testWaitGroup(ж<Δtesting.T> Ꮡt, ж<Δsync.WaitGroup> �
         Ꮡwg2.Done();
     }
     for (nint i = 0; i != n; i++) {
-        ᐸꟷ(exited);
+        ᐸꟷ(exited); // Will block if barrier fails to unlock someone.
     }
 }
 
-// Will block if barrier fails to unlock someone.
 public static void TestWaitGroup(ж<Δtesting.T> Ꮡt) {
     var wg1 = Ꮡ(new WaitGroup(nil));
     var wg2 = Ꮡ(new WaitGroup(nil));

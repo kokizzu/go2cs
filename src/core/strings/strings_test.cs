@@ -765,8 +765,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
         return rΔ4;
     };
     @string s = ((@string)(rune)utf8.RuneSelf) + ((@string)(rune)utf8.MaxRune);
-    @string r = ((@string)(rune)utf8.MaxRune) + ((@string)(rune)utf8.RuneSelf);
-    // reverse of s
+    @string r = ((@string)(rune)utf8.MaxRune) + ((@string)(rune)utf8.RuneSelf); // reverse of s
     m = Map(encode, s);
     if (m != r) {
         Ꮡt.Errorf("encoding not handled correctly: expected %q got %q"u8, r, m);
@@ -2272,8 +2271,7 @@ public static void BenchmarkRepeatSpaces(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
-    @string x = Repeat("#"u8, 2048);
-    // Never matches set
+    @string x = Repeat("#"u8, 2048); // Never matches set
     @string cs = "0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz"u8;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2292,8 +2290,7 @@ public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
 internal static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
 
 public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
-    @string x = Repeat("#"u8, 2048);
-    // Never matches set
+    @string x = Repeat("#"u8, 2048); // Never matches set
     @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2309,8 +2306,7 @@ public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexAnyASCII(ж<testing.B> Ꮡb) {
-    @string x = Repeat("#"u8, 2048);
-    // Never matches set
+    @string x = Repeat("#"u8, 2048); // Never matches set
     @string cs = "0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz"u8;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2326,8 +2322,7 @@ public static void BenchmarkLastIndexAnyASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexAnyUTF8(ж<testing.B> Ꮡb) {
-    @string x = Repeat("#"u8, 2048);
-    // Never matches set
+    @string x = Repeat("#"u8, 2048); // Never matches set
     @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2349,8 +2344,7 @@ public static void BenchmarkTrimASCII(ж<testing.B> Ꮡb) {
         for (nint jᴛ1 = 1; jᴛ1 <= 16; jᴛ1 <<= (int)(1)) {
             var j = jᴛ1;
             Ꮡb.Run(fmt.Sprintf("%d:%d"u8, k, j), (ж<testing.B> bΔ1) => {
-                @string x = Repeat(cs[..(int)(j)], k);
-                // Always matches set
+                @string x = Repeat(cs[..(int)(j)], k); // Always matches set
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     Trim(x[..(int)(k)], cs[..(int)(j)]);
                 }

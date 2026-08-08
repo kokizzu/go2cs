@@ -948,13 +948,13 @@ public static void TestAdd64OverflowPanic(ж<testing.T> Ꮡt) {
         shouldPanic(() => {
             testʗ1(_M64, 1);
         });
+        var testʗ2 = test;
+        shouldPanic(() => {
+            testʗ2(1, _M64);
+        });
         var testʗ3 = test;
         shouldPanic(() => {
-            testʗ3(1, _M64);
-        });
-        var testʗ5 = test;
-        shouldPanic(() => {
-            testʗ5(_M64, _M64);
+            testʗ3(_M64, _M64);
         });
         // no overflow
         test(_M64, 0);
@@ -1024,13 +1024,13 @@ public static void TestSub64OverflowPanic(ж<testing.T> Ꮡt) {
         shouldPanic(() => {
             testʗ1(0, 1);
         });
+        var testʗ2 = test;
+        shouldPanic(() => {
+            testʗ2(1, _M64);
+        });
         var testʗ3 = test;
         shouldPanic(() => {
-            testʗ3(1, _M64);
-        });
-        var testʗ5 = test;
-        shouldPanic(() => {
-            testʗ5(_M64 - 1, _M64);
+            testʗ3(_M64 - 1, _M64);
         });
         // no overflow
         test(_M64, 0);
@@ -1332,8 +1332,7 @@ public static void TestDiv64PanicZero(ж<testing.T> Ꮡt) {
 public static void TestRem32(ж<testing.T> Ꮡt) {
     // Sanity check: for non-oveflowing dividends, the result is the
     // same as the rem returned by Div32
-    var (hi, lo, y) = ((uint32)510510, (uint32)9699690, (uint32)(510510 + 1));
-    // ensure hi < y
+    var (hi, lo, y) = ((uint32)510510, (uint32)9699690, (uint32)(510510 + 1)); // ensure hi < y
     for (nint i = 0; i < 1000; i++) {
         var r = Rem32(hi, lo, y);
         var (_, r2) = Div32(hi, lo, y);
@@ -1360,8 +1359,7 @@ public static void TestRem32Overflow(ж<testing.T> Ꮡt) {
 public static void TestRem64(ж<testing.T> Ꮡt) {
     // Sanity check: for non-oveflowing dividends, the result is the
     // same as the rem returned by Div64
-    var (hi, lo, y) = ((uint64)510510, (uint64)9699690, (uint64)(510510 + 1));
-    // ensure hi < y
+    var (hi, lo, y) = ((uint64)510510, (uint64)9699690, (uint64)(510510 + 1)); // ensure hi < y
     for (nint i = 0; i < 1000; i++) {
         var r = Rem64(hi, lo, y);
         var (_, r2) = Div64(hi, lo, y);
@@ -1581,8 +1579,7 @@ internal static array<entry> tab = new(256);
     tab[0] = new entry(8, 8, 0);
     for (nint i = 1; i < len(tab); i++) {
         // nlz
-        nint x = i;
-        // x != 0
+        nint x = i; // x != 0
         nint n = 0;
         while ((nint)(x & 0x80) == 0) {
             n++;
@@ -1590,8 +1587,7 @@ internal static array<entry> tab = new(256);
         }
         tab[i].nlz = n;
         // ntz
-        x = i;
-        // x != 0
+        x = i; // x != 0
         n = 0;
         while ((nint)(x & 1) == 0) {
             n++;
@@ -1599,8 +1595,7 @@ internal static array<entry> tab = new(256);
         }
         tab[i].ntz = n;
         // pop
-        x = i;
-        // x != 0
+        x = i; // x != 0
         n = 0;
         while (x != 0) {
             n += (nint)((nint)(x & 1));

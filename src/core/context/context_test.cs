@@ -197,8 +197,7 @@ public static void XTestChildFinishesFirst(testingT t) {
                 break;
             }}
             var cc = child._<ж<global::go.context_package.cancelCtx>>();
-            var (pc, pcok) = parent._<ж<global::go.context_package.cancelCtx>>(ᐧ);
-            // pcok == false when parent == Background()
+            var (pc, pcok) = parent._<ж<global::go.context_package.cancelCtx>>(ᐧ); // pcok == false when parent == Background()
             {
                 var (p, ok) = parentCancelCtx((~cc).Context); if (ok != pcok || (ok && pc != p)) {
                     t.Errorf("bad linkage: parentCancelCtx(cc.Context) = %v, %v want %v, %v"u8, p.OrTypedNil(), ok, pc.OrTypedNil(), pcok);
@@ -346,8 +345,7 @@ public static void XTestCustomContextGoroutines(testingT t) {
         var (_, cancel3b) = WithCancel(new context_internal_test_package.myDoneCtxжContext(Ꮡ(new myDoneCtx(new context_internal_test_package.myCtxжContext(ctx2)))));
         var cancel3bʗ1 = cancel3b;
         defer(() => cancel3bʗ1(), ref ᒐ);
-        checkCreatedGoroutine();
-        // ctx1 is not providing Done, must not be used
+        checkCreatedGoroutine(); // ctx1 is not providing Done, must not be used
         var (ctx4, cancel4) = WithTimeout(ctx3, veryLongDuration);
         var cancel4ʗ1 = cancel4;
         defer(() => cancel4ʗ1(), ref ᒐ);

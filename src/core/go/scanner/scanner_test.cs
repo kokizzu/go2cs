@@ -338,11 +338,9 @@ internal static readonly @string testSemisˢ = "TestSemis"u8;
 internal static void checkSemi(ж<testing.T> Ꮡt, @string input, @string want, global::go.go.scanner_package.Mode mode) {
     if ((global::go.go.scanner_package.Mode)(mode & ScanComments) == 0) {
         want = strings.ReplaceAll(want, commentˢ, ""u8);
-        want = strings.ReplaceAll(want, commentˢ2, ""u8);
-        // if at end
-        want = strings.ReplaceAll(want, commentˢ3, ""u8);
+        want = strings.ReplaceAll(want, commentˢ2, ""u8); // if at end
+        want = strings.ReplaceAll(want, commentˢ3, ""u8); // if sole token
     }
-    // if sole token
     var @file = fset.AddFile(testSemisˢ, fset.Base(), len(input));
     global::go.go.scanner_package.Scanner scan = default!;
     scan.Init(@file, slice<byte>(input), default!, mode);
@@ -360,8 +358,7 @@ internal static void checkSemi(ж<testing.T> Ꮡt, @string input, @string want, 
                 Ꮡt.Errorf("scanning <<%s>>, got SEMICOLON at offset %d, want newline or EOF"u8, input, off);
             }
         }
-        lit = tok.String();
-        // "\n" => ";"
+        lit = tok.String(); // "\n" => ";"
         tokens = append(tokens, lit);
     }
     {
@@ -655,12 +652,9 @@ public static void TestInit(ж<testing.T> Ꮡt) {
     if (f1.Size() != len(src1)) {
         Ꮡt.Errorf("bad file size: got %d, expected %d"u8, f1.Size(), len(src1));
     }
-    s.Scan();
-    // if
-    s.Scan();
-    // true
-    var (_, tok, _) = s.Scan();
-    // {
+    s.Scan(); // if
+    s.Scan(); // true
+    var (_, tok, _) = s.Scan(); // {
     if (tok != token.LBRACE) {
         Ꮡt.Errorf("bad token: got %s, expected %s"u8, tok, token.LBRACE);
     }
@@ -671,8 +665,7 @@ public static void TestInit(ж<testing.T> Ꮡt) {
     if (f2.Size() != len(src2)) {
         Ꮡt.Errorf("bad file size: got %d, expected %d"u8, f2.Size(), len(src2));
     }
-    (_, tok, _) = s.Scan();
-    // go
+    (_, tok, _) = s.Scan(); // go
     if (tok != token.GO) {
         Ꮡt.Errorf("bad token: got %s, expected %s"u8, tok, token.GO);
     }

@@ -439,9 +439,8 @@ public static void TestLex(ж<testing.T> Ꮡt) {
         var items = collect(Ꮡtest, ""u8, ""u8);
         if (!equal(items, test.items, false)) {
             Ꮡt.Errorf("%s: got\n\t%+v\nexpected\n\t%v"u8, test.name, items, test.items);
-            return;
+            return; // TODO
         }
-        // TODO
         Ꮡt.Log(test.name, (@string)"OK"u8);
     }
 }

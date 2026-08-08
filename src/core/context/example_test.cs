@@ -32,11 +32,11 @@ public static void ExampleWithCancel() {
             var dstʗ1 = dst;
             goǃ(() => {
                 while (ᐧ) {
-                    var selᴛ5 = ctxΔ1.Done();
-                    var selᴛ6 = dstʗ1.ᐸꟷ(n, ꓸꓸꓸ);
-                    switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), selᴛ6)) {
-                    case 0 when selᴛ5.ꟷᐳ(out _): {
-                        return;
+                    var selᴛ3 = ctxΔ1.Done();
+                    var selᴛ4 = dstʗ1.ᐸꟷ(n, ꓸꓸꓸ);
+                    switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), selᴛ4)) {
+                    case 0 when selᴛ3.ꟷᐳ(out _): {
+                        return; // returning not to leak the goroutine
                     }
                     case 1: {
                         n++;
@@ -44,13 +44,11 @@ public static void ExampleWithCancel() {
                     }}
                 }
             });
-            // returning not to leak the goroutine
             return dst;
         }
         var (ctx, cancel) = context.WithCancel(context.Background());
         var cancelʗ1 = cancel;
-        defer(() => cancelʗ1(), ref ᒐ);
-        // cancel when we are finished consuming integers
+        defer(() => cancelʗ1(), ref ᒐ); // cancel when we are finished consuming integers
         foreach (var n in gen(ctx)) {
             fmt.Println(n);
             if (n == 5) {
@@ -84,14 +82,14 @@ public static void ExampleWithDeadline() {
         // context and its parent alive longer than necessary.
         var cancelʗ1 = cancel;
         defer(() => cancelʗ1(), ref ᒐ);
-        var selᴛ7 = neverReady;
-        var selᴛ8 = ctx.Done();
-        switch (select(ᐸꟷ(selᴛ7, ꓸꓸꓸ), ᐸꟷ(selᴛ8, ꓸꓸꓸ))) {
-        case 0 when selᴛ7.ꟷᐳ(out _): {
+        var selᴛ5 = neverReady;
+        var selᴛ6 = ctx.Done();
+        switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+        case 0 when selᴛ5.ꟷᐳ(out _): {
             fmt.Println(readyˢ);
             break;
         }
-        case 1 when selᴛ8.ꟷᐳ(out _): {
+        case 1 when selᴛ6.ꟷᐳ(out _): {
             fmt.Println(ctx.Err());
             break;
         }}
@@ -113,15 +111,15 @@ public static void ExampleWithTimeout() {
         var (ctx, cancel) = context.WithTimeout(context.Background(), shortDuration);
         var cancelʗ1 = cancel;
         defer(() => cancelʗ1(), ref ᒐ);
-        var selᴛ9 = neverReady;
-        var selᴛ10 = ctx.Done();
-        switch (select(ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
-        case 0 when selᴛ9.ꟷᐳ(out _): {
+        var selᴛ7 = neverReady;
+        var selᴛ8 = ctx.Done();
+        switch (select(ᐸꟷ(selᴛ7, ꓸꓸꓸ), ᐸꟷ(selᴛ8, ꓸꓸꓸ))) {
+        case 0 when selᴛ7.ꟷᐳ(out _): {
             fmt.Println(readyˢ);
             break;
         }
-        case 1 when selᴛ10.ꟷᐳ(out _): {
-            fmt.Println(ctx.Err());
+        case 1 when selᴛ8.ꟷᐳ(out _): {
+            fmt.Println(ctx.Err()); // prints "context deadline exceeded"
             break;
         }}
     }
@@ -137,7 +135,6 @@ internal static readonly @string colorˢ = "color"u8;
 
 [GoType("@string")] partial struct ExampleWithValue_favContextKey;
 
-// prints "context deadline exceeded"
 // Output:
 // context deadline exceeded
 
@@ -310,11 +307,11 @@ public static void ExampleAfterFunc_merge() {
             var stop = context.AfterFunc(cancelCtx, () => {
                 cancelʗ1(context.Cause(cancelCtx));
             });
-            var cancelʗ3 = cancel;
+            var cancelʗ2 = cancel;
             var stopʗ1 = stop;
             return (ctx, (Action)(() => {
                 stopʗ1();
-                cancelʗ3(context.Canceled);
+                cancelʗ2(context.Canceled);
             }));
         }
         var (ctx1, cancel1) = context.WithCancelCause(context.Background());

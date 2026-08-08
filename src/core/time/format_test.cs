@@ -810,10 +810,8 @@ public static void TestMissingZone(ж<Δtesting.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(errorParsingDateˢ, err);
     }
-    @string expect = thuFeb216100305002006ˢ;
-    // -0500 not EST
-    @string str = time.Format(UnixDate);
-    // uses MST as its time zone
+    @string expect = thuFeb216100305002006ˢ; // -0500 not EST
+    @string str = time.Format(UnixDate); // uses MST as its time zone
     if (str != expect) {
         Ꮡt.Errorf("got %s; expect %s"u8, str, expect);
     }

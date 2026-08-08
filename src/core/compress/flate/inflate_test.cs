@@ -117,10 +117,10 @@ public static void TestReaderReusesReaderBuffer(ж<testing.T> Ꮡt) {
             tΔ1.Fatalf("bufio.Reader was not reused"u8);
         }
     });
-    var encodedNotByteReaderʗ3 = encodedNotByteReader;
+    var encodedNotByteReaderʗ2 = encodedNotByteReader;
     var encodedReaderʗ1 = encodedReader;
     Ꮡt.Run(bufferIsNotReusedWhenGotByteReaderˢ, (ж<testing.T> tΔ2) => {
-        var f = NewReader(encodedNotByteReaderʗ3)._<ж<global::go.compress.flate_package.decompressor>>();
+        var f = NewReader(encodedNotByteReaderʗ2)._<ж<global::go.compress.flate_package.decompressor>>();
         {
             var (_, ok) = (~f).r._<ж<bufio.Reader>>(ᐧ); if (!ok) {
                 tΔ2.Fatalf("bufio.Reader should be created"u8);
@@ -131,15 +131,15 @@ public static void TestReaderReusesReaderBuffer(ж<testing.T> Ꮡt) {
             tΔ2.Fatalf("provided io.ByteReader should be used directly"u8);
         }
     });
-    var encodedNotByteReaderʗ5 = encodedNotByteReader;
-    var encodedReaderʗ3 = encodedReader;
+    var encodedNotByteReaderʗ3 = encodedNotByteReader;
+    var encodedReaderʗ2 = encodedReader;
     Ꮡt.Run(bufferIsCreatedAfterByteReaderˢ, (ж<testing.T> tΔ3) => {
-        foreach (var (i, r) in new io.Reader[]{new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ3), new flate_test_package.bufio_ReaderжReader(bufio.NewReader(new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ3)))}.slice()) {
+        foreach (var (i, r) in new io.Reader[]{new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ2), new flate_test_package.bufio_ReaderжReader(bufio.NewReader(new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ2)))}.slice()) {
             var f = NewReader(r)._<ж<global::go.compress.flate_package.decompressor>>();
             if (!AreEqual((~f).r, r)) {
                 tΔ3.Fatalf("provided io.ByteReader should be used directly, i=%d"u8, i);
             }
-            f.Reset(encodedNotByteReaderʗ5, default!);
+            f.Reset(encodedNotByteReaderʗ3, default!);
             {
                 var (_, ok) = (~f).r._<ж<bufio.Reader>>(ᐧ); if (!ok) {
                     tΔ3.Fatalf("bufio.Reader should be created, i=%d"u8, i);

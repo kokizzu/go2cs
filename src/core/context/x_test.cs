@@ -21,25 +21,21 @@ partial class context_test_package {
 
 // Each XTestFoo in context_test.go must be called from a TestFoo here to run.
 public static void TestParentFinishesChild(ж<testing.T> Ꮡt) {
-    context_internal_test_package.XTestParentFinishesChild(new context_test_package.testing_TжtestingT(Ꮡt));
+    context_internal_test_package.XTestParentFinishesChild(new context_test_package.testing_TжtestingT(Ꮡt)); // uses unexported context types
 }
 
-// uses unexported context types
 public static void TestChildFinishesFirst(ж<testing.T> Ꮡt) {
-    context_internal_test_package.XTestChildFinishesFirst(new context_test_package.testing_TжtestingT(Ꮡt));
+    context_internal_test_package.XTestChildFinishesFirst(new context_test_package.testing_TжtestingT(Ꮡt)); // uses unexported context types
 }
 
-// uses unexported context types
 public static void TestCancelRemoves(ж<testing.T> Ꮡt) {
-    context_internal_test_package.XTestCancelRemoves(new context_test_package.testing_TжtestingT(Ꮡt));
+    context_internal_test_package.XTestCancelRemoves(new context_test_package.testing_TжtestingT(Ꮡt)); // uses unexported context types
 }
 
-// uses unexported context types
 public static void TestCustomContextGoroutines(ж<testing.T> Ꮡt) {
-    context_internal_test_package.XTestCustomContextGoroutines(new context_test_package.testing_TжtestingT(Ꮡt));
+    context_internal_test_package.XTestCustomContextGoroutines(new context_test_package.testing_TжtestingT(Ꮡt)); // reads the context.goroutines counter
 }
 
-// reads the context.goroutines counter
 // The following are regular tests in package context_test.
 
 // otherContext is a Context that's not one of the types defined in context.go.
@@ -73,9 +69,9 @@ public static void TestBackground(ж<testing.T> Ꮡt) {
     if (c == default!) {
         Ꮡt.Fatalf("Background returned nil"u8);
     }
-    var selᴛ11 = c.Done();
-    switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
-    case 0 when selᴛ11.ꟷᐳ(out var x): {
+    var selᴛ9 = c.Done();
+    switch (trySelect(ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+    case 0 when selᴛ9.ꟷᐳ(out var x): {
         Ꮡt.Errorf("<-c.Done() == %v want nothing (it should block)"u8, x);
         break;
     }
@@ -98,9 +94,9 @@ public static void TestTODO(ж<testing.T> Ꮡt) {
     if (c == default!) {
         Ꮡt.Fatalf("TODO returned nil"u8);
     }
-    var selᴛ12 = c.Done();
-    switch (trySelect(ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
-    case 0 when selᴛ12.ꟷᐳ(out var x): {
+    var selᴛ10 = c.Done();
+    switch (trySelect(ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
+    case 0 when selᴛ10.ꟷᐳ(out var x): {
         Ꮡt.Errorf("<-c.Done() == %v want nothing (it should block)"u8, x);
         break;
     }
@@ -142,9 +138,9 @@ public static void TestWithCancel(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("c[%d].Err() == %v want nil"u8, i, e);
             }
         }
-        var selᴛ13 = c.Done();
-        switch (trySelect(ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
-        case 0 when selᴛ13.ꟷᐳ(out var x): {
+        var selᴛ11 = c.Done();
+        switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
+        case 0 when selᴛ11.ꟷᐳ(out var x): {
             Ꮡt.Errorf("<-c.Done() == %v want nothing (it should block)"u8, x);
             break;
         }
@@ -152,12 +148,11 @@ public static void TestWithCancel(ж<testing.T> Ꮡt) {
             break;
         }}
     }
-    cancel();
-    // Should propagate synchronously.
+    cancel(); // Should propagate synchronously.
     foreach (var (i, c) in contexts) {
-        var selᴛ14 = c.Done();
-        switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
-        case 0 when selᴛ14.ꟷᐳ(out _): {
+        var selᴛ12 = c.Done();
+        switch (trySelect(ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
+        case 0 when selᴛ12.ꟷᐳ(out _): {
             break;
         }
         default: {
@@ -180,14 +175,14 @@ internal static void testDeadline(context.Context c, @string name, ж<testing.T>
         var timer = time.NewTimer(d);
         var timerʗ1 = timer;
         defer(() => timerʗ1.Stop(), ref ᒐ);
-        var selᴛ15 = (~timer).C;
-        var selᴛ16 = c.Done();
-        switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
-        case 0 when selᴛ15.ꟷᐳ(out _): {
+        var selᴛ13 = (~timer).C;
+        var selᴛ14 = c.Done();
+        switch (select(ᐸꟷ(selᴛ13, ꓸꓸꓸ), ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+        case 0 when selᴛ13.ꟷᐳ(out _): {
             Ꮡt.Fatalf("%s: context not timed out after %v"u8, name, d);
             break;
         }
-        case 1 when selᴛ16.ꟷᐳ(out _): {
+        case 1 when selᴛ14.ꟷᐳ(out _): {
             break;
         }}
         {
@@ -261,11 +256,10 @@ public static void TestCanceledTimeout(ж<testing.T> Ꮡt) {
     var (c, _) = WithTimeout(Background(), time.ΔSecond);
     var o = new otherContext(c);
     (c, var cancel) = WithTimeout(o, veryLongDuration);
-    cancel();
-    // Should propagate synchronously.
-    var selᴛ17 = c.Done();
-    switch (trySelect(ᐸꟷ(selᴛ17, ꓸꓸꓸ))) {
-    case 0 when selᴛ17.ꟷᐳ(out _): {
+    cancel(); // Should propagate synchronously.
+    var selᴛ15 = c.Done();
+    switch (trySelect(ᐸꟷ(selᴛ15, ꓸꓸꓸ))) {
+    case 0 when selᴛ15.ꟷᐳ(out _): {
         break;
     }
     default: {
@@ -479,13 +473,13 @@ public static void TestSimultaneousCancels(ж<testing.T> Ꮡt) {
         defer(() => timerʗ1.Stop(), ref ᒐ);
         // Wait on all the contexts in a random order.
         foreach (var (ctx, _) in m) {
-            var selᴛ18 = ctx.Done();
-            var selᴛ19 = stuck;
-            switch (select(ᐸꟷ(selᴛ18, ꓸꓸꓸ), ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
-            case 0 when selᴛ18.ꟷᐳ(out _): {
+            var selᴛ16 = ctx.Done();
+            var selᴛ17 = stuck;
+            switch (select(ᐸꟷ(selᴛ16, ꓸꓸꓸ), ᐸꟷ(selᴛ17, ꓸꓸꓸ))) {
+            case 0 when selᴛ16.ꟷᐳ(out _): {
                 break;
             }
-            case 1 when selᴛ19.ꟷᐳ(out _): {
+            case 1 when selᴛ17.ꟷᐳ(out _): {
                 var buf = new slice<byte>((10 << (int)(10)));
                 nint n = Δruntime.Stack(buf, true);
                 Ꮡt.Fatalf("timed out after %v waiting for <-ctx.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
@@ -499,13 +493,13 @@ public static void TestSimultaneousCancels(ж<testing.T> Ꮡt) {
             Ꮡwg.Wait();
             close(doneʗ1);
         });
-        var selᴛ20 = done;
-        var selᴛ21 = stuck;
-        switch (select(ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
-        case 0 when selᴛ20.ꟷᐳ(out _): {
+        var selᴛ18 = done;
+        var selᴛ19 = stuck;
+        switch (select(ᐸꟷ(selᴛ18, ꓸꓸꓸ), ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
+        case 0 when selᴛ18.ꟷᐳ(out _): {
             break;
         }
-        case 1 when selᴛ21.ꟷᐳ(out _): {
+        case 1 when selᴛ19.ꟷᐳ(out _): {
             var buf = new slice<byte>((10 << (int)(10)));
             nint n = Δruntime.Stack(buf, true);
             Ꮡt.Fatalf("timed out after %v waiting for cancel functions; stacks:\n%s"u8, d, buf[..(int)(n)]);
@@ -532,13 +526,13 @@ public static void TestInterlockedCancels(ж<testing.T> Ꮡt) {
         var timer = time.NewTimer(d);
         var timerʗ1 = timer;
         defer(() => timerʗ1.Stop(), ref ᒐ);
-        var selᴛ22 = child.Done();
-        var selᴛ23 = (~timer).C;
-        switch (select(ᐸꟷ(selᴛ22, ꓸꓸꓸ), ᐸꟷ(selᴛ23, ꓸꓸꓸ))) {
-        case 0 when selᴛ22.ꟷᐳ(out _): {
+        var selᴛ20 = child.Done();
+        var selᴛ21 = (~timer).C;
+        switch (select(ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
+        case 0 when selᴛ20.ꟷᐳ(out _): {
             break;
         }
-        case 1 when selᴛ23.ꟷᐳ(out _): {
+        case 1 when selᴛ21.ꟷᐳ(out _): {
             var buf = new slice<byte>((10 << (int)(10)));
             nint n = Δruntime.Stack(buf, true);
             Ꮡt.Fatalf("timed out after %v waiting for child.Done(); stacks:\n%s"u8, d, buf[..(int)(n)]);
@@ -620,9 +614,9 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
             }
         }
         if (!testTimeout) {
-            var selᴛ24 = ctx.Done();
-            switch (trySelect(ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
-            case 0 when selᴛ24.ꟷᐳ(out _): {
+            var selᴛ22 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
+            case 0 when selᴛ22.ꟷᐳ(out _): {
                 errorf("ctx should not be canceled yet"u8);
                 break;
             }
@@ -643,13 +637,13 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
             var timer = time.NewTimer(d);
             var timerʗ1 = timer;
             defer(() => timerʗ1.Stop(), ref ᒐ);
-            var selᴛ25 = ctx.Done();
-            var selᴛ26 = (~timer).C;
-            switch (select(ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
-            case 0 when selᴛ25.ꟷᐳ(out _): {
+            var selᴛ23 = ctx.Done();
+            var selᴛ24 = (~timer).C;
+            switch (select(ᐸꟷ(selᴛ23, ꓸꓸꓸ), ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
+            case 0 when selᴛ23.ꟷᐳ(out _): {
                 break;
             }
-            case 1 when selᴛ26.ꟷᐳ(out _): {
+            case 1 when selᴛ24.ꟷᐳ(out _): {
                 errorf("ctx should have timed out after %v"u8, d);
                 break;
             }}
@@ -657,9 +651,9 @@ internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout
         } else {
             var cancel = cancels[r.Intn(len(cancels))];
             cancel();
-            var selᴛ27 = ctx.Done();
-            switch (trySelect(ᐸꟷ(selᴛ27, ꓸꓸꓸ))) {
-            case 0 when selᴛ27.ꟷᐳ(out _): {
+            var selᴛ25 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ25, ꓸꓸꓸ))) {
+            case 0 when selᴛ25.ꟷᐳ(out _): {
                 break;
             }
             default: {
@@ -678,9 +672,9 @@ public static void TestWithCancelCanceledParent(ж<testing.T> Ꮡt) {
     var cause = fmt.Errorf("Because!"u8);
     pcancel(cause);
     var (c, _) = WithCancel(parent);
-    var selᴛ28 = c.Done();
-    switch (trySelect(ᐸꟷ(selᴛ28, ꓸꓸꓸ))) {
-    case 0 when selᴛ28.ꟷᐳ(out _): {
+    var selᴛ26 = c.Done();
+    switch (trySelect(ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
+    case 0 when selᴛ26.ꟷᐳ(out _): {
         break;
     }
     default: {
@@ -1340,24 +1334,24 @@ public static void TestAfterFuncCalledAfterCancel(ж<testing.T> Ꮡt) {
     var stop = AfterFunc(ctx, () => {
         close(donecʗ1);
     });
-    var selᴛ29 = donec;
-    var selᴛ30 = time.After(shortDuration);
-    switch (select(ᐸꟷ(selᴛ29, ꓸꓸꓸ), ᐸꟷ(selᴛ30, ꓸꓸꓸ))) {
-    case 0 when selᴛ29.ꟷᐳ(out _): {
+    var selᴛ27 = donec;
+    var selᴛ28 = time.After(shortDuration);
+    switch (select(ᐸꟷ(selᴛ27, ꓸꓸꓸ), ᐸꟷ(selᴛ28, ꓸꓸꓸ))) {
+    case 0 when selᴛ27.ꟷᐳ(out _): {
         Ꮡt.Fatalf("AfterFunc called before context is done"u8);
         break;
     }
-    case 1 when selᴛ30.ꟷᐳ(out _): {
+    case 1 when selᴛ28.ꟷᐳ(out _): {
         break;
     }}
     cancel();
-    var selᴛ31 = donec;
-    var selᴛ32 = time.After(veryLongDuration);
-    switch (select(ᐸꟷ(selᴛ31, ꓸꓸꓸ), ᐸꟷ(selᴛ32, ꓸꓸꓸ))) {
-    case 0 when selᴛ31.ꟷᐳ(out _): {
+    var selᴛ29 = donec;
+    var selᴛ30 = time.After(veryLongDuration);
+    switch (select(ᐸꟷ(selᴛ29, ꓸꓸꓸ), ᐸꟷ(selᴛ30, ꓸꓸꓸ))) {
+    case 0 when selᴛ29.ꟷᐳ(out _): {
         break;
     }
-    case 1 when selᴛ32.ꟷᐳ(out _): {
+    case 1 when selᴛ30.ꟷᐳ(out _): {
         Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
         break;
     }}
@@ -1377,13 +1371,13 @@ public static void TestAfterFuncCalledAfterTimeout(ж<testing.T> Ꮡt) {
         AfterFunc(ctx, () => {
             close(donecʗ1);
         });
-        var selᴛ33 = donec;
-        var selᴛ34 = time.After(veryLongDuration);
-        switch (select(ᐸꟷ(selᴛ33, ꓸꓸꓸ), ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
-        case 0 when selᴛ33.ꟷᐳ(out _): {
+        var selᴛ31 = donec;
+        var selᴛ32 = time.After(veryLongDuration);
+        switch (select(ᐸꟷ(selᴛ31, ꓸꓸꓸ), ᐸꟷ(selᴛ32, ꓸꓸꓸ))) {
+        case 0 when selᴛ31.ꟷᐳ(out _): {
             break;
         }
-        case 1 when selᴛ34.ꟷᐳ(out _): {
+        case 1 when selᴛ32.ꟷᐳ(out _): {
             Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
             break;
         }}
@@ -1400,13 +1394,13 @@ public static void TestAfterFuncCalledImmediately(ж<testing.T> Ꮡt) {
     AfterFunc(ctx, () => {
         close(donecʗ1);
     });
-    var selᴛ35 = donec;
-    var selᴛ36 = time.After(veryLongDuration);
-    switch (select(ᐸꟷ(selᴛ35, ꓸꓸꓸ), ᐸꟷ(selᴛ36, ꓸꓸꓸ))) {
-    case 0 when selᴛ35.ꟷᐳ(out _): {
+    var selᴛ33 = donec;
+    var selᴛ34 = time.After(veryLongDuration);
+    switch (select(ᐸꟷ(selᴛ33, ꓸꓸꓸ), ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
+    case 0 when selᴛ33.ꟷᐳ(out _): {
         break;
     }
-    case 1 when selᴛ36.ꟷᐳ(out _): {
+    case 1 when selᴛ34.ꟷᐳ(out _): {
         Ꮡt.Fatalf("AfterFunc not called for already-canceled context"u8);
         break;
     }}
@@ -1423,14 +1417,14 @@ public static void TestAfterFuncNotCalledAfterStop(ж<testing.T> Ꮡt) {
         Ꮡt.Fatalf("stop() = false, want true"u8);
     }
     cancel();
-    var selᴛ37 = donec;
-    var selᴛ38 = time.After(shortDuration);
-    switch (select(ᐸꟷ(selᴛ37, ꓸꓸꓸ), ᐸꟷ(selᴛ38, ꓸꓸꓸ))) {
-    case 0 when selᴛ37.ꟷᐳ(out _): {
+    var selᴛ35 = donec;
+    var selᴛ36 = time.After(shortDuration);
+    switch (select(ᐸꟷ(selᴛ35, ꓸꓸꓸ), ᐸꟷ(selᴛ36, ꓸꓸꓸ))) {
+    case 0 when selᴛ35.ꟷᐳ(out _): {
         Ꮡt.Fatalf("AfterFunc called for already-canceled context"u8);
         break;
     }
-    case 1 when selᴛ38.ꟷᐳ(out _): {
+    case 1 when selᴛ36.ꟷᐳ(out _): {
         break;
     }}
     if (stop()) {
@@ -1453,13 +1447,13 @@ public static void TestAfterFuncCalledAsynchronously(ж<testing.T> Ꮡt) {
         defer(() => stopʗ1(), ref ᒐ);
         cancel();
         // After cancel returns, read from donec and unblock the AfterFunc.
-        var selᴛ39 = donec;
-        var selᴛ40 = time.After(veryLongDuration);
-        switch (select(ᐸꟷ(selᴛ39, ꓸꓸꓸ), ᐸꟷ(selᴛ40, ꓸꓸꓸ))) {
-        case 0 when selᴛ39.ꟷᐳ(out _): {
+        var selᴛ37 = donec;
+        var selᴛ38 = time.After(veryLongDuration);
+        switch (select(ᐸꟷ(selᴛ37, ꓸꓸꓸ), ᐸꟷ(selᴛ38, ꓸꓸꓸ))) {
+        case 0 when selᴛ37.ꟷᐳ(out _): {
             break;
         }
-        case 1 when selᴛ40.ꟷᐳ(out _): {
+        case 1 when selᴛ38.ꟷᐳ(out _): {
             Ꮡt.Fatalf("AfterFunc not called after context is canceled"u8);
             break;
         }}

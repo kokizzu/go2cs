@@ -412,8 +412,7 @@ public static void TestIndexByteBig(ж<testing.T> Ꮡt) {
 
 // test a small index across all page offsets
 public static void TestIndexByteSmall(ж<testing.T> Ꮡt) {
-    var b = new slice<byte>(5015);
-    // bigger than a page
+    var b = new slice<byte>(5015); // bigger than a page
     // Make sure we find the correct byte even when straddling a page.
     for (nint i = 0; i <= len(b) - 15; i++) {
         for (nint j = 0; j < 15; j++) {
@@ -505,8 +504,7 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
 
 // test count of a single byte across page offsets
 public static void TestCountByte(ж<testing.T> Ꮡt) {
-    var b = new slice<byte>(5015);
-    // bigger than a page
+    var b = new slice<byte>(5015); // bigger than a page
     var windows = new nint[]{1, 2, 3, 4, 15, 16, 17, 31, 32, 33, 63, 64, 65, 128}.slice();
     var bʗ1 = b;
     void testCountWindow(nint i, nint window) {
@@ -2423,8 +2421,7 @@ public static void BenchmarkBytesCompare(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
-    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
-    // Never matches set
+    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048); // Never matches set
     @string cs = "0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz"u8;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2444,8 +2441,7 @@ public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
 internal static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
 
 public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
-    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
-    // Never matches set
+    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048); // Never matches set
     @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2462,8 +2458,7 @@ public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexAnyASCII(ж<testing.B> Ꮡb) {
-    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
-    // Never matches set
+    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048); // Never matches set
     @string cs = "0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz"u8;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2480,8 +2475,7 @@ public static void BenchmarkLastIndexAnyASCII(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexAnyUTF8(ж<testing.B> Ꮡb) {
-    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
-    // Never matches set
+    var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048); // Never matches set
     @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
@@ -2504,8 +2498,7 @@ public static void BenchmarkTrimASCII(ж<testing.B> Ꮡb) {
         for (nint jᴛ1 = 1; jᴛ1 <= 16; jᴛ1 <<= (int)(1)) {
             var j = jᴛ1;
             Ꮡb.Run(fmt.Sprintf("%d:%d"u8, k, j), (ж<testing.B> bΔ1) => {
-                var x = Repeat(slice<byte>(cs[..(int)(j)]), k);
-                // Always matches set
+                var x = Repeat(slice<byte>(cs[..(int)(j)]), k); // Always matches set
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     Trim(x[..(int)(k)], cs[..(int)(j)]);
                 }

@@ -236,8 +236,7 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
         Ꮡt.Skip(boringCryptoDoesnTExposeˢ);
     }
     var (gen, asm) = (New()._<ж<global::go.crypto.sha256_package.digest>>(), New()._<ж<global::go.crypto.sha256_package.digest>>());
-    var buf = new slice<byte>(ΔBlockSize * 20);
-    // arbitrary factor
+    var buf = new slice<byte>(ΔBlockSize * 20); // arbitrary factor
     rand.Read(buf);
     blockGeneric(gen, buf);
     block(asm, buf);

@@ -43,8 +43,7 @@ partial class draw_internal_test_package {
         return new color.RGBA64(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     var r = (uint16)s[0];
     var g = (uint16)s[1];
     var b = (uint16)s[2];
@@ -63,8 +62,7 @@ partial class draw_internal_test_package {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.RGBAModel.Convert(c)._<colorꓸRGBA>();
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c1.R;
     s[1] = c1.G;
     s[2] = c1.B;
@@ -130,8 +128,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
         return new color.RGBA64(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     var r = (uint16)s[0];
     var g = (uint16)s[1];
     var b = (uint16)s[2];
@@ -150,8 +147,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.RGBAModel.Convert(c)._<colorꓸRGBA>();
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c1.R;
     s[1] = c1.G;
     s[2] = c1.B;
@@ -163,8 +159,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c.R >> (int)(8)));
     s[1] = (uint8)((c.G >> (int)(8)));
     s[2] = (uint8)((c.B >> (int)(8)));

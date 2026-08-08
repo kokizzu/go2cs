@@ -33,8 +33,7 @@ public static void TestBlockHuff(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     foreach (var (_, @in) in match) {
-        @string @out = @in;
-        // for files where input and output are identical
+        @string @out = @in; // for files where input and output are identical
         if (strings.HasSuffix(@in, ".in"u8)) {
             @out = @in[..(int)(len(@in) - len(".in"))] + ".golden";
         }

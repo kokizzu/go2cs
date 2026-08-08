@@ -13,6 +13,7 @@ import (
 	"go/build"
 	"go/types"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -276,7 +277,7 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 
 		importPathParts := strings.Split(importPath, "/")
 		packageName := strings.Join(importPathParts, ".")
-		projectReference := filepath.Join(strings.ReplaceAll(targetDir, "/", "\\"), "\\"+packageName+".csproj")
+		projectReference := emittedProjectReference(targetDir, packageName+".csproj")
 
 		targetDir = strings.ReplaceAll(targetDir, "$(go2csPath)", options.go2csPath+string(os.PathSeparator))
 
@@ -342,7 +343,7 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 
 		importPathParts := strings.Split(importPath, "/")
 		packageName := strings.Join(importPathParts, ".")
-		projectReference := filepath.Join(strings.ReplaceAll(targetDir, "/", "\\"), "\\"+packageName+".csproj")
+		projectReference := emittedProjectReference(targetDir, packageName+".csproj")
 
 		return PackageInfo{
 			IsStdLib:         true,
@@ -362,8 +363,8 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 	// to the matching $(go2csPath)pkg\<import-path> directory, so reference and output stay in agreement.
 	if isPathUnder(meta.Dir, filepath.Join(options.goPath, "pkg", "mod")) {
 		libProjectName, namespace := getProjectName(meta.Dir, options)
-		targetDir := "$(go2csPath)pkg\\" + strings.ReplaceAll(importPath, "/", "\\")
-		projectReference := filepath.Join(targetDir, libProjectName+".csproj")
+		targetDir := "$(go2csPath)pkg/" + importPath
+		projectReference := emittedProjectReference(targetDir, libProjectName+".csproj")
 
 		return PackageInfo{
 			IsStdLib:         false,
@@ -463,6 +464,36 @@ func packageQualifiedName(namespace, packageName string) string {
 	}
 
 	return nsPrefix + "." + packageName
+}
+
+// emittedProjectReference joins a reference DIRECTORY (an $(go2csPath)-rooted or absolute path) and a
+// .csproj file name into the exact string that lands in a <ProjectReference Include="…">.
+//
+// It emits FORWARD slashes on every host, because the emitted corpus must be one corpus: MSBuild
+// accepts `/` in every path context on Windows too (FileUtilities.MaybeAdjustFilePath normalizes the
+// other direction on Unix, which is why the historical `\` form still *builds* there), so `/` is the
+// single form that is correct everywhere — no per-host emission, no second corpus shape to diff.
+//
+// The hand-rolled predecessor here was `filepath.Join(strings.ReplaceAll(dir, "/", "\\"), "\\"+name)`.
+// On Windows filepath.Clean folded the injected separators back into a well-formed `\` path; on Unix
+// filepath.Join treats `\` as an ordinary filename character, so it produced the malformed
+// `$(go2csPath)core\fmt/\fmt.csproj` — F5 in docs/PLAN-linux-operation.md. path.Join (slash-only,
+// host-independent) over a ToSlash'd directory has neither behavior.
+func emittedProjectReference(dir string, csprojFileName string) string {
+	return path.Join(filepath.ToSlash(dir), csprojFileName)
+}
+
+// normalizeEmittedPath rewrites a path READ BACK OUT of an MSBuild file to forward slashes on ANY
+// host, so the readers of an emitted <ProjectReference> are separator-agnostic in both directions.
+//
+// filepath.ToSlash cannot do this job: it replaces the HOST's separator, so on Linux and macOS it is
+// the identity and a `\`-spelled reference passes through unchanged — which is why, before this,
+// parseCoreProjectRefs returned `core\golib\golib.csproj` on Linux and isSelfProjectReference's
+// filepath.Base saw one long filename. Emission is forward-slash since F5, but a reference can still
+// arrive backslashed from a corpus converted by an older binary, a deployed tree, or a hand-authored
+// project — and reading those must not depend on which OS is doing the reading.
+func normalizeEmittedPath(reference string) string {
+	return strings.ReplaceAll(reference, "\\", "/")
 }
 
 // isPathUnder reports whether path is the directory dir or nested within it (case-insensitive on

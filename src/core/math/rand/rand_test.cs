@@ -126,8 +126,7 @@ internal static slice<float64> generateNormalSamples(nint nsamples, float64 mean
 internal static void testNormalDistribution(ж<testing.T> Ꮡt, nint nsamples, float64 mean, float64 stddev, int64 seed) {
     //fmt.Printf("testing nsamples=%v mean=%v stddev=%v seed=%v\n", nsamples, mean, stddev, seed);
     var samples = generateNormalSamples(nsamples, mean, stddev, seed);
-    var errorScale = max(1.0D, stddev);
-    // Error scales with stddev
+    var errorScale = max(1.0D, stddev); // Error scales with stddev
     var expected = Ꮡ(new statsResults(mean, stddev, 0.10D * errorScale, 0.08D * errorScale));
     // Make sure that the entire set matches the expected distribution.
     checkSampleDistribution(Ꮡt, samples, expected);
@@ -182,8 +181,7 @@ internal static void testExponentialDistribution(ж<testing.T> Ꮡt, nint nsampl
     ref var stddev = ref heap<float64>(out var Ꮡstddev);
     stddev = mean;
     var samples = generateExponentialSamples(nsamples, rate, seed);
-    var errorScale = max(1.0D, 1D / rate);
-    // Error scales with the inverse of the rate
+    var errorScale = max(1.0D, 1D / rate); // Error scales with the inverse of the rate
     var expected = Ꮡ(new statsResults(mean, stddev, 0.10D * errorScale, 0.20D * errorScale));
     // Make sure that the entire set matches the expected distribution.
     checkSampleDistribution(Ꮡt, samples, expected);
@@ -375,9 +373,8 @@ public static void TestFloat32(ж<testing.T> Ꮡt) {
     // But ARM5 floating point emulation is slow (Issue 10749), so
     // do less for that builder:
     if (testing.Short() && (testenv.Builder() == ""u8 || hasSlowFloatingPoint())) {
-        num /= 100;
+        num /= 100; // 1.72 seconds instead of 172 seconds
     }
-    // 1.72 seconds instead of 172 seconds
     var r = New(NewSource(1));
     for (nint ct = 0; ct < num; ct++) {
         var f = r.Float32();
@@ -531,8 +528,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
                 nfact *= i;
             }
             // Test a few different ways to generate a uniform distribution.
-            var p = new slice<nint>(n);
-            // re-usable slice for Shuffle generator
+            var p = new slice<nint>(n); // re-usable slice for Shuffle generator
                 var rʗ2 = rʗ1;
 
                 var rʗ3 = rʗ1;
@@ -595,8 +591,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
                     var expected = Ꮡ(new statsResults(mean: dof, stddev: math.Sqrt(2D * dof)));
                     var errorScale = max(1.0D, (~expected).stddev);
                     expected.Value.closeEnough = 0.10D * errorScale;
-                    expected.Value.maxError = 0.08D;
-                    // TODO: What is the right value here? See issue 21211.
+                    expected.Value.maxError = 0.08D; // TODO: What is the right value here? See issue 21211.
                     checkSampleDistribution(tΔ2, samples, expected);
                 });
             }

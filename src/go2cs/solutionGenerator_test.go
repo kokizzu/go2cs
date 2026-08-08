@@ -219,14 +219,19 @@ func TestCollectConvertedProjects(t *testing.T) {
 	}
 }
 
-// TestParseCoreProjectRefs checks that only $(go2csPath)core\ ProjectReferences are extracted
-// (normalized to forward slashes), while the analyzer's $(go2csPath)gen\ reference and NuGet
+// TestParseCoreProjectRefs checks that only $(go2csPath)core/ ProjectReferences are extracted
+// (normalized to forward slashes), while the analyzer's $(go2csPath)gen/ reference and NuGet
 // PackageReferences are ignored — the raw material for recovering hand-owned packages like unsafe.
+//
+// The fixture MIXES separators deliberately. Emission is forward-slash since F5, but a reference
+// still arrives backslashed from a pre-F5 corpus, a deployed tree or a hand-authored project, and
+// the normalization must not depend on the HOST: filepath.ToSlash replaces the host separator, so
+// off Windows it is the identity and every backslashed reference came back through unchanged.
 func TestParseCoreProjectRefs(t *testing.T) {
 	content := strings.Join([]string{
-		`<ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />`,
-		`<ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />`,
-		`<ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />`,
+		`<ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />`,
+		`<ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />`,
+		`<ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />`,
 		`<ProjectReference Include="$(go2csPath)core\unsafe\unsafe.csproj" />`,
 		`<PackageReference Include="go.unsafe" Version="$(GoStdLibVersion)" />`,
 	}, "\r\n")
