@@ -42,7 +42,7 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<LocalID, convlib.Token>(Inverted = true, ValueType = "LocalID")]
+[assembly: GoImplicitConv<LocalID, convlib.Token>(Inverted = true, ValueType = "uintptr")]
 // </ImplicitConversions>
 
 namespace go;

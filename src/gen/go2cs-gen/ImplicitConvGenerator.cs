@@ -204,6 +204,13 @@ public class ImplicitConvGenerator : ISourceGenerator
             // conversions (CS0030 — reflect's flag→ΔKind). Hop through nuint. The backing kind
             // comes from the src side's [GoType("num:uintptr")] tag — the generated Value
             // property is invisible to a single-pass sibling generator.
+            //
+            // `valueType` is the CONSTRUCTED type's backing primitive, so it is the cast target, not
+            // the type to construct — the type to construct is the LH type, exactly as in the
+            // template's default body and in the local-pair arm below. (It named the constructed
+            // type itself until the converter was corrected to record the primitive; reading it as a
+            // type name here would have emitted `new nuint((nuint)(nuint)src.Value)` for reflect's
+            // `ΔKind`←`flag`.)
             if (convExprOverride is null && !string.IsNullOrWhiteSpace(valueType))
             {
                 ITypeSymbol srcSide = inverted ? targetType : sourceType;
@@ -216,7 +223,10 @@ public class ImplicitConvGenerator : ISourceGenerator
                     .FirstOrDefault();
 
                 if (goTypeTag == "num:uintptr")
-                    convExprOverride = $"new {valueType}(({valueType})(nuint)src.Value)";
+                {
+                    string lhName = inverted ? sourceTypeName : targetTypeName;
+                    convExprOverride = $"new {lhName}(({valueType})(nuint)src.Value)";
+                }
             }
 
             // A LOCAL numeric pair whose SOURCE underlying does not implicitly convert to the

@@ -998,6 +998,32 @@ exhibit **(c)**. None is a *layout* question, so increment 4 is not blocked on t
 against 305 of 306 on Windows with zero errors. *(Superseded by increment 3.5b below: 143 compile
 unscaffolded, and 307/307 behind four class-(c) scaffolds.)*
 
+> **All four class-(c) defects are FIXED — lane r51a, 2026-08-08.** L2 and L3 in `ad6378b88`, L4/L5
+> and L6 in `eef90b3f1`. Two findings reshape the table above. **L5 was never independent:** the
+> duplicate record of L4 is what made `adapterNameCollisionSet` see a FALSE collision and qualify one
+> cast site to the third spelling, so removing the duplicate removes the third name — one root cause,
+> two rows. And **L3's root was wider than syscall:** every one of the corpus's 49 `ValueType`
+> records named the constructed type instead of its backing primitive, so the form was never right,
+> only never yet fatal — `int`/`uint` native-width wrappers are exactly the case the generator's
+> compensating override deliberately declined, which is why `WaitStatus`(uint32)←`Signal`(nint) was
+> where it finally bit. Correcting the record required moving one consumer with it: the generator's
+> `uintptr` hop read `ValueType` as the type to CONSTRUCT.
+>
+> With the four fixes plus scaffolds for the two remaining class-(b) hand-own gaps (L1's futex
+> note/mutex and `os.File.readdir`, both lane r51b's), **the whole corpus compiles on Linux: 307
+> projects, ZERO errors, 154 s at `--no-incremental`** — so the class-(c) defects were the only
+> converter-layer blockers in the entire Linux surface, and the 150-package tail above was blocked
+> solely by what sat under it. Control that this is a real Linux compile rather than a mis-targeted
+> one: injecting a syntax error into `os/linux/zero_copy_linux.cs` fails the build, and `log/syslog`
+> — whose Go source is excluded on Windows in its entirety — produces a 346 KB assembly.
+>
+> Windows moved, deliberately and by classification: of the 22 files a three-target seeded reconvert
+> changed, 14 are the `ValueType` correction (which spans every flavor, `runtime/windows` included)
+> and one is `go/types/object.cs`, where the sealed-interface accessibility rule publicizes `Δcolor`
+> on purpose — it had only ever compiled because its `Δ` collision-rename made the generator's
+> name-based scope rule read it as exported by accident. Corpus build property-absent: **307
+> projects, 0 errors**.
+
 *Proofs.*
 
 | Proof | Method | Result |

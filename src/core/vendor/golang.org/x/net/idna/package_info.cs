@@ -47,7 +47,7 @@ using static go.vendor.golang.org.x.net.idna_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<info, Δcategory>(Inverted = true, ValueType = "info")]
+[assembly: GoImplicitConv<info, Δcategory>(Inverted = true, ValueType = "uint16")]
 // </ImplicitConversions>
 
 namespace go.vendor.golang.org.x.net;

@@ -388,7 +388,10 @@ func collectMethodSignatureUnexportedTypes(named *types.Named, pkg *types.Packag
 	for i := range named.NumMethods() {
 		method := named.Method(i)
 
-		collectSignatureUnexportedTypes(method, pkg)
+		// A CONCRETE method's emitted accessibility tracks Go exportedness (an unexported
+		// method emits `internal static … sockaddr(this ж<SockaddrInet4> …)`), so an
+		// unexported one exposes nothing public and is gated out.
+		collectSignatureUnexportedTypes(method, pkg, false)
 	}
 
 	// A defined INTERFACE type's methods live on its UNDERLYING *types.Interface, not on the Named
@@ -400,15 +403,28 @@ func collectMethodSignatureUnexportedTypes(named *types.Named, pkg *types.Packag
 	// `corpusEntry`). The cascade fixpoint then propagates through those types in turn.
 	if iface, ok := named.Underlying().(*types.Interface); ok {
 		for i := range iface.NumMethods() {
-			collectSignatureUnexportedTypes(iface.Method(i), pkg)
+			// An INTERFACE member is emitted with NO access modifier (see visitInterfaceType),
+			// and a C# interface member with none is implicitly PUBLIC — Go's case convention
+			// does not survive into the emitted surface. So the member of a public interface is
+			// public whether or not the Go method is exported, and its signature types must be
+			// publicized either way. syscall's `Sockaddr` is the archetype: the sealing method
+			// `sockaddr() (unsafe.Pointer, _Socklen, error)` is deliberately unexported so only
+			// the package can implement the interface, yet the emitted member returns the
+			// unexported `_Socklen` from a public interface — CS0050 on every unix flavor.
+			// (Windows spells the same method with `int32`, so the corpus never saw it.)
+			collectSignatureUnexportedTypes(iface.Method(i), pkg, true)
 		}
 	}
 }
 
 // collectSignatureUnexportedTypes publicizes the unexported named types (and lifted anonymous
-// struct/interface types) in an EXPORTED method's parameter/result signature.
-func collectSignatureUnexportedTypes(method *types.Func, pkg *types.Package) {
-	if !method.Exported() {
+// struct/interface types) in a method's parameter/result signature, when the method is emitted as a
+// PUBLIC C# member. memberAlwaysPublic states that the emitted member's accessibility does NOT track
+// Go exportedness — true for an interface member, which carries no access modifier and is therefore
+// implicitly public whatever the Go method's case. It is the EMITTED C# surface, not the Go
+// exportedness, that decides what must be lifted.
+func collectSignatureUnexportedTypes(method *types.Func, pkg *types.Package, memberAlwaysPublic bool) {
+	if !memberAlwaysPublic && !method.Exported() {
 		return
 	}
 

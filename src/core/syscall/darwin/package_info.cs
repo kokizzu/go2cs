@@ -60,8 +60,8 @@ using static go.syscall_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<WaitStatus, ΔSignal>(Inverted = true, ValueType = "WaitStatus")]
-[assembly: GoImplicitConv<_C_int, WaitStatus>(Inverted = true, ValueType = "_C_int")]
+[assembly: GoImplicitConv<WaitStatus, ΔSignal>(Inverted = true, ValueType = "uint32")]
+[assembly: GoImplicitConv<_C_int, WaitStatus>(Inverted = true, ValueType = "int32")]
 // </ImplicitConversions>
 
 namespace go;
@@ -81,7 +81,6 @@ public static partial class syscall_package
     internal partial struct _C_long_long {}
     internal partial struct _C_short {}
     internal partial struct _Gid_t {}
-    internal partial struct _Socklen {}
     internal partial struct anyMessage {}
     internal partial struct ivalue {}
     internal partial struct mmapper {}
@@ -149,6 +148,7 @@ public static partial class syscall_package
     public partial struct Timeval {}
     public partial struct Timeval32 {}
     public partial struct WaitStatus {}
+    public partial struct _Socklen {}
     public partial struct ΔSignal {}
     // </TypeAccessibility>
 }

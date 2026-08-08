@@ -10,13 +10,6 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using CrossPkgLibꓸGrade = go.CrossPkgLib_package.ΔGrade;
-global using CrossPkgLibꓸMarker = go.CrossPkgLib_package.ΔMarker;
-global using CrossPkgLibꓸStatus = go.CrossPkgLib_package.ΔStatus;
-global using CrossPkgLibꓸTemperature = go.CrossPkgLib_package.Celsius;
-global using CrossPkgLibꓸToken = object;
-global using CrossPkgLibꓸΔToken = object;
-using CrossPkgLib = go.CrossPkgLib_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -34,8 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("Meter", "ΔMeter")]
-[assembly: GoTypeAlias("Tagged", "go.CrossPkgLib_package.Labeled")]
+[assembly: GoTypeAlias("Alias", "go.main_package.Network")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -47,28 +39,9 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<CrossPkgLib_package.Branch, CrossPkgLib_package.Emitter>(Pointer = true)]
-[assembly: GoImplement<CrossPkgLib_package.Leaf, CrossPkgLib_package.Emitter>(Pointer = true)]
-[assembly: GoImplement<CrossPkgLib_package.Probe, CrossPkgLib_package.Sampler>(Pointer = true)]
-[assembly: GoImplement<CrossPkgLib_package.Sensor, Labeled>(Pointer = true)]
-[assembly: GoImplement<badge, Labeled>]
-[assembly: GoImplement<badge, Tagged>]
-[assembly: GoImplement<cert, Labeled>]
-[assembly: GoImplement<cert, certificate>]
-[assembly: GoImplement<counter, ΔMeter>]
-[assembly: GoImplement<dial, CrossPkgLib_package.Labeled>(Pointer = true)]
-[assembly: GoImplement<emblem, Labeled>]
-[assembly: GoImplement<emblem, namedLabel>]
-[assembly: GoImplement<probe, Labeled>]
-[assembly: GoImplement<relay, CrossPkgLib_package.Reporter>(Pointer = true)]
-[assembly: GoImplement<seal, Labeled>]
-[assembly: GoImplement<seal, stamped>]
-[assembly: GoImplement<tagged, Labeled>]
-[assembly: GoImplement<tallies, CrossPkgLib_package.Scored>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<localCelsius, CrossPkgLib.Celsius>(Inverted = true, ValueType = "float64")]
 // </ImplicitConversions>
 
 namespace go;
@@ -84,29 +57,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface certificate {}
-    internal partial interface namedLabel {}
-    internal partial interface stamped {}
-    internal partial struct badge {}
-    internal partial struct cert {}
-    internal partial struct counter {}
-    internal partial struct dial {}
-    internal partial struct emblem {}
-    internal partial struct holder<T> {}
-    internal partial struct ledger {}
-    internal partial struct localCelsius {}
-    internal partial struct meterBox {}
-    internal partial struct probe {}
-    internal partial struct reading {}
-    internal partial struct relay {}
-    internal partial struct rig {}
-    internal partial struct seal {}
-    internal partial struct sensorBox {}
-    internal partial struct stamp {}
-    internal partial struct tagged {}
-    internal partial struct tallies {}
-    public partial interface Labeled {}
-    public partial interface ΔMeter {}
-    public partial struct Holder<T> {}
+    public partial struct Label {}
+    public partial struct Network {}
     // </TypeAccessibility>
 }

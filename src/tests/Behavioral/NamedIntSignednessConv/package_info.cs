@@ -41,8 +41,8 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<Time, timestamp>(Inverted = true, ValueType = "Time")]
-[assembly: GoImplicitConv<timestamp, Time>(Inverted = true, ValueType = "timestamp")]
+[assembly: GoImplicitConv<Time, timestamp>(Inverted = true, ValueType = "int64")]
+[assembly: GoImplicitConv<timestamp, Time>(Inverted = true, ValueType = "uint64")]
 // </ImplicitConversions>
 
 namespace go;

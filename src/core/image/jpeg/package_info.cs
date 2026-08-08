@@ -46,7 +46,7 @@ using static go.image.jpeg_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<quantIndex, huffIndex>(Inverted = true, ValueType = "quantIndex")]
+[assembly: GoImplicitConv<quantIndex, huffIndex>(Inverted = true, ValueType = "nint")]
 // </ImplicitConversions>
 
 namespace go.image;

@@ -542,6 +542,7 @@
     <Project Path="tests/Behavioral/NamedStringConversion/NamedStringConversion.csproj" />
     <Project Path="tests/Behavioral/NamedStringConsts/NamedStringConsts.csproj" />
     <Project Path="tests/Behavioral/NamedStringDefine/NamedStringDefine.csproj" />
+    <Project Path="tests/Behavioral/NamedStringZeroValue/NamedStringZeroValue.csproj" />
     <Project Path="tests/Behavioral/NamedTypeBitwiseConst/NamedTypeBitwiseConst.csproj" />
     <Project Path="tests/Behavioral/NamedTypeOverStruct/NamedTypeOverStruct.csproj" />
     <Project Path="tests/Behavioral/NamedIntSignednessConv/NamedIntSignednessConv.csproj" />

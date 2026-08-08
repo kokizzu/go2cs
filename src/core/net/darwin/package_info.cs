@@ -118,7 +118,7 @@ using static go.net_package;
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<Interface, ж<Interface>>(Indirect = true)]
-[assembly: GoImplicitConv<addrinfoErrno, _C_int>(Inverted = true, ValueType = "addrinfoErrno")]
+[assembly: GoImplicitConv<addrinfoErrno, _C_int>(Inverted = true, ValueType = "nint")]
 // </ImplicitConversions>
 
 namespace go;

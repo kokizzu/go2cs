@@ -104,6 +104,26 @@ func resultRendersAsBareLambda(expr ast.Expr) bool {
 	}
 }
 
+// isNamedStringType reports whether t is a DEFINED type whose underlying is a Go string — `type
+// String string` (internal/poll), `type Name string`. A plain `string` is deliberately excluded: it
+// emits as golib's `@string`, which a literal already reaches in one conversion. So is a type
+// PARAMETER, whose emitted form is not a `[GoType]` wrapper.
+func isNamedStringType(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+
+	named, ok := types.Unalias(t).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	basic, ok := named.Underlying().(*types.Basic)
+
+	return ok && basic.Info()&types.IsString != 0
+}
+
 func (v *Visitor) lambdaFuncLitReturnCastType(targetType types.Type, expr ast.Expr) string {
 	if v.lambdaCapture == nil || !v.lambdaCapture.conversionInLambda || targetType == nil {
 		return ""
@@ -400,6 +420,18 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 						elemBasicLitContext.u8StringOK = true
 						elemBasicLitContext.castToGoString = true
 						elemBasicLitContext.spanTargetUnsupported = true
+					} else if isNamedStringType(resultParams.At(i).Type()) {
+						// A string literal returned at a NAMED string result type needs the
+						// @string step written out. Go converts the untyped constant to the named
+						// type implicitly, but the emitted C# would have to cross TWO user-defined
+						// conversions to get there — C# string → golib `@string` → the type's
+						// `[GoType("@string")]` wrapper — and C# admits only one in a conversion,
+						// so a bare `""` has no conversion to the named type at all (CS0029), and
+						// in a tuple the failed element leaves its `default!` siblings with no
+						// target type (CS8716). Naming the intermediate makes each step a separate
+						// conversion. os's `getPollFDAndNetwork` is the reached case: its
+						// `return nil, ""` at `(*poll.FD, poll.String)` is the linux corpus's L6.
+						elemBasicLitContext.castToGoString = true
 					}
 				}
 

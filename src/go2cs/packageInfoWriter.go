@@ -340,7 +340,22 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 			}
 
 			for implementation := range implementations {
-				canonKey := strings.TrimPrefix(interfaceName, RootNamespace+".") + "|" + implementation
+				// Compare on the spelling that will actually be EMITTED, not on the raw registry
+				// key. The covered set is built from exportedTypeAliases, whose values visitTypeSpec
+				// already canonicalized (it reverts a file-local import rename before recording the
+				// alias target), while the registry key keeps whatever rendering the cast site
+				// produced — including that rename. os is the reached case: it aliases its `io`
+				// import to `Δio` (io is shadowed once io/fs is in the reference closure), so the
+				// SAME interface is registered as `DirEntry` through os's own `type DirEntry =
+				// fs.DirEntry` and as `Δio.fs_package.DirEntry` through the io/fs name, and neither
+				// key compared equal to the canonical `io.fs_package.DirEntry` the covered set
+				// holds. Both records were therefore emitted for the ONE pair, ImplementGenerator
+				// composed `unixDirentжDirEntry` twice (CS0102 + CS0111 ×9 + CS8646 ×4), and the
+				// resulting FALSE collision made adapterNameCollisionSet qualify one cast site to a
+				// third spelling, `unixDirentжfs_DirEntry`, that neither record produces (CS0246).
+				// qualifyLocalTypeRef is the same canonicalization the emission below applies, so
+				// keying on it makes the two sides comparable by construction.
+				canonKey := strings.TrimPrefix(qualifyLocalTypeRef(interfaceName), RootNamespace+".") + "|" + implementation
 
 				if aliasCoveredImplementations.Contains(canonKey) {
 					continue

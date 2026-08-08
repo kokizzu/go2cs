@@ -1396,7 +1396,30 @@ A conversion **between two named slice types** sharing an identical underlying (
 
 (Guarded by `NamedNumericConversion`, `NamedNumericShiftConv`, `NamedTypeBitwiseConst`, `IotaEnum`, `FuncTypeParam`, and `CrossPkgUser`; the `string`-target exception is guarded by `StringConvPostfix` and `UnsafeOperations`; verified by the full behavioral suite — output comparisons confirm the precedence is unchanged.)
 
-**Generated conversion operators between named numerics of *different* assemblies.** The two paragraphs above are the *converter's inline* casts. Separately, when the converter sees a conversion *between two named numeric types* it records a `[assembly: GoImplicitConv<…>]` and the `ImplicitConvGenerator` emits a user-defined `implicit operator` for it. The emitted body constructs one named type from the other's underlying value: `new Target((ValueType)src.Value)`. When both named types live in the **same** assembly this is fine (e.g. runtime's `muintptr ↔ Δhex`), but when the operator must **construct a *foreign* named numeric** — one declared in another C# assembly — two problems appear that only manifest cross-assembly:
+**Generated conversion operators between named numerics of *different* assemblies.** The two paragraphs above are the *converter's inline* casts. Separately, when the converter sees a conversion *between two named numeric types* it records a `[assembly: GoImplicitConv<…>]` and the `ImplicitConvGenerator` emits a user-defined `implicit operator` for it. The emitted body constructs one named type from the other's underlying value: `new Target((ValueType)src.Value)`.
+
+**`ValueType` is a CAST TARGET, and it names the constructed type's BACKING PRIMITIVE (corrected
+2026-08-08).** The template applies it to `src.Value` and feeds the result to the constructed type's
+constructor, and that constructor takes the primitive — so `ValueType` must be `uint32`, `nint`,
+`int64`, not the wrapper. It named the **constructed type itself** until this was rooted, making the
+body a round-trip through that type's own conversion operators — `new WaitStatus((WaitStatus)src.Value)`
+— which compiles only while a standard EXPLICIT conversion exists between the two primitives, because
+a user-defined conversion admits just one standard conversion on its input. syscall's unix flavors are
+where it finally bit: `WaitStatus` is backed by `uint32` and `Signal` by `int` (`nint`), and
+`uint32`→`nint` is not a standard IMPLICIT conversion (a 32-bit unsigned value does not fit a 32-bit
+native int), so its reverse is not a standard explicit one, the operator is not applicable, and the
+cast is **CS0030**. Windows declares `WaitStatus` a struct, so the pair is never registered there and
+no corpus build reached it. All 49 of the corpus's `ValueType` records carried the constructed type's
+own name, so the form was never right — only never yet fatal, because the two compensating generator
+overrides below cover most of the gap. One consumer had to move with it: the `uintptr` hop read
+`ValueType` as the type to CONSTRUCT (`new {valueType}(…)`) and now constructs the LH type and casts
+to `ValueType`, exactly like the default body. (Guarded by `implicitConvValueType_test.go` — an
+end-to-end conversion of two named numerics with different underlyings, plus a unit sweep over every
+basic kind a named numeric can carry.)
+
+When both named types live in the **same** assembly the default body is fine (e.g. runtime's
+`muintptr ↔ Δhex`), but when the operator must **construct a *foreign* named numeric** — one declared
+in another C# assembly — two problems appear that only manifest cross-assembly:
 
 * A direct cast to the foreign named type has no route. `(NameOff)src.Value` where `src.Value` is `ulong` and `NameOff` (`internal/abi`) is a *different assembly* is **CS0030** — C# does not select the foreign type's `int32`-based user conversion for a `ulong` source across the assembly boundary (the same cast to a *local* named type compiles). It must go **through the foreign type's underlying basic**: `new …NameOff((int)src.Value)`.
 * The default host can be a phantom. The operator is hosted in `partial struct {sourceType}`; if that source is the *foreign* type (reached here via a local alias, e.g. runtime's `global using nameOff = abi.NameOff`, so the cross-package dot is hidden and the conversion records as `Inverted`), the `partial struct NameOff` declares a new *empty local* type rather than extending the foreign one — **CS1729** (no constructor). The operator is relocated into the **local** type instead.
@@ -4313,6 +4336,33 @@ return ((errorString)(@string)"kaboom"u8);
 ```
 
 This is the form the runtime uses for every `panic(errorString("…"))` / `plainError("…")`. (Guarded by the behavioral test `NamedStringConversion`.)
+
+**The same intermediate is needed with NO explicit Go conversion written — a named string type's
+zero value in a RESULT position (2026-08-08).** Go converts an untyped string constant to a defined
+string type implicitly, so the source says only `return nil, ""`; the emitted C# still has to cross
+the two user-defined conversions, so a bare `""` has no conversion to the named type at all
+(**CS0029**). In a multi-result return the damage spreads: the failed element leaves its tuple
+siblings with no target type either, so the `default!` beside it is **CS8716**. The result type's
+being a defined type over `string` is the signal, and the literal takes the `@string` step:
+
+```go
+// os/zero_copy_linux.go — poll.String is `type String string`
+func getPollFDAndNetwork(i any) (*poll.FD, poll.String) {
+    sc, ok := i.(syscall.Conn)
+    if !ok {
+        return nil, ""
+    }
+```
+```csharp
+return (default!, (@string)"");
+```
+
+A plain `string` result is deliberately excluded (it emits as `@string`, which a literal already
+reaches in one conversion), as is a type parameter, whose emitted form is not a `[GoType]` wrapper.
+An ALIAS of a named string type is the same type and takes the same route. (Guarded by the behavioral
+test `NamedStringZeroValue` — the multi-result shape that carries the cascade, the single-result
+shape, the alias, and the named type still behaving as a string under `+`, `+=` and `==`,
+stdout-compared against `go run`.)
 
 ### A POSITIONAL struct-composite element in a `string` field renders `u8`
 Go requires a positional composite literal to list every field in order, so element *i* is field *i*.
@@ -9474,6 +9524,25 @@ walked a type's `named.NumMethods()` (declared receiver methods) but that is **0
 `iface.NumMethods()` for a publicized interface, so an unexported NAMED type in a public interface member's
 parameter/result signature is publicized in turn (CS0051/CS0050).
 
+**…and an interface member is public whether or not the GO method is exported (2026-08-08).** That
+walk still ran each method through a gate that returned early on `!method.Exported()`. The gate is
+right for a CONCRETE method — an unexported one emits `internal static … sockaddr(this
+ж<SockaddrInet4> …)` and exposes nothing — and wrong for an interface member, which
+`visitInterfaceType` emits with **no access modifier** and which C# therefore makes implicitly
+**public**. Go's case convention simply does not survive into the emitted surface, so it is the
+EMITTED C# accessibility, not the Go exportedness, that decides what must be lifted; the gate now
+takes an explicit flag, set only on the interface arm. syscall's `Sockaddr` is the archetype and the
+idiom is deliberate Go: `sockaddr() (unsafe.Pointer, _Socklen, error)` is unexported precisely so
+that only the package can implement the interface — a SEALED interface — yet the emitted member
+returns the unexported `_Socklen` from a public interface (**CS0050** on every unix flavor; Windows
+spells the same method with `int32`, which is why the corpus never saw it). `go/types` is the other
+reached case, and a subtler one: its exported `Object` interface has `color() color` and
+`setColor(color)`, and the wrapper only ever compiled because the type's `Δ` collision-rename made
+`TypeGenerator`'s name-based scope rule read the leading Greek capital as exported and emit it
+`public` by accident. It is now publicized on purpose. (Guarded by
+`typeAccessibilityInterface_test.go`, whose negative controls fail if the gate is dropped outright
+rather than narrowed — a concrete unexported method must still publicize nothing.)
+
 A public callable's signature can also reference a **lifted anonymous** type, which the NAMED-only cascade
 above cannot reach — testing's `testDeps.CoordinateFuzzing(… corpusEntry …)` / `RunFuzzWorker` / `ReadCorpus`,
 where `type corpusEntry = struct{…}` is an ALIAS to an anonymous struct. The signature type is not a
@@ -9628,6 +9697,27 @@ The adapter class scope cannot be derived from Go name casing alone (`error` is 
 
 ### GoImplement records de-duplicate at attribute emission
 os converts dirEntry to fs.DirEntry both through its own alias (`type DirEntry = fs.DirEntry`) and through the io/fs name - two records for ONE interface made the generator emit the explicit implementation twice (CS8646/CS0111). The de-duplication happens at ATTRIBUTE EMISSION with the ALIASED record winning (its simple name resolves via the package usings); normalizing the RECORD KEY instead was twice wrong - qualified attr names break generator name resolution and flip the alias-locality gate. **Measurement lesson:** those declaration-phase errors had SUPPRESSED all of os's method-body diagnostics (Roslyn phase gating) - a package is not truly measured until its declaration errors are zero.
+
+**The comparison must run on the EMITTED spelling, not the raw registry key (2026-08-08).** The
+covered set is built from `exportedTypeAliases`, whose values `visitTypeSpec` has already
+canonicalized — it reverts a file-local import rename before recording the alias target — while the
+registry key keeps whatever rendering the cast site produced. os aliases its `io` import to `Δio`
+(io is shadowed once io/fs is in the reference closure), so on the **unix** flavors
+`unixDirent`→`fs.DirEntry` registers as `DirEntry` *and* as `Δio.fs_package.DirEntry`, and **neither**
+compares equal to the canonical `io.fs_package.DirEntry` the covered set holds. Both records were
+emitted for the one pair and `unixDirentжDirEntry` was composed twice (CS0102, CS0111 ×9, CS8646 ×4).
+
+That also produced a **third** adapter spelling, worth recording because it looks like a separate
+defect and is not: two records composing one adapter name is exactly what `adapterNameCollisionSet`
+exists to detect, so it saw a FALSE collision, applied its collision-conditional rule and qualified
+the foreign side of one cast site to `unixDirentжfs_DirEntry` — a name neither record produces
+(CS0246). Removing the duplicate removes the collision, and all three call sites in `file_unix.cs`
+converge. The key is now built with `qualifyLocalTypeRef`, the same canonicalization the emission
+applies, so the two sides are comparable by construction. Windows is unaffected, and that was
+measured rather than argued: its `os` registers the renamed-canonical spelling ALONE, with no
+alias-keyed record, so nothing is covered and the qualified record is still the only record.
+(Guarded by `implementRecordAliasCanonicalization_test.go`, whose controls pin both the Windows shape
+and a genuinely distinct second implementation that must NOT collapse.)
 
 **The interface-inheritance PRUNE exempts pairs that generate their own adapter CLASS.** The same
 attribute-emission stage also drops a "lower" GoImplement record when the SAME implementing type is

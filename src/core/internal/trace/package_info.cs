@@ -69,8 +69,8 @@ using static go.@internal.trace_package;
 [assembly: GoImplicitConv<dataTable<stringID, @string>, ж<dataTable<stringID, @string>>>(Indirect = true)]
 [assembly: GoImplicitConv<evTable, ж<evTable>>(Indirect = true)]
 [assembly: GoImplicitConv<spilledBatch, ж<spilledBatch>>(Indirect = true)]
-[assembly: GoImplicitConv<ΔTime, oldtrace.Timestamp>(Inverted = false, ValueType = "oldtrace.Timestamp")]
-[assembly: GoImplicitConv<ΔTime, timestamp>(Inverted = true, ValueType = "ΔTime")]
+[assembly: GoImplicitConv<ΔTime, oldtrace.Timestamp>(Inverted = false, ValueType = "int64")]
+[assembly: GoImplicitConv<ΔTime, timestamp>(Inverted = true, ValueType = "int64")]
 // </ImplicitConversions>
 
 namespace go.@internal;

@@ -2684,7 +2684,11 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 
 			// Check if the arg type is an aliased numeric type
 			if ok := isAliasedNumericType(argType); ok {
-				valueTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(argType, true))
+				// argType is the type the generated operator CONSTRUCTS in both arms below —
+				// directly when the record is `Inverted` (LH is the record's source), and after
+				// the local-anchor swap when it is not (LH is the record's target) — so its
+				// BACKING PRIMITIVE is what ValueType must name. See numericConversionValueTypeName.
+				valueTypeName := numericConversionValueTypeName(argType)
 
 				if targetTypeIsPointer {
 					// Dereference target type when casting to pointer types,
@@ -2778,6 +2782,38 @@ func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 	}
 
 	return obj != nil && obj.Pkg() == v.pkg
+}
+
+// numericConversionValueTypeName renders the C# name of the PRIMITIVE that backs a named (or
+// aliased) numeric type — the `uint32` in `type WaitStatus uint32` — which is what a
+// `[assembly: GoImplicitConv<…>]` record's `ValueType` must carry.
+//
+// ValueType is not a type ARGUMENT; ImplicitConvGenerator applies it as a CAST to the source
+// operand and feeds the result to the constructed type's constructor:
+//
+//	public static implicit operator WaitStatus(ΔSignal src) => new WaitStatus((ValueType)src.Value);
+//
+// (ImplicitConvTemplate.ParamList). That constructor takes the backing primitive, so ValueType must
+// name the primitive. Naming the constructed NAMED type there instead — which is what the record
+// carried until this was rooted — round-trips through the type's own conversion operators,
+// `new WaitStatus((WaitStatus)src.Value)`. That compiles only while a standard EXPLICIT conversion
+// exists from the SOURCE's primitive to the target's, because a user-defined conversion admits just
+// one standard conversion on its input: syscall's `ΔSignal` is backed by `nint` and `WaitStatus` by
+// `uint32`, and `uint32`→`nint` is not a standard IMPLICIT conversion (a 32-bit unsigned value does
+// not fit a 32-bit native int), so its reverse is not a standard explicit one, the operator is not
+// applicable, and the cast is CS0030. Casting to the primitive is a plain numeric conversion and is
+// always available. Windows never saw it: `WaitStatus` is a struct there, so the pair is never
+// registered at all.
+//
+// Callers must have established isAliasedNumericType, which is what makes the underlying a
+// *types.Basic; the name falls back to the type's own rendering if that ever stops holding, since a
+// wrong-but-shaped ValueType is a compile error at the call site rather than silent bad codegen.
+func numericConversionValueTypeName(t types.Type) string {
+	if basic, ok := t.Underlying().(*types.Basic); ok {
+		return convertToCSTypeName(basic.Name())
+	}
+
+	return convertToCSTypeName(types.TypeString(t, nil))
 }
 
 func isAliasedNumericType(targetType types.Type) bool {

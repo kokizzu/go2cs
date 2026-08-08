@@ -41,7 +41,7 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<lfstack, hexval>(Inverted = true, ValueType = "lfstack")]
+[assembly: GoImplicitConv<lfstack, hexval>(Inverted = true, ValueType = "uint64")]
 // </ImplicitConversions>
 
 namespace go;

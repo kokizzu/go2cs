@@ -73,9 +73,11 @@
     <None Include="$(MSBuildThisFileDirectory)hoistedLiteralOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)identifierNaming.go" />
     <None Include="$(MSBuildThisFileDirectory)iifeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)implementRecordAliasCanonicalization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)implementRecordKey_test.go" />
     <None Include="$(MSBuildThisFileDirectory)importAliasOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)importOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)implicitConvValueType_test.go" />
     <None Include="$(MSBuildThisFileDirectory)importOperations_test.go" />
     <None Include="$(MSBuildThisFileDirectory)initOrderOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)interfaceConversion.go" />
@@ -147,6 +149,7 @@
     <None Include="$(MSBuildThisFileDirectory)testdata\validationproof\expected.md" />
     <None Include="$(MSBuildThisFileDirectory)ToDo.md" />
     <None Include="$(MSBuildThisFileDirectory)trailingComments_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)typeAccessibilityInterface_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeAccessibilityOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)typedNilInterfaceBoxing.go" />
     <None Include="$(MSBuildThisFileDirectory)typeNameResolution.go" />

@@ -47,10 +47,10 @@ using static go.os.user_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<_C_char, ж<_C_char>>(Inverted = true, ValueType = "_C_char")]
-[assembly: GoImplicitConv<_C_gid_t, ж<_C_gid_t>>(Inverted = true, Indirect = true, ValueType = "_C_gid_t")]
-[assembly: GoImplicitConv<_C_int, ж<_C_int>>(Inverted = true, Indirect = true, ValueType = "_C_int")]
-[assembly: GoImplicitConv<_C_long, _C_size_t>(Inverted = true, ValueType = "_C_long")]
+[assembly: GoImplicitConv<_C_char, ж<_C_char>>(Inverted = true, ValueType = "byte")]
+[assembly: GoImplicitConv<_C_gid_t, ж<_C_gid_t>>(Inverted = true, Indirect = true, ValueType = "uint32")]
+[assembly: GoImplicitConv<_C_int, ж<_C_int>>(Inverted = true, Indirect = true, ValueType = "int32")]
+[assembly: GoImplicitConv<_C_long, _C_size_t>(Inverted = true, ValueType = "int64")]
 // </ImplicitConversions>
 
 namespace go.os;
