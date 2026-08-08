@@ -174,12 +174,10 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         }, ref ᒐ);
         // Start workers.
         // TODO(jayconrod): do we want to support fuzzing different binaries?
-        @string dir = ""u8;
-        // same as self
+        @string dir = ""u8; // same as self
         @string binPath = os.Args[0];
         var args = append(new @string[]{"-test.fuzzworker"u8}.slice(), os.Args[1..].ꓸꓸꓸ);
-        var env = os.Environ();
-        // same as self
+        var env = os.Environ(); // same as self
         var errC = new channel<error>(0);
         var workers = new slice<ж<worker>>(opts.Parallel);
         foreach (var (i, _) in workers) {
@@ -971,10 +969,9 @@ internal static (ж<coordinator>, error) newCoordinator(CoordinateFuzzingOpts op
 public static (slice<CorpusEntry>, error) ReadCorpus(@string dir, slice<reflectꓸType> types) {
     var (files, err) = os.ReadDir(dir);
     if (os.IsNotExist(err)){
-        return (default!, default!);
+        return (default!, default!); // No corpus to read
     } else 
     if (err != default!) {
-        // No corpus to read
         return (default!, fmt.Errorf("reading seed corpus from testdata: %v"u8, err));
     }
     slice<CorpusEntry> corpus = default!;
@@ -1055,8 +1052,7 @@ internal static error /*err*/ writeToCorpus(ж<CorpusEntry> Ꮡentry, @string di
     }
     {
         var errΔ2 = os.WriteFile(entry.Path, entry.Data, 438); if (errΔ2 != default!) {
-            os.Remove(entry.Path);
-            // remove partially written file
+            os.Remove(entry.Path); // remove partially written file
             return errΔ2;
         }
     }

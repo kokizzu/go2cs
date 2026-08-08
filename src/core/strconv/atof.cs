@@ -220,13 +220,11 @@ internal static (uint64 mantissa, nint exp, bool neg, bool trunc, bool hex, nint
 
     // digits
     var @base = (uint64)10;
-    nint maxMantDigits = 19;
-    // 10^19 fits in uint64
+    nint maxMantDigits = 19; // 10^19 fits in uint64
     var expChar = (byte)(rune)'e';
     if (i + 2 < len(s) && s[i] == (rune)'0' && lower(s[i + 1]) == (rune)'x') {
         @base = 16;
-        maxMantDigits = 16;
-        // 16^16 fits in uint64
+        maxMantDigits = 16; // 16^16 fits in uint64
         i += 2;
         expChar = (rune)'p';
         hex = true;
@@ -554,8 +552,7 @@ internal static (float64, error) atofHex(@string s, ж<floatInfo> Ꮡflt, uint64
 
     nint maxExp = ((nint)1).Lsh(flt.expbits) + flt.bias - 2;
     nint minExp = flt.bias + 1;
-    exp += (nint)flt.mantbits;
-    // mantissa now implicitly divided by 2^mantbits.
+    exp += (nint)flt.mantbits; // mantissa now implicitly divided by 2^mantbits.
     // Shift mantissa and exponent to bring representation into float range.
     // Eventually we want a mantissa with a leading 1-bit followed by mantbits other bits.
     // For rounding, we need two more, where the bottom bit represents
@@ -583,8 +580,7 @@ internal static (float64, error) atofHex(@string s, ж<floatInfo> Ꮡflt, uint64
     // Round using two bottom bits.
     var round = (uint64)(mantissa & 3);
     mantissa >>= (int)(2);
-    round |= (uint64)((uint64)(mantissa & 1));
-    // round to even (round up if mantissa is odd)
+    round |= (uint64)((uint64)(mantissa & 1)); // round to even (round up if mantissa is odd)
     exp += 2;
     if (round == 3) {
         mantissa++;

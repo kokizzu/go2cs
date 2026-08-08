@@ -18,8 +18,7 @@ internal const bool unaligned = /* runtime.GOARCH == "386" ||
 // places the result in little endian byte order in dst.
 internal static void addXor(slice<byte> dst, slice<byte> src, uint32 a, uint32 b) {
     _ = src[3];
-    _ = dst[3];
-    // bounds check elimination hint
+    _ = dst[3]; // bounds check elimination hint
     if (unaligned){
         // The compiler should optimize this code into
         // 32-bit unaligned little endian loads and stores.

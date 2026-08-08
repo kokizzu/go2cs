@@ -758,8 +758,7 @@ internal static ж<ΔNat> montgomeryMul(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡa, ж<
 internal static nuint /*carry*/ addMulVVW(slice<nuint> z, slice<nuint> x, nuint y) {
     nuint carry = default!;
 
-    _ = x[len(z) - 1];
-    // bounds check elimination hint
+    _ = x[len(z) - 1]; // bounds check elimination hint
     foreach (var (i, _) in z) {
         var (hi, lo) = bits.Mul(x[i], y);
         (lo, var c) = bits.Add(lo, z[i], 0);
@@ -780,16 +779,14 @@ internal static nuint /*carry*/ addMulVVW(slice<nuint> z, slice<nuint> x, nuint 
 // must already be reduced modulo m.
 public static ж<ΔNat> Mul(this ж<ΔNat> Ꮡx, ж<ΔNat> Ꮡy, ж<Modulus> Ꮡm) {
     ref var x = ref Ꮡx.DerefOrNull();
+    ref var y = ref Ꮡy.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
 
     // A Montgomery multiplication by a value out of the Montgomery domain
     // takes the result out of Montgomery representation.
-    var xR = NewNat().set(Ꮡx).montgomeryRepresentation(Ꮡm);
-    // xR = x * R mod m
-    return Ꮡx.montgomeryMul(xR, Ꮡy, Ꮡm);
+    var xR = NewNat().set(Ꮡx).montgomeryRepresentation(Ꮡm); // xR = x * R mod m
+    return Ꮡx.montgomeryMul(xR, Ꮡy, Ꮡm); // x = xR * y / R mod m
 }
-
-// x = xR * y / R mod m
 
 // Exp calculates out = x^e mod m.
 //

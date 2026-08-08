@@ -61,26 +61,22 @@ internal static float64 asinh(float64 x) {
     float64 temp = default!;
     switch (ᐧ) {
     case {} when x > Large: {
-        temp = Log(x) + Ln2;
+        temp = Log(x) + Ln2; // |x| > 2**28
         break;
     }
     case {} when x is > 2D: {
-        temp = Log(2D * x + 1D / (Sqrt(x * x + 1D) + x));
+        temp = Log(2D * x + 1D / (Sqrt(x * x + 1D) + x)); // 2**28 > |x| > 2.0
         break;
     }
     case {} when x < NearZero: {
-        temp = x;
+        temp = x; // |x| < 2**-28
         break;
     }
     default: {
-        temp = Log1p(x + x * x / (1D + Sqrt(1D + x * x)));
+        temp = Log1p(x + x * x / (1D + Sqrt(1D + x * x))); // 2.0 > |x| > 2**-28
         break;
     }}
 
-    // |x| > 2**28
-    // 2**28 > |x| > 2.0
-    // |x| < 2**-28
-    // 2.0 > |x| > 2**-28
     if (sign) {
         temp = -temp;
     }

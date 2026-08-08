@@ -76,9 +76,8 @@ partial class hpack_package {
     }
     copy(t.ents, t.ents[(int)(n)..]);
     for (nint k = t.len() - n; k < t.len(); k++) {
-        t.ents[k] = new HeaderField(nil);
+        t.ents[k] = new HeaderField(nil); // so strings can be garbage collected
     }
-    // so strings can be garbage collected
     t.ents = t.ents[..(int)(t.len() - n)];
     if (t.evictCount + (uint64)n < t.evictCount) {
         throw panic("evictCount overflow");
@@ -127,12 +126,10 @@ internal static uint64 idToIndex(this ж<headerFieldTable> Ꮡt, uint64 id) {
     if (id <= t.evictCount) {
         throw panic(fmt.Sprintf("id (%v) <= evictCount (%v)"u8, id, t.evictCount));
     }
-    var k = id - t.evictCount - 1;
-    // convert id to an index t.ents[k]
+    var k = id - t.evictCount - 1; // convert id to an index t.ents[k]
     if (Ꮡt != staticTable) {
-        return (uint64)t.len() - k;
+        return (uint64)t.len() - k; // dynamic table
     }
-    // dynamic table
     return k + 1;
 }
 

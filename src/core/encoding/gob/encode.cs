@@ -118,10 +118,8 @@ internal static ж<encoderState> newEncoderState(this ж<Encoder> Ꮡenc, ж<enc
         return;
     }
     binary.BigEndian.PutUint64(state.buf[1..], x);
-    nint bc = (bits.LeadingZeros64(x) >> (int)(3));
-    // 8 - bytelen(x)
-    state.buf[bc] = (uint8)(bc - (nint)uint64Size);
-    // and then we subtract 8 to get -bytelen(x)
+    nint bc = (bits.LeadingZeros64(x) >> (int)(3)); // 8 - bytelen(x)
+    state.buf[bc] = (uint8)(bc - (nint)uint64Size); // and then we subtract 8 to get -bytelen(x)
     state.b.Write(state.buf[(int)(bc)..(int)(uint64Size + 1)]);
 }
 
@@ -665,10 +663,8 @@ internal static (ж<Action<ж<encInstr>, ж<encoderState>, reflectꓸValue>>, ni
         state.update(i);
         (~state).enc.encodeGobEncoder((~state).b, Ꮡut, v);
     };
-    return (Ꮡop, (nint)ut.encIndir);
+    return (Ꮡop, (nint)ut.encIndir); // encIndir: op will get called with p == address of receiver.
 }
-
-// encIndir: op will get called with p == address of receiver.
 
 // compileEnc returns the engine to compile the type.
 internal static ж<encEngine> compileEnc(ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) {

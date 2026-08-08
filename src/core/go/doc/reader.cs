@@ -115,11 +115,9 @@ internal static void set(this methodSet mset, ж<ast.FuncDecl> Ꮡf, bool preser
         Orig: recv
     ));
     if (!preserveAST) {
-        f.Doc = default!;
+        f.Doc = default!; // doc consumed - remove from AST
     }
 }
-
-// doc consumed - remove from AST
 
 // add adds method m to the method set; m is ignored if the method set
 // already contains a method with the same name at the same or a higher
@@ -236,9 +234,8 @@ internal static (@string name, bool imported) baseTypeName(ast.Expr x) {
 // is added to the type map.
 [GoRecv] internal static ж<namedType> lookupType(this ref reader r, @string name) {
     if (name == ""u8 || name == "_"u8) {
-        return default!;
+        return default!; // no type docs for anonymous types
     }
-    // no type docs for anonymous types
     {
         var (typΔ1, found) = r.types[name, ꟷ]; if (found) {
             return typΔ1;
@@ -298,8 +295,7 @@ internal static (@string name, bool imported) baseTypeName(ast.Expr x) {
 }
 
 internal static slice<@string> specNames(slice<ast.Spec> specs) {
-    var names = new slice<@string>(0, len(specs));
-    // reasonable estimate
+    var names = new slice<@string>(0, len(specs)); // reasonable estimate
     foreach (var (_, s) in specs) {
         // s guaranteed to be an *ast.ValueSpec by readValue
         foreach (var (_, ident) in (~s._<ж<ast.ValueSpec>>()).Names) {
@@ -325,9 +321,8 @@ internal static void readValue(this ж<reader> Ꮡr, ж<ast.GenDecl> Ꮡdecl) {
     foreach (var (_, spec) in decl.Specs) {
         var (s, ok) = spec._<ж<ast.ValueSpec>>(ᐧ);
         if (!ok) {
-            continue;
+            continue; // should not happen, but be conservative
         }
-        // should not happen, but be conservative
         @string name = ""u8;
         switch (ᐧ) {
         case {} when (~s).Type != default!: {
@@ -371,11 +366,10 @@ internal static void readValue(this ж<reader> Ꮡr, ж<ast.GenDecl> Ꮡdecl) {
         // typed entries are sufficiently frequent
         {
             var typ = r.lookupType(domName); if (typ != nil) {
-                values = typ.of(namedType.Ꮡvalues);
+                values = typ.of(namedType.Ꮡvalues); // associate with that type
             }
         }
     }
-    // associate with that type
     values.ValueSlot = append(values.ValueSlot, Ꮡ(new Value(
         Doc: decl.Doc.Text(),
         Names: specNames(decl.Specs),
@@ -383,9 +377,8 @@ internal static void readValue(this ж<reader> Ꮡr, ж<ast.GenDecl> Ꮡdecl) {
         order: r.order
     )));
     if ((Mode)(r.mode & PreserveAST) == 0) {
-        decl.Doc = default!;
+        decl.Doc = default!; // doc consumed - remove from AST
     }
-    // doc consumed - remove from AST
     // Note: It's important that the order used here is global because the cleanupTypes
     // methods may move values associated with types back into the global list. If the
     // order is list-specific, sorting is not deterministic because the same order value
@@ -422,9 +415,8 @@ internal static (slice<ж<ast.Field>> list, bool isStruct) fields(ast.Expr typ) 
 
     var typ = r.lookupType((~spec.Name).Name);
     if (typ == nil) {
-        return;
+        return; // no name or blank name - ignore the type
     }
-    // no name or blank name - ignore the type
     // A type should be added at most once, so typ.decl
     // should be nil - if it is not, simply overwrite it.
     typ.Value.decl = Ꮡdecl;
@@ -435,11 +427,9 @@ internal static (slice<ж<ast.Field>> list, bool isStruct) fields(ast.Expr typ) 
         doc = decl.Doc;
     }
     if ((Mode)(r.mode & PreserveAST) == 0) {
-        spec.Doc = default!;
-        // doc consumed - remove from AST
-        decl.Doc = default!;
+        spec.Doc = default!; // doc consumed - remove from AST
+        decl.Doc = default!; // doc consumed - remove from AST
     }
-    // doc consumed - remove from AST
     typ.Value.doc = doc.Text();
     // record anonymous fields (they may contribute methods)
     // (some fields may have been recorded already when filtering
@@ -613,8 +603,7 @@ internal static @string clean(@string s) {
 // another note in the same comment group, whichever comes first.
 [GoRecv] internal static void readNotes(this ref reader r, slice<ж<ast.CommentGroup>> comments) {
     foreach (var (_, group) in comments) {
-        nint i = -1;
-        // comment index of most recent note start, valid if >= 0
+        nint i = -1; // comment index of most recent note start, valid if >= 0
         var list = group.Value.List;
         foreach (var (j, c) in list) {
             if (noteCommentRx.MatchString((~c).Text)) {
@@ -639,10 +628,9 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
     if (src.Doc != nil) {
         r.readDoc(src.Doc);
         if ((Mode)(r.mode & PreserveAST) == 0) {
-            src.Doc = default!;
+            src.Doc = default!; // doc consumed - remove from AST
         }
     }
-    // doc consumed - remove from AST
     // add all declarations but for functions which are processed in a separate pass
     foreach (var (_, decl) in src.Decls) {
         switch (decl.type()) {
@@ -672,7 +660,7 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
                                             r.importByName[name] = import_;
                                         } else 
                                         if (old != import_ && old != ""u8) {
-                                            r.importByName[name] = ""u8;
+                                            r.importByName[name] = ""u8; // ambiguous
                                         }
                                     }
                                 }
@@ -687,7 +675,6 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
             else if (exprᴛ1 == token.TYPE) {
                 do {
                     if (len((~d).Specs) == 1 && !(~d).Lparen.IsValid()) {
-                        // ambiguous
                         // constants and variables are always handled as a group
                         // types are handled individually
                         // common case: single declaration w/o parentheses
@@ -733,11 +720,10 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
     // collect MARKER(...): annotations
     r.readNotes(src.Comments);
     if ((Mode)(r.mode & PreserveAST) == 0) {
-        src.Comments = default!;
+        src.Comments = default!; // consumed unassociated comments - remove from AST
     }
 }
 
-// consumed unassociated comments - remove from AST
 internal static void readPackage(this ж<reader> Ꮡr, ж<ast.Package> Ꮡpkg, Mode mode) {
     ref var r = ref Ꮡr.DerefOrNull();
     ref var pkg = ref Ꮡpkg.DerefOrNull();
@@ -789,9 +775,8 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
     ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf == nil || f.Decl == nil || (~f.Decl).Recv == nil || len((~(~f.Decl).Recv).List) != 1) {
-        return Ꮡf;
+        return Ꮡf; // shouldn't happen, but be safe
     }
-    // shouldn't happen, but be safe
     // copy existing receiver field and set new type
     ref var newField = ref heap<ast.Field>(out var ᏑnewField);
     newField = (~(~f.Decl).Recv).List[0].Value;
@@ -801,8 +786,7 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
     var newIdent = Ꮡ(new ast.Ident(NamePos: origPos, Name: recvTypeName));
     ast.Expr typ = new ast_IdentжExpr(newIdent);
     if (!embeddedIsPtr && origRecvIsPtr) {
-        newIdent.Value.NamePos++;
-        // '*' is one character
+        newIdent.Value.NamePos++; // '*' is one character
         typ = new ast_StarExprжExpr(Ꮡ(new ast.StarExpr(Star: origPos, X: new ast_IdentжExpr(newIdent))));
     }
     newField.Type = typ;
@@ -939,8 +923,7 @@ internal static @string sortingName(ж<ast.GenDecl> Ꮡd) {
 }
 
 internal static slice<ж<Value>> sortedValues(slice<ж<Value>> m, token.Token tok) {
-    var list = new slice<ж<Value>>(len(m));
-    // big enough in any case
+    var list = new slice<ж<Value>>(len(m)); // big enough in any case
     nint i = 0;
     foreach (var (_, val) in m) {
         if ((~(~val).Decl).Tok == tok) {

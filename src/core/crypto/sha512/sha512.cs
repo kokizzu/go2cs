@@ -160,8 +160,7 @@ internal static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: inv
     b = byteorder.BeAppendUint64(b, d.h[6]);
     b = byteorder.BeAppendUint64(b, d.h[7]);
     b = append(b, d.x[..(int)(d.nx)].ꓸꓸꓸ);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)];
-    // already zero
+    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
     b = byteorder.BeAppendUint64(b, d.len);
     return (b, default!);
 }

@@ -52,8 +52,7 @@ internal static void resolveFile(ж<ast.File> Ꮡfile, ж<tokenꓸFile> Ꮡhandl
     foreach (var (_, ident) in (~r).unresolved) {
         // i <= index for current ident
         assert((~ident).Obj == unresolved, objectAlreadyResolvedˢ);
-        ident.Value.Obj = (~r).pkgScope.Lookup((~ident).Name);
-        // also removes unresolved sentinel
+        ident.Value.Obj = (~r).pkgScope.Lookup((~ident).Name); // also removes unresolved sentinel
         if ((~ident).Obj == nil){
             r.Value.unresolved[i] = ident;
             i++;
@@ -199,8 +198,7 @@ internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables 
     // Go spec: A short variable declaration may redeclare variables
     // provided they were originally declared in the same block with
     // the same type, and at least one of the non-blank variables is new.
-    nint n = 0;
-    // number of new variables
+    nint n = 0; // number of new variables
     foreach (var (_, x) in decl.Lhs) {
         {
             var (ident, isIdent) = x._<ж<ast.Ident>>(ᐧ); if (isIdent) {
@@ -215,17 +213,15 @@ internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables 
                     }
                     {
                         var alt = r.topScope.Insert(obj); if (alt != nil){
-                            ident.Value.Obj = alt;
+                            ident.Value.Obj = alt; // redeclaration
                         } else {
-                            // redeclaration
-                            n++;
+                            n++; // new declaration
                         }
                     }
                 }
             }
         }
     }
-    // new declaration
     if (n == 0 && r.declErr != default!) {
         r.declErr(decl.Lhs[0].Pos(), noNewVariablesOnLeftSideˢ);
     }
@@ -645,9 +641,8 @@ internal static void walkRecv(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡrecv)
     // trying to resolve the rest of the receiver, and avoid re-resolving the
     // type parameter identifiers.
     if (Ꮡrecv == nil || len(recv.List) == 0) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     var typ = recv.List[0].Value.Type;
     {
         var (ptr, ok) = typ._<ж<ast.StarExpr>>(ᐧ); if (ok) {

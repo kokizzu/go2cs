@@ -236,8 +236,7 @@ internal static error errClosed = errors.New("lzw: reader/writer is closed"u8);
 // Close closes the [Reader] and returns an error for any future read operation.
 // It does not close the underlying [io.Reader].
 [GoRecv] public static error Close(this ref Reader r) {
-    r.err = errClosed;
-    // in case any Reads come along
+    r.err = errClosed; // in case any Reads come along
     return default!;
 }
 

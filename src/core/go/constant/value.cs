@@ -252,14 +252,11 @@ internal static @string String(this floatVal x) {
     // formatting.
     // f = mant * 2**exp
     ref var mant = ref heap(new big.Float(), out var Ꮡmant);
-    nint exp = f.MantExp(Ꮡmant);
-    // 0.5 <= |mant| < 1.0
+    nint exp = f.MantExp(Ꮡmant); // 0.5 <= |mant| < 1.0
     // approximate float64 mantissa m and decimal exponent d
     // f ~ m * 10**d
-    var (m, _) = Ꮡmant.Float64();
-    // 0.5 <= |m| < 1.0
-    var d = (float64)exp * /* (math.Ln2 / math.Ln10) */ 0.3010299956639812D;
-    // log_10(2)
+    var (m, _) = Ꮡmant.Float64(); // 0.5 <= |m| < 1.0
+    var d = (float64)exp * /* (math.Ln2 / math.Ln10) */ 0.3010299956639812D; // log_10(2)
     // adjust m for truncated (integer) decimal exponent e
     var e = (int64)d;
     m *= math.Pow(10D, d - (float64)e);
@@ -509,9 +506,8 @@ public static Value MakeBool(bool b) {
 // MakeString returns the [String] value for s.
 public static Value MakeString(@string s) {
     if (s == ""u8) {
-        return new stringValжValue(ᏑemptyString);
+        return new stringValжValue(ᏑemptyString); // common case
     }
-    // common case
     return new stringValжValue(Ꮡ(new stringVal(s: s)));
 }
 
@@ -539,9 +535,8 @@ public static Value MakeFloat64(float64 x) {
         return new unknownVal(nil);
     }
     if (smallFloat64(x)) {
-        return new ratVal(newRat().SetFloat64(x + 0D));
+        return new ratVal(newRat().SetFloat64(x + 0D)); // convert -0 to 0
     }
-    // convert -0 to 0
     return new floatVal(newFloat().SetFloat64(x + 0D));
 }
 
@@ -659,15 +654,14 @@ public static (int64, bool) Int64Val(Value x) {
         return ((int64)xΔ1, true);
     }
     case intVal xΔ1: {
-        return (xΔ1.val.Int64(), false);
+        return (xΔ1.val.Int64(), false); // not an int64Val and thus not exact
     }
     case unknownVal xΔ1: {
         return (0, false);
     }
     default: {
         var xΔ1 = x;
-        throw panic(fmt.Sprintf("%v not an Int"u8, // not an int64Val and thus not exact
- xΔ1));
+        throw panic(fmt.Sprintf("%v not an Int"u8, xΔ1));
         break;
     }}
 }
@@ -881,12 +875,11 @@ public static nint Sign(Value x) {
         return (nint)(Sign(xΔ1.re) | Sign(xΔ1.im));
     }
     case unknownVal xΔ1: {
-        return 1;
+        return 1; // avoid spurious division by zero errors
     }
     default: {
         var xΔ1 = x;
-        throw panic(fmt.Sprintf("%v not numeric"u8, // avoid spurious division by zero errors
- xΔ1));
+        throw panic(fmt.Sprintf("%v not numeric"u8, xΔ1));
         break;
     }}
 }
@@ -1166,11 +1159,10 @@ public static Value ToInt(Value x) {
 public static Value ToFloat(Value x) {
     switch (x.type()) {
     case int64Val xΔ1: {
-        return i64tor(xΔ1);
+        return i64tor(xΔ1); // x is always a small int
     }
     case intVal xΔ1: {
         if (smallInt(xΔ1.val)) {
-            // x is always a small int
             return itor(xΔ1);
         }
         return itof(xΔ1);
@@ -1247,7 +1239,7 @@ public static Value UnaryOp(token.Token op, Value y, nuint prec) {
         case int64Val yΔ4: {
             {
                 var z = -yΔ4; if (z != yΔ4) {
-                    return z;
+                    return z; // no overflow
                 }
             }
             return makeInt(newInt().Neg(big.NewInt((int64)yΔ4)));
@@ -1262,8 +1254,7 @@ public static Value UnaryOp(token.Token op, Value y, nuint prec) {
             return makeFloat(newFloat().Neg(yΔ4.val));
         }
         case complexVal yΔ4: {
-            var re = UnaryOp(token.SUB, // no overflow
- yΔ4.re, 0);
+            var re = UnaryOp(token.SUB, yΔ4.re, 0);
             var im = UnaryOp(token.SUB, yΔ4.im, 0);
             return makeComplex(re, im);
         }}
@@ -1291,7 +1282,7 @@ public static Value UnaryOp(token.Token op, Value y, nuint prec) {
             // For unsigned types, the result will be negative and
             // thus "too large": We must limit the result precision
             // to the type's precision.
-            z.AndNot(z, newInt().Lsh(big.NewInt(-1), prec));
+            z.AndNot(z, newInt().Lsh(big.NewInt(-1), prec)); // z &^= (-1)<<prec
         }
         return makeInt(z);
     }
@@ -1305,7 +1296,6 @@ public static Value UnaryOp(token.Token op, Value y, nuint prec) {
         }}
     }
 
-    // z &^= (-1)<<prec
 Error:
     throw panic(fmt.Sprintf("invalid unary operation %s%v"u8, op, y));
 }

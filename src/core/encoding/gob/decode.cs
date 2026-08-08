@@ -143,8 +143,7 @@ internal static (uint64 x, nint width, error err) decodeUintReader(io.Reader r, 
     foreach (var (_, bΔ1) in buf[0..(int)(width)]) {
         x = (uint64)((x << (int)(8)) | (uint64)bΔ1);
     }
-    width++;
-    // +1 for length byte
+    width++; // +1 for length byte
     return (x, width, err);
 }
 
@@ -1312,10 +1311,8 @@ internal static (ж<decEngine> engine, error err) compileSingle(this ж<Decoder>
     ref var ut = ref Ꮡut.DerefOrNull();
     var rt = ut.user;
     engine = @new<decEngine>();
-    engine.Value.instr = new slice<decInstr>(1);
-    // one item
-    @string name = rt.String();
-    // best we can do
+    engine.Value.instr = new slice<decInstr>(1); // one item
+    @string name = rt.String(); // best we can do
     if (!dec.compatibleType(rt, remoteId, new map<reflectꓸType, typeId>())) {
         @string remoteType = Ꮡdec.typeString(remoteId);
         // Common confusing case: local interface type, remote concrete type.
@@ -1334,8 +1331,7 @@ internal static (ж<decEngine> engine, error err) compileSingle(this ж<Decoder>
 // compileIgnoreSingle compiles the decoder engine for a non-struct top-level value that will be discarded.
 internal static ж<decEngine> compileIgnoreSingle(this ж<Decoder> Ꮡdec, typeId remoteId) {
     var engine = @new<decEngine>();
-    engine.Value.instr = new slice<decInstr>(1);
-    // one item
+    engine.Value.instr = new slice<decInstr>(1); // one item
     var op = Ꮡdec.decIgnoreOpFor(remoteId, new map<typeId, ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>>>());
     var ovfl = overflow(Ꮡdec.typeString(remoteId));
     engine.Value.instr[0] = new decInstr(op.ValueSlot, 0, default!, ovfl);

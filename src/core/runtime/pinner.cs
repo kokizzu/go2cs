@@ -101,8 +101,7 @@ internal static bool isPinned(@unsafe.Pointer ptr) {
     }
     var objIndex = span.objIndex((uintptr)ptr);
     var pinState = pinnerBits.ofObject(objIndex);
-    KeepAlive(ptr);
-    // make sure ptr is alive until we are done so the span can't be freed
+    KeepAlive(ptr); // make sure ptr is alive until we are done so the span can't be freed
     return pinState.isPinned();
 }
 
@@ -128,11 +127,9 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
     // w/o locks.
     var mp = acquirem();
     span.ensureSwept();
-    KeepAlive(ptr);
-    // make sure ptr is still alive after span is swept
+    KeepAlive(ptr); // make sure ptr is still alive after span is swept
     var objIndex = span.objIndex((uintptr)ptr);
-    @lock(span.of(mspan.Ꮡspeciallock));
-    // guard against concurrent calls of setPinned on same span
+    @lock(span.of(mspan.Ꮡspeciallock)); // guard against concurrent calls of setPinned on same span
     var pinnerBits = span.getPinnerBits();
     if (pinnerBits == nil) {
         pinnerBits = span.newPinnerBits();

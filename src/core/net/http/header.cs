@@ -100,8 +100,7 @@ public static ΔHeader Clone(this ΔHeader h) {
     foreach (var (_, vv) in h) {
         nv += builtin.len(vv);
     }
-    var sv = new slice<@string>(nv);
-    // shared backing array for headers' values
+    var sv = new slice<@string>(nv); // shared backing array for headers' values
     var h2 = new ΔHeader(builtin.len(h));
     foreach (var (k, vv) in h) {
         if (vv == default!) {

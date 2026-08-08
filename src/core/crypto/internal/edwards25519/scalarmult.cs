@@ -62,24 +62,15 @@ public static ж<Point> ScalarBaseMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡx) {
         Ꮡv.fromP1xP1(tmp1);
     }
     // Multiply by 16
-    tmp2.FromP3(Ꮡv);
-    // tmp2 =    v in P2 coords
-    tmp1.Double(tmp2);
-    // tmp1 =  2*v in P1xP1 coords
-    tmp2.FromP1xP1(tmp1);
-    // tmp2 =  2*v in P2 coords
-    tmp1.Double(tmp2);
-    // tmp1 =  4*v in P1xP1 coords
-    tmp2.FromP1xP1(tmp1);
-    // tmp2 =  4*v in P2 coords
-    tmp1.Double(tmp2);
-    // tmp1 =  8*v in P1xP1 coords
-    tmp2.FromP1xP1(tmp1);
-    // tmp2 =  8*v in P2 coords
-    tmp1.Double(tmp2);
-    // tmp1 = 16*v in P1xP1 coords
-    Ꮡv.fromP1xP1(tmp1);
-    // now v = 16*(odd components)
+    tmp2.FromP3(Ꮡv); // tmp2 =    v in P2 coords
+    tmp1.Double(tmp2); // tmp1 =  2*v in P1xP1 coords
+    tmp2.FromP1xP1(tmp1); // tmp2 =  2*v in P2 coords
+    tmp1.Double(tmp2); // tmp1 =  4*v in P1xP1 coords
+    tmp2.FromP1xP1(tmp1); // tmp2 =  4*v in P2 coords
+    tmp1.Double(tmp2); // tmp1 =  8*v in P1xP1 coords
+    tmp2.FromP1xP1(tmp1); // tmp2 =  8*v in P2 coords
+    tmp1.Double(tmp2); // tmp1 = 16*v in P1xP1 coords
+    Ꮡv.fromP1xP1(tmp1); // now v = 16*(odd components)
     // Accumulate the even components
     for (nint i = 0; i < 64; i += 2) {
         basepointTableΔ1.Value[i / 2].SelectInto(multiple, digits[i]);
@@ -113,31 +104,20 @@ public static ж<Point> ScalarMult(this ж<Point> Ꮡv, ж<Scalar> Ꮡx, ж<Poin
     var tmp2 = Ꮡ(new projP2(nil));
     table.SelectInto(multiple, digits[63]);
     Ꮡv.Set(NewIdentityPoint());
-    tmp1.Add(Ꮡv, multiple);
-    // tmp1 = x_63*Q in P1xP1 coords
+    tmp1.Add(Ꮡv, multiple); // tmp1 = x_63*Q in P1xP1 coords
     for (nint i = 62; i >= 0; i--) {
-        tmp2.FromP1xP1(tmp1);
-        // tmp2 =    (prev) in P2 coords
-        tmp1.Double(tmp2);
-        // tmp1 =  2*(prev) in P1xP1 coords
-        tmp2.FromP1xP1(tmp1);
-        // tmp2 =  2*(prev) in P2 coords
-        tmp1.Double(tmp2);
-        // tmp1 =  4*(prev) in P1xP1 coords
-        tmp2.FromP1xP1(tmp1);
-        // tmp2 =  4*(prev) in P2 coords
-        tmp1.Double(tmp2);
-        // tmp1 =  8*(prev) in P1xP1 coords
-        tmp2.FromP1xP1(tmp1);
-        // tmp2 =  8*(prev) in P2 coords
-        tmp1.Double(tmp2);
-        // tmp1 = 16*(prev) in P1xP1 coords
-        Ꮡv.fromP1xP1(tmp1);
-        //    v = 16*(prev) in P3 coords
+        tmp2.FromP1xP1(tmp1); // tmp2 =    (prev) in P2 coords
+        tmp1.Double(tmp2); // tmp1 =  2*(prev) in P1xP1 coords
+        tmp2.FromP1xP1(tmp1); // tmp2 =  2*(prev) in P2 coords
+        tmp1.Double(tmp2); // tmp1 =  4*(prev) in P1xP1 coords
+        tmp2.FromP1xP1(tmp1); // tmp2 =  4*(prev) in P2 coords
+        tmp1.Double(tmp2); // tmp1 =  8*(prev) in P1xP1 coords
+        tmp2.FromP1xP1(tmp1); // tmp2 =  8*(prev) in P2 coords
+        tmp1.Double(tmp2); // tmp1 = 16*(prev) in P1xP1 coords
+        Ꮡv.fromP1xP1(tmp1); //    v = 16*(prev) in P3 coords
         table.SelectInto(multiple, digits[i]);
-        tmp1.Add(Ꮡv, multiple);
+        tmp1.Add(Ꮡv, multiple); // tmp1 = x_i*Q + 16*(prev) in P1xP1 coords
     }
-    // tmp1 = x_i*Q + 16*(prev) in P1xP1 coords
     Ꮡv.fromP1xP1(tmp1);
     return Ꮡv;
 }

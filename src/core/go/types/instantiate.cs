@@ -59,8 +59,7 @@ public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slic
     if (Ꮡctxt == nil) {
         Ꮡctxt = NewContext(); ctxt = ref Ꮡctxt.DerefOrNull();
     }
-    var orig_ = orig._<ΔgenericType>();
-    // signature of Instantiate must not change for backward-compatibility
+    var orig_ = orig._<ΔgenericType>(); // signature of Instantiate must not change for backward-compatibility
     if (validate) {
         var tparams = orig_.TypeParams().list();
         assert(len(tparams) > 0);
@@ -136,39 +135,34 @@ internal static ΔType /*res*/ instance(this ж<Checker> Ꮡcheck, tokenꓸPos p
     }
     switch (orig.type()) {
     case ж<Named> origΔ1: {
-        res = new NamedжΔType(Ꮡcheck.newNamedInstance(pos, origΔ1, targs, Ꮡexpanding));
+        res = new NamedжΔType(Ꮡcheck.newNamedInstance(pos, origΔ1, targs, Ꮡexpanding)); // substituted lazily
         break;
     }
     case ж<Alias> origΔ1: {
         if (!buildcfg.Experiment.AliasTypeParams) {
-            // substituted lazily
-            assert(Ꮡexpanding == nil);
+            assert(Ꮡexpanding == nil); // Alias instances cannot be reached from Named types
         }
         var tparams = origΔ1.TypeParams();
-        if (!Ꮡcheck.validateTArgLen(pos, // Alias instances cannot be reached from Named types
- // TODO(gri) investigate if this is needed (type argument and parameter count seem to be correct here)
+        if (!Ꮡcheck.validateTArgLen(pos, // TODO(gri) investigate if this is needed (type argument and parameter count seem to be correct here)
  origΔ1.String(), tparams.Len(), len(targs))) {
             return new BasicжΔType(Typ[Invalid]);
         }
         if (tparams.Len() == 0) {
-            return new AliasжΔType(origΔ1);
+            return new AliasжΔType(origΔ1); // nothing to do (minor optimization)
         }
-        return new AliasжΔType(Ꮡcheck.newAliasInstance(pos, // nothing to do (minor optimization)
- origΔ1, targs, Ꮡexpanding, Ꮡctxt));
+        return new AliasжΔType(Ꮡcheck.newAliasInstance(pos, origΔ1, targs, Ꮡexpanding, Ꮡctxt));
     }
     case ж<ΔSignature> origΔ1: {
-        assert(Ꮡexpanding == nil);
+        assert(Ꮡexpanding == nil); // function instances cannot be reached from Named types
         var tparams = origΔ1.TypeParams();
-        if (!Ꮡcheck.validateTArgLen(pos, // function instances cannot be reached from Named types
- // TODO(gri) investigate if this is needed (type argument and parameter count seem to be correct here)
+        if (!Ꮡcheck.validateTArgLen(pos, // TODO(gri) investigate if this is needed (type argument and parameter count seem to be correct here)
  origΔ1.String(), tparams.Len(), len(targs))) {
             return new BasicжΔType(Typ[Invalid]);
         }
         if (tparams.Len() == 0) {
-            return new ΔSignatureжΔType(origΔ1);
+            return new ΔSignatureжΔType(origΔ1); // nothing to do (minor optimization)
         }
-        var sig = Ꮡcheck.subst(pos, // nothing to do (minor optimization)
- new ΔSignatureжΔType(origΔ1), makeSubstMap(tparams.list(), targs), nil, Ꮡctxt)._<ж<ΔSignature>>();
+        var sig = Ꮡcheck.subst(pos, new ΔSignatureжΔType(origΔ1), makeSubstMap(tparams.list(), targs), nil, Ꮡctxt)._<ж<ΔSignature>>();
         if (sig == origΔ1) {
             // If the signature doesn't use its type parameters, subst
             // will not make a copy. In that case, make a copy now (so
@@ -254,15 +248,13 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
     var Vu = under(V);
     var Tu = under(T);
     if (!isValid(Vu) || !isValid(Tu)) {
-        return true;
+        return true; // avoid follow-on errors
     }
-    // avoid follow-on errors
     {
         var (p, _) = Vu._<ж<Pointer>>(ᐧ); if (p != nil && !isValid(under((~p).@base))) {
-            return true;
+            return true; // avoid follow-on errors (see go.dev/issue/49541 for an example)
         }
     }
-    // avoid follow-on errors (see go.dev/issue/49541 for an example)
     @string verb = implementˢ;
     if (constraint) {
         verb = satisfyˢ;
@@ -343,9 +335,8 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
     // V must also be in the set of types of T, if any.
     // Constraints with empty type sets were already excluded above.
     if (!Ti.typeSet().hasTerms()) {
-        return checkComparability();
+        return checkComparability(); // nothing to do
     }
-    // nothing to do
     // If V is itself an interface, each of its possible types must be in the set
     // of T types (i.e., the V type set must be a subset of the T type set).
     // Interfaces V with empty type sets were already excluded above.

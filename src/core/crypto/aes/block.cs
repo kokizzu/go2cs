@@ -41,8 +41,7 @@ partial class aes_package {
 
 // Encrypt one block from src into dst, using the expanded key xk.
 internal static void encryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byte> src) {
-    _ = src[15];
-    // early bounds check
+    _ = src[15]; // early bounds check
     var s0 = byteorder.BeUint32(src[0..4]);
     var s1 = byteorder.BeUint32(src[4..8]);
     var s2 = byteorder.BeUint32(src[8..12]);
@@ -54,8 +53,7 @@ internal static void encryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byt
     s3 ^= (uint32)(xk[3]);
     // Middle rounds shuffle using tables.
     // Number of rounds is set by length of expanded key.
-    nint nr = len(xk) / 4 - 2;
-    // - 2: one above, one more below
+    nint nr = len(xk) / 4 - 2; // - 2: one above, one more below
     nint k = 4;
     uint32 t0 = default!;
     uint32 t1 = default!;
@@ -78,8 +76,7 @@ internal static void encryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byt
     s1 ^= (uint32)(xk[k + 1]);
     s2 ^= (uint32)(xk[k + 2]);
     s3 ^= (uint32)(xk[k + 3]);
-    _ = dst[15];
-    // early bounds check
+    _ = dst[15]; // early bounds check
     byteorder.BePutUint32(dst[0..4], s0);
     byteorder.BePutUint32(dst[4..8], s1);
     byteorder.BePutUint32(dst[8..12], s2);
@@ -88,8 +85,7 @@ internal static void encryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byt
 
 // Decrypt one block from src into dst, using the expanded key xk.
 internal static void decryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byte> src) {
-    _ = src[15];
-    // early bounds check
+    _ = src[15]; // early bounds check
     var s0 = byteorder.BeUint32(src[0..4]);
     var s1 = byteorder.BeUint32(src[4..8]);
     var s2 = byteorder.BeUint32(src[8..12]);
@@ -101,8 +97,7 @@ internal static void decryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byt
     s3 ^= (uint32)(xk[3]);
     // Middle rounds shuffle using tables.
     // Number of rounds is set by length of expanded key.
-    nint nr = len(xk) / 4 - 2;
-    // - 2: one above, one more below
+    nint nr = len(xk) / 4 - 2; // - 2: one above, one more below
     nint k = 4;
     uint32 t0 = default!;
     uint32 t1 = default!;
@@ -125,8 +120,7 @@ internal static void decryptBlockGo(slice<uint32> xk, slice<byte> dst, slice<byt
     s1 ^= (uint32)(xk[k + 1]);
     s2 ^= (uint32)(xk[k + 2]);
     s3 ^= (uint32)(xk[k + 3]);
-    _ = dst[15];
-    // early bounds check
+    _ = dst[15]; // early bounds check
     byteorder.BePutUint32(dst[0..4], s0);
     byteorder.BePutUint32(dst[4..8], s1);
     byteorder.BePutUint32(dst[8..12], s2);

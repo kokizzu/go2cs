@@ -116,10 +116,8 @@ internal static UntypedInt maxShift => /* uintSize - 4 */ 60;
 internal static void rightShift(ж<@decimal> Ꮡa, nuint k) {
     ref var a = ref Ꮡa.DerefOrNull();
 
-    nint r = 0;
-    // read pointer
-    nint w = 0;
-    // write pointer
+    nint r = 0; // read pointer
+    nint w = 0; // write pointer
     // Pick up enough leading digits to cover first shift.
     nuint n = default!;
     for (; n.Rsh(k) == 0; r++) {
@@ -338,10 +336,8 @@ internal static void leftShift(ж<@decimal> Ꮡa, nuint k) {
     if (prefixIsLessThan(a.d[0..(int)(a.nd)], leftcheats[(nint)(k)].cutoff)) {
         delta--;
     }
-    nint r = a.nd;
-    // read index
-    nint w = a.nd + delta;
-    // write index
+    nint r = a.nd; // read index
+    nint w = a.nd + delta; // write index
     // Pick up a digit, put down a digit.
     nuint n = default!;
     for (r--; r >= 0; r--) {

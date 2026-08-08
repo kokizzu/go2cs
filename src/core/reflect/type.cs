@@ -1087,8 +1087,7 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
                 }
                 var styp = ntyp.Reinterpret<abi.Type, structType>();
                 if (nextCount[styp] > 0) {
-                    nextCount[styp] = 2;
-                    // exact multiple doesn't matter
+                    nextCount[styp] = 2; // exact multiple doesn't matter
                     continue;
                 }
                 if (nextCount == default!) {
@@ -1096,9 +1095,8 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
                 }
                 nextCount[styp] = 1;
                 if (count[tΔ1] > 1) {
-                    nextCount[styp] = 2;
+                    nextCount[styp] = 2; // exact multiple doesn't matter
                 }
-                // exact multiple doesn't matter
                 slice<nint> index = default!;
                 index = builtin.append(index, scan.index.ꓸꓸꓸ);
                 index = builtin.append(index, i);
@@ -1536,17 +1534,14 @@ internal static slice<ж<abi.Type>> typesByString(@string s) {
         nint i = 0;
         nint j = len(offs);
         while (i < j) {
-            nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-            // avoid overflow when computing h
+            nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
             // i ≤ h < j
             if (!(stringFor(rtypeOff(section, offs[h])) >= s)){
-                i = h + 1;
+                i = h + 1; // preserves f(i-1) == false
             } else {
-                // preserves f(i-1) == false
-                j = h;
+                j = h; // preserves f(j) == true
             }
         }
-        // preserves f(j) == true
         // i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
         // Having found the first, linear scan forward to find the last.
         // We could do a second binary search, but the caller is going
@@ -1702,16 +1697,14 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
     mt.Flags = 0;
     if ((~ktyp).Size_ > abi.MapMaxKeyBytes){
         mt.KeySize = (uint8)goarch.PtrSize;
-        mt.Flags |= (uint32)(1);
+        mt.Flags |= (uint32)(1); // indirect key
     } else {
-        // indirect key
         mt.KeySize = (uint8)(~ktyp).Size_;
     }
     if ((~etyp).Size_ > abi.MapMaxElemBytes){
         mt.ValueSize = (uint8)goarch.PtrSize;
-        mt.Flags |= (uint32)(2);
+        mt.Flags |= (uint32)(2); // indirect value
     } else {
-        // indirect value
         mt.MapType.ValueSize = (uint8)(~etyp).Size_;
     }
     mt.MapType.BucketSize = (uint16)(~mt.Bucket).Size_;
@@ -2546,8 +2539,7 @@ public static ΔType StructOf(slice<StructField> fields) {
                     lastPtrField = i;
                 }
             }
-            var prog = new byte[]{0, 0, 0, 0}.slice();
-            // will be length of prog
+            var prog = new byte[]{0, 0, 0, 0}.slice(); // will be length of prog
             uintptr off = default!;
             foreach (var (i, ft) in fs) {
                 if (i > lastPtrField) {
@@ -2562,14 +2554,11 @@ public static ΔType StructOf(slice<StructField> fields) {
                 // Pad to start of this field with zeros.
                 if (ft.Offset > off) {
                     var n = (ft.Offset - off) / (uintptr)goarch.PtrSize;
-                    prog = builtin.append(prog, (byte)(0x01), (byte)(0x00));
-                    // emit a 0 bit
+                    prog = builtin.append(prog, (byte)(0x01), (byte)(0x00)); // emit a 0 bit
                     if (n > 1) {
-                        prog = builtin.append(prog, (byte)(0x81));
-                        // repeat previous bit
-                        prog = appendVarint(prog, n - 1);
+                        prog = builtin.append(prog, (byte)(0x81)); // repeat previous bit
+                        prog = appendVarint(prog, n - 1); // n-1 times
                     }
-                    // n-1 times
                     off = ft.Offset;
                 }
                 prog = appendGCProg(prog, ft.Typ);
@@ -2637,8 +2626,7 @@ internal static (structField, @string) runtimeStructField(StructField field) {
             throw panic("reflect.StructOf: field \"" + field.Name + "\" is unexported but missing PkgPath");
         }
     }
-    resolveReflectType(field.Type.common());
-    // install in runtime
+    resolveReflectType(field.Type.common()); // install in runtime
     var f = new structField(
         Name: newName(field.Name, ((@string)field.Tag), field.IsExported(), field.Anonymous),
         Typ: field.Type.common(),
@@ -2764,9 +2752,8 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     default: {
         var prog = new byte[]{ // Create program that emits one element
  // and then repeats to make the array.
-0, 0, 0, 0}.slice();
-        prog = appendGCProg(prog, // will be length of prog
- typ);
+0, 0, 0, 0}.slice(); // will be length of prog
+        prog = appendGCProg(prog, typ);
         var elemPtrs = (~typ).PtrBytes / (uintptr)goarch.PtrSize;
         var elemWords = (~typ).Size_ / (uintptr)goarch.PtrSize;
         if (elemPtrs < elemWords) {
@@ -2790,11 +2777,10 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
         (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
         Δarray.Kind_ |= (abiꓸKind)(abi.KindGCProg);
         Δarray.GCData = Ꮡ(prog, 0);
-        Δarray.PtrBytes = Δarray.Size_;
+        Δarray.PtrBytes = Δarray.Size_; // overestimate but ok; must match program
         break;
     }}
 
-    // overestimate but ok; must match program
     var etyp = typ;
     var esize = etyp.Size();
     Δarray.Equal = default!;
@@ -2980,13 +2966,10 @@ public static ΔType TypeFor<T>() {
     T v = default!;
     {
         var t = TypeOf(v); if (t != default!) {
-            return t;
+            return t; // optimize for T being a non-interface kind
         }
     }
-    // optimize for T being a non-interface kind
-    return TypeOf(((ж<T>)nil)).Elem();
+    return TypeOf(((ж<T>)nil)).Elem(); // only for an interface kind
 }
-
-// only for an interface kind
 
 } // end reflect_package

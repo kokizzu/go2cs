@@ -67,9 +67,8 @@ internal static void record(this ж<timeHistogram> Ꮡh, int64 duration) {
     {
         nint l = sys.Len64((uint64)duration); if (l < timeHistMinBucketBits){
             bucketBit = timeHistMinBucketBits;
-            bucket = 0;
+            bucket = 0; // bucketBit - timeHistMinBucketBits
         } else {
-            // bucketBit - timeHistMinBucketBits
             bucketBit = (nuint)l;
             bucket = bucketBit - (nuint)timeHistMinBucketBits + 1;
         }

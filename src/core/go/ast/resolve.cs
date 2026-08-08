@@ -98,12 +98,11 @@ public static (ж<Package>, error) NewPackage(ж<token.FileSet> Ꮡfset, map<@st
             }
             case {} when name != pkgName: {
                 p.errorf((~@file).Package, "package %s; expected %s"u8, name, pkgName);
-                continue;
+                continue; // ignore this file
                 break;
             }}
         }
 
-        // ignore this file
         // collect top-level file objects in package scope
         foreach (var (_, obj) in (~(~@file).Scope).Objects) {
             p.declare(pkgScope, nil, obj);
@@ -176,9 +175,8 @@ public static (ж<Package>, error) NewPackage(ж<token.FileSet> Ꮡfset, map<@st
             }
         }
         @file.Value.Unresolved = (~@file).Unresolved[0..(int)(i)];
-        pkgScope.Value.Outer = Ꮡuniverse;
+        pkgScope.Value.Outer = Ꮡuniverse; // reset universe scope
     }
-    // reset universe scope
     p.errors.Sort();
     return (Ꮡ(new Package(pkgName, pkgScope, imports, files)), p.errors.Err());
 }

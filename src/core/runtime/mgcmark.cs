@@ -172,11 +172,10 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
             @throw(markrootBadIndexˢ);
         }
         var gp = work.stackRoots[(nint)(i - work.baseStacks)];
-        var status = readgstatus(gp);
+        var status = readgstatus(gp); // We are not in a scan state
         if ((status == _Gwaiting || status == _Gsyscall) && (~gp).waitsince == 0) {
             // remember when we've first observed the G blocked
             // needed only to output in traceback
-            // We are not in a scan state
             gp.Value.waitsince = work.tstart;
         }
         var gpʗ1 = gp;
@@ -817,9 +816,8 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     // It is less than the allocated size (which is hi-lo).
     uintptr sp = default!;
     if (gp.syscallsp != 0){
-        sp = gp.syscallsp;
+        sp = gp.syscallsp; // If in a system call this is the stack pointer (gp.sched.sp can be 0 in this case on Windows).
     } else {
-        // If in a system call this is the stack pointer (gp.sched.sp can be 0 in this case on Windows).
         sp = gp.sched.sp;
     }
     var scannedSize = gp.stack.hi - sp;
@@ -902,8 +900,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
             // We've already scanned this object.
             continue;
         }
-        obj.setRecord(nil);
-        // Don't scan it again.
+        obj.setRecord(nil); // Don't scan it again.
         if (stackTraceDebug) {
             printlock();
             print((@string)"  live stkobj at"u8, ((Δhex)(uint64)(state.stack.lo + (uintptr)(~obj).off)), (@string)"of size"u8, (~obj).size);
@@ -1033,12 +1030,10 @@ internal static void scanframeworker(ж<stkframe> Ꮡframe, ж<stackScanState> �
         foreach (var (i, _) in objs) {
             var obj = Ꮡ(objs, i);
             var off = obj.Value.off;
-            var @base = frame.varp;
-            // locals base pointer
+            var @base = frame.varp; // locals base pointer
             if (off >= 0) {
-                @base = frame.argp;
+                @base = frame.argp; // arguments and return values base pointer
             }
-            // arguments and return values base pointer
             var ptr = @base + (uintptr)off;
             if (ptr < frame.sp) {
                 // object hasn't been allocated in the frame yet.

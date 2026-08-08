@@ -175,17 +175,14 @@ internal static float64 log1p(float64 x) {
         iu &= (uint64)(0x000fffffffffffffUL);
         if (iu < 0x0006a09e667f3bcdUL){
             // mantissa of Sqrt(2)
-            u = Float64frombits((uint64)(iu | 0x3ff0000000000000UL));
+            u = Float64frombits((uint64)(iu | 0x3ff0000000000000UL)); // normalize u
         } else {
-            // normalize u
             k++;
-            u = Float64frombits((uint64)(iu | 0x3fe0000000000000UL));
-            // normalize u/2
+            u = Float64frombits((uint64)(iu | 0x3fe0000000000000UL)); // normalize u/2
             iu = ((0x0010000000000000UL - iu) >> (int)(2));
         }
-        f = u - 1.0D;
+        f = u - 1.0D; // Sqrt(2)/2 < u < Sqrt(2)
     }
-    // Sqrt(2)/2 < u < Sqrt(2)
     var hfsq = 0.5D * f * f;
     float64 s = default!;
     float64 R = default!;
@@ -199,8 +196,7 @@ internal static float64 log1p(float64 x) {
             c += (float64)k * Ln2Lo;
             return (float64)k * Ln2Hi + c;
         }
-        R = hfsq * (1.0D - 0.66666666666666666D * f);
-        // avoid division
+        R = hfsq * (1.0D - 0.66666666666666666D * f); // avoid division
         if (k == 0) {
             return f - R;
         }

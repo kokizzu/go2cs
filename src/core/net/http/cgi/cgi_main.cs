@@ -148,10 +148,9 @@ internal static void childCGIProcess() {
         if (req.FormValue(writeForeverˢ) == "1"u8) {
             io.Copy(new http_ResponseWriterᴠWriter(rw), ((neverEnding)(rune)'a'));
             while (ᐧ) {
-                time.Sleep((time.Duration)(5000000000L));
+                time.Sleep((time.Duration)(5000000000L)); // hang forever, until killed
             }
         }
-        // hang forever, until killed
         fmt.Fprintf(new http_ResponseWriterᴠWriter(rw), "test=Hello CGI-in-CGI\n"u8);
         foreach (var (k, vv) in (~req).Form) {
             foreach (var (_, v) in vv) {

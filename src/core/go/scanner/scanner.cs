@@ -143,11 +143,10 @@ internal static Mode dontInsertSemis => 2;     // do not automatically insert se
     s.ErrorCount = 0;
     s.next();
     if (s.ch == bom) {
-        s.next();
+        s.next(); // ignore BOM at file beginning
     }
 }
 
-// ignore BOM at file beginning
 [GoRecv] internal static void error(this ref Scanner s, nint offs, @string msg) {
     if (s.err != default!) {
         s.err(s.@file.Position(s.@file.Pos(offs)), msg);
@@ -169,13 +168,10 @@ internal static readonly @string commentNotTerminatedˢ = "comment not terminate
 // /*...*/ comment.
 [GoRecv] internal static (@string, nint) scanComment(this ref Scanner s) {
     // initial '/' already consumed; s.ch == '/' || s.ch == '*'
-    nint offs = s.offset - 1;
-    // position of initial '/'
-    nint next = -1;
-    // position immediately following the comment; < 0 means invalid comment
+    nint offs = s.offset - 1; // position of initial '/'
+    nint next = -1; // position immediately following the comment; < 0 means invalid comment
     nint numCR = 0;
-    nint nlOffset = 0;
-    // offset of first newline within /*...*/ comment
+    nint nlOffset = 0; // offset of first newline within /*...*/ comment
     if (s.ch == (rune)'/') {
         //-style comment
         // (the final '\n' is not considered part of the comment)
@@ -242,17 +238,14 @@ internal static slice<byte> prefix = slice<byte>("line "u8);
 [GoRecv] internal static void updateLineInfo(this ref Scanner s, nint next, nint offs, slice<byte> text) {
     // extract comment text
     if (text[1] == (rune)'*') {
-        text = text[..(int)(len(text) - 2)];
+        text = text[..(int)(len(text) - 2)]; // lop off trailing "*/"
     }
-    // lop off trailing "*/"
-    text = text[7..];
-    // lop off leading "//line " or "/*line "
+    text = text[7..]; // lop off leading "//line " or "/*line "
     offs += 7;
     var (i, n, ok) = trailingDigits(text);
     if (i == 0) {
-        return;
+        return; // ignore (not a line directive)
     }
-    // ignore (not a line directive)
     // i > 0
     if (!ok) {
         // text has a suffix :xxx but xxx is not a number
@@ -274,9 +267,8 @@ internal static slice<byte> prefix = slice<byte>("line "u8);
             s.error(offs + i2, "invalid column number: "u8 + ((sstring)(text[(int)(i2)..])));
             return;
         }
-        text = text[..(int)(i2 - 1)];
+        text = text[..(int)(i2 - 1)]; // lop off ":col"
     } else {
-        // lop off ":col"
         //line filename:line
         line = n;
     }
@@ -286,8 +278,7 @@ internal static slice<byte> prefix = slice<byte>("line "u8);
     }
     // If we have a column (//line filename:line:col form),
     // an empty filename means to use the previous filename.
-    @string filename = ((@string)(text[..(int)(i - 1)]));
-    // lop off ":line", and trim white space
+    @string filename = ((@string)(text[..(int)(i - 1)])); // lop off ":line", and trim white space
     if (filename == ""u8 && ok2){
         filename = s.@file.Position(s.@file.Pos(offs)).Filename;
     } else 
@@ -304,12 +295,10 @@ internal static slice<byte> prefix = slice<byte>("line "u8);
 }
 
 internal static (nint, nint, bool) trailingDigits(slice<byte> text) {
-    nint i = bytes.LastIndexByte(text, (rune)':');
-    // look from right (Windows filenames may contain ':')
+    nint i = bytes.LastIndexByte(text, (rune)':'); // look from right (Windows filenames may contain ':')
     if (i < 0) {
-        return (0, 0, false);
+        return (0, 0, false); // no ":"
     }
-    // no ":"
     // i >= 0
     var (n, err) = strconv.ParseUint(((@string)(text[(int)(i + 1)..])), 10, 0);
     return (i + 1, (nint)n, err == default!);
@@ -380,15 +369,13 @@ internal static nint digitVal(rune ch) {
         return (nint)(lower(ch) - (rune)'a' + 10);
     }}
 
-    return 16;
+    return 16; // larger than any legal digit val
 }
 
-// larger than any legal digit val
 internal static rune lower(rune ch) {
-    return (rune)(((rune)'a' - (rune)'A') | ch);
+    return (rune)(((rune)'a' - (rune)'A') | ch); // returns lower-case ch iff ch is ASCII letter
 }
 
-// returns lower-case ch iff ch is ASCII letter
 internal static bool isDecimal(rune ch) {
     return (rune)'0' <= ch && ch <= (rune)'9';
 }
@@ -415,9 +402,8 @@ internal static bool isHex(rune ch) {
                 ds = 2;
             } else 
             if (s.ch >= max && invalid < 0) {
-                invalid = s.offset;
+                invalid = s.offset; // record invalid rune offset
             }
-            // record invalid rune offset
             digsep |= (nint)(ds);
             s.next();
         }
@@ -442,15 +428,11 @@ internal static readonly @string mustSeparateSuccessiveˢ = "'_' must separate s
 [GoRecv] internal static (token.Token, @string) scanNumber(this ref Scanner s) {
     nint offs = s.offset;
     token.Token tok = token.ILLEGAL;
-    nint @base = 10;
-    // number base
-    var prefix = (rune)0;
-    // one of 0 (decimal), '0' (0-octal), 'x', 'o', or 'b'
-    nint digsep = 0;
-    // bit 0: digit present, bit 1: '_' present
+    nint @base = 10; // number base
+    var prefix = (rune)0; // one of 0 (decimal), '0' (0-octal), 'x', 'o', or 'b'
+    nint digsep = 0; // bit 0: digit present, bit 1: '_' present
     ref var invalid = ref heap<nint>(out var Ꮡinvalid);
-    invalid = -1;
-    // index of invalid digit in literal, or < 0
+    invalid = -1; // index of invalid digit in literal, or < 0
     // integer part
     if (s.ch != (rune)'.') {
         tok = token.INT;
@@ -474,12 +456,11 @@ internal static readonly @string mustSeparateSuccessiveˢ = "'_' must separate s
             }
             default: {
                 (@base, prefix) = (8, (rune)'0');
-                digsep = 1;
+                digsep = 1; // leading 0
                 break;
             }}
 
         }
-        // leading 0
         digsep |= (nint)(s.digits(@base, Ꮡinvalid));
     }
     // fractional part
@@ -564,10 +545,8 @@ internal static @string litname(rune prefix) {
 
 // invalidSep returns the index of the first invalid separator in x, or -1.
 internal static nint invalidSep(@string x) {
-    var x1 = (rune)' ';
-    // prefix char, we only care if it's 'x'
-    var d = (rune)'.';
-    // digit, one of '_', '0' (a digit), or '.' (anything else)
+    var x1 = (rune)' '; // prefix char, we only care if it's 'x'
+    var d = (rune)'.'; // digit, one of '_', '0' (a digit), or '.' (anything else)
     nint i = 0;
     // a prefix counts as a digit
     if (len(x) >= 2 && x[0] == (rune)'0') {
@@ -579,8 +558,7 @@ internal static nint invalidSep(@string x) {
     }
     // mantissa and exponent
     for (; i < len(x); i++) {
-        var p = d;
-        // previous digit
+        var p = d; // previous digit
         d = (rune)x[i];
         switch (ᐧ) {
         case {} when d is (rune)'_': {
@@ -898,19 +876,17 @@ scanAgain:
             break;
         }
         default: {
-            s.next();
+            s.next(); // always make progress
             var exprᴛ2 = ch;
             if (exprᴛ2 == eof) {
                 if (s.insertSemi) {
-                    // always make progress
-                    s.insertSemi = false;
-                    // EOF consumed
+                    s.insertSemi = false; // EOF consumed
                     return (pos, token.SEMICOLON, "\n");
                 }
                 tok = token.EOF;
             }
             else if (exprᴛ2 is (rune)'\n') {
-                s.insertSemi = false;
+                s.insertSemi = false; // newline consumed
                 return (pos, token.SEMICOLON, "\n");
             }
             else if (exprᴛ2 is (rune)'"') {
@@ -932,7 +908,6 @@ scanAgain:
                 tok = s.switch2(token.COLON, // we only reach here if s.insertSemi was
  // set in the first place and exited early
  // from s.skipWhitespace()
- // newline consumed
  token.DEFINE);
             }
             else if (exprᴛ2 is (rune)'.') {
@@ -940,8 +915,7 @@ scanAgain:
                 if (s.ch == (rune)'.' && s.peek() == (rune)'.') {
                     // fractions starting with a '.' are handled by outer switch
                     s.next();
-                    s.next();
-                    // consume last '.'
+                    s.next(); // consume last '.'
                     tok = token.ELLIPSIS;
                 }
             }
@@ -998,9 +972,8 @@ scanAgain:
                         s.nlPos = s.@file.Pos(nlOffset);
                         s.insertSemi = false;
                     } else {
-                        insertSemi = s.insertSemi;
+                        insertSemi = s.insertSemi; // preserve insertSemi info
                     }
-                    // preserve insertSemi info
                     if ((Mode)(s.mode & ScanComments) == 0) {
                         // skip comment
                         goto scanAgain;
@@ -1060,7 +1033,7 @@ scanAgain:
                         s.errorf(s.@file.Offset(pos), "illegal character %#U"u8, ch);
                     }
                 }
-                insertSemi = s.insertSemi;
+                insertSemi = s.insertSemi; // preserve insertSemi info
                 tok = token.ILLEGAL;
                 lit = ((@string)ch);
             }
@@ -1069,7 +1042,6 @@ scanAgain:
         }}
     }
 
-    // preserve insertSemi info
     if ((Mode)(s.mode & dontInsertSemis) == 0) {
         s.insertSemi = insertSemi;
     }

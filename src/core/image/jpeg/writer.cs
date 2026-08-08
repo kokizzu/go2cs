@@ -304,8 +304,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 [GoRecv] internal static void writeSOF0(this ref encoder e, image.Point size, nint nComponent) {
     nint markerlen = 8 + 3 * nComponent;
     e.writeMarkerHeader(sof0Marker, markerlen);
-    e.buf[0] = 8;
-    // 8-bit color.
+    e.buf[0] = 8; // 8-bit color.
     e.buf[1] = (uint8)((size.Y >> (int)(8)));
     e.buf[2] = (uint8)((nint)(size.Y & 0xff));
     e.buf[3] = (uint8)((size.X >> (int)(8)));

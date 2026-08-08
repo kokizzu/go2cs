@@ -139,8 +139,7 @@ public static float64 FMA(float64 x, float64 y, float64 z) {
     // shifts the 106-bit product to the left by 21.
     var (pm1, pm2) = bits.Mul64((xm << (int)(10)), (ym << (int)(11)));
     var (zm1, zm2) = ((zm << (int)(10)), (uint64)0);
-    var ps = (uint32)(xs ^ ys);
-    // product sign
+    var ps = (uint32)(xs ^ ys); // product sign
     // normalize to 62nd bit
     nuint is62zero = (nuint)((uint64)(((~pm1 >> (int)(62))) & 1));
     (pm1, pm2) = shl(pm1, pm2, is62zero);

@@ -234,12 +234,10 @@ public static bool CanBackquote(@string s) {
         s = s[(int)(wid)..];
         if (wid > 1) {
             if (r == (rune)'\ufeff') {
-                return false;
+                return false; // BOMs are invisible and should not be quoted.
             }
-            // BOMs are invisible and should not be quoted.
-            continue;
+            continue; // All other multibyte runes are correctly encoded and assumed printable.
         }
-        // All other multibyte runes are correctly encoded and assumed printable.
         if (r == utf8.RuneError) {
             return false;
         }
@@ -471,18 +469,16 @@ internal static (@string @out, @string rem, error err) unquote(@string @in, bool
     if (end < 0) {
         return ("", @in, ErrSyntax);
     }
-    end += 2;
-    // position after terminating quote; may be wrong if escape sequences are present
+    end += 2; // position after terminating quote; may be wrong if escape sequences are present
     switch (quote) {
     case (rune)'`': {
         switch (ᐧ) {
         case {} when !unescape: {
-            @out = @in[..(int)(end)];
+            @out = @in[..(int)(end)]; // include quotes
             break;
         }
-        case {} when !contains(@in[..(int)(end)], // include quotes
- (rune)'\r'): {
-            @out = @in[(int)(len("`"))..(int)(end - len("`"))];
+        case {} when !contains(@in[..(int)(end)], (rune)'\r'): {
+            @out = @in[(int)(len("`"))..(int)(end - len("`"))]; // exclude quotes
             break;
         }
         default: {
@@ -521,22 +517,19 @@ internal static (@string @out, @string rem, error err) unquote(@string @in, bool
             if (valid) {
                 @out = @in[..(int)(end)];
                 if (unescape) {
-                    @out = @out[1..(int)(end - 1)];
+                    @out = @out[1..(int)(end - 1)]; // exclude quotes
                 }
-                // exclude quotes
                 return (@out, @in[(int)(end)..], default!);
             }
         }
         // Handle quoted strings with escape sequences.
         slice<byte> buf = default!;
         @string in0 = @in;
-        @in = @in[1..];
+        @in = @in[1..]; // skip starting quote
         if (unescape) {
-            // skip starting quote
-            buf = new slice<byte>(0, 3 * end / 2);
+            buf = new slice<byte>(0, 3 * end / 2); // try to avoid more allocations
         }
         while (len(@in) > 0 && @in[0] != quote) {
-            // try to avoid more allocations
             // Process the next character,
             // rejecting any unescaped newline characters which are invalid.
             var (r, multibyte, remΔ2, errΔ2) = UnquoteChar(@in, quote);
@@ -561,9 +554,8 @@ internal static (@string @out, @string rem, error err) unquote(@string @in, bool
             // Verify that the string ends with a terminating quote.
             return ("", in0, ErrSyntax);
         }
-        @in = @in[1..];
+        @in = @in[1..]; // skip terminating quote
         if (unescape) {
-            // skip terminating quote
             return (((@string)buf), @in, default!);
         }
         return (in0[..(int)(len(in0) - len(@in))], @in, default!);
@@ -612,9 +604,8 @@ public static bool IsPrint(rune r) {
         }
         if (0xA1 <= r && r <= 0xFF) {
             // Similarly for ¡ through ÿ...
-            return r != 0xAD;
+            return r != 0xAD; // ...except for the bizarre soft hyphen.
         }
-        // ...except for the bizarre soft hyphen.
         return false;
     }
     // Same algorithm, either on uint16 or uint32 value.

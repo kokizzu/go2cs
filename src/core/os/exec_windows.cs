@@ -227,8 +227,7 @@ internal static slice<@string> commandLineToArgv(@string cmd) {
 internal static time.Duration ftToDuration(ж<syscall.Filetime> Ꮡft) {
     ref var ft = ref Ꮡft.DerefOrNull();
 
-    var n = ((int64)ft.HighDateTime << (int)(32)) + (int64)ft.LowDateTime;
-    // in 100-nanosecond intervals
+    var n = ((int64)ft.HighDateTime << (int)(32)) + (int64)ft.LowDateTime; // in 100-nanosecond intervals
     return ((time.Duration)(n * 100)) * time.ΔNanosecond;
 }
 

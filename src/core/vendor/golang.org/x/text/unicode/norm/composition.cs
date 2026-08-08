@@ -456,10 +456,8 @@ internal static nint decomposeHangul(slice<byte> buf, rune r) {
             b[k] = b[i];
             k++;
         } else {
-            var l = rb.runeAt(s);
-            // also used to compare to hangulBase
-            var v = rb.runeAt(i);
-            // also used to compare to jamoT
+            var l = rb.runeAt(s); // also used to compare to hangulBase
+            var v = rb.runeAt(i); // also used to compare to jamoT
             switch (ᐧ) {
             case {} when jamoLBase <= l && l < jamoLEnd && jamoVBase <= v && v < jamoVEnd: {
                 rb.assignRune(s, // 11xx plus 116x to LV
@@ -515,8 +513,7 @@ internal static nint decomposeHangul(slice<byte> buf, rune r) {
         if (ii.combinesBackward()) {
             var cccB = b[k - 1].ccc;
             var cccC = ii.ccc;
-            var blocked = false;
-            // b[i] blocked by starter or greater or equal CCC?
+            var blocked = false; // b[i] blocked by starter or greater or equal CCC?
             if (cccB == 0){
                 s = k - 1;
             } else {

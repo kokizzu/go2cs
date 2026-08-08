@@ -170,8 +170,7 @@ public static ж<Interface> Complete(this ж<Interface> Ꮡt) {
     if (!t.complete) {
         t.complete = true;
     }
-    Ꮡt.typeSet();
-    // checks if t.tset is already set
+    Ꮡt.typeSet(); // checks if t.tset is already set
     return Ꮡt;
 }
 
@@ -188,8 +187,7 @@ public static @string String(this ж<Interface> Ꮡt) {
 internal static void cleanup(this ж<Interface> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    Ꮡt.typeSet();
-    // any interface that escapes type checking must be safe for concurrent use
+    Ꮡt.typeSet(); // any interface that escapes type checking must be safe for concurrent use
     t.check = default!;
     t.embedPos = default!;
 }
@@ -221,18 +219,16 @@ internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡi
         var name = (~f).Names[0];
         if ((~name).Name == "_"u8) {
             Ꮡcheck.error(new ast_Identжpositioner(name), BlankIfaceMethod, methodsMustHaveAUniqueˢ);
-            continue;
+            continue; // ignore
         }
-        // ignore
         var typ = Ꮡcheck.typ((~f).Type);
         var (sig, _) = typ._<ж<ΔSignature>>(ᐧ);
         if (sig == nil) {
             if (isValid(typ)) {
                 Ꮡcheck.errorf(new ast_Exprᴠpositioner((~f).Type), InvalidSyntaxTree, "%s is not a method signature"u8, typ);
             }
-            continue;
+            continue; // ignore
         }
-        // ignore
         // The go/parser doesn't accept method type parameters but an ast.FuncType may have them.
         if ((~sig).tparams != nil) {
             positioner at = new ast_Exprᴠpositioner((~f).Type);

@@ -144,17 +144,15 @@ internal static void reportInstanceLoop(this ж<Checker> Ꮡcheck, nint v) {
             break;
         }
         case ж<Named>: {
-            err.addf(((atPos)edge.pos), "%s implicitly parameterized by %s"u8, obj.of(TypeName.Ꮡobject).Name(), TypeString(edge.typ, qf));
+            err.addf(((atPos)edge.pos), "%s implicitly parameterized by %s"u8, obj.of(TypeName.Ꮡobject).Name(), TypeString(edge.typ, qf)); // secondary error, \t indented
             break;
         }
         case ж<TypeParam>: {
-            err.addf(((atPos)edge.pos), // secondary error, \t indented
- "%s instantiated as %s"u8, obj.of(TypeName.Ꮡobject).Name(), TypeString(edge.typ, qf));
+            err.addf(((atPos)edge.pos), "%s instantiated as %s"u8, obj.of(TypeName.Ꮡobject).Name(), TypeString(edge.typ, qf)); // secondary error, \t indented
             break;
         }}
 
     }
-    // secondary error, \t indented
     err.report();
 }
 
@@ -289,14 +287,12 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
 
     var obj = named.Obj();
     if (obj.of(TypeName.Ꮡobject).Pkg() != Ꮡpkg) {
-        return -1;
+        return -1; // imported type
     }
-    // imported type
     var root = Ꮡpkg.Scope();
     if (obj.of(TypeName.Ꮡobject).Parent() == root) {
-        return -1;
+        return -1; // package scope, no ambient type parameters
     }
-    // package scope, no ambient type parameters
     {
         var (idxΔ1, ok) = w.nameIdx[obj, ꟷ]; if (ok) {
             return idxΔ1;

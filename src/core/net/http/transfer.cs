@@ -115,13 +115,12 @@ internal static (ж<transferWriter> t, error err) newTransferWriter(any r) {
             // wire. (Issue 22088.)
             t.Value.FlushHeaders = true;
         }
-        atLeastHTTP11 = true;
+        atLeastHTTP11 = true; // Transport requests are always 1.1 or 2.0
         break;
     }
     case ж<Response> rr: {
         t.Value.IsResponse = true;
         if ((~rr).Request != nil) {
-            // Transport requests are always 1.1 or 2.0
             t.Value.Method = rr.Value.Request.Value.Method;
         }
         t.Value.Body = rr.Value.Body;
@@ -194,8 +193,7 @@ internal static bool shouldSendChunkedRequestBody(this ж<transferWriter> Ꮡt) 
         // Only probe the Request.Body for GET/HEAD/DELETE/etc
         // requests, because it's only those types of requests
         // that confuse servers.
-        Ꮡt.probeRequestBody();
-        // adjusts t.Body, t.ContentLength
+        Ꮡt.probeRequestBody(); // adjusts t.Body, t.ContentLength
         return t.Body != default!;
     }
     // For all other request types (PUT, POST, PATCH, or anything

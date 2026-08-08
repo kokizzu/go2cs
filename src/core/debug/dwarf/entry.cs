@@ -64,8 +64,7 @@ internal static (abbrevTable, error) parseAbbrev(this ж<Data> Ꮡd, uint64 off,
         }
         // Walk over attributes, counting.
         nint n = 0;
-        var b1 = b;
-        // Read from copy of b.
+        var b1 = b; // Read from copy of b.
         b1.@uint();
         b1.uint8();
         while (ᐧ) {

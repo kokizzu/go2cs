@@ -148,8 +148,7 @@ public static @string Clean(@string path) {
     if (@out.w == 0) {
         @out.append((rune)'.');
     }
-    postClean(Ꮡout);
-    // avoid creating absolute paths on Windows
+    postClean(Ꮡout); // avoid creating absolute paths on Windows
     return FromSlash(@out.@string());
 }
 

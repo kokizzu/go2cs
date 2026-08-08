@@ -78,8 +78,7 @@ public static error WriteHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
             return errΔ1;
         }
     }
-    tw.hdr = hdr;
-    // Shallow copy of Header
+    tw.hdr = hdr; // Shallow copy of Header
     // Avoid usage of the legacy TypeRegA flag, and automatically promote
     // it to use TypeReg or TypeDir.
     if (tw.hdr.Typeflag == TypeRegA) {
@@ -114,12 +113,11 @@ public static error WriteHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
         return tw.err;
     }
     default: {
-        return err;
+        return err; // Non-fatal error
     }}
 
 }
 
-// Non-fatal error
 internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
     ref var tw = ref Ꮡtw.DerefOrNull();
     ref var hdr = ref Ꮡhdr.DerefOrNull();
@@ -137,9 +135,8 @@ internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr)
     f.formatString(blk.toUSTAR().prefix(), namePrefix);
     blk.setFormat(FormatUSTAR);
     if (f.err != default!) {
-        return f.err;
+        return f.err; // Should never happen since header is validated
     }
-    // Should never happen since header is validated
     return tw.writeRawHeader(blk, hdr.Size, hdr.Typeflag);
 }
 
@@ -226,11 +223,10 @@ internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, m
         }
         {
             var err = Ꮡtw.writeRawFile(name, data, flag, FormatPAX); if (err != default! || isGlobal) {
-                return err;
+                return err; // Global headers return here
             }
         }
     }
-    // Global headers return here
     // Pack the main header.
     ref var f = ref heap(new formatter(), out var Ꮡf);                   // Ignore errors since they are expected
     var fmtStr = (slice<byte> b, @string s) => {
@@ -404,14 +400,12 @@ internal static error writeRawFile(this ж<Writer> Ꮡtw, @string name, @string 
     f.formatOctal(v7.mode(), 0);
     f.formatOctal(v7.uid(), 0);
     f.formatOctal(v7.gid(), 0);
-    f.formatOctal(v7.size(), (int64)len(data));
-    // Must be < 8GiB
+    f.formatOctal(v7.size(), (int64)len(data)); // Must be < 8GiB
     f.formatOctal(v7.modTime(), 0);
     Ꮡtw.of(Writer.Ꮡblk).setFormat(format);
     if (f.err != default!) {
-        return f.err;
+        return f.err; // Only occurs if size condition is violated
     }
-    // Only occurs if size condition is violated
     // Write the header and data.
     {
         var errΔ1 = tw.writeRawHeader(Ꮡtw.of(Writer.Ꮡblk), (int64)len(data), flag); if (errΔ1 != default!) {
@@ -512,10 +506,8 @@ internal static (@string prefix, @string suffix, bool ok) splitUSTARPath(@string
         length--;
     }
     nint i = strings.LastIndex(name[..(int)(length)], "/"u8);
-    nint nlen = len(name) - i - 1;
-    // nlen is length of suffix
-    nint plen = i;
-    // plen is length of prefix
+    nint nlen = len(name) - i - 1; // nlen is length of suffix
+    nint plen = i; // plen is length of prefix
     if (i <= 0 || nlen > nameSize || nlen == 0 || plen > prefixSize) {
         return ("", "", false);
     }
@@ -578,10 +570,8 @@ internal static (@string prefix, @string suffix, bool ok) splitUSTARPath(@string
     }
     // Ensure all future actions are invalid.
     tw.err = ErrWriteAfterClose;
-    return err;
+    return err; // Report IO errors
 }
-
-// Report IO errors
 
 // regFileWriter is a fileWriter for writing data to a regular file entry.
 [GoType] partial struct regFileWriter {
@@ -664,20 +654,19 @@ internal static int64 physicalRemaining(this regFileWriter fw) {
         b = b[(int)(nf)..];
         sw.pos += (int64)nf;
         if (sw.pos >= dataEnd && len(sw.sp) > 1) {
-            sw.sp = sw.sp[1..];
+            sw.sp = sw.sp[1..]; // Ensure last fragment always remains
         }
     }
-    // Ensure last fragment always remains
     n = len(b0) - len(b);
     switch (ᐧ) {
     case {} when AreEqual(err, ErrWriteTooLong): {
-        return (n, errMissData);
+        return (n, errMissData); // Not possible; implies bug in validation logic
     }
     case {} when err != default!: {
         return (n, err);
     }
     case {} when sw.logicalRemaining() == 0 && sw.physicalRemaining() > 0: {
-        return (n, errUnrefData);
+        return (n, errUnrefData); // Not possible; implies bug in validation logic
     }
     case {} when overwrite: {
         return (n, ErrWriteTooLong);
@@ -688,8 +677,6 @@ internal static int64 physicalRemaining(this regFileWriter fw) {
 
 }
 
-// Not possible; implies bug in validation logic
-// Not possible; implies bug in validation logic
 internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, io.Reader r) {
     int64 n = default!;
     error err = default!;
@@ -699,11 +686,10 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
     if (ok) {
         {
             var (_, errΔ1) = rs.Seek(0, io.SeekCurrent); if (errΔ1 != default!) {
-                ok = false;
+                ok = false; // Not all io.Seeker can really seek
             }
         }
     }
-    // Not all io.Seeker can really seek
     if (!ok) {
         return io.Copy(new ReadFrom_dst(new sparseFileWriterжWriter(Ꮡsw)), r);
     }
@@ -727,10 +713,9 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
         }
         sw.pos += nf;
         if (sw.pos >= dataEnd && len(sw.sp) > 1) {
-            sw.sp = sw.sp[1..];
+            sw.sp = sw.sp[1..]; // Ensure last fragment always remains
         }
     }
-    // Ensure last fragment always remains
     // If the last fragment is a hole, then seek to 1-byte before EOF, and
     // read a single byte to ensure the file is the right size.
     if (readLastByte && err == default!) {
@@ -743,13 +728,13 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
         return (n, io.ErrUnexpectedEOF);
     }
     case {} when AreEqual(err, ErrWriteTooLong): {
-        return (n, errMissData);
+        return (n, errMissData); // Not possible; implies bug in validation logic
     }
     case {} when err != default!: {
         return (n, err);
     }
     case {} when sw.logicalRemaining() == 0 && sw.physicalRemaining() > 0: {
-        return (n, errUnrefData);
+        return (n, errUnrefData); // Not possible; implies bug in validation logic
     }
     default: {
         return (n, ensureEOF(rs));
@@ -757,8 +742,6 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
 
 }
 
-// Not possible; implies bug in validation logic
-// Not possible; implies bug in validation logic
 internal static int64 logicalRemaining(this sparseFileWriter sw) {
     return sw.sp[len(sw.sp) - 1].endOffset() - sw.pos;
 }

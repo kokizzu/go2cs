@@ -351,8 +351,7 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
         b.pbSample(values, locs, labels);
     }
     foreach (var (i, m) in b.mem) {
-        var hasFunctions = m.funcs == lookupTried;
-        // lookupTried but not lookupFailed
+        var hasFunctions = m.funcs == lookupTried; // lookupTried but not lookupFailed
         b.pbMapping(tagProfile_Mapping, (uint64)(i + 1), (uint64)m.start, (uint64)m.end, m.offset, m.@file, m.buildID, hasFunctions);
     }
     // TODO: Anything for tagProfile_DropFrames?
@@ -447,11 +446,9 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
         {
             var (l, ok) = b.locs[addr, ꟷ]; if (ok){
                 locs = append(locs, l.id);
-                stk = stk[(int)(len(l.pcs))..];
+                stk = stk[(int)(len(l.pcs))..]; // skip the matching pcs.
             } else {
-                // skip the matching pcs.
-                b.deck.tryAdd(addr, frames, symbolizeResult);
-                // must succeed.
+                b.deck.tryAdd(addr, frames, symbolizeResult); // must succeed.
                 stk = stk[1..];
             }
         }
@@ -711,10 +708,8 @@ internal static void parseProcSelfMaps(slice<byte> data, Action<uint64, uint64, 
         if (err != default!) {
             continue;
         }
-        next();
-        // dev
-        var inode = next();
-        // inode
+        next(); // dev
+        var inode = next(); // inode
         if (line == default!) {
             continue;
         }

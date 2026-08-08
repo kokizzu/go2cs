@@ -173,8 +173,7 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
             Ꮡcheck.error(at, BadImportPath, cannotUseFakeImportCAndˢ);
         }
         imp = NewPackage("C"u8, "C"u8);
-        imp.Value.fake = true;
-        // package scope is not populated
+        imp.Value.fake = true; // package scope is not populated
         imp.Value.cgo = check.conf.Value.go115UsesCgo;
     } else {
         // ordinary import
@@ -201,9 +200,8 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
         // (errors here can only happen through manipulation of packages after creation)
         if (err == default! && imp != nil && ((~imp).name == "_"u8 || (~imp).name == ""u8)) {
             err = fmt.Errorf("invalid package name: %q"u8, (~imp).name);
-            imp = default!;
+            imp = default!; // create fake package below
         }
-        // create fake package below
         if (err != default!) {
             Ꮡcheck.errorf(at, BrokenImport, "could not import %s (%s)"u8, path, err);
             if (imp == nil) {
@@ -223,10 +221,9 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
                 imp = NewPackage(path, name);
             }
             // continue to use the package as best as we can
-            imp.Value.fake = true;
+            imp.Value.fake = true; // avoid follow-up lookup failures
         }
     }
-    // avoid follow-up lookup failures
     // package should be complete or marked fake, but be cautious
     if ((~imp).complete || (~imp).fake) {
         check.impMap[key] = imp;
@@ -301,11 +298,10 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
             case importDecl dΔ1: {
                 if ((~(~dΔ1.spec).Path).Value == ""u8) {
                     // import package
-                    return;
+                    return; // error reported by parser
                 }
                 var (path, err) = validatedImportPath((~(~dΔ1.spec).Path).Value);
                 if (err != default!) {
-                    // error reported by parser
                     Ꮡcheck.errorf(new ast_BasicLitжpositioner((~dΔ1.spec).Path), BadImportPath, "invalid import path (%s)"u8, err);
                     return;
                 }
@@ -434,11 +430,9 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
             }
             case ΔfuncDecl dΔ1: {
                 @string name = dΔ1.decl.Value.Name.Value.Name;
-                var obj = NewFunc((~dΔ1.decl).Name.Pos(), pkgʗ1, name, nil);
-                var hasTParamError = false;
+                var obj = NewFunc((~dΔ1.decl).Name.Pos(), pkgʗ1, name, nil); // signature set later
+                var hasTParamError = false; // avoid duplicate type parameter errors
                 if ((~dΔ1.decl).Recv.NumFields() == 0){
-                    // signature set later
-                    // avoid duplicate type parameter errors
                     // regular function
                     if ((~dΔ1.decl).Recv != nil) {
                         Ꮡcheck.error(new ast_FieldListжpositioner((~dΔ1.decl).Recv), BadRecv, methodHasNoReceiverˢ);
@@ -528,9 +522,8 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
     // Ignore methods that have an invalid receiver. They will be
     // type-checked later, with regular functions.
     if (methods == default!) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     check.methods = new map<ж<TypeName>, slice<ж<Func>>>();
     foreach (var (i, _) in methods) {
         var m = Ꮡ(methods, i);
@@ -652,10 +645,9 @@ break_L:;
                     return (false, default!);
                 }
                 ptr = true;
-                typ = ast.Unparen((~pexpr).X);
+                typ = ast.Unparen((~pexpr).X); // continue with pointer base type
             }
         }
-        // continue with pointer base type
         // typ must be a name, or a C.name cgo selector.
         @string name = default!;
         switch (typ.type()) {
@@ -716,8 +708,7 @@ break_L:;
         }
         // we're done if tdecl defined tname as a new type
         // (rather than an alias)
-        var tdecl = check.objMap[new TypeNameжObject(tname)].Value.tdecl;
-        // must exist for objects in package scope
+        var tdecl = check.objMap[new TypeNameжObject(tname)].Value.tdecl; // must exist for objects in package scope
         if (!(~tdecl).Assign.IsValid()) {
             return (ptr, tname);
         }

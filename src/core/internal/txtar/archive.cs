@@ -114,11 +114,9 @@ internal static (slice<byte> before, @string name, slice<byte> after) findFileMa
         if (j < 0) {
             return (fixNL(data), "", default!);
         }
-        i += j + 1;
+        i += j + 1; // positioned at start of new possible marker
     }
 }
-
-// positioned at start of new possible marker
 
 // isMarker checks whether data begins with a file marker line.
 // If so, it returns the name from the line and the data after the line.

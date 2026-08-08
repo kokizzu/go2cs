@@ -60,16 +60,14 @@ internal static ref mutex debuglock => ref Ꮡdebuglock.Value;
 // For both these reasons, let a thread acquire the printlock 'recursively'.
 internal static void printlock() {
     var mp = getg().Value.m;
-    mp.Value.locks++;
-    // do not reschedule between printlock++ and lock(&debuglock).
+    mp.Value.locks++; // do not reschedule between printlock++ and lock(&debuglock).
     mp.Value.printlock++;
     if ((~mp).printlock == 1) {
         @lock(Ꮡdebuglock);
     }
-    mp.Value.locks--;
+    mp.Value.locks--; // now we know debuglock is held and holding up mp.locks for us.
 }
 
-// now we know debuglock is held and holding up mp.locks for us.
 internal static void printunlock() {
     var mp = getg().Value.m;
     mp.Value.printlock--;
@@ -142,8 +140,7 @@ internal static void printfloat(float64 v) {
     UntypedInt n = 7; // digits printed
     array<byte> buf = new(14); /* n + 7 */
     buf[0] = (rune)'+';
-    nint e = 0;
-    // exp
+    nint e = 0; // exp
     if (v == 0D){
         if (1D / v < 0D) {
             buf[0] = (rune)'-';

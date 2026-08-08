@@ -122,9 +122,8 @@ internal static slice<Spec> sortSpecs(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf, 
     if (endLine == endFile.LineCount()){
         end = endSpecs;
     } else {
-        end = endFile.LineStart(endLine + 1);
+        end = endFile.LineStart(endLine + 1); // beginning of next line
     }
-    // beginning of next line
     nint first = len(f.Comments);
     nint last = -1;
     foreach (var (i, g) in f.Comments) {

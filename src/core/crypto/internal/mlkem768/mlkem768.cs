@@ -354,8 +354,7 @@ internal static slice<byte> pkeEncrypt(ж<array<byte>> Ꮡcc, ж<encryptionKey> 
         N++;
     }
     var e2 = samplePolyCBD(rnd, N);
-    var u = new slice<ringElement>(k);
-    // NTT⁻¹(AT ◦ r) + e1
+    var u = new slice<ringElement>(k); // NTT⁻¹(AT ◦ r) + e1
     foreach (var (i, _) in u) {
         u[i] = e1[i].Clone();
         foreach (var (j, _) in r) {
@@ -539,8 +538,7 @@ internal static uint16 compress(fieldElement x, uint8 d) {
     // rounding up (see FIPS 203 (DRAFT), Section 2.3).
     // Barrett reduction produces a quotient and a remainder in the range [0, 2q),
     // such that dividend = quotient * q + remainder.
-    var dividend = ((uint32)(uint16)x).Lsh((uint64)(d));
-    // x * 2ᵈ
+    var dividend = ((uint32)(uint16)x).Lsh((uint64)(d)); // x * 2ᵈ
     var quotient = (uint32)(((uint64)dividend * (uint64)barrettMultiplier >> (int)(barrettShift)));
     var remainder = dividend - quotient * (uint32)q;
     // Since the remainder is in the range [0, 2q), not [0, q), we need to
@@ -568,8 +566,7 @@ internal static fieldElement decompress(uint16 y, uint8 d) {
     // We want to compute (y * q) / 2ᵈ, rounded to nearest integer, with 1/2
     // rounding up (see FIPS 203 (DRAFT), Section 2.3).
     var dividend = (uint32)y * (uint32)q;
-    var quotient = dividend.Rsh((uint64)(d));
-    // (y * q) / 2ᵈ
+    var quotient = dividend.Rsh((uint64)(d)); // (y * q) / 2ᵈ
     // The d'th least-significant bit of the dividend (the most significant bit
     // of the remainder) is 1 for the top half of the values that divide to the
     // same quotient, which are the ones that round up.
@@ -710,9 +707,8 @@ internal static ringElement ringDecodeAndDecompress1(ж<array<byte>> Ꮡb) {
     foreach (var (i, _) in f) {
         var b_i = (byte)((b[i / 8] >> (int)((i % 8))) & 1);
         UntypedInt halfQ = /* (q + 1) / 2 */ 1665; // ⌈q/2⌋, rounded up per FIPS 203 (DRAFT), Section 2.3
-        f[i] = (fieldElement)(((fieldElement)(uint16)b_i) * (uint16)halfQ);
+        f[i] = (fieldElement)(((fieldElement)(uint16)b_i) * (uint16)halfQ); // 0 decompresses to 0, and 1 to ⌈q/2⌋
     }
-    // 0 decompresses to 0, and 1 to ⌈q/2⌋
     return f.Clone();
 }
 
@@ -886,9 +882,8 @@ internal static ringElement inverseNTT(nttElement f) {
         }
     }
     foreach (var (i, _) in f) {
-        f[i] = fieldMul(f[i], 3303);
+        f[i] = fieldMul(f[i], 3303); // 3303 = 128⁻¹ mod q
     }
-    // 3303 = 128⁻¹ mod q
     return ((ringElement)(array<fieldElement>)f);
 }
 
@@ -925,8 +920,7 @@ internal static nttElement sampleNTT(slice<byte> rho, byte ii, byte jj) {
     nttElement a = default!;
     nint j = default!;              // index into a
     array<byte> buf = new(24);               // buffered reads from B
-    nint off = len(buf);
-    // index into buf, starts in a "buffer fully consumed" state
+    nint off = len(buf); // index into buf, starts in a "buffer fully consumed" state
     while (ᐧ) {
         if (off >= len(buf)) {
             B.Read(buf[..]);

@@ -95,9 +95,8 @@ internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
         b.visited = new slice<uint32>(visitedSize, maxBacktrackVector / visitedBits);
     } else {
         b.visited = b.visited[..(int)(visitedSize)];
-        builtin.clear(b.visited);
+        builtin.clear(b.visited); // set to 0
     }
-    // set to 0
     if (cap(b.cap) < ncap){
         b.cap = new slice<nint>(ncap);
     } else {
@@ -251,8 +250,7 @@ Skip:
             } else {
                 if ((~inst).Arg < (uint32)len(b.cap)) {
                     // Capture pos to register, but save old value.
-                    b.push(Ꮡre, pcΔ1, b.cap[(nint)((~inst).Arg)], true);
-                    // come back when we're done.
+                    b.push(Ꮡre, pcΔ1, b.cap[(nint)((~inst).Arg)], true); // come back when we're done.
                     b.cap[(nint)((~inst).Arg)] = posΔ1;
                 }
                 pcΔ1 = inst.Value.Out;

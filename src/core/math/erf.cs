@@ -212,9 +212,8 @@ internal static float64 erf(float64 x) {
         if (x < Small){
             // |x| < 2**-28
             if (x < VeryTiny){
-                temp = 0.125D * (8.0D * x + (float64)efx8 * x);
+                temp = 0.125D * (8.0D * x + (float64)efx8 * x); // avoid underflow
             } else {
-                // avoid underflow
                 temp = x + (float64)efx * x;
             }
         } else {
@@ -258,8 +257,7 @@ internal static float64 erf(float64 x) {
         R = (float64)rb0 + s * ((float64)rb1 + s * ((float64)rb2 + s * ((float64)rb3 + s * ((float64)rb4 + s * ((float64)rb5 + s * (float64)rb6)))));
         S = 1D + s * ((float64)sb1 + s * ((float64)sb2 + s * ((float64)sb3 + s * ((float64)sb4 + s * ((float64)sb5 + s * ((float64)sb6 + s * (float64)sb7))))));
     }
-    var z = Float64frombits((uint64)(Float64bits(x) & 0xffffffff00000000UL));
-    // pseudo-single (20-bit) precision x
+    var z = Float64frombits((uint64)(Float64bits(x) & 0xffffffff00000000UL)); // pseudo-single (20-bit) precision x
     var r = Exp(-z * z - 0.5625D) * Exp((z - x) * (z + x) + R / S);
     if (sign) {
         return r / x - 1D;
@@ -345,14 +343,12 @@ internal static float64 erfc(float64 x) {
         } else {
             // |x| >= 1 / 0.35 ~ 2.857143
             if (sign && x > 6D) {
-                return 2D;
+                return 2D; // x < -6
             }
-            // x < -6
             R = (float64)rb0 + s * ((float64)rb1 + s * ((float64)rb2 + s * ((float64)rb3 + s * ((float64)rb4 + s * ((float64)rb5 + s * (float64)rb6)))));
             S = 1D + s * ((float64)sb1 + s * ((float64)sb2 + s * ((float64)sb3 + s * ((float64)sb4 + s * ((float64)sb5 + s * ((float64)sb6 + s * (float64)sb7))))));
         }
-        var z = Float64frombits((uint64)(Float64bits(x) & 0xffffffff00000000UL));
-        // pseudo-single (20-bit) precision x
+        var z = Float64frombits((uint64)(Float64bits(x) & 0xffffffff00000000UL)); // pseudo-single (20-bit) precision x
         var r = Exp(-z * z - 0.5625D) * Exp((z - x) * (z + x) + R / S);
         if (sign) {
             return 2D - r / x;

@@ -83,12 +83,10 @@ public static void SetDefault(ж<Logger> Ꮡl) {
             ref var capturePC = ref heap<bool>(out var ᏑcapturePC);
             capturePC = (nint)(log_package.Flags() & (nint)((nint)((nint)log_package.Lshortfile | (nint)log_package.Llongfile))) != 0;
             log_package.SetOutput(new handlerWriterжWriter(Ꮡ(new handlerWriter(l.Handler(), new LevelVarжLeveler(ᏑlogLoggerLevel), capturePC))));
-            log_package.SetFlags(0);
+            log_package.SetFlags(0); // we want just the log message, no time or location
         }
     }
 }
-
-// we want just the log message, no time or location
 
 // handlerWriter is an io.Writer that calls a Handler.
 // It is used to link the default log.Logger to the default slog.Logger.
@@ -111,8 +109,7 @@ public static void SetDefault(ж<Logger> Ꮡl) {
         pc = pcs[0];
     }
     // Remove final newline.
-    nint origLen = len(buf);
-    // Report that the entire buf was written.
+    nint origLen = len(buf); // Report that the entire buf was written.
     if (len(buf) > 0 && buf[len(buf) - 1] == (rune)'\n') {
         buf = buf[..(int)(len(buf) - 1)];
     }

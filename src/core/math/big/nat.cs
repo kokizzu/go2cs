@@ -41,9 +41,8 @@ internal static nat norm(this nat z) {
 
 internal static nat make(this nat z, nint n) {
     if (n <= cap(z)) {
-        return z[..(int)(n)];
+        return z[..(int)(n)]; // reuse z
     }
-    // reuse z
     if (n == 1) {
         // Most nats start small and stay that way; don't over-allocate.
         return new nat(1);
@@ -176,9 +175,8 @@ internal static nint /*r*/ cmp(this nat x, nat y) {
 internal static nat mulAddWW(this nat z, nat x, Word y, Word r) {
     nint m = len(x);
     if (m == 0 || y == 0) {
-        return z.setWord(r);
+        return z.setWord(r); // result is r
     }
-    // result is r
     // m > 0
     z = z.make(m + 1);
     z[m] = mulAddVWW(z[0..(int)(m)], x, y, r);
@@ -188,8 +186,7 @@ internal static nat mulAddWW(this nat z, nat x, Word y, Word r) {
 // basicMul multiplies x and y and leaves the result in z.
 // The (non-normalized) result is placed in z[0 : len(x) + len(y)].
 internal static void basicMul(nat z, nat x, nat y) {
-    clear(z[0..(int)(len(x) + len(y))]);
-    // initialize z
+    clear(z[0..(int)(len(x) + len(y))]); // initialize z
     foreach (var (i, d) in y) {
         if (d != 0) {
             z[len(x) + i] = addMulVVW(z[(int)(i)..(int)(i + len(x))], x, d);
@@ -300,12 +297,9 @@ internal static void karatsuba(nat z, nat x, nat y) {
     //      = x1*y0 -    z2 -    z0 + x0*y1 + z2 + z0
     //      = x1*y0                 + x0*y1
     // split x, y into "digits"
-    nint n2 = (n >> (int)(1));
-    // n2 >= 1
-    var (x1, x0) = (x[(int)(n2)..], x[0..(int)(n2)]);
-    // x = x1*b + y0
-    var (y1, y0) = (y[(int)(n2)..], y[0..(int)(n2)]);
-    // y = y1*b + y0
+    nint n2 = (n >> (int)(1)); // n2 >= 1
+    var (x1, x0) = (x[(int)(n2)..], x[0..(int)(n2)]); // x = x1*b + y0
+    var (y1, y0) = (y[(int)(n2)..], y[0..(int)(n2)]); // y = y1*b + y0
     // z is used for the result and temporary storage:
     //
     //   6*n     5*n     4*n     3*n     2*n     1*n     0*n
@@ -315,28 +309,23 @@ internal static void karatsuba(nat z, nat x, nat y) {
     // z is passed in that has (at least) half the length of the
     // caller's z.
     // compute z0 and z2 with the result "in place" in z
-    karatsuba(z, x0, y0);
-    // z0 = x0*y0
-    karatsuba(z[(int)(n)..], x1, y1);
-    // z2 = x1*y1
+    karatsuba(z, x0, y0); // z0 = x0*y0
+    karatsuba(z[(int)(n)..], x1, y1); // z2 = x1*y1
     // compute xd (or the negative value if underflow occurs)
-    nint s = 1;
-    // sign of product xd*yd
+    nint s = 1; // sign of product xd*yd
     var xd = z[(int)(2 * n)..(int)(2 * n + n2)];
     if (subVV(xd, x1, x0) != 0) {
         // x1-x0
         s = -s;
-        subVV(xd, x0, x1);
+        subVV(xd, x0, x1); // x0-x1
     }
-    // x0-x1
     // compute yd (or the negative value if underflow occurs)
     var yd = z[(int)(2 * n + n2)..(int)(3 * n)];
     if (subVV(yd, y0, y1) != 0) {
         // y0-y1
         s = -s;
-        subVV(yd, y1, y0);
+        subVV(yd, y1, y0); // y1-y0
     }
-    // y1-y0
     // p = (x1-x0)*(y0-y1) == x1*y0 - x1*y1 - x0*y0 + x0*y1 for s > 0
     // p = (x0-x1)*(y0-y1) == x0*y0 - x0*y1 - x1*y0 + x1*y1 for s < 0
     var p = z[(int)(n * 3)..];
@@ -420,9 +409,8 @@ internal static nat mul(this nat z, nat x, nat y) {
     // m >= n > 1
     // determine if z can be reused
     if (alias(z, x) || alias(z, y)) {
-        z = default!;
+        z = default!; // z is an alias for x or y - cannot reuse
     }
-    // z is an alias for x or y - cannot reuse
     // use basic multiplication if the numbers are small
     if (n < karatsubaThreshold) {
         z = z.make(m + n);
@@ -439,17 +427,12 @@ internal static nat mul(this nat z, nat x, nat y) {
     nint k = karatsubaLen(n, karatsubaThreshold);
     // k <= n
     // multiply x0 and y0 via Karatsuba
-    var x0 = x[0..(int)(k)];
-    // x0 is not normalized
-    var y0 = y[0..(int)(k)];
-    // y0 is not normalized
-    z = z.make(max(6 * k, m + n));
-    // enough space for karatsuba of x0*y0 and full result of x*y
+    var x0 = x[0..(int)(k)]; // x0 is not normalized
+    var y0 = y[0..(int)(k)]; // y0 is not normalized
+    z = z.make(max(6 * k, m + n)); // enough space for karatsuba of x0*y0 and full result of x*y
     karatsuba(z, x0, y0);
-    z = z[0..(int)(m + n)];
-    // z has final length but may be incomplete
-    clear(z[(int)(2 * k)..]);
-    // upper portion of z is garbage (and 2*k <= m+n since k <= n <= m)
+    z = z[0..(int)(m + n)]; // z has final length but may be incomplete
+    clear(z[(int)(2 * k)..]); // upper portion of z is garbage (and 2*k <= m+n since k <= n <= m)
     // If xh != 0 or yh != 0, add the missing terms to z. For
     //
     //   xh = xi*b^i + ... + x2*b^2 + x1*b (0 <= xi < b)
@@ -468,10 +451,8 @@ internal static nat mul(this nat z, nat x, nat y) {
         var t = tp.ValueSlot;
         // add x0*y1*b
         var x0Δ1 = x0.norm();
-        var y1 = y[(int)(k)..];
-        // y1 is normalized because y is
-        t = t.mul(x0Δ1, y1);
-        // update t so we don't lose t's underlying array
+        var y1 = y[(int)(k)..]; // y1 is normalized because y is
+        t = t.mul(x0Δ1, y1); // update t so we don't lose t's underlying array
         addAt(z, t, k);
         // add xi*y0<<i, xi*y1*b<<(i+k)
         var y0Δ1 = y0.norm();
@@ -498,11 +479,9 @@ internal static nat mul(this nat z, nat x, nat y) {
 internal static void basicSqr(nat z, nat x) {
     nint n = len(x);
     var tp = getNat(2 * n);
-    var t = tp.ValueSlot;
-    // temporary variable to hold the products
+    var t = tp.ValueSlot; // temporary variable to hold the products
     clear(t);
-    (z[1], z[0]) = mulWW(x[0], x[0]);
-    // the initial square
+    (z[1], z[0]) = mulWW(x[0], x[0]); // the initial square
     for (nint i = 1; i < n; i++) {
         Word d = x[i];
         // z collects the squares x[i] * x[i]
@@ -510,10 +489,8 @@ internal static void basicSqr(nat z, nat x) {
         // t collects the products x[i] * x[j] where j < i
         t[2 * i] = addMulVVW(t[(int)(i)..(int)(2 * i)], x[0..(int)(i)], d);
     }
-    t[2 * n - 1] = shlVU(t[1..(int)(2 * n - 1)], t[1..(int)(2 * n - 1)], 1);
-    // double the j < i products
-    addVV(z, z, t);
-    // combine the result
+    t[2 * n - 1] = shlVU(t[1..(int)(2 * n - 1)], t[1..(int)(2 * n - 1)], 1); // double the j < i products
+    addVV(z, z, t); // combine the result
     putNat(tp);
 }
 
@@ -543,10 +520,8 @@ internal static void karatsubaSqr(nat z, nat x) {
     copy(r, z[..(int)(n * 2)]);
     karatsubaAdd(z[(int)(n2)..], r, n);
     karatsubaAdd(z[(int)(n2)..], r[(int)(n)..], n);
-    karatsubaSub(z[(int)(n2)..], p, n);
+    karatsubaSub(z[(int)(n2)..], p, n); // s == -1 for p != 0; s == 1 for p == 0
 }
-
-// s == -1 for p != 0; s == 1 for p == 0
 
 // Operands that are shorter than basicSqrThreshold are squared using
 // "grade school" multiplication; for operands longer than karatsubaSqrThreshold
@@ -570,9 +545,8 @@ internal static nat sqr(this nat z, nat x) {
     }}
 
     if (alias(z, x)) {
-        z = default!;
+        z = default!; // z is an alias for x - cannot reuse
     }
-    // z is an alias for x - cannot reuse
     if (n < basicSqrThreshold) {
         z = z.make(2 * n);
         basicMul(z, x, x);
@@ -589,8 +563,7 @@ internal static nat sqr(this nat z, nat x) {
     nint k = karatsubaLen(n, karatsubaSqrThreshold);
     var x0 = x[0..(int)(k)];
     z = z.make(max(6 * k, 2 * n));
-    karatsubaSqr(z, x0);
-    // z = x0^2
+    karatsubaSqr(z, x0); // z = x0^2
     z = z[0..(int)(2 * n)];
     clear(z[(int)(2 * k)..]);
     if (k < n) {
@@ -600,11 +573,9 @@ internal static nat sqr(this nat z, nat x) {
         var x1 = x[(int)(k)..];
         t = t.mul(x0Δ1, x1);
         addAt(z, t, k);
-        addAt(z, t, k);
-        // z = 2*x1*x0*b + x0^2
+        addAt(z, t, k); // z = 2*x1*x0*b + x0^2
         t = t.sqr(x1);
-        addAt(z, t, 2 * k);
-        // z = x1^2*b^2 + 2*x1*x0*b + x0^2
+        addAt(z, t, 2 * k); // z = x1^2*b^2 + 2*x1*x0*b + x0^2
         putNat(tp);
     }
     return z.norm();
@@ -628,8 +599,7 @@ internal static nat mulRange(this nat z, uint64 a, uint64 b) {
  ((nat)default!).setUint64(b));
     }}
 
-    var m = a + (b - a) / 2;
-    // avoid overflow
+    var m = a + (b - a) / 2; // avoid overflow
     return z.mul(((nat)default!).mulRange(a, m), ((nat)default!).mulRange(m + 1, b));
 }
 
@@ -647,9 +617,8 @@ internal static ж<nat> getNat(nint n) {
     }
     z.ValueSlot = (~z).make(n);
     if (n > 0) {
-        (z.ValueSlot)[0] = 0xfedcb;
+        (z.ValueSlot)[0] = 0xfedcb; // break code expecting zero
     }
-    // break code expecting zero
     return z;
 }
 
@@ -677,8 +646,7 @@ internal static nint bitLen(this nat x) {
             top |= (nuint)((top >> (int)(4)));
             top |= (nuint)((top >> (int)(8)));
             top |= (nuint)((top >> (int)(16)));
-            top |= (nuint)(((top >> (int)(16)) >> (int)(16)));
-            // ">> 32" doesn't compile on 32-bit architectures
+            top |= (nuint)(((top >> (int)(16)) >> (int)(16))); // ">> 32" doesn't compile on 32-bit architectures
             return i * (nint)_W + bits.Len(top);
         }
     }
@@ -904,9 +872,8 @@ internal static nat random(this nat z, ж<rand.Rand> Ꮡrand, nat limit, nint n)
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     if (alias(z, limit)) {
-        z = default!;
+        z = default!; // z is an alias for limit - cannot reuse
     }
-    // z is an alias for limit - cannot reuse
     z = z.make(len(limit));
     nuint bitLengthOfMSW = (nuint)(n % (nint)_W);
     if (bitLengthOfMSW == 0) {
@@ -993,8 +960,7 @@ internal static nat expNN(this nat z, nat x, nat y, nat m, bool slow) {
         }
     }
     z = z.set(x);
-    Word v = y[len(y) - 1];
-    // v > 0 because y is normalized and y > 0
+    Word v = y[len(y) - 1]; // v > 0 because y is normalized and y > 0
     nuint shift = nlz(v) + 1;
     v <<= (int)(shift);
     nat q = default!;
@@ -1122,8 +1088,7 @@ internal static nat expNNWindowed(this nat z, nat x, nat y, nuint logM) {
     // Instead of allocating a new y, we start reading y at the right word
     // and truncate it appropriately at the start of the loop.
     nint i = len(y) - 1;
-    nint mtop = (nint)((logM - 2) / (nuint)_W);
-    // -2 because the top word of N bits is the (N-1)/W'th word.
+    nint mtop = (nint)((logM - 2) / (nuint)_W); // -2 because the top word of N bits is the (N-1)/W'th word.
     Word mmask = ~((Word)((Word)0));
     {
         nuint mbits = (nuint)((logM - 1) & (nuint)(_W - 1)); if (mbits != 0) {
@@ -1337,8 +1302,7 @@ internal static nat sqrt(this nat z, nat x) {
     nat z2 = default!;
     z1 = z;
     z1 = z1.setUint64(1);
-    z1 = z1.shl(z1, (nuint)(x.bitLen() + 1) / 2);
-    // must be ≥ √x
+    z1 = z1.shl(z1, (nuint)(x.bitLen() + 1) / 2); // must be ≥ √x
     for (nint n = 0; ᐧ ; n++) {
         (z2, _) = z2.div(default!, x, z1);
         z2 = z2.add(z2, z1);

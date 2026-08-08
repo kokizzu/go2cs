@@ -87,8 +87,7 @@ internal static (ж<Cipher>, error) newUnauthenticatedCipher(ж<Cipher> Ꮡc, sl
     if (len(nonce) != NonceSize) {
         return (default!, errors.New(chacha20WrongNonceSizeˢ));
     }
-    (key, nonce) = (key[..(int)(KeySize)], nonce[..(int)(NonceSize)]);
-    // bounds check elimination hint
+    (key, nonce) = (key[..(int)(KeySize)], nonce[..(int)(NonceSize)]); // bounds check elimination hint
     c.key = new uint32[]{
         binary.LittleEndian.Uint32(key[0..4]),
         binary.LittleEndian.Uint32(key[4..8]),
@@ -193,8 +192,7 @@ internal static (uint32, uint32, uint32, uint32) quarterRound(uint32 a, uint32 b
         if (len(src) < len(keyStream)) {
             keyStream = keyStream[..(int)(len(src))];
         }
-        _ = src[len(keyStream) - 1];
-        // bounds check elimination hint
+        _ = src[len(keyStream) - 1]; // bounds check elimination hint
         foreach (var (i, b) in keyStream) {
             dst[i] = (byte)(src[i] ^ b);
         }
@@ -380,8 +378,7 @@ internal static (slice<byte>, error) hChaCha20(slice<byte> @out, slice<byte> key
         (x2, x7, x8, x13) = quarterRound(x2, x7, x8, x13);
         (x3, x4, x9, x14) = quarterRound(x3, x4, x9, x14);
     }
-    _ = @out[31];
-    // bounds check elimination hint
+    _ = @out[31]; // bounds check elimination hint
     binary.LittleEndian.PutUint32(@out[0..4], x0);
     binary.LittleEndian.PutUint32(@out[4..8], x1);
     binary.LittleEndian.PutUint32(@out[8..12], x2);

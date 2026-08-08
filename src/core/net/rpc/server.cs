@@ -605,8 +605,7 @@ internal static (ж<service> service, ж<methodType> mtype, ж<Request> req, ref
         return (service, mtype, req, argv, replyv, keepReading, err);
     }
     // Decode the argument value.
-    var argIsValue = false;
-    // if true, need to indirect before calling.
+    var argIsValue = false; // if true, need to indirect before calling.
     if ((~mtype).ArgType.Kind() == reflect.ΔPointer){
         argv = reflect.New((~mtype).ArgType.Elem());
     } else {

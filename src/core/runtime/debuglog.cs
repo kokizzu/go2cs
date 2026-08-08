@@ -472,12 +472,10 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 [GoRecv] internal static void varint(this ref debugLogWriter l, int64 x) {
     uint64 u = default!;
     if (x < 0){
-        u = (uint64)(((~(uint64)x << (int)(1))) | 1);
+        u = (uint64)(((~(uint64)x << (int)(1))) | 1); // complement i, bit 0 is 1
     } else {
-        // complement i, bit 0 is 1
-        u = (((uint64)x << (int)(1)));
+        u = (((uint64)x << (int)(1))); // do not complement i, bit 0 is 0
     }
-    // do not complement i, bit 0 is 0
     l.uvarint(u);
 }
 

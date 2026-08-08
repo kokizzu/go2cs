@@ -57,8 +57,7 @@ internal static (syscallꓸSockaddr, error) sockaddr(this ж<UDPAddr> Ꮡa, nint
         ref var from = ref heap(new syscall.SockaddrInet4(), out var Ꮡfrom);
         (n, err) = c.fd.readFromInet4(b, Ꮡfrom);
         if (err == default!) {
-            var ip = from.Addr.Clone();
-            // copy from.Addr; ip escapes, so this line allocates 4 bytes
+            var ip = from.Addr.Clone(); // copy from.Addr; ip escapes, so this line allocates 4 bytes
             addr = new UDPAddr(IP: ip[..], Port: from.Port);
         }
     }
@@ -66,8 +65,7 @@ internal static (syscallꓸSockaddr, error) sockaddr(this ж<UDPAddr> Ꮡa, nint
         ref var from = ref heap(new syscall.SockaddrInet6(), out var Ꮡfrom);
         (n, err) = c.fd.readFromInet6(b, Ꮡfrom);
         if (err == default!) {
-            var ip = from.Addr.Clone();
-            // copy from.Addr; ip escapes, so this line allocates 16 bytes
+            var ip = from.Addr.Clone(); // copy from.Addr; ip escapes, so this line allocates 16 bytes
             addr = new UDPAddr(IP: ip[..], Port: from.Port, Zone: zoneCache.name((nint)from.ZoneId));
         }
     }

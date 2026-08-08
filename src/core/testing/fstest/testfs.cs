@@ -66,11 +66,10 @@ public static error TestFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
                         return fmt.Errorf("testing fs.Sub(fsys, %s): %w"u8, dir, errΔ1);
                     }
                 }
-                break;
+                break; // one sub-test is enough
             }
         }
     }
-    // one sub-test is enough
     return default!;
 }
 

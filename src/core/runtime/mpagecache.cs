@@ -41,10 +41,8 @@ internal static uintptr pageCachePages => /* 8 * unsafe.Sizeof(pageCache{}.cache
     if (npages == 1) {
         var i = (uintptr)sys.TrailingZeros64(c.cache);
         var scav = (uint64)((c.scav.Rsh((uint64)(i))) & 1);
-        c.cache &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i))));
-        // set bit to mark in-use
-        c.scav &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i))));
-        // clear bit to mark unscavenged
+        c.cache &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i)))); // set bit to mark in-use
+        c.scav &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i)))); // clear bit to mark unscavenged
         return (c.@base + i * (uintptr)pageSize, (uintptr)scav * (uintptr)pageSize);
     }
     return c.allocN(npages);
@@ -63,10 +61,8 @@ internal static uintptr pageCachePages => /* 8 * unsafe.Sizeof(pageCache{}.cache
     }
     var mask = ((((uint64)1).Lsh((uint64)(npages))) - 1).Lsh(i);
     nint scav = sys.OnesCount64((uint64)(c.scav & mask));
-    c.cache &= unchecked((uint64)~(uint64)(mask));
-    // mark in-use bits
-    c.scav &= unchecked((uint64)~(uint64)(mask));
-    // clear scavenged bits
+    c.cache &= unchecked((uint64)~(uint64)(mask)); // mark in-use bits
+    c.scav &= unchecked((uint64)~(uint64)(mask)); // clear scavenged bits
     return (c.@base + (uintptr)(i * (nuint)pageSize), (uintptr)scav * (uintptr)pageSize);
 }
 
@@ -128,8 +124,7 @@ internal static uintptr pageCachePages => /* 8 * unsafe.Sizeof(pageCache{}.cache
         return new pageCache(nil);
     }
     var c = new pageCache(nil);
-    chunkIdx ci = chunkIndex(Δp.searchAddr.addr());
-    // chunk index
+    chunkIdx ci = chunkIndex(Δp.searchAddr.addr()); // chunk index
     ж<pallocData> chunk = default!;
     if (Δp.summary[len(Δp.summary) - 1][ci] != 0){
         // Fast path: there's free pages at or near the searchAddr address.

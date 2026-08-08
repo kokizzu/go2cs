@@ -52,8 +52,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
             }, ref ᒐ);
         }
         if (traceInference) {
-            Ꮡcheck.dump(inferSSSˢ, tparams, Ꮡparams.OrTypedNil(), targs);
-            // aligned with rename print below
+            Ꮡcheck.dump(inferSSSˢ, tparams, Ꮡparams.OrTypedNil(), targs); // aligned with rename print below
             var tparamsʗ2 = tparams;
             defer(() => {
                 Ꮡcheck.dump("=> %s ➞ %s\n"u8, tparamsʗ2, inferred);
@@ -295,10 +294,9 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                 }
             }
             if (u.unknowns() == nn) {
-                break;
+                break; // no progress
             }
         }
-        // no progress
         if (traceInference) {
             var inferredΔ3 = u.inferred(tparams);
             u.tracef("=> %s ➞ %s\n"u8, tparams, inferredΔ3);
@@ -313,11 +311,9 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // maximum untyped type for each of those parameters, if possible.
         map<ж<TypeParam>, ΔType> maxUntyped = default!;                              // lazily allocated (we may not need it)
         foreach (var (_, index) in untyped) {
-            var tpar = (~@params.At(index)).typ._<ж<TypeParam>>();
-            // is type parameter (no alias) by construction of untyped
+            var tpar = (~@params.At(index)).typ._<ж<TypeParam>>(); // is type parameter (no alias) by construction of untyped
             if (u.at(tpar) == default!) {
-                var arg = args[index];
-                // arg corresponding to tpar
+                var arg = args[index]; // arg corresponding to tpar
                 if (maxUntyped == default!) {
                     maxUntyped = new map<ж<TypeParam>, ΔType>();
                 }
@@ -492,16 +488,14 @@ internal static (slice<ж<TypeParam>>, ΔType) renameTParams(this ж<Checker> �
     // Type parameter renaming turns the first example into the second
     // example by renaming the type parameter P into P2.
     if (len(tparams) == 0) {
-        return (default!, typ);
+        return (default!, typ); // nothing to do
     }
-    // nothing to do
     var tparams2 = new slice<ж<TypeParam>>(len(tparams));
     foreach (var (i, tparam) in tparams) {
         var tname = NewTypeName(tparam.Obj().of(TypeName.Ꮡobject).Pos(), tparam.Obj().of(TypeName.Ꮡobject).Pkg(), tparam.Obj().of(TypeName.Ꮡobject).Name(), default!);
         tparams2[i] = NewTypeParam(tname, default!);
-        tparams2[i].Value.index = tparam.Value.index;
+        tparams2[i].Value.index = tparam.Value.index; // == i
     }
-    // == i
     var renameMap = makeRenameMap(tparams, tparams2);
     foreach (var (i, tparam) in tparams) {
         tparams2[i].Value.bound = Ꮡcheck.subst(pos, (~tparam).bound, renameMap, nil, check.context());
@@ -672,9 +666,8 @@ internal static (ж<term>, bool) coreTerm(ж<TypeParam> Ꮡtpar) {
     tpar.@is((ж<term> t) => {
         if (t == nil) {
             assert(n == 0);
-            return false;
+            return false; // no terms
         }
-        // no terms
         n++;
         Ꮡsingle.ValueSlot = t;
         if ((~t).tilde) {
@@ -711,11 +704,10 @@ internal static void killCycles(slice<ж<TypeParam>> tparams, slice<ΔType> infe
     ref var w = ref heap<cycleFinder>(out var Ꮡw);
     w = new cycleFinder(tparams, inferred, new map<ΔType, bool>());
     foreach (var (_, t) in tparams) {
-        Ꮡw.typ(new TypeParamжΔType(t));
+        Ꮡw.typ(new TypeParamжΔType(t)); // t != nil
     }
 }
 
-// t != nil
 [GoType] partial struct cycleFinder {
     internal slice<ж<TypeParam>> tparams;
     internal slice<ΔType> inferred;

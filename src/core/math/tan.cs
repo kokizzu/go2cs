@@ -101,10 +101,9 @@ internal static float64 tan(float64 x) {
     // special cases
     switch (ᐧ) {
     case {} when x == 0D || IsNaN(x): {
-        return x;
+        return x; // return ±0 || NaN()
     }
-    case {} when IsInf(x, // return ±0 || NaN()
- 0): {
+    case {} when IsInf(x, 0): {
         return NaN();
     }}
 
@@ -120,10 +119,8 @@ internal static float64 tan(float64 x) {
     if (x >= reduceThreshold){
         (j, z) = trigReduce(x);
     } else {
-        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D);
-        // integer part of x/(Pi/4), as integer for tests on the phase angle
-        y = (float64)j;
-        // integer part of x/(Pi/4), as float
+        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D); // integer part of x/(Pi/4), as integer for tests on the phase angle
+        y = (float64)j; // integer part of x/(Pi/4), as float
         /* map zeros and singularities to origin */
         if ((uint64)(j & 1) == 1) {
             j++;

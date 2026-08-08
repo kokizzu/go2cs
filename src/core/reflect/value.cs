@@ -375,8 +375,7 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
         // prepare slice for remaining values
         nint m = len(@in) - n;
         var Δslice = MakeSlice(new rtypeжΔType(toRType(t.In(n))), m, m);
-        var elem = toRType(t.In(n)).Elem();
-        // FIXME cast to slice type and Elem()
+        var elem = toRType(t.In(n)).Elem(); // FIXME cast to slice type and Elem()
         for (nint i = 0; i < m; i++) {
             var x = @in[n + i];
             {
@@ -1001,12 +1000,11 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
                     var exprᴛ2 = mStepΔ1.kind;
                     var matchᴛ2 = false;
                     if (exprᴛ2 == abiStepPointer) { matchᴛ2 = true;
-                        methodRegs.Ptrs[mStepΔ1.ireg] = ~(ж<@unsafe.Pointer>)(uintptr)(from);
+                        methodRegs.Ptrs[mStepΔ1.ireg] = ~(ж<@unsafe.Pointer>)(uintptr)(from); // We need to make sure this ends up in Ints, too.
                         fallthrough = true;
                     }
                     if (fallthrough || !matchᴛ2 && exprᴛ2 == abiStepIntReg) { matchᴛ2 = true;
                         intToReg(ᏑmethodRegs, // Do the pointer copy directly so we get a write barrier.
- // We need to make sure this ends up in Ints, too.
  mStepΔ1.ireg, mStepΔ1.size, from);
                     }
                     else if (exprᴛ2 == abiStepFloatReg) {
@@ -1610,8 +1608,7 @@ public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
     }
     var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
     var ktype = t.Value.Key;
-    iter.m.mustBeExported();
-    // do not let unexported m leak
+    iter.m.mustBeExported(); // do not let unexported m leak
     var key = new ΔValue(ktype, iterkey.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)ktype.Kind())) | flagIndir));
     key = key.assignTo(reflectMapIterSetKeyˢ, v.typ(), target);
     typedmemmove(v.typ(), v.ptr, key.ptr);
@@ -1643,8 +1640,7 @@ public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
     }
     var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
     var vtype = t.Value.Elem;
-    iter.m.mustBeExported();
-    // do not let unexported m leak
+    iter.m.mustBeExported(); // do not let unexported m leak
     var elem = new ΔValue(vtype, iterelem.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)vtype.Kind())) | flagIndir));
     elem = elem.assignTo(reflectMapIterSetValueˢ, v.typ(), target);
     typedmemmove(v.typ(), v.ptr, elem.ptr);
@@ -1790,12 +1786,11 @@ public static bool OverflowUint(this ΔValue v, uint64 x) {
     ΔKind k = v.kind();
     var exprᴛ1 = k;
     if (exprᴛ1 == ΔUint || exprᴛ1 == Uintptr || exprᴛ1 == Uint8 || exprᴛ1 == Uint16 || exprᴛ1 == Uint32 || exprᴛ1 == Uint64) {
-        var bitSize = v.typ_.Size() * 8;
+        var bitSize = v.typ_.Size() * 8; // ok to use v.typ_ directly as Size doesn't escape
         var trunc = (x.Lsh((uint64)((64 - bitSize)))).Rsh((uint64)((64 - bitSize)));
         return x != trunc;
     }
 
-    // ok to use v.typ_ directly as Size doesn't escape
     throw panic(Ꮡ(new ValueError("reflect.Value.OverflowUint"u8, v.kind())));
 }
 
@@ -2215,10 +2210,8 @@ internal static ΔValue extendSlice(this ΔValue v, nint n) {
     sh = ~(ж<unsafeheader.Slice>)(uintptr)(v.ptr);
     var s = Ꮡsh;
     v.ptr = new @unsafe.Pointer(s);
-    v.flag = (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice));
-    // equivalent flag to MakeSlice
-    v.grow(n);
-    // fine to treat as assignable since we allocate a new slice header
+    v.flag = (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice)); // equivalent flag to MakeSlice
+    v.grow(n); // fine to treat as assignable since we allocate a new slice header
     s.Value.Len += n;
     return v;
 }
@@ -3097,10 +3090,8 @@ internal static ΔValue cvtDirect(ΔValue v, ΔType typ) {
         ptr = c;
         f &= unchecked((flag)~(flag)(flagAddr));
     }
-    return new ΔValue(t, ptr.Value, (flag)(v.flag.ro() | f));
+    return new ΔValue(t, ptr.Value, (flag)(v.flag.ro() | f)); // v.flag.ro()|f == f?
 }
-
-// v.flag.ro()|f == f?
 
 // convertOp: concrete -> interface
 internal static ΔValue cvtT2I(ΔValue v, ΔType typ) {
@@ -3312,11 +3303,9 @@ internal static dummyᴛ1 dummy;
 // the compiler cannot follow.
 internal static void contentEscapes(@unsafe.Pointer x) {
     if (dummy.b) {
-        escapes(~(ж<any>)(uintptr)(x));
+        escapes(~(ж<any>)(uintptr)(x)); // the dereference may not always be safe, but never executed
     }
 }
-
-// the dereference may not always be safe, but never executed
 
 // This is just a wrapper around abi.NoEscape. The inlining heuristics are
 // finnicky and for whatever reason treat the local call to noescape as much

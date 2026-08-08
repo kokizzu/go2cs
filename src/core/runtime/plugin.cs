@@ -25,8 +25,7 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
     ж<moduledata> md = default!;
     for (var pmd = firstmoduledata.next; pmd != nil; pmd = pmd.Value.next) {
         if ((~pmd).bad) {
-            md = default!;
-            // we only want the last module
+            md = default!; // we only want the last module
             continue;
         }
         md = pmd;
@@ -85,8 +84,7 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
     syms = new map<@string, any>(len((~md).ptab));
     foreach (var (_, ptab) in (~md).ptab) {
         var symName = resolveNameOff((@unsafe.Pointer)(~md).types, ptab.name);
-        var t = toRType((ж<_type>)(uintptr)((@unsafe.Pointer)(~md).types)).typeOff(ptab.typ);
-        // TODO can this stack of conversions be simpler?
+        var t = toRType((ж<_type>)(uintptr)((@unsafe.Pointer)(~md).types)).typeOff(ptab.typ); // TODO can this stack of conversions be simpler?
         ref var val = ref heap<any>(out var Ꮡval);
         var valp = (ж<array<@unsafe.Pointer>>)(uintptr)(new @unsafe.Pointer(Ꮡval));
         (valp.Value)[0] = new @unsafe.Pointer(t);

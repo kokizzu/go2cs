@@ -180,11 +180,11 @@ internal static void errRecover(ж<error> Ꮡerrp) {
                 break;
             }
             case ΔwriteError err: {
-                errp = err.Err;
+                errp = err.Err; // Strip the wrapper.
                 break;
             }
             case ExecError err: {
-                errp = err;
+                errp = err; // Keep the wrapper.
                 break;
             }
             default: {
@@ -197,9 +197,6 @@ internal static void errRecover(ж<error> Ꮡerrp) {
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
 }
-
-// Strip the wrapper.
-// Keep the wrapper.
 
 // ExecuteTemplate applies the template associated with t that has the given name
 // to the specified data object and writes the output to wr.
@@ -432,13 +429,12 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
         truth = val.Uint() != 0;
     }
     else if (exprᴛ1 == reflect.Struct) {
-        truth = true;
+        truth = true; // Struct values are always true.
     }
     else { /* default: */
         return (truth, ok);
     }
 
-    // Struct values are always true.
     return (truth, true);
 }
 
@@ -550,12 +546,11 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
         }
         else if (exprᴛ1 == reflect.Invalid) {
             do {
-                break;
+                break; // An invalid value is likely a nil map, etc. and acts like an empty map.
             } while (false);
         }
         else { /* default: */
-            s.errorf("range can't iterate over %v"u8, // An invalid value is likely a nil map, etc. and acts like an empty map.
- val);
+            s.errorf("range can't iterate over %v"u8, val);
         }
 
         if (r.ElseList != nil) {
@@ -606,8 +601,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
     s.at(new parse.PipeNodeжNode(Ꮡpipe));
     value = missingVal;
     foreach (var (_, cmd) in pipe.Cmds) {
-        value = s.evalCommand(dot, cmd, value);
-        // previous value is this one's final arg.
+        value = s.evalCommand(dot, cmd, value); // previous value is this one's final arg.
         // If the object has type interface{}, dig down one level to the thing inside.
         if (value.Kind() == reflect.ΔInterface && value.Type().NumMethod() == 0) {
             value = value.Elem();
@@ -691,10 +685,9 @@ internal static readonly @string eEpPˢ = ".eEpP"u8;
     s.at(new parse.NumberNodeжNode(Ꮡconstant));
     switch (ᐧ) {
     case {} when constant.IsComplex: {
-        return reflect.ValueOf(constant.Complex128);
+        return reflect.ValueOf(constant.Complex128); // incontrovertible.
     }
-    case {} when constant.IsFloat && !isHexInt(constant.Text) && !isRuneInt(constant.Text) && strings.ContainsAny(constant.Text, // incontrovertible.
- eEpPˢ): {
+    case {} when constant.IsFloat && !isHexInt(constant.Text) && !isRuneInt(constant.Text) && strings.ContainsAny(constant.Text, eEpPˢ): {
         return reflect.ValueOf(constant.Float64);
     }
     case {} when constant.IsInt: {
@@ -884,9 +877,8 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
 // as the function itself.
 [GoRecv] internal static reflectꓸValue evalCall(this ref state s, reflectꓸValue dot, reflectꓸValue fun, bool isBuiltin, parse.Node node, @string name, slice<parse.Node> args, reflectꓸValue final) {
     if (args != default!) {
-        args = args[1..];
+        args = args[1..]; // Zeroth arg is function name/node; not passed to function.
     }
-    // Zeroth arg is function name/node; not passed to function.
     var typ = fun.Type();
     nint numIn = len(args);
     if (!isMissing(final)) {
@@ -894,8 +886,7 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
     }
     nint numFixed = len(args);
     if (typ.IsVariadic()){
-        numFixed = typ.NumIn() - 1;
-        // last arg is the variadic one.
+        numFixed = typ.NumIn() - 1; // last arg is the variadic one.
         if (numIn < numFixed) {
             s.errorf("wrong number of args for %s: want at least %d got %d"u8, name, typ.NumIn() - 1, len(args));
         }
@@ -946,8 +937,7 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
     }
     // Now the ... args.
     if (typ.IsVariadic()) {
-        var argType = typ.In(typ.NumIn() - 1).Elem();
-        // Argument is a slice.
+        var argType = typ.In(typ.NumIn() - 1).Elem(); // Argument is a slice.
         for (; i < len(args); i++) {
             argv[i] = s.evalArg(dot, argType, args[i]);
         }
@@ -1272,9 +1262,8 @@ internal static readonly object noValueˢ = (@string)"<no value>"u8;
 // is best for a call to formatted printer.
 internal static (any, bool) printableValue(reflectꓸValue v) {
     if (v.Kind() == reflect.ΔPointer) {
-        (v, _) = indirect(v);
+        (v, _) = indirect(v); // fmt.Fprint handles nil.
     }
-    // fmt.Fprint handles nil.
     if (!v.IsValid()) {
         return (noValueˢ, true);
     }

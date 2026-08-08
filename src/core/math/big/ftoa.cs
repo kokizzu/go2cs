@@ -44,8 +44,7 @@ partial class big_package {
 // using x.Prec() mantissa bits.
 // The prec value is ignored for the 'b' and 'p' formats.
 public static @string Text(this ж<Float> Ꮡx, byte format, nint prec) {
-    nint cap = 10;
-    // TODO(gri) determine a good/better value here
+    nint cap = 10; // TODO(gri) determine a good/better value here
     if (prec > 0) {
         cap += prec;
     }
@@ -174,9 +173,8 @@ public static slice<byte> Append(this ж<Float> Ꮡx, slice<byte> buf, byte fmt,
 
     // unknown format
     if (x.neg) {
-        buf = buf[..(int)(len(buf) - 1)];
+        buf = buf[..(int)(len(buf) - 1)]; // sign was added prematurely - remove it again
     }
-    // sign was added prematurely - remove it again
     return append(buf, (byte)((rune)'%'), fmt);
 }
 
@@ -222,8 +220,7 @@ internal static void roundShortest(ж<@decimal> Ꮡd, ж<Float> Ꮡx) {
     // The upper and lower bounds are possible outputs only if
     // the original mantissa is even, so that ToNearestEven rounding
     // would round to the original mantissa and not the neighbors.
-    var inclusive = (Word)(mant[0] & 2) == 0;
-    // test bit 1 since original mantissa was shifted by 1
+    var inclusive = (Word)(mant[0] & 2) == 0; // test bit 1 since original mantissa was shifted by 1
     // Now we can figure out the minimum number of digits required.
     // Walk along until d has distinguished itself from upper and lower.
     foreach (var (i, m) in d.mant) {
@@ -280,9 +277,8 @@ internal static slice<byte> fmtE(slice<byte> buf, byte fmt, nint prec, @decimal 
     buf = append(buf, fmt);
     int64 exp = default!;
     if (len(d.mant) > 0) {
-        exp = (int64)d.exp - 1;
+        exp = (int64)d.exp - 1; // -1 because first digit was printed before '.'
     }
-    // -1 because first digit was printed before '.'
     if (exp < 0){
         ch = (rune)'-';
         exp = -exp;
@@ -292,9 +288,8 @@ internal static slice<byte> fmtE(slice<byte> buf, byte fmt, nint prec, @decimal 
     buf = append(buf, ch);
     // dd...d
     if (exp < 10) {
-        buf = append(buf, (byte)((rune)'0'));
+        buf = append(buf, (byte)((rune)'0')); // at least 2 exponent digits
     }
-    // at least 2 exponent digits
     return strconv.AppendInt(buf, exp, 10);
 }
 
@@ -385,9 +380,8 @@ internal static slice<byte> fmtX(this ж<Float> Ꮡx, slice<byte> buf, nint prec
     // round mantissa to n bits
     nuint n = default!;
     if (prec < 0){
-        n = 1 + (x.MinPrec() - 1 + 3) / 4 * 4;
+        n = 1 + (x.MinPrec() - 1 + 3) / 4 * 4; // round MinPrec up to 1 mod 4
     } else {
-        // round MinPrec up to 1 mod 4
         n = 1 + 4 * (nuint)prec;
     }
     // n%4 == 1
@@ -407,8 +401,7 @@ internal static slice<byte> fmtX(this ж<Float> Ꮡx, slice<byte> buf, nint prec
         }}
     }
 
-    var exp64 = (int64)x.exp - 1;
-    // avoid wrap-around
+    var exp64 = (int64)x.exp - 1; // avoid wrap-around
     var hm = m.utoa(16);
     if (debugFloat && hm[0] != (rune)'1') {
         throw panic("incorrect mantissa: " + ((sstring)hm));
@@ -479,9 +472,8 @@ public static void Format(this ж<Float> Ꮡx, fmt.State s, rune format) {
 
     var (prec, hasPrec) = s.Precision();
     if (!hasPrec) {
-        prec = 6;
+        prec = 6; // default precision for 'e', 'f'
     }
-    // default precision for 'e', 'f'
     var exprᴛ1 = format;
     var matchᴛ1 = false;
     if (exprᴛ1 is (rune)'e' or (rune)'E' or (rune)'f' or (rune)'b' or (rune)'p' or (rune)'x') { matchᴛ1 = true;
@@ -498,21 +490,19 @@ public static void Format(this ж<Float> Ꮡx, fmt.State s, rune format) {
             // nothing to do
             // (*Float).Text doesn't support 'F'; handle like 'f'
             // handle like 'g'
-            prec = -1;
+            prec = -1; // default precision for 'g', 'G'
         }
     }
     else if (!matchᴛ1) { /* default: */
-        fmt.Fprintf(new fmt_StateᴠWriter(s), // default precision for 'g', 'G'
- "%%!%c(*big.Float=%s)"u8, format, Ꮡx.String());
+        fmt.Fprintf(new fmt_StateᴠWriter(s), "%%!%c(*big.Float=%s)"u8, format, Ꮡx.String());
         return;
     }
 
     slice<byte> buf = default!;
     buf = Ꮡx.Append(buf, (byte)format, prec);
     if (len(buf) == 0) {
-        buf = slice<byte>("?"u8);
+        buf = slice<byte>("?"u8); // should never happen, but don't crash
     }
-    // should never happen, but don't crash
     // len(buf) > 0
     @string sign = default!;
     switch (ᐧ) {

@@ -91,8 +91,7 @@ public static Action<nint, nint> Swapper(any Δslice) {
 
     }
     var s = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-    @unsafe.Pointer tmp = (uintptr)unsafe_New(typ);
-    // swap scratch space
+    @unsafe.Pointer tmp = (uintptr)unsafe_New(typ); // swap scratch space
     var sʗ1 = s;
     var typʗ1 = typ;
     return (nint i, nint j) => {

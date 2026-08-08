@@ -207,8 +207,7 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
             {
                 var (tpar, _) = Unalias(x.typ)._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
                     buf.WriteString(constrainedByˢ);
-                    WriteType(Ꮡbuf, (~tpar).bound, qf);
-                    // do not compute interface type sets here
+                    WriteType(Ꮡbuf, (~tpar).bound, qf); // do not compute interface type sets here
                     // If we have the type set and it's empty, say so for better error messages.
                     if (hasEmptyTypeset(new TypeParamжΔType(tpar))) {
                         buf.WriteString(withEmptyTypeSetˢ);
@@ -289,9 +288,8 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
     ref var cause = ref Ꮡcause.DerefOrNull();
 
     if (x.mode == invalid || !isValid(T)) {
-        return (true, 0);
+        return (true, 0); // avoid spurious errors
     }
-    // avoid spurious errors
     var origT = T;
     var V = Unalias(x.typ);
     T = Unalias(T);
@@ -395,9 +393,8 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         var errorfʗ1 = errorf;
         Tp.@is((ж<term> TΔ1) => {
             if (TΔ1 == nil) {
-                return false;
+                return false; // no specific types
             }
-            // no specific types
             (ok, code) = Ꮡx.assignableTo(Ꮡcheck, (~TΔ1).typ, Ꮡcause);
             if (!ok) {
                 errorfʗ1("cannot assign %s to %s (in %s)"u8, Ꮡx.Value.typ, (~TΔ1).typ, Tpʗ1.OrTypedNil());
@@ -412,8 +409,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
     // assignable to T.
     if (Vp != nil && !hasName(T)) {
         ref var xΔ1 = ref heap<operand>(out var ᏑxΔ1);
-        xΔ1 = x;
-        // don't clobber outer x
+        xΔ1 = x; // don't clobber outer x
         var ok = false;
         errors.Code code = IncompatibleAssign;
         var Vpʗ1 = Vp;
@@ -421,9 +417,8 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         var origTʗ1 = origT;
         Vp.@is((ж<term> VΔ1) => {
             if (VΔ1 == nil) {
-                return false;
+                return false; // no specific types
             }
-            // no specific types
             ᏑxΔ1.Value.typ = VΔ1.Value.typ;
             (ok, code) = ᏑxΔ1.assignableTo(Ꮡcheck, T, Ꮡcause);
             if (!ok) {

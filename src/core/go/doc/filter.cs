@@ -88,8 +88,7 @@ internal static slice<ж<Func>> filterFuncs(slice<ж<Func>> a, Func<@string, boo
 internal static slice<ж<Type>> filterTypes(slice<ж<Type>> a, Func<@string, bool> f) {
     nint w = 0;
     foreach (var (_, td) in a) {
-        nint n = 0;
-        // number of matches
+        nint n = 0; // number of matches
         if (matchDecl((~td).Decl, f)){
             n = 1;
         } else {
@@ -115,9 +114,7 @@ internal static slice<ж<Type>> filterTypes(slice<ж<Type>> a, Func<@string, boo
     p.Vars = filterValues(p.Vars, f);
     p.Types = filterTypes(p.Types, f);
     p.Funcs = filterFuncs(p.Funcs, f);
-    p.Doc = ""u8;
+    p.Doc = ""u8; // don't show top-level package doc
 }
-
-// don't show top-level package doc
 
 } // end doc_package

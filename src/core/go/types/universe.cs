@@ -107,8 +107,7 @@ internal static void defPredeclaredTypes() {
         // representation.
         universeAnyAlias = NewTypeName(nopos, nil, anyˢ, default!);
         universeAnyAlias.of(TypeName.Ꮡobject).setColor(black);
-        _ = NewAlias(universeAnyAlias, universeAnyNoAlias.of(TypeName.Ꮡobject).Type().Underlying());
-        // Link TypeName and Alias
+        _ = NewAlias(universeAnyAlias, universeAnyNoAlias.of(TypeName.Ꮡobject).Type().Underlying()); // Link TypeName and Alias
         def(new TypeNameжObject(universeAnyAlias));
     }
     // type error interface{ Error() string }
@@ -123,8 +122,7 @@ internal static void defPredeclaredTypes() {
         var err = NewFunc(nopos, nil, errorˢ2, sig);
         // interface{ Error() string }
         var ityp = Ꮡ(new Interface(methods: new ж<Func>[]{err}.slice(), complete: true));
-        computeInterfaceTypeSet(nil, nopos, ityp);
-        // prevent races due to lazy computation of tset
+        computeInterfaceTypeSet(nil, nopos, ityp); // prevent races due to lazy computation of tset
         typ.SetUnderlying(new InterfaceжΔType(ityp));
         def(new TypeNameжObject(obj));
     }
@@ -236,9 +234,8 @@ internal static void defPredeclaredFuncs() {
     foreach (var (i, _) in predeclaredFuncs) {
         builtinId id = ((builtinId)i);
         if (id == _Assert || id == _Trace) {
-            continue;
+            continue; // only define these in testing environment
         }
-        // only define these in testing environment
         def(new BuiltinжObject(newBuiltin(id)));
     }
 }
@@ -251,9 +248,8 @@ internal static readonly @string assertˢ = "assert"u8;
 // package only.
 public static void DefPredeclaredTestFuncs() {
     if (Universe.Lookup(assertˢ) != default!) {
-        return;
+        return; // already defined
     }
-    // already defined
     def(new BuiltinжObject(newBuiltin(_Assert)));
     def(new BuiltinжObject(newBuiltin(_Trace)));
 }
@@ -280,9 +276,8 @@ internal static void def(Object obj) {
     assert(obj.color() == black);
     @string name = obj.Name();
     if (strings.Contains(name, " "u8)) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     // fix Obj link for named types
     {
         var typ = asNamed(obj.Type()); if (typ != nil) {

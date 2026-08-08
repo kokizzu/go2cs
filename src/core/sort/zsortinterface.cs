@@ -125,8 +125,7 @@ internal static (nint newpivot, bool alreadyPartitioned) partition(Interface dat
 
     data.Swap(a, pivot);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (i <= j && data.Less(i, a)) {
         i++;
     }
@@ -165,8 +164,7 @@ internal static nint /*newpivot*/ partitionEqual(Interface data, nint a, nint b,
 
     data.Swap(a, pivot);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (ᐧ) {
         while (i <= j && !data.Less(a, i)) {
             i++;
@@ -319,8 +317,7 @@ internal static void swapRange(Interface data, nint a, nint b, nint n) {
 }
 
 internal static void stable(Interface data, nint n) {
-    nint blockSize = 20;
-    // must be > 0
+    nint blockSize = 20; // must be > 0
     nint a = 0;
     nint b = blockSize;
     while (b <= n) {

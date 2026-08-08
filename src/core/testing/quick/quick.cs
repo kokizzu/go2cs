@@ -149,9 +149,8 @@ internal static (reflectꓸValue value, bool ok) sizedValue(reflectꓸType t, ж
         }
         else if (exprᴛ1 == reflect.ΔPointer) {
             if (randΔ1.Intn(size) == 0){
-                v.SetZero();
+                v.SetZero(); // Generate nil pointer.
             } else {
-                // Generate nil pointer.
                 var (elem, okΔ6) = sizedValue(concrete.Elem(), Ꮡrand, size);
                 if (!okΔ6) {
                     return (new reflectꓸValue(nil), false);

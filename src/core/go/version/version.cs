@@ -20,8 +20,7 @@ partial class version_package {
 // stripGo converts from a "go1.21-bigcorp" version to a "1.21" version.
 // If v does not start with "go", stripGo returns the empty string (a known invalid version).
 internal static @string stripGo(@string v) {
-    (v, _, _) = strings.Cut(v, "-"u8);
-    // strip -bigcorp suffix.
+    (v, _, _) = strings.Cut(v, "-"u8); // strip -bigcorp suffix.
     if (len(v) < 2 || v[..2] != "go") {
         return ""u8;
     }
@@ -44,9 +43,8 @@ public static @string Lang(@string x) {
         return ""u8;
     }
     if (strings.HasPrefix(x[2..], v)){
-        return x[..(int)(2 + len(v))];
+        return x[..(int)(2 + len(v))]; // "go"+v without allocation
     } else {
-        // "go"+v without allocation
         return "go"u8 + v;
     }
 }

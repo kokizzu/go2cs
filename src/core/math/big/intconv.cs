@@ -163,16 +163,14 @@ public static void Format(this ж<ΔInt> Ꮡx, fmt.State s, rune ch) {
     if (precisionSet) {
         switch (ᐧ) {
         case {} when len(digits) < precision: {
-            zeros = precision - len(digits);
+            zeros = precision - len(digits); // count of zero padding
             break;
         }
         case {} when len(digits) == 1 && digits[0] == (rune)'0' && precision == 0: {
-            return;
+            return; // print nothing if zero value (x == 0) and zero precision ("." or ".0")
         }}
 
     }
-    // count of zero padding
-    // print nothing if zero value (x == 0) and zero precision ("." or ".0")
     // determine field pad from width: the least number of characters to output
     nint length = len(sign) + len(prefix) + zeros + len(digits);
     {
@@ -233,8 +231,7 @@ internal static (ж<ΔInt>, nint, error) scan(this ж<ΔInt> Ꮡz, io.ByteScanne
     if (err != default!) {
         return (default!, @base, err);
     }
-    z.neg = len(z.abs) > 0 && neg;
-    // 0 has no sign
+    z.neg = len(z.abs) > 0 && neg; // 0 has no sign
     return (Ꮡz, @base, default!);
 }
 
@@ -292,8 +289,7 @@ internal static readonly @string intScanInvalidVerbˢ = "Int.Scan: invalid verb"
 // the scanned number. It accepts the formats 'b' (binary), 'o' (octal),
 // 'd' (decimal), 'x' (lowercase hexadecimal), and 'X' (uppercase hexadecimal).
 public static error Scan(this ж<ΔInt> Ꮡz, fmt.ScanState s, rune ch) {
-    s.SkipSpace();
-    // skip leading space characters
+    s.SkipSpace(); // skip leading space characters
     nint @base = 0;
     switch (ch) {
     case (rune)'b': {

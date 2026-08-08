@@ -215,9 +215,8 @@ internal static (rune mappedRune, bool foundMapping) to(nint _case, rune r, slic
     bool foundMapping = default!;
 
     if (_case < 0 || MaxCase <= _case) {
-        return (ReplacementChar, false);
+        return (ReplacementChar, false); // as reasonable an error as any
     }
-    // as reasonable an error as any
     // binary search over ranges
     nint lo = 0;
     nint hi = len(caseRange);

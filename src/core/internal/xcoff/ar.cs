@@ -196,8 +196,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         if (((sstring)(fmag[..])) != AIAFMAG) {
             return (default!, fmt.Errorf("AIAFMAG not found after member header"u8));
         }
-        fileoff += 2;
-        // Add the two bytes of AIAFMAG
+        fileoff += 2; // Add the two bytes of AIAFMAG
         member.Value.sr = io.NewSectionReader(new io_SectionReaderжReaderAt(sr), fileoff, size);
         if (off == lastoff) {
             break;

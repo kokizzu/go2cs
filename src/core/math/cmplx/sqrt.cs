@@ -86,12 +86,10 @@ public static complex128 Sqrt(complex128 x) {
         b *= 0.25D;
         scale = 2D;
     } else {
-        a *= 1.8014398509481984e16D;
-        // 2**54
+        a *= 1.8014398509481984e16D; // 2**54
         b *= 1.8014398509481984e16D;
-        scale = 7.450580596923828125e-9D;
+        scale = 7.450580596923828125e-9D; // 2**-27
     }
-    // 2**-27
     var r = math.Hypot(a, b);
     float64 t = default!;
     if (a > 0D){

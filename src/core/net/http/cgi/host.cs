@@ -109,8 +109,7 @@ internal static slice<@string> /*ret*/ removeLeadingDuplicates(slice<@string> en
         var found = false;
         {
             nint eq = strings.IndexByte(e, (rune)'='); if (eq != -1) {
-                @string keq = e[..(int)(eq + 1)];
-                // "key="
+                @string keq = e[..(int)(eq + 1)]; // "key="
                 foreach (var (_, e2) in env[(int)(i + 1)..]) {
                     if (strings.HasPrefix(e2, keq)) {
                         found = true;

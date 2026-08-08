@@ -37,8 +37,7 @@ internal static (nint, error) Read(this eofReader _Δp0, slice<byte> _Δp1) {
         if (AreEqual(err, EOF)) {
             // Use eofReader instead of nil to avoid nil panic
             // after performing flatten (Issue 18232).
-            mr.readers[0] = new eofReader(nil);
-            // permit earlier GC
+            mr.readers[0] = new eofReader(nil); // permit earlier GC
             mr.readers = mr.readers[1..];
         }
         if (n > 0 || !AreEqual(err, EOF)) {
@@ -75,13 +74,11 @@ internal static (nint, error) Read(this eofReader _Δp0, slice<byte> _Δp1) {
         }
         sum += n;
         if (err != default!) {
-            mr.readers = mr.readers[(int)(i)..];
-            // permit resume / retry after error
+            mr.readers = mr.readers[(int)(i)..]; // permit resume / retry after error
             return (sum, err);
         }
-        mr.readers[i] = default!;
+        mr.readers[i] = default!; // permit early GC
     }
-    // permit early GC
     mr.readers = default!;
     return (sum, default!);
 }

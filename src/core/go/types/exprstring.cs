@@ -45,7 +45,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     switch (x.type()) {
     default: {
         var xΔ1 = x;
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "(ast: %T)"u8, xΔ1);
+        fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "(ast: %T)"u8, xΔ1); // nil, ast.BadExpr, ast.KeyValueExpr
         break;
     }
     case ж<ast.Ident> xΔ1: {
@@ -55,7 +55,6 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     case ж<ast.Ellipsis> xΔ1: {
         buf.WriteString("..."u8);
         if ((~xΔ1).Elt != default!) {
-            // nil, ast.BadExpr, ast.KeyValueExpr
             WriteExpr(Ꮡbuf, (~xΔ1).Elt);
         }
         break;
@@ -67,12 +66,11 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     case ж<ast.FuncLit> xΔ1: {
         buf.WriteByte((rune)'(');
         WriteExpr(Ꮡbuf, new ast_FuncTypeжExpr((~xΔ1).Type));
-        buf.WriteString(literalˢ);
+        buf.WriteString(literalˢ); // shortened
         break;
     }
     case ж<ast.CompositeLit> xΔ1: {
-        WriteExpr(Ꮡbuf, // shortened
- (~xΔ1).Type);
+        WriteExpr(Ꮡbuf, (~xΔ1).Type);
         buf.WriteByte((rune)'{');
         if (len((~xΔ1).Elts) > 0) {
             buf.WriteString("…"u8);

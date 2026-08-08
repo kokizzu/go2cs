@@ -82,18 +82,16 @@ public static error SetCrashOutput(ж<os.File> Ꮡf, CrashOptions opts) {
         if (err != default!) {
             return err;
         }
-        runtime.KeepAlive(Ꮡf.OrTypedNil());
-        // prevent finalization before dup
+        runtime.KeepAlive(Ꮡf.OrTypedNil()); // prevent finalization before dup
         fd = (uintptr)fd2;
     }
     {
         var prev = runtime_setCrashFD(fd); if (prev != ~(uintptr)0) {
             // We use NewFile+Close because it is portable
             // unlike syscall.Close, whose parameter type varies.
-            os.NewFile(prev, ""u8).Close();
+            os.NewFile(prev, ""u8).Close(); // ignore error
         }
     }
-    // ignore error
     return default!;
 }
 

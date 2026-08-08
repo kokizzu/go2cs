@@ -219,9 +219,8 @@ public static (@string host, @string port, error err) SplitHostPort(@string host
         }
 
         host = hostport[1..(int)(end)];
-        (j, k) = (1, end + 1);
+        (j, k) = (1, end + 1); // there can't be a '[' resp. ']' before these positions
     } else {
-        // there can't be a '[' resp. ']' before these positions
         host = hostport[..(int)(i)];
         if (bytealg.IndexByteString(host, (rune)':') >= 0) {
             return addrErr(hostport, tooManyColons);

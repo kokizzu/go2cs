@@ -118,22 +118,19 @@ internal static float64 sqrt(float64 x) {
         }
         exp++;
     }
-    exp -= bias;
-    // unbias exponent
+    exp -= bias; // unbias exponent
     ix &= unchecked((uint64)~(uint64)(((uint64)mask << (int)(shift))));
     ix |= (uint64)(((uint64)1 << (int)(shift)));
     if ((nint)(exp & 1) == 1) {
         // odd exp, double x to make it even
         ix <<= (int)(1);
     }
-    exp >>= (int)(1);
-    // exp = exp/2, exponent of square root
+    exp >>= (int)(1); // exp = exp/2, exponent of square root
     // generate sqrt(x) bit by bit
     ix <<= (int)(1);
     uint64 q = default!;                              // q = sqrt(x)
     uint64 s = default!;
-    var r = (uint64)(((uint64)1 << (int)((shift + 1))));
-    // r = moving bit from MSB to LSB
+    var r = (uint64)(((uint64)1 << (int)((shift + 1)))); // r = moving bit from MSB to LSB
     while (r != 0) {
         var t = s + r;
         if (t <= ix) {
@@ -147,11 +144,9 @@ internal static float64 sqrt(float64 x) {
     // final rounding
     if (ix != 0) {
         // remainder, result not exact
-        q += (uint64)(q & 1);
+        q += (uint64)(q & 1); // round according to extra bit
     }
-    // round according to extra bit
-    ix = (q >> (int)(1)) + ((uint64)(exp - 1 + (nint)bias) << (int)(shift));
-    // significand + biased exponent
+    ix = (q >> (int)(1)) + ((uint64)(exp - 1 + (nint)bias) << (int)(shift)); // significand + biased exponent
     return Float64frombits(ix);
 }
 

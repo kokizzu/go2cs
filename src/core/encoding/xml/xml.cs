@@ -660,9 +660,8 @@ internal static readonly @string attributeNameWithoutInˢ = "attribute name with
             b0 = b;
         }
         var data = d.buf.Bytes();
-        data = data[0..(int)(len(data) - 2)];
+        data = data[0..(int)(len(data) - 2)]; // chop ?>
         if (targetΔ1 == "xml"u8) {
-            // chop ?>
             @string content = ((@string)data);
             @string ver = procInst(versionˢ, content);
             if (ver != ""u8 && ver != "1.0"u8) {
@@ -730,12 +729,11 @@ internal static readonly @string attributeNameWithoutInˢ = "attribute name with
                 (b0, b1) = (b1, b);
             }
             var data = d.buf.Bytes();
-            data = data[0..(int)(len(data) - 3)];
+            data = data[0..(int)(len(data) - 3)]; // chop -->
             return (((Comment)data), default!);
         }
         case (rune)'[': {
             for (nint i = 0; i < 6; i++) {
-                // chop -->
                 // <![
                 // Probably <![CDATA[.
                 {

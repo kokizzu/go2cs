@@ -416,8 +416,7 @@ internal static bool notSpace(rune r) {
     if (r.buf[0] < utf8.RuneSelf) {
         // fast check for common ASCII case
         rr = (rune)r.buf[0];
-        size = 1;
-        // Known to be 1.
+        size = 1; // Known to be 1.
         // Flip the bits of the rune so it's available to UnreadRune.
         r.peekRune = ~rr;
         return (rr, size, err);
@@ -680,8 +679,7 @@ internal static readonly @string integerˢ = "integer"u8;
     nint @base = default!;
     @string digits = default!;
 
-    s.okVerb(verb, bdoUxXvˢ, integerˢ);
-    // sets s.err
+    s.okVerb(verb, bdoUxXvˢ, integerˢ); // sets s.err
     @base = 10;
     digits = decimalDigits;
     switch (verb) {
@@ -782,8 +780,7 @@ internal static readonly @string badUnicodeFormatˢ = "bad unicode format "u8;
             s.errorString(badUnicodeFormatˢ);
         }
     } else {
-        s.accept(sign);
-        // If there's a sign, it will be left in the token buffer.
+        s.accept(sign); // If there's a sign, it will be left in the token buffer.
         if (verb == (rune)'v') {
             (@base, digits, haveDigits) = s.scanBasePrefix();
         }
@@ -991,11 +988,10 @@ internal static readonly @string stringˢ2 = "string"u8;
         break;
     }
     default: {
-        str = ((@string)s.token(true, notSpace));
+        str = ((@string)s.token(true, notSpace)); // %s and %v just return the next word
         break;
     }}
 
-    // %s and %v just return the next word
     return str;
 }
 
@@ -1429,14 +1425,12 @@ internal static readonly @string missingVerbAtEndOfFormatˢ = "missing verb: % a
                 s.errorString(missingVerbAtEndOfFormatˢ);
             }
             // %% acts like a real percent
-            var (nextc, _) = utf8.DecodeRuneInString(format[(int)(i + w)..]);
-            // will not match % if string is empty
+            var (nextc, _) = utf8.DecodeRuneInString(format[(int)(i + w)..]); // will not match % if string is empty
             if (nextc != (rune)'%') {
                 return i;
             }
-            i += w;
+            i += w; // skip the first %
         }
-        // skip the first %
         // Literals.
         var inputc = s.mustReadRune();
         if (fmtc != inputc) {
@@ -1480,8 +1474,7 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
                 // Otherwise at EOF; "too many operands" error handled below
                 break;
             }
-            i++;
-            // % is one byte
+            i++; // % is one byte
             // do we have 20 (width)?
             bool widPresent = default!;
             (s.maxWid, widPresent, i) = parsenum(format, i, end);
@@ -1495,9 +1488,8 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
             }
             if (c == (rune)'%') {
                 s.scanPercent();
-                continue;
+                continue; // Do not consume an argument.
             }
-            // Do not consume an argument.
             s.argLimit = s.limit;
             {
                 nint f = s.count + s.maxWid; if (f < s.argLimit) {

@@ -68,8 +68,7 @@ public static (ж<Cipher>, error) NewCipher(slice<byte> key) {
     }
     var (i, j) = (c.i, c.j);
     _ = dst[len(src) - 1];
-    dst = dst[..(int)(len(src))];
-    // eliminate bounds check from loop
+    dst = dst[..(int)(len(src))]; // eliminate bounds check from loop
     foreach (var (k, v) in src) {
         i += 1;
         var x = c.s[i];

@@ -723,8 +723,7 @@ public static (slice<byte> result, nint n, error err) Append(Transformer t, slic
     error err = default!;
 
     if (len(dst) == cap(dst)) {
-        nint nΔ1 = len(src) + len(dst);
-        // It is okay for this to be 0.
+        nint nΔ1 = len(src) + len(dst); // It is okay for this to be 0.
         var b = new slice<byte>(nΔ1);
         dst = b[..(int)(copy(b, dst))];
     }

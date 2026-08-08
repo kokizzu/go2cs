@@ -613,9 +613,8 @@ internal static void stringEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encO
         // In Go1.5 the empty string encodes to "0", while this is not a valid number literal
         // we keep compatibility so check validity after this.
         if (numStr == ""u8) {
-            numStr = "0"u8;
+            numStr = "0"u8; // Number's zero-val
         }
-        // Number's zero-val
         if (!isValidNumber(numStr)) {
             e.error(fmt.Errorf("json: invalid number literal %q"u8, numStr));
         }
@@ -628,9 +627,8 @@ internal static void stringEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encO
     }
     if (opts.quoted){
         var b = appendString(default!, v.String(), opts.escapeHTML);
-        Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), b, false));
+        Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), b, false)); // no need to escape again since it is already escaped
     } else {
-        // no need to escape again since it is already escaped
         Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), v.String(), opts.escapeHTML));
     }
 }

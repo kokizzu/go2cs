@@ -458,10 +458,9 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any ol
                 swapped = e.tryCompareAndSwap(old, @new); goto ᒐdone;
             } else 
             if (!read.amended) {
-                swapped = false; goto ᒐdone;
+                swapped = false; goto ᒐdone; // No existing value for key.
             }
         }
-        // No existing value for key.
         Ꮡm.of(Map.Ꮡmu).Lock();
         defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
         read = Ꮡm.loadReadOnly();

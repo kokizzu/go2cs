@@ -89,8 +89,7 @@ internal static ж<Process> newHandleProcess(nint pid, uintptr handle) {
         mode: modeHandle,
         handle: handle
     ));
-    p.of(Process.Ꮡstate).Store(1);
-    // 1 persistent reference
+    p.of(Process.Ꮡstate).Store(1); // 1 persistent reference
     Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
     return p;
 }
@@ -102,8 +101,7 @@ internal static ж<Process> newDoneProcess(nint pid) {
     ));
     // N.B Since we set statusDone, handle will never actually be
     // used, so its value doesn't matter.
-    p.of(Process.Ꮡstate).Store((uint64)statusDone);
-    // No persistent reference, as there is no handle.
+    p.of(Process.Ꮡstate).Store((uint64)statusDone); // No persistent reference, as there is no handle.
     Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
     return p;
 }

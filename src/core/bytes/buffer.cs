@@ -245,9 +245,8 @@ public static UntypedInt MinRead => 512;
         b.buf = b.buf[..(int)(i + m)];
         n += (int64)m;
         if (AreEqual(e, io.EOF)) {
-            return (n, default!);
+            return (n, default!); // e is EOF, so return nil explicitly
         }
-        // e is EOF, so return nil explicitly
         if (e != default!) {
             return (n, e);
         }
@@ -272,8 +271,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
         //
         // Instead use the append-make pattern with a nil slice to ensure that
         // we allocate buffers rounded up to the closest size class.
-        nint c = len(b) + n;
-        // ensure enough space for n elements
+        nint c = len(b) + n; // ensure enough space for n elements
         if (c < 2 * cap(b)) {
             // The growth rate has historically always been 2x. In the future,
             // we could rely purely on append to determine the growth rate.

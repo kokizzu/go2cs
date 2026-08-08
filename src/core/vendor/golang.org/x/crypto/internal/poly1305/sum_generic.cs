@@ -217,10 +217,8 @@ internal static void updateGeneric(ж<macState> Ꮡstate, slice<byte> msg) {
             throw panic("poly1305: unexpected overflow");
         }
         var m0 = h0r0;
-        var m1 = add128(h1r0, h0r1);
-        // These two additions don't overflow thanks again
-        var m2 = add128(h2r0, h1r1);
-        // to the 4 masked bits at the top of r0 and r1.
+        var m1 = add128(h1r0, h0r1); // These two additions don't overflow thanks again
+        var m2 = add128(h2r0, h1r1); // to the 4 masked bits at the top of r0 and r1.
         var m3 = h2r1;
         var t0 = m0.lo;
         (var t1, c) = bits.Add64(m1.lo, m0.hi, 0);

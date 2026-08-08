@@ -588,11 +588,9 @@ internal static void uninterlace(ж<image.Paletted> Ꮡm) {
     nint dx = m.Bounds().Dx();
     nint dy = m.Bounds().Dy();
     nPix = new slice<uint8>(dx * dy);
-    nint offset = 0;
-    // steps through the input by sequential scan lines.
+    nint offset = 0; // steps through the input by sequential scan lines.
     foreach (var (_, pass) in interlacing) {
-        nint nOffset = pass.start * dx;
-        // steps through the output as defined by pass.
+        nint nOffset = pass.start * dx; // steps through the output as defined by pass.
         for (nint y = pass.start; y < dy; y += pass.skip) {
             copy(nPix[(int)(nOffset)..(int)(nOffset + dx)], m.Pix[(int)(offset)..(int)(offset + dx)]);
             offset += dx;

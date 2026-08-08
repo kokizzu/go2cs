@@ -153,9 +153,8 @@ public static (@string, error) GetMUIStringValue(this Key k, @string name) {
     while (AreEqual(err, syscall.ERROR_MORE_DATA)) {
         // Grow buffer if needed
         if (buflen <= (uint32)len(buf)) {
-            break;
+            break; // Buffer not growing, assume race; break
         }
-        // Buffer not growing, assume race; break
         buf = new slice<uint16>((nint)(buflen));
         err = regLoadMUIString(((syscallꓸHandle)k), pname, Ꮡ(buf, 0), (uint32)len(buf), Ꮡbuflen, 0, pdir);
     }
@@ -214,9 +213,8 @@ public static unsafe (slice<@string> val, uint32 valtype, error err) GetStringsV
         return (default!, typ, default!);
     }
     if (p[len(p) - 1] == 0) {
-        p = p[..(int)(len(p) - 1)];
+        p = p[..(int)(len(p) - 1)]; // remove terminating null
     }
-    // remove terminating null
     val = new slice<@string>(0, 5);
     nint from = 0;
     foreach (var (i, c) in p) {
@@ -372,8 +370,7 @@ public static (slice<@string>, error) ReadValueNames(this Key k) {
         return (default!, err);
     }
     var names = new slice<@string>(0, (nint)((~ki).ValueCount));
-    var buf = new slice<uint16>((nint)((~ki).MaxValueNameLen + 1));
-    // extra room for terminating null character
+    var buf = new slice<uint16>((nint)((~ki).MaxValueNameLen + 1)); // extra room for terminating null character
 loopItems:
     for (var i = (uint32)0; ᐧ ; i++) {
         ref var l = ref heap<uint32>(out var Ꮡl);

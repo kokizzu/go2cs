@@ -281,9 +281,8 @@ internal static UntypedInt workbufAlloc => /* 32 << 10 */ 32768;
         {
             var wbufΔ1 = w.wbuf1; if ((~wbufΔ1).nobj > 4){
                 w.wbuf1 = handoff(wbufΔ1);
-                w.flushedWork = true;
+                w.flushedWork = true; // handoff did putfull
             } else {
-                // handoff did putfull
                 return;
             }
         }

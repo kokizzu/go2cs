@@ -32,8 +32,7 @@ internal static uint32 absInt32(int32 i) {
 //	sample = NormFloat64() * desiredStdDev + desiredMean
 [GoRecv] public static float64 NormFloat64(this ref Rand r) {
     while (ᐧ) {
-        var j = (int32)r.Uint32();
-        // Possibly negative
+        var j = (int32)r.Uint32(); // Possibly negative
         var i = (int32)(j & 0x7F);
         var x = (float64)j * (float64)wn[i];
         if (absInt32(j) < kn[i]) {

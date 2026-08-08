@@ -440,8 +440,7 @@ internal static void parsedebugvars() {
     // defaults
     debug.cgocheck = 1;
     debug.invalidptr = 1;
-    debug.adaptivestackstart = 1;
-    // set this to 0 to turn larger initial goroutine stacks off
+    debug.adaptivestackstart = 1; // set this to 0 to turn larger initial goroutine stacks off
     if (GOOS == "linux"u8) {
         // On Linux, MADV_FREE is faster than MADV_DONTNEED,
         // but doesn't affect many of the statistics that
@@ -777,8 +776,7 @@ internal static int32 reflect_addReflectOff(@unsafe.Pointer ptr) {
     var (id, found) = reflectOffs.minv[ptr, ꟷ];
     if (!found) {
         id = reflectOffs.next;
-        reflectOffs.next--;
-        // use negative offsets as IDs to aid debugging
+        reflectOffs.next--; // use negative offsets as IDs to aid debugging
         reflectOffs.m[id] = ptr;
         reflectOffs.minv[ptr] = id;
     }

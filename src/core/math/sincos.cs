@@ -24,10 +24,9 @@ public static (float64 sin, float64 cos) Sincos(float64 x) {
     // special cases
     switch (ᐧ) {
     case {} when x is 0D: {
-        return (x, 1D);
+        return (x, 1D); // return ±0.0, 1.0
     }
-    case {} when IsNaN(x) || IsInf(x, // return ±0.0, 1.0
- 0): {
+    case {} when IsNaN(x) || IsInf(x, 0): {
         return (NaN(), NaN());
     }}
 
@@ -43,20 +42,16 @@ public static (float64 sin, float64 cos) Sincos(float64 x) {
     if (x >= reduceThreshold){
         (j, z) = trigReduce(x);
     } else {
-        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D);
-        // integer part of x/(Pi/4), as integer for tests on the phase angle
-        y = (float64)j;
-        // integer part of x/(Pi/4), as float
+        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D); // integer part of x/(Pi/4), as integer for tests on the phase angle
+        y = (float64)j; // integer part of x/(Pi/4), as float
         if ((uint64)(j & 1) == 1) {
             // map zeros to origin
             j++;
             y++;
         }
-        j &= (uint64)(7);
-        // octant modulo 2Pi radians (360 degrees)
-        z = ((x - y * PI4A) - y * PI4B) - y * PI4C;
+        j &= (uint64)(7); // octant modulo 2Pi radians (360 degrees)
+        z = ((x - y * PI4A) - y * PI4B) - y * PI4C; // Extended precision modular arithmetic
     }
-    // Extended precision modular arithmetic
     if (j > 3) {
         // reflect in x axis
         j -= 4;

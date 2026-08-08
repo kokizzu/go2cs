@@ -169,10 +169,9 @@ internal static error setDeadlineImpl(ж<FD> Ꮡfd, time.Time t, nint mode) {
         if (!t.IsZero()) {
             d = (int64)time.Until(t);
             if (d == 0) {
-                d = -1;
+                d = -1; // don't confuse deadline right now with no deadline
             }
         }
-        // don't confuse deadline right now with no deadline
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;

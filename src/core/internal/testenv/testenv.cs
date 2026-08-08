@@ -237,10 +237,9 @@ internal static (@string, error) findGOROOT() {
             {
                 @string @base = filepath.Base(dir); if (@base != "src"u8) {
                     dir = parent;
-                    continue;
+                    continue; // dir cannot be GOROOT/src if it doesn't end in "src".
                 }
             }
-            // dir cannot be GOROOT/src if it doesn't end in "src".
             var (b, errΔ1) = os.ReadFile(filepath.Join(dir, goModˢ));
             if (errΔ1 != default!) {
                 if (os.IsNotExist(errΔ1)) {

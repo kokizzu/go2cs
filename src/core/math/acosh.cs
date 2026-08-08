@@ -59,18 +59,14 @@ internal static float64 acosh(float64 x) {
         return 0D;
     }
     case {} when x >= Large: {
-        return Log(x) + (float64)Ln2;
+        return Log(x) + (float64)Ln2; // x > 2**28
     }
     case {} when x is > 2D: {
-        return Log(2D * x - 1D / (x + Sqrt(x * x - 1D)));
+        return Log(2D * x - 1D / (x + Sqrt(x * x - 1D))); // 2**28 > x > 2
     }}
 
-    // x > 2**28
-    // 2**28 > x > 2
     var t = x - 1D;
-    return Log1p(t + Sqrt(2D * t + t * t));
+    return Log1p(t + Sqrt(2D * t + t * t)); // 2 >= x > 1
 }
-
-// 2 >= x > 1
 
 } // end math_package

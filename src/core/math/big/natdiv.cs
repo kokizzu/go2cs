@@ -556,16 +556,14 @@ internal static (nat q, Word r) divW(this nat z, nat x, Word y) {
         break;
     }
     case {} when y == 1: {
-        q = z.set(x);
+        q = z.set(x); // result is x
         return (q, r);
     }
     case {} when m is 0: {
-        q = z[..0];
+        q = z[..0]; // result is 0
         return (q, r);
     }}
 
-    // result is x
-    // result is 0
     // m > 0
     z = z.make(m);
     r = divWVW(z, 0, x, y);
@@ -786,9 +784,8 @@ internal static void divRecursiveStep(this nat z, nat u, nat v, nint depth, ж<n
     nint B = n / 2;
     // Allocate a nat for qhat below.
     if (temps[depth] == nil){
-        temps[depth] = getNat(n);
+        temps[depth] = getNat(n); // TODO(rsc): Can be just B+1.
     } else {
-        // TODO(rsc): Can be just B+1.
         temps[depth].ValueSlot = (~temps[depth]).make(B + 1);
     }
     // Compute each wide digit of the quotient.

@@ -117,9 +117,8 @@ public static ж<Reader> NewReader(slice<byte> b, bool @readonly) {
     var b = r.b[(int)(r.off)..(int)(r.off + len)];
     r.off += len;
     if (r.@readonly) {
-        return toString(b);
+        return toString(b); // backed by RO memory, ok to make unsafe string
     }
-    // backed by RO memory, ok to make unsafe string
     return ((@string)b);
 }
 

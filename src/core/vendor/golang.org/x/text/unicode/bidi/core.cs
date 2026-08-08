@@ -246,8 +246,7 @@ private static readonly object assertIEndˢ = (@string)"assert (i <= end)"u8;
                 break;
             } else 
             if (t.@in(FSI, LRI, RLI)) {
-                i = p.matchingPDI[i];
-                // skip over to the matching PDI
+                i = p.matchingPDI[i]; // skip over to the matching PDI
                 if (i > end) {
                     log.Panic(assertIEndˢ);
                 }
@@ -739,11 +738,10 @@ loop:
                 goto continue_loop;
             }
         }
-        return index;
+        return index; // didn't find a match in validSet
 continue_loop:;
     }
 break_loop:;
-    // didn't find a match in validSet
     return len(s.types);
 }
 

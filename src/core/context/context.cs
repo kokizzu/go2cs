@@ -513,9 +513,8 @@ internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, ca
     c.Context = parent;
     var done = parent.Done();
     if (done == default!) {
-        return;
+        return; // parent is never canceled
     }
-    // parent is never canceled
     var selᴛ1 = done;
     switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out _): {
@@ -605,9 +604,8 @@ internal static void cancel(this ж<cancelCtx> Ꮡc, bool removeFromParent, erro
     Ꮡc.of(cancelCtx.Ꮡmu).Lock();
     if (c.err != default!) {
         Ꮡc.of(cancelCtx.Ꮡmu).Unlock();
-        return;
+        return; // already canceled
     }
-    // already canceled
     c.err = err;
     c.cause = cause;
     var (d, _) = Ꮡc.of(cancelCtx.Ꮡdone).Load()._<channel<EmptyStruct>>(ᐧ);
@@ -698,8 +696,7 @@ public static (Context, Action) WithDeadlineCause(Context parent, time.Time d, e
         c.of(timerCtx.ᏑcancelCtx).propagateCancel(parent, new timerCtxжcanceler(c));
         var dur = time.Until(d);
         if (dur <= 0) {
-            c.cancel(true, DeadlineExceeded, cause);
-            // deadline has already passed
+            c.cancel(true, DeadlineExceeded, cause); // deadline has already passed
             var cʗ1 = c;
             return (new timerCtxжContext(c), () => {
                 cʗ1.cancel(false, Canceled, default!);

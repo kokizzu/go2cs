@@ -119,15 +119,13 @@ internal static uintptr f32hash(@unsafe.Pointer Δp, uintptr h) {
     var f = ~(ж<float32>)(uintptr)(Δp);
     switch (ᐧ) {
     case {} when f is 0F: {
-        return c1 * ((uintptr)(c0 ^ h));
+        return c1 * ((uintptr)(c0 ^ h)); // +0, -0
     }
     case {} when f != f: {
-        return c1 * ((uintptr)((uintptr)(c0 ^ h) ^ (uintptr)rand()));
+        return c1 * ((uintptr)((uintptr)(c0 ^ h) ^ (uintptr)rand())); // any kind of NaN
     }
     default: {
-        return memhash(Δp, // +0, -0
- // any kind of NaN
- h, 4);
+        return memhash(Δp, h, 4);
     }}
 
 }
@@ -136,15 +134,13 @@ internal static uintptr f64hash(@unsafe.Pointer Δp, uintptr h) {
     var f = ~(ж<float64>)(uintptr)(Δp);
     switch (ᐧ) {
     case {} when f is 0D: {
-        return c1 * ((uintptr)(c0 ^ h));
+        return c1 * ((uintptr)(c0 ^ h)); // +0, -0
     }
     case {} when f != f: {
-        return c1 * ((uintptr)((uintptr)(c0 ^ h) ^ (uintptr)rand()));
+        return c1 * ((uintptr)((uintptr)(c0 ^ h) ^ (uintptr)rand())); // any kind of NaN
     }
     default: {
-        return memhash(Δp, // +0, -0
- // any kind of NaN
- h, 8);
+        return memhash(Δp, h, 8);
     }}
 
 }

@@ -125,30 +125,24 @@ public static float64 J0(float64 x) {
             var v = qzero(x);
             zΔ2 = /* (1 / SqrtPi) */ 0.5641895835477563D * (uΔ1 * cc - v * ss) / Sqrt(x);
         }
-        return zΔ2;
+        return zΔ2; // |x| >= 2.0
     }
-    // |x| >= 2.0
     if (x < TwoM13) {
         // |x| < ~1.2207e-4
         if (x < TwoM27) {
-            return 1D;
+            return 1D; // |x| < ~7.4506e-9
         }
-        // |x| < ~7.4506e-9
-        return 1D - 0.25D * x * x;
+        return 1D - 0.25D * x * x; // ~7.4506e-9 < |x| < ~1.2207e-4
     }
-    // ~7.4506e-9 < |x| < ~1.2207e-4
     var z = x * x;
     var r = z * (R02 + z * (R03 + z * (R04 + z * R05)));
     var s = 1D + z * (S01 + z * (S02 + z * (S03 + z * S04)));
     if (x < 1D) {
-        return 1D + z * (-0.25D + (r / s));
+        return 1D + z * (-0.25D + (r / s)); // |x| < 1.00
     }
-    // |x| < 1.00
     var u = 0.5D * x;
-    return (1D + u) * (1D - u) + z * (r / s);
+    return (1D + u) * (1D - u) + z * (r / s); // 1.0 < |x| < 2.0
 }
-
-// 1.0 < |x| < 2.0
 
 // Y0 returns the order-zero Bessel function of the second kind.
 //
@@ -220,20 +214,17 @@ public static float64 Y0(float64 x) {
             var vΔ1 = qzero(x);
             zΔ2 = /* (1 / SqrtPi) */ 0.5641895835477563D * (uΔ1 * ss + vΔ1 * cc) / Sqrt(x);
         }
-        return zΔ2;
+        return zΔ2; // |x| >= 2.0
     }
-    // |x| >= 2.0
     if (x <= TwoM27) {
-        return U00 + /* (2 / Pi) */ 0.6366197723675814D * Log(x);
+        return U00 + /* (2 / Pi) */ 0.6366197723675814D * Log(x); // |x| < ~7.4506e-9
     }
-    // |x| < ~7.4506e-9
     var z = x * x;
     var u = U00 + z * (U01 + z * (U02 + z * (U03 + z * (U04 + z * (U05 + z * U06)))));
     var v = 1D + z * (V01 + z * (V02 + z * (V03 + z * V04)));
-    return u / v + /* (2 / Pi) */ 0.6366197723675814D * J0(x) * Log(x);
+    return u / v + /* (2 / Pi) */ 0.6366197723675814D * J0(x) * Log(x); // ~7.4506e-9 < |x| < 2.0
 }
 
-// ~7.4506e-9 < |x| < 2.0
 // The asymptotic expansions of pzero is
 //      1 - 9/128 s**2 + 11025/98304 s**4 - ..., where s = 1/x.
 // For x >= 2, We approximate pzero by

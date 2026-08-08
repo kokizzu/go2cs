@@ -137,8 +137,7 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
             // spec: "An embedded type must be specified as a type name T or as a
             // pointer to a non-interface type name *T, and T itself may not be a
             // pointer type."
-            tokenꓸPos pos = (~f).Type.Pos();
-            // position of type, for errors
+            tokenꓸPos pos = (~f).Type.Pos(); // position of type, for errors
             var name = embeddedFieldIdent((~f).Type);
             if (name == nil) {
                 Ꮡcheck.errorf(new ast_Exprᴠpositioner((~f).Type), InvalidSyntaxTree, "embedded field type %s has no name"u8, (~f).Type);
@@ -147,8 +146,7 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
                 addInvalid(name);
                 continue;
             }
-            add(name, true);
-            // struct{p.T} field has position of T
+            add(name, true); // struct{p.T} field has position of T
             // Because we have a name, typ must be of the form T or *T, where T is the name
             // of a (named or alias) type, and t (= deref(typ)) must be the type of T.
             // We must delay this check to the end because we don't want to instantiate
@@ -220,10 +218,9 @@ internal static ж<ast.Ident> embeddedFieldIdent(ast.Expr e) {
     case ж<ast.IndexListExpr> eΔ1: {
         return embeddedFieldIdent((~eΔ1).X);
     }}
-    return default!;
+    return default!; // invalid embedded field
 }
 
-// invalid embedded field
 internal static bool declareInSet(this ж<Checker> Ꮡcheck, ж<objset> Ꮡoset, tokenꓸPos pos, Object obj) {
     ref var oset = ref Ꮡoset.DerefOrNull();
 

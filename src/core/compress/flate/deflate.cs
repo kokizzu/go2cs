@@ -674,8 +674,7 @@ public static (ж<Writer>, error) NewWriterDict(io.Writer w, nint level, slice<b
         return (default!, err);
     }
     zw.of(Writer.Ꮡd).fillWindow(dict);
-    zw.Value.dict = append((~zw).dict, dict.ꓸꓸꓸ);
-    // duplicate dictionary for Reset method.
+    zw.Value.dict = append((~zw).dict, dict.ꓸꓸꓸ); // duplicate dictionary for Reset method.
     return (zw, err);
 }
 

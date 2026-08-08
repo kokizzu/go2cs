@@ -198,10 +198,8 @@ internal static void setFormat(this ж<block> Ꮡb, Format format) {
     // This field is special in that it is terminated by a NULL then space.
     formatter f = default!;
     var field = Ꮡb.toV7().chksum();
-    var (chksum, _) = b.computeChecksum();
-    // Possible values are 256..128776
-    f.formatOctal(field[..7], chksum);
-    // Never fails since 128776 < 262143
+    var (chksum, _) = b.computeChecksum(); // Possible values are 256..128776
+    f.formatOctal(field[..7], chksum); // Never fails since 128776 < 262143
     field[7] = (rune)' ';
 }
 
@@ -217,9 +215,8 @@ internal static void setFormat(this ж<block> Ꮡb, Format format) {
         var c = vᴛ1;
 
         if (148 <= i && i < 156) {
-            c = (rune)' ';
+            c = (rune)' '; // Treat the checksum field itself as all spaces.
         }
-        // Treat the checksum field itself as all spaces.
         unsigned += (int64)c;
         signed += (int64)(int8)c;
     }

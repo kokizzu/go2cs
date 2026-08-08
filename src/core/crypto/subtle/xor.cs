@@ -17,8 +17,7 @@ public static nint XORBytes(slice<byte> dst, slice<byte> x, slice<byte> y) {
     if (n > len(dst)) {
         throw panic("subtle.XORBytes: dst too short");
     }
-    xorBytes(Ꮡ(dst, 0), Ꮡ(x, 0), Ꮡ(y, 0), n);
-    // arch-specific
+    xorBytes(Ꮡ(dst, 0), Ꮡ(x, 0), Ꮡ(y, 0), n); // arch-specific
     return n;
 }
 

@@ -704,11 +704,10 @@ internal static nint format(this Duration d, ж<array<byte>> Ꮡbuf) {
         }
         case {} when u < (uint64)(int64)Millisecond: {
             prec = 3;
-            w--;
+            w--; // Need room for two bytes.
             copy(buf[(int)(w)..], // print nanoseconds
  // print microseconds
  // U+00B5 'µ' micro sign == 0xC2 0xB5
- // Need room for two bytes.
  "µ"u8);
             break;
         }
@@ -875,9 +874,8 @@ public static Duration Round(this Duration d, Duration m) {
                 return d1;
             }
         }
-        return minDuration;
+        return minDuration; // overflow
     }
-    // overflow
     if (lessThanHalf(r, m)) {
         return d - r;
     }
@@ -886,10 +884,8 @@ public static Duration Round(this Duration d, Duration m) {
             return d1;
         }
     }
-    return maxDuration;
+    return maxDuration; // overflow
 }
-
-// overflow
 
 // Abs returns the absolute value of d.
 // As a special case, [math.MinInt64] is converted to [math.MaxInt64].
@@ -919,8 +915,7 @@ public static Time Add(this Time t, Duration d) {
         dsec--;
         nsec += 1000000000;
     }
-    t.wall = (uint64)((uint64)(t.wall & ~(uint64)nsecMask) | (uint64)nsec);
-    // update nsec
+    t.wall = (uint64)((uint64)(t.wall & ~(uint64)nsecMask) | (uint64)nsec); // update nsec
     t.addSec(dsec);
     if ((uint64)(t.wall & (uint64)hasMonotonic) != 0) {
         var te = t.ext + (int64)d;
@@ -946,30 +941,25 @@ public static Duration Sub(this Time t, Time u) {
     // Check for overflow or underflow.
     switch (ᐧ) {
     case {} when u.Add(d).Equal(t): {
-        return d;
+        return d; // d is correct
     }
     case {} when t.Before(u): {
-        return minDuration;
+        return minDuration; // t - u is negative out of range
     }
     default: {
-        return maxDuration;
+        return maxDuration; // t - u is positive out of range
     }}
 
 }
 
-// d is correct
-// t - u is negative out of range
-// t - u is positive out of range
 internal static Duration subMono(int64 t, int64 u) {
     var d = ((Duration)(t - u));
     if (d < 0 && t > u) {
-        return maxDuration;
+        return maxDuration; // t - u is positive out of range
     }
-    // t - u is positive out of range
     if (d > 0 && t < u) {
-        return minDuration;
+        return minDuration; // t - u is negative out of range
     }
-    // t - u is negative out of range
     return d;
 }
 
@@ -1114,8 +1104,7 @@ internal static (nint year, ΔMonth month, nint day, nint yday) absDate(uint64 a
     } else {
         begin = (nint)daysBefore[month];
     }
-    month++;
-    // because January is 1
+    month++; // because January is 1
     day = day - begin + 1;
     return (year, month, day, yday);
 }
@@ -1580,9 +1569,8 @@ public static Time Date(nint year, ΔMonth month, nint day, nint hour, nint min,
     // Add in days before this month.
     d += (uint64)daysBefore[month - 1];
     if (isLeap(year) && month >= March) {
-        d++;
+        d++; // February 29
     }
-    // February 29
     // Add in days before today.
     d += (uint64)(day - 1);
     // Add in time elapsed today.
@@ -1661,10 +1649,9 @@ internal static (nint qmod2, Duration r) div(Time t, Duration d) {
         nsec = -nsec;
         if (nsec < 0) {
             nsec += 1000000000;
-            sec--;
+            sec--; // sec >= 1 before the -- so safe
         }
     }
-    // sec >= 1 before the -- so safe
     switch (ᐧ) {
     case {} when d < ΔSecond && ΔSecond % (d + d) == 0: {
         qmod2 = (nint)((nint)(nsec / (int32)(int64)d) & 1);

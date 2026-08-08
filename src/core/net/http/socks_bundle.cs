@@ -72,8 +72,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
                 }}
             });
         }
-        var b = new slice<byte>(0, 6 + builtin.len(host));
-        // the size here is just an estimate
+        var b = new slice<byte>(0, 6 + builtin.len(host)); // the size here is just an estimate
         b = append(b, (byte)(socksVersion5));
         if (builtin.len(d.AuthMethods) == 0 || d.Authenticate == default!){
             b = append(b, (byte)(1), (byte)(nint)socksAuthMethodNotRequired);

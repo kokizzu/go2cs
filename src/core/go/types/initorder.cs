@@ -111,12 +111,10 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
         // but they all have the same initializer - emit only
         // one, for the first variable seen
         if (emitted[info]) {
-            continue;
+            continue; // initializer already emitted, if any
         }
-        // initializer already emitted, if any
         emitted[info] = true;
-        var infoLhs = info.Value.lhs;
-        // possibly nil (see declInfo.lhs field comment)
+        var infoLhs = info.Value.lhs; // possibly nil (see declInfo.lhs field comment)
         if (infoLhs == default!) {
             infoLhs = new ж<Var>[]{v}.slice();
         }
@@ -281,15 +279,13 @@ internal static slice<ж<graphNode>> dependencyGraph(map<Object, ж<declInfo>> o
                         s.of(graphNode.Ꮡpred).add(p);
                     }
                 }
-                delete((~p).succ, n);
+                delete((~p).succ, n); // remove edge to n
             }
         }
-        // remove edge to n
         foreach (var (s, _) in (~n).succ) {
-            delete((~s).pred, n);
+            delete((~s).pred, n); // remove edge to n
         }
     }
-    // remove edge to n
     // fill in index and ndeps fields
     foreach (var (i, n) in G) {
         n.Value.index = i;
@@ -332,8 +328,7 @@ internal static bool Less(this nodeQueue a, nint i, nint j) {
 [GoRecv] internal static any Pop(this ref nodeQueue a) {
     nint n = len(a);
     var x = (a)[n - 1];
-    x.Value.index = -1;
-    // for safety
+    x.Value.index = -1; // for safety
     a = (a)[..(int)(n - 1)];
     return x.OrTypedNil();
 }

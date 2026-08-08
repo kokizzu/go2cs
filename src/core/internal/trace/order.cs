@@ -186,9 +186,8 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             if ((~s).status != status) {
                 return (curCtx, false, fmt.Errorf("inconsistent status for proc %d: old %v vs. new %v"u8, pid, (~s).status, status));
             }
-            s.Value.seq = makeSeq(gen, 0);
+            s.Value.seq = makeSeq(gen, 0); // Reset seq.
         } else {
-            // Reset seq.
             o.pStates[pid] = Ꮡ(new pState(id: pid, status: status, seq: makeSeq(gen, 0)));
             if (gen == o.initialGen){
                 oldState = ProcUndetermined;
@@ -197,8 +196,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             }
         }
     }
-    ev.extra(version.Go122)[0] = (uint64)(uint8)oldState;
-    // Smuggle in the old state for StateTransition.
+    ev.extra(version.Go122)[0] = (uint64)(uint8)oldState; // Smuggle in the old state for StateTransition.
     // Bind the proc to the new context, if it's running.
     var newCtx = curCtx;
     if (status == go122.ProcRunning || status == go122.ProcSyscall) {
@@ -332,8 +330,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         return (curCtx, true, default!);
     }
     // Validate that the M we're stealing from is what we expect.
-    var mid = ((ThreadID)(int64)ev.args[2]);
-    // The M we're stealing from.
+    var mid = ((ThreadID)(int64)ev.args[2]); // The M we're stealing from.
     var newCtx = curCtx;
     if (mid == curCtx.M) {
         // We're stealing from ourselves. This behaves like a ProcStop.
@@ -381,10 +378,9 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             if ((~s).status != status) {
                 return (curCtx, false, fmt.Errorf("inconsistent status for goroutine %d: old %v vs. new %v"u8, gid, (~s).status, status));
             }
-            s.Value.seq = makeSeq(gen, 0);
+            s.Value.seq = makeSeq(gen, 0); // Reset seq.
         } else 
         if (gen == o.initialGen){
-            // Reset seq.
             // Set the state.
             o.gStates[gid] = Ꮡ(new gState(id: gid, status: status, seq: makeSeq(gen, 0)));
             oldState = GoUndetermined;
@@ -392,8 +388,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, fmt.Errorf("found goroutine status for new goroutine after the first generation: id=%v status=%v"u8, gid, status));
         }
     }
-    ev.extra(version.Go122)[0] = (uint64)(uint8)oldState;
-    // Smuggle in the old state for StateTransition.
+    ev.extra(version.Go122)[0] = (uint64)(uint8)oldState; // Smuggle in the old state for StateTransition.
     var newCtx = curCtx;
     var exprᴛ1 = status;
     if (exprᴛ1 == go122.GoRunning) {
@@ -603,8 +598,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         return (curCtx, false, fmt.Errorf("%s event for goroutine that's not %s"u8, go122.EventString(ev.typ), GoRunning));
     }
     var nextg = ((GoID)(int64)ev.args[0]);
-    var seq = makeSeq(gen, ev.args[1]);
-    // seq is for nextg, not curCtx.G.
+    var seq = makeSeq(gen, ev.args[1]); // seq is for nextg, not curCtx.G.
     (var nextGState, ok) = o.gStates[nextg, ꟷ];
     if (!ok || (~nextGState).status != go122.GoWaiting || !seq.succeeds((~nextGState).seq)) {
         // We can't make an inference as to whether this is bad. We could just be seeing
@@ -1528,8 +1522,7 @@ internal static @string dumpOrdering(ж<ordering> Ꮡorder) {
     }
     var elem = Ꮡ(q.buf, q.start % len(q.buf));
     var value = elem.ValueSlot;
-    elem.ValueSlot = @new<T>().ValueSlot;
-    // Clear the entry before returning, so we don't hold onto old tables.
+    elem.ValueSlot = @new<T>().ValueSlot; // Clear the entry before returning, so we don't hold onto old tables.
     q.start++;
     return (value, true);
 }

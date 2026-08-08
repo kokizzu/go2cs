@@ -830,8 +830,7 @@ internal static uintptr reclaimChunk(this ж<mheap> Ꮡh, slice<arenaIdx> arenas
         traceRelease(Δtrace);
         @lock(Ꮡh.of(mheap.Ꮡlock));
     }
-    assertLockHeld(Ꮡh.of(mheap.Ꮡlock));
-    // Must be locked on return.
+    assertLockHeld(Ꮡh.of(mheap.Ꮡlock)); // Must be locked on return.
     return nFreed;
 }
 
@@ -1331,8 +1330,7 @@ internal static void initSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType
         // Initialize mark and allocation structures.
         s.freeindex = 0;
         s.freeIndexForScan = 0;
-        s.allocCache = ~(uint64)0;
-        // all 1s indicating all free.
+        s.allocCache = ~(uint64)0; // all 1s indicating all free.
         s.gcmarkBits = newMarkBits((uintptr)s.nelems);
         s.allocBits = newAllocBits((uintptr)s.nelems);
         // It's safe to access h.sweepgen without the heap lock because it's
@@ -1817,13 +1815,11 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
     }
     unlock(span.of(mspan.Ꮡspeciallock));
     releasem(mp);
-    return !exists;
+    return !exists; // already exists
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string removespecialOnInvalidˢ = "removespecial on invalid pointer"u8;
-
-// already exists
 
 // Removes the Special record of the given kind for the object p.
 // Returns the record if the record existed, nil otherwise.
@@ -1937,9 +1933,8 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
 internal static void removefinalizer(@unsafe.Pointer Δp) {
     var s = removespecial(Δp, _KindSpecialFinalizer).Reinterpret<special, specialfinalizer>();
     if (s == nil) {
-        return;
+        return; // there wasn't a finalizer to remove
     }
-    // there wasn't a finalizer to remove
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(new @unsafe.Pointer(s));
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
@@ -2367,8 +2362,7 @@ internal static void nextMarkBitArenaEpoch() {
     }
     gcBitsArenas.previous = gcBitsArenas.current;
     gcBitsArenas.current = gcBitsArenas.next;
-    atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)).Value), nil);
-    // newMarkBits calls newArena when needed
+    atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)).Value), nil); // newMarkBits calls newArena when needed
     unlock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
 }
 

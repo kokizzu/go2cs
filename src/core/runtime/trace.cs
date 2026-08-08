@@ -256,10 +256,8 @@ public static error StartTrace() {
     //
     // N.B. This will also emit a status event for this goroutine.
     var tl = traceAcquire();
-    tl.Gomaxprocs(gomaxprocs);
-    // Get this as early in the trace as possible. See comment in traceAdvance.
-    tl.STWStart(stwStartTrace);
-    // We didn't trace this above, so trace it now.
+    tl.Gomaxprocs(gomaxprocs); // Get this as early in the trace as possible. See comment in traceAdvance.
+    tl.STWStart(stwStartTrace); // We didn't trace this above, so trace it now.
     // Record the fact that a GC is active, if applicable.
     if (gcphase == _GCmark || gcphase == _GCmarktermination) {
         tl.GCActive();

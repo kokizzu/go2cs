@@ -54,8 +54,7 @@ public static ж<Decoder> NewDecoder(io.Reader r) {
     dec.Value.wireType = new map<typeId, ж<wireType>>();
     dec.Value.decoderCache = new map<reflectꓸType, map<typeId, ж<ж<decEngine>>>>();
     dec.Value.ignorerCache = new map<typeId, ж<ж<decEngine>>>();
-    dec.Value.countBuf = new slice<byte>(9);
-    // counts may be uint64s (unlikely!), require 9 bytes
+    dec.Value.countBuf = new slice<byte>(9); // counts may be uint64s (unlikely!), require 9 bytes
     return dec;
 }
 
@@ -251,8 +250,7 @@ public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
         // Make sure we're single-threaded through here.
         Ꮡdec.of(Decoder.Ꮡmutex).Lock();
         defer(Ꮡdec.of(Decoder.Ꮡmutex).Unlock, ref ᒐ);
-        dec.buf.Reset();
-        // In case data lingers from previous invocation.
+        dec.buf.Reset(); // In case data lingers from previous invocation.
         dec.err = default!;
         var id = Ꮡdec.decodeTypeSequence(false);
         if (dec.err == default!) {

@@ -363,10 +363,8 @@ internal static (nint, error) length(reflectꓸValue item) {
 internal static reflectꓸValue emptyCall(reflectꓸValue fn, params ꓸꓸꓸreflectꓸValue argsʗp) {
     var args = argsʗp.sslice();
 
-    throw panic("unreachable");
+    throw panic("unreachable"); // implemented as a special case in evalCall
 }
-
-// implemented as a special case in evalCall
 
 // call returns the result of evaluating the first argument as a function.
 // The function must return 1 result, or 2 results, the second of which is an error.
@@ -460,20 +458,16 @@ internal static bool truth(reflectꓸValue arg) {
 internal static reflectꓸValue and(reflectꓸValue arg0, params ꓸꓸꓸreflectꓸValue argsʗp) {
     var args = argsʗp.sslice();
 
-    throw panic("unreachable");
+    throw panic("unreachable"); // implemented as a special case in evalCall
 }
-
-// implemented as a special case in evalCall
 
 // or computes the Boolean OR of its arguments, returning
 // the first true argument it encounters, or the last argument.
 internal static reflectꓸValue or(reflectꓸValue arg0, params ꓸꓸꓸreflectꓸValue argsʗp) {
     var args = argsʗp.sslice();
 
-    throw panic("unreachable");
+    throw panic("unreachable"); // implemented as a special case in evalCall
 }
-
-// implemented as a special case in evalCall
 
 // not returns the Boolean negation of its argument.
 internal static bool not(reflectꓸValue arg) {
@@ -910,9 +904,8 @@ internal static @string evalArgs(slice<any> args) {
             var (a, okΔ1) = printableValue(reflect.ValueOf(arg));
             if (okΔ1) {
                 args[i] = a;
-            }
+            } // else let fmt do its thing
         }
-        // else let fmt do its thing
         s = fmt.Sprint(args.ꓸꓸꓸ);
     }
     return s;

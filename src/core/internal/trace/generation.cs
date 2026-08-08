@@ -240,8 +240,7 @@ internal static error addStrings(ж<dataTable<stringID, @string>> ᏑstringTable
         return fmt.Errorf("internal error: addStrings called on non-string batch"u8);
     }
     var r = bytes.NewReader(b.data);
-    var (hdr, err) = r.ReadByte();
-    // Consume the EvStrings byte.
+    var (hdr, err) = r.ReadByte(); // Consume the EvStrings byte.
     if (err != default! || ((@event.Type)hdr) != go122.EvStrings) {
         return fmt.Errorf("missing strings batch header"u8);
     }
@@ -298,8 +297,7 @@ internal static error addStacks(ж<dataTable<stackID, stack>> ᏑstackTable, map
         return fmt.Errorf("internal error: addStacks called on non-stacks batch"u8);
     }
     var r = bytes.NewReader(b.data);
-    var (hdr, err) = r.ReadByte();
-    // Consume the EvStacks byte.
+    var (hdr, err) = r.ReadByte(); // Consume the EvStacks byte.
     if (err != default! || ((@event.Type)hdr) != go122.EvStacks) {
         return fmt.Errorf("missing stacks batch header"u8);
     }
@@ -375,8 +373,7 @@ internal static (slice<cpuSample>, error) addCPUSamples(slice<cpuSample> samples
         return (default!, fmt.Errorf("internal error: addCPUSamples called on non-CPU-sample batch"u8));
     }
     var r = bytes.NewReader(b.data);
-    var (hdr, err) = r.ReadByte();
-    // Consume the EvCPUSamples byte.
+    var (hdr, err) = r.ReadByte(); // Consume the EvCPUSamples byte.
     if (err != default! || ((@event.Type)hdr) != go122.EvCPUSamples) {
         return (default!, fmt.Errorf("missing CPU samples batch header"u8));
     }
@@ -441,8 +438,7 @@ internal static (frequency, error) parseFreq(batch b) {
         return (0D, fmt.Errorf("internal error: parseFreq called on non-frequency batch"u8));
     }
     var r = bytes.NewReader(b.data);
-    r.ReadByte();
-    // Consume the EvFrequency byte.
+    r.ReadByte(); // Consume the EvFrequency byte.
     // Read the frequency. It'll come out as timestamp units per second.
     var (f, err) = binary.ReadUvarint(new bytes_ReaderжByteReader(r));
     if (err != default!) {

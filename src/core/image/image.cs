@@ -129,8 +129,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
         return new color.RGBA64(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     var r = (uint16)s[0];
     var g = (uint16)s[1];
     var b = (uint16)s[2];
@@ -148,8 +147,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
         return new colorꓸRGBA(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     return new colorꓸRGBA(s[0], s[1], s[2], s[3]);
 }
 
@@ -165,8 +163,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.RGBAModel.Convert(c)._<colorꓸRGBA>();
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c1.R;
     s[1] = c1.G;
     s[2] = c1.B;
@@ -178,8 +175,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c.R >> (int)(8)));
     s[1] = (uint8)((c.G >> (int)(8)));
     s[2] = (uint8)((c.B >> (int)(8)));
@@ -191,8 +187,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c.R;
     s[1] = c.G;
     s[2] = c.B;
@@ -276,8 +271,7 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
         return new color.RGBA64(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     return new color.RGBA64(
         (uint16)((uint16)((uint16)s[0] << (int)(8)) | (uint16)s[1]),
         (uint16)((uint16)((uint16)s[2] << (int)(8)) | (uint16)s[3]),
@@ -298,8 +292,7 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.RGBA64Model.Convert(c)._<color.RGBA64>();
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c1.R >> (int)(8)));
     s[1] = (uint8)c1.R;
     s[2] = (uint8)((c1.G >> (int)(8)));
@@ -315,8 +308,7 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c.R >> (int)(8)));
     s[1] = (uint8)c.R;
     s[2] = (uint8)((c.G >> (int)(8)));
@@ -409,8 +401,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
         return new color.NRGBA(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     return new color.NRGBA(s[0], s[1], s[2], s[3]);
 }
 
@@ -426,8 +417,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.NRGBAModel.Convert(c)._<color.NRGBA>();
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c1.R;
     s[1] = c1.G;
     s[2] = c1.B;
@@ -445,8 +435,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
         b = (b * 0xffff) / a;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((r >> (int)(8)));
     s[1] = (uint8)((g >> (int)(8)));
     s[2] = (uint8)((b >> (int)(8)));
@@ -458,8 +447,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c.R;
     s[1] = c.G;
     s[2] = c.B;
@@ -548,8 +536,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
         return new color.NRGBA64(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     return new color.NRGBA64(
         (uint16)((uint16)((uint16)s[0] << (int)(8)) | (uint16)s[1]),
         (uint16)((uint16)((uint16)s[2] << (int)(8)) | (uint16)s[3]),
@@ -570,8 +557,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.NRGBA64Model.Convert(c)._<color.NRGBA64>();
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c1.R >> (int)(8)));
     s[1] = (uint8)c1.R;
     s[2] = (uint8)((c1.G >> (int)(8)));
@@ -593,8 +579,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
         b = (b * 0xffff) / a;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((r >> (int)(8)));
     s[1] = (uint8)r;
     s[2] = (uint8)((g >> (int)(8)));
@@ -610,8 +595,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 8, i + 8);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 8, i + 8); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = (uint8)((c.R >> (int)(8)));
     s[1] = (uint8)c.R;
     s[2] = (uint8)((c.G >> (int)(8)));
@@ -1150,8 +1134,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
         return new color.CMYK(nil);
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     return new color.CMYK(s[0], s[1], s[2], s[3]);
 }
 
@@ -1167,8 +1150,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
     }
     nint i = p.PixOffset(x, y);
     var c1 = color.CMYKModel.Convert(c)._<color.CMYK>();
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c1.C;
     s[1] = c1.M;
     s[2] = c1.Y;
@@ -1181,8 +1163,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
     }
     var (cc, mm, yy, kk) = color.RGBToCMYK((uint8)((c.R >> (int)(8))), (uint8)((c.G >> (int)(8))), (uint8)((c.B >> (int)(8))));
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = cc;
     s[1] = mm;
     s[2] = yy;
@@ -1194,8 +1175,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    var s = p.Pix.slice(i, i + 4, i + 4);
-    // Small cap improves performance, see https://golang.org/issue/27857
+    var s = p.Pix.slice(i, i + 4, i + 4); // Small cap improves performance, see https://golang.org/issue/27857
     s[0] = c.C;
     s[1] = c.M;
     s[2] = c.Y;

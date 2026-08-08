@@ -541,13 +541,11 @@ internal static void GoSysCall(this traceLocker tl) {
 // - The goroutine lost its P and acquired a different one, and is now running with that P.
 internal static void GoSysExit(this traceLocker tl, bool lostP) {
     var ev = traceEvGoSyscallEnd;
-    var procStatus = traceProcSyscall;
-    // Procs implicitly enter traceProcSyscall on GoSyscallBegin.
+    var procStatus = traceProcSyscall; // Procs implicitly enter traceProcSyscall on GoSyscallBegin.
     if (lostP){
         ev = traceEvGoSyscallEndBlocked;
-        procStatus = traceProcRunning;
+        procStatus = traceProcRunning; // If a G has a P when emitting this event, it reacquired a P and is indeed running.
     } else {
-        // If a G has a P when emitting this event, it reacquired a P and is indeed running.
         (~tl.mp).p.ptr().Value.trace.mSyscallID = -1;
     }
     tl.eventWriter(traceGoSyscall, procStatus).commit(ev);

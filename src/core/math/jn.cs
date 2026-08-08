@@ -82,10 +82,9 @@ public static float64 Jn(nint n, float64 x) {
     if (x < 0D) {
         x = -x;
         if ((nint)(n & 1) == 1) {
-            sign = true;
+            sign = true; // odd n and negative x
         }
     }
-    // odd n and negative x
     float64 b = default!;
     if ((float64)n <= x){
         // Safe to use J(n+1,x)=2n/x *J(n,x)-J(n-1,x)
@@ -129,11 +128,10 @@ public static float64 Jn(nint n, float64 x) {
         } else {
             b = J1(x);
             for ((nint i, var a) = (1, J0(x)); i < n; i++) {
-                (a, b) = (b, b * ((float64)(i + i) / x) - a);
+                (a, b) = (b, b * ((float64)(i + i) / x) - a); // avoid underflow
             }
         }
     } else {
-        // avoid underflow
         if (x < TwoM29){
             // x < 2**-29
             // x is tiny, return the first Taylor expansion of J(n,x)
@@ -146,11 +144,9 @@ public static float64 Jn(nint n, float64 x) {
                 b = temp;
                 var a = 1.0D;
                 for (nint i = 2; i <= n; i++) {
-                    a *= (float64)i;
-                    // a = n!
-                    b *= temp;
+                    a *= (float64)i; // a = n!
+                    b *= temp; // b = (x/2)**n
                 }
-                // b = (x/2)**n
                 b /= a;
             }
         } else {
@@ -270,10 +266,9 @@ public static float64 Yn(nint n, float64 x) {
     if (n < 0) {
         n = -n;
         if ((nint)(n & 1) == 1) {
-            sign = true;
+            sign = true; // sign true if n < 0 && |n| odd
         }
     }
-    // sign true if n < 0 && |n| odd
     if (n == 1) {
         if (sign) {
             return -Y1(x);

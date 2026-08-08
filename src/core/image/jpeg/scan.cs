@@ -98,8 +98,7 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
     array<processSOS_scan> scan = new(4); /* maxComponents */
     nint totalHV = 0;
     for (nint i = 0; i < nComp; i++) {
-        var cs = d.tmp[1 + 2 * i];
-        // Component selector.
+        var cs = d.tmp[1 + 2 * i]; // Component selector.
         nint compIndex = -1;
         foreach (var (j, comp) in d.comp[..(int)(d.nComp)]) {
             if (cs == comp.c) {
@@ -175,8 +174,7 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
     }
     // mxx and myy are the number of MCUs (Minimum Coded Units) in the image.
     nint h0 = d.comp[0].h;
-    nint v0 = d.comp[0].v;
-    // The h and v values from the Y components.
+    nint v0 = d.comp[0].v; // The h and v values from the Y components.
     nint mxx = (d.width + 8 * h0 - 1) / (8 * h0);
     nint myy = (d.height + 8 * v0 - 1) / (8 * v0);
     if (d.img1 == nil && d.img3 == nil) {
@@ -330,10 +328,8 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
                             return err;
                         }
                     }
-                }
-            }
-            // for j
-            // for i
+                } // for j
+            } // for i
             mcu++;
             if (d.ri > 0 && mcu % d.ri == 0 && mcu < mxx * myy) {
                 // For well-formed input, the RST[0-7] restart marker follows
@@ -362,10 +358,8 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
                 // Reset the progressive decoder state, as per section G.1.2.2.
                 d.eobRun = 0;
             }
-        }
-    }
-    // for mx
-    // for my
+        } // for mx
+    } // for my
     return default!;
 }
 

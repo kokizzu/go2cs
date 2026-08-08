@@ -258,8 +258,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
 
     ref var bz2 = ref Ꮡbz2.DerefOrNull();
     var br = Ꮡbz2.of(reader.Ꮡbr);
-    bz2.wantBlockCRC = (uint32)br.ReadBits64(32);
-    // skip checksum. TODO: check it if we can figure out what it is.
+    bz2.wantBlockCRC = (uint32)br.ReadBits64(32); // skip checksum. TODO: check it if we can figure out what it is.
     bz2.blockCRC = 0;
     bz2.fileCRC = (uint32)(((uint32)((bz2.fileCRC << (int)(1)) | (bz2.fileCRC >> (int)(31)))) ^ bz2.wantBlockCRC);
     nint randomized = br.ReadBits(1);
@@ -325,8 +324,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
         }
     }
     var mtf = newMTFDecoder(symbols);
-    numSymbols += 2;
-    // to account for RUNA and RUNB symbols
+    numSymbols += 2; // to account for RUNA and RUNB symbols
     var huffmanTrees = new slice<huffmanTree>(numHuffmanTrees);
     // Now we decode the arrays of code-lengths for each tree.
     var lengths = new slice<uint8>(numSymbols);
@@ -354,8 +352,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
             return err;
         }
     }
-    nint selectorIndex = 1;
-    // the next tree index to use
+    nint selectorIndex = 1; // the next tree index to use
     if (len(treeIndexes) == 0) {
         return ((StructuralError)(@string)noTreeSelectorsGivenˢ);
     }
@@ -363,8 +360,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
         return ((StructuralError)(@string)treeSelectorOutOfRangeˢ);
     }
     var currentHuffmanTree = huffmanTrees[treeIndexes[0]];
-    nint bufIndex = 0;
-    // indexes bz2.buf, the output buffer.
+    nint bufIndex = 0; // indexes bz2.buf, the output buffer.
     // The output of the move-to-front transform is run-length encoded and
     // we merge the decoding into the Huffman parsing loop. These two
     // variables accumulate the repeat count. See the Wikipedia page for
@@ -373,8 +369,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     nint repeatPower = 0;
     // The `C' array (used by the inverse BWT) needs to be zero initialized.
     clear(bz2.c[..]);
-    nint decoded = 0;
-    // counts the number of symbols decoded by the current tree.
+    nint decoded = 0; // counts the number of symbols decoded by the current tree.
     while (ᐧ) {
         if (decoded == 50) {
             if (selectorIndex >= numSelectors) {

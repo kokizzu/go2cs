@@ -620,8 +620,7 @@ internal static @string gostringw(ж<uint16> Ꮡstrw) {
         }
         n2 += encoderune(b[(int)(n2)..], (rune)str.Value[i]);
     }
-    b[n2] = 0;
-    // for luck
+    b[n2] = 0; // for luck
     return s[..(int)(n2)];
 }
 

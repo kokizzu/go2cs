@@ -134,14 +134,12 @@ public static ж<Type> TypeFor<T>() {
     T v = default!;
     {
         var t = TypeOf(v); if (t != nil) {
-            return t;
+            return t; // optimize for T being a non-interface kind
         }
     }
-    // optimize for T being a non-interface kind
-    return TypeOf(((ж<T>)nil)).Elem();
+    return TypeOf(((ж<T>)nil)).Elem(); // only for an interface kind
 }
 
-// only for an interface kind
 [GoRecv] public static ΔKind Kind(this ref Type t) {
     return (ΔKind)(t.Kind_ & KindMask);
 }

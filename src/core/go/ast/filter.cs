@@ -382,9 +382,8 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
         filenames[i] = filename;
         i++;
         if ((~f).Doc != nil) {
-            ndocs += len((~(~f).Doc).List) + 1;
+            ndocs += len((~(~f).Doc).List) + 1; // +1 for separator
         }
-        // +1 for separator
         ncomments += len((~f).Comments);
         ndecls += len((~f).Decls);
         if (i == 0 || (~f).FileStart < minPos) {
@@ -402,8 +401,7 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
     ж<CommentGroup> doc = default!;
     ref var pos = ref heap(new tokenꓸPos(), out var Ꮡpos);
     if (ndocs > 0) {
-        var list = new slice<ж<Comment>>(ndocs - 1);
-        // -1: no separator before first group
+        var list = new slice<ж<Comment>>(ndocs - 1); // -1: no separator before first group
         nint iΔ1 = 0;
         foreach (var (_, filename) in filenames) {
             var f = pkg.Files[filename];
@@ -431,12 +429,9 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
     slice<Decl> decls = default!;
     if (ndecls > 0) {
         decls = new slice<Decl>(ndecls);
-        var funcs = new map<@string, nint>();
-        // map of func name -> decls index
-        nint iΔ2 = 0;
-        // current index
-        nint n = 0;
-        // number of filtered entries
+        var funcs = new map<@string, nint>(); // map of func name -> decls index
+        nint iΔ2 = 0; // current index
+        nint n = 0; // number of filtered entries
         foreach (var (_, filename) in filenames) {
             var f = pkg.Files[filename];
             foreach (var (_, vᴛ1) in (~f).Decls) {
@@ -466,9 +461,8 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
                                         // ignore the new declaration
                                         d = default!;
                                     }
-                                    n++;
+                                    n++; // filtered an entry
                                 } else {
-                                    // filtered an entry
                                     funcs[name] = iΔ2;
                                 }
                             }

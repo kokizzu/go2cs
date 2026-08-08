@@ -1088,8 +1088,7 @@ public static error VerifyHostname(this ж<Certificate> Ꮡc, @string h) {
             return new HostnameError(Ꮡc, candidateIP);
         }
     }
-    @string candidateName = toLowerCaseASCII(h);
-    // Save allocations inside the loop.
+    @string candidateName = toLowerCaseASCII(h); // Save allocations inside the loop.
     var validCandidateName = validHostnameInput(candidateName);
     foreach (var (_, match) in c.DNSNames) {
         // Ideally, we'd only match valid hostnames according to RFC 6125 like

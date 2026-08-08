@@ -80,19 +80,17 @@ internal static (@string, nint) getShellName(@string s) {
             // Scan to closing brace
             if (s[iΔ2] == (rune)'}') {
                 if (iΔ2 == 1) {
-                    return ("", 2);
+                    return ("", 2); // Bad syntax; eat "${}"
                 }
-                // Bad syntax; eat "${}"
                 return (s[1..(int)(iΔ2)], iΔ2 + 1);
             }
         }
-        return ("", 1);
+        return ("", 1); // Bad syntax; eat "${"
     }
     case {} when isShellSpecialVar(s[0]): {
         return (s[0..1], 1);
     }}
 
-    // Bad syntax; eat "${"
     // Scan alphanumerics.
     nint i = default!;
     for (i = 0; i < len(s) && isAlphaNum(s[i]); i++) {

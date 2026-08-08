@@ -212,9 +212,8 @@ private static readonly @string pendingAsn1ChildTooLongˢ = "pending ASN.1 child
     }
     nint length = len((~child).result) - (~child).pendingLenLen - (~child).offset;
     if (length < 0) {
-        throw panic("cryptobyte: internal error");
+        throw panic("cryptobyte: internal error"); // result unexpectedly shrunk
     }
-    // result unexpectedly shrunk
     if ((~child).pendingIsASN1) {
         // For ASN.1, we reserved a single byte for the length. If that turned out
         // to be incorrect, we have to move the contents along in order to make

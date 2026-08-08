@@ -196,8 +196,7 @@ internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> �
     if (err != default!) {
         return (default!, err);
     }
-    h = h[4..];
-    // strip four byte prefix
+    h = h[4..]; // strip four byte prefix
     nint paddingLen = default!;
     if (inner.serverName != ""u8){
         paddingLen = max(0, maxNameLength - len(inner.serverName));
@@ -210,8 +209,7 @@ internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> �
 
 internal static (slice<byte>, error) generateOuterECHExt(uint8 id, uint16 kdfID, uint16 aeadID, slice<byte> encodedKey, slice<byte> payload) {
     ref var b = ref heap(new cryptobyte.Builder(), out var Ꮡb);
-    b.AddUint8(0);
-    // outer
+    b.AddUint8(0); // outer
     b.AddUint16(kdfID);
     b.AddUint16(aeadID);
     b.AddUint8(id);
@@ -241,8 +239,7 @@ internal static error computeAndUpdateOuterECHExtension(ж<clientHelloMsg> Ꮡou
     // NOTE: the tag lengths for all of the supported AEADs are the same (16
     // bytes), so we have hardcoded it here. If we add support for another AEAD
     // with a different tag length, we will need to change this.
-    nint encryptedLen = len(encodedInner) + 16;
-    // AEAD tag length
+    nint encryptedLen = len(encodedInner) + 16; // AEAD tag length
     (outer.encryptedClientHello, err) = generateOuterECHExt((~ech.config).ConfigID, ech.kdfID, ech.aeadID, encapKey, new slice<byte>(encryptedLen));
     if (err != default!) {
         return err;
@@ -251,8 +248,7 @@ internal static error computeAndUpdateOuterECHExtension(ж<clientHelloMsg> Ꮡou
     if (err != default!) {
         return err;
     }
-    serializedOuter = serializedOuter[4..];
-    // strip the four byte prefix
+    serializedOuter = serializedOuter[4..]; // strip the four byte prefix
     (var encryptedInner, err) = ech.hpkeContext.Seal(serializedOuter, encodedInner);
     if (err != default!) {
         return err;

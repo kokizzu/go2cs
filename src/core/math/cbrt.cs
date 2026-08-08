@@ -55,8 +55,7 @@ internal static float64 cbrt(float64 x) {
     var t = Float64frombits(Float64bits(x) / 3 + (uint64)(((uint64)B1 << (int)(32))));
     if (x < SmallestNormal) {
         // subnormal number
-        t = (float64)(18014398509481984D);
-        // set t= 2**54
+        t = (float64)(18014398509481984D); // set t= 2**54
         t *= x;
         t = Float64frombits(Float64bits(t) / 3 + (uint64)(((uint64)B2 << (int)(32))));
     }
@@ -67,12 +66,10 @@ internal static float64 cbrt(float64 x) {
     // chop to 22 bits, make larger than cbrt(x)
     t = Float64frombits((uint64)(Float64bits(t) & (((uint64)(nint)0xFFFFFFFFCL << (int)(28)))) + ((uint64)1 << (int)(30)));
     // one step newton iteration to 53 bits with error less than 0.667ulps
-    s = t * t;
-    // t*t is exact
+    s = t * t; // t*t is exact
     r = x / s;
     var w = t + t;
-    r = (r - t) / (w + r);
-    // r-s is exact
+    r = (r - t) / (w + r); // r-s is exact
     t = t + t * r;
     // restore the sign bit
     if (sign) {

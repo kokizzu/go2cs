@@ -289,8 +289,7 @@ internal static readonly @string badPlteLengthˢ = "bad PLTE length"u8;
 internal static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mismatch"u8;
 
 [GoRecv] internal static error parsePLTE(this ref decoder d, uint32 length) {
-    nint np = (nint)(length / 3);
-    // The number of palette entries.
+    nint np = (nint)(length / 3); // The number of palette entries.
     if (length % 3 != 0 || np <= 0 || np > 256 || np > ((nint)1).Lsh((nuint)d.depth)) {
         return ((FormatError)(@string)badPlteLengthˢ);
     }

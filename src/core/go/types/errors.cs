@@ -224,9 +224,8 @@ internal static readonly @string errorSCodeDˢ = "ERROR: %s (code = %d)"u8;
     }
     var f = check.conf.Value.Error;
     if (f == default!) {
-        throw panic(new bailout(nil));
+        throw panic(new bailout(nil)); // record first error and exit
     }
-    // record first error and exit
     f(e);
 }
 

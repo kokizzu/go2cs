@@ -299,9 +299,8 @@ public static io.Reader NewDecoder(io.Reader r) {
             if (ndst > 0) {
                 d.@out = d.outbuf[0..(int)(ndst)];
                 d.nbuf = copy(d.buf[0..], d.buf[(int)(nsrc)..(int)(d.nbuf)]);
-                continue;
+                continue; // copy out and return
             }
-            // copy out and return
             if (ndst == 0 && d.err == default!) {
                 // Special case: input buffer is mostly filled with non-data bytes.
                 // Filter out such bytes to make room for more input.

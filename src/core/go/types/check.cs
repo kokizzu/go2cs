@@ -190,15 +190,13 @@ internal static bool aliasAny() {
 [GoRecv] internal static void addDeclDep(this ref Checker check, Object to) {
     var from = check.decl;
     if (from == nil) {
-        return;
+        return; // not in a package-level init expression
     }
-    // not in a package-level init expression
     {
         var (_, found) = check.objMap[to, ꟷ]; if (!found) {
-            return;
+            return; // to is not a package-level object
         }
     }
-    // to is not a package-level object
     from.addDep(to);
 }
 
@@ -510,8 +508,7 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
         print(packageObjectsˢ);
         Ꮡcheck.packageObjects();
         print(processDelayedˢ);
-        Ꮡcheck.processDelayed(0);
-        // incl. all functions
+        Ꮡcheck.processDelayed(0); // incl. all functions
         print(cleanupˢ);
         check.cleanup();
         print(initOrderˢ);
@@ -566,14 +563,12 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
                 Ꮡcheck.trace(nopos, delayedPˢ, (~a).f);
             }
         }
-        (~a).f();
-        // may append to check.delayed
+        (~a).f(); // may append to check.delayed
         if ((~check.conf)._Trace) {
             fmt.Println();
         }
     }
-    assert(top <= len(check.delayed));
-    // stack must not have shrunk
+    assert(top <= len(check.delayed)); // stack must not have shrunk
     check.delayed = check.delayed[..(int)(top)];
 }
 
@@ -625,9 +620,8 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
     if (!debug && check.Types == default!) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     foreach (var (x, info) in check.untyped) {
         if (debug && isTyped(new BasicжΔType(info.typ))) {
             Ꮡcheck.dump(vSTypeSIsTypedˢ, x.Pos(), x, info.typ.OrTypedNil());
@@ -641,9 +635,8 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     assert(x != default!);
     assert(typ != default!);
     if (mode == invalid) {
-        return;
+        return; // omit
     }
-    // omit
     if (mode == constant_) {
         assert(val != default!);
         // We check allBasic(typ, IsConstType) here as constant expressions may be
@@ -668,7 +661,7 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
         case ж<ast.Ident> _:
         case ж<ast.SelectorExpr> _: {
             var p = f;
-            return;
+            return; // we're done
         }
         case ж<ast.ParenExpr> p: {
             f = p.Value.X;
@@ -681,8 +674,6 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
         }}
     }
 }
-
-// we're done
 
 // recordCommaOkTypes updates recorded types to reflect that x is used in a commaOk context
 // (and therefore has tuple type).
@@ -698,8 +689,7 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
         var m = check.Types; if (m != default!) {
             while (ᐧ) {
                 var tv = m[x];
-                assert(tv.Type != default!);
-                // should have been recorded already
+                assert(tv.Type != default!); // should have been recorded already
                 tokenꓸPos pos = x.Pos();
                 tv.Type = new TupleжΔType(NewTuple(
                     NewVar(pos, check.pkg, ""u8, t0),

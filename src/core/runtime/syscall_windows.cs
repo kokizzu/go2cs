@@ -189,13 +189,12 @@ internal static abiPartKind abiPartReg => 2; // Move a value from memory to a re
         else if (exprᴛ1 == abi.Array) {
             var at = Ꮡt.Reinterpret<_type, arraytype>();
             if ((~at).Len == 1) {
-                return Δp.tryRegAssignArg((~at).Elem, offset);
+                return Δp.tryRegAssignArg((~at).Elem, offset); // TODO fix when runtime is fully commoned up w/ abi.Type
             }
         }
         else if (exprᴛ1 == abi.Struct) {
             var st = Ꮡt.Reinterpret<_type, structtype>();
             foreach (var (i, _) in (~st).Fields) {
-                // TODO fix when runtime is fully commoned up w/ abi.Type
                 var f = Ꮡ((~st).Fields, i);
                 if (!Δp.tryRegAssignArg((~f).Typ, offset + (~f).Offset)) {
                     return false;

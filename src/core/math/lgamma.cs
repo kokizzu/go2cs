@@ -286,8 +286,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         }
         var t = sinPi(x);
         if (t == 0D) {
-            lgamma = Inf(1);
-            // -integer
+            lgamma = Inf(1); // -integer
             return (lgamma, sign);
         }
         nadj = Log((float64)Pi / Abs(t * x));
@@ -359,7 +358,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         case 1: {
             var z = y * y;
             var w = z * y;
-            var p1 = _lgamT[0] + w * (_lgamT[3] + w * (_lgamT[6] + w * (_lgamT[9] + w * _lgamT[12])));
+            var p1 = _lgamT[0] + w * (_lgamT[3] + w * (_lgamT[6] + w * (_lgamT[9] + w * _lgamT[12]))); // parallel comp
             var p2 = _lgamT[1] + w * (_lgamT[4] + w * (_lgamT[7] + w * (_lgamT[10] + w * _lgamT[13])));
             var p3 = _lgamT[2] + w * (_lgamT[5] + w * (_lgamT[8] + w * (_lgamT[11] + w * _lgamT[14])));
             var p = z * p1 - (Tt - w * (p2 + y * p3));
@@ -381,7 +380,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         var p = y * (_lgamS[0] + y * (_lgamS[1] + y * (_lgamS[2] + y * (_lgamS[3] + y * (_lgamS[4] + y * (_lgamS[5] + y * _lgamS[6]))))));
         var q = 1D + y * (_lgamR[1] + y * (_lgamR[2] + y * (_lgamR[3] + y * (_lgamR[4] + y * (_lgamR[5] + y * _lgamR[6])))));
         lgamma = 0.5D * y + p / q;
-        var z = 1.0D;
+        var z = 1.0D; // Lgamma(1+s) = Log(s) + Lgamma(s)
         var exprᴛ1 = i;
         var matchᴛ1 = false;
         if (exprᴛ1 is 7) { matchᴛ1 = true;
@@ -423,9 +422,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
     // 1.7316 <= x < 2
     // 1.2316 <= x < 1.7316
     // 0.9 < x < 1.2316
-    // parallel comp
     // 2 <= x < 8
-    // Lgamma(1+s) = Log(s) + Lgamma(s)
     // 8 <= x < 2**58
     // 2**58 <= x <= Inf
     if (neg) {
@@ -455,9 +452,8 @@ internal static float64 sinPi(float64 x) {
             n = 0;
         } else {
             if (x < Two52) {
-                z = x + Two52;
+                z = x + Two52; // exact
             }
-            // exact
             n = (nint)((uint64)(1 & Float64bits(z)));
             x = (float64)n;
             n <<= (int)(2);

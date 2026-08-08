@@ -129,9 +129,8 @@ public static float64 J1(float64 x) {
     }
     if (x < TwoM27) {
         // |x|<2**-27
-        return 0.5D * x;
+        return 0.5D * x; // inexact if x!=0 necessary
     }
-    // inexact if x!=0 necessary
     var z = x * x;
     var r = z * (R00 + z * (R01 + z * (R02 + z * R03)));
     var s = 1.0D + z * (S01 + z * (S02 + z * (S03 + z * (S04 + z * S05))));

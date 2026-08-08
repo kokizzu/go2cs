@@ -311,8 +311,7 @@ internal static void ryuFtoaShortest(ж<decimalSlice> Ꮡd, uint64 mant, nint ex
     }
     // Is 'dc' the correctly rounded base 10 mantissa?
     // The correct rounding might be dc+1
-    var cup = false;
-    // don't round up.
+    var cup = false; // don't round up.
     if (dc0){
         // If we computed an exact product, the half integer
         // should round to next (even) integer if 'dc' is odd.
@@ -587,8 +586,7 @@ internal static (uint32, uint32) divmod1e9(uint64 x) {
         return ((uint32)(x / 1000000000), (uint32)(x % 1000000000));
     }
     // Use the same sequence of operations as the amd64 compiler.
-    var (hi, _) = bits.Mul64((x >> (int)(1)), 0x89705f4136b4a598UL);
-    // binary digits of 1e-9
+    var (hi, _) = bits.Mul64((x >> (int)(1)), 0x89705f4136b4a598UL); // binary digits of 1e-9
     var q = (hi >> (int)(28));
     return ((uint32)q, (uint32)(x - q * 1000000000));
 }

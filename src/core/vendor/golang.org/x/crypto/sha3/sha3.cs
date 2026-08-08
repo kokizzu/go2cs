@@ -179,8 +179,7 @@ internal static (nint n, error err) Read(this ж<state> Ꮡd, slice<byte> @out) 
     // Make a copy of the original hash so that caller can keep writing
     // and summing.
     var dup = d.clone();
-    var hash = new slice<byte>((~dup).outputLen, 64);
-    // explicit cap to allow stack allocation
+    var hash = new slice<byte>((~dup).outputLen, 64); // explicit cap to allow stack allocation
     dup.Read(hash);
     return append(@in, hash.ꓸꓸꓸ);
 }

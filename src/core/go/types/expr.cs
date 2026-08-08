@@ -255,9 +255,8 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
 
     var (old, found) = check.untyped[x, ꟷ];
     if (!found) {
-        return;
+        return; // nothing to do
     }
-    // nothing to do
     // update operands of x if necessary
     switch (x.type()) {
     case ж<ast.BadExpr> _:
@@ -317,12 +316,11 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
     }
     case ж<ast.BinaryExpr> xΔ1: {
         if (old.val != default!) {
-            break;
+            break; // see comment for unary expressions
         }
         if (isComparison((~xΔ1).Op)){
         } else 
         if (isShift((~xΔ1).Op)){
-            // see comment for unary expressions
             // The result type is independent of operand types
             // and the operand types must have final types.
             // The result type depends only on lhs operand.
@@ -517,10 +515,8 @@ internal static void comparison(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<
     if (switchCase) {
         op = token.EQL;
     }
-    var errOp = Ꮡx;
-    // operand for which error is reported, if any
-    @string cause = ""u8;
-    // specific error cause, if any
+    var errOp = Ꮡx; // operand for which error is reported, if any
+    @string cause = ""u8; // specific error cause, if any
     // spec: "In any comparison, the first operand must be assignable
     // to the type of the second operand, or vice versa."
     errors.Code code = MismatchedTypes;
@@ -619,14 +615,12 @@ internal static void comparison(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<
             }
             cause = Ꮡcheck.sprintf("type parameter %s is not comparable with %s"u8, (~errOp).typ, op);
         } else {
-            cause = Ꮡcheck.sprintf("operator %s not defined on %s"u8, op, Ꮡcheck.kindString((~errOp).typ));
+            cause = Ꮡcheck.sprintf("operator %s not defined on %s"u8, op, Ꮡcheck.kindString((~errOp).typ)); // catch-all
         }
     }
-    // catch-all
     if (switchCase){
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "invalid case %s in switch on %s (%s)"u8, x.expr, y.expr, cause);
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, "invalid case %s in switch on %s (%s)"u8, x.expr, y.expr, cause); // error position always at 1st operand
     } else {
-        // error position always at 1st operand
         Ꮡcheck.errorf(new operandжpositioner(errOp), code, invalidOp + "%s %s %s (%s)", x.expr, op, y.expr, cause);
     }
     x.mode = invalid;
@@ -692,12 +686,10 @@ internal static @string kindString(this ж<Checker> Ꮡcheck, ΔType typ) {
         return chanˢ;
     }
     default: {
-        return Ꮡcheck.sprintf("%s"u8, typ);
+        return Ꮡcheck.sprintf("%s"u8, typ); // catch-all
     }}
 
 }
-
-// catch-all
 
 // If e != nil, it must be the shift expression; it may be nil for non-constant shifts.
 internal static void shift(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<operand> Ꮡy, ast.Expr e, token.Token op) {
@@ -726,8 +718,7 @@ internal static void shift(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<opera
     constant.Value yval = default!;
     if (y.mode == constant_){
         // Provide a good error message for negative shift counts.
-        yval = constant.ToInt(y.val);
-        // consider -1, 1.0, but not -1.1
+        yval = constant.ToInt(y.val); // consider -1, 1.0, but not -1.1
         if (yval.Kind() == constant.Int && constant.Sign(yval) < 0) {
             Ꮡcheck.errorf(new operandжpositioner(Ꮡy), InvalidShiftCount, invalidOp + "negative shift count %s", Ꮡy.OrTypedNil());
             x.mode = invalid;
@@ -1176,12 +1167,11 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
     x.typ = new BasicжΔType(Typ[Invalid]);
     switch (e.type()) {
     case ж<ast.BadExpr> eΔ1: {
-        goto ΔError;
+        goto ΔError; // error was reported before
         break;
     }
     case ж<ast.Ident> eΔ1: {
-        Ꮡcheck.ident(Ꮡx, // error was reported before
- eΔ1, nil, false);
+        Ꮡcheck.ident(Ꮡx, eΔ1, nil, false);
         break;
     }
     case ж<ast.Ellipsis> eΔ1: {
@@ -1235,10 +1225,8 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     // Anonymous functions are considered part of the
                     // init expression/func declaration which contains
                     // them: use existing package-level declaration info.
-                    var decl = check.decl;
-                    // capture for use in closure below
-                    var iota = check.iota;
-                    // capture for use in closure below (go.dev/issue/22345)
+                    var decl = check.decl; // capture for use in closure below
+                    var iota = check.iota; // capture for use in closure below (go.dev/issue/22345)
                     // Don't type-check right away because the function may
                     // be part of a type definition to which the function
                     // body refers. Instead, type-check as soon as possible,
@@ -1287,10 +1275,9 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
         }
         case {} when hint != default!: {
             typ = hint;
-            (@base, _) = deref(coreType(typ));
+            (@base, _) = deref(coreType(typ)); // *T implies &T{}
             if (@base == default!) {
                 // no composite literal type present - use hint (element type of enclosing type)
-                // *T implies &T{}
                 Ꮡcheck.errorf(new ast_CompositeLitжpositioner(eΔ1), InvalidLit, "invalid composite literal element type %s (no core type)"u8, typ);
                 goto ΔError;
             }
@@ -1372,9 +1359,8 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                         Ꮡcheck.expr(nil, Ꮡx, eΔ3);
                         if (i >= len(fields)) {
                             Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidStructLit, "too many values in struct literal of type %s"u8, @base);
-                            break;
+                            break; // cannot continue
                         }
-                        // cannot continue
                         // i < len(fields)
                         var fld = fields[i];
                         if (!fld.of(Var.Ꮡobject).Exported() && (~fld).pkg != check.pkg) {
@@ -1615,13 +1601,12 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
         }
         if ((~eΔ1).Op == token.ARROW) {
             x.expr = new ast_UnaryExprжExpr(eΔ1);
-            return statement;
+            return statement; // receive operations may appear in statement context
         }
         break;
     }
     case ж<ast.BinaryExpr> eΔ1: {
-        Ꮡcheck.binary(Ꮡx, // receive operations may appear in statement context
- new ast_BinaryExprжExpr(eΔ1), (~eΔ1).X, (~eΔ1).Y, (~eΔ1).Op, (~eΔ1).OpPos);
+        Ꮡcheck.binary(Ꮡx, new ast_BinaryExprжExpr(eΔ1), (~eΔ1).X, (~eΔ1).Y, (~eΔ1).Op, (~eΔ1).OpPos);
         if (x.mode == invalid) {
             goto ΔError;
         }
@@ -1660,10 +1645,8 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
 ΔError:
     x.mode = invalid;
     x.expr = e;
-    return statement;
+    return statement; // avoid follow-up errors
 }
-
-// avoid follow-up errors
 
 // keyVal maps a complex, float, integer, string or boolean constant value
 // to the corresponding complex128, float64, int64, uint64, string, or bool
@@ -1723,9 +1706,8 @@ internal static void typeAssertion(this ж<Checker> Ꮡcheck, ast.Expr e, ж<ope
 
     ref var cause = ref heap(new @string(), out var Ꮡcause);
     if (Ꮡcheck.assertableTo(x.typ, T, Ꮡcause)) {
-        return;
+        return; // success
     }
-    // success
     if (typeSwitch) {
         Ꮡcheck.errorf(new ast_Exprᴠpositioner(e), ImpossibleAssert, "impossible type switch case: %s\n\t%s cannot have dynamic type %s %s"u8, e, Ꮡx.OrTypedNil(), T, cause);
         return;

@@ -404,9 +404,8 @@ internal static void maybeRunAsync(this ж<timer> Ꮡt) {
         {
             var now = nanotime(); if (t.when <= now) {
                 systemstack(() => {
-                    Ꮡt.unlockAndRun(now);
+                    Ꮡt.unlockAndRun(now); // resets t.when
                 });
-                // resets t.when
                 Ꮡt.@lock();
             }
         }
@@ -1005,8 +1004,7 @@ Redo:
         return (~t).when;
     }
     t.unlockAndRun(now);
-    assertLockHeld(Ꮡts.of(timers.Ꮡmu));
-    // t is unlocked now, but not ts
+    assertLockHeld(Ꮡts.of(timers.Ꮡmu)); // t is unlocked now, but not ts
     return 0;
 }
 
@@ -1217,8 +1215,7 @@ internal static UntypedInt timerHeapN => 4;
         badTimer();
     }
     while (i > 0) {
-        nint Δp = (nint)((nuint)(i - 1) / (nuint)timerHeapN);
-        // parent
+        nint Δp = (nint)((nuint)(i - 1) / (nuint)timerHeapN); // parent
         if (when >= heap[Δp].when) {
             break;
         }

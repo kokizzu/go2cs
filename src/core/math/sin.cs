@@ -152,20 +152,16 @@ internal static float64 cos(float64 x) {
     if (x >= reduceThreshold){
         (j, z) = trigReduce(x);
     } else {
-        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D);
-        // integer part of x/(Pi/4), as integer for tests on the phase angle
-        y = (float64)j;
-        // integer part of x/(Pi/4), as float
+        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D); // integer part of x/(Pi/4), as integer for tests on the phase angle
+        y = (float64)j; // integer part of x/(Pi/4), as float
         // map zeros to origin
         if ((uint64)(j & 1) == 1) {
             j++;
             y++;
         }
-        j &= (uint64)(7);
-        // octant modulo 2Pi radians (360 degrees)
-        z = ((x - y * PI4A) - y * PI4B) - y * PI4C;
+        j &= (uint64)(7); // octant modulo 2Pi radians (360 degrees)
+        z = ((x - y * PI4A) - y * PI4B) - y * PI4C; // Extended precision modular arithmetic
     }
-    // Extended precision modular arithmetic
     if (j > 3) {
         j -= 4;
         sign = !sign;
@@ -206,10 +202,9 @@ internal static float64 sin(float64 x) {
     // special cases
     switch (ᐧ) {
     case {} when x == 0D || IsNaN(x): {
-        return x;
+        return x; // return ±0 || NaN()
     }
-    case {} when IsInf(x, // return ±0 || NaN()
- 0): {
+    case {} when IsInf(x, 0): {
         return NaN();
     }}
 
@@ -225,20 +220,16 @@ internal static float64 sin(float64 x) {
     if (x >= reduceThreshold){
         (j, z) = trigReduce(x);
     } else {
-        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D);
-        // integer part of x/(Pi/4), as integer for tests on the phase angle
-        y = (float64)j;
-        // integer part of x/(Pi/4), as float
+        j = (uint64)(x * /* (4 / Pi) */ 1.2732395447351628D); // integer part of x/(Pi/4), as integer for tests on the phase angle
+        y = (float64)j; // integer part of x/(Pi/4), as float
         // map zeros to origin
         if ((uint64)(j & 1) == 1) {
             j++;
             y++;
         }
-        j &= (uint64)(7);
-        // octant modulo 2Pi radians (360 degrees)
-        z = ((x - y * PI4A) - y * PI4B) - y * PI4C;
+        j &= (uint64)(7); // octant modulo 2Pi radians (360 degrees)
+        z = ((x - y * PI4A) - y * PI4B) - y * PI4C; // Extended precision modular arithmetic
     }
-    // Extended precision modular arithmetic
     // reflect in x axis
     if (j > 3) {
         sign = !sign;

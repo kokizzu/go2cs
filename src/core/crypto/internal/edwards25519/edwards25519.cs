@@ -129,12 +129,9 @@ internal static slice<byte> bytes(this ж<Point> Ꮡv, ж<array<byte>> Ꮡbuf) {
     ref var zInv = ref heap(new field.Element(), out var ᏑzInv);
     ref var x = ref heap(new field.Element(), out var Ꮡx);
     ref var y = ref heap(new field.Element(), out var Ꮡy);
-    ᏑzInv.Invert(Ꮡv.of(Point.Ꮡz));
-    // zInv = 1 / Z
-    Ꮡx.Multiply(Ꮡv.of(Point.Ꮡx), ᏑzInv);
-    // x = X / Z
-    Ꮡy.Multiply(Ꮡv.of(Point.Ꮡy), ᏑzInv);
-    // y = Y / Z
+    ᏑzInv.Invert(Ꮡv.of(Point.Ꮡz)); // zInv = 1 / Z
+    Ꮡx.Multiply(Ꮡv.of(Point.Ꮡx), ᏑzInv); // x = X / Z
+    Ꮡy.Multiply(Ꮡv.of(Point.Ꮡy), ᏑzInv); // y = Y / Z
     var @out = copyFieldElement(Ꮡbuf, Ꮡy);
     @out[31] |= (byte)((byte)((x.IsNegative() << (int)(7))));
     return @out;
@@ -187,8 +184,7 @@ public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
     Ꮡv.of(Point.Ꮡx).Set(xx);
     Ꮡv.of(Point.Ꮡy).Set(y);
     Ꮡv.of(Point.Ꮡz).One();
-    Ꮡv.of(Point.Ꮡt).Multiply(xx, y);
-    // xy = T / Z
+    Ꮡv.of(Point.Ꮡt).Multiply(xx, y); // xy = T / Z
     return (Ꮡv, default!);
 }
 
@@ -309,19 +305,15 @@ internal static ж<projP1xP1> Sub(this ж<projP1xP1> Ꮡv, ж<Point> Ꮡp, ж<pr
     ref var ZZ2 = ref heap(new field.Element(), out var ᏑZZ2);
     ᏑYplusX.Add(Ꮡp.of(Point.Ꮡy), Ꮡp.of(Point.Ꮡx));
     ᏑYminusX.Subtract(Ꮡp.of(Point.Ꮡy), Ꮡp.of(Point.Ꮡx));
-    ᏑPP.Multiply(ᏑYplusX, Ꮡq.of(projCached.ᏑYminusX));
-    // flipped sign
-    ᏑMM.Multiply(ᏑYminusX, Ꮡq.of(projCached.ᏑYplusX));
-    // flipped sign
+    ᏑPP.Multiply(ᏑYplusX, Ꮡq.of(projCached.ᏑYminusX)); // flipped sign
+    ᏑMM.Multiply(ᏑYminusX, Ꮡq.of(projCached.ᏑYplusX)); // flipped sign
     ᏑTT2d.Multiply(Ꮡp.of(Point.Ꮡt), Ꮡq.of(projCached.ᏑT2d));
     ᏑZZ2.Multiply(Ꮡp.of(Point.Ꮡz), Ꮡq.of(projCached.ᏑZ));
     ᏑZZ2.Add(ᏑZZ2, ᏑZZ2);
     Ꮡv.of(projP1xP1.ᏑX).Subtract(ᏑPP, ᏑMM);
     Ꮡv.of(projP1xP1.ᏑY).Add(ᏑPP, ᏑMM);
-    Ꮡv.of(projP1xP1.ᏑZ).Subtract(ᏑZZ2, ᏑTT2d);
-    // flipped sign
-    Ꮡv.of(projP1xP1.ᏑT).Add(ᏑZZ2, ᏑTT2d);
-    // flipped sign
+    Ꮡv.of(projP1xP1.ᏑZ).Subtract(ᏑZZ2, ᏑTT2d); // flipped sign
+    Ꮡv.of(projP1xP1.ᏑT).Add(ᏑZZ2, ᏑTT2d); // flipped sign
     return Ꮡv;
 }
 
@@ -354,18 +346,14 @@ internal static ж<projP1xP1> SubAffine(this ж<projP1xP1> Ꮡv, ж<Point> Ꮡp,
     ref var Z2 = ref heap(new field.Element(), out var ᏑZ2);
     ᏑYplusX.Add(Ꮡp.of(Point.Ꮡy), Ꮡp.of(Point.Ꮡx));
     ᏑYminusX.Subtract(Ꮡp.of(Point.Ꮡy), Ꮡp.of(Point.Ꮡx));
-    ᏑPP.Multiply(ᏑYplusX, Ꮡq.of(affineCached.ᏑYminusX));
-    // flipped sign
-    ᏑMM.Multiply(ᏑYminusX, Ꮡq.of(affineCached.ᏑYplusX));
-    // flipped sign
+    ᏑPP.Multiply(ᏑYplusX, Ꮡq.of(affineCached.ᏑYminusX)); // flipped sign
+    ᏑMM.Multiply(ᏑYminusX, Ꮡq.of(affineCached.ᏑYplusX)); // flipped sign
     ᏑTT2d.Multiply(Ꮡp.of(Point.Ꮡt), Ꮡq.of(affineCached.ᏑT2d));
     ᏑZ2.Add(Ꮡp.of(Point.Ꮡz), Ꮡp.of(Point.Ꮡz));
     Ꮡv.of(projP1xP1.ᏑX).Subtract(ᏑPP, ᏑMM);
     Ꮡv.of(projP1xP1.ᏑY).Add(ᏑPP, ᏑMM);
-    Ꮡv.of(projP1xP1.ᏑZ).Subtract(ᏑZ2, ᏑTT2d);
-    // flipped sign
-    Ꮡv.of(projP1xP1.ᏑT).Add(ᏑZ2, ᏑTT2d);
-    // flipped sign
+    Ꮡv.of(projP1xP1.ᏑZ).Subtract(ᏑZ2, ᏑTT2d); // flipped sign
+    Ꮡv.of(projP1xP1.ᏑT).Add(ᏑZ2, ᏑTT2d); // flipped sign
     return Ꮡv;
 }
 

@@ -70,8 +70,7 @@ internal static void idct(ж<block> Ꮡsrc) {
     // Horizontal 1-D IDCT.
     for (nint y = 0; y < 8; y++) {
         nint y8 = y * 8;
-        var s = src.Value.slice(y8, y8 + 8, y8 + 8);
-        // Small cap improves performance, see https://golang.org/issue/27857
+        var s = src.Value.slice(y8, y8 + 8, y8 + 8); // Small cap improves performance, see https://golang.org/issue/27857
         // If all the AC components are zero, then the IDCT is trivial.
         if (s[1] == 0 && s[2] == 0 && s[3] == 0 && s[4] == 0 && s[5] == 0 && s[6] == 0 && s[7] == 0) {
             var dc = (s[0] << (int)(3));
@@ -133,8 +132,7 @@ internal static void idct(ж<block> Ꮡsrc) {
         // Similar to the horizontal 1-D IDCT case, if all the AC components are zero, then the IDCT is trivial.
         // However, after performing the horizontal 1-D IDCT, there are typically non-zero AC components, so
         // we do not bother to check for the all-zero case.
-        var s = src.Value.slice(x, x + 57, x + 57);
-        // Small cap improves performance, see https://golang.org/issue/27857
+        var s = src.Value.slice(x, x + 57, x + 57); // Small cap improves performance, see https://golang.org/issue/27857
         // Prescale.
         var y0 = ((s[8 * 0] << (int)(8))) + 8192;
         var y1 = (s[8 * 4] << (int)(8));

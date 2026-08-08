@@ -83,8 +83,7 @@ public static (ж<Prog>, error) Compile(ж<Regexp> Ꮡre) {
 
 [GoRecv] internal static void init(this ref compiler c) {
     c.p = @new<Prog>();
-    c.p.Value.NumCap = 2;
-    // implicit ( and ) for whole match $0
+    c.p.Value.NumCap = 2; // implicit ( and ) for whole match $0
     c.inst(InstFail);
 }
 
@@ -296,8 +295,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
     f.nullable = false;
     var i = Ꮡ((~c.p).Inst, (int)(f.i));
     i.Value.Rune = r;
-    flags &= (Flags)(FoldCase);
-    // only relevant flag is FoldCase
+    flags &= (Flags)(FoldCase); // only relevant flag is FoldCase
     if (len(r) != 1 || unicode.SimpleFold(r[0]) == r[0]) {
         // and sometimes not even that
         flags &= unchecked((Flags)~(Flags)(FoldCase));

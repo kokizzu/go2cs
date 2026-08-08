@@ -462,10 +462,9 @@ internal static UntypedInt noncePrefixLength => 4;
 }
 
 [GoRecv] internal static nint NonceSize(this ref xorNonceAEAD f) {
-    return 8;
+    return 8; // 64-bit sequence number
 }
 
-// 64-bit sequence number
 [GoRecv] internal static nint Overhead(this ref xorNonceAEAD f) {
     return f.aead.Overhead();
 }

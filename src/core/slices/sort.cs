@@ -155,17 +155,14 @@ public static (nint, bool) BinarySearch<S, E>(S x, E target)
     nint i = 0;
     nint j = n;
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (cmp.Less(x[h], target)){
-            i = h + 1;
+            i = h + 1; // preserves x[i-1] < target
         } else {
-            // preserves x[i-1] < target
-            j = h;
+            j = h; // preserves x[j] >= target
         }
     }
-    // preserves x[j] >= target
     // i == j, x[i-1] < target, and x[j] (= x[i]) >= target  =>  answer is i.
     return (i, i < n && (AreEqual(x[i], target) || (isNaN(x[i]) && isNaN(target))));
 }
@@ -186,17 +183,14 @@ public static (nint, bool) BinarySearchFunc<S, E, T>(S x, T target, Func<E, T, n
     nint i = 0;
     nint j = n;
     while (i < j) {
-        nint h = (nint)(((nuint)(i + j) >> (int)(1)));
-        // avoid overflow when computing h
+        nint h = (nint)(((nuint)(i + j) >> (int)(1))); // avoid overflow when computing h
         // i ≤ h < j
         if (cmp(x[h], target) < 0){
-            i = h + 1;
+            i = h + 1; // preserves cmp(x[i - 1], target) < 0
         } else {
-            // preserves cmp(x[i - 1], target) < 0
-            j = h;
+            j = h; // preserves cmp(x[j], target) >= 0
         }
     }
-    // preserves cmp(x[j], target) >= 0
     // i == j, cmp(x[i-1], target) < 0, and cmp(x[j], target) (= cmp(x[i], target)) >= 0  =>  answer is i.
     return (i, i < n && cmp(x[i], target) == 0);
 }

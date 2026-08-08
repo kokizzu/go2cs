@@ -315,10 +315,9 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST, 
             dstOffset = stdOffset + (nint)secondsPerHour;
         } else {
             (dstOffset, s, ok) = tzsetOffset(s);
-            dstOffset = -dstOffset;
+            dstOffset = -dstOffset; // as with stdOffset, above
         }
     }
-    // as with stdOffset, above
     if (!ok) {
         return ("", 0, 0, 0, false, false);
     }
@@ -524,8 +523,7 @@ internal static (rule, @string, bool) tzsetRule(@string s) {
         r.day = day;
     }
     if (len(s) == 0 || s[0] != (rune)'/') {
-        r.time = 2 * secondsPerHour;
-        // 2am is the default
+        r.time = 2 * secondsPerHour; // 2am is the default
         return (r, s, true);
     }
     (var offset, s, ok) = tzsetOffset(s[1..]);

@@ -58,9 +58,8 @@ internal static int64 when(Duration d) {
     if (t < 0) {
         // N.B. runtimeNano() and d are always positive, so addition
         // (including overflow) will never result in t == 0.
-        t = 9223372036854775807L;
+        t = 9223372036854775807L; // math.MaxInt64
     }
-    // math.MaxInt64
     return t;
 }
 

@@ -191,10 +191,8 @@ public static slice<byte> AppendHuffmanString(slice<byte> dst, @string s) {
         x <<= (int)(huffmanCodeLen[c] % 64);
         x |= (uint64)((uint64)huffmanCodes[c]);
         if (n >= 32) {
-            n %= 32;
-            // Normally would be -= 32 but %= 32 informs compiler 0 <= n <= 31 for upcoming shift
-            var yΔ1 = (uint32)(x.Rsh(n));
-            // Compiler doesn't combine memory writes if y isn't uint32
+            n %= 32; // Normally would be -= 32 but %= 32 informs compiler 0 <= n <= 31 for upcoming shift
+            var yΔ1 = (uint32)(x.Rsh(n)); // Compiler doesn't combine memory writes if y isn't uint32
             dst = append(dst, (byte)((yΔ1 >> (int)(24))), (byte)((yΔ1 >> (int)(16))), (byte)((yΔ1 >> (int)(8))), (byte)yΔ1);
         }
     }
@@ -206,10 +204,9 @@ public static slice<byte> AppendHuffmanString(slice<byte> dst, @string s) {
             const uint64 eosPadByte = /* eosCode >> (eosNBits - 8) */ 255;
             nuint pad = 8 - over;
             x = (uint64)((x.Lsh(pad)) | (eosPadByte.Rsh(over)));
-            n += pad;
+            n += pad; // 8 now divides into n exactly
         }
     }
-    // 8 now divides into n exactly
     // n in (0, 8, 16, 24, 32)
     switch (n / 8) {
     case 0: {

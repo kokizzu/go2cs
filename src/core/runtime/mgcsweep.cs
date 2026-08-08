@@ -678,8 +678,7 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
         @throw(sweepIncreasedAllocationˢ);
     }
     s.Value.allocCount = nalloc;
-    s.Value.freeindex = 0;
-    // reset allocation index to start of span.
+    s.Value.freeindex = 0; // reset allocation index to start of span.
     s.Value.freeIndexForScan = 0;
     if (traceEnabled()) {
         (~(~getg()).m).p.ptr().Value.trace.reclaimed += (uintptr)nfreed * (~s).elemsize;
@@ -812,8 +811,7 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
             // It should be possible to switch back to sysFree if we also
             // implement and then call some kind of mheap.deleteSpan.
             if (debug.efence > 0){
-                s.Value.limit = 0;
-                // prevent mlookup from finding this span
+                s.Value.limit = 0; // prevent mlookup from finding this span
                 sysFault((@unsafe.Pointer)s.@base(), size);
             } else {
                 Ꮡmheap_.freeSpan(s);

@@ -20,12 +20,9 @@ public static (slice<byte>, error) GobEncode(this ж<ΔInt> Ꮡx) {
     if (Ꮡx == nil) {
         return (default!, default!);
     }
-    var buf = new slice<byte>(1 + len(x.abs) * (nint)_S);
-    // extra byte for version and sign bit
-    nint i = x.abs.bytes(buf) - 1;
-    // i >= 0
-    var b = (byte)((intGobVersion << (int)(1)));
-    // make space for sign bit
+    var buf = new slice<byte>(1 + len(x.abs) * (nint)_S); // extra byte for version and sign bit
+    nint i = x.abs.bytes(buf) - 1; // i >= 0
+    var b = (byte)((intGobVersion << (int)(1))); // make space for sign bit
     if (x.neg) {
         b |= (byte)(1);
     }

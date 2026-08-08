@@ -224,8 +224,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
             return (default!, default!, default!, errors.New(tlsˢ));
         }
         ech = Ꮡ(new echContext(config: echConfig));
-        hello.Value.encryptedClientHello = new byte[]{1}.slice();
-        // indicate inner hello
+        hello.Value.encryptedClientHello = new byte[]{1}.slice(); // indicate inner hello
         // We need to explicitly set these 1.2 fields to nil, as we do not
         // marshal them when encoding the inner hello, otherwise transcripts
         // will later mismatch.
@@ -668,13 +667,11 @@ internal static readonly @string tlsServerChoseAnˢ = "tls: server chose an unco
         }
     }
     if ((~(~hs.c).config).CipherSuites == default! && !needFIPS() && rsaKexCiphers[(~hs.suite).id]) {
-        tlsrsakex.Value();
-        // ensure godebug is initialized
+        tlsrsakex.Value(); // ensure godebug is initialized
         tlsrsakex.IncNonDefault();
     }
     if ((~(~hs.c).config).CipherSuites == default! && !needFIPS() && tdesCiphers[(~hs.suite).id]) {
-        tls3des.Value();
-        // ensure godebug is initialized
+        tls3des.Value(); // ensure godebug is initialized
         tls3des.IncNonDefault();
     }
     hs.c.Value.cipherSuite = hs.suite.Value.id;

@@ -307,8 +307,7 @@ internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string na
                 array<byte> buf = new(512); /* sniffLen */
                 var (n, _) = io.ReadFull(content, buf[..]);
                 ctype = DetectContentType(buf[..(int)(n)]);
-                var (_, errΔ1) = content.Seek(0, io.SeekStart);
-                // rewind to output whole file
+                var (_, errΔ1) = content.Seek(0, io.SeekStart); // rewind to output whole file
                 if (errΔ1 != default!) {
                     serveError(w, seekerCanTSeekˢ, StatusInternalServerError);
                     return;
@@ -396,12 +395,11 @@ internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string na
             w.Header().Set(contentTypeˢ, "multipart/byteranges; boundary="u8 + mw.Boundary());
             sendContent = new io_PipeReaderжReader(pr);
             var prʗ1 = pr;
-            defer(() => prʗ1.Close(), ref ᒐ);
+            defer(() => prʗ1.Close(), ref ᒐ); // cause writing goroutine to fail and exit if CopyN doesn't finish.
             var mwʗ1 = mw;
             var pwʗ1 = pw;
             var rangesʗ1 = ranges;
             goǃ(() => {
-                // cause writing goroutine to fail and exit if CopyN doesn't finish.
                 foreach (var (_, vᴛ1) in rangesʗ1) {
                     ref var ra = ref heap(new httpRange(), out var Ꮡra);
                     ra = vᴛ1;
@@ -1131,9 +1129,8 @@ internal static readonly @string invalidRangeˢ = "invalid range"u8;
 // errNoOverlap is returned if none of the ranges overlap.
 internal static (slice<httpRange>, error) parseRange(@string s, int64 size) {
     if (s == ""u8) {
-        return (default!, default!);
+        return (default!, default!); // header not present
     }
-    // header not present
     @string b = "bytes="u8;
     if (!strings.HasPrefix(s, b)) {
         return (default!, errors.New(invalidRangeˢ));

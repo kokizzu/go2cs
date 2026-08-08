@@ -125,8 +125,7 @@ internal static (nint newpivot, bool alreadyPartitioned) partitionCmpFunc<E>(sli
 
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (i <= j && (cmp(data[i], data[a]) < 0)) {
         i++;
     }
@@ -165,8 +164,7 @@ internal static nint /*newpivot*/ partitionEqualCmpFunc<E>(slice<E> data, nint a
 
     (data[a], data[pivot]) = (data[pivot], data[a]);
     nint i = a + 1;
-    nint j = b - 1;
-    // i and j are inclusive of the elements remaining to be partitioned
+    nint j = b - 1; // i and j are inclusive of the elements remaining to be partitioned
     while (ᐧ) {
         while (i <= j && !(cmp(data[a], data[i]) < 0)) {
             i++;
@@ -319,8 +317,7 @@ internal static void swapRangeCmpFunc<E>(slice<E> data, nint a, nint b, nint n, 
 }
 
 internal static void stableCmpFunc<E>(slice<E> data, nint n, Func<E, E, nint> cmp) {
-    nint blockSize = 20;
-    // must be > 0
+    nint blockSize = 20; // must be > 0
     nint a = 0;
     nint b = blockSize;
     while (b <= n) {

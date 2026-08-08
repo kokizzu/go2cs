@@ -196,8 +196,7 @@ public static io.Reader NewDecoder(io.Reader r) {
     if (len(d.@in) < 2 && d.err == default!) {
         nint numCopy = default!;
         nint numRead = default!;
-        numCopy = copy(d.arr[..], d.@in);
-        // Copies either 0 or 1 bytes
+        numCopy = copy(d.arr[..], d.@in); // Copies either 0 or 1 bytes
         (numRead, d.err) = d.r.Read(d.arr[(int)(numCopy)..]);
         d.@in = d.arr[..(int)(numCopy + numRead)];
         if (AreEqual(d.err, io.EOF) && len(d.@in) % 2 != 0) {
@@ -219,13 +218,11 @@ public static io.Reader NewDecoder(io.Reader r) {
     (var numDec, err) = Decode(p, d.@in[..(int)(len(p) * 2)]);
     d.@in = d.@in[(int)(2 * numDec)..];
     if (err != default!) {
-        (d.@in, d.err) = (default!, err);
+        (d.@in, d.err) = (default!, err); // Decode error; discard input remainder
     }
-    // Decode error; discard input remainder
     if (len(d.@in) < 2) {
-        return (numDec, d.err);
+        return (numDec, d.err); // Only expose errors when buffer fully consumed
     }
-    // Only expose errors when buffer fully consumed
     return (numDec, default!);
 }
 

@@ -214,8 +214,7 @@ internal static void putBuffer(ж<slice<byte>> Ꮡp) {
 // provided for generality, although at the moment on all pre-defined
 // paths it will be 2.
 public static error Output(this ж<Logger> Ꮡl, nint calldepth, @string s) {
-    calldepth++;
-    // +1 for this frame.
+    calldepth++; // +1 for this frame.
     return Ꮡl.output(0, calldepth, (slice<byte> b) => append(b, s.ꓸꓸꓸ));
 }
 
@@ -229,8 +228,7 @@ internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, F
         if (Ꮡl.of(Logger.ᏑisDiscard).Load()) {
             return default!;
         }
-        var now = time.Now();
-        // get this early.
+        var now = time.Now(); // get this early.
         // Load prefix and flag once so that their value is consistent within
         // this call regardless of any concurrent changes to their value.
         @string prefix = Ꮡl.Prefix();
@@ -519,9 +517,7 @@ public static void Panicln(params ꓸꓸꓸany vʗp) {
 // if [Llongfile] or [Lshortfile] is set; a value of 1 will print the details
 // for the caller of Output.
 public static error Output(nint calldepth, @string s) {
-    return std.Output(calldepth + 1, s);
+    return std.Output(calldepth + 1, s); // +1 for this frame.
 }
-
-// +1 for this frame.
 
 } // end log_package

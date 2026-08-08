@@ -330,10 +330,9 @@ internal static void send(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
             if (c.recvx == c.dataqsiz) {
                 c.recvx = 0;
             }
-            c.sendx = c.recvx;
+            c.sendx = c.recvx; // c.sendx = (c.sendx+1) % c.dataqsiz
         }
     }
-    // c.sendx = (c.sendx+1) % c.dataqsiz
     if (sg.elem != nil) {
         sendDirect(c.elemtype, Ꮡsg, ep);
         sg.elem = default!;
@@ -722,9 +721,8 @@ internal static void recv(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
         if (c.recvx == c.dataqsiz) {
             c.recvx = 0;
         }
-        c.sendx = c.recvx;
+        c.sendx = c.recvx; // c.sendx = (c.sendx+1) % c.dataqsiz
     }
-    // c.sendx = (c.sendx+1) % c.dataqsiz
     sg.elem = default!;
     var gp = sg.g;
     unlockf();
@@ -905,9 +903,8 @@ internal static void reflect_chanclose(ж<Δhchan> Ꮡc) {
         } else {
             y.Value.prev = default!;
             q.first = y;
-            sgp.Value.next = default!;
+            sgp.Value.next = default!; // mark as removed (see dequeueSudoG)
         }
-        // mark as removed (see dequeueSudoG)
         // if a goroutine was put on this queue because of a
         // select, there is a small window between the goroutine
         // being woken up by a different case and it grabbing the

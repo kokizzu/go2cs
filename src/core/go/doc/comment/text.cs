@@ -157,9 +157,8 @@ internal static void text(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, @s
     p.@long.Reset();
     slice<nint> seq = default!;
     if (p.width < 0 || len(words) == 0){
-        seq = new nint[]{0, len(words)}.slice();
+        seq = new nint[]{0, len(words)}.slice(); // one long line
     } else {
-        // one long line
         seq = wrap(words, p.width - utf8.RuneCountInString(indent));
     }
     for (nint i = 0; i + 1 < len(seq); i++) {
@@ -331,16 +330,13 @@ internal static slice<nint> /*seq*/ wrap(slice<@string> words, nint max) {
         f = append(f, g(d[0], m));
         bestleft = append(bestleft, d[0]);
         while (len(d) > 1 && cmp(g(d[1], m + 1), g(d[0], m + 1)) <= 0) {
-            d = d[1..];
+            d = d[1..]; // “Retire”
         }
-        // “Retire”
         while (len(d) > 1 && bridge(d[len(d) - 2], d[len(d) - 1], m)) {
-            d = d[..(int)(len(d) - 1)];
+            d = d[..(int)(len(d) - 1)]; // “Fire”
         }
-        // “Fire”
         if (cmp(g(m, len(words)), g(d[len(d) - 1], len(words))) < 0) {
-            d = append(d, m);
-            // “Hire”
+            d = append(d, m); // “Hire”
             // The next few lines are not in the paper but are necessary
             // to handle two-word inputs correctly. It appears to be
             // just a bug in the paper's pseudocode.

@@ -129,17 +129,14 @@ internal static bool traceReadCPU(uintptr gen) {
     var (data, tags, eof) = Δtrace.cpuLogRead[(nint)(gen % 2)].read(profBufNonBlocking);
     while (len(data) > 0) {
         if (len(data) < 4 || data[0] > (uint64)len(data)) {
-            break;
+            break; // truncated profile
         }
-        // truncated profile
         if (data[0] < 4 || tags != default! && len(tags) < 1) {
-            break;
+            break; // malformed profile
         }
-        // malformed profile
         if (len(tags) < 1) {
-            break;
+            break; // mismatched profile records and tags
         }
-        // mismatched profile records and tags
         // Deserialize the data in the profile buffer.
         var recordLen = data[0];
         var timestamp = data[1];

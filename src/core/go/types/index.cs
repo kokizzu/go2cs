@@ -60,8 +60,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
     }
     // ordinary index expression
     var valid = false;
-    var length = (int64)(-1);
-    // valid if >= 0
+    var length = (int64)(-1); // valid if >= 0
     switch (under(x.typ).type()) {
     case ж<Basic> typ: {
         if (isString(new BasicжΔType(typ))) {
@@ -73,7 +72,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
             // (not a constant) even if the string and the
             // index are constant
             x.mode = value;
-            x.typ = universeByte;
+            x.typ = universeByte; // use 'byte' name
         }
         break;
     }
@@ -81,7 +80,6 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
         valid = true;
         length = typ.Value.len;
         if (x.mode != variable) {
-            // use 'byte' name
             x.mode = value;
         }
         x.typ = typ.Value.elem;
@@ -126,12 +124,10 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
         // TODO(gri) report detailed failure cause for better error messages
         ref var key = ref heap<ΔType>(out var Ꮡkey);             // key != nil: we must have all maps
         ref var elem = ref heap<ΔType>(out var Ꮡelem);
-        var mode = variable;
+        var mode = variable; // non-maps result mode
         if (typ.typeSet().underIs((ΔType u) => {
-            // non-maps result mode
             // TODO(gri) factor out closure and use it for non-typeparam cases as well
-            var l = (int64)(-1);
-            // valid if >= 0
+            var l = (int64)(-1); // valid if >= 0
             ΔType k = default!;             // k is only set for maps
             ΔType eΔ1 = default!;
             switch (u.type()) {
@@ -251,8 +247,7 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
         return;
     }
     var valid = false;
-    var length = (int64)(-1);
-    // valid if >= 0
+    var length = (int64)(-1); // valid if >= 0
     switch (coreString(x.typ).type()) {
     case null: {
         Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonSliceableOperand, invalidOp + "cannot slice %s: %s has no core type", Ꮡx.OrTypedNil(), x.typ);
@@ -264,9 +259,8 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
             if (e.Slice3) {
                 var at = e.Max;
                 if (at == default!) {
-                    at = new ast_SliceExprжExpr(Ꮡe);
+                    at = new ast_SliceExprжExpr(Ꮡe); // e.Index[2] should be present but be careful
                 }
-                // e.Index[2] should be present but be careful
                 Ꮡcheck.error(new ast_Exprᴠpositioner(at), InvalidSliceExpr, invalidOp + "3-index slice of string");
                 x.mode = invalid;
                 return;
@@ -366,7 +360,7 @@ L:
                     // when checking indices and thus e.Index[i+1+j] is not nil.
                     var at = new ast.Expr[]{e.Low, e.High, e.Max}.slice()[i + 1 + j];
                     Ꮡcheck.errorf(new ast_Exprᴠpositioner(at), SwappedSliceIndices, "invalid slice indices: %d < %d"u8, y, xΔ2);
-                    goto break_L;
+                    goto break_L; // only report one error, ok to continue
                 }
             }
         }
@@ -374,8 +368,6 @@ continue_L:;
     }
 break_L:;
 }
-
-// only report one error, ok to continue
 
 // singleIndex returns the (single) index from the index expression e.
 // If the index is missing, or if there are multiple indices, an error

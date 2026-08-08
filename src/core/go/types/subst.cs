@@ -63,12 +63,11 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
     // common cases
     switch (typ.type()) {
     case ж<Basic> t: {
-        return typ;
+        return typ; // nothing to do
     }
     case ж<TypeParam> t: {
         return smap.lookup(t);
     }}
-    // nothing to do
     // general case
     var subst = new subster(
         pos: pos,
@@ -105,16 +104,14 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
             // nothing to do
             // This code follows the code for *Named types closely.
             // TODO(gri) try to factor better
-            return new AliasжΔType(t);
+            return new AliasжΔType(t); // type is not parameterized
         }
         if (t.TypeArgs().Len() != n) {
-            // type is not parameterized
             // TODO(gri) do we need this for Alias types?
-            return new BasicжΔType(Typ[Invalid]);
+            return new BasicжΔType(Typ[Invalid]); // error reported elsewhere
         }
         var (targs, updated) = subst.typeList(t.TypeArgs().list());
         if (updated) {
-            // error reported elsewhere
             // already instantiated
             // For each (existing) type argument determine if it needs
             // to be substituted; i.e., if it is or contains a type parameter
@@ -206,8 +203,7 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
             iface.Value.embeddeds = embeddeds;
             iface.Value.embedPos = t.Value.embedPos;
             iface.Value.@implicit = t.Value.@implicit;
-            assert((~t).complete);
-            // otherwise we are copying incomplete data
+            assert((~t).complete); // otherwise we are copying incomplete data
             iface.Value.complete = t.Value.complete;
             // If we've changed the interface type, we may need to replace its
             // receiver if the receiver type is the original interface. Receivers of
@@ -256,15 +252,13 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
             // so would result in deadlock.
             //
             // So we call t.Origin().TypeParams() rather than t.TypeParams().
-            return new NamedжΔType(t);
+            return new NamedжΔType(t); // type is not parameterized
         }
         if (t.TypeArgs().Len() != n) {
-            // type is not parameterized
-            return new BasicжΔType(Typ[Invalid]);
+            return new BasicжΔType(Typ[Invalid]); // error reported elsewhere
         }
         var (targs, updated) = subst.typeList(t.TypeArgs().list());
         if (updated) {
-            // error reported elsewhere
             // already instantiated
             // For each (existing) type argument determine if it needs
             // to be substituted; i.e., if it is or contains a type parameter

@@ -146,8 +146,7 @@ public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @pa
     }
     // Request.RemoteAddr has its port set by Go's standard http
     // server, so we do here too.
-    var (remotePort, _) = strconv.Atoi(@params[remotePortˢ]);
-    // zero if unset or invalid
+    var (remotePort, _) = strconv.Atoi(@params[remotePortˢ]); // zero if unset or invalid
     r.Value.RemoteAddr = net.JoinHostPort(@params[remoteAddrˢ], strconv.Itoa(remotePort));
     return (r, default!);
 }
@@ -173,8 +172,7 @@ public static error Serve(httpꓸHandler handler) {
         bufw: bufio.NewWriter(new os.FileжWriter(os.Stdout))
     ));
     handler.ServeHTTP(new responseжResponseWriter(rw), req);
-    rw.Write(default!);
-    // make sure a response is sent
+    rw.Write(default!); // make sure a response is sent
     {
         err = (~rw).bufw.Flush(); if (err != default!) {
             return err;

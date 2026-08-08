@@ -263,8 +263,7 @@ internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     var f = s.fn;
     // Figure out what we can about our stack map
     var pc = s.pc;
-    var pcdata = (int32)(-1);
-    // Use the entry map at function entry
+    var pcdata = (int32)(-1); // Use the entry map at function entry
     if (pc != f.entry()) {
         pc--;
         pcdata = pcdatavalue(f, abi.PCDATA_StackMapIndex, pc);
@@ -284,14 +283,10 @@ internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     }
     // Dump main body of stack frame.
     dumpint(tagStackFrame);
-    dumpint((uint64)s.sp);
-    // lowest address in frame
-    dumpint((uint64)child.depth);
-    // # of frames deep on the stack
-    dumpint((uint64)(uintptr)child.sp);
-    // sp of child, or 0 if bottom of stack
-    dumpmemrange((@unsafe.Pointer)s.sp, s.fp - s.sp);
-    // frame contents
+    dumpint((uint64)s.sp); // lowest address in frame
+    dumpint((uint64)child.depth); // # of frames deep on the stack
+    dumpint((uint64)(uintptr)child.sp); // sp of child, or 0 if bottom of stack
+    dumpmemrange((@unsafe.Pointer)s.sp, s.fp - s.sp); // frame contents
     dumpint((uint64)f.entry());
     dumpint((uint64)s.pc);
     dumpint((uint64)s.continpc);
@@ -368,8 +363,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
     dumpint((uint64)gp.gopc);
     dumpint((uint64)readgstatus(Ꮡgp));
     dumpbool(isSystemGoroutine(Ꮡgp, false));
-    dumpbool(false);
-    // isbackground
+    dumpbool(false); // isbackground
     dumpint((uint64)gp.waitsince);
     dumpstr(gp.waitreason.String());
     dumpint((uint64)(uintptr)gp.sched.ctxt);
@@ -410,8 +404,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
         var eface = efaceOf(Δp.of(_panic.Ꮡarg));
         dumpint((uint64)(uintptr)(~eface)._type);
         dumpint((uint64)(uintptr)(~eface).data);
-        dumpint(0);
-        // was p->defer, no longer recorded
+        dumpint(0); // was p->defer, no longer recorded
         dumpint((uint64)(uintptr)(~Δp).link);
     }
 }
@@ -423,8 +416,7 @@ internal static void dumpgs() {
     assertWorldStopped();
     // goroutines & stacks
     forEachG((ж<g> gp) => {
-        var status = readgstatus(gp);
-        // The world is stopped so gp will not be in a scan state.
+        var status = readgstatus(gp); // The world is stopped so gp will not be in a scan state.
         var exprᴛ1 = status;
         if (exprᴛ1 == _Gdead) {
         }
@@ -523,12 +515,10 @@ internal static void dumpparams() {
     ref var x = ref heap<uintptr>(out var Ꮡx);
     x = (uintptr)1;
     if (~Ꮡx.Reinterpret<uintptr, byte>() == 1){
-        dumpbool(false);
+        dumpbool(false); // little-endian ptrs
     } else {
-        // little-endian ptrs
-        dumpbool(true);
+        dumpbool(true); // big-endian ptrs
     }
-    // big-endian ptrs
     dumpint(goarch.PtrSize);
     uintptr arenaStart = default!;
     uintptr arenaEnd = default!;

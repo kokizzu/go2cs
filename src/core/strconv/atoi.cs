@@ -308,8 +308,7 @@ internal static bool underscoreOK(@string s) {
     var hex = false;
     if (len(s) >= 2 && s[0] == (rune)'0' && (lower(s[1]) == (rune)'b' || lower(s[1]) == (rune)'o' || lower(s[1]) == (rune)'x')) {
         i = 2;
-        saw = (rune)'0';
-        // base prefix counts as a digit for "underscore as digit separator"
+        saw = (rune)'0'; // base prefix counts as a digit for "underscore as digit separator"
         hex = lower(s[1]) == (rune)'x';
     }
     // Number proper.

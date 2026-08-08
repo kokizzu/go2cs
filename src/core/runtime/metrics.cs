@@ -57,8 +57,7 @@ internal static void initMetrics() {
     // Skip size class 0 which is a stand-in for large objects, but large
     // objects are tracked separately (and they actually get placed in
     // the last bucket, not the first).
-    sizeClassBuckets[0] = 1D;
-    // The smallest allocation is 1 byte in size.
+    sizeClassBuckets[0] = 1D; // The smallest allocation is 1 byte in size.
     for (nint i = 1; i < _NumSizeClasses; i++) {
         // Size classes have an inclusive upper-bound
         // and exclusive lower bound (e.g. 48-byte size class is

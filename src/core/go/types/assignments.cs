@@ -29,7 +29,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     Ꮡcheck.singleValue(Ꮡx);
     var exprᴛ1 = x.mode;
     if (exprᴛ1 == invalid) {
-        return;
+        return; // error reported before
     }
     if (exprᴛ1 == nilvalue) {
         assert(isTypes2);
@@ -37,8 +37,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     else if (exprᴛ1 == constant_ || exprᴛ1 == variable || exprᴛ1 == mapindex || exprᴛ1 == value || exprᴛ1 == commaok || exprᴛ1 == commaerr) {
     }
     else { /* default: */
-        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), // error reported before
- // ok
+        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), // ok
  // ok
  // we may get here because of other problems (go.dev/issue/39634, crash 12)
  // TODO(gri) do we need a new "generic" error code here?
@@ -235,9 +234,8 @@ internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
     ref var x = ref heap(new operand(), out var Ꮡx);
     Ꮡcheck.expr(nil, Ꮡx, lhs);
     if (v != nil) {
-        v.Value.used = v_used;
+        v.Value.used = v_used; // restore v.used
     }
-    // restore v.used
     if (x.mode == invalid || !isValid(x.typ)) {
         return new BasicжΔType(Typ[Invalid]);
     }
@@ -277,8 +275,7 @@ internal static readonly @string assignmentToIdentifierˢ = "assignment to _ ide
 internal static void assignVar(this ж<Checker> Ꮡcheck, ast.Expr lhs, ast.Expr rhs, ж<operand> Ꮡx, @string context) {
     ref var x = ref Ꮡx.DerefOrNull();
 
-    var T = Ꮡcheck.lhsVar(lhs);
-    // nil if lhs is _
+    var T = Ꮡcheck.lhsVar(lhs); // nil if lhs is _
     if (!isValid(T)) {
         if (Ꮡx != nil){
             x.mode = invalid;
@@ -340,7 +337,7 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
     foreach (var (i, t) in list) {
         @string s = default!;
         var matchᴛ1 = false;
-        if (t == default!) { matchᴛ1 = true;
+        if (t == default!) { matchᴛ1 = true; // should not happen but be cautious
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (!isValid(t))) { matchᴛ1 = true;
@@ -348,7 +345,6 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
         }
         else if (isUntyped(t)) {
             if (isNumeric(t)){
-                // should not happen but be cautious
                 // Do not imply a specific type requirement:
                 // "have number, want float64" is better than
                 // "have untyped int, want float64" or
@@ -407,14 +403,12 @@ internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice
     nint r = len(rhs);
     @string qualifier = notEnoughˢ;
     if (r > l){
-        at = new operandжpositioner(rhs[l]);
-        // report at first extra value
+        at = new operandжpositioner(rhs[l]); // report at first extra value
         qualifier = tooManyˢ;
     } else 
     if (r > 0) {
-        at = new operandжpositioner(rhs[r - 1]);
+        at = new operandжpositioner(rhs[r - 1]); // report at last value
     }
-    // report at last value
     var err = Ꮡcheck.newError(WrongResultCount);
     err.addf(at, "%s return values"u8, qualifier);
     err.addf(noposn, "have %s"u8, Ꮡcheck.typesSummary(operandTypes(rhs), false));
@@ -640,10 +634,8 @@ internal static void shortVarDecl(this ж<Checker> Ꮡcheck, positioner pos, sli
     // containing block."
     tokenꓸPos scopePos = endPos(rhs[len(rhs) - 1]);
     foreach (var (_, obj) in newVars) {
-        Ꮡcheck.declare(scope, nil, new VarжObject(obj), scopePos);
+        Ꮡcheck.declare(scope, nil, new VarжObject(obj), scopePos); // id = nil: recordDef already called
     }
 }
-
-// id = nil: recordDef already called
 
 } // end types_package

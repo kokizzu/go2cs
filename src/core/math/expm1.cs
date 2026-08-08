@@ -164,9 +164,8 @@ internal static float64 expm1(float64 x) {
     if (absx >= Ln2X56) {
         // if |x| >= 56 * ln2
         if (sign) {
-            return -1D;
+            return -1D; // x < -56*ln2, return -1
         }
-        // x < -56*ln2, return -1
         if (absx >= Othreshold) {
             // if |x| >= 709.78...
             return Inf(1);
@@ -197,8 +196,7 @@ internal static float64 expm1(float64 x) {
                 k = (nint)(InvLn2 * x - 0.5D);
             }
             var tΔ1 = (float64)k;
-            hi = x - tΔ1 * Ln2Hi;
-            // t * Ln2Hi is exact here
+            hi = x - tΔ1 * Ln2Hi; // t * Ln2Hi is exact here
             lo = tΔ1 * (float64)Ln2Lo;
         }
         x = hi - lo;
@@ -217,9 +215,8 @@ internal static float64 expm1(float64 x) {
     var t = 3D - r1 * hfx;
     var e = hxs * ((r1 - t) / (6.0D - x * t));
     if (k == 0) {
-        return x - (x * e - hxs);
+        return x - (x * e - hxs); // c is 0
     }
-    // c is 0
     e = (x * (e - c) - c);
     e -= hxs;
     switch (ᐧ) {
@@ -234,26 +231,21 @@ internal static float64 expm1(float64 x) {
     }
     case {} when k <= -2 || k > 56: {
         var yΔ2 = 1D - (e - x);
-        yΔ2 = Float64frombits(Float64bits(yΔ2) + ((uint64)k << (int)(52)));
+        yΔ2 = Float64frombits(Float64bits(yΔ2) + ((uint64)k << (int)(52))); // add k to y's exponent
         return yΔ2 - 1D;
     }}
 
     // suffice to return exp(x)-1
-    // add k to y's exponent
     if (k < 20) {
-        var tΔ2 = Float64frombits(0x3ff0000000000000UL - (((uint64)0x20000000000000UL).Rsh((nuint)k)));
-        // t=1-2**-k
+        var tΔ2 = Float64frombits(0x3ff0000000000000UL - (((uint64)0x20000000000000UL).Rsh((nuint)k))); // t=1-2**-k
         var yΔ3 = tΔ2 - (e - x);
-        yΔ3 = Float64frombits(Float64bits(yΔ3) + ((uint64)k << (int)(52)));
-        // add k to y's exponent
+        yΔ3 = Float64frombits(Float64bits(yΔ3) + ((uint64)k << (int)(52))); // add k to y's exponent
         return yΔ3;
     }
-    t = Float64frombits(((uint64)(0x3ff - k) << (int)(52)));
-    // 2**-k
+    t = Float64frombits(((uint64)(0x3ff - k) << (int)(52))); // 2**-k
     var y = x - (e + t);
     y++;
-    y = Float64frombits(Float64bits(y) + ((uint64)k << (int)(52)));
-    // add k to y's exponent
+    y = Float64frombits(Float64bits(y) + ((uint64)k << (int)(52))); // add k to y's exponent
     return y;
 }
 

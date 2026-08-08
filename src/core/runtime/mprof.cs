@@ -488,13 +488,11 @@ internal static ref uint64 blockprofilerate => ref Ꮡblockprofilerate.Value; //
 public static void SetBlockProfileRate(nint rate) {
     int64 r = default!;
     if (rate <= 0){
-        r = 0;
+        r = 0; // disable profiling
     } else 
     if (rate == 1){
-        // disable profiling
-        r = 1;
+        r = 1; // profile everything
     } else {
-        // profile everything
         // convert ns to cycles, use float64 to prevent overflow during multiplication
         r = (int64)((float64)rate * (float64)ticksPerSecond() / (1000D * 1000D * 1000D));
         if (r == 0) {
@@ -544,8 +542,7 @@ internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketT
         @throw(invalidSkipValueˢ);
     }
     var gp = getg();
-    var mp = acquirem();
-    // we must not be preempted while accessing profstack
+    var mp = acquirem(); // we must not be preempted while accessing profstack
     nint nstk = default!;
     if (tracefpunwindoff() || (~gp).m.hasCgoOnStack()){
         if ((~(~gp).m).curg == nil || (~(~gp).m).curg == gp){
@@ -786,8 +783,7 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
         // can't record a stack trace.
         return;
     }
-    nint skip = 3;
-    // runtime.(*mLockProfile).recordUnlock runtime.unlock2 runtime.unlockWithRank
+    nint skip = 3; // runtime.(*mLockProfile).recordUnlock runtime.unlock2 runtime.unlockWithRank
     if (staticLockRanking) {
         // When static lock ranking is enabled, we'll always be on the system
         // stack at this point. There will be a runtime.unlockWithRank.func1
@@ -798,9 +794,8 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
         // we've been on the system stack so accept an extra frame in that case,
         // with a leaf of "runtime.unlockWithRank runtime.unlock" instead of
         // "runtime.unlock".
-        skip += 1;
+        skip += 1; // runtime.unlockWithRank.func1
     }
-    // runtime.unlockWithRank.func1
     prof.pending = 0;
     prof.stack[0] = logicalStackSentinel;
     if (Ꮡdebug.of(debugᴛ1.ᏑruntimeContentionStacks).Load() == 0) {
@@ -1415,8 +1410,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
     }
     semacquire(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
     var ourg = getg();
-    var pcbuf = makeProfStack();
-    // see saveg() for explanation
+    var pcbuf = makeProfStack(); // see saveg() for explanation
     var stw = stopTheWorld(stwGoroutineProfile);
     // Using gcount while the world is stopped should give us a consistent view
     // of the number of live goroutines, minus the number of goroutines that are
@@ -1624,8 +1618,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
         // consistent with both NumGoroutine and Stack.
         return gp1 != gpʗ1 && readgstatus(gp1) != _Gdead && !isSystemGoroutine(gp1, false);
     }
-    var pcbuf = makeProfStack();
-    // see saveg() for explanation
+    var pcbuf = makeProfStack(); // see saveg() for explanation
     var stw = stopTheWorld(stwGoroutineProfile);
     // World is stopped, no locking required.
     n = 1;

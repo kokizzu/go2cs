@@ -200,8 +200,7 @@ public static error Start(this ж<QUICConn> Ꮡq, context.Context ctx) {
         return new QUICEvent(Kind: QUICNoEvent);
     }
     var e = (~qs).events[(~qs).nextEvent];
-    qs.Value.events[(~qs).nextEvent] = new QUICEvent(nil);
-    // zero out references to data
+    qs.Value.events[(~qs).nextEvent] = new QUICEvent(nil); // zero out references to data
     qs.Value.nextEvent++;
     return e;
 }
@@ -209,9 +208,8 @@ public static error Start(this ж<QUICConn> Ꮡq, context.Context ctx) {
 // Close closes the connection and stops any in-progress handshake.
 [GoRecv] public static error Close(this ref QUICConn q) {
     if ((~(~q.conn).quic).cancel == default!) {
-        return default!;
+        return default!; // never started
     }
-    // never started
     (~(~q.conn).quic).cancel();
     foreach (var _ᴛ1 in (~(~q.conn).quic).blockedc) {
     }

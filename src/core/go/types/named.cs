@@ -167,20 +167,16 @@ internal static ж<Named> resolve(this ж<Named> Ꮡn) {
             return Ꮡn;
         }
         if (n.inst != nil) {
-            assert(n.underlying == default!);
-            // n is an unresolved instance
-            assert(n.loader == default!);
-            // instances are created by instantiation, in which case n.loader is nil
+            assert(n.underlying == default!); // n is an unresolved instance
+            assert(n.loader == default!); // instances are created by instantiation, in which case n.loader is nil
             var orig = n.inst.Value.orig;
             orig.resolve();
             var underlying = Ꮡn.expandUnderlying();
             n.tparams = orig.Value.tparams;
             n.underlying = underlying;
-            n.fromRHS = orig.Value.fromRHS;
-            // for cycle detection
+            n.fromRHS = orig.Value.fromRHS; // for cycle detection
             if (len((~orig).methods) == 0){
-                Ꮡn.setState(complete);
-                // nothing further to do
+                Ꮡn.setState(complete); // nothing further to do
                 n.inst.Value.ctxt = default!;
             } else {
                 Ꮡn.setState(resolved);
@@ -196,13 +192,11 @@ internal static ж<Named> resolve(this ж<Named> Ꮡn) {
         // also make the API more future-proof towards further extensions.
         if (n.loader != default!) {
             assert(n.underlying == default!);
-            assert(n.TypeArgs().Len() == 0);
-            // instances are created by instantiation, in which case n.loader is nil
+            assert(n.TypeArgs().Len() == 0); // instances are created by instantiation, in which case n.loader is nil
             var (tparams, underlying, methods) = n.loader(Ꮡn);
             n.tparams = bindTParams(tparams);
             n.underlying = underlying;
-            n.fromRHS = underlying;
-            // for cycle detection
+            n.fromRHS = underlying; // for cycle detection
             n.methods = methods;
             n.loader = default!;
         }
@@ -292,11 +286,10 @@ internal static void cleanup(this ж<Named> Ꮡt) {
     }
     case ж<Named> _:
     case ж<Alias> _: {
-        Ꮡt.under();
+        Ꮡt.under(); // t.under may add entries to check.cleaners
         break;
     }}
 
-    // t.under may add entries to check.cleaners
     t.check = default!;
 }
 
@@ -368,8 +361,7 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
         if (Ꮡt.state() >= complete) {
             return t.methods[i];
         }
-        assert(t.inst != nil);
-        // only instances should have incomplete methods
+        assert(t.inst != nil); // only instances should have incomplete methods
         var orig = t.inst.Value.orig;
         Ꮡt.of(Named.Ꮡmu).Lock();
         defer(Ꮡt.of(Named.Ꮡmu).Unlock, ref ᒐ);
@@ -378,18 +370,16 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
             t.methods = new slice<ж<Func>>(len((~orig).methods));
         }
         if (t.methods[i] == nil) {
-            assert((~t.inst).ctxt != nil);
-            // we should still have a context remaining from the resolution phase
+            assert((~t.inst).ctxt != nil); // we should still have a context remaining from the resolution phase
             t.methods[i] = Ꮡt.expandMethod(i);
             t.inst.Value.expandedMethods++;
             // Check if we've created all methods at this point. If we have, mark the
             // type as fully expanded.
             if ((~t.inst).expandedMethods == len((~orig).methods)) {
                 Ꮡt.setState(complete);
-                t.inst.Value.ctxt = default!;
+                t.inst.Value.ctxt = default!; // no need for a context anymore
             }
         }
-        // no need for a context anymore
         return t.methods[i];
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
@@ -465,11 +455,9 @@ public static void SetUnderlying(this ж<Named> Ꮡt, ΔType underlying) {
     }
     Ꮡt.resolve().Value.underlying = underlying;
     if (t.fromRHS == default!) {
-        t.fromRHS = underlying;
+        t.fromRHS = underlying; // for cycle detection
     }
 }
-
-// for cycle detection
 
 // AddMethod adds method m unless it is already in the method list.
 // The method must be in the same package as t, and t must not have
@@ -579,8 +567,7 @@ internal static ΔType under(this ж<Named> Ꮡn0) {
     // underlying chain should be set up when this function exits.
     var check = n0.check;
     var n = Ꮡn0;
-    var seen = new map<ж<Named>, nint>();
-    // types that need their underlying type resolved
+    var seen = new map<ж<Named>, nint>(); // types that need their underlying type resolved
     slice<Object> path = default!;                         // objects encountered, for cycle reporting
 loop:
     while (ᐧ) {
@@ -716,16 +703,13 @@ internal static ΔType expandUnderlying(this ж<Named> Ꮡn) {
                             var old = iface;
                             iface = check.newInterface();
                             iface.Value.embeddeds = old.Value.embeddeds;
-                            assert((~old).complete);
-                            // otherwise we are copying incomplete data
+                            assert((~old).complete); // otherwise we are copying incomplete data
                             iface.Value.complete = old.Value.complete;
-                            iface.Value.@implicit = old.Value.@implicit;
-                            // should be false but be conservative
+                            iface.Value.@implicit = old.Value.@implicit; // should be false but be conservative
                             underlying = new InterfaceжΔType(iface);
                         }
                         iface.Value.methods = methods;
-                        iface.Value.tset = default!;
-                        // recompute type set with new methods
+                        iface.Value.tset = default!; // recompute type set with new methods
                         // If check != nil, check.newInterface will have saved the interface for later completion.
                         if (check == nil) {
                             // golang/go#61561: all newly created interfaces must be fully evaluated

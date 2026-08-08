@@ -737,8 +737,7 @@ internal static error Close(this ж<driverConn> Ꮡdc) {
         return errors.New(sqlDuplicateDriverConnˢ);
     }
     dc.closed = true;
-    Ꮡdc.of(driverConn.ᏑMutex).Unlock();
-    // not defer; removeDep finalClose calls may need to lock
+    Ꮡdc.of(driverConn.ᏑMutex).Unlock(); // not defer; removeDep finalClose calls may need to lock
     // And now updates that require holding dc.mu.Lock.
     dc.db.of(DB.Ꮡmu).Lock();
     dc.dbmuClosed = true;
@@ -1376,8 +1375,7 @@ public static DBStats Stats(this ж<DB> Ꮡdb) {
         }
     }
     while (numRequests > 0) {
-        db.numOpen++;
-        // optimistically
+        db.numOpen++; // optimistically
         numRequests--;
         if (db.closed) {
             return;
@@ -1576,14 +1574,12 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         }}
         return default!;
     }
-    db.numOpen++;
-    // optimistically
+    db.numOpen++; // optimistically
     Ꮡdb.of(DB.Ꮡmu).Unlock();
     var (ci, err) = db.connector.Connect(ctx);
     if (err != default!) {
         Ꮡdb.of(DB.Ꮡmu).Lock();
-        db.numOpen--;
-        // correct for earlier optimism
+        db.numOpen--; // correct for earlier optimism
         db.maybeOpenNewConnections();
         Ꮡdb.of(DB.Ꮡmu).Unlock();
         return (default!, err);
@@ -3005,8 +3001,7 @@ internal static (ж<driverConn> dc, Action<error> ΔreleaseConn, ж<driverStmt> 
     // stmt was created on.
     if (s.cg != default!) {
         Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
-        (dc, ΔreleaseConn, err) = s.cg.grabConn(ctx);
-        // blocks, waiting for the connection.
+        (dc, ΔreleaseConn, err) = s.cg.grabConn(ctx); // blocks, waiting for the connection.
         if (err != default!) {
             return (dc, ΔreleaseConn, ds, err);
         }
@@ -3964,8 +3959,7 @@ internal static void withLock(sync.Locker lk, Action fn) {
     GoFrame ᒐ = default;
     try {
         lk.Lock();
-        defer(lk.Unlock, ref ᒐ);
-        // in case fn panics
+        defer(lk.Unlock, ref ᒐ); // in case fn panics
         fn();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

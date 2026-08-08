@@ -281,10 +281,9 @@ internal static array<bidi.Properties> asciiTable = new(128);
                     // TODO: is this correct?
                     return (n, false);
                 }
-                return (n, true);
+                return (n, true); // incomplete UTF-8 encoding
             }
         }
-        // incomplete UTF-8 encoding
         // TODO: using CompactClass would result in noticeable speedup.
         // See unicode/bidi/prop.go:Properties.CompactClass.
         var c = (uint16)(((uint16)1).Lsh(e.Class()));
@@ -331,13 +330,11 @@ internal static array<bidi.Properties> asciiTable = new(128);
             (e, sz) = bidi.LookupString(s[(int)(n)..]);
             if (sz <= 1) {
                 if (sz == 1) {
-                    return (n, false);
+                    return (n, false); // invalid UTF-8
                 }
-                // invalid UTF-8
-                return (n, true);
+                return (n, true); // incomplete UTF-8 encoding
             }
         }
-        // incomplete UTF-8 encoding
         // TODO: using CompactClass results in noticeable speedup.
         // See unicode/bidi/prop.go:Properties.CompactClass.
         var c = (uint16)(((uint16)1).Lsh(e.Class()));

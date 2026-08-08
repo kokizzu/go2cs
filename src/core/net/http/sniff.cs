@@ -33,10 +33,8 @@ public static @string DetectContentType(slice<byte> data) {
             }
         }
     }
-    return applicationOctetStreamˢ;
+    return applicationOctetStreamˢ; // fallback
 }
-
-// fallback
 
 // isWS reports whether the provided byte is a whitespace byte (0xWS)
 // as defined in https://mimesniff.spec.whatwg.org/#terminology.

@@ -64,9 +64,8 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
 
         if ((~check.conf)._Trace && obj.Type() == default!) {
             if (check.indent == 0) {
-                fmt.Println();
+                fmt.Println(); // empty line between top-level objects for readability
             }
-            // empty line between top-level objects for readability
             Ꮡcheck.trace(obj.Pos(), checkingSSObjPathSˢ, obj, obj.color(), pathString(check.objPath));
             check.indent++;
             defer(() => {
@@ -199,26 +198,23 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
         // check.decl.
         switch (obj.type()) {
         case ж<Const> objΔ3: {
-            check.decl = d;
-            Ꮡcheck.constDecl(objΔ3, // new package-level const decl
- (~d).vtyp, (~d).init, (~d).inherited);
+            check.decl = d; // new package-level const decl
+            Ꮡcheck.constDecl(objΔ3, (~d).vtyp, (~d).init, (~d).inherited);
             break;
         }
         case ж<Var> objΔ3: {
-            check.decl = d;
-            Ꮡcheck.varDecl(objΔ3, // new package-level var decl
- (~d).lhs, (~d).vtyp, (~d).init);
+            check.decl = d; // new package-level var decl
+            Ꮡcheck.varDecl(objΔ3, (~d).lhs, (~d).vtyp, (~d).init);
             break;
         }
         case ж<TypeName> objΔ3: {
             Ꮡcheck.typeDecl(objΔ3, // invalid recursive types are detected via path
  (~d).tdecl, Ꮡdef);
-            Ꮡcheck.collectMethods(objΔ3);
+            Ꮡcheck.collectMethods(objΔ3); // methods can only be added to top-level types
             break;
         }
         case ж<Func> objΔ3: {
-            Ꮡcheck.funcDecl(objΔ3, // methods can only be added to top-level types
- // functions may be recursive - no need to track dependencies
+            Ꮡcheck.funcDecl(objΔ3, // functions may be recursive - no need to track dependencies
  d);
             break;
         }
@@ -251,8 +247,7 @@ internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj)
         // The object map contains the package scope objects and the non-interface methods.
         if (debug) {
             var info = check.objMap[obj];
-            var inObjMap = info != nil && ((~info).fdecl == nil || (~(~info).fdecl).Recv == nil);
-            // exclude methods
+            var inObjMap = info != nil && ((~info).fdecl == nil || (~(~info).fdecl).Recv == nil); // exclude methods
             var isPkgObj = obj.Parent() == (~check.pkg).scope;
             if (isPkgObj != inObjMap) {
                 Ꮡcheck.dump(vInconsistentObjectMapˢ, obj.Pos(), obj, isPkgObj, inObjMap);
@@ -261,15 +256,11 @@ internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj)
         }
         // Count cycle objects.
         assert(obj.color() >= grey);
-        var start = obj.color() - grey;
-        // index of obj in objPath
+        var start = obj.color() - grey; // index of obj in objPath
         var cycle = check.objPath[(int)(uint32)(start)..];
-        var tparCycle = false;
-        // if set, the cycle is through a type parameter list
-        nint nval = 0;
-        // number of (constant or variable) values in the cycle; valid if !generic
-        nint ndef = 0;
-        // number of type definitions in the cycle; valid if !generic
+        var tparCycle = false; // if set, the cycle is through a type parameter list
+        nint nval = 0; // number of (constant or variable) values in the cycle; valid if !generic
+        nint ndef = 0; // number of type definitions in the cycle; valid if !generic
 loop:
         foreach (var (_, objΔ1) in cycle) {
             switch (objΔ1.type()) {
@@ -302,15 +293,13 @@ loop:
                 } else {
                     {
                         var d = check.objMap[new TypeNameжObject(objΔ2)]; if (d != nil){
-                            alias = (~(~d).tdecl).Assign.IsValid();
+                            alias = (~(~d).tdecl).Assign.IsValid(); // package-level object
                         } else {
-                            // package-level object
-                            alias = objΔ2.IsAlias();
+                            alias = objΔ2.IsAlias(); // function local object
                         }
                     }
                 }
                 if (!alias) {
-                    // function local object
                     ndef++;
                 }
                 break;
@@ -505,13 +494,12 @@ internal static void walkDecl(this ж<Checker> Ꮡcheck, ast.Decl d, Action<decl
                         break;
                     }
                     case {} when last == nil: {
-                        last = @new<ast.ValueSpec>();
+                        last = @new<ast.ValueSpec>(); // make sure last exists
                         inherited = false;
                         break;
                     }}
 
                     Ꮡcheck.arityMatch(sΔ1, // determine which initialization expressions to use
- // make sure last exists
  last);
                     f(new ΔconstDecl(spec: sΔ1, iota: iota, typ: (~last).Type, init: (~last).Values, inherited: inherited));
                 }
@@ -734,9 +722,8 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
                 rhs = Ꮡcheck.definedType(tdecl.Type, Ꮡobj);
                 assert(rhs != default!);
                 alias.Value.fromRHS = rhs;
-                Unalias(new AliasжΔType(alias));
+                Unalias(new AliasжΔType(alias)); // resolve alias.actual
             } else {
-                // resolve alias.actual
                 // With Go1.23, the default behavior is to use Alias nodes,
                 // reflected by check.enableAlias. Signal non-default behavior.
                 //
@@ -891,8 +878,7 @@ internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck
     //           are not properly set yet.
     foreach (var (_, name) in names) {
         var tname = NewTypeName(name.Pos(), check.pkg, (~name).Name, default!);
-        var tpar = Ꮡcheck.newTypeParam(tname, new BasicжΔType(Typ[Invalid]));
-        // assigns type to tpar as a side-effect
+        var tpar = Ꮡcheck.newTypeParam(tname, new BasicжΔType(Typ[Invalid])); // assigns type to tpar as a side-effect
         Ꮡcheck.declare(check.scope, name, new TypeNameжObject(tname), scopePos);
         tparams = append(tparams, tpar);
     }
@@ -915,17 +901,14 @@ internal static void collectMethods(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡo
         return;
     }
     delete(check.methods, Ꮡobj);
-    assert(!(~(~check.objMap[new TypeNameжObject(Ꮡobj)]).tdecl).Assign.IsValid());
-    // don't use TypeName.IsAlias (requires fully set up object)
+    assert(!(~(~check.objMap[new TypeNameжObject(Ꮡobj)]).tdecl).Assign.IsValid()); // don't use TypeName.IsAlias (requires fully set up object)
     // use an objset to check for name conflicts
     objset mset = default!;
     // spec: "If the base type is a struct type, the non-blank method
     // and field names must be distinct."
-    var @base = asNamed(obj.typ);
-    // shouldn't fail but be conservative
+    var @base = asNamed(obj.typ); // shouldn't fail but be conservative
     if (@base != nil) {
-        assert(@base.TypeArgs().Len() == 0);
-        // collectMethods should not be called on an instantiated type
+        assert(@base.TypeArgs().Len() == 0); // collectMethods should not be called on an instantiated type
         // See go.dev/issue/52529: we must delay the expansion of underlying here, as
         // base may not be fully set-up.
         var baseʗ1 = @base;
@@ -1003,8 +986,7 @@ internal static void funcDecl(this ж<Checker> Ꮡcheck, ж<Func> Ꮡobj, ж<dec
     // func declarations cannot use iota
     assert(check.iota == default!);
     var sig = @new<ΔSignature>();
-    obj.typ = new ΔSignatureжΔType(sig);
-    // guard against cycles
+    obj.typ = new ΔSignatureжΔType(sig); // guard against cycles
     // Avoid cycle error when referring to method while type-checking the signature.
     // This avoids a nuisance in the best case (non-parameterized receiver type) and
     // since the method is not a type, we get an error. If we have a parameterized
@@ -1108,12 +1090,11 @@ internal static void declStmt(this ж<Checker> Ꮡcheck, ast.Decl d) {
                 }
             }
             Ꮡcheck.processDelayed(top);
-            tokenꓸPos scopePos = dΔ2.spec.End();
+            tokenꓸPos scopePos = dΔ2.spec.End(); // see constant declarations
             foreach (var (i, name) in (~dΔ2.spec).Names) {
                 // process function literals in init expressions before scope changes
                 // declare all variables
                 // (only at this point are the variable scopes (parents) set)
-                // see constant declarations
                 // see constant declarations
                 Ꮡcheck.declare(Ꮡcheck.Value.scope, name, new VarжObject(lhs0[i]), scopePos);
             }

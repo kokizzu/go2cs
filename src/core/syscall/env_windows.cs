@@ -81,8 +81,7 @@ public static slice<@string> Environ() {
             return default!;
         }
         defer(FreeEnvironmentStrings, envp, ref ᒐ);
-        var r = new slice<@string>(0, 50);
-        // Empty with room to grow.
+        var r = new slice<@string>(0, 50); // Empty with room to grow.
         uintptr size = /* unsafe.Sizeof(*envp) */ 2;
         while (envp.Value != 0) {
             // environment block ends with empty string

@@ -16,14 +16,12 @@ internal static UntypedInt tableShift => /* 32 - tableBits */ 18; // Right-shift
 internal static UntypedInt bufferReset => /* math.MaxInt32 - maxStoreBlockSize*2 */ 2147352577;
 
 internal static uint32 load32(slice<byte> b, int32 i) {
-    b = b.slice(i, i + 4, len(b));
-    // Help the compiler eliminate bounds checks on the next line.
+    b = b.slice(i, i + 4, len(b)); // Help the compiler eliminate bounds checks on the next line.
     return (uint32)((uint32)((uint32)((uint32)b[0] | ((uint32)b[1] << (int)(8))) | ((uint32)b[2] << (int)(16))) | ((uint32)b[3] << (int)(24)));
 }
 
 internal static uint64 load64(slice<byte> b, int32 i) {
-    b = b.slice(i, i + 8, len(b));
-    // Help the compiler eliminate bounds checks on the next line.
+    b = b.slice(i, i + 8, len(b)); // Help the compiler eliminate bounds checks on the next line.
     return (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)b[0] | ((uint64)b[1] << (int)(8))) | ((uint64)b[2] << (int)(16))) | ((uint64)b[3] << (int)(24))) | ((uint64)b[4] << (int)(32))) | ((uint64)b[5] << (int)(40))) | ((uint64)b[6] << (int)(48))) | ((uint64)b[7] << (int)(56)));
 }
 

@@ -74,8 +74,7 @@ internal static void initScanner(this ж<parser> Ꮡp, @string filename, io.Read
     };
     p.scanner.Value.Mode = (nuint)((nuint)(UntypedInt)((UntypedInt)(scanner.ScanIdents | scanner.ScanInts) | scanner.ScanFloats) | (nuint)scanner.ScanStrings);
     p.scanner.Value.Whitespace = (uint64)((1 << (int)((rune)'\t')) | 4294967296L);
-    p.scanner.Value.Filename = filename;
-    // for good error messages
+    p.scanner.Value.Filename = filename; // for good error messages
     p.next();
 }
 
@@ -632,8 +631,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
             // use the previously imported (canonical) type
             var tΔ1 = obj.Type();
             p.update(tΔ1, nlist);
-            Ꮡp.parseType(pkg);
-            // discard
+            Ꮡp.parseType(pkg); // discard
             return tΔ1;
         }
         var tΔ2 = Ꮡp.parseType(pkg, nlist.ꓸꓸꓸ);
@@ -1173,8 +1171,7 @@ internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) 
             Ꮡsb.WriteRune(r);
         }
         @string allTypeData = sb.String();
-        p.typeData = new @string[]{""u8}.slice();
-        // type 0, unused
+        p.typeData = new @string[]{""u8}.slice(); // type 0, unused
         foreach (var (_, to) in typeOffsets) {
             p.typeData = append(p.typeData, allTypeData[(int)(to.offset)..(int)(to.offset + to.length)]);
         }

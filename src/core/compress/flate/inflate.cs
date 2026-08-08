@@ -344,12 +344,11 @@ internal static (nint, error) Read(this ж<decompressor> Ꮡf, slice<byte> b) {
         }
         f.step(Ꮡf);
         if (f.err != default! && len(f.toRead) == 0) {
-            f.toRead = f.dict.readFlush();
+            f.toRead = f.dict.readFlush(); // Flush what's left in case of error
         }
     }
 }
 
-// Flush what's left in case of error
 [GoRecv] internal static error Close(this ref decompressor f) {
     if (AreEqual(f.err, io.EOF)) {
         return default!;
@@ -644,8 +643,7 @@ copyHistory:
         f.copyLen -= cnt;
         if (f.dict.availWrite() == 0 || f.copyLen > 0) {
             f.toRead = f.dict.readFlush();
-            f.step = (Action<ж<decompressor>>)(huffmanBlock);
-            // We need to continue this work
+            f.step = (Action<ж<decompressor>>)(huffmanBlock); // We need to continue this work
             f.stepState = stateDict;
             return;
         }

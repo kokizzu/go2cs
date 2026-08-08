@@ -120,8 +120,7 @@ public static @string Text(this ж<CommentGroup> Ꮡg) {
     foreach (var (i, c) in g.List) {
         comments[i] = c.Value.Text;
     }
-    var lines = new slice<@string>(0, 10);
-    // most comments are less than 10 lines
+    var lines = new slice<@string>(0, 10); // most comments are less than 10 lines
     foreach (var (_, vᴛ1) in comments) {
         var c = vᴛ1;
 
@@ -562,10 +561,9 @@ public static ChanDir RECV => 2;
         // see issue 3870
         return x.Func;
     }
-    return x.Params.Pos();
+    return x.Params.Pos(); // interface method declarations have no "func" keyword
 }
 
-// interface method declarations have no "func" keyword
 [GoRecv] public static tokenꓸPos Pos(this ref InterfaceType x) {
     return x.Interface;
 }
@@ -590,10 +588,9 @@ public static ChanDir RECV => 2;
     if (x.Elt != default!) {
         return x.Elt.End();
     }
-    return x.ΔEllipsis + 3;
+    return x.ΔEllipsis + 3; // len("...")
 }
 
-// len("...")
 [GoRecv] public static tokenꓸPos End(this ref BasicLit x) {
     return ((tokenꓸPos)((nint)x.ValuePos + len(x.Value)));
 }
@@ -1029,10 +1026,9 @@ public static @string String(this ж<Ident> Ꮡid) {
     if (s.Implicit) {
         return s.Semicolon;
     }
-    return s.Semicolon + 1;
+    return s.Semicolon + 1; /* len(";") */
 }
 
-/* len(";") */
 [GoRecv] public static tokenꓸPos End(this ref LabeledStmt s) {
     return s.Stmt.End();
 }
@@ -1046,10 +1042,9 @@ public static @string String(this ж<Ident> Ꮡid) {
 }
 
 [GoRecv] public static tokenꓸPos End(this ref IncDecStmt s) {
-    return s.TokPos + 2;
+    return s.TokPos + 2; /* len("++") */
 }
 
-/* len("++") */
 [GoRecv] public static tokenꓸPos End(this ref AssignStmt s) {
     return s.Rhs[len(s.Rhs) - 1].End();
 }
@@ -1068,10 +1063,9 @@ public static @string String(this ж<Ident> Ꮡid) {
             return s.Results[n - 1].End();
         }
     }
-    return s.Return + 6;
+    return s.Return + 6; // len("return")
 }
 
-// len("return")
 [GoRecv] public static tokenꓸPos End(this ref BranchStmt s) {
     if (s.Label != nil) {
         return s.Label.End();
@@ -1453,9 +1447,8 @@ internal static (@string, bool) generator(ж<File> Ꮡfile) {
     foreach (var (_, group) in @file.Comments) {
         foreach (var (_, comment) in (~group).List) {
             if (comment.Pos() > @file.Package) {
-                break;
+                break; // after package declaration
             }
-            // after package declaration
             // opt: check Contains first to avoid unnecessary array allocation in Split.
             @string prefix = "// Code generated "u8;
             if (strings.Contains((~comment).Text, prefix)) {

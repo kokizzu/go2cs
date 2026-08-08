@@ -422,8 +422,7 @@ internal static void poll_runtime_pollSetDeadline(ж<pollDesc> Ꮡpd, int64 d, n
         }
     } else 
     if (pd.rd != rd0 || combo != combo0) {
-        pd.rseq++;
-        // invalidate current timers
+        pd.rseq++; // invalidate current timers
         if (pd.rd > 0){
             Ꮡpd.of(pollDesc.Ꮡrt).modify(pd.rd, 0, rtf, Ꮡpd.makeArg(), pd.rseq);
         } else {
@@ -438,8 +437,7 @@ internal static void poll_runtime_pollSetDeadline(ж<pollDesc> Ꮡpd, int64 d, n
         }
     } else 
     if (pd.wd != wd0 || combo != combo0) {
-        pd.wseq++;
-        // invalidate current timers
+        pd.wseq++; // invalidate current timers
         if (pd.wd > 0 && !combo){
             Ꮡpd.of(pollDesc.Ꮡwt).modify(pd.wd, 0, netpollWriteDeadline, Ꮡpd.makeArg(), pd.wseq);
         } else {

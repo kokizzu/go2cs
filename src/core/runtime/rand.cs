@@ -153,8 +153,7 @@ internal static uint64 rand() {
         if (ok) {
             return x;
         }
-        mp.Value.locks++;
-        // hold m even though c.Refill may do stack split checks
+        mp.Value.locks++; // hold m even though c.Refill may do stack split checks
         c.Refill();
         mp.Value.locks--;
     }
@@ -168,8 +167,7 @@ internal static void mrandinit(ж<m> Ꮡmp) {
     foreach (var (i, _) in seed) {
         seed[i] = bootstrapRand();
     }
-    bootstrapRandReseed();
-    // erase key we just extracted
+    bootstrapRandReseed(); // erase key we just extracted
     Ꮡmp.of(m.Ꮡchacha8).Init64(seed);
     mp.cheaprand = rand();
 }

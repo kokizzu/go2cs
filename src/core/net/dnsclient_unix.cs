@@ -149,8 +149,7 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsStreamRoundTrip
             return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errΔ1);
         }
     }
-    b = new slice<byte>(1280);
-    // 1280 is a reasonable initial size for IP over Ethernet, see RFC 4035
+    b = new slice<byte>(1280); // 1280 is a reasonable initial size for IP over Ethernet, see RFC 4035
     {
         var (_, errΔ2) = Δio.ReadFull(new ConnᴠReader(c), b[..2]); if (errΔ2 != default!) {
             return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errΔ2);

@@ -538,9 +538,8 @@ internal static (MIMEHeader, error) readMIMEHeader(ж<Reader> Ꮡr, int64 maxMem
     nint hint = r.upcomingHeaderKeys();
     if (hint > 0) {
         if (hint > 1000) {
-            hint = 1000;
+            hint = 1000; // set a cap to avoid overallocation
         }
-        // set a cap to avoid overallocation
         strs = new slice<@string>(hint);
     }
     var m = new MIMEHeader(hint);
@@ -635,8 +634,7 @@ internal static slice<byte> nl = slice<byte>("\n"u8);
     nint n = default!;
 
     // Try to determine the 'hint' size.
-    r.R.Peek(1);
-    // force a buffer load if empty
+    r.R.Peek(1); // force a buffer load if empty
     nint s = r.R.Buffered();
     if (s == 0) {
         return n;
@@ -803,9 +801,8 @@ internal static (@string, bool ok) canonicalMIMEHeaderKey(slice<byte> a) {
             c += toLower;
         }
         a[i] = c;
-        upper = c == (rune)'-';
+        upper = c == (rune)'-'; // for next time
     }
-    // for next time
     ᏑcommonHeaderOnce.Do(initCommonHeader);
     // The compiler recognizes m[string(byteSlice)] as a special
     // case, so a copy of a's bytes into a new string does not

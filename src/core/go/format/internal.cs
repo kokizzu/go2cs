@@ -110,9 +110,8 @@ internal static (slice<byte>, error) format(ж<token.FileSet> Ꮡfset, ж<ast.Fi
     nint j = 0;
     while (j < len(src) && isSpace(src[j])) {
         if (src[j] == (rune)'\n') {
-            i = j + 1;
+            i = j + 1; // byte offset of last line in leading space
         }
-        // byte offset of last line in leading space
         j++;
     }
     slice<byte> res = default!;

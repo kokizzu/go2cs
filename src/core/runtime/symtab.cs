@@ -759,10 +759,8 @@ internal static ж<Func> _Func(this ΔfuncInfo f) {
 
 // isInlined reports whether f should be re-interpreted as a *funcinl.
 [GoRecv] internal static bool isInlined(this ref _func f) {
-    return f.entryOff == ~(uint32)0;
+    return f.entryOff == ~(uint32)0; // see comment for funcinl.ones
 }
-
-// see comment for funcinl.ones
 
 // entry returns the entry PC for f.
 //
@@ -806,8 +804,7 @@ internal static ΔfuncInfo findfunc(uintptr pc) {
     if (!ok) {
         return new ΔfuncInfo(nil);
     }
-    var x = (uintptr)pcOff + (~datap).text - (~datap).minpc;
-    // TODO: are datap.text and datap.minpc always equal?
+    var x = (uintptr)pcOff + (~datap).text - (~datap).minpc; // TODO: are datap.text and datap.minpc always equal?
     var b = x / (uintptr)abi.FuncTabBucketSize;
     var i = x % (uintptr)abi.FuncTabBucketSize / (uintptr)((uintptr)abi.FuncTabBucketSize / nsub);
     var ffb = (ж<findfuncbucket>)(uintptr)(add((@unsafe.Pointer)(~datap).findfunctab, b * /* unsafe.Sizeof(findfuncbucket{}) */ (uintptr)20));
@@ -1153,8 +1150,7 @@ internal static @unsafe.Pointer funcdata(ΔfuncInfo f, uint8 i) {
     if (i < 0 || i >= f.nfuncdata) {
         return default!;
     }
-    var @base = f.datap.Value.gofunc;
-    // load gofunc address early so that we calculate during cache misses
+    var @base = f.datap.Value.gofunc; // load gofunc address early so that we calculate during cache misses
     var Δp = (uintptr)Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata) + /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)f.npcdata * 4 + (uintptr)i * 4;
     var off = ~(ж<uint32>)(uintptr)((@unsafe.Pointer)Δp);
     // Return off == ^uint32(0) ? 0 : f.datap.gofunc + uintptr(off), but without branches.

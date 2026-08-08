@@ -104,10 +104,8 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         defer(checkʗ1.handleBailout, Ꮡerr, ref ᒐ);
         // evaluate node
         ref var x = ref heap(new operand(), out var Ꮡx);
-        check.rawExpr(nil, Ꮡx, expr, default!, true);
-        // allow generic expressions
-        check.processDelayed(0);
-        // incl. all functions
+        check.rawExpr(nil, Ꮡx, expr, default!, true); // allow generic expressions
+        check.processDelayed(0); // incl. all functions
         check.recordUntyped();
         err = default!;
     }

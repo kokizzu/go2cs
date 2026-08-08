@@ -139,22 +139,18 @@ internal static slice<Node> nodeList(Node n) {
 // assignment rather than just the last operand in the assignment.
 public static CommentMap NewCommentMap(ж<token.FileSet> Ꮡfset, Node node, slice<ж<CommentGroup>> comments) {
     if (len(comments) == 0) {
-        return default!;
+        return default!; // no comments to map
     }
-    // no comments to map
     var cmap = new CommentMap(0);
     // set up comment reader r
     var tmp = new slice<ж<CommentGroup>>(len(comments));
-    copy(tmp, comments);
-    // don't change incoming comments
+    copy(tmp, comments); // don't change incoming comments
     sortComments(tmp);
-    var r = new commentListReader(fset: Ꮡfset, list: tmp);
-    // !r.eol() because len(comments) > 0
+    var r = new commentListReader(fset: Ꮡfset, list: tmp); // !r.eol() because len(comments) > 0
     r.next();
     // create node list in lexical order
     var nodes = nodeList(node);
-    nodes = append(nodes, (Node)(default!));
-    // append sentinel
+    nodes = append(nodes, (Node)(default!)); // append sentinel
     // set up iteration variables
     Node p = default!;                       // previous node
     
@@ -168,9 +164,8 @@ public static CommentMap NewCommentMap(ж<token.FileSet> Ꮡfset, Node node, sli
     foreach (var (_, q) in nodes) {
         tokenꓸPosition qpos = default!;
         if (q != default!){
-            qpos = Ꮡfset.Position(q.Pos());
+            qpos = Ꮡfset.Position(q.Pos()); // current node position
         } else {
-            // current node position
             // set fake sentinel position to infinity so that
             // all comments get processed before the sentinel
             const nint infinity = /* 1 << 30 */ 1073741824;

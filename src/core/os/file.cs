@@ -194,9 +194,8 @@ public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
     }
     (n, var handled, var e) = f.readFrom(r);
     if (!handled) {
-        return genericReadFrom(Ꮡf, r);
+        return genericReadFrom(Ꮡf, r); // without wrapping
     }
-    // without wrapping
     return (n, f.wrapErr(writeˢ, e));
 }
 
@@ -301,10 +300,8 @@ public static (int64 n, error err) WriteTo(this ж<File> Ꮡf, Δio.Writer w) {
     if (handled) {
         return (n, f.wrapErr(readˢ, e));
     }
-    return genericWriteTo(Ꮡf, w);
+    return genericWriteTo(Ꮡf, w); // without wrapping
 }
-
-// without wrapping
 
 // noWriteTo can be embedded alongside another type to
 // hide the WriteTo method of that other type.
@@ -401,8 +398,7 @@ internal static error setStickyBit(@string name) {
 public static error Chdir(@string dir) {
     {
         var e = syscall.Chdir(dir); if (e != default!) {
-            testlog.Open(dir);
-            // observe likely non-existent directory
+            testlog.Open(dir); // observe likely non-existent directory
             return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "chdir"u8, Path: dir, Err: e)));
         }
     }
@@ -912,8 +908,7 @@ public static (slice<byte>, error) ReadFile(@string name) {
                 }
             }
         }
-        size++;
-        // one byte for final read at EOF
+        size++; // one byte for final read at EOF
         // If a file claims a small size, read at least 512 bytes.
         // In particular, files in Linux's /proc claim size 0 but
         // then do not work right if read in small pieces,

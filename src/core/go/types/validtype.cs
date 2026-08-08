@@ -172,8 +172,7 @@ internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
                     // A type parameter stands for the type (argument) it was instantiated with.
                     // Check the corresponding type argument for validity if we are in an
                     // instantiated type.
-                    var inst = nest[d];
-                    // the type instance
+                    var inst = nest[d]; // the type instance
                     // Find the corresponding type argument for the type parameter
                     // and proceed with checking that type argument.
                     foreach (var (i, tparam) in inst.TypeParams().list()) {

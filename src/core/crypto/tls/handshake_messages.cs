@@ -118,8 +118,7 @@ internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bo
         exts.AddUint16(extensionServerName);
         Ꮡexts.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ1) => {
             extsΔ1.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ2) => {
-                extsΔ2.AddUint8(0);
-                // name_type = host_name
+                extsΔ2.AddUint8(0); // name_type = host_name
                 extsΔ2.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ3) => {
                     extsΔ3.AddBytes(slice<byte>(Ꮡm.Value.serverName));
                 });
@@ -154,21 +153,18 @@ internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bo
     if (m.extendedMasterSecret && !echInner) {
         // RFC 7627
         exts.AddUint16(extensionExtendedMasterSecret);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (m.scts) {
         // RFC 6962, Section 3.3.1
         exts.AddUint16(extensionSCT);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (m.earlyData) {
         // RFC 8446, Section 4.2.10
         exts.AddUint16(extensionEarlyData);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (m.quicTransportParameters != default!) {
         // marshal zero-length parameters when present
         // RFC 9001, Section 8.2
@@ -195,15 +191,12 @@ internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bo
         } else {
             exts.AddUint16(extensionStatusRequest);
             Ꮡexts.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ11) => {
-                extsΔ11.AddUint8(1);
-                // status_type = ocsp
-                extsΔ11.AddUint16(0);
-                // empty responder_id_list
-                extsΔ11.AddUint16(0);
+                extsΔ11.AddUint8(1); // status_type = ocsp
+                extsΔ11.AddUint16(0); // empty responder_id_list
+                extsΔ11.AddUint16(0); // empty request_extensions
             });
         }
     }
-    // empty request_extensions
     if (len(m.supportedCurves) > 0) {
         // RFC 4492, sections 5.1.1 and RFC 8446, Section 4.2.7
         if (echInner){
@@ -411,11 +404,9 @@ internal static (slice<byte>, error) marshal(this ж<clientHelloMsg> Ꮡm) {
 internal static (slice<byte>, error) marshalWithoutBinders(this ж<clientHelloMsg> Ꮡm) {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    nint bindersLen = 2;
-    // uint16 length prefix
+    nint bindersLen = 2; // uint16 length prefix
     foreach (var (_, binder) in m.pskBinders) {
-        bindersLen += 1;
-        // uint8 length prefix
+        bindersLen += 1; // uint8 length prefix
         bindersLen += len(binder);
     }
     slice<byte> fullMessage = default!;
@@ -689,9 +680,8 @@ internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
         case extensionPreSharedKey: {
             if (!extensions.Empty()) {
                 // RFC 8446, Section 4.2.11
-                return false;
+                return false; // pre_shared_key must be the last extension
             }
-// pre_shared_key must be the last extension
             ref var identities = ref heap<cryptobyte.String>(out var Ꮡidentities);
             if (!extData.ReadUint16LengthPrefixed(Ꮡidentities) || identities.Empty()) {
                 return false;
@@ -798,14 +788,12 @@ internal static (slice<byte>, error) marshal(this ж<serverHelloMsg> Ꮡm) {
     ref var exts = ref heap(new cryptobyte.Builder(), out var Ꮡexts);
     if (m.ocspStapling) {
         exts.AddUint16(extensionStatusRequest);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (m.ticketSupported) {
         exts.AddUint16(extensionSessionTicket);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (m.secureRenegotiationSupported) {
         exts.AddUint16(extensionRenegotiationInfo);
         Ꮡexts.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ1) => {
@@ -816,9 +804,8 @@ internal static (slice<byte>, error) marshal(this ж<serverHelloMsg> Ꮡm) {
     }
     if (m.extendedMasterSecret) {
         exts.AddUint16(extensionExtendedMasterSecret);
-        exts.AddUint16(0);
+        exts.AddUint16(0); // empty extension_data
     }
-    // empty extension_data
     if (len(m.alpnProtocol) > 0) {
         exts.AddUint16(extensionALPN);
         Ꮡexts.AddUint16LengthPrefixed((ж<cryptobyte.Builder> extsΔ3) => {
@@ -1100,9 +1087,8 @@ internal static (slice<byte>, error) marshal(this ж<encryptedExtensionsMsg> Ꮡ
             if (Ꮡm.Value.earlyData) {
                 // RFC 8446, Section 4.2.10
                 bΔ2.AddUint16(extensionEarlyData);
-                bΔ2.AddUint16(0);
+                bΔ2.AddUint16(0); // empty extension_data
             }
-            // empty extension_data
             if (len(Ꮡm.Value.echRetryConfigs) > 0) {
                 bΔ2.AddUint16(extensionEncryptedClientHello);
                 bΔ2.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ7) => {
@@ -1313,9 +1299,8 @@ internal static (slice<byte>, error) marshal(this ж<certificateRequestMsgTLS13>
         bΔ1.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ2) => {
             if (Ꮡm.Value.ocspStapling) {
                 bΔ2.AddUint16(extensionStatusRequest);
-                bΔ2.AddUint16(0);
+                bΔ2.AddUint16(0); // empty extension_data
             }
-            // empty extension_data
             if (Ꮡm.Value.scts) {
                 // RFC 8446, Section 4.4.2.1 makes no mention of
                 // signed_certificate_timestamp in CertificateRequest, but
@@ -1323,9 +1308,8 @@ internal static (slice<byte>, error) marshal(this ж<certificateRequestMsgTLS13>
                 // correspond to extensions in the CertificateRequest message
                 // from the server." and it appears in the table in Section 4.2.
                 bΔ2.AddUint16(extensionSCT);
-                bΔ2.AddUint16(0);
+                bΔ2.AddUint16(0); // empty extension_data
             }
-            // empty extension_data
             if (len(Ꮡm.Value.supportedSignatureAlgorithms) > 0) {
                 bΔ2.AddUint16(extensionSignatureAlgorithms);
                 bΔ2.AddUint16LengthPrefixed((ж<cryptobyte.Builder> bΔ3) => {
@@ -1517,8 +1501,7 @@ internal static (slice<byte>, error) marshal(this ж<certificateMsgTLS13> Ꮡm) 
     ref var b = ref heap(new cryptobyte.Builder(), out var Ꮡb);
     b.AddUint8(typeCertificate);
     Ꮡb.AddUint24LengthPrefixed((ж<cryptobyte.Builder> bΔ1) => {
-        bΔ1.AddUint8(0);
-        // certificate_request_context
+        bΔ1.AddUint8(0); // certificate_request_context
         var certificate = Ꮡm.Value.certificate;
         if (!Ꮡm.Value.ocspStapling) {
             certificate.OCSPStaple = default!;

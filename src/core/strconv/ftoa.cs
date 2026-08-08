@@ -301,8 +301,7 @@ internal static void roundShortest(ж<@decimal> Ꮡd, uint64 mant, nint exp, ж<
     // So the number is already shortest if 10^(dp-nd) > 2^(exp-mantbits),
     // or equivalently log2(10)*(dp-nd) > exp-mantbits.
     // It is true if 332/100*(dp-nd) >= exp-mantbits (log2(10) > 3.32).
-    nint minexp = flt.bias + 1;
-    // minimum possible exponent
+    nint minexp = flt.bias + 1; // minimum possible exponent
     if (exp > minexp && 332 * (d.dp - d.nd) >= 100 * (exp - (nint)flt.mantbits)) {
         // The number is already shortest.
         return;
@@ -358,18 +357,15 @@ internal static void roundShortest(ж<@decimal> Ꮡd, uint64 mant, nint exp, ж<
             break;
         }
         nint li = ui - (~upper).dp + (~lower).dp;
-        var l = (byte)(rune)'0';
-        // lower digit
+        var l = (byte)(rune)'0'; // lower digit
         if (li >= 0 && li < (~lower).nd) {
             l = (~lower).d[li];
         }
-        var m = (byte)(rune)'0';
-        // middle digit
+        var m = (byte)(rune)'0'; // middle digit
         if (mi >= 0) {
             m = d.d[mi];
         }
-        var u = (byte)(rune)'0';
-        // upper digit
+        var u = (byte)(rune)'0'; // upper digit
         if (ui < (~upper).nd) {
             u = (~upper).d[ui];
         }
@@ -575,8 +571,7 @@ internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg,
     }
     dst = append(dst, (byte)((rune)'0'), fmt, (rune)'0' + (byte)((uint64)(((mant >> (int)(60))) & 1)));
     // .fraction
-    mant <<= (int)(4);
-    // remove leading 0 or 1
+    mant <<= (int)(4); // remove leading 0 or 1
     if (prec < 0 && mant != 0){
         dst = append(dst, (byte)((rune)'.'));
         while (mant != 0) {

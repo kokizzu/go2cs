@@ -33,10 +33,9 @@ internal static (float64 @int, float64 frac) modf(float64 f) {
             return (-@int, -frac);
         }
         case {} when f is 0D: {
-            return (f, f);
+            return (f, f); // Return -0, -0 when f == -0
         }}
 
-        // Return -0, -0 when f == -0
         return (0D, f);
     }
     var x = Float64bits(f);

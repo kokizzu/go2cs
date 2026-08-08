@@ -63,8 +63,7 @@ internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, 
         defer(Ꮡpr.of(pkgReader.Ꮡfake).setLines, ref ᒐ);
         var r = Ꮡpr.newReader(pkgbits.RelocMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic);
         var pkg = r.pkg();
-        r.of(reader.ᏑDecoder).Bool();
-        // TODO(mdempsky): Remove; was "has init"
+        r.of(reader.ᏑDecoder).Bool(); // TODO(mdempsky): Remove; was "has init"
         for ((nint i, nint n) = (0, r.of(reader.ᏑDecoder).Len()); i < n; i++) {
             // As if r.obj(), but avoiding the Scope.Lookup call,
             // to avoid eager loading of imports.
@@ -225,13 +224,12 @@ internal static ж<types.Package> doPkg(this ж<reader> Ꮡr) {
         path = r.p.of(pkgReader.ᏑPkgDecoder).PkgPath();
     }
     else if (exprᴛ1 == "builtin"u8) {
-        return default!;
+        return default!; // universe
     }
     else if (exprᴛ1 == "unsafe"u8) {
         return types.Unsafe;
     }
 
-    // universe
     {
         var pkgΔ1 = (~r.p).imports[path]; if (pkgΔ1 != nil) {
             return pkgΔ1;
@@ -626,8 +624,7 @@ internal static ж<types.Func> method(this ж<reader> Ꮡr) {
     var (pkg, name) = Ꮡr.selector();
     var rparams = Ꮡr.typeParamNames();
     var sig = Ꮡr.signature(Ꮡr.param(), rparams, default!);
-    _ = Ꮡr.pos();
-    // TODO(mdempsky): Remove; this is a hacker for linker.go.
+    _ = Ꮡr.pos(); // TODO(mdempsky): Remove; this is a hacker for linker.go.
     return types.NewFunc(pos, pkg, name, sig);
 }
 
@@ -669,11 +666,10 @@ internal static ж<types.TypeName> newAliasTypeName(tokenꓸPos pos, ж<types.Pa
     var exprᴛ1 = godebug.New(gotypesaliasˢ).Value();
     if (exprᴛ1 == ""u8 || exprᴛ1 == "1"u8) {
         var tname = types.NewTypeName(pos, Ꮡpkg, name, default!);
-        _ = types.NewAlias(tname, rhs);
+        _ = types.NewAlias(tname, rhs); // form TypeName -> Alias cycle
         return tname;
     }
 
-    // form TypeName -> Alias cycle
     return types.NewTypeName(pos, Ꮡpkg, name, rhs);
 }
 

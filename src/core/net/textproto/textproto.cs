@@ -150,8 +150,7 @@ internal static bool isASCIISpace(byte b) {
 }
 
 internal static bool isASCIILetter(byte b) {
-    b |= (byte)(0x20);
-    // make lower case
+    b |= (byte)(0x20); // make lower case
     return (rune)'a' <= b && b <= (rune)'z';
 }
 

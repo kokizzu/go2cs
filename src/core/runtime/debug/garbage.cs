@@ -50,8 +50,7 @@ public static void ReadGCStats(ж<GCStats> Ꮡstats) {
     stats.LastGC = time.Unix(0, (int64)stats.Pause[n]);
     stats.NumGC = (int64)stats.Pause[n + 1];
     stats.PauseTotal = stats.Pause[n + 2];
-    n /= 2;
-    // buffer holds pauses and end times
+    n /= 2; // buffer holds pauses and end times
     stats.Pause = stats.Pause[..(int)(n)];
     if (cap(stats.PauseEnd) < maxPause) {
         stats.PauseEnd = new slice<time.Time>(0, maxPause);

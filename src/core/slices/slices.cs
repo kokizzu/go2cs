@@ -163,8 +163,7 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
 {
     var v = vʗp.slice();
 
-    _ = subslice<S, E>(s, i, -1);
-    // bounds check
+    _ = subslice<S, E>(s, i, -1); // bounds check
     nint m = len(v);
     if (m == 0) {
         return s;
@@ -241,15 +240,13 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
 public static S Delete<S, E>(S s, nint i, nint j)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
-    _ = subslice3<S, E>(s, i, j, len(s));
-    // bounds check
+    _ = subslice3<S, E>(s, i, j, len(s)); // bounds check
     if (i == j) {
         return s;
     }
     nint oldlen = len(s);
     s = append(subslice<S, E>(s, -1, i), subslice<S, E>(s, j, -1).ꓸꓸꓸ);
-    clear(subslice<S, E>(s, len(s), oldlen));
-    // zero/nil out the obsolete elements, for GC
+    clear(subslice<S, E>(s, len(s), oldlen)); // zero/nil out the obsolete elements, for GC
     return s;
 }
 
@@ -272,8 +269,7 @@ public static S DeleteFunc<S, E>(S s, Func<E, bool> del)
             }
         }
     }
-    clear(subslice<S, E>(s, i, -1));
-    // zero/nil out the obsolete elements, for GC
+    clear(subslice<S, E>(s, i, -1)); // zero/nil out the obsolete elements, for GC
     return subslice<S, E>(s, -1, i);
 }
 
@@ -286,24 +282,21 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
 {
     var v = vʗp.slice();
 
-    _ = subslice<S, E>(s, i, j);
-    // bounds check
+    _ = subslice<S, E>(s, i, j); // bounds check
     if (i == j) {
         return Insert(s, i, v.ꓸꓸꓸ);
     }
     if (j == len(s)) {
         var s2 = append(subslice<S, E>(s, -1, i), v.ꓸꓸꓸ);
         if (len(s2) < len(s)) {
-            clear(subslice<S, E>(s, len(s2), -1));
+            clear(subslice<S, E>(s, len(s2), -1)); // zero/nil out the obsolete elements, for GC
         }
-        // zero/nil out the obsolete elements, for GC
         return s2;
     }
     nint tot = len(subslice<S, E>(s, -1, i)) + len(v) + len(subslice<S, E>(s, j, -1));
     if (tot > cap(s)) {
         // Too big to fit, allocate and copy over.
-        var s2 = append(subslice<S, E>(s, -1, i), make<S>(tot - i).ꓸꓸꓸ);
-        // See Insert
+        var s2 = append(subslice<S, E>(s, -1, i), make<S>(tot - i).ꓸꓸꓸ); // See Insert
         copy(subslice<S, E>(s2, i, -1), v);
         copy(subslice<S, E>(s2, i + len(v), -1), subslice<S, E>(s, j, -1));
         return s2;
@@ -313,8 +306,7 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
         // Easy, as v fits in the deleted portion.
         copy(subslice<S, E>(r, i, -1), v);
         copy(subslice<S, E>(r, i + len(v), -1), subslice<S, E>(s, j, -1));
-        clear(subslice<S, E>(s, tot, -1));
-        // zero/nil out the obsolete elements, for GC
+        clear(subslice<S, E>(s, tot, -1)); // zero/nil out the obsolete elements, for GC
         return r;
     }
     // We are expanding (v is bigger than j-i).
@@ -345,8 +337,7 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     //        i   j  len(s) tot
     //
     // If either of those two destinations don't alias v, then we're good.
-    nint y = len(v) - (j - i);
-    // length of y portion
+    nint y = len(v) - (j - i); // length of y portion
     if (!overlaps(new slice<E>(subslice<S, E>(r, i, j)), v)) {
         copy(subslice<S, E>(r, i, j), v[(int)(y)..]);
         copy(subslice<S, E>(r, len(s), -1), v[..(int)(y)]);
@@ -401,8 +392,7 @@ public static S Compact<S, E>(S s)
                     k++;
                 }
             }
-            clear(subslice<S, E>(s, k, -1));
-            // zero/nil out the obsolete elements, for GC
+            clear(subslice<S, E>(s, k, -1)); // zero/nil out the obsolete elements, for GC
             return subslice<S, E>(s, -1, k);
         }
     }
@@ -427,8 +417,7 @@ public static S CompactFunc<S, E>(S s, Func<E, E, bool> eq)
                     k++;
                 }
             }
-            clear(subslice<S, E>(s, k, -1));
-            // zero/nil out the obsolete elements, for GC
+            clear(subslice<S, E>(s, k, -1)); // zero/nil out the obsolete elements, for GC
             return subslice<S, E>(s, -1, k);
         }
     }

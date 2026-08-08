@@ -603,10 +603,9 @@ internal static bool isOldHeading(@string line, slice<@string> all, nint off) {
             }
         }
         if (b != "s"u8 && !strings.HasPrefix(b, "s "u8)) {
-            return false;
+            return false; // ' not followed by s and then end-of-word
         }
     }
-    // ' not followed by s and then end-of-word
     // allow "." when followed by non-space
     for (@string b = line; ᐧ ; ) {
         bool ok = default!;
@@ -616,10 +615,9 @@ internal static bool isOldHeading(@string line, slice<@string> all, nint off) {
             }
         }
         if (b == ""u8 || strings.HasPrefix(b, " "u8)) {
-            return false;
+            return false; // not followed by non-space
         }
     }
-    // not followed by non-space
     return true;
 }
 
@@ -641,8 +639,7 @@ internal static bool isHeading(@string line) {
 // code returns a code block built from the lines.
 [GoRecv] internal static ж<Code> code(this ref parseDoc d, slice<@string> lines) {
     var body = unindent(lines);
-    body = append(body, ""u8);
-    // to get final \n from Join
+    body = append(body, ""u8); // to get final \n from Join
     return Ꮡ(new Code(Text: strings.Join(body, "\n"u8)));
 }
 

@@ -216,9 +216,8 @@ internal static (ж<routingNode>, slice<@string>) matchPath(this ж<routingNode>
             // Don't record a match for a nameless wildcard (which arises from a
             // trailing slash in the pattern).
             if ((~c).pattern.lastSegment().s != ""u8) {
-                matches = append(matches, pathUnescape(path[1..]));
+                matches = append(matches, pathUnescape(path[1..])); // remove initial slash
             }
-            // remove initial slash
             return (c, matches);
         }
     }
@@ -236,8 +235,7 @@ internal static (@string seg, @string rest) firstSegment(@string path) {
     if (path == "/"u8) {
         return ("/", "");
     }
-    path = path[1..];
-    // drop initial slash
+    path = path[1..]; // drop initial slash
     nint i = strings.IndexByte(path, (rune)'/');
     if (i < 0) {
         i = builtin.len(path);

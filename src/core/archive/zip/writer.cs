@@ -112,16 +112,13 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
             // the file needs a zip64 header. store maxint in both
             // 32 bit size fields (and offset later) to signal that the
             // zip64 extra header should be used.
-            bΔ1.uint32(uint32max);
-            // compressed size
-            bΔ1.uint32(uint32max);
-            // uncompressed size
+            bΔ1.uint32(uint32max); // compressed size
+            bΔ1.uint32(uint32max); // uncompressed size
             // append a zip64 extra block to Extra
             array<byte> bufΔ2 = new(28);            // 2x uint16 + 3x uint64
             var eb = ((writeBuf)(bufΔ2[..]));
             eb.uint16(zip64ExtraID);
-            eb.uint16(24);
-            // size = 3x uint64
+            eb.uint16(24); // size = 3x uint64
             eb.uint64((~h).UncompressedSize64);
             eb.uint64((~h).CompressedSize64);
             eb.uint64((~h).offset);
@@ -133,8 +130,7 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
         bΔ1.uint16((uint16)len((~h).Name));
         bΔ1.uint16((uint16)len((~h).Extra));
         bΔ1.uint16((uint16)len((~h).Comment));
-        bΔ1 = bΔ1[4..];
-        // skip disk number start and internal file attr (2x uint16)
+        bΔ1 = bΔ1[4..]; // skip disk number start and internal file attr (2x uint16)
         bΔ1.uint32((~h).ExternalAttrs);
         if ((~h).offset > uint32max){
             bΔ1.uint32(uint32max);
@@ -176,32 +172,20 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
         var bΔ2 = ((writeBuf)(bufΔ3[..]));
         // zip64 end of central directory record
         bΔ2.uint32(directory64EndSignature);
-        bΔ2.uint64(directory64EndLen - 12);
-        // length minus signature (uint32) and length fields (uint64)
-        bΔ2.uint16(zipVersion45);
-        // version made by
-        bΔ2.uint16(zipVersion45);
-        // version needed to extract
-        bΔ2.uint32(0);
-        // number of this disk
-        bΔ2.uint32(0);
-        // number of the disk with the start of the central directory
-        bΔ2.uint64(records);
-        // total number of entries in the central directory on this disk
-        bΔ2.uint64(records);
-        // total number of entries in the central directory
-        bΔ2.uint64(size);
-        // size of the central directory
-        bΔ2.uint64(offset);
-        // offset of start of central directory with respect to the starting disk number
+        bΔ2.uint64(directory64EndLen - 12); // length minus signature (uint32) and length fields (uint64)
+        bΔ2.uint16(zipVersion45); // version made by
+        bΔ2.uint16(zipVersion45); // version needed to extract
+        bΔ2.uint32(0); // number of this disk
+        bΔ2.uint32(0); // number of the disk with the start of the central directory
+        bΔ2.uint64(records); // total number of entries in the central directory on this disk
+        bΔ2.uint64(records); // total number of entries in the central directory
+        bΔ2.uint64(size); // size of the central directory
+        bΔ2.uint64(offset); // offset of start of central directory with respect to the starting disk number
         // zip64 end of central directory locator
         bΔ2.uint32(directory64LocSignature);
-        bΔ2.uint32(0);
-        // number of the disk with the start of the zip64 end of central directory
-        bΔ2.uint64((uint64)end);
-        // relative offset of the zip64 end of central directory record
-        bΔ2.uint32(1);
-        // total number of disks
+        bΔ2.uint32(0); // number of the disk with the start of the zip64 end of central directory
+        bΔ2.uint64((uint64)end); // relative offset of the zip64 end of central directory record
+        bΔ2.uint32(1); // total number of disks
         {
             var (_, err) = w.cw.Write(bufΔ3[..]); if (err != default!) {
                 return err;
@@ -217,18 +201,12 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
     array<byte> buf = new(22); /* directoryEndLen */
     var b = ((writeBuf)(buf[..]));
     b.uint32((uint32)directoryEndSignature);
-    b = b[4..];
-    // skip over disk number and first disk number (2x uint16)
-    b.uint16((uint16)records);
-    // number of entries this disk
-    b.uint16((uint16)records);
-    // number of entries total
-    b.uint32((uint32)size);
-    // size of directory
-    b.uint32((uint32)offset);
-    // start of directory
-    b.uint16((uint16)len(w.comment));
-    // byte size of EOCD comment
+    b = b[4..]; // skip over disk number and first disk number (2x uint16)
+    b.uint16((uint16)records); // number of entries this disk
+    b.uint16((uint16)records); // number of entries total
+    b.uint32((uint32)size); // size of directory
+    b.uint32((uint32)offset); // start of directory
+    b.uint16((uint16)len(w.comment)); // byte size of EOCD comment
     {
         var (_, err) = w.cw.Write(buf[..]); if (err != default!) {
             return err;
@@ -349,8 +327,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
         break;
     }}
 
-    fh.CreatorVersion = (uint16)((uint16)(fh.CreatorVersion & 0xff00) | (uint16)zipVersion20);
-    // preserve compatibility byte
+    fh.CreatorVersion = (uint16)((uint16)(fh.CreatorVersion & 0xff00) | (uint16)zipVersion20); // preserve compatibility byte
     fh.ReaderVersion = zipVersion20;
     // If Modified is set, this takes precedence over MS-DOS timestamp fields.
     if (!fh.Modified.IsZero()) {
@@ -373,12 +350,9 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
         var mt = (uint32)fh.Modified.Unix();
         var eb = ((writeBuf)(mbuf[..]));
         eb.uint16(extTimeExtraID);
-        eb.uint16(5);
-        // Size: SizeOf(uint8) + SizeOf(uint32)
-        eb.uint8(1);
-        // Flags: ModTime
-        eb.uint32(mt);
-        // ModTime
+        eb.uint16(5); // Size: SizeOf(uint8) + SizeOf(uint32)
+        eb.uint8(1); // Flags: ModTime
+        eb.uint32(mt); // ModTime
         fh.Extra = append(fh.Extra, mbuf[..].ꓸꓸꓸ);
     }
     io.Writer ow = default!;
@@ -393,8 +367,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
         // This is necessary as most compression formats have non-zero lengths
         // even when compressing an empty string.
         fh.Method = Store;
-        fh.Flags &= unchecked((uint16)~(uint16)(0x8));
-        // we will not write a data descriptor
+        fh.Flags &= unchecked((uint16)~(uint16)(0x8)); // we will not write a data descriptor
         // Explicitly clear sizes as they have no meaning for directories.
         fh.CompressedSize = 0;
         fh.CompressedSize64 = 0;
@@ -402,8 +375,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
         fh.UncompressedSize64 = 0;
         ow = new dirWriter(nil);
     } else {
-        fh.Flags |= (uint16)(0x8);
-        // we will write a data descriptor
+        fh.Flags |= (uint16)(0x8); // we will write a data descriptor
         fw = Ꮡ(new fileWriter(
             zipw: new countWriterжWriter(w.cw),
             compCount: Ꮡ(new countWriter(w: new countWriterжWriter(w.cw))),
@@ -461,13 +433,10 @@ internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
     } else {
         // When this package handle the compression, these values are
         // always written to the trailing data descriptor.
-        b.uint32(0);
-        // crc32
-        b.uint32(0);
-        // compressed size
-        b.uint32(0);
+        b.uint32(0); // crc32
+        b.uint32(0); // compressed size
+        b.uint32(0); // uncompressed size
     }
-    // uncompressed size
     b.uint16((uint16)len(h.Name));
     b.uint16((uint16)len(h.Extra));
     {
@@ -674,9 +643,8 @@ internal static readonly @string zipFileClosedTwiceˢ = "zip: file closed twice"
     if (fh.isZip64()){
         fh.Value.CompressedSize = uint32max;
         fh.Value.UncompressedSize = uint32max;
-        fh.Value.ReaderVersion = zipVersion45;
+        fh.Value.ReaderVersion = zipVersion45; // requires 4.5 - File uses ZIP64 format extensions
     } else {
-        // requires 4.5 - File uses ZIP64 format extensions
         fh.Value.CompressedSize = (uint32)(~fh).CompressedSize64;
         fh.Value.UncompressedSize = (uint32)(~fh).UncompressedSize64;
     }
@@ -699,8 +667,7 @@ internal static readonly @string zipFileClosedTwiceˢ = "zip: file closed twice"
         buf = new slice<byte>(dataDescriptorLen);
     }
     var b = ((writeBuf)buf);
-    b.uint32(dataDescriptorSignature);
-    // de-facto standard, required by OS X
+    b.uint32(dataDescriptorSignature); // de-facto standard, required by OS X
     b.uint32(w.CRC32);
     if (w.isZip64()){
         b.uint64(w.CompressedSize64);

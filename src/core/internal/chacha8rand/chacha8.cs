@@ -48,10 +48,8 @@ internal static partial void block(ж<array<uint64>> seed, ж<array<uint64>> blo
         return (0, false);
     }
     s.i = i + 1;
-    return (s.buf[(nint)((uint32)(i & 31))], true);
+    return (s.buf[(nint)((uint32)(i & 31))], true); // i&31 eliminates bounds check
 }
-
-// i&31 eliminates bounds check
 
 // Init seeds the State with the given seed value.
 public static void Init(this ж<State> Ꮡs, array<byte> seed) {

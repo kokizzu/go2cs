@@ -50,8 +50,7 @@ public static ж<Float> Sqrt(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     if (x.form != finite) {
         z.acc = Exact;
         z.form = x.form;
-        z.neg = x.neg;
-        // IEEE754-2008 requires √±0 = ±0
+        z.neg = x.neg; // IEEE754-2008 requires √±0 = ±0
         return Ꮡz;
     }
     // MantExp sets the argument's precision to the receiver's, and
@@ -107,16 +106,11 @@ internal static void sqrtInverse(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     ж<Float> ng(ж<Float> t) {
         uʗ1.Value.prec = t.Value.prec;
         vʗ1.Value.prec = t.Value.prec;
-        uʗ1.Mul(t, t);
-        // u = t²
-        uʗ1.Mul(Ꮡx, uʗ1);
-        //   = xt²
-        vʗ1.Sub(threeʗ1, uʗ1);
-        // v = 3 - xt²
-        uʗ1.Mul(t, vʗ1);
-        // u = t(3 - xt²)
-        uʗ1.Value.exp--;
-        //   = ½t(3 - xt²)
+        uʗ1.Mul(t, t); // u = t²
+        uʗ1.Mul(Ꮡx, uʗ1); //   = xt²
+        vʗ1.Sub(threeʗ1, uʗ1); // v = 3 - xt²
+        uʗ1.Mul(t, vʗ1); // u = t(3 - xt²)
+        uʗ1.Value.exp--; //   = ½t(3 - xt²)
         return t.Set(uʗ1);
     }
     var (xf, _) = Ꮡx.Float64();

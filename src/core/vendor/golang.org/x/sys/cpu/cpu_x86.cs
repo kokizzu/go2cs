@@ -105,8 +105,7 @@ internal static void archInit() {
     X86.HasERMS = isSet(9, ebx7);
     X86.HasRDSEED = isSet(18, ebx7);
     X86.HasADX = isSet(19, ebx7);
-    X86.HasAVX512 = isSet(16, ebx7) && osSupportsAVX512;
-    // Because avx-512 foundation is the core required extension
+    X86.HasAVX512 = isSet(16, ebx7) && osSupportsAVX512; // Because avx-512 foundation is the core required extension
     if (X86.HasAVX512) {
         X86.HasAVX512F = true;
         X86.HasAVX512CD = isSet(28, ebx7);

@@ -61,8 +61,7 @@ internal static (ж<userTypeInfo>, error) validUserType(reflectꓸType rt) {
     // cycle detection algorithm from Knuth, Vol 2, Section 3.1, Ex 6,
     // pp 539-540.  As we step through indirections, run another type at
     // half speed. If they meet up, there's a cycle.
-    var slowpoke = ut.Value.@base;
-    // walks half as fast as ut.base
+    var slowpoke = ut.Value.@base; // walks half as fast as ut.base
     while (ᐧ) {
         var pt = ut.Value.@base;
         if (pt.Kind() != reflect.ΔPointer) {

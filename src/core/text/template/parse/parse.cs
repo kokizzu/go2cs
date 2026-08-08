@@ -157,11 +157,9 @@ public static (@string location, @string context) ErrorContext(this ж<Tree> Ꮡ
     @string text = (~tree).text[..(int)(pos)];
     nint byteNum = strings.LastIndex(text, "\n"u8);
     if (byteNum == -1){
-        byteNum = pos;
+        byteNum = pos; // On first line.
     } else {
-        // On first line.
-        byteNum++;
-        // After the newline.
+        byteNum++; // After the newline.
         byteNum = pos - byteNum;
     }
     nint lineNum = 1 + strings.Count(text, "\n"u8);
@@ -211,10 +209,9 @@ internal static readonly @string actionˢ = " action"u8;
         if (t.actionLine != 0 && t.actionLine != token.line) {
             extra = fmt.Sprintf(" in action started at %s:%d"u8, t.ParseName, t.actionLine);
             if (strings.HasSuffix(token.val, actionˢ)) {
-                extra = extra[(int)(len(" in action"))..];
+                extra = extra[(int)(len(" in action"))..]; // avoid "action in action"
             }
         }
-        // avoid "action in action"
         t.errorf("%s%s"u8, token, extra);
     }
     t.errorf("unexpected %s in %s"u8, token, context);
@@ -371,8 +368,7 @@ internal static void parse(this ж<Tree> Ꮡt) {
         if (t.peek().typ == itemLeftDelim) {
             var delim = t.next();
             if (t.nextNonSpace().typ == itemDefine) {
-                var newT = New(definitionˢ);
-                // name will be updated once we know it.
+                var newT = New(definitionˢ); // name will be updated once we know it.
                 newT.Value.text = t.text;
                 newT.Value.Mode = t.Mode;
                 newT.Value.ParseName = t.ParseName;
@@ -705,8 +701,7 @@ internal static (Pos pos, nint line, ж<PipeNode> pipe, ж<ListNode> list, ж<Li
                 //  {{with a}}_{{else}}{{with b}}_{{end}}{{end}}.
                 // To do this, parse the "if" or "with" as usual and stop at it {{end}};
                 // the subsequent{{end}} is assumed. This technique works even for long if-else-if chains.
-                t.next();
-                // Consume the "if" token.
+                t.next(); // Consume the "if" token.
                 elseList = Ꮡt.newList(next.Position());
                 elseList.append(Ꮡt.ifControl());
             } else 
@@ -813,8 +808,7 @@ internal static Node blockControl(this ж<Tree> Ꮡt) {
     var token = t.nextNonSpace();
     @string name = t.parseTemplateName(token, context);
     var pipe = Ꮡt.pipeline(context, itemRightDelim);
-    var block = New(name);
-    // name will be updated once we know it.
+    var block = New(name); // name will be updated once we know it.
     block.Value.text = t.text;
     block.Value.Mode = t.Mode;
     block.Value.ParseName = t.ParseName;
@@ -882,8 +876,7 @@ internal static ж<CommandNode> command(this ж<Tree> Ꮡt) {
 
     var cmd = Ꮡt.newCommand(t.peekNonSpace().pos);
     while (ᐧ) {
-        t.peekNonSpace();
-        // skip leading spaces.
+        t.peekNonSpace(); // skip leading spaces.
         var operand = Ꮡt.operand();
         if (operand != default!) {
             cmd.append(operand);

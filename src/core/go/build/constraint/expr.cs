@@ -242,11 +242,10 @@ internal static (Expr x, error err) parseExpr(@string text) {
                             return;
                         }
                     }
-                    throw panic(e);
+                    throw panic(e); // unreachable unless parser has a bug
                 }
             }
         }, ref ᒐ);
-        // unreachable unless parser has a bug
         var p = Ꮡ(new exprParser(s: text));
         x = p.or();
         if ((~p).tok != ""u8) {
