@@ -1,6 +1,6 @@
 # DESIGN — one corpus, three platforms: what a multiplatform standard library costs, and how it ships
 
-> **STATUS: PROPOSED.** This is a proposal for a user ruling, not a landed decision. It changes no
+> **STATUS: ACCEPTED** (user ruling 2026-08-08: recommendations accepted as written — layout L3 + packaging option (a) RID assemblies; increments proceed in order). It changes no
 > emitter, no corpus, and no packaging. Everything below is **measured** — four seeded full-standard-library
 > conversions, three `go list` censuses and a `go/types` API-surface probe, run 2026-08-08 in lane
 > `r47c-goosdesign` against `739f3606ad`. Where a measurement contradicts an earlier ruling
