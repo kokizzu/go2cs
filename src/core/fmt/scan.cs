@@ -54,8 +54,6 @@ partial class fmt_package {
 // as space. It returns the number of items successfully scanned.
 // If that is less than the number of arguments, err will report why.
 public static (nint n, error err) Scan(params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fscan(new os_FileжReader(os.Stdin), a.ꓸꓸꓸ);
@@ -64,8 +62,6 @@ public static (nint n, error err) Scan(params ꓸꓸꓸany aʗp) {
 // Scanln is similar to [Scan], but stops scanning at a newline and
 // after the final item there must be a newline or EOF.
 public static (nint n, error err) Scanln(params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fscanln(new os_FileжReader(os.Stdin), a.ꓸꓸꓸ);
@@ -79,8 +75,6 @@ public static (nint n, error err) Scanln(params ꓸꓸꓸany aʗp) {
 // The one exception: the verb %c always scans the next rune in the
 // input, even if it is a space (or tab etc.) or newline.
 public static (nint n, error err) Scanf(@string format, params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     return Fscanf(new os_FileжReader(os.Stdin), format, a.ꓸꓸꓸ);
@@ -105,8 +99,6 @@ public static (nint n, error err) Scanf(@string format, params ꓸꓸꓸany aʗp
 // returns the number of items successfully scanned. If that is less
 // than the number of arguments, err will report why.
 public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
@@ -116,8 +108,6 @@ public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp
 // Sscanln is similar to [Sscan], but stops scanning at a newline and
 // after the final item there must be a newline or EOF.
 public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
@@ -129,8 +119,6 @@ public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany a�
 // returns the number of items successfully parsed.
 // Newlines in the input must match newlines in the format.
 public static (nint n, error err) Sscanf(@string strʗp, @string format, params ꓸꓸꓸany aʗp) {
-    nint n = default!;
-    error err = default!;
     var a = aʗp.slice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
@@ -215,9 +203,6 @@ internal static readonly @string scanStateSReadShouldNotˢ = "ScanState's Read s
 // satisfies io.Reader. It will never be called when used as
 // intended, so there is no need to make it actually work.
 [GoRecv] internal static (nint n, error err) Read(this ref ss s, slice<byte> buf) {
-    nint n = default!;
-    error err = default!;
-
     return (0, errors.New(scanStateSReadShouldNotˢ));
 }
 
@@ -244,9 +229,6 @@ internal static readonly @string scanStateSReadShouldNotˢ = "ScanState's Read s
 }
 
 [GoRecv] internal static (nint wid, bool ok) Width(this ref ss s) {
-    nint wid = default!;
-    bool ok = default!;
-
     if (s.maxWid == hugeWid) {
         return (0, false);
     }
@@ -734,10 +716,6 @@ internal static readonly @string expectedIntegerˢ = "expected integer"u8;
 // and returns the base, digit string, and whether a zero was found.
 // It is called only if the verb is %v.
 [GoRecv] internal static (nint @base, @string digits, bool zeroFound) scanBasePrefix(this ref ss s) {
-    nint @base = default!;
-    @string digits = default!;
-    bool zeroFound = default!;
-
     if (!s.peek("0"u8)) {
         return (0, decimalDigits + "_", false);
     }

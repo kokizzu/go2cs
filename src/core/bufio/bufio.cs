@@ -210,7 +210,6 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
 // then this Read method can do so as well; see the [io.Reader] docs.
 [GoRecv] public static (nint n, error err) Read(this ref Reader b, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     n = len(p);
     if (n == 0) {
@@ -303,7 +302,6 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
 [GoRecv] public static (rune r, nint size, error err) ReadRune(this ref Reader b) {
     rune r = default!;
     nint size = default!;
-    error err = default!;
 
     while (b.r + (nint)utf8.UTFMax > b.w && !utf8.FullRune(b.buf[(int)(b.r)..(int)(b.w)]) && b.err == default! && b.w - b.r < len(b.buf)) {
         b.fill(); // b.w-b.r < len(buf) => buffer is not full
@@ -455,7 +453,6 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
 // to minimize allocations and copies.
 [GoRecv] internal static (slice<slice<byte>> fullBuffers, slice<byte> finalFragment, nint totalLen, error err) collectFragments(this ref Reader b, byte delim) {
     slice<slice<byte>> fullBuffers = default!;
-    slice<byte> finalFragment = default!;
     nint totalLen = default!;
     error err = default!;
 
@@ -695,7 +692,6 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
 // why the write is short.
 [GoRecv] public static (nint nn, error err) Write(this ref Writer b, slice<byte> p) {
     nint nn = default!;
-    error err = default!;
 
     while (len(p) > b.Available() && b.err == default!) {
         nint nΔ1 = default!;

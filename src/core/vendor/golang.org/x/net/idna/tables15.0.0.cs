@@ -266,9 +266,6 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookup(this ref idnaTrie t, slice<byte> s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {
@@ -367,9 +364,6 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
 // the width in bytes of this encoding. The size will be 0 if s does not
 // hold enough bytes to complete the encoding. len(s) must be greater than 0.
 [GoRecv] internal static (uint16 v, nint sz) lookupString(this ref idnaTrie t, @string s) {
-    uint16 v = default!;
-    nint sz = default!;
-
     var c0 = s[0];
     switch (ᐧ) {
     case {} when c0 is < 0x80: {

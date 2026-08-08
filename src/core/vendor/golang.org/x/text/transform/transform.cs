@@ -224,7 +224,6 @@ public static ж<Writer> NewWriter(io.Writer w, Transformer t) {
 // for the next write. Call Close to convert the remaining bytes.
 [GoRecv] public static (nint n, error err) Write(this ref Writer w, slice<byte> data) {
     nint n = default!;
-    error err = default!;
 
     var src = data;
     if (w.n > 0) {
@@ -315,8 +314,6 @@ public static ж<Writer> NewWriter(io.Writer w, Transformer t) {
 }
 
 internal static (nint nDst, nint nSrc, error err) Transform(this nop _, slice<byte> dst, slice<byte> src, bool atEOF) {
-    nint nDst = default!;
-    nint nSrc = default!;
     error err = default!;
 
     nint n = copy(dst, src);
@@ -327,9 +324,6 @@ internal static (nint nDst, nint nSrc, error err) Transform(this nop _, slice<by
 }
 
 internal static (nint n, error err) Span(this nop _, slice<byte> src, bool atEOF) {
-    nint n = default!;
-    error err = default!;
-
     return (len(src), default!);
 }
 
@@ -338,10 +332,6 @@ internal static (nint n, error err) Span(this nop _, slice<byte> src, bool atEOF
 }
 
 internal static (nint nDst, nint nSrc, error err) Transform(this discard _, slice<byte> dst, slice<byte> src, bool atEOF) {
-    nint nDst = default!;
-    nint nSrc = default!;
-    error err = default!;
-
     return (0, len(src), default!);
 }
 
@@ -421,8 +411,6 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
 
 // Transform applies the transformers of c in sequence.
 [GoRecv] internal static (nint nDst, nint nSrc, error err) Transform(this ref chain c, slice<byte> dst, slice<byte> src, bool atEOF) {
-    nint nDst = default!;
-    nint nSrc = default!;
     error err = default!;
 
     // Set up src and dst in the chain.
@@ -597,8 +585,6 @@ internal static UntypedInt initialBufSize => 128;
 // String returns a string with the result of converting s[:n] using t, where
 // n <= len(s). If err == nil, n will be len(s). It calls Reset on t.
 public static (@string result, nint n, error err) String(Transformer t, @string s) {
-    @string result = default!;
-    nint n = default!;
     error err = default!;
 
     t.Reset();
@@ -708,20 +694,12 @@ public static (@string result, nint n, error err) String(Transformer t, @string 
 // Bytes returns a new byte slice with the result of converting b[:n] using t,
 // where n <= len(b). If err == nil, n will be len(b). It calls Reset on t.
 public static (slice<byte> result, nint n, error err) Bytes(Transformer t, slice<byte> b) {
-    slice<byte> result = default!;
-    nint n = default!;
-    error err = default!;
-
     return doAppend(t, 0, new slice<byte>(len(b)), b);
 }
 
 // Append appends the result of converting src[:n] using t to dst, where
 // n <= len(src), If err == nil, n will be len(src). It calls Reset on t.
 public static (slice<byte> result, nint n, error err) Append(Transformer t, slice<byte> dst, slice<byte> src) {
-    slice<byte> result = default!;
-    nint n = default!;
-    error err = default!;
-
     if (len(dst) == cap(dst)) {
         nint nΔ1 = len(src) + len(dst); // It is okay for this to be 0.
         var b = new slice<byte>(nΔ1);
@@ -731,10 +709,6 @@ public static (slice<byte> result, nint n, error err) Append(Transformer t, slic
 }
 
 internal static (slice<byte> result, nint n, error err) doAppend(Transformer t, nint pDst, slice<byte> dst, slice<byte> src) {
-    slice<byte> result = default!;
-    nint n = default!;
-    error err = default!;
-
     t.Reset();
     nint pSrc = 0;
     while (ᐧ) {

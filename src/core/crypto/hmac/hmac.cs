@@ -71,9 +71,6 @@ partial class hmac_package {
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref hmac h, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return h.inner.Write(p);
 }
 

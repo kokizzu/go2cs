@@ -222,11 +222,9 @@ internal static @string singleJoiningSlash(@string a, @string b) {
 }
 
 internal static (@string path, @string rawpath) joinURLPath(ж<url.URL> Ꮡa, ж<url.URL> Ꮡb) {
-    @string path = default!;
-    @string rawpath = default!;
-
     ref var a = ref Ꮡa.DerefOrNull();
     ref var b = ref Ꮡb.DerefOrNull();
+
     if (a.RawPath == ""u8 && b.RawPath == ""u8) {
         return (singleJoiningSlash(a.Path, b.Path), "");
     }

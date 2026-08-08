@@ -18,9 +18,6 @@ internal static partial @string modinfo();
 // in the running binary. The information is available only
 // in binaries built with module support.
 public static (ж<BuildInfo> info, bool ok) ReadBuildInfo() {
-    ж<BuildInfo> info = default!;
-    bool ok = default!;
-
     @string data = modinfo();
     if (len(data) < 32) {
         return (default!, false);

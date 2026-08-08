@@ -229,9 +229,6 @@ internal static (ж<routingNode>, slice<@string>) matchPath(this ж<routingNode>
 // If path consists of only a slash, firstSegment returns ("/", "").
 // The segment is returned unescaped, if possible.
 internal static (@string seg, @string rest) firstSegment(@string path) {
-    @string seg = default!;
-    @string rest = default!;
-
     if (path == "/"u8) {
         return ("/", "");
     }

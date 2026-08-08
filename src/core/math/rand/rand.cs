@@ -282,10 +282,8 @@ again:
 // always returns len(p) and a nil error.
 // Read should not be called concurrently with any other Rand method.
 public static (nint n, error err) Read(this ж<Rand> Ꮡr, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     ref var r = ref Ꮡr.DerefOrNull();
+
     switch (r.src.type()) {
     case ж<lockedSource> src: {
         return src.read(p, Ꮡr.of(Rand.ᏑreadVal), Ꮡr.of(Rand.ᏑreadPos));
@@ -523,9 +521,6 @@ public static void Shuffle(nint n, Action<nint, nint> swap) {
 // Deprecated: For almost all use cases, [crypto/rand.Read] is more appropriate.
 // If a deterministic source is required, use [math/rand/v2.ChaCha8.Read].
 public static (nint n, error err) Read(slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return globalRand().Read(p);
 }
 

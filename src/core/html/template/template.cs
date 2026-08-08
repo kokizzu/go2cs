@@ -578,9 +578,6 @@ internal static (ж<Template>, error) parseGlob(ж<Template> Ꮡt, @string patte
 // and whether the value has a meaningful truth value. This is the definition of
 // truth used by if and other such actions.
 public static (bool truth, bool ok) IsTrue(any val) {
-    bool truth = default!;
-    bool ok = default!;
-
     return text.template_package.IsTrue(val);
 }
 

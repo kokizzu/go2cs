@@ -491,10 +491,6 @@ public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
 // splitUSTARPath splits a path according to USTAR prefix and suffix rules.
 // If the path is not splittable, then it will return ("", "", false).
 internal static (@string prefix, @string suffix, bool ok) splitUSTARPath(@string name) {
-    @string prefix = default!;
-    @string suffix = default!;
-    bool ok = default!;
-
     nint length = len(name);
     if (length <= nameSize || !isASCII(name)){
         return ("", "", false);

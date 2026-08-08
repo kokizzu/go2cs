@@ -169,10 +169,8 @@ internal static (nint, error) Read(this ж<pipe> Ꮡp, slice<byte> b) {
 }
 
 internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
-    nint n = default!;
-    error err = default!;
-
     ref var p = ref Ꮡp.DerefOrNull();
+
     switch (ᐧ) {
     case {} when isClosedChan(p.localDone): {
         return (0, Δio.ErrClosedPipe);

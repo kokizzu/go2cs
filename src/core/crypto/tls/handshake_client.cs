@@ -1099,9 +1099,6 @@ internal static UntypedInt defaultMaxRSAKeySize => 8192;
 internal static ж<godebug.Setting> tlsmaxrsasize = godebug.New("tlsmaxrsasize"u8);
 
 internal static (nint max, bool ok) checkKeySize(nint n) {
-    nint max = default!;
-    bool ok = default!;
-
     {
         @string v = tlsmaxrsasize.Value(); if (v != ""u8) {
             {

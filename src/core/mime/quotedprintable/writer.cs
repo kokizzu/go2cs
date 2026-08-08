@@ -30,7 +30,6 @@ public static ж<Writer> NewWriter(io.Writer w) {
 // bytes are not necessarily flushed until the [Writer] is closed.
 [GoRecv] public static (nint n, error err) Write(this ref Writer w, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     foreach (var (i, b) in p) {
         switch (ᐧ) {

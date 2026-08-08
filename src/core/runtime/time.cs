@@ -216,9 +216,8 @@ internal static readonly @string updateHeapˢ = "updateHeap"u8;
 // If ts == nil, then t must not be in a heap (or is in a heap that is
 // temporarily not maintaining its invariant, such as during timers.adjust).
 internal static bool /*updated*/ updateHeap(this ж<timer> Ꮡt) {
-    bool updated = default!;
-
     ref var t = ref Ꮡt.DerefOrNull();
+
     assertWorldStoppedOrLockHeld(Ꮡt.of(timer.Ꮡmu));
     Ꮡt.trace(updateHeapˢ);
     var ts = t.ts;
@@ -904,7 +903,6 @@ internal static readonly @string checkˢ = "check"u8;
 //
 //go:yeswritebarrierrec
 internal static (int64 rnow, int64 pollUntil, bool ran) check(this ж<timers> Ꮡts, int64 now) {
-    int64 rnow = default!;
     int64 pollUntil = default!;
     bool ran = default!;
 

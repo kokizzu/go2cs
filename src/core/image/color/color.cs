@@ -56,11 +56,6 @@ public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this ΔRGBA c) {
 }
 
 public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this RGBA64 c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
-    uint32 a = default!;
-
     return ((uint32)c.R, (uint32)c.G, (uint32)c.B, (uint32)c.A);
 }
 
@@ -123,9 +118,6 @@ public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this NRGBA64 c) {
 }
 
 public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Alpha c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
     uint32 a = default!;
 
     a = (uint32)c.A;
@@ -139,9 +131,6 @@ public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Alpha c) {
 }
 
 public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Alpha16 c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
     uint32 a = default!;
 
     a = (uint32)c.A;
@@ -154,11 +143,6 @@ public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Alpha16 c) {
 }
 
 public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Gray c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
-    uint32 a = default!;
-
     var y = (uint32)c.Y;
     y |= (uint32)((y << (int)(8)));
     return (y, y, y, 0xffff);
@@ -170,11 +154,6 @@ public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Gray c) {
 }
 
 public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this Gray16 c) {
-    uint32 r = default!;
-    uint32 g = default!;
-    uint32 b = default!;
-    uint32 a = default!;
-
     var y = (uint32)c.Y;
     return (y, y, y, 0xffff);
 }

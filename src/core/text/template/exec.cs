@@ -392,9 +392,6 @@ internal static void walkIfOrWith(this ж<state> Ꮡs, parse.NodeType typ, refle
 // and whether the value has a meaningful truth value. This is the definition of
 // truth used by if and other such actions.
 public static (bool truth, bool ok) IsTrue(any val) {
-    bool truth = default!;
-    bool ok = default!;
-
     return isTrue(reflect.ValueOf(val));
 }
 
@@ -1216,9 +1213,6 @@ internal static bool canBeNil(reflectꓸType typ) {
 // if it's nil. If the returned bool is true, the returned value's kind will be
 // either a pointer or interface.
 internal static (reflectꓸValue rv, bool isNil) indirect(reflectꓸValue v) {
-    reflectꓸValue rv = new(nil);
-    bool isNil = default!;
-
     for (; v.Kind() == reflect.ΔPointer || v.Kind() == reflect.ΔInterface; v = v.Elem()) {
         if (v.IsNil()) {
             return (v, true);

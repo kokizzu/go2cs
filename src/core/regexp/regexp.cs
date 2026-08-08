@@ -533,9 +533,6 @@ internal const rune endOfText = -1;
 // of the regular expression re. It returns the boolean true if the
 // literal string comprises the entire regular expression.
 [GoRecv] public static (@string prefix, bool complete) LiteralPrefix(this ref Regexp re) {
-    @string prefix = default!;
-    bool complete = default!;
-
     return (re.prefix, re.prefixComplete);
 }
 
@@ -561,7 +558,6 @@ public static bool Match(this ж<Regexp> Ꮡre, slice<byte> b) {
 // contains any match of the regular expression pattern.
 // More complicated queries need to use [Compile] and the full [Regexp] interface.
 public static (bool matched, error err) MatchReader(@string pattern, io.RuneReader r) {
-    bool matched = default!;
     error err = default!;
 
     (var re, err) = Compile(pattern);
@@ -575,7 +571,6 @@ public static (bool matched, error err) MatchReader(@string pattern, io.RuneRead
 // contains any match of the regular expression pattern.
 // More complicated queries need to use [Compile] and the full [Regexp] interface.
 public static (bool matched, error err) MatchString(@string pattern, @string s) {
-    bool matched = default!;
     error err = default!;
 
     (var re, err) = Compile(pattern);
@@ -589,7 +584,6 @@ public static (bool matched, error err) MatchString(@string pattern, @string s) 
 // contains any match of the regular expression pattern.
 // More complicated queries need to use [Compile] and the full [Regexp] interface.
 public static (bool matched, error err) Match(@string pattern, slice<byte> b) {
-    bool matched = default!;
     error err = default!;
 
     (var re, err) = Compile(pattern);
@@ -855,8 +849,6 @@ public static slice<byte> Find(this ж<Regexp> Ꮡre, slice<byte> b) {
 // b[loc[0]:loc[1]].
 // A return value of nil indicates no match.
 public static slice<nint> /*loc*/ FindIndex(this ж<Regexp> Ꮡre, slice<byte> b) {
-    slice<nint> loc = default!;
-
     var a = Ꮡre.doExecute(default!, b, ""u8, 0, 2, default!);
     if (a == default!) {
         return default!;
@@ -883,8 +875,6 @@ public static @string FindString(this ж<Regexp> Ꮡre, @string s) {
 // itself is at s[loc[0]:loc[1]].
 // A return value of nil indicates no match.
 public static slice<nint> /*loc*/ FindStringIndex(this ж<Regexp> Ꮡre, @string s) {
-    slice<nint> loc = default!;
-
     var a = Ꮡre.doExecute(default!, default!, s, 0, 2, default!);
     if (a == default!) {
         return default!;
@@ -898,8 +888,6 @@ public static slice<nint> /*loc*/ FindStringIndex(this ж<Regexp> Ꮡre, @string
 // byte offset loc[0] through loc[1]-1.
 // A return value of nil indicates no match.
 public static slice<nint> /*loc*/ FindReaderIndex(this ж<Regexp> Ꮡre, io.RuneReader r) {
-    slice<nint> loc = default!;
-
     var a = Ꮡre.doExecute(r, default!, ""u8, 0, 2, default!);
     if (a == default!) {
         return default!;

@@ -9,9 +9,6 @@ partial class math_package {
 internal const bool haveArchModf = false;
 
 internal static (float64 @int, float64 frac) archModf(float64 f) {
-    float64 @int = default!;
-    float64 frac = default!;
-
     throw panic("not implemented");
 }
 

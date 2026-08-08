@@ -244,10 +244,6 @@ internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, ж<ar
 //
 // The shared key must be kept secret.
 public static (slice<byte> ciphertext, slice<byte> sharedKey, error err) Encapsulate(slice<byte> encapsulationKey) {
-    slice<byte> ciphertext = default!;
-    slice<byte> sharedKey = default!;
-    error err = default!;
-
     // The actual logic is in a separate function to outline this allocation.
     ref var cc = ref heap(new array<byte>(1088), out var Ꮡcc);
     return encapsulate(Ꮡcc, encapsulationKey);
@@ -257,10 +253,6 @@ public static (slice<byte> ciphertext, slice<byte> sharedKey, error err) Encapsu
 internal static readonly @string mlkem768Invalidˢ2 = "mlkem768: invalid encapsulation key length"u8;
 
 internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encapsulate(ж<array<byte>> Ꮡcc, slice<byte> encapsulationKey) {
-    slice<byte> ciphertext = default!;
-    slice<byte> sharedKey = default!;
-    error err = default!;
-
     if (len(encapsulationKey) != EncapsulationKeySize) {
         return (default!, default!, errors.New(mlkem768Invalidˢ2));
     }
@@ -279,7 +271,6 @@ internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encap
 internal static (slice<byte> c, slice<byte> K, error err) kemEncaps(ж<array<byte>> Ꮡcc, slice<byte> ek, ж<array<byte>> Ꮡm) {
     slice<byte> c = default!;
     slice<byte> K = default!;
-    error err = default!;
 
     ref var cc = ref Ꮡcc.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
@@ -386,9 +377,6 @@ internal static readonly @string mlkem768Invalidˢ4 = "mlkem768: invalid ciphert
 //
 // The shared key must be kept secret.
 public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey> Ꮡdk, slice<byte> ciphertext) {
-    slice<byte> sharedKey = default!;
-    error err = default!;
-
     if (len(ciphertext) != CiphertextSize) {
         return (default!, errors.New(mlkem768Invalidˢ4));
     }
@@ -400,10 +388,9 @@ public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey
 //
 // It implements ML-KEM.Decaps according to FIPS 203 (DRAFT), Algorithm 17.
 internal static slice<byte> /*K*/ kemDecaps(ж<DecapsulationKey> Ꮡdk, ж<array<byte>> Ꮡc) {
-    slice<byte> K = default!;
-
     ref var dk = ref Ꮡdk.DerefOrNull();
     ref var c = ref Ꮡc.DerefOrNull();
+
     var h = dk.dk[(int)(decryptionKeySize + encryptionKeySize)..(int)(decryptionKeySize + encryptionKeySize + 32)];
     var z = dk.dk[(int)(decryptionKeySize + encryptionKeySize + 32)..];
     var m = pkeDecrypt(Ꮡdk.of(DecapsulationKey.ᏑdecryptionKey), Ꮡc);

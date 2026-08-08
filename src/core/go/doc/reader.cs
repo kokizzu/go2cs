@@ -145,9 +145,6 @@ internal static void add(this methodSet mset, ж<Func> Ꮡm) {
 // baseTypeName returns the name of the base type of x (or "")
 // and whether the type is imported or not.
 internal static (@string name, bool imported) baseTypeName(ast.Expr x) {
-    @string name = default!;
-    bool imported = default!;
-
     switch (x.type()) {
     case ж<ast.Ident> t: {
         return ((~t).Name, false);

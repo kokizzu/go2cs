@@ -264,9 +264,6 @@ internal static ΔStateTransition procStateTransition(ProcID id, ProcState from,
 //
 // Panics if d.Resource.Kind is not ResourceGoroutine.
 public static (GoState from, GoState to) Goroutine(this ΔStateTransition d) {
-    GoState from = default!;
-    GoState to = default!;
-
     if (d.Resource.Kind != ResourceGoroutine) {
         throw panic("Goroutine called on non-Goroutine state transition");
     }
@@ -281,9 +278,6 @@ public static (GoState from, GoState to) Goroutine(this ΔStateTransition d) {
 //
 // Panics if d.Resource.Kind is not ResourceProc.
 public static (ProcState from, ProcState to) Proc(this ΔStateTransition d) {
-    ProcState from = default!;
-    ProcState to = default!;
-
     if (d.Resource.Kind != ResourceProc) {
         throw panic("Proc called on non-Proc state transition");
     }

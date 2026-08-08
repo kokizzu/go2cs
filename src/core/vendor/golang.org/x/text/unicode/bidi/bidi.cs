@@ -75,9 +75,6 @@ public static Action<ж<options>> DefaultDirection(ΔDirection d) {
 //
 // The function has the same return values as SetBytes() / SetString()
 [GoRecv] internal static (nint n, error err) prepareInput(this ref Paragraph p) {
-    nint n = default!;
-    error err = default!;
-
     p.runes = bytes.Runes(p.p);
     nint bytecount = 0;
     // clear slices from previous SetString or SetBytes
@@ -115,8 +112,6 @@ public static Action<ж<options>> DefaultDirection(ΔDirection d) {
 // consumed from b including this separator. Error may be non-nil if options are
 // given.
 [GoRecv] public static (nint n, error err) SetBytes(this ref Paragraph p, slice<byte> b, params Span<Action<ж<options>>> optsʗp) {
-    nint n = default!;
-    error err = default!;
     var opts = optsʗp.slice();
 
     p.p = b;
@@ -130,8 +125,6 @@ public static Action<ж<options>> DefaultDirection(ΔDirection d) {
 // consumed from s including this separator. Error may be non-nil if options are
 // given.
 [GoRecv] public static (nint n, error err) SetString(this ref Paragraph p, @string s, params Span<Action<ж<options>>> optsʗp) {
-    nint n = default!;
-    error err = default!;
     var opts = optsʗp.slice();
 
     p.p = slice<byte>(s);
@@ -303,9 +296,6 @@ public static (Ordering, error) Order(this ж<Paragraph> Ꮡp) {
 // Pos returns the position of the Run within the text passed to SetBytes or SetString of the
 // originating Paragraph value.
 [GoRecv] public static (nint start, nint end) Pos(this ref ΔRun r) {
-    nint start = default!;
-    nint end = default!;
-
     return (r.startpos, r.startpos + len(r.runes) - 1);
 }
 

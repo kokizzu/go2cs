@@ -925,8 +925,6 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
     // commitFrame commits to a logical frame and returns whether this frame
     // should be printed and whether iteration should stop.
     var commitFrame = () => {
-        bool pr = default!;
-        bool stop = default!;
         if (skip == 0 && max == 0) {
             // Stop
             return (false, true);
@@ -1539,8 +1537,6 @@ internal static void printCgoTraceback(ж<ΔcgoCallers> Ꮡcallers) {
         return;
     }
     var commitFrame = () => {
-        bool pr = default!;
-        bool stop = default!;
         return (true, false);
     };
     ref var arg = ref heap(new cgoSymbolizerArg(), out var Ꮡarg);

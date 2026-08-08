@@ -38,9 +38,6 @@ public static rune DecodeRune(rune r1, rune r2) {
 // If the rune is not a valid Unicode code point or does not need encoding,
 // EncodeRune returns U+FFFD, U+FFFD.
 public static (rune r1, rune r2) EncodeRune(rune r) {
-    rune r1 = default!;
-    rune r2 = default!;
-
     if (r < surrSelf || r > maxRune) {
         return (replacementChar, replacementChar);
     }

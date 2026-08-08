@@ -73,7 +73,6 @@ internal static readonly @string x509InvalidSimpleChainˢ = "x509: invalid simpl
 // extractSimpleChain extracts the final certificate chain from a CertSimpleChain.
 internal static (slice<ж<Certificate>> chain, error err) extractSimpleChain(ж<ж<syscall.CertSimpleChain>> ᏑsimpleChain, nint count) {
     slice<ж<Certificate>> chain = default!;
-    error err = default!;
 
     if (ᏑsimpleChain == nil || count == 0) {
         return (default!, errors.New(x509InvalidSimpleChainˢ));

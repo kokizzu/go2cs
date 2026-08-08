@@ -194,9 +194,6 @@ public static @string String(this ж<Buffer> Ꮡb) {
 // needed. The return value n is the length of p; err is always nil. If the
 // buffer becomes too large, Write will panic with [ErrTooLarge].
 [GoRecv] public static (nint n, error err) Write(this ref Buffer b, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     b.lastRead = opInvalid;
     var (m, ok) = b.tryGrowByReslice(len(p));
     if (!ok) {
@@ -209,9 +206,6 @@ public static @string String(this ж<Buffer> Ꮡb) {
 // needed. The return value n is the length of s; err is always nil. If the
 // buffer becomes too large, WriteString will panic with [ErrTooLarge].
 [GoRecv] public static (nint n, error err) WriteString(this ref Buffer b, @string s) {
-    nint n = default!;
-    error err = default!;
-
     b.lastRead = opInvalid;
     var (m, ok) = b.tryGrowByReslice(len(s));
     if (!ok) {
@@ -232,7 +226,6 @@ public static UntypedInt MinRead => 512;
 // buffer becomes too large, ReadFrom will panic with [ErrTooLarge].
 [GoRecv] public static (int64 n, error err) ReadFrom(this ref Buffer b, io.Reader r) {
     int64 n = default!;
-    error err = default!;
 
     b.lastRead = opInvalid;
     while (ᐧ) {
@@ -291,7 +284,6 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
 // encountered during the write is also returned.
 [GoRecv] public static (int64 n, error err) WriteTo(this ref Buffer b, io.Writer w) {
     int64 n = default!;
-    error err = default!;
 
     b.lastRead = opInvalid;
     {
@@ -336,9 +328,6 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
 // included to match [bufio.Writer]'s WriteRune. The buffer is grown as needed;
 // if it becomes too large, WriteRune will panic with [ErrTooLarge].
 [GoRecv] public static (nint n, error err) WriteRune(this ref Buffer b, rune r) {
-    nint n = default!;
-    error err = default!;
-
     // Compare as uint32 to correctly handle negative runes.
     if ((uint32)r < utf8.RuneSelf) {
         b.WriteByte((byte)r);
@@ -359,7 +348,6 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
 // otherwise it is nil.
 [GoRecv] public static (nint n, error err) Read(this ref Buffer b, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     b.lastRead = opInvalid;
     if (b.empty()) {
@@ -417,8 +405,6 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
 // consumes one byte and returns U+FFFD, 1.
 [GoRecv] public static (rune r, nint size, error err) ReadRune(this ref Buffer b) {
     rune r = default!;
-    nint size = default!;
-    error err = default!;
 
     if (b.empty()) {
         // Buffer is empty, reset to recover space.
@@ -514,7 +500,6 @@ internal static error errUnreadByte = errors.New("bytes.Buffer: UnreadByte: prev
 // ReadString returns err != nil if and only if the returned data does not end
 // in delim.
 [GoRecv] public static (@string line, error err) ReadString(this ref Buffer b, byte delim) {
-    @string line = default!;
     error err = default!;
 
     (var Δslice, err) = b.readSlice(delim);

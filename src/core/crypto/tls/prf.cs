@@ -185,9 +185,6 @@ internal static ΔfinishedHash newFinishedHash(uint16 version, ж<cipherSuite> �
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref ΔfinishedHash h, slice<byte> msg) {
-    nint n = default!;
-    error err = default!;
-
     h.client.Write(msg);
     h.server.Write(msg);
     if (h.version < VersionTLS12) {

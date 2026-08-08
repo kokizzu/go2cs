@@ -465,8 +465,6 @@ public static (ж<P521Point>, error) ScalarBaseMult(this ж<P521Point> Ꮡp, sli
 // p521Sqrt sets e to a square root of x. If x is not a square, p521Sqrt returns
 // false and e is unchanged. e and x can overlap.
 internal static bool /*isSquare*/ p521Sqrt(ж<fiat.P521Element> Ꮡe, ж<fiat.P521Element> Ꮡx) {
-    bool isSquare = default!;
-
     var candidate = @new<fiat.P521Element>();
     p521SqrtCandidate(candidate, Ꮡx);
     var square = @new<fiat.P521Element>().Square(candidate);

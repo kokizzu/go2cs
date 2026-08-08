@@ -9,14 +9,9 @@ partial class main_package {
 private static readonly @string negativeValueˢ = "negative value"u8;
 
 internal static (slice<nint> evens, slice<nint> odds, error err) parse(slice<nint> items) {
-    slice<nint> evens = default!;
-    slice<nint> odds = default!;
-    error err = default!;
-
     (slice<nint> e, slice<nint> o, error err) classify(slice<nint> vals) {
         slice<nint> e = default!;
         slice<nint> o = default!;
-        error errΔ1 = default!;
         foreach (var (_, v) in vals) {
             if (v < 0) {
                 return (default!, default!, errors.New(negativeValueˢ));

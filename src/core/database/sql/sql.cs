@@ -2083,7 +2083,6 @@ public static (ж<Tx>, error) Begin(this ж<DB> Ꮡdb) {
 }
 
 internal static (ж<Tx> tx, error err) begin(this ж<DB> Ꮡdb, context.Context ctx, ж<TxOptions> Ꮡopts, connReuseStrategy strategy) {
-    ж<Tx> tx = default!;
     error err = default!;
 
     (var dc, err) = Ꮡdb.conn(ctx, strategy);
@@ -3576,19 +3575,12 @@ public static (slice<ж<ColumnType>>, error) ColumnTypes(this ж<Rows> Ꮡrs) {
 // If the column type is not variable length, such as an int, or if not supported
 // by the driver ok is false.
 [GoRecv] public static (int64 length, bool ok) Length(this ref ColumnType ci) {
-    int64 length = default!;
-    bool ok = default!;
-
     return (ci.length, ci.hasLength);
 }
 
 // DecimalSize returns the scale and precision of a decimal type.
 // If not applicable or if not supported ok is false.
 [GoRecv] public static (int64 precision, int64 scale, bool ok) DecimalSize(this ref ColumnType ci) {
-    int64 precision = default!;
-    int64 scale = default!;
-    bool ok = default!;
-
     return (ci.precision, ci.scale, ci.hasPrecisionScale);
 }
 
@@ -3602,9 +3594,6 @@ public static (slice<ж<ColumnType>>, error) ColumnTypes(this ж<Rows> Ꮡrs) {
 // Nullable reports whether the column may be null.
 // If a driver does not support this property ok will be false.
 [GoRecv] public static (bool nullable, bool ok) Nullable(this ref ColumnType ci) {
-    bool nullable = default!;
-    bool ok = default!;
-
     return (ci.nullable, ci.hasNullable);
 }
 
@@ -4061,9 +4050,6 @@ internal static void withLock(sync.Locker lk, Action fn) {
 // and reports whether there was one to take. (It returns ok=false
 // if the set is empty.)
 [GoRecv] internal static (channel<connRequest> v, bool ok) TakeRandom(this ref connRequestSet s) {
-    channel<connRequest> v = default!;
-    bool ok = default!;
-
     if (len(s.s) == 0) {
         return (default!, false);
     }

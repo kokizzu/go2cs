@@ -202,9 +202,6 @@ public static ж<Reader> NewReader(io.Reader r) {
 //
 // If this is called with an out-of-bounds index, it panics.
 [GoRecv] public static (nint line, nint column) FieldPos(this ref Reader r, nint field) {
-    nint line = default!;
-    nint column = default!;
-
     if (field < 0 || field >= len(r.fieldPositions)) {
         throw panic("out of range index passed to FieldPos");
     }
@@ -231,7 +228,6 @@ public static ж<Reader> NewReader(io.Reader r) {
 // reported.
 [GoRecv] public static (slice<slice<@string>> records, error err) ReadAll(this ref Reader r) {
     slice<slice<@string>> records = default!;
-    error err = default!;
 
     while (ᐧ) {
         var (record, errΔ1) = r.readRecord(default!);

@@ -599,8 +599,6 @@ keep:;
 // duration across the execution. The returned value is in the range
 // [0, 1].
 [GoRecv] public static float64 /*mmu*/ MMU(this ref MMUCurve c, time.Duration window) {
-    float64 mmu = default!;
-
     ref var acc = ref heap<accumulator>(out var Ꮡacc);
     acc = new accumulator(mmu: 1.0D, bound: 1.0D);
     c.mmu(window, Ꮡacc);
@@ -613,8 +611,6 @@ keep:;
 // mostly-overlapping windows at the single lowest point). There are
 // no guarantees on which set of disjoint windows this returns.
 [GoRecv] public static slice<UtilWindow> /*worst*/ Examples(this ref MMUCurve c, time.Duration window, nint n) {
-    slice<UtilWindow> worst = default!;
-
     ref var acc = ref heap<accumulator>(out var Ꮡacc);
     acc = new accumulator(mmu: 1.0D, bound: 1.0D, nWorst: n);
     c.mmu(window, Ꮡacc);

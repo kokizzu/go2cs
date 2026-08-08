@@ -223,7 +223,7 @@ private static readonly @string pendingAsn1ChildTooLongˢ = "pending ASN.1 child
         }
         uint8 lenLen = default!;
         uint8 lenByte = default!;
-        if ((int64)length > (nint)0xfffffffeL){
+        if ((int64)length > 0xfffffffeL){
             b.err = errors.New(pendingAsn1ChildTooLongˢ);
             return;
         } else 

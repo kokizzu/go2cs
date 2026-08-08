@@ -30,9 +30,6 @@ partial class fs_package {
 // Otherwise, Glob uses [ReadDir] to traverse the directory tree
 // and look for matches for the pattern.
 public static (slice<@string> matches, error err) Glob(FS fsys, @string pattern) {
-    slice<@string> matches = default!;
-    error err = default!;
-
     return globWithLimit(fsys, pattern, 0);
 }
 

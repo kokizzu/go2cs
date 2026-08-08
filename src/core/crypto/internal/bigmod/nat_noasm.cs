@@ -9,20 +9,14 @@ using @unsafe = unsafe_package;
 partial class bigmod_package {
 
 internal static nuint /*c*/ addMulVVW1024(ж<nuint> Ꮡz, ж<nuint> Ꮡx, nuint y) {
-    nuint c = default!;
-
     return addMulVVW(@unsafe.Slice(Ꮡz, 1024 / _W), @unsafe.Slice(Ꮡx, 1024 / _W), y);
 }
 
 internal static nuint /*c*/ addMulVVW1536(ж<nuint> Ꮡz, ж<nuint> Ꮡx, nuint y) {
-    nuint c = default!;
-
     return addMulVVW(@unsafe.Slice(Ꮡz, 1536 / _W), @unsafe.Slice(Ꮡx, 1536 / _W), y);
 }
 
 internal static nuint /*c*/ addMulVVW2048(ж<nuint> Ꮡz, ж<nuint> Ꮡx, nuint y) {
-    nuint c = default!;
-
     return addMulVVW(@unsafe.Slice(Ꮡz, 2048 / _W), @unsafe.Slice(Ꮡx, 2048 / _W), y);
 }
 

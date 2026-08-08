@@ -296,7 +296,6 @@ public static @string Error(this CorruptInputError e) {
 [GoRecv] internal static (nint n, bool end, error err) decode(this ref Encoding enc, slice<byte> dst, slice<byte> src) {
     nint n = default!;
     bool end = default!;
-    error err = default!;
 
     // Lift the nil check outside of the loop.
     _ = enc.decodeMap;

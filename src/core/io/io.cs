@@ -322,9 +322,6 @@ public static error ErrNoProgress = errors.New("multiple Read calls return no da
 // If w implements [StringWriter], [StringWriter.WriteString] is invoked directly.
 // Otherwise, [Writer.Write] is called exactly once.
 public static (nint n, error err) WriteString(Writer w, @string s) {
-    nint n = default!;
-    error err = default!;
-
     {
         var (sw, ok) = w._<StringWriter>(ᐧ); if (ok) {
             return sw.WriteString(s);
@@ -370,9 +367,6 @@ public static (nint n, error err) ReadAtLeast(Reader r, slice<byte> buf, nint mi
 // On return, n == len(buf) if and only if err == nil.
 // If r returns an error having read at least len(buf) bytes, the error is dropped.
 public static (nint n, error err) ReadFull(Reader r, slice<byte> buf) {
-    nint n = default!;
-    error err = default!;
-
     return ReadAtLeast(r, buf, len(buf));
 }
 
@@ -410,9 +404,6 @@ public static (int64 written, error err) CopyN(Writer dst, Reader src, int64 n) 
 // Otherwise, if dst implements [ReaderFrom],
 // the copy is implemented by calling dst.ReadFrom(src).
 public static (int64 written, error err) Copy(Writer dst, Reader src) {
-    int64 written = default!;
-    error err = default!;
-
     return copyBuffer(dst, src, default!);
 }
 
@@ -424,9 +415,6 @@ public static (int64 written, error err) Copy(Writer dst, Reader src) {
 // If either src implements [WriterTo] or dst implements [ReaderFrom],
 // buf will not be used to perform the copy.
 public static (int64 written, error err) CopyBuffer(Writer dst, Reader src, slice<byte> buf) {
-    int64 written = default!;
-    error err = default!;
-
     if (buf != default! && len(buf) == 0) {
         throw panic("empty buffer in CopyBuffer");
     }
@@ -625,10 +613,6 @@ internal static error errOffset = errors.New("Seek: invalid offset"u8);
 // The returned values are the same that were passed to [NewSectionReader]
 // when the [SectionReader] was created.
 [GoRecv] public static (ReaderAt r, int64 off, int64 n) Outer(this ref SectionReader s) {
-    ReaderAt r = default!;
-    int64 off = default!;
-    int64 n = default!;
-
     return (s.r, s.@base, s.n);
 }
 
@@ -655,9 +639,6 @@ public static ж<OffsetWriter> NewOffsetWriter(WriterAt w, int64 off) {
 }
 
 [GoRecv] public static (nint n, error err) WriteAt(this ref OffsetWriter o, slice<byte> p, int64 off) {
-    nint n = default!;
-    error err = default!;
-
     if (off < 0) {
         return (0, errOffset);
     }
@@ -789,9 +770,6 @@ internal static error Close(this nopCloserWriterTo _) {
 }
 
 internal static (int64 n, error err) WriteTo(this nopCloserWriterTo c, Writer w) {
-    int64 n = default!;
-    error err = default!;
-
     return c.Reader._<WriterTo>().WriteTo(w);
 }
 

@@ -994,9 +994,6 @@ internal static bool disableMemoryProfiling;
 // the testing package's -test.memprofile flag instead
 // of calling MemProfile directly.
 public static (nint n, bool ok) MemProfile(slice<MemProfileRecord> Δp, bool inuseZero) {
-    nint n = default!;
-    bool ok = default!;
-
     return memProfileInternal(len(Δp), inuseZero, (profilerecord.MemProfileRecord r) => {
         copyMemProfileRecord(Ꮡ(Δp, 0), r);
         Δp = Δp[1..];
@@ -1098,9 +1095,6 @@ internal static void copyMemProfileRecord(ж<MemProfileRecord> Ꮡdst, profilere
 
 //go:linkname pprof_memProfileInternal
 internal static (nint n, bool ok) pprof_memProfileInternal(slice<profilerecord.MemProfileRecord> Δp, bool inuseZero) {
-    nint n = default!;
-    bool ok = default!;
-
     return memProfileInternal(len(Δp), inuseZero, (profilerecord.MemProfileRecord r) => {
         Δp[0] = r;
         Δp = Δp[1..];
@@ -1227,9 +1221,6 @@ internal static void copyBlockProfileRecord(ж<BlockProfileRecord> Ꮡdst, profi
 
 //go:linkname pprof_blockProfileInternal
 internal static (nint n, bool ok) pprof_blockProfileInternal(slice<profilerecord.BlockProfileRecord> Δp) {
-    nint n = default!;
-    bool ok = default!;
-
     return blockProfileInternal(len(Δp), (profilerecord.BlockProfileRecord r) => {
         Δp[0] = r;
         Δp = Δp[1..];
@@ -1288,9 +1279,6 @@ internal static (nint n, bool ok) mutexProfileInternal(nint size, Action<profile
 
 //go:linkname pprof_mutexProfileInternal
 internal static (nint n, bool ok) pprof_mutexProfileInternal(slice<profilerecord.BlockProfileRecord> Δp) {
-    nint n = default!;
-    bool ok = default!;
-
     return mutexProfileInternal(len(Δp), (profilerecord.BlockProfileRecord r) => {
         Δp[0] = r;
         Δp = Δp[1..];
@@ -1304,9 +1292,6 @@ internal static (nint n, bool ok) pprof_mutexProfileInternal(slice<profilerecord
 // Most clients should use the runtime/pprof package instead
 // of calling ThreadCreateProfile directly.
 public static (nint n, bool ok) ThreadCreateProfile(slice<StackRecord> Δp) {
-    nint n = default!;
-    bool ok = default!;
-
     return threadCreateProfileInternal(len(Δp), (profilerecord.StackRecord r) => {
         copy(Δp[0].Stack0[..], r.Stack);
         Δp = Δp[1..];
@@ -1336,9 +1321,6 @@ internal static (nint n, bool ok) threadCreateProfileInternal(nint size, Action<
 
 //go:linkname pprof_threadCreateInternal
 internal static (nint n, bool ok) pprof_threadCreateInternal(slice<profilerecord.StackRecord> Δp) {
-    nint n = default!;
-    bool ok = default!;
-
     return threadCreateProfileInternal(len(Δp), (profilerecord.StackRecord r) => {
         Δp[0] = r;
         Δp = Δp[1..];
@@ -1347,17 +1329,11 @@ internal static (nint n, bool ok) pprof_threadCreateInternal(slice<profilerecord
 
 //go:linkname pprof_goroutineProfileWithLabels
 internal static (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
-    nint n = default!;
-    bool ok = default!;
-
     return goroutineProfileWithLabels(Δp, labels);
 }
 
 // labels may be nil. If labels is non-nil, it must have the same length as p.
 internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
-    nint n = default!;
-    bool ok = default!;
-
     if (labels != default! && len(labels) != len(Δp)) {
         labels = default!;
     }
@@ -1399,7 +1375,6 @@ internal static bool CompareAndSwap(this ж<goroutineProfileStateHolder> Ꮡp, g
 
 internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
     nint n = default!;
-    bool ok = default!;
 
     if (len(Δp) == 0) {
         // An empty slice is obviously too small. Return a rough
@@ -1705,9 +1680,6 @@ public static (nint n, bool ok) GoroutineProfile(slice<StackRecord> Δp) {
 }
 
 internal static (nint n, bool ok) goroutineProfileInternal(slice<profilerecord.StackRecord> Δp) {
-    nint n = default!;
-    bool ok = default!;
-
     return goroutineProfileWithLabels(Δp, default!);
 }
 

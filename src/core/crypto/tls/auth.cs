@@ -114,7 +114,6 @@ internal static slice<byte> signedMessage(crypto.Hash sigHash, @string context, 
 internal static (uint8 sigType, crypto.Hash hash, error err) typeAndHashFromSignatureScheme(SignatureScheme signatureAlgorithm) {
     uint8 sigType = default!;
     crypto.Hash hash = default!;
-    error err = default!;
 
     var exprᴛ1 = signatureAlgorithm;
     if (exprᴛ1 == PKCS1WithSHA1 || exprᴛ1 == PKCS1WithSHA256 || exprᴛ1 == PKCS1WithSHA384 || exprᴛ1 == PKCS1WithSHA512) {
@@ -160,10 +159,6 @@ internal static (uint8 sigType, crypto.Hash hash, error err) typeAndHashFromSign
 // a given public key used with TLS 1.0 and 1.1, before the introduction of
 // signature algorithm negotiation.
 internal static (uint8 sigType, crypto.Hash hash, error err) legacyTypeAndHashFromPublicKey(cryptoꓸPublicKey pub) {
-    uint8 sigType = default!;
-    crypto.Hash hash = default!;
-    error err = default!;
-
     switch (pub.type()) {
     case ж<rsa.PublicKey>: {
         return (signaturePKCS1v15, crypto.MD5SHA1, default!);

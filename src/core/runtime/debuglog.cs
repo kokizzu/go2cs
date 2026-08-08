@@ -537,8 +537,6 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 }
 
 [GoRecv] internal static uint64 /*tick*/ peek(this ref debugLogReader r) {
-    uint64 tick = default!;
-
     // Consume any sync records.
     var size = (uint64)0;
     while (size == 0) {

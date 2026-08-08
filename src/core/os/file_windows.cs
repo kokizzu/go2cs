@@ -258,10 +258,6 @@ internal static error rename(@string oldname, @string newname) {
 // It returns the files and an error, if any. The Windows handles underlying
 // the returned files are marked as inheritable by child processes.
 public static (ж<File> r, ж<File> w, error err) Pipe() {
-    ж<File> r = default!;
-    ж<File> w = default!;
-    error err = default!;
-
     array<syscallꓸHandle> p = new(2);
     var e = syscall.Pipe(p[..]);
     if (e != default!) {

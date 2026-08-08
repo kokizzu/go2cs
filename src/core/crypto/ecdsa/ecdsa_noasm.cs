@@ -13,9 +13,6 @@ internal static error verifyAsm(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<by
 }
 
 internal static (slice<byte> sig, error err) signAsm(ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash) {
-    slice<byte> sig = default!;
-    error err = default!;
-
     return (default!, errNoAsm);
 }
 

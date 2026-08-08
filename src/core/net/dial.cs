@@ -226,7 +226,6 @@ internal static (time.Time, error) partialDeadline(time.Time now, time.Time dead
 
 internal static (@string afnet, nint proto, error err) parseNetwork(context.Context ctx, @string network, bool needsProto) {
     @string afnet = default!;
-    nint proto = default!;
     error err = default!;
 
     nint i = bytealg.LastIndexByteString(network, (rune)':');

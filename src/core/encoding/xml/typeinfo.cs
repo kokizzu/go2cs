@@ -239,8 +239,6 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
 // in case it exists and has a valid xml field tag, otherwise
 // it returns nil.
 internal static ж<fieldInfo> /*xmlname*/ lookupXMLName(reflectꓸType typ) {
-    ж<fieldInfo> xmlname = default!;
-
     while (typ.Kind() == reflect.ΔPointer) {
         typ = typ.Elem();
     }

@@ -423,11 +423,8 @@ public static (ж<SessionState>, error) DecryptTicket(this ж<Config> Ꮡc, slic
 // It can be called by [ClientSessionCache.Put] to serialize (with
 // [SessionState.Bytes]) and store the session.
 public static (slice<byte> ticket, ж<SessionState> state, error err) ResumptionState(this ж<ClientSessionState> Ꮡcs) {
-    slice<byte> ticket = default!;
-    ж<SessionState> state = default!;
-    error err = default!;
-
     ref var cs = ref Ꮡcs.DerefOrNull();
+
     if (Ꮡcs == nil || cs.session == nil) {
         return (default!, default!, default!);
     }

@@ -487,10 +487,6 @@ internal static readonly @string missingProtocolSchemeˢ = "missing protocol sch
 // (Scheme must be [a-zA-Z][a-zA-Z0-9+.-]*)
 // If so, return scheme, path; else return "", rawURL.
 internal static (@string scheme, @string path, error err) getScheme(@string rawURL) {
-    @string scheme = default!;
-    @string path = default!;
-    error err = default!;
-
     for (nint i = 0; i < len(rawURL); i++) {
         var c = rawURL[i];
         switch (ᐧ) {
@@ -1318,9 +1314,6 @@ internal static (@string host, @string port) splitHostPort(@string hostPort) {
 // Marshaling interface implementations.
 // Would like to implement MarshalText/UnmarshalText but that will change the JSON representation of URLs.
 [GoRecv] public static (slice<byte> text, error err) MarshalBinary(this ref URL u) {
-    slice<byte> text = default!;
-    error err = default!;
-
     return (slice<byte>(u.String()), default!);
 }
 

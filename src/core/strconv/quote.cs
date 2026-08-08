@@ -457,8 +457,6 @@ public static (@string, error) Unquote(@string s) {
 // otherwise the input prefix is provided verbatim.
 internal static (@string @out, @string rem, error err) unquote(@string @in, bool unescape) {
     @string @out = default!;
-    @string rem = default!;
-    error err = default!;
 
     // Determine the quote form and optimistically find the terminating quote.
     if (len(@in) < 2) {

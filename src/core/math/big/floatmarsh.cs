@@ -108,9 +108,6 @@ public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
 // Only the [Float] value is marshaled (in full precision), other
 // attributes such as precision or accuracy are ignored.
 public static (slice<byte> text, error err) MarshalText(this ж<Float> Ꮡx) {
-    slice<byte> text = default!;
-    error err = default!;
-
     if (Ꮡx == nil) {
         return (slice<byte>("<nil>"u8), default!);
     }

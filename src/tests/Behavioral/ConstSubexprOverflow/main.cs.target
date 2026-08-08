@@ -39,9 +39,9 @@ internal static void Main() {
     fmt.Println(n32, c32, nptr);
     showInt32((int32)(2147483648L - 2));
     showUint32((uint32)(4294967296L - 1));
-    var words = new Word[]{(nuint)(9223372036854775809UL), (nuint)(9223372036854775807UL)}.slice();
-    var wide = new uintptr[]{(nuint)(9223372036854775809UL), (nuint)(9223372036854775807UL)}.slice();
-    var uns = new nuint[]{(nuint)(9223372036854775809UL)}.slice();
+    var words = new Word[]{unchecked((nuint)(9223372036854775809UL)), unchecked((nuint)(9223372036854775807UL))}.slice();
+    var wide = new uintptr[]{unchecked((nuint)(9223372036854775809UL)), unchecked((nuint)(9223372036854775807UL))}.slice();
+    var uns = new nuint[]{unchecked((nuint)(9223372036854775809UL))}.slice();
     var u64wide = new uint64[]{9223372036854775809UL}.slice();
     foreach (var (_, v) in words) {
         fmt.Println(v);

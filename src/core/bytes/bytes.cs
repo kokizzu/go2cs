@@ -913,7 +913,6 @@ internal static nint lastIndexFunc(slice<byte> s, Func<rune, bool> f, bool truth
 // characters in chars are ASCII.
 internal static (asciiSet @as, bool ok) makeASCIISet(@string chars) {
     asciiSet @as = default!;
-    bool ok = default!;
 
     for (nint i = 0; i < len(chars); i++) {
         var c = chars[i];
@@ -1365,10 +1364,6 @@ public static nint Index(slice<byte> s, slice<byte> sep) {
 //
 // Cut returns slices of the original slice s, not copies.
 public static (slice<byte> before, slice<byte> after, bool found) Cut(slice<byte> s, slice<byte> sep) {
-    slice<byte> before = default!;
-    slice<byte> after = default!;
-    bool found = default!;
-
     {
         nint i = Index(s, sep); if (i >= 0) {
             return (s[..(int)(i)], s[(int)(i + len(sep))..], true);
@@ -1394,9 +1389,6 @@ public static slice<byte> Clone(slice<byte> b) {
 //
 // CutPrefix returns slices of the original slice s, not copies.
 public static (slice<byte> after, bool found) CutPrefix(slice<byte> s, slice<byte> prefix) {
-    slice<byte> after = default!;
-    bool found = default!;
-
     if (!HasPrefix(s, prefix)) {
         return (s, false);
     }
@@ -1410,9 +1402,6 @@ public static (slice<byte> after, bool found) CutPrefix(slice<byte> s, slice<byt
 //
 // CutSuffix returns slices of the original slice s, not copies.
 public static (slice<byte> before, bool found) CutSuffix(slice<byte> s, slice<byte> suffix) {
-    slice<byte> before = default!;
-    bool found = default!;
-
     if (!HasSuffix(s, suffix)) {
         return (s, false);
     }

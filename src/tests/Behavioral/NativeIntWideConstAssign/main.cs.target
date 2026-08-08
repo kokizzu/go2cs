@@ -12,7 +12,7 @@ internal static (uintptr, nuint, nint) run() {
     nuint u = default!;
     u = (nuint)(144115188075855872L + 5);
     nint n = default!;
-    n = (nint)(144115188075855772L);
+    n = unchecked((nint)(144115188075855772L));
     return (p, u, n);
 }
 

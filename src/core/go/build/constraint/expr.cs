@@ -191,9 +191,6 @@ internal static readonly @string goBuildˢ = "//go:build"u8;
 // splitGoBuild splits apart the leading //go:build prefix in line from the build expression itself.
 // It returns "", false if the input is not a //go:build line or if the input contains multiple lines.
 internal static (@string expr, bool ok) splitGoBuild(@string line) {
-    @string expr = default!;
-    bool ok = default!;
-
     // A single trailing newline is OK; otherwise multiple lines are not.
     if (len(line) > 0 && line[len(line) - 1] == (rune)'\n') {
         line = line[..(int)(len(line) - 1)];
@@ -416,9 +413,6 @@ internal static readonly @string buildˢ = "+build"u8;
 // splitPlusBuild splits apart the leading // +build prefix in line from the build expression itself.
 // It returns "", false if the input is not a // +build line or if the input contains multiple lines.
 internal static (@string expr, bool ok) splitPlusBuild(@string line) {
-    @string expr = default!;
-    bool ok = default!;
-
     // A single trailing newline is OK; otherwise multiple lines are not.
     if (len(line) > 0 && line[len(line) - 1] == (rune)'\n') {
         line = line[..(int)(len(line) - 1)];

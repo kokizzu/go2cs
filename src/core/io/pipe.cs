@@ -60,10 +60,8 @@ public static error ErrClosedPipe = errors.New("io: read/write on closed pipe"u8
 }
 
 internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
-    nint n = default!;
-    error err = default!;
-
     ref var p = ref Ꮡp.DerefOrNull();
+
     var selᴛ1 = p.done;
     switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out _): {
@@ -179,9 +177,6 @@ internal static error writeCloseError(this ж<pipe> Ꮡp) {
 // If the write end is closed with an error, that error is
 // returned as err; otherwise err is EOF.
 public static (nint n, error err) Read(this ж<PipeReader> Ꮡr, slice<byte> data) {
-    nint n = default!;
-    error err = default!;
-
     return Ꮡr.of(PipeReader.Ꮡpipe).read(data);
 }
 
@@ -211,9 +206,6 @@ public static error CloseWithError(this ж<PipeReader> Ꮡr, error err) {
 // If the read end is closed with an error, that err is
 // returned as err; otherwise err is [ErrClosedPipe].
 public static (nint n, error err) Write(this ж<PipeWriter> Ꮡw, slice<byte> data) {
-    nint n = default!;
-    error err = default!;
-
     return Ꮡw.of(PipeWriter.Ꮡr).of(PipeReader.Ꮡpipe).write(data);
 }
 

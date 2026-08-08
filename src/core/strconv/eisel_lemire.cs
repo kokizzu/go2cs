@@ -23,7 +23,6 @@ partial class strconv_package {
 
 internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool neg) {
     float64 f = default!;
-    bool ok = default!;
 
     // The terse comments in this function body refer to sections of the
     // https://nigeltao.github.io/blog/2020/eisel-lemire.html blog post.
@@ -88,7 +87,6 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
 
 internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool neg) {
     float32 f = default!;
-    bool ok = default!;
 
     // The terse comments in this function body refer to sections of the
     // https://nigeltao.github.io/blog/2020/eisel-lemire.html blog post.

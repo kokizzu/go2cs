@@ -277,9 +277,6 @@ internal static bool hasPlan9Magic(slice<byte> magic) {
 }
 
 internal static (@string s, slice<byte> rest) decodeString(slice<byte> data) {
-    @string s = default!;
-    slice<byte> rest = default!;
-
     var (u, n) = binary.Uvarint(data);
     if (n <= 0 || u > (uint64)(len(data) - n)) {
         return ("", default!);

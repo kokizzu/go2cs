@@ -145,7 +145,6 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
     where Point : nistPoint<Point>
 {
     Point p = default!;
-    error err = default!;
 
     ref var x = ref Ꮡx.DerefOrNull();
     ref var y = ref Ꮡy.DerefOrNull();
@@ -260,9 +259,6 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
 [GoRecv] internal static (ж<bigꓸInt> x, ж<bigꓸInt> y) CombinedMult<Point>(this ref nistCurve<Point> curve, ж<bigꓸInt> ᏑPx, ж<bigꓸInt> ᏑPy, slice<byte> s1, slice<byte> s2)
     where Point : nistPoint<Point>
 {
-    ж<bigꓸInt> x = default!;
-    ж<bigꓸInt> y = default!;
-
     s1 = curve.normalizeScalar(s1);
     var (q, err) = curve.newPoint().ScalarBaseMult(s1);
     if (err != default!) {
@@ -306,9 +302,6 @@ internal static readonly @string overflowingCoordinateˢ = "overflowing coordina
 [GoRecv] internal static (ж<bigꓸInt> x, ж<bigꓸInt> y) UnmarshalCompressed<Point>(this ref nistCurve<Point> curve, slice<byte> data)
     where Point : nistPoint<Point>
 {
-    ж<bigꓸInt> x = default!;
-    ж<bigꓸInt> y = default!;
-
     if (len(data) == 0 || (data[0] != 2 && data[0] != 3)) {
         return (default!, default!);
     }

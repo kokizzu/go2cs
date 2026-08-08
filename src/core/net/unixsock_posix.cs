@@ -170,11 +170,8 @@ internal static Δsockaddr toLocal(this ж<UnixAddr> Ꮡa, @string net) {
 }
 
 [GoRecv] internal static (nint n, nint oobn, error err) writeMsg(this ref UnixConn c, slice<byte> b, slice<byte> oob, ж<UnixAddr> Ꮡaddr) {
-    nint n = default!;
-    nint oobn = default!;
-    error err = default!;
-
     ref var addr = ref Ꮡaddr.DerefOrNull();
+
     if ((~c.fd).sotype == syscall.SOCK_DGRAM && (~c.fd).isConnected) {
         return (0, 0, ErrWriteToConnected);
     }

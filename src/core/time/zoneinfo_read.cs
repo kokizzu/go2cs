@@ -66,9 +66,6 @@ internal static UntypedInt seekEnd => 2;
 }
 
 [GoRecv] internal static (uint32 n, bool ok) big4(this ref dataIO d) {
-    uint32 n = default!;
-    bool ok = default!;
-
     var p = d.read(4);
     if (len(p) < 4) {
         d.error = true;
@@ -78,9 +75,6 @@ internal static UntypedInt seekEnd => 2;
 }
 
 [GoRecv] internal static (uint64 n, bool ok) big8(this ref dataIO d) {
-    uint64 n = default!;
-    bool ok = default!;
-
     var (n1, ok1) = d.big4();
     var (n2, ok2) = d.big4();
     if (!ok1 || !ok2) {
@@ -91,9 +85,6 @@ internal static UntypedInt seekEnd => 2;
 }
 
 [GoRecv] internal static (byte n, bool ok) @byte(this ref dataIO d) {
-    byte n = default!;
-    bool ok = default!;
-
     var p = d.read(1);
     if (len(p) < 1) {
         d.error = true;

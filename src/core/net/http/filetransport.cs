@@ -51,9 +51,6 @@ public static RoundTripper NewFileTransportFS(fs.FS fsys) {
 }
 
 internal static (ж<Response> resp, error err) RoundTrip(this fileTransport t, ж<Request> Ꮡreq) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     // We start ServeHTTP in a goroutine, which may take a long
     // time if the file is large. The newPopulateResponseWriter
     // call returns a channel which either ServeHTTP or finish()
@@ -133,9 +130,6 @@ internal static (ж<populateResponse>, /*<-*/channel<ж<Response>>) newPopulateR
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref populateResponse pr, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (!pr.wroteHeader) {
         pr.WriteHeader(StatusOK);
     }

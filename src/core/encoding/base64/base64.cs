@@ -303,8 +303,6 @@ public static @string Error(this CorruptInputError e) {
 // It returns the number of bytes read from src, the number of bytes written
 // to dst, and an error, if any.
 [GoRecv] internal static (nint nsi, nint n, error err) decodeQuantum(this ref Encoding enc, slice<byte> dst, slice<byte> src, nint si) {
-    nint nsi = default!;
-    nint n = default!;
     error err = default!;
 
     // Decode quantum using the base64 alphabet
@@ -437,7 +435,6 @@ public static @string Error(this CorruptInputError e) {
 
 [GoRecv] internal static (nint n, error err) Read(this ref decoder d, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     // Use leftover decoded output from last read.
     if (len(d.@out) > 0) {
@@ -577,9 +574,6 @@ public static @string Error(this CorruptInputError e) {
 // Each digit comes from the decode map, and will be 0xff
 // if it came from an invalid character.
 internal static (uint32 dn, bool ok) assemble32(byte n1, byte n2, byte n3, byte n4) {
-    uint32 dn = default!;
-    bool ok = default!;
-
     // Check that all the digits are valid. If any of them was 0xff, their
     // bitwise OR will be 0xff.
     if ((byte)((byte)((byte)(n1 | n2) | n3) | n4) == 0xff) {
@@ -592,9 +586,6 @@ internal static (uint32 dn, bool ok) assemble32(byte n1, byte n2, byte n3, byte 
 // Each digit comes from the decode map, and will be 0xff
 // if it came from an invalid character.
 internal static (uint64 dn, bool ok) assemble64(byte n1, byte n2, byte n3, byte n4, byte n5, byte n6, byte n7, byte n8) {
-    uint64 dn = default!;
-    bool ok = default!;
-
     // Check that all the digits are valid. If any of them was 0xff, their
     // bitwise OR will be 0xff.
     if ((byte)((byte)((byte)((byte)((byte)((byte)((byte)(n1 | n2) | n3) | n4) | n5) | n6) | n7) | n8) == 0xff) {

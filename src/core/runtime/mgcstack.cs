@@ -236,10 +236,8 @@ internal static void putPtr(this ж<stackScanState> Ꮡs, uintptr Δp, bool cons
 // This prefers non-conservative pointers so we scan stack objects
 // precisely if there are any non-conservative pointers to them.
 internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> Ꮡs) {
-    uintptr Δp = default!;
-    bool conservative = default!;
-
     ref var s = ref Ꮡs.DerefOrNull();
+
     foreach (var (_, head) in new ж<ж<stackWorkBuf>>[]{Ꮡs.of(stackScanState.Ꮡbuf), Ꮡs.of(stackScanState.Ꮡcbuf)}.slice()) {
         var buf = head.ValueSlot;
         if (buf == nil) {
@@ -320,8 +318,6 @@ internal static readonly @string objectsAddedOutOfOrderOrˢ = "objects added out
 // If n == 0, returns nil, x.
 internal static (ж<stackObject> root, ж<stackObjectBuf> restBuf, nint restIdx) binarySearchTree(ж<stackObjectBuf> Ꮡx, nint idx, nint n) {
     ж<stackObject> root = default!;
-    ж<stackObjectBuf> restBuf = default!;
-    nint restIdx = default!;
 
     ref var x = ref Ꮡx.DerefOrNull();
     if (n == 0) {

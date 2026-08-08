@@ -1040,9 +1040,8 @@ public static error CheckCorpus(slice<any> vals, slice<reflectꓸType> types) {
 // writeToCorpus will not rewrite it. writeToCorpus sets entry.Path to the new
 // file that was just written or an error if it failed.
 internal static error /*err*/ writeToCorpus(ж<CorpusEntry> Ꮡentry, @string dir) {
-    error err = default!;
-
     ref var entry = ref Ꮡentry.DerefOrNull();
+
     @string sum = fmt.Sprintf("%x"u8, sha256.Sum256(entry.Data))[..16];
     entry.Path = filepath.Join(dir, sum);
     {

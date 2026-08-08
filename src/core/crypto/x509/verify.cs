@@ -223,7 +223,6 @@ internal static UntypedInt rootCertificate => 2;
 // format of an rfc822Name is a "Mailbox" as defined in RFC 2821, Section 4.1.2”.
 internal static (rfc2821Mailbox mailbox, bool ok) parseRFC2821Mailbox(@string @in) {
     rfc2821Mailbox mailbox = default!;
-    bool ok = default!;
 
     if (builtin.len(@in) == 0) {
         return (mailbox, false);
@@ -346,7 +345,6 @@ break_NextChar:;
 // the list of labels in reverse order, e.g. ["com", "example", "foo"].
 internal static (slice<@string> reverseLabels, bool ok) domainToReverseLabels(@string domain) {
     slice<@string> reverseLabels = default!;
-    bool ok = default!;
 
     while (builtin.len(domain) > 0) {
         {

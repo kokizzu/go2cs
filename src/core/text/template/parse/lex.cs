@@ -312,9 +312,6 @@ internal static Pos rightTrimLength(@string s) {
 
 // atRightDelim reports whether the lexer is at a right delimiter, possibly preceded by a trim marker.
 [GoRecv] internal static (bool delim, bool trimSpaces) atRightDelim(this ref lexer l) {
-    bool delim = default!;
-    bool trimSpaces = default!;
-
     if (hasRightTrimMarker(l.input[(int)(nint)(l.pos)..]) && strings.HasPrefix(l.input[(int)(nint)(l.pos + trimMarkerLen)..], l.rightDelim)) {
         // With trim marker.
         return (true, true);

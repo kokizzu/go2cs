@@ -173,8 +173,6 @@ internal static void encodeMessage(ж<buffer> Ꮡb, nint tag, message m) {
 }
 
 internal static error /*err*/ unmarshal(slice<byte> data, message m) {
-    error err = default!;
-
     ref var b = ref heap<buffer>(out var Ꮡb);
     b = new buffer(data: data, typ: 2);
     return decodeMessage(Ꮡb, m);

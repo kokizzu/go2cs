@@ -189,8 +189,6 @@ partial class embed_package {
 // comment in the FS struct above. isDir reports whether the
 // final trailing slash was present, indicating that name is a directory.
 internal static (@string dir, @string elem, bool isDir) split(@string name) {
-    @string dir = default!;
-    @string elem = default!;
     bool isDir = default!;
 
     (name, isDir) = stringslite.CutSuffix(name, "/"u8);

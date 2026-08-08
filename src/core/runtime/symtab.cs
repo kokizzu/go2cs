@@ -702,7 +702,6 @@ public static uintptr Entry(this ж<Func> Ꮡf) {
 // counter within f.
 public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc) {
     @string @file = default!;
-    nint line = default!;
 
     ref var f = ref Ꮡf.DerefOrNull();
     var fn = Ꮡf.raw();
@@ -1069,9 +1068,6 @@ internal static (@string @file, int32 line) funcline1(ΔfuncInfo f, uintptr targ
 }
 
 internal static (@string @file, int32 line) funcline(ΔfuncInfo f, uintptr targetpc) {
-    @string @file = default!;
-    int32 line = default!;
-
     return funcline1(f, targetpc, true);
 }
 
@@ -1176,11 +1172,9 @@ internal static @unsafe.Pointer funcdata(ΔfuncInfo f, uint8 i) {
 //
 //go:linkname step
 internal static (slice<byte> newp, bool ok) step(slice<byte> Δp, ж<uintptr> Ꮡpc, ж<int32> Ꮡval, bool first) {
-    slice<byte> newp = default!;
-    bool ok = default!;
-
     ref var pc = ref Ꮡpc.DerefOrNull();
     ref var val = ref Ꮡval.DerefOrNull();
+
     // For both uvdelta and pcdelta, the common case (~70%)
     // is that they are a single byte. If so, avoid calling readvarint.
     var uvdelta = (uint32)Δp[0];
@@ -1205,9 +1199,6 @@ internal static (slice<byte> newp, bool ok) step(slice<byte> Δp, ж<uintptr> �
 
 // readvarint reads a varint from p.
 internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
-    uint32 read = default!;
-    uint32 val = default!;
-
     uint32 v = default!;
     uint32 shift = default!;
     uint32 n = default!;

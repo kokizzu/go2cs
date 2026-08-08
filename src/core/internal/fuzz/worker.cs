@@ -788,7 +788,6 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
         var memʗ3 = mem;
         (time.Duration dur, slice<byte> cov, @string errMsg) fuzzOnce(CorpusEntry entry) {
             time.Duration dur = default!;
-            slice<byte> cov = default!;
             @string errMsg = default!;
             memʗ3.header().Value.count++;
             error errΔ1 = default!;
@@ -915,7 +914,6 @@ internal static minimizeResponse /*resp*/ minimize(this ж<workerServer> Ꮡws, 
 // stopping once closed. It returns a bool indicating whether minimization was
 // successful and an error if one was found.
 internal static (bool success, error retErr) minimizeInput(this ж<workerServer> Ꮡws, context.Context ctx, slice<any> vals, ж<sharedMem> Ꮡmem, minimizeArgs args) {
-    bool success = default!;
     error retErr = default!;
 
     ref var ws = ref Ꮡws.DerefOrNull();
@@ -1285,8 +1283,6 @@ internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) {
 // callLocked sends an RPC from the coordinator to the worker process and waits
 // for the response. The callLocked may be canceled with ctx.
 [GoRecv] internal static error /*err*/ callLocked(this ref workerClient wc, context.Context ctx, call c, any resp) {
-    error err = default!;
-
     var enc = json.NewEncoder(new os.FileжWriter(wc.fuzzIn));
     var dec = json.NewDecoder(new contextReaderжReader(Ꮡ(new contextReader(ctx: ctx, r: new os_FileжReader(wc.fuzzOut)))));
     {

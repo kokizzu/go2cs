@@ -116,7 +116,7 @@ internal static addrRange removeGreaterEqual(this addrRange a, uintptr addr) {
 }
 
 internal static offAddr minOffAddr = new offAddr(arenaBaseOffset);
-internal static offAddr maxOffAddr = new offAddr((nuint)(140737488355327UL));
+internal static offAddr maxOffAddr = new offAddr(unchecked((nuint)(140737488355327UL)));
 
 // offAddr represents an address in a contiguous view
 // of the address space on systems where the address space is

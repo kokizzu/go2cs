@@ -849,9 +849,6 @@ internal static (int64, error) ReadFrom(this noReadFrom _Δp0, Δio.Reader _Δp1
 // Fallback implementation of io.ReaderFrom's ReadFrom, when sendfile isn't
 // applicable.
 internal static (int64 n, error err) genericReadFrom(ж<TCPConn> Ꮡc, Δio.Reader r) {
-    int64 n = default!;
-    error err = default!;
-
     // Use wrapper to hide existing r.ReadFrom from io.Copy.
     return Δio.Copy(new tcpConnWithoutReadFrom(TCPConn: Ꮡc), r);
 }
@@ -877,9 +874,6 @@ internal static (int64, error) WriteTo(this noWriteTo _Δp0, Δio.Writer _Δp1) 
 
 // Fallback implementation of io.WriterTo's WriteTo, when zero-copy isn't applicable.
 internal static (int64 n, error err) genericWriteTo(ж<TCPConn> Ꮡc, Δio.Writer w) {
-    int64 n = default!;
-    error err = default!;
-
     // Use wrapper to hide existing w.WriteTo from io.Copy.
     return Δio.Copy(w, new tcpConnWithoutWriteTo(TCPConn: Ꮡc));
 }
@@ -935,7 +929,6 @@ internal static Δio.Reader _ᴛ3ʗ = new BuffersжReader(((ж<Buffers>)nil));
 // but does not modify v[i][j] for any i, j.
 public static (int64 n, error err) WriteTo(this ж<Buffers> Ꮡv, Δio.Writer w) {
     int64 n = default!;
-    error err = default!;
 
     ref var v = ref Ꮡv.DerefOrNull();
     {

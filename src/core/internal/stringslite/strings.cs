@@ -112,10 +112,6 @@ public static nint Index(@string s, @string substr) {
 }
 
 public static (@string before, @string after, bool found) Cut(@string s, @string sep) {
-    @string before = default!;
-    @string after = default!;
-    bool found = default!;
-
     {
         nint i = Index(s, sep); if (i >= 0) {
             return (s[..(int)(i)], s[(int)(i + len(sep))..], true);
@@ -125,9 +121,6 @@ public static (@string before, @string after, bool found) Cut(@string s, @string
 }
 
 public static (@string after, bool found) CutPrefix(@string s, @string prefix) {
-    @string after = default!;
-    bool found = default!;
-
     if (!HasPrefix(s, prefix)) {
         return (s, false);
     }
@@ -135,9 +128,6 @@ public static (@string after, bool found) CutPrefix(@string s, @string prefix) {
 }
 
 public static (@string before, bool found) CutSuffix(@string s, @string suffix) {
-    @string before = default!;
-    bool found = default!;
-
     if (!HasSuffix(s, suffix)) {
         return (s, false);
     }

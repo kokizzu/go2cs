@@ -133,7 +133,6 @@ internal static readonly @string readˢ = "read"u8;
 // At end of file, Read returns 0, io.EOF.
 public static (nint n, error err) Read(this ж<File> Ꮡf, slice<byte> b) {
     nint n = default!;
-    error err = default!;
 
     ref var f = ref Ꮡf.DerefOrNull();
     {
@@ -184,7 +183,6 @@ internal static readonly @string writeˢ = "write"u8;
 // ReadFrom implements io.ReaderFrom.
 public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
     int64 n = default!;
-    error err = default!;
 
     ref var f = ref Ꮡf.DerefOrNull();
     {
@@ -288,7 +286,6 @@ public static (nint n, error err) WriteAt(this ж<File> Ꮡf, slice<byte> b, int
 // WriteTo implements io.WriterTo.
 public static (int64 n, error err) WriteTo(this ж<File> Ꮡf, Δio.Writer w) {
     int64 n = default!;
-    error err = default!;
 
     ref var f = ref Ꮡf.DerefOrNull();
     {
@@ -335,10 +332,8 @@ internal static readonly @string seekˢ = "seek"u8;
 // It returns the new offset and an error, if any.
 // The behavior of Seek on a file opened with O_APPEND is not specified.
 public static (int64 ret, error err) Seek(this ж<File> Ꮡf, int64 offset, nint whence) {
-    int64 ret = default!;
-    error err = default!;
-
     ref var f = ref Ꮡf.DerefOrNull();
+
     {
         var errΔ1 = Ꮡf.checkValid(seekˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
@@ -357,9 +352,6 @@ public static (int64 ret, error err) Seek(this ж<File> Ꮡf, int64 offset, nint
 // WriteString is like Write, but writes the contents of string s rather than
 // a slice of bytes.
 public static (nint n, error err) WriteString(this ж<File> Ꮡf, @string s) {
-    nint n = default!;
-    error err = default!;
-
     var b = @unsafe.Slice(@unsafe.StringData(s), len(s));
     return Ꮡf.Write(b);
 }

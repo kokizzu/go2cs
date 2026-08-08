@@ -44,7 +44,6 @@ internal static void Main() {
 
 [GoRecv] public static (nint n, error err) Read(this ref Buffer b, slice<byte> p) {
     nint n = default!;
-    error err = default!;
 
     b.lastRead = opInvalid;
     b.off += n;
@@ -56,8 +55,6 @@ internal static void Main() {
 }
 
 public static ж<Buffer> /*b1*/ NewBuffer(slice<byte> buf) {
-    ж<Buffer> b1 = default!;
-
     return Ꮡ(new Buffer(buf: buf));
 }
 

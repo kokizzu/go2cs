@@ -378,7 +378,6 @@ internal static bool knownRoundTripperImpl(RoundTripper rt, ж<Request> Ꮡreq) 
 // This function populates the second and third, and uses the first if it really needs to.
 internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Request> Ꮡreq, RoundTripper rt, time.Time deadline) {
     Action stopTimer = default!;
-    Func<bool> didTimeout = default!;
 
     ref var req = ref Ꮡreq.DerefOrNull();
     if (deadline.IsZero()) {
@@ -493,9 +492,6 @@ internal static @string basicAuth(@string username, @string password) {
 // To make a request with a specified context.Context, use [NewRequestWithContext]
 // and DefaultClient.Do.
 public static (ж<Response> resp, error err) Get(@string url) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     return DefaultClient.Get(url);
 }
 
@@ -526,7 +522,6 @@ internal static readonly @string getˢ = "GET"u8;
 // To make a request with a specified context.Context, use [NewRequestWithContext]
 // and Client.Do.
 public static (ж<Response> resp, error err) Get(this ж<Client> Ꮡc, @string url) {
-    ж<Response> resp = default!;
     error err = default!;
 
     (var req, err) = NewRequest(getˢ, url, default!);
@@ -914,9 +909,6 @@ internal static error defaultCheckRedirect(ж<Request> Ꮡreq, slice<ж<Request>
 // To make a request with a specified context.Context, use [NewRequestWithContext]
 // and DefaultClient.Do.
 public static (ж<Response> resp, error err) Post(@string url, @string contentType, io.Reader body) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     return DefaultClient.Post(url, contentType, body);
 }
 
@@ -939,7 +931,6 @@ internal static readonly @string contentTypeˢ = "Content-Type"u8;
 // See the Client.Do method documentation for details on how redirects
 // are handled.
 public static (ж<Response> resp, error err) Post(this ж<Client> Ꮡc, @string url, @string contentType, io.Reader body) {
-    ж<Response> resp = default!;
     error err = default!;
 
     (var req, err) = NewRequest(postˢ, url, body);
@@ -967,9 +958,6 @@ public static (ж<Response> resp, error err) Post(this ж<Client> Ꮡc, @string 
 // To make a request with a specified [context.Context], use [NewRequestWithContext]
 // and DefaultClient.Do.
 public static (ж<Response> resp, error err) PostForm(@string urlΔ1, url.Values data) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     return DefaultClient.PostForm(urlΔ1, data);
 }
 
@@ -991,9 +979,6 @@ internal static readonly @string applicationXWwwFormˢ = "application/x-www-form
 // To make a request with a specified context.Context, use [NewRequestWithContext]
 // and Client.Do.
 public static (ж<Response> resp, error err) PostForm(this ж<Client> Ꮡc, @string urlΔ1, url.Values data) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     return Ꮡc.Post(urlΔ1, applicationXWwwFormˢ, new strings_ReaderжReader(strings.NewReader(data.Encode())));
 }
 
@@ -1012,9 +997,6 @@ public static (ж<Response> resp, error err) PostForm(this ж<Client> Ꮡc, @str
 // To make a request with a specified [context.Context], use [NewRequestWithContext]
 // and DefaultClient.Do.
 public static (ж<Response> resp, error err) Head(@string url) {
-    ж<Response> resp = default!;
-    error err = default!;
-
     return DefaultClient.Head(url);
 }
 
@@ -1034,7 +1016,6 @@ internal static readonly @string headˢ = "HEAD"u8;
 // To make a request with a specified [context.Context], use [NewRequestWithContext]
 // and [Client.Do].
 public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string url) {
-    ж<Response> resp = default!;
     error err = default!;
 
     (var req, err) = NewRequest(headˢ, url, default!);

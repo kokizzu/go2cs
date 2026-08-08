@@ -26,10 +26,6 @@ partial class windows_package {
 // version retrieves the major, minor, and build version numbers
 // of the current Windows OS from the RtlGetVersion API.
 internal static (uint32 major, uint32 minor, uint32 build) version() {
-    uint32 major = default!;
-    uint32 minor = default!;
-    uint32 build = default!;
-
     ref var info = ref heap<_OSVERSIONINFOW>(out var Ꮡinfo);
     info = new _OSVERSIONINFOW(nil);
     info.osVersionInfoSize = (uint32)/* unsafe.Sizeof(info) */ (uintptr)276;

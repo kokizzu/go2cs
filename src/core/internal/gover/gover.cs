@@ -175,10 +175,6 @@ public static Version Parse(@string x) {
 // cutInt scans the leading decimal number at the start of x to an integer
 // and returns that value and the rest of the string.
 internal static (@string n, @string rest, bool ok) cutInt(@string x) {
-    @string n = default!;
-    @string rest = default!;
-    bool ok = default!;
-
     nint i = 0;
     while (i < len(x) && (rune)'0' <= x[i] && x[i] <= (rune)'9') {
         i++;

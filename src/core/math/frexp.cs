@@ -16,9 +16,6 @@ partial class math_package {
 //	Frexp(±Inf) = ±Inf, 0
 //	Frexp(NaN) = NaN, 0
 public static (float64 frac, nint exp) Frexp(float64 f) {
-    float64 frac = default!;
-    nint exp = default!;
-
     if (haveArchFrexp) {
         return archFrexp(f);
     }

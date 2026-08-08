@@ -87,9 +87,6 @@ internal static readonly @string ed25519ExpectedOptsˢ = "ed25519: expected opts
 // A value of type [Options] can be used as opts, or crypto.Hash(0) or
 // crypto.SHA512 directly to select plain Ed25519 or Ed25519ph, respectively.
 public static (slice<byte> signature, error err) Sign(this PrivateKey priv, io.Reader rand, slice<byte> message, crypto.SignerOpts opts) {
-    slice<byte> signature = default!;
-    error err = default!;
-
     crypto.Hash hash = opts.HashFunc();
     @string context = ""u8;
     {

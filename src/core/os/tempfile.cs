@@ -65,7 +65,6 @@ internal static error errPatternHasSeparator = errors.New("pattern contains path
 internal static (@string prefix, @string suffix, error err) prefixAndSuffix(@string pattern) {
     @string prefix = default!;
     @string suffix = default!;
-    error err = default!;
 
     for (nint i = 0; i < len(pattern); i++) {
         if (IsPathSeparator(pattern[i])) {

@@ -39,9 +39,6 @@ partial class pem_package {
 // bytes) is also returned and this will always be smaller than the original
 // argument.
 internal static (slice<byte> line, slice<byte> rest) getLine(slice<byte> data) {
-    slice<byte> line = default!;
-    slice<byte> rest = default!;
-
     nint i = bytes.IndexByte(data, (rune)'\n');
     nint j = default!;
     if (i < 0){

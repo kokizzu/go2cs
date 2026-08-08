@@ -88,9 +88,6 @@ internal const nint maxPortBufSize = /* len("mobility-header") + 10 */ 25;
 internal static readonly @string tcpˢ = "tcp"u8;
 
 internal static (nint port, error error) lookupPortMap(@string network, @string service) {
-    nint port = default!;
-    error error = default!;
-
     var exprᴛ1 = network;
     if (exprᴛ1 == "ip"u8) {
         {
@@ -112,9 +109,6 @@ internal static (nint port, error error) lookupPortMap(@string network, @string 
 }
 
 internal static (nint port, error error) lookupPortMapWithNetwork(@string network, @string errNetwork, @string service) {
-    nint port = default!;
-    error error = default!;
-
     {
         var (m, ok) = services[network, ꟷ]; if (ok) {
             array<byte> lowerService = new(25); /* maxPortBufSize */
@@ -211,18 +205,12 @@ internal static ж<singleflight.Group> getLookupGroup(this ж<Resolver> Ꮡr) {
 // LookupHost uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupHost].
 public static (slice<@string> addrs, error err) LookupHost(@string host) {
-    slice<@string> addrs = default!;
-    error err = default!;
-
     return DefaultResolver.LookupHost(context.Background(), host);
 }
 
 // LookupHost looks up the given host using the local resolver.
 // It returns a slice of that host's addresses.
 public static (slice<@string> addrs, error err) LookupHost(this ж<Resolver> Ꮡr, context.Context ctx, @string host) {
-    slice<@string> addrs = default!;
-    error err = default!;
-
     // Make sure that no matter what we do later, host=="" is rejected.
     if (host == ""u8) {
         return (default!, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), host, ""u8)));
@@ -457,9 +445,6 @@ internal static slice<any> ipAddrsEface(slice<IPAddr> addrs) {
 // LookupPort uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupPort].
 public static (nint port, error err) LookupPort(@string network, @string service) {
-    nint port = default!;
-    error err = default!;
-
     return DefaultResolver.LookupPort(context.Background(), network, service);
 }
 
@@ -511,9 +496,6 @@ Err: "unknown network"u8, Addr: network))));
 // LookupCNAME uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupCNAME].
 public static (@string cname, error err) LookupCNAME(@string host) {
-    @string cname = default!;
-    error err = default!;
-
     return DefaultResolver.LookupCNAME(context.Background(), host);
 }
 
@@ -556,10 +538,6 @@ public static (@string, error) LookupCNAME(this ж<Resolver> Ꮡr, context.Conte
 // invalid names, those records are filtered out and an error
 // will be returned alongside the remaining results, if any.
 public static (@string cname, slice<ж<SRV>> addrs, error err) LookupSRV(@string service, @string proto, @string name) {
-    @string cname = default!;
-    slice<ж<SRV>> addrs = default!;
-    error err = default!;
-
     return DefaultResolver.LookupSRV(context.Background(), service, proto, name);
 }
 
@@ -707,9 +685,6 @@ public static (slice<@string>, error) LookupTXT(this ж<Resolver> Ꮡr, context.
 // LookupAddr uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupAddr].
 public static (slice<@string> names, error err) LookupAddr(@string addr) {
-    slice<@string> names = default!;
-    error err = default!;
-
     return DefaultResolver.LookupAddr(context.Background(), addr);
 }
 

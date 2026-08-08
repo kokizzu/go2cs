@@ -242,9 +242,8 @@ internal static slice<byte> nextMultiNorm(ж<Iter> Ꮡi) {
 
 // nextDecomposed is the implementation of Next for forms NFD and NFKD.
 internal static slice<byte> /*next*/ nextDecomposed(ж<Iter> Ꮡi) {
-    slice<byte> next = default!;
-
     ref var i = ref Ꮡi.DerefOrNull();
+
     nint outp = 0;
     nint inCopyStart = i.p;
     nint outCopyStart = 0;

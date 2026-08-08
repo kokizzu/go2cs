@@ -7,9 +7,6 @@ partial class os_package {
 
 // Hostname returns the host name reported by the kernel.
 public static (@string name, error err) Hostname() {
-    @string name = default!;
-    error err = default!;
-
     return hostname();
 }
 

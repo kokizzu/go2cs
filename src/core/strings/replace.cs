@@ -101,10 +101,8 @@ public static @string Replace(this ж<Replacer> Ꮡr, @string s) {
 
 // WriteString writes s to w with all replacements performed.
 public static (nint n, error err) WriteString(this ж<Replacer> Ꮡr, io.Writer w, @string s) {
-    nint n = default!;
-    error err = default!;
-
     ref var r = ref Ꮡr.DerefOrNull();
+
     Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     return r.r.WriteString(w, s);
 }
@@ -472,7 +470,6 @@ internal static ж<singleStringReplacer> makeSingleStringReplacer(@string patter
 
 [GoRecv] internal static (nint n, error err) WriteString(this ref byteReplacer r, io.Writer w, @string s) {
     nint n = default!;
-    error err = default!;
 
     var sw = getStringWriter(w);
     nint last = 0;

@@ -117,9 +117,7 @@ public static (ж<SID>, error) StringToSid(@string s) {
 // System specify target computer to search.
 public static (ж<SID> sid, @string domain, uint32 accType, error err) LookupSID(@string system, @string account) {
     ж<SID> sid = default!;
-    @string domain = default!;
     ref var accType = ref heap(new uint32(), out var ᏑaccType);
-    error err = default!;
 
     if (len(account) == 0) {
         return (default!, "", 0, EINVAL);
@@ -193,8 +191,6 @@ public static (ж<SID>, error) Copy(this ж<SID> Ꮡsid) {
 // and the name of the first domain on which this sid is found.
 // System specify target computer to search for.
 public static (@string account, @string domain, uint32 accType, error err) LookupAccount(this ж<SID> Ꮡsid, @string system) {
-    @string account = default!;
-    @string domain = default!;
     ref var accType = ref heap(new uint32(), out var ᏑaccType);
     error err = default!;
 

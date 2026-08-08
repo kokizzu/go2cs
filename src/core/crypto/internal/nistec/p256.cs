@@ -466,8 +466,6 @@ public static (ж<P256Point>, error) ScalarBaseMult(this ж<P256Point> Ꮡp, sli
 // p256Sqrt sets e to a square root of x. If x is not a square, p256Sqrt returns
 // false and e is unchanged. e and x can overlap.
 internal static bool /*isSquare*/ p256Sqrt(ж<fiat.P256Element> Ꮡe, ж<fiat.P256Element> Ꮡx) {
-    bool isSquare = default!;
-
     var candidate = @new<fiat.P256Element>();
     p256SqrtCandidate(candidate, Ꮡx);
     var square = @new<fiat.P256Element>().Square(candidate);

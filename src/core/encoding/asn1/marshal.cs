@@ -289,9 +289,6 @@ internal static void Encode(this oidEncoder oid, slice<byte> dst) {
 }
 
 internal static (encoder e, error err) makeObjectIdentifier(slice<nint> oid) {
-    encoder e = default!;
-    error err = default!;
-
     if (len(oid) < 2 || oid[0] > 2 || (oid[0] < 2 && oid[1] >= 40)) {
         return (default!, new StructuralError("invalid object identifier"u8));
     }
@@ -299,9 +296,6 @@ internal static (encoder e, error err) makeObjectIdentifier(slice<nint> oid) {
 }
 
 internal static (encoder e, error err) makePrintableString(@string s) {
-    encoder e = default!;
-    error err = default!;
-
     for (nint i = 0; i < len(s); i++) {
         // The asterisk is often used in PrintableString, even though
         // it is invalid. If a PrintableString was specifically
@@ -317,9 +311,6 @@ internal static (encoder e, error err) makePrintableString(@string s) {
 }
 
 internal static (encoder e, error err) makeIA5String(@string s) {
-    encoder e = default!;
-    error err = default!;
-
     for (nint i = 0; i < len(s); i++) {
         if (s[i] > 127) {
             return (default!, new StructuralError("IA5String contains invalid character"u8));
@@ -329,9 +320,6 @@ internal static (encoder e, error err) makeIA5String(@string s) {
 }
 
 internal static (encoder e, error err) makeNumericString(@string s) {
-    encoder e = default!;
-    error err = default!;
-
     for (nint i = 0; i < len(s); i++) {
         if (!isNumeric(s[i])) {
             return (default!, new StructuralError("NumericString contains invalid character"u8));
@@ -362,7 +350,6 @@ internal static bool outsideUTCRange(time.Time t) {
 }
 
 internal static (encoder e, error err) makeUTCTime(time.Time t) {
-    encoder e = default!;
     error err = default!;
 
     var dst = new slice<byte>(0, 18);
@@ -374,7 +361,6 @@ internal static (encoder e, error err) makeUTCTime(time.Time t) {
 }
 
 internal static (encoder e, error err) makeGeneralizedTime(time.Time t) {
-    encoder e = default!;
     error err = default!;
 
     var dst = new slice<byte>(0, 20);
@@ -386,9 +372,6 @@ internal static (encoder e, error err) makeGeneralizedTime(time.Time t) {
 }
 
 internal static (slice<byte> ret, error err) appendUTCTime(slice<byte> dst, time.Time t) {
-    slice<byte> ret = default!;
-    error err = default!;
-
     nint year = t.Year();
     switch (ᐧ) {
     case {} when 1950 <= year && year < 2000: {
@@ -407,9 +390,6 @@ internal static (slice<byte> ret, error err) appendUTCTime(slice<byte> dst, time
 }
 
 internal static (slice<byte> ret, error err) appendGeneralizedTime(slice<byte> dst, time.Time t) {
-    slice<byte> ret = default!;
-    error err = default!;
-
     nint year = t.Year();
     if (year < 0 || year > 9999) {
         return (default!, new StructuralError("cannot represent time as GeneralizedTime"u8));
@@ -458,7 +438,6 @@ internal static slice<byte> stripTagAndLength(slice<byte> @in) {
 }
 
 internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldParameters @params) {
-    encoder e = default!;
     error err = default!;
 
     var exprᴛ1 = value.Type();
@@ -598,7 +577,6 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
 internal static readonly @string asn1StringNotValidUtf8ˢ = "asn1: string not valid UTF-8"u8;
 
 internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParameters @params) {
-    encoder e = default!;
     error err = default!;
 
     if (!v.IsValid()) {

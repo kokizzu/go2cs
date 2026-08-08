@@ -320,7 +320,6 @@ public static (nint n, error err) SpanString(this Form f, @string s, bool atEOF)
 // non-normalized by appending other runes.
 [GoRecv] internal static (nint n, bool ok) quickSpan(this ref formInfo f, input src, nint i, nint end, bool atEOF) {
     nint n = default!;
-    bool ok = default!;
 
     uint8 lastCC = default!;
     var ss = ((streamSafe)0);

@@ -84,9 +84,6 @@ internal static void clear(this ж<sweepClass> Ꮡs) {
 // unswept lists for that class, indicated as a boolean
 // (true means "full").
 internal static (spanClass spc, bool full) split(this sweepClass s) {
-    spanClass spc = default!;
-    bool full = default!;
-
     return (((spanClass)(uint8)((uint32)((s >> (int)(1))))), (sweepClass)(s & 1) == 0);
 }
 

@@ -552,7 +552,6 @@ private static readonly @string bisectMatchˢ = "[bisect-match "u8;
 public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
     @string @short = default!;
     uint64 id = default!;
-    bool ok = default!;
 
     // Find first instance of prefix.
     @string prefix = bisectMatchˢ;

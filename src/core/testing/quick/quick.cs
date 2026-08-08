@@ -64,9 +64,6 @@ internal static UntypedInt complexSize => 50;
 // If the type implements the [Generator] interface, that will be used.
 // Note: To create arbitrary values for structs, all the fields must be exported.
 public static (reflectꓸValue value, bool ok) Value(reflectꓸType t, ж<rand.Rand> Ꮡrand) {
-    reflectꓸValue value = new(nil);
-    bool ok = default!;
-
     return sizedValue(t, Ꮡrand, complexSize);
 }
 
@@ -74,10 +71,8 @@ public static (reflectꓸValue value, bool ok) Value(reflectꓸType t, ж<rand.R
 // hint is used for shrinking as a function of indirection level so
 // that recursive data structures will terminate.
 internal static (reflectꓸValue value, bool ok) sizedValue(reflectꓸType t, ж<rand.Rand> Ꮡrand, nint size) {
-    reflectꓸValue value = new(nil);
-    bool ok = default!;
-
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
+
     {
         var (m, okΔ1) = reflect.Zero(t).Interface()._<Generator>(ᐧ); if (okΔ1) {
             return (m.Generate(Ꮡrand, size), true);

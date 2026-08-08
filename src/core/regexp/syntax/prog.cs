@@ -157,9 +157,6 @@ public static @string String(this ж<Prog> Ꮡp) {
 // regexp must start with. Complete is true if the prefix
 // is the entire match.
 [GoRecv] public static (@string prefix, bool complete) Prefix(this ref Prog p) {
-    @string prefix = default!;
-    bool complete = default!;
-
     var i = p.skipNop((uint32)p.Start);
     // Avoid allocation of buffer if prefix is empty.
     if (i.op() != InstRune || len((~i).Rune) != 1) {

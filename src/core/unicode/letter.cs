@@ -211,9 +211,6 @@ public static bool IsTitle(rune r) {
 // to maps the rune using the specified case mapping.
 // It additionally reports whether caseRange contained a mapping for r.
 internal static (rune mappedRune, bool foundMapping) to(nint _case, rune r, slice<CaseRange> caseRange) {
-    rune mappedRune = default!;
-    bool foundMapping = default!;
-
     if (_case < 0 || MaxCase <= _case) {
         return (ReplacementChar, false); // as reasonable an error as any
     }

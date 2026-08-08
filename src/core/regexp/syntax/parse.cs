@@ -1207,7 +1207,6 @@ ErrInvalidEscape, t[..2])))); goto ᒐdone;
 // like (?i) or (?: or (?i:.  It removes the prefix from s and updates the parse state.
 // The caller must have ensured that s begins with "(?".
 [GoRecv] internal static (@string rest, error err) parsePerlFlags(this ref parser p, @string s) {
-    @string rest = default!;
     error err = default!;
 
     @string t = s;
@@ -1542,7 +1541,6 @@ internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
 // and returns the rune.
 [GoRecv] internal static (rune r, @string rest, error err) parseEscape(this ref parser p, @string s) {
     rune r = default!;
-    @string rest = default!;
     error err = default!;
 
     @string t = s[1..];
@@ -1678,10 +1676,6 @@ Switch:
 // parseClassChar parses a character class character at the beginning of s
 // and returns it.
 [GoRecv] internal static (rune r, @string rest, error err) parseClassChar(this ref parser p, @string s, @string wholeClass) {
-    rune r = default!;
-    @string rest = default!;
-    error err = default!;
-
     if (s == ""u8) {
         return (0, "", new ΔErrorжerror(Ꮡ(new ΔError(Code: ErrMissingBracket, Expr: wholeClass))));
     }
@@ -1875,10 +1869,8 @@ internal static (slice<rune> @out, @string rest, error err) parseUnicodeClass(th
 // parseClass parses a character class at the beginning of s
 // and pushes it onto the parse stack.
 internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @string s) {
-    @string rest = default!;
-    error err = default!;
-
     ref var p = ref Ꮡp.DerefOrNull();
+
     @string t = s[1..]; // chop [
     var re = p.newRegexp(OpCharClass);
     re.Value.Flags = p.flags;
@@ -2255,8 +2247,6 @@ internal static error checkUTF8(@string s) {
 
 internal static (rune c, @string t, error err) nextRune(@string s) {
     rune c = default!;
-    @string t = default!;
-    error err = default!;
 
     (c, var size) = utf8.DecodeRuneInString(s);
     if (c == utf8.RuneError && size == 1) {

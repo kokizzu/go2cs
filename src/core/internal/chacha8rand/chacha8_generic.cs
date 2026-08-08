@@ -202,11 +202,6 @@ internal static void block_generic(ж<array<uint64>> Ꮡseed, ж<array<uint64>> 
 
 // qr is the (inlinable) ChaCha8 quarter round.
 internal static (uint32 _a, uint32 _b, uint32 _c, uint32 _d) qr(uint32 a, uint32 b, uint32 c, uint32 d) {
-    uint32 _a = default!;
-    uint32 _b = default!;
-    uint32 _c = default!;
-    uint32 _d = default!;
-
     a += b;
     d ^= (uint32)(a);
     d = (uint32)((d << (int)(16)) | (d >> (int)(16)));

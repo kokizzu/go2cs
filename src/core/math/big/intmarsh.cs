@@ -48,10 +48,8 @@ public static (slice<byte>, error) GobEncode(this ж<ΔInt> Ꮡx) {
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
 public static (slice<byte> text, error err) MarshalText(this ж<ΔInt> Ꮡx) {
-    slice<byte> text = default!;
-    error err = default!;
-
     ref var x = ref Ꮡx.DerefOrNull();
+
     if (Ꮡx == nil) {
         return (slice<byte>("<nil>"u8), default!);
     }

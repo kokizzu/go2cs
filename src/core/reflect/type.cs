@@ -897,9 +897,6 @@ public static @string Get(this StructTag tag, @string key) {
 // the tag string. If the tag does not have the conventional format,
 // the value returned by Lookup is unspecified.
 public static (@string value, bool ok) Lookup(this StructTag tag, @string key) {
-    @string value = default!;
-    bool ok = default!;
-
     // When modifying this code, also update the validateStructTag code
     // in cmd/vet/structtag.go.
     while (tag != ""u8) {
@@ -2846,7 +2843,6 @@ internal static ref Δsync.Map layoutCache => ref ᏑlayoutCache.Value; // map[l
 // Currently, that's just size and the GC program. We also fill in
 // the name for possible debugging use.
 internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid) funcLayout(ж<funcType> Ꮡt, ж<abi.Type> Ꮡrcvr) {
-    ж<abi.Type> frametype = default!;
     ж<Δsync.Pool> framePool = default!;
     abiDesc abid = default!;
 

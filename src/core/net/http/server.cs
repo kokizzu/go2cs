@@ -1697,25 +1697,17 @@ internal static void writeStatusLine(ж<bufio.Writer> Ꮡbw, bool is11, nint cod
 // bufferBeforeChunkingSize smaller and having bufio's fast-paths deal
 // with this instead.
 internal static (nint n, error err) Write(this ж<response> Ꮡw, slice<byte> data) {
-    nint n = default!;
-    error err = default!;
-
     return Ꮡw.write(builtin.len(data), data, ""u8);
 }
 
 internal static (nint n, error err) WriteString(this ж<response> Ꮡw, @string data) {
-    nint n = default!;
-    error err = default!;
-
     return Ꮡw.write(builtin.len(data), default!, data);
 }
 
 // either dataB or dataS is non-zero.
 internal static (nint n, error err) write(this ж<response> Ꮡw, nint lenData, slice<byte> dataB, @string dataS) {
-    nint n = default!;
-    error err = default!;
-
     ref var w = ref Ꮡw.DerefOrNull();
+
     if (w.conn.hijacked()) {
         if (lenData > 0) {
             var caller = relevantCaller();
@@ -1934,9 +1926,6 @@ internal static void setState(this ж<conn> Ꮡc, net.Conn nc, ConnState state, 
 }
 
 internal static (ConnState state, int64 unixSec) getState(this ж<conn> Ꮡc) {
-    ConnState state = default!;
-    int64 unixSec = default!;
-
     var packedState = Ꮡc.of(conn.ᏑcurState).Load();
     return (((ConnState)(nint)((uint64)(packedState & 0xff))), (int64)((packedState >> (int)(8))));
 }
@@ -2671,7 +2660,6 @@ internal static @string stripHostPort(@string h) {
 // Handler returns a “page not found” handler and an empty pattern.
 public static (ΔHandler h, @string pattern) Handler(this ж<ServeMux> Ꮡmux, ж<Request> Ꮡr) {
     ΔHandler h = default!;
-    @string pattern = default!;
 
     if (use121) {
         return Ꮡmux.of(ServeMux.Ꮡmux121).findHandler(Ꮡr);
@@ -2688,8 +2676,6 @@ internal static readonly @string allowˢ = "Allow"u8;
 // Otherwise it returns a Redirect or NotFound handler with the path that would match
 // after the redirect.
 internal static (ΔHandler h, @string patStr, ж<pattern>, slice<@string> matches) findHandler(this ж<ServeMux> Ꮡmux, ж<Request> Ꮡr) {
-    ΔHandler h = default!;
-    @string patStr = default!;
     slice<@string> matches = default!;
 
     ref var mux = ref Ꮡmux.DerefOrNull();

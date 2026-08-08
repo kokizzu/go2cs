@@ -186,10 +186,10 @@ internal static void Main() {
     fmt.Println(retNamedˢ, AreEqual(retNamed(), ((any)i)));
     fmt.Println(retRuneLitˢ, AreEqual(retRuneL(), ((any)r)));
     fmt.Println(retFloatLitˢ, AreEqual(retFloatL(), ((any)f)));
-    nint wide = (nint)(1099511627776L);
-    fmt.Println(wideLitˢ, variadicEq(wide, (nint)(1099511627776L)));
+    nint wide = unchecked((nint)(1099511627776L));
+    fmt.Println(wideLitˢ, variadicEq(wide, unchecked((nint)(1099511627776L))));
     fmt.Println(wideNamedˢ, variadicEq(wide, (nint)(namedWide)));
-    fmt.Println(wideKindsˢ, kindOf((nint)(1099511627776L)), kindOf((nint)(namedWide)));
+    fmt.Println(wideKindsˢ, kindOf(unchecked((nint)(1099511627776L))), kindOf((nint)(namedWide)));
     fmt.Println(kindsLitˢ, kindOf((nint)(0)), kindOf((rune)'A'), kindOf(2.5D));
     fmt.Println(kindsNamedˢ, kindOf((nint)(namedInt)), kindOf((int32)(namedRune)), kindOf((float64)(namedFloat)));
     fmt.Println(kindsValueˢ, kindOf(i), kindOf(r), kindOf(f));

@@ -26,9 +26,6 @@ public static io.Reader Reader;
 // Read is a helper function that calls Reader.Read using io.ReadFull.
 // On return, n == len(b) if and only if err == nil.
 public static (nint n, error err) Read(slice<byte> b) {
-    nint n = default!;
-    error err = default!;
-
     return io.ReadFull(Reader, b);
 }
 

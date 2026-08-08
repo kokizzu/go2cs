@@ -405,9 +405,6 @@ internal static readonly @string go386ˢ = "GO386"u8;
 // GOGOARCH returns the name and value of the GO$GOARCH setting.
 // For example, if GOARCH is "amd64" it might return "GOAMD64", "v2".
 public static (@string name, @string value) GOGOARCH() {
-    @string name = default!;
-    @string value = default!;
-
     var exprᴛ1 = GOARCH;
     if (exprᴛ1 == "386"u8) {
         return (go386ˢ, GO386);

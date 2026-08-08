@@ -189,8 +189,6 @@ internal static byte toUpper(byte c) {
 
 // IsAbs reports whether the path is absolute.
 public static bool /*b*/ IsAbs(@string path) {
-    bool b = default!;
-
     nint l = volumeNameLen(path);
     if (l == 0) {
         return false;
@@ -304,10 +302,6 @@ internal static nint uncLen(@string path, nint prefixLen) {
 
 // cutPath slices path around the first path separator.
 internal static (@string before, @string after, bool found) cutPath(@string path) {
-    @string before = default!;
-    @string after = default!;
-    bool found = default!;
-
     foreach (var (i, _) in path) {
         if (IsPathSeparator(path[i])) {
             return (path[..(int)(i)], path[(int)(i + 1)..], true);

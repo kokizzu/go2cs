@@ -276,9 +276,6 @@ internal static bool isNotTokenChar(rune r) {
 // the token consumed and the rest of the string. Returns ("", v) on
 // failure to consume at least one character.
 internal static (@string token, @string rest) consumeToken(@string v) {
-    @string token = default!;
-    @string rest = default!;
-
     nint notPos = strings.IndexFunc(v, isNotTokenChar);
     if (notPos == -1) {
         return (v, "");

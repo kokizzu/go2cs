@@ -773,8 +773,6 @@ internal static bool chanparkcommit(ж<g> Ꮡgp, @unsafe.Pointer chanLock) {
 //		... bar
 //	}
 internal static bool /*selected*/ selectnbsend(ж<Δhchan> Ꮡc, @unsafe.Pointer elem) {
-    bool selected = default!;
-
     return chansend(Ꮡc, elem, false, getcallerpc());
 }
 
@@ -795,24 +793,16 @@ internal static bool /*selected*/ selectnbsend(ж<Δhchan> Ꮡc, @unsafe.Pointer
 //		... bar
 //	}
 internal static (bool selected, bool received) selectnbrecv(@unsafe.Pointer elem, ж<Δhchan> Ꮡc) {
-    bool selected = default!;
-    bool received = default!;
-
     return chanrecv(Ꮡc, elem, false);
 }
 
 //go:linkname reflect_chansend reflect.chansend0
 internal static bool /*selected*/ reflect_chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer elem, bool nb) {
-    bool selected = default!;
-
     return chansend(Ꮡc, elem, !nb, getcallerpc());
 }
 
 //go:linkname reflect_chanrecv reflect.chanrecv
 internal static (bool selected, bool received) reflect_chanrecv(ж<Δhchan> Ꮡc, bool nb, @unsafe.Pointer elem) {
-    bool selected = default!;
-    bool received = default!;
-
     return chanrecv(Ꮡc, elem, !nb);
 }
 

@@ -265,7 +265,6 @@ internal static readonly @string badListSyntaxˢ = "bad list syntax"u8;
 // nextList parses and returns a comma-separated list of names.
 [GoRecv] internal static (slice<@string> list, @string token) nextList(this ref rulesParser p) {
     slice<@string> list = default!;
-    @string token = default!;
 
     while (ᐧ) {
         @string tok = p.nextToken();

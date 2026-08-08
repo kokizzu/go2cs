@@ -582,9 +582,7 @@ internal static @string sanitizeOrWarn(@string fieldName, Func<byte, bool> valid
 // parsing was successful, and a boolean indicating whether the parsed
 // value was enclosed in double quotes.
 internal static (@string value, bool quoted, bool ok) parseCookieValue(@string raw, bool allowDoubleQuote) {
-    @string value = default!;
     bool quoted = default!;
-    bool ok = default!;
 
     // Strip the quotes, if present.
     if (allowDoubleQuote && builtin.len(raw) > 1 && raw[0] == (rune)'"' && raw[builtin.len(raw) - 1] == (rune)'"') {

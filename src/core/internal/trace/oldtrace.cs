@@ -273,11 +273,9 @@ internal static error errSkip = errors.New("skip event"u8);
 // encountering events that oldtrace shouldn't be able to emit, ocnvertEvent
 // returns a descriptive error.
 internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter> Ꮡit, ж<oldtrace.Event> Ꮡev) {
-    ΔEvent OUT = default!;
-    error ERR = default!;
-
     ref var it = ref Ꮡit.DerefOrNull();
     ref var ev = ref Ꮡev.DerefOrNull();
+
     @event.Type mappedType = default!;
     timedEventArgs mappedArgs = default!;
     copy(mappedArgs[..], ev.Args[..]);

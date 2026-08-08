@@ -33,8 +33,6 @@ public static float64 NaN() {
 
 // IsNaN reports whether f is an IEEE 754 “not-a-number” value.
 public static bool /*is*/ IsNaN(float64 f) {
-    bool @is = default!;
-
     // IEEE 754 says that only NaNs satisfy f != f.
     // To avoid the floating-point hardware, could use:
     //	x := Float64bits(f);
@@ -57,9 +55,6 @@ public static bool IsInf(float64 f, nint sign) {
 // normalize returns a normal number y and exponent exp
 // satisfying x == y × 2**exp. It assumes x is finite and non-zero.
 internal static (float64 y, nint exp) normalize(float64 x) {
-    float64 y = default!;
-    nint exp = default!;
-
     const float64 SmallestNormal = 2.2250738585072014e-308; // 2**-1022
     if (Abs(x) < SmallestNormal) {
         return (x * (4503599627370496D), -52);

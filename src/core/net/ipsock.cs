@@ -178,14 +178,10 @@ internal static readonly @string unexpectedInAddressˢ2 = "unexpected ']' in add
 public static (@string host, @string port, error err) SplitHostPort(@string hostport) {
     @string host = default!;
     @string port = default!;
-    error err = default!;
 
     @string missingPort = "missing port in address"u8;
     @string tooManyColons = "too many colons in address"u8;
     (@string host, @string port, error err) addrErr(@string addr, @string why) {
-        @string hostΔ1 = default!;
-        @string portΔ1 = default!;
-        error errΔ1 = default!;
         return ("", "", new AddrErrorжerror(Ꮡ(new AddrError(Err: why, Addr: addr))));
     }
     nint j = 0;

@@ -857,7 +857,6 @@ internal static readonly @string stringHasInvalidLength0ˢ = "string has invalid
 }
 
 [GoRecv] internal static (@string s, error err) readStr(this ref parser p) {
-    @string s = default!;
     error err = default!;
 
     (var sz, err) = p.readVal();
@@ -1358,8 +1357,6 @@ internal static error errMalformedVarint = errors.New("malformatted base-128 var
 
 internal static (uint64 v, slice<byte> rem, error err) readValFrom(slice<byte> buf) {
     uint64 v = default!;
-    slice<byte> rem = default!;
-    error err = default!;
 
     (v, var n) = binary.Uvarint(buf);
     if (n <= 0) {

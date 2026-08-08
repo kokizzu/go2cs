@@ -200,11 +200,6 @@ internal static readonly @string setˢ = "SET"u8;
 // Given a reflected Go type, getUniversalType returns the default tag number
 // and expected compound flag.
 internal static (bool matchAny, nint tagNumber, bool isCompound, bool ok) getUniversalType(reflectꓸType t) {
-    bool matchAny = default!;
-    nint tagNumber = default!;
-    bool isCompound = default!;
-    bool ok = default!;
-
     var exprᴛ1 = t;
     if (AreEqual(exprᴛ1, rawValueType)) {
         return (true, -1, false, true);

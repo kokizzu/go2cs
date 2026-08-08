@@ -37,9 +37,6 @@ public static error ErrLineTooLong = @internal.ErrLineTooLong;
 }
 
 internal static (nint n, error err) Read(this errorReader r, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     return (0, r.err);
 }
 
@@ -49,9 +46,6 @@ internal static (nint n, error err) Read(this errorReader r, slice<byte> p) {
 }
 
 [GoRecv] internal static (nint n, error err) Read(this ref byteReader br, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if (br.done) {
         return (0, io.EOF);
     }
@@ -84,7 +78,6 @@ internal static (nint n, error err) Read(this errorReader r, slice<byte> p) {
 
 internal static (ж<transferWriter> t, error err) newTransferWriter(any r) {
     ж<transferWriter> t = default!;
-    error err = default!;
 
     t = Ꮡ(new transferWriter(nil));
     // Extract relevant fields
@@ -1179,9 +1172,6 @@ internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) {
 }
 
 internal static (nint n, error err) Read(this bodyLocked bl, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     if ((~bl.b).closed) {
         return (0, ErrBodyReadAfterClose);
     }
@@ -1254,9 +1244,6 @@ internal static reflectꓸType nopCloserWriterToType = reflect.TypeOf(io.NopClos
 // unwrapNopCloser return the underlying reader and true if r is a NopCloser
 // else it return false.
 internal static (io.Reader underlyingReader, bool isNopCloser) unwrapNopCloser(io.Reader r) {
-    io.Reader underlyingReader = default!;
-    bool isNopCloser = default!;
-
     var exprᴛ1 = reflect.TypeOf(r);
     if (AreEqual(exprᴛ1, nopCloserType) || AreEqual(exprᴛ1, nopCloserWriterToType)) {
         return (reflect.ValueOf(r).Field(0).Interface()._<io.Reader>(), true);

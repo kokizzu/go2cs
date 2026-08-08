@@ -209,7 +209,6 @@ public static (uint64, error) ParseUint(@string s, nint @base, nint bitSize) {
 //
 // [integer literals]: https://go.dev/ref/spec#Integer_literals
 public static (int64 i, error err) ParseInt(@string s, nint @base, nint bitSize) {
-    int64 i = default!;
     error err = default!;
 
     @string fnParseInt = "ParseInt"u8;

@@ -243,9 +243,6 @@ internal static void text(this Italic _) {
 // the first chance to resolve it, in case there's a different package imported as math,
 // and otherwise we refer to a built-in list of single-element standard library package names.
 [GoRecv] internal static (@string importPath, bool ok) lookupPkg(this ref parseDoc d, @string pkg) {
-    @string importPath = default!;
-    bool ok = default!;
-
     if (strings.Contains(pkg, "/"u8)) {
         // assume a full import path
         if (validImportPath(pkg)) {
@@ -278,9 +275,6 @@ internal static bool isStdPkg(@string path) {
 // Note that the go/doc package provides a more sophisticated
 // lookup based on the imports used in the current package.
 public static (@string importPath, bool ok) DefaultLookupPackage(@string name) {
-    @string importPath = default!;
-    bool ok = default!;
-
     if (isStdPkg(name)) {
         return (name, true);
     }
@@ -743,7 +737,6 @@ internal static ж<List> list(this ж<parseDoc> Ꮡd, slice<@string> lines, bool
 internal static (@string num, @string rest, bool ok) listMarker(@string line) {
     @string num = default!;
     @string rest = default!;
-    bool ok = default!;
 
     line = strings.TrimSpace(line);
     if (line == ""u8) {
@@ -906,7 +899,6 @@ internal static slice<ΔText> parseLinkedText(this ж<parseDoc> Ꮡd, @string te
 internal static (@string before, @string name, bool foundDot) splitDocName(@string text) {
     @string before = default!;
     @string name = default!;
-    bool foundDot = default!;
 
     nint i = strings.LastIndex(text, "."u8);
     name = text[(int)(i + 1)..];
@@ -1017,9 +1009,6 @@ internal static (@string before, @string name, bool foundDot) splitDocName(@stri
 // The caller should skip over the first len(url) bytes of s
 // before further processing.
 internal static (@string url, bool ok) autoURL(@string s) {
-    @string url = default!;
-    bool ok = default!;
-
     // Find the ://. Fast path to pick off non-URL,
     // since we call this at every position in the string.
     // The shortest possible URL is ftp://x, 7 bytes.
@@ -1217,9 +1206,6 @@ internal static bool isName(@string s) {
 // The caller should skip over the first len(id) bytes of s
 // before further processing.
 internal static (@string id, bool ok) ident(@string s) {
-    @string id = default!;
-    bool ok = default!;
-
     // Scan [\pL_][\pL_0-9]*
     nint n = 0;
     while (n < len(s)) {

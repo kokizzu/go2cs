@@ -465,8 +465,6 @@ public static (ж<P384Point>, error) ScalarBaseMult(this ж<P384Point> Ꮡp, sli
 // p384Sqrt sets e to a square root of x. If x is not a square, p384Sqrt returns
 // false and e is unchanged. e and x can overlap.
 internal static bool /*isSquare*/ p384Sqrt(ж<fiat.P384Element> Ꮡe, ж<fiat.P384Element> Ꮡx) {
-    bool isSquare = default!;
-
     var candidate = @new<fiat.P384Element>();
     p384SqrtCandidate(candidate, Ꮡx);
     var square = @new<fiat.P384Element>().Square(candidate);

@@ -294,9 +294,6 @@ internal static (ж<ast.Object>, error) simpleImporter(map<@string, ж<ast.Objec
 // to signal a reference to p.
 // Otherwise, importPath returns "", false.
 [GoRecv] internal static (@string importPath, bool ok) lookupPackage(this ref Package p, @string name) {
-    @string importPath = default!;
-    bool ok = default!;
-
     {
         var (path, okΔ1) = p.importByName[name, ꟷ]; if (okΔ1) {
             if (path == ""u8) {

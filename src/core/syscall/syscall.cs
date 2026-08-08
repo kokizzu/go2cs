@@ -83,17 +83,11 @@ internal static uintptr _zero;
 
 // Unix returns the time stored in ts as seconds plus nanoseconds.
 [GoRecv] public static (int64 sec, int64 nsec) Unix(this ref Timespec ts) {
-    int64 sec = default!;
-    int64 nsec = default!;
-
     return ((int64)ts.Sec, (int64)ts.Nsec);
 }
 
 // Unix returns the time stored in tv as seconds plus nanoseconds.
 [GoRecv] public static (int64 sec, int64 nsec) Unix(this ref Timeval tv) {
-    int64 sec = default!;
-    int64 nsec = default!;
-
     return ((int64)tv.Sec, (int64)tv.Usec * 1000);
 }
 

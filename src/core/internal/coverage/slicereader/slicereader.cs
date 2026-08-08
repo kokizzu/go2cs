@@ -41,9 +41,6 @@ public static ж<Reader> NewReader(slice<byte> b, bool @readonly) {
 }
 
 [GoRecv] public static (int64 ret, error err) Seek(this ref Reader r, int64 offset, nint whence) {
-    int64 ret = default!;
-    error err = default!;
-
     var exprᴛ1 = whence;
     if (exprᴛ1 == io.SeekStart) {
         if (offset < 0 || offset > (int64)len(r.b)) {

@@ -177,9 +177,6 @@ internal static (@string, error) encode(@string prefix, @string s) {
 
 // madd computes a + (b * c), detecting overflow.
 internal static (int32 next, bool overflow) madd(int32 a, int32 b, int32 c) {
-    int32 next = default!;
-    bool overflow = default!;
-
     var p = (int64)b * (int64)c;
     if (p > (int64)math.MaxInt32 - (int64)a) {
         return (0, true);
@@ -188,9 +185,6 @@ internal static (int32 next, bool overflow) madd(int32 a, int32 b, int32 c) {
 }
 
 internal static (int32 digit, bool ok) decodeDigit(byte x) {
-    int32 digit = default!;
-    bool ok = default!;
-
     switch (ᐧ) {
     case {} when (rune)'0' <= x && x <= (rune)'9': {
         return ((int32)(x - ((rune)'0' - 26)), true);

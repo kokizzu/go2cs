@@ -38,7 +38,6 @@ public static @string String(this HardwareAddr a) {
 //	0000.0000.fe80.0000.0000.0000.0200.5e10.0000.0001
 public static (HardwareAddr hw, error err) ParseMAC(@string s) {
     HardwareAddr hw = default!;
-    error err = default!;
 
     if (len(s) < 14) {
         goto error;

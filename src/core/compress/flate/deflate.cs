@@ -506,7 +506,6 @@ break_Loop:;
 
 internal static (nint n, error err) write(this ж<compressor> Ꮡd, slice<byte> b) {
     nint n = default!;
-    error err = default!;
 
     ref var d = ref Ꮡd.DerefOrNull();
     if (d.err != default!) {
@@ -541,8 +540,6 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
 }
 
 [GoRecv] internal static error /*err*/ init(this ref compressor d, io.Writer w, nint level) {
-    error err = default!;
-
     d.w = newHuffmanBitWriter(w);
     var matchᴛ1 = false;
     if (level == NoCompression) { matchᴛ1 = true;
@@ -683,9 +680,6 @@ public static (ж<Writer>, error) NewWriterDict(io.Writer w, nint level, slice<b
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref dictWriter w, slice<byte> b) {
-    nint n = default!;
-    error err = default!;
-
     return w.w.Write(b);
 }
 
@@ -701,9 +695,6 @@ internal static error errWriterClosed = errors.New("flate: closed writer"u8);
 // Write writes data to w, which will eventually write the
 // compressed form of data to its underlying writer.
 public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> data) {
-    nint n = default!;
-    error err = default!;
-
     return Ꮡw.of(Writer.Ꮡd).write(data);
 }
 

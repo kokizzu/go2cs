@@ -60,9 +60,6 @@ public static (FS, error) Sub(FS fsys, @string dir) {
 
 // shorten maps name, which should start with f.dir, back to the suffix after f.dir.
 [GoRecv] internal static (@string rel, bool ok) shorten(this ref subFS f, @string name) {
-    @string rel = default!;
-    bool ok = default!;
-
     if (name == f.dir) {
         return (".", true);
     }

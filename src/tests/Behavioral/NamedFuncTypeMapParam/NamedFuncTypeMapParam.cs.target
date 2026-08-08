@@ -19,9 +19,6 @@ internal static ж<Node> newPackage(Func<map<@string, ж<Node>>, @string, (ж<No
 }
 
 internal static (ж<Node> pkg, error err) lookup(map<@string, ж<Node>> imports, @string path) {
-    ж<Node> pkg = default!;
-    error err = default!;
-
     return (imports["a"u8], default!);
 }
 

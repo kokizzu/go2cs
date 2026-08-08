@@ -112,10 +112,8 @@ internal static @string extractCAPS(@string desc) {
 
 // abbrev returns the abbreviations to use for the given zone z.
 internal static (@string std, @string dst) abbrev(ж<syscall.Timezoneinformation> Ꮡz) {
-    @string std = default!;
-    @string dst = default!;
-
     ref var z = ref Ꮡz.DerefOrNull();
+
     @string stdName = syscall.UTF16ToString(z.StandardName[..]);
     var (a, ok) = abbrs[stdName, ꟷ];
     if (!ok) {

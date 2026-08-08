@@ -212,10 +212,6 @@ internal static bool startsWithLowerCase(@string str) {
 //
 //go:linkname nextStdChunk
 internal static (@string prefix, nint std, @string suffix) nextStdChunk(@string layout) {
-    @string prefix = default!;
-    nint std = default!;
-    @string suffix = default!;
-
     for (nint i = 0; i < len(layout); i++) {
         {
             nint c = (nint)layout[i];
@@ -1590,7 +1586,6 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
 // GMT is special because it can have an hour offset.
 internal static (nint length, bool ok) parseTimeZone(@string value) {
     nint length = default!;
-    bool ok = default!;
 
     if (len(value) < 3) {
         return (0, false);
@@ -1725,7 +1720,6 @@ internal static (uint64 x, bytes rem, error err) leadingInt<bytes>(bytes s)
 {
     uint64 x = default!;
     bytes rem = default!;
-    error err = default!;
 
     nint i = 0;
     for (; i < len(s); i++) {
@@ -1752,7 +1746,6 @@ internal static (uint64 x, bytes rem, error err) leadingInt<bytes>(bytes s)
 internal static (uint64 x, float64 scale, @string rem) leadingFraction(@string s) {
     uint64 x = default!;
     float64 scale = default!;
-    @string rem = default!;
 
     nint i = 0;
     scale = 1D;

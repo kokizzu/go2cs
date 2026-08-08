@@ -91,9 +91,6 @@ internal static void testCGI() {
 [GoType("num:byte")] partial struct neverEnding;
 
 internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
-    nint n = default!;
-    error err = default!;
-
     foreach (var (i, _) in p) {
         p[i] = (byte)b;
     }

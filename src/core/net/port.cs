@@ -15,7 +15,6 @@ partial class net_package {
 // numbers are parsed in full and rejected if invalid.
 internal static (nint port, bool needsLookup) parsePort(@string service) {
     nint port = default!;
-    bool needsLookup = default!;
 
     if (service == ""u8) {
         // Lock in the legacy behavior that an empty string

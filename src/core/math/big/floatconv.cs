@@ -292,10 +292,6 @@ public static (ж<Float> f, nint b, error err) Parse(this ж<Float> Ꮡz, @strin
 // ParseFloat is like f.Parse(s, base) with f set to the given precision
 // and rounding mode.
 public static (ж<Float> f, nint b, error err) ParseFloat(@string s, nint @base, nuint prec, RoundingMode mode) {
-    ж<Float> f = default!;
-    nint b = default!;
-    error err = default!;
-
     return @new<Float>().SetPrec(prec).SetMode(mode).Parse(s, @base);
 }
 

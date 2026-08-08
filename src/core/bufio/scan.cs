@@ -167,7 +167,7 @@ public static error ErrFinalToken = errors.New("final token"u8);
         if (s.end == len(s.buf)) {
             // Guarantee no overflow in the multiplication below.
             nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
-            if (len(s.buf) >= s.maxTokenSize || len(s.buf) > (nint)(4611686018427387903L)) {
+            if (len(s.buf) >= s.maxTokenSize || len(s.buf) > unchecked((nint)(4611686018427387903L))) {
                 s.setErr(ErrTooLong);
                 return false;
             }
@@ -262,10 +262,6 @@ public static error ErrFinalToken = errors.New("final token"u8);
 
 // ScanBytes is a split function for a [Scanner] that returns each byte as a token.
 public static (nint advance, slice<byte> token, error err) ScanBytes(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     if (atEOF && len(data) == 0) {
         return (0, default!, default!);
     }
@@ -281,10 +277,6 @@ internal static slice<byte> errorRune = slice<byte>(((@string)(rune)utf8.RuneErr
 // Because of the Scan interface, this makes it impossible for the client to
 // distinguish correctly encoded replacement runes from encoding errors.
 public static (nint advance, slice<byte> token, error err) ScanRunes(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     if (atEOF && len(data) == 0) {
         return (0, default!, default!);
     }
@@ -327,10 +319,6 @@ internal static slice<byte> dropCR(slice<byte> data) {
 // The last non-empty line of input will be returned even if it has no
 // newline.
 public static (nint advance, slice<byte> token, error err) ScanLines(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     if (atEOF && len(data) == 0) {
         return (0, default!, default!);
     }
@@ -381,10 +369,6 @@ internal static bool isSpace(rune r) {
 // never return an empty string. The definition of space is set by
 // unicode.IsSpace.
 public static (nint advance, slice<byte> token, error err) ScanWords(slice<byte> data, bool atEOF) {
-    nint advance = default!;
-    slice<byte> token = default!;
-    error err = default!;
-
     // Skip leading spaces.
     nint start = 0;
     for (nint width = 0; start < len(data); start += width) {

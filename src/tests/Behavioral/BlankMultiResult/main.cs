@@ -12,8 +12,6 @@ internal static (nint, nint) match(nint x, nint y) {
 }
 
 internal static (nint lo, nint) keyed(nint x, nint y) {
-    nint lo = default!;
-
     if (x < y) {
         return (x, y);
     }

@@ -2215,9 +2215,6 @@ internal static ж<uint8> bytep(this ж<gcBits> Ꮡb, uintptr n) {
 // bitp returns a pointer to the byte containing bit n and a mask for
 // selecting that bit from *bytep.
 internal static (ж<uint8> bytep, uint8 mask) bitp(this ж<gcBits> Ꮡb, uintptr n) {
-    ж<uint8> bytep = default!;
-    uint8 mask = default!;
-
     return (Ꮡb.bytep(n / 8), (uint8)(1 << (int)((n % 8))));
 }
 

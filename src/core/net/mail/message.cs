@@ -57,7 +57,6 @@ internal static void Printf(this debugT d, @string format, params ꓸꓸꓸany a
 // The headers are parsed, and the body of the message will be available
 // for reading from msg.Body.
 public static (ж<Message> msg, error err) ReadMessage(io.Reader r) {
-    ж<Message> msg = default!;
     error err = default!;
 
     var tp = textproto.NewReader(bufio.NewReader(r));
@@ -659,9 +658,6 @@ internal static readonly @string mailUnclosedQuotedStringˢ = "mail: unclosed qu
 
 // consumeQuotedString parses the quoted string at the start of p.
 [GoRecv] internal static (@string qs, error err) consumeQuotedString(this ref addrParser p) {
-    @string qs = default!;
-    error err = default!;
-
     // Assume first byte is '"'.
     nint i = 1;
     var qsb = new slice<rune>(0, 10);
@@ -723,7 +719,6 @@ internal static readonly @string mailTrailingDotInAtomˢ = "mail: trailing dot i
 // - leading/trailing/double dots in the atom (see golang.org/issue/4938)
 [GoRecv] internal static (@string atom, error err) consumeAtom(this ref addrParser p, bool dot, bool permissive) {
     @string atom = default!;
-    error err = default!;
 
     nint i = 0;
 Loop:
@@ -897,7 +892,6 @@ internal static readonly @string mailCommentDoesNotStartˢ = "mail: comment does
 
 [GoRecv] internal static (@string word, bool isEncoded, error err) decodeRFC2047Word(this ref addrParser p, @string s) {
     @string word = default!;
-    bool isEncoded = default!;
     error err = default!;
 
     var dec = p.dec;

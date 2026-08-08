@@ -758,7 +758,6 @@ internal static ж<Request> setupRewindBody(ж<Request> Ꮡreq) {
 // rewindBody takes care of closing req.Body when appropriate
 // (in all cases except when rewindBody returns req unmodified).
 internal static (ж<Request> rewound, error err) rewindBody(ж<Request> Ꮡreq) {
-    ж<Request> rewound = default!;
     error err = default!;
 
     ref var req = ref Ꮡreq.DerefOrNull();
@@ -3350,7 +3349,6 @@ internal static error Close(this ж<bodyEOFSignal> Ꮡes) {
 }
 
 [GoRecv] internal static (nint n, error err) Read(this ref gzipReader gz, slice<byte> p) {
-    nint n = default!;
     error err = default!;
 
     if (gz.zr == nil) {

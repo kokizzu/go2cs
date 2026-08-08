@@ -448,7 +448,6 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
 internal static (@string mapped, bool isBidi, error err) normalize(ж<Profile> Ꮡp, @string s) {
     @string mapped = default!;
     bool isBidi = default!;
-    error err = default!;
 
     // TODO: consider first doing a quick check to see if any of these checks
     // need to be done. This will make it slower in the general case, but
@@ -459,9 +458,7 @@ internal static (@string mapped, bool isBidi, error err) normalize(ж<Profile> �
 }
 
 internal static (@string idem, bool bidi, error err) validateRegistration(ж<Profile> Ꮡp, @string s) {
-    @string idem = default!;
     bool bidi = default!;
-    error err = default!;
 
     ref var p = ref Ꮡp.DerefOrNull();
     // TODO: filter need for normalization in loop below.
@@ -506,7 +503,6 @@ internal static bool isBidi(this info c, @string s) {
 }
 
 internal static (@string vm, bool bidi, error err) validateAndMap(ж<Profile> Ꮡp, @string s) {
-    @string vm = default!;
     bool bidi = default!;
     error err = default!;
 
@@ -747,8 +743,6 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
 // validateLabel validates the criteria from Section 4.1. Item 1, 4, and 6 are
 // already implicitly satisfied by the overall implementation.
 [GoRecv] internal static error /*err*/ validateLabel(this ref Profile p, @string s) {
-    error err = default!;
-
     if (s == ""u8) {
         if (p.verifyDNSLength) {
             return new labelErrorжerror(Ꮡ(new labelError(s, "A4"u8)));

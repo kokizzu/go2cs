@@ -61,7 +61,7 @@ partial class big_package {
         rB = (uint32)(nuint)x.abs.modW(primesB);
     }
     else if (exprᴛ1 == 64) {
-        Word r = x.abs.modW((nuint)(16294579238595022365UL));
+        Word r = x.abs.modW(unchecked((nuint)(16294579238595022365UL)));
         rA = (uint32)(nuint)(r % (nuint)primesA);
         rB = (uint32)(nuint)(r % (nuint)primesB);
     }

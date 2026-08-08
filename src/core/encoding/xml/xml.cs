@@ -973,7 +973,6 @@ internal static readonly @string unquotedOrMissingˢ = "unquoted or missing attr
 // Maintain line number.
 [GoRecv] internal static (byte b, bool ok) getc(this ref Decoder d) {
     byte b = default!;
-    bool ok = default!;
 
     if (d.err != default!) {
         return (0, false);
@@ -1009,9 +1008,6 @@ internal static readonly @string unquotedOrMissingˢ = "unquoted or missing attr
 // input position of the line. The position gives the location of the end of the
 // most recently returned token.
 [GoRecv] public static (nint line, nint column) InputPos(this ref Decoder d) {
-    nint line = default!;
-    nint column = default!;
-
     return (d.line, (nint)(d.offset - d.linestart) + 1);
 }
 
@@ -1246,8 +1242,6 @@ break_Input:;
 // the Char production of https://www.xml.com/axml/testaxml.htm,
 // Section 2.2 Characters.
 internal static bool /*inrange*/ isInCharacterRange(rune r) {
-    bool inrange = default!;
-
     return r == 0x09 || r == 0x0A || r == 0x0D || r >= 0x20 && r <= 0xD7FF || r >= 0xE000 && r <= 0xFFFD || r >= 0x10000 && r <= 0x10FFFF;
 }
 
@@ -1279,9 +1273,6 @@ internal static bool /*inrange*/ isInCharacterRange(rune r) {
 // Do not set d.err if the name is missing (unless unexpected EOF is received):
 // let the caller provide better context.
 [GoRecv] internal static (@string s, bool ok) name(this ref Decoder d) {
-    @string s = default!;
-    bool ok = default!;
-
     d.buf.Reset();
     if (!d.readName()) {
         return ("", false);

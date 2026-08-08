@@ -283,11 +283,6 @@ internal static readonly @string m320M1110ˢ = ",M3.2.0,M11.1.0"u8;
 // The return values are as for lookup, plus ok which reports whether the
 // parse succeeded.
 internal static (@string name, nint offset, int64 start, int64 end, bool isDST, bool ok) tzset(@string s, int64 lastTxSec, int64 sec) {
-    @string name = default!;
-    nint offset = default!;
-    int64 start = default!;
-    int64 end = default!;
-    bool isDST = default!;
     bool ok = default!;
 
     @string stdName = default!;
@@ -408,8 +403,6 @@ internal static (@string, @string, bool) tzsetName(@string s) {
 // and the remainder of s, and reports whether the parsing is OK.
 // The timezone offset is returned as a number of seconds.
 internal static (nint offset, @string rest, bool ok) tzsetOffset(@string s) {
-    nint offset = default!;
-    @string rest = default!;
     bool ok = default!;
 
     if (len(s) == 0) {
@@ -539,8 +532,6 @@ internal static (rule, @string, bool) tzsetRule(@string s) {
 // The number must be between min and max.
 internal static (nint num, @string rest, bool ok) tzsetNum(@string s, nint min, nint max) {
     nint num = default!;
-    @string rest = default!;
-    bool ok = default!;
 
     if (len(s) == 0) {
         return (0, "", false);

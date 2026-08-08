@@ -40,7 +40,6 @@ partial class regexp_package {
 // in the string. The onePassPrefix skips over the mandatory
 // EmptyBeginText.
 internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<syntax.Prog> Ꮡp) {
-    @string prefix = default!;
     bool complete = default!;
     uint32 pc = default!;
 
@@ -147,8 +146,6 @@ internal static syntax.InstOp iop(ж<syntax.Inst> Ꮡi) {
 }
 
 internal static ж<queueOnePass> /*q*/ newQueue(nint size) {
-    ж<queueOnePass> q = default!;
-
     return Ꮡ(new queueOnePass(
         sparse: new slice<uint32>(size),
         dense: new slice<uint32>(size)
