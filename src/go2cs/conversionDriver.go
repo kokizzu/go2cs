@@ -237,8 +237,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 					continue
 				}
 
-				// See if output already exists and has been marked as manually converted
-				outputFileName := filepath.Join(packageOutputPath, strings.TrimSuffix(filepath.Base(path), ".go")+".cs")
+				// See if output already exists and has been marked as manually converted. The
+				// probe follows layout L3's routing (platformLayout.go): a hand-owned file of an
+				// L3 package lives in the per-GOOS folder its emission does, so asking flat would
+				// miss the marker and convert over it.
+				outputFileName := platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform),
+					strings.TrimSuffix(filepath.Base(path), ".go")+".cs")
 				manualConv, err := containsManualConversionMarker(outputFileName)
 
 				if err != nil {
@@ -386,9 +390,11 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 				if !isDir {
 					outputFileName = strings.TrimSuffix(packageOutputPath, ".go") + ".cs"
 				} else if fileEntry.manualConversion {
-					outputFileName = filepath.Join(packageOutputPath, baseName+".cs.auto")
+					// The `.cs.auto` review sibling follows its hand-owned `.cs` into whichever
+					// folder layout L3 put that file in, so the pair stays together.
+					outputFileName = platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform), baseName+".cs") + ".auto"
 				} else {
-					outputFileName = filepath.Join(packageOutputPath, baseName+".cs")
+					outputFileName = platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform), baseName+".cs")
 				}
 
 				if fileEntry.manualConversion {
@@ -432,7 +438,10 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 
 		// Handle package information file
 		if isDir {
-			packageInfoFileName = filepath.Join(packageOutputPath, PackageInfoFileName)
+			// package_info.cs is closure-derived, so it is one of the artifacts that can vary by
+			// platform (27 of them corpus-wide, design §4.3); it follows the same layout L3 routing
+			// a converted source file does.
+			packageInfoFileName = platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform), PackageInfoFileName)
 		} else {
 			packageInfoFileName = filepath.Join(filepath.Dir(packageOutputPath), PackageInfoFileName)
 		}
@@ -451,7 +460,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// append its own relocations (writeTestVariantInitFile) — like the IP-4 csproj
 		// exclusions, this production-file difference is intended -tests output, not drift.
 		if isDir {
-			if err := writePackageInitFile(packageOutputPath, packageNamespace, packageName, options.convertTests); err != nil {
+			// Go's InitOrder differs when the file set does, so package_init.cs is per-GOOS in the
+			// four packages where it varies (design §4.3) — routed by the same L3 rule, passed as
+			// the directory this writer joins its fixed file name onto.
+			packageInitDir := platformLayoutDir(packageOutputPath, goosOfTarget(options.targetPlatform), PackageInitFileName)
+
+			if err := writePackageInitFile(packageInitDir, packageNamespace, packageName, options.convertTests); err != nil {
 				log.Fatalf("Failed to write package init file for \"%s\": %s\n", packageOutputPath, err)
 			}
 		}

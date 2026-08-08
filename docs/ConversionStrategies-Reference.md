@@ -120,6 +120,64 @@ Three separate isolation intents were silently defeated by the unconditional pin
 
 Two guards pin this. `TestCsprojTemplateEmitsWellFormedXml` / `TestTestCsprojTemplateEmitsWellFormedXml` (`src/go2cs/csprojTemplate_test.go`) substitute each template exactly as its emitter does and stream the result through `encoding/xml`, which enforces the same comment rules MSBuild's loader does — a malformed template breaks the entire corpus at compile time and is otherwise only visible ~450 s into a full behavioral run. On the measurement side, `PerformanceRunner` reads the JIT binary's `runtimeconfig.json` before timing anything and **fails the run** if it is self-contained or has dynamic code disabled.
 
+### Per-GOOS sources: layout L3 and `$(GoTargetOS)`
+
+Go selects its platform sources at *build* time — filename suffixes and `//go:build` constraints — so a
+conversion does not merely target a platform, it **is** that platform. A converted package whose emission
+varies across `GOOS` therefore keeps the varying files in per-GOOS subfolders, and the `.csproj` compiles
+exactly one of them; files that are byte-identical on every platform stay flat. This is layout **L3**
+([`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md) §8, accepted 2026-08-08).
+`internal/goos` is the first package to carry it:
+
+```
+src/core/internal/goos/goos.cs                    shared by windows, linux and darwin
+src/core/internal/goos/package_info.cs            shared
+src/core/internal/goos/windows/nonunix.cs         public const bool IsUnix = false;
+src/core/internal/goos/windows/zgoos_windows.cs   public static readonly @string GOOS = @"windows"u8;
+src/core/internal/goos/linux/unix.cs              public const bool IsUnix = true;
+src/core/internal/goos/linux/zgoos_linux.cs       public static readonly @string GOOS = @"linux"u8;
+src/core/internal/goos/darwin/…
+```
+
+Such a package's `.csproj` gains exactly two blocks — the selector, and the include that reads it:
+
+```xml
+<PropertyGroup Condition="'$(GoTargetOS)'==''">
+  <GoTargetOS>windows</GoTargetOS>
+</PropertyGroup>
+…
+  <Compile Remove="**/*.cs" />
+  <Compile Include="*.cs" />
+  <Compile Include="$(GoTargetOS)/*.cs" />
+```
+
+The include must follow `<Compile Remove="**/*.cs" />`, which would otherwise remove it — MSBuild evaluates
+items in document order. The property may sit anywhere (properties are evaluated in an earlier pass) but is
+declared above the item that reads it. `windows` is the default because the corpus that exists today is the
+Windows emission, so a plain `dotnet build` reproduces the single-platform package this layout replaced:
+verified byte-identical, and `-p:GoTargetOS=windows` produces the same assembly as the property absent.
+
+**Only a package that varies gets the blocks.** The design measures the varying set at 37 of 304; the rest
+emit the same C# on every platform and keep exactly the project file they always had.
+
+**Which files are per-GOOS cannot be decided by one conversion.** The platform axis is a comparison of
+several targets' *emissions*, and it is emphatically not derivable from Go file sets: four packages emit
+different C# from identical Go source (constant folding, escape analysis, cross-file collision renaming,
+dead-branch folding), and three emit identical C# from differing Go source. So the layout is produced by a
+multi-target run — `go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64` — which
+converts once per target into a seeded staging root, classifies every emitted artifact (shared / variant /
+partial / exclusive), and merges the result into one tree.
+
+A **single**-target conversion instead *honors* a layout the output tree already carries: if the package
+directory holds `<goos>/<name>.cs`, that is where `<name>.cs` is written, and a package directory holding
+any per-GOOS source folder gets the two blocks. That is what makes an ordinary seeded reconvert reproduce
+an L3 package file for file, instead of laying a flat duplicate beside the copy the project is already
+compiling — a duplicate-member break that would otherwise arrive silently. A per-GOOS folder is
+distinguished from a nested package by the project file every converted package directory holds and a
+source folder never does: `internal/syscall/windows` is a real package whose own directory name is a GOOS.
+
+Guarded by `platformLayout_test.go` (`src/go2cs`), that negative case included.
+
 ### Build-warning suppression: what the emitted `.csproj` silences, and what it deliberately does not
 
 Both templates carry one suppression policy, and it is a policy rather than an accretion: every entry is a

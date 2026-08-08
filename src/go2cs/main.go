@@ -99,8 +99,9 @@ func main() {
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
 	var recurseVal recurseMode
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
-	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which today requires -platform-census")
+	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which with -stdlib emits the multi-platform (layout L3) corpus — one GOOS per target")
 	platformCensusCmd := commandLine.String("platform-census", "", "With -stdlib and two or more -platforms targets: convert once per target into an isolated seeded staging root under this directory, classify the emissions (shared/variant/partial/exclusive) and write platform-manifest.json there. Emits NO corpus output")
+	platformStageCmd := commandLine.String("platform-stage", "", "Directory a multi-platform -stdlib EMISSION stages its per-target conversions in (kept afterwards for inspection); a temporary directory is created and removed when omitted")
 	buildTagsCmd := commandLine.String("tags", "", "Comma-separated build tags applied when loading packages, e.g. -tags purego to select the portable Go implementations over assembly ones (with -stdlib, purego is applied by default and any explicit -tags value replaces it)")
 	indentSpacesCmd := commandLine.Int("indent", 4, "Number of spaces for indentation")
 	preferVarDeclCmd := commandLine.Bool("var", true, "Prefer \"var\" declarations")
@@ -190,16 +191,20 @@ Examples:
   go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -platform-census out
                                           # Emission census: convert once per target into out\<goos>-<goarch>,
                                           # write out\platform-manifest.json; no corpus output
+  go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64
+                                          # Multi-platform corpus (layout L3): files shared by every target
+                                          # stay flat, platform-varying ones land in <pkg>\<goos>, and the
+                                          # .csproj selects one with $(GoTargetOS)
  `)
 		os.Exit(1)
 	}
 
-	// -platforms is a LIST as of the multiplatform-corpus design's increment 1. Every conversion pass
-	// still emits for exactly ONE target, so targetPlatform stays the first entry and single-platform
-	// behavior is unchanged; the list is consumed only by the -platform-census instrument, which runs
-	// the pipeline once per target into its own staging root and compares the emissions. Emitting a
-	// multi-platform corpus from one run is increment 3, so a list without -platform-census is
-	// rejected rather than silently converting only the first target.
+	// -platforms is a LIST as of the multiplatform-corpus design's increment 1. A single conversion
+	// PASS still emits for exactly one target — targetPlatform stays the first entry and
+	// single-platform behavior is unchanged — but a `-stdlib` run given several targets now converts
+	// once per target and MERGES the emissions into one layout-L3 corpus (increment 2,
+	// platformEmit.go). -platform-census remains the read-only instrument: same staging, same
+	// classification, a manifest instead of a corpus.
 	targetPlatforms, err := parsePlatformList(*targetPlatformCmd)
 
 	if err != nil {
@@ -217,9 +222,11 @@ Examples:
 			log.Fatalf("-platform-census needs at least two -platforms targets to compare (got %d: %s)\n",
 				len(targetPlatforms), strings.Join(targetPlatforms, ", "))
 		}
-	} else if len(targetPlatforms) > 1 {
-		log.Fatalf("-platforms lists %d targets (%s) but multi-platform emission is not implemented yet; "+
-			"pass -platform-census <dir> to take the emission census, or name a single target\n",
+	} else if len(targetPlatforms) > 1 && !convertStdLib {
+		// Only the standard-library driver has the seeded-staging + classification machinery a
+		// multi-platform emission is built on; a single-package or -recurse conversion emits for one
+		// target, so a list there is a mistake worth naming rather than silently truncating.
+		log.Fatalf("-platforms lists %d targets (%s) but multi-platform emission requires -stdlib; name a single target\n",
 			len(targetPlatforms), strings.Join(targetPlatforms, ", "))
 	}
 
@@ -237,6 +244,7 @@ Examples:
 		targetPlatform:      targetPlatforms[0],
 		targetPlatforms:     targetPlatforms,
 		platformCensusDir:   platformCensusDir,
+		platformStageDir:    strings.TrimSpace(*platformStageCmd),
 		buildTags:           buildTags,
 		tagsExplicit:        tagsExplicit,
 		indentSpaces:        *indentSpacesCmd,
@@ -302,6 +310,17 @@ Examples:
 			// under the census directory, and the only artifact produced is the manifest.
 			if err := runPlatformCensus(options, options.platformCensusDir, packageFilter); err != nil {
 				log.Fatalf("Multi-platform census failed: %v", err)
+			}
+
+			return
+		}
+
+		if len(options.targetPlatforms) > 1 {
+			// Multi-platform EMISSION (layout L3): convert once per target into a seeded staging
+			// root, classify the emissions, and merge them into the -go2cspath corpus — shared
+			// files flat, platform-varying ones in per-GOOS folders.
+			if err := runPlatformEmission(options, options.platformStageDir, packageFilter); err != nil {
+				log.Fatalf("Multi-platform emission failed: %v", err)
 			}
 
 			return
