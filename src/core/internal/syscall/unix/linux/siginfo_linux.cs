@@ -1,0 +1,64 @@
+// Copyright 2023 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+namespace go.@internal.syscall;
+
+using syscall = syscall_package;
+
+partial class unix_package {
+
+internal const nuint is64bit = /* ^uint(0) >> 63 */ 1; // 0 for 32-bit hosts, 1 for 64-bit ones.
+
+// SiginfoChild is a struct filled in by Linux waitid syscall.
+// In C, siginfo_t contains a union with multiple members;
+// this struct corresponds to one used when Signo is SIGCHLD.
+//
+// NOTE fields are exported to be used by TestSiginfoChildLayout.
+[GoType] partial struct SiginfoChild {
+    public int32 Signo;
+    internal partial ref siErrnoCode siErrnoCode { get; }                // Two int32 fields, swapped on MIPS.
+    internal array<int32> _ = new(is64bit); // Extra padding for 64-bit hosts only.
+// End of common part. Beginning of signal-specific part.
+    public int32 Pid;
+    public uint32 Uid;
+    public int32 Status;
+    // Pad to 128 bytes.
+    internal array<byte> __ = new(128 - (6 + is64bit) * 4);
+}
+
+internal const int32 _CLD_EXITED = 1;
+internal static UntypedInt _CLD_KILLED => 2;
+internal static UntypedInt _CLD_DUMPED => 3;
+internal static UntypedInt _CLD_TRAPPED => 4;
+internal static UntypedInt _CLD_STOPPED => 5;
+internal static UntypedInt _CLD_CONTINUED => 6;
+internal static UntypedInt core => 0x80;
+internal static UntypedInt stopped => 0x7f;
+internal static UntypedInt continued => 0xffff;
+
+// WaitStatus converts SiginfoChild, as filled in by the waitid syscall,
+// to syscall.WaitStatus.
+[GoRecv] public static syscall.WaitStatus /*ws*/ WaitStatus(this ref SiginfoChild s) {
+    syscall.WaitStatus ws = default!;
+
+    var exprᴛ1 = s.Code;
+    if (exprᴛ1 is _CLD_EXITED) {
+        ws = ((syscall.WaitStatus)(uint32)((s.Status << (int)(8))));
+    }
+    else if (exprᴛ1 == _CLD_DUMPED) {
+        ws = (syscall.WaitStatus)(((syscall.WaitStatus)(uint32)s.Status) | (uint32)core);
+    }
+    else if (exprᴛ1 == _CLD_KILLED) {
+        ws = ((syscall.WaitStatus)(uint32)s.Status);
+    }
+    else if (exprᴛ1 == _CLD_TRAPPED || exprᴛ1 == _CLD_STOPPED) {
+        ws = (syscall.WaitStatus)(((syscall.WaitStatus)(uint32)((s.Status << (int)(8)))) | (uint32)stopped);
+    }
+    else if (exprᴛ1 == _CLD_CONTINUED) {
+        ws = continued;
+    }
+
+    return ws;
+}
+
+} // end unix_package

@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -29,6 +30,21 @@ const AssetFileName = "stdlib-metadata.txt"
 // fixed by the emitted file's name and is asserted against the converter's constant by
 // TestStdLibMetadataAssetFileName.
 const PackageInfoFileName = "package_info.cs"
+
+// ReferenceGOOS is the platform flavor this record describes.
+//
+// Layout L3 (docs/phase4/DESIGN-multiplatform-corpus.md §8) moves a package's platform-VARYING
+// artifacts into per-GOOS subfolders, and `package_info.cs` is one of them — 27 packages corpus-wide
+// carry a per-platform copy rather than a flat one. This asset, though, feeds `-recurse=nuget`,
+// where the dependency is a PUBLISHED assembly and the consumer therefore sees exactly one compile
+// surface: the flavor shipped as the package's `lib/{tfm}` compile-time asset (design §9(a)). So the
+// record is taken from the flat copy where one exists, and from this GOOS's copy where the metadata
+// varies — the same designated flavor `$(GoTargetOS)` defaults to.
+//
+// It duplicates the converter's platformDefaultTargetOS for the same reason PackageInfoFileName
+// duplicates its constant (this package cannot import `package main`), and is asserted against it by
+// TestStdLibMetadataAssetFileName.
+const ReferenceGOOS = "windows"
 
 // SectionPrefix introduces a package section; the remainder of the line is the package's
 // dotted name (`math.rand.v2`), matching PackageInfo.PackageName and the `go.<name>` NuGet
@@ -102,10 +118,19 @@ func Generate(convertedRoot string) ([]byte, int, error) {
 // Collect returns, per dotted package name, the package_info.cs lines that carry exported
 // cross-package metadata: the <ExportedTypeAliases> section (markers included, so an empty
 // section still parses as "no aliases" rather than "unknown") and every GoImplement record.
+// Layout L3 (docs/phase4/DESIGN-multiplatform-corpus.md §8) can put a package's package_info.cs in a
+// per-GOOS subfolder instead of flat, so the walk is TWO passes: pass one records where every
+// package_info.cs and every .csproj live, pass two decides which copy each package is described by.
+//
+// The per-GOOS folder is told from a nested package by the project file — a converted package
+// directory always holds one, a source folder never does. That is the converter's own discriminator
+// (isPlatformSourceFolder), and it is what keeps `internal/syscall/windows`, a real package whose
+// name IS a GOOS, from being folded into `internal/syscall`.
 func Collect(convertedRoot string) (map[string][]string, error) {
-	sections := map[string][]string{}
+	infoDirs := map[string]string{} // package-info dir (rel, forward slashes) -> absolute file path
+	packageDirs := map[string]bool{}
 
-	err := filepath.WalkDir(convertedRoot, func(path string, entry fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(convertedRoot, func(filePath string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -119,23 +144,20 @@ func Collect(convertedRoot string) (map[string][]string, error) {
 			return nil
 		}
 
-		if entry.Name() != PackageInfoFileName {
-			return nil
-		}
-
-		relDir, relErr := filepath.Rel(convertedRoot, filepath.Dir(path))
+		relDir, relErr := filepath.Rel(convertedRoot, filepath.Dir(filePath))
 
 		if relErr != nil {
 			return relErr
 		}
 
-		lines, readErr := extract(path)
+		relDir = filepath.ToSlash(relDir)
 
-		if readErr != nil {
-			return readErr
+		switch {
+		case entry.Name() == PackageInfoFileName:
+			infoDirs[relDir] = filePath
+		case strings.EqualFold(filepath.Ext(entry.Name()), ".csproj"):
+			packageDirs[relDir] = true
 		}
-
-		sections[strings.ReplaceAll(filepath.ToSlash(relDir), "/", ".")] = lines
 
 		return nil
 	})
@@ -144,7 +166,53 @@ func Collect(convertedRoot string) (map[string][]string, error) {
 		return nil, err
 	}
 
+	sections := map[string][]string{}
+
+	for _, relDir := range sortedKeys(infoDirs) {
+		packageDir := relDir
+
+		if !packageDirs[relDir] && packageDirs[path.Dir(relDir)] {
+			// A per-GOOS copy. Keep only the reference flavor: this asset feeds -recurse=nuget,
+			// where the dependency is a published assembly presenting exactly one compile surface
+			// (design §9(a)), and ReferenceGOOS names which one.
+			if path.Base(relDir) != ReferenceGOOS {
+				continue
+			}
+
+			packageDir = path.Dir(relDir)
+		}
+
+		name := strings.ReplaceAll(packageDir, "/", ".")
+
+		// A flat copy is authoritative; a per-GOOS one only describes a package that has none.
+		if _, exists := sections[name]; exists && packageDir != relDir {
+			continue
+		}
+
+		lines, readErr := extract(infoDirs[relDir])
+
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		sections[name] = lines
+	}
+
 	return sections, nil
+}
+
+// sortedKeys returns a map's keys in sorted order, so the two-pass collection above is
+// order-independent regardless of the filesystem walk.
+func sortedKeys(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+
+	for key := range values {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	return keys
 }
 
 // extract pulls the metadata-bearing lines out of one package_info.cs, preserving their

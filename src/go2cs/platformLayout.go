@@ -141,6 +141,40 @@ func platformLayoutPath(packageOutputPath string, goos string, fileName string) 
 	return filepath.Join(platformLayoutDir(packageOutputPath, goos, fileName), fileName)
 }
 
+// platformPackageInfoPath resolves the `package_info.cs` a CONSUMER of an already-converted package
+// should read — the mirror of platformLayoutDir, for the reading side.
+//
+// It exists because `package_info.cs` is closure-derived and therefore one of the artifacts L3
+// routes per-GOOS (27 of them corpus-wide, design §4.3), while the converter READS its dependencies'
+// copies to mint each conversion's `<ImportedTypeAliases>` block and to learn their
+// `[assembly: GoImplement]` records. A reader that only ever asked flat would, for those 27, find
+// nothing and fall through to the DERIVED-alias path — no error, no warning, just a quietly
+// different closure in every dependent. That is the same silent-empty failure mode a stale
+// `-go2cspath` produced (CLAUDE.md, 2026-08-06), and it is worth the same care.
+//
+// Flat wins whenever it exists, so the 275 packages whose metadata is shared are untouched and this
+// costs them one `os.Stat`. When neither exists the FLAT path is returned, so every caller keeps its
+// existing not-exist handling unchanged.
+func platformPackageInfoPath(packageDir string, goos string) string {
+	flatPath := filepath.Join(packageDir, PackageInfoFileName)
+
+	if info, err := os.Stat(flatPath); err == nil && info.Mode().IsRegular() {
+		return flatPath
+	}
+
+	if len(goos) == 0 || !isPlatformSourceFolder(packageDir, goos) {
+		return flatPath
+	}
+
+	platformPath := filepath.Join(packageDir, goos, PackageInfoFileName)
+
+	if info, err := os.Stat(platformPath); err == nil && info.Mode().IsRegular() {
+		return platformPath
+	}
+
+	return flatPath
+}
+
 // packageCarriesPlatformLayout reports whether a converted package directory holds any per-GOOS
 // source folder, i.e. whether its project file needs the conditioned <Compile Include>.
 func packageCarriesPlatformLayout(packageOutputPath string) bool {

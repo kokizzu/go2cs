@@ -1,0 +1,29 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+namespace go.@internal.syscall;
+
+using syscall = syscall_package;
+using @unsafe = unsafe_package;
+
+partial class unix_package {
+
+public static (nint n, error err) CopyFileRange(nint rfd, ж<int64> Ꮡroff, nint wfd, ж<int64> Ꮡwoff, nint len, nint flags) {
+    nint n = default!;
+    error err = default!;
+
+    var (r1, _, errno) = syscall.Syscall6(copyFileRangeTrap,
+        (uintptr)rfd,
+        (uintptr)Ꮡroff,
+        (uintptr)wfd,
+        (uintptr)Ꮡwoff,
+        (uintptr)len,
+        (uintptr)flags);
+    n = (nint)r1;
+    if (errno != 0) {
+        err = errno;
+    }
+    return (n, err);
+}
+
+} // end unix_package

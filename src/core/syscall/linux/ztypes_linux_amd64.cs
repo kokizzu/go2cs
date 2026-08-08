@@ -1,0 +1,710 @@
+// Created by cgo -godefs - DO NOT EDIT
+// cgo -godefs types_linux.go
+//go:build amd64 && linux
+namespace go;
+
+partial class syscall_package {
+
+internal static UntypedInt sizeofPtr => 0x8;
+internal static UntypedInt sizeofShort => 0x2;
+internal static UntypedInt sizeofInt => 0x4;
+internal static UntypedInt sizeofLong => 0x8;
+internal static UntypedInt sizeofLongLong => 0x8;
+public static UntypedInt PathMax => 0x1000;
+
+[GoType("num:int16")] partial struct _C_short;
+
+[GoType("num:int32")] partial struct _C_int;
+
+[GoType("num:int64")] partial struct _C_long;
+
+[GoType("num:int64")] partial struct _C_long_long;
+
+[GoType] partial struct Timespec {
+    public int64 Sec;
+    public int64 Nsec;
+}
+
+[GoType] partial struct Timeval {
+    public int64 Sec;
+    public int64 Usec;
+}
+
+[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1", "Pad_cgo_2", "Pad_cgo_3")] partial struct Timex {
+    public uint32 Modes;
+    public array<byte> Pad_cgo_0 = new(4);
+    public int64 Offset;
+    public int64 Freq;
+    public int64 Maxerror;
+    public int64 Esterror;
+    public int32 Status;
+    public array<byte> Pad_cgo_1 = new(4);
+    public int64 Constant;
+    public int64 Precision;
+    public int64 Tolerance;
+    public Timeval Time;
+    public int64 Tick;
+    public int64 Ppsfreq;
+    public int64 Jitter;
+    public int32 Shift;
+    public array<byte> Pad_cgo_2 = new(4);
+    public int64 Stabil;
+    public int64 Jitcnt;
+    public int64 Calcnt;
+    public int64 Errcnt;
+    public int64 Stbcnt;
+    public int32 Tai;
+    public array<byte> Pad_cgo_3 = new(44);
+}
+
+[GoType("num:int64")] partial struct Time_t;
+
+[GoType] partial struct Tms {
+    public int64 Utime;
+    public int64 Stime;
+    public int64 Cutime;
+    public int64 Cstime;
+}
+
+[GoType] partial struct Utimbuf {
+    public int64 Actime;
+    public int64 Modtime;
+}
+
+[GoType] partial struct Rusage {
+    public Timeval Utime;
+    public Timeval Stime;
+    public int64 Maxrss;
+    public int64 Ixrss;
+    public int64 Idrss;
+    public int64 Isrss;
+    public int64 Minflt;
+    public int64 Majflt;
+    public int64 Nswap;
+    public int64 Inblock;
+    public int64 Oublock;
+    public int64 Msgsnd;
+    public int64 Msgrcv;
+    public int64 Nsignals;
+    public int64 Nvcsw;
+    public int64 Nivcsw;
+}
+
+[GoType] partial struct Rlimit {
+    public uint64 Cur;
+    public uint64 Max;
+}
+
+[GoType("num:uint32")] partial struct _Gid_t;
+
+[GoType] [GoValueClone("X__unused")] partial struct Stat_t {
+    public uint64 Dev;
+    public uint64 Ino;
+    public uint64 Nlink;
+    public uint32 Mode;
+    public uint32 Uid;
+    public uint32 Gid;
+    public int32 X__pad0;
+    public uint64 Rdev;
+    public int64 Size;
+    public int64 Blksize;
+    public int64 Blocks;
+    public Timespec Atim;
+    public Timespec Mtim;
+    public Timespec Ctim;
+    public array<int64> X__unused = new(3);
+}
+
+[GoType] [GoValueClone("Fsid", "Spare")] partial struct Statfs_t {
+    public int64 Type;
+    public int64 Bsize;
+    public uint64 Blocks;
+    public uint64 Bfree;
+    public uint64 Bavail;
+    public uint64 Files;
+    public uint64 Ffree;
+    public Fsid Fsid;
+    public int64 Namelen;
+    public int64 Frsize;
+    public int64 Flags;
+    public array<int64> Spare = new(4);
+}
+
+[GoType] [GoValueClone("Name", "Pad_cgo_0")] partial struct Dirent {
+    public uint64 Ino;
+    public int64 Off;
+    public uint16 Reclen;
+    public uint8 Type;
+    public array<int8> Name = new(256);
+    public array<byte> Pad_cgo_0 = new(5);
+}
+
+[GoType] [GoValueClone("X__val")] partial struct Fsid {
+    public array<int32> X__val = new(2);
+}
+
+[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] partial struct Flock_t {
+    public int16 Type;
+    public int16 Whence;
+    public array<byte> Pad_cgo_0 = new(4);
+    public int64 Start;
+    public int64 Len;
+    public int32 Pid;
+    public array<byte> Pad_cgo_1 = new(4);
+}
+
+[GoType] [GoValueClone("Addr", "Zero")] partial struct RawSockaddrInet4 {
+    public uint16 Family;
+    public uint16 Port;
+    public array<byte> Addr = new(4); /* in_addr */
+    public array<uint8> Zero = new(8);
+}
+
+[GoType] [GoValueClone("Addr")] partial struct RawSockaddrInet6 {
+    public uint16 Family;
+    public uint16 Port;
+    public uint32 Flowinfo;
+    public array<byte> Addr = new(16); /* in6_addr */
+    public uint32 Scope_id;
+}
+
+[GoType] [GoValueClone("Path")] partial struct RawSockaddrUnix {
+    public uint16 Family;
+    public array<int8> Path = new(108);
+}
+
+[GoType] [GoValueClone("Addr")] partial struct RawSockaddrLinklayer {
+    public uint16 Family;
+    public uint16 Protocol;
+    public int32 Ifindex;
+    public uint16 Hatype;
+    public uint8 Pkttype;
+    public uint8 Halen;
+    public array<uint8> Addr = new(8);
+}
+
+[GoType] partial struct RawSockaddrNetlink {
+    public uint16 Family;
+    public uint16 Pad;
+    public uint32 Pid;
+    public uint32 Groups;
+}
+
+[GoType] [GoValueClone("Data")] partial struct RawSockaddr {
+    public uint16 Family;
+    public array<int8> Data = new(14);
+}
+
+[GoType] [GoValueClone("Addr", "Pad")] partial struct RawSockaddrAny {
+    public RawSockaddr Addr;
+    public array<int8> Pad = new(96);
+}
+
+[GoType("num:uint32")] partial struct _Socklen;
+
+[GoType] partial struct Linger {
+    public int32 Onoff;
+    public int32 ΔLinger;
+}
+
+[GoType] partial struct Iovec {
+    public ж<byte> Base;
+    public uint64 Len;
+}
+
+[GoType] [GoValueClone("Multiaddr", "Interface")] partial struct IPMreq {
+    public array<byte> Multiaddr = new(4); /* in_addr */
+    public array<byte> Interface = new(4); /* in_addr */
+}
+
+[GoType] [GoValueClone("Multiaddr", "Address")] partial struct IPMreqn {
+    public array<byte> Multiaddr = new(4); /* in_addr */
+    public array<byte> Address = new(4); /* in_addr */
+    public int32 Ifindex;
+}
+
+[GoType] [GoValueClone("Multiaddr")] partial struct IPv6Mreq {
+    public array<byte> Multiaddr = new(16); /* in6_addr */
+    public uint32 Interface;
+}
+
+[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] partial struct Msghdr {
+    public ж<byte> Name;
+    public uint32 Namelen;
+    public array<byte> Pad_cgo_0 = new(4);
+    public ж<Iovec> Iov;
+    public uint64 Iovlen;
+    public ж<byte> Control;
+    public uint64 Controllen;
+    public int32 Flags;
+    public array<byte> Pad_cgo_1 = new(4);
+}
+
+[GoType] partial struct Cmsghdr {
+    public uint64 Len;
+    public int32 Level;
+    public int32 Type;
+}
+
+[GoType] [GoValueClone("Spec_dst", "Addr")] partial struct Inet4Pktinfo {
+    public int32 Ifindex;
+    public array<byte> Spec_dst = new(4); /* in_addr */
+    public array<byte> Addr = new(4); /* in_addr */
+}
+
+[GoType] [GoValueClone("Addr")] partial struct Inet6Pktinfo {
+    public array<byte> Addr = new(16); /* in6_addr */
+    public uint32 Ifindex;
+}
+
+[GoType] [GoValueClone("Addr")] partial struct IPv6MTUInfo {
+    public RawSockaddrInet6 Addr;
+    public uint32 Mtu;
+}
+
+[GoType] [GoValueClone("Data")] partial struct ICMPv6Filter {
+    public array<uint32> Data = new(8);
+}
+
+[GoType] partial struct Ucred {
+    public int32 Pid;
+    public uint32 Uid;
+    public uint32 Gid;
+}
+
+[GoType] [GoValueClone("Pad_cgo_0")] partial struct TCPInfo {
+    public uint8 State;
+    public uint8 Ca_state;
+    public uint8 Retransmits;
+    public uint8 Probes;
+    public uint8 Backoff;
+    public uint8 Options;
+    public array<byte> Pad_cgo_0 = new(2);
+    public uint32 Rto;
+    public uint32 Ato;
+    public uint32 Snd_mss;
+    public uint32 Rcv_mss;
+    public uint32 Unacked;
+    public uint32 Sacked;
+    public uint32 Lost;
+    public uint32 Retrans;
+    public uint32 Fackets;
+    public uint32 Last_data_sent;
+    public uint32 Last_ack_sent;
+    public uint32 Last_data_recv;
+    public uint32 Last_ack_recv;
+    public uint32 Pmtu;
+    public uint32 Rcv_ssthresh;
+    public uint32 Rtt;
+    public uint32 Rttvar;
+    public uint32 Snd_ssthresh;
+    public uint32 Snd_cwnd;
+    public uint32 Advmss;
+    public uint32 Reordering;
+    public uint32 Rcv_rtt;
+    public uint32 Rcv_space;
+    public uint32 Total_retrans;
+}
+
+public static UntypedInt SizeofSockaddrInet4 => 0x10;
+public static UntypedInt SizeofSockaddrInet6 => 0x1c;
+public static UntypedInt SizeofSockaddrAny => 0x70;
+public static UntypedInt SizeofSockaddrUnix => 0x6e;
+public static UntypedInt SizeofSockaddrLinklayer => 0x14;
+public static UntypedInt SizeofSockaddrNetlink => 0xc;
+public static UntypedInt SizeofLinger => 0x8;
+public static UntypedInt SizeofIPMreq => 0x8;
+public static UntypedInt SizeofIPMreqn => 0xc;
+public static UntypedInt SizeofIPv6Mreq => 0x14;
+public static UntypedInt SizeofMsghdr => 0x38;
+public static UntypedInt SizeofCmsghdr => 0x10;
+public static UntypedInt SizeofInet4Pktinfo => 0xc;
+public static UntypedInt SizeofInet6Pktinfo => 0x14;
+public static UntypedInt SizeofIPv6MTUInfo => 0x20;
+public static UntypedInt SizeofICMPv6Filter => 0x20;
+public static UntypedInt SizeofUcred => 0xc;
+public static UntypedInt SizeofTCPInfo => 0x68;
+
+public static UntypedInt IFA_UNSPEC => 0x0;
+public static UntypedInt IFA_ADDRESS => 0x1;
+public static UntypedInt IFA_LOCAL => 0x2;
+public static UntypedInt IFA_LABEL => 0x3;
+public static UntypedInt IFA_BROADCAST => 0x4;
+public static UntypedInt IFA_ANYCAST => 0x5;
+public static UntypedInt IFA_CACHEINFO => 0x6;
+public static UntypedInt IFA_MULTICAST => 0x7;
+public static UntypedInt IFLA_UNSPEC => 0x0;
+public static UntypedInt IFLA_ADDRESS => 0x1;
+public static UntypedInt IFLA_BROADCAST => 0x2;
+public static UntypedInt IFLA_IFNAME => 0x3;
+public static UntypedInt IFLA_MTU => 0x4;
+public static UntypedInt IFLA_LINK => 0x5;
+public static UntypedInt IFLA_QDISC => 0x6;
+public static UntypedInt IFLA_STATS => 0x7;
+public static UntypedInt IFLA_COST => 0x8;
+public static UntypedInt IFLA_PRIORITY => 0x9;
+public static UntypedInt IFLA_MASTER => 0xa;
+public static UntypedInt IFLA_WIRELESS => 0xb;
+public static UntypedInt IFLA_PROTINFO => 0xc;
+public static UntypedInt IFLA_TXQLEN => 0xd;
+public static UntypedInt IFLA_MAP => 0xe;
+public static UntypedInt IFLA_WEIGHT => 0xf;
+public static UntypedInt IFLA_OPERSTATE => 0x10;
+public static UntypedInt IFLA_LINKMODE => 0x11;
+public static UntypedInt IFLA_LINKINFO => 0x12;
+public static UntypedInt IFLA_NET_NS_PID => 0x13;
+public static UntypedInt IFLA_IFALIAS => 0x14;
+public static UntypedInt IFLA_MAX => 0x1d;
+public static UntypedInt RT_SCOPE_UNIVERSE => 0x0;
+public static UntypedInt RT_SCOPE_SITE => 0xc8;
+public static UntypedInt RT_SCOPE_LINK => 0xfd;
+public static UntypedInt RT_SCOPE_HOST => 0xfe;
+public static UntypedInt RT_SCOPE_NOWHERE => 0xff;
+public static UntypedInt RT_TABLE_UNSPEC => 0x0;
+public static UntypedInt RT_TABLE_COMPAT => 0xfc;
+public static UntypedInt RT_TABLE_DEFAULT => 0xfd;
+public static UntypedInt RT_TABLE_MAIN => 0xfe;
+public static UntypedInt RT_TABLE_LOCAL => 0xff;
+public static UntypedInt RT_TABLE_MAX => 0xffffffff;
+public static UntypedInt RTA_UNSPEC => 0x0;
+public static UntypedInt RTA_DST => 0x1;
+public static UntypedInt RTA_SRC => 0x2;
+public static UntypedInt RTA_IIF => 0x3;
+public static UntypedInt RTA_OIF => 0x4;
+public static UntypedInt RTA_GATEWAY => 0x5;
+public static UntypedInt RTA_PRIORITY => 0x6;
+public static UntypedInt RTA_PREFSRC => 0x7;
+public static UntypedInt RTA_METRICS => 0x8;
+public static UntypedInt RTA_MULTIPATH => 0x9;
+public static UntypedInt RTA_FLOW => 0xb;
+public static UntypedInt RTA_CACHEINFO => 0xc;
+public static UntypedInt RTA_TABLE => 0xf;
+public static UntypedInt RTN_UNSPEC => 0x0;
+public static UntypedInt RTN_UNICAST => 0x1;
+public static UntypedInt RTN_LOCAL => 0x2;
+public static UntypedInt RTN_BROADCAST => 0x3;
+public static UntypedInt RTN_ANYCAST => 0x4;
+public static UntypedInt RTN_MULTICAST => 0x5;
+public static UntypedInt RTN_BLACKHOLE => 0x6;
+public static UntypedInt RTN_UNREACHABLE => 0x7;
+public static UntypedInt RTN_PROHIBIT => 0x8;
+public static UntypedInt RTN_THROW => 0x9;
+public static UntypedInt RTN_NAT => 0xa;
+public static UntypedInt RTN_XRESOLVE => 0xb;
+public static UntypedInt RTNLGRP_NONE => 0x0;
+public static UntypedInt RTNLGRP_LINK => 0x1;
+public static UntypedInt RTNLGRP_NOTIFY => 0x2;
+public static UntypedInt RTNLGRP_NEIGH => 0x3;
+public static UntypedInt RTNLGRP_TC => 0x4;
+public static UntypedInt RTNLGRP_IPV4_IFADDR => 0x5;
+public static UntypedInt RTNLGRP_IPV4_MROUTE => 0x6;
+public static UntypedInt RTNLGRP_IPV4_ROUTE => 0x7;
+public static UntypedInt RTNLGRP_IPV4_RULE => 0x8;
+public static UntypedInt RTNLGRP_IPV6_IFADDR => 0x9;
+public static UntypedInt RTNLGRP_IPV6_MROUTE => 0xa;
+public static UntypedInt RTNLGRP_IPV6_ROUTE => 0xb;
+public static UntypedInt RTNLGRP_IPV6_IFINFO => 0xc;
+public static UntypedInt RTNLGRP_IPV6_PREFIX => 0x12;
+public static UntypedInt RTNLGRP_IPV6_RULE => 0x13;
+public static UntypedInt RTNLGRP_ND_USEROPT => 0x14;
+public static UntypedInt SizeofNlMsghdr => 0x10;
+public static UntypedInt SizeofNlMsgerr => 0x14;
+public static UntypedInt SizeofRtGenmsg => 0x1;
+public static UntypedInt SizeofNlAttr => 0x4;
+public static UntypedInt SizeofRtAttr => 0x4;
+public static UntypedInt SizeofIfInfomsg => 0x10;
+public static UntypedInt SizeofIfAddrmsg => 0x8;
+public static UntypedInt SizeofRtMsg => 0xc;
+public static UntypedInt SizeofRtNexthop => 0x8;
+
+[GoType] partial struct NlMsghdr {
+    public uint32 Len;
+    public uint16 Type;
+    public uint16 Flags;
+    public uint32 Seq;
+    public uint32 Pid;
+}
+
+[GoType] partial struct NlMsgerr {
+    public int32 Error;
+    public NlMsghdr Msg;
+}
+
+[GoType] partial struct RtGenmsg {
+    public uint8 Family;
+}
+
+[GoType] partial struct NlAttr {
+    public uint16 Len;
+    public uint16 Type;
+}
+
+[GoType] partial struct RtAttr {
+    public uint16 Len;
+    public uint16 Type;
+}
+
+[GoType] partial struct IfInfomsg {
+    public uint8 Family;
+    public uint8 X__ifi_pad;
+    public uint16 Type;
+    public int32 Index;
+    public uint32 Flags;
+    public uint32 Change;
+}
+
+[GoType] partial struct IfAddrmsg {
+    public uint8 Family;
+    public uint8 Prefixlen;
+    public uint8 Flags;
+    public uint8 Scope;
+    public uint32 Index;
+}
+
+[GoType] partial struct RtMsg {
+    public uint8 Family;
+    public uint8 Dst_len;
+    public uint8 Src_len;
+    public uint8 Tos;
+    public uint8 Table;
+    public uint8 Protocol;
+    public uint8 Scope;
+    public uint8 Type;
+    public uint32 Flags;
+}
+
+[GoType] partial struct RtNexthop {
+    public uint16 Len;
+    public uint8 Flags;
+    public uint8 Hops;
+    public int32 Ifindex;
+}
+
+public static UntypedInt SizeofSockFilter => 0x8;
+public static UntypedInt SizeofSockFprog => 0x10;
+
+[GoType] partial struct SockFilter {
+    public uint16 Code;
+    public uint8 Jt;
+    public uint8 Jf;
+    public uint32 K;
+}
+
+[GoType] [GoValueClone("Pad_cgo_0")] partial struct SockFprog {
+    public uint16 Len;
+    public array<byte> Pad_cgo_0 = new(6);
+    public ж<SockFilter> Filter;
+}
+
+[GoType] [GoValueClone("Name")] partial struct InotifyEvent {
+    public int32 Wd;
+    public uint32 Mask;
+    public uint32 Cookie;
+    public uint32 Len;
+    public array<uint8> Name = new(0);
+}
+
+public static UntypedInt SizeofInotifyEvent => 0x10;
+
+[GoType] partial struct PtraceRegs {
+    public uint64 R15;
+    public uint64 R14;
+    public uint64 R13;
+    public uint64 R12;
+    public uint64 Rbp;
+    public uint64 Rbx;
+    public uint64 R11;
+    public uint64 R10;
+    public uint64 R9;
+    public uint64 R8;
+    public uint64 Rax;
+    public uint64 Rcx;
+    public uint64 Rdx;
+    public uint64 Rsi;
+    public uint64 Rdi;
+    public uint64 Orig_rax;
+    public uint64 Rip;
+    public uint64 Cs;
+    public uint64 Eflags;
+    public uint64 Rsp;
+    public uint64 Ss;
+    public uint64 Fs_base;
+    public uint64 Gs_base;
+    public uint64 Ds;
+    public uint64 Es;
+    public uint64 Fs;
+    public uint64 Gs;
+}
+
+[GoType] [GoValueClone("Bits")] partial struct FdSet {
+    public array<int64> Bits = new(16);
+}
+
+[GoType] [GoValueClone("Loads", "Pad_cgo_0", "X_f", "Pad_cgo_1")] partial struct Sysinfo_t {
+    public int64 Uptime;
+    public array<uint64> Loads = new(3);
+    public uint64 Totalram;
+    public uint64 Freeram;
+    public uint64 Sharedram;
+    public uint64 Bufferram;
+    public uint64 Totalswap;
+    public uint64 Freeswap;
+    public uint16 Procs;
+    public uint16 Pad;
+    public array<byte> Pad_cgo_0 = new(4);
+    public uint64 Totalhigh;
+    public uint64 Freehigh;
+    public uint32 Unit;
+    public array<byte> X_f = new(0);
+    public array<byte> Pad_cgo_1 = new(4);
+}
+
+[GoType] [GoValueClone("Sysname", "Nodename", "Release", "Version", "Machine", "Domainname")] partial struct Utsname {
+    public array<int8> Sysname = new(65);
+    public array<int8> Nodename = new(65);
+    public array<int8> Release = new(65);
+    public array<int8> Version = new(65);
+    public array<int8> Machine = new(65);
+    public array<int8> Domainname = new(65);
+}
+
+[GoType] [GoValueClone("Pad_cgo_0", "Fname", "Fpack", "Pad_cgo_1")] partial struct Ustat_t {
+    public int32 Tfree;
+    public array<byte> Pad_cgo_0 = new(4);
+    public uint64 Tinode;
+    public array<int8> Fname = new(6);
+    public array<int8> Fpack = new(6);
+    public array<byte> Pad_cgo_1 = new(4);
+}
+
+[GoType] partial struct EpollEvent {
+    public uint32 Events;
+    public int32 Fd;
+    public int32 Pad;
+}
+
+internal static UntypedInt _AT_FDCWD => /* -0x64 */ -100;
+internal static UntypedInt _AT_REMOVEDIR => 0x200;
+internal static UntypedInt _AT_SYMLINK_NOFOLLOW => 0x100;
+internal static UntypedInt _AT_EACCESS => 0x200;
+internal static UntypedInt _AT_EMPTY_PATH => 0x1000;
+
+[GoType] partial struct pollFd {
+    public int32 Fd;
+    public int16 Events;
+    public int16 Revents;
+}
+
+[GoType] [GoValueClone("Cc", "Pad_cgo_0")] partial struct Termios {
+    public uint32 Iflag;
+    public uint32 Oflag;
+    public uint32 Cflag;
+    public uint32 Lflag;
+    public uint8 Line;
+    public array<uint8> Cc = new(32);
+    public array<byte> Pad_cgo_0 = new(3);
+    public uint32 Ispeed;
+    public uint32 Ospeed;
+}
+
+public static UntypedInt VINTR => 0x0;
+public static UntypedInt VQUIT => 0x1;
+public static UntypedInt VERASE => 0x2;
+public static UntypedInt VKILL => 0x3;
+public static UntypedInt VEOF => 0x4;
+public static UntypedInt VTIME => 0x5;
+public static UntypedInt VMIN => 0x6;
+public static UntypedInt VSWTC => 0x7;
+public static UntypedInt VSTART => 0x8;
+public static UntypedInt VSTOP => 0x9;
+public static UntypedInt VSUSP => 0xa;
+public static UntypedInt VEOL => 0xb;
+public static UntypedInt VREPRINT => 0xc;
+public static UntypedInt VDISCARD => 0xd;
+public static UntypedInt VWERASE => 0xe;
+public static UntypedInt VLNEXT => 0xf;
+public static UntypedInt VEOL2 => 0x10;
+public static UntypedInt IGNBRK => 0x1;
+public static UntypedInt BRKINT => 0x2;
+public static UntypedInt IGNPAR => 0x4;
+public static UntypedInt PARMRK => 0x8;
+public static UntypedInt INPCK => 0x10;
+public static UntypedInt ISTRIP => 0x20;
+public static UntypedInt INLCR => 0x40;
+public static UntypedInt IGNCR => 0x80;
+public static UntypedInt ICRNL => 0x100;
+public static UntypedInt IUCLC => 0x200;
+public static UntypedInt IXON => 0x400;
+public static UntypedInt IXANY => 0x800;
+public static UntypedInt IXOFF => 0x1000;
+public static UntypedInt IMAXBEL => 0x2000;
+public static UntypedInt IUTF8 => 0x4000;
+public static UntypedInt OPOST => 0x1;
+public static UntypedInt OLCUC => 0x2;
+public static UntypedInt ONLCR => 0x4;
+public static UntypedInt OCRNL => 0x8;
+public static UntypedInt ONOCR => 0x10;
+public static UntypedInt ONLRET => 0x20;
+public static UntypedInt OFILL => 0x40;
+public static UntypedInt OFDEL => 0x80;
+public static UntypedInt B0 => 0x0;
+public static UntypedInt B50 => 0x1;
+public static UntypedInt B75 => 0x2;
+public static UntypedInt B110 => 0x3;
+public static UntypedInt B134 => 0x4;
+public static UntypedInt B150 => 0x5;
+public static UntypedInt B200 => 0x6;
+public static UntypedInt B300 => 0x7;
+public static UntypedInt B600 => 0x8;
+public static UntypedInt B1200 => 0x9;
+public static UntypedInt B1800 => 0xa;
+public static UntypedInt B2400 => 0xb;
+public static UntypedInt B4800 => 0xc;
+public static UntypedInt B9600 => 0xd;
+public static UntypedInt B19200 => 0xe;
+public static UntypedInt B38400 => 0xf;
+public static UntypedInt CSIZE => 0x30;
+public static UntypedInt CS5 => 0x0;
+public static UntypedInt CS6 => 0x10;
+public static UntypedInt CS7 => 0x20;
+public static UntypedInt CS8 => 0x30;
+public static UntypedInt CSTOPB => 0x40;
+public static UntypedInt CREAD => 0x80;
+public static UntypedInt PARENB => 0x100;
+public static UntypedInt PARODD => 0x200;
+public static UntypedInt HUPCL => 0x400;
+public static UntypedInt CLOCAL => 0x800;
+public static UntypedInt B57600 => 0x1001;
+public static UntypedInt B115200 => 0x1002;
+public static UntypedInt B230400 => 0x1003;
+public static UntypedInt B460800 => 0x1004;
+public static UntypedInt B500000 => 0x1005;
+public static UntypedInt B576000 => 0x1006;
+public static UntypedInt B921600 => 0x1007;
+public static UntypedInt B1000000 => 0x1008;
+public static UntypedInt B1152000 => 0x1009;
+public static UntypedInt B1500000 => 0x100a;
+public static UntypedInt B2000000 => 0x100b;
+public static UntypedInt B2500000 => 0x100c;
+public static UntypedInt B3000000 => 0x100d;
+public static UntypedInt B3500000 => 0x100e;
+public static UntypedInt B4000000 => 0x100f;
+public static UntypedInt ISIG => 0x1;
+public static UntypedInt ICANON => 0x2;
+public static UntypedInt XCASE => 0x4;
+public static UntypedInt ECHO => 0x8;
+public static UntypedInt ECHOE => 0x10;
+public static UntypedInt ECHOK => 0x20;
+public static UntypedInt ECHONL => 0x40;
+public static UntypedInt NOFLSH => 0x80;
+public static UntypedInt TOSTOP => 0x100;
+public static UntypedInt ECHOCTL => 0x200;
+public static UntypedInt ECHOPRT => 0x400;
+public static UntypedInt ECHOKE => 0x800;
+public static UntypedInt FLUSHO => 0x1000;
+public static UntypedInt PENDIN => 0x4000;
+public static UntypedInt IEXTEN => 0x8000;
+public static UntypedInt TCGETS => 0x5401;
+public static UntypedInt TCSETS => 0x5402;
+
+} // end syscall_package

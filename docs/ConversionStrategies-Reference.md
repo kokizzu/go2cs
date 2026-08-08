@@ -178,6 +178,48 @@ source folder never does: `internal/syscall/windows` is a real package whose own
 
 Guarded by `platformLayout_test.go` (`src/go2cs`), that negative case included.
 
+**References are conditioned by the same rule, one level up.** A package's *direct imports* can differ by
+`GOOS` too — measured at **21** packages, `os` being the clearest: it imports `internal/syscall/windows` on
+Windows and `internal/syscall/unix` on Linux and macOS. One flat reference list cannot say that, so the
+references common to every platform stay unconditioned and only the differences are selected:
+
+```xml
+  <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    …the 16 references os has on every platform…
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GoTargetOS)'=='darwin'">
+    <ProjectReference Include="$(go2csPath)core/internal/syscall/unix/internal.syscall.unix.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GoTargetOS)'=='windows'">
+    <ProjectReference Include="$(go2csPath)core/internal/godebug/internal.godebug.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/internal.syscall.windows.csproj" />
+  </ItemGroup>
+```
+
+**A platform whose delta is empty still gets a group**, written self-closing
+(`<ItemGroup Condition="'$(GoTargetOS)'=='linux'" />`). That is not noise, and it is the one detail the whole
+mechanism rests on: the shared list is an *intersection*, and a single-target reconvert recovers the other
+platforms' sets from the file it is about to overwrite. Forget that linux takes part and the next reconvert
+computes the intersection over two platforms instead of three — promoting a Windows-only reference into the
+shared list, where it would land in the Linux build. The empty group records membership so the axis survives.
+
+Both producers — the multi-target merge and a single-target reconvert — go through one renderer, which is
+what makes the reconvert reproduce the merge's bytes rather than something merely equivalent. When every
+platform's imports agree again the block disappears and the project file returns to its plain form.
+
+Two facts that are NOT references still have to be reconciled, because one `.csproj` serves every platform:
+`<AllowUnsafeBlocks>` is emitted as the **union** across targets (it differs in `os/user` and `syscall`; the
+property grants a capability rather than using one, so raising it is inert where unused), and every other
+companion artifact — README, icons, `.cs.auto` — is taken from the **first target in `-platforms` order**,
+the reference flavor, so the choice is deterministic instead of depending on which target happened to have
+something to rewrite.
+
+Guarded by `platformProject_test.go`, whose central test is the invariant itself: a single-target reconvert
+of every platform must reproduce the merged project file byte for byte.
+
 ### Build-warning suppression: what the emitted `.csproj` silences, and what it deliberately does not
 
 Both templates carry one suppression policy, and it is a policy rather than an accretion: every entry is a

@@ -260,7 +260,7 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 
 		// Load imported type aliases for the current package, if not already loaded — needed regardless of
 		// whether this import is emitted as a ProjectReference or a NuGet PackageReference.
-		loadImportedTypeAliases(info)
+		loadImportedTypeAliases(info, options)
 
 		if emitNuGet && info.IsStdLib {
 			// PackageId is `go.` + the referenced project's AssemblyName. That AssemblyName is the .csproj
@@ -303,8 +303,17 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 		projectReferences.WriteString(fmt.Sprintf("\r\n    <PackageReference Include=\"%s\" Version=\"$(GoStdLibVersion)\" />", escapeXMLAttributeValue(packageID)))
 	}
 
+	// The EMITTED spelling of each reference — escaped once, here, so the marker substitution below
+	// and layout L3's reference adoption (which reads escaped values back out of the previous
+	// project file) speak the same one spelling and cannot disagree about an escaped character.
+	emittedReferences := make([]string, 0, len(references))
+
 	for _, reference := range references {
-		projectReferences.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(reference)))
+		emittedReferences = append(emittedReferences, escapeXMLAttributeValue(reference))
+	}
+
+	for _, reference := range emittedReferences {
+		projectReferences.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", reference))
 	}
 
 	// Replace the project reference marker with the actual project references
@@ -319,6 +328,15 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	if packageCarriesPlatformLayout(outputFilePath) {
 		newContents = []byte(applyPlatformLayoutBlocks(string(newContents), projectFileName))
 	}
+
+	// Layout L3's second half (platformProject.go): a package whose DIRECT IMPORT SET differs by
+	// GOOS carries conditioned <ProjectReference> groups. Same adoption rule as the block above and
+	// for the same reason — one target's conversion holds the truth for one platform only, so the
+	// others' reference sets are recovered from the project file this write is about to replace.
+	// Asked of the file rather than of the package directory: the reference axis and the source
+	// axis are measured separately (design §4 vs §4.3) and need not coincide.
+	newContents = []byte(applyPlatformReferenceAdoption(string(newContents), projectFileName,
+		goosOfTarget(options.targetPlatform), emittedReferences))
 
 	// Check if project file needs to be written
 	if needToWriteFile(projectFileName, newContents) {

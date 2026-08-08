@@ -109,7 +109,15 @@ import _ "image/png"    // registers the PNG decoder with image.Decode
 A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
 `.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
 `windows`. Files identical on every platform stay flat, so this touches only the packages that genuinely
-vary (`internal/goos` is the first).
+vary: **37** of 307. A package whose *imports* also differ by platform — **21** of them, `os` reaching
+`internal/syscall/windows` on Windows and `internal/syscall/unix` elsewhere — states its common references
+once and selects the rest the same way:
+
+```xml
+<ItemGroup Condition="'$(GoTargetOS)'=='windows'">
+  <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/internal.syscall.windows.csproj" />
+</ItemGroup>
+```
 
 **Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
