@@ -1567,6 +1567,31 @@ scheduler-level mechanics. The same "realize, don't stub" instinct also ports an
 layer for real wherever .NET exposes the same instructions the `.s` file issues — `hash/crc32`'s SSE4.2
 `CRC32` and PCLMULQDQ folding.
 
+**On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
+assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
+binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,
+getrlimit, the epoll helpers) lights up behind it:
+
+```go
+// Go — internal/runtime/syscall/syscall_linux.go: no body, no linkname, raw metal
+func Syscall6(num, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, errno uintptr)
+```
+```csharp
+// C# — internal/runtime/syscall/linux/syscall_linux_impl.cs
+[DllImport("libc", EntryPoint = "syscall", SetLastError = true)]
+private static extern nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+```
+
+The pointer half needs nothing extra: these wrappers pass addresses as `uintptr`, and golib's `ж<T>` →
+`uintptr` operator pins the managed storage and yields a real address rather than a token, so the kernel
+reads and writes through it. Go's second result `r2` is reproduced *exactly* rather than approximated —
+the x86-64 syscall convention clobbers only `RCX`/`R11`, so the `RDX` the assembly reports is the `a3`
+that went in. That, the SysV variadic question, and `errno` were each measured rather than assumed, and
+the one case libc cannot distinguish is disclosed in the file.
+[Full detail](ConversionStrategies-Reference.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate),
+including the [scheduler brackets that are a faithful no-op](ConversionStrategies-Reference.md#the-scheduler-brackets-are-a-faithful-no-op-not-an-omission)
+and [why `runtime.argslice` must be populated in the same change that forwards it](ConversionStrategies-Reference.md#runtimeargslice--forwarding-and-populating-are-one-change).
+
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
 every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,
 whitelisted `//go:linkname` forwarders in both directions (a
