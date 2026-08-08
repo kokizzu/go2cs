@@ -253,6 +253,19 @@ ONE stdlib in a build; there is now only one on disk.
   So `Solitaire`/`SortArrayType`/`StdLibInternalAbi` keep their `.cs` `-text` marks. A NEW multi-line-string
   test only needs `-text` if its program's *behavior/output* depends on the literal's exact bytes; if the
   literal is inert (never printed/measured), no mark is needed and the golden compare stays green regardless.
+  **⚠ The CRLF working-tree form is now PINNED, not inherited from `core.autocrlf` (2026-08-08, r46c).**
+  `.gitattributes` carries a `text eol=crlf` block for every converter-emitted artifact type — `*.cs`,
+  `*.cs.auto`, `*.cs.target`, `*.csproj`, `*.slnx`, `*.props`, `*.targets`, `src/core/**/README.md` —
+  ordered ABOVE the `-text` blocks so those keep their verbatim-bytes exemption (last matching pattern
+  wins). Rationale: the converter emits CRLF *unconditionally*, so the checkout was the only variable,
+  and a clone with `autocrlf=false` (git's default on Linux/macOS) materialized LF and made
+  `check-no-regression` report the entire corpus as drifted before any work started. **Nothing about
+  the Windows lane changed** — `eol=crlf` reproduces exactly what `autocrlf=true` was already doing,
+  verified by `git add --renormalize .` over all 9,380 tracked files staging **zero** corpus files
+  (every non-LF blob in the index was already `-text`). Two consequences worth carrying: a whole-tree
+  renormalization is **not** owed, and the mixed-CRLF/LF phantom described above is *unchanged* in
+  shape — it is simply platform-independent now. Do not "fix" a `.cs` to LF to match a Linux habit;
+  the pin will put it back.
 - **testhost lock gotcha:** a stray `testhost`/`vstest.console` from a prior run can lock
   `BehavioralTests.dll` → next build fails with `MSB3027` ("file locked by testhost"). Kill it (and
   `dotnet build-server shutdown` frees bin/obj locks) before rebuilding — not a real compile error.

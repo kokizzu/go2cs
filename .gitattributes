@@ -1,3 +1,44 @@
+# ---------------------------------------------------------------------------
+# CRLF pins for converter-emitted artifacts
+# ---------------------------------------------------------------------------
+# go2cs emits CRLF UNCONDITIONALLY — the line ending is written into the output by
+# the emitters themselves (initOrderOperations.go, projectFileWriter.go,
+# packageInfoWriter.go, readme.go, solutionGenerator.go, autoSiblingOperations.go,
+# moduleConverter.go, packageStateOperations.go, testConversion.go), never taken
+# from the host. That makes the converter byte-deterministic across platforms and
+# leaves the CHECKOUT as the only variable: with no attribute, a Windows clone
+# (core.autocrlf=true) materializes CRLF while a Linux/macOS clone (autocrlf=false,
+# the platform default) materializes LF. The converter then rewrites every file it
+# regenerates and `git status` reports the WHOLE corpus as modified — so CNR, the
+# authoritative drift instrument, is 100% false-positive on a non-Windows clone
+# before a single line of converter work (F2 in docs/PLAN-linux-operation.md).
+#
+# Pinning eol=crlf makes every checkout — Windows, Linux, macOS, autocrlf on or off
+# — materialize the exact bytes the converter regenerates, so a post-transpile
+# `git status` is a truthful drift signal everywhere. Blobs stay LF in the object
+# store (`text` normalizes on check-in), which is what they already are, so this pin
+# does NOT rewrite the index: `git add --renormalize .` over all 9,380 tracked files
+# stages nothing but this file. It makes the Windows lane's existing end state
+# explicit instead of dependent on a per-machine core.autocrlf.
+#
+# ORDER MATTERS: these patterns must stay ABOVE the -text blocks below, because the
+# last matching pattern wins. -text keeps the verbatim-bytes exemption for the four
+# runtime-byte-sensitive behavioral projects and the testdata trees: an explicitly
+# UNSET text attribute suppresses all conversion on both check-in and check-out, so
+# the eol value those paths inherit from this block is inert. (`git check-attr eol`
+# still ECHOES crlf for them — measured on git 2.42, where a trailing `!eol` does
+# not override an earlier `eol=`. Read `text: unset` as the operative answer; the
+# proof that nothing converts is that renormalize leaves all 54 -text paths, which
+# are the only CRLF/mixed blobs in the index, untouched.)
+*.cs         text eol=crlf
+*.cs.auto    text eol=crlf
+*.cs.target  text eol=crlf
+*.csproj     text eol=crlf
+*.slnx       text eol=crlf
+*.props      text eol=crlf
+*.targets    text eol=crlf
+src/core/**/README.md text eol=crlf
+
 # go2cs behavioral TargetComparison tests compare transpiled C# to .cs.target
 # golden files BYTE-FOR-BYTE (TargetComparisonTests.FileMatch). The converter
 # preserves the Go source's LF inside multi-line string literals, so these files
