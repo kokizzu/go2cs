@@ -205,6 +205,25 @@
     corpus damage. A/B'd at r41 against the master converter: identical, so it is pre-existing and
     was not introduced by the frame arc. Worth rooting when item 18 is levelled, since `hashtriemap`
     has never had a `.cs.auto` at all and `godebug`'s is frozen at whenever the panic started.
+22. **The four items the warning-suppression arc deliberately did not take.** r46b landed the
+    configuration half of [`phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md)
+    and stopped there on purpose; §5 and §7 of that doc carry the full detail, this is only the
+    parking record. (a) **`CS0219`, 1,219 sites across 136 packages** — the converter declares every
+    named result as a local at function entry and 1,218 of those are never read. Emit the local only
+    when the body reads, assigns, address-takes or defer-captures it; that keeps `CS0219` alive as
+    the one static signal for a genuinely dropped assignment to a named result, which suppressing it
+    would have destroyed. (b) **`CS8778`, 620 sites** — untyped Go constants taking `int`→`nint`
+    instead of a composite literal's `int64` element type (607 in `math/rand/rng.cs` alone), plus 13
+    folded constants missing their `unchecked`. That is a live 32-bit truncation, and the one warning
+    in the corpus that is unambiguously right. Together (a) and (b) are **94.5 % of the 1,945
+    warnings that remain**, so the next honest reduction is a converter fix, not another `NoWarn`
+    entry. (c) **golib's 26 `IL####` warnings want `DynamicallyAccessedMembers` annotations and
+    justified `UnconditionalSuppressMessage`, never a `NoWarn`** — golib is precisely the assembly a
+    trimmed or AOT-published converted app breaks on, which is why its publish properties were left
+    unconditioned when the corpus's were scoped off `Library`. (d) **golib's five `CS8618`**
+    (`slice.m_array`, `ж.m_val`, one in `GoReflect.ValueMarshalling`) want `= null!` on the fields;
+    the code was deliberately NOT added to golib's suppression list, so the to-do stays visible.
+
 ## Recorded residuals (no work owed unless the surrounding facts change)
 
 21. **A LEADING `[` is still read as a generic bracket, so `[]<-chan <module path>.T` renders
