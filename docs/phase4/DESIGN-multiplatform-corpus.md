@@ -902,9 +902,11 @@ recorded in the tree by the emission itself — an `*_impl.cs` supplements `<nam
 hand-own's principal is its own `<name>.cs.auto` review sibling, which is emitted by exactly the platforms
 that compile the Go file the hand-own replaces.
 
-Census, measured: **33** `*_impl.cs` and **41** line-anchored `[module: GoManualConversion]` files; 20 sit
-in one of the 37 L3 packages; **6 were misplaced**, and the other 14 were correct where they were, for the
-platform-set reason above.
+Census, measured: **33** `*_impl.cs` and **41** line-anchored `[module: GoManualConversion]` files (the two
+sets overlap — a marked file can also be an `_impl` companion). **19** distinct hand-owns sit in one of the
+37 L3 packages: **6 were misplaced**, and the other 13 were already correct, for the platform-set reason
+above. The same census re-taken *after* the move counts **20**, because `runtime/lock_sema_impl.cs` is now
+two files — the same file-versus-hand-own distinction that takes the marker gate from 41 to 42.
 
 | Hand-own | Principal | Emitted by | Moved to |
 |:--|:--|:--|:--|
