@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -3531,8 +3532,13 @@ func implementedInterfaceCandidates(named *types.Named) []*types.Named {
 // production csproj. The comparison must be on the path's BASE NAME: a raw suffix test drops
 // any dependency whose project file name merely ENDS with the target's ("runtime.csproj" ends
 // with "time.csproj", so converting time silently lost its runtime reference — 5x CS0234).
+//
+// The reference is normalized first, and with path.Base rather than filepath.Base, so the base name
+// is taken the same way on every host: filepath.Base off Windows does not split on a backslash, so a
+// `\`-spelled reference (a pre-F5 corpus, a deployed tree, a hand-authored project) came back whole
+// and matched nothing.
 func isSelfProjectReference(reference, projectName string) bool {
-	return strings.EqualFold(filepath.Base(reference), projectName+".csproj")
+	return strings.EqualFold(path.Base(normalizeEmittedPath(reference)), projectName+".csproj")
 }
 
 func productionCSFiles(outputPath string) ([]string, error) {
