@@ -41,7 +41,7 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<traceGoStatus, traceArg>(Inverted = true, ValueType = "traceGoStatus")]
+[assembly: GoImplicitConv<traceGoStatus, traceArg>(Inverted = true, ValueType = "uint8")]
 // </ImplicitConversions>
 
 namespace go;
