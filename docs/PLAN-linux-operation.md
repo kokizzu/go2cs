@@ -2,10 +2,18 @@
 
 > **Status:** partially executed. Arc 1 is complete (F2, F3), Arc 2 is complete except its
 > whole-corpus item (F6 and F10 done; **F5 open** — it rewrites a line in every emitted `.csproj`, so
-> it must land inside a rebank arc), and Arc 3 has landed its PowerShell tier plus `BehavioralRunner`
-> and `UpdateTestTargets`. Per-finding disposition is the **Status** column of the findings table in
-> §2, and the reasoning behind each is the *Execution log* directly beneath it — read that before
-> re-planning anything here. Everything else stands as originally written: a plan, unimplemented.
+> it must land inside a rebank arc), and **Arc 3 is complete** (F4 and F7 — every harness instrument
+> now runs unmodified under `pwsh` on any platform, and the last external Windows tool dependency is
+> gone). Per-finding disposition is the **Status** column of the findings table in §2, and the
+> reasoning behind each is the *Execution log* directly beneath it — read that before re-planning
+> anything here. Everything else stands as originally written: a plan, unimplemented.
+>
+> What remains is, by design, the expensive part and the part that must wait for it: **F1** (the
+> `GOOS=linux` corpus, Arc 4+), **F5** and **F9/N0** (both rewrite every emitted `.csproj`, so both
+> belong to a rebank arc — land them together), **F8** (blocked behind F1: gating three
+> Windows-semantic behavioral tests is worthless while all 515 stdout comparisons fault on
+> `kernel32.dll`), and **F12** (the README, sequenced last on purpose — it should describe what
+> works).
 >
 > **Path convention.** Every repository path here uses the **normalized lowercase** folder casing
 > (`src/tests`, `src/archived`, `src/utilities`, `docs/phase3`, `docs/phase4`). The evidence line numbers
@@ -87,16 +95,16 @@ different library.
 | F1 | Converted stdlib platform identity | S1 | 3–6 arcs | open (Arc 4+) |
 | F2 | Line endings / `.gitattributes` determinism | S1 | ~~0.5 arc~~ | ✅ **done** — pin landed, renormalize blast radius measured at **0 files** |
 | F3 ✅ | `packageInfoWriter` `\r\n` read-back seam | S1 | ~~1 session~~ | ✅ **done** — plus the `testConversion` insert and guard tests |
-| F4 | Harness scripts + runners + utilities | S1 | 1 arc | ◑ **partial** — PowerShell tier + `BehavioralRunner` + `UpdateTestTargets` done; `BehavioralTestBase`, `PerformanceRunner`, `run-validated-sweep`, `run-behavioral-tests`, `mod-init-all` remain |
+| F4 | Harness scripts + runners + utilities | S1 | ~~1 arc~~ | ✅ **done** — every instrument ported; zero path literals remain outside `src/archived`, and the one converter-test fixture defect it owned is closed and Linux-verified |
 | F5 | Converter path emission on a Linux host | S1 | 1 session | open — **whole-corpus rebank**, must land with a rebank arc |
 | F6 | `pathReplace` silent no-match | S2 | ~~0.5 session~~ | ✅ **done** — no-match is now loud, plus a fallback-only symlink resolve |
-| F7 | `deploy-core.ps1` robocopy | S2 | 0.5 session | open — deliberately deferred (no safe end-to-end gate; see below) |
-| F8 | Windows-semantic behavioral tests + time zone seam | S2 | 1 session (gate) + carried by F1 | open |
-| F9 | NuGet strategy for GOOS-pinned content | S2 | plan: this doc; execution 1 session after F1 | open |
+| F7 | `deploy-core.ps1` robocopy | S2 | ~~0.5 session~~ | ✅ **done** — portable copy + a real `-WhatIf`; the "no safe gate" objection is answered by a temp-target A/B, not waived |
+| F8 | Windows-semantic behavioral tests + time zone seam | S2 | 1 session (gate) + carried by F1 | open — **do not start before F1**; see the r47b log |
+| F9 | NuGet strategy for GOOS-pinned content | S2 | plan: this doc; execution 1 session after F1 | open — N0's half is a converter emission change, so **pair it with F5 in the rebank arc** |
 | F10 | golib / go2cs-gen | S4 | ~~trivial~~ | ✅ **done** — `golib.csproj` `USERPROFILE`→`HOME` fallback |
 | F11 | `.slnx` + `.gitattributes` path casing after (b) | S2 | folded into (b) | ✅ done by rename (b) |
 | F12 | `docs/README.md` dual-platform presentation | S3 | 1 session | open (sequenced last, by design) |
-| F13 | Native AOT on Linux (perf suite) | S3 | 0.5 session | open |
+| F13 | Native AOT on Linux (perf suite) | S3 | ~~0.5 session~~ | ✅ **done** — per-host prerequisite table documented (not scripted), plus a real `/proc/cpuinfo` CPU name |
 | F14 | `set-version.ps1` (Windows PE resource) | S4 | ~~doc only~~ | ✅ **done** — `$IsWindows` guard + header note |
 | F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ◑ measured, see below |
 
@@ -228,6 +236,103 @@ they need the `go` toolchain before they can reach the separator bug.
 **The two CRLF-template failures §1 predicts are GONE.** Every `csprojTemplate_test.go` case passes
 on Linux, as do all seven new line-ending guards. That is the F2 pin plus the F3 fix doing exactly
 what they were landed for, measured on a real Linux kernel rather than argued.
+
+### Execution log — Arc 3 completed (F4 remainder, F7, F13), lane r47b-harness
+
+**The instruments r46c left, all ported to the same pattern.** `src/_paths.ps1` is new: the platform
+primitives were promoted out of the behavioral tree because the sweep, the deploy and the
+performance wrapper need the same `$ExeSuffix` and the same roots, and a `src`-level script reaching
+into the TEST tree for them is backwards. `src/tests/Behavioral/_paths.ps1` now dot-sources it and
+adds only `$BehavioralRoot`, so every variable its three existing consumers bind is unchanged —
+verified by materializing the pre-change helper beside the new one and comparing all eight values
+(`$IsWindowsHost`, `$ExeSuffix`, `$SepPattern`, `$BehavioralRoot`, `$SrcRoot`, `$RepoRoot`,
+`$ConverterSrc`, `$Go2csExe`): **0 differences**. The reason to promote rather than copy is
+`$IsWindowsHost` specifically — getting it wrong is silent and backwards on the one platform 5.1
+runs on, so that reasoning must exist once.
+
+| Instrument | Disposition | Windows-equivalence evidence |
+|:--|:--|:--|
+| `src/run-validated-sweep.ps1` | ported | The import-path→directory mapping was the load-bearing site (`'core\' + ($pkg -replace '/','\')`). Replaced with `Join-Path $src "core/$pkg"` after measuring that PS 5.1's `Join-Path` normalizes interior forward slashes: over all **110** roster packages the old and new forms produce **byte-identical** strings for both `$outDir` and `$goDir`. Then live: the unported script and the ported one each run on `net/http/internal/ascii` → identical output (`PASS … 13`). Then the full gate, below. |
+| `src/tests/Behavioral/run-behavioral-tests.ps1` | ported | Roots from the helper. The kill-scope `Where-Object` guard survives, and its scope was deliberately **not** widened to `$SrcRoot` while porting (it is `src/tests`, two levels up, exactly as before) — a kill scope must never grow as a side effect of a path cleanup. Its string comparison now follows the host's filesystem rule. |
+| `src/tests/Behavioral/mod-init-all.ps1` | ported **+ two safety fixes** | Anchored to `$PSScriptRoot` instead of the caller's current directory — it deletes `*.csproj`, and a `Get-ChildItem -Directory` over wherever you happen to be standing should not be able to do that. And the name-based skip (`BehavioralTests` only) became the Go-source-presence rule CNR already uses: once `BehavioralRunner` arrived in 2026-06-30 the old form would have deleted `BehavioralRunner.csproj`. |
+| `src/tests/Behavioral/BehavioralTests/BehavioralTestBase.cs` | ported | `RootPath`/`TestRootPath` from `Path.Combine` segments, split on both separators, `$"…{s_exeSuffix}"`, separator-built `bin`/`obj` fragments, `PublishProfile` = `RuntimeInformation.RuntimeIdentifier`, and two new `GetCSExeFile`/`GetGoExeFile` helpers so the suffix is decided once (the two derived test classes consume them). **Filtered MSTest through the ported base: 20/20** across `AtomicField`, `Solitaire`, `VersionedImport` (nested sub-library) and `LocalTimeZone`, plus 3/3 on `IoLike` — all four phases. |
+| `src/tests/Performance/PerformanceRunner/Program.cs` + `run-performance.ps1` | ported | Same pattern; builds clean. Also the `/proc/cpuinfo` CPU name (F13). |
+| `src/deploy-core.ps1` | ported (F7) | Below. |
+| `src/tour/scripts/start.ps1` | ported (1 line) | §A5 keeps `start.sh` as the Linux entry point and that ruling stands — but there was no reason for this to be the one file in the tree that still could not run under `pwsh`. It was the last backslash literal outside `src/archived`. |
+
+**The one thing that could not be ported byte-identically, because the original was wrong.**
+`BehavioralTestBase.RootPath` spelled **seven** `..` and meant **six**. It was concatenated, not
+combined (`$@"{execPath}{RootPath}go2cs\"`), and `Directory.GetCurrentDirectory()` carries no
+trailing separator — so its last segment fused with the first `..` into `net9.0..`, and Windows path
+normalization strips trailing dots from a segment, turning that back into `net9.0` and **eating one
+level**. Measured, not reasoned: `GetFullPath(execPath + @"..\..\..\..\..\..\..\" + @"go2cs\")` is
+`<repo>\src\go2cs`, while the same seven levels combined properly is `<repo>\go2cs`. Nothing off
+Windows performs that strip — `net9.0..` would be a literal directory that does not exist — so the
+accident had to be resolved into the real count (six) to port at all. It was caught by running the
+suite, not by reading: the first ported build failed with `go: go.mod file not found`. Anyone
+porting a path literal in this repository should assume a concatenated `..` may be carrying one of
+these.
+
+**F7 — what answered the "no safe end-to-end gate" objection.** The objection was correct and is not
+waived; it is answered. `Invoke-Robocopy` became `Copy-SourceTree`, one .NET-level implementation
+for every host (an `rsync`-on-Linux twin would be a second copy of the exclusion rules, which are
+load-bearing). The directory exclusion is tested **segment-wise**, not by substring — a substring
+test would also drop `src/core/encoding/binary`, silently deploying an incomplete standard library.
+Three gates, none of which touches a live deploy:
+
+1. **`-WhatIf` is real, not decorative.** `[System.IO.File]::WriteAllText` is not a cmdlet and knows
+   nothing about `$WhatIfPreference`, so all three writes are explicitly `ShouldProcess`-gated, and
+   the solution enumeration reads the SOURCE under `-WhatIf` (a dry run that reports "deployed 0
+   project(s)" is worse than none). Run against the real machine-global `%GOPATH%\src\go2cs`: it
+   reported the plan correctly (43 + 3,933 files, **304** projects) and the target held **48,231
+   files with an unchanged newest mtime before and after**.
+2. **A/B against the tool it replaced.** The pre-change script staged into one scratch root, the
+   ported script into another. **3,979 files and 376 directories each; `diff -r` exit 0** — byte
+   identical. (First pass showed one file differing: `Directory.Build.props`. Root cause was the
+   probe, not the port — `git show` emits the LF blob, so the reference script's here-string produced
+   LF. Re-materialized with CRLF, the strict diff is clean.)
+3. **End-to-end into a scratch target**, full script including its verify build: **304 projects, 0
+   errors**, "deployment verified".
+
+**F13 closed as documentation, deliberately.** `src/tests/Performance/README.md` gains a per-host
+prerequisite table (Windows MSVC / Linux `clang` + `zlib1g-dev` / macOS command line tools) and an
+explicit statement that the runner does **not** install any of them: a benchmark harness that
+silently mutates the machine's toolchain is not one to trust with a performance claim. `--no-aot`
+needs none of them. The runner also stops reporting `unknown CPU` off Windows — the environment line
+of a results table is the one field that must never be a shrug.
+
+**The converter-test fixture defect F4 owned is closed, and Linux-verified.** §A5's WSL table lists
+`TestValidationPackBlockSurvivesTestsRewriteOfCorePackage` as "not F5 — the TEST hard-codes Windows
+absolute paths; fix with the F4 sweep". Done: `csprojTemplate_test.go` gains `fixtureSrcRoot()` /
+`fixturePath()`, and the Windows spelling is preserved exactly so this lane's fixtures are
+byte-identical to the ones that have always run here. Cross-compiled and run on a real Linux kernel
+(the r46c technique, no toolchain install): **all six `csprojTemplate_test.go` cases PASS**, and the
+negative control — the same binary built from the pre-fix file — **FAILS** with exactly the reported
+symptom (`lost the validation pack block: ""`). That takes §A5's five real Linux-host findings down
+to the four that are F5.
+
+**Dispositions for what this lane did NOT do, and why.**
+
+- **F8 — blocked behind F1, not merely sequenced after it.** The remedy (gate `LocalTimeZone` /
+  `FindFirstFileData` by target platform in the runners' enumeration) is a day's work, and its value
+  before a Linux corpus exists is *zero*: every one of the 515 stdout comparisons faults on
+  `kernel32.dll` there (§A2.2), so excluding three of them changes 515 failures into 512. It also
+  wants a marker in `package_info.cs` or a sibling file — a corpus change — which this lane is
+  scoped out of. Start it when F1 makes the other 512 pass, and it will be obvious then which of the
+  two mechanisms the corpus wants.
+- **F9/N0 — belongs in the rebank arc, beside F5.** N0's substance is two converter emission changes
+  (`PackageTags`/`PackageDescription` in `csproj-template.xml`, and the same statement in
+  `readme.go`). Both rewrite a line in every emitted `.csproj`/`README.md`, which is exactly F5's
+  cost profile. Landing them as one rebank pays that cost once instead of twice.
+- **F5, F1 — not this lane's.** Unchanged from the plan.
+- **F12 — correctly last.** The README should describe what works, and the module tutorial's steps
+  0–4 do not work end-to-end on Linux until F5 and the F1/N0 runtime story settle.
+- **Owed to the post-provision verify.** This lane could not run any ported *script* on Linux: the
+  box has no `pwsh` and the distro had none either at F15's measurement, and installing one was
+  another lane's work. Every port is therefore proven on Windows and reasoned for Linux, except the
+  converter-test fixture, which was measured on both. When `pwsh` lands in the distro, the cheap
+  confirmation is `check-no-regression.ps1` (it exercises the helper, both shape guards and the
+  deepest-first walk) and `deploy-core.ps1 -WhatIf`.
 
 ---
 
@@ -689,20 +794,20 @@ PowerShell 7 (`pwsh`) runs every one of these scripts' *language* constructs on 
 
 | Instrument | What breaks | Verdict |
 |:--|:--|:--|
-| **`src/tests/behavioral/check-no-regression.ps1`** | `:30` `Join-Path $PSScriptRoot "..\..\.."`; `:31` `"src\go2cs"`; `:32` `"bin\go2cs.exe"`; `:68` `-notmatch '\\(bin\|obj)(\\\|$)'` (**silently matches nothing** on Linux → `bin`/`obj` dirs are transpiled); `:70` `($_.FullName -split '\\').Count` (**silently returns 1 for every path** → the deepest-first sort collapses, reverting the FALSE-GREEN-#3 fix); `:85` `.TrimStart('\')` | Parameterize. High value: this is the authoritative drift instrument. |
-| **`src/tests/behavioral/run-behavioral.ps1`** + **`BehavioralRunner/Program.cs`** | `run-behavioral.ps1:32,33` backslash + `BehavioralRunner.exe`. Program.cs `:97-98` `Path.Combine(AppContext.BaseDirectory, @"..\..\..\..")` — .NET does **not** normalize `\` on Unix, so this is one directory name, and `GetFullPath` yields nonsense; `:101` `go2cs.exe`; `:269-270` `d.Contains(@"\bin\")` (**silent** — bin/obj enumerate as packages); `:484` `.dll` ok, `:557,558` `{p}.exe` for both C# and Go binaries | Parameterize. `Path.DirectorySeparatorChar`, `RuntimeInformation.IsOSPlatform`, and a `ExeSuffix` constant cover it. |
-| **`src/tests/behavioral/BehavioralTests/BehavioralTestBase.cs`** (MSTest) | `:38` `PublishProfile = "win-x64"` hard-coded RID; `:55,57,63` `$@"bin\{…}\"`; `:73,83` `bin\` + `go2cs.exe`; `:78` `BinOutput.Split(@"\", …)[^1]` (**silent** — `NetVersion` becomes the whole path); `:268` `\obj\`; `:279,300` `.exe` + `-r {PublishProfile}` | Parameterize. Lower priority than the standalone runner (which is the preferred instrument). |
-| **`src/tests/behavioral/check-solution-integrity.ps1`** | Only `:34` `Join-Path … "..\.."`. `:43` `.Replace('\','/')` is already a no-op on Linux. `:49` regex `Path="(Tests/Behavioral/…` must become `tests/behavioral/` with rename (b) | Nearly portable. One line. |
-| **`src/tests/behavioral/run-behavioral-tests.ps1`** | `:38,39,49` backslash literals; `:51-56` `Get-Process -Name … \| Stop-Process` — works on Linux but the **path-scoped `Where-Object` guard must survive the port** (the concurrent-session-kill hazard is identical on Linux) | Parameterize. |
-| **`src/run-validated-sweep.ps1`** | `:29,30` `docs\ValidatedTestPackages.md`, `go2cs\bin\go2cs.exe`; `:62` `go build -o bin\go2cs.exe`; `:92,93` `('core\' + ($pkg -replace '/', '\'))` — **the import-path-to-directory mapping is backslash-based**; `:132` git pathspec already forward-slash | Parameterize — but note it is **inert on Linux until F1** (§A2.3): the sweep cannot run against a windows-target corpus. |
-| **`src/tests/performance/run-performance.ps1`** + **`PerformanceRunner/Program.cs`** | `run-performance.ps1:38,39,52` backslash + `.exe`. Program.cs `:133` `go2cs.exe`; `:913-915` `{project}.exe` × 3 variants; `:871` `PROCESSOR_IDENTIFIER` (Windows-only env → "unknown CPU" in the README environment line). The **vswhere/`link.exe` block is already safe**: `:410-411` `Environment.SpecialFolder.ProgramFilesX86` returns `""` on Linux, `Directory.Exists` is false, and the PATH prepend is skipped (`:417`). `Directory.Build.targets` sets `RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)`, which resolves to `linux-x64` correctly | Parameterize; Native AOT on Linux additionally needs `clang` + `zlib1g-dev` on the box (§F13) — document as a prerequisite, do not script the install. |
-| **`src/deploy-core.ps1`** | `:48-70` **`robocopy`** — no Linux equivalent; `:78` `'src\go2cs'`; `:83` `.TrimEnd('\')`; `:101,111` backslash sources. `:145` `.TrimStart('\','/')` already handles both | Rewrite `Invoke-Robocopy` as a portable `Copy-Item -Recurse` + exclusion filter (or `robocopy`-on-Windows / `rsync`-on-Linux behind the same function signature). Prefer the pure-PowerShell copy: one implementation, no external tool on either OS. |
+| **`src/tests/behavioral/check-no-regression.ps1`** | `:30` `Join-Path $PSScriptRoot "..\..\.."`; `:31` `"src\go2cs"`; `:32` `"bin\go2cs.exe"`; `:68` `-notmatch '\\(bin\|obj)(\\\|$)'` (**silently matches nothing** on Linux → `bin`/`obj` dirs are transpiled); `:70` `($_.FullName -split '\\').Count` (**silently returns 1 for every path** → the deepest-first sort collapses, reverting the FALSE-GREEN-#3 fix); `:85` `.TrimStart('\')` | ✅ **done** (r46c). Parameterize. High value: this is the authoritative drift instrument. |
+| **`src/tests/behavioral/run-behavioral.ps1`** + **`BehavioralRunner/Program.cs`** | `run-behavioral.ps1:32,33` backslash + `BehavioralRunner.exe`. Program.cs `:97-98` `Path.Combine(AppContext.BaseDirectory, @"..\..\..\..")` — .NET does **not** normalize `\` on Unix, so this is one directory name, and `GetFullPath` yields nonsense; `:101` `go2cs.exe`; `:269-270` `d.Contains(@"\bin\")` (**silent** — bin/obj enumerate as packages); `:484` `.dll` ok, `:557,558` `{p}.exe` for both C# and Go binaries | ✅ **done** (r46c). `Path.DirectorySeparatorChar`, `RuntimeInformation.IsOSPlatform` and an `ExeSuffix` constant covered it. |
+| **`src/tests/behavioral/BehavioralTests/BehavioralTestBase.cs`** (MSTest) | `:38` `PublishProfile = "win-x64"` hard-coded RID; `:55,57,63` `$@"bin\{…}\"`; `:73,83` `bin\` + `go2cs.exe`; `:78` `BinOutput.Split(@"\", …)[^1]` (**silent** — `NetVersion` becomes the whole path); `:268` `\obj\`; `:279,300` `.exe` + `-r {PublishProfile}` | ✅ **done** (r47b) — and it carried the seven-dot-dot-means-six concatenation accident; see the r47b log. |
+| **`src/tests/behavioral/check-solution-integrity.ps1`** | Only `:34` `Join-Path … "..\.."`. `:43` `.Replace('\','/')` is already a no-op on Linux. `:49` regex `Path="(Tests/Behavioral/…` must become `tests/behavioral/` with rename (b) | ✅ **done** (r46c). Nearly portable. One line. |
+| **`src/tests/behavioral/run-behavioral-tests.ps1`** | `:38,39,49` backslash literals; `:51-56` `Get-Process -Name … \| Stop-Process` — works on Linux but the **path-scoped `Where-Object` guard must survive the port** (the concurrent-session-kill hazard is identical on Linux) | ✅ **done** (r47b). Kill scope deliberately NOT widened while porting. |
+| **`src/run-validated-sweep.ps1`** | `:29,30` `docs\ValidatedTestPackages.md`, `go2cs\bin\go2cs.exe`; `:62` `go build -o bin\go2cs.exe`; `:92,93` `('core\' + ($pkg -replace '/', '\'))` — **the import-path-to-directory mapping is backslash-based**; `:132` git pathspec already forward-slash | ✅ **done** (r47b), gated by a full 110/110 sweep through the ported script. Still **inert on Linux until F1** (§A2.3): the sweep cannot run against a windows-target corpus. |
+| **`src/tests/performance/run-performance.ps1`** + **`PerformanceRunner/Program.cs`** | `run-performance.ps1:38,39,52` backslash + `.exe`. Program.cs `:133` `go2cs.exe`; `:913-915` `{project}.exe` × 3 variants; `:871` `PROCESSOR_IDENTIFIER` (Windows-only env → "unknown CPU" in the README environment line). The **vswhere/`link.exe` block is already safe**: `:410-411` `Environment.SpecialFolder.ProgramFilesX86` returns `""` on Linux, `Directory.Exists` is false, and the PATH prepend is skipped (`:417`). `Directory.Build.targets` sets `RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)`, which resolves to `linux-x64` correctly | ✅ **done** (r47b), including the §F13 prerequisite documentation (per-host table in the perf README) and a `/proc/cpuinfo` CPU name. |
+| **`src/deploy-core.ps1`** | `:48-70` **`robocopy`** — no Linux equivalent; `:78` `'src\go2cs'`; `:83` `.TrimEnd('\')`; `:101,111` backslash sources. `:145` `.TrimStart('\','/')` already handles both | ✅ **done** (r47b) as the recommended pure-PowerShell copy (`Copy-SourceTree`), plus a real `-WhatIf`. Exclusion matching is SEGMENT-wise, not substring — a substring test also drops `encoding/binary`. |
 | **`src/check-symbol-sync.ps1`** | Nothing. Uses forward slashes throughout, `go run`, `git -C` | **Portable as written.** |
 | **`src/clean-bin.ps1`** | Nothing structural. `Read-Host` makes it interactive (already true on Windows); `-Include "bin","obj","Generated"` is case-**sensitive** on Linux, and all three match MSBuild's actual casing | **Portable as written.** |
-| **`src/set-version.ps1`** | `ReplaceInFiles.exe`, `go-winres`, `cmd /c "pause"` | **Windows-only by nature** — it stamps a Windows PE version resource. Do **not** port; add a one-line guard (`if (-not $IsWindows) { throw … }`) and say so in its header. |
-| **`src/tests/behavioral/mod-init-all.ps1`** | `del go.mod` / `del *.csproj` (aliases resolve on pwsh Linux) | Portable; a maintenance one-off, low priority. |
-| **`src/utilities/UpdateTestTargets/Program.cs`** | `:8` `const string RootPath = @"..\..\..\..\..\"`; `:11,41,91,117` `Tests\Behavioral\…` | **Hard break, and it is a required step in the documented add-a-test flow.** Must be ported with the runners. |
-| **`src/tour/scripts/start.ps1`** | `:15` `"..\.."`; `:24` `bin\tour.exe` | Already has a **bash twin** (`src/tour/scripts/start.sh`, 19 lines) — see the strategy note below. |
+| **`src/set-version.ps1`** | `ReplaceInFiles.exe`, `go-winres`, `cmd /c "pause"` | ✅ **done** (r46c) as a guard, not a port. **Windows-only by nature** — it stamps a Windows PE version resource. |
+| **`src/tests/behavioral/mod-init-all.ps1`** | `del go.mod` / `del *.csproj` (aliases resolve on pwsh Linux) | ✅ **done** (r47b) — and it was NOT merely portable: it walked the callers current directory while deleting `*.csproj`, and its name-based skip missed `BehavioralRunner`. |
+| **`src/utilities/UpdateTestTargets/Program.cs`** | `:8` `const string RootPath = @"..\..\..\..\..\"`; `:11,41,91,117` `Tests\Behavioral\…` | ✅ **done** (r46c). **Hard break, and it is a required step in the documented add-a-test flow.** |
+| **`src/tour/scripts/start.ps1`** | `:15` `"..\.."`; `:24` `bin\tour.exe` | ✅ **done** (r47b, one line). The **bash twin** (`src/tour/scripts/start.sh`) remains the Linux entry point per the strategy note below; the `.ps1` simply stopped being the trees last backslash literal. |
 | **`.bat`/`.cmd` launchers** (11 under `src/`) | `cmd.exe` only | Leave them. They are convenience wrappers around the `.ps1`; a Linux user invokes the `.ps1` directly. |
 
 #### Strategy: parameterize, do not write bash twins
