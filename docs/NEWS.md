@@ -8,6 +8,22 @@ their full text.
 
 ---
 
+## August 8, 2026 — Over half the standard library validates; defers reach zero allocation
+
+Three days took the validated roster from 73 packages to **110 of 215 (51.2%)** — 13,628 matching
+verdicts against `go test`, 50 disclosed divergences, not one added in the climb. The largest single
+advance was also the quietest: a re-scout of never-measured packages found **34 that validated with no
+changes at all** — the corpus had grown past them as shared machinery landed. The loudest was
+architectural: **`defer` now compiles to an inline `try`/`catch`/`finally` over a `ref struct` frame** —
+no closure object, no delegate per defer, zero allocation for non-capturing defers — replacing the
+execution-context lambda while *improving* behavioral fidelity (a capture-semantics divergence class
+died by construction). Three runtime capabilities were hand-implemented on managed primitives following
+the established pattern: Go's concurrent hash-trie map, weak pointers, and caller-frame walks. And three
+user-reported `-recurse` failures — a quoted `go.mod` directive, a C# keyword inside an import path, and
+a type renderer chasing its own tail through `<-chan` — were each root-caused, fixed, and answered on
+the issue the same day, ending with `gopkg.in/yaml.v3` converting, compiling, and running byte-identical
+to `go run`.
+
 ## July 26, 2026 — More than a quarter of the standard library's test suites pass in C#
 
 **57 of the 215 testable standard-library packages validated their own Go test suites in C# — 26.5%

@@ -9,16 +9,17 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Go's own standard-library test suites pass in C#
+## 📰 NEWS — Over half the standard library's test suites now pass in C#
 
-**69 of the 215 converted standard-library packages that define `Test` functions run their own Go 1.23.1
-test suites in C# and agree with `go test -json` verdict for verdict — 32.1%.** That is **2,376 matching
-test results**, with **48** divergences disclosed by exact failure signature rather than skipped. The set
-reaches well past leaf packages: `sync`'s own concurrency suite, the full RE2 engine in `regexp`,
-`strconv`'s float formatting at full precision, and the reflection-driven `errors`, `encoding/binary` and
-`go/token` — the last round-tripping a `FileSet` through the real converted `encoding/gob` engines.
-Per-package counts, and a [one-command reproduction](#try-it-yourself--validate-a-converted-test-suite)
-from a clone, are in the [validated-package table](ValidatedTestPackages.md).
+**110 of the 215 converted standard-library packages that define `Test` functions run their own Go 1.23.1
+test suites in C# and agree with `go test -json` verdict for verdict — 51.2%.** That is **13,628 matching
+test results**, with **50** divergences disclosed by exact failure signature rather than skipped. The set
+now spans the library's core: `sync`'s concurrency suite, the full RE2 engine, `time` including Go 1.23's
+synchronous timer channels, `crypto/rand`, `log`'s structured `slog` test matrix, and `go/doc/comment`'s
+ten-thousand-case corpus. Every validated package's README carries two badges — its test proof, and the
+official Go docs it mirrors — and ships that proof inside its NuGet package. Per-package counts, and a
+[one-command reproduction](#try-it-yourself--validate-a-converted-test-suite) from a clone, are in the
+[validated-package table](ValidatedTestPackages.md).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -481,6 +482,7 @@ High level timeline of the project's major turning points.
 | 2026-07-18 | [**Phase-4 test suites expand — disclosed-divergence mechanism**](NEWS.md#july-18-2026--bytes-and-strings-tests-pass-with-disclosed-divergence) | `40f39d2be` · [`bytes-strings-tests-green-2026-07-18`](https://github.com/ritchiecarroll/go2cs/releases/tag/bytes-strings-tests-green-2026-07-18) · [`sort`](https://github.com/ritchiecarroll/go2cs/releases/tag/sort-tests-green-2026-07-18) · [`utf16`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf16-tests-green-2026-07-18) | `bytes` (81), `strings` (68), `sort` (63) and `unicode/utf16` (8) validate, introducing the committed per-package disclosure manifest matched by exact failure signature. |
 | 2026-07-26 | [**More than a quarter of the standard library's test suites pass in C#**](NEWS.md#july-26-2026--more-than-a-quarter-of-the-standard-librarys-test-suites-pass-in-c) | `44fcc4f04` | The validated set moves past leaf packages into `sync`, `regexp`/`regexp/syntax`, `strconv`, `bufio`, `compress/gzip`, the `crypto/sha*` family and the reflection-driven `errors` / `encoding/binary` / `go/token`. |
 | 2026-08-01 | One tree — the converted standard library comes home to `src/core` | `2e8066da6` | Baseline and full conversion consolidate into a single tree with one `$(go2csPath)core\<pkg>` path scheme; no reference rewriting anywhere. |
+| 2026-08-08 | [**Over half the stdlib's test suites validate in C#**](NEWS.md#august-8-2026--over-half-the-standard-library-validates-defers-reach-zero-allocation) | [`stdlib-half-validated-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-half-validated-2026-08-08) | **110/215** packages, 13,628 matching verdicts; zero-allocation `defer` frames; Docs+Tests badge trust chain in every package. |
 
 ## C# to Go?
 
