@@ -490,7 +490,7 @@ internal static (@string, error) readlink(@string name) {
 }
 
 internal static @string String(this ж<unixDirent> Ꮡd) {
-    return fs.FormatDirEntry(new unixDirentжfs_DirEntry(Ꮡd));
+    return fs.FormatDirEntry(new unixDirentжDirEntry(Ꮡd));
 }
 
 internal static (DirEntry, error) newUnixDirent(@string parent, @string name, FileMode typ) {

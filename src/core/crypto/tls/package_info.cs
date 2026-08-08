@@ -100,12 +100,12 @@ using static go.crypto.tls_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<AlertError, alert>(Inverted = true, ValueType = "AlertError")]
+[assembly: GoImplicitConv<AlertError, alert>(Inverted = true, ValueType = "uint8")]
 [assembly: GoImplicitConv<Certificate, ж<Certificate>>(Indirect = true)]
 [assembly: GoImplicitConv<Config, ж<Config>>(Indirect = true)]
 [assembly: GoImplicitConv<QUICConfig, ж<QUICConfig>>(Indirect = true)]
 [assembly: GoImplicitConv<SessionState, ж<SessionState>>]
-[assembly: GoImplicitConv<alert, AlertError>(Inverted = true, ValueType = "alert")]
+[assembly: GoImplicitConv<alert, AlertError>(Inverted = true, ValueType = "uint8")]
 [assembly: GoImplicitConv<clientHelloMsg, ж<clientHelloMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<clientKeyExchangeMsg, ж<clientKeyExchangeMsg>>(Indirect = true)]
 [assembly: GoImplicitConv<echContext, ж<echContext>>(Indirect = true)]

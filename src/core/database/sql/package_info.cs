@@ -65,7 +65,7 @@ using static go.database.sql_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<IsolationLevel, driver.IsolationLevel>(Inverted = true, ValueType = "IsolationLevel")]
+[assembly: GoImplicitConv<IsolationLevel, driver.IsolationLevel>(Inverted = true, ValueType = "nint")]
 [assembly: GoImplicitConv<driverConn, ж<driverConn>>(Indirect = true)]
 [assembly: GoImplicitConv<driverStmt, ж<driverStmt>>(Indirect = true)]
 // </ImplicitConversions>

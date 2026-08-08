@@ -161,15 +161,15 @@ internal static (int64 written, bool handled, error err) copyFileRange(this ж<F
 internal static (ж<poll.FD>, poll.String) getPollFDAndNetwork(any i) {
     var (sc, ok) = i._<syscall.Conn>(ᐧ);
     if (!ok) {
-        return (default!, "");
+        return (default!, (@string)"");
     }
     var (rc, err) = sc.SyscallConn();
     if (err != default!) {
-        return (default!, "");
+        return (default!, (@string)"");
     }
     (var irc, ok) = rc._<getPollFDAndNetwork_type>(ᐧ);
     if (!ok) {
-        return (default!, "");
+        return (default!, (@string)"");
     }
     return (irc.PollFD(), irc.Network());
 }

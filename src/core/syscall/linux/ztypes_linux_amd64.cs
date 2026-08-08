@@ -200,7 +200,7 @@ public static UntypedInt PathMax => 0x1000;
     public array<int8> Pad = new(96);
 }
 
-[GoType("num:uint32")] partial struct _Socklen;
+[GoType("num:uint32")] public partial struct _Socklen;
 
 [GoType] partial struct Linger {
     public int32 Onoff;

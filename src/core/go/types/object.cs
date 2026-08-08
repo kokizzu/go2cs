@@ -95,7 +95,7 @@ public static @string Id(ж<Package> Ꮡpkg, @string name) {
     internal tokenꓸPos scopePos_;
 }
 
-[GoType("num:uint32")] partial struct Δcolor;
+[GoType("num:uint32")] public partial struct Δcolor;
 
 // An object may be painted in one of three colors.
 // Color values other than white or black are considered grey.
@@ -110,7 +110,7 @@ internal static readonly @string whiteˢ = "white"u8;
 internal static readonly @string blackˢ = "black"u8;
 internal static readonly @string greyˢ = "grey"u8;
 
-internal static @string String(this Δcolor c) {
+public static @string String(this Δcolor c) {
     var exprᴛ1 = c;
     if (exprᴛ1 == white) {
         return whiteˢ;

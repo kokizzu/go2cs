@@ -61,7 +61,6 @@ using static go.os_package;
 [assembly: GoImplement<rawConn, syscall_package.RawConn>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, ΔSignal>]
 [assembly: GoImplement<unixDirent, DirEntry>(Pointer = true)]
-[assembly: GoImplement<unixDirent, go.io.fs_package.DirEntry>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

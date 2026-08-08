@@ -73,6 +73,7 @@
     <None Include="$(MSBuildThisFileDirectory)hoistedLiteralOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)identifierNaming.go" />
     <None Include="$(MSBuildThisFileDirectory)iifeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)implementRecordAliasCanonicalization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)implementRecordKey_test.go" />
     <None Include="$(MSBuildThisFileDirectory)importAliasOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)importOperations.go" />
