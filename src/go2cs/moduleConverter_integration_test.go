@@ -99,6 +99,7 @@ func TestRecurseSyntheticModule(t *testing.T) {
 	libProject := filepath.Join(options.recurseOutputRoot, "pkg", "example.com", "lib", "example.com.lib.csproj")
 	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
 	libReference, err := filepath.Rel(appProjectDir, libProject)
+	libReference = filepath.ToSlash(libReference)
 
 	if err != nil {
 		t.Fatal(err)
@@ -108,7 +109,7 @@ func TestRecurseSyntheticModule(t *testing.T) {
 		t.Errorf("app csproj missing the relative lib ProjectReference %q:\n%s", libReference, appCsproj)
 	}
 
-	if !strings.Contains(appCsproj, "$(go2csPath)core\\fmt\\fmt.csproj") {
+	if !strings.Contains(appCsproj, "$(go2csPath)core/fmt/fmt.csproj") {
 		t.Errorf("app csproj missing the stdlib fmt reference:\n%s", appCsproj)
 	}
 
@@ -223,9 +224,9 @@ func TestRecurseNuGetReferences(t *testing.T) {
 
 	// No local $(go2csPath) references remain for the stdlib or the runtime.
 	for _, notWant := range []string{
-		`$(go2csPath)core\fmt\fmt.csproj`,
-		`$(go2csPath)core\golib\golib.csproj`,
-		`$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj`,
+		`$(go2csPath)core/fmt/fmt.csproj`,
+		`$(go2csPath)core/golib/golib.csproj`,
+		`$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj`,
 	} {
 		if strings.Contains(appCsproj, notWant) {
 			t.Errorf("app csproj still has local reference %q under -recurse=nuget:\n%s", notWant, appCsproj)
@@ -234,6 +235,7 @@ func TestRecurseNuGetReferences(t *testing.T) {
 
 	// The app's OWN converted dependency stays a relative LOCAL ProjectReference.
 	libReference, err := filepath.Rel(appProjectDir, libProject)
+	libReference = filepath.ToSlash(libReference)
 
 	if err != nil {
 		t.Fatal(err)
@@ -357,6 +359,7 @@ func TestRecurseModuleOnly(t *testing.T) {
 	libProject := filepath.Join(options.recurseOutputRoot, "pkg", "example.com", "lib", "example.com.lib.csproj")
 	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
 	libReference, err := filepath.Rel(appProjectDir, libProject)
+	libReference = filepath.ToSlash(libReference)
 
 	if err != nil {
 		t.Fatal(err)
@@ -367,7 +370,7 @@ func TestRecurseModuleOnly(t *testing.T) {
 	}
 
 	// The standard library is referenced exactly as before — the scope narrows the CONVERT-set only.
-	if !strings.Contains(appCsproj, "$(go2csPath)core\\fmt\\fmt.csproj") {
+	if !strings.Contains(appCsproj, "$(go2csPath)core/fmt/fmt.csproj") {
 		t.Errorf("app csproj missing the stdlib fmt reference:\n%s", appCsproj)
 	}
 
@@ -676,6 +679,7 @@ func TestRecurseQuotedModulePath(t *testing.T) {
 	appProjectDir := filepath.Join(options.recurseOutputRoot, "src", "example.com", "app")
 	appCsproj := readGenerated(t, filepath.Join(appProjectDir, "example.com.app.csproj"))
 	libReference, err := filepath.Rel(appProjectDir, libProject)
+	libReference = filepath.ToSlash(libReference)
 
 	if err != nil {
 		t.Fatal(err)

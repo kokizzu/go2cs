@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -162,6 +163,57 @@ func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	if err := assertWellFormedXml(contents); err != nil {
 		t.Fatalf("test-csproj-template.xml does not emit well-formed XML: %v", err)
 	}
+}
+
+// F5 guard — the emitted corpus has ONE separator form, and it is `/`.
+//
+// MSBuild accepts forward slashes in every path context on Windows, and normalizes backslashes to
+// forward ones on Unix, so BOTH forms build on both hosts. What does not survive the round trip is
+// the converter's own hand-rolled path arithmetic (filepath.Join treats `\` as an ordinary filename
+// character on Unix) and every consumer of an emitted reference that is NOT MSBuild —
+// BehavioralRunner/PerformanceRunner resolve `ProjectReference Include=` through
+// Path.GetFullPath, which on Linux does not split on `\` either. Emitting `/` universally is what
+// makes one corpus correct for every host; see docs/PLAN-linux-operation.md §A1.1.
+//
+// The templates carry no backslash for any other purpose, so the assertion can be the whole file:
+// anything a future edit adds — an OutDir, an Exists() probe, a fixed reference — is covered without
+// this guard needing to enumerate it.
+func TestEmbeddedCsprojTemplatesUseForwardSlashesOnly(t *testing.T) {
+	for name, contents := range map[string]string{
+		"csproj-template.xml":      string(csprojTemplate),
+		"test-csproj-template.xml": string(testCsprojTemplate),
+	} {
+		if idx := strings.IndexByte(contents, '\\'); idx >= 0 {
+			t.Errorf("%s carries a backslash at offset %d (%q); emitted MSBuild paths must use forward slashes",
+				name, idx, lineAround(contents, idx))
+		}
+	}
+}
+
+// The VALIDATION.md pack block is composed in Go rather than in the template, so it needs the same
+// assertion applied where it is built.
+func TestValidationPackBlockUsesForwardSlashesOnly(t *testing.T) {
+	block := validationPackBlock(filepath.Join("root", "core", "fmt", "fmt.csproj"), Options{convertStdLib: true})
+
+	if block == "" {
+		t.Fatal("validationPackBlock returned empty for a stdlib conversion")
+	}
+
+	if strings.Contains(block, `\`) {
+		t.Errorf("validation pack block carries a backslash:\n%s", block)
+	}
+}
+
+// lineAround returns the line containing idx, for a legible failure message.
+func lineAround(contents string, idx int) string {
+	start := strings.LastIndexByte(contents[:idx], '\n') + 1
+	end := strings.IndexByte(contents[idx:], '\r')
+
+	if end < 0 {
+		return contents[start:]
+	}
+
+	return contents[start : idx+end]
 }
 
 // A reference path is the one part of a rendered csproj built from user-controlled text rather than

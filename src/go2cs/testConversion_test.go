@@ -347,9 +347,10 @@ func TestStdLibConversionSkipsHandOwnedAndToolchainPackages(t *testing.T) {
 }
 
 // Every converted test project carries the shared runtime and the hand-owned testing package as
-// fixed references, both rooted in the one converted-standard-library tree.
+// fixed references, both rooted in the one converted-standard-library tree — and, since F5, spelled
+// with FORWARD slashes like every other emitted reference, so one corpus form serves every host.
 func TestTestProjectFixedReferencesRootedInCore(t *testing.T) {
-	want := []string{`$(go2csPath)core\golib\golib.csproj`, `$(go2csPath)core\testing\testing.csproj`}
+	want := []string{`$(go2csPath)core/golib/golib.csproj`, `$(go2csPath)core/testing/testing.csproj`}
 
 	if !reflect.DeepEqual(testProjectFixedReferences, want) {
 		t.Fatalf("test project fixed references = %v, want %v", testProjectFixedReferences, want)

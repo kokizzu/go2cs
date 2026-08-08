@@ -2551,8 +2551,8 @@ func writeTestHost(outputPath, namespace, importPath string, declarations []test
 // that hosts the run. Both are rooted in the one converted-standard-library tree at
 // $(go2csPath)core — the same root every resolved dependency reference uses.
 var testProjectFixedReferences = []string{
-	`$(go2csPath)core\golib\golib.csproj`,
-	`$(go2csPath)core\testing\testing.csproj`,
+	`$(go2csPath)core/golib/golib.csproj`,
+	`$(go2csPath)core/testing/testing.csproj`,
 }
 
 func writeTestProject(projectFile, projectName, namespace string, model testProjectModel, productionFiles, testFiles, fixtures, dependencies []string, options Options) error {
@@ -2635,7 +2635,10 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	refs := references.Keys()
 	sort.Strings(refs)
 	for _, reference := range refs {
-		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(reference)))
+		// Forward slashes on every host, matching the production writer (see F5): a resolved
+		// dependency arrives already slashed from emittedProjectReference, but an ABSOLUTE
+		// reference (a local module) is OS-native.
+		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(filepath.ToSlash(reference))))
 	}
 
 	contents := []byte(strings.NewReplacer(
