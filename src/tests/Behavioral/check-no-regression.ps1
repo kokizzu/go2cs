@@ -1,16 +1,24 @@
 <#
 .SYNOPSIS
     Fast converter no-regression check: re-transpile every behavioral project and report any change
-    to the generated C#. No compile, no run, no testhost.
+    to the converter's output (.cs and .csproj). No compile, no run, no testhost.
 
 .DESCRIPTION
     Per CLAUDE.md: byte-identical generated .cs  =>  identical compile+run  =>  identical results.
     So after a converter change, the cheapest regression signal is simply to re-transpile every
-    tests\Behavioral\* project and `git status` the generated .cs files. If nothing changed, the
-    converter change is provably output-neutral for the behavioral corpus with zero build/run cost.
-    If files changed, this prints them so you can inspect (intended new goldens) vs. revert (regression).
+    tests\Behavioral\* project and `git status` the converter-emitted files -- the generated .cs AND
+    the generated .csproj (the transpile rewrites both). If nothing changed, the converter change is
+    provably output-neutral for the behavioral corpus with zero build/run cost. If files changed,
+    this prints them so you can inspect (intended new goldens) vs. revert (regression).
 
-    This regenerates the .cs in-place. That IS the check: identical output leaves the tree clean.
+    This regenerates the output in-place. That IS the check: identical output leaves the tree clean.
+
+    The byte-identical verdict is only meaningful for a package whose output this run actually
+    regenerated, so a package the converter could not fully convert (best-effort/untyped conversion,
+    a recovered visitor panic, or a non-zero exit) fails the gate as NOT MEASURED rather than
+    counting toward the green verdict (coordinator ruling 2026-08-08, docs/PLAN-linux-operation.md:
+    on Linux, FindFirstFileData does not type-check, its main.cs is never rewritten, and this gate
+    reported "byte-identical" against a file it never regenerated).
 
 .PARAMETER Revert
     After reporting, `git checkout` any changed .cs back to HEAD (use when you only wanted the check,
@@ -112,44 +120,73 @@ if (($depths | Sort-Object -Unique).Count -lt 2) {
 }
 
 Write-Host "==> transpiling $($projects.Count) behavioral packages (deepest-first, depths $(($depths | Measure-Object -Minimum).Minimum)-$(($depths | Measure-Object -Maximum).Maximum))..." -ForegroundColor Cyan
-# go2cs writes advisory WARNINGs to stderr (e.g. unsafe.Sizeof usage). Under $ErrorActionPreference='Stop'
-# native-command stderr surfaces as a terminating NativeCommandError and aborts the loop, so relax it here
-# and gate purely on the exit code; merge stderr into the pipeline so warnings are swallowed by Out-Null.
+# go2cs writes WARNINGs to stderr. Under $ErrorActionPreference='Stop' native-command stderr surfaces
+# as a terminating NativeCommandError and aborts the loop, so relax it here and CAPTURE the merged
+# output instead of discarding it (it was `| Out-Null` until 2026-08-08, which is how a loud converter
+# warning could coexist with a green verdict). Two warning classes mean this run did NOT fully
+# regenerate the package's output, so the byte-identical verdict below would be vacuous for it:
+#   - "did not fully type-check" (conversionDriver.go) -- best-effort/untyped conversion;
+#   - "visit file error" (a recovered visitor panic) -- a source file's emission was skipped.
+# Those, and a non-zero converter exit (the same hole's previously-unhandled sibling: the loop printed
+# the failure but the verdict stayed green), fail the gate by name as NOT MEASURED. Every other
+# WARNING is advisory (e.g. unsafe.Sizeof usage) -- present on a healthy run, counted, never fatal.
 $savedEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
+$unmeasured = @()
+$advisoryWarnings = 0
 try {
     foreach ($proj in $projects) {
-        & $go2csExe -go2cspath $go2csRoot $proj.FullName 2>&1 | Out-Null
+        $lines = @(& $go2csExe -go2cspath $go2csRoot $proj.FullName 2>&1 | ForEach-Object { "$_" })
         # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
         # sub-libraries (three of them are called "inner", two "latelib").
+        $rel = Get-RelativeDisplayPath $proj.FullName $behavioral
+        $vacuous = @($lines | Where-Object { $_ -match 'did not fully type-check|visit file error' })
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "    [transpile FAILED] $(Get-RelativeDisplayPath $proj.FullName $behavioral)" -ForegroundColor Red
+            Write-Host "    [transpile FAILED] $rel" -ForegroundColor Red
+            $unmeasured += $rel
         }
+        elseif ($vacuous.Count -gt 0) {
+            Write-Host "    [NOT MEASURED] $rel -- output not fully regenerated:" -ForegroundColor Red
+            $vacuous | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkYellow }
+            $unmeasured += $rel
+        }
+        $advisoryWarnings += @($lines | Where-Object { $_ -match 'WARNING' -and $_ -notmatch 'did not fully type-check|visit file error' }).Count
     }
 }
 finally { $ErrorActionPreference = $savedEAP }
 
-# 3. Report any changed generated .cs under the behavioral tree. Both C# tooling dirs are excluded:
-#    their .cs is HAND-WRITTEN source, not converter output, so an edit to either is a deliberate
-#    harness change and reporting it as converter drift is pure noise. (BehavioralRunner was missing
-#    from this filter until 2026-08-02, so editing the runner made CNR accuse itself of a regression.)
-$changed = & git -C $repoRoot status --short -- "src/tests/Behavioral/*.cs" |
+# 3. Report any changed converter output under the behavioral tree: the generated .cs AND the
+#    generated .csproj (the transpile rewrites both; the pathspec was .cs-only until 2026-08-08, so a
+#    converter change to csproj emission -- e.g. a dropped <ProjectReference> block -- was invisible
+#    to this gate on EVERY platform, not just the Linux host where it was found). Both C# tooling
+#    dirs are excluded: their sources are HAND-WRITTEN, not converter output, so an edit to either is
+#    a deliberate harness change and reporting it as converter drift is pure noise. (BehavioralRunner
+#    was missing from this filter until 2026-08-02, so editing the runner made CNR accuse itself of a
+#    regression.)
+$changed = & git -C $repoRoot status --short -- "src/tests/Behavioral/*.cs" "src/tests/Behavioral/*.csproj" |
     Where-Object { $_ -notmatch "Behavioral(Tests|Runner)/" }
 
-if (-not $changed) {
-    Write-Host "==> NO REGRESSION: generated C# is byte-identical across all behavioral projects." -ForegroundColor Green
+if (-not $changed -and $unmeasured.Count -eq 0) {
+    Write-Host "==> NO REGRESSION: generated C# and .csproj are byte-identical across all $($projects.Count) behavioral packages ($advisoryWarnings advisory converter warnings)." -ForegroundColor Green
     exit 0
 }
 
-Write-Host "==> CHANGED generated C# (inspect: intended new golden vs. regression):" -ForegroundColor Yellow
-$changed | ForEach-Object { Write-Host "    $_" }
+if ($changed) {
+    Write-Host "==> CHANGED converter output (inspect: intended new golden vs. regression):" -ForegroundColor Yellow
+    $changed | ForEach-Object { Write-Host "    $_" }
+}
 
-if ($Revert) {
+if ($unmeasured.Count -gt 0) {
+    Write-Host "==> NOT MEASURED ($($unmeasured.Count)): output was not fully regenerated for these packages, so the byte-identical check is vacuous for them:" -ForegroundColor Red
+    $unmeasured | ForEach-Object { Write-Host "    $_" }
+}
+
+if ($Revert -and $changed) {
     # Same two exclusions as the report above, and for a sharper reason: without them this checkout
-    # DESTROYS uncommitted hand-edits to the harness sources themselves (they are .cs under
+    # DESTROYS uncommitted hand-edits to the harness sources themselves (they are .cs/.csproj under
     # tests\Behavioral, so the bare pathspec swept them up).
-    Write-Host "==> -Revert: restoring changed .cs to HEAD" -ForegroundColor Cyan
-    & git -C $repoRoot checkout -- "src/tests/Behavioral/*.cs" `
+    Write-Host "==> -Revert: restoring changed .cs/.csproj to HEAD" -ForegroundColor Cyan
+    & git -C $repoRoot checkout -- "src/tests/Behavioral/*.cs" "src/tests/Behavioral/*.csproj" `
         ":(exclude)src/tests/Behavioral/BehavioralTests/*" `
         ":(exclude)src/tests/Behavioral/BehavioralRunner/*"
 }
