@@ -649,7 +649,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			}
 
 			for _, stmt := range caseClause.Body {
-				v.visitStmt(stmt, []StmtContext{})
+				v.visitListStmt(stmt)
 			}
 
 			// A case whose body can fall OUT of the switch — it wraps a switch-`break`, or it is neither a
@@ -749,7 +749,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			v.lastStatementWasReturn = false
 
 			for _, stmt := range caseClause.Body {
-				v.visitStmt(stmt, []StmtContext{})
+				v.visitListStmt(stmt)
 			}
 
 			v.outputBuilder.WriteString(v.newline)
@@ -841,7 +841,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			v.lastStatementWasReturn = false
 
 			for _, stmt := range caseClause.Body {
-				v.visitStmt(stmt, []StmtContext{})
+				v.visitListStmt(stmt)
 			}
 
 			v.outputBuilder.WriteString(v.newline)

@@ -339,7 +339,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 		}
 
 		for _, stmt := range comClause.Body {
-			v.visitStmt(stmt, []StmtContext{})
+			v.visitListStmt(stmt)
 		}
 
 		v.outputBuilder.WriteString(v.newline)

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"sort"
 	"strings"
 )
 
@@ -102,23 +103,111 @@ func (v *Visitor) writeStandAloneCommentString(builder *strings.Builder, targetP
 				}
 			}
 
-			removePos := func(slice []token.Pos, pos token.Pos) []token.Pos {
-				for i, v := range slice {
-					if v == pos {
-						return append(slice[:i], slice[i+1:]...)
-					}
-				}
-				return slice
-			}
-
 			// Remove handled positions from sorted list
 			for _, pos := range handledPos {
-				v.sortedCommentPos = removePos(v.sortedCommentPos, pos)
+				v.sortedCommentPos = removeCommentPos(v.sortedCommentPos, pos)
 			}
 		}
 	}
 
 	return wroteStandAloneComment, lines
+}
+
+// removeCommentPos drops one position from the sorted standalone-comment index, which is how a
+// comment is retired once it has been written somewhere.
+func removeCommentPos(slice []token.Pos, pos token.Pos) []token.Pos {
+	for i, p := range slice {
+		if p == pos {
+			return append(slice[:i], slice[i+1:]...)
+		}
+	}
+
+	return slice
+}
+
+// writeTrailingComment appends the free-floating comment(s) sitting on the SAME source line as the
+// just-emitted statement's end, so a Go end-of-line comment stays an end-of-line comment.
+//
+// Go's AST attaches comments to declarations, fields and specs but NEVER to statements, so a
+// statement's trailing comment is "standalone" (visitFile) and — with nothing claiming it where it
+// belongs — was flushed at the next emission point instead: on its own line AFTER the statement, and,
+// when the statement was the LAST of its block, after that block's closing brace, escaping the
+// construct it documented entirely (`pow[i] = 1 << uint(i) // == 2**i` losing its comment out of the
+// enclosing loop; a func body's final comment landing past the method's `}`).
+//
+// Only the last emitted line is a candidate: a Go statement can lower to several C# lines, and the
+// comment belongs at the end of that whole emission, which is exactly where the output builder
+// stands when this is called. Callers are the statement-LIST slots (visitListStmt) — the one place a
+// statement's text is known to end its line.
+//
+// Returns whether anything was written.
+func (v *Visitor) writeTrailingComment(stmtEnd token.Pos) bool {
+	if !v.options.includeComments || stmtEnd == token.NoPos || len(v.sortedCommentPos) == 0 {
+		return false
+	}
+
+	endPos := v.fset.Position(stmtEnd)
+	handledPos := []token.Pos{}
+	trailing := strings.Builder{}
+
+	// A comment INSIDE the statement's own span (`x := /* why */ 1`) is not a trailing one, and one
+	// before it was consumed long ago; the index is sorted, so seek past both rather than rescanning
+	// the file's comments once per statement.
+	first := sort.Search(len(v.sortedCommentPos), func(i int) bool { return v.sortedCommentPos[i] > stmtEnd })
+
+	for _, pos := range v.sortedCommentPos[first:] {
+		commentPos := v.fset.Position(pos)
+
+		// sortedCommentPos is ordered and a FileSet lays every position of one file ahead of the
+		// next, so the first comment past this line — or past this file — ends the run.
+		if commentPos.Filename != endPos.Filename || commentPos.Line != endPos.Line {
+			break
+		}
+
+		comment, found := v.standAloneComments[pos]
+
+		if !found {
+			continue
+		}
+
+		// A block comment that opens on this line but spans further cannot be tucked onto it; leave
+		// it to the standalone path, which writes it with the indentation its own lines need.
+		if strings.ContainsAny(comment, "\r\n") {
+			break
+		}
+
+		trailing.WriteString(" ")
+		trailing.WriteString(comment)
+
+		handledPos = append(handledPos, pos)
+	}
+
+	if len(handledPos) == 0 {
+		return false
+	}
+
+	// Most statements leave the builder mid-line (each writes its own LEADING newline), but a few
+	// close their own line — visitSwitchStmt ends its emission with one. Tuck the comment in AHEAD of
+	// that terminator, or it would open the next line at column zero instead of trailing the
+	// statement.
+	current := v.outputBuilder.String()
+	lineTerminator := ""
+
+	if strings.HasSuffix(current, v.newline) {
+		lineTerminator = v.newline
+		v.outputBuilder.Reset()
+		v.outputBuilder.WriteString(strings.TrimSuffix(current, v.newline))
+	}
+
+	v.outputBuilder.WriteString(trailing.String())
+	v.outputBuilder.WriteString(lineTerminator)
+
+	for _, pos := range handledPos {
+		delete(v.standAloneComments, pos)
+		v.sortedCommentPos = removeCommentPos(v.sortedCommentPos, pos)
+	}
+
+	return true
 }
 
 func (v *Visitor) writeDocString(builder *strings.Builder, doc *ast.CommentGroup, targetPos token.Pos) {

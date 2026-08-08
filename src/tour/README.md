@@ -10,6 +10,10 @@ The interface is deliberately parallel:
 - The original Tour occupies the left two-thirds of the window.
 - Generated C# occupies the right third, with a draggable divider.
 - **Code** and **Project** tabs show the matching `.cs` and `.csproj`.
+- Conversion runs with comments on, so a lesson's own commentary crosses over
+  with the code it explains: a Go end-of-line comment stays an end-of-line
+  comment, on the statement it annotates
+  ([Comments](../../docs/ConversionStrategies-Reference.md#comments)).
 - The **Runtime** selector chooses NuGet packages, a deployed stdlib, or live
   checkout source without changing the Go lesson.
 - **Transpile**, **Build**, and **.NET Run** keep their output separate.
