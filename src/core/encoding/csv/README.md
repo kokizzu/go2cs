@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-71%2F71_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/encoding.csv.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/encoding/csv@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-71%2F71_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/encoding.csv.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/encoding/csv@go1.23.1)
 
 Package csv reads and writes comma-separated values (CSV) files. There are many kinds of CSV files; this package supports the format described in RFC 4180, except that \[Writer] uses LF instead of CRLF as newline character by default.
 

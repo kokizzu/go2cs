@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/text.scanner.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/text/scanner@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/text.scanner.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/text/scanner@go1.23.1)
 
 Package scanner provides a scanner and tokenizer for UTF-8-encoded text. It takes an io.Reader providing the source, which then can be tokenized through repeated calls to the Scan function. For compatibility with existing tools, the NUL character is not allowed. If the first character in the source is a UTF-8 encoded byte order mark (BOM), it is discarded.
 

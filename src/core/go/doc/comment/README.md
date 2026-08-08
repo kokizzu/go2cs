@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-10059%2F10059_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/go.doc.comment.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/doc/comment@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-10059%2F10059_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/go.doc.comment.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/doc/comment@go1.23.1)
 
 Package comment implements parsing and reformatting of Go doc comments, (documentation comments), which are comments that immediately precede a top-level declaration of a package, const, func, type, or var.
 

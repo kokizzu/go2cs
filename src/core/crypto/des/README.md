@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.des.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/des@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-18%2F18_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/crypto.des.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/des@go1.23.1)
 
 Package des implements the Data Encryption Standard (DES) and the Triple Data Encryption Algorithm (TDEA) as defined in U.S. Federal Information Processing Standards Publication 46-3.
 

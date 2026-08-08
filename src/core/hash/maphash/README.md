@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-22%2F22_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/hash.maphash.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/hash/maphash@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-22%2F22_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/hash.maphash.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/hash/maphash@go1.23.1)
 
 Package maphash provides hash functions on byte sequences. These hash functions are intended to be used to implement hash tables or other data structures that need to map arbitrary strings or byte sequences to a uniform distribution on unsigned 64-bit integers. Each different instance of a hash table or data structure should use its own \[Seed].
 

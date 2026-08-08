@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-14%2F14_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/unicode.utf8.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/unicode/utf8@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-14%2F14_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/unicode.utf8.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/unicode/utf8@go1.23.1)
 
 Package utf8 implements functions and constants to support text encoded in UTF-8. It includes functions to translate between runes and UTF-8 byte sequences. See [https://en.wikipedia.org/wiki/UTF-8](https://en.wikipedia.org/wiki/UTF-8)
 

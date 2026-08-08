@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-36%2F37_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/crypto.sha512.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/sha512@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-36%2F37_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/crypto.sha512.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/crypto/sha512@go1.23.1)
 
 Package sha512 implements the SHA-384, SHA-512, SHA-512/224, and SHA-512/256 hash algorithms as defined in FIPS 180-4.
 

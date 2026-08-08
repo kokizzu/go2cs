@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-4%2F4_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/compress.bzip2.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/compress/bzip2@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-4%2F4_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/compress.bzip2.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/compress/bzip2@go1.23.1)
 
 Package bzip2 implements bzip2 decompression.
 

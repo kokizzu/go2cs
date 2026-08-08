@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/container.heap.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/container/heap@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/container.heap.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/container/heap@go1.23.1)
 
 Package heap provides heap operations for any type that implements heap.Interface. A heap is a tree with the property that each node is the minimum-valued node in its subtree.
 

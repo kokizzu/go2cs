@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 > Go version: 1.23.1
 
-[![Tests](https://img.shields.io/badge/Tests-28%2F28_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.3/unicode.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/unicode@go1.23.1)
+[![Tests](https://img.shields.io/badge/Tests-28%2F28_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/unicode.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/unicode@go1.23.1)
 
 Package unicode provides data and functions to test some properties of Unicode code points.
 
