@@ -288,9 +288,11 @@ ONE stdlib in a build; there is now only one on disk.
   orphaned testhost. `Exec` now has a per-call timeout (180s build/transpile, 30s run) that kills the
   whole child **process tree**, and disables MSBuild node reuse (`MSBUILDDISABLENODEREUSE=1`) so in-test
   builds don't leave lock-holding worker nodes; `AssemblySetup.[AssemblyCleanup]` runs
-  `dotnet build-server shutdown`. Prefer **`src/tests/Behavioral/run-behavioral-tests.ps1`** (clears stale
-  hosts *before* the build — the lock manifests at build time — and runs with `--blame-hang`) over a bare
-  `dotnet test`.
+  `dotnet build-server shutdown` **only for a bare `dotnet test`** — a `run-behavioral-tests.ps1` run
+  sets an env-var contract that suppresses it, since the script's default path isolates its own children
+  instead (chip `6fe128108`, 2026-08-08). Prefer **`src/tests/Behavioral/run-behavioral-tests.ps1`**
+  (clears stale hosts *before* the build — the lock manifests at build time — and runs with
+  `--blame-hang`) over a bare `dotnet test`.
 - **⚠ CONCURRENT-SESSION KILLS — worktree isolation does NOT isolate `Get-Process <name> | Stop-Process`.**
   Those cleanup preambles (here, and the ad-hoc `Get-Process BehavioralRunner,testhost | Stop-Process` that
   is easy to type before a run) match by process NAME across the whole machine, so they kill a SIBLING
@@ -307,7 +309,10 @@ ONE stdlib in a build; there is now only one on disk.
   cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
   truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT
   run it; isolate your own builds instead (`MSBUILDDISABLENODEREUSE=1`, `-p:UseSharedCompilation=false`)
-  and reserve `build-server shutdown` for solo contexts or coordinator-owned quiet points.
+  and reserve `build-server shutdown` for solo contexts or coordinator-owned quiet points. The repo's
+  own instruments are safe by default since 2026-08-08 (`db427e6e9`): `run-behavioral-tests.ps1` runs
+  its shutdowns only under an opt-in `-ShutdownBuildServers` switch, and `AssemblySetup`'s teardown
+  honors the same env-var contract — the hazard that remains is the ad-hoc, hand-typed invocation.
 - **Faster alternative to MSTest — the standalone runner `src/tests/Behavioral/BehavioralRunner`
   (2026-06-30).** A dependency-free console app that runs the same four phases over every behavioral
   project but is **not** hosted in testhost, so the
