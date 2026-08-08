@@ -10,11 +10,35 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 )
+
+// fixtureSrcRoot is an absolute go2cs `src` root spelled the way the HOST spells one. The fixtures
+// below used to hard-code `H:\Projects\go2cs\src`, which is not a portability wart but a real test
+// defect off Windows: testsRewriteOfCorePackage compares a cleaned project path against
+// filepath.Join(root, "core") + filepath.Separator, and on Linux a backslash literal is a single
+// FILENAME with no separators at all -- so the structural "under <root>/core/" test can never match
+// and TestValidationPackBlockSurvivesTestsRewriteOfCorePackage fails for a reason that has nothing
+// to do with what it guards. Measured as one of the five real Linux-host findings (F4,
+// docs/PLAN-linux-operation.md). The Windows spelling is preserved exactly, so this lane's fixtures
+// are byte-identical to the ones that have always run here.
+func fixtureSrcRoot() string {
+	if runtime.GOOS == "windows" {
+		return `H:\Projects\go2cs\src`
+	}
+
+	return "/projects/go2cs/src"
+}
+
+// fixturePath joins path elements onto fixtureSrcRoot with the host's separator.
+func fixturePath(elements ...string) string {
+	return filepath.Join(append([]string{fixtureSrcRoot()}, elements...)...)
+}
 
 // The embedded csproj templates are emitted verbatim into every converted project, so a malformed
 // one breaks the whole corpus at once and only surfaces at COMPILE time — the behavioral suite
@@ -58,7 +82,7 @@ func TestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 // The VALIDATION.md pack block is built in Go and injected into every converted stdlib .csproj, so a
 // malformed one breaks the whole published corpus at pack time. This is that block, in place.
 func TestCsprojTemplateWithValidationPackEmitsWellFormedXml(t *testing.T) {
-	block := validationPackBlock(`H:\Projects\go2cs\src\core\path\filepath\path.filepath.csproj`, Options{convertStdLib: true})
+	block := validationPackBlock(fixturePath("core", "path", "filepath", "path.filepath.csproj"), Options{convertStdLib: true})
 
 	if !strings.Contains(block, `path.filepath.md`) {
 		t.Fatalf("the validation pack block does not name the package's proof sheet: %s", block)
@@ -98,19 +122,19 @@ func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
 // structural — output under the runtime root's core\ tree — so a fixture or end-user module
 // still collapses to the historical blank line.
 func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
-	testsOverCore := Options{convertTests: true, go2csPath: `H:\Projects\go2cs\src`}
+	testsOverCore := Options{convertTests: true, go2csPath: fixtureSrcRoot()}
 
-	block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, testsOverCore)
+	block := validationPackBlock(fixturePath("core", "time", "time.csproj"), testsOverCore)
 
 	if !strings.Contains(block, `time.md`) || !strings.Contains(block, `PackagePath="VALIDATION.md"`) {
 		t.Fatalf("a -tests rewrite of a core package's production .csproj lost the validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(`H:\Projects\go2cs\src\tests\PackageTests\ConvertedTestHarness\value.csproj`, testsOverCore); block != "" {
+	if block := validationPackBlock(fixturePath("tests", "PackageTests", "ConvertedTestHarness", "value.csproj"), testsOverCore); block != "" {
 		t.Fatalf("a -tests conversion outside the core tree emitted a validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, Options{convertTests: true}); block != "" {
+	if block := validationPackBlock(fixturePath("core", "time", "time.csproj"), Options{convertTests: true}); block != "" {
 		t.Fatalf("a -tests conversion with no resolved runtime root emitted a validation pack block: %q", block)
 	}
 }
