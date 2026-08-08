@@ -1414,6 +1414,13 @@ Recorded so nobody mistakes a measurement for a guarantee.
    consequence of knowing it.** Plan Arc 4's "one afternoon" estimate assumed option 1's separate tree; L3
    reaches the same number without one.
 3. **`syscall`'s public contract** (§11 seam 1) needs a user ruling, not a measurement.
+   **RULED (user, 2026-08-08): option (i) — the neutral `lib/net9.0/` slot carrying the Windows
+   host-of-record assembly is an acceptable default.** Increment 4's de-facto layout is ratified as the
+   design; the silent-fallback consequence for unshipped RIDs remains increment 5's arch-agnostic
+   `runtimes/linux` item, softened rather than reopened by this ruling. **Same day, the run-layer ruling:
+   `internal/runtime/syscall.Syscall6` is implemented as the libc `syscall(2)` keystone P/Invoke**
+   (FINDING-linux-run-layer.md option A) — one gate lighting the whole generated surface, mirroring Go's
+   own single-funnel asm architecture, with the errno-convention conversion inside the shim.
 4. **cgo.** Every census here ran `CGO_ENABLED=0`. Real Go on Linux resolves `os/user` and `net` through
    cgo by default; the pure-Go paths measured here are the same class of decision as the standing
    `-tags purego` ruling, and should be confirmed as such rather than assumed.
