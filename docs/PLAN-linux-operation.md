@@ -110,7 +110,7 @@ different library.
 | F12 | `docs/README.md` dual-platform presentation | S3 | 1 session | open (sequenced last, by design) |
 | F13 | Native AOT on Linux (perf suite) | S3 | ~~0.5 session~~ | ✅ **done** — per-host prerequisite table documented (not scripted), plus a real `/proc/cpuinfo` CPU name |
 | F14 | `set-version.ps1` (Windows PE resource) | S4 | ~~doc only~~ | ✅ **done** — `$IsWindows` guard + header note |
-| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ✅ **done** — the distro is provisioned (Go 1.23.1, .NET SDK 9.0.316, pwsh 7.5.4, all user-space) and a fresh ext4 clone builds, tests, converts and `dotnet build`s natively; recipe in the r47a execution log |
+| F15 | WSL vs native clone (workspace topology) | S2 | 0.5 session (setup doc) | ✅ **done** — the distro is provisioned (Go 1.23.1, .NET SDK 9.0.316, pwsh 7.5.4, all user-space) and a fresh ext4 clone builds, tests, converts and `dotnet build`s natively; recipe in the r47a execution log. **The ported SCRIPTS are now measured there too** (r48b): `go test ./...` 227 PASS / 0 FAIL, `check-no-regression.ps1` byte-clean over 574 packages in 279 s, `deploy-core.ps1 -WhatIf` inert, `fmt.csproj` builds with 0 errors — every port green first try, one finding (`FindFirstFileData` is unmeasurable on Linux and CNR cannot say so) |
 
 ### Execution log — Arc 1 + Arc 2 (partial) + Arc 3 (partial), lane r46c-linux
 
@@ -484,6 +484,103 @@ to the four that are F5.
   converter-test fixture, which was measured on both. When `pwsh` lands in the distro, the cheap
   confirmation is `check-no-regression.ps1` (it exercises the helper, both shape guards and the
   deepest-first walk) and `deploy-core.ps1 -WhatIf`.
+  → **Discharged 2026-08-08 by lane r48b**; both named instruments run green on Linux, see the log
+  immediately below.
+
+---
+
+### Execution log — the owed post-provision Linux confirmation, lane r48b
+
+**What this closes.** The bullet directly above: every r47 port was proven on Windows and *reasoned*
+for Linux, because `pwsh` reached the distro only after the porting. It is now measured. **Every
+ported instrument runs on Linux green on its first attempt — no port needed a fix**, so this lane's
+repair budget went unspent and the reasoning behind the ports is confirmed rather than corrected.
+
+**Host.** WSL2 Ubuntu 22.04, kernel `6.18.33.2-microsoft-standard-WSL2`, 24 CPUs. Go 1.23.1
+linux/amd64 (`$HOME/golang`), .NET SDK 9.0.316 (`$HOME/.dotnet`), pwsh 7.5.4 (dotnet tool), git
+2.34.1 — all user-space, nothing installed system-wide. Clone at `$HOME/go2cs-linux` on **ext4**
+(not `/mnt`), reset to master `82fe15fe8`, which is three lines of `CLAUDE.md` ahead of this
+branch's base `b31112db5` and corpus-identical to it. After checkout: **0 modified, 0 untracked.**
+
+**The `eol=crlf` pin, measured natively rather than reasoned.** On a Linux checkout `fmt.csproj`
+materializes CRLF on **158 of 158** lines and `golib.csproj` on **103 of 103**, while `.go` sources
+stay LF (`main.go`, 0 CR). That is the r46c pin doing exactly what it promised: the working tree is
+the bytes the converter regenerates, on a host whose git default is `autocrlf=false`.
+
+| # | Instrument | Verdict |
+|:--|:--|:--|
+| 1 | `go test ./...` in `src/go2cs` | **exit 0, 43 s** — `ok go2cs 29.276s`, 3 packages with no test files. Recounted with `-v`: **227 top-level PASS, 143 subtest PASS, 1 SKIP, 0 FAIL.** |
+| 2 | `check-no-regression.ps1` under pwsh, full | **exit 0, 279 s** — the first execution of any ported script on Linux. Preflight: **576** behavioral projects registered, **4,142** tracked paths case-checked. Transpiles **574** packages deepest-first at **depths 7–8**, then: *"NO REGRESSION: generated C# is byte-identical across all behavioral projects."* One finding, below. |
+| 3 | `deploy-core.ps1 -WhatIf` under pwsh | **exit 0, 2 s, provably inert** — see below. |
+| 4 | §A1.1 recipe — `dotnet build src/core/fmt/fmt.csproj -c Debug` | **Build succeeded, 0 Error(s)**, 533 warnings, **57** project assemblies, 68 s. |
+| 4 | §A1.1 recipe — scratch single-package conversion | **0 backslashes** in the emitted `.csproj`. |
+
+**Both of CNR's shape guards are armed on the host they were written for.** The count guard
+(`≥ 400` packages) and the distinct-depth guard (`≥ 2` depths) exist because a `\`-anchored regex
+off Windows does not error, it silently matches nothing — which would collapse the bin/obj exclusion
+and the deepest-first order without failing anything. On Linux they report 574 packages across
+depths 7–8, so the walk and the depth split are genuinely operating on this platform's separator.
+
+**§A1.1 is answered definitively, in both directions.** The section's own verification recipe said
+one command would settle whether the *committed* csprojs consume on Linux: they do — `fmt` restores
+its stdlib `ProjectReference`s and compiles with **0 errors**. And the *emission* side, F5's actual
+subject, is clean at the source: a scratch package importing `fmt`, `os`, `path/filepath`, `sort`,
+`strings`, `syscall`-free `time` emits seven `ProjectReference`s plus the analyzer and golib, **all
+forward-slashed, zero backslashes in the file**. The only backslash anywhere in the emission is the
+one in `'\uA4F8'`, inside a `package_info.cs` comment — a C# escape in prose, not a path.
+
+**F7's `-WhatIf` is inert on Linux, proven two ways rather than asserted.** `go env GOPATH` resolves
+to `/home/rcarroll/go`, so the target is `/home/rcarroll/go/src/go2cs` — a path that **does not
+exist**. The dry run plans the whole deploy correctly (43 files / 9 directories of analyzer, **3,927
+files / 365 directories** of core, **304** projects, plus `version.props`, the root
+`Directory.Build.props` and `go2cs-core.slnx`) and then: the target **still does not exist**
+afterwards, and all **413** `src/core/**/*.csproj` mtimes are unchanged. Repository drift after the
+run: **0 files**. The `ShouldProcess` gating on the three `[System.IO.File]::WriteAllText` calls —
+which know nothing about `$WhatIfPreference` on their own — is what makes that true, and it holds
+under pwsh 7 exactly as it does under 5.1.
+
+#### The one finding: `FindFirstFileData` is not measured on Linux, and CNR cannot say so
+
+Predicted in class by §A2.5 ("Windows-only by construction"); the **shape** is new and is the part
+worth carrying.
+
+The package does not type-check on a Linux host — `syscall.Win32finddata`, `FindFirstFile`,
+`FindClose`, `UTF16PtrFromString`, `ERROR_FILE_NOT_FOUND` and `FILE_ATTRIBUTE_DIRECTORY` are all
+Windows-only. The converter says so loudly (`WARNING: … did not fully type-check; converting
+best-effort — code depending on the following is emitted untyped: [...]`), then recovers from a nil
+dereference (`WARNING: visit file error: runtime error: invalid memory address or nil pointer
+dereference in "main.go"`) and **exits 0**. What reaches disk:
+
+- `main.cs` is **never written** — its mtime is still the checkout's. A control package converted in
+  the same CNR pass has a freshly written `main.cs`, so this is the failure, not a no-op skip.
+- `package_info.cs` and the `.csproj` **are** rewritten, and the csproj **loses all seven**
+  `<ProjectReference>` lines (`fmt`, `os`, `path/filepath`, `sort`, `strings`, `syscall`, `time`),
+  keeping only golib — because the import set the references are minted from came back empty.
+
+CNR reports none of it, for two independent reasons that happen to compound: its drift pathspec is
+`src/tests/Behavioral/*.cs`, so a `.csproj` is outside what it looks at; and the converter's warning
+is discarded (`2>&1 | Out-Null`) with the gate resting on an exit code that is 0 by best-effort
+design. So on Linux the verdict *"byte-identical across all behavioral projects"* is true of 573
+packages and **vacuous for the 574th** — the file it compared was never regenerated. It is not a
+false green about a converter regression (there is none), but it is a gate that stops measuring one
+package without saying so.
+
+This sharpens **F8**. Its remedy — gate `LocalTimeZone`/`FindFirstFileData` by target platform in
+the runners' enumeration — was justified by the output comparison failing; the transpile gate going
+quietly blind on the same packages is a second, independent reason, and it applies to CNR, which F8
+did not previously cover.
+
+**Deliberately not fixed here.** The two candidate repairs — widening CNR's drift pathspec to
+`.csproj`, or making the converter exit non-zero on a best-effort conversion — both change a gate's
+semantics **on Windows too**, and the first would make CNR report this project as drifted on every
+Linux run until F8 lands. Those are coordinator-level calls, not a verification lane's.
+
+**Operational note for the next lane driving WSL from Windows.** Do not pass a command containing
+double quotes to `wsl -e bash -lc "…"`: the interop reconstructs the command line and the output is
+silently **truncated** at the first quoted token — `echo "== tools =="` prints `==` and everything
+after it in the script is lost, with exit code 0. It reads exactly like a hung or empty command. Put
+the commands in a `.sh` file and run `wsl -e bash /mnt/c/…/script.sh` instead; quoting inside the
+file is unaffected. (Files written from Windows tooling arrive LF, so no `dos2unix` step is needed.)
 
 ---
 

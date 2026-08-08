@@ -88,6 +88,7 @@
     <None Include="$(MSBuildThisFileDirectory)linknameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)linknamePush_test.go" />
     <None Include="$(MSBuildThisFileDirectory)main.go" />
+    <None Include="$(MSBuildThisFileDirectory)manualConversionMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualTypeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)moduleConverter.go" />
     <None Include="$(MSBuildThisFileDirectory)moduleConverter_integration_test.go" />
