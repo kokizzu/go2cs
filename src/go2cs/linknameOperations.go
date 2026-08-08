@@ -180,6 +180,23 @@ var linknamePushTargets = map[string]linknamePush{
 	// because env_unix.go is `//go:build unix || (js && wasm) || plan9 || wasip1`, so the declaration
 	// does not exist there at all.
 	"syscall.runtime_envs": {source: "runtime.syscall_runtime_envs", bareDecl: true},
+	// os's command-line snapshot, pushed by runtime/runtime.go — the exact sibling of the envs row
+	// above, in the same BARE consumer shape: os/proc.go declares `func runtime_args() []string //
+	// in package runtime` with no directive of its own, and runtime pushes it with
+	// `//go:linkname os_runtime_args os.runtime_args`.
+	//
+	// The pushed body is ordinary converted Go (`append([]string{}, argslice...)`), and — this is
+	// the part that had to be TRUE before the row could be honorable — `runtime.argslice` is
+	// genuinely populated in the managed model by the hand-owned runtime/goargs_impl.cs module
+	// initializer, which fills it from Environment.GetCommandLineArgs(). Without that companion the
+	// forwarder would have returned an EMPTY os.Args: not an error, just a plausible-looking wrong
+	// answer, which is the failure mode this project rules against. Forwarding and populating are
+	// therefore one change, not two.
+	//
+	// Windows is unaffected in both halves: os.init() returns early there (Args comes from
+	// exec_windows.go) and goargs_impl.cs keeps goargs()'s own `if GOOS == "windows" { return }`
+	// guard, so argslice stays unset exactly as in Go.
+	"os.runtime_args": {source: "runtime.os_runtime_args", bareDecl: true},
 	// internal/weak's two halves, pushed by runtime/mheap.go — the UNHONORABLE class. Both pushed
 	// bodies reach the span allocator: registerWeakPointer → getOrAddWeakHandle → spanOfHeap →
 	// `throw("getWeakHandle on invalid pointer")`, and makeStrongFromWeak reads a handle word out of

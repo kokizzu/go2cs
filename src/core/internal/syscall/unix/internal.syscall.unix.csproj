@@ -157,11 +157,13 @@
        shared list above, which is what lets a single-target reconvert reproduce this file. -->
   <ItemGroup Condition="'$(GoTargetOS)'=='darwin'">
     <ProjectReference Include="$(go2csPath)core/internal/abi/internal.abi.csproj" />
+    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
     <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(GoTargetOS)'=='linux'">
+    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
     <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
     <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />

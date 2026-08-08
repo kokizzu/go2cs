@@ -479,7 +479,7 @@ internal static void osyield_no_g() {
 internal static partial (int32 r, int32 w, int32 errno) pipe2(int32 flags);
 
 //go:nosplit
-internal static (int32 ret, int32 errno) fcntl(int32 fd, int32 cmd, int32 arg) {
+public static (int32 ret, int32 errno) fcntl(int32 fd, int32 cmd, int32 arg) {
     var (r, _, err) = syscall.Syscall6(syscall.SYS_FCNTL, (uintptr)fd, (uintptr)cmd, (uintptr)arg, 0, 0, 0);
     return ((int32)r, (int32)err);
 }
