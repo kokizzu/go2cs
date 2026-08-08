@@ -3052,8 +3052,7 @@ public static void TestHypotGo(ж<testing.T> Ꮡt) {
 
 public static void TestIlogb(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(vf); i++) {
-        nint a = frexp[i].i - 1;
-        // adjust because fr in the interval [½, 1)
+        nint a = frexp[i].i - 1; // adjust because fr in the interval [½, 1)
         {
             nint e = Ilogb(vf[i]); if (a != e) {
                 Ꮡt.Errorf("Ilogb(%g) = %d, want %d"u8, vf[i], e, a);

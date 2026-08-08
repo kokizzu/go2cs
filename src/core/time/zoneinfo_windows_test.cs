@@ -28,8 +28,7 @@ internal static void testZoneAbbr(ж<Δtesting.T> Ꮡt) {
 public static void TestUSPacificZoneAbbr(ж<Δtesting.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        time_internal_test_package.ForceUSPacificFromTZIForTesting();
-        // reset the Once to trigger the race
+        time_internal_test_package.ForceUSPacificFromTZIForTesting(); // reset the Once to trigger the race
         defer(time_internal_test_package.ForceUSPacificForTesting, ref ᒐ);
         testZoneAbbr(Ꮡt);
     }

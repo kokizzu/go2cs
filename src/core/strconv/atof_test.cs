@@ -641,9 +641,8 @@ public static void TestRoundTrip32(ж<testing.T> Ꮡt) {
     for (var i = (uint32)0; i < ((uint32)0xff << (int)(23)); i += step) {
         var f = Δmath.Float32frombits(i);
         if ((uint32)(i & 1) == 1) {
-            f = -f;
+            f = -f; // negative
         }
-        // negative
         @string s = FormatFloat((float64)f, (rune)'g', -1, 32);
         var (parsed, err) = ParseFloat(s, 32);
         var parsed32 = (float32)parsed;

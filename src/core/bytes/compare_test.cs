@@ -71,8 +71,7 @@ public static void TestCompareIdenticalSlice(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCompareBytes(ж<testing.T> Ꮡt) {
-    var lengths = new slice<nint>(0);
-    // lengths to test in ascending order
+    var lengths = new slice<nint>(0); // lengths to test in ascending order
     for (nint i = 0; i <= 128; i++) {
         lengths = append(lengths, i);
     }

@@ -161,10 +161,10 @@ public static void BenchmarkCheckCanceled(ж<testing.B> Ꮡb) {
             ctxʗ1.Err();
         }
     });
-    var ctxʗ3 = ctx;
+    var ctxʗ2 = ctx;
     Ꮡb.Run(doneˢ, (ж<testing.B> bΔ2) => {
         for (nint i = 0; i < (~bΔ2).N; i++) {
-            var selᴛ1 = ctxʗ3.Done();
+            var selᴛ1 = ctxʗ2.Done();
             switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
             case 0 when selᴛ1.ꟷᐳ(out _): {
                 break;
@@ -185,9 +185,9 @@ public static void BenchmarkContextCancelDone(ж<testing.B> Ꮡb) {
         var ctxʗ1 = ctx;
         Ꮡb.RunParallel((ж<testing.PB> pb) => {
             while (pb.Next()) {
-                var selᴛ3 = ctxʗ1.Done();
-                switch (trySelect(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
-                case 0 when selᴛ3.ꟷᐳ(out _): {
+                var selᴛ2 = ctxʗ1.Done();
+                switch (trySelect(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+                case 0 when selᴛ2.ꟷᐳ(out _): {
                     break;
                 }
                 default: {

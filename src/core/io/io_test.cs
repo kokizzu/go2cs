@@ -60,8 +60,7 @@ public static void TestCopyBuffer(ж<testing.T> Ꮡt) {
     var rb = @new<Buffer>();
     var wb = @new<Buffer>();
     rb.of(Buffer.ᏑΔBuffer).WriteString(helloWorldˢ);
-    CopyBuffer(new io_test_package.BufferжWriter(wb), new io_test_package.BufferжReader(rb), new slice<byte>(1));
-    // Tiny buffer to keep it honest.
+    CopyBuffer(new io_test_package.BufferжWriter(wb), new io_test_package.BufferжReader(rb), new slice<byte>(1)); // Tiny buffer to keep it honest.
     if (wb.of(Buffer.ᏑΔBuffer).String() != "hello, world."u8) {
         Ꮡt.Errorf("CopyBuffer did not work properly"u8);
     }
@@ -71,8 +70,7 @@ public static void TestCopyBufferNil(ж<testing.T> Ꮡt) {
     var rb = @new<Buffer>();
     var wb = @new<Buffer>();
     rb.of(Buffer.ᏑΔBuffer).WriteString(helloWorldˢ);
-    CopyBuffer(new io_test_package.BufferжWriter(wb), new io_test_package.BufferжReader(rb), default!);
-    // Should allocate a buffer.
+    CopyBuffer(new io_test_package.BufferжWriter(wb), new io_test_package.BufferжReader(rb), default!); // Should allocate a buffer.
     if (wb.of(Buffer.ᏑΔBuffer).String() != "hello, world."u8) {
         Ꮡt.Errorf("CopyBuffer did not work properly"u8);
     }
@@ -80,8 +78,7 @@ public static void TestCopyBufferNil(ж<testing.T> Ꮡt) {
 
 public static void TestCopyReadFrom(ж<testing.T> Ꮡt) {
     var rb = @new<Buffer>();
-    var wb = @new<bytes.Buffer>();
-    // implements ReadFrom.
+    var wb = @new<bytes.Buffer>(); // implements ReadFrom.
     rb.of(Buffer.ᏑΔBuffer).WriteString(helloWorldˢ);
     Copy(new io_test_package.bytes_BufferжWriter(wb), new io_test_package.BufferжReader(rb));
     if (wb.String() != "hello, world."u8) {
@@ -90,8 +87,7 @@ public static void TestCopyReadFrom(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCopyWriteTo(ж<testing.T> Ꮡt) {
-    var rb = @new<bytes.Buffer>();
-    // implements WriteTo.
+    var rb = @new<bytes.Buffer>(); // implements WriteTo.
     var wb = @new<Buffer>();
     rb.WriteString(helloWorldˢ);
     Copy(new io_test_package.BufferжWriter(wb), new io_test_package.bytes_BufferжReader(rb));
@@ -171,8 +167,7 @@ public static void TestCopyN(ж<testing.T> Ꮡt) {
 
 public static void TestCopyNReadFrom(ж<testing.T> Ꮡt) {
     var rb = @new<Buffer>();
-    var wb = @new<bytes.Buffer>();
-    // implements ReadFrom.
+    var wb = @new<bytes.Buffer>(); // implements ReadFrom.
     rb.of(Buffer.ᏑΔBuffer).WriteString(helloˢ);
     CopyN(new io_test_package.bytes_BufferжWriter(wb), new io_test_package.BufferжReader(rb), 5);
     if (wb.String() != "hello"u8) {
@@ -181,8 +176,7 @@ public static void TestCopyNReadFrom(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCopyNWriteTo(ж<testing.T> Ꮡt) {
-    var rb = @new<bytes.Buffer>();
-    // implements WriteTo.
+    var rb = @new<bytes.Buffer>(); // implements WriteTo.
     var wb = @new<Buffer>();
     rb.WriteString(helloWorldˢ);
     CopyN(new io_test_package.BufferжWriter(wb), new io_test_package.bytes_BufferжReader(rb), 5);
@@ -253,13 +247,11 @@ public static void TestCopyNEOF(ж<testing.T> Ꮡt) {
     if (n != 3 || !AreEqual(err, EOF)) {
         Ꮡt.Errorf("CopyN(noReadFrom, foo, 4) = %d, %v; want 3, EOF"u8, n, err);
     }
-    (n, err) = CopyN(new io_test_package.bytes_BufferжWriter(b), new io_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)), 3);
-    // b has read from
+    (n, err) = CopyN(new io_test_package.bytes_BufferжWriter(b), new io_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)), 3); // b has read from
     if (n != 3 || err != default!) {
         Ꮡt.Errorf("CopyN(bytes.Buffer, foo, 3) = %d, %v; want 3, nil"u8, n, err);
     }
-    (n, err) = CopyN(new io_test_package.bytes_BufferжWriter(b), new io_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)), 4);
-    // b has read from
+    (n, err) = CopyN(new io_test_package.bytes_BufferжWriter(b), new io_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)), 4); // b has read from
     if (n != 3 || !AreEqual(err, EOF)) {
         Ꮡt.Errorf("CopyN(bytes.Buffer, foo, 4) = %d, %v; want 3, EOF"u8, n, err);
     }
@@ -598,11 +590,11 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
             }
         });
         // Should throw error errOffset if offset is negative
-        var wʗ3 = w;
+        var wʗ2 = w;
         Ꮡt.Run(errOffsetˢ, (ж<testing.T> tΔ2) => {
             foreach (var (_, whence) in new nint[]{SeekStart, SeekCurrent}.slice()) {
                 for (var offset = (int64)(-3); offset < 0; offset++) {
-                    var (gotOff, gotErr) = wʗ3.Seek(offset, whence);
+                    var (gotOff, gotErr) = wʗ2.Seek(offset, whence);
                     if (gotOff != 0 || !AreEqual(gotErr, io_internal_test_package.ErrOffset)) {
                         tΔ2.Errorf("For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, %v)"u8,
                             whence, offset, gotOff, gotErr, (nint)(0), io_internal_test_package.ErrOffset);
@@ -611,7 +603,7 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
             }
         });
         // Normal tests
-        var wʗ5 = w;
+        var wʗ3 = w;
         Ꮡt.Run(normalˢ, (ж<testing.T> tΔ3) => {
             var tests = new TestOffsetWriter_Seek_tests[]{ // keep in order
 
@@ -623,7 +615,7 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
                 new(whence: SeekCurrent, offset: 3, returnOff: 9)
             }.slice();
             foreach (var (idx, tt) in tests) {
-                var (gotOff, gotErr) = wʗ5.Seek(tt.offset, tt.whence);
+                var (gotOff, gotErr) = wʗ3.Seek(tt.offset, tt.whence);
                 if (gotOff != tt.returnOff || gotErr != default!) {
                     tΔ3.Errorf("%d:: For whence %d, offset %d, OffsetWriter.Seek got: (%d, %v), want: (%d, <nil>)"u8,
                         idx + 1, tt.whence, tt.offset, gotOff, gotErr, tt.returnOff);
@@ -787,16 +779,16 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
     // Copy -> WriteTo -> Write
     // Note: strings.Reader implements the io.WriterTo interface.
     name = writeOfCopyWriteToˢ;
-    var checkContentʗ3 = checkContent;
-    var makeOffsetWriterʗ3 = makeOffsetWriter;
+    var checkContentʗ2 = checkContent;
+    var makeOffsetWriterʗ2 = makeOffsetWriter;
     Ꮡt.Run(name, (ж<testing.T> tΔ2) => {
         GoFrame ᒐ = default;
         try {
-            var (w, f) = makeOffsetWriterʗ3(name);
-            var fʗ3 = f;
-            defer(() => fʗ3.Close(), ref ᒐ);
+            var (w, f) = makeOffsetWriterʗ2(name);
+            var fʗ2 = f;
+            defer(() => fʗ2.Close(), ref ᒐ);
             Copy(new io_test_package.io_OffsetWriterжWriter(w), new io_test_package.strings_ReaderжReader(strings.NewReader(content)));
-            checkContentʗ3(name, f);
+            checkContentʗ2(name, f);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }

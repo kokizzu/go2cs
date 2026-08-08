@@ -77,10 +77,8 @@ internal static readonly @string fileGoˢ = "file.go"u8;
 public static void TestOpenFailure(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    @string filename = fileGoˢ;
-    // not a Plan 9 a.out file
-    var (_, err) = Open(filename);
-    // don't crash
+    @string filename = fileGoˢ; // not a Plan 9 a.out file
+    var (_, err) = Open(filename); // don't crash
     if (err == default!) {
         Ꮡt.Errorf("open %s: succeeded unexpectedly"u8, filename);
     }

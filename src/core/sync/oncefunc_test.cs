@@ -246,9 +246,9 @@ public static void TestOnceXGC(ж<Δtesting.T> Ꮡt) {
             });
         },
         ["OnceValue"u8] = (slice<byte> buf) => {
-            var bufʗ3 = buf;
+            var bufʗ2 = buf;
             var f = Δsync.OnceValue(any () => {
-                bufʗ3[0] = 1;
+                bufʗ2[0] = 1;
                 return default!;
             });
             var fʗ1 = f;
@@ -257,9 +257,9 @@ public static void TestOnceXGC(ж<Δtesting.T> Ꮡt) {
             };
         },
         ["OnceValues"u8] = (slice<byte> buf) => {
-            var bufʗ5 = buf;
+            var bufʗ3 = buf;
             var f = Δsync.OnceValues((any, any) () => {
-                bufʗ5[0] = 1;
+                bufʗ3[0] = 1;
                 return (default!, default!);
             });
             var fʗ2 = f;

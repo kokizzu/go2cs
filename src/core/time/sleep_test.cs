@@ -664,8 +664,7 @@ public static void TestOverflowSleep(ж<Δtesting.T> Ꮡt) {
     }}
     // OK
     Δtime.Duration neg = /* Duration(-1 << 63) */ -9223372036854775808;
-    Sleep(neg);
-    // Returns immediately.
+    Sleep(neg); // Returns immediately.
     var selᴛ11 = After(neg);
     var selᴛ12 = After(1 * ΔSecond);
     switch (select(ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
@@ -872,12 +871,11 @@ public static void TestAdjustTimers(ж<Δtesting.T> Ꮡt) {
             break;
         }
         case 1: {
-            ᐸꟷ((~timer).C);
+            ᐸꟷ((~timer).C); // Timer is now idle.
             break;
         }
         case 2: {
             if (timer.Reset((Δtime.Duration)(60000000000L))) {
-                // Timer is now idle.
                 // Reset to various long durations, which we'll cancel.
                 throw panic("shouldn't be active (1)");
             }

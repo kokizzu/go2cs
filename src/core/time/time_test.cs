@@ -416,8 +416,7 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
         if (d < 0) {
             d = -d;
         }
-        ti >>= (int)(1);
-        // see comment in f1
+        ti >>= (int)(1); // see comment in f1
         return testOneʗ2(ti, (int64)tns, (int64)d);
     };
     quick.Check(f2, cfg);
@@ -440,8 +439,7 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
     // full generality
     var testOneʗ4 = testOne;
     var f4 = (int64 ti, int32 tns, int64 di) => {
-        ti >>= (int)(1);
-        // see comment in f1
+        ti >>= (int)(1); // see comment in f1
         return testOneʗ4(ti, (int64)tns, di);
     };
     quick.Check(f4, cfg);
@@ -1127,8 +1125,7 @@ public static void TestParseDurationRoundTrip(ж<Δtesting.T> Ꮡt) {
 
 // golang.org/issue/4622
 public static void TestLocationRace(ж<Δtesting.T> Ꮡt) {
-    time_internal_test_package.ResetLocalOnceForTest();
-    // reset the Once to trigger the race
+    time_internal_test_package.ResetLocalOnceForTest(); // reset the Once to trigger the race
     var c = new channel<@string>(1);
     var cʗ1 = c;
     goǃ(() => {
@@ -1813,8 +1810,7 @@ public static void TestMarshalBinaryZeroTime(ж<Δtesting.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    var t1 = Now();
-    // not zero
+    var t1 = Now(); // not zero
     {
         var errΔ1 = t1.UnmarshalBinary(enc); if (errΔ1 != default!) {
             Ꮡt.Fatal(errΔ1);
@@ -1858,8 +1854,7 @@ public static void TestMarshalBinaryVersion2(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestUnmarshalTextAllocations(ж<Δtesting.T> Ꮡt) {
-    var @in = slice<byte>(testdataRFC3339UTC);
-    // short enough to be stack allocated
+    var @in = slice<byte>(testdataRFC3339UTC); // short enough to be stack allocated
     {
         var inʗ1 = @in;
         var allocs = Δtesting.AllocsPerRun(100, () => {

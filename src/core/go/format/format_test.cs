@@ -20,8 +20,7 @@ internal static readonly @string testfile = "format_test.go"u8;
 
 internal static void diff(ж<testing.T> Ꮡt, slice<byte> dst, slice<byte> src) {
     nint line = 1;
-    nint offs = 0;
-    // line offset
+    nint offs = 0; // line offset
     for (nint i = 0; i < len(dst) && i < len(src); i++) {
         var d = dst[i];
         var s = src[i];
@@ -182,8 +181,7 @@ public static void TestPartial(ж<testing.T> Ꮡt) {
 
         if (strings.HasPrefix(src, errorˢ)){
             // test expected to fail
-            src = src[5..];
-            // remove ERROR prefix
+            src = src[5..]; // remove ERROR prefix
             var (res, err) = String(src);
             if (err == default! && res == src) {
                 Ꮡt.Errorf("formatting succeeded but was expected to fail:\n%q"u8, src);

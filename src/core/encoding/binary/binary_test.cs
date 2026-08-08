@@ -370,9 +370,8 @@ public static void TestWriteT(ж<testing.T> Ꮡt) {
             for ((nint i, nint n) = (0, tv.NumField()); i < n; i++) {
                 @string typ = tv.Field(i).Type().String();
                 if (typ == "[4]int"u8) {
-                    typ = intˢ;
+                    typ = intˢ; // the problem is int, not the [4]
                 }
-                // the problem is int, not the [4]
                 {
                     var (_, err) = encʗ1.fn(BigEndian, tv.Field(i).Interface()); if (err == default!){
                         tΔ1.Errorf("WriteT.%v: have err == nil, want non-nil"u8, tv.Field(i).Type());

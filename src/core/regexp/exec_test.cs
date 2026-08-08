@@ -93,9 +93,8 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) {
         if (strings.HasSuffix(@file, bz2ˢ)){
             var z = bzip2.NewReader(new regexp_test_package.os_FileжReader(f));
             txt = z;
-            @file = @file[..(int)(len(@file) - len(".bz2"))];
+            @file = @file[..(int)(len(@file) - len(".bz2"))]; // for error messages
         } else {
-            // for error messages
             txt = new regexp_test_package.os_FileжReader(f);
         }
         nint lineno = 0;

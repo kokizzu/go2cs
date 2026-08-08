@@ -117,8 +117,7 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
             b.WriteByte((byte)tc.extraSeparate);
             b.WriteString(extra[..(int)(tc.extraSeparate)]);
         }
-        b.WriteByte(0x00);
-        // An empty block signifies the end of the image data.
+        b.WriteByte(0x00); // An empty block signifies the end of the image data.
         b.WriteString(trailerStr);
         var (got, err) = Decode(new gif_internal_test_package.bytes_BufferжReader(b));
         if (!AreEqual(err, tc.wantErr)) {
@@ -251,16 +250,14 @@ public static void TestNoPalette(ж<testing.T> Ꮡt) {
     // Manufacture a GIF with no palette, so any pixel at all
     // will be invalid.
     b.WriteString(headerStr[..(int)(len(headerStr) - 3)]);
-    b.WriteString("\x00\x00\x00"u8);
-    // No global palette.
+    b.WriteString("\x00\x00\x00"u8); // No global palette.
     // Image descriptor: 2x1, no local palette, and 2-bit LZW literals.
     b.WriteString("\x2c\x00\x00\x00\x00\x02\x00\x01\x00\x00\x02"u8);
     // Encode the pixels: neither is in range, because there is no palette.
     var enc = lzwEncode(new byte[]{0x00, 0x03}.slice());
     b.WriteByte((byte)len(enc));
     b.Write(enc);
-    b.WriteByte(0x00);
-    // An empty block signifies the end of the image data.
+    b.WriteByte(0x00); // An empty block signifies the end of the image data.
     b.WriteString(trailerStr);
     @try(Ꮡt, b.Bytes(), gifNoColorTableˢ);
 }
@@ -280,8 +277,7 @@ public static void TestPixelOutsidePaletteRange(ж<testing.T> Ꮡt) {
         var enc = lzwEncode(new byte[]{pval, pval}.slice());
         b.WriteByte((byte)len(enc));
         b.Write(enc);
-        b.WriteByte(0x00);
-        // An empty block signifies the end of the image data.
+        b.WriteByte(0x00); // An empty block signifies the end of the image data.
         b.WriteString(trailerStr);
         // No error expected, unless the pixels are beyond the 2 color palette.
         @string want = ""u8;
@@ -311,8 +307,7 @@ public static void TestTransparentPixelOutsidePaletteRange(ж<testing.T> Ꮡt) {
     var enc = lzwEncode(new byte[]{0x03, 0x03}.slice());
     b.WriteByte((byte)len(enc));
     b.Write(enc);
-    b.WriteByte(0x00);
-    // An empty block signifies the end of the image data.
+    b.WriteByte(0x00); // An empty block signifies the end of the image data.
     b.WriteString(trailerStr);
     @try(Ꮡt, b.Bytes(), ""u8);
 }

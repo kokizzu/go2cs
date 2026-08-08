@@ -129,8 +129,7 @@ public static void ExampleOnceValues() {
             if (err != default!) {
                 fmt.Println(errorˢ, err);
             }
-            _ = data;
-            // Ignore the data for this example
+            _ = data; // Ignore the data for this example
             doneʗ1.ᐸꟷ(true);
         });
     }

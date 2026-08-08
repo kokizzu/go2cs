@@ -272,9 +272,9 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     // data; test that as well.
     for (nint deltaᴛ2 = 1; deltaᴛ2 <= 7; deltaᴛ2++) {
         var delta = deltaᴛ2;
-        var castagnoliTabʗ3 = castagnoliTab;
+        var castagnoliTabʗ2 = castagnoliTab;
         testGoldenCastagnoli(Ꮡt, (slice<byte> b) => {
-            var castagnoli = New(castagnoliTabʗ3);
+            var castagnoli = New(castagnoliTabʗ2);
             nint d = delta;
             if (d >= len(b)) {
                 d = len(b);

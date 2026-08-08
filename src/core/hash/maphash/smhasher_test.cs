@@ -69,10 +69,8 @@ internal static uint64 stringHash(@string s) {
 internal static UntypedInt hashSize => 64;
 
 internal static void randBytes(ж<rand.Rand> Ꮡr, slice<byte> b) {
-    Ꮡr.Read(b);
+    Ꮡr.Read(b); // can't fail
 }
-
-// can't fail
 
 // A hashSet measures the frequency of hash collisions.
 [GoType] internal partial struct hashSet {
@@ -423,8 +421,7 @@ internal static void avalancheTest1(ж<testing.T> Ꮡt, key k) {
     // find c such that Prob(mean-c*stddev < x < mean+c*stddev)^N > .9999
     for (c = 0.0D; math.Pow(math.Erf(c / math.Sqrt(2D)), (float64)N) < .9999D; c += .1D) {
     }
-    c *= 11.0D;
-    // allowed slack: 40% to 60% - we don't need to be perfectly random
+    c *= 11.0D; // allowed slack: 40% to 60% - we don't need to be perfectly random
     var mean = /* .5 * REP */ 50000D;
     var stddev = .5D * math.Sqrt(REP);
     nint low = (nint)(mean - c * stddev);
@@ -526,9 +523,8 @@ public static void TestSmhasherSeed(ж<testing.T> Ꮡt) {
     @string s = helloˢ;
     for (nint i = 0; i < N; i++) {
         h.addS_seed(s, new ΔSeed(s: (uint64)(i + 1)));
-        h.addS_seed(s, new ΔSeed(s: ((uint64)(i + 1) << (int)(32))));
+        h.addS_seed(s, new ΔSeed(s: ((uint64)(i + 1) << (int)(32)))); // make sure high bits are used
     }
-    // make sure high bits are used
     h.check(Ꮡt);
 }
 

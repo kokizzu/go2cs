@@ -780,8 +780,7 @@ internal static void testWalk(ж<testing.T> Ꮡt, Func<@string, Func<@string, fs
             // correct double-marking of directory itself
             (~tree).entries[1].Value.mark -= errVisit;
             (~tree).entries[3].Value.mark -= errVisit;
-            clear = false;
-            // error will stop processing
+            clear = false; // error will stop processing
             errΔ2 = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFnʗ1));
             if (errΔ2 == default!) {
                 tΔ1.Fatalf("expected error return from Walk"u8);
@@ -864,13 +863,13 @@ public static void TestWalkSkipDirOnFile(ж<testing.T> Ꮡt) {
         checkʗ1(tΔ2, Walk, td);
         checkʗ1(tΔ2, Walk, filepath.Join(td, dirˢ));
     });
-    var checkʗ3 = check;
+    var checkʗ2 = check;
     var walkDirFnʗ1 = walkDirFn;
     Ꮡt.Run(walkDirˢ, (ж<testing.T> tΔ3) => {
         var walkDirFnʗ2 = walkDirFnʗ1;
         var WalkDir = (@string root) => filepath.WalkDir(td, new Func<@string, fs.DirEntry, error, error>(walkDirFnʗ2));
-        checkʗ3(tΔ3, WalkDir, td);
-        checkʗ3(tΔ3, WalkDir, filepath.Join(td, dirˢ));
+        checkʗ2(tΔ3, WalkDir, td);
+        checkʗ2(tΔ3, WalkDir, filepath.Join(td, dirˢ));
     });
 }
 
@@ -934,13 +933,13 @@ public static void TestWalkSkipAllOnFile(ж<testing.T> Ꮡt) {
         checkʗ1(tΔ2, Walk, td);
         checkʗ1(tΔ2, Walk, filepath.Join(td, dirˢ));
     });
-    var checkʗ3 = check;
+    var checkʗ2 = check;
     var walkDirFnʗ1 = walkDirFn;
     Ꮡt.Run(walkDirˢ, (ж<testing.T> tΔ3) => {
         var walkDirFnʗ2 = walkDirFnʗ1;
         var WalkDir = (@string _) => filepath.WalkDir(td, new Func<@string, fs.DirEntry, error, error>(walkDirFnʗ2));
-        checkʗ3(tΔ3, WalkDir, td);
-        checkʗ3(tΔ3, WalkDir, filepath.Join(td, dirˢ));
+        checkʗ2(tΔ3, WalkDir, td);
+        checkʗ2(tΔ3, WalkDir, filepath.Join(td, dirˢ));
     });
 }
 
@@ -2092,8 +2091,7 @@ public static void TestIssue51617(ж<testing.T> Ꮡt) {
                 Ꮡt.Fatal(errΔ2);
             }
         }
-        defer(os.Chmod, bad, (fs.FileMode)(448), ref ᒐ);
-        // avoid errors on cleanup
+        defer(os.Chmod, bad, (fs.FileMode)(448), ref ᒐ); // avoid errors on cleanup
         ref var saw = ref heap<slice<@string>>(out var Ꮡsaw);
         var err = filepath.WalkDir(dir, error (@string path, fs.DirEntry d, error errΔ3) => {
             if (errΔ3 != default!) {

@@ -48,10 +48,8 @@ public static void Swap(this PriorityQueue pq, nint i, nint j) {
     var old = pq;
     nint n = len(old);
     var item = old[n - 1];
-    old[n - 1] = default!;
-    // don't stop the GC from reclaiming the item eventually
-    item.Value.index = -1;
-    // for safety
+    old[n - 1] = default!; // don't stop the GC from reclaiming the item eventually
+    item.Value.index = -1; // for safety
     pq = old[0..(int)(n - 1)];
     return item.OrTypedNil();
 }

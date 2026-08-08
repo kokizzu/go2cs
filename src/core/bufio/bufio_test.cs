@@ -37,8 +37,7 @@ internal static ж<rot13Reader> newRot13Reader(Δio.Reader r) {
 [GoRecv] internal static (nint, error) Read(this ref rot13Reader r13, slice<byte> p) {
     var (n, err) = r13.r.Read(p);
     for (nint i = 0; i < n; i++) {
-        var c = (byte)(p[i] | 0x20);
-        // lowercase byte
+        var c = (byte)(p[i] | 0x20); // lowercase byte
         if ((rune)'a' <= c && c <= (rune)'m'){
             p[i] += 13;
         } else 
@@ -564,8 +563,7 @@ internal static readonly object expectedErrorAfterˢ4 = (@string)"expected error
 
 // Test that UnreadRune fails if the preceding operation was not a ReadRune.
 public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
-    var buf = new slice<byte>(3);
-    // All runes in this test are 3 bytes long
+    var buf = new slice<byte>(3); // All runes in this test are 3 bytes long
     var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: new @string[]{"日本語日本語日本語"u8}.slice()))));
     if (r.UnreadRune() == default!) {
         Ꮡt.Error(expectedErrorOnˢ);
@@ -583,8 +581,7 @@ public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Error(expectedErrorAfterˢ);
     }
     // Test error after Read.
-    (_, _, err) = r.ReadRune();
-    // reset state
+    (_, _, err) = r.ReadRune(); // reset state
     if (err != default!) {
         Ꮡt.Error(unexpectedErrorOnˢ7, err);
     }
@@ -596,8 +593,7 @@ public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Error(expectedErrorAfterRead2ˢ);
     }
     // Test error after ReadByte.
-    (_, _, err) = r.ReadRune();
-    // reset state
+    (_, _, err) = r.ReadRune(); // reset state
     if (err != default!) {
         Ꮡt.Error(unexpectedErrorOnˢ7, err);
     }
@@ -611,8 +607,7 @@ public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Error(expectedErrorAfterˢ2);
     }
     // Test error after UnreadByte.
-    (_, _, err) = r.ReadRune();
-    // reset state
+    (_, _, err) = r.ReadRune(); // reset state
     if (err != default!) {
         Ꮡt.Error(unexpectedErrorOnˢ9, err);
     }
@@ -628,8 +623,7 @@ public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Error(expectedErrorAfterˢ3);
     }
     // Test error after ReadSlice.
-    (_, _, err) = r.ReadRune();
-    // reset state
+    (_, _, err) = r.ReadRune(); // reset state
     if (err != default!) {
         Ꮡt.Error(unexpectedErrorOnˢ12, err);
     }
@@ -879,14 +873,10 @@ public static void TestWriteString(ж<Δtesting.T> Ꮡt) {
     const nint BufSize = 8;
     var buf = @new<strings.Builder>();
     var b = NewWriterSize(new bufio_test_package.strings_BuilderжWriter(buf), BufSize);
-    b.WriteString("0"u8);
-    // easy
-    b.WriteString("123456"u8);
-    // still easy
-    b.WriteString("7890"u8);
-    // easy after flush
-    b.WriteString(abcdefghijklmnopqrstuvwxyˢ);
-    // hard
+    b.WriteString("0"u8); // easy
+    b.WriteString("123456"u8); // still easy
+    b.WriteString("7890"u8); // easy after flush
+    b.WriteString(abcdefghijklmnopqrstuvwxyˢ); // hard
     b.WriteString("z"u8);
     {
         var err = b.Flush(); if (err != default!) {
@@ -910,43 +900,35 @@ public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
         var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.WriteString("1234"u8);
         tw.check(Ꮡt, ""u8, ""u8);
-        b.WriteString("56789012"u8);
-        // longer than BufSize
-        tw.check(Ꮡt, "12345678"u8, ""u8);
-        // but not enough (after filling the partially-filled buffer)
+        b.WriteString("56789012"u8); // longer than BufSize
+        tw.check(Ꮡt, "12345678"u8, ""u8); // but not enough (after filling the partially-filled buffer)
         b.Flush();
         tw.check(Ꮡt, "123456789012"u8, ""u8);
     }
     {
         var tw = Ꮡ(new teststringwriter(nil));
         var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
-        b.WriteString("123456789"u8);
-        // long string, empty buffer:
-        tw.check(Ꮡt, ""u8, "123456789"u8);
+        b.WriteString("123456789"u8); // long string, empty buffer:
+        tw.check(Ꮡt, ""u8, "123456789"u8); // use WriteString
     }
-    // use WriteString
     {
         var tw = Ꮡ(new teststringwriter(nil));
         var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.WriteString(abcˢ);
         tw.check(Ꮡt, ""u8, ""u8);
-        b.WriteString("123456789012345"u8);
-        // long string, non-empty buffer
-        tw.check(Ꮡt, abc12345ˢ, "6789012345"u8);
+        b.WriteString("123456789012345"u8); // long string, non-empty buffer
+        tw.check(Ꮡt, abc12345ˢ, "6789012345"u8); // use Write and then WriteString since the remaining part is still longer than BufSize
     }
-    // use Write and then WriteString since the remaining part is still longer than BufSize
     {
         var tw = Ꮡ(new teststringwriter(nil));
         var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
-        b.Write(slice<byte>("abc"u8));
-        // same as above, but use Write instead of WriteString
+        b.Write(slice<byte>("abc"u8)); // same as above, but use Write instead of WriteString
         tw.check(Ꮡt, ""u8, ""u8);
         b.WriteString("123456789012345"u8);
-        tw.check(Ꮡt, abc12345ˢ, "6789012345"u8);
+        tw.check(Ꮡt, abc12345ˢ, "6789012345"u8); // same as above
     }
 }
 
-// same as above
 [GoType] partial struct teststringwriter {
     internal @string write;
     internal @string writeString;
@@ -1091,10 +1073,9 @@ public static void TestPeekThenUnreadRune(ж<Δtesting.T> Ꮡt) {
     r.ReadRune();
     r.Peek(1);
     r.UnreadRune();
-    r.ReadRune();
+    r.ReadRune(); // Used to panic here
 }
 
-// Used to panic here
 internal static slice<byte> testOutput = slice<byte>("0123456789abcdefghijklmnopqrstuvwxy"u8);
 
 internal static slice<byte> testInput = slice<byte>("012\n345\n678\n9ab\ncde\nfgh\nijk\nlmn\nopq\nrst\nuvw\nxy"u8);
@@ -1758,8 +1739,7 @@ public static void TestReaderReset(ж<Δtesting.T> Ꮡt) {
     }
     r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(barBarˢ)));
     checkAll(r, barBarˢ);
-    r.Value = new Reader(nil);
-    // zero out the Reader
+    r.Value = new Reader(nil); // zero out the Reader
     r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(barBarˢ)));
     checkAll(r, barBarˢ);
     // Wrap a reader and then Reset to that reader.
@@ -1783,8 +1763,7 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
     ref var buf5 = ref heap(new strings.Builder(), out var Ꮡbuf5);
     var w = NewWriter(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf1));
     w.WriteString(fooˢ);
-    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf2));
-    // and not flushed
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf2)); // and not flushed
     w.WriteString(barˢ);
     w.Flush();
     if (buf1.String() != ""u8) {
@@ -1793,10 +1772,8 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
     if (buf2.String() != "bar"u8) {
         Ꮡt.Errorf("buf2 = %q; want bar"u8, buf2.String());
     }
-    w.Value = new Writer(nil);
-    // zero out the Writer
-    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf3));
-    // and not flushed
+    w.Value = new Writer(nil); // zero out the Writer
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf3)); // and not flushed
     w.WriteString(barˢ);
     w.Flush();
     if (buf1.String() != ""u8) {

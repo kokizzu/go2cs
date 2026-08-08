@@ -515,8 +515,7 @@ public static void TestIssue56724(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    b = b[..24];
-    // truncate image data
+    b = b[..24]; // truncate image data
     (_, err) = Decode(new jpeg_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
     if (!AreEqual(err, io.ErrUnexpectedEOF)) {
         Ꮡt.Errorf("got: %v, want: %v"u8, err, io.ErrUnexpectedEOF);

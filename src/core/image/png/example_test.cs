@@ -36,8 +36,7 @@ public static void ExampleDecode() {
     for (nint y = img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++) {
         for (nint x = img.Bounds().Min.X; x < img.Bounds().Max.X; x++) {
             var c = color.GrayModel.Convert(img.At(x, y))._<color.Gray>();
-            var level = (uint8)(c.Y / 51);
-            // 51 * 5 = 255
+            var level = (uint8)(c.Y / 51); // 51 * 5 = 255
             if (level == 5) {
                 level--;
             }

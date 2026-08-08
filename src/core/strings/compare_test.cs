@@ -63,8 +63,7 @@ public static void TestCompareStrings(ж<testing.T> Ꮡt) {
     // unsafeString converts a []byte to a string with no allocation.
     // The caller must not modify b while the result string is in use.
     @string unsafeString(slice<byte> bΔ1) => @unsafe.String(@unsafe.SliceData(bΔ1), len(bΔ1));
-    var lengths = new slice<nint>(0);
-    // lengths to test in ascending order
+    var lengths = new slice<nint>(0); // lengths to test in ascending order
     for (nint i = 0; i <= 128; i++) {
         lengths = append(lengths, i);
     }

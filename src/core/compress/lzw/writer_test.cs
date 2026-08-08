@@ -251,12 +251,12 @@ public static void BenchmarkEncoder(ж<testing.B> Ꮡb) {
                 w.Close();
             }
         });
-        var buf1ʗ3 = buf1;
+        var buf1ʗ2 = buf1;
         Ꮡb.Run(fmt.Sprint(reuseˢ, e), (ж<testing.B> bΔ2) => {
             bΔ2.SetBytes((int64)n);
             var w = NewWriter(io.Discard, LSB, 8);
             for (nint i = 0; i < (~bΔ2).N; i++) {
-                w.Write(buf1ʗ3);
+                w.Write(buf1ʗ2);
                 w.Close();
                 w._<ж<global::go.compress.lzw_package.Writer>>().Reset(io.Discard, LSB, 8);
             }

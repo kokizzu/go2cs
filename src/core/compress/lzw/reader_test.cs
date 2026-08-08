@@ -321,12 +321,12 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
                 io.Copy(io.Discard, NewReader(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8));
             }
         });
-        var bufʗ3 = buf;
-        var getInputBufʗ3 = getInputBuf;
+        var bufʗ2 = buf;
+        var getInputBufʗ2 = getInputBuf;
         Ꮡb.Run(fmt.Sprint(reuseˢ, e), (ж<testing.B> bΔ2) => {
             bΔ2.StopTimer();
             bΔ2.SetBytes((int64)n);
-            var buf1 = getInputBufʗ3(bufʗ3, n);
+            var buf1 = getInputBufʗ2(bufʗ2, n);
             runtime.GC();
             bΔ2.StartTimer();
             var r = NewReader(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8);

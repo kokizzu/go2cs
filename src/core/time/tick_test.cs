@@ -213,7 +213,7 @@ public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
         var outQ = new channel<Action>(0);
         defer(ᴛ1 => close(ᴛ1), inQ, ref ᒐ);
         Ꮡwg.Add(1);
-        var doneʗ3 = done;
+        var doneʗ2 = done;
         var inQʗ1 = inQ;
         var outQʗ1 = outQ;
         goǃ(() => {
@@ -231,7 +231,7 @@ public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
                     }
                     var selᴛ16 = sendTo.ᐸꟷ(send, ꓸꓸꓸ);
                     var selᴛ17 = inQʗ1;
-                    var selᴛ18 = doneʗ3;
+                    var selᴛ18 = doneʗ2;
                     switch (select(selᴛ16, ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
                     case 0: {
                         q = q[1..];

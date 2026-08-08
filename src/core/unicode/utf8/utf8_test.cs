@@ -228,10 +228,8 @@ public static void TestSequencing(ж<testing.T> Ꮡt) {
 }
 
 internal static nint runtimeRuneCount(@string s) {
-    return len(slice<rune>(s));
+    return len(slice<rune>(s)); // Replaced by gc with call to runtime.countrunes(s).
 }
-
-// Replaced by gc with call to runtime.countrunes(s).
 
 // Check that a range loop, len([]rune(string)) optimization and
 // []rune conversions visit the same runes.

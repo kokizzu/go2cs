@@ -280,9 +280,8 @@ internal static void testScan(ж<testing.T> Ꮡt, nuint mode) {
             checkTok(Ꮡt, s, line, tok, k.tok, k.text);
             tok = s.Scan();
         }
-        line += countNewlines(k.text) + 1;
+        line += countNewlines(k.text) + 1; // each token is on a new line
     }
-    // each token is on a new line
     checkTok(Ꮡt, s, line, tok, EOF, ""u8);
 }
 
@@ -330,10 +329,8 @@ public static void TestPosition(ж<testing.T> Ꮡt) {
         if ((~s).Column != pos.Column) {
             Ꮡt.Errorf("column = %d, want %d for %q"u8, (~s).Column, pos.Column, k.text);
         }
-        pos.Offset += 4 + len(k.text) + 1;
-        // 4 tabs + token bytes + newline
-        pos.Line += countNewlines(k.text) + 1;
-        // each token is on a new line
+        pos.Offset += 4 + len(k.text) + 1; // 4 tabs + token bytes + newline
+        pos.Line += countNewlines(k.text) + 1; // each token is on a new line
         s.Scan();
     }
     // make sure there were no token-internal errors reported by scanner
@@ -348,10 +345,8 @@ public static void TestScanZeroMode(ж<testing.T> Ꮡt) {
     var src = makeSource("%s\n"u8);
     @string str = src.String();
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(src));
-    s.Value.Mode = 0;
-    // don't recognize any token classes
-    s.Value.Whitespace = 0;
-    // don't skip any whitespace
+    s.Value.Mode = 0; // don't recognize any token classes
+    s.Value.Whitespace = 0; // don't skip any whitespace
     var tok = s.Scan();
     foreach (var (i, ch) in str) {
         if (tok != ch) {
@@ -425,8 +420,7 @@ public static void TestScanNext(ж<testing.T> Ꮡt) {
     UntypedInt BOM = /* '\uFEFF' */ 65279;
     @string BOMs = ((@string)(rune)BOM);
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(BOMs + "if a == bcd /* com"u8 + BOMs + "ment */ {\n\ta += c\n}"u8 + BOMs + "// line comment ending in eof"u8)));
-    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "if"u8);
-    // the first BOM is ignored
+    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "if"u8); // the first BOM is ignored
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), (rune)'=', "="u8);
     checkTok(Ꮡt, s, 0, s.Next(), (rune)'=', ""u8);
@@ -545,10 +539,9 @@ public static void TestError(ж<testing.T> Ꮡt) {
 }
 
 internal static (nint, error) Read(this errReader _, slice<byte> b) {
-    return (0, io.ErrNoProgress);
+    return (0, io.ErrNoProgress); // some error that is not io.EOF
 }
 
-// some error that is not io.EOF
 public static void TestIOError(ж<testing.T> Ꮡt) {
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new errReader(nil));
     var errorCalled = false;
@@ -616,8 +609,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
     // corner case: empty source
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(""u8)));
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
-    s.Peek();
-    // peek doesn't affect the position
+    s.Peek(); // peek doesn't affect the position
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
     // corner case: source with only a newline
     s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader("\n"u8)));
@@ -644,8 +636,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
     // positions after calling Next
     s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)));
     checkNextPos(Ꮡt, s, 1, 1, 2, (rune)' ');
-    s.Peek();
-    // peek doesn't affect the position
+    s.Peek(); // peek doesn't affect the position
     checkNextPos(Ꮡt, s, 2, 1, 3, (rune)' ');
     checkNextPos(Ꮡt, s, 3, 1, 4, (rune)'f');
     checkNextPos(Ꮡt, s, 4, 1, 5, (rune)'o');
@@ -671,8 +662,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
     s.Value.Mode = 0;
     s.Value.Whitespace = 0;
     checkScanPos(Ꮡt, s, 0, 1, 1, (rune)'a');
-    s.Peek();
-    // peek doesn't affect the position
+    s.Peek(); // peek doesn't affect the position
     checkScanPos(Ꮡt, s, 1, 1, 2, (rune)'b');
     checkScanPos(Ꮡt, s, 2, 1, 3, (rune)'c');
     checkScanPos(Ꮡt, s, 3, 1, 4, (rune)'\n');
@@ -740,8 +730,7 @@ public static void TestIssue29723(ж<testing.T> Ꮡt) {
 
     var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(@"x """u8)));
     s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string _) => {
-        @string got = sΔ1.TokenText();
-        // this call shouldn't panic
+        @string got = sΔ1.TokenText(); // this call shouldn't panic
         @string want = @""""u8;
         if (got != want) {
             Ꮡt.Errorf("got %q; want %q"u8, got, want);

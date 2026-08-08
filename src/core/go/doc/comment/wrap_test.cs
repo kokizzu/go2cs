@@ -34,13 +34,11 @@ public static void TestWrap(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < 100; i++) {
         nint n = 1 + r.Intn(sN - 1);
         if (n >= 12) {
-            n++;
+            n++; // extra byte for β
         }
-        // extra byte for β
         if (n >= 11) {
-            n++;
+            n++; // extra byte for α
         }
-        // extra byte for α
         words = append(words, s[..(int)(n)]);
     }
     for (nint nᴛ1 = 1; nᴛ1 <= len(words) && !Ꮡt.Failed(); nᴛ1++) {
@@ -130,9 +128,8 @@ internal static (slice<nint> seq, int64 score) wrapSlow(slice<@string> words, ni
             }
             var line = (int64)(nΔ1 - max) * (int64)(nΔ1 - max) + p;
             if (i == len(words) - 1) {
-                line = 0;
+                line = 0; // no score for final line being too short
             }
-            // no score for final line being too short
             var s = best[j] + line;
             if (best[i + 1] > s) {
                 best[i + 1] = s;

@@ -767,8 +767,7 @@ public static void TestWriterPersistentWriteError(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("ReadFile: %v"u8, err);
     }
-    d = d[..10000];
-    // Keep this test short
+    d = d[..10000]; // Keep this test short
     (var zw, err) = NewWriter(default!, DefaultCompression);
     if (err != default!) {
         Ꮡt.Fatalf("NewWriter: %v"u8, err);

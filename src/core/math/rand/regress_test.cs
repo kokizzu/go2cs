@@ -61,8 +61,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                         }
                         var big = int64s[repeat % len(int64s)];
                         if ((int64)(nint)big != big) {
-                            r.Int63n(big);
-                            // what would happen on 64-bit machine, to keep stream in sync
+                            r.Int63n(big); // what would happen on 64-bit machine, to keep stream in sync
                             if (printgolden.Value) {
                                 fmt.Printf("\tskipped, // must run printgolden on 64-bit machine\n"u8);
                             }

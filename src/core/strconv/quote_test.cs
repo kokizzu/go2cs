@@ -397,16 +397,14 @@ internal static void testUnquote(ж<testing.T> Ꮡt, @string @in, @string want, 
     if (gotErr == default!) {
         want = @in;
     }
-    @string suffix = "\n\r\\\"`'"u8;
-    // special characters for quoted strings
+    @string suffix = "\n\r\\\"`'"u8; // special characters for quoted strings
     if (len(@in) > 0) {
         suffix = strings.ReplaceAll(suffix, @in[..1], ""u8);
     }
     @in += suffix;
     (got, gotErr) = QuotedPrefix(@in);
     if (gotErr == default! && wantErr != default!) {
-        (_, wantErr) = Unquote(got);
-        // original input had trailing junk, reparse with only valid prefix
+        (_, wantErr) = Unquote(got); // original input had trailing junk, reparse with only valid prefix
         want = got;
     }
     if (got != want || !AreEqual(gotErr, wantErr)) {

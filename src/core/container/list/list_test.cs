@@ -95,47 +95,35 @@ public static void TestList(ж<testing.T> Ꮡt) {
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e2, e3, e4}.slice());
     l.Remove(e2);
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e3, e4}.slice());
-    l.MoveToFront(e3);
-    // move from middle
+    l.MoveToFront(e3); // move from middle
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e3, e1, e4}.slice());
     l.MoveToFront(e1);
-    l.MoveToBack(e3);
-    // move from middle
+    l.MoveToBack(e3); // move from middle
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e3}.slice());
-    l.MoveToFront(e3);
-    // move from back
+    l.MoveToFront(e3); // move from back
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e3, e1, e4}.slice());
-    l.MoveToFront(e3);
-    // should be no-op
+    l.MoveToFront(e3); // should be no-op
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e3, e1, e4}.slice());
-    l.MoveToBack(e3);
-    // move from front
+    l.MoveToBack(e3); // move from front
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e3}.slice());
-    l.MoveToBack(e3);
-    // should be no-op
+    l.MoveToBack(e3); // should be no-op
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e3}.slice());
-    e2 = l.InsertBefore((nint)(2), e1);
-    // insert before front
+    e2 = l.InsertBefore((nint)(2), e1); // insert before front
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e2, e1, e4, e3}.slice());
     l.Remove(e2);
-    e2 = l.InsertBefore((nint)(2), e4);
-    // insert before middle
+    e2 = l.InsertBefore((nint)(2), e4); // insert before middle
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e2, e4, e3}.slice());
     l.Remove(e2);
-    e2 = l.InsertBefore((nint)(2), e3);
-    // insert before back
+    e2 = l.InsertBefore((nint)(2), e3); // insert before back
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e2, e3}.slice());
     l.Remove(e2);
-    e2 = l.InsertAfter((nint)(2), e1);
-    // insert after front
+    e2 = l.InsertAfter((nint)(2), e1); // insert after front
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e2, e4, e3}.slice());
     l.Remove(e2);
-    e2 = l.InsertAfter((nint)(2), e4);
-    // insert after middle
+    e2 = l.InsertAfter((nint)(2), e4); // insert after middle
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e2, e3}.slice());
     l.Remove(e2);
-    e2 = l.InsertAfter((nint)(2), e3);
-    // insert after back
+    e2 = l.InsertAfter((nint)(2), e3); // insert after back
     checkListPointers(Ꮡt, l, new ж<global::go.container.list_package.Element>[]{e1, e4, e3, e2}.slice());
     l.Remove(e2);
     // Check standard iteration.
@@ -232,8 +220,7 @@ public static void TestIssue4103(ж<testing.T> Ꮡt) {
     l2.PushBack((nint)(3));
     l2.PushBack((nint)(4));
     var e = l1.Front();
-    l2.Remove(e);
-    // l2 should not change because e is not an element of l2
+    l2.Remove(e); // l2 should not change because e is not an element of l2
     {
         nint n = l2.Len(); if (n != 2) {
             Ꮡt.Errorf("l2.Len() = %d, want 2"u8, n);

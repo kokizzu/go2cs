@@ -305,8 +305,7 @@ public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
 // verify that copying from an empty reader always has the same results,
 // regardless of the presence of a WriteTo method.
 public static void TestReaderCopyNothing(ж<testing.T> Ꮡt) {
-    var discard = new TestReaderCopyNothing_justWriter(Δio.Discard);
-    // hide ReadFrom
+    var discard = new TestReaderCopyNothing_justWriter(Δio.Discard); // hide ReadFrom
     TestReaderCopyNothing_nErr with = default!;
     TestReaderCopyNothing_nErr withOut = default!;
     (with.n, with.err) = Δio.Copy(discard, new bytes_test_package.bytes_ReaderжReader(NewReader(default!)));
