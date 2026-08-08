@@ -569,9 +569,6 @@ func containsManualConversionMarker(filename string) (bool, error) {
 
 	scanner := bufio.NewScanner(file)
 
-	// Regex to check if a line starts with a comment
-	commentStartRE := regexp.MustCompile(`^\s*//|^\s*/\*`)
-
 	// Regex to match the module pattern with or without "go." namespace prefix
 	// and with or without the "Attribute" suffix (for C# compatibility)
 	modulePatternRE := regexp.MustCompile(`\[\s*module\s*:\s*(?:go\.)?\s*GoManualConversion(?:Attribute)?\s*\]`)
@@ -581,46 +578,26 @@ func containsManualConversionMarker(filename string) (bool, error) {
 	// followed by an identifier (which is a sequence of letters, digits, or underscores, starting with a letter)
 	classDefinitionRE := regexp.MustCompile(`\bclass\s+\w+`)
 
-	// Keep track of if we're in a multiline comment
-	inMultilineComment := false
+	// Whether the scan is inside an unterminated /* ... */ block, carried across lines
+	inBlockComment := false
 
 	for scanner.Scan() {
-		line := scanner.Text()
+		// Comments are removed by a lexer rather than probed for with Contains, so a delimiter that
+		// only LOOKS like an opener cannot hide the rest of the file (see stripCSharpComments)
+		code := stripCSharpComments(scanner.Text(), &inBlockComment)
 
-		// Check for multiline comment boundaries
-		if !inMultilineComment && strings.Contains(line, "/*") {
-			inMultilineComment = true
-		}
-
-		if inMultilineComment {
-			if strings.Contains(line, "*/") {
-				inMultilineComment = false
-				// The rest of the line after */ could contain relevant code
-				// Extract the part after */
-				parts := strings.Split(line, "*/")
-				if len(parts) > 1 {
-					line = parts[1]
-				} else {
-					continue
-				}
-			} else {
-				continue
-			}
-		}
-
-		// Skip single-line comments
-		if commentStartRE.MatchString(line) {
+		if strings.TrimSpace(code) == "" {
 			continue
 		}
 
 		// Check if the line contains the marker
-		if modulePatternRE.MatchString(line) {
+		if modulePatternRE.MatchString(code) {
 			return true, nil
 		}
 
 		// Check if the line contains a class definition - exit early if found
 		// This is fine because valid module markers will come before class definitions
-		if classDefinitionRE.MatchString(line) {
+		if classDefinitionRE.MatchString(code) {
 			return false, nil
 		}
 	}
@@ -630,4 +607,57 @@ func containsManualConversionMarker(filename string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// stripCSharpComments returns the code content of one line with its comments removed, carrying the
+// open-block state across lines through inBlockComment.
+//
+// The ORDER the two openers are tested in is the whole point. This was a pair of strings.Contains
+// probes that asked "does this line contain /*?" WITHOUT first asking whether that /* was itself
+// inside a // line comment. core/runtime/runtime2_impl.cs opens with prose describing Go's pointer
+// family — "hide a *g/*p/*m inside a uintptr" — whose `/*` is ordinary English inside a line
+// comment. The probe read it as opening a block that never closes, so every line after it was
+// treated as comment interior, including the file's own [module: GoManualConversion] on line 24:
+// the converter's marker predicate reported a hand-owned file as NOT hand-owned. Inert where it was
+// found (an _impl companion has no Go counterpart emitted at that path, so nothing overwrites it),
+// but it is precisely the shape that silently clobbers a whole-file hand-own on the next reconvert.
+//
+// In C# a // comment runs to the end of the line and nothing inside it opens a block comment, which
+// is what this lexes. String literals are deliberately NOT lexed: the region this predicate reads is
+// a file header of usings, comments and attributes, and the scan stops at the first class
+// definition, so a delimiter inside a literal cannot reach it.
+func stripCSharpComments(line string, inBlockComment *bool) string {
+	var code strings.Builder
+
+	// Byte-wise is safe for the ASCII delimiters below: no UTF-8 continuation byte can be one.
+	for index := 0; index < len(line); {
+		remaining := line[index:]
+
+		if *inBlockComment {
+			if strings.HasPrefix(remaining, "*/") {
+				*inBlockComment = false
+				index += 2
+				continue
+			}
+
+			index++
+			continue
+		}
+
+		// Tested BEFORE the block opener: a /* that follows a // on the same line opens nothing.
+		if strings.HasPrefix(remaining, "//") {
+			break
+		}
+
+		if strings.HasPrefix(remaining, "/*") {
+			*inBlockComment = true
+			index += 2
+			continue
+		}
+
+		code.WriteByte(line[index])
+		index++
+	}
+
+	return code.String()
 }
