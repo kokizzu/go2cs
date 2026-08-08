@@ -18,7 +18,13 @@
     to docs\validation\<version>\ (write-once) and the version-pinned validation badge links in every
     src\core\*\README.md are retargeted at it, so a published package's green badge, its proof link
     and the VALIDATION.md it packs all describe the exact binary being pushed. Commit the snapshot,
-    the retargeted READMEs and version.props together, and tag the commit nuget-<version>.
+    the retargeted READMEs and version.props together.
+
+    IT ALSO MINTS THE RELEASE TAG, at that same pre-build moment rather than after the push. Every
+    README's C# Source badge links github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg>,
+    so the tag has to exist by the time those READMEs are baked into packages -- tagging afterward
+    published a README full of links to a tag that did not exist yet. Creation is idempotent
+    (check-then-skip) so a re-run after a failed later phase does not die on "tag already exists".
 
     SAFETY: pushing to a public feed is an irreversible publish (a version can be unlisted, never
     deleted). This script therefore PACKS ONLY by default; it pushes nothing unless -Push is given,
@@ -148,6 +154,53 @@ if ($propsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $baseVersi
 $fullVersion = "$baseVersion.$build"
 Write-Step "Package version: $fullVersion   (solution: go2cs-stdlib.slnx)"
 
+$repoRoot = Split-Path $src -Parent
+
+# --- Release tag ----------------------------------------------------------------------------------
+# The tag is minted HERE, before anything is packed, because every package's README BAKES A LINK TO
+# IT: the C# Source badge points at github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg>
+# so a reader lands on the exact C# that shipped in the package they hold. Minting the tag after the
+# push -- where it used to live, as a Phase-3 instruction -- meant every README on nuget.org linked a
+# 404 for however long it took to get around to tagging. Created before the first .nupkg is built,
+# the link resolves the moment the package is published.
+#
+# The tag names the tree this release was built FROM. HEAD here is the last commit before the release
+# commit, and the two differ only by version.props, the proof snapshot and the retargeted README
+# links -- no converted C# moves between them -- so the tree the badge reaches IS the C# in the
+# package. (Committing the release before running this flow would collapse the two; nothing needs it.)
+#
+# It runs BEFORE the write-once proof snapshot deliberately: a signing failure then costs nothing,
+# where the reverse order would leave a frozen directory behind for a release that never happened.
+#
+# Gated on the bump, because the bump is what makes a run a release -- a pack-only inspection run
+# must not mint a release tag. Idempotent by check-then-skip, loudly, so a re-run after a failed
+# later phase carries on instead of dying on "tag already exists".
+$releaseTag = "nuget-$fullVersion"
+
+if (-not $doBump) {
+    Write-Step "No build-number bump this run -- not tagging (the run that bumps mints $releaseTag)"
+}
+elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Warning ("git is not available, so release tag $releaseTag was NOT created. Every package README's C# " +
+                   "Source badge links it and will 404 until it exists: create it by hand before publishing " +
+                   "(git tag -s $releaseTag -m ""NuGet publication $fullVersion"").")
+}
+elseif (& git -C $repoRoot tag --list $releaseTag) {
+    Write-Step "Release tag $releaseTag already exists -- keeping it (re-run of a partially completed release)"
+}
+elseif ($PSCmdlet.ShouldProcess($releaseTag, 'create signed release tag at HEAD')) {
+    # Signed, per repository convention. A failure here is fatal on purpose: publishing 300 packages
+    # whose READMEs all link a tag that does not exist is worse than stopping. If GPG is the problem,
+    # the agent must be launched via Gpg4win's gpgconf.
+    & git -C $repoRoot tag -s $releaseTag -m "NuGet publication $fullVersion"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create signed release tag $releaseTag ($LASTEXITCODE). Every package README's C# Source badge links this tag -- resolve the signing failure and re-run before publishing."
+    }
+
+    Write-Step "Created signed release tag $releaseTag at $(& git -C $repoRoot rev-parse --short HEAD) (push it with the release commit)"
+}
+
 # --- Validation proof snapshot + badge retarget ---------------------------------------------------
 # Every validated package's README carries a green badge whose link is VERSION-PINNED, and every
 # validated package packs that same page as VALIDATION.md. Both point at docs\validation\<version>\,
@@ -157,7 +210,6 @@ Write-Step "Package version: $fullVersion   (solution: go2cs-stdlib.slnx)"
 # Order matters. The snapshot is taken BEFORE the build so the .csproj Exists() guards see the files
 # they are about to pack, and the READMEs are retargeted in the same breath so the badge, the link
 # and the packed sheet are the one version being published.
-$repoRoot = Split-Path $src -Parent
 $validationDir = Join-Path $repoRoot 'docs\validation'
 $currentProofs = Join-Path $validationDir 'current'
 $versionProofs = Join-Path $validationDir $fullVersion
@@ -250,6 +302,61 @@ if (-not (Test-Path $currentProofs)) {
 
     Write-Step "Verified $verified green badge(s) against the frozen $fullVersion proof pages"
 }
+
+# --- C# Source badge retarget ---------------------------------------------------------------------
+# The C# Source badge (2026-08-08) is version-pinned TWICE -- in its message and in the release tag
+# its link resolves against -- and both must move to the version this run is publishing, or a
+# published package's README sends the reader to the PREVIOUS release's C#.
+#
+# Its own block, deliberately outside the proof-snapshot branch above: this badge is on EVERY package
+# README, validated or not, and has nothing to do with docs\validation. Gating it on the proof pages
+# existing would silently ship stale source links on the one run where they had gone missing.
+#
+# Both patterns are anchored on literals only this badge carries -- 'badge/Source-C%23_@' and the
+# repository's '/tree/nuget-'. The version class excludes '-' (it terminates at the badge's colour
+# field) and whitespace/')' (so it can never run past the badge, the lesson the Tests-badge pattern
+# learned the hard way on the 1.23.1.3 run).
+$sourceBadgeVersionPattern = '(badge/Source-C%23_@)[^-\s)]+(-512BD4)'
+$sourceBadgeTagPattern = '(https://github\.com/ritchiecarroll/go2cs/tree/nuget-)[^/\s)]+(/src/core/)'
+$sourceRetargeted = 0
+
+foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
+    $text = [System.IO.File]::ReadAllText($readme.FullName)
+    $updated = $text
+
+    foreach ($pattern in @($sourceBadgeVersionPattern, $sourceBadgeTagPattern)) {
+        $updated = [regex]::Replace($updated, $pattern, "`${1}$fullVersion`${2}")
+    }
+
+    if ($updated -eq $text) { continue }
+
+    if ($PSCmdlet.ShouldProcess($readme.FullName, "retarget C# Source badge to $fullVersion")) {
+        [System.IO.File]::WriteAllText($readme.FullName, $updated, $utf8NoBom)
+        $sourceRetargeted++
+    }
+}
+
+Write-Step "Retargeted $sourceRetargeted C# Source badge(s) to $fullVersion (commit them with version.props)"
+
+# Same consistency-by-construction check the green badges get: the badge is composed from
+# version.props and nothing else, so re-deriving it here IS the converter re-emission, and both of
+# its pins must name the version being published.
+$sourceVerified = 0
+
+foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
+    $text = [System.IO.File]::ReadAllText($readme.FullName)
+    if ($text -notmatch 'badge/Source-C%23_@([^-\s)]+)-512BD4') { continue }
+
+    if ($Matches[1] -ne $fullVersion) { throw "C# Source badge in $($readme.FullName) states version $($Matches[1]), not $fullVersion" }
+
+    if ($text -notmatch 'https://github\.com/ritchiecarroll/go2cs/tree/nuget-([^/\s)]+)/src/core/') { throw "C# Source badge without a release-tag link in $($readme.FullName)" }
+
+    if ($Matches[1] -ne $fullVersion) { throw "C# Source badge in $($readme.FullName) links tag nuget-$($Matches[1]), not nuget-$fullVersion" }
+
+    $sourceVerified++
+}
+
+Write-Step "Verified $sourceVerified C# Source badge(s) pin $fullVersion and its release tag"
 
 # --- Fresh Release pack -------------------------------------------------------------------------
 New-Item -ItemType Directory -Force $OutDir | Out-Null

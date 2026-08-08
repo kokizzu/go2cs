@@ -18,6 +18,12 @@ rem  docs\validation\current -> docs\validation\<version> (write-once) and retar
 rem  the version-pinned badge links in src\core\*\README.md. Those files are part of
 rem  the release commit, not an afterthought -- see the Phase 3 notes at the end.
 rem
+rem  Phase 1 ALSO MINTS THE SIGNED TAG nuget-<version>, at that same pre-build point
+rem  instead of after the push, because every package README's C# Source badge links
+rem  github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg>. Tagging later
+rem  meant publishing 300 READMEs that all linked a tag which did not exist yet. So
+rem  Phase 3 no longer tells you to tag -- it tells you to PUSH the tag already there.
+rem
 rem  Requires environment variable NUGET_API_KEY for the push.
 rem  NOTE: if you abort before Phase 2 (or Phase 1 fails), version.props was
 rem  already bumped -- either re-run and let it advance, or reset it (git checkout
@@ -65,6 +71,11 @@ rem --- Phase 3: record the release in git -------------------------------------
 rem  The published version, its frozen proof snapshot and the badge links that point
 rem  at it are ONE fact -- commit them together or a published badge links a
 rem  directory that is not in the repository.
+rem  The TAG is not part of this step any more: Phase 1 created it (signed) before
+rem  anything was packed, so it points at the commit this release was built FROM --
+rem  which differs from the release commit only by version.props, the snapshot and
+rem  the retargeted README links. No converted C# moves between the two, so the tree
+rem  every C# Source badge reaches is the C# that is in the packages. Push it.
 rem  Read the version via a temp file, NOT a for /f backquote: cmd's for-parser
 rem  treats the ')' inside PowerShell subexpressions as the end of the for body
 rem  ("...was unexpected at this time"), which aborted Phase 3 on its first-ever
@@ -75,12 +86,15 @@ del "%TEMP%\go2cs-release-ver.txt" >nul 2>&1
 
 echo.
 echo === Phase 3: record the release ===
-echo  Commit these together, then tag the commit:
+echo  Commit these together, then push the commit and the tag Phase 1 minted:
 echo.
 echo    git add src\version.props docs\validation\%VER% src\core
 echo    git commit -S -m "release: go2cs converted stdlib %VER%"
-echo    git tag -a nuget-%VER% -m "NuGet publication %VER%"
+echo    git push ^&^& git push origin nuget-%VER%
 echo.
 echo  docs\validation\%VER% is FROZEN from here on -- it is the proof every
 echo  %VER% package's green badge links and packs as VALIDATION.md.
+echo  The tag nuget-%VER% ALREADY EXISTS locally ^(signed, created in Phase 1^);
+echo  every published README's C# Source badge links it, so pushing it is not
+echo  optional -- until it reaches GitHub those links 404.
 exit /b 0
