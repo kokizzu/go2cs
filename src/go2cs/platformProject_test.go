@@ -317,6 +317,34 @@ func TestStripPlatformReferencesIsolatesTheReferenceLists(t *testing.T) {
 	}
 }
 
+// <AllowUnsafeBlocks> is a per-package emission fact that can differ by platform (measured: os/user
+// and syscall). One .csproj serves every platform, so it must carry the UNION — a `false` inherited
+// from whichever target the merge read first makes the platform that needs unsafe uncompilable.
+func TestUnsafeBlocksTakesTheUnionInEitherDirection(t *testing.T) {
+	safe := flatProjectFile([]string{refErrors})
+	unsafeProject := strings.Replace(safe, unsafeBlocksDisabled, unsafeBlocksEnabled, 1)
+
+	if unsafeProject == safe {
+		t.Fatalf("test setup: %q was not found in the rendered template", unsafeBlocksDisabled)
+	}
+
+	// The corpus's real polarity: Windows needs unsafe, the unix side does not. Union = enabled.
+	if got := unsafeBlocksUnion(unsafeProject, true); !strings.Contains(got, unsafeBlocksEnabled) {
+		t.Errorf("union lost the enabled setting the base already carried")
+	}
+
+	// The polarity the corpus does NOT currently have, and the one that would silently break a
+	// Linux build if the merge simply kept the first target's remainder.
+	if got := unsafeBlocksUnion(safe, true); !strings.Contains(got, unsafeBlocksEnabled) {
+		t.Errorf("a base emitted without unsafe was not raised for a target that needs it:\n%s", got)
+	}
+
+	// And a package no platform needs unsafe for is left exactly as it was.
+	if got := unsafeBlocksUnion(safe, false); got != safe {
+		t.Errorf("union modified a project file no target needs unsafe for")
+	}
+}
+
 // platformPackageInfoPath is the READING half of L3: 27 packages' package_info.cs move into a
 // per-GOOS folder, and every dependent's conversion reads them.
 func TestPlatformPackageInfoPathResolution(t *testing.T) {

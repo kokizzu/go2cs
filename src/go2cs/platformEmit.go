@@ -445,10 +445,22 @@ func mergeCompanionArtifacts(coreDir string, targets []string, emissions []*plat
 			continue
 		}
 
+		// The FIRST TARGET that has this artifact, not the first that re-emitted it. Those differ,
+		// and the difference matters: "emitted" is decided by modification time, so a target whose
+		// emission reproduced the seed byte for byte is not marked as emitting — which made the
+		// source depend on which target happened to have something to rewrite. Measured, that is not
+		// hypothetical: two companions genuinely vary by platform (os/exec/internal/fdtest's README,
+		// whose package doc comes from a file Windows excludes, and runtime/runtime2.cs.auto), and
+		// they were picking up whichever flavor emitted first.
+		//
+		// Target order is the caller's -platforms order, whose head is the reference flavor
+		// ($(GoTargetOS)'s default). So this is deterministic AND it keeps the Windows lane's
+		// shipped bytes exactly as they are, while a platform-exclusive package — absent from the
+		// earlier targets entirely — still lands from the only target that has it.
 		source := ""
 
 		for _, emission := range emissions {
-			if state, ok := emission.artifacts[rawPath]; ok && state.emitted {
+			if _, ok := emission.artifacts[rawPath]; ok {
 				source = filepath.Join(emission.root, "core", filepath.FromSlash(rawPath))
 				break
 			}
@@ -481,6 +493,7 @@ func mergePlatformProjectFile(rawPath string, targets []string, emissions []*pla
 	sets := map[string][]string{}
 
 	base, baseTarget, baseRemainder, note := "", "", "", ""
+	needsUnsafe := false
 
 	for i, target := range targets {
 		if _, ok := emissions[i].artifacts[rawPath]; !ok {
@@ -510,7 +523,12 @@ func mergePlatformProjectFile(rawPath string, targets []string, emissions []*pla
 		}
 
 		sets[goos] = references
-		remainder := stripPlatformReferences(string(contents))
+
+		if strings.Contains(string(contents), unsafeBlocksEnabled) {
+			needsUnsafe = true
+		}
+
+		remainder := stripPlatformReferences(unsafeBlocksUnion(string(contents), true))
 
 		if len(base) == 0 {
 			base, baseTarget, baseRemainder = string(contents), target, remainder
@@ -523,13 +541,39 @@ func mergePlatformProjectFile(rawPath string, targets []string, emissions []*pla
 	}
 
 	shared, deltas, _ := splitPlatformReferenceSets(sets)
-	merged, err := renderPlatformReferences(base, shared, deltas)
+	merged, err := renderPlatformReferences(unsafeBlocksUnion(base, needsUnsafe), shared, deltas)
 
 	if err != nil {
 		return base, note, fmt.Errorf("failed to compose conditioned references for %q: %w", rawPath, err)
 	}
 
 	return merged, note, nil
+}
+
+const (
+	unsafeBlocksEnabled  = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>"
+	unsafeBlocksDisabled = "<AllowUnsafeBlocks>false</AllowUnsafeBlocks>"
+)
+
+// unsafeBlocksUnion raises a merged project file's <AllowUnsafeBlocks> to the UNION across the
+// targets, because `usesUnsafeCode` is a per-package emission fact that can differ by platform —
+// measured at 2 packages, `os/user` and `syscall`, both unsafe on Windows and not on the unix side.
+//
+// The union rather than the first target's value, and it is not a stylistic preference: a .csproj is
+// ONE file serving every platform, so a `false` inherited from a target that happens to be first
+// makes the platform that DOES need unsafe uncompilable (CS0227). The property is permissive — it
+// grants a capability, it does not use one — so raising it is inert for a platform whose emission
+// contains no unsafe code, and no IL moves.
+//
+// It is also, measurably, byte-neutral for the corpus as it stands: in both diverging packages the
+// permissive side IS Windows, so the union equals what the Windows lane already ships. The rule is
+// here so that stays true by construction rather than by which target the merge read first.
+func unsafeBlocksUnion(contents string, needsUnsafe bool) string {
+	if !needsUnsafe {
+		return contents
+	}
+
+	return strings.Replace(contents, unsafeBlocksDisabled, unsafeBlocksEnabled, 1)
 }
 
 // stripPlatformReferences returns a project file with every reference removed — the unconditioned
