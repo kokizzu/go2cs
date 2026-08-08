@@ -1005,6 +1005,58 @@ func convertToCSTypeName(typeName string) string {
 	return fullTypeName
 }
 
+// importPathStart returns the index at which the package IMPORT PATH begins inside a rendered type
+// string whose leading type CONSTRUCTOR has not been peeled off yet: 7 for
+// `<-chan go.mongodb.org/…`, 1 for `*io/fs`, 2 for `[]io/fs`, 0 for a bare `io/fs`.
+//
+// convertToCSFullTypeName rewrites an import path to its C# namespace BEFORE the branches that peel
+// `<-chan `/`chan `/`*`/`[]` run, and it used to hand convertImportPathToNamespace everything from
+// index 0 — constructor included. That sanitizer maps a HYPHEN to an underscore, because a Go path
+// element may legally contain one (mongo-driver, go-isatty), so it rewrote the `-` of `<-chan` as
+// well: `<-chan go.mongodb.org/mongo-driver/mongo/description_package.Topology` came back as
+// `<_chan go.mongodb.org.mongo_driver.…`. No channel branch recognizes `<_chan`, so the string fell
+// into the ARRAY branch, whose `]` was nowhere to be found — and that branch then re-entered on the
+// unchanged string forever (issue #33's `fatal error: stack overflow`). Rewriting only the path
+// leaves `<-chan ` intact for its own branch, which recurses on the bare qualified element exactly
+// as it always has for a single-segment path — `<-chan time_package.Time` never reached this code
+// at all, having no slash to trigger it, which is why the whole standard library renders such a
+// field correctly and only a MODULE dependency's multi-segment path could expose this.
+//
+// The scan runs BACKWARD from the end of the candidate region and stops at the first byte no import
+// path may contain. `-` cannot serve as that delimiter (mongo-driver would split mid-path), but
+// every constructor this renderer emits ends in one that can: a space (`<-chan `, `chan `,
+// `chan<- `), `*`, `]` (`[]`, `[2]`, `map[K]`) or `(` (`func(`).
+func importPathStart(typeName string) int {
+	for i := len(typeName) - 1; i >= 0; i-- {
+		if !isImportPathByte(typeName[i]) {
+			return i + 1
+		}
+	}
+
+	return 0
+}
+
+// isImportPathByte reports whether c can be part of a package path or the qualified type name that
+// follows it — letters, digits and the `-._~+/` set Go allows in a path element, the `@` of an
+// escaped keyword segment, and any NON-ASCII byte.
+//
+// The non-ASCII case is the one worth stating. Every delimiter this predicate exists to find is a
+// type CONSTRUCTOR character, and all of those are ASCII; meanwhile the converter's own synthetic
+// markers are not (`ᴛ` of a lifted `entryᴛ1`, `ж`, `Ꮡ`, `ꓸ`, `Δ` — see symbols.go). Treating a
+// multi-byte rune as a delimiter stops the backward scan INSIDE the type name, freezing the package
+// path in front of it verbatim, and a rendered lifted type comes back with its separator unconverted
+// (`go.main_package/entryᴛ1` for `go.main_package.entryᴛ1`, CS1002). Caught by CNR on the
+// PublicizedInterfaceAnonAlias and NestedAliasUser goldens, which is exactly what those anonymous-
+// alias guards are for.
+func isImportPathByte(c byte) bool {
+	switch {
+	case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c >= 0x80:
+		return true
+	}
+
+	return strings.IndexByte("-._~+/@", c) >= 0
+}
+
 func convertToCSFullTypeName(typeName string) string {
 	typeName = strings.TrimPrefix(typeName, "~")
 
@@ -1049,7 +1101,12 @@ func convertToCSFullTypeName(typeName string) string {
 
 		if dotAfterSlash != -1 {
 			splitAt := lastSlash + dotAfterSlash
-			pkgPath := typeName[:splitAt]
+
+			// The path starts where the TYPE CONSTRUCTOR in front of it ends — a `<-chan `, `*`,
+			// `[]` or `map[K]` that the branches below have not peeled yet is NOT part of the
+			// package path and must survive this rewrite untouched (see importPathStart).
+			pathStart := importPathStart(typeName[:splitAt])
+			pkgPath := typeName[pathStart:splitAt]
 
 			// Some callers hand a path whose last segment ALREADY carries the class suffix
 			// (`sync/atomic_package.Uint32`, from a recorded `[GoType]` underlying); others hand the
@@ -1057,13 +1114,24 @@ func convertToCSFullTypeName(typeName string) string {
 			// it is not already present, or it doubles (`atomic_package_package`).
 			suffix := PackageSuffix
 
-			if strings.HasSuffix(pkgPath[lastSlash+1:], PackageSuffix) {
+			if strings.HasSuffix(pkgPath[strings.LastIndexByte(pkgPath, '/')+1:], PackageSuffix) {
 				suffix = ""
 			}
 
-			typeName = convertImportPathToNamespace(pkgPath, suffix) + typeName[splitAt:]
+			typeName = typeName[:pathStart] + convertImportPathToNamespace(pkgPath, suffix) + typeName[splitAt:]
 		} else {
-			typeName = convertImportPathToNamespace(typeName, "")
+			// A composite whose ELEMENT is the qualified type reaches here too, not only a bare path:
+			// the `[` of a leading `[]`/`[N]` constructor is read as the start of a generic argument
+			// list above, truncating scanEnd in front of every slash. The constructor is still not
+			// part of the path, and skipping it is what keeps `<-chan []description.Topology` from
+			// being sanitized into `<_chan <>…` — the same mangling, one nesting level down.
+			//
+			// The scan is bounded by scanEnd, not by the whole string: past it lie the generic
+			// ARGUMENTS, whose `,`/space/`]` are not constructor text and would strand the scan at
+			// the tail of the string, leaving the path in front of them unconverted.
+			pathStart := importPathStart(typeName[:scanEnd])
+
+			typeName = typeName[:pathStart] + convertImportPathToNamespace(typeName[pathStart:], "")
 		}
 	}
 
@@ -1087,9 +1155,24 @@ func convertToCSFullTypeName(typeName string) string {
 		return fmt.Sprintf("%s./*<-*/channel<%s>", RootNamespace, convertToCSTypeName(typeName[7:]))
 	}
 
-	// Handle array types
+	// Handle array types — the leading `<` is the `[` of `[N]`, so its `>` closes the length.
+	//
+	// With NO `>` anywhere the string is not an array, and `Index` returning -1 made the slice
+	// `typeName[0:]` — a recursion on the IDENTICAL string that can never terminate. That is not a
+	// survivable defect: a Go stack overflow is a FATAL error, not a panic, so the per-file recover
+	// in the conversion driver cannot catch it and ONE unrenderable type takes the entire run down
+	// (issue #33, `-recurse` dying at package 1456 of 1726). Every other branch here consumes at
+	// least one byte before recursing, so bounding this one bounds the whole renderer.
+	//
+	// Falling through is deliberate: the remaining branches are finite and end at the default
+	// name render, so the package still converts and the reader gets a named diagnostic plus a
+	// C# name that fails visibly at compile time, rather than a dead run with no output at all.
 	if strings.HasPrefix(typeName, "<") {
-		return fmt.Sprintf("%s.array<%s>", RootNamespace, convertToCSTypeName(typeName[strings.Index(typeName, ">")+1:]))
+		if closeIndex := strings.IndexByte(typeName, '>'); closeIndex != -1 {
+			return fmt.Sprintf("%s.array<%s>", RootNamespace, convertToCSTypeName(typeName[closeIndex+1:]))
+		}
+
+		showWarning("Cannot render a C# type name for the unrecognized type expression \"%s\" - emitting it as a name", typeName)
 	}
 
 	if strings.HasPrefix(typeName, "map<") {

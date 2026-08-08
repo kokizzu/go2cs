@@ -133,6 +133,7 @@
     <None Include="$(MSBuildThisFileDirectory)typeAccessibilityOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)typedNilInterfaceBoxing.go" />
     <None Include="$(MSBuildThisFileDirectory)typeNameResolution.go" />
+    <None Include="$(MSBuildThisFileDirectory)typeNameResolution_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typePredicates.go" />
     <None Include="$(MSBuildThisFileDirectory)typeSignatureParsing.go" />
     <None Include="$(MSBuildThisFileDirectory)untypedConstAnalysisOperations.go" />
