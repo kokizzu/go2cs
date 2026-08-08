@@ -24,10 +24,19 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$src = $PSScriptRoot
-$repo = Split-Path $src -Parent
-$table = Join-Path $repo 'docs\ValidatedTestPackages.md'
-$exe = Join-Path $src 'go2cs\bin\go2cs.exe'
+
+# Roots, the converter path and the executable suffix come from one shared definition (src\_paths.ps1)
+# so this gate cannot disagree with the behavioral instruments about where anything is -- and so it
+# carries no backslash literal, which off Windows fails SILENTLY rather than loudly (F4,
+# docs/PLAN-linux-operation.md). Every path below is joined with a single forward-slash child
+# argument: PowerShell 5.1 and 7+ both normalize that to the host separator, so the strings handed to
+# the converter are byte-identical to the ones the backslash literals produced on Windows.
+. (Join-Path $PSScriptRoot '_paths.ps1')
+
+$src = $SrcRoot
+$repo = $RepoRoot
+$table = Join-Path $repo 'docs/ValidatedTestPackages.md'
+$exe = $Go2csExe
 $goroot = (& go env GOROOT).Trim()
 
 if (-not (Test-Path $table)) { throw "Cannot find the validated-package table at $table" }
@@ -57,9 +66,11 @@ Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected 
 
 if (-not $SkipBuild) {
     Write-Host '==> building the converter' -ForegroundColor Cyan
-    Push-Location (Join-Path $src 'go2cs')
+    Push-Location $ConverterSrc
     try {
-        & go build -o bin\go2cs.exe .
+        # Absolute output path rather than the relative 'bin\go2cs.exe' this replaced: same file on
+        # Windows, and it carries the host's own executable suffix instead of a hard-coded one.
+        & go build -o $exe .
         if ($LASTEXITCODE -ne 0) { throw 'converter build failed' }
     }
     finally { Pop-Location }
@@ -89,8 +100,11 @@ $longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
-    $outDir = Join-Path $src ('core\' + ($pkg -replace '/', '\'))
-    $goDir = Join-Path $goroot ('src\' + ($pkg -replace '/', '\'))
+    # The import path is already forward-slash-separated, which is exactly the form Join-Path
+    # normalizes for us -- so the -replace that hand-built a Windows path is not just unnecessary,
+    # it was the thing that made this mapping wrong off Windows.
+    $outDir = Join-Path $src "core/$pkg"
+    $goDir = Join-Path $goroot "src/$pkg"
     $label = '{0,-34}' -f $pkg
     $pkgTimeout = if ($longTimeouts.ContainsKey($pkg)) { $longTimeouts[$pkg] } else { $TestTimeout }
 
@@ -187,7 +201,7 @@ if ($drift) {
 
     # Marker glyphs come from the canonical symbol table, never spelled here -- the standing rule
     # for every consumer of the converter's naming constants.
-    $symbols = (Get-Content (Join-Path $src 'core\go2cs\symbols.json') -Raw | ConvertFrom-Json).symbols
+    $symbols = (Get-Content (Join-Path $src 'core/go2cs/symbols.json') -Raw | ConvertFrom-Json).symbols
     $symbolValue = { param($name) ($symbols | Where-Object { $_.name -eq $name }).value }
     $shadow = & $symbolValue 'ShadowVarMarker'
     $temp = & $symbolValue 'TempVarMarker'

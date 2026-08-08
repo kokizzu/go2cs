@@ -675,6 +675,16 @@ rewriting. It also deploys the `go2cs-gen` analyzer, writes a root `Directory.Bu
 `$(go2csPath)` to the deploy root (so no `-p:go2csPath` is needed), generates `go2cs-core.slnx`, and builds
 to verify. The other src PowerShell utilities `clean-bin.ps1` (remove bin/obj/Generated) and
 `set-version.ps1` each also have a `.bat` launcher.
+**⚠ Its default target is MACHINE-GLOBAL** — `%GOPATH%\src\go2cs`, shared with every sibling worktree —
+so never run it bare as a gate. It supports **`-WhatIf`** (a real dry run: the three non-cmdlet writes
+are explicitly `ShouldProcess`-gated, and the solution enumeration reads the SOURCE so the projected
+project count is truthful) and **`-Target <dir>`** for a scratch deploy. The copy is pure PowerShell
+(`Copy-SourceTree`) rather than robocopy since 2026-08-08, and is byte-identical to what robocopy
+produced (3,979 files A/B-verified); that also removed the repository's last external Windows tool
+dependency. Harness path/platform primitives (`$IsWindowsHost`, `$ExeSuffix`, `$SepPattern`, the roots,
+`Get-PathDepth`) live in **`src/_paths.ps1`**, dot-sourced by every instrument — never re-derive them,
+especially `$IsWindowsHost` (`$IsWindows` does not exist on PowerShell 5.1, so a bare `-not $IsWindows`
+reads backwards on the one platform 5.1 runs on).
 
 ### Known staleness (do not trust blindly)
 - `docs/README.md` is partly historical (ANTLR4-era prose) but now carries a banner and corrected references.

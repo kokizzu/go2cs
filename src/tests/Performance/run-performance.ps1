@@ -35,8 +35,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$runnerProj = Join-Path $PSScriptRoot "PerformanceRunner\PerformanceRunner.csproj"
-$runnerExe  = Join-Path $PSScriptRoot "PerformanceRunner\bin\Debug\net9.0\PerformanceRunner.exe"
+# $ExeSuffix and the roots come from the shared definition at src\_paths.ps1 (F4,
+# docs/PLAN-linux-operation.md).
+. (Join-Path $PSScriptRoot '../../_paths.ps1')
+
+$runnerProj = Join-Path $PSScriptRoot 'PerformanceRunner/PerformanceRunner.csproj'
+$runnerExe  = Join-Path $PSScriptRoot "PerformanceRunner/bin/Debug/net9.0/PerformanceRunner$ExeSuffix"
 
 Write-Host "==> building PerformanceRunner..." -ForegroundColor Cyan
 & dotnet build $runnerProj -c Debug -clp:ErrorsOnly --nologo | Out-Null
@@ -49,7 +53,7 @@ $runnerExit = $LASTEXITCODE
 # publishes the docs folder. This README.md is the master; docs/Performance.md is the copy.
 if ($runnerExit -eq 0) {
     $readme   = Join-Path $PSScriptRoot "README.md"
-    $docsCopy = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..\..\..\docs")) "Performance.md"
+    $docsCopy = Join-Path $RepoRoot 'docs/Performance.md'
     $banner   = "<!-- AUTO-COPIED from src/tests/Performance/README.md by run-performance.ps1 -- edit that file, not this one. -->`r`n`r`n"
     [IO.File]::WriteAllText($docsCopy, $banner + [IO.File]::ReadAllText($readme))
     Write-Host "==> mirrored README.md to docs/Performance.md" -ForegroundColor Cyan

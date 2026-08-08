@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // Don't enable for timing tests:
@@ -24,10 +25,36 @@ namespace BehavioralTests;
 [TestClass]
 public abstract class BehavioralTestBase
 {
-    // Move up from here: "...\go2cs\src\tests\Behavioral\BehavioralTests\bin\Debug\net9.0"
-    private const string RootPath = @"..\..\..\..\..\..\..\"; // At "src" folder
+    // Move up from here: ".../go2cs/src/tests/Behavioral/BehavioralTests/bin/Debug/net9.0" to "src".
+    //
+    // Built from Path.Combine SEGMENTS rather than an embedded @"..\..\..\..\..\..\..\": .NET does
+    // NOT normalize a backslash on Unix, so that literal is ONE directory name there and every path
+    // derived from it points at nothing (F4, docs/PLAN-linux-operation.md).
+    //
+    // SIX, where the literal spelled seven -- and the discrepancy is the point. The old form was
+    // concatenated, not combined ($@"{execPath}{RootPath}go2cs\"), and execPath carries no trailing
+    // separator, so its last segment fused with the first "..": "net9.0" + ".." = "net9.0..".
+    // Windows path normalization strips trailing dots from a segment, turning that back into
+    // "net9.0" and EATING one level, so seven written levels resolved as six. Measured, not
+    // reasoned: GetFullPath(execPath + @"..\..\..\..\..\..\..\" + @"go2cs\") is <repo>\src\go2cs.
+    // Nothing off Windows performs that strip -- "net9.0.." would be a literal directory name that
+    // does not exist -- so the accident had to be resolved into the real level count to port at all.
+    private static readonly string RootPath = Path.Combine("..", "..", "..", "..", "..", ".."); // At "src" folder
 
-    protected const string TestRootPath = @"..\..\..\..\";
+    // Trailing separator retained: two derived test classes interpolate this directly as
+    // $"{TestRootPath}{targetProject}", so the separator is load-bearing at those call sites.
+    protected static readonly string TestRootPath = Path.Combine("..", "..", "..", "..") + Path.DirectorySeparatorChar;
+
+    // Executable suffix for a built .NET apphost or Go binary. Windows only; empty everywhere else.
+    // A hard-coded ".exe" is not a cosmetic wart here -- CompileCSProject probes File.Exists on it to
+    // decide whether a build can be skipped, and OutputComparisonTests runs it.
+    private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
+
+    // Build-output path fragments, from the host's own separator. The literals @"\bin\" / @"\obj\"
+    // these replaced do not ERROR off Windows -- they simply never match, so bin/ and obj/ enumerate
+    // as Go package directories and get transpiled.
+    private static readonly string s_binFragment = $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}";
+    private static readonly string s_objFragment = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
 
     protected static string BinOutput { get; private set; } = null!;
 
@@ -45,7 +72,9 @@ public abstract class BehavioralTestBase
     // the only root whose metadata describes those assemblies.
     protected static string Go2csRoot { get; private set; } = null!;
 
-    protected static string PublishProfile { get; private set; } = "win-x64";
+    // The host's own RID rather than a pinned "win-x64" -- "win-x64" on this lane, "linux-x64" or
+    // "osx-arm64" elsewhere. Only consumed under USE_PUBLISH_PROFILES (off by default).
+    protected static string PublishProfile { get; private set; } = RuntimeInformation.RuntimeIdentifier;
 
     protected static string TargetConfig { get; private set; } = "Release";
 
@@ -62,16 +91,24 @@ public abstract class BehavioralTestBase
     protected static string GetCSExecPath(string projPath, string targetProject)
     {
     #if USE_PUBLISH_PROFILES
-        return Path.Combine(projPath, $@"bin\{TargetConfig}\{NetVersion}\publish\{PublishProfile}");
+        return Path.Combine(projPath, "bin", TargetConfig, NetVersion, "publish", PublishProfile);
     #else
-        return Path.Combine(projPath, $@"bin\{TargetConfig}\{NetVersion}\");
+        return Path.Combine(projPath, "bin", TargetConfig, NetVersion);
     #endif
     }
 
     protected static string GetGoExePath(string projPath, string targetProject)
     {
-        return Path.Combine(projPath, $@"bin\{TargetConfig}\Go");
+        return Path.Combine(projPath, "bin", TargetConfig, "Go");
     }
+
+    // The built C#/Go binary for a project, under the paths above. Centralized so the exe suffix is
+    // decided once rather than at each of the four sites that used to spell ".exe".
+    protected static string GetCSExeFile(string projPath, string targetProject) =>
+        Path.Combine(GetCSExecPath(projPath, targetProject), $"{targetProject}{s_exeSuffix}");
+
+    protected static string GetGoExeFile(string projPath, string targetProject) =>
+        Path.Combine(GetGoExePath(projPath, targetProject), $"{targetProject}{s_exeSuffix}");
 
     private static readonly ConcurrentDictionary<string, object> s_projectLocks = new(StringComparer.OrdinalIgnoreCase);
 
@@ -79,23 +116,26 @@ public abstract class BehavioralTestBase
     protected static void Init(TestContext context)
     {
         string execPath = Directory.GetCurrentDirectory();
-        string go2csSrc = Path.GetFullPath($@"{execPath}{RootPath}go2cs\");
-        string go2csBin = Path.Combine(go2csSrc, @"bin\");
+        string go2csSrc = Path.GetFullPath(Path.Combine(execPath, RootPath, "go2cs"));
+        string go2csBin = Path.Combine(go2csSrc, "bin");
 
         // Resolved before the up-to-date early return below, so every path through Init sets it. The
         // trailing separator must go: a Windows command line ends the quoted argument on the closing
         // quote, and a backslash immediately before it escapes that quote instead.
-        Go2csRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath($@"{execPath}{RootPath}"));
+        Go2csRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Combine(execPath, RootPath)));
 
         int projectNameIndex = execPath.IndexOf(nameof(BehavioralTests), StringComparison.OrdinalIgnoreCase);
 
+        // Split on BOTH separators. The @"\" this replaced does not error off Windows -- it simply
+        // never splits, so NetVersion silently becomes the whole "/bin/Debug/net9.0" tail and every
+        // build-output path built from it points nowhere.
         BinOutput = execPath[(projectNameIndex + nameof(BehavioralTests).Length)..];
-        NetVersion = BinOutput.Split(@"\", StringSplitOptions.RemoveEmptyEntries)[^1];
+        NetVersion = BinOutput.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries)[^1];
 
         if (!Directory.Exists(go2csBin))
             Directory.CreateDirectory(go2csBin);
 
-        go2cs = Path.Combine(go2csBin, "go2cs.exe");
+        go2cs = Path.Combine(go2csBin, $"go2cs{s_exeSuffix}");
 
         if (File.Exists(go2cs))
         {
@@ -112,7 +152,7 @@ public abstract class BehavioralTestBase
             throw new InvalidOperationException($"\"go build\" failed with exit code {exitCode:N0}");
 
         if (!File.Exists(go2cs))
-            throw new InvalidOperationException($"Failed to find \"go2cs.exe\" build for testing, check path: {go2cs}");
+            throw new InvalidOperationException($"Failed to find \"{Path.GetFileName(go2cs)}\" build for testing, check path: {go2cs}");
     }
 
     public TestContext? TestContext { get; set; }
@@ -217,7 +257,7 @@ public abstract class BehavioralTestBase
     protected void TranspileProject(string targetProject, bool forceBuild = false)
     {
         string targetPath = $"{TestRootPath}{targetProject}";
-        string csproj = Path.GetFullPath($@"{targetPath}\{targetProject}.csproj");
+        string csproj = Path.GetFullPath(Path.Combine(targetPath, $"{targetProject}.csproj"));
         string projPath = Path.GetFullPath($"{targetPath}");
 
         object projectLock = s_projectLocks.GetOrAdd(targetProject, _ => new object());
@@ -279,8 +319,8 @@ public abstract class BehavioralTestBase
     private static string[] GoPackageDirs(string projPath) =>
         new[] { projPath }
             .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
-                .Where(dirName => !dirName.Contains(@"\bin\", StringComparison.OrdinalIgnoreCase) &&
-                                  !dirName.Contains(@"\obj\", StringComparison.OrdinalIgnoreCase))
+                .Where(dirName => !dirName.Contains(s_binFragment, StringComparison.OrdinalIgnoreCase) &&
+                                  !dirName.Contains(s_objFragment, StringComparison.OrdinalIgnoreCase))
                 .Where(dirName => ProductionGoFiles(dirName).Length > 0))
             .OrderByDescending(dirName => dirName.Count(c => c == Path.DirectorySeparatorChar))
             .ThenBy(dirName => dirName, StringComparer.OrdinalIgnoreCase)
@@ -291,13 +331,14 @@ public abstract class BehavioralTestBase
         string targetPath = $"{TestRootPath}{targetProject}";
         string projPath = Path.GetFullPath($"{targetPath}");
         string csExePath = GetCSExecPath(projPath, targetProject);
-        string projExe = Path.Combine(csExePath, $"{targetProject}.exe");
+        string projExe = GetCSExeFile(projPath, targetProject);
         object projectLock = s_projectLocks.GetOrAdd(targetProject, _ => new object());
 
         lock (projectLock)
         {
-            // Set 'go2csPath' environment variable
-            Environment.SetEnvironmentVariable("go2csPath", Path.GetFullPath($@"{TestRootPath}..\..\"));
+            // Set 'go2csPath' environment variable. MSBuild wants the trailing separator: every
+            // generated csproj concatenates it directly ($(go2csPath)core\<pkg>\...).
+            Environment.SetEnvironmentVariable("go2csPath", Path.GetFullPath(Path.Combine(TestRootPath, "..", "..")) + Path.DirectorySeparatorChar);
 
             if (!forceBuild && File.Exists(projExe))
             {
@@ -353,7 +394,7 @@ public abstract class BehavioralTestBase
     private static bool MatchConsoleOutput(string targetProject)
     {
         // Access "package_info.cs" file for the target test project
-        string packageInfoFile = Path.GetFullPath($@"{TestRootPath}{targetProject}\package_info.cs");
+        string packageInfoFile = Path.GetFullPath(Path.Combine($"{TestRootPath}{targetProject}", "package_info.cs"));
 
         if (!File.Exists(packageInfoFile))
             return false;

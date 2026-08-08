@@ -1687,7 +1687,7 @@ public class C3_TargetComparisonTests : BehavioralTestBase
             if (goSrcFile.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            string transpiledFile = $@"{projPath}\{Path.GetFileNameWithoutExtension(goSrcFile)}.cs";
+            string transpiledFile = Path.Combine(projPath, $"{Path.GetFileNameWithoutExtension(goSrcFile)}.cs");
             string targetFile = $"{transpiledFile}.target";
 
             Assert.IsTrue(FileMatch(transpiledFile, targetFile), $"Go source file converted to C# \"{transpiledFile}\" does not match target \"{targetFile}\"");

@@ -34,9 +34,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Repo root is three levels up from src\tests\Behavioral.
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
-$slnx     = Join-Path $repoRoot "src\go2cs.slnx"
+# Roots and the platform primitives come from one shared definition, so this script cannot disagree
+# with the other behavioral instruments about where anything is (F4, docs/PLAN-linux-operation.md).
+. (Join-Path $PSScriptRoot '_paths.ps1')
+
+$slnx = Join-Path $SrcRoot 'go2cs.slnx'
 
 Write-Host "==> Clearing stale test/build processes (prior-run lock-holders)..." -ForegroundColor Cyan
 
@@ -46,10 +48,20 @@ Write-Host "==> Clearing stale test/build processes (prior-run lock-holders)..."
 # name-wide kill takes down a SIBLING worktree's in-flight suite (exit -1, log truncated mid-line;
 # see CLAUDE.md's concurrent-session kill section — this script was the last name-wide killer).
 # Only processes whose executable lives under THIS tree (repo root, two levels up) are fair game.
-$killScopeRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+#
+# Off Windows this loop is a deliberate no-op rather than a port: the three names are Windows apphost
+# names, and the muxer that hosts them on Linux (`dotnet`) lives outside the tree, so the path guard
+# excludes it. That is the right outcome, not a gap -- the MSB3027 class this clears exists because
+# Windows file locking is MANDATORY; on Linux an open handle does not block a rewrite, so there is no
+# stale lock-holder to clear. The guard's string comparison follows the host's own filesystem rule.
+# Unchanged scope: src\tests, two levels up from here. Deliberately NOT widened to $SrcRoot while
+# porting -- a kill scope is the one thing that must never grow as a side effect of a path cleanup.
+$killScopeRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+$pathComparison = if ($IsWindowsHost) { [System.StringComparison]::OrdinalIgnoreCase } else { [System.StringComparison]::Ordinal }
+
 foreach ($name in @("testhost", "vstest.console", "MSBuild")) {
     $procs = Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object {
-        $_.Path -and $_.Path.StartsWith($killScopeRoot, [System.StringComparison]::OrdinalIgnoreCase)
+        $_.Path -and $_.Path.StartsWith($killScopeRoot, $pathComparison)
     }
     if ($procs) {
         Write-Host "    killing $($procs.Count) x $name (scoped to $killScopeRoot)" -ForegroundColor DarkYellow
