@@ -98,20 +98,29 @@ func TestValidationPackMarkerCollapsesToBlankLine(t *testing.T) {
 // un-shipped every validated package's proof sheet at the next NuGet pack. The -tests arm is
 // structural — output under the runtime root's core\ tree — so a fixture or end-user module
 // still collapses to the historical blank line.
+// The fixture paths are composed with filepath.Join rather than written as Windows literals: the
+// predicate under test is a real path-prefix comparison (filepath.Clean over a separator-joined
+// root), so a `H:\…\src\core\time\time.csproj` literal is ONE filename on Linux and macOS and the
+// prefix never matches — the guard failed there for a reason that has nothing to do with what it
+// guards. Built from segments it asserts the same property on every host.
 func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
-	testsOverCore := Options{convertTests: true, go2csPath: `H:\Projects\go2cs\src`}
+	root := filepath.Join(t.TempDir(), "src")
+	testsOverCore := Options{convertTests: true, go2csPath: root}
 
-	block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, testsOverCore)
+	corePackage := filepath.Join(root, "core", "time", "time.csproj")
+	block := validationPackBlock(corePackage, testsOverCore)
 
 	if !strings.Contains(block, `time.md`) || !strings.Contains(block, `PackagePath="VALIDATION.md"`) {
 		t.Fatalf("a -tests rewrite of a core package's production .csproj lost the validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(`H:\Projects\go2cs\src\tests\PackageTests\ConvertedTestHarness\value.csproj`, testsOverCore); block != "" {
+	outsideCore := filepath.Join(root, "tests", "PackageTests", "ConvertedTestHarness", "value.csproj")
+
+	if block := validationPackBlock(outsideCore, testsOverCore); block != "" {
 		t.Fatalf("a -tests conversion outside the core tree emitted a validation pack block: %q", block)
 	}
 
-	if block := validationPackBlock(`H:\Projects\go2cs\src\core\time\time.csproj`, Options{convertTests: true}); block != "" {
+	if block := validationPackBlock(corePackage, Options{convertTests: true}); block != "" {
 		t.Fatalf("a -tests conversion with no resolved runtime root emitted a validation pack block: %q", block)
 	}
 }
