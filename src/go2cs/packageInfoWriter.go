@@ -55,7 +55,7 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		// non-Windows checkout, or core.autocrlf=false) cannot convert a single package that already
 		// has a committed package_info.cs (F3 in docs/PLAN-linux-operation.md). The WRITE path is
 		// unchanged — each line is still emitted with "\r\n" — so output stays byte-identical.
-		packageInfoLines = strings.Split(strings.ReplaceAll(string(packageInfoBytes), "\r\n", "\n"), "\n")
+		packageInfoLines = splitLines(string(packageInfoBytes))
 	} else {
 		// Generate new package info file from template. The template is pinned CRLF at CHECKOUT
 		// (.gitattributes) and embedded at COMPILE time, so its endings are a property of the tree
@@ -64,7 +64,7 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		// either way, rather than a fresh package_info.cs being fatal on a tree that predates the pin.
 		packageClassName := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
 		templateFile := fmt.Sprintf(string(packageInfoTemplate), packageNamespace+"."+packageClassName, packageNamespace, packageName, packageClassName)
-		packageInfoLines = strings.Split(strings.ReplaceAll(templateFile, "\r\n", "\n"), "\n")
+		packageInfoLines = splitLines(templateFile)
 	}
 
 	// Handle imported type aliases

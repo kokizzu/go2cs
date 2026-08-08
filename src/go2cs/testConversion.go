@@ -1575,7 +1575,16 @@ func appendExternalTestPackageClass(testInfoPath, packageNamespace, productionPa
 		return fmt.Errorf("read test package metadata: %w", err)
 	}
 
-	contents := string(data)
+	// EOL-agnostic: package_test_info.cs is READ BACK off disk, and for a validated package it is a
+	// COMMITTED file, so its line endings are the checkout's rather than the converter's. Every test
+	// below is CRLF-shaped — the `block` literal and the using-directive insert — so an LF copy makes
+	// `strings.Contains(contents, block)` miss and the [GoPackage] class is appended AGAIN on every
+	// run, accumulating duplicate declarations. writePackageInfoFile emits this file uniformly CRLF
+	// (one "\r\n" per line, no exceptions), which is why normalizing to CRLF is the faithful
+	// reconstruction rather than a guess, and why it is inert on a Windows checkout: the content is
+	// already CRLF, so `contents == string(data)` still short-circuits the write below.
+	// F3 in docs/PLAN-linux-operation.md.
+	contents := normalizeToCRLF(string(data))
 	className := getSanitizedImport(external.Name + PackageSuffix)
 
 	productionUsing := fmt.Sprintf("using static %s.%s;", packageNamespace, getSanitizedImport(productionPackageName+PackageSuffix))

@@ -43,7 +43,9 @@ type PackageInfo struct {
 
 func getProjectName(importPath string, options Options) (string, string) {
 	if strings.HasPrefix(importPath, options.goRoot) {
-		importPath = pathReplace(importPath, filepath.Join(options.goRoot, "src"), "")
+		// A no-match is tolerable here: the guard only proves the path is under GOROOT, not under
+		// GOROOT/src, and the untrimmed value still names the package sensibly for the caller.
+		importPath, _ = pathReplace(importPath, filepath.Join(options.goRoot, "src"), "")
 	} else {
 		// Check if current folder has go.mod or main.go
 		if _, err := os.Stat(filepath.Join(importPath, "go.mod")); err == nil {
@@ -257,9 +259,19 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 		var targetDir string
 
 		if isStdLib {
-			targetDir = pathReplace(sourceDir, filepath.Join(options.goRoot, "src"), "$(go2csPath)core")
+			goRootSrc := filepath.Join(options.goRoot, "src")
+
+			var rewritten bool
+			targetDir, rewritten = pathReplace(sourceDir, goRootSrc, "$(go2csPath)core")
+
+			if !rewritten {
+				warnGoRootPathReplace(sourceDir, goRootSrc)
+			}
 		} else {
-			targetDir = pathReplace(sourceDir, filepath.Join(options.goPath, "pkg"), "$(go2csPath)pkg")
+			// A no-match here is ROUTINE — a non-stdlib package resolved by go/build commonly sits
+			// under GOPATH/src or a local module rather than GOPATH/pkg, and keeping the source dir
+			// is the in-place convention for those. Nothing to warn about.
+			targetDir, _ = pathReplace(sourceDir, filepath.Join(options.goPath, "pkg"), "$(go2csPath)pkg")
 		}
 
 		importPathParts := strings.Split(importPath, "/")
@@ -322,7 +334,12 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 	goRootSrc := filepath.Join(options.goRoot, "src")
 
 	if isPathUnder(meta.Dir, goRootSrc) {
-		targetDir := pathReplace(meta.Dir, goRootSrc, "$(go2csPath)core")
+		targetDir, rewritten := pathReplace(meta.Dir, goRootSrc, "$(go2csPath)core")
+
+		if !rewritten {
+			warnGoRootPathReplace(meta.Dir, goRootSrc)
+		}
+
 		importPathParts := strings.Split(importPath, "/")
 		packageName := strings.Join(importPathParts, ".")
 		projectReference := filepath.Join(strings.ReplaceAll(targetDir, "/", "\\"), "\\"+packageName+".csproj")
@@ -459,15 +476,81 @@ func isPathUnder(path, dir string) bool {
 	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator))
 }
 
-func pathReplace(subject string, search string, replace string) string {
-	// Execute case insensitive replacement on Windows, otherwise use the standard replace function
+// pathReplace rewrites occurrences of the `search` path inside `subject` to `replace` — the mapping
+// that turns a GOROOT/GOPATH source directory into the emitted $(go2csPath)core / $(go2csPath)pkg
+// reference. It reports whether a replacement actually happened.
+//
+// The bool matters because a NO-MATCH is silent and consequential: the caller keeps the untouched
+// absolute source path and emits it as a <ProjectReference>, producing a machine-specific reference
+// to a .csproj under GOROOT that does not exist. On Windows the match is case-insensitive so the
+// realistic failure is none; on Linux and macOS the exposure is a toolchain reached through a
+// SYMLINK, where options.goRoot and the directory go/build reports differ by spelling alone
+// (/usr/lib/go vs /usr/lib/go-1.23, $HOME/sdk/go1.23.1 vs a GOROOT env pointing at a symlink).
+//
+// The symlink fallback runs ONLY when the direct replace already failed, which is the whole reason
+// it is safe: a run whose direct replace matches — every Windows run today — never reaches it, so
+// emitted bytes cannot move. Both sides are resolved, because either one may be the symlinked
+// spelling. See F6 in docs/PLAN-linux-operation.md.
+func pathReplace(subject string, search string, replace string) (string, bool) {
+	if result, ok := pathReplaceExact(subject, search, replace); ok {
+		return result, true
+	}
+
+	// filepath.EvalSymlinks needs both paths to exist; when either does not, there is nothing to
+	// resolve and the no-match stands.
+	resolvedSubject, err := filepath.EvalSymlinks(subject)
+
+	if err != nil {
+		return subject, false
+	}
+
+	resolvedSearch, err := filepath.EvalSymlinks(search)
+
+	if err != nil {
+		return subject, false
+	}
+
+	return pathReplaceExact(resolvedSubject, resolvedSearch, replace)
+}
+
+// pathReplaceExact is pathReplace's literal half: case-insensitive on Windows (where the same
+// directory is legitimately spelled several ways), exact elsewhere.
+func pathReplaceExact(subject string, search string, replace string) (string, bool) {
+	var result string
+
 	if runtime.GOOS == "windows" {
 		searchEscaped := regexp.QuoteMeta(search)
 		searchRE := regexp.MustCompile("(?i)" + searchEscaped)
-		return searchRE.ReplaceAllString(subject, replace)
+		result = searchRE.ReplaceAllString(subject, replace)
 	} else {
-		return strings.ReplaceAll(subject, search, replace)
+		result = strings.ReplaceAll(subject, search, replace)
 	}
+
+	return result, result != subject
+}
+
+// goRootPathReplaceWarned pins the GOROOT-rewrite no-match warning to ONCE per run — a conversion
+// resolves dozens of imports and every stdlib one would otherwise repeat the same advice. Follows
+// go2csRootWarned's shape (package-level, test-pinnable: a test saves it, resets it, restores it).
+var goRootPathReplaceWarned bool
+
+// warnGoRootPathReplace reports a stdlib source directory that could NOT be rewritten to its
+// $(go2csPath)core form. Called only where the directory is KNOWN to live under GOROOT/src, so a
+// no-match is never the normal case — unlike the import-path and GOPATH call sites, where a
+// non-match is routine and silence is correct.
+func warnGoRootPathReplace(sourceDir string, goRootSrc string) {
+	if goRootPathReplaceWarned {
+		return
+	}
+
+	goRootPathReplaceWarned = true
+
+	// %s, not %q: on Windows %q escapes every separator in the paths it is asking the reader to compare.
+	showWarning("Standard-library source \"%s\" could not be rewritten relative to \"%s\".\n"+
+		"         The emitted <ProjectReference> keeps that absolute path and will not resolve on\n"+
+		"         another machine. This is the symlinked-toolchain case: pass -goroot with the same\n"+
+		"         spelling `go env GOROOT` reports, or point it at the resolved directory.",
+		sourceDir, goRootSrc)
 }
 
 func (v *Visitor) loadImportedTypeAliases(projectImport string) {

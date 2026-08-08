@@ -14,6 +14,41 @@ import (
 	"strings"
 )
 
+// The converter emits CRLF UNCONDITIONALLY — every writer in this tree terminates its lines with
+// "\r\n" so the output is byte-deterministic on every host, and .gitattributes pins the emitted
+// artifact types to eol=crlf so every checkout materializes those same bytes.
+//
+// The files it READS BACK are the other half of that contract. package_info.cs and
+// package_test_info.cs are committed artifacts that the converter parses on the next run, so their
+// endings are whatever the CHECKOUT produced. A tree materialized before the pin — or one cloned
+// with core.autocrlf=false, git's default everywhere but Windows — hands the reader LF content that
+// no CRLF-shaped scan can match, and the failure is not a diff but a hard stop: the marker sections
+// are never found and the conversion log.Fatals (F3 in docs/PLAN-linux-operation.md).
+//
+// These helpers are that seam. They belong to the READ path only; nothing here changes what is
+// written, which is why applying them cannot move emitted bytes on any platform.
+
+// normalizeToLF collapses CRLF to bare LF so read-back content can be scanned or split into lines
+// independently of how it was checked out.
+func normalizeToLF(content string) string {
+	return strings.ReplaceAll(content, "\r\n", "\n")
+}
+
+// normalizeToCRLF rewrites read-back content into the converter's own uniform CRLF form, so
+// CRLF-shaped searches and inserts behave identically on every checkout. Idempotent, and an exact
+// no-op on content that is already uniformly CRLF — which is what lets a caller keep an
+// unchanged-content early-out and stay byte-identical on a Windows tree.
+func normalizeToCRLF(content string) string {
+	return strings.ReplaceAll(normalizeToLF(content), "\n", "\r\n")
+}
+
+// splitLines splits read-back content into lines EOL-agnostically. Note it treats a BARE LF as a
+// line break too, matching writePackageInfoFile's re-emission (which terminates every element with
+// "\r\n"): a package_info.cs is uniformly CRLF by construction, so the two agree by design.
+func splitLines(content string) []string {
+	return strings.Split(normalizeToLF(content), "\n")
+}
+
 func (v *Visitor) indent(indentLevel int) string {
 	return strings.Repeat(" ", v.options.indentSpaces*indentLevel)
 }

@@ -219,9 +219,13 @@ func stdLibImportPath(sourceDir string, goRoot string) string {
 	}
 
 	sourceDir = filepath.Clean(sourceDir)
-	trimmed := pathReplace(sourceDir, filepath.Join(goRoot, "src"), "")
+	trimmed, rewritten := pathReplace(sourceDir, filepath.Join(goRoot, "src"), "")
 
-	if trimmed == sourceDir {
+	// A no-match means this is not a GOROOT/src package after all, so there is no stdlib import path
+	// to report — the same answer the old `trimmed == sourceDir` comparison gave, now stated by the
+	// replace itself rather than re-derived. Silent by design: readmeValidationBadge calls this for
+	// every conversion, including the non-stdlib ones that legitimately have no import path.
+	if !rewritten {
 		return ""
 	}
 
