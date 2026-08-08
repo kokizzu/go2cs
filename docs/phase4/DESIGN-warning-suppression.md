@@ -361,3 +361,159 @@ accumulated drift that belongs to a milestone test-source rebank rather than to 
 review siblings, and 10 `-text` `testdata` paths verified CR-only by CR-stripped equality against
 `HEAD` (their numstat is non-empty by construction, so `--numstat` is the wrong instrument there).
 Zero unclassified.
+
+## 11. What landed — r48c-warnroots, 2026-08-08
+
+Both converter roots. The `NoWarn` list is **unchanged**: the point of fixing these two rather than
+suppressing them was to keep both codes alive as signals, and both are still fully enabled.
+
+### 11.1 `CS8778` — the constant took the untyped-int DEFAULT type (§5.2)
+
+§5.2 named two roots. There were **three emitters**, and the accounting closes exactly:
+
+| Emitter | Sites | Shape |
+|---|---:|---|
+| `convBasicLit` — the beyond-int32 literal branch | **614** | `-(nint)4181792142133755926L` in a `new int64[]{…}` |
+| `convBinaryExpr` — the constant FOLD | **3** | `(nint)(4611686018427387903L)`, `(nuint)(140737488355327UL)` |
+| `convCallExpr.csNintLiteral` — an array LENGTH | **3** | `(nint)140737488355327` for `(*[maxAlloc/2 - 1]byte)` |
+| | **620** | = the measured `CS8778` total |
+
+§5.2's first root said the composite literal's element type was "ignored". The mechanism is sharper
+than that, and worth recording because it will recur anywhere the converter reasons about a constant
+operand's type: go/types **deliberately** leaves the operands of a constant expression untyped.
+`updateExprType0` short-circuits with *"if x is a constant, the operands were constants"* and does
+not descend — in Go they never materialize at runtime, so there is nothing to type. The observable
+consequence is that in
+
+```go
+rngCooked [rngLen]int64 = [...]int64{-4181792142133755926, 1395769623340756751, …}
+```
+
+the **negated** element records `untyped int` while its positive sibling records `int64`, purely
+because one is wrapped in a unary minus. Every element of `rngCooked` is negative — which is exactly
+why 607 of the 620 sites are that one table, and why positive-only tables elsewhere were never
+affected. The emission branch then never consulted a type at all, so it applied the untyped-int
+default (`int` → `nint`) universally.
+
+The fix resolves the literal's integer type from the two routes `convBasicLit` already uses for the
+float `F`/`D` suffix — the type go/types recorded directly, else the contextual type
+`markUntypedConstContexts` propagated (which already pushes an integer context through unary
+`+`/`-`/`^`). An `int64` resolution emits the bare `…L`; everything else keeps `nint`, because an
+`any` slot must box a Go `int` as `nint` for a later `x.(int)`, but wraps it `unchecked(…)` so the
+constant conversion is legal without the warning. `nint` is 64-bit on every platform go2cs targets,
+so the value is exact at runtime; `unchecked` only states it.
+
+`wholeExprIsCastOfType` — the whole-expression-cast redundancy guard **17 call sites** share — now
+peels an `unchecked(` wrapper before matching. Without that, the wrapped fold stops being recognized
+and the enclosing guards re-wrap it into `(nint)(unchecked((nint)(…)))`. The balance walk was
+factored into `balancedCloseIndex` and is otherwise unchanged.
+
+The emission is now byte-for-byte the Go source's own digits:
+
+```csharp
+internal static array<int64> rngCooked = new int64[]{
+    -4181792142133755926L, -4576982950128230565L, 1395769623340756751L, 5333664234075297259L,
+```
+
+**`CS8778`: 620 → 0.**
+
+### 11.2 `CS0219` — the named-return prologue (§5.1)
+
+§5.1's diagnosis and its proposed check were both correct, and the implementation follows it: emit
+the named-result local only when the body can read it. What §5.1 did not say is that the check must
+be switched **off** — not merely satisfied — for the two lowerings where *generated* code reads the
+locals and the Go body need never mention them:
+
+- **`namedReturnDeferMode`**, where the declarations sit outside the `func()` wrapper precisely so
+  deferred closures can mutate them, and the read happens after the wrapper returns.
+- **A GoFrame**, whose named exit emits a trailing `return <names>;` after the `try`, reached by
+  `goto ᒐdone` from every return inside.
+
+Inferring liveness from the body in either case would drop a declaration the emitted code
+references — `CS0103`, a hard error rather than a warning. So the caller passes a nil body and the
+predicate returns true wholesale.
+
+Otherwise the declaration is kept when the body **references** the result (read, assigned,
+address-taken, or captured — the walk descends into function literals, because a capture is a use),
+when the body has a **naked `return`** (which reads every named result; that walk stops at a nested
+`*ast.FuncLit`, whose bare returns belong to the literal), and when the result is **heap-box
+backed**. The same rule and the same opt-out apply to function literals via `namedReturnDeclLines`.
+Everything unclear — no body, unresolved object — keeps the declaration: one dead line is cheap,
+a dropped live one is not.
+
+**`CS0219`: 1,219 → 52**, and **none of the 52 is a named-return prologue**.
+
+### 11.3 The 52 retained `CS0219`, by design
+
+| Shape | n | Why it stays |
+|---|---:|---|
+| Hand-owned files the converter never re-emits — `sync/atomic/type.cs` (27), `syscall/exec_windows.cs` (6) | **33** | These carry `[module: GoManualConversion]`, so a reconvert leaves the `.cs` alone. Their `.cs.auto` review siblings **do** carry the fixed form (both appear in this arc's A/B), which is the tell: this is hand-own staleness (CleanupBacklog item 18), not a converter gap. Fixing it means hand-editing hand-owned files — a separate, deliberate act. |
+| Go's own `var` witnesses for a constant-folded `unsafe.Sizeof`/`Offsetof` — `runtime/runtime1.cs` (11), `debug/elf/file.cs` (6), `sync/runtime.cs` (1) | **18** | `var a int8` exists in the Go source only so `unsafe.Sizeof(a)` can name a typed operand. go2cs folds the `Sizeof`/`Offsetof` to a constant and keeps the original in a comment (`/* unsafe.Sizeof(a) */`), which leaves the declaration unread. It is **Go-visible source**, and the emitted comment still names it — deleting it would delete code the reader is meant to see. |
+| A folded local const — `bufio/scan.cs:169` `maxInt` | **1** | The `const maxInt = int(^uint(0) >> 1)` declaration is Go-visible; its only use, `maxInt/2`, is constant-folded by `convBinaryExpr`. Already identified in §4 as the single non-named-return site. |
+
+Each is Go-visible code or frozen hand-owned text, so none is fixable at the converter layer without
+distorting the output. `CS0219` stays enabled: with the prologue gone, a *genuine* dropped
+assignment to a named result would now stand out among these 52 instead of being lost in 1,219.
+
+### 11.4 Measured
+
+`src/go2cs-stdlib.slnx`, 304 projects, `-c Debug -t:Rebuild`, isolated (`MSBUILDDISABLENODEREUSE=1`,
+`-p:UseSharedCompilation=false`), warnings captured to a file logger:
+
+| Run | Warnings | Errors |
+|---|---:|---:|
+| before (reproduces §10's post-suppression baseline exactly) | **1,945** | 0 |
+| after | **158** | 0 |
+
+**−1,787, or −91.9 %.** Attributable per family, measured not estimated:
+
+| Code | before | after | Δ |
+|---|---:|---:|---:|
+| `CS0219` | 1,219 | 52 | **−1,167** |
+| `CS8778` | 620 | 0 | **−620** |
+| every other code (21 of them) | 106 | 106 | **0** |
+
+The zero on that last row is the load-bearing one: no code moved in either direction except the two
+targeted, so nothing was traded away. Cumulatively with §10 the corpus is **4,147 → 158, −96.2 %**.
+
+### 11.5 A/B footprint
+
+Two seeded temp roots, converted from the **same** seed by the pre-fix and post-fix binaries, so the
+diff is this change alone and is independent of any pre-existing corpus drift. Marker gate on both
+roots: **41 marked / 15 with a `.cs.auto` sibling / 0 clobbered.** A control comparison of the
+pre-fix root against the committed tree found **zero** production `.cs`/`.csproj`/`README.md`
+content drift (52 CRLF phantoms, CR-stripped-equal; the only real differences were 12 stale
+`.cs.auto`, the known standing family) — so the committed tree sat exactly on the `-stdlib` emission
+point and the overlay banks precisely what is classified below.
+
+287 files differ; **zero unclassified**:
+
+| Family | Lines | |
+|---|---:|---|
+| `CS0219` — removed dead declaration | 1,213 | |
+| `CS0219` — the orphaned blank separator that followed the declaration block | 437 | every one in a file that also lost a declaration |
+| `CS8778` — old `(nint)`/`(nuint)` cast removed | 165 | |
+| `CS8778` — new bare `…L` (the `int64` resolution) | 157 | |
+| `CS8778` — new `unchecked((n[u]int)…)` | 8 | |
+
+By artifact type the diff is `.cs` only — **no `.csproj`, no `README.md`, no `.slnx`** — which is
+what an emission-only change must look like. 283 `.cs` were overlaid; the 4 `.cs.auto` were excluded
+per the standard overlay rule (they protect the hand-owned `.cs` beside them and go stale on their
+own schedule).
+
+### 11.6 Gates
+
+| Gate | Verdict |
+|---|---|
+| `go test ./...` (converter) | green, 58 s. Both new guards run, and each is proved by **negative control** — `nativeIntConstWidth_test.go` fails when the `int64` arm is neutered; `namedResultLiveness_test.go` fails in BOTH directions (always-true leaves the three dead declarations, always-false drops all five live ones). `projitemsIntegrity` green, including its BOM and line-ending assertions. |
+| Marker gate, both A/B roots | **41 marked / 15 with a `.cs.auto` sibling / 0 clobbered**, line-anchored and path-precise. Matches the r44a census; re-measured, not carried forward. |
+| Corpus build — `go2cs-stdlib.slnx`, 304 projects, `-t:Rebuild`, isolated | **0 errors**, 1,945 → **158** warnings. |
+| Behavioral suite — 549 projects, 1,239 s | Transpile **549/549**, Compile **549/549**, Output **523 pass / 0 fail / 26 skip** (no `package main`), Target 534 pass / **15 re-baselined**. The emission change compiles everywhere and stdout still matches `go run` everywhere; only the goldens were stale, and the 15 match the 15 git-modified `.cs` exactly. |
+| Golden re-baseline | `UpdateTestTargets --createTargetFiles` after the suite's own transpile — one golden per changed `.cs`, and **no `*Tests.cs` churn**, confirming no project was added or removed. |
+| `check-no-regression.ps1` — 574 packages, 411 s | **NO REGRESSION: byte-identical across all behavioral projects**, so the banked tree is a fixed point of the converter. Solution integrity 576/576 registered; path casing 4,142/4,142. |
+| `go2cs.slnx` build — 573 projects | **0 errors** (the only gate that compiles the non-generated members). |
+
+Not run, and deliberately: the **validated sweep**. This change re-emits the banked `*_test.cs`
+sources too, but those are refreshed at a milestone test-source rebank rather than per arc (the
+standing practice §10 followed), so they are left as they are and will pick the new emission up on
+their next regen.
