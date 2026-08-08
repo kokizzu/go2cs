@@ -5,8 +5,11 @@
 > and produced the first-ever Linux run). This file records the run-layer loop that followed it: what
 > failed, what class each failure was, and where the loop hit its wall.
 >
-> **Status: the wall is real and it is ONE declaration.** The wiring class is cleared; what remains is
-> a single missing native surface, catalogued in §4 for a design-with-user conversation.
+> **Status: THE WALL IS DOWN.** Lane r53a implemented the §4 keystone under the user's option-A ruling
+> and resumed the loop; `fmt.Println("hello, 世界")` and a second program exercising `os.Args` +
+> `os.Getenv` + `time.Now()` both run on Linux with output **byte-identical** to `go run` on the Linux
+> toolchain. The loop log and the four failures it cleared are §7; §4 is kept as the record of what the
+> wall was, and §6's three open questions are now answered there.
 
 ## 1. The loop's harness (use this, not the nupkg feed)
 
@@ -82,7 +85,7 @@ Emitted footprint is **five files** (push source widened to `public` in all thre
 consumer forwarded in the two unix ones), confirmed by a seeded three-target A/B: 0 new, 0 absent, 3
 content differences, all intended; marker gate 44/44 intact.
 
-## 4. Failure 1 — the wall: `internal/runtime/syscall.Syscall6`
+## 4. Failure 1 — the wall: `internal/runtime/syscall.Syscall6` *(CLEARED by r53a — see §7)*
 
 **The catalog. This is the whole implementation-class surface between here and a running Linux
 program — one declaration.**
@@ -152,13 +155,96 @@ corpus. This is a *superset*, not a work list: most are never called on any give
 census was taken from generated files on disk and still listed `runtime_envs`, which this lane's fix
 had already removed — the `Generated/` folder accumulates, so read it as an upper bound.)
 
-## 6. Open questions for the design conversation
+## 6. Open questions for the design conversation — ALL THREE ANSWERED
 
-1. **Bind libc, or map per call?** One keystone P/Invoke lights up the whole generated syscall surface
-   at once; per-call mapping onto .NET APIs is more hand-owns but no ABI dependency. This decides the
-   shape of Linux operation, so it is a design-with-user call, not a lane call.
-2. **Is `r2` ever load-bearing on linux/amd64 for the paths that matter?** If not, libc's `syscall(2)`
-   is sufficient and the answer to (1) gets much easier.
-3. **Does `syscall.init()`'s rlimit dance need to succeed at all?** Go's own code tolerates the error
-   (`if err := Getrlimit(...); err == nil`), so a bottom that reports failure honestly would let init
-   proceed — which is a legitimate intermediate state, and notably *not* a fabricated answer.
+1. **Bind libc, or map per call?** **RULED (user, 2026-08-08): bind libc.** One keystone P/Invoke, not
+   N per-call hand-owns. Implemented in §7.
+2. **Is `r2` ever load-bearing on linux/amd64 for the paths that matter?** **Moot — `r2` is reproduced
+   EXACTLY, so the question never has to be asked.** The Linux x86-64 convention clobbers only `RCX`
+   and `R11`, so `RDX` still holds `a3` when the asm reads it; returning `a3` from the shim is
+   bit-for-bit what the assembly produces. Measured under the real Go runtime, not inferred:
+   `syscall.Syscall6(SYS_GETPID, …, a3=0xDEADBEEF, …)` → `r2=0xdeadbeef`; the failure path returns
+   `r1=-1, r2=0, errno>0` and the shim mirrors that branch.
+3. **Does `syscall.init()`'s rlimit dance need to succeed at all?** Moot for the same reason — it now
+   genuinely succeeds. `Rlimit` is two `uint64`s, so the first struct to cross the boundary was
+   blittable and the pinned-address path worked untouched, exactly as §4.2/§4.3 predicted.
+
+## 7. The r53a run — the wall falls, and two programs run
+
+The keystone landed first (`core/internal/runtime/syscall/linux/syscall_linux_impl.cs`; shape, the
+three measurements behind it, and the one disclosed divergence are in the
+[ConversionStrategies reference](../ConversionStrategies-Reference.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate)),
+then §1's loop resumed against the same scratch harness. Four failures followed, and the striking
+thing is the shape of the list: **not one of them was a missing native surface.** The keystone was
+genuinely the whole implementation class on this path — everything after it was wiring, or a value
+the managed model could produce but was not producing.
+
+| # | Failure | Class | Root cause | Fix |
+|---|---|---|---|---|
+| 2 | `NotImplementedException: fcntl` at `unix.Fcntl` ← `os.NewFile` ← `os.init()`'s `initStdin` | **(w) wiring** | `internal/syscall/unix` PULLs `runtime.fcntl` (`//go:linkname fcntl runtime.fcntl`), whose Go body is three lines over the keystone. The forwarder machinery already existed; the target was simply not in the whitelist | one row: `linknameForwardTargets["runtime.fcntl"]` |
+| 3 | `NotImplementedException: runtime_args` at `os.init()` | **(w) wiring** + a truth problem | The BARE push shape r52b's failure 0 introduced — but forwarding alone would have returned an EMPTY `os.Args`, because `runtime.argslice` is filled by `goargs()` off the initial stack | one row: `linknamePushTargets["os.runtime_args"]`, **plus** `runtime/goargs_impl.cs` so the forwarded body has real data |
+| 4 | `NotImplementedException: runtime_entersyscall` at `syscall.Syscall` ← `os.File.Write` ← `fmt.Println` | **(w) wiring** | Scheduler brackets pulled from runtime; forwarding is impossible (`getcallerfp`/`getcallerpc`/`getcallersp` then the P state machine) and unnecessary — the CLR's thread model discharges the obligation | `core/syscall/linux/syscall_linux_impl.cs`, both as documented no-ops |
+| — | *(none)* | | Program 2 ran on the **first** attempt after failure 4 — `os.Args`, `os.Setenv`/`Getenv`/`LookupEnv` and `time.Now()` all worked with no further change | |
+
+Failure 3 is the one worth carrying forward as a lesson rather than a fix. It is the only failure in
+either lane's log where the obvious change would have **passed the run and been wrong**: `os.Args`
+would have come back empty, `len(os.Args)` would have printed `0`, and nothing would have thrown.
+The registry row and the module initializer are one change for that reason.
+
+### The success conditions
+
+Both byte-compared against `go run` on the same box (`~/golang/bin/go`, go1.23.1 linux/amd64), C# side
+built by project reference per §1 and run as `dotnet <app>.dll` under WSL2.
+
+**(a) `fmt.Println("hello, 世界")` — BYTE-IDENTICAL, 14 bytes.**
+
+```
+hello, 世界
+```
+```
+00000000: 6865 6c6c 6f2c 20e4 b896 e795 8c0a       hello, .......
+```
+
+The UTF-8 encoding of 世界 and the trailing newline are included in the comparison — this is `cmp`
+over the two captured streams, not an eyeball match.
+
+**(b) `os.Args` + `os.Getenv` + `time.Now()` — BYTE-IDENTICAL, 152 bytes.** Run as
+`prog2 alpha beta` on both sides; every line is a deterministic assertion over a nondeterministic
+value, so the comparison is meaningful rather than trivially true.
+
+```
+args: 3
+argv0 nonempty: true
+env get: round-trip
+env lookup: round-trip true
+env absent found: false
+year>2020: true
+month in range: true
+nonzero: true
+```
+
+`args: 3` is the load-bearing line: it is what distinguishes a populated `argslice` from the
+plausible-looking empty one failure 3 would otherwise have produced.
+
+### Footprint
+
+Three hand-owned files and two registry rows — no change to any converted `.cs` beyond what the two
+rows emit, and nothing Windows-visible.
+
+| Change | Kind |
+|---|---|
+| `core/internal/runtime/syscall/linux/syscall_linux_impl.cs` | hand-own (the keystone) |
+| `core/syscall/linux/syscall_linux_impl.cs` | hand-own (scheduler-bracket no-ops) |
+| `core/runtime/goargs_impl.cs` | hand-own (`argslice` from the CLR; carries Go's own Windows guard) |
+| `linknameForwardTargets["runtime.fcntl"]` | converter registry row (PULL) |
+| `linknamePushTargets["os.runtime_args"]` | converter registry row (bare-shape PUSH) |
+
+### What this does and does not prove
+
+It proves the **run layer**: init completes, the kernel boundary works in both directions, stdout is
+real, and three of the most common standard-library entry points return true answers. It does not
+prove the corpus *operates* on Linux — that is Phase 4's differential oracle, which has never been
+run against a Linux target. The §5 census remains an upper bound on what is still stubbed, and the
+`syscall` package's remaining four raw declarations (`rawSyscallNoError`, `rawVforkSyscall`,
+`runtime_doAllThreadsSyscall`, `cgocaller`) are untouched: nothing on these two paths needs them, and
+writing them speculatively is exactly what this loop is designed not to do.

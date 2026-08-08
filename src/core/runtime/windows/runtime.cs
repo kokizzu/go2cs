@@ -127,7 +127,7 @@ internal static nint syscall_Getpagesize() {
 }
 
 //go:linkname os_runtime_args os.runtime_args
-internal static slice<@string> os_runtime_args() {
+public static slice<@string> os_runtime_args() {
     return append(new @string[]{}.slice(), argslice.ꓸꓸꓸ);
 }
 

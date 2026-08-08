@@ -22,7 +22,9 @@ public static slice<@string> Args;
     Args = runtime_args();
 }
 
-internal static partial slice<@string> runtime_args();
+internal static slice<@string> runtime_args() {
+    return Δruntime.os_runtime_args();
+}
 
 // in package runtime
 

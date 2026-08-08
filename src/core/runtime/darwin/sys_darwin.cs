@@ -645,7 +645,7 @@ internal static partial void sysctlbyname_trampoline();
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static (int32 ret, int32 errno) fcntl(int32 fd, int32 cmd, int32 arg) {
+public static (int32 ret, int32 errno) fcntl(int32 fd, int32 cmd, int32 arg) {
     ref var args = ref heap<fcntl_args>(out var Ꮡargs);
     args = new fcntl_args(fd, cmd, arg, 0, 0);
     libcCall((@unsafe.Pointer)abi.FuncPCABI0(fcntl_trampoline), new @unsafe.Pointer(Ꮡargs));

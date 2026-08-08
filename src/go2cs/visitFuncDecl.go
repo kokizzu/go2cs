@@ -1668,6 +1668,25 @@ var linknameForwardTargets = map[string]bool{
 	// adds a `time` project reference to time/tzdata, which is acyclic: time imports no subpackage
 	// of itself.
 	"time.registerLoadFromEmbeddedTZData": true,
+	// runtime's fcntl, pulled by internal/syscall/unix's fcntl_unix.go
+	// (`//go:linkname fcntl runtime.fcntl` over a bodyless `func fcntl(fd, cmd, arg int32) (int32,
+	// int32)`), and authorized by the matching one-arg handle in runtime/linkname_unix.go. Like the
+	// tzdata entry above, the implementation is ORDINARY CONVERTED Go rather than a hand-written
+	// native body — runtime/os_linux.go's fcntl is three lines over
+	// internal/runtime/syscall.Syscall6, which is real on Linux now that the keystone P/Invoke
+	// exists — so the forwarder is an ordinary cross-assembly call to something that genuinely
+	// works.
+	//
+	// This is the first entry the LINUX flavor needed, and it sits on the very first file any
+	// program opens: os.NewFile calls unix.Fcntl(fd, F_GETFL, 0) to learn whether a descriptor is
+	// non-blocking, and os.init()'s initStdin runs that for stdin before main. Without the row the
+	// stub threw from os_package's type initializer, so `fmt.Println` could not run at all. The
+	// Windows corpus never surfaced it: fcntl_unix.go is `//go:build unix`, so the declaration does
+	// not exist there.
+	//
+	// The pull adds a `runtime` project reference to internal/syscall/unix, which is acyclic —
+	// runtime does not import internal/syscall/unix, directly or transitively.
+	"runtime.fcntl": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose

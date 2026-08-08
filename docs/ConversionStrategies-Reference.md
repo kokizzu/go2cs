@@ -13140,6 +13140,63 @@ file, which makes `internal/concurrent` fully hand-owned — see
 [`Baseline-vs-FullConversion.md`](../src/archived/Baseline-vs-FullConversion.md) for what that does to the package's
 `.csproj`/`package_info.cs`/`README.md`, and for the seeded-reconvert proof in both directions.
 
+### The Linux syscall bottom — ONE libc P/Invoke, and why `r2` is exact rather than approximate
+
+Go reaches the Linux kernel through a single assembly function. `internal/runtime/syscall/asm_linux_amd64.s` loads the call number into `RAX` and `a1..a6` into `RDI, RSI, RDX, R10, R8, R9`, executes `SYSCALL`, and reports `RAX` and `RDX`:
+
+```go
+// internal/runtime/syscall/syscall_linux.go — no body, no linkname, no Go anywhere
+func Syscall6(num, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, errno uintptr)
+```
+
+Everything funnels through it: `syscall`'s `RawSyscall`/`RawSyscall6`/`Syscall`/`Syscall6`, every generated wrapper in `zsyscall_linux_amd64.cs` (open, read, write, close, stat, getrlimit, …), and this package's own `EpollCreate1`/`EpollWait`/`EpollCtl`/`Eventfd`, which is how `internal/poll` and the netpoller reach the kernel. Converted, it is a bodyless partial, so the [`PartialStubGenerator`](#source-generators) filled it with a throw — and because `syscall`'s own `init()` calls `Getrlimit(RLIMIT_NOFILE)` before `os` is usable, that one throw stopped every Linux program before `fmt.Println` could emit a byte.
+
+The hand-own (`core/internal/runtime/syscall/linux/syscall_linux_impl.cs`) binds **glibc's `syscall(2)`** rather than reproducing the instruction — a user ruling, taken over the alternative of mapping each wrapper onto a .NET API. One P/Invoke lights the whole generated surface at once; the per-call alternative is N hand-owns, each independently guessing at semantics the kernel already defines exactly.
+
+```csharp
+[DllImport("libc", EntryPoint = "syscall", SetLastError = true)]
+private static extern nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+```
+
+Three details separate a faithful binding from a plausible one. Each was **measured on linux/amd64** (glibc 2.35, .NET 9) rather than argued from the ABI documents, because each is exactly the kind of claim that reads as obviously true and is expensive when it is not:
+
+* **The variadic.** C declares `long syscall(long number, ...)`; this declares seven fixed native ints. That is correct under SysV AMD64 — integer-class variadic arguments ride the same registers as fixed ones, with the seventh spilling to the stack, which is precisely where glibc's hand-written `syscall.S` reads `a6`. Proven with a real six-argument call: `mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)` returned a live mapping that `munmap` then released. (`AL`, which a true variadic call sets to the vector-register count, is unused by `syscall.S`.)
+* **`r2`.** Go's contract returns `RDX`, which libc's wrapper cannot hand back — the reason the [run-layer finding](phase4/FINDING-linux-run-layer.md) listed it as an open question. It does not need to: the Linux x86-64 convention clobbers only `RCX` and `R11`, so `RDX` still holds what entered the kernel, and the asm's `MOVQ DX, BX` observes `a3` unchanged. Returning `a3` is therefore not a stand-in for `r2` on this architecture — it *is* `r2`. Probed under the real Go runtime: `syscall.Syscall6(SYS_GETPID, …, a3=0xDEADBEEF, …)` returns `r2=0xdeadbeef`. The failure path zeroes `r2`, which the shim mirrors.
+* **`errno`.** libc collapses the kernel's whole `[-4095, -1]` error band to a `-1` return and reports the positive errno out of band — the same number Go's asm produces by negating the raw return — and `SetLastError` lets the CLR capture it before managed code can perturb it. Probed: `openat(AT_FDCWD, NULL)` returns `-1` with `Marshal.GetLastPInvokeError() == 14` (EFAULT).
+
+**One divergence is disclosed rather than papered over:** a syscall that legitimately returns `-1` as a *success* value is indistinguishable from a failure through libc, and would report a stale errno. Go's asm has no such ambiguity because it tests the raw return against the whole band. Nothing the converted corpus reaches behaves that way, and the only true fix is an instruction-level bottom the managed model cannot express.
+
+**The pointer half needed nothing.** These wrappers pass addresses as `uintptr` — `Getrlimit` emits `RawSyscall(SYS_GETRLIMIT, (uintptr)resource, (uintptr)Ꮡrlim, 0)` — and golib's `ж<T>` → `uintptr` operator does not hand out a token: it calls `EnsureStableAddress()` to pin the managed storage and returns a real address, so the kernel genuinely reads and writes through it. The residual risk is per-struct **layout**, not addressing, and it is the same open class as the Windows non-blittable-wrapper census (see `zsyscall_windows_impl.cs`); `Rlimit` is two `uint64`s, so the first crosser was blittable and worked untouched.
+
+**Portability, stated in the file for the arm64 increment:** `asm_linux_arm64.s` puts `a1..a6` in `X0..X5` with the number in `X8` and reads `r2` from `X1` — which holds `a2`, not `a3` — so an arm64 flavor must echo `a2` and must re-run the `r2` probe there rather than inherit this answer. The variadic shortcut is likewise a per-platform judgment (standard AAPCS64 passes variadic integer args in the same registers as named ones; Apple's arm64 ABI deliberately does not), and a musl target would likely need a `NativeLibrary.SetDllImportResolver` fallback.
+
+> **Open: `DllImport` vs `LibraryImport` for the Linux FFI surface.** The source-generated `[LibraryImport]` form is preferable in principle — for an all-blittable signature the native call is equivalent, but it makes a *non-blittable* signature a **compile error** instead of silent runtime marshalling, turning the per-struct layout hazard above into a compile-time guard as the surface grows. It is not adopted here yet because `SYSLIB1062` requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` unconditionally (even for an all-`nint` signature), and that property is **converter-generated** from `usesUnsafeCode`, which sees only the converter's own emission — it is `false` for this package, and hand-editing the `.csproj` would be undone by the next reconvert overlay. Honoring it generally therefore needs a mechanism by which a hand-owned file can declare that its project requires `/unsafe`. Recorded here so the decision is not re-derived; the four existing Windows `DllImport` files are a deliberate per-vintage convention and are not to be churned either way.
+
+### The scheduler brackets are a faithful no-op, not an omission
+
+`syscall_linux.go` pulls the pair that wraps every non-`Raw` kernel call:
+
+```go
+//go:linkname runtime_entersyscall runtime.entersyscall
+func runtime_entersyscall()
+//go:linkname runtime_exitsyscall runtime.exitsyscall
+func runtime_exitsyscall()
+```
+
+Forwarding is the shape this converter reaches for first (see the PULL section above), and it is unavailable here — not marginally: runtime's `entersyscall` opens with `getcallerfp()` / `getcallerpc()` / `getcallersp()`, raw-metal frame intrinsics with no managed realization, and hands them to `reentersyscall`, which drives the P state machine across `sched`, `mp.oldp` and `casgstatus`. None of that state exists in the managed model, so a forwarder faults on the first intrinsic.
+
+`core/syscall/linux/syscall_linux_impl.cs` implements both as empty. That is a *realization*, not a stub: the pair's whole job is to release the P around a blocking call so other goroutines can run on another M, and to reacquire one after. Both are `func()`, they compute nothing any caller consumes, and no converted code reads state they would set — while the obligation they discharge is discharged by the host instead, since a converted goroutine is a .NET thread, a blocking syscall blocks that thread as the CLR expects, and thread-pool injection keeps other work running. This is the same judgment `syscall_impl.cs` records for `runtimeSetenv`/`runtimeUnsetenv`, and it is *not* the fabricated-answer failure mode the project rules against — there is no answer to fabricate. The package's other bodyless declarations (`rawSyscallNoError`, `rawVforkSyscall`, `runtime_doAllThreadsSyscall`, `cgocaller`) are separate questions and stay announcing stubs.
+
+The file lives in `linux/` rather than flat because the declarations it implements are linux-only; a flat implementing part would have no defining declaration on Windows. See *Hand-owns have a platform*.
+
+### `runtime.argslice` — forwarding and populating are ONE change
+
+`os.init()` on unix assigns `Args = runtime_args()`, a bare-shape PUSH whose pushed body is ordinary converted Go: `append([]string{}, argslice...)`. Adding the registry row alone would have *worked* and been wrong — `runtime.argslice` is filled by `goargs()` reading the argv vector off the initial stack, a raw address the CLR does not hand out, so `os.Args` would have come back **empty**: not an error, just a plausible-looking wrong answer.
+
+`core/runtime/goargs_impl.cs` is the sibling of `goenvs_impl.cs` and closes that: a `[ModuleInitializer]` — the faithful stand-in for schedinit's slot, running once before any converted Go code in the assembly — fills `argslice` from `Environment.GetCommandLineArgs()`, which is the managed mirror of the same vector (measured under `dotnet prog.dll alpha beta`: `{".../prog.dll", "alpha", "beta"}` — the program followed by its arguments, exactly Go's shape; *not* `Environment.ProcessPath`, which names the host, and *not* Main's `args`, which omits element zero). The row and the companion therefore land together, or the pair announces a falsehood.
+
+**Windows is untouched in both halves**, and by Go's own construction rather than by an exception: `goargs()` itself opens `if GOOS == "windows" { return }`, and the companion keeps that guard verbatim, so `argslice` stays unset exactly as in Go — which is what `runtime_boring.cs`'s `boring_runtime_arg0` already documents and depends on ("On Windows, argslice is not set").
+
 ### `internal/weak.Pointer` — the CLR already has weak references, so the runtime handle becomes one
 
 `internal/weak` is `unique`'s liveness model, one layer below `internal/concurrent.HashTrieMap` and in
