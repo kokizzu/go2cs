@@ -129,6 +129,21 @@ func packageFuncAccess(goIDName string, isFreeFunction bool) string {
 type linknamePush struct {
 	source string
 	reason string
+
+	// bareDecl records that the CONSUMER declares the symbol with NO `//go:linkname` directive of its
+	// own — a plain bodyless func whose only directive is the two-arg one on the PUSHING side
+	// (`func runtime_envs() []string // in package runtime` in syscall/env_unix.go, pushed by
+	// runtime/runtime.go). That is the standard library's older push shape, every bit as legal as the
+	// one-arg-handle form `unique` and `internal/weak` use, and the corpus contains both — so the
+	// matcher has to accept both.
+	//
+	// It is recorded per entry rather than inferred, so the match still FAILS CLOSED in both
+	// directions: a handle entry will not forward a declaration that carries no handle, and a bare
+	// entry will not forward one that does. Neither shape is verifiable from the consumer's own
+	// syntax — the pushing package's directive is invisible while converting the consumer, which is
+	// the whole reason this registry is curated — so the consumer's shape is part of the same
+	// recorded judgment as the disposition.
+	bareDecl bool
 }
 
 // linknamePushTargets is the registry of `//go:linkname` PUSH destinations the converter resolves,
@@ -152,6 +167,19 @@ var linknamePushTargets = map[string]linknamePush{
 	// never fires (unique's map simply keeps its entries), not a fabricated answer. Before this the
 	// stub threw out of `unique.Make`'s setupMake.Do, taking net/netip and gob's TestNetIP with it.
 	"unique.runtime_registerUniqueMapCleanup": {source: "runtime.unique_runtime_registerUniqueMapCleanup"},
+	// syscall's environment snapshot, pushed by runtime/runtime.go. The pushed body is ordinary
+	// converted Go — `append([]string{}, envs...)` — and `runtime.envs` is genuinely populated in the
+	// managed model by the hand-owned runtime/goenvs_impl.cs module initializer, so the forwarder
+	// hands back the real process environment rather than a plausible-looking empty one.
+	//
+	// This is the BARE consumer shape: syscall/env_unix.go declares `func runtime_envs() []string //
+	// in package runtime` with no directive of its own. Until this row existed the declaration took a
+	// throwing PartialStubGenerator stub, and because `envs` is a package-level var INITIALIZED from
+	// it, the throw came out of syscall's type initializer — taking os.init() and therefore every
+	// Linux program that so much as touches fmt down with it. The Windows corpus never surfaced it
+	// because env_unix.go is `//go:build unix || (js && wasm) || plan9 || wasip1`, so the declaration
+	// does not exist there at all.
+	"syscall.runtime_envs": {source: "runtime.syscall_runtime_envs", bareDecl: true},
 	// internal/weak's two halves, pushed by runtime/mheap.go — the UNHONORABLE class. Both pushed
 	// bodies reach the span allocator: registerWeakPointer → getOrAddWeakHandle → spanOfHeap →
 	// `throw("getWeakHandle on invalid pointer")`, and makeStrongFromWeak reads a handle word out of

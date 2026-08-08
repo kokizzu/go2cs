@@ -117,7 +117,7 @@ internal static slice<@string> envs;
 internal static slice<@string> argslice;
 
 //go:linkname syscall_runtime_envs syscall.runtime_envs
-internal static slice<@string> syscall_runtime_envs() {
+public static slice<@string> syscall_runtime_envs() {
     return append(new @string[]{}.slice(), envs.ꓸꓸꓸ);
 }
 

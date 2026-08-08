@@ -46,10 +46,16 @@ func TestRecurseLinknamePush(t *testing.T) {
 
 	// Inject the fixture's push dispositions, then restore the registry so no other test (or a
 	// later stdlib run in the same process) sees them.
+	// The last three rows are the 2x2 over the consumer's SHAPE. `unauthorized` and `bare` have
+	// identical syntax — a bodyless func with no directive at all — and differ only in what their
+	// registry row records, so together they prove the recorded shape is what decides. `bareMismatch`
+	// closes the other diagonal: a row that says bare will not forward a declaration carrying a handle.
 	entries := map[string]linknamePush{
 		consumerPath + ".pushed":       {source: pusherPath + ".push_pushed"},
 		consumerPath + ".unhonorable":  {source: pusherPath + ".push_unhonorable", reason: "the fixture's pushed body has no managed form"},
 		consumerPath + ".unauthorized": {source: pusherPath + ".push_unauthorized"},
+		consumerPath + ".bare":         {source: pusherPath + ".push_bare", bareDecl: true},
+		consumerPath + ".bareMismatch": {source: pusherPath + ".push_bareMismatch", bareDecl: true},
 	}
 
 	for key, push := range entries {
@@ -74,19 +80,24 @@ func TestRecurseLinknamePush(t *testing.T) {
 
 	// The consumer. `pushed` and `unhonorable` carry the one-arg handle and ARE in the registry;
 	// `notPushed` carries the handle but is not; `unauthorized` is in the registry but never opened
-	// itself to a push, so forwarding to it would not be faithful.
+	// itself to a push, so forwarding to it would not be faithful. `bare` is the standard library's
+	// older push shape — bodyless with no directive at all, exactly `syscall.runtime_envs` — and its
+	// row says so; `bareMismatch`'s row says bare but the declaration carries a handle.
 	writeModuleFile(t, filepath.Join(appDir, "main.go"),
 		"package main\n\nimport (\n\t_ \"unsafe\"\n\n\t_ \""+pusherPath+"\"\n)\n\n"+
 			"//go:linkname pushed\nfunc pushed(x int) int\n\n"+
 			"//go:linkname unhonorable\nfunc unhonorable(x int) int\n\n"+
 			"//go:linkname notPushed\nfunc notPushed(x int) int\n\n"+
 			"func unauthorized(x int) int\n\n"+
-			"func main() {\n\tprintln(pushed(1), unhonorable(2), notPushed(3), unauthorized(4))\n}\n")
+			"func bare(x int) int // in package pusher\n\n"+
+			"//go:linkname bareMismatch\nfunc bareMismatch(x int) int\n\n"+
+			"func main() {\n\tprintln(pushed(1), unhonorable(2), notPushed(3), unauthorized(4), bare(5), bareMismatch(6))\n}\n")
 
 	// The pushing side: an ordinary body naming the consumer's symbol.
 	writeModuleFile(t, filepath.Join(appDir, "pusher", "pusher.go"),
 		"package pusher\n\nimport _ \"unsafe\"\n\n"+
-			"//go:linkname push_pushed "+consumerPath+".pushed\nfunc push_pushed(x int) int { return x * 2 }\n")
+			"//go:linkname push_pushed "+consumerPath+".pushed\nfunc push_pushed(x int) int { return x * 2 }\n\n"+
+			"//go:linkname push_bare "+consumerPath+".bare\nfunc push_bare(x int) int { return x + 7 }\n")
 
 	goRoot := build.Default.GOROOT
 
@@ -148,9 +159,30 @@ func TestRecurseLinknamePush(t *testing.T) {
 		t.Errorf("un-registered linkname handle was not left as a bodyless stub:\n%s", mainCs)
 	}
 
-	// A registry entry whose declaration never carried the handle is NOT forwarded — the handle is
-	// Go's authorization for the push.
+	// A registry entry whose declaration never carried the handle is NOT forwarded — a HANDLE row is
+	// asserting Go opened the symbol that way, and this declaration did not.
 	if !strings.Contains(mainCs, "int unauthorized(nint x);") || strings.Contains(mainCs, ".push_unauthorized(") {
 		t.Errorf("linkname push forwarded to a declaration that carries no handle:\n%s", mainCs)
+	}
+
+	// The BARE shape — syntactically identical to `unauthorized`, and forwarded purely because its row
+	// records that shape. This is the standard library's pre-handle push consumer (syscall.runtime_envs,
+	// os.runtime_args), which took a throwing stub until the matcher learned the shape.
+	if !strings.Contains(mainCs, ".push_bare(x);") {
+		t.Errorf("bare-shape linkname push consumer was not forwarded to the pushing definition:\n%s", mainCs)
+	}
+
+	if strings.Contains(mainCs, "int bare(nint x);") {
+		t.Errorf("bare-shape linkname push consumer emitted as a bodyless partial stub, not a forwarder:\n%s", mainCs)
+	}
+
+	if !strings.Contains(pusherCs, "public static nint push_bare(nint x)") {
+		t.Errorf("bare-shape pushing definition not publicized for the cross-assembly forwarder:\n%s", pusherCs)
+	}
+
+	// The other diagonal: a row recording the bare shape must NOT forward a declaration that carries a
+	// handle. The shape is half the judgment, so a mismatch fails closed rather than guessing.
+	if !strings.Contains(mainCs, "int bareMismatch(nint x);") || strings.Contains(mainCs, ".push_bareMismatch(") {
+		t.Errorf("bare-shape row forwarded a declaration that carries a handle:\n%s", mainCs)
 	}
 }

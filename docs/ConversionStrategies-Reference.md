@@ -12950,11 +12950,46 @@ internal static @unsafe.Pointer runtime_registerWeakPointer(@unsafe.Pointer _) {
 The accessibility half mirrors the pull's: a forwarder calls the pushing definition **across an assembly
 boundary**, so `packageFuncAccess` emits that definition `public` from the reverse index `linknamePushSources`.
 The pull arm requires the target's own one-arg handle as Go's authorization; a push carries its authorization on
-the **consumer's** side instead, so this arm reads the registry alone — and the consumer's handle is still
-required, because forwarding into a declaration that never opened itself would not be faithful. Reaching the
+the **pushing** side instead, so this arm reads the registry alone. Reaching the
 pusher can be the only edge to its package, so the path is queued for a project reference exactly as the pull
 queues its target (`linknameTargetAlias`, now shared by both arms, also resolves the file's actual using-alias —
 `unique/handle.cs` spells `Δruntime`, not `runtime`).
+
+**The consumer has TWO shapes, and a row records which one it is** (`bareDecl`, added 2026-08-08). The example
+above is the **handle** shape — a one-arg `//go:linkname <thisFunc>` above the bodyless declaration, Go's modern
+way of opening a symbol to a push, used by `unique` and `internal/weak`. The standard library also pushes into a
+**bare** shape that predates that convention: a bodyless declaration with *no directive at all*, carrying only a
+prose comment saying where the body lives. `syscall` and `os` still use it, and it is every bit as legal:
+
+```go
+// syscall/env_unix.go — the BARE consumer: no directive of its own
+func runtime_envs() []string // in package runtime
+
+// runtime/runtime.go — the PUSHER, where this pair's only directive lives
+//go:linkname syscall_runtime_envs syscall.runtime_envs
+func syscall_runtime_envs() []string { return append([]string{}, envs...) }
+```
+
+The matcher originally required the handle unconditionally (it returned early on `funcDecl.Doc == nil`, before
+even reading the registry), so the bare shape could never resolve — it fell to the `PartialStubGenerator`, and
+because `syscall.envs` is a package-level var *initialized* from that call, the throw came out of `syscall`'s
+type initializer and took `os.init()`, and every Linux program that so much as touches `fmt`, with it. Nothing
+on Windows could see it: `env_unix.go` is `//go:build unix || (js && wasm) || plan9 || wasip1`, so that
+declaration does not exist in the Windows corpus, and the registry's original census was taken against a
+Windows-only emission.
+
+The shape is **recorded per row rather than inferred**, so the match fails closed in both directions: a handle
+row will not forward a bare declaration, a bare row will not forward one carrying a handle, and a two-arg
+directive (a PULL — a different mechanism) is rejected by both arms. Neither shape is verifiable from the
+consumer's own syntax, which is the whole reason this registry is curated, so the shape belongs in the same
+recorded judgment as the disposition (`linknamePushDeclMatches`, `visitFuncDecl.go`). The `syscall.runtime_envs`
+row forwards honorably rather than plausibly: `runtime.envs` really is populated in the managed model, by the
+hand-owned `runtime/goenvs_impl.cs` module initializer, so the forwarder hands back the real process
+environment. Guarded two ways — `TestRecurseLinknamePush` carries the 2x2 over shape (`unauthorized` and `bare`
+are *syntactically identical* and differ only in what their row records, which is what proves the recorded shape
+is what decides), and `TestLinknamePushRegistryMatchesGoSource` checks every row against the real Go source in
+GOROOT: the consumer's declaration exists, is bodyless, matches the recorded shape, and the pushing side really
+does carry the two-arg directive the row vouches for.
 
 **Why a curated registry rather than general detection.** The same reason the pull whitelist exists, plus one
 more that is structural: **the converter never sees the pushing package's directives while converting the

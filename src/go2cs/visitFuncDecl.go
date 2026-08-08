@@ -1771,7 +1771,7 @@ func (v *Visitor) linknameTargetAlias(pkgPath string) string {
 // which packageFuncAccess has emitted public on the other side. An UNHONORABLE entry returns the
 // recorded reason, and the caller emits a panicking stub naming both halves of the pair.
 func (v *Visitor) funcLinknamePush(funcDecl *ast.FuncDecl) (alias string, targetFunc string, reason string, ok bool) {
-	if funcDecl.Doc == nil || funcDecl.Name == nil {
+	if funcDecl.Name == nil {
 		return "", "", "", false
 	}
 
@@ -1781,24 +1781,59 @@ func (v *Visitor) funcLinknamePush(funcDecl *ast.FuncDecl) (alias string, target
 		return "", "", "", false
 	}
 
-	for _, comment := range funcDecl.Doc.List {
-		fields := strings.Fields(comment.Text)
-
-		// //go:linkname <thisFunc> — the one-arg handle, i.e. this declaration is open to a push.
-		if len(fields) != 2 || fields[0] != "//go:linkname" || fields[1] != funcDecl.Name.Name {
-			continue
-		}
-
-		if push.reason != "" {
-			return "", "", fmt.Sprintf("//go:linkname push %s -> %s.%s is not honored: %s", push.source, currentPackagePath, funcDecl.Name.Name, push.reason), true
-		}
-
-		dot := strings.LastIndex(push.source, ".")
-
-		return v.linknameTargetAlias(push.source[:dot]), getSanitizedFunctionName(push.source[dot+1:]), "", true
+	// The declaration's own syntax must match the consumer shape the registry row records.
+	if !linknamePushDeclMatches(funcDecl, push.bareDecl) {
+		return "", "", "", false
 	}
 
-	return "", "", "", false
+	if push.reason != "" {
+		return "", "", fmt.Sprintf("//go:linkname push %s -> %s.%s is not honored: %s", push.source, currentPackagePath, funcDecl.Name.Name, push.reason), true
+	}
+
+	dot := strings.LastIndex(push.source, ".")
+
+	return v.linknameTargetAlias(push.source[:dot]), getSanitizedFunctionName(push.source[dot+1:]), "", true
+}
+
+// linknamePushDeclMatches reports whether a bodyless declaration's own syntax is the consumer shape
+// its registry row records — Go's standard library pushes into TWO shapes and they are distinguished
+// only by what the consumer writes above itself:
+//
+//   - the HANDLE shape (bareDecl false): a one-arg `//go:linkname <thisFunc>` directive, Go 1.23's
+//     way of opening a symbol to a push (unique.runtime_registerUniqueMapCleanup);
+//   - the BARE shape (bareDecl true): no `//go:linkname` directive at all, just a bodyless func and
+//     usually a prose comment saying where the body lives (`func runtime_envs() []string // in
+//     package runtime`). It predates the handle convention and is what syscall and os still use.
+//
+// Requiring each row to match its recorded shape is what keeps this fail-closed: a mis-keyed row
+// cannot quietly forward some unrelated bodyless declaration that happens to share the name, and a
+// consumer carrying a two-arg directive — which is a PULL, a different mechanism entirely — is
+// rejected by both arms rather than being mistaken for an unadorned bare declaration.
+func linknamePushDeclMatches(funcDecl *ast.FuncDecl, bareDecl bool) bool {
+	hasHandle, hasDirective := false, false
+
+	if funcDecl.Doc != nil {
+		for _, comment := range funcDecl.Doc.List {
+			fields := strings.Fields(comment.Text)
+
+			if len(fields) == 0 || fields[0] != "//go:linkname" {
+				continue
+			}
+
+			hasDirective = true
+
+			// //go:linkname <thisFunc> — the one-arg handle, i.e. this declaration is open to a push.
+			if len(fields) == 2 && fields[1] == funcDecl.Name.Name {
+				hasHandle = true
+			}
+		}
+	}
+
+	if bareDecl {
+		return !hasDirective
+	}
+
+	return hasHandle
 }
 
 // writeLinknamePanicStub emits the body of a `//go:linkname` push whose pushed body the managed
