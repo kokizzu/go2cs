@@ -92,6 +92,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |
 | `io` | [`io.md`](current/io.md) | [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) |
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |
+| `log/slog/internal/benchmarks` | [`log.slog.internal.benchmarks.md`](current/log.slog.internal.benchmarks.md) | [`src/core/log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |
 | `math/bits` | [`math.bits.md`](current/math.bits.md) | [`src/core/math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/bits) |

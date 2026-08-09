@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **113 / 215 testable packages validated — 52.6%**
+> ### Phase 4 progress: **114 / 215 testable packages validated — 53.0%**
 >
-> **13,642 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,645 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -116,6 +116,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 534 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. · [proof](validation/current/internal.zstd.md) |
 | [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 59 | 2 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · [proof](validation/current/io.md) |
 | [`io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) | 18 | | The `fs.FS` interface family — named-interface runtime shells, `fs.Glob` deep recursion, `dirFS` walks. · [proof](validation/current/io.fs.md) |
+| [`log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) | 3 |  | The two hand-written `slog.Handler` implementations `log/slog`'s benchmarks measure against, checked for correctness rather than speed — a minimal text handler's rendered output byte-for-byte, and an async handler's ring-buffered `Record` compared attribute by attribute through `slices.EqualFunc` over `slog.Attr.Equal`. · [proof](validation/current/log.slog.internal.benchmarks.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · [proof](validation/current/maps.md) |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. · [proof](validation/current/math.md) |
 | [`math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/bits) | 26 | | Bit-manipulation intrinsics. · [proof](validation/current/math.bits.md) |
