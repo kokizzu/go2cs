@@ -282,3 +282,20 @@
     lands as its own regen bank (CNR behavioral-csproj re-baseline included) at an idle point or
     riding the next rebank arc. History belongs in ConversionStrategies-Reference, not in the
     artifact.
+
+25. **Investigate moving `[GoValueClone]` — and every movable extended attribute — off the
+    mainline type declaration into `package_info.cs`'s `<TypeAccessibility>` records
+    (user-commissioned investigation, 2026-08-09).** The visible converted code should read as
+    close to the Go original as the emission allows; `[GoType] [GoValueClone("intbuf")] partial
+    struct fmt` carries machinery the READER never needs, and package_info.cs already exists to
+    hold exactly this class of per-type record out of view. Scope: (1) find `GoValueClone`'s
+    consumer (generator or golib reflection) and determine whether an assembly-level record keyed
+    by type serves it identically — including any ordering/partial-class constraints; (2) if
+    implementable, migrate emission + consumption with the full A/B discipline (the attribute
+    appears corpus-wide, so this is a regen-bank change; behavioral goldens move); (3) AUDIT the
+    whole extended-attribute surface for the same movability — every attribute the converter stamps
+    on declarations beyond bare `[GoType]` (survey Symbols/golib attribute definitions and the
+    emitters that write them), classifying each as movable / must-stay (e.g. anything a generator
+    needs syntactically ON the declaration) / field-level-different (e.g. `[GoTag]`); (4) record
+    the classification in ConversionStrategies-Reference and move what cleanly moves. Readability
+    is the goal; behavioral identity is the bar.
