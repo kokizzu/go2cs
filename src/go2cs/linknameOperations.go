@@ -197,6 +197,28 @@ var linknamePushTargets = map[string]linknamePush{
 	// exec_windows.go) and goargs_impl.cs keeps goargs()'s own `if GOOS == "windows" { return }`
 	// guard, so argslice stays unset exactly as in Go.
 	"os.runtime_args": {source: "runtime.os_runtime_args", bareDecl: true},
+	// internal/syscall/windows's system-directory query, pushed by runtime/os_windows.go. Unlike the
+	// two rows above this is the HANDLE consumer shape — security_windows.go carries its own one-arg
+	// `//go:linkname GetSystemDirectory` above a bodyless `func GetSystemDirectory() string` — so
+	// bareDecl stays false. It is the first FORWARDED handle-shape row since `unique`.
+	//
+	// The pushed body is one line of ordinary converted Go (`unsafe.String(&sysDirectory[0],
+	// sysDirectoryLen)`), and the precondition the os.runtime_args row spells out had to be made true
+	// first. Go fills `runtime.sysDirectory` in initSysDirectory() with
+	// `stdcall2(_GetSystemDirectoryA, …)`, called from osinit — and NEITHER half runs in the managed
+	// model: osinit is Go's runtime bootstrap, which the converter emits already marked not-run, and
+	// stdcall bottoms out in asmstdcall, a throwing stub. So the buffer stays all-zero and its length
+	// zero, and a forwarder ALONE would have returned "" — turning net's
+	// `hostsFilePath = windows.GetSystemDirectory() + "/Drivers/etc/hosts"` into
+	// "/Drivers/etc/hosts", a plausible-looking wrong answer. The hand-owned
+	// runtime/windows/os_windows_impl.cs module initializer fills the buffer from
+	// Environment.GetFolderPath(SpecialFolder.System), trailing backslash and all, so forwarding and
+	// populating are one change here too.
+	//
+	// What the stub was costing: the throw came out of a package-level VAR INITIALIZER, so it
+	// surfaced from net_package's type initializer — and every httptest consumer dies in net's cctor,
+	// whatever it was actually testing (net/http/cgi's TestCopyError is where it was found).
+	"internal/syscall/windows.GetSystemDirectory": {source: "runtime.windows_GetSystemDirectory"},
 	// internal/weak's two halves, pushed by runtime/mheap.go — the UNHONORABLE class. Both pushed
 	// bodies reach the span allocator: registerWeakPointer → getOrAddWeakHandle → spanOfHeap →
 	// `throw("getWeakHandle on invalid pointer")`, and makeStrongFromWeak reads a handle word out of

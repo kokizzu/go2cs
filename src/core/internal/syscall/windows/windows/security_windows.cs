@@ -118,7 +118,9 @@ public static UntypedInt MAX_PREFERRED_LENGTH => 0xFFFFFFFF;
 // directory, which is typically, though not always, `C:\Windows\System32`.
 //
 //go:linkname GetSystemDirectory
-public static partial @string GetSystemDirectory();
+public static @string GetSystemDirectory() {
+    return go.runtime_package.windows_GetSystemDirectory();
+}
 
 // Implemented in runtime package.
 
