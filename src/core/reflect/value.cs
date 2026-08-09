@@ -2258,8 +2258,7 @@ public static ΔValue AppendSlice(ΔValue s, ΔValue t) {
     return s;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectCopyˢ = "reflect.Copy"u8;
+// go2cs generated this placeholder — func Copy is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // A runtimeSelect is a single case passed to rselect.
 // This must match ../runtime/select.go:/runtimeSelect

@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **113 / 215 testable packages validated — 52.6%**
+> ### Phase 4 progress: **115 / 215 testable packages validated — 53.5%**
 >
-> **13,642 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,771 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -50,6 +50,8 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) | 6 | | The root `crypto` package's cross-cipher invariants — every stream mode's out-of-bounds-write guard (CFB/CTR/OFB/RC4) and the `purego` build-tag assertion the converted corpus is built under. · [proof](validation/current/crypto.md) |
 | [`crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) | 13 | | AES over the `purego` generic implementation — key expansion, the S-box and Te/Td round tables, GF(2⁸) `mul`/`powx`, known-answer encrypt/decrypt vectors, and the CBC/CTR/GCM interface-upgrade probes. · [proof](validation/current/crypto.aes.md) |
 | [`crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) | 18 | | DES and Triple-DES — the initial/final permutation bit shuffles, the substitution tables, semi-weak key pairs, and the full known-answer vector matrix. · [proof](validation/current/crypto.des.md) |
+| [`crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) | 47 | | ECDH key agreement over P-256/P-384/P-521 and X25519 — key generation, the `Bytes`/`NewPublicKey`/`NewPrivateKey` encoding round-trips, shared-secret agreement across curves, the low-order and non-canonical X25519 rejections, and the `crypto.PublicKey`/`crypto.PrivateKey` interface witnesses. · [proof](validation/current/crypto.ecdh.md) |
+| [`crypto/ecdsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdsa) | 82 | | ECDSA sign/verify over the four NIST curves AND the generic `big.Int` `CurveParams` path — the NIST CAVP vector matrix, nonce safety, negative and zero-hash inputs, r±n signature rejection, `ASN1` encoding via `crypto/x509`, and `randomPoint`. · [proof](validation/current/crypto.ecdsa.md) |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. · [proof](validation/current/crypto.hmac.md) |
 | [`crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) | 1 | | The buffer-overlap predicate every cipher mode's in-place guard is built on, over the full offset matrix. · [proof](validation/current/crypto.internal.alias.md) |
 | [`crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) | 14 | | Constant-time modular arithmetic on big naturals — Montgomery domain round-trips, `Exp`, modular add/sub identities, limb expansion and `SetBytes` bounds, all on the `purego` word-at-a-time path. · [proof](validation/current/crypto.internal.bigmod.md) |
