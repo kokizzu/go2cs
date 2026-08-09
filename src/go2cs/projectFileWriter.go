@@ -99,9 +99,36 @@ func prepareProjectFiles(projectName string, packageNamespace string, projectPat
 		projectFileContents = insertFriendAssemblyAccess(projectFileContents)
 	}
 
-	projectFileName := projectPath + projectName + ".csproj"
+	// The FILE is named through the path budget; the CONTENTS above already carry the full canonical
+	// projectName as AssemblyName (hence PackageId) and the full namespace. Identity and label are
+	// deliberately allowed to differ here — see projectFileBaseName.
+	projectFileName := projectPath + projectFileBaseName(projectName) + ".csproj"
 
 	return projectFileName, projectFileContents, nil
+}
+
+// declaredAssemblyName returns the value of the single <AssemblyName> element a rendered project file
+// carries, or "" when the template has none. It reads the rendered CONTENTS rather than inferring the
+// name from the .csproj file name, which since the projectFileBaseName path budget is no longer the
+// same string for a deep import path.
+func declaredAssemblyName(contents string) string {
+	const open = "<AssemblyName>"
+	const close = "</AssemblyName>"
+
+	start := strings.Index(contents, open)
+
+	if start < 0 {
+		return ""
+	}
+
+	start += len(open)
+	end := strings.Index(contents[start:], close)
+
+	if end < 0 {
+		return ""
+	}
+
+	return contents[start : start+end]
 }
 
 // insertFriendAssemblyAccess grants the package's colocated test assembly access to its internal
@@ -279,8 +306,14 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	// dotted name — their DLL/NuGet PackageId identity ($(AssemblyName)) must stay unique across the
 	// package graph (e.g. github.com.fatih.color). Only the AssemblyName changes; the .csproj filename
 	// (the project's identity in the solution/references) is left on the full path.
+	//
+	// The full name is read back out of the CONTENTS, not off the file name: since the path budget
+	// landed (projectFileBaseName), a deep package's file name can be a compressed label while its
+	// AssemblyName is still the full canonical path, and deriving it from the file name would then
+	// match nothing and silently leave the app's AssemblyName on the full dotted path. Reading the
+	// element the template just wrote is also what makes this correct for a user `-csproj` template.
 	if outputType == "Exe" {
-		fullName := strings.TrimSuffix(filepath.Base(projectFileName), ".csproj")
+		fullName := declaredAssemblyName(string(newContents))
 
 		if idx := strings.LastIndex(fullName, "."); idx >= 0 {
 			lastSegment := fullName[idx+1:]

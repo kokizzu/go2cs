@@ -926,6 +926,175 @@ func TestRecurseGoFileFreeContainerDirsKeepDistinctProjectNames(t *testing.T) {
 			t.Errorf("main.cs does not qualify against %q:\n%s", want, mainCs)
 		}
 	}
+
+	// Issue #35's SECOND wall, at the same altitude. Recovering the full import path made every name
+	// correct and, on a deep tree, long: the path is spelled once by the directory and again by the
+	// file name, so the reporter's deepest package emitted a 242-character project path and Visual
+	// Studio then refused to LOAD it — MAX_PATH, which its project loader enforces even where
+	// LongPathsEnabled is on. Nothing emitted anywhere in the output tree may exceed the budget.
+	assertEmittedPathsInsideBudget(t, options.recurseOutputRoot)
+
+	// And the artifact redirection that keeps the DERIVED paths bounded too — obj, bin and the
+	// generator output all multiply the import path rather than merely repeating it, and on the
+	// reporter's tree 1,570 of 1,725 projects produced a generator path over MAX_PATH.
+	props := readGenerated(t, filepath.Join(options.recurseOutputRoot, "Directory.Build.props"))
+
+	for _, want := range []string{"<BaseIntermediateOutputPath>", "<BaseOutputPath>", "Go2csArtifactToken"} {
+		if !strings.Contains(props, want) {
+			t.Errorf("output-root Directory.Build.props does not redirect %s:\n%s", want, props)
+		}
+	}
+
+	targets := readGenerated(t, filepath.Join(options.recurseOutputRoot, "Directory.Build.targets"))
+
+	// The .targets, not the .props: the generated csproj sets CompilerGeneratedFilesOutputPath in the
+	// project body, which beats any .props value. And with NO trailing separator — csc receives it as
+	// /generatedfilesout:"<path>", where a trailing backslash escapes the closing quote and the
+	// compiler is handed the directory as a file name (CS2021).
+	if !strings.Contains(targets, "<CompilerGeneratedFilesOutputPath>$(Go2csArtifactsRoot)gen\\$(Go2csArtifactToken)</CompilerGeneratedFilesOutputPath>") {
+		t.Errorf("output-root Directory.Build.targets does not redirect generator output correctly:\n%s", targets)
+	}
+}
+
+// assertEmittedPathsInsideBudget fails if anything the conversion wrote under root exceeds
+// maxRelativeProjectPath, which is the whole point of the budget: a bound that holds for the TREE, not
+// merely for the one file whose name the derivation controls.
+func assertEmittedPathsInsideBudget(t *testing.T, root string) {
+	t.Helper()
+
+	var longest string
+
+	if err := filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+
+		rel, relErr := filepath.Rel(root, p)
+
+		if relErr != nil {
+			return relErr
+		}
+
+		if len(rel) > len(longest) {
+			longest = rel
+		}
+
+		return nil
+	}); err != nil {
+		t.Fatalf("walking the output root: %v", err)
+	}
+
+	if len(longest) > maxRelativeProjectPath {
+		t.Errorf("emitted path %q is %d characters, over the %d budget", longest, len(longest), maxRelativeProjectPath)
+	}
+}
+
+// TestRecurseDeepImportPathStaysInsideMaxPath is the issue-#35 second-wall regression at full depth,
+// on the reporter's actual shape: a 115-character import path (envoyproxy/go-control-plane's
+// client_side_weighted_round_robin/v3) whose package implements an interface from a SECOND deep
+// module, which is what drives the source generators to compose hint names carrying a namespace
+// twice. Before the budget this emitted a 242-character project path Visual Studio would not load,
+// and a 314-character generated FILE NAME that no Windows can write at any output root — that build
+// died with CS0016 from a nine-character root, with every long-path setting turned on.
+func TestRecurseDeepImportPathStaysInsideMaxPath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "app")
+	pbDir := filepath.Join(root, "pb")
+	gcpDir := filepath.Join(root, "gcp")
+
+	deep := filepath.Join("envoy", "extensions", "load_balancing_policies", "client_side_weighted_round_robin", "v3")
+
+	writeModuleFile(t, filepath.Join(pbDir, "go.mod"), "module google.golang.org/protobuf\n\ngo 1.23\n")
+	writeModuleFile(t, filepath.Join(pbDir, "reflect", "protoreflect", "protoreflect.go"),
+		"package protoreflect\n\ntype Message interface {\n\tDescriptor() string\n}\n\n"+
+			"type ProtoMessage interface {\n\tProtoReflect() Message\n}\n")
+
+	writeModuleFile(t, filepath.Join(gcpDir, "go.mod"),
+		"module github.com/envoyproxy/go-control-plane\n\ngo 1.23\n\n"+
+			"require google.golang.org/protobuf v1.0.0\n\nreplace google.golang.org/protobuf => ../pb\n")
+	writeModuleFile(t, filepath.Join(gcpDir, deep, "config.go"),
+		"package v3\n\nimport pr \"google.golang.org/protobuf/reflect/protoreflect\"\n\n"+
+			"type ClientSideWeightedRoundRobinConfig struct {\n\tName string\n}\n\n"+
+			"func (x *ClientSideWeightedRoundRobinConfig) ProtoReflect() pr.Message {\n\treturn nil\n}\n\n"+
+			"var _ pr.ProtoMessage = (*ClientSideWeightedRoundRobinConfig)(nil)\n")
+
+	writeModuleFile(t, filepath.Join(appDir, "go.mod"),
+		"module renart\n\ngo 1.23\n\nrequire github.com/envoyproxy/go-control-plane v1.0.0\n\n"+
+			// The transitive dependency needs its own require in the MAIN module's go.mod: module
+			// graph pruning (go 1.17+) will not otherwise resolve a replaced indirect dependency.
+			"require google.golang.org/protobuf v1.0.0 // indirect\n\n"+
+			"replace github.com/envoyproxy/go-control-plane => ../gcp\n\n"+
+			"replace google.golang.org/protobuf => ../pb\n")
+	writeModuleFile(t, filepath.Join(appDir, "main.go"),
+		"package main\n\nimport (\n\t\"fmt\"\n\n\tv3 \"github.com/envoyproxy/go-control-plane/"+
+			"envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3\"\n)\n\n"+
+			"func main() {\n\tc := &v3.ClientSideWeightedRoundRobinConfig{Name: \"wrr\"}\n\tfmt.Println(c.Name)\n}\n")
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{
+		goRoot:              goRoot,
+		goPath:              build.Default.GOPATH,
+		go2csPath:           filepath.Join(root, "runtime"),
+		recurseOutputRoot:   filepath.Join(root, "out"),
+		recurse:             true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+	}
+
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	converter := NewModuleConverter(options)
+
+	if err := converter.ConvertModule(appDir); err != nil {
+		t.Fatalf("ConvertModule: %v", err)
+	}
+
+	const canonical = "github.com.envoyproxy.go-control-plane.envoy.extensions.load_balancing_policies." +
+		"client_side_weighted_round_robin.v3"
+
+	deepDir := filepath.Join(options.recurseOutputRoot, "pkg", "github.com", "envoyproxy",
+		"go-control-plane", deep)
+
+	// The name is COMPRESSED, and the file is written where the reference side will look for it.
+	emitted := projectFileBaseName(canonical)
+
+	if emitted == canonical {
+		t.Fatalf("expected the deep project name to be compressed, got the full %q", emitted)
+	}
+
+	if _, err := os.Stat(filepath.Join(deepDir, emitted+".csproj")); err != nil {
+		t.Errorf("deep project file not written at %s: %v", filepath.Join(deepDir, emitted+".csproj"), err)
+	}
+
+	// IDENTITY is untouched by the file-name compression: the assembly — hence the NuGet package id,
+	// which the template derives from it — still spells the full import path.
+	deepCsproj := readGenerated(t, filepath.Join(deepDir, emitted+".csproj"))
+
+	if !strings.Contains(deepCsproj, "<AssemblyName>"+canonical+"</AssemblyName>") {
+		t.Errorf("deep project's AssemblyName is not the full canonical path:\n%s", deepCsproj)
+	}
+
+	assertEmittedPathsInsideBudget(t, options.recurseOutputRoot)
+
+	// The app references the dependency by its compressed name. Declaration and reference sides derive
+	// it independently, from the import path alone — they must agree or the reference dangles.
+	appCsproj := readGenerated(t, filepath.Join(options.recurseOutputRoot, "src", "renart", "renart.csproj"))
+
+	if !strings.Contains(appCsproj, emitted+".csproj") {
+		t.Errorf("app csproj does not reference the deep dependency as %q:\n%s", emitted+".csproj", appCsproj)
+	}
 }
 
 func writeModuleFile(t *testing.T, path, content string) {
