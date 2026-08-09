@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **113 / 215 testable packages validated — 52.6%**
+> ### Phase 4 progress: **114 / 215 testable packages validated — 53.0%**
 >
-> **13,642 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,704 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -138,6 +138,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. · [proof](validation/current/strconv.md) |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. · [proof](validation/current/strings.md) |
 | [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 41 | 10 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
+| [`syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) | 62 | | The Windows system-call surface itself — WTF-8/UTF-16 round-trips across the whole surrogate matrix (lone highs, lone lows, paired, and the astral characters between them), `EscapeArg`'s command-line quoting rules, the environment block, `StartupInfo`/handle inheritance and permuted-fd process launch, `TOKEN_ALL_ACCESS`'s version-dependent value, and `Getwd` over a path far past `MAX_PATH` — the row that needed a converted process to be long-path aware the way every Go binary is. · [proof](validation/current/syscall.md) |
 | [`testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) | 18 | | The `io` testing helpers — the half/one-byte/timeout/error reader wrappers, `DataErrReader`'s final-read fusion, and the read/write loggers' `log` output. · [proof](validation/current/testing.iotest.md) |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |
 | [`testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) | 17 | | The `slog.Handler` conformance harness Go ships for third-party handlers, run against the real `TextHandler`/`JSONHandler` — the whole 17-case matrix of groups, inline and empty groups, `WithAttrs`/`WithGroup` composition, and `LogValuer` resolution. · [proof](validation/current/testing.slogtest.md) |
