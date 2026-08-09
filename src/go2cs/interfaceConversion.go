@@ -684,19 +684,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					aliasQualified := v.getAliasQualifiedTypeName(named, false)
 					adapterBase := convertToCSTypeName(aliasQualified)
 
-					// A COLLISION-RENAMED foreign type resolves through a WHOLE-TYPE `global using`
-					// alias (`imageꓸRGBA` = go.image_package.ΔRGBA), which is a single IDENTIFIER, not
-					// a qualified path — and the adapter is a MEMBER of the declaring package's class,
-					// so composing onto the alias names nothing (`imageꓸRGBAжImage`, CS0246). Rebuild
-					// the base as the file's package qualifier plus the type's EMITTED simple name,
-					// which is what the declaring assembly's generator composed the class from
-					// (image's own casts read `new ΔRGBAжImage(…)`). Only these types reach here:
-					// until the record key was keyed in one spelling they could never match.
-					if !strings.Contains(adapterBase, ".") {
-						if idx := strings.LastIndex(aliasQualified, "."); idx >= 0 {
-							adapterBase = aliasQualified[:idx+1] + simpleCSTypeName(targetTypeName)
-						}
-					}
+					adapterBase = wholeTypeAliasAdapterBase(aliasQualified, adapterBase, targetTypeName)
 
 					return fmt.Sprintf("new %s(%s)", adapterTypeRef(adapterBase, interfaceTypeName), exprResult)
 				}
@@ -732,7 +720,15 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					// class the generator never emits in a same-assembly build (strings_test's
 					// `strings_BuilderжWriter` CS0246).
 					if v.isSameAssemblyPkg(pkg) {
-						adapterBase := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
+						// Same whole-type-alias rebuild as the foreign-adapter arm above: crypto/ecdh's
+						// PublicKey is collision-renamed (ΔPublicKey) and the external test file reaches
+						// it through `global using ecdhꓸPublicKey`, so the alias-qualified render is a
+						// single identifier and the composed `ecdhꓸPublicKeyж_ᴛ1` named nothing (CS0246),
+						// while its un-renamed sibling PrivateKey — rendered `ecdh.PrivateKey` — composed
+						// correctly. The generator anchors this adapter in the production class, so the
+						// reference must read `ecdh.ΔPublicKeyж_ᴛ1`.
+						aliasQualified := v.getAliasQualifiedTypeName(named, false)
+						adapterBase := wholeTypeAliasAdapterBase(aliasQualified, convertToCSTypeName(aliasQualified), targetTypeName)
 
 						return fmt.Sprintf("new %s(%s)", adapterTypeRef(adapterBase, interfaceTypeName), exprResult)
 					}
@@ -851,6 +847,28 @@ func valueAdapterTypeRef(structTypeName string, interfaceTypeName string) string
 	}
 
 	return structSimple + ValueAdapterInfix + ifaceSimple
+}
+
+// wholeTypeAliasAdapterBase rebuilds a pointer-adapter class BASE whose alias-qualified render
+// collapsed to a WHOLE-TYPE `global using` alias — `imageꓸRGBA` = go.image_package.ΔRGBA,
+// `ecdhꓸPublicKey` = go.crypto.ecdh_package.ΔPublicKey. Only a COLLISION-RENAMED type takes that
+// route, and the alias is a single IDENTIFIER, not a qualified path, while the adapter is a MEMBER
+// of the declaring package's class — so composing the adapter infix onto the alias names nothing
+// (`imageꓸRGBAжImage` / `ecdhꓸPublicKeyж_ᴛ1`, CS0246). Rebuild the base as the file's package
+// qualifier plus the type's EMITTED simple name, which is what the declaring generator composed the
+// class from (image's own casts read `new ΔRGBAжImage(…)`). A render that already carries a
+// qualifier — every un-renamed type, e.g. `ecdh.PrivateKey` — is returned untouched, so this is a
+// no-op for them.
+func wholeTypeAliasAdapterBase(aliasQualified, adapterBase, targetTypeName string) string {
+	if strings.Contains(adapterBase, ".") {
+		return adapterBase
+	}
+
+	if idx := strings.LastIndex(aliasQualified, "."); idx >= 0 {
+		return aliasQualified[:idx+1] + simpleCSTypeName(targetTypeName)
+	}
+
+	return adapterBase
 }
 
 func adapterTypeRef(structTypeName string, interfaceTypeName string) string {

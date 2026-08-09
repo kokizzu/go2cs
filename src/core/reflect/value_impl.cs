@@ -270,6 +270,68 @@ public static ΔValue Index(this ΔValue v, nint i) {
 // The result SHARES the source's backing store — golib slices window their T[] — which the
 // round-trip consumers depend on (encoding/binary's TestSliceRoundTrip decodes through the
 // window into the original array).
+// Copy copies src's elements into dst until dst is full or src is exhausted, returning the count.
+// dst and src must share an element type; as a special case src may be a String when dst's element
+// type is byte.
+//
+// The auto form reinterprets BOTH operands' data words as flat `unsafeheader.Slice` headers
+// (`*(*unsafeheader.Slice)(dst.ptr)`) and hands them to typedslicecopy — a raw memory move with no
+// managed form, and on the bridge's never-populated ptr slot it dereferenced a nil ж outright
+// (`op_OnesComplement`). encoding/asn1's parseField copies every parsed []byte into its destination
+// through it, so this NRE was crypto/x509's ParsePKCS8PrivateKey and therefore crypto/ecdsa's
+// TestEqual. Copying element-wise through the same golib container interfaces every other bridged
+// container method uses keeps the aliasing exact: a slice VALUE windows the backing store it shares
+// with its parent, so a write through the indexer is a write the parent sees — which is what Go's
+// typedslicecopy does to the same memory.
+public static nint Copy(ΔValue dst, ΔValue src) {
+    ΔKind dk = dst.kind();
+    if (dk != Array && dk != ΔSlice) {
+        throw panic(Ꮡ(new ValueError("reflect.Copy"u8, dk)));
+    }
+    if (dk == Array) {
+        dst.flag.mustBeAssignable();
+    }
+    dst.flag.mustBeExported();
+    System.Type? dstElem = GoReflect.ElementType(dst.typ_ == nil ? null : dst.typ_.Value.sysType);
+    ΔKind sk = src.kind();
+    bool stringCopy = false;
+    if (sk != Array && sk != ΔSlice) {
+        stringCopy = sk == ΔString && dstElem == typeof(byte);
+        if (!stringCopy) {
+            throw panic(Ꮡ(new ValueError("reflect.Copy"u8, sk)));
+        }
+    }
+    src.flag.mustBeExported();
+    if (!stringCopy) {
+        System.Type? srcElem = GoReflect.ElementType(src.typ_ == nil ? null : src.typ_.Value.sysType);
+        if (dstElem is null || srcElem is null || dstElem != srcElem) {
+            throw panic("reflect.Copy: type mismatch: " + GoReflect.GoTypeName(srcElem) +
+                        " is not assignable to type " + GoReflect.GoTypeName(dstElem));
+        }
+    }
+    // A nil container on either side copies nothing — Go's headers report length 0 there.
+    if (dst.live is not IArray dstArr) {
+        return 0;
+    }
+    nint n;
+    if (stringCopy) {
+        @string s = src.live is @string str ? str : default;
+        n = dstArr.Length < s.Length ? dstArr.Length : s.Length;
+        for (nint i = 0; i < n; i++) {
+            dstArr[i] = s[i];
+        }
+        return n;
+    }
+    if (src.live is not IArray srcArr) {
+        return 0;
+    }
+    n = dstArr.Length < srcArr.Length ? dstArr.Length : srcArr.Length;
+    for (nint i = 0; i < n; i++) {
+        dstArr[i] = srcArr[i];
+    }
+    return n;
+}
+
 public static ΔValue Slice(this ΔValue v, nint i, nint j) {
     ΔKind k = v.kind();
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
@@ -1104,16 +1166,26 @@ private static bool isExportedGoName(string name) {
 
 // Field returns the i'th struct field's descriptor: the projected Go name (blank fields are
 // "_"; a promoted embed carries the embedded type's name), the field's STATIC Go type
-// (dims-stamped when the declaring zero instance reveals an array field's length), and the
-// single-hop Index sequence — Value.FieldByIndex(f.Index) must reach the field (an EMPTY
-// index makes the auto FieldByIndex return the struct itself, which is how gob's encodeStruct
-// walked every wireType field as the whole struct and encIndirect died in Elem-on-struct).
+// (dims-stamped when the declaring zero instance reveals an array field's length), the declared
+// struct TAG, and the single-hop Index sequence — Value.FieldByIndex(f.Index) must reach the
+// field (an EMPTY index makes the auto FieldByIndex return the struct itself, which is how gob's
+// encodeStruct walked every wireType field as the whole struct and encIndirect died in
+// Elem-on-struct).
+//
+// The Tag is a real READ, not a reconstruction, so it satisfies the descriptor rule: the
+// converter emits every tagged field's tag as `[GoTag]` at the declaration and golib's field
+// projection carries it through verbatim. It had never been surfaced, so StructField.Tag came
+// back empty for EVERY converted struct and every tag-driven decoder saw an untagged type —
+// encoding/asn1 marshalled crypto/x509's `optional` NamedCurveOID instead of omitting its nil
+// value, which is the "asn1: structure error: invalid object identifier" behind crypto/ecdsa's
+// TestEqual. Offset/PkgPath/Anonymous stay unpopulated: no truthful read backs them here.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
     GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
     return new StructField(
         Name: (@string)f.Name,
         Type: toType(abi.synthType(f.Type, f.ArrayDims)),
+        Tag: ((StructTag)(@string)f.Tag),
         Index: new slice<nint>(new nint[] { i })
     );
 }

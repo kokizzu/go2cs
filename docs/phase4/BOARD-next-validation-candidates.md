@@ -4758,3 +4758,60 @@ cleared: it is now a **performance** row, not a build row. Banking it needs eith
 where it actually lands) or the string/slice throughput work that would make the measurement moot. A
 lane picking it up should start by timing the C# host solo with no deadline rather than re-rooting
 anything.
+
+### r56f-ecroots — the two EC roots, and a shift-count defect that was a HANG in `math/big`
+
+**Banked: `crypto/ecdh` 47/47, `crypto/ecdsa` 82/82, no disclosures.** Roster 113 → **115** of 215
+(52.6 % → **53.5 %**), 13,642 → **13,771** matching verdicts, 50 disclosed (unchanged). Four roots,
+each isolated to a standalone Go program converted and run against `go run` before anything moved.
+
+**1. An INITIALIZED var never lifted its explicit anonymous declared type.** `visitValueSpec` lifts
+an anonymous struct/interface DECLARED type — but only on the bodyless arm. `var _ interface{
+Equal(x crypto.PublicKey) bool } = &ecdh.PublicKey{}`, the documented-interface witness idiom Go's
+own suites open with, emitted the raw Go text into both the declaration type and the adapter class
+name: 40 diagnostics from one construct. The lift is named from the **Go** identifier, not
+`csIDName` — a blank `_`'s C# name is a synthesized temp in no Go scope, so a lift named from it
+takes the field's own name (CS0102).
+
+**2. The same-assembly pointer-adapter arm composed onto a whole-type alias.** A collision-renamed
+type resolves through `global using ecdhꓸPublicKey = …ΔPublicKey`, a single identifier; gluing the
+adapter infix onto it names nothing (CS0246). The FOREIGN arm has carried the rebuild since
+`imageꓸRGBA`; the same-assembly arm never got it. ecdh shows both halves side by side — `PrivateKey`
+is not renamed, rendered `ecdh.PrivateKey`, and composed correctly all along.
+
+**3. `reflect.StructField.Tag` had NEVER been read — corpus-wide, and silent.** The converter emits
+`[GoTag(…)]` at every tagged field and nothing consumed it, so every converted struct reported as
+UNTAGGED and every tag-driven decoder saw a tagless type. Surfaced as `crypto/x509` marshalling an
+`optional` nil OID instead of omitting it ("asn1: structure error: invalid object identifier"),
+which points nowhere near reflection. Behind it, `reflect.Copy` was still the auto two-header
+`typedslicecopy` and NRE'd on the bridge's empty `ptr` slot. Both now bridged; `Offset`/`PkgPath`/
+`Anonymous` deliberately left unpopulated.
+
+**4. The one to carry forward — `TestINDCCA/P256/Generic` was a HANG, not a performance gap.** This
+board recorded it as a 20-minute timeout with the question open. It is an infinite loop, and the
+fixed path runs in **0.31 s** against Go's 0.66 s, so slowness was never the answer.
+
+Go's shift count is unbounded; C# MASKS it. golib's `GoShift` guards exist for exactly this and the
+converter applies them whenever it cannot prove a count in range — **but only for an UNNAMED basic
+operand.** A NAMED numeric type resolves through the go2cs-gen wrapper operator instead, which did
+the native masked shift, so that entire family kept the wrong answer. `math/big`'s `lehmerSimulate`
+reads `a2 = B.abs[n-2] >> (_W - h)` on `Word`; for a normalized operand `h == 0`, so the count is
+exactly 64. Go yields 0, C# yielded the word. The corrupted Lehmer cosequences make `GCD`'s
+`for len(B.abs) > 1` loop stop converging — an infinite loop inside `math/big`, reached from
+`crypto/elliptic`'s generic `CurveParams` path, so `elliptic.P256().Params().Double(Gx, Gy)` never
+returned. It is value-dependent, which is why it hid: a garbage `a1`/`a2` that fails Collins'
+stopping condition immediately costs only a Euclidean step, so equal-width pairs pass and only pairs
+that make the condition iterate corrupt anything.
+
+The guard now lives in `NumericTypeTemplate`'s `operator <<`/`>>`. That is a **corpus-wide runtime
+semantics change**, so it was gated operationally, not just by compile: the full validated sweep is
+**115/115, 13,771 verdicts, 0 failures**. Worth re-reading the board's own `math/big` 9-of-226 and
+`crypto/elliptic` 4-of-82 censuses against it — both were measured with the masked shift in place.
+
+**Escalation — pre-existing drift, not this lane's.** `src/core/time/package_info_internal_test.cs`
+flips on every sweep: `GoImplicitConv<RuleKind, …ruleKind>(ValueType = …)` moves from
+`"global::go.time_package.ruleKind"` to `"nint"`. The `nint` form is the correct one (the VALUE type
+of `type ruleKind int`), so a converter fix landed after `time` was banked and its committed metadata
+went stale. Confirmed NOT this branch's by building the converter at the merge base `363e728bb` and
+re-running `time`'s `-tests` conversion: the base reproduces the identical flip. It needs a
+re-bank of that one file by whoever owns the fix, not a restore in perpetuity.

@@ -10,10 +10,22 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using cryptoꓸDecrypterOpts = object;
+global using cryptoꓸPrivateKey = object;
+global using cryptoꓸPublicKey = object;
+global using ecdhꓸCurve = go.crypto.ecdh_package.ΔCurve;
+global using ecdhꓸPublicKey = go.crypto.ecdh_package.ΔPublicKey;
+global using execꓸError = go.os.exec_package.ΔError;
+global using osꓸDirEntry = go.io.fs_package.DirEntry;
+global using osꓸFileInfo = go.io.fs_package.FileInfo;
+global using osꓸFileMode = go.io.fs_package.FileMode;
+global using osꓸPathError = go.io.fs_package.PathError;
+global using osꓸSignal = go.os_package.ΔSignal;
 // </ImportedTypeAliases>
 
 using go;
-using static go.main_package;
+using static go.crypto.ecdh_package;
+using static go.crypto.ecdh_test_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -27,6 +39,8 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoTypeAlias("Curve", "ΔCurve")]
+[assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -38,16 +52,25 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<PrivateKey, _ᴛ2>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<nistCurve<P256PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<nistCurve<P384PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<nistCurve<P521PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<x25519Curve, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<ΔPublicKey, _ᴛ1>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<ΔPublicKey, ж<ΔPublicKey>>(Indirect = true)]
 // </ImplicitConversions>
 
-namespace go;
+namespace go.crypto;
 
-[GoTestMatchingConsoleOutput]
-[GoPackage("main")]
-public static partial class main_package
+[GoPackage("ecdh")]
+public static partial class ecdh_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -56,8 +79,16 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct halfword {}
-    internal partial struct signedword {}
-    internal partial struct word {}
+    internal partial interface nistPoint<T> {}
+    internal partial struct nistCurve<Point> {}
+    internal partial struct x25519Curve {}
+    public partial interface ΔCurve {}
+    public partial struct PrivateKey {}
+    public partial struct ΔPublicKey {}
     // </TypeAccessibility>
+}
+
+[GoPackage("ecdh_test")]
+public static partial class ecdh_test_package
+{
 }

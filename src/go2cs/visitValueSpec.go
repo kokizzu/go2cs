@@ -435,6 +435,37 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						}
 					}
 
+					// An EXPLICITLY typed spec whose declared type is (or reaches) an anonymous
+					// struct/interface literal AND which carries an initializer — crypto/ecdh's
+					// documented-interface witnesses, `var _ interface{ Equal(x crypto.PublicKey)
+					// bool } = &ecdh.PublicKey{}`. Only the BODYLESS arm above lifted an explicit
+					// anonymous type, so the initialized form had nothing to resolve to and the raw
+					// Go `interface{…}` text landed in BOTH the declaration type and the value
+					// adapter's class name (whose `{`/`}` then break the member declaration —
+					// CS1519/CS1002/CS1513, and every following member reads as a namespace-level
+					// declaration: CS0106 on each one, a whole-file cascade). Lift under the var
+					// name so both sites resolve to the lifted C# type. The adapter name is minted
+					// earlier in this iteration (convertToInterfaceType, above) as a DEFERRED
+					// marker, so registering the lift here still resolves it at the file-visit
+					// barrier. Mirrors the bodyless arm's lift exactly.
+					// The lift is named from the GO identifier, not from csIDName. For every
+					// ordinary name the two agree (csIDName is that name sanitized, and
+					// getUniqueLiftedTypeName re-sanitizes its argument), but a BLANK `_` var's
+					// csIDName is a synthesized temp (`_ᴛ1ʗ`) that exists in no Go scope — so
+					// getUniqueLiftedTypeName's typeExists check cannot see it and hands the type
+					// the field's own name back, giving one class a type and a field both called
+					// `_ᴛ1ʗ` (CS0102). Passing `_` finds the blank var among the package's defs and
+					// bumps the type to `_ᴛ1`, distinct from the field by construction.
+					if valueSpec.Type != nil {
+						if subStructType, exprType := v.extractStructType(valueSpec.Type); subStructType != nil && !v.liftedTypeExists(subStructType) {
+							v.visitStructType(subStructType, exprType, goIDName, valueSpec.Comment, true, nil)
+						}
+
+						if subInterfaceType, exprType := v.extractInterfaceType(valueSpec.Type); subInterfaceType != nil && !v.liftedTypeExists(subInterfaceType) {
+							v.visitInterfaceType(subInterfaceType, exprType, goIDName, valueSpec.Comment, true, nil)
+						}
+					}
+
 					var csTypeName string
 					var typeLenDeviation token.Pos
 
