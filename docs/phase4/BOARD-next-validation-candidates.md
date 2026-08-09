@@ -4191,6 +4191,102 @@ around it — until the shim reports a count, no `alloc-profile` disclosure at t
 the CLR *provably cannot satisfy* the assert, because nobody has measured the number the assert is
 about.
 
+> **r56d settled the units question by measurement, and the shim no longer presents bytes as a
+> count.** The survey is recorded on the declaration itself (`testing.cs`, `AllocsPerRun`):
+> net9.0/9.0.18 x64 exposes byte totals ONLY — `GetAllocatedBytesForCurrentThread` is exact
+> (40.000 B/object over 1, 10, 1e3, 1e5 allocations of a 40-byte type) but cannot separate count
+> from size, `GCAllocationTick` is a byte-threshold sample (378 events per 1,000,000 allocations,
+> one per ≈105,820 B), `GCSampledObjectAllocation` — whose `ObjectCountForTypeSample` WOULD be a
+> count — raises **zero** events through an in-process `EventListener` in every configuration tried
+> (High `0x200000`, Low `0x2000000`, both, all keywords `0xFFFFFFFFFFFF`, Verbose and Informational)
+> with the GC keyword's own tick count as the live positive control, `System.Runtime`'s 27
+> EventCounters offer only `alloc-rate` (bytes/interval), and runtime events reach an in-process
+> listener **asynchronously** (zero visible immediately after the loop, settling ≈117 ms later), so
+> no event-derived figure could serve a synchronous call regardless. A nonzero result now notes its
+> unit once on the running test; the zero case is left untouched because there the two units agree
+> exactly, so no passing row's output moves (verified: 2,195 passing nistec rows carry no note).
+> **The disclosure question is now answerable** — but it is still the user's, and it has a third
+> option, below.
+
+### r56d-allocdecomp — nistec's 21,964,011 decomposes, and 100 % of it is the `ж<T>` box model
+
+The prize was gated on one number, so the number was decomposed the way r39-osalloc decomposed os's
+9,184. **Method:** a console probe references the converted `crypto/internal/nistec` + `fiat` and
+measures `GC.GetAllocatedBytesForCurrentThread` deltas — the same instrument the shim uses, so the
+figures ARE the ones the test sees. Positive control: the probe's P256 body reads **21,963,547**
+against the pipeline's **21,964,011**, the 464-byte gap being the `rand.Read` the probe substitutes.
+Temporary counters in golib's `ж`/`array`/`slice` constructors (reverted; instrumentation is
+temporary by construction) supplied exact per-class counts.
+
+**Phase decomposition, P224 body (per run) — sums to within 156 B of the whole, the ibyteseq standard:**
+
+| Phase | B/run | Share |
+|:--|--:|--:|
+| `ScalarMult(p, scalar)` | 13,042,167 | 55.2 % |
+| `ScalarBaseMult(scalar)` | 5,592,992 | 23.7 % |
+| `SetBytes(compressed)` | 4,556,755 | 19.3 % |
+| `Bytes()` / `BytesCompressed()` | 203,226 / 203,194 | 0.9 % each |
+| `NewP224Point().SetBytes(out)` | 17,681 | 0.1 % |
+| `NewP224Point().SetGenerator()` | 8,344 | 0.0 % |
+| `make([]byte, 28)` | 104 | 0.0 % |
+| **whole body (control)** | **23,624,307** | 100 % |
+
+**Unit costs close the bill to the BYTE** — three classes, and every field-element operation is
+exactly `(number of field pointers × 128) + (number of address-taken locals × 144)`:
+
+| Operation | Measured | Closes as |
+|:--|--:|:--|
+| `P224Element.Sub` | 528 | 3 × 128 + 1 × 144 |
+| `P224Element.Mul` | 960 | 3 × 128 + 4 × 144 |
+| `P224Element.Add` | 960 | 3 × 128 + 4 × 144 |
+| `P224Element.Square` | 832 | 2 × 128 + 4 × 144 |
+| `P224Point.Add` | 39,464 | ≈43 field ops + 8 `@new` boxes |
+| `P224Point.Double` | 31,552 | same shape |
+
+**Allocation COUNTS per run** (golib counters; Go's count for all four is **zero**):
+
+| Curve | standard `ж` boxes | of which pinnable `T[1]` | field-ref `ж` boxes | `array<T>` backings | total objects | bytes |
+|:--|--:|--:|--:|--:|--:|--:|
+| P224 | 106,472 | 86,930 | 66,081 | 3,373 | **263,049** | 23,624,307 |
+| P256 | 97,389 | 76,513 | 63,786 | 3,386 | **241,077** | 21,963,547 |
+| P384 | 200,133 | 168,947 | 94,993 | 4,992 | **469,068** | 40,754,499 |
+| P521 | 386,667 | 343,898 | 129,963 | 6,783 | **867,314** | 72,242,788 |
+
+**Ownership, per class — none of it is established-class waste, and that is the finding:**
+
+1. **field-ref boxes, 128 B (`of(…)`, i.e. Go's `&e.x`)** — a fresh `ж<array<uint64>>` per call.
+   Go's `&e.x` is free and yields the same pointer every time, so *memoizing the box per
+   (source, accessor)* is semantically faithful — but it is r39 item 1's territory and changes
+   pinning lifetime, so it is **chip-class, design-WITH-user**, not a lane fix.
+2. **address-taken locals, 144 B (`heap(new uint64(), out var Ꮡx)`)** — Go's `var x uint64; &x`
+   handed to `p224CmovznzU64`, a stack variable there. 144 B = the `ж` box plus the `T[1]` pinnable
+   slot its constructor allocates eagerly for an unmanaged `T`. Removing the eager slot needs the
+   box pinned by handle instead — again the `ж<T>` architecture.
+3. **`@new<T>()` boxes, 128 B** — Go's comment in `ScalarMult` says it outright: *"The explicit
+   NewP224Point calls get inlined, letting the allocations live on the stack."* The managed model
+   has no inlining that turns a heap box into a frame slot.
+4. **`array<T>` backings, 88 B** — Go's `[4]uint64` is inline in the struct; golib's `array<T>` is a
+   struct wrapping a heap `T[]`.
+
+**The r39-killed classes did NOT reappear** — the hot path has zero dead `unsafe.Pointer` temps,
+zero `GoFunc`/defer frames and zero capture boxes (the only closures are one-time `sync.Once`
+initializers, outside the measured window). Checked explicitly, because a regression there would
+have been a lane fix.
+
+**So nistec does NOT bank, and the reason is honest**: five want-zero rows fail on a real
+divergence, ruling #1 stands (a want-zero assert is satisfiable in principle, so it is not a
+disclosure), and no established class remains to fix. Roster unchanged at **110/215**. The 2,200
+verdicts are gated on the **`ж<T>` box arc** — the same arc `os`'s residual named — which makes that
+arc's value 2,200 verdicts larger than it looked.
+
+**The third option for the disclosure decision.** A true allocation COUNT *is* obtainable — not from
+the CLR, but from go2cs's own runtime. golib allocates essentially every Go-semantic object, so
+counting there mirrors precisely what Go's `Mallocs` already is: a runtime-owned counter, not a
+platform facility. r56d proved it works (the count column above IS that instrument). It was
+deliberately not landed: a count that silently omits allocation sites is worse than an honest byte
+figure — the inverse-of-atomic rule — so making golib the counter requires an audited-total census
+of its allocation sites and a ruling on what counts as an allocation. **Design-with-user.**
+
 ### Build roots found in the never-measured tail
 
 | Package | Verdicts | First diagnostic |
