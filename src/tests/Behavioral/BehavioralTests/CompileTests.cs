@@ -1168,6 +1168,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPrintfWidthFlags() => CheckTarget("PrintfWidthFlags");
 
     [TestMethod]
+    public void CheckPromotedEmbedAnonIfaceWitness() => CheckTarget("PromotedEmbedAnonIfaceWitness");
+
+    [TestMethod]
     public void CheckPromotedEmbedLib() => CheckTarget("PromotedEmbedLib");
 
     [TestMethod]
