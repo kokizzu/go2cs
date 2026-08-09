@@ -164,10 +164,14 @@ if ($drift) {
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
     #                       variant's relocated initializers implement (unicode, internal/zstd,
-    #                       time, and internal/buildcfg -- whose test half implements nothing, so
-    #                       the hook is erased again and the committed file stays hookless. time
-    #                       previously landed in the "inspect" bucket every sweep, the exact false
-    #                       alarm this section exists to stop).
+    #                       time, internal/profile, and internal/buildcfg -- whose test half
+    #                       implements nothing, so the hook is erased again and the committed file
+    #                       stays hookless. time previously landed in the "inspect" bucket every
+    #                       sweep, the exact false alarm this section exists to stop).
+    #                       ⚠ THIS LIST IS OWED BY EVERY BANK. A package whose production
+    #                       package_init.cs relocates initializers gains the hook the moment its
+    #                       suite is banked, and it reports as CONTENT drift on every sweep
+    #                       thereafter until its row is added here (internal/profile, 2026-08-09).
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -187,6 +191,7 @@ if ($drift) {
         'src/core/hash/hash.cs'
         'src/core/image/format.cs'
         'src/core/internal/buildcfg/package_init.cs'
+        'src/core/internal/profile/package_init.cs'
         'src/core/internal/zstd/package_init.cs'
         'src/core/math/rand/v2/pcg.cs'
         'src/core/math/rand/v2/rand.cs'
