@@ -477,19 +477,47 @@ public static partial class testing_package
     public static void Skipf(this ж<F> f, @string format, params ꓸꓸꓸany args) => Skipf(ref f.Value, format, args);
 
     /// <summary>
-    /// Reports the average allocation cost per run of f — like Go's testing.AllocsPerRun, with
-    /// one deliberate semantic difference: Go counts MALLOCS (runtime.MemStats.Mallocs delta);
-    /// the CLR exposes no malloc counter, so the shim measures allocated BYTES on the calling
-    /// thread. Zero maps exactly — 0 bytes ⟺ 0 allocations — so the dominant assert-zero stdlib
-    /// tests are faithful; a nonzero result is the average allocated bytes per run (floored at 1
-    /// so amortized sub-byte-per-run allocation can never masquerade as the exact-zero case) — a
-    /// byte-derived approximation, NOT a malloc count, so a test asserting a specific nonzero
-    /// count diverges as a loud failure in the differential oracle instead of silently passing.
-    /// A nonzero return additionally NOTES its unit on the running test (see
-    /// <see cref="TestExecution.NoteMeasurementUnitOnce"/>), because the value is about to be
-    /// rendered by Go's own <c>"got %v allocs"</c> format and must not be read as a count.
+    /// Reports the average allocation cost per run of f — like Go's testing.AllocsPerRun, which
+    /// counts MALLOCS (a <c>runtime.MemStats.Mallocs</c> delta). The CLR publishes no malloc
+    /// counter, so the count comes from go2cs's OWN runtime instead of the platform's:
+    /// <see cref="AllocationCounter"/> charges golib's allocation sites, which is the structural
+    /// mirror of what Go's Mallocs is — a counter the runtime keeps at its own sites, not a
+    /// facility the platform provides.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>Bytes are still measured, as the cross-check that keeps the count honest.</b> The counted
+    /// set cannot be total (see <see cref="AllocationCounter"/>'s coverage statement: allocations
+    /// the C# compiler emits in converted code, BCL internals, and <c>@string</c> materialization
+    /// are outside it), so the count is never trusted on its own:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     zero BYTES ⟹ zero allocations, exactly, in both units — the dominant assert-zero stdlib
+    ///     tests are faithful and their output is unchanged;
+    ///   </description></item>
+    ///   <item><description>
+    ///     nonzero bytes with a nonzero count ⟹ the COUNT is reported, floored at 1;
+    ///   </description></item>
+    ///   <item><description>
+    ///     nonzero bytes with a ZERO count ⟹ allocations happened that the counter did not see, so
+    ///     the byte-derived figure is reported instead. Reporting the zero would be a FALSE PASS,
+    ///     which is worse than the byte figure it would replace.
+    ///   </description></item>
+    /// </list>
+    /// <para>
+    /// The floor at 1 on any nonzero-byte result is inherited from the byte-only shim and kept for
+    /// the same reason: amortized sub-one-per-run allocation must never masquerade as the exact-zero
+    /// case. It also makes the change MONOTONE — a counted object always costs at least the CLR's
+    /// 24-byte object minimum, so the reported value can only fall, never rise, relative to the byte
+    /// figure. No test that passed on bytes can fail on the count.
+    /// </para>
+    /// <para>
+    /// Either way a nonzero return NOTES what was measured on the running test (see
+    /// <see cref="TestExecution.NoteMeasurementUnitOnce"/>), carrying both numbers, because the
+    /// value is about to be rendered by Go's own <c>"got %v allocs"</c> format and a reader — or a
+    /// later disclosure decision — has to be able to see what it is.
+    /// </para>
     /// <para>
     /// GC.GetAllocatedBytesForCurrentThread is precise and inherently scoped to this thread,
     /// which stands in for Go's GOMAXPROCS(1) pinning: other threads' allocations never pollute
@@ -532,14 +560,12 @@ public static partial class testing_package
     ///   </description></item>
     /// </list>
     /// <para>
-    /// A true count IS obtainable from go2cs's own runtime rather than the CLR's — golib
-    /// allocates essentially every Go-semantic object, so counting there mirrors exactly what
-    /// Go's Mallocs is (a runtime-owned counter, not a platform facility). Proven by temporary
-    /// instrumentation in r56d: crypto/internal/nistec's TestAllocations P256 body allocates
-    /// 241 077 golib objects per run for its 21 963 547 bytes. It is deliberately NOT taken here:
-    /// a count that silently omits allocation sites is worse than an honest byte figure, so
-    /// making golib the counter requires an audited-total census of its allocation sites, and
-    /// that is a design-with-user arc rather than something to half-land.
+    /// That survey is what makes the count come from go2cs's own runtime instead. It is taken now
+    /// (r58a) rather than in r56d because a count that silently omits allocation sites is worse
+    /// than an honest byte figure: what the census bought is not totality — which is unreachable,
+    /// the compiler emitting allocations in converted code that golib never sees — but a STATED
+    /// coverage boundary plus the byte cross-check below, so the number can be trusted exactly as
+    /// far as it is true and no further.
     /// </para>
     /// </remarks>
     public static double AllocsPerRun(nint runs, Action f)
@@ -548,29 +574,53 @@ public static partial class testing_package
         // initialization — and JIT compilation here — must not count against f.
         f();
 
-        long start = GC.GetAllocatedBytesForCurrentThread();
+        long startBytes = GC.GetAllocatedBytesForCurrentThread();
+        long startCount = AllocationCounter.CurrentThreadCount;
 
         for (nint i = 0; i < runs; i++)
             f();
 
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - start;
+        // Read the COUNT first: the byte read itself allocates nothing, but reading in this order
+        // keeps the two windows nested rather than overlapping.
+        long counted = AllocationCounter.CurrentThreadCount - startCount;
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - startBytes;
 
-        // Integer division like Go's (its comment: "do the division as integers"); runs == 0
-        // divides by zero — a runtime-error panic exactly where Go's own division panics.
-        double average = Math.Max(1L, allocated / runs);
-
+        // Zero bytes is zero allocations, exactly, in both units. Returning here keeps every
+        // assert-zero test — the dominant stdlib shape — byte-identical in output to the byte-only
+        // shim, and is the reason no banked row's terminal text moves.
         if (allocated == 0L)
             return 0.0D;
 
-        // Only the nonzero case needs the note: at zero the two units agree exactly (0 bytes ⟺
-        // 0 allocations), so nothing is being presented as something it is not — and a test that
-        // passes on the zero answer keeps its output byte-identical to before this seam existed.
-        TestExecution.Current?.NoteMeasurementUnitOnce(
-            $"go2cs: testing.AllocsPerRun measured {allocated:N0} allocated BYTES over {runs:N0} " +
-            "run(s) — the figure reported above is BYTES PER RUN, not an allocation count. Go's " +
-            "AllocsPerRun counts mallocs; the CLR exposes no in-process allocation counter (see " +
-            "the measured survey on testing.AllocsPerRun), so bytes is what is measurable here. " +
-            "Zero is exact in both units; a nonzero value is not comparable to a Go malloc count.");
+        // Something allocated. If the counter saw none of it, the census missed this path
+        // (compiler-emitted closures in converted code, a BCL internal, an @string materialization)
+        // and the count is not usable: reporting its zero would turn a real allocation into a
+        // passing assert. Fall back to the byte figure, which at least cannot understate.
+        bool countUsable = AllocationCounter.Enabled && counted > 0L;
+
+        // Integer division like Go's (its comment: "do the division as integers"); runs == 0
+        // divides by zero — a runtime-error panic exactly where Go's own division panics. The floor
+        // at 1 is what stops amortized sub-one-per-run allocation from masquerading as exact zero.
+        double average = Math.Max(1L, (countUsable ? counted : allocated) / runs);
+
+        // The note carries BOTH numbers on every nonzero result, so the unit is never in doubt and
+        // a disclosure decision can see the count and the byte total together. Only the nonzero
+        // case needs it: at zero the units agree and the test's output must not move.
+        TestExecution.Current?.NoteMeasurementUnitOnce(countUsable
+            ? $"go2cs: testing.AllocsPerRun counted {counted:N0} go2cs-runtime object allocations " +
+              $"({allocated:N0} bytes) over {runs:N0} run(s) — the figure reported above is an " +
+              "allocation COUNT per run, from go2cs's own runtime counter (golib's allocation " +
+              "sites), which is the structural mirror of Go's runtime.MemStats.Mallocs. The CLR " +
+              "publishes no in-process malloc counter (see the measured survey on " +
+              "testing.AllocsPerRun). The count covers golib's sites only: allocations the C# " +
+              "compiler emits in converted code, BCL internals, and @string materialization are " +
+              "outside it, so this is a LOWER BOUND on the true object count."
+            : $"go2cs: testing.AllocsPerRun measured {allocated:N0} allocated BYTES over {runs:N0} " +
+              "run(s) — the figure reported above is BYTES PER RUN, not an allocation count. The " +
+              "go2cs runtime allocation counter charged none of it, so every object on this path " +
+              "was allocated outside golib (compiler-emitted closures in converted code, a BCL " +
+              "internal, or an @string materialization) and no count is available; bytes is what " +
+              "is measurable here. Zero is exact in both units; a nonzero value is not comparable " +
+              "to a Go malloc count.");
 
         return average;
     }

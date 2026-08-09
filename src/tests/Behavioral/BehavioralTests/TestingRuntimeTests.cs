@@ -478,6 +478,79 @@ public class TestingRuntimeTests
         ).Contains(Marker, StringComparison.Ordinal), "a zero AllocsPerRun must add nothing — the units agree there, so passing output must not move");
     }
 
+    [TestMethod]
+    public void AllocsPerRunReportsAGolibObjectCountAndFallsBackToBytesWhenNothingIsCounted()
+    {
+        // r58a: AllocsPerRun reports go2cs's OWN allocation COUNT — golib's runtime counter, the
+        // structural mirror of Go's runtime.MemStats.Mallocs — instead of the byte figure the CLR
+        // is the only thing able to supply. Two arms, and the SECOND is the one that keeps the
+        // first honest.
+        double boxAllocs = double.NaN;
+        double rawAllocs = double.NaN;
+        double zeroAllocs = double.NaN;
+        ж<long>? boxSink = null;
+        byte[]? byteSink = null;
+
+        TestRegistry registry = new("runtime/alloccount", []);
+        registry.Add("TestAllocs", _ =>
+        {
+            // COUNTED: a ж<long> over an unmanaged T allocates exactly two managed objects — the
+            // box and the eager one-element pinnable slot ж.cs's m_slot commentary explains cannot
+            // be deferred. Two is therefore the exact expected COUNT; the same run allocates on the
+            // order of 72-80 BYTES, so this assert distinguishes the units outright and fails if
+            // the counter is ever removed or stops being read.
+            boxAllocs = testing_package.AllocsPerRun(100, () => boxSink = new ж<long>(1L));
+
+            // UNCOUNTED: a raw byte[64] is allocated by the C# compiler in this assembly, never
+            // through golib, so the counter charges nothing for it. Reporting the count's zero here
+            // would be a FALSE PASS on any assert-zero test, so the shim must fall back to bytes.
+            rawAllocs = testing_package.AllocsPerRun(100, () => byteSink = new byte[64]);
+
+            // Zero stays exactly zero in both units.
+            zeroAllocs = testing_package.AllocsPerRun(100, static () => { });
+        }, "runtime_test.go", 1);
+
+        Assert.AreEqual(0, TestHost.Run(registry, []));
+
+        Assert.AreEqual(2.0D, boxAllocs, $"a ж<long> per run is exactly 2 counted objects; got {boxAllocs} (a byte figure would be ~72-80)");
+        Assert.IsTrue(rawAllocs >= 64.0D, $"an allocation golib never sees must fall back to BYTES rather than report a false zero; got {rawAllocs}");
+        Assert.AreEqual(0.0D, zeroAllocs);
+
+        Assert.IsNotNull(boxSink);
+        Assert.IsNotNull(byteSink);
+    }
+
+    [TestMethod]
+    public void AllocsPerRunNoteNamesTheCountWhenCountedAndBytesWhenNot()
+    {
+        // The r56d seam, now carrying two shapes: the note must say which quantity produced the
+        // number, because the value is about to be rendered by Go's own "got %v allocs" format and
+        // a disclosure decision has to be able to see whether it read a count or a byte total.
+        const string CountedMarker = "go2cs: testing.AllocsPerRun counted";
+        const string BytesMarker = "go2cs: testing.AllocsPerRun measured";
+
+        string counted = RunAndCaptureJUnit("runtime/alloccount-counted", static () =>
+        {
+            ж<long>? sink = null;
+            testing_package.AllocsPerRun(100, () => sink = new ж<long>(1L));
+            GC.KeepAlive(sink);
+        });
+
+        Assert.IsTrue(counted.Contains(CountedMarker, StringComparison.Ordinal), "a counted result must name itself an allocation COUNT");
+        Assert.IsTrue(counted.Contains("LOWER BOUND", StringComparison.Ordinal), "a counted result must disclose that golib's census is not total");
+        Assert.IsFalse(counted.Contains(BytesMarker, StringComparison.Ordinal), "a counted result must not also claim to be a byte figure");
+
+        string uncounted = RunAndCaptureJUnit("runtime/alloccount-uncounted", static () =>
+        {
+            byte[]? sink = null;
+            testing_package.AllocsPerRun(100, () => sink = new byte[64]);
+            GC.KeepAlive(sink);
+        });
+
+        Assert.IsTrue(uncounted.Contains(BytesMarker, StringComparison.Ordinal), "an uncounted result must disclose that it fell back to BYTES");
+        Assert.IsFalse(uncounted.Contains(CountedMarker, StringComparison.Ordinal), "an uncounted result must never present itself as a count");
+    }
+
     private static string RunAndCaptureJUnit(string package, Action body)
     {
         string junitPath = Path.Combine(Path.GetTempPath(), $"go2cs-junit-{Guid.NewGuid():N}.xml");
