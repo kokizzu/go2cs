@@ -3707,7 +3707,7 @@ keeps classifying them rather than reporting them as content drift.
 | ~~`log`, `go/scanner`~~ | ~~CS0012~~ | **CLOSED 2026-08-07 (r43f-closure-edge): both edges landed, `go/scanner` BANKED 11/11, `log` does NOT bank — two roots stand behind the closure one. Full account in the last section of this file.** The rooting below called both mechanisms correctly and was wrong about two details worth carrying: `log`'s literal is not `log.Logger{}` but `var l Logger` (a zero-value DECLARATION, in the INTERNAL white-box half — no composite literal exists, which is exactly why no literal walk could see it), and the implemented-interface gate is not `types.Implements` but the package's own emitted VALUE-form `GoImplement` RECORDS: satisfaction alone drifts 16 of the 96 banked projects. Original rooting: ~~**A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.**~~ |
 | `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
 | `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
-| `archive/zip` | CS1929 | The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser` — the pointer/value receiver split on an interface realized through an *embedded* field. |
+| ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. |
 | `testing/fstest` | CS0030 | Converting the test-local named type `shuffledFS` to its underlying `map[string]*MapFile`. |
 | `internal/types/errors` | CS0246 | `Error` / `Info` — names the emitted code does not declare for a test-local enumeration. |
 | `crypto/ecdh` (CS1001), `crypto/ed25519` (CS0030), `crypto/internal/mlkem768` (CS0315), `runtime/debug` (CS0264) | — | not taken past the first diagnostic. |
@@ -4622,3 +4622,108 @@ rebanked**, per the standing doctrine; it belongs to the next deliberate test-so
 recording because it is precisely what the sweep exists to see: CNR covers behavioral projects and
 the reconvert-diff covers production `.cs`, and neither of them can see banked *test* emission going
 stale.
+
+## r56g — dwarf's "missing witness" was a missing METHOD; three defects, one family (2026-08-09)
+
+This board left `debug/dwarf` at **30 of 40** with all ten residual rows on one panic and one
+attribution: *"No witness is minted for that combination... this is the `go2cs-gen`
+`ImplementGenerator` family."* The family was right and the noun was wrong, in a way worth recording
+because it will recur: **no witness CAN be minted for that combination.** An anonymous interface
+asserted from a value held as a *different* named interface is exactly the shape the compile-time
+recorders are blind to by construction — `convTypeAssertExpr` records nothing there deliberately,
+and says so — which is precisely why golib carries a run-time tier. The tier was present, correct,
+and answering MISS, because the method it was asked about **had never been emitted**.
+
+**Roster 117 -> 118 of 215 (54.4% -> 54.9%), 13,659 -> 13,699 matching verdicts, 50 disclosed
+(unchanged).** Lane-local arithmetic; totals recomputed by summing the table, whose pre-bank sum
+reproduces the committed header exactly.
+
+### Root 1 — an exportedness gate on a Go method set
+
+`TypeGenerator` promoted a value embed's **box-receiver (pointer-receiver) primaries** only when the
+embedded type was UNEXPORTED. Go has no such rule: the method set of `*S` contains every
+pointer-receiver method of a value-embedded `E`, because `&s.E` is addressable, whatever `E`'s case.
+
+The gate read as a *scoping* decision, and as one it was defensible — it arrived with the
+cross-package-reachability shim (`testing.T.Errorf`, whose `Ꮡcommon` accessor is `internal`), and for
+an EXPORTED embed the accessor is public, so the converter's own call sites descend inline and need
+no shim. But the converter's call sites are not the only reader. **golib reconstructs a Go method set
+at RUN TIME by scanning the emitted extension methods** (`GetGoMethodSetCandidates`, shared by
+`StructurallyImplements` and `AdapterBinder`'s shell binder). An un-emitted promotion is therefore not
+a missing convenience but an **ABSENT Go method**, and the type silently stops satisfying interfaces
+Go says it satisfies.
+
+**The transferable lesson: an emission gate that appears to control only "which callers can see this"
+stops being a scoping decision the moment something reads the emission as a FACT.** The method-set
+reconstruction is such a reader, and it fails silently — MISS, never a diagnostic. Any future
+narrowing of what gets emitted should be checked against that reader specifically.
+
+### Root 2 — a named field the adapter mistook for an embedded interface
+
+With `Basic()` restored, dwarf reached 37 of 40, and the remaining three exposed something worse than
+a miss. `ImplementGenerator` detects an embedded INTERFACE field by NAME — field name equals its
+interface type's simple name, modulo the `Δ` marker — and that test cannot distinguish a Go embedded
+interface from an ordinary named field whose name equals its type's. Both emit the same C# field.
+dwarf carries both shapes in ONE struct:
+
+```go
+type PtrType struct {
+	CommonType        // a real embed — promotes Common()
+	Type       Type   // an ordinary field — promotes nothing
+}
+```
+
+`Common()` was forwarded through the FIELD, returning the **referenced** type's `CommonType` rather
+than the receiver's own — a silent wrong answer whenever `Type` was non-nil, and a null dereference
+when it was not. Five dwarf structs carry that field shape.
+
+Resolved by **precedence**, since no new signal exists (the two emissions are identical by
+construction): marker-backed **depth-1** value-embed promotion — `public partial ref CommonType
+CommonType { get; }`, a hard converter marker — now resolves ahead of the name heuristic. Legal Go
+guarantees the two can never both be right at depth 1, because promoting one member from two depth-1
+embeds is an ambiguity the Go compiler REJECTS; so a struct where both arms answer is a struct whose
+"interface embed" is really a plain field. Deeper levels stay below the interface arm, matching Go's
+shallower-wins rule. Implemented as two passes of the existing descent (`maxDepth` 1, then 4) so the
+"what can bind at this hop" logic is not duplicated and cannot drift from itself.
+
+### Root 3 — the shim was emitted, and emitted unreachable
+
+Widening root 1 paid a second package immediately and exposed a third defect doing it. `archive/zip`
+was recorded here as build-blocked on *"the generated `ReadCloser`->`fs.FS` witness binds `Open`
+against a `ж<Reader>` receiver while holding a value `ReadCloser`"*. With root 1 fixed the promoted
+`Open(this ж<ReadCloser>)` shim existed — and was emitted **`internal`**, so the test assembly still
+could not bind it.
+
+The scope came from the name heuristic, which reduces a return type to its last dotted segment. For a
+Go MULTI-RETURN that segment is `error)` — lowercase — so **every tuple-returning promoted method**
+read as unexported. The accurate test (`ReturnTypeIsPublic`, via `IsEffectivelyPublicType`, which
+walks tuple elements) already existed but was keyed to the unexported-embed case alone. It now also
+covers the value-embed box shim, which is the *stronger* case for it: that shim exists **to** be
+reachable across assemblies, since it performs a descent the caller cannot spell, so emitting it
+internal defeats its own purpose. Every other promotion keeps the conservative heuristic.
+
+`archive/zip` went from **build-blocked (99 errors)** to **running at 95 of 98** on that one change.
+
+### `archive/zip` — 95 of 98, and the residual is the SLOW class, not a defect
+
+The three residual rows are `TestZip64LargeDirectory` and its two subtests, and they are not
+mismatches: the C# verdict is **empty**, with `{"action":"timeout","elapsed":900}` and all three still
+in `run` state. That is the signature `run-validated-sweep.ps1`'s own `$longTimeouts` comment
+describes — *"a timeout with every test up to the cut PASSING, which reads as a failure"* — and it now
+has a third member beside `hash/maphash` and `index/suffixarray`.
+
+Measured: **Go 13.2 s** (`go test -run '^TestZip64LargeDirectory$'`). The C# side did not complete
+under a 15 m deadline, nor under 45 m. The test builds a central directory of `uint32max-1` and then
+`uint32max` BYTES out of ~128 KB records (a 65,535-rune name plus a comment per record) — roughly 4 GiB
+pushed through the converted writer twice, so it is throughput, not an algorithmic divergence: every
+other assertion in the package matches, including the zip64 boundary logic these same tests check at
+smaller sizes.
+
+**Not a disclosure.** The roster admits only `alloc-profile` and `codegen-liveness` — assertions the
+CLR *provably cannot* satisfy — and "too slow" is neither; the same call the board already made for
+`crypto/dsa`. So `archive/zip` does NOT bank here, and is left with its blocker rewritten rather than
+cleared: it is now a **performance** row, not a build row. Banking it needs either a measured deadline
+(the `index/suffixarray` route — add `'archive/zip' = '<N>m'` to `$longTimeouts` once someone measures
+where it actually lands) or the string/slice throughput work that would make the measurement moot. A
+lane picking it up should start by timing the C# host solo with no deadline rather than re-rooting
+anything.
