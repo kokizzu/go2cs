@@ -31,6 +31,10 @@ using System.Runtime.InteropServices;
 // containsManualConversionMarker).
 [module: go.GoManualConversion]
 
+// [LibraryImport] requires /unsafe unconditionally (SYSLIB1062); this file's function-pointer
+// trampoline needs it independently. Declared rather than inherited — see exec_windows.cs.
+[module: go.GoRequiresUnsafe]
+
 namespace go;
 
 using sysdll = @internal.syscall.windows.sysdll_package;
@@ -58,11 +62,29 @@ partial class syscall_package {
 
 private const uint LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
-[DllImport("kernel32.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode, SetLastError = true)]
-private static extern IntPtr win32LoadLibraryEx(string lpLibFileName, IntPtr hFile, uint dwFlags);
+// CharSet.Unicode becomes StringMarshalling.Utf16, which is the one case where the source-generated
+// form is not merely equivalent: UTF-16 marshalling of a `string` is a PIN, not a transcode, so the
+// generated stub hands LoadLibraryExW the string's own storage.
+[LibraryImport("kernel32.dll", EntryPoint = "LoadLibraryExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+private static partial IntPtr win32LoadLibraryEx(string lpLibFileName, IntPtr hFile, uint dwFlags);
 
-[DllImport("kernel32.dll", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, SetLastError = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-private static extern IntPtr win32GetProcAddress(IntPtr hModule, string lpProcName);
+// GetProcAddress is the migration's one REJECTION that had to be answered with a different
+// signature rather than a different attribute, and the rejection was right.
+//
+// The old declaration was `string` under CharSet.Ansi with BestFitMapping=false and
+// ThrowOnUnmappableChar=true. [LibraryImport] supports neither of those two options at all, so the
+// mechanical translation — StringMarshalling.Custom over AnsiStringMarshaller — would have kept the
+// transcode while SILENTLY dropping the guard that made it safe: an unmappable rune stops throwing
+// and becomes '?', i.e. a lookup of a DIFFERENT symbol.
+//
+// The right answer is that there was never a transcode to preserve. Go passes this entry point a
+// `*byte` — `getprocaddress(handle uintptr, procname *byte)` — with no codepage step anywhere, and
+// the caller below already HOLDS that NUL-terminated byte buffer. The old form decoded it through
+// the ANSI codepage into UTF-16 and the marshaller re-encoded it back, a round trip that is lossy in
+// both directions for any name outside the current codepage. Taking `byte*` deletes both halves and
+// is byte-for-byte what Go does.
+[LibraryImport("kernel32.dll", EntryPoint = "GetProcAddress", SetLastError = true)]
+private static unsafe partial IntPtr win32GetProcAddress(IntPtr hModule, byte* lpProcName);
 
 // The system-call trampoline: invoke the native function at trap with the given uintptr
 // arguments. Mirrors runtime.syscall_syscalln: r2 is only meaningful for floating-point
@@ -124,7 +146,8 @@ private static unsafe (uintptr handle, Errno err) loadLibraryImpl(ж<uint16> fil
 }
 
 public static unsafe (uintptr proc, Errno err) getprocaddress(uintptr handle, ж<uint8> procname) {
-    IntPtr p = win32GetProcAddress((IntPtr)(nint)(nuint)handle.Value, new string((sbyte*)(void*)procname));
+    // Go's own argument, unchanged: the caller's NUL-terminated byte buffer, passed through.
+    IntPtr p = win32GetProcAddress((IntPtr)(nint)(nuint)handle.Value, (byte*)(void*)procname);
 
     if (p == IntPtr.Zero) {
         return (0, (Errno)(uint32)Marshal.GetLastSystemError());
@@ -216,10 +239,24 @@ public static ж<DLL> MustLoadDLL(@string name) {
 
 // FindProc searches [DLL] d for procedure named name and returns [*Proc]
 // if found. It returns an error if search fails.
-public static (ж<Proc> proc, error err) FindProc(this ж<DLL> Ꮡd, @string name) {
+public static unsafe (ж<Proc> proc, error err) FindProc(this ж<DLL> Ꮡd, @string name) {
     ref var d = ref Ꮡd.Value;
 
-    IntPtr addr = win32GetProcAddress((IntPtr)(nint)(nuint)(uintptr)d.Handle, name.ToString());
+    // Go's FindProc calls BytePtrFromString(name) and hands getprocaddress the resulting *byte, so
+    // the bytes Windows sees are the string's OWN bytes plus a terminator — not an ANSI transcode of
+    // them. `new byte[n + 1]` is zero-filled, which supplies the NUL. (BytePtrFromString also
+    // rejects an embedded NUL with EINVAL; that check was absent from this conversion before and is
+    // left absent here rather than smuggled in with a mechanical change — an embedded NUL truncates
+    // the name exactly as it did.)
+    byte[] nameBytes = name;
+    byte[] procName = new byte[nameBytes.Length + 1];
+    nameBytes.CopyTo(procName, 0);
+
+    IntPtr addr;
+
+    fixed (byte* procNamePtr = procName) {
+        addr = win32GetProcAddress((IntPtr)(nint)(nuint)(uintptr)d.Handle, procNamePtr);
+    }
 
     if (addr == IntPtr.Zero) {
         ref var e = ref heap<Errno>(out var _);

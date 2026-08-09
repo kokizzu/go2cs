@@ -40,6 +40,14 @@ public sealed class BodylessPartialMethodFinder : ISyntaxReceiver
 [Generator]
 public class PartialStubGenerator : ISourceGenerator
 {
+    // Attributes that oblige a DIFFERENT source generator to implement the partial method they are
+    // applied to. A declaration carrying one is not an unimplemented Go function and gets no stub;
+    // see the skip in Execute for why the compilation cannot be asked instead. Today the converted
+    // corpus uses exactly one — hand-owned FFI declarations under [LibraryImport] — and a second
+    // (JSImport, GeneratedComInterface, …) would be added here rather than worked around at the
+    // call site.
+    private const string GeneratorImplementedPartialAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
+
     public void Initialize(GeneratorInitializationContext context)
     {
         context.RegisterForSyntaxNotifications(() => new BodylessPartialMethodFinder());
@@ -77,6 +85,19 @@ public class PartialStubGenerator : ISourceGenerator
             // a stub here would throw from the package class's static ctor for every consumer
             // of the production assembly. It is go2cs init machinery, never an asm/cgo function.
             if (identifier == PackageTestInitHookMethod)
+                continue;
+
+            // A partial declaration whose body ANOTHER source generator is contractually obliged to
+            // supply is not a bodyless Go function, and must not be stubbed.
+            //
+            // PartialImplementationPart above cannot answer this: source generators do not observe
+            // each other's output, so from here the [LibraryImport] declaration looks exactly like an
+            // asm function with no companion. Stubbing it produced TWO implementing parts and the
+            // whole package failed with CS0757 — for every P/Invoke at once, and only once a hand-own
+            // adopted the source-generated form. The test is therefore on the ATTRIBUTE, which is the
+            // obligation itself, and it is a semantic lookup so a using-alias cannot hide it.
+            if (symbol.GetAttributes().Any(attribute =>
+                    attribute.AttributeClass?.ToDisplayString() is GeneratorImplementedPartialAttribute))
                 continue;
 
             // Reuse the declaration's exact signature (modifiers, return type, type params,

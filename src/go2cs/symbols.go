@@ -16,6 +16,13 @@ const RootNamespace = "go"                    // Root namespace for all converte
 const PackageSuffix = "_package"              // Suffix of a package's static partial class (e.g. `fmt_package`)
 const PackageInfoFileName = "package_info.cs" // Converter-emitted per-package metadata file
 
+// The two module-scoped attributes a HAND-OWNED .cs file declares to the converter. Each is a
+// real attribute class in golib (<name>Attribute.cs) that is ALSO detected by scanning the
+// file's header text, so its name is shared between a C# declaration and a Go regexp and
+// belongs in this table rather than being spelled out in either side's source.
+const ManualConversionMarker = "GoManualConversion" // [module: go.GoManualConversion] - hand-owned file; never convert over it
+const RequiresUnsafeMarker = "GoRequiresUnsafe"     // [module: go.GoRequiresUnsafe] - hand-owned file needs /unsafe; union into AllowUnsafeBlocks
+
 // Extended Unicode characters are being used to help avoid conflicts with Go identifiers for
 // symbols, markers, intermediate and temporary variables. These characters have to be valid
 // C# identifiers, i.e., Unicode letter characters, decimal digit characters, connecting

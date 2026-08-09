@@ -727,6 +727,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLargeUintptrConst() => CheckTarget("LargeUintptrConst");
 
     [TestMethod]
+    public void CheckLibraryImportPartial() => CheckTarget("LibraryImportPartial");
+
+    [TestMethod]
     public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
 
     [TestMethod]

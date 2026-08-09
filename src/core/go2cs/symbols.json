@@ -38,6 +38,24 @@
       "note": "Name of the per-package metadata file the converter emits."
     },
     {
+      "name": "ManualConversionMarker",
+      "value": "GoManualConversion",
+      "comment": [
+        "The two module-scoped attributes a HAND-OWNED .cs file declares to the converter. Each is a",
+        "real attribute class in golib (<name>Attribute.cs) that is ALSO detected by scanning the",
+        "file's header text, so its name is shared between a C# declaration and a Go regexp and",
+        "belongs in this table rather than being spelled out in either side's source."
+      ],
+      "goTrailing": "[module: go.GoManualConversion] - hand-owned file; never convert over it",
+      "note": "Module-scoped marker a whole-file hand-own carries: containsManualConversionMarker drops the file from the convert set and redirects its emission to a .cs.auto review sibling."
+    },
+    {
+      "name": "RequiresUnsafeMarker",
+      "value": "GoRequiresUnsafe",
+      "goTrailing": "[module: go.GoRequiresUnsafe] - hand-owned file needs /unsafe; union into AllowUnsafeBlocks",
+      "note": "Module-scoped marker a hand-owned file declares when ITS OWN code needs /unsafe that the converter's own emission does not; unioned into the generated .csproj's AllowUnsafeBlocks."
+    },
+    {
       "name": "PointerPrefix",
       "value": "\u0436",
       "csharp": true,

@@ -683,6 +683,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLargeUintptrConst() => CheckTarget("LargeUintptrConst");
 
     [TestMethod]
+    public void CheckLibraryImportPartial() => CheckTarget("LibraryImportPartial");
+
+    [TestMethod]
     public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
 
     [TestMethod]

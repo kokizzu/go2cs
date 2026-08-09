@@ -554,6 +554,25 @@ func CheckBuildConstraints(filename string, targetPlatform string, buildTags []s
 // the "go." namespace prefix. Function will exit early if a class definition is detected, as the
 // marker should appear before class definitions.
 func containsManualConversionMarker(filename string) (bool, error) {
+	return containsModuleMarker(filename, ManualConversionMarker)
+}
+
+// containsRequiresUnsafeMarker checks if a file declares the GoRequiresUnsafe module marker — a
+// hand-owned file stating that its own code needs `/unsafe`, which the converter's `usesUnsafeCode`
+// predicate cannot see because that predicate only observes the converter's OWN emission.
+//
+// Deliberately the same scan as the hand-own marker above rather than a second one: the lexing this
+// shares (stripCSharpComments) is the whole reason a marker mentioned in prose, or one sitting after
+// a line comment that merely LOOKS like it opens a block, is not mistaken for a declaration.
+func containsRequiresUnsafeMarker(filename string) (bool, error) {
+	return containsModuleMarker(filename, RequiresUnsafeMarker)
+}
+
+// containsModuleMarker reports whether a file declares the named module-scoped marker attribute in
+// code — not in a comment. Both spellings C# accepts are matched (with or without the `go.`
+// namespace qualifier, with or without the `Attribute` suffix), and the scan stops at the first
+// class definition because every marker belongs to the file header above it.
+func containsModuleMarker(filename string, markerName string) (bool, error) {
 	// Check if file exists
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return false, nil
@@ -571,7 +590,7 @@ func containsManualConversionMarker(filename string) (bool, error) {
 
 	// Regex to match the module pattern with or without "go." namespace prefix
 	// and with or without the "Attribute" suffix (for C# compatibility)
-	modulePatternRE := regexp.MustCompile(`\[\s*module\s*:\s*(?:go\.)?\s*GoManualConversion(?:Attribute)?\s*\]`)
+	modulePatternRE := regexp.MustCompile(`\[\s*module\s*:\s*(?:go\.)?\s*` + regexp.QuoteMeta(markerName) + `(?:Attribute)?\s*\]`)
 
 	// Regex to detect class definition
 	// This looks for the word "class" surrounded by spaces/boundaries

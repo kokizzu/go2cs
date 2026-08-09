@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>go</RootNamespace>
-    <AssemblyName>time</AssemblyName>
+    <AssemblyName>LibraryImportPartial</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -25,11 +25,6 @@
     <NoWarn>CS0162;CS0164;CS0282;CS0660;CS0661;CS1717;CS1718;CS8618;CS8860;CS8974;CS8981;IDE0060;IDE1006;CA2255</NoWarn>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-
-  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->
-  <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName).tests" />
-  </ItemGroup>
 
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
        $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
@@ -85,14 +80,6 @@
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!-- Ship this package's versioned validation proof sheet as VALIDATION.md inside the nupkg -->
-  <PropertyGroup>
-    <GoValidationProofFile>$(go2csPath)../docs/validation/$(GoStdLibVersion).$(GoBuildNumber)/time.md</GoValidationProofFile>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(OutputType)'=='Library' AND Exists('$(GoValidationProofFile)')">
-    <None Include="$(GoValidationProofFile)" Pack="true" PackagePath="VALIDATION.md" Visible="false" />
-  </ItemGroup>
-
   <!-- Expose output of source generators as local files -->
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -127,21 +114,11 @@
     <Using Include="System.Runtime.CompilerServices.ModuleInitializerAttribute" Alias="GoInitAttribute" />
   </ItemGroup>
 
-  <!-- Selects which per-GOOS source folder this package compiles. Defaults to `windows` so a
-       plain build reproduces the single-platform package this layout replaced; a pack pass sets
-       it explicitly per RID (-p:GoTargetOS=linux). -->
-  <PropertyGroup Condition="'$(GoTargetOS)'==''">
-    <GoTargetOS>windows</GoTargetOS>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Remove all .cs files, including those in sub-folders -->
     <Compile Remove="**/*.cs" />
     <!-- Include only .cs files from current folder -->
     <Compile Include="*.cs" />
-    <!-- Layout L3: this package's platform-varying sources live in per-GOOS subfolders, so
-         exactly one platform's copy joins the compilation (docs/phase4/DESIGN-multiplatform-corpus.md). -->
-    <Compile Include="$(GoTargetOS)/*.cs" />
     <!-- Remove converted test artifacts from current folder (compiled by the colocated
          <name>.tests.csproj instead; the old `*._test.cs` pattern matched nothing the
          converter emits — Go test files are `*_test.go` so their outputs are `*_test.cs`) -->
@@ -153,27 +130,7 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
-    <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/bytealg/internal.bytealg.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/godebug/internal.godebug.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/stringslite/internal.stringslite.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
-    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
-    <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
-  </ItemGroup>
-
-  <!-- Layout L3: this package's direct imports differ by GOOS, so the references that are not
-       common to every platform are selected by $(GoTargetOS)
-       (docs/phase4/DESIGN-multiplatform-corpus.md §8). A group with no items is not noise: it
-       records that the platform takes part in this package's axis and adds nothing beyond the
-       shared list above, which is what lets a single-target reconvert reproduce this file. -->
-  <ItemGroup Condition="'$(GoTargetOS)'=='darwin'" />
-
-  <ItemGroup Condition="'$(GoTargetOS)'=='linux'" />
-
-  <ItemGroup Condition="'$(GoTargetOS)'=='windows'">
-    <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/registry/internal.syscall.windows.registry.csproj" />
+    <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
   </ItemGroup>
 
 </Project>

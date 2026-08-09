@@ -175,6 +175,94 @@ func testsRewriteOfCorePackage(projectFileName string, options Options) bool {
 	return len(cleaned) > len(coreRoot) && strings.EqualFold(cleaned[:len(coreRoot)], coreRoot)
 }
 
+// allowUnsafeBlocks is the value the emitted .csproj's <AllowUnsafeBlocks> takes: the UNION of what
+// the converter's own emission needs (usesUnsafeCode) and what any HAND-OWNED file in the package
+// declares it needs ([module: go.GoRequiresUnsafe]).
+//
+// The union exists because usesUnsafeCode is an emission fact — it is set while visiting Go code, so
+// it sees only C# the converter wrote. A hand-owned file is by definition code the converter did not
+// write, and the .csproj is regenerated on every transpile, so before this a package whose only
+// unsafe need was hand-written had no way to express it: setting the property by hand was undone by
+// the next reconvert overlay, which is precisely what kept the FFI surface on `DllImport` (the
+// [LibraryImport] source generator requires /unsafe unconditionally, SYSLIB1062).
+//
+// It is the same union, and inert for the same reason, as the cross-platform one in platformEmit.go:
+// AllowUnsafeBlocks grants a capability rather than using one, so raising it changes no IL for code
+// that contains nothing unsafe.
+func allowUnsafeBlocks(packageOutputPath string) bool {
+	return usesUnsafeCode || packageDeclaresRequiresUnsafe(packageOutputPath)
+}
+
+// packageDeclaresRequiresUnsafe reports whether any hand-owned C# file already in this package's
+// OUTPUT directory declares [module: go.GoRequiresUnsafe].
+//
+// Reading the output tree is the same contract the hand-own marker itself runs on (conversionDriver
+// probes the destination before converting over it), which means it inherits the same prerequisite:
+// a reconvert must be SEEDED from the committed corpus, or there is nothing on disk to declare
+// anything. That is already CLAUDE.md's non-negotiable reconvert ritual, so this adds no new rule.
+//
+// The walk is the package's own files plus its per-GOOS source folders — never recursive — because a
+// converted package directory can hold NESTED PACKAGES (internal/runtime holds syscall, atomic, …)
+// whose own .csproj answers for them. isPlatformSourceFolder is the same discriminator layout L3
+// uses everywhere else, so `internal/syscall/windows` (a real package whose name is a GOOS) is not
+// read as its parent's Windows sources.
+//
+// The declaration is per PACKAGE rather than per platform on purpose: a .csproj is ONE file serving
+// every $(GoTargetOS), so a per-GOOS hand-own's requirement has to reach the shared property anyway.
+func packageDeclaresRequiresUnsafe(packageOutputPath string) bool {
+	packageDir := packageOutputPath
+
+	if info, err := os.Stat(packageDir); err != nil || !info.IsDir() {
+		// A single-FILE conversion hands its output file path here, not a directory.
+		packageDir = filepath.Dir(packageDir)
+	}
+
+	if declaresRequiresUnsafeInDir(packageDir) {
+		return true
+	}
+
+	entries, err := os.ReadDir(packageDir)
+
+	if err != nil {
+		return false
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() || !isPlatformSourceFolder(packageDir, entry.Name()) {
+			continue
+		}
+
+		if declaresRequiresUnsafeInDir(filepath.Join(packageDir, entry.Name())) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// declaresRequiresUnsafeInDir scans the `.cs` files directly in one directory for the marker. The
+// `.cs.auto` review siblings are excluded by the extension test — they are not compiled, so what
+// they contain cannot need a compiler flag.
+func declaresRequiresUnsafeInDir(dir string) bool {
+	entries, err := os.ReadDir(dir)
+
+	if err != nil {
+		return false
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".cs") {
+			continue
+		}
+
+		if declared, err := containsRequiresUnsafeMarker(filepath.Join(dir, entry.Name())); err == nil && declared {
+			return true
+		}
+	}
+
+	return false
+}
+
 func writeProjectFile(projectFileName string, projectFileContents string, outputFilePath string, pkg *types.Package, options Options) error {
 	// Get assembly output type from the package details
 	outputType := getAssemblyOutputType(pkg)
@@ -183,7 +271,7 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	newContents := []byte(strings.ReplaceAll(string(projectFileContents), OutputTypeMarker, outputType))
 
 	// Replace the unsafe code marker with the actual unsafe code setting
-	newContents = []byte(strings.ReplaceAll(string(newContents), UnsafeMarker, strconv.FormatBool(usesUnsafeCode)))
+	newContents = []byte(strings.ReplaceAll(string(newContents), UnsafeMarker, strconv.FormatBool(allowUnsafeBlocks(outputFilePath))))
 
 	// Go's `go build` names an executable after the LAST element of the main package's import path
 	// (`example.com/colordemo` → `colordemo`), not the full dotted module path. Mirror that for an

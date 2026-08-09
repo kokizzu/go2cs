@@ -1578,9 +1578,11 @@ func Syscall6(num, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, errno uintptr)
 ```
 ```csharp
 // C# — internal/runtime/syscall/linux/syscall_linux_impl.cs
-[DllImport("libc", EntryPoint = "syscall", SetLastError = true)]
-private static extern nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+[LibraryImport("libc", EntryPoint = "syscall", SetLastError = true)]
+private static partial nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
 ```
+
+Every native binding in the corpus is `[LibraryImport]` rather than `[DllImport]`, on both operating systems, for one reason: `[DllImport]` answers a signature it cannot marshal by silently marshalling a COPY, so a kernel writing through the pointer writes into a temporary the caller never reads — a wrong answer at run time. The source generator makes that a compile error instead, which turns the per-struct **layout** risk of routing Go's kernel boundary through managed structs into a build-time question. It costs `/unsafe` unconditionally (SYSLIB1062), and since the `.csproj` is regenerated on every transpile, a hand-owned file states that requirement itself with `[module: go.GoRequiresUnsafe]`, which the emission unions into `<AllowUnsafeBlocks>`.
 
 The pointer half needs nothing extra: these wrappers pass addresses as `uintptr`, and golib's `ж<T>` →
 `uintptr` operator pins the managed storage and yields a real address rather than a token, so the kernel

@@ -59,15 +59,30 @@
 // must re-run probe (2) there rather than inherit this one's answer. The variadic question is also
 // live on that target: standard AAPCS64 passes variadic integer arguments in the same registers as
 // named ones, but Apple's arm64 ABI deliberately does not, so the "declare it fixed" shortcut is a
-// per-platform judgment, not a general one. Library resolution is a third: DllImport("libc") binds
-// on glibc, and a musl target (Alpine) would likely need a NativeLibrary.SetDllImportResolver
+// per-platform judgment, not a general one. Library resolution is a third: LibraryImport("libc")
+// binds on glibc, and a musl target (Alpine) would likely need a NativeLibrary.SetDllImportResolver
 // fallback.
+//
+// THE BINDING IS SOURCE-GENERATED ([LibraryImport]), not runtime-marshalled ([DllImport]). For this
+// all-`nint` signature the two produce an equivalent native call, so the change buys nothing HERE —
+// it is taken for what it does as the surface grows. The whole residual risk of routing Go's kernel
+// boundary through managed structs is per-struct LAYOUT (see the pointer-half note above), and
+// [DllImport] answers a non-blittable signature by silently marshalling a COPY: the kernel then
+// writes into a temporary the caller never reads, which is a wrong ANSWER with no diagnostic. The
+// source generator refuses to emit that call at all, so the same mistake becomes a compile error
+// with a line number. That guard is the entire reason this file's one-line form matters.
 
 using System.Runtime.InteropServices;
 
 // Hand-owned (no syscall_linux_impl.go exists, so a reconvert never regenerates this file);
 // marked for consistency with the other hand-owned operational files in the corpus.
 [module: go.GoManualConversion]
+
+// [LibraryImport] requires /unsafe unconditionally (SYSLIB1062) — the generated stub is written in
+// terms of pointers even when, as here, every parameter is already a native int. The converter's own
+// <AllowUnsafeBlocks> predicate sees only ITS emission, which for this package contains nothing
+// unsafe, so the requirement has to be declared by the file that has it.
+[module: go.GoRequiresUnsafe]
 
 namespace go.@internal.runtime;
 
@@ -77,8 +92,8 @@ partial class syscall_package {
 // note (1) in the file header for why that is correct here despite the C declaration being
 // variadic. EntryPoint keeps the managed name from colliding with the `syscall` namespace
 // segment this package's own name contributes.
-[DllImport("libc", EntryPoint = "syscall", SetLastError = true)]
-private static extern nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+[LibraryImport("libc", EntryPoint = "syscall", SetLastError = true)]
+private static partial nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
 
 // Bit-preserving bridges between Go's uintptr (a golib struct wrapping nuint) and the signed
 // native int the C signature takes. Both directions are pure reinterpretation: the kernel's

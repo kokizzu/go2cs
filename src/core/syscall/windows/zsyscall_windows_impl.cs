@@ -54,6 +54,18 @@ using System.Runtime.InteropServices;
 // marked for consistency with the other hand-owned operational files in this package.
 [module: go.GoManualConversion]
 
+// [LibraryImport] requires /unsafe unconditionally (SYSLIB1062); the blittable mirrors below need it
+// independently for their `fixed` buffers. Declared rather than inherited — see exec_windows.cs.
+//
+// The source generator accepted all five declarations UNCHANGED, and that is why this file is the
+// one worth reading for what the migration BUYS. Every one of them already takes a pointer to an
+// explicitly blittable mirror, which is precisely the discipline the header above spends forty lines
+// arguing for — and which, until now, only a reviewer enforced. Hand any of these the CONVERTED
+// struct instead (the exact defect this file exists to repair, three times over) and the build now
+// fails with a line number, where [DllImport] would have marshalled a copy and let the kernel write
+// 172, 592 or 568 bytes into a temporary nobody reads.
+[module: go.GoRequiresUnsafe]
+
 namespace go;
 
 partial class syscall_package
@@ -88,8 +100,8 @@ partial class syscall_package
         public uint16 Milliseconds;
     }
 
-    [DllImport("kernel32.dll", EntryPoint = "GetTimeZoneInformation", SetLastError = true)]
-    private static extern unsafe uint32 win32GetTimeZoneInformation(NativeTimeZoneInformation* tzi);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetTimeZoneInformation", SetLastError = true)]
+    private static unsafe partial uint32 win32GetTimeZoneInformation(NativeTimeZoneInformation* tzi);
 
     // GetTimeZoneInformation is the native transcription of the generated wrapper — see the file
     // header for why it cannot be a literal conversion. Return values follow the Go original
@@ -181,11 +193,11 @@ partial class syscall_package
         public uint32 HighDateTime;
     }
 
-    [DllImport("kernel32.dll", EntryPoint = "FindFirstFileW", SetLastError = true)]
-    private static extern unsafe nint win32FindFirstFileW(uint16* name, NativeWin32FindDataW* data);
+    [LibraryImport("kernel32.dll", EntryPoint = "FindFirstFileW", SetLastError = true)]
+    private static unsafe partial nint win32FindFirstFileW(uint16* name, NativeWin32FindDataW* data);
 
-    [DllImport("kernel32.dll", EntryPoint = "FindNextFileW", SetLastError = true)]
-    private static extern unsafe int32 win32FindNextFileW(nint handle, NativeWin32FindDataW* data);
+    [LibraryImport("kernel32.dll", EntryPoint = "FindNextFileW", SetLastError = true)]
+    private static unsafe partial int32 win32FindNextFileW(nint handle, NativeWin32FindDataW* data);
 
     // findFirstFile1 is the native transcription of the generated wrapper — see the file header for
     // why it cannot be a literal conversion. Results follow the Go original exactly: the raw HANDLE
@@ -279,11 +291,11 @@ partial class syscall_package
         public fixed uint16 ExeFile[maxPath];
     }
 
-    [DllImport("kernel32.dll", EntryPoint = "Process32FirstW", SetLastError = true)]
-    private static extern unsafe int32 win32Process32First(nint snapshot, NativeProcessEntry32* entry);
+    [LibraryImport("kernel32.dll", EntryPoint = "Process32FirstW", SetLastError = true)]
+    private static unsafe partial int32 win32Process32First(nint snapshot, NativeProcessEntry32* entry);
 
-    [DllImport("kernel32.dll", EntryPoint = "Process32NextW", SetLastError = true)]
-    private static extern unsafe int32 win32Process32Next(nint snapshot, NativeProcessEntry32* entry);
+    [LibraryImport("kernel32.dll", EntryPoint = "Process32NextW", SetLastError = true)]
+    private static unsafe partial int32 win32Process32Next(nint snapshot, NativeProcessEntry32* entry);
 
     // Process32First is the native transcription of the generated wrapper — see the file header for
     // why it cannot be a literal conversion. `procEntry` is left untouched on failure, as in Go,
