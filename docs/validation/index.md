@@ -39,6 +39,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto/subtle` | [`crypto.subtle.md`](current/crypto.subtle.md) | [`src/core/crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) |
 | `database/sql/driver` | [`database.sql.driver.md`](current/database.sql.driver.md) | [`src/core/database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) |
 | `debug/buildinfo` | [`debug.buildinfo.md`](current/debug.buildinfo.md) | [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) |
+| `debug/macho` | [`debug.macho.md`](current/debug.macho.md) | [`src/core/debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) |
 | `debug/plan9obj` | [`debug.plan9obj.md`](current/debug.plan9obj.md) | [`src/core/debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) |
 | `encoding/ascii85` | [`encoding.ascii85.md`](current/encoding.ascii85.md) | [`src/core/encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) |
 | `encoding/base32` | [`encoding.base32.md`](current/encoding.base32.md) | [`src/core/encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base32) |
@@ -54,6 +55,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/doc/comment` | [`go.doc.comment.md`](current/go.doc.comment.md) | [`src/core/go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) |
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
+| `go/internal/gccgoimporter` | [`go.internal.gccgoimporter.md`](current/go.internal.gccgoimporter.md) | [`src/core/go/internal/gccgoimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gccgoimporter) |
 | `go/printer` | [`go.printer.md`](current/go.printer.md) | [`src/core/go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) |
 | `go/scanner` | [`go.scanner.md`](current/go.scanner.md) | [`src/core/go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) |
 | `go/token` | [`go.token.md`](current/go.token.md) | [`src/core/go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) |
@@ -86,6 +88,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/itoa` | [`internal.itoa.md`](current/internal.itoa.md) | [`src/core/internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) |
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
+| `internal/xcoff` | [`internal.xcoff.md`](current/internal.xcoff.md) | [`src/core/internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) |
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |
 | `io` | [`io.md`](current/io.md) | [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) |
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |

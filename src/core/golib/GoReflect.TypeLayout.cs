@@ -34,9 +34,12 @@ namespace go;
 //   over the PROJECTED Go fields (see GoReflect.FieldAccess.cs), which is best-effort composite
 //   fidelity and recorded as such.
 //
-//   Recorded divergence, not a bug to fix in passing: `unsafe.Sizeof` currently answers through a
-//   SEPARATE rule (`Marshal.SizeOf`). Unifying the two onto this one is deferred pending a named
-//   consumer (I2.R R-14, docs/phase4/DESIGN-reflection-bridge-phase3-plan.md).
+//   UNIFIED 2026-08-09 (r56a): `unsafe.Sizeof` now answers through THIS rule too (see
+//   core/unsafe/unsafe.cs), so a Go size has one definition in the runtime rather than two. The
+//   named consumer the deferral (I2.R R-14) was waiting for arrived as three packages at once —
+//   debug/macho, internal/xcoff and go/internal/gccgoimporter all reach `unsafe.Sizeof` through
+//   `internal/saferio.SliceCap[E]` with E bound to a managed type, where the old `Marshal.SizeOf`
+//   rule does not merely disagree with Go, it throws.
 //
 // WHY DIMENSIONS ARE RECOVERED FROM A VALUE AND NOT READ FROM THE TYPE
 //   `array<T>` carries its element type and not its LENGTH, so the managed type alone cannot tell
@@ -66,8 +69,8 @@ public static partial class GoReflect
     /// known (an array whose length the managed type does not carry). Struct sizes follow Go's
     /// alignment rules over the PROJECTED Go fields — best-effort composite fidelity, recorded;
     /// the demonstrated consumer (encoding/binary's sizeof) reads only the scalar kinds.
-    /// NOTE: unsafe.Sizeof currently answers via Marshal.SizeOf — a separate rule; unification
-    /// onto this one is deferred with a named consumer (I2.R R-14).
+    /// <c>unsafe.Sizeof</c> answers through this same rule (unified 2026-08-09), so a descriptor's
+    /// stamped size and an <c>unsafe.Sizeof</c> of the same type can never disagree.
     /// </summary>
     public static nint GoSizeOf(Type t, nint[]? arrayDims = null)
     {
