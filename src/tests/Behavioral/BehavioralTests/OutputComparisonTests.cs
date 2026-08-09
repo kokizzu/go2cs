@@ -1208,6 +1208,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
 
     [TestMethod]
+    public void CheckReflectTypedNilInterface() => CheckTarget("ReflectTypedNilInterface");
+
+    [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]
