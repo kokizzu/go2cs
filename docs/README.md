@@ -318,10 +318,11 @@ internal static void Main() {
 } // end main_package
 ```
 
-> **NOTE — platforms:** _steps 1 and 2 are verified on Linux as well as Windows. Steps 3 and 4 complete on
-> **Windows** today: the published 1.23.1.4 packages carry Windows-only assemblies, so on Linux the C# build
-> of a program whose import closure reaches `syscall` does not yet resolve. Linux support for these two steps
-> is in progress — see the [Roadmap](Roadmap.md)._
+> **NOTE — platforms:** _requires go2cs packages **1.23.1.5 or later**, the first release carrying Linux
+> binaries alongside Windows. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
+> on Linux for programs whose import closure stays within the `fmt`/`os`/`time` class. A closure reaching
+> platform-divergent `syscall` surface (as this example's `x/sys` dependency does) still builds only on
+> Windows — the remaining Linux piece is in progress, see the [Roadmap](Roadmap.md)._
 
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
 converted dependency tree, restoring the go2cs packages on the way; opening it in Visual Studio makes the
