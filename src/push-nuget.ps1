@@ -321,11 +321,16 @@ if (-not (Test-Path $currentProofs)) {
 # README, validated or not, and has nothing to do with docs\validation. Gating it on the proof pages
 # existing would silently ship stale source links on the one run where they had gone missing.
 #
-# Both patterns are anchored on literals only this badge carries -- 'badge/Source-C%23_@' and the
-# repository's '/tree/nuget-'. The version class excludes '-' (it terminates at the badge's colour
-# field) and whitespace/')' (so it can never run past the badge, the lesson the Tests-badge pattern
-# learned the hard way on the 1.23.1.3 run).
-$sourceBadgeVersionPattern = '(badge/Source-C%23_@)[^-\s)]+(-512BD4)'
+# Both patterns are anchored on literals only this badge carries -- 'badge/Source-@' paired with the
+# .NET purple '-512BD4' (the Go Source badge beside it is '-00ADD8', so the colour field is what
+# tells the twins apart since the r51d tidy dropped the language text from the message). The version
+# class excludes '-' (it terminates at the badge's colour field) and whitespace/')' (so it can never
+# run past the badge, the lesson the Tests-badge pattern learned the hard way on the 1.23.1.3 run).
+# ⚠ The 1.23.1.5 run shipped with this pattern still spelling r51c's 'Source-C%23_@' form: the text
+# retarget silently no-opped against r51d's renamed badge while the link retarget matched, and the
+# verifier below SKIPPED files without the stale form instead of failing them -- a vacuous pass.
+# Both are corrected here; the verifier now throws on a README with no C# Source badge at all.
+$sourceBadgeVersionPattern = '(badge/Source-@)[^-\s)]+(-512BD4)'
 $sourceBadgeTagPattern = '(https://github\.com/ritchiecarroll/go2cs/tree/nuget-)[^/\s)]+(/src/core/)'
 $sourceRetargeted = 0
 
@@ -354,7 +359,11 @@ $sourceVerified = 0
 
 foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
     $text = [System.IO.File]::ReadAllText($readme.FullName)
-    if ($text -notmatch 'badge/Source-C%23_@([^-\s)]+)-512BD4') { continue }
+    # Non-package READMEs legitimately carry no badges: the root attribution file, golib's
+    # hand-written runtime README, and testdata corpora (plus anything under build output).
+    if ($readme.Directory.FullName -eq (Join-Path $src 'core')) { continue }
+    if ($readme.FullName -match '\\(testdata|bin|obj)\\' -or $readme.Directory.Name -eq 'golib') { continue }
+    if ($text -notmatch 'badge/Source-@([^-\s)]+)-512BD4') { throw "README without a C# Source badge: $($readme.FullName) -- every package README carries one; a no-match here means the badge form drifted and this retarget is no-opping (the vacuous pass that shipped on the 1.23.1.5 run)" }
 
     if ($Matches[1] -ne $fullVersion) { throw "C# Source badge in $($readme.FullName) states version $($Matches[1]), not $fullVersion" }
 
