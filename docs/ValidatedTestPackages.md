@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **121 / 215 testable packages validated — 56.3%**
+> ### Phase 4 progress: **122 / 215 testable packages validated — 56.7%**
 >
-> **13,890 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,894 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -50,6 +50,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) | 6 | | The root `crypto` package's cross-cipher invariants — every stream mode's out-of-bounds-write guard (CFB/CTR/OFB/RC4) and the `purego` build-tag assertion the converted corpus is built under. · [proof](validation/current/crypto.md) |
 | [`crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) | 13 | | AES over the `purego` generic implementation — key expansion, the S-box and Te/Td round tables, GF(2⁸) `mul`/`powx`, known-answer encrypt/decrypt vectors, and the CBC/CTR/GCM interface-upgrade probes. · [proof](validation/current/crypto.aes.md) |
 | [`crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) | 18 | | DES and Triple-DES — the initial/final permutation bit shuffles, the substitution tables, semi-weak key pairs, and the full known-answer vector matrix. · [proof](validation/current/crypto.des.md) |
+| [`crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) | 4 | | DSA over the converted `math/big` — FIPS 186-3 parameter generation at all four key sizes (a probabilistic prime search run to completion), sign/verify round-trips, the bad-public-key rejection, and the degenerate-key signing contract. · [proof](validation/current/crypto.dsa.md) |
 | [`crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) | 47 | | ECDH key agreement over P-256/P-384/P-521 and X25519 — key generation, the `Bytes`/`NewPublicKey`/`NewPrivateKey` encoding round-trips, shared-secret agreement across curves, the low-order and non-canonical X25519 rejections, and the `crypto.PublicKey`/`crypto.PrivateKey` interface witnesses. · [proof](validation/current/crypto.ecdh.md) |
 | [`crypto/ecdsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdsa) | 82 | | ECDSA sign/verify over the four NIST curves AND the generic `big.Int` `CurveParams` path — the NIST CAVP vector matrix, nonce safety, negative and zero-hash inputs, r±n signature rejection, `ASN1` encoding via `crypto/x509`, and `randomPoint`. · [proof](validation/current/crypto.ecdsa.md) |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. · [proof](validation/current/crypto.hmac.md) |
