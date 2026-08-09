@@ -456,6 +456,54 @@ public class TestingRuntimeTests
     }
 
     [TestMethod]
+    public void AllocsPerRunNotesItsUnitOnlyWhenTheAnswerIsNonzero()
+    {
+        // r56d: the value AllocsPerRun returns is rendered by Go's own "got %v allocs" format,
+        // so a byte figure was reaching the page wearing the word "allocs". A NONZERO result
+        // must therefore name its unit at the seam. The ZERO case must stay silent — there the
+        // two units agree exactly (0 bytes ⟺ 0 allocations), and a passing test's output has to
+        // remain byte-identical to what it was before this seam existed, which is what keeps
+        // every already-banked suite's proof page from moving.
+        const string Marker = "go2cs: testing.AllocsPerRun measured";
+
+        Assert.IsTrue(RunAndCaptureJUnit("runtime/allocnote-nonzero", static () =>
+        {
+            byte[]? sink = null;
+            testing_package.AllocsPerRun(100, () => sink = new byte[64]);
+            GC.KeepAlive(sink);
+        }).Contains(Marker, StringComparison.Ordinal), "a nonzero AllocsPerRun must disclose that its figure is in BYTES");
+
+        Assert.IsFalse(RunAndCaptureJUnit("runtime/allocnote-zero", static () =>
+            testing_package.AllocsPerRun(100, static () => { })
+        ).Contains(Marker, StringComparison.Ordinal), "a zero AllocsPerRun must add nothing — the units agree there, so passing output must not move");
+    }
+
+    private static string RunAndCaptureJUnit(string package, Action body)
+    {
+        string junitPath = Path.Combine(Path.GetTempPath(), $"go2cs-junit-{Guid.NewGuid():N}.xml");
+
+        try
+        {
+            TestRegistry registry = new(package, []);
+
+            // The test fails deliberately: a JUnit record carries a test's captured output, and
+            // failing is the state the real rows this guards are in (nistec's TestAllocations).
+            registry.Add("TestAllocs", pointer =>
+            {
+                body();
+                pointer.Error("deliberate failure so the record carries its output");
+            }, "runtime_test.go", 1);
+
+            Assert.AreEqual(1, TestHost.Run(registry, ["--junit", junitPath]));
+            return File.ReadAllText(junitPath);
+        }
+        finally
+        {
+            File.Delete(junitPath);
+        }
+    }
+
+    [TestMethod]
     public void JUnitOutputSurvivesXmlInvalidCharacters()
     {
         // Real Go test logs legitimately contain XML-invalid characters (unicode/utf8's own
