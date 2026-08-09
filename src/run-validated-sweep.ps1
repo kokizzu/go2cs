@@ -96,7 +96,12 @@ $ErrorActionPreference = 'Continue'
 # the same shape and worse: `TestNew{32,64}/exhaustive3` brute-forces every string up to length 8
 # over a 3-letter alphabet, 12.4 s in Go and ~35 min in C#; under 10m it reports exactly the
 # TestNew64/exhaustive3 tail as empty verdicts.
-$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m' }
+# crypto/dsa is the third member and the one that cost the most to misread: TestParameterGeneration
+# is a probabilistic prime search over the converted math/big and takes 1,156.8 s (19.3 min) in C#
+# against seconds in Go. The board recorded it as "no -test-timeout is enough" after measuring at
+# 6m and again at 20m -- but 20m is just UNDER what the package needs end to end, so the deadline
+# cut a run that was converging. It validates 4/4 at 30m.
+$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package

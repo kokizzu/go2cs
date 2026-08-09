@@ -1582,7 +1582,53 @@ after the flush and the neutered control PASSED — a guard that proved nothing.
 fire for all three mechanisms (drop `offered`: 315–483 of 600; drop the drain: 477 stale of 600;
 drop the `seq` check: stale ticks in all four race sections).
 
-## `math/big` — arithmetic RUNS as of 2026-08-02; one nil-argument root stands in front of a probe
+## `math/big` — **222 of 226** (re-measured 2026-08-09, r57a); three roots left, two of them the alloc model
+
+> **Supersedes the 2026-08-02 state below and the board's `9 of 226` census.** Both were taken with
+> r56f's named-numeric shift-masking defect live — the defect whose corrupted Lehmer cosequences made
+> `GCD`'s `for len(B.abs) > 1` loop stop converging, i.e. an infinite loop inside this very package.
+> With it fixed the suite runs to completion: **226 verdicts, 222 matching, 83 excluded**
+> (examples + benchmarks, Phase-4D). The "nil `x`/`y` GCD panic" recorded below did **not** reproduce;
+> `lehmerGCD`'s converted entry guards its extended outputs correctly (`if (Ꮡx != nil) { x = Ua.Value; … }`,
+> `int.cs:970`) and `big.Rat`'s `SetFrac` → `norm` → `GCD` path runs, so that root is closed too.
+>
+> **The four remaining rows are three roots, and only ONE is a defect:**
+>
+> 1. **`TestNewIntAllocs` — the AllocsPerRun-reports-BYTES shim, fifth member.** Measured 81,600 B over
+>    100 runs; the assert wants `0` allocations from `x.Add(x, NewInt(0))` and is handed `816.000000`
+>    "allocations" that are really bytes per run. Report-never-disclose, per the standing rule.
+> 2. **`TestMulUnbalanced` — the same alloc model, measured honestly in bytes on both sides.**
+>    *"multiplication uses too much memory (20487200 > 51 times the size of inputs)"*. Go reads
+>    `runtime.MemStats.TotalAlloc` around the multiply and bounds it at 51× the input words, so unlike
+>    row 1 the units ARE comparable — the converted `nat` simply allocates far more per word, which is
+>    the `ж<T>`/`slice` box model r56d decomposed to the byte on nistec. **Not a disclosure and not a
+>    correctness failure**: it is the allocation-model overhead stated as a budget, and it will move
+>    when that model does, not before.
+> 3. **`TestGobEncodingNilIntInSlice` / `TestGobEncodingNilRatInSlice` — a REAL defect, and a
+>    general one: Go's TYPED-NIL interface does not survive the conversion.** Both panic identically
+>    with *"interface conversion: interface {} is nil, not gob.GobEncoder"* inside
+>    `gob.EncodeValue` (`encoder.cs:303`). In Go, an element of `make([]*Int, 1)` is a nil `*Int`, so
+>    `v.Interface()` yields a **non-nil interface** carrying `(type=*Int, value=nil)`; the assertion
+>    `.(GobEncoder)` therefore SUCCEEDS and `GobEncode` is dispatched on a nil receiver, which
+>    `math/big` handles explicitly — `func (x *Int) GobEncode() { if x == nil { return nil, nil } }`
+>    (`intmarsh.go:18`). The whole test exists to exercise that contract. In the conversion the nil
+>    `ж<ΔInt>` reaches the interface as a plain `null`, losing its type identity, so the assertion
+>    fails and gob's `catchError` re-panics (correctly — Go re-panics on a non-`gobError` too).
+>    **Scope is corpus-wide, not `math/big`'s**: any `x.(I)` on a typed-nil pointer takes the wrong
+>    arm, and this is one of Go's most load-bearing interface behaviors. Worth noting golib already
+>    has the vocabulary — `ж<T>` distinguishes `IsNilStandardPointer` from a null reference
+>    (`DerefOrNull`, `ж.PointerExtensions.cs:359`), so a typed nil is *representable*; what is missing
+>    is producing one where a nil pointer is boxed into an interface (the reflection bridge's
+>    `Value.Interface()` knows the static type and is the narrow place to start). **Chip-class /
+>    design-with-user**, not a lane fix — it changes what `== nil` means for every converted
+>    interface. Also blocks part of `encoding/gob` (99 of 106).
+>
+> **Consequence for banking: `math/big` cannot bank on roots 1 and 2 regardless of root 3**, so
+> fixing the typed-nil defect pays `encoding/gob` and the corpus, not this row. The package is
+> nonetheless now one of the most thoroughly exercised in the corpus — 222 verdicts across `Int`,
+> `Rat`, `Float`, `nat`, decimal/float conversion, primality, GCD and the marshalling surfaces.
+
+### Historical — the 2026-08-02 state (superseded above)
 
 Until r37-time-os-fin `math/big` was in the 302-package clean compile and could not perform a single
 operation: the `math_big_pure_go` build tag was missing from the default set, so all eight of
@@ -4351,7 +4397,11 @@ the batch CONVERTED; only the C# build or the run failed. This one has a one-lin
 - **`encoding/gob`: 98 → 99 of 106.** `TestNetIP` now passes (the `internal/weak` hand-own let
   `net/netip`'s initializer complete and the value render correctly). The seven remaining failures
   are the same gob-internal set.
-- **`crypto/elliptic` 4 of 82, `math/big` 9 of 226, `go/doc` 24 of 85, `go/parser` 6 of 173,
+- ⚠ **The first two rows below are SUPERSEDED — re-measured 2026-08-09 (r57a) after the r56f shift
+  fix: `crypto/elliptic` is 82 of 82 and BANKED, `math/big` is 222 of 226.** Both were censused with
+  the named-numeric shift-masking defect live, so they measured the defect rather than the package.
+  Treat every census on this list as carrying a timestamp against the corpus it was taken on.
+- **~~`crypto/elliptic` 4 of 82~~, ~~`math/big` 9 of 226~~, `go/doc` 24 of 85, `go/parser` 6 of 173,
   `mime/multipart` 7 of 52, `encoding/asn1` 28 of 38, `net/rpc` 6 of 15, `net/http/httputil` 16 of
   53, `net/http/httptest` 24 of 55, `net/http/cookiejar` 10 of 17, `debug/dwarf` 7 of 40,
   `internal/coverage/cfile` 4 of 16, `go/internal/gcimporter` 399 of 583** — first censuses, all
@@ -4616,9 +4666,9 @@ discard at `file_test.cs:1195`, a build root this fix does not touch.)
 | `internal/trace` | 0 (build) | `batchcursor_test.cs(92): CS0149 Method name expected` — a parameter **named `heap`** shadows golib's `heap()` intrinsic that the same body calls (`ref var sb = ref heap(new strings.Builder(), …)`). A name-collision rule the analysis does not cover: a local or parameter whose name collides with a golib intrinsic the body invokes. |
 | `crypto/internal/edwards25519` | 0 of 55 | **Package-var initialization ORDER.** Go initializes package-level vars in DEPENDENCY order; the converter emits C# static field initializers in DECLARATION order. `identity` is declared at line 66 and reads `feOne`, declared at line 140 — so `identity`'s initializer sees `null`, `field.Subtract` null-derefs, and the package cctor throws before any test runs. This is the board's init-ORDER arc (design-with-user), and this is its first WHOLE-PACKAGE casualty. |
 | `net/smtp` | 9 of 14 | `TestNewClientWithTLS` fails with `loadcert: tls: failed to parse private key`; `TestSendMail`, `TestSendMailWithAuth`, `TestTLSClient` and `TestTLSConnState` infrastructure-error behind it. Shares its root with `crypto/rsa` below — PEM/ASN.1 private-key parsing. |
-| `crypto/rsa` | 0 of 592 (32 top-level + 560 subtests) | The **test package's own static initializer** panics: `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` *"sequence truncated"*. The DER walk is reflection-driven (`parseField(reflect.Value, …)`), so a field-set or field-order disagreement in the bridge desynchronizes the parse. Very likely the same root as `encoding/asn1`'s recorded 28 of 38 and `net/smtp`'s five. ⚠ **A longer deadline does not help**: measured at 4 m and again at 25 m with byte-identical verdicts, the run consuming its full deadline both times — the host does not fail fast when a test-package cctor throws, so this package costs its entire timeout on every sweep that includes it. |
+| `crypto/rsa` | **559 of 560 — ONE row away (re-measured 2026-08-09, r57a)** | ~~0 of 592; the test package's own static initializer panics in `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` "sequence truncated".~~ **The cctor panic is GONE**, closed by r56f's `reflect.StructField.Tag` bridge exactly as that write-back predicted: `parseField` reaches its `asn1:"…"` parameters through `field.Tag.Get("asn1")` (`asn1.cs:971`, `marshal.cs:509/514`), so while every converted struct reported UNTAGGED the DER walk read every field as having no `optional`/`explicit`/`tag:` modifiers and desynchronized on the first one that mattered. With tags bridged the whole suite runs: **560 verdicts, 559 matching, 13 excluded** (8 benchmarks + 5 examples, Phase-4D). The single mismatch is **`TestAllocations`** — `testing.AllocsPerRun(100, …)` around `DecryptPKCS1v15` — and it is the **AllocsPerRun-reports-BYTES shim**, now its FOURTH member after `log`'s `TestDiscard`, `net/http/internal`'s `TestChunkReaderAllocs` and `log/slog/internal/buffer`'s `TestAlloc`. Measured: **2,851,392,000 bytes over 100 runs = 28,513,920 B/run**, reported where Go reports a malloc COUNT. **Not banked and NOT disclosable** on the standing rule — the shim has never reported the number the assert is actually about, so disclosing it would launder an unmeasured quantity. This is now the largest prize gated on that one decision: **560 verdicts held by a single row**, which is the strongest argument yet for the carried AllocsPerRun-ownership item (r56d showed golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT — that is the design-with-user path to banking this package). `net/smtp`'s five and `encoding/asn1`'s 28-of-38 shared this root and are both worth an immediate re-measure. |
 | `go/build` | 57 of 58 verdicts (34 of 35 top-level) | `TestLocalDirectory`: `ImportPath="."`, want `"go/build"`. The test calls `ImportDir(os.Getwd())`; `go test` runs from the GOROOT package dir, the converted host runs from `src/core/go/build`, which is not inside a Go source tree. **The converted-host WORKING-DIRECTORY class**, third member after `internal/godebugs` (0 of 1) and `io/ioutil` (27 of 28). Not a disclosure: it is satisfiable at a layer go2cs owns (the staging root's identity), so disclosing it would launder a harness limitation as an unsatisfiable assert. |
-| `crypto/dsa` | 0 of 4 | `TestParameterGeneration` alone exceeds a **20 m** package deadline (measured at 6 m and again at 20 m; Go finishes in seconds). DSA parameter generation is a probabilistic prime search over the converted `math/big`; a **performance** gap, not a correctness signal — and one no `-test-timeout` this lane tried is enough for. |
+| ~~`crypto/dsa`~~ | **DONE 2026-08-09 (r57a) — 4 of 4, banked.** The row's diagnosis was right and its conclusion was wrong by about ninety seconds. `TestParameterGeneration` **passes in 1,156.8 s (19.3 min)**, so the 20 m package deadline this row measured at was just UNDER what the package needs end to end — the deadline has to cover conversion, the C# host's startup and the `go test` oracle beside it, so it cut a run that was converging. At **30 m** it validates first try, and `crypto/dsa` is now the third `$longTimeouts` entry beside `hash/maphash` and `index/suffixarray`. ⚠ Two lessons worth carrying: "no `-test-timeout` is enough" is a claim no timeout can ever establish — only a completed run distinguishes a slow suite from a hung one — and this lane opened expecting r56f's named-numeric shift fix to be the root (a prime search over the converted `math/big` is precisely the shape that defect corrupted) and it was **not**: DSA reaches its slowness honestly, every verdict matching Go. |
 
 ### Two things the next lane should not have to rediscover
 
@@ -4815,3 +4865,58 @@ of `type ruleKind int`), so a converter fix landed after `time` was banked and i
 went stale. Confirmed NOT this branch's by building the converter at the merge base `363e728bb` and
 re-running `time`'s `-tests` conversion: the base reproduces the identical flip. It needs a
 re-bank of that one file by whoever owns the fix, not a restore in perpetuity.
+
+### r57a-bignum — the post-fix re-measure: what two corpus-wide fixes were actually worth (2026-08-09)
+
+**Banked: `crypto/dsa` 4/4, `crypto/elliptic` 82/82, no disclosures.** Roster 121 → **123** of 215
+(56.3 % → **57.2 %**), 13,890 → **13,976** matching verdicts, 50 disclosed (unchanged). **No converter
+change was made in this lane** — every delta below is a census that had gone stale against fixes
+already on master, which is the finding.
+
+| Package | Board's census | Re-measured | Outcome |
+|:--|:--|:--|:--|
+| `crypto/dsa` | 0 of 4, "no `-test-timeout` is enough" | **4 of 4** | **BANKED** — deadline was ~90 s short |
+| `crypto/rsa` | 0 of 592, cctor panic | **559 of 560** | one row away: AllocsPerRun |
+| `math/big` | 9 of 226 | **222 of 226** | 3 roots, 2 of them the alloc model |
+| `crypto/elliptic` | 4 of 82 | **82 of 82** | **BANKED** — no work needed |
+
+**The headline: a census taken under a live corpus-wide defect measures the defect, not the package.**
+Three of these four rows moved without a line of code being written. r56f's named-numeric shift fix
+alone carried `crypto/elliptic` from 4 to 82 and `math/big` from 9 to 222; r56f's
+`reflect.StructField.Tag` bridge carried `crypto/rsa` from a static-initializer panic to 559 of 560.
+Both fixes were landed and written up correctly — what was missing was the re-read, and the board
+had explicitly asked for it. **Every census row on this board should be treated as timestamped
+against the corpus it was taken on**, and a lane that inherits one is cheaper re-measuring it than
+reasoning from it. The r44a lesson ("the yield is in what NOBODY HAS RUN") has a sibling: the yield
+is also in what nobody has re-run since the thing that was blocking it got fixed.
+
+**`crypto/rsa` is the campaign's largest single-row prize.** 560 verdicts held by `TestAllocations`,
+which is the AllocsPerRun-reports-BYTES shim measuring 28,513,920 B/run where Go reports a malloc
+count. It is now the **fourth** member of that class (`log`, `net/http/internal`,
+`log/slog/internal/buffer`) and `math/big`'s `TestNewIntAllocs` is the **fifth**. Two full packages
+and 560 + 226 verdicts now sit behind one unmade decision. r56d already demonstrated the missing
+half: golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT, which is the
+number the asserts are actually about. Recommend promoting the AllocsPerRun-ownership item from
+"carried" to the next design-with-user slot on that evidence.
+
+**One new root, characterized and escalated rather than half-fixed: Go's TYPED-NIL interface does not
+survive the conversion.** Detail in the `math/big` section above. A nil `*Int` in a slice reaches an
+interface as a plain `null` instead of a non-nil interface carrying `(type=*Int, value=nil)`, so
+`.(GobEncoder)` takes the wrong arm where Go succeeds and dispatches on the nil receiver that
+`big.Int.GobEncode` explicitly handles. Corpus-wide in scope, chip-class in cost — it changes what
+`== nil` means for every converted interface — and golib can already *represent* the state
+(`IsNilStandardPointer`), so the narrow starting point is the reflection bridge's `Value.Interface()`,
+which knows the static type at the moment the box is made. Blocks 2 of `math/big`'s 4 and part of
+`encoding/gob`'s 99 of 106.
+
+**`crypto/dsa` — the negative result, recorded so it is not re-derived.** This lane opened expecting
+the shift fix to be dsa's root too; a probabilistic prime search over the converted `math/big` is
+exactly the shape that defect corrupted. It is not. `TestParameterGeneration` passes in **1,156.8 s**
+having always been slow-but-correct, and the board's "no `-test-timeout` is enough" was a conclusion
+no timeout can support — only a *completed* run distinguishes a slow suite from a hung one. It is now
+the third `$longTimeouts` entry at 30 m, beside `hash/maphash` and `index/suffixarray`.
+
+**Two rows the next lane should re-measure immediately, for the same reason:** `encoding/asn1`
+(28 of 38) and `net/smtp` (9 of 14). Both were attributed to the same reflection-driven DER walk that
+the `StructField.Tag` bridge just repaired for `crypto/rsa`, and neither has been run since.
+

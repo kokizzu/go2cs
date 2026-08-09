@@ -26,8 +26,10 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto` | [`crypto.md`](current/crypto.md) | [`src/core/crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) |
 | `crypto/aes` | [`crypto.aes.md`](current/crypto.aes.md) | [`src/core/crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) |
 | `crypto/des` | [`crypto.des.md`](current/crypto.des.md) | [`src/core/crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) |
+| `crypto/dsa` | [`crypto.dsa.md`](current/crypto.dsa.md) | [`src/core/crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) |
 | `crypto/ecdh` | [`crypto.ecdh.md`](current/crypto.ecdh.md) | [`src/core/crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) |
 | `crypto/ecdsa` | [`crypto.ecdsa.md`](current/crypto.ecdsa.md) | [`src/core/crypto/ecdsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdsa) |
+| `crypto/elliptic` | [`crypto.elliptic.md`](current/crypto.elliptic.md) | [`src/core/crypto/elliptic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/elliptic) |
 | `crypto/hmac` | [`crypto.hmac.md`](current/crypto.hmac.md) | [`src/core/crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) |
 | `crypto/internal/alias` | [`crypto.internal.alias.md`](current/crypto.internal.alias.md) | [`src/core/crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) |
 | `crypto/internal/bigmod` | [`crypto.internal.bigmod.md`](current/crypto.internal.bigmod.md) | [`src/core/crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) |
