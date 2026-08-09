@@ -230,6 +230,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"MapIter.Next":        goosAny,
 		"MapIter.Key":         goosAny,
 		"MapIter.Value":       goosAny,
+		// The map READ pair, same root as MapRange and landed against it: both auto bodies do
+		// `v.typ().Reinterpret<abi.Type, mapType>()` to reach the key/elem types off the embedded
+		// abi.MapType, and a synthesized descriptor has no abi.MapType behind it — the emitted
+		// mapType holds that embed as a promoted REFERENCE box, so the reinterpret reads the
+		// descriptor's first word as an object. go/ast's TestPrint (ast.Fprint over a map) died
+		// there. Both also index through Go's mapaccess/hiter intrinsics, which MapRange already
+		// replaced; MapKeys is now MapRange collected and MapIndex the golib comma-ok lookup, so
+		// one key/element typing rule serves the walk and the lookup alike.
+		"Value.MapKeys":  goosAny,
+		"Value.MapIndex": goosAny,
 		// Type side: reflect.rtype's ΔType methods over the abi.Type's System.Type (%T, %+v names).
 		"rtype.String": goosAny,
 		"rtype.Name":   goosAny,

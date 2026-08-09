@@ -68,7 +68,6 @@ using static go.reflect_package;
 [assembly: GoImplicitConv<abi.Type, ж<abi.Type>>(Indirect = true)]
 [assembly: GoImplicitConv<flag, abiꓸKind>(Inverted = false, ValueType = "uint8")]
 [assembly: GoImplicitConv<flag, ΔKind>(Inverted = true, ValueType = "uintptr")]
-[assembly: GoImplicitConv<hiter, ж<hiter>>(Indirect = true)]
 [assembly: GoImplicitConv<ΔChanDir, abiꓸChanDir>(Inverted = false, ValueType = "nint")]
 [assembly: GoImplicitConv<ΔKind, abiꓸKind>(Inverted = false, ValueType = "uint8")]
 [assembly: GoImplicitConv<ΔKind, flag>(Inverted = true, ValueType = "nuint")]
