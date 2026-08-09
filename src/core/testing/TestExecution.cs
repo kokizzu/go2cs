@@ -80,6 +80,7 @@ public sealed class TestExecution
     private bool m_finished;
     private bool m_failed;
     private bool m_skipped;
+    private bool m_measurementUnitNoted;
 
     internal TestExecution(TestRunner runner, string name, TestExecution? parent, string source, int line)
     {
@@ -199,6 +200,30 @@ public sealed class TestExecution
     public void Helper()
     {
         // Helper-frame elision is staged; declaration source identity is still reported.
+    }
+
+    /// <summary>
+    /// Records — at most once per test — that a number this test is about was measured in a
+    /// different UNIT than the Go declaration reporting it assumes. The note rides the test's
+    /// own log output, so it lands beside the assert's own message rather than replacing it.
+    /// </summary>
+    /// <remarks>
+    /// The one caller is <see cref="testing_package.AllocsPerRun"/>. Silently letting a byte
+    /// figure be printed by Go's own <c>"got %v allocs"</c> format would present bytes AS a
+    /// count, which is the thing that must not happen: a reader — or a later disclosure
+    /// decision — has to be able to see which unit the number is in. Attaching it here rather
+    /// than at the measurement keeps the seam observable in <c>results.json</c> too, since a
+    /// test's log output is carried on its <see cref="TestEvent"/> whatever the verdict.
+    /// </remarks>
+    internal void NoteMeasurementUnitOnce(string note)
+    {
+        lock (m_syncRoot)
+        {
+            if (m_finished || m_measurementUnitNoted)
+                return;
+            m_measurementUnitNoted = true;
+            m_logs.Add(note);
+        }
     }
 
     public void Cleanup(Action cleanup)
