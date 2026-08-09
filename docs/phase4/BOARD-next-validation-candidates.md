@@ -4287,6 +4287,33 @@ deliberately not landed: a count that silently omits allocation sites is worse t
 figure — the inverse-of-atomic rule — so making golib the counter requires an audited-total census
 of its allocation sites and a ruling on what counts as an allocation. **Design-with-user.**
 
+#### `log` and `net/http/internal` are a DIFFERENT case from nistec — and the difference decides them
+
+Both remaining `AllocsPerRun` blockers assert a nonzero budget of **exactly 1**, where nistec asserts
+zero. Measured through the shim itself (a temporary object-count readout, since these closures resist
+a standalone probe — the pointer-to-interface conversions go2cs-gen mints are scoped to the declaring
+assembly, so a hand-written probe cannot obtain them):
+
+| Row | reported | true B/run | golib-tracked objects/run | Go's budget |
+|:--|--:|--:|--:|--:|
+| `log` `TestDiscard` | `got 424 allocs, want at most 1` | 424 | ≥ 2 | 1 |
+| `net/http/internal` `TestChunkReaderAllocs` | `mallocs = 640; want 1` | 640 | ≥ 2 | 1 |
+| `crypto/internal/nistec` `TestAllocations/P256` | `got 21964011.0` | 21,964,011 | 241,077 | 0 |
+
+The top two are **the same order of magnitude as Go** — single-digit objects against a budget of one —
+so their failures are dominated by the unit mismatch, not by over-allocation. nistec is five orders
+away. That is the line the disclosure decision should follow.
+
+⚠ **But they are still not disclosable today, and the reason is a result this lane produced against
+itself.** The counter used above covers `ж`/`array`/`slice` only, and 424 bytes cannot be two objects
+of ~50 B each — so allocations exist on that path which the instrument did not see (`@string`,
+`object[]` varargs, delegates, boxing). **The partial counter demonstrating its own incompleteness is
+the concrete evidence for the caveat above**: a golib-derived count is the right mechanism and is NOT
+trustworthy until its census of allocation sites is audited-total. Until then no site can claim the
+CLR *provably cannot satisfy* the assert, because the number the assert is about is still not known
+exactly — which is precisely the standard r43g set. The lower bound is nonetheless decision-relevant,
+and it points the opposite way from nistec.
+
 ### Build roots found in the never-measured tail
 
 | Package | Verdicts | First diagnostic |
