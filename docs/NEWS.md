@@ -8,6 +8,36 @@ their full text.
 
 ---
 
+## August 8, 2026 — Go programs run on Linux
+
+Converted Go programs now **run on Linux, byte-identical to `go run`**: `fmt.Println("hello, 世界")`,
+a program crossing `os.Args`, `os.Getenv` and `time.Now()`, and the README's own
+[real-world walkthrough](README.md#converting-a-real-world-module) — `fatih/color` printing true ANSI
+colour under a real PTY, with the `isatty` branch agreeing with Go in both directions (plain when piped,
+coloured on a terminal). The whole campaign landed in one continuous arc: the repository checks out
+deterministically on any filesystem, the converter and every harness instrument run natively on Linux,
+the standard library compiles for **windows, linux and darwin from one tree** (per-GOOS source folders
+selected by `$(GoTargetOS)`, windows the default, with 141 of 141 shared-source packages measured
+IL-identical across flavors), and each Go package ships as **one NuGet package** carrying RID-specific
+assemblies only where source genuinely varies.
+
+At the bottom of it all sits **one measured keystone**: Linux's entire syscall surface crosses the
+kernel through a single `libc syscall(2)` binding whose three claims were probed rather than argued —
+the variadic ABI with a real six-argument `mmap`, the second return register shown to be *exact* (the
+kernel preserves `RDX`), and errno round-tripped through a deliberate fault. The road there surfaced
+exactly two converter defect families and a handful of linkname wiring gaps — including the lesson that
+a forward alone can *pass a run and be wrong* (`os.Args` silently empty), which is why every wiring row
+now pairs with its populated truth. The FFI surface simultaneously converged on source-generated
+`[LibraryImport]` bindings, where non-blittable signatures fail at **compile time** — three latent
+marshalling hazards surfaced during the migration, each converted explicitly.
+
+Stated plainly: the published `1.23.1.4` packages still carry Windows-only assemblies — the Linux
+experience ships with the next release; a Linux consumer of the few platform-divergent packages also
+needs the compile-surface answer scheduled next; and darwin binaries are compile-proven and
+IL-identity-backed but have never been executed here. The Windows lane did not move a byte through any
+of it: every merge held CNR byte-identical, the behavioral suite green, and the 110-package validated
+sweep at 13,628 verdicts with zero failures.
+
 ## August 8, 2026 — Over half the standard library validates; defers reach zero allocation
 
 Three days took the validated roster from 73 packages to **110 of 215 (51.2%)** — 13,628 matching
