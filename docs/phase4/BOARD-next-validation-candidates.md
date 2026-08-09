@@ -4500,3 +4500,125 @@ test-host detail — and it takes `syscall` to 62/62.
   is a contained fix rather than a new mechanism. A map INSTANCE cannot carry the shape: a nil map
   is `default(map<K,V>)` and reading one is legal Go, so there is no construction site to record it
   at.
+
+## The r56a breadth harvest — the packages with no board row at all; 4 bank, 1 fix, 12 rooted (2026-08-09)
+
+r44a ran 108 packages and left an instruction of its own: *the yield is in what nobody has run.* This
+pass took that literally and asked a narrower question than "what is unbanked" — **what is unbanked
+and has never appeared on this board in any form**. Of the 106 unbanked testable packages, exactly
+**sixteen** had no row, no census, and no mention: the residue r43c's 58 and r44a's 108 between them
+never enumerated. Every one was run.
+
+**Roster 110 → 114 (51.2% → 53.0%), 13,628 → 13,645 matching verdicts, 50 disclosed (unchanged).**
+
+The pass's own lesson is a refinement of r44a's rather than a repeat: **three of the four banks came
+from ONE fix, and that fix was already designed.** `golib/GoReflect.TypeLayout.cs` carried a written
+deferral — "unifying `unsafe.Sizeof` onto this rule is deferred pending a named consumer" — and the
+consumer had been sitting in the unmeasured tail the whole time, three packages deep. A deferred
+unification with a named trigger is worth re-reading every time the tail is re-scouted; the trigger
+does not announce itself.
+
+### The four
+
+`debug/macho` (7) · `go/internal/gccgoimporter` (4) · `internal/xcoff` (3) ·
+`log/slog/internal/benchmarks` (3)
+
+The first three are one root. The fourth needed nothing at all.
+
+### The one fix — `unsafe.Sizeof` had two rules and only one of them was Go's
+
+The converter FOLDS `unsafe.Sizeof` to a constant wherever `go/types` can compute one — 283 corpus
+sites. The folding arc that landed that named what it could not reach: an operand whose type is a
+**type parameter**, which Go's own spec calls variable-size and does not fold either. Seven run-time
+call sites remain corpus-wide, and they kept riding `Marshal.SizeOf<T>`.
+
+There the "latent throw" that arc documented was not latent. A type parameter binds at run time to
+exactly the shapes `Marshal.SizeOf` refuses — a generic type (*"The specified Type must not be a
+generic type"*) or a struct holding a managed reference (*"cannot be marshaled as an unmanaged
+structure"*). Three packages died on it through the SAME one line, `internal/saferio.SliceCap[E]`,
+which asks the size only to choose an allocation chunk:
+
+| Package | `E` bound to | Reached from |
+|:--|:--|:--|
+| `debug/macho` | the `Load` **interface** | `NewFile`, `NewFatFile` |
+| `internal/xcoff` | `ж<Section>` | `NewFile` |
+| `go/internal/gccgoimporter` | `debug/elf.ΔSection` | `elfFromAr` → `elf.NewFile` |
+
+The run-time form now answers through `GoReflect.GoSizeOf` — the same Go-layout walk that stamps a
+descriptor's `Size_` and that `reflect.Type.Size()` reads — with `Marshal.SizeOf` retained as the
+fallback for the shapes `GoSizeOf` declines, so nothing that resolved before stops resolving. It is
+also *correct* where the old rule merely differed: `Marshal.SizeOf` reports a **bool** as 4 bytes
+where Go says 1, so any struct holding one was being measured wrong at precisely the sites folding
+could not reach. **A/B footprint: one method body.** Recorded in
+`ConversionStrategies-Reference.md` beside the folding subsection.
+
+### What the fix moved that did NOT bank — `debug/dwarf` 7 → 30 of 40, and its residual is ONE root
+
+`debug/dwarf` opens its fixtures through `debug/macho` and `debug/elf`, so the Sizeof fix took it
+from the board's recorded **7 of 40** to **30 of 40** with no work aimed at it. All ten residual
+rows are one panic, at `debug/dwarf/type.cs:683`:
+
+```
+panic: interface conversion: interface {} is *dwarf.UintType, not dwarf.readType_type
+```
+
+Go's source asserts to an **anonymous interface** — `typ.(interface{ Basic() *BasicType })` — which
+the converter lifts to a package-local `[GoType("dyn")] partial interface readType_type`. The
+concrete types (`*IntType`, `*UintType`, `*CharType`, `*UcharType`, …) satisfy it in Go only through
+a method **PROMOTED from an embedded `BasicType`**, and the value is held as a *different* named
+interface (`Type`) at the assertion site. No witness is minted for that combination, so the assert
+throws. Ten rows, one root, in the `go2cs-gen` `ImplementGenerator` family — the largest single
+prize this pass leaves rooted, and the reason `debug/dwarf` is now a *near* miss rather than a
+distant one. (`debug/elf` itself is unmoved: its blocker is the recorded CS8183 implicitly-typed
+discard at `file_test.cs:1195`, a build root this fix does not touch.)
+
+### The twelve rooted non-validators
+
+| Package | Census | Root |
+|:--|:--:|:--|
+| `internal/runtime/syscall` | — | *"build constraints exclude all Go files"* on windows/amd64. Joins `net/internal/socktest`, `internal/syscall/unix`, `log/syslog` and `runtime/race`: in the naive 215 denominator, cannot bank on this target. |
+| `runtime/trace` | 0 of 2 | `NotImplementedException: getg: external (assembly or cgo) function is not implemented`. Both tests enter the tracer through `getg`; no managed body exists. |
+| `log/slog/internal/buffer` | 1 of 2 | `TestAlloc`: *"got 304 allocs, want 1"* — **the AllocsPerRun-reports-BYTES shim, third package** after `log`'s `TestDiscard` and `net/http/internal`'s `TestChunkReaderAllocs`. Still not a disclosure candidate for the reason r44a gave: until the shim reports a COUNT, nobody has measured the number the assert is about. |
+| `internal/trace/internal/oldtrace` | 2 of 3 | `TestParseCanned`: the pre-1.22 trace parser rejects two of its own canned good traces — *"p 3 is running before start (time 369986239)"* and *"previous sweeping is not ended before a new one"*. Parser-state semantics, not I/O. |
+| `internal/testenv` | 3 of 4 | `TestGoToolLocation` looks for `<staging root>/bin/go.exe`; the converted host's GOROOT is the pipeline's exported root, which has no `bin`. Same shape as `internal/godebugs`' GOROOT-relative `doc/godebug.md`. |
+| `internal/fuzz` | 0 (build) | `minimize_test.cs(177): CS1003` — a **func-literal parameter whose type is an ALIAS to an anonymous struct** emits the Go type STRING verbatim: `(struct{Parent string; Path string; …} e) => …`. `CorpusEntry` is `type CorpusEntry = struct{…}`, and production emission handles it correctly (`global using CorpusEntry = …CorpusEntryᴛ1`), so the lift exists and the func-literal parameter position does not consult it. |
+| `internal/trace` | 0 (build) | `batchcursor_test.cs(92): CS0149 Method name expected` — a parameter **named `heap`** shadows golib's `heap()` intrinsic that the same body calls (`ref var sb = ref heap(new strings.Builder(), …)`). A name-collision rule the analysis does not cover: a local or parameter whose name collides with a golib intrinsic the body invokes. |
+| `crypto/internal/edwards25519` | 0 of 55 | **Package-var initialization ORDER.** Go initializes package-level vars in DEPENDENCY order; the converter emits C# static field initializers in DECLARATION order. `identity` is declared at line 66 and reads `feOne`, declared at line 140 — so `identity`'s initializer sees `null`, `field.Subtract` null-derefs, and the package cctor throws before any test runs. This is the board's init-ORDER arc (design-with-user), and this is its first WHOLE-PACKAGE casualty. |
+| `net/smtp` | 9 of 14 | `TestNewClientWithTLS` fails with `loadcert: tls: failed to parse private key`; `TestSendMail`, `TestSendMailWithAuth`, `TestTLSClient` and `TestTLSConnState` infrastructure-error behind it. Shares its root with `crypto/rsa` below — PEM/ASN.1 private-key parsing. |
+| `crypto/rsa` | 0 of 592 (32 top-level + 560 subtests) | The **test package's own static initializer** panics: `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` *"sequence truncated"*. The DER walk is reflection-driven (`parseField(reflect.Value, …)`), so a field-set or field-order disagreement in the bridge desynchronizes the parse. Very likely the same root as `encoding/asn1`'s recorded 28 of 38 and `net/smtp`'s five. ⚠ **A longer deadline does not help**: measured at 4 m and again at 25 m with byte-identical verdicts, the run consuming its full deadline both times — the host does not fail fast when a test-package cctor throws, so this package costs its entire timeout on every sweep that includes it. |
+| `go/build` | 57 of 58 verdicts (34 of 35 top-level) | `TestLocalDirectory`: `ImportPath="."`, want `"go/build"`. The test calls `ImportDir(os.Getwd())`; `go test` runs from the GOROOT package dir, the converted host runs from `src/core/go/build`, which is not inside a Go source tree. **The converted-host WORKING-DIRECTORY class**, third member after `internal/godebugs` (0 of 1) and `io/ioutil` (27 of 28). Not a disclosure: it is satisfiable at a layer go2cs owns (the staging root's identity), so disclosing it would launder a harness limitation as an unsatisfiable assert. |
+| `crypto/dsa` | 0 of 4 | `TestParameterGeneration` alone exceeds a **20 m** package deadline (measured at 6 m and again at 20 m; Go finishes in seconds). DSA parameter generation is a probabilistic prime search over the converted `math/big`; a **performance** gap, not a correctness signal — and one no `-test-timeout` this lane tried is enough for. |
+
+### Two things the next lane should not have to rediscover
+
+1. **A README validation badge can only be refreshed by a `-stdlib` run.** The badge emitter is
+   gated on `options.convertStdLib`, so a plain single-package conversion does not write `README.md`
+   **at all** — and worse, it regenerates the `.csproj` WITHOUT the validation-pack block (the
+   `Exists`-guarded `VALIDATION.md` pack input), an 8-line silent removal that reads as nothing in
+   `git status` until you diff it. A `-tests` run does not write the README either. The correct
+   instrument for a rebank is `go2cs -stdlib <pkg…> -comments -go2cspath <src>`; it also re-copies
+   the six root attribution files (`core/LICENSE`, `core/VERSION`, …) as pure CRLF phantoms, which
+   are restored, not banked.
+2. **The badge needs BOTH signals present on disk before that run.** Green requires the committed
+   `<pkg>.tests.csproj` *and* the proof page. The proof page is written at the END of a successful
+   `compare`, so the ordering is: run the pipeline, THEN the `-stdlib` regen, THEN commit. Running
+   them the other way around produces an orange badge on a validated package and no error anywhere.
+
+### The gate found one pre-existing staleness — `time`'s implicit-conversion record
+
+The 114/114 sweep reported exactly one CONTENT drift outside the documented 20-file `-tests`-closure
+family: `src/core/time/package_info_internal_test.cs`, one line —
+
+```
+-[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(… ValueType = "global::go.time_package.ruleKind")]
++[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(… ValueType = "nint")]
+```
+
+Banked at `34f593bf3` (`time` #73) and stale since some later emission change narrowed `ValueType` to
+the UNDERLYING representation. **Not attributable to the lane that found it** — r56a touched no
+converter source at all (`git diff <base> -- src/go2cs` empty, working tree clean there), and
+`unsafe.Sizeof` is a run-time golib method the converter process does not even link. **Restored, not
+rebanked**, per the standing doctrine; it belongs to the next deliberate test-source refresh. Worth
+recording because it is precisely what the sweep exists to see: CNR covers behavioral projects and
+the reconvert-diff covers production `.cs`, and neither of them can see banked *test* emission going
+stale.

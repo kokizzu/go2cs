@@ -312,8 +312,27 @@ public class Pointer : ж<uintptr> {
 // does not have variable size.
 // (A type has variable size if it is a type parameter or if it is an array
 // or struct type with elements of variable size).
+//
+// The converter FOLDS this call to a Go constant wherever go/types can compute one — which is
+// every operand Go itself calls fixed-size, 283 corpus sites emitted as `/* unsafe.Sizeof(x) */ 8`.
+// What actually reaches this body is the residue Go's own spec calls VARIABLE size: an operand
+// whose type is a type parameter. So T here is almost always bound to something managed —
+// `ж<Section>`, an interface, a struct holding a reference — and `Marshal.SizeOf<T>` answers
+// none of them: it computes an unmanaged MARSHALLING size, which is unrelated to Go's number
+// (Go's bool is 1 byte where marshalling says 4), and for a generic type or a type with no
+// unmanaged form it does not answer at all, it THROWS. Three packages reached this body through
+// internal/saferio.SliceCap[E] and died on that exception (debug/macho, internal/xcoff, and
+// go/internal/gccgoimporter through debug/elf).
+//
+// GoReflect.GoSizeOf is the one Go layout rule the reflection bridge already computes descriptor
+// Size_ from, so answering here through it makes unsafe.Sizeof and reflect.Type.Size() the same
+// rule rather than two — the unification GoReflect.TypeLayout.cs recorded as deferred pending a
+// named consumer. Dims come from the live value because array<T> carries its Go length in the
+// INSTANCE. Marshal.SizeOf remains the fallback for the shapes GoSizeOf declines (-1), so no
+// operand that resolves today stops resolving.
 public static uintptr Sizeof<T>(T x) {
-    return (uintptr)Marshal.SizeOf<T>();
+    nint size = GoReflect.GoSizeOf(typeof(T), GoReflect.ArrayDimsOfValue(x));
+    return size >= 0 ? (uintptr)size : (uintptr)Marshal.SizeOf<T>();
 }
 
 // Offsetof returns the offset within the struct of the field represented by x,

@@ -10617,6 +10617,46 @@ assignment and compound-assignment, and `make`-size positions, over structs whos
 padding-, embedding- and array-sensitive (and non-blittable once converted); output-compared vs
 `go run`.
 
+### The run-time `unsafe.Sizeof` answers through Go's layout rule, not the CLR's marshaller
+
+The folding arc above removed the reflection call from every site Go itself settles at compile time,
+and named what was left: the handful of operands whose type is a **type parameter**, which Go's own
+spec calls variable-size and does not fold either. Those kept riding `Marshal.SizeOf<T>` — and there
+the latent throw the folding arc had just designed around was not latent at all, because a type
+parameter binds at run time to exactly the shapes `Marshal.SizeOf` refuses: a generic type
+(`ж<Section>`, `slice<T>`) raises *"The specified Type must not be a generic type"*, and a struct
+holding a managed reference raises *"cannot be marshaled as an unmanaged structure"*.
+
+Three packages died on it at once, all through the same one line — `internal/saferio.SliceCap[E]`,
+which asks `unsafe.Sizeof(*new(E))` only to decide how large a chunk it may pre-allocate:
+`debug/macho` (E = the `Load` **interface**), `internal/xcoff` (E = `ж<Section>`), and
+`go/internal/gccgoimporter` through `debug/elf` (E = `ΔSection`, a struct over an embedded header, an
+`io.ReaderAt` and a `ж<SectionReader>`).
+
+So the run-time form now answers through **`GoReflect.GoSizeOf`** — the same Go-layout walk the
+reflection bridge already stamps into a descriptor's `Size_`, and the same one `reflect.Type.Size()`
+reads:
+
+```csharp
+public static uintptr Sizeof<T>(T x) {
+    nint size = GoReflect.GoSizeOf(typeof(T), GoReflect.ArrayDimsOfValue(x));
+    return size >= 0 ? (uintptr)size : (uintptr)Marshal.SizeOf<T>();
+}
+```
+
+`typeof(T)` is Go's rule verbatim — `Sizeof` is defined against the operand's **static** type, and the
+converter's inferred type argument is that type. Dims come from the live value because `array<T>`
+carries its Go length in the instance, not the type. `Marshal.SizeOf` stays as the fallback for the
+shapes `GoSizeOf` declines (`-1`: an array whose length nothing can reveal, a struct holding such a
+field), so no operand that resolved before stops resolving.
+
+This makes the answer *correct* as well as non-throwing, which matters beyond the three packages:
+`Marshal.SizeOf` reports a **bool** as 4 bytes where Go says 1, so any struct containing one was
+already measured wrong — silently, at the sites the folding arc could not reach. A Go size now has
+one definition in the runtime rather than two (the unification `golib/GoReflect.TypeLayout.cs` had
+recorded as deferred pending a named consumer). Corpus reach is small by construction: **7 run-time
+call sites**, against 283 folded ones.
+
 ### Converting a Go pointer to `unsafe.Pointer`
 `unsafe.Pointer` is the golib class `unsafe_package.Pointer : ж<uintptr>` (a numeric address wrapper). A `uintptr`/`unsafe.Pointer` argument converts through the implicit `uintptr ↔ Pointer` operators, but a **Go pointer** argument (`*T`, emitted as the managed box `ж<T>`) has no such conversion — a plain cast `(@unsafe.Pointer)(ж<T>)` is `CS0030` (when `T` is unrelated to `uintptr`) or a runtime `InvalidCastException` (the base→derived downcast `(@unsafe.Pointer)(ж<uintptr>)` compiles but the object is a plain `ж<uintptr>`, not a `Pointer`). So `unsafe.Pointer(ptr)` for a pointer `ptr` is emitted through the golib helper that pins the pointed-to storage:
 ```go
