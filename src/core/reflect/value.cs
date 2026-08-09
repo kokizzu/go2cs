@@ -2261,63 +2261,6 @@ public static ΔValue AppendSlice(ΔValue s, ΔValue t) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string reflectCopyˢ = "reflect.Copy"u8;
 
-// Copy copies the contents of src into dst until either
-// dst has been filled or src has been exhausted.
-// It returns the number of elements copied.
-// Dst and src each must have kind [Slice] or [Array], and
-// dst and src must have the same element type.
-//
-// As a special case, src can have kind [String] if the element type of dst is kind [Uint8].
-public static nint Copy(ΔValue dst, ΔValue src) {
-    ref var dk = ref heap<ΔKind>(out var Ꮡdk);
-    dk = dst.kind();
-    if (dk != Array && dk != ΔSlice) {
-        throw panic(Ꮡ(new ValueError("reflect.Copy"u8, dk)));
-    }
-    if (dk == Array) {
-        dst.mustBeAssignable();
-    }
-    dst.mustBeExported();
-    ref var sk = ref heap<ΔKind>(out var Ꮡsk);
-    sk = src.kind();
-    bool stringCopy = default!;
-    if (sk != Array && sk != ΔSlice) {
-        stringCopy = sk == ΔString && dst.typ().Elem().Kind() == abi.Uint8;
-        if (!stringCopy) {
-            throw panic(Ꮡ(new ValueError("reflect.Copy"u8, sk)));
-        }
-    }
-    src.mustBeExported();
-    var de = dst.typ().Elem();
-    if (!stringCopy) {
-        var se = src.typ().Elem();
-        typesMustMatch(reflectCopyˢ, toType(de), toType(se));
-    }
-    unsafeheader.Slice ds = default!;
-    unsafeheader.Slice ss = default!;
-    if (dk == Array){
-        ds.Data = dst.ptr;
-        ds.Len = dst.Len();
-        ds.Cap = ds.Len;
-    } else {
-        ds = ~(ж<unsafeheader.Slice>)(uintptr)(dst.ptr);
-    }
-    if (sk == Array){
-        ss.Data = src.ptr;
-        ss.Len = src.Len();
-        ss.Cap = ss.Len;
-    } else 
-    if (sk == ΔSlice){
-        ss = ~(ж<unsafeheader.Slice>)(uintptr)(src.ptr);
-    } else {
-        var sh = ~(ж<unsafeheader.String>)(uintptr)(src.ptr);
-        ss.Data = sh.Data;
-        ss.Len = sh.Len;
-        ss.Cap = sh.Len;
-    }
-    return typedslicecopy(de.Common(), ds, ss);
-}
-
 // A runtimeSelect is a single case passed to rselect.
 // This must match ../runtime/select.go:/runtimeSelect
 [GoType] partial struct runtimeSelect {

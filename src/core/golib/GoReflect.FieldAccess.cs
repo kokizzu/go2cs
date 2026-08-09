@@ -185,17 +185,25 @@ public static partial class GoReflect
         /// <summary>Array dims when <see cref="Type"/> is an array kind and the declaring zero instance reveals them.</summary>
         public readonly nint[]? ArrayDims;
 
+        /// <summary>
+        /// The field's raw Go struct TAG, verbatim — <c>asn1:"optional,explicit,tag:0"</c> — or the
+        /// empty string when the field carries none. The converter emits every tagged field's tag as
+        /// <c>[GoTag]</c> at the declaration, so this is the declared text, not a reconstruction.
+        /// </summary>
+        public readonly string Tag;
+
         // The C# access path from the declaring struct: each step is an instance field; a step
         // whose IsBoxHop flag is set holds a ж<T> promoted-embed box the path derefs through.
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop)
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "")
         {
             Name = name;
             Type = type;
             Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
             ArrayDims = arrayDims;
+            Tag = tag;
             Path = path;
             BoxHop = boxHop;
         }
@@ -269,7 +277,7 @@ public static partial class GoReflect
             {
                 string goName = name[embedPrefix.Length..];
                 Type embedded = boxType.GetGenericArguments()[0];
-                result.Add(new GoFieldInfo(goName, embedded, null, [.. prefixPath, field], [.. prefixHops, true]));
+                result.Add(new GoFieldInfo(goName, embedded, null, [.. prefixPath, field], [.. prefixHops, true], goTagOf(field)));
                 continue;
             }
 
@@ -282,8 +290,19 @@ public static partial class GoReflect
                 projected = "_";
 
             nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
-            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false]));
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field)));
         }
+    }
+
+    // The declared Go struct tag of a converted field, or "" when it carries none. The converter
+    // emits `[GoTag("…")]` (aliased to DescriptionAttribute) at every tagged field declaration —
+    // it has done so all along, and until now nothing read it, which is why reflect.StructField.Tag
+    // came back empty for every converted struct and every tag-driven decoder saw an untagged type.
+    private static string goTagOf(FieldInfo field)
+    {
+        return field.GetCustomAttributes(typeof(GoTagAttribute), false) is [GoTagAttribute tag]
+            ? tag.Description
+            : "";
     }
 
     private static bool isAllUnderscores(string name)

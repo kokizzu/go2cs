@@ -303,6 +303,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"MakeSlice":         goosAny,
 		"MakeMap":           goosAny,
 		"MakeMapWithSize":   goosAny,
+		// Copy reinterprets BOTH operands' data words as flat `unsafeheader.Slice` headers
+		// (`*(*unsafeheader.Slice)(dst.ptr)`) and hands them to typedslicecopy — a raw memory move
+		// with no managed form, which on the bridge's never-populated ptr slot dereferences a nil ж
+		// outright. encoding/asn1's parseField copies every parsed []byte into its destination
+		// through it, which is crypto/x509's ParsePKCS8PrivateKey and so crypto/ecdsa's TestEqual.
+		// Bridged element-wise over the same golib container interfaces every other container
+		// method uses, so a window slice writes the backing store it shares with its parent.
+		"Copy":              goosAny,
 		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
 		"valueMethodName":  goosAny,
 		"rtype.Key":        goosAny,

@@ -75,15 +75,30 @@ internal static class NumericTypeTemplate
     // `x[i] >> ŝ` on a named integer (math/big's Word) IS a Word, but with no wrapper operator
     // C# resolved through the implicit-to-underlying conversion and the whole expression
     // degraded to the raw numeric (CS0266 ×45 across math/big's arith.cs).
+    //
+    // The two SHIFTS route through golib's GoShift guards rather than C#'s native operators,
+    // because Go's shift count is UNBOUNDED (`x >> n` with n >= width is 0, or the sign for a
+    // signed right shift) while C# MASKS the count to the operand's width - `x >> 64` on a
+    // 64-bit value is `x >> 0`, i.e. x. The converter already applies this guard for a shift on
+    // an unnamed basic type whose count it cannot prove in range (convBinaryExpr's
+    // shiftCountGuarded); a NAMED numeric type resolves through this operator instead, so the
+    // guard has to live here or that whole family keeps the masked answer. It did:
+    // math/big's lehmerSimulate reads `A.abs[n-2] >> (_W - h)` on `Word`, which for a normalized
+    // operand (h == 0) is a shift by exactly 64 - Go yields 0, C# yielded the word itself, and
+    // the corrupted Lehmer cosequences made GCD's `for len(B.abs) > 1` loop stop converging.
+    // That is an INFINITE LOOP in math/big reachable from crypto/elliptic's generic CurveParams
+    // path: `elliptic.P256().Params().Double(Gx, Gy)` never returned, which is crypto/ecdsa's
+    // P256/Generic subtest hanging every suite that includes it. `>>>` is left native: Go has no
+    // unsigned-right-shift operator, so nothing converted ever calls it.
     private static string GetComplementOperator(string typeName, string targetTypeName) => typeName.StartsWith("float") || typeName.StartsWith("complex") ? "" :
        $"""
 
 
                 public static {targetTypeName} operator ~({targetTypeName} value) => ({targetTypeName})(~value.m_value);
 
-                public static {targetTypeName} operator <<({targetTypeName} value, int shift) => ({targetTypeName})(value.m_value << shift);
+                public static {targetTypeName} operator <<({targetTypeName} value, int shift) => ({targetTypeName})value.m_value.Lsh((uint64)shift);
 
-                public static {targetTypeName} operator >>({targetTypeName} value, int shift) => ({targetTypeName})(value.m_value >> shift);
+                public static {targetTypeName} operator >>({targetTypeName} value, int shift) => ({targetTypeName})value.m_value.Rsh((uint64)shift);
 
                 public static {targetTypeName} operator >>>({targetTypeName} value, int shift) => ({targetTypeName})(value.m_value >>> shift);
 
