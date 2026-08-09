@@ -13,7 +13,7 @@ public static uintptr MaxUintptr => /* ^uintptr(0) */ unchecked((uintptr)1844674
 // MulUintptr returns a * b and whether the multiplication overflowed.
 // On supported platforms this is an intrinsic lowered by the compiler.
 public static (uintptr, bool) MulUintptr(uintptr a, uintptr b) {
-    if ((uintptr)(a | b) < (uintptr)(1 << (int)((4 * goarch.PtrSize))) || a == 0) {
+    if ((uintptr)(a | b) < ((uintptr)1 << (int)((4 * goarch.PtrSize))) || a == 0) {
         return (a * b, false);
     }
     var overflow = b > MaxUintptr / a;

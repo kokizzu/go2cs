@@ -880,10 +880,10 @@ internal static void minit() {
     // calling C functions that don't have stack checks and for
     // lastcontinuehandler. We shouldn't be anywhere near this
     // bound anyway.
-    var @base = mbi.allocationBase + (uintptr)(16 << (int)(10));
+    var @base = mbi.allocationBase + ((uintptr)16 << (int)(10));
     // Sanity check the stack bounds.
     var g0 = getg();
-    if (@base > (~g0).stack.hi || (~g0).stack.hi - @base > (uintptr)(64 << (int)(20))) {
+    if (@base > (~g0).stack.hi || (~g0).stack.hi - @base > ((uintptr)64 << (int)(20))) {
         print((@string)"runtime: g0 stack ["u8, ((Δhex)(uint64)@base), (@string)","u8, ((Δhex)(uint64)(~g0).stack.hi), (@string)")\n"u8);
         @throw(badG0Stackˢ);
     }

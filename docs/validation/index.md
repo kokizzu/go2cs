@@ -108,6 +108,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `plugin` | [`plugin.md`](current/plugin.md) | [`src/core/plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) |
 | `regexp` | [`regexp.md`](current/regexp.md) | [`src/core/regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) |
 | `regexp/syntax` | [`regexp.syntax.md`](current/regexp.syntax.md) | [`src/core/regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) |
+| `runtime/internal/math` | [`runtime.internal.math.md`](current/runtime.internal.math.md) | [`src/core/runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) |
 | `runtime/internal/sys` | [`runtime.internal.sys.md`](current/runtime.internal.sys.md) | [`src/core/runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) |
 | `sort` | [`sort.md`](current/sort.md) | [`src/core/sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) |
 | `strconv` | [`strconv.md`](current/strconv.md) | [`src/core/strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) |

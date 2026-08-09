@@ -255,9 +255,21 @@ func (v *Visitor) isLargeIntLiteralOperand(expr ast.Expr) bool {
 // left operand of a shift — i.e. the shift is performed in that type's own width. For these,
 // shifting a bare `1` (an `int` literal) overflows before any result cast, so the operand must be
 // cast instead. Narrower types (uint16/byte/…) promote to `int`, so a result cast suffices.
+//
+// `uintptr` belongs here even though it is a golib STRUCT rather than a C# primitive: it carries a
+// native-width `nuint` and declares `operator <<(uintptr, int)` over it, so a cast operand shifts at
+// 64 bits exactly as `nuint` does. Omitting it sent Go's `uintptr` — alone among the wide unsigned
+// types, since `uint` renders as the primitive `nuint` — down the narrow arm and cast the RESULT,
+// which is the very thing this function's own comment says does not help: `1 << (UintptrSize / 2)`
+// emitted `(uintptr)(1 << (int)(32))`, and C# masks an `int` shift count to five bits, so the value
+// was 1. That is runtime/internal/math's `TestMulUintptr` table (`MulUintptr(1, 1) = 1, false`), and
+// the same shape sits latent in runtime/mpagealloc_64bit.go's `1 << heapAddrBits` — 1<<16 where Go
+// computes 2^48, silently. The neighbouring `1<<(UintptrSize/2) - 1` was always right, which is what
+// made this hard to see: there the shift is an INNER node still typed `untyped int`, so
+// overflowingConstLiteral's signed arm folds it whole.
 func isWideShiftType(csType string) bool {
 	switch csType {
-	case "uint32", "uint64", "int64", "nuint":
+	case "uint32", "uint64", "int64", "nuint", "uintptr":
 		return true
 	}
 

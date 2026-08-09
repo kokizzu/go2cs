@@ -164,7 +164,7 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
     lockWithRankMayAcquire(Ꮡmheap_.of(mheap.Ꮡlock), lockRankMheap);
     if (s == nil) {
         // no free stacks. Allocate another span worth.
-        s = Ꮡmheap_.allocManual((uintptr)(_StackCacheSize >> (int)(_PageShift)), spanAllocStack);
+        s = Ꮡmheap_.allocManual(((uintptr)_StackCacheSize >> (int)(_PageShift)), spanAllocStack);
         if (s == nil) {
             @throw(outOfMemoryˢ);
         }
@@ -458,7 +458,7 @@ internal static void stackfree(Δstack stk) {
     if (asanenabled) {
         asanpoison(v, n);
     }
-    if (n < (uintptr)(fixedStack << (int)(_NumStackOrders)) && n < _StackCacheSize){
+    if (n < ((uintptr)fixedStack << (int)(_NumStackOrders)) && n < _StackCacheSize){
         var order = (uint8)0;
         var n2 = n;
         while (n2 > fixedStack) {
@@ -504,7 +504,7 @@ internal static void stackfree(Δstack stk) {
     }
 }
 
-internal static uintptr maxstacksize = (uintptr)(1 << (int)(20)); // enough until runtime.main sets it for real
+internal static uintptr maxstacksize = ((uintptr)1 << (int)(20)); // enough until runtime.main sets it for real
 
 internal static uintptr maxstackceiling = maxstacksize;
 

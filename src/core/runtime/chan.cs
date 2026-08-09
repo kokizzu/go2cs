@@ -78,7 +78,7 @@ internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
 
     var elem = t.Elem;
     // compiler checks this but be safe.
-    if ((~elem).Size_ >= (uintptr)(1 << (int)(16))) {
+    if ((~elem).Size_ >= ((uintptr)1 << (int)(16))) {
         @throw(makechanInvalidChannelˢ);
     }
     if (hchanSize % (uintptr)maxAlign != 0 || (~elem).Align_ > maxAlign) {

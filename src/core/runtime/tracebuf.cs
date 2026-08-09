@@ -178,7 +178,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
 [GoType] [GoValueClone("arr")] partial struct traceBuf {
     internal sys.NotInHeap _;
     internal partial ref traceBufHeader traceBufHeader { get; }
-    internal array<byte> arr = new((uintptr)(64 << (int)(10)) - /* unsafe.Sizeof(traceBufHeader{}) */ (uintptr)32); // underlying buffer for traceBufHeader.buf
+    internal array<byte> arr = new(((uintptr)64 << (int)(10)) - /* unsafe.Sizeof(traceBufHeader{}) */ (uintptr)32); // underlying buffer for traceBufHeader.buf
 }
 
 // byte appends v to buf.
