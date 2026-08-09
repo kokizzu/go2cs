@@ -4356,3 +4356,22 @@ discard at `file_test.cs:1195`, a build root this fix does not touch.)
    `<pkg>.tests.csproj` *and* the proof page. The proof page is written at the END of a successful
    `compare`, so the ordering is: run the pipeline, THEN the `-stdlib` regen, THEN commit. Running
    them the other way around produces an orange badge on a validated package and no error anywhere.
+
+### The gate found one pre-existing staleness — `time`'s implicit-conversion record
+
+The 114/114 sweep reported exactly one CONTENT drift outside the documented 20-file `-tests`-closure
+family: `src/core/time/package_info_internal_test.cs`, one line —
+
+```
+-[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(… ValueType = "global::go.time_package.ruleKind")]
++[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(… ValueType = "nint")]
+```
+
+Banked at `34f593bf3` (`time` #73) and stale since some later emission change narrowed `ValueType` to
+the UNDERLYING representation. **Not attributable to the lane that found it** — r56a touched no
+converter source at all (`git diff <base> -- src/go2cs` empty, working tree clean there), and
+`unsafe.Sizeof` is a run-time golib method the converter process does not even link. **Restored, not
+rebanked**, per the standing doctrine; it belongs to the next deliberate test-source refresh. Worth
+recording because it is precisely what the sweep exists to see: CNR covers behavioral projects and
+the reconvert-diff covers production `.cs`, and neither of them can see banked *test* emission going
+stale.
