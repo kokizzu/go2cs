@@ -13,7 +13,8 @@
 > list; derive it fresh rather than trusting this summary: the Kind classifier + type helpers (golib
 > `GoReflect`: `KindOf`, `GoTypeName`, `ElementType`, `IsComparable`, `TryAdapterWrappedType`),
 > `internal/abi.TypeOf` (`type_impl.cs` synthesizes the descriptor from the managed `System.Type`),
-> `reflect.{ValueOf, unpackEface, valueInterface}`, the ~17 `Value` readers + `MapIter.{Next,Key,Value}`,
+> `reflect.{ValueOf, unpackEface, valueInterface}`, the ~17 `Value` readers + `MapIter.{Next,Key,Value}`
+> + `Value.{MapKeys, MapIndex}` (2026-08-09, § below),
 > `rtype.{String, Name, Elem, Field, NumField}`, **canonical interned `Value.Type`/`toType`**
 > (`canonType` — the map-key-ordering fix, § below), `deepValueEqual` (`deepequal_impl.cs`), the
 > `internal/reflectlite` mini-bridge (`ValueOf`/`Len`/`Swapper`), and the `synthType.Equal`
@@ -269,8 +270,31 @@
 > cannot — a hand-owned `_impl.cs` on the `sync.Mutex` precedent. Needs a coordinator ownership
 > ruling before it is written.
 >
+> **The map READ pair landed 2026-08-09 (r57b), with `go/ast` as its first validator.**
+> `Value.MapKeys` and `Value.MapIndex` were the two map methods `MapRange`/`MapIter.*`/
+> `SetMapIndex` left behind, and both still ran their converted bodies: each opens with
+> `v.typ().Reinterpret<abi.Type, mapType>()` to read the key/element types off the embedded
+> `abi.MapType`. That is NOT the managed-box aliasing case `toRType` relies on — a synthesized
+> descriptor is a bare `abi.Type` with no `abi.MapType` behind it, and the emitted `mapType` holds
+> that embed as a promoted REFERENCE box (`ᏑʗMapType`), so the reinterpret reads the descriptor's
+> first word as an object. Both then index through `mapaccess`/`hiter`, which `MapRange` had already
+> replaced. `MapKeys` is now `MapRange` collected; `MapIndex` is a golib comma-ok lookup
+> (`GoReflect.TryGetMapEntry`, routed through `IMap<K,V>` rather than the non-generic `IDictionary`
+> so the nil key in golib's dedicated slot is found like any other). One key/element typing rule now
+> serves the walk and the lookup alike, and a miss returns the invalid zero Value that
+> `text/template`'s `funcs.go` already tests with `IsValid()`.
+>
+> **Unnamed struct types render STRUCTURALLY (same arc).** `reflect.Type.String()`/`%T` of a
+> converter-LIFTED anonymous struct reported the lift's C# name (`ast_internal_test.typeᴛ1`) where
+> Go prints `struct { X int; y int }`, and golib's `EmptyStruct` where Go prints `struct {}`. The
+> `[GoType("dyn")]` stamp is what distinguishes a lift from an ordinary declared struct, and the arm
+> in `GoReflect.TypeNaming` builds the text from `GoFields` — the same projection `NumField`/`Field`
+> and the value side read, so a type's reported NAME and the fields it hands out cannot disagree.
+> Format verified against the toolchain (embedded field contributes its type alone; a tagged field
+> appends the `strconv.Quote`d tag). This partially answers open question 3 on the READ side.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
-> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
+> (text/template); `SetMapIndex` delete-on-invalid (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
 > if they surface); `FieldByName`'s embedded-field depth search (a promoted name currently answers
 > the not-found path); open question 3 (field-name/tag fidelity — `[GoTag]` is carried but not yet
