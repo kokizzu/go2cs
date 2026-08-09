@@ -70,9 +70,34 @@ func (c *curve[Point]) Fresh() string {
 	return r.label()
 }
 
+// describe and build are the GENERIC FUNCTION forms of the same constraint — the shape
+// crypto/internal/nistec's testEquivalents[P nistPoint[P]] / benchmarkScalarMult[P nistPoint[P]]
+// take. The proxy machinery was reachable only from a generic NAMED TYPE (curve[*p224] above), so
+// these rendered the raw box `ж<p224>` against `where P : point<P>` — 16 CS0311 in nistec, which
+// build-blocked its whole 2,200-verdict suite.
+//
+// describe's type argument is INFERRED by Go from an ordinary value argument, which is exactly why
+// the emission must state it explicitly: C# infers the box from that same argument.
+func describe[P point[P]](p P) string {
+	return p.label() + "/" + p.combine(p).label()
+}
+
+// build takes the constrained type behind a FUNC parameter, so the delegate position carries the
+// proxy and a method-group argument cannot convert into it (CS0407) — it is re-wrapped as a lambda.
+func build[P point[P]](newPoint func() P, tag string) string {
+	p := newPoint()
+	r, _ := p.restore([]byte{9})
+	return tag + ":" + r.label()
+}
+
 func main() {
 	var c1 Curve = &curve[*p224]{name: "c224", newPoint: newP224, base: &p224{v: 3}}
 	var c2 Curve = &curve[*p384]{name: "c384", newPoint: newP384, base: &p384{v: 5}}
+
+	// Generic FUNCTION instantiation over the same self-referential constraint: the
+	// inferred-from-a-value form and the method-group-factory form.
+	fmt.Println(describe(&p224{v: 4}), describe(&p384{v: 6}))
+	fmt.Println(build(newP224, "b224"), build(newP384, "b384"))
 
 	fmt.Println(c1.Name(), c1.BaseLabel(), c1.Combined(), c1.Fresh())
 	fmt.Println(c2.Name(), c2.BaseLabel(), c2.Combined(), c2.Fresh())
