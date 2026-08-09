@@ -489,15 +489,14 @@ internal class StructTypeTemplate : TemplateBase
         {
             HashSet<string> embedMethodNames = new(StringComparer.Ordinal);
 
-            // A DIRECT (depth-1) UNEXPORTED, NON-GENERIC VALUE embed also promotes its box-receiver
-            // (direct-ж) primaries through a public descent shim (see IsValueEmbedBoxRecv). Count them
-            // for the same cross-embed ambiguity rule so two such embeds carrying the same method name
-            // drop (as Go's ambiguity rule requires) rather than emitting a duplicate forwarder. A plain
+            // A DIRECT (depth-1) NON-GENERIC VALUE embed also promotes its box-receiver (direct-ж)
+            // primaries through a descent shim (see IsValueEmbedBoxRecv). Count them for the same
+            // cross-embed ambiguity rule so two such embeds carrying the same method name drop (as
+            // Go's ambiguity rule requires) rather than emitting a duplicate forwarder. A plain
             // value embed's type name never carries '<' — both the pointer-box embed form (`ж<…>`) and a
             // generic embed do — which is a more robust discriminator than the pointerEmbedTypeNames
             // membership test (whose `@`-keyword-escaped names, e.g. os.File's `ж<@file>`, mismatch).
-            bool directEmbedIsUnexportedValue = !promotedStructType.Contains("<") &&
-                GetScope(GetSimpleName(promotedStructType, dropCollisionPrefix: true)) != "public";
+            bool directEmbedIsValue = !promotedStructType.Contains("<");
 
             countPromotedMethods(promotedStructType, []);
 
@@ -518,9 +517,9 @@ internal class StructTypeTemplate : TemplateBase
                     embedMethodNames.Add(m.Name);
 
                 // A POINTER embed's box-receiver primaries promote too (see below) — count them for
-                // the same cross-embed ambiguity rule. A direct unexported VALUE embed likewise promotes
-                // its box-receiver primaries via the descent shim.
-                if (pointerEmbedTypeNames.Contains(embedKey(typeName)) || (typeName == promotedStructType && directEmbedIsUnexportedValue))
+                // the same cross-embed ambiguity rule. A direct VALUE embed likewise promotes its
+                // box-receiver primaries via the descent shim.
+                if (pointerEmbedTypeNames.Contains(embedKey(typeName)) || (typeName == promotedStructType && directEmbedIsValue))
                 {
                     foreach (MethodInfo m in decl.GetBoxReceiverExtensionMethods(comp!))
                         embedMethodNames.Add(m.Name);
@@ -551,7 +550,12 @@ internal class StructTypeTemplate : TemplateBase
             HashSet<string> promotedMethodNames = new(StringComparer.Ordinal);
 
             // See the identical computation in the ambiguity-counting pass above.
-            bool directEmbedIsUnexportedValue = !promotedStructType.Contains("<") &&
+            bool directEmbedIsValue = !promotedStructType.Contains("<");
+
+            // The NARROWER unexported-embed form, kept for the return-type accessibility relaxation
+            // below only — that relaxation is about a cross-package call the converter emits as a bare
+            // `Ꮡt.M()`, which is the unexported-embed case alone (see its own comment).
+            bool directEmbedIsUnexportedValue = directEmbedIsValue &&
                 GetScope(GetSimpleName(promotedStructType, dropCollisionPrefix: true)) != "public";
 
             collectPromotedMethods(promotedStructType, []);
@@ -577,11 +581,20 @@ internal class StructTypeTemplate : TemplateBase
                 // `target.<embed>` is a ж<T>, so the value/pointer forwarders below (`target.<embed>.M(…)`)
                 // bind the box receiver directly. GetExtensionMethods above harvests only value-receiver
                 // forms, so collect the box primaries here (sha3's cshakeState←*state.Write, CS1929).
-                // A direct UNEXPORTED VALUE embed also promotes its box-receiver primaries, but through
-                // the box-field descent shim (IsValueEmbedBoxRecv) — its hop `target.<embed>` is a value,
+                // A direct VALUE embed also promotes its box-receiver primaries, but through the
+                // box-field descent shim (IsValueEmbedBoxRecv) — its hop `target.<embed>` is a value,
                 // not a ж<T>, so the plain forwarder body would be CS1929. Only the direct embed is taken
                 // (a deeper value hop would need a multi-level descent this narrow fix does not emit).
-                bool valueEmbedBoxRecv = typeName == promotedStructType && directEmbedIsUnexportedValue;
+                //
+                // ⚠ NOT gated on the embed's EXPORTEDNESS. It was, and that gate was not a Go rule: Go
+                // puts a value embed's POINTER-receiver methods in the OUTER type's pointer method set
+                // whatever the embed's case, and go2cs reconstructs a Go method set at run time by
+                // reading these EMITTED extension methods (GetGoMethodSetCandidates). So an unemitted
+                // promotion is an ABSENT Go method — `debug/dwarf`'s `*UintType` (embedding the exported
+                // `BasicType`, whose `Basic()` takes a pointer receiver) did not satisfy the lifted
+                // anonymous `interface{ Basic() *BasicType }`, and its assertion threw for ten of the
+                // package's forty tests.
+                bool valueEmbedBoxRecv = typeName == promotedStructType && directEmbedIsValue;
 
                 if (pointerEmbedTypeNames.Contains(embedKey(typeName)) || valueEmbedBoxRecv)
                 {
