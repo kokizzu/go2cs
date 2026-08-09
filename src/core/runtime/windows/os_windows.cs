@@ -232,7 +232,7 @@ internal static void initSysDirectory() {
 }
 
 //go:linkname windows_GetSystemDirectory internal/syscall/windows.GetSystemDirectory
-internal static @string windows_GetSystemDirectory() {
+public static @string windows_GetSystemDirectory() {
     return @unsafe.String(ᏑsysDirectory.at<byte>(0), sysDirectoryLen);
 }
 

@@ -4441,16 +4441,33 @@ Probed directly — same 446-character path, same machine:
 | .NET, `<ApplicationManifest>` carrying `<ws2:longPathAware>true</ws2:longPathAware>` | **succeeds** |
 
 The root is that **converted Windows binaries are not long-path aware and every Go Windows binary
-is** — Go's linker bakes that manifest in. `MkdirAll` worked because Go's `fixLongPath` prefixes
-`\\?\` explicitly; `Chdir` hands `SetCurrentDirectoryW` a plain path, and without the manifest the
-process is held to `MAX_PATH`. (`\\?\` is no escape hatch here: `SetCurrentDirectory` rejects the
-extended form outright — it fails 206 too.) Verified to hold under `dotnet run`, which is how the
-pipeline launches the host, so an app manifest genuinely reaches the process.
+is**. `MkdirAll` worked because Go's `fixLongPath` prefixes `\\?\` explicitly; `Chdir` hands
+`SetCurrentDirectoryW` a plain path, and without the opt-in the process is held to `MAX_PATH`.
+(`\\?\` is no escape hatch here: `SetCurrentDirectory` rejects the extended form outright — it fails
+206 too.)
 
-**Not implemented here, deliberately: the remedy is one `<ApplicationManifest>` property on the
-emitted csproj TEMPLATE, which lane r55a owns.** Escalated rather than duplicated. It is worth doing
-beyond this one row — it is a "runs like Go" gap for every converted Windows program, not a
-test-host detail — and it takes `syscall` to 62/62.
+**CLOSED 2026-08-09 (r56e) — `syscall` banks at 62/62. The diagnosis above held; the MECHANISM
+attributed to Go did not, and the correction changed the remedy.** Go's linker bakes in no manifest.
+`runtime/os_windows.go`'s `initLongPathSupport()`, called from `osinit()`, checks for Windows
+10.0.15063 and then sets the undocumented `IsLongPathAwareProcess` bit in the PEB's bit field
+itself — which is why every Go Windows binary is long-path aware.
+
+That distinction is not academic, because the two routes are **not** equivalent: Windows honors a
+manifest's `longPathAware` only when the machine-wide policy
+`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled` is ALSO 1. It is 1 on this
+machine — which is exactly why the manifest measured as a fix in the row above — so a manifested
+converted binary would still have diverged from the Go binary on a default install, where that value
+is 0. Go asks for neither the manifest nor the policy.
+
+So the remedy landed in **golib, not the csproj template**: `builtin.WindowsLongPaths.cs` sets the
+same PEB bit from `InitializeGoLib`, golib's analogue of `osinit`. Probed both ways in one process —
+without golib the PEB reads `0x04` and a 434-character `Directory.SetCurrentDirectory` fails
+`0x800700CE`; referencing golib it reads `0x84` before the probe's own code runs and the same call
+succeeds. It is also the far smaller footprint: no `<ApplicationManifest>` property, no per-project
+manifest artifact, nothing in the emitted `.csproj` — so CNR stayed byte-identical across all 576
+behavioral packages *including* their `.csproj`, and none of the banked `<pkg>.tests.csproj` went
+stale. `internal/syscall/windows.CanUseLongPaths` is deliberately left false (golib cannot reference
+a converted package, and the `\\?\` spelling still works with the bit set).
 
 ### Rooted, not fixed — carried back with evidence
 
@@ -4489,6 +4506,20 @@ test-host detail — and it takes `syscall` to 62/62.
   `Environment.GetFolderPath(SpecialFolder.System)`, with the registry row landing WITH it rather
   than before it. `TestDir`/`TestEnvOverride` are the staging-cwd class above — the re-exec'd CGI
   child resolves a different `go2cs-tests` root than the parent's `os.Getwd` reports.
+  **DONE 2026-08-09 (r56e), exactly as prescribed** — the row (`bareDecl: false`; this is the handle
+  consumer shape, the first forwarded one since `unique`) and `runtime/windows/os_windows_impl.cs`
+  landed together, reproducing Go's trailing backslash and its "Unable to determine system directory"
+  throw. Measured over the built corpus: `GetSystemDirectory()` returns `C:\WINDOWS\system32\` and
+  `net`'s cctor initializes.
+  ⚠ **But "every httptest consumer dies in net's cctor" over-generalized from the `cgi` case, and the
+  board should not carry it forward unqualified.** Re-measured `net/http/httptest` after the fix:
+  the `GetSystemDirectory` throw is entirely ABSENT from the run (0 occurrences), yet the census is
+  **~23 pass / 25 fail / 3 infrastructure-error of 55**, essentially unchanged from the 24-of-55
+  first census recorded above. The cctor was a real blocker and it is gone; it was simply not
+  `httptest`'s BINDING one. Its dominant remaining failure is the already-tracked `array<T>`
+  unshaped-instance class (`panic: index out of range [0] with length 0` inside
+  `go.array\`1.get_Item`), which is that arc's to own. So the unlock should be re-measured per
+  package rather than assumed to free the family.
 - **`internal/poll` 18/19** — `runtime_pollServerInit` is a `PartialStubGenerator` stub reached
   through `sync.Once` from `pollDesc.init`; the netpoller has no managed body. Unchanged from this
   board's own reading.
