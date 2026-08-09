@@ -40,6 +40,12 @@ using System.Runtime.InteropServices;
 // containsManualConversionMarker).
 [module: go.GoManualConversion]
 
+// [LibraryImport] requires /unsafe unconditionally (SYSLIB1062). This package's converted emission
+// happens to need it too, so the flag is already true — but inheriting a requirement by luck is
+// how it disappears: declare it in the file that has it and the union keeps it true whatever the
+// emission does next.
+[module: go.GoRequiresUnsafe]
+
 namespace go;
 
 using bytealg = @internal.bytealg_package;
@@ -362,20 +368,25 @@ private struct NativeSecurityAttributes
     public int32 InheritHandle;
 }
 
-[DllImport("kernel32.dll", EntryPoint = "CreateProcessW", SetLastError = true)]
-private static extern int win32CreateProcess(IntPtr applicationName, IntPtr commandLine, IntPtr processAttributes, IntPtr threadAttributes, int inheritHandles, uint32 creationFlags, IntPtr environment, IntPtr currentDirectory, IntPtr startupInfo, IntPtr processInformation);
+// The source generator accepted all five of these UNCHANGED, and that is the result worth
+// recording rather than the syntax. Every parameter is already a native word because this file
+// deliberately hands CreateProcessW unmanaged copies of every buffer (the soundness note in the
+// header) — so the "nothing managed crosses this boundary" discipline the file follows by
+// convention is, from here on, checked by the compiler.
+[LibraryImport("kernel32.dll", EntryPoint = "CreateProcessW", SetLastError = true)]
+private static partial int win32CreateProcess(IntPtr applicationName, IntPtr commandLine, IntPtr processAttributes, IntPtr threadAttributes, int inheritHandles, uint32 creationFlags, IntPtr environment, IntPtr currentDirectory, IntPtr startupInfo, IntPtr processInformation);
 
-[DllImport("advapi32.dll", EntryPoint = "CreateProcessAsUserW", SetLastError = true)]
-private static extern int win32CreateProcessAsUser(IntPtr token, IntPtr applicationName, IntPtr commandLine, IntPtr processAttributes, IntPtr threadAttributes, int inheritHandles, uint32 creationFlags, IntPtr environment, IntPtr currentDirectory, IntPtr startupInfo, IntPtr processInformation);
+[LibraryImport("advapi32.dll", EntryPoint = "CreateProcessAsUserW", SetLastError = true)]
+private static partial int win32CreateProcessAsUser(IntPtr token, IntPtr applicationName, IntPtr commandLine, IntPtr processAttributes, IntPtr threadAttributes, int inheritHandles, uint32 creationFlags, IntPtr environment, IntPtr currentDirectory, IntPtr startupInfo, IntPtr processInformation);
 
-[DllImport("kernel32.dll", EntryPoint = "InitializeProcThreadAttributeList", SetLastError = true)]
-private static extern int win32InitializeProcThreadAttributeList(IntPtr attributeList, int32 attributeCount, int32 flags, ref IntPtr size);
+[LibraryImport("kernel32.dll", EntryPoint = "InitializeProcThreadAttributeList", SetLastError = true)]
+private static partial int win32InitializeProcThreadAttributeList(IntPtr attributeList, int32 attributeCount, int32 flags, ref IntPtr size);
 
-[DllImport("kernel32.dll", EntryPoint = "UpdateProcThreadAttribute", SetLastError = true)]
-private static extern int win32UpdateProcThreadAttribute(IntPtr attributeList, uint32 flags, IntPtr attribute, IntPtr value, IntPtr size, IntPtr previousValue, IntPtr returnSize);
+[LibraryImport("kernel32.dll", EntryPoint = "UpdateProcThreadAttribute", SetLastError = true)]
+private static partial int win32UpdateProcThreadAttribute(IntPtr attributeList, uint32 flags, IntPtr attribute, IntPtr value, IntPtr size, IntPtr previousValue, IntPtr returnSize);
 
-[DllImport("kernel32.dll", EntryPoint = "DeleteProcThreadAttributeList")]
-private static extern void win32DeleteProcThreadAttributeList(IntPtr attributeList);
+[LibraryImport("kernel32.dll", EntryPoint = "DeleteProcThreadAttributeList")]
+private static partial void win32DeleteProcThreadAttributeList(IntPtr attributeList);
 
 // Copies a Go string to a NUL-terminated unmanaged UTF-16 buffer. Mirrors UTF16PtrFromString:
 // a string containing a NUL is rejected with EINVAL (Windows would silently truncate).

@@ -730,6 +730,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckLargeUintptrConst() => CheckTarget("LargeUintptrConst");
 
     [TestMethod]
+    public void CheckLibraryImportPartial() => CheckTarget("LibraryImportPartial");
+
+    [TestMethod]
     public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
 
     [TestMethod]

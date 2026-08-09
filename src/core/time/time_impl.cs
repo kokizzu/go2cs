@@ -4,6 +4,14 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
+// [LibraryImport] requires /unsafe unconditionally (SYSLIB1062) — the generated stub is written in
+// terms of pointers even for a signature that has none. `time`'s converted emission needs nothing
+// unsafe, so this package is the one where the declaration is genuinely load-bearing rather than
+// merely honest: without it the file below does not compile, and the .csproj that would have said
+// otherwise is regenerated on every transpile. Placed above the file-scoped namespace because module
+// attributes must precede every other element (CS1730).
+[module: go.GoRequiresUnsafe]
+
 namespace go;
 
 using System.Collections.Generic;
@@ -916,7 +924,7 @@ partial class time_package
     // sub-tick sleeps (runtime/os_windows.go: CreateWaitableTimerExW with
     // CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, Windows 10 1803+) and it is what keeps a 1 ms Go timer
     // from becoming a ~15 ms one.
-    private sealed class highResTimer : WaitHandle
+    private sealed partial class highResTimer : WaitHandle
     {
         private const uint CreateHighResolution = 0x2;
         private const uint TimerAllAccess = 0x1F0003;
@@ -964,13 +972,49 @@ partial class time_package
                 dueTime = -1;
             }
 
-            return SetWaitableTimer(SafeWaitHandle, ref dueTime, 0, 0, 0, false);
+            // The reference count the SafeWaitHandle parameter used to take implicitly — see the
+            // declaration below for why it is explicit now. Without it a concurrent Dispose could
+            // close the handle between the read and the kernel's use of it, and the timer would be
+            // armed on whatever object Windows had since given the number to.
+            bool addedRef = false;
+
+            try
+            {
+                SafeWaitHandle.DangerousAddRef(ref addedRef);
+
+                return SetWaitableTimer(SafeWaitHandle.DangerousGetHandle(), ref dueTime, 0, 0, 0, resume: false);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    SafeWaitHandle.DangerousRelease();
+                }
+            }
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "CreateWaitableTimerExW", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern nint CreateWaitableTimerExW(nint timerAttributes, string? timerName, uint flags, uint desiredAccess);
+        // CharSet.Unicode becomes StringMarshalling.Utf16. `timerName` is always null here (Go's
+        // runtime creates an unnamed timer), but the parameter stays a string because that is what
+        // the API takes and the marshalling for it is a pin, not a copy.
+        [LibraryImport("kernel32.dll", EntryPoint = "CreateWaitableTimerExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+        private static partial nint CreateWaitableTimerExW(nint timerAttributes, string? timerName, uint flags, uint desiredAccess);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetWaitableTimer(SafeWaitHandle timer, ref long dueTime, int period, nint completionRoutine, nint completionArg, bool resume);
+        // TWO rejections, and they are the two the migration was worth doing for.
+        //
+        //  1. SafeWaitHandle. The source generator does not marshal SafeHandles at all, because the
+        //     reference counting that makes them safe is a RUNTIME marshalling service. [DllImport]
+        //     supplied it invisibly, which reads as "SafeHandle, therefore safe" — but nothing in
+        //     the source said where the ref count was taken, so nothing would have said it if the
+        //     parameter had ever been changed to a raw handle. The declaration now takes the `nint`
+        //     it always passed, and Arm above takes the ref count where a reader can see it.
+        //
+        //  2. `bool`, in both directions. Its native width is a marshalling decision, not a fact
+        //     about the type: Win32 BOOL is a 4-byte int, C++ `bool` is one byte, and the runtime
+        //     marshaller's silent default of 4 bytes happened to be right here. The generator
+        //     refuses to guess. Both are now stated — UnmanagedType.Bool IS the 4-byte Win32 BOOL,
+        //     so the ABI is unchanged and the choice is written down.
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool SetWaitableTimer(nint timer, ref long dueTime, int period, nint completionRoutine, nint completionArg, [MarshalAs(UnmanagedType.Bool)] bool resume);
     }
 }
