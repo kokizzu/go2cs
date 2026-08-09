@@ -60,6 +60,11 @@ public static partial class builtin
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         Console.OutputEncoding = Console.InputEncoding = Encoding.UTF8;
 
+        // Go's runtime.osinit opts every Windows process into long-path handling before any user
+        // code runs; a converted program is an ordinary .NET process and gets nothing of the kind
+        // unless golib asks for it here. See builtin.WindowsLongPaths.cs.
+        InitializeWindowsLongPaths();
+
         // Goroutines are synchronous ThreadPool work items, and a goroutine parked on a channel
         // operation (a true unbuffered rendezvous, a full buffer, or a blocked select) holds its
         // pool thread while parked. Below the pool's minimum the hill-climbing injector adds
