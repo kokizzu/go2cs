@@ -233,12 +233,14 @@ Here is the full round-trip for a small CLI that uses [`github.com/fatih/color`]
 which itself pulls in `github.com/mattn/go-colorable`, `github.com/mattn/go-isatty`, and `golang.org/x/sys` —
 a genuine dependency graph:
 
-> **NOTE:** _these steps are tested on Windows only — they assume a `cmd.exe`-type shell._
+> **NOTE:** _the commands below run verbatim in both PowerShell and a POSIX shell (bash/zsh), on Windows and
+> on Linux. Where the two genuinely differ, both forms are shown and the block is labelled with its shell._
 
 **1 — Go: get the app and confirm it builds as Go.**
 
-```bat
-mkdir colordemo && cd colordemo
+```shell
+mkdir colordemo
+cd colordemo
 go mod init example.com/colordemo
 ```
 
@@ -259,27 +261,39 @@ Next, pin the app to a **Go 1.23-compatible** dependency set and confirm it buil
 
 > **NOTE:** _go2cs is built with **Go 1.23**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.23**. `fatih/color` v1.19+ and current `golang.org/x/sys` require Go 1.25, which would fail step 2 with_ `package requires newer Go version go1.25`_; pin as shown._
 
-```bat
-set GOTOOLCHAIN=local
-go get github.com/fatih/color@v1.18.0     & :: a Go 1.23-era release (v1.19+ requires Go 1.25)
-go mod tidy                               & :: download color + its (Go 1.23-era) dependencies
-go build ./...                            & :: baseline: confirm it compiles as Go first
+First pin the toolchain, so Go uses the 1.23 you have instead of fetching the newer one a dependency asks
+for — the one command whose syntax is shell-specific:
+
+```powershell
+$env:GOTOOLCHAIN = 'local'   # PowerShell
+```
+
+```bash
+export GOTOOLCHAIN=local     # bash / zsh
+```
+
+Then, in either shell:
+
+```shell
+go get github.com/fatih/color@v1.18.0   # a Go 1.23-era release (v1.19+ requires Go 1.25)
+go mod tidy                             # download color + its (Go 1.23-era) dependencies
+go build ./...                          # baseline: confirm it compiles as Go first
 ```
 
 **2 — go2cs: recurse-convert the app.** `go2cs` is the converter you put on your `PATH` in *Installing the
 converter* above, so it runs from anywhere. Point it at the **app** directory, and give it an output root
 to write the generated C# into:
 
-```bat
-cd path\to\colordemo
+```shell
+cd path/to/colordemo
 go2cs -recurse=nuget . csharp
 ```
 
 `go2cs` discovers the imports and converts each package, least-dependencies-first
-(`go-isatty` and `x/sys` → `go-colorable` → `color` → the app), into a parallel tree under `csharp\`,
-leaving your original Go source untouched. The converted app lands under `csharp\src\<import-path>`, and
-every third-party library under `csharp\pkg\<import-path>`. The standard library is referenced as
-`go.<pkg>` packages, and the generated `csharp\Directory.Build.props` supplies the version they resolve —
+(`go-isatty` and `x/sys` → `go-colorable` → `color` → the app), into a parallel tree under `csharp/`,
+leaving your original Go source untouched. The converted app lands under `csharp/src/<import-path>`, and
+every third-party library under `csharp/pkg/<import-path>`. The standard library is referenced as
+`go.<pkg>` packages, and the generated `csharp/Directory.Build.props` supplies the version they resolve —
 so the projects restore and build with no further configuration. A per-project `.slnx` sits next to every
 generated `.csproj`, each with that project plus its converted dependencies.
 
@@ -292,27 +306,39 @@ using github.com.fatih;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object helloFromFatihColorˢ = (@string)"hello from fatih/color"u8;
+
 internal static void Main() {
-    color.New(color.FgGreen, color.Bold).Println("hello from fatih/color");
+    color.New(color.FgGreen, color.Bold).Println(helloFromFatihColorˢ);
 }
 
 } // end main_package
 ```
 
+> **NOTE — platforms:** _steps 1 and 2 are verified on Linux as well as Windows. Steps 3 and 4 complete on
+> **Windows** today: the published 1.23.1.4 packages carry Windows-only assemblies, so on Linux the C# build
+> of a program whose import closure reaches `syscall` does not yet resolve. Linux support for these two steps
+> is in progress — see the [Roadmap](Roadmap.md)._
+
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
 converted dependency tree, restoring the go2cs packages on the way; opening it in Visual Studio makes the
 app the startup project (F5 runs it):
 
-```bat
-cd "csharp\src\example.com\colordemo\"
+```shell
+cd csharp/src/example.com/colordemo
 dotnet build example.com.colordemo.slnx -c Debug
 ```
 
 **4 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
-```bat
-cd "bin\Debug\net9.0\"
-colordemo.exe
+```shell
+cd bin/Debug/net9.0
+dotnet colordemo.dll
 ```
+
+A native launcher is built beside it — `colordemo.exe` on Windows, `./colordemo` on Linux — and runs the
+same program.
+
 _Expected output:_
 
 ![colorapp-output](images/colorapp-output.png)
@@ -325,13 +351,13 @@ A dependency closure is not always convertible today — a large third-party SDK
 or pull in a package go2cs cannot yet handle — and under plain `-recurse` that blocks the packages you
 actually came for. `-recurse=module` narrows the **scope** to the input module's own packages:
 
-```bat
-cd path\to\myapp
+```shell
+cd path/to/myapp
 go2cs -recurse=module . csharp
 ```
 
 Every package under the module's own `go.mod` converts, in dependency order, exactly as it would under the
-full `-recurse`; every third-party package is *referenced* — into `csharp\pkg\<import-path>`, the same place
+full `-recurse`; every third-party package is *referenced* — into `csharp/pkg/<import-path>`, the same place
 the full run would have converted it — but never converted, so nothing about it can fail the run. The
 converter prints the referenced-but-unconverted list when it finishes:
 
@@ -351,26 +377,28 @@ converted `.cs` and `.csproj` come out byte-identical either way, so nothing you
 #### Optional: build against a local standard library
 
 Some work wants the standard library on disk as C# source instead — to step into it in the debugger, or to
-change it and rebuild. `deploy-core` is a build script in the go2cs repo's **`src/`** folder (it is *not* on
-your `PATH`), so run it from there. It stages the standard library, runtime and analyzer at
-`%GOPATH%\src\go2cs` — the "deploy root" a converted project resolves through `$(go2csPath)`:
+change it and rebuild. `deploy-core.ps1` is a PowerShell script in the go2cs repo's **`src/`** folder (it is
+*not* on your `PATH`), so run it from there, from a PowerShell prompt — `powershell` or `pwsh` on Windows,
+`pwsh` on Linux and macOS. It stages the standard library, runtime and analyzer at `<gopath>/src/go2cs` —
+the "deploy root" a converted project resolves through `$(go2csPath)`, where `<gopath>` is the directory
+`go env GOPATH` prints:
 
-```bat
-cd path\to\go2cs\src
-deploy-core
+```powershell
+cd path/to/go2cs/src
+./deploy-core.ps1
 ```
 
 Staging is **per-machine**, not per-app; redo it when you pull a new go2cs version. Then convert with plain
 `-recurse`, pointing at the deploy root:
 
-```bat
-cd path\to\colordemo
-go2cs -recurse . -go2cspath %GOPATH%\src\go2cs
+```shell
+cd path/to/colordemo
+go2cs -recurse . -go2cspath <gopath>/src/go2cs
 ```
 
-The converted app lands under `%GOPATH%\src\go2cs\src\<import-path>` and its converted third-party
-dependencies under `%GOPATH%\src\go2cs\pkg\<import-path>`, with the standard library referenced at
-`%GOPATH%\src\go2cs\core\`; build and run it exactly as in steps 3 and 4 from there. The converted C# is
+The converted app lands under `<gopath>/src/go2cs/src/<import-path>` and its converted third-party
+dependencies under `<gopath>/src/go2cs/pkg/<import-path>`, with the standard library referenced at
+`<gopath>/src/go2cs/core/`; build and run it exactly as in steps 3 and 4 from there. The converted C# is
 the same either way — only the reference style in the generated projects differs.
 
 ## Project layout
