@@ -4077,19 +4077,19 @@ Eighteen packages match every verdict but one or two. Each cell is the whole gap
 
 | Package | Census | The row, and its root |
 |:--|:--:|:--|
-| `runtime/internal/math` | 0 of 1 | the untyped-shift int32 fold, below — one converter rule |
-| `internal/platform` | 0 of 1 | `json: cannot unmarshal array into []platform_test.listEntry` — a converter-LIFTED anonymous struct as a JSON slice element (`crypto/internal/hpke` is the same shape) |
-| `internal/profile` | 0 of 1 | `TestPackedEncoding` encodes empty (`got []`) |
+| ~~`runtime/internal/math`~~ | ~~0 of 1~~ | **BANKED** (roster line 143) — re-measured 1/1 by r57b |
+| `internal/platform` | 0 of 1 | `json: cannot unmarshal array into` a slice of a converter-LIFTED anonymous struct (`crypto/internal/hpke` is the same shape). ⚠ r57b's naming arm changed the TEXT to Go's structural `[]struct { GOOS string; … }`; the row is a Kind question about the lift, not a naming one |
+| ~~`internal/profile`~~ | ~~0 of 1~~ | **BANKED** (roster line 117) — re-measured 1/1 by r57b |
 | `internal/godebugs` | 0 of 1 | `TestAll` reads GOROOT-relative `../../../doc/godebug.md`; the pipeline's working dir has none |
 | `html` | 2 of 3 | the `array<T>` unshaped-instance class, producer (1) |
 | `internal/chacha8rand` | 3 of 4 | the same class, producer (2) |
 | `internal/singleflight` | 4 of 5 | `TestDoAndForgetUnsharedRace` never returns — still the only hang in the tail |
 | ~~`internal/cpu`~~ | ~~7 of 8~~ | **BANKED this arc** |
-| `go/ast` | 8 of 9 | `ast.Fprint` → `reflect.MapKeys` → `mapType.get_MapType()` interface conversion; reflection chip |
+| ~~`go/ast`~~ | ~~8 of 9~~ | **BANKED by r57b at 9/9** — two roots: the unbridged map read pair, then the lift's leaked C# name |
 | `debug/gosym` | 8 of 9 | `TestPCLine`'s child process exits 1 |
-| `debug/pe` | 9 of 10 | one row |
+| `debug/pe` | 9 of 10 | the `array<T>` unshaped class — `_ [3]uint8` prints `[0 0 0 0 0 0 0 0]` vs Go's `[0 0 0]` (r57b) |
 | `net/http/internal` | 9 of 10 | the `AllocsPerRun` byte/count shim, below |
-| `net/http/fcgi` | 11 of 12 | `TestGetValues` byte-stream mismatch in the FCGI_GET_VALUES record |
+| ~~`net/http/fcgi`~~ | ~~11 of 12~~ | **BANKED** (roster line 133) — re-measured 12/12 by r57b; the `TestGetValues` mismatch is gone |
 | `crypto/cipher` | 13 of 14 | the oracle's build tags, below |
 | `crypto/internal/edwards25519/field` | 13 of 16 | the `array<T>` class, producer (3) |
 | `internal/poll` | 18 of 19 | `runtime_pollServerInit` — the netpoller has no managed body |
@@ -4815,3 +4815,119 @@ of `type ruleKind int`), so a converter fix landed after `time` was banked and i
 went stale. Confirmed NOT this branch's by building the converter at the merge base `363e728bb` and
 re-running `time`'s `-tests` conversion: the base reproduces the identical flip. It needs a
 re-bank of that one file by whoever owns the fix, not a restore in perpetuity.
+
+## r57b — the near-miss singles, re-measured: five rows were already banked (2026-08-09)
+
+A breadth pass over the board's smallest-gap rows, run under the r44a doctrine: measure cheaply,
+bank what clears, characterize what does not. Its most useful product is not the one bank — it is
+that **the ONE ROW AWAY table above is substantially stale**, and a lane that trusts it spends its
+budget re-deriving closed rows.
+
+### The stale table — verify before you plan
+
+Five of the eighteen entries no longer exist. `internal/profile` (roster line 117),
+`runtime/internal/math` (143), `net/http/fcgi` (133) and `syscall` are **banked**, and `internal/cpu`
+is already struck through. Each was re-measured this pass and each returned a clean
+`Validated N tests` — `net/http/fcgi` at 12/12, whose recorded `TestGetValues` byte-stream mismatch
+is gone. Treat every row below as a HYPOTHESIS to re-measure, never as a work item to start from;
+the roster table in `docs/ValidatedTestPackages.md` is the authority and the board is a lagging
+index of it.
+
+### `go/ast` — BANKED 9/9, and the row had two roots stacked
+
+The recorded root (`ast.Fprint` -> `reflect.MapKeys` -> `mapType.get_MapType()`) was right about the
+family and hid a second defect behind it. Both are closed in this arc's bank commit; the short form
+is that **the map READ pair was never bridged** — `MapRange`/`MapIter.*`/`SetMapIndex` all live in
+the bridge, `Value.MapKeys` and `Value.MapIndex` never joined them — and that with the panic gone,
+an **unnamed struct reported its LIFT's C# name** (`ast_internal_test.typeᴛ1`) where Go renders it
+structurally (`struct { X int; y int }`). The naming arm is corpus-wide and visible immediately:
+`internal/platform`'s failure text moved from `[]platform_test.listEntry` to
+`[]struct { GOOS string; GOARCH string; ... }` in the same pass. Its row does NOT close — the
+residual is `encoding/json` refusing to unmarshal an array into a slice whose element is a lifted
+struct, which is a Kind question about the lift, not a naming one.
+
+### `net/smtp` — the recorded root is CLOSED; what is behind it is the Windows-socket class
+
+The board's `loadcert: tls: failed to parse private key` is **gone**: the PEM/ASN.1 private-key
+parse now succeeds, which retires the shared attribution with `crypto/rsa`'s cctor panic for this
+package (that package is r57a's and is not re-measured here). All five rows now fail on ONE panic,
+and it is not a TLS defect at all:
+
+```
+panic: runtime error: index out of range [0] with length 0
+  at go.array`1.get_Item ... golib\array.cs:280
+  at go.syscall_package.sockaddr(ж`1 Ꮡsa) ... syscall\windows\syscall_windows.cs:881
+  at go.syscall_package.Bind(ΔHandle fd, ΔSockaddr sa)
+  at net.listenStream -> socket -> internetSocket -> listenTCP -> net.Listen
+```
+
+`(*SockaddrInet4).sockaddr` does `p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))` to write the port
+in network byte order. The emitted form is
+`var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(...ᏑPort)))`, and `ж<array<byte>>`
+over a raw address materializes `default(array<byte>)` — a LENGTH-ZERO array — so `p[0]` panics.
+`array<T>` is a managed container, not two inline bytes, so no address reinterpret can produce one.
+
+**This is `net.Listen` on Windows, so it is not one package's row.** `net/http/cgi` hits the
+identical stack through `httptest.NewServer` -> `newLocalListener`, and every package that listens
+on a TCP socket will. Note also that fixing the reinterpret alone is not enough: `Bind` then hands
+the kernel `unsafe.Pointer(&sa.raw)`, and `RawSockaddrInet4`'s `Addr [4]byte` / `Zero [8]uint8` are
+managed references — which is precisely the **open syscall STRUCT-PASSING seam** already censused
+above, whose remedy is the established blittable mirror (`GetTimeZoneInformation`,
+`findFirstFile1`/`findNextFile1`). The board predicted `net` would be the package that forces it.
+It has.
+
+### The `array<T>` unshaped-instance class has a sharper root than "producer (N)"
+
+`html`'s row is a **map MISS**. Go's `if x := entity2[string(entityName)]; x[0] != 0` reads the ZERO
+VALUE of `[2]rune` on a miss and indexes it legally; golib's indexer returns `default(array<rune>)`,
+length zero, and `x[0]` panics. `debug/pe` is the same class at a different site — its
+`_ [3]uint8` padding field prints `[0 0 0 0 0 0 0 0]` against Go's `[0 0 0]`, so there the shape is
+wrong rather than absent. The class is therefore **"an `array<T>` zero value produced without its Go
+length"**, with several distinct producer SITES, of which the map-miss is one.
+
+golib already carries the contract (`IGoZeroShaped` / `builtin.GoZero<T>`), but it recovers shape
+from a TEMPLATE, and a map miss has none. The natural general fix is the idiom the converter already
+emits for slices — `new slice<ΔValue>(mlen, () => new(nil))` — extended to a map's miss value, since
+the declared value type's Go shape is statically known at the construction site. That is a converter
++ golib arc with corpus-wide map-construction emission impact, not a near-miss single.
+
+### The converted-host WORKING-DIRECTORY class — why no cheap subset exists
+
+`go/build` re-measures unchanged at 57 of 58 (`TestLocalDirectory`: `ImportPath="."`), and
+`internal/testenv` at 3 of 4, now with its exact mechanism: the host's working directory is
+`<temp>/go2cs-tests/<flat pkg>/<guid>/<last segment>` (`TestHost.CreateRunDirectory`), so
+`../../../bin/go.exe` resolves to `go2cs-tests/internal_testenv/bin/go.exe`.
+
+All four members of the class (`internal/godebugs`, `io/ioutil`, `go/build`, `internal/testenv`)
+want the SAME thing: `CWD == $GOROOT/src/<pkg>`, which is the working directory `go test`
+guarantees. Reproducing it is honest — it is the harness's job to reproduce `go test`'s execution
+environment, and CWD is part of that environment exactly as GOROOT and the env are.
+
+**But there is no cheap subset, and the reason is worth recording.** Deepening the run directory to
+`<runRoot>/src/<full import path>` costs nothing and fixes the SHAPE — and closes none of the four,
+because every one of them needs CONTENT at the reconstructed ancestor: `bin/go.exe` for testenv,
+`doc/godebug.md` for godebugs, the package's own `.go` sources for `go/build`'s `ImportDir`, the
+sibling package's sources for `io/ioutil`. So the remedy really is the full synthetic-GOROOT
+staging the board suspected, it changes the execution contract for all 122 banked packages at once,
+and it interacts with the staging path that feeds the input-digest manifest. Design-with-user, not a
+breadth lane's — and NOT a disclosure, for the reason already recorded: it is satisfiable at a layer
+go2cs owns.
+
+`net/textproto` also re-measures unchanged at 25 of 26 — still the want-ZERO
+`canonicalMIMEHeaderKey allocs = 816` against the AllocsPerRun-reports-BYTES shim, still not a
+disclosure candidate under ruling #1.
+
+### Escalation — `InterfaceInheritance` fails on master, and it is not this lane's
+
+The full behavioral suite gating this arc came back **554/554 transpile + compile + target, 527 of
+528 output**, with one failure: `InterfaceInheritance`, `map[:2 :1]` against Go's `map[:1 :2]`.
+
+Confirmed **pre-existing**, by restoring `src/core/golib` and `src/core/reflect` to the merge base
+(`7c7bc7d69`) and re-running the project filtered — it fails identically there. It is also
+deterministic, not flaky: six consecutive runs give byte-identical output. The mechanism is
+`internal/fmtsort.compare`'s Interface arm, which orders two keys of differing dynamic type by
+comparing their type descriptors as VALUES — in Go a `Kind Pointer` compare of descriptor
+ADDRESSES, which the linker assigns in declaration order. go2cs's canonical interned
+`reflect.Type` has no such ordering, so the pair sorts by whatever box identity gives. Worth
+deciding deliberately rather than patching: this is an ordering Go's own documentation treats as an
+implementation detail, so the guard may be asserting something go2cs can only match by luck.
