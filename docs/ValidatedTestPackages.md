@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **117 / 215 testable packages validated — 54.4%**
+> ### Phase 4 progress: **118 / 215 testable packages validated — 54.9%**
 >
-> **13,659 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,699 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -63,6 +63,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) | 7 | | Constant-time primitives; word-at-a-time `XORBytes` over the full alignment matrix. · [proof](validation/current/crypto.subtle.md) |
 | [`database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) | 1 |  | The driver `Value` contract — `IsValue`/`IsScanValue` over every convertible Go kind and the default converter's integer-range and pointer-indirection rules. · [proof](validation/current/database.sql.driver.md) |
 | [`debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) | 197 |  | Build-info extraction from real linked binaries — the ELF/Mach-O/PE/XCOFF reader matrix over the package's own `testdata` executables, and the blob scan repeated at every start offset. · [proof](validation/current/debug.buildinfo.md) |
+| [`debug/dwarf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/dwarf) | 40 |  | DWARF debug info — the whole type graph (basic, struct, array, pointer, typedef including a cycle, qualified, unsupported), bit fields and DWARF 4/5 bit offsets, line tables across GCC/Clang and zstd-compressed sections, ranges/rnglists, split and type units. Its reader satisfies an **anonymous** interface via a pointer-receiver method promoted from an exported value embed — the shape whose absent promotion made the run-time method set incomplete. · [proof](validation/current/debug.dwarf.md) |
 | [`debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) | 7 |  | Mach-O object files — the load-command walk over the thin and fat testdata corpus, dynamic-symbol parsing including a malformed `LC_DYSYMTAB`, and the relocation/CPU stringer tables. Reached through `saferio.SliceCap` over a slice of the `Load` **interface**, whose Go size `unsafe.Sizeof` now answers from Go's own layout rule. · [proof](validation/current/debug.macho.md) |
 | [`debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) | 2 |  | Plan 9 a.out objects — section table and symbol parsing over the testdata corpus, plus the malformed-file error path. · [proof](validation/current/debug.plan9obj.md) |
 | [`encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) | 9 | | Ascii85 encode/decode and streaming wrappers. · [proof](validation/current/encoding.ascii85.md) |

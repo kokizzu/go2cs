@@ -647,10 +647,20 @@ internal class StructTypeTemplate : TemplateBase
                 // same-named FOREIGN extension win (flag.Name → CS1929) — trust the return type's
                 // ACTUAL accessibility so a public-but-lowercase return keeps the forwarder public.
                 // Every other promotion keeps the conservative name heuristic (no golden/compile churn).
+                //
+                // The VALUE-EMBED BOX SHIM takes the accurate test for the same reason, and it is the
+                // stronger case: that shim EXISTS to be reachable across assemblies (it performs a
+                // descent the caller cannot spell), so emitting it `internal` defeats its own purpose.
+                // The name heuristic gets more than lowercase builtins wrong — a TUPLE return reduces
+                // under GetSimpleName to its last dotted segment, `error)`, which reads unexported for
+                // every multi-return Go method. archive/zip is the reached case: `Open`, promoted from
+                // ReadCloser's exported `Reader` embed, returns `(io.fs.File, error)` and was emitted
+                // internal, so the test assembly's own ReadCloser→fs.FS adapter could not bind it
+                // (CS1929, and the whole package build-blocked behind it).
                 if (method.ReturnType != "void")
                 {
                     bool returnTypeIsPublic = GetScope(GetSimpleName(method.ReturnType)) == "public" ||
-                        (directEmbedIsUnexportedValue && method.ReturnTypeIsPublic);
+                        ((directEmbedIsUnexportedValue || method.IsValueEmbedBoxRecv) && method.ReturnTypeIsPublic);
 
                     if (!returnTypeIsPublic)
                         methodScope = "internal";

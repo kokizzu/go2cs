@@ -1229,7 +1229,10 @@ internal static bool Less(this reverse r, nint i, nint j) {
 Promoted-embed structs construct through a generated constructor (never `default`, which would leave null
 boxes). Cross-package embeds resolve through the compiled type's metadata, and pointer-receiver methods
 promoted through a value embed are routed at the call site (`t.of(timeTimer.Ꮡtimer).modify(…)`) so writes
-land on the real storage. A field promoted through a **pointer** embed takes the hop before its reference is
+land on the real storage. Such a method is *also* emitted as a `ж<T>`-receiver extension on the outer type,
+because that emitted set is what golib reads back at run time as the type's Go **method set** — so a
+promotion the generator skips is not a missing shortcut but a Go method the type is then judged not to have,
+and every duck-typed assertion against it quietly misses. A field promoted through a **pointer** embed takes the hop before its reference is
 built, so its address is rooted where Go roots it — `f.pfd` for `type File struct{ *file }` *is* `f.file.pfd`,
 one address whichever spelling reaches it:
 

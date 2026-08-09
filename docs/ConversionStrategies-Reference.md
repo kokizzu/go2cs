@@ -9348,7 +9348,7 @@ reference to an `internal` member reads as **CS0117** ("`testing_package.T` does
 for `Ꮡcommon`"), not CS0122. Every path through the unexported embed (`common`, `Ꮡcommon`, its promoted
 members) is `internal`, so no converter-only descent can reach it. The fix is two-sided:
 
-- **`go2cs-gen` (`StructTypeTemplate`)** — for a direct, non-generic, **unexported VALUE embed**, harvest
+- **`go2cs-gen` (`StructTypeTemplate`)** — for a direct, non-generic **VALUE embed**, harvest
   the embed's box-receiver primaries (`GetBoxReceiverExtensionMethods`, previously collected only for
   POINTER embeds) and, for each **exported** one, emit a single box-only shim (`IsValueEmbedBoxRecv`) that
   performs the descent internally, where the `internal` accessor is reachable:
@@ -9366,7 +9366,10 @@ members) is `internal`, so no converter-only descent can reach it. The fix is tw
   `!promotedStructType.Contains("<")` (a plain value embed's type name never carries `<`, whereas the
   pointer-box form `ж<…>` and generic embeds do) — a more robust test than the `@`-keyword-escaped
   `pointerEmbedTypeNames` membership, whose `ж<@file>`-shaped names mismatch and mis-fired the shim onto
-  os.File's `*file` POINTER embed (a stray `File.Ꮡfile.Value`, CS0119).
+  os.File's `*file` POINTER embed (a stray `File.Ꮡfile.Value`, CS0119). The embed's own **exportedness is
+  NOT part of that discrimination** — it was, until r56g, and the restriction was never a Go rule; see
+  *A value embed promotes its pointer-receiver methods into the outer POINTER method set* below for why
+  the narrower gate silently truncated a Go method set rather than merely skipping an unreachable shim.
 - **the converter (`convSelectorExpr`)** — when the promoted-method descent is reached through an
   unexported embed of a FOREIGN package (single hop), it drops the inaccessible `.of(…)` view and calls
   the promoted method DIRECTLY on the receiver box, binding the public shim:
@@ -9422,6 +9425,112 @@ pkg.Scope().Lookup(name)._<ж<types.TypeName>>().Type();   // binds the public T
 (Guarded by `PromotedValueEmbedExprRecv`: the promoted `Name()` called on a `map[string]any`
 assert-chain receiver and on a constructor-call receiver, output-compared vs Go; CS1061 without the
 fix.)
+
+### A value embed promotes its pointer-receiver methods into the outer POINTER method set
+Go's rule has no exportedness clause: for `type S struct{ E; … }` embedding `E` **by value**, the method
+set of `*S` contains every **pointer**-receiver method of `E`, because `&s.E` is addressable. (The method
+set of a plain `S` does **not** — that half is the narrowing this subsection also has to preserve.)
+
+The shim above emitted exactly that promotion, but only for an **unexported** embed. That gate arrived
+with the cross-package-reachability problem it solves (`testing.T.Errorf`, whose `Ꮡcommon` accessor is
+`internal`) and reads as a scoping decision, which is why it looked harmless: for an EXPORTED embed the
+accessor is public, so the converter's own call sites descend inline and never need a shim.
+
+They are not the only reader. **golib reconstructs a Go method set at RUN TIME by scanning the EMITTED
+extension methods** (`TypeExtensions.GetGoMethodSetCandidates`, shared by the `StructurallyImplements`
+probe and `AdapterBinder`'s shell binder — see *Every eligible interface carries runtime duck-typing
+shells*). So an un-emitted promotion is not a missing convenience, it is an **ABSENT Go method**: the type
+stops satisfying interfaces Go says it satisfies, at every site the compile-time recorders cannot reach.
+
+`debug/dwarf` is the reached case. Its `readType` asserts to an **anonymous** interface —
+
+```go
+typ.(interface{ Basic() *BasicType }).Basic()
+```
+
+— which the converter lifts to a package-local `[GoType("dyn")] partial interface readType_type`. The
+concrete types (`*IntType`, `*UintType`, `*CharType`, `*UcharType`, `*FloatType`, …) satisfy it **only**
+through `func (b *BasicType) Basic() *BasicType` promoted from their exported `BasicType` value embed, and
+the value is held as a *different* named interface (`Type`) at the assertion site — so no compile-time
+witness can exist for the pair and the run-time tier is the only thing that can answer. It answered MISS:
+
+```
+panic: interface conversion: interface {} is *dwarf.UintType, not dwarf.readType_type
+```
+
+The gate is now the Go rule — any direct, non-generic VALUE embed promotes its box-receiver primaries —
+and the shim keeps its `ж<S>`-only receiver, which is what preserves the narrowing half (a `Uint` VALUE
+must still miss the same anonymous interface):
+
+```csharp
+public static ж<BasicType> Basic(this ж<UintType> Ꮡtarget) => Ꮡtarget.of(UintType.ᏑBasicType).Basic();
+```
+
+The `of(…)` view is load-bearing rather than incidental: it **aliases** the embedded storage, so dwarf's
+caller writing `t.Name`/`t.BitSize` through the returned `*BasicType` reaches the real field. A
+copy-returning promotion would have compiled, run, and printed plausible zeros.
+
+**Reachability addendum — the shim was emitted, and emitted unreachable.** Widening the collection gate
+made the promotion EXIST; it did not by itself make it bindable. The shim's scope is the shared
+`methodScope`, whose return-type downgrade runs the name heuristic — and `GetSimpleName` reduces a type to
+its last dotted segment, which for a Go MULTI-RETURN is `error)`. Lowercase. So *every tuple-returning*
+promoted method read as unexported and was emitted `internal`. `archive/zip` is the reached case: `Open`,
+promoted from `ReadCloser`'s exported `Reader` embed, returns `(io.fs.File, error)`, so the package's own
+test assembly could not bind the shim its `ReadCloser`→`fs.FS` adapter needed (**CS1929**, the whole
+package build-blocked behind it). The accurate test (`method.ReturnTypeIsPublic`, from
+`IsEffectivelyPublicType`, which walks tuple elements) already existed for the plain-return case; it now
+also applies to `IsValueEmbedBoxRecv`, which is the *stronger* case for it — that shim exists precisely to
+be reachable across assemblies, since it performs a descent the caller cannot spell, so emitting it
+`internal` defeats its own purpose. Every other promotion keeps the conservative heuristic.
+
+Only the **collection** gate widened. The return-type relaxation's OTHER arm
+(`directEmbedIsUnexportedValue && method.ReturnTypeIsPublic`, in the plain-return addendum above) stays on
+the narrow condition, because it answers a different question — a cross-package call the converter emits
+as a bare `Ꮡt.M()` — which remains the unexported-embed case alone.
+
+### A named field whose name equals its interface type is NOT an embedded interface
+`ImplementGenerator` forwards an interface member it cannot bind directly through an **embedded interface
+field** (zip's `type nopCloser struct{ io.Writer }` → `m_box.Value.Writer.Write(…)`), and detects one by
+NAME: the field's name equals its interface type's simple name, modulo the `Δ` collision marker (the
+converter names the field after the Go embed, so a Δ-renamed interface TYPE keeps a markerless FIELD —
+slogtest's `wrapper` embeds `slog.Handler` as `Handler`).
+
+That test cannot, by itself, be right. Go emits an **ordinary named field** `Type Type` and an **embedded**
+`Type` to the same C# field declaration, and only the first promotes nothing. `debug/dwarf` carries both
+shapes in ONE struct:
+
+```go
+type PtrType struct {
+	CommonType        // a real embed — promotes Common()
+	Type       Type   // an ordinary field — promotes nothing
+}
+```
+
+`Common()` was therefore forwarded through the FIELD, returning the **referenced** type's `CommonType`
+instead of the receiver's own — a silent wrong answer whenever `Type` was non-nil, and a null dereference
+when it was not. Five dwarf structs carry that field (`QualType`, `ArrayType`, `PtrType`, `StructField`,
+`TypedefType`).
+
+Resolved by **precedence**, not by a new signal — none is available, since the two emissions are identical
+by construction. Promotion through a marker-backed **depth-1** value embed (`public partial ref CommonType
+CommonType { get; }` — a hard converter marker the name heuristic is not) now resolves BEFORE the
+interface-field arm:
+
+```csharp
+ж<CommonType> ΔType.Common() => m_box.of(PtrType.ᏑCommonType).Common();   // not m_box.Value.Type.Common()
+```
+
+Legal Go guarantees the two can never both be correct at depth 1: promoting one member from two depth-1
+embeds is an **ambiguity the Go compiler rejects**, so a struct where both arms answer is a struct whose
+"interface embed" is really a plain field. Deeper embed levels stay BELOW the interface arm, matching Go's
+shallower-embed-wins rule. Implemented by running the existing `.of(…)` descent in two passes (`maxDepth`
+1, then 4) so the "what can bind at this hop" logic is not duplicated and cannot drift from itself.
+
+(Both subsections guarded by `PromotedEmbedAnonIfaceWitness`, which pins the anonymous-interface assert
+from a named-interface-held value, the two-concrete-type spread, the type-switch form, the ALIASING write
+back through the promoted pointer, the VALUE-must-miss narrowing, and the `Ptr{CommonType; Node Node}`
+shape checking the VALUE `Common()` returns rather than merely that nothing crashed. `debug/dwarf`
+30 → 40 of 40.)
 
 ### Cross-package value-to-interface conversions use the local VALUE adapter
 A VALUE conversion of a FOREIGN named type to a LOCAL interface (os's `Signal` interface is
