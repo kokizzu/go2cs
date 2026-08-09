@@ -1121,6 +1121,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckPrintfWidthFlags() => CheckTarget("PrintfWidthFlags");
 
     [TestMethod]
+    public void CheckPromotedEmbedAnonIfaceWitness() => CheckTarget("PromotedEmbedAnonIfaceWitness");
+
+    [TestMethod]
     public void CheckPromotedEmbedUser() => CheckTarget("PromotedEmbedUser");
 
     [TestMethod]

@@ -1,4 +1,4 @@
-// ImplementGenerator.cs - Gbtc
+﻿// ImplementGenerator.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -607,6 +607,26 @@ public class ImplementGenerator : ISourceGenerator
                     }
                 }
 
+                // DEPTH-1 promotion through a marker-backed VALUE embed is resolved FIRST, ahead of
+                // the embedded-INTERFACE-field arm below. That arm's field test is a NAME heuristic
+                // and it cannot, on its own, tell a Go embedded interface from an ordinary named
+                // field whose name happens to equal its type's simple name: `type PtrType struct {
+                // CommonType; Type Type }` and slogtest's genuine `wrapper` embed of `slog.Handler`
+                // BOTH emit a plain `public ΔType Type;` / `public ΔHandler Handler;` field.
+                //
+                // Where a depth-1 value embed the converter MARKED (`public partial ref CommonType
+                // CommonType { get; }`) provides the member, the heuristic's answer is the wrong one
+                // by construction: legal Go cannot promote one member from two depth-1 embeds — that
+                // is an ambiguity the compiler rejects — so seeing both means the interface "embed"
+                // is really a plain field. Yield to the hard marker. Deeper embed levels stay BELOW
+                // the interface arm, matching Go's shallower-embed-wins rule.
+                //
+                // What this cost while the order was the other way round: `dwarf.PtrType.Common()`
+                // and `TypedefType.Common()` forwarded through the `Type` FIELD, so they returned
+                // the REFERENCED type's CommonType instead of the receiver's own — a silent wrong
+                // answer whenever `Type` was non-nil, and a null dereference when it was not.
+                bindThroughValueEmbeds(maxDepth: 1);
+
                 // Interface members may also promote through embedded INTERFACE field(s) —
                 // zip's `type nopCloser struct { io.Writer }`: Write lives on the FIELD's
                 // interface value (Go promotes its method set), Close on the struct. Forward
@@ -660,74 +680,84 @@ public class ImplementGenerator : ISourceGenerator
                 // .Value (ref extensions bind on the ref-returning Value, matching the pointer-hop
                 // dichotomy above). Each level follows a SINGLE value embed (Go's promotion
                 // ambiguity rules make multi-embed satisfaction rare), bounded to 4 hops.
-                foreach (MethodInfo method in methods)
+                //
+                // Run in TWO passes (see the depth-1 call sited above the interface-field arm): the
+                // marker-backed depth-1 level outranks that arm's name heuristic, everything deeper
+                // stays below it. A member already bound is skipped, so the second pass only picks up
+                // what the first two left.
+                bindThroughValueEmbeds(maxDepth: 4);
+
+                void bindThroughValueEmbeds(int maxDepth)
                 {
-                    string methodName = GetSimpleName(method.Name);
-
-                    if (forwardReceivers.ContainsKey(methodName))
-                        continue;
-
-                    string receiver = "m_box";
-                    StructDeclarationSyntax? currentDecl = structDecl;
-                    string currentTypeName = structName;
-                    INamedTypeSymbol? currentTypeSymbol = structType as INamedTypeSymbol;
-
-                    for (int depth = 0; depth < 4 && currentDecl is not null; depth++)
+                    foreach (MethodInfo method in methods)
                     {
-                        List<(string Name, string TypeName)> valueEmbedHops = currentDecl.GetEmbeddedValueHopNames();
+                        string methodName = GetSimpleName(method.Name);
 
-                        if (valueEmbedHops.Count != 1)
-                            break;
+                        if (forwardReceivers.ContainsKey(methodName))
+                            continue;
 
-                        (string embedName, string embedTypeName) = valueEmbedHops[0];
+                        string receiver = "m_box";
+                        StructDeclarationSyntax? currentDecl = structDecl;
+                        string currentTypeName = structName;
+                        INamedTypeSymbol? currentTypeSymbol = structType as INamedTypeSymbol;
 
-                        // Resolve the embedded field's TYPE SYMBOL from the current struct symbol —
-                        // the converter emits the embed as a `partial ref {Type} {Name}` property (and
-                        // the TypeGenerator a boxed backing field), so the member named `embedName`
-                        // carries the embed type. Needed to probe a FOREIGN embed's methods in
-                        // METADATA when it has no local syntax declaration (see below).
-                        INamedTypeSymbol? embedTypeSymbol = currentTypeSymbol?
-                            .GetMembers(embedName)
-                            .Select(member => member switch
+                        for (int depth = 0; depth < maxDepth && currentDecl is not null; depth++)
+                        {
+                            List<(string Name, string TypeName)> valueEmbedHops = currentDecl.GetEmbeddedValueHopNames();
+
+                            if (valueEmbedHops.Count != 1)
+                                break;
+
+                            (string embedName, string embedTypeName) = valueEmbedHops[0];
+
+                            // Resolve the embedded field's TYPE SYMBOL from the current struct symbol —
+                            // the converter emits the embed as a `partial ref {Type} {Name}` property (and
+                            // the TypeGenerator a boxed backing field), so the member named `embedName`
+                            // carries the embed type. Needed to probe a FOREIGN embed's methods in
+                            // METADATA when it has no local syntax declaration (see below).
+                            INamedTypeSymbol? embedTypeSymbol = currentTypeSymbol?
+                                .GetMembers(embedName)
+                                .Select(member => member switch
+                                {
+                                    IPropertySymbol property => property.Type,
+                                    IFieldSymbol field => field.Type,
+                                    _ => null
+                                })
+                                .OfType<INamedTypeSymbol>()
+                                .FirstOrDefault();
+
+                            // The projecting class qualifier is a real identifier position — escape a
+                            // keyword-named type (`@fixed.Ꮡn`, not the parse-breaking `fixed.Ꮡn`).
+                            receiver = $"{receiver}.of({EscapeCsKeyword(currentTypeName)}.{AddressPrefix}{GetUnsanitizedIdentifier(embedName)})";
+                            (currentDecl, Compilation? embedCompilation) = context.GetStructDeclaration(embedTypeName);
+                            currentTypeName = embedTypeName;
+                            currentTypeSymbol = embedTypeSymbol;
+
+                            if (StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(embedTypeName, syntaxContext.SemanticModel.Compilation).Contains(methodName))
                             {
-                                IPropertySymbol property => property.Type,
-                                IFieldSymbol field => field.Type,
-                                _ => null
-                            })
-                            .OfType<INamedTypeSymbol>()
-                            .FirstOrDefault();
+                                forwardReceivers[methodName] = receiver;
+                                break;
+                            }
 
-                        // The projecting class qualifier is a real identifier position — escape a
-                        // keyword-named type (`@fixed.Ꮡn`, not the parse-breaking `fixed.Ꮡn`).
-                        receiver = $"{receiver}.of({EscapeCsKeyword(currentTypeName)}.{AddressPrefix}{GetUnsanitizedIdentifier(embedName)})";
-                        (currentDecl, Compilation? embedCompilation) = context.GetStructDeclaration(embedTypeName);
-                        currentTypeName = embedTypeName;
-                        currentTypeSymbol = embedTypeSymbol;
+                            // The embed method may be a FOREIGN direct-ж extension visible only in
+                            // METADATA — a syntax-tree scan cannot see it (database/sql's driverConn
+                            // value-embeds sync.Mutex, whose Lock/Unlock are `this ж<Mutex>` extensions in
+                            // the compiled sync assembly). Bind the box hop exactly as a local direct-ж
+                            // primary does — `m_box.of(driverConn.ᏑMutex).Lock()`, matching the converter's
+                            // own call-site form — instead of the bare `m_box.Lock()` fallback (CS1929).
+                            if (embedTypeSymbol is not null &&
+                                StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodNames(embedTypeSymbol).Contains(methodName))
+                            {
+                                forwardReceivers[methodName] = receiver;
+                                break;
+                            }
 
-                        if (StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(embedTypeName, syntaxContext.SemanticModel.Compilation).Contains(methodName))
-                        {
-                            forwardReceivers[methodName] = receiver;
-                            break;
-                        }
-
-                        // The embed method may be a FOREIGN direct-ж extension visible only in
-                        // METADATA — a syntax-tree scan cannot see it (database/sql's driverConn
-                        // value-embeds sync.Mutex, whose Lock/Unlock are `this ж<Mutex>` extensions in
-                        // the compiled sync assembly). Bind the box hop exactly as a local direct-ж
-                        // primary does — `m_box.of(driverConn.ᏑMutex).Lock()`, matching the converter's
-                        // own call-site form — instead of the bare `m_box.Lock()` fallback (CS1929).
-                        if (embedTypeSymbol is not null &&
-                            StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodNames(embedTypeSymbol).Contains(methodName))
-                        {
-                            forwardReceivers[methodName] = receiver;
-                            break;
-                        }
-
-                        if (currentDecl is not null && embedCompilation is not null &&
-                            currentDecl.GetExtensionMethods(embedCompilation).Any(m => GetSimpleName(m.Name) == methodName))
-                        {
-                            forwardReceivers[methodName] = $"{receiver}.Value";
-                            break;
+                            if (currentDecl is not null && embedCompilation is not null &&
+                                currentDecl.GetExtensionMethods(embedCompilation).Any(m => GetSimpleName(m.Name) == methodName))
+                            {
+                                forwardReceivers[methodName] = $"{receiver}.Value";
+                                break;
+                            }
                         }
                     }
                 }
