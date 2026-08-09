@@ -4253,3 +4253,127 @@ the batch CONVERTED; only the C# build or the run failed. This one has a one-lin
    `internal/syscall/windows/registry`, which imports `internal/syscall/windows` — a cycle NuGet's
    restore path walk rejects even though the C# compile would be fine. `git add` the banks, then
    `git clean -fd -- src/core`, before re-running anything.
+
+## The one-row-away cluster, worked — 3 bank, and `syscall`'s root is not the one on record (2026-08-09, r56c-onerow)
+
+Worked the ONE ROW AWAY list above in its own order. Three banked (`internal/profile` 1,
+`net/http/fcgi` 12, `runtime/internal/math` 1); roster **110 → 113 (51.2% → 52.6%), 13,628 →
+13,642 matching verdicts, 50 disclosed (unchanged)**. Every bank came from a converter or generator
+defect that was producing a SILENT wrong answer — none needed a disclosure, and none was a
+test-targeted patch.
+
+### The three roots
+
+1. **A Go package that spans two assemblies lost its unexported interface methods.**
+   `internal/profile`'s `proto_test.go` is `package profile` — an internal white-box test — and it
+   implements the production package's unexported `message` interface on its own `packedInts`.
+   `ImplementGenerator` emitted the adapter's members as `=> default!` / `{ }`: a required member
+   satisfied by a NO-OP. `marshal()` returned an empty buffer, `unmarshal` decoded nothing, and
+   nothing at any layer said so. The stub is a real mechanism (Go's package-sealing markers —
+   `ast.Expr.exprNode()`), but its test was `unexported name && declaring assembly != this
+   assembly`, a proxy for "there is nothing to forward to" that answers wrongly for the one shape
+   where a single Go package spans two C# assemblies. It now also requires the struct to declare no
+   method of that name in the current compilation. **This class is corpus-wide**: any white-box test
+   package whose test-local type implements a production unexported interface was silently no-op
+   before this, and the failure mode is invisible — it compiles and it runs.
+
+2. **C#'s `\x` escape is greedy where Go's is exactly two digits.** `net/http/fcgi`'s
+   `const want = "\x0f\x01" + "FCGI_MPXS_CONNS1" + …` folds to one constant with no single
+   `BasicLit`, so it bypassed `convBasicLit`'s byte-array diversion and the folded arm asked only
+   `utf8.ValidString`. The value is pure ASCII, so that test passed it — and `\x01F` re-parsed as
+   U+001F with the `F` eaten. `TestGetValues` compared a correct response against its own corrupted
+   constant. The folded arm now runs the same predicate `convBasicLit` does. Measured reach: **one
+   live site** — every other `\x`-plus-hex-digit run in the emitted corpus is inside a C# verbatim
+   `@"…"` literal, where `\x` is two ordinary characters.
+
+3. **`uintptr` was missing from `isWideShiftType`.** Go's `uint` renders as the C# primitive
+   `nuint`, but Go's `uintptr` renders as golib's `uintptr` STRUCT — so it was the one wide unsigned
+   type that fell to the narrow arm and got its shift cast on the RESULT, which is exactly what that
+   arm's own comment says does not help. `1 << (4 * goarch.PtrSize)` emitted
+   `(uintptr)(1 << (int)(32))`, C# masked the count to five bits, and the value was **1**.
+   Whole-corpus A/B: eight files, one mechanical family, six sub-int32 reshapes and **two live wrong
+   answers** — `MulUintptr`'s overflow fast path (guarding at 1, so every `uintptr` below
+   `MaxUint32` "overflowed") and `runtime/mpagealloc_64bit.go`'s `1 << heapAddrBits` (2^16 where Go
+   computes 2^48, the latent site this board already recorded). Both banked rather than deferred.
+
+### ⚠ `syscall` 61/62 — the recorded root is WRONG, and the recorded remedy cannot work
+
+This board says the row is "the pipeline's own path depth … shorten the staging root and 62 verdicts
+should land." **Both halves are false, and the correction matters because the real remedy is cheap
+and sits in another lane's file.**
+
+`TestGetwd_DoesNotPanicWhenPathIsLong` skips on `Chdir failed: … The filename or extension is too
+long`. `MkdirAll` SUCCEEDS — only `Chdir` fails. The arithmetic refutes the depth story on its own:
+the test appends two 200-character segments, so it contributes **401 characters** whatever the root
+is. The converted run's path is ~551; **Go's own is ~488**. No staging root gets the total under
+`MAX_PATH` (260) — Go is not passing because its path is shorter, it is passing at 488 characters,
+which is already 1.9x the limit.
+
+Probed directly — same 446-character path, same machine:
+
+| binary | `SetCurrentDirectoryW(plain)` |
+|:--|:--|
+| Go (`os.Chdir`) | succeeds |
+| .NET (`dotnet run`, no manifest) | **fails, error 206** (`ERROR_FILENAME_EXCED_RANGE`) |
+| .NET, `<ApplicationManifest>` carrying `<ws2:longPathAware>true</ws2:longPathAware>` | **succeeds** |
+
+The root is that **converted Windows binaries are not long-path aware and every Go Windows binary
+is** — Go's linker bakes that manifest in. `MkdirAll` worked because Go's `fixLongPath` prefixes
+`\\?\` explicitly; `Chdir` hands `SetCurrentDirectoryW` a plain path, and without the manifest the
+process is held to `MAX_PATH`. (`\\?\` is no escape hatch here: `SetCurrentDirectory` rejects the
+extended form outright — it fails 206 too.) Verified to hold under `dotnet run`, which is how the
+pipeline launches the host, so an app manifest genuinely reaches the process.
+
+**Not implemented here, deliberately: the remedy is one `<ApplicationManifest>` property on the
+emitted csproj TEMPLATE, which lane r55a owns.** Escalated rather than duplicated. It is worth doing
+beyond this one row — it is a "runs like Go" gap for every converted Windows program, not a
+test-host detail — and it takes `syscall` to 62/62.
+
+### Rooted, not fixed — carried back with evidence
+
+- **`debug/pe` 9/10 — a byte-level struct pun across surrogate layouts.** `COFFSymbolAuxFormat5`
+  prints `_:[0 0 0 0 0 0 0 0]` where Go prints `_:[0 0 0]`. Go reinterprets a `COFFSymbol` as the aux
+  record (`(*COFFSymbolAuxFormat5)(unsafe.Pointer(&sym))`); the two have identical GO layouts but no
+  field correspondence at all (`Name [8]uint8` vs `Size uint32 + NumRelocs uint16 + …`). golib's
+  alias route correctly REFUSES this (6 fields vs 7, not layout-compatible), so it falls to the
+  raw-address route — which reads the aux struct's `array<uint8>` field out of the bytes where
+  `COFFSymbol.Name`'s reference sits: a fabricated managed reference that happens to be
+  type-compatible, so it aliases `Name`'s 8-element array instead of a fresh 3-element one. The
+  scalars round-trip only because the same wrong mapping is used in both directions. A correct
+  answer needs a Go-LAYOUT marshalling view for the pun, not a shape patch; that is an arc, and the
+  fallback's "never something newly wrong" claim in `ж.PointerExtensions.cs` deserves revisiting
+  with it — here it fabricates a reference, which is the very thing the alias route refuses to do.
+- **A GOROOT-tree-reproduction class: four packages, one question.** `go test` runs a package's
+  tests with cwd = the package's GOROOT source directory; the converted host runs in the staged
+  copy, and the staging deliberately bounds itself to paths carrying a `testdata` segment. So
+  `debug/gosym` 8/9 (`TestPCLine` runs `go build` in `testdata` and dies on `go.mod file not found`
+  — GOROOT/src has one, the staged tree does not), `internal/godebugs` 0/1
+  (`../../../doc/godebug.md`), `internal/platform` 0/1 (reads `zosarch.go` from cwd, behind its own
+  JSON root), and `io/ioutil` 27/28 (lists `..` for a sibling package's file) are ONE question: how
+  much of the GOROOT tree around a package should the run reproduce? Pointing the host's cwd at the
+  real GOROOT package directory answers all four and makes both sides see literally the same tree —
+  and would also make `io/ioutil` order-INdependent, retiring the reason this board gives for not
+  banking it. But it lets a test write into GOROOT and it trades away the staged copy's
+  reproducibility, so it is a pipeline design decision, not a defect fix.
+- **`net/http/cgi` 36/39 is TWO roots, not three rows.** `TestCopyError` infrastructure-errors on
+  `GetSystemDirectory: external (assembly or cgo) function is not implemented` — a `//go:linkname`
+  PUSH from `runtime` that is not in `linknamePushTargets`, and it throws out of `net_package`'s
+  type initializer, so **every `httptest` consumer dies in `net`'s cctor**. Its pushed body reads
+  `runtime.sysDirectory`, which `initSysDirectory` fills via `stdcall2` — nothing the managed model
+  runs — so a bare forwarder would hand back `""`: a plausible-looking wrong answer, which is
+  exactly what the registry's own rule forbids. The honorable shape is the one `os.runtime_args`
+  already took: a hand-owned module initializer populating `sysDirectory` from
+  `Environment.GetFolderPath(SpecialFolder.System)`, with the registry row landing WITH it rather
+  than before it. `TestDir`/`TestEnvOverride` are the staging-cwd class above — the re-exec'd CGI
+  child resolves a different `go2cs-tests` root than the parent's `os.Getwd` reports.
+- **`internal/poll` 18/19** — `runtime_pollServerInit` is a `PartialStubGenerator` stub reached
+  through `sync.Once` from `pollDesc.init`; the netpoller has no managed body. Unchanged from this
+  board's own reading.
+- The `array<T>` unshaped-instance class (`html` 2/3, `internal/chacha8rand` 3/4) was re-confirmed
+  at both producers and left for the arc that owns it. One measurement worth carrying: the map-miss
+  producer is **two sites in the whole corpus** (`html/entity.cs`'s `map[string][2]rune`, and a
+  `map[int][2]int` inside `encoding/csv`'s already-banked test half), which is small enough that an
+  index-site shaped zero — the same statically-known-shape route `arrayZeroValueArgs` already is —
+  is a contained fix rather than a new mechanism. A map INSTANCE cannot carry the shape: a nil map
+  is `default(map<K,V>)` and reading one is legal Go, so there is no construction site to record it
+  at.

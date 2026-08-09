@@ -231,7 +231,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
 //
 // Returns the amount of memory added to sysStat.
 [GoRecv] internal static uintptr sysInit(this ref scavengeIndex s, bool test, ж<sysMemStat> ᏑsysStat) {
-    var n = (uintptr)((uintptr)(1 << (int)(heapAddrBits))) / (uintptr)pallocChunkBytes;
+    var n = (uintptr)(((uintptr)1 << (int)(heapAddrBits))) / (uintptr)pallocChunkBytes;
     var nbytes = n * /* unsafe.Sizeof(atomicScavChunkData{}) */ (uintptr)8;
     @unsafe.Pointer r = (uintptr)sysReserve(nil, nbytes);
     ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);

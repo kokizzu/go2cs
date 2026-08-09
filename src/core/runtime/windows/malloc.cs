@@ -406,13 +406,13 @@ internal static void mallocinit() {
         if (mheap_.heapArenaAlloc.next <= Δp && Δp < mheap_.heapArenaAlloc.end) {
             Δp = mheap_.heapArenaAlloc.end;
         }
-        Δp = alignUp(Δp + ((uintptr)(256 << (int)(10))), heapArenaBytes);
+        Δp = alignUp(Δp + (((uintptr)256 << (int)(10))), heapArenaBytes);
         // Because we're worried about fragmentation on
         // 32-bit, we try to make a large initial reservation.
         var arenaSizes = new uintptr[]{
-            (uintptr)(512 << (int)(20)),
-            (uintptr)(256 << (int)(20)),
-            (uintptr)(128 << (int)(20))
+            ((uintptr)512 << (int)(20)),
+            ((uintptr)256 << (int)(20)),
+            ((uintptr)128 << (int)(20))
         }.slice();
         foreach (var (_, arenaSize) in arenaSizes) {
             var (a, size) = sysReserveAligned((@unsafe.Pointer)Δp, arenaSize, heapArenaBytes);
@@ -1571,28 +1571,28 @@ internal static ж<notInHeap> add(this ж<notInHeap> Ꮡp, uintptr bytes) {
 internal static uintptr computeRZlog(uintptr userSize) {
     switch (ᐧ) {
     case {} when userSize <= (64 - 16): {
-        return (uintptr)(16 << (int)(0));
+        return ((uintptr)16 << (int)(0));
     }
     case {} when userSize <= (128 - 32): {
-        return (uintptr)(16 << (int)(1));
+        return ((uintptr)16 << (int)(1));
     }
     case {} when userSize <= (512 - 64): {
-        return (uintptr)(16 << (int)(2));
+        return ((uintptr)16 << (int)(2));
     }
     case {} when userSize <= (4096 - 128): {
-        return (uintptr)(16 << (int)(3));
+        return ((uintptr)16 << (int)(3));
     }
     case {} when userSize <= ((1 << (int)(14))) - 256: {
-        return (uintptr)(16 << (int)(4));
+        return ((uintptr)16 << (int)(4));
     }
     case {} when userSize <= ((1 << (int)(15))) - 512: {
-        return (uintptr)(16 << (int)(5));
+        return ((uintptr)16 << (int)(5));
     }
     case {} when userSize <= ((1 << (int)(16))) - 1024: {
-        return (uintptr)(16 << (int)(6));
+        return ((uintptr)16 << (int)(6));
     }
     default: {
-        return (uintptr)(16 << (int)(7));
+        return ((uintptr)16 << (int)(7));
     }}
 
 }

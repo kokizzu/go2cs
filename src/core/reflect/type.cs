@@ -1596,7 +1596,7 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
         }
     }
     // This restriction is imposed by the gc compiler and the runtime.
-    if ((~typ).Size_ >= (uintptr)(1 << (int)(16))) {
+    if ((~typ).Size_ >= ((uintptr)1 << (int)(16))) {
         throw panic("reflect.ChanOf: element size too large");
     }
     // Look in known types.

@@ -710,7 +710,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			if c.Val().Kind() == constant.String && len(valueSpec.Values) >= i+1 {
 				if lit, ok := valueSpec.Values[i].(*ast.BasicLit); ok && lit.Kind == token.STRING {
 					constVal = v.convBasicLit(lit, DefaultBasicLitContext())
-				} else if s := constant.StringVal(c.Val()); !utf8.ValidString(s) {
+				} else if s := constant.StringVal(c.Val()); !utf8.ValidString(s) || stringLiteralNeedsByteArray(c.Val().ExactString()) {
 					// A CONCATENATED string const folds to one value here; unlike a single *ast.BasicLit
 					// (handled by convBasicLit's byte-array machinery above) it bypassed that path, so a
 					// raw-byte table like math/bits' `rev8tab` ("\x00\x80…", built by "" + … concatenation)
@@ -718,6 +718,15 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// byte (`rev8tab[1]` == 0xC2, not 0x80 → Reverse8 wrong). A value that is not valid
 					// UTF-8 cannot round-trip through a C# string/u8 literal, so emit its exact bytes; a
 					// valid-UTF-8 value keeps the readable getStringLiteral form.
+					//
+					// Valid UTF-8 is NOT the only way that round-trip fails, which is why convBasicLit's
+					// own predicate gates this arm too. C#'s `\x` escape is GREEDY — one to FOUR hex
+					// digits — where Go's is exactly two, so a `\xHH` followed by a hex-digit CHARACTER
+					// re-parses as a different, longer escape. net/http/fcgi's
+					// `"\x0f\x01" + "FCGI_MPXS_CONNS1"` folds to this arm and emitted `\x01F`: U+001F,
+					// with the 'F' eaten. Every byte in it is ASCII, so the UTF-8 test alone reported
+					// that the value round-trips, and TestGetValues then compared the response against
+					// its own silently-wrong constant.
 					constVal = byteArrayStringLiteral(s)
 				} else {
 					var isRawStr bool
