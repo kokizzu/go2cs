@@ -171,7 +171,7 @@ public readonly ref struct sstring
     // where a stack string becomes a heap string.
     public static implicit operator sstring(@string value)
     {
-        return new sstring(value.m_value);
+        return new sstring(value.Bytes);
     }
 
     public static implicit operator @string(sstring value)
@@ -344,62 +344,62 @@ public readonly ref struct sstring
     // string variable (`s == other`), the mixed idiom the literal-only comparison could not cover.
     public static bool operator ==(sstring a, @string b)
     {
-        return a.m_value.SequenceEqual(b.m_value);
+        return a.m_value.SequenceEqual(b.Bytes);
     }
 
     public static bool operator !=(sstring a, @string b)
     {
-        return !a.m_value.SequenceEqual(b.m_value);
+        return !a.m_value.SequenceEqual(b.Bytes);
     }
 
     public static bool operator ==(@string a, sstring b)
     {
-        return b.m_value.SequenceEqual(a.m_value);
+        return b.m_value.SequenceEqual(a.Bytes);
     }
 
     public static bool operator !=(@string a, sstring b)
     {
-        return !b.m_value.SequenceEqual(a.m_value);
+        return !b.m_value.SequenceEqual(a.Bytes);
     }
 
     public static bool operator <(sstring a, @string b)
     {
-        return a.m_value.SequenceCompareTo(b.m_value) < 0;
+        return a.m_value.SequenceCompareTo(b.Bytes) < 0;
     }
 
     public static bool operator <=(sstring a, @string b)
     {
-        return a.m_value.SequenceCompareTo(b.m_value) <= 0;
+        return a.m_value.SequenceCompareTo(b.Bytes) <= 0;
     }
 
     public static bool operator >(sstring a, @string b)
     {
-        return a.m_value.SequenceCompareTo(b.m_value) > 0;
+        return a.m_value.SequenceCompareTo(b.Bytes) > 0;
     }
 
     public static bool operator >=(sstring a, @string b)
     {
-        return a.m_value.SequenceCompareTo(b.m_value) >= 0;
+        return a.m_value.SequenceCompareTo(b.Bytes) >= 0;
     }
 
     public static bool operator <(@string a, sstring b)
     {
-        return new ReadOnlySpan<byte>(a.m_value).SequenceCompareTo(b.m_value) < 0;
+        return a.Bytes.SequenceCompareTo(b.m_value) < 0;
     }
 
     public static bool operator <=(@string a, sstring b)
     {
-        return new ReadOnlySpan<byte>(a.m_value).SequenceCompareTo(b.m_value) <= 0;
+        return a.Bytes.SequenceCompareTo(b.m_value) <= 0;
     }
 
     public static bool operator >(@string a, sstring b)
     {
-        return new ReadOnlySpan<byte>(a.m_value).SequenceCompareTo(b.m_value) > 0;
+        return a.Bytes.SequenceCompareTo(b.m_value) > 0;
     }
 
     public static bool operator >=(@string a, sstring b)
     {
-        return new ReadOnlySpan<byte>(a.m_value).SequenceCompareTo(b.m_value) >= 0;
+        return a.Bytes.SequenceCompareTo(b.m_value) >= 0;
     }
 
     // Concatenation. A Go string concatenation always allocates a fresh result, so joining a stack
@@ -411,12 +411,12 @@ public readonly ref struct sstring
     // the concatenation reads it. Mirrors @string's own `+` overloads (incl. the `u8`-literal span form).
     public static @string operator +(sstring a, @string b)
     {
-        return concat(a.m_value, b.m_value);
+        return concat(a.m_value, b.Bytes);
     }
 
     public static @string operator +(@string a, sstring b)
     {
-        return concat(a.m_value, b.m_value);
+        return concat(a.Bytes, b.m_value);
     }
 
     public static @string operator +(sstring a, sstring b)

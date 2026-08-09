@@ -96,7 +96,15 @@ $ErrorActionPreference = 'Continue'
 # the same shape and worse: `TestNew{32,64}/exhaustive3` brute-forces every string up to length 8
 # over a 3-letter alphabet, 12.4 s in Go and ~35 min in C#; under 10m it reports exactly the
 # TestNew64/exhaustive3 tail as empty verdicts.
-$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m' }
+#
+# archive/zip is the mildest of the three and the one whose number MOVED. TestZip64LargeDirectory
+# builds a 4 GiB central directory out of ~128 KB records; before r57c it never completed at all
+# (>45 m) because @string's range indexer copied, making the rune walk over each 65,535-byte name
+# quadratic. With @string carrying a real window the whole suite runs 20 s in Release against Go's
+# 11.3 s -- honest. The deadline is here for the harness's DEBUG build, which the pipeline uses and
+# which pays ~22x for non-inlined golib accessors: 391 s measured solo, so 20m carries the same
+# concurrent-load headroom the two rows above do.
+$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'archive/zip' = '20m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
