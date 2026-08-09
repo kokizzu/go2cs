@@ -84,6 +84,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/fmtsort` | [`internal.fmtsort.md`](current/internal.fmtsort.md) | [`src/core/internal/fmtsort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fmtsort) |
 | `internal/gover` | [`internal.gover.md`](current/internal.gover.md) | [`src/core/internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) |
 | `internal/itoa` | [`internal.itoa.md`](current/internal.itoa.md) | [`src/core/internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) |
+| `internal/profile` | [`internal.profile.md`](current/internal.profile.md) | [`src/core/internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) |
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |

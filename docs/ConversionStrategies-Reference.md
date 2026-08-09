@@ -9059,13 +9059,30 @@ void global::go.go.ast_package.Expr.exprNode() { }                       // void
 global::go.…parse_package.Tree global::go.…parse_package.Node.tree() => default!;   // non-void marker
 ```
 The `ImplementGenerator` flags a method as an inaccessible marker when its Go name is unexported
-(`GetScope == "internal"`) **and** its declaring assembly differs from the one the adapter is
-generated into (`MethodInfo.IsInaccessibleMarker`); a SAME-assembly impl keeps forwarding (the
-internal extension is accessible there). Both the pointer (`AdapterImplTemplate`) and value
-(`ValueAdapterImplTemplate`) adapters emit the stub. This greens `go/internal/typeparams` (whose only
-errors were the two `exprNode` forwards) and is a prerequisite for `text/template`/`go/doc`. (Guarded
-by `CrossPkgLib`/`CrossPkgUser`: the sealed `Emitter` interface with an unexported `emitNode()`, a
+(`GetScope == "internal"`), its declaring assembly differs from the one the adapter is generated
+into, **and the struct declares no method of that name in the current compilation**
+(`MethodInfo.IsInaccessibleMarker`); a SAME-assembly impl keeps forwarding (the internal extension is
+accessible there). Both the pointer (`AdapterImplTemplate`) and value (`ValueAdapterImplTemplate`)
+adapters emit the stub. This greens `go/internal/typeparams` (whose only errors were the two
+`exprNode` forwards) and is a prerequisite for `text/template`/`go/doc`. (Guarded by
+`CrossPkgLib`/`CrossPkgUser`: the sealed `Emitter` interface with an unexported `emitNode()`, a
 `*Leaf` implementing it, cast to `Emitter` in the consumer assembly — CS1061 without the stub.)
+
+That third clause is the correction the white-box test model forced (2026-08-09, `internal/profile`).
+The assembly comparison is a *proxy* for "there is nothing to forward to", and it answers wrongly for
+the one shape where a single Go package spans two C# assemblies: an **INTERNAL (white-box) test
+package**. `internal/profile`'s `proto_test.go` is `package profile` — it declares `packedInts` and
+its `encode`/`decoder` methods for the production package's own unexported `message` interface. Same
+Go package, different C# assembly, and genuinely reachable, because the test model mints an
+`InternalsVisibleTo` grant for exactly this. Stubbing there is worse than a compile error: the
+adapter COMPILES and *silently does nothing*, so `marshal(source)` returned an empty buffer and
+`unmarshal` decoded nothing, with no diagnostic at any layer. Requiring the absence of a local
+implementation — the struct's own value/ref extensions plus its direct-`ж` primaries — leaves every
+genuine marker stubbed unchanged, because a FOREIGN struct never declares the sealing method (Go
+forbids implementing another package's unexported method at all, so a `[GoImplement]` record naming
+an unexported interface method can only come from a struct in that same Go package). The guard is
+`internal/profile`'s own banked suite: the shape needs a white-box test package, which the behavioral
+corpus has no way to express.
 
 ### A dynamic interface's runtime conversion class re-escapes a keyword method name
 An anonymous or type-asserted interface is lifted to a `[GoType("dyn")]` partial interface (see

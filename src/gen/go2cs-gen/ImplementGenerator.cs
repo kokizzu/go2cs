@@ -243,6 +243,15 @@ public class ImplementGenerator : ISourceGenerator
             IEnumerable<MethodInfo>? structMethods = structDecl is null ? [] : structDecl.GetExtensionMethods(compilation!);
             HashSet<string> overrides = new(structMethods?.Select(method => method.Name) ?? [], StringComparer.Ordinal);
 
+            // Every method this struct DECLARES in the current compilation, in either receiver form —
+            // the value/ref extensions above plus the direct-ж primaries. This is the evidence that the
+            // adapter has something real to forward to, and it is what keeps the package-sealing stub
+            // below from swallowing a genuine implementation (see IsInaccessibleMarker).
+            HashSet<string> localImplNames = new(overrides, StringComparer.Ordinal);
+
+            if (structDecl is not null)
+                localImplNames.UnionWith(structDecl.GetBoxReceiverMethodNames(compilation!));
+
             // GetAllBaseInterfaces (not AllInterfaces) recovers a base declared in ANOTHER package
             // class, which is still PRIVATE until this generator emits its access modifier and would
             // otherwise bind to an empty error symbol — see Common.GetAllBaseInterfaces.
@@ -273,8 +282,20 @@ public class ImplementGenerator : ISourceGenerator
                     // into is a package-sealing MARKER (ast.Expr's exprNode(), parse.Node's tree()/writeTo()):
                     // its extension is invisible here, so forwarding is CS1061. Go bars calling it from
                     // outside its package, so the adapter stubs the (still-required, public) member.
+                    //
+                    // The assembly comparison alone is a PROXY for "there is nothing to forward to", and
+                    // it answers wrongly for the one shape where a Go package spans two assemblies: an
+                    // INTERNAL (white-box) test package. `package profile`'s proto_test.go declares
+                    // packedInts and its `encode`/`decoder` methods for profile's own unexported
+                    // `message` interface — same Go package, different C# assembly, and reachable
+                    // because the test model mints an InternalsVisibleTo grant. Stubbing there is worse
+                    // than a compile error: the adapter COMPILES and silently does nothing, so
+                    // marshal(source) returned an empty buffer with no diagnostic anywhere. Require the
+                    // absence of a local implementation as well, which leaves the genuine markers (a
+                    // FOREIGN struct never declares the sealing method) stubbed exactly as before.
                     IsInaccessibleMarker = GetScope(info.method.Name) == "internal" &&
-                        !SymbolEqualityComparer.Default.Equals(info.method.ContainingAssembly, context.Compilation.Assembly)
+                        !SymbolEqualityComparer.Default.Equals(info.method.ContainingAssembly, context.Compilation.Assembly) &&
+                        !localImplNames.Contains(GetSimpleName(EscapeCsKeyword(info.method.Name)))
                 })
                 .Distinct()
                 .ToList();
