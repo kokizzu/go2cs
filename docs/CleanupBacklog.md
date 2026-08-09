@@ -256,3 +256,15 @@
     they still carry the retired accessor; they re-emit as `DerefOrNull()` the next time each
     package's `-tests` pipeline runs. Levels naturally with the whole-corpus rebank or with each
     package's next validation pass — no separate work."*
+
+23. **Published 1.23.1.5 nupkg READMEs show .NET Source @1.23.1.4 — the badge TEXT trails the
+    deployed version by one (user-reported from the go.sync gallery page, 2026-08-09).** Known,
+    root-caused, and already fixed for every future release: the release script's badge-text
+    retarget pattern was written against the pre-tidy `Source-C%23_@` form, r51d renamed the text
+    to `Source-@` the same day, so the 1.23.1.5 pack moved the badge's LINK but not its TEXT — and
+    the verifier skipped non-matching files instead of failing (a vacuous pass). `f2b80a766` fixed
+    the pattern AND made the verifier throw on any package README without the badge, so the class
+    cannot ship silently again; the repository's READMEs were corrected in the same landing
+    (`1ab15f998`). NuGet versions are immutable, so the published 1.23.1.5 pages keep the cosmetic
+    one-version trail until the NEXT release replaces them — nothing to do besides ship the next
+    release, which the now-throwing verifier guards. Do not re-diagnose from the gallery page.
