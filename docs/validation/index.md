@@ -98,6 +98,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `math/rand/v2` | [`math.rand.v2.md`](current/math.rand.v2.md) | [`src/core/math/rand/v2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand/v2) |
 | `mime` | [`mime.md`](current/mime.md) | [`src/core/mime`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime) |
 | `mime/quotedprintable` | [`mime.quotedprintable.md`](current/mime.quotedprintable.md) | [`src/core/mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) |
+| `net/http/fcgi` | [`net.http.fcgi.md`](current/net.http.fcgi.md) | [`src/core/net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) |
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |
 | `net/url` | [`net.url.md`](current/net.url.md) | [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) |
 | `os/exec/internal/fdtest` | [`os.exec.internal.fdtest.md`](current/os.exec.internal.fdtest.md) | [`src/core/os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) |

@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **111 / 215 testable packages validated — 51.6%**
+> ### Phase 4 progress: **112 / 215 testable packages validated — 52.1%**
 >
-> **13,629 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
+> **13,641 matching test verdicts · 50 disclosed** *(updated 2026-08-09 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -122,6 +122,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`math/rand/v2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand/v2) | 36 | | The v2 PRNG API (PCG, ChaCha8). · [proof](validation/current/math.rand.v2.md) |
 | [`mime`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime) | 17 | 1 | MIME type tables and media-type parsing — the first package through the runtime process-control facade (`LockOSThread`, registry reads). · [proof](validation/current/mime.md) |
 | [`mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) | 5 | | Quoted-printable encoding — the reader's soft-line-break and hex-escape state machine, the writer's line wrapping, and an exhaustive encode/decode round-trip. · [proof](validation/current/mime.quotedprintable.md) |
+| [`net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) | 12 |  | The FastCGI record protocol end to end — the child's record dispatch and `FCGI_GET_VALUES` reply, multiplexed request streams over a shared connection, the `ResponseWriter`'s content-type sniffing, and a served request torn down mid-flight. · [proof](validation/current/net.http.fcgi.md) |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. · [proof](validation/current/net.http.internal.ascii.md) |
 | [`net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) | 48 | | URL parsing, escaping and reference resolution — the query encode/decode matrix including semicolon rejection, userinfo, opaque and relative references, `JoinPath`, and `gob`/`JSON`/`TextMarshaler` round-trips of a parsed `URL`. · [proof](validation/current/net.url.md) |
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |

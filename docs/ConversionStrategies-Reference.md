@@ -4616,6 +4616,22 @@ forms as a const and as a local, plus the rune pair, output-compared vs `go run`
 
 The above routes a single `*ast.BasicLit` through `convBasicLit`'s scan. A string **constant** whose value is a *concatenation* — `const rev8tab = "" + "\x00\x80…" + …` (math/bits' bit-reversal table) — folds to one value with **no** single `BasicLit`, so it bypassed that scan and rendered a UTF-16 string literal: `rev8tab[1]` returned `0xC2` (the UTF-8 lead byte of U+0080), not `0x80`, and `Reverse8` was wrong. The const-string path now tests the FOLDED value directly — a value that is not valid UTF-8 (`utf8.ValidString`) cannot round-trip through a C# string/u8 literal, so it emits the same byte-array `@string` from its exact bytes (`byteArrayStringLiteral`, shared with `emitByteArrayString`); a valid-UTF-8 value keeps the readable `getStringLiteral` form. This catches any non-UTF-8 byte table built by concatenation (crypto S-boxes, embedded blobs), not just single literals. (Guarded by the `ByteTableStringConst` behavioral test — a concatenated `\x00\x80…` table byte-indexed and `len`-measured, output-compared vs `go run`; the pre-fix converter returns `0xC2` for index 1. The full corpus compiles with the byte-array consts, and CNR is byte-identical.)
 
+**Valid UTF-8 is not sufficient, and that gap cost `net/http/fcgi` a row (2026-08-09).** The folded
+arm's `utf8.ValidString` test answers only the byte-widening half of the round-trip; the *greedy-
+escape* half above applies to a folded constant exactly as it does to a `BasicLit`. FastCGI's
+`const want = "\x01\n\x00\x00\x00\x12\x06\x00" + "\x0f\x01FCGI_MPXS_CONNS1" + …` folds to a value
+that is entirely ASCII — perfectly valid UTF-8 — so it took the readable path and emitted
+`\x0f\x01FCGI…`, in which C# reads `\x01F` as U+001F and eats the `F`. Nothing failed to compile;
+`TestGetValues` simply compared a correct response against its own corrupted constant, and reported a
+`%q` diff whose cause is invisible unless you already know C#'s escape is variable-length. The arm
+now applies `stringLiteralNeedsByteArray` to the folded value's own quoted form, so BOTH declaration
+routes ask exactly the same question and diverge only where the answer genuinely differs. Corpus
+reach, measured before the fix: one live site — every other `\x`+hex-digit run in the emitted corpus
+sits inside a C# *verbatim* (`@"…"`) literal, where `\x` is two ordinary characters. (Guarded by the
+extended `ByteTableStringConst` behavioral test, whose second constant is the ASCII-only
+`"\x0f\x01" + "FCGI_MPXS_CONNS1" + "\x0a\x0d" + "BEEF"` — two greedy sites, byte-indexed, `len`- and
+`%q`-printed, output-compared vs `go run`; and by `net/http/fcgi`'s banked suite.)
+
 The **`var`** form of the same table needs no separate rule, and it is worth stating why, because
 the two declaration kinds reach the byte-array emission by genuinely different routes. A `const`
 is *folded* by go/types, so the concatenation is gone by the time the declaration is emitted and
