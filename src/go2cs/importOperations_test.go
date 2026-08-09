@@ -9,6 +9,7 @@ package main
 import (
 	"go/build"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -278,4 +279,220 @@ func TestEmittedProjectReferenceForModuleCachePath(t *testing.T) {
 	if want := "$(go2csPath)pkg/github.com/google/uuid/github.com.google.uuid.csproj"; got != want {
 		t.Errorf("emittedProjectReference = %q, want %q", got, want)
 	}
+}
+
+// emittedRelativeProjectPath models what projectFileBaseName budgets: the generated project's path
+// relative to the conversion output root, `<tree-root>/<import-path>/<name>.csproj`, using the longest
+// tree root (`core`). The dotted project name and the slashed import path are the same length.
+func emittedRelativeProjectPath(canonical string) int {
+	return len("core") + 1 + len(canonical) + 1 + len(projectFileBaseName(canonical)) + len(".csproj")
+}
+
+// TestProjectFileBaseNameLeavesCorpusNamesAlone pins the no-op half of the budget. Every name the
+// committed corpus produces is well inside it, so the .csproj file names of the standard library and
+// the behavioral tests are byte-identical to what they were before the budget existed — which is what
+// makes check-no-regression's zero-movement verdict meaningful rather than lucky.
+func TestProjectFileBaseNameLeavesCorpusNamesAlone(t *testing.T) {
+	// Real names, longest first: the deepest emitted stdlib path is 101 characters and the deepest
+	// behavioral one 109, both far under maxRelativeProjectPath.
+	for _, canonical := range []string{
+		"vendor.golang.org.x.crypto.internal.poly1305",
+		"vendor.golang.org.x.crypto.chacha20poly1305",
+		"log.slog.internal.benchmarks",
+		"net.http",
+		"fmt",
+		"ForeignPointerImplementSuppression.shade",
+		"github.com.envoyproxy.go-control-plane.envoy.extensions.filters.http.rbac.v3",
+	} {
+		if got := projectFileBaseName(canonical); got != canonical {
+			t.Errorf("projectFileBaseName(%q) = %q, want it returned verbatim", canonical, got)
+		}
+	}
+}
+
+// TestProjectFileBaseNameBoundsTheEmittedPath is the issue-#35 second-wall invariant: whatever the
+// import path, the emitted project path stays inside the budget, so a user's output root has a known
+// amount of room before Windows' 260-character limit — the limit Visual Studio's project loader
+// enforces even with LongPathsEnabled=1.
+func TestProjectFileBaseNameBoundsTheEmittedPath(t *testing.T) {
+	cases := []string{
+		// The reporter's deepest package, 115 characters.
+		"github.com.envoyproxy.go-control-plane.envoy.extensions.load_balancing_policies.client_side_weighted_round_robin.v3",
+		"github.com.microsoft.go-mssqldb.internal.github.com.swisscom.mssql-always-encrypted.pkg.algorithms",
+		"github.com.AzureAD.microsoft-authentication-library-for-go.apps.internal.oauth.ops.internal.grant",
+		// Deeper than anything observed, to prove the bound is not merely a coincidence of the corpus.
+		strings.Repeat("segment.", 18) + "leaf",
+	}
+
+	for _, canonical := range cases {
+		if got := emittedRelativeProjectPath(canonical); got > maxRelativeProjectPath {
+			t.Errorf("emitted path for %q is %d characters, over the %d budget (name = %q)",
+				canonical, got, maxRelativeProjectPath, projectFileBaseName(canonical))
+		}
+	}
+}
+
+// TestProjectFileBaseNameBoundaryIsExact walks the threshold one character at a time. Names that fit
+// must be returned untouched and names that do not must land inside the budget — an off-by-one here
+// would either compress a name that never needed it (churning file names for no reason) or leave one
+// over the limit (the bug).
+func TestProjectFileBaseNameBoundaryIsExact(t *testing.T) {
+	compressedSeen := false
+
+	for length := 80; length <= 110; length++ {
+		canonical := strings.Repeat("a", length-2) + ".z"
+		got := projectFileBaseName(canonical)
+
+		if got == canonical {
+			if emittedRelativeProjectPath(canonical) > maxRelativeProjectPath {
+				t.Errorf("name of length %d returned verbatim but its path is %d, over the %d budget",
+					length, emittedRelativeProjectPath(canonical), maxRelativeProjectPath)
+			}
+
+			continue
+		}
+
+		compressedSeen = true
+
+		if emittedRelativeProjectPath(canonical) > maxRelativeProjectPath {
+			t.Errorf("name of length %d compressed to %q but its path is still %d, over the %d budget",
+				length, got, emittedRelativeProjectPath(canonical), maxRelativeProjectPath)
+		}
+	}
+
+	if !compressedSeen {
+		t.Error("no name in the 80..110 range compressed — the boundary moved out of the swept window")
+	}
+}
+
+// TestProjectFileBaseNameIsDeterministicAndSetIndependent is the property that lets the DECLARATION
+// side (which writes the .csproj) and the REFERENCE side (getRecurseDependencyInfo, which names the
+// same project from an import path alone, knowing nothing about the rest of the conversion) agree
+// without communicating. It is also why the budget compresses the canonical name rather than picking a
+// shortest-unique suffix: a set-dependent name would rename unrelated projects when a dependency is
+// added, which is the coupling 9c970b258 removed one level up.
+func TestProjectFileBaseNameIsDeterministicAndSetIndependent(t *testing.T) {
+	const canonical = "github.com.envoyproxy.go-control-plane.envoy.extensions.load_balancing_policies.client_side_weighted_round_robin.v3"
+
+	first := projectFileBaseName(canonical)
+
+	for i := 0; i < 32; i++ {
+		if got := projectFileBaseName(canonical); got != first {
+			t.Fatalf("projectFileBaseName is not deterministic: %q then %q", first, got)
+		}
+	}
+
+	if !strings.Contains(first, "~") {
+		t.Errorf("expected an elision marker in the compressed name %q", first)
+	}
+}
+
+// TestProjectFileBaseNameKeepsDistinctNamesDistinct is the uniqueness half. Compression must not undo
+// what 9c970b258 established — two packages that differ only outside the retained head and tail would
+// collide on the visible text, and the solution would be back to refusing to open. The hash covers the
+// FULL canonical name, so they do not.
+func TestProjectFileBaseNameKeepsDistinctNamesDistinct(t *testing.T) {
+	const prefix = "github.com.envoyproxy.go-control-plane.envoy.extensions.load_balancing_policies."
+	const suffix = ".client_side_weighted_round_robin.v3"
+
+	names := map[string]string{}
+
+	for _, middle := range []string{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab", "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	} {
+		canonical := prefix + middle + suffix
+		got := projectFileBaseName(canonical)
+
+		if got == canonical {
+			t.Fatalf("test case %q was expected to exceed the budget", canonical)
+		}
+
+		if prior, dup := names[got]; dup {
+			t.Errorf("compressed name %q emitted for both %q and %q — a duplicate .slnx project name",
+				got, prior, canonical)
+		}
+
+		names[got] = canonical
+	}
+}
+
+// TestIssue35ReplayCorpus replays a REAL conversion's whole project set through the derivation, which
+// is the evidence the synthetic cases above cannot give: thousands of genuine import paths, from the
+// module layouts people actually depend on, checked for the two properties that matter together —
+// every emitted name distinct (or Visual Studio refuses to open the solution) and every emitted path
+// inside the budget (or Visual Studio refuses to load the project).
+//
+// It runs against the solution file from the issue-#35 report — 1,727 projects from a real application
+// — by pointing GO2CS_ISSUE35_CORPUS at it, and skips when that is unset so an ordinary `go test ./...`
+// costs nothing. The corpus is not committed; it is the reporter's file, attached to the issue.
+func TestIssue35ReplayCorpus(t *testing.T) {
+	corpus := os.Getenv("GO2CS_ISSUE35_CORPUS")
+
+	if corpus == "" {
+		t.Skip("set GO2CS_ISSUE35_CORPUS to a generated .slnx to replay a real project set")
+	}
+
+	contents, err := os.ReadFile(corpus)
+
+	if err != nil {
+		t.Fatalf("failed to read replay corpus: %v", err)
+	}
+
+	// Recover each project's import path from its DIRECTORY, which mirrors it, rather than from the
+	// file name — the file name is exactly what is under test, and the corpus predates the fix.
+	names := map[string]string{}
+	replayed, compressed, worst := 0, 0, 0
+
+	for _, line := range strings.Split(string(contents), "\n") {
+		start := strings.Index(line, `<Project Path="`)
+
+		if start < 0 {
+			continue
+		}
+
+		rest := line[start+len(`<Project Path="`):]
+		end := strings.Index(rest, `"`)
+
+		if end < 0 {
+			continue
+		}
+
+		dir := path.Dir(strings.TrimPrefix(strings.TrimPrefix(rest[:end], "../../"), "pkg/"))
+
+		// Skip the runtime/analyzer entries, which are not converted packages.
+		if dir == "." || strings.Contains(dir, "..") {
+			continue
+		}
+
+		canonical := strings.ReplaceAll(dir, "/", ".")
+		emitted := projectFileBaseName(canonical)
+		replayed++
+
+		if emitted != canonical {
+			compressed++
+		}
+
+		if got := emittedRelativeProjectPath(canonical); got > worst {
+			worst = got
+		}
+
+		if got := emittedRelativeProjectPath(canonical); got > maxRelativeProjectPath {
+			t.Errorf("%q emits a %d-character path, over the %d budget", canonical, got, maxRelativeProjectPath)
+		}
+
+		if prior, dup := names[emitted]; dup && prior != canonical {
+			t.Errorf("project name %q emitted for both %q and %q — a duplicate .slnx project name",
+				emitted, prior, canonical)
+		}
+
+		names[emitted] = canonical
+	}
+
+	if replayed == 0 {
+		t.Fatal("replay corpus contained no project entries")
+	}
+
+	t.Logf("replayed %d projects: %d distinct names, %d compressed by the budget, longest emitted path %d",
+		replayed, len(names), compressed, worst)
 }

@@ -8,6 +8,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"go/build"
@@ -192,6 +194,90 @@ func getProjectName(importPath string, options Options) (string, string) {
 	return projectName, namespace
 }
 
+// maxRelativeProjectPath bounds, by construction, the length of a generated project's path RELATIVE
+// to the conversion output root — `<tree-root>/<import-path>/<name>.csproj`. Absolute paths are what
+// Windows measures, so the budget leaves room for the user's own output root: 200 characters here
+// means any root up to 59 characters keeps every emitted project under Windows' 260-character MAX_PATH.
+//
+// The limit is real and it is NOT liftable — issue #35, second wall. Visual Studio's project loader
+// refuses a .csproj whose path exceeds MAX_PATH *even on a machine with LongPathsEnabled=1* (measured:
+// a 259-character project loads and builds; a 265-character one fails with "The project file could not
+// be loaded. Could not find a part of the path", naming a file that is demonstrably there and that
+// `dotnet build` reads without complaint). So the registry key is not an answer, and neither is
+// flattening the tree: `pkg/<import-path>/<dotted>.csproj` and `pkg/<dotted>/<dotted>.csproj` measure
+// IDENTICALLY, because a separator costs exactly what a dot costs. The reporter's real conversion put
+// its deepest project at 242 characters before the output root.
+//
+// The import path is spelled TWICE on disk — once by the directory, which mirrors it, and once by this
+// file name — and only the second spelling is redundant: the directory already says which package this
+// is. It cannot simply be dropped, though. Visual Studio derives a project's NAME from its file name
+// and refuses a solution holding two of the same name (issue #35's FIRST wall, fixed in 9c970b258 by
+// recovering the full import path), and .slnx has no display-name override to separate the two
+// (measured: a `DisplayName` attribute does not help — VS still reports "Project name 'v3' already
+// exists in the '/pkg/' solution folder"). The name must stay unique; the only lever left is to make
+// it shorter WHILE unique.
+const maxRelativeProjectPath = 200
+
+// minProjectFileBaseName floors the budget: an import path deep enough to exhaust the whole allowance
+// on its directory alone cannot meet maxRelativeProjectPath however short the file name gets (the
+// directory is not negotiable — it is what a Go developer navigates by). Rather than compress the name
+// to nothing, stop at a length that still carries a readable head, a readable tail and the hash, and
+// let the path run over. Nothing observed comes close: the deepest import path in the reporter's
+// 1,725-package conversion is 115 characters, against the ~168 at which this floor starts to bind.
+const minProjectFileBaseName = 24
+
+// projectFileBaseName returns the FILE-NAME spelling of a project whose canonical name is projectName
+// (the dotted import path getProjectName returns). It is the file name only — the C# namespace, the
+// AssemblyName and the NuGet PackageId all keep the full canonical path, because those are identity:
+// they must stay globally unique and legible in a stack trace. This is a label.
+//
+// Names that fit the budget are returned VERBATIM, which is every package in the standard library
+// (longest emitted path: 101 characters) and every behavioral-test package (longest: 109) — so this
+// function is a no-op for the entire committed corpus. Only a name whose emitted path would exceed
+// maxRelativeProjectPath is compressed, to `head~tail.hash8`: a readable head (carrying the module), a
+// readable tail (carrying the leaf package), and 8 hex characters of SHA-256 over the FULL name.
+//
+// Two properties matter more than the length:
+//
+//   - It is a pure function of the canonical name, so it is SET-INDEPENDENT. The reference side
+//     (getRecurseDependencyInfo) derives a dependency's file name from the import path alone, without
+//     knowing which other packages are in the conversion. A shortest-unique-SUFFIX scheme would have
+//     been shorter still, but under it adding one dependency can rename unrelated projects — the same
+//     coupling 9c970b258 removed, one level up.
+//   - Uniqueness survives compression, because the hash covers the full name: two import paths that
+//     share a head and a tail still differ in the hash.
+func projectFileBaseName(projectName string) string {
+	// The emitted layout spells the import path twice: as the directory `<tree-root>/<import-path>`
+	// and as this file name. The dotted name and the slashed import path are the SAME length (one
+	// separator per segment either way), so the directory costs len(projectName) plus the tree root
+	// and its separator — `core/` at 5 is the longest of core, pkg and src, and taking the longest
+	// keeps the bound conservative for all three.
+	const treeRootCost = len("core") + 1
+	const extensionCost = len(".csproj")
+
+	budget := maxRelativeProjectPath - treeRootCost - len(projectName) - 1 - extensionCost
+
+	if len(projectName) <= budget {
+		return projectName
+	}
+
+	if budget < minProjectFileBaseName {
+		budget = minProjectFileBaseName
+	}
+
+	sum := sha256.Sum256([]byte(projectName))
+	hash := hex.EncodeToString(sum[:])[:8]
+
+	// `head~tail.hash8`: the tilde marks the elision (a hyphen would not — module paths like
+	// `go-control-plane` already contain hyphens), and the hash is set off by a dot so the whole name
+	// still reads as dotted segments.
+	visible := budget - len(hash) - 2
+	head := visible * 2 / 3
+	tail := visible - head
+
+	return projectName[:head] + "~" + projectName[len(projectName)-tail:] + "." + hash
+}
+
 // readModuleFromGoMod reads the module path from a go.mod file.
 //
 // The module path is a go.mod TOKEN, and a token may be written as a quoted string — gopkg.in/yaml.v3
@@ -309,7 +395,7 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 
 		importPathParts := strings.Split(importPath, "/")
 		packageName := strings.Join(importPathParts, ".")
-		projectReference := emittedProjectReference(targetDir, packageName+".csproj")
+		projectReference := emittedProjectReference(targetDir, projectFileBaseName(packageName)+".csproj")
 
 		targetDir = strings.ReplaceAll(targetDir, "$(go2csPath)", options.go2csPath+string(os.PathSeparator))
 
@@ -375,7 +461,7 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 
 		importPathParts := strings.Split(importPath, "/")
 		packageName := strings.Join(importPathParts, ".")
-		projectReference := emittedProjectReference(targetDir, packageName+".csproj")
+		projectReference := emittedProjectReference(targetDir, projectFileBaseName(packageName)+".csproj")
 
 		return PackageInfo{
 			IsStdLib:         true,
@@ -396,7 +482,7 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 	if isPathUnder(meta.Dir, filepath.Join(options.goPath, "pkg", "mod")) {
 		libProjectName, namespace := getProjectName(meta.Dir, options)
 		targetDir := "$(go2csPath)pkg/" + importPath
-		projectReference := emittedProjectReference(targetDir, libProjectName+".csproj")
+		projectReference := emittedProjectReference(targetDir, projectFileBaseName(libProjectName)+".csproj")
 
 		return PackageInfo{
 			IsStdLib:         false,
@@ -412,7 +498,7 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 	// (co-located with its Go source), and it generates `<projectName>.csproj` in its own directory.
 	// The absolute ProjectReference is rewritten relative to the referencing project by writeProjectFile.
 	libProjectName, namespace := getProjectName(meta.Dir, options)
-	projectReference := filepath.Join(meta.Dir, libProjectName+".csproj")
+	projectReference := filepath.Join(meta.Dir, projectFileBaseName(libProjectName)+".csproj")
 
 	return PackageInfo{
 		IsStdLib:         false,
@@ -468,7 +554,7 @@ func getRecurseDependencyInfo(importPath string, options Options) (PackageInfo, 
 
 	libProjectName, namespace := getProjectName(meta.Dir, options)
 	targetDir := filepath.Join(outputRoot, root, filepath.FromSlash(importPath))
-	projectReference := filepath.Join(targetDir, libProjectName+".csproj")
+	projectReference := filepath.Join(targetDir, projectFileBaseName(libProjectName)+".csproj")
 
 	return PackageInfo{
 		IsStdLib:         false,

@@ -497,7 +497,7 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 		append([]string{production.PkgPath}, referenceImports...),
 		packageImplementBases(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))))...)
 
-	testProjectName := projectName + ".tests.csproj"
+	testProjectName := projectFileBaseName(projectName) + ".tests.csproj"
 	if err := writeTestProject(filepath.Join(outputPath, testProjectName), projectName, projectNamespace, model, productionFiles, outputFiles, fixtures, referenceImports, options); err != nil {
 		return err
 	}
@@ -2572,7 +2572,7 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	// -tests contract colocates the test project with the production csproj — so the reference
 	// is layout-independent (no $(go2csPath) tree mapping involved).
 	if model.referencesProduction() {
-		references.Add(projectName + ".csproj")
+		references.Add(projectFileBaseName(projectName) + ".csproj")
 	}
 
 	for _, dependency := range dependencies {
@@ -3542,7 +3542,7 @@ func implementedInterfaceCandidates(named *types.Named) []*types.Named {
 // `\`-spelled reference (a pre-F5 corpus, a deployed tree, a hand-authored project) came back whole
 // and matched nothing.
 func isSelfProjectReference(reference, projectName string) bool {
-	return strings.EqualFold(path.Base(normalizeEmittedPath(reference)), projectName+".csproj")
+	return strings.EqualFold(path.Base(normalizeEmittedPath(reference)), projectFileBaseName(projectName)+".csproj")
 }
 
 func productionCSFiles(outputPath string) ([]string, error) {
@@ -3934,7 +3934,7 @@ func writeNoTestsManifest(production *packages.Package, inputPath, outputPath st
 	projectName, _ := getProjectName(inputPath, options)
 	manifest := testManifest{
 		SchemaVersion: 1, CapabilitiesVersion: 1, PackageImportPath: production.PkgPath,
-		ProjectName: projectName, TestProject: projectName + ".tests.csproj", GoVersion: runtime.Version(),
+		ProjectName: projectName, TestProject: projectFileBaseName(projectName) + ".tests.csproj", GoVersion: runtime.Version(),
 		TargetGOOS: target[0], TargetGOARCH: target[1], SourceRevision: gitRevision(inputPath),
 		ConverterRevision: converterRevision(), ProductionFiles: []string{}, TestSources: []testSource{},
 		Fixtures: []string{}, FixtureDirectories: []string{}, Tests: []testDeclaration{}, Dependencies: []string{}, Capabilities: supportedTestCapabilities(),
@@ -4026,7 +4026,7 @@ func gitRevision(path string) string {
 
 func executeTestAction(inputPath, outputPath string, options Options) error {
 	projectName, _ := getProjectName(inputPath, options)
-	testProject := filepath.Join(outputPath, projectName+".tests.csproj")
+	testProject := filepath.Join(outputPath, projectFileBaseName(projectName)+".tests.csproj")
 	if err := validateTestManifest(inputPath, outputPath, options); err != nil {
 		return err
 	}

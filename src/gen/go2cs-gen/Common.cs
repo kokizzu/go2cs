@@ -10,6 +10,8 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -255,12 +257,81 @@ public static class Common
     /// </remarks>
     public static string GetValidFileName(string fileName)
     {
-        return new string(fileName.Replace("@", "").Select(c => IsValidHintNameChar(c) ? c : '_').ToArray());
+        return CapHintName(new string(fileName.Replace("@", "").Select(c => IsValidHintNameChar(c) ? c : '_').ToArray()));
     }
 
     private static bool IsValidHintNameChar(char c)
     {
         return char.IsLetterOrDigit(c) || c is '.' or ',' or '-' or '_' or ' ' or '(' or ')' or '[' or ']';
+    }
+
+    /// <summary>
+    /// The longest hint name any generator in this assembly will emit.
+    /// </summary>
+    /// <remarks>
+    /// Windows caps a single FILENAME COMPONENT at 255 characters. Unlike MAX_PATH that ceiling is not
+    /// liftable — <c>LongPathsEnabled</c>, the <c>\\?\</c> prefix and a long-path-aware manifest all
+    /// raise the limit on the total PATH and none of them touches the component (measured: a 265-character
+    /// path writes fine on such a machine; a 256-character file name fails on the same one).
+    /// <para>
+    /// Hint names compose the containing package's namespace with a fully qualified type name, so the
+    /// converted import path appears in them TWICE and they grow at twice its length. For the standard
+    /// library that is nothing — <c>log/slog</c>'s longest is 81 characters — but a converted third-party
+    /// tree has no such bound: issue #35's reporter has import paths of 115 characters, which produces
+    /// <c>go.github.com.envoyproxy…v3_package.ProtoReflect.global__go.github.com.envoyproxy…v3_package.ClientSideWeightedRoundRobinConfig.g.cs</c>
+    /// at 314 characters, and <c>csc</c> then fails the build outright with CS0016 — at ANY output root,
+    /// on any Windows, with every setting turned on.
+    /// </para>
+    /// <para>
+    /// A hint name is only a label: Roslyn requires it to be unique within a generator and nothing more,
+    /// and <c>EmitCompilerGeneratedFiles</c> writes it out purely so the generated source is readable on
+    /// disk. Capping it is therefore free of any semantic consequence — the compiled output is identical
+    /// and the files it names are git-ignored.
+    /// </para>
+    /// <para>
+    /// The value is set from the PATH the emitted file lands at, not from the 255 ceiling. Under a
+    /// <c>-recurse</c> conversion that is
+    /// <c>&lt;root&gt;\.artifacts\gen\&lt;token&gt;\go2cs-gen\go2cs.ImplicitConvGenerator\&lt;hint&gt;</c>,
+    /// whose fixed part measures 66 characters; 128 therefore holds the whole path to 194 characters plus
+    /// the user's output root, which keeps a root of up to 59 characters inside MAX_PATH — the same
+    /// promise the converter's own project-path budget makes. There is room to spare for the numeric
+    /// suffix <see cref="GetUniqueHintName"/> may still add.
+    /// </para>
+    /// </remarks>
+    public const int MaxHintNameLength = 128;
+
+    // Compresses an over-long hint name to `<head>-<hash16>.g.cs`, deterministically: the hash is
+    // SHA-256 over the FULL name, so two names sharing a head stay distinct, and it is stable across
+    // processes and machines (string.GetHashCode is NOT — it is randomized per process in .NET Core,
+    // which would make the emitted file names differ run to run).
+    //
+    // The elision separator MUST come from the same allow-list IsValidHintNameChar enforces, which is
+    // why it is a hyphen and not the tilde a truncation usually reads best with. Roslyn validates the
+    // hint name it is handed, and this compression runs AFTER the sanitize pass — so an out-of-list
+    // character here reaches AddSource unscrubbed and throws ArgumentException, which surfaces as
+    // CS8785, a WARNING, leaving the generator to contribute NOTHING and the build to fail on whatever
+    // it should have produced. That is precisely the failure mode GetValidFileName's remarks describe,
+    // reachable from the other side; measured on the issue-#35 repro, a tilde here cost all three
+    // generators at once (ImplementGenerator, RecvGenerator, TypeGenerator) and the package then failed
+    // with CS0246 on the adapter type that was never emitted.
+    private static string CapHintName(string hintName)
+    {
+        if (hintName.Length <= MaxHintNameLength)
+            return hintName;
+
+        string extension = hintName.EndsWith(".g.cs") ? ".g.cs" : "";
+        string baseName = hintName.Substring(0, hintName.Length - extension.Length);
+
+        using SHA256 sha256 = SHA256.Create();
+        byte[] digest = sha256.ComputeHash(Encoding.UTF8.GetBytes(hintName));
+        StringBuilder hash = new(16);
+
+        for (int i = 0; i < 8; i++)
+            hash.Append(digest[i].ToString("x2"));
+
+        int keep = MaxHintNameLength - extension.Length - hash.Length - 1;
+
+        return string.Concat(baseName.Substring(0, keep), "-", hash.ToString(), extension);
     }
 
     /// <summary>
