@@ -18,7 +18,7 @@ using static go.time_internal_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(Inverted = false, ValueType = "global::go.time_package.ruleKind")]
+[assembly: GoImplicitConv<RuleKind, global::go.time_package.ruleKind>(Inverted = false, ValueType = "nint")]
 // </ImplicitConversions>
 
 namespace go;
