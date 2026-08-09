@@ -129,14 +129,20 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
 
     private readonly NilKeyDictionary m_map;
 
+    // Each of these charges ONE object: the store itself. The bucket and entry arrays Dictionary
+    // allocates behind its own constructor are BCL-internal and uncharged by policy — Go's own
+    // make(map) allocates an hmap plus its buckets, so the two runtimes differ here by exactly the
+    // structures neither exposes. See AllocationCounter's coverage statement.
     public map()
     {
         m_map = new NilKeyDictionary();
+        AllocationCounter.Count();
     }
 
     public map(nint size)
     {
         m_map = new NilKeyDictionary((int)size);
+        AllocationCounter.Count();
     }
 
     public map(IEnumerable<KeyValuePair<TKey, TValue>> map)
@@ -146,6 +152,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (typeof(TKey).IsValueType)
         {
             m_map = new NilKeyDictionary(map);
+            AllocationCounter.Count();
             return;
         }
 
@@ -154,6 +161,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (map is map<TKey, TValue> source)
         {
             m_map = source.m_map is null ? new NilKeyDictionary() : new NilKeyDictionary((IDictionary<TKey, TValue>)source.m_map);
+            AllocationCounter.Count();
 
             if (source.m_map is { HasNilKey: true })
             {
@@ -167,6 +175,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         // Any other source — a generated named-map wrapper, a plain Dictionary — is copied entry by
         // entry through the indexer, so a null key ROUTES to the slot rather than throwing.
         m_map = new NilKeyDictionary();
+        AllocationCounter.Count();
 
         foreach (KeyValuePair<TKey, TValue> entry in map)
             this[entry.Key] = entry.Value;

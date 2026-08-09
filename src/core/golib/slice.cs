@@ -83,7 +83,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public slice(Span<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf<T>(source);
         m_low = 0;
         m_length = m_array.Length;
         m_capacity = m_array.Length;
@@ -91,7 +91,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public slice(ReadOnlySpan<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf(source);
         m_low = 0;
         m_length = m_array.Length;
         m_capacity = m_array.Length;
@@ -99,7 +99,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public slice(Memory<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf<T>(source.Span);
         m_low = 0;
         m_length = m_array.Length;
         m_capacity = m_array.Length;
@@ -107,7 +107,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public slice(ReadOnlyMemory<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf(source.Span);
         m_low = 0;
         m_length = m_array.Length;
         m_capacity = m_array.Length;
@@ -141,7 +141,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         }
 
         // Foreign implementer: a detached copy is the only option.
-        m_array = view.ToSpan().ToArray();
+        m_array = AllocationCounter.CopyOf<T>(view.ToSpan());
         m_low = 0;
         m_length = m_array.Length;
         m_capacity = m_array.Length;
@@ -163,7 +163,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return;
         }
 
-        T[] copy = new T[seq.Length];
+        T[] copy = AllocationCounter.NewArray<T>(seq.Length);
 
         for (nint i = 0; i < copy.Length; i++)
             copy[i] = seq[i];
@@ -250,7 +250,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (capacity <= 0)
             capacity = length;
 
-        m_array = new T[capacity];
+        m_array = AllocationCounter.NewArray<T>(capacity);
         m_low = low;
         m_length = length;
         m_capacity = capacity - low;
@@ -273,7 +273,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             m_array[i] = elementFactory();
     }
 
-    public T[] Source => ToSpan().ToArray();
+    public T[] Source => AllocationCounter.CopyOf<T>(ToSpan());
 
     public Span<T> ꓸꓸꓸ => ToSpan(); // Spread operator
 
@@ -643,6 +643,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     ISlice ISlice.Append(object[] elems)
     {
+        // The Cast/ToArray materialization is this method's own allocation, distinct from whatever
+        // Append then allocates to grow; the LINQ iterator behind it is BCL-internal and uncharged.
+        AllocationCounter.Count();
         return Append(elems.Cast<T>().ToArray());
     }
 
@@ -827,7 +830,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (array is T[] baseTypeArray)
             return new slice<T>(baseTypeArray);
 
-        baseTypeArray = new T[array.Length];
+        baseTypeArray = AllocationCounter.NewArray<T>(array.Length);
 
         for (int i = 0; i < array.Length; i++)
             baseTypeArray[i] = (T)TypeExtensions.ConvertToType((IConvertible)array[i]!);
@@ -848,7 +851,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
         if (slice == nil)
         {
-            newArray = new T[elems.Length];
+            newArray = AllocationCounter.NewArray<T>(elems.Length);
             elems.CopyTo(newArray);
             return new slice<T>(newArray);
         }
@@ -868,7 +871,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
         // Beyond capacity: reallocate and DETACH from the original backing array, like Go.
         nint newCapacity = CalculateNewCapacity(slice, slice.Length + elems.Length);
-        newArray = new T[newCapacity];
+        newArray = AllocationCounter.NewArray<T>(newCapacity);
 
         Array.Copy(slice.m_array, slice.m_low, newArray, 0, slice.Length);
         elems.CopyTo(newArray.AsSpan((int)slice.Length));
@@ -950,12 +953,14 @@ public static class SliceExtensions
     // slice from a Span helper function
     public static slice<T> slice<T>(this Span<T> source, nint low = -1, nint high = -1, nint max = -1)
     {
-        return source.ToArray().slice(low, high, max);
+        return AllocationCounter.CopyOf<T>(source).slice(low, high, max);
     }
 
     // slice of an enumerable helper function
     public static slice<T> slice<T>(this IEnumerable<T> source, nint low = -1, nint high = -1, nint max = -1)
     {
+        // Enumerable.ToArray's result is charged; its discarded growth buffers are BCL-internal.
+        AllocationCounter.Count();
         return source.ToArray().slice(low, high, max);
     }
 

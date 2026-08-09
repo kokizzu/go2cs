@@ -284,6 +284,13 @@ internal abstract class ChanCore
     protected ChanCore(nint size)
     {
         Dataqsiz = (int)size;
+
+        // FOUR objects, charged here because this constructor runs exactly once per channel core
+        // whatever the derived type: the core instance itself, plus the three the field
+        // initializers above allocate — SyncRoot, Recvq and Sendq. Go's makechan allocates the
+        // hchan with its lock and both wait queues INSIDE that one struct; the .NET shape needs
+        // four objects to hold the same state, and the count says so.
+        AllocationCounter.Count(4);
     }
 
     /// <summary>
@@ -320,7 +327,9 @@ internal sealed class ChanCore<T> : ChanCore
 
     internal ChanCore(nint size) : base(size)
     {
-        m_buf = size > 0 ? new T[size] : null;
+        // Only the ring buffer here — the core object and its lock/queues are charged by the base
+        // constructor above, which runs for every derived core.
+        m_buf = size > 0 ? AllocationCounter.NewArray<T>(size) : null;
     }
 
     /// <summary>
@@ -371,6 +380,9 @@ internal sealed class ChanCore<T> : ChanCore
 
         // Park: enqueue as a sender, release the channel lock, THEN wait — the lock is never held
         // across a park. A receiver (or close) publishes into the waiter before signaling.
+        // Two objects: the waiter and the SemaphoreSlim its field initializer allocates to park on.
+        // Go's equivalent is one sudog, taken from a per-P free list rather than freshly allocated.
+        AllocationCounter.Count(2);
         Waiter parked = new(isSend: true) { Elem = value };
         Sendq.Enqueue(parked);
         Monitor.Exit(SyncRoot);
@@ -452,6 +464,8 @@ internal sealed class ChanCore<T> : ChanCore
             return false;
         }
 
+        // As on the send side: the waiter plus its park semaphore.
+        AllocationCounter.Count(2);
         Waiter parked = new(isSend: false);
         Recvq.Enqueue(parked);
         Monitor.Exit(SyncRoot);
@@ -752,8 +766,10 @@ internal static class SelectRuntime
             return committed;
 
         // Nothing ready — park one waiter per live case, all sharing one SelectState.
+        // The shared select state plus its completion semaphore.
+        AllocationCounter.Count(2);
         SelectState sel = new();
-        Waiter?[] waiters = new Waiter?[ops.Length];
+        Waiter?[] waiters = AllocationCounter.NewArray<Waiter?>(ops.Length);
 
         for (int i = 0; i < ops.Length; i++)
         {
@@ -762,6 +778,8 @@ internal static class SelectRuntime
             if (op.Core is null)
                 continue;
 
+            // Waiter plus its park semaphore, once per live case — Go parks one sudog per case too.
+            AllocationCounter.Count(2);
             Waiter waiter = new(op.IsSend, sel, i);
 
             if (op.IsSend)
