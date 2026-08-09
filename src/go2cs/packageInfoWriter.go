@@ -383,6 +383,22 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		for _, proxy := range constraintProxies {
 			elementRef := qualifyLocalTypeRef(proxy[0])
 			interfaceRef := qualifyLocalTypeRef(proxy[1])
+
+			// The proxy CLASS is emitted per record into the assembly that CARRIES the record, and
+			// it is named for the (element, interface) pair alone — so two assemblies holding the
+			// same record declare two same-named classes. Under the REFERENCE model the production
+			// package is a referenced assembly whose own package_info.cs already carries this
+			// record, and the interface reference stays package-QUALIFIED here precisely because
+			// the production class is not local (see metadataAnchorLocalTypes above). Re-emitting
+			// it mints a second `P224PointжnistPoint` in the test namespace and every use of the
+			// name becomes ambiguous — CS0104 ×8 in crypto/ecdsa's test half, the same
+			// duplicate-type shadow the reference model exists to eliminate. The production proxy
+			// is the single identity; defer to it. A test-DECLARED constraint interface still
+			// renders bare (crypto/internal/nistec's own nistPoint) and is emitted here as before.
+			if metadataAnchorLocalTypes && strings.Contains(interfaceRef, PackageSuffix+".") {
+				continue
+			}
+
 			lines.Add(fmt.Sprintf("[assembly: GoImplement<%s, %s<%s>>(ConstraintProxy = true)]", elementRef, interfaceRef, elementRef))
 		}
 

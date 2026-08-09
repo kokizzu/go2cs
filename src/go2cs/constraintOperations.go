@@ -904,13 +904,7 @@ func (v *Visitor) explicitTypeArgsAfterErasure(x ast.Expr, indices []ast.Expr) (
 // type-parameter list; the result is always non-nil — an EMPTY list means every position was
 // erased (emit no `<...>`).
 func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList) []string {
-	var typeParams *types.TypeParamList
-
-	if funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func); ok {
-		if sig, ok := funcObj.Type().(*types.Signature); ok {
-			typeParams = sig.TypeParams()
-		}
-	}
+	typeParams := v.signatureTypeParams(funIdent)
 
 	names := make([]string, 0, typeArgs.Len())
 
@@ -919,6 +913,14 @@ func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList
 			if _, erased := pointerCoreConstraint(typeParams.At(i)); erased {
 				continue
 			}
+		}
+
+		// A pointer argument against a SELF-REFERENTIAL generic method-set constraint renders as
+		// its constraint proxy, not as the box: `where P : nistPoint<P>` is a nominal C# bound the
+		// golib box can never satisfy (see constraintProxyFor).
+		if proxyName, ok := v.constraintProxySigArg(funIdent, typeArgs, i); ok {
+			names = append(names, proxyName)
+			continue
 		}
 
 		names = append(names, v.getCSharpTypeName(typeArgs.At(i)))
@@ -1266,15 +1268,26 @@ func (v *Visitor) constraintProxyArg(named *types.Named, i int) (string, bool) {
 
 	typeParams := origin.TypeParams()
 
-	if typeParams == nil || i >= typeParams.Len() {
+	if typeParams == nil || i >= typeParams.Len() || named.TypeArgs() == nil || i >= named.TypeArgs().Len() {
 		return "", false
 	}
 
-	typeParam := typeParams.At(i)
+	return v.constraintProxyFor(typeParams.At(i), named.TypeArgs().At(i))
+}
+
+// constraintProxyFor is the (type parameter, type argument) core shared by every instantiation
+// form. A generic NAMED TYPE reaches it through constraintProxyArg; a generic FUNCTION reaches it
+// through constraintProxySigArg — Go's `benchmarkScalarMult[P nistPoint[P]]` called with
+// `*P224Point` needs exactly the same proxy `nistCurve[Point nistPoint[Point]]` does, because the
+// C# constraint `where P : nistPoint<P>` is nominal either way and the box cannot satisfy it.
+func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.Type) (string, bool) {
+	if typeParam == nil || typeArg == nil {
+		return "", false
+	}
 
 	// The argument must be a pointer to a named type — a value type arg satisfies its constraint
 	// nominally (or widens), only the boxed pointer needs the proxy.
-	ptr, ok := named.TypeArgs().At(i).(*types.Pointer)
+	ptr, ok := types.Unalias(typeArg).(*types.Pointer)
 
 	if !ok {
 		return "", false
@@ -1361,6 +1374,168 @@ func (v *Visitor) namedHasConstraintProxy(named *types.Named) bool {
 
 	for i := 0; i < named.TypeArgs().Len(); i++ {
 		if _, ok := v.constraintProxyArg(named, i); ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+// signatureTypeParams resolves the declared type-parameter list of the generic FUNCTION `funIdent`
+// names, or nil when it names something that is not a generic function.
+func (v *Visitor) signatureTypeParams(funIdent *ast.Ident) *types.TypeParamList {
+	if funIdent == nil {
+		return nil
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok {
+		return nil
+	}
+
+	return sig.TypeParams()
+}
+
+// constraintProxySigArg is constraintProxyArg for a generic FUNCTION instantiation: the same
+// self-referential-constraint test against the CALLEE's declared type parameters and the resolved
+// type arguments go/types recorded in info.Instances.
+func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (string, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil || i >= typeParams.Len() || typeArgs == nil || i >= typeArgs.Len() {
+		return "", false
+	}
+
+	return v.constraintProxyFor(typeParams.At(i), typeArgs.At(i))
+}
+
+// typeMentionsTypeParam reports whether `typ` uses `target` anywhere in its structure. Used to
+// decide which FUNC-typed parameters of a constraint-proxy instantiation carry the proxy at a
+// delegate boundary (see constraintProxyLambdaParams). The `seen` set terminates the recursion on
+// a self-referential named type (`type node[T any] struct { next *node[T] }`).
+func typeMentionsTypeParam(typ types.Type, target *types.TypeParam, seen map[types.Type]bool) bool {
+	if typ == nil || target == nil {
+		return false
+	}
+
+	if seen[typ] {
+		return false
+	}
+
+	seen[typ] = true
+
+	switch t := types.Unalias(typ).(type) {
+	case *types.TypeParam:
+		return t == target
+	case *types.Pointer:
+		return typeMentionsTypeParam(t.Elem(), target, seen)
+	case *types.Slice:
+		return typeMentionsTypeParam(t.Elem(), target, seen)
+	case *types.Array:
+		return typeMentionsTypeParam(t.Elem(), target, seen)
+	case *types.Chan:
+		return typeMentionsTypeParam(t.Elem(), target, seen)
+	case *types.Map:
+		return typeMentionsTypeParam(t.Key(), target, seen) || typeMentionsTypeParam(t.Elem(), target, seen)
+	case *types.Tuple:
+		for i := range t.Len() {
+			if typeMentionsTypeParam(t.At(i).Type(), target, seen) {
+				return true
+			}
+		}
+	case *types.Signature:
+		return typeMentionsTypeParam(t.Params(), target, seen) || typeMentionsTypeParam(t.Results(), target, seen)
+	case *types.Named:
+		if args := t.TypeArgs(); args != nil {
+			for i := range args.Len() {
+				if typeMentionsTypeParam(args.At(i), target, seen) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// constraintProxyLambdaParams reports the lambda parameter list to re-wrap argument `i` of a
+// generic FUNCTION call with, when that parameter is FUNC-typed and its signature mentions a
+// PROXIED type parameter. C# renders such a delegate over the proxy (`Func<P224PointжnistPoint>`
+// for Go's `newPoint func() P`), and a method-group conversion cannot apply the user-defined
+// ж↔proxy conversion the proxy return needs — CS0407 on
+// `testEquivalents(t, nistec.NewP224Point, …)`. The lambda re-wrap moves the conversion into the
+// body, where it is an ordinary implicit conversion. Same remedy convCompositeLit already applies
+// to a proxied struct's FUNC field initializer.
+func (v *Visitor) constraintProxyLambdaParams(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (string, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil || typeArgs == nil {
+		return "", false
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return "", false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.Params() == nil || i >= sig.Params().Len() {
+		return "", false
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok {
+		return "", false
+	}
+
+	proxied := false
+
+	for p := 0; p < typeParams.Len() && p < typeArgs.Len(); p++ {
+		if _, ok := v.constraintProxyFor(typeParams.At(p), typeArgs.At(p)); !ok {
+			continue
+		}
+
+		if typeMentionsTypeParam(paramSig, typeParams.At(p), map[types.Type]bool{}) {
+			proxied = true
+			break
+		}
+	}
+
+	if !proxied {
+		return "", false
+	}
+
+	params := make([]string, paramSig.Params().Len())
+
+	for p := range params {
+		params[p] = fmt.Sprintf("%sp%d", ShadowVarMarker, p)
+	}
+
+	return strings.Join(params, ", "), true
+}
+
+// callNeedsConstraintProxy reports whether any type argument of a generic FUNCTION instantiation
+// resolves to a self-referential constraint proxy. Such a call must render its type arguments
+// EXPLICITLY even where Go inferred them from an ordinary value argument: C# would otherwise infer
+// the box `ж<P224Point>` from the argument's own type and reject it against `where P : nistPoint<P>`
+// (CS0311) — `benchmarkScalarMult(b, nistec.NewP224Point().SetGenerator(), 28)`.
+func (v *Visitor) callNeedsConstraintProxy(funIdent *ast.Ident, typeArgs *types.TypeList) bool {
+	if typeArgs == nil {
+		return false
+	}
+
+	for i := 0; i < typeArgs.Len(); i++ {
+		if _, ok := v.constraintProxySigArg(funIdent, typeArgs, i); ok {
 			return true
 		}
 	}

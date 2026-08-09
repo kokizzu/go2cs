@@ -1246,6 +1246,30 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// A FUNC-typed parameter of a SELF-REFERENTIAL constraint-proxy instantiation renders
+			// its delegate over the proxy (`Func<P224PointжnistPoint>` for `newPoint func() P`),
+			// so a method-group / func-value argument must be re-wrapped as a lambda — a C#
+			// method-group conversion cannot apply the ж↔proxy user-defined conversion (CS0407 on
+			// `testEquivalents(t, nistec.NewP224Point, …)`). A FuncLit already targets the proxy
+			// and nil stays bare, exactly as in the composite-literal field case.
+			if paramHasArg {
+				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
+					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
+						if _, isLit := callExpr.Args[i].(*ast.FuncLit); !isLit {
+							if tv, isNil := v.info.Types[callExpr.Args[i]]; !isNil || !tv.IsNil() {
+								if params, ok := v.constraintProxyLambdaParams(funIdent, instance.TypeArgs, i); ok {
+									if callExprContext.wrapArgWithLambda == nil {
+										callExprContext.wrapArgWithLambda = make(map[int]string)
+									}
+
+									callExprContext.wrapArgWithLambda[i] = params
+								}
+							}
+						}
+					}
+				}
+			}
+
 			// A CONSTRAINED SLICE TYPE PARAMETER passed where a concrete slice<E> parameter is
 			// expected — Go assignability (S ~[]E is assignable to []E; the slices package's
 			// rotateRight(s[m:i], …)/pdqsortOrdered(x, …) helper chain) — materializes through
@@ -2068,11 +2092,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// types, but C# never infers a type parameter that appears only in constraints (CS0411,
 		// 14 sites in the slices/maps wave). go/types already resolved every instantiation
 		// (info.Instances); a concrete instantiation still infers fine in C# and stays bare
-		// (no churn).
+		// (no churn). A SELF-REFERENTIAL constraint forces the same explicit rendering for the
+		// opposite reason: C# WOULD infer, and would infer the box that cannot satisfy the bound
+		// (see callNeedsConstraintProxy).
 		if len(typeParamExpr) == 0 {
 			if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 				if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil &&
-					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr)) {
+					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
+						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
 					// erases to empty stays bare.

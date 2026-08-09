@@ -190,16 +190,16 @@ public static (ж<PrivateKey>, error) GenerateKey(elliptic.Curve c, io.Reader ra
     boring.UnreachableExceptTests();
     var exprᴛ1 = c.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return generateNISTEC(p224(), rand);
+        return generateNISTEC<P224PointжnistPoint>(p224(), rand);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return generateNISTEC(p256(), rand);
+        return generateNISTEC<P256PointжnistPoint>(p256(), rand);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return generateNISTEC(p384(), rand);
+        return generateNISTEC<P384PointжnistPoint>(p384(), rand);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return generateNISTEC(p521(), rand);
+        return generateNISTEC<P521PointжnistPoint>(p521(), rand);
     }
     { /* default: */
         return generateLegacy(c, rand);
@@ -314,16 +314,16 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
     }
     var exprᴛ1 = priv.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return signNISTEC(p224(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P224PointжnistPoint>(p224(), Ꮡpriv, csprng, hash);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return signNISTEC(p256(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P256PointжnistPoint>(p256(), Ꮡpriv, csprng, hash);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return signNISTEC(p384(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P384PointжnistPoint>(p384(), Ꮡpriv, csprng, hash);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return signNISTEC(p521(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P521PointжnistPoint>(p521(), Ꮡpriv, csprng, hash);
     }
     { /* default: */
         return signLegacy(Ꮡpriv, csprng, hash);
@@ -550,16 +550,16 @@ public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte
     }
     var exprᴛ1 = pub.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return verifyNISTEC(p224(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P224PointжnistPoint>(p224(), Ꮡpub, hash, sig);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return verifyNISTEC(p256(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P256PointжnistPoint>(p256(), Ꮡpub, hash, sig);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return verifyNISTEC(p384(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P384PointжnistPoint>(p384(), Ꮡpub, hash, sig);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return verifyNISTEC(p521(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P521PointжnistPoint>(p521(), Ꮡpub, hash, sig);
     }
     { /* default: */
         return verifyLegacy(Ꮡpub, hash, sig);
@@ -711,7 +711,7 @@ internal static ж<nistCurve<P224PointжnistPoint>> p224() {
         _p224 = Ꮡ(new nistCurve<P224PointжnistPoint>(
             newPoint: () => nistec.NewP224Point()
         ));
-        precomputeParams(_p224, elliptic.P224());
+        precomputeParams<P224PointжnistPoint>(_p224, elliptic.P224());
     });
     return _p224;
 }
@@ -726,7 +726,7 @@ internal static ж<nistCurve<P256PointжnistPoint>> p256() {
         _p256 = Ꮡ(new nistCurve<P256PointжnistPoint>(
             newPoint: () => nistec.NewP256Point()
         ));
-        precomputeParams(_p256, elliptic.P256());
+        precomputeParams<P256PointжnistPoint>(_p256, elliptic.P256());
     });
     return _p256;
 }
@@ -741,7 +741,7 @@ internal static ж<nistCurve<P384PointжnistPoint>> p384() {
         _p384 = Ꮡ(new nistCurve<P384PointжnistPoint>(
             newPoint: () => nistec.NewP384Point()
         ));
-        precomputeParams(_p384, elliptic.P384());
+        precomputeParams<P384PointжnistPoint>(_p384, elliptic.P384());
     });
     return _p384;
 }
@@ -756,7 +756,7 @@ internal static ж<nistCurve<P521PointжnistPoint>> p521() {
         _p521 = Ꮡ(new nistCurve<P521PointжnistPoint>(
             newPoint: () => nistec.NewP521Point()
         ));
-        precomputeParams(_p521, elliptic.P521());
+        precomputeParams<P521PointжnistPoint>(_p521, elliptic.P521());
     });
     return _p521;
 }
