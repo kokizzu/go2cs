@@ -10,6 +10,11 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
@@ -56,8 +61,6 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct halfword {}
-    internal partial struct signedword {}
-    internal partial struct word {}
+    internal partial struct record {}
     // </TypeAccessibility>
 }

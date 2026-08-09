@@ -1363,7 +1363,7 @@ The same narrowing applies to a narrow-arithmetic **comparison operand** (2026-0
 
 A related **wide** case: a computed *constant* arithmetic expression assigned to a **native-width integer** (`uintptr`/`uint`/`int` → C# `nuint`/`nint`) whose folded value overflows int32. `pattern = 1<<maxBits - 1` (runtime `mbitmap`, `maxBits` = 57) is a `uintptr` constant, but the converter folds the untyped sub-shift `1<<maxBits` to a **signed** C# `long` literal (`144115188075855872L`, since it exceeds int32 and the untyped operand is treated as signed), so the whole RHS is `long` — which has no implicit conversion to the native target (CS0266). A `UL`/`(nuint)` suffix would not help (`ulong`→`nuint` is also an explicit conversion). The converter wraps the whole RHS in the native target's cast: `pattern = (uintptr)(144115188075855872L - 1)`. This fires **only** when the constant fits int64 but is out of int32 range — exactly the signed-`long` fold range. A value that overflows *int64* (a large unsigned `uintptr` like `1<<63 + 1<<62`) is deliberately left alone: its sub-shift already mis-emits (a `1<<63` int-shift), so casting it would convert a visible compile error into a silent wrong value — that is a separate defect to fix on its own, not to mask. (Guarded by the `NativeIntWideConstAssign` behavioral test — `uintptr`/`uint`/`int` targets with int64-range constants, values verified vs Go; cleared the `mbitmap` CS0266, the last one in `runtime`.)
 
-**A runtime shift count that can reach the operand width uses Go-semantics helpers (2026-07-18).** Go zeroes a shift whose count reaches or exceeds the operand's bit-width — `x >> n` / `x << n` with `n >= width` is `0` (a SIGNED right shift sign-extends: `0` for a non-negative value, `-1` for a negative one). C#'s native `>>`/`<<` instead **mask** the count (`n & 63` for a 64-bit operand, `n & 31` for 32-bit, and sub-`int` operands promote to `int` and mask by 31), so a native shift by a runtime count silently yields the wrong value once the count can reach the width — `math.FMA`'s double-word funnel shifts (`u2 >> (64 - n)` at `n == 0`: Go `>>64`=0, C# `>>0`=`u2`) and `math.RoundToEven`'s `>> e` (`e` up to 1024 for a NaN) both corrupted. The converter keeps the native shift ONLY when the count is PROVABLY in `[0, width)`: **R1** a constant in range (the majority of shifts — every `x >> 5`; a constant `>= width` routes to the guard, which returns 0); **R2** a syntactic mask `y & M` with constant `M <= width-1`; **R3** a modulo `y % M` with constant `M <= width`. Everything else — a bare variable count (`x >> s`, which genuinely can exceed width, as RoundToEven's `e` proves, so it cannot be trusted) or an arithmetic count (`64 - n`, `shift - e`) — routes through golib's `GoShift.Rsh`/`Lsh` extension methods, `x.Rsh(n)` / `x.Lsh(n)` (the naming echoing Go's `math/big.Int.Rsh`/`Lsh`): one guarded shift per operand width returning 0 (or sign-extending) at `n >= width`. The count is taken as a wide `uint64` so a computed count like `64 - n` that unsigned-wraps to a huge value is compared at FULL magnitude BEFORE narrowing to the `int` shift amount — truncating to `int` first would defeat the guard. A named-`[GoType]`-wrapper left operand keeps its generated-operator path (round-one scope), as does a compound untyped-const `UntypedInt` left operand (its own `operator<<`, the `UntypedIntWideShift` subject). Measured footprint: of ~3,556 corpus shifts, ~80% (constant, named-const, and masked/modulo counts) stay native and byte-identical; only the ~20% of unprovable variable/arithmetic counts become `.Rsh`/`.Lsh` — the SOUND floor without value-range analysis (a lightweight loop-bound/range recognition could shrink it later). This replaces the narrow-shift result retype for a runtime count (`(byte)(cb << (int)(k))` → `cb.Lsh(k)`, the `Lsh(byte)` overload doing both the width wrap and the `k>=8`→0). (Guarded by the `GoShiftSemantics` behavioral test — 64/32-bit unsigned shifts by runtime counts 0/1/63/64/65/200, signed sign-extension, and R2/R3 masked/modulo counts staying native, output-compared vs Go; cleared `math`'s `TestFMA` + `TestRoundToEven`, whose funnel shifts now emit guarded automatically.)
+**A runtime shift count that can reach the operand width uses Go-semantics helpers (2026-07-18).** Go zeroes a shift whose count reaches or exceeds the operand's bit-width — `x >> n` / `x << n` with `n >= width` is `0` (a SIGNED right shift sign-extends: `0` for a non-negative value, `-1` for a negative one). C#'s native `>>`/`<<` instead **mask** the count (`n & 63` for a 64-bit operand, `n & 31` for 32-bit, and sub-`int` operands promote to `int` and mask by 31), so a native shift by a runtime count silently yields the wrong value once the count can reach the width — `math.FMA`'s double-word funnel shifts (`u2 >> (64 - n)` at `n == 0`: Go `>>64`=0, C# `>>0`=`u2`) and `math.RoundToEven`'s `>> e` (`e` up to 1024 for a NaN) both corrupted. The converter keeps the native shift ONLY when the count is PROVABLY in `[0, width)`: **R1** a constant in range (the majority of shifts — every `x >> 5`; a constant `>= width` routes to the guard, which returns 0); **R2** a syntactic mask `y & M` with constant `M <= width-1`; **R3** a modulo `y % M` with constant `M <= width`. Everything else — a bare variable count (`x >> s`, which genuinely can exceed width, as RoundToEven's `e` proves, so it cannot be trusted) or an arithmetic count (`64 - n`, `shift - e`) — routes through golib's `GoShift.Rsh`/`Lsh` extension methods, `x.Rsh(n)` / `x.Lsh(n)` (the naming echoing Go's `math/big.Int.Rsh`/`Lsh`): one guarded shift per operand width returning 0 (or sign-extending) at `n >= width`. The count is taken as a wide `uint64` so a computed count like `64 - n` that unsigned-wraps to a huge value is compared at FULL magnitude BEFORE narrowing to the `int` shift amount — truncating to `int` first would defeat the guard. A named-`[GoType]`-wrapper left operand keeps its generated-operator path, as does a compound untyped-const `UntypedInt` left operand (its own `operator<<`, the `UntypedIntWideShift` subject) — but the WRAPPER OPERATOR now carries the guard itself (2026-08-09), because leaving it native left that entire family with the masked answer and no other layer covers it. `NumericTypeTemplate`'s `operator <<` / `operator >>` emit `value.m_value.Lsh((uint64)shift)` / `.Rsh(…)` in place of the native `value.m_value << shift`, so a named integer type shifts with Go's semantics wherever the converter's own provability analysis cannot reach. What motivated it was not a wrong number but a **hang**: `math/big`'s `lehmerSimulate` reads `a2 = B.abs[n-2] >> (_W - h)` on `Word` (`type Word uint`), and for a normalized operand `h == 0`, so the count is exactly 64 — Go yields 0, C# yielded the word itself. The corrupted Lehmer cosequences make `GCD`'s `for len(B.abs) > 1` loop stop converging: an INFINITE LOOP inside `math/big`, reached from `crypto/elliptic`'s generic `CurveParams` path, so `elliptic.P256().Params().Double(Gx, Gy)` never returned. That is `crypto/ecdsa`'s `TestINDCCA/P256/Generic`, carried on the board as a 20-minute timeout open between "performance gap or hang"; the fixed path runs in 0.31 s against Go's 0.66 s, so it was never slowness. It is value-dependent, which is why it hid so long — a garbage `a1`/`a2` that fails Collins' stopping condition immediately costs only a Euclidean step, so equal-width operand pairs pass and only pairs that make the condition iterate corrupt anything. `operator >>>` stays native: Go has no unsigned-right-shift operator, so nothing converted ever calls it. Measured footprint: of ~3,556 corpus shifts, ~80% (constant, named-const, and masked/modulo counts) stay native and byte-identical; only the ~20% of unprovable variable/arithmetic counts become `.Rsh`/`.Lsh` — the SOUND floor without value-range analysis (a lightweight loop-bound/range recognition could shrink it later). This replaces the narrow-shift result retype for a runtime count (`(byte)(cb << (int)(k))` → `cb.Lsh(k)`, the `Lsh(byte)` overload doing both the width wrap and the `k>=8`→0). (Guarded by the `GoShiftSemantics` behavioral test — 64/32-bit unsigned shifts by runtime counts 0/1/63/64/65/200, signed sign-extension, and R2/R3 masked/modulo counts staying native, output-compared vs Go; cleared `math`'s `TestFMA` + `TestRoundToEven`, whose funnel shifts now emit guarded automatically. Extended 2026-08-09 with the NAMED forms — `type word uint` / `halfword uint32` / `signedword int64` shifted by the same runtime counts, including the `w >> (W - h)` shape `lehmerSimulate` writes, which is the wrapper-operator route rather than the guard route.)
 
 **The signed integer minima sign-fold at the unary level.** Go folds `-literal` into one constant, but the emitter classifies the POSITIVE operand literal alone, and both signed minima's magnitudes overflow their own type: `[]int32{-2147483648}` (internal/fuzz mutator's `interesting32`) saw 2147483648 > MaxInt32 and emitted `-(nint)2147483648L`, which has no implicit conversion back to an int32 slot (CS0266); the int64 minimum's operand 9223372036854775808 does not even parse as int64, routing through the unsigned branch to `-(nuint)9223372036854775808UL` — and C# defines no unary minus on `nuint` at all (CS0023). `convUnaryExpr`'s `token.SUB` handling now mirrors its FLOAT arm: for an INT literal operand it classifies the range on the **unary expression's resolved (sign-folded) constant**. The exact int32 minimum in an int32-typed context emits the plain negated literal `-2147483648` — C# special-cases the negated decimal int-min as an `int` constant, **by value**, so `_` digit separators survive (`-2_147_483_648` compiles, proven by the guard) — and the exact int64 minimum emits `-9223372036854775808L` (the matching `long` special case), wrapped as `((nint)(-9223372036854775808L))` in a Go-`int` context where `long` has no implicit conversion. Decimal source formatting is preserved per the literal-formatting rule; hex/binary re-render as decimal (C# has no signed special case for those forms — `-0x80000000` binds as a `long`-typed expression). Everything else keeps the default path: in-int32 operands never had a problem, and a folded int32-min in a WIDER context (`var x int64 = -2147483648`, or boxed to `any` where Go-`int` must stay `nint`) keeps the implicitly-convertible `-(nint)…L` form — the full-stdlib A/B footprint was exactly the one mutator.cs line. (Guarded by the `IntMinLiterals` behavioral test — int32-min plain and underscored in `[]int32`, int64-min in `[]int64`, the nint-min `:=` form, between-minima and non-minimal negative controls, and min-value comparisons, values vs Go; the pre-fix converter fails it CS0266 ×2 + CS0023 ×2.)
 
@@ -9880,6 +9880,64 @@ not satisfying a lifted operator constraint — is a distinct, deeper root). Gua
 Namer })`, file B casts a concrete `*box` to it — the lifted name must flow into the attribute,
 the adapter, and the signature).
 
+### An INITIALIZED var lifts its explicit anonymous declared type too — and a blank name lifts from the GO identifier
+
+`visitValueSpec` lifts a var whose DECLARED type is an anonymous struct/interface literal, but
+until 2026-08-09 only on the BODYLESS arm (`var x struct{…}`). Give the same var an
+**initializer** and nothing lifted it, so the raw Go text landed in both the declaration type
+and the value adapter's class name — and its braces close the C# member, making every following
+declaration in the file read as a namespace-level one:
+
+```go
+// crypto/ecdh's test half opens with the documented-interface witness idiom:
+var _ interface{ Equal(x crypto.PublicKey) bool } = &ecdh.PublicKey{}
+```
+```csharp
+// before — CS1519/CS1002 at the site, then CS0106 on every remaining member, CS1022 at EOF:
+internal static interface{Equal(x crypto.PublicKey) bool} _ᴛ1ʗ =
+    new ecdhꓸPublicKeyжinterface{Equal(x crypto.PublicKey) bool}(Ꮡ(new ecdhꓸPublicKey(nil)));
+// after:
+[GoType("dyn")] partial interface _ᴛ1 { bool Equal(cryptoꓸPublicKey x); }
+internal static _ᴛ1 _ᴛ1ʗ = new ecdh.ΔPublicKeyж_ᴛ1(Ꮡ(new ecdhꓸPublicKey(nil)));
+```
+
+The initialized arm now performs the bodyless arm's lift (both the struct and the interface
+twin). Ordering is not a constraint: the adapter name is minted EARLIER in the same iteration by
+`convertToInterfaceType`, but as a deferred `«DYNTYPE:…»` marker, so a lift registered afterwards
+still resolves it at the file-visit barrier.
+
+The lift is named from the **GO** identifier, not from `csIDName`. For an ordinary name the two
+agree (`csIDName` is that name sanitized, and `getUniqueLiftedTypeName` re-sanitizes its
+argument), but a BLANK `_` var's `csIDName` is a synthesized temp (`_ᴛ1ʗ`) that exists in no Go
+scope — so `getUniqueLiftedTypeName`'s `typeExists` check cannot see it and hands the type the
+field's own name back, giving one class a nested type and a field both called `_ᴛ1ʗ` (CS0102).
+Passing `_` finds the blank var among the package's defs and bumps the type to `_ᴛ1`, distinct
+by construction. (Guarded by the `AnonInterfaceVarWitness` behavioral test — two blank witnesses
+over different anonymous interfaces, a NAMED anonymous-interface var that is then called through
+its adapter, an anonymous-struct declared type, and a local interface value of the witness type,
+output-compared vs Go; and by `crypto/ecdh`'s banked 47-verdict suite, which is where it was
+found.)
+
+### A collision-renamed type's pointer adapter composes on the package qualifier, never the whole-type alias
+
+A COLLISION-RENAMED type resolves through a whole-type `global using` alias — `imageꓸRGBA` =
+`go.image_package.ΔRGBA`, `ecdhꓸPublicKey` = `go.crypto.ecdh_package.ΔPublicKey` — which is a
+single IDENTIFIER, not a qualified path. The adapter is a MEMBER of the declaring package's
+class, so composing the adapter infix onto the alias names nothing: `imageꓸRGBAжImage`,
+`ecdhꓸPublicKeyж_ᴛ1`, CS0246. The base is rebuilt as the file's package qualifier plus the
+type's EMITTED simple name — what the declaring generator composed the class from — giving
+`image.ΔRGBAжImage` / `ecdh.ΔPublicKeyж_ᴛ1`.
+
+The FOREIGN-adapter arm carried this rebuild from the start; the SAME-ASSEMBLY arm (the `-tests`
+production-under-test package, which compiles into the test assembly) did not, and the
+asymmetry was invisible because it only bites a type that is BOTH collision-renamed and
+adapted. crypto/ecdh shows both halves side by side: `PrivateKey` is not renamed, renders
+`ecdh.PrivateKey`, and composed correctly all along, while `PublicKey` is renamed and did not.
+Both arms now share `wholeTypeAliasAdapterBase`, which returns any render that already carries a
+qualifier untouched — so it is a no-op for every un-renamed type. (The same-assembly arm is a
+`-tests`-only shape, so its guard is `crypto/ecdh`'s banked suite rather than a behavioral
+project; the foreign arm's twin is guarded by `CrossPkgUser`.)
+
 ### Every type-name render resolves a lifted anonymous struct cross-file
 
 The registry/marker resolution above initially covered only two dedicated call sites
@@ -13495,6 +13553,59 @@ consumer: `internal/cpu`'s own `TestDisableSSE3`, whose first statement is
 guard was an infrastructure-error, and it was the package's only divergence (7 of 8). With the constant in
 place the test reads 1, walks on into `runDebugOptionsTest`, and skips exactly where Go does:
 `internal/cpu` validates **8 of 8**.
+
+### `StructField.Tag` is a REAL read — the converter has always emitted the tag, nothing had ever read it
+
+The converter emits a tagged field's Go struct tag verbatim at the declaration:
+
+```go
+NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
+```
+```csharp
+[GoTag(@"asn1:""optional,explicit,tag:0""")]
+public asn1.ObjectIdentifier NamedCurveOID;
+```
+
+`GoTagAttribute` aliases `System.ComponentModel.DescriptionAttribute`, so the text survives into
+metadata. It has done so since tags were first emitted — and until 2026-08-09 **nothing in the
+corpus read it**: golib's Go-field projection (`GoReflect.GoFieldInfo`) carried no tag, and the
+reflection bridge's `rtype.Field` left `StructField.Tag` at its zero value. Every converted
+struct therefore reported as UNTAGGED, and every tag-driven decoder in the standard library —
+`encoding/json`, `encoding/xml`, `encoding/asn1` — saw a type with no tags at all.
+
+The failure that surfaced it is subtle rather than loud, which is the point: `encoding/asn1`
+omits an `optional` field whose value `DeepEqual`s its zero, so with the tag invisible
+`crypto/x509`'s `marshalECPrivateKeyWithOID(k, nil)` MARSHALLED the nil `NamedCurveOID` instead
+of omitting it, and `makeObjectIdentifier` rejected the empty arc list — `asn1: structure
+error: invalid object identifier`, the whole of `crypto/ecdsa`'s `TestEqual`. Nothing about the
+message points at reflection.
+
+`GoFieldInfo` gains `Tag`, read from the declaration's attribute (the promoted-embed arm reads
+it off the backing box field, since Go allows a tag on an embedded field); `rtype.Field`
+surfaces it as `StructTag`. `Offset`, `PkgPath` and `Anonymous` stay **unpopulated**: no
+truthful read backs them here, and a descriptor field whose read cannot be honored must not be
+made to look truthful. (Guarded by the `ReflectStructTagCopy` behavioral test — raw tag text,
+`Tag.Get` for two keys, `Tag.Lookup`'s absent-vs-empty distinction, and untagged fields
+answering `""`, output-compared vs Go.)
+
+### `reflect.Copy` is bridged element-wise — the auto form is a flat two-header memory move
+
+`reflect.Copy` reinterprets BOTH operands' data words as `unsafeheader.Slice` headers
+(`*(*unsafeheader.Slice)(dst.ptr)`) and hands them to `typedslicecopy`. That is a raw memory
+move with no managed form, and on the bridge's never-populated `ptr` slot it dereferences a nil
+`ж` outright. `encoding/asn1`'s `parseField` copies every parsed `[]byte` into its destination
+through it, so this was `crypto/x509`'s `ParsePKCS8PrivateKey` and therefore the second half of
+`crypto/ecdsa`'s `TestEqual` — reached only once the tag fix above let the marshal succeed.
+
+The bridge copies element-wise through the same golib container interfaces every other bridged
+container method uses, which keeps the ALIASING exact rather than approximating it: a slice
+VALUE windows the backing store it shares with its parent, so an indexer write is a write the
+parent sees — precisely what `typedslicecopy` does to the same memory. Kind and element-type
+validation mirror Go's, including the documented special case where `src` may be a `String`
+when `dst`'s element type is `byte`; a nil container on either side copies nothing, matching
+Go's zero-length header. (Guarded by the `ReflectStructTagCopy` behavioral test — slice←slice
+truncating at either side, slice←string, an addressable array through `Elem()`, a nil
+destination, and a window slice whose copy must be visible in the ORIGINAL backing array.)
 
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 

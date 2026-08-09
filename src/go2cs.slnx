@@ -230,6 +230,7 @@
     <Project Path="tests/Behavioral/AnonIfaceThroughPointerAdapter/AnonIfaceThroughPointerAdapter.csproj" />
     <Project Path="tests/Behavioral/AnonInterfaceCrossFile/AnonInterfaceCrossFile.csproj" />
     <Project Path="tests/Behavioral/AnonInterfaceSignatureAssert/AnonInterfaceSignatureAssert.csproj" />
+    <Project Path="tests/Behavioral/AnonInterfaceVarWitness/AnonInterfaceVarWitness.csproj" />
     <Project Path="tests/Behavioral/AnonStructArrayElement/AnonStructArrayElement.csproj" />
     <Project Path="tests/Behavioral/AnonStructComposedTypes/AnonStructComposedTypes.csproj" />
     <Project Path="tests/Behavioral/AnonStructCrossFile/AnonStructCrossFile.csproj" />
@@ -653,6 +654,7 @@
     <Project Path="tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
     <Project Path="tests/Behavioral/ReflectMapRangeNilKey/ReflectMapRangeNilKey.csproj" />
     <Project Path="tests/Behavioral/ReflectMethodTableWalk/ReflectMethodTableWalk.csproj" />
+    <Project Path="tests/Behavioral/ReflectStructTagCopy/ReflectStructTagCopy.csproj" />
     <Project Path="tests/Behavioral/ReflectZeroAndGrow/ReflectZeroAndGrow.csproj" />
     <Project Path="tests/Behavioral/ReflectliteTypeName/ReflectliteTypeName.csproj" />
     <Project Path="tests/Behavioral/ReinterpretPinLifetime/ReinterpretPinLifetime.csproj" />

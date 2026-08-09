@@ -38,6 +38,10 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<thing, _ᴛ1>(Pointer = true)]
+[assembly: GoImplement<thing, _ᴛ2>(Pointer = true)]
+[assembly: GoImplement<thing, labelerᴛ1>(Pointer = true)]
+[assembly: GoImplement<thing, main_eq>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -56,8 +60,11 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct halfword {}
-    internal partial struct signedword {}
-    internal partial struct word {}
+    internal partial interface _ᴛ1 {}
+    internal partial interface _ᴛ2 {}
+    internal partial interface labelerᴛ1 {}
+    internal partial interface main_eq {}
+    internal partial struct originᴛ1 {}
+    internal partial struct thing {}
     // </TypeAccessibility>
 }

@@ -47,6 +47,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAnonInterfaceSignatureAssert() => CheckTarget("AnonInterfaceSignatureAssert");
 
     [TestMethod]
+    public void CheckAnonInterfaceVarWitness() => CheckTarget("AnonInterfaceVarWitness");
+
+    [TestMethod]
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
@@ -1197,6 +1200,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckReflectMethodTableWalk() => CheckTarget("ReflectMethodTableWalk");
+
+    [TestMethod]
+    public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
 
     [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
