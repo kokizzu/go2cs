@@ -268,3 +268,34 @@
     (`1ab15f998`). NuGet versions are immutable, so the published 1.23.1.5 pages keep the cosmetic
     one-version trail until the NEXT release replaces them — nothing to do besides ship the next
     release, which the now-throwing verifier guards. Do not re-diagnose from the gallery page.
+
+24. **Emitted-artifact comments carry converter HISTORY into user-level files — rewrite present
+    tense, corpus-wide (user-queued 2026-08-09).** The csproj template's test-artifact exclusion
+    comment narrates its own past ("the old `*._test.cs` pattern matched nothing the converter
+    emits...") — historical precedent that is meaningless in a file every package ships. The r42
+    docs ruling (present tense, educate the new reader, no history) applies with MORE force to
+    emitted files than to docs. Scope: audit EVERY emitted-artifact template for the same smell —
+    both csproj templates, the pubxml profiles, the emitted Directory.Build.props/.targets (the
+    -recurse artifacts redirect and the deploy root's), the validation-pack block, the README
+    emitter's fixed prose — rewrite each comment to state only what the line DOES and the
+    constraint it serves. Comment-only change but corpus-wide: every emitted csproj moves, so it
+    lands as its own regen bank (CNR behavioral-csproj re-baseline included) at an idle point or
+    riding the next rebank arc. History belongs in ConversionStrategies-Reference, not in the
+    artifact.
+
+25. **Investigate moving `[GoValueClone]` — and every movable extended attribute — off the
+    mainline type declaration into `package_info.cs`'s `<TypeAccessibility>` records
+    (user-commissioned investigation, 2026-08-09).** The visible converted code should read as
+    close to the Go original as the emission allows; `[GoType] [GoValueClone("intbuf")] partial
+    struct fmt` carries machinery the READER never needs, and package_info.cs already exists to
+    hold exactly this class of per-type record out of view. Scope: (1) find `GoValueClone`'s
+    consumer (generator or golib reflection) and determine whether an assembly-level record keyed
+    by type serves it identically — including any ordering/partial-class constraints; (2) if
+    implementable, migrate emission + consumption with the full A/B discipline (the attribute
+    appears corpus-wide, so this is a regen-bank change; behavioral goldens move); (3) AUDIT the
+    whole extended-attribute surface for the same movability — every attribute the converter stamps
+    on declarations beyond bare `[GoType]` (survey Symbols/golib attribute definitions and the
+    emitters that write them), classifying each as movable / must-stay (e.g. anything a generator
+    needs syntactically ON the declaration) / field-level-different (e.g. `[GoTag]`); (4) record
+    the classification in ConversionStrategies-Reference and move what cleanly moves. Readability
+    is the goal; behavioral identity is the bar.

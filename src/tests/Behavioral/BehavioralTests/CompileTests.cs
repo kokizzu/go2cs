@@ -1267,6 +1267,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
 
     [TestMethod]
+    public void CheckReflectTypedNilInterface() => CheckTarget("ReflectTypedNilInterface");
+
+    [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]

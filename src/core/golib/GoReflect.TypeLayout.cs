@@ -26,13 +26,14 @@ namespace go;
 //
 // THESE ARE GO'S NUMBERS, NOT THE CLR'S — THAT IS THE WHOLE POINT
 //   `GoSizeOf` returns the amd64 size of the GO type, computed from Go's own rules, and it has to,
-//   because the managed representation's real size is unrelated: a Go `string` is 16 bytes while
-//   `@string` is a single 8-byte reference; a Go `[]T` is 24 while `slice<T>` is 32; a Go `[2]byte`
-//   is 2 while `array<byte>` is one reference to a backing store. Anything that reads a size and
-//   expects Go's answer — encoding/binary's `sizeof` is the demonstrated consumer — would get
-//   nonsense from `Marshal.SizeOf` or `Unsafe.SizeOf`. Struct sizes follow Go's alignment rules
-//   over the PROJECTED Go fields (see GoReflect.FieldAccess.cs), which is best-effort composite
-//   fidelity and recorded as such.
+//   because the managed representation's real size is unrelated: a Go `[]T` is 24 bytes while
+//   `slice<T>` is 32; a Go `[2]byte` is 2 while `array<byte>` is one reference to a backing store.
+//   (`@string` happens to be 16 bytes like a Go `string` now that it carries an offset/length
+//   window, but that is a coincidence of the window's shape, not something a caller may rely on.)
+//   Anything that reads a size and expects Go's answer — encoding/binary's `sizeof` is the
+//   demonstrated consumer — would get nonsense from `Marshal.SizeOf` or `Unsafe.SizeOf`. Struct
+//   sizes follow Go's alignment rules over the PROJECTED Go fields (see GoReflect.FieldAccess.cs),
+//   which is best-effort composite fidelity and recorded as such.
 //
 //   UNIFIED 2026-08-09 (r56a): `unsafe.Sizeof` now answers through THIS rule too (see
 //   core/unsafe/unsafe.cs), so a Go size has one definition in the runtime rather than two. The

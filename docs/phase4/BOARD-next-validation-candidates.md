@@ -1582,7 +1582,36 @@ after the flush and the neutered control PASSED — a guard that proved nothing.
 fire for all three mechanisms (drop `offered`: 315–483 of 600; drop the drain: 477 stale of 600;
 drop the `seq` check: stale ticks in all four race sections).
 
-## `math/big` — **222 of 226** (re-measured 2026-08-09, r57a); three roots left, two of them the alloc model
+## `math/big` — **224 of 226** (re-measured 2026-08-09, r58b); root 3 CLOSED, the two left are both the alloc model
+
+> **r58b (2026-08-09): root 3 below is FIXED and both gob rows pass.** The reflection bridge now
+> packs the typed nil — `reflect.Value.Interface()` re-encodes a null read out of a POINTER-kinded
+> slot as that slot's canonical typed nil (`ж<T>.NilBox`, the same instance `reflect.Zero` and every
+> emitted `nil`→`*T` conversion already produce), so `v.Interface().(GobEncoder)` succeeds and
+> `big.Int.GobEncode`'s `if x == nil` arm is reached. `TestGobEncodingNilIntInSlice` and
+> `TestGobEncodingNilRatInSlice` both pass: **222 → 224 of 226**, exactly those two rows. Guarded by
+> the `ReflectTypedNilInterface` behavioral test.
+>
+> **`math/big` still does NOT bank**, for the reason root 3's own paragraph predicted: rows 1 and 2
+> are the alloc model and neither is disclosable. Both re-measured on this tree — `TestNewIntAllocs`:
+> *"measured 81,600 allocated BYTES over 100 run(s) … got 816.000000"*; `TestMulUnbalanced`:
+> *"multiplication uses too much memory (20487208 > 51 times the size of inputs)"* (inputs =
+> (50000+40)×8 = 400,320 B, so the converted `nat.mul` allocates ~51× where Go bounds at 10×). Row 1
+> waits on the AllocsPerRun ownership decision; row 2 is a truthful, comparable measurement of the
+> box model, which a disclosure would launder rather than explain.
+>
+> **⚠ Attribution correction, measured as an A/B rather than reasoned.** The paragraph below says
+> this root "also blocks part of `encoding/gob` (99 of 106)". The bridge half does **not**. r58b ran
+> gob's full pipeline with and without the fix on the same tree: **99 of 106 both ways, the same seven
+> divergent rows.** The typed-nil root has TWO halves that pay DIFFERENT packages — the reflection
+> READ path (fixed here; it pays *math/big's* gob rows, because gob reaches math/big's types through
+> `reflect`) and the EMISSION path (`var ip *int` boxed into an interface by ordinary converted
+> code), which is what gob's own `TestNilPointerInsideInterface` and the `mustPanic` family need. The
+> emission half remains chip-class / design-with-user and is untouched.
+
+### Historical — the r57a state (superseded above)
+
+## `math/big` — **222 of 226** (measured 2026-08-09, r57a); three roots left, two of them the alloc model
 
 > **Supersedes the 2026-08-02 state below and the board's `9 of 226` census.** Both were taken with
 > r56f's named-numeric shift-masking defect live — the defect whose corrupted Lehmer cosequences made
@@ -3753,7 +3782,7 @@ keeps classifying them rather than reporting them as content drift.
 | ~~`log`, `go/scanner`~~ | ~~CS0012~~ | **CLOSED 2026-08-07 (r43f-closure-edge): both edges landed, `go/scanner` BANKED 11/11, `log` does NOT bank — two roots stand behind the closure one. Full account in the last section of this file.** The rooting below called both mechanisms correctly and was wrong about two details worth carrying: `log`'s literal is not `log.Logger{}` but `var l Logger` (a zero-value DECLARATION, in the INTERNAL white-box half — no composite literal exists, which is exactly why no literal walk could see it), and the implemented-interface gate is not `types.Implements` but the package's own emitted VALUE-form `GoImplement` RECORDS: satisfaction alone drifts 16 of the 96 banked projects. Original rooting: ~~**A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.**~~ |
 | `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
 | `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
-| ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. |
+| ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. — **BANKED 98/98 2026-08-09 (r57c)**: the performance row was `@string` slicing in O(n); see *r57c* at the end of this file. |
 | `testing/fstest` | CS0030 | Converting the test-local named type `shuffledFS` to its underlying `map[string]*MapFile`. |
 | `internal/types/errors` | CS0246 | `Error` / `Info` — names the emitted code does not declare for a test-local enumeration. |
 | `crypto/ecdh` (CS1001), `crypto/ed25519` (CS0030), `crypto/internal/mlkem768` (CS0315), `runtime/debug` (CS0264) | — | not taken past the first diagnostic. |
@@ -4123,19 +4152,19 @@ Eighteen packages match every verdict but one or two. Each cell is the whole gap
 
 | Package | Census | The row, and its root |
 |:--|:--:|:--|
-| `runtime/internal/math` | 0 of 1 | the untyped-shift int32 fold, below — one converter rule |
-| `internal/platform` | 0 of 1 | `json: cannot unmarshal array into []platform_test.listEntry` — a converter-LIFTED anonymous struct as a JSON slice element (`crypto/internal/hpke` is the same shape) |
-| `internal/profile` | 0 of 1 | `TestPackedEncoding` encodes empty (`got []`) |
+| ~~`runtime/internal/math`~~ | ~~0 of 1~~ | **BANKED** (roster line 143) — re-measured 1/1 by r57b |
+| `internal/platform` | 0 of 1 | `json: cannot unmarshal array into` a slice of a converter-LIFTED anonymous struct (`crypto/internal/hpke` is the same shape). ⚠ r57b's naming arm changed the TEXT to Go's structural `[]struct { GOOS string; … }`; the row is a Kind question about the lift, not a naming one |
+| ~~`internal/profile`~~ | ~~0 of 1~~ | **BANKED** (roster line 117) — re-measured 1/1 by r57b |
 | `internal/godebugs` | 0 of 1 | `TestAll` reads GOROOT-relative `../../../doc/godebug.md`; the pipeline's working dir has none |
 | `html` | 2 of 3 | the `array<T>` unshaped-instance class, producer (1) |
 | `internal/chacha8rand` | 3 of 4 | the same class, producer (2) |
 | `internal/singleflight` | 4 of 5 | `TestDoAndForgetUnsharedRace` never returns — still the only hang in the tail |
 | ~~`internal/cpu`~~ | ~~7 of 8~~ | **BANKED this arc** |
-| `go/ast` | 8 of 9 | `ast.Fprint` → `reflect.MapKeys` → `mapType.get_MapType()` interface conversion; reflection chip |
+| ~~`go/ast`~~ | ~~8 of 9~~ | **BANKED by r57b at 9/9** — two roots: the unbridged map read pair, then the lift's leaked C# name |
 | `debug/gosym` | 8 of 9 | `TestPCLine`'s child process exits 1 |
-| `debug/pe` | 9 of 10 | one row |
+| `debug/pe` | 9 of 10 | the `array<T>` unshaped class — `_ [3]uint8` prints `[0 0 0 0 0 0 0 0]` vs Go's `[0 0 0]` (r57b) |
 | `net/http/internal` | 9 of 10 | the `AllocsPerRun` byte/count shim, below |
-| `net/http/fcgi` | 11 of 12 | `TestGetValues` byte-stream mismatch in the FCGI_GET_VALUES record |
+| ~~`net/http/fcgi`~~ | ~~11 of 12~~ | **BANKED** (roster line 133) — re-measured 12/12 by r57b; the `TestGetValues` mismatch is gone |
 | `crypto/cipher` | 13 of 14 | the oracle's build tags, below |
 | `crypto/internal/edwards25519/field` | 13 of 16 | the `array<T>` class, producer (3) |
 | `internal/poll` | 18 of 19 | `runtime_pollServerInit` — the netpoller has no managed body |
@@ -4402,7 +4431,8 @@ the batch CONVERTED; only the C# build or the run failed. This one has a one-lin
   the named-numeric shift-masking defect live, so they measured the defect rather than the package.
   Treat every census on this list as carrying a timestamp against the corpus it was taken on.
 - **~~`crypto/elliptic` 4 of 82~~, ~~`math/big` 9 of 226~~, `go/doc` 24 of 85, `go/parser` 6 of 173,
-  `mime/multipart` 7 of 52, `encoding/asn1` 28 of 38, `net/rpc` 6 of 15, `net/http/httputil` 16 of
+  `mime/multipart` 7 of 52, ~~`encoding/asn1` 28 of 38~~ (**re-measured 34 of 38 by r57b**, below),
+  `net/rpc` 6 of 15, `net/http/httputil` 16 of
   53, `net/http/httptest` 24 of 55, `net/http/cookiejar` 10 of 17, `debug/dwarf` 7 of 40,
   `internal/coverage/cfile` 4 of 16, `go/internal/gcimporter` 399 of 583** — first censuses, all
   recorded here rather than in prose.
@@ -4787,6 +4817,11 @@ internal defeats its own purpose. Every other promotion keeps the conservative h
 
 ### `archive/zip` — 95 of 98, and the residual is the SLOW class, not a defect
 
+> **SUPERSEDED 2026-08-09 (r57c-zipperf) — the package BANKS at 98 of 98.** Everything measured
+> below stands; the closing paragraph offered two routes and the *second* one was taken. The
+> "throughput" was an ASYMPTOTE: `@string` held a bare `byte[]`, so `s[i:]` copied where Go's
+> string header slices in O(1). See *r57c* at the end of this file.
+
 The three residual rows are `TestZip64LargeDirectory` and its two subtests, and they are not
 mismatches: the C# verdict is **empty**, with `{"action":"timeout","elapsed":900}` and all three still
 in `run` state. That is the signature `run-validated-sweep.ps1`'s own `$longTimeouts` comment
@@ -4909,6 +4944,27 @@ interface as a plain `null` instead of a non-nil interface carrying `(type=*Int,
 which knows the static type at the moment the box is made. Blocks 2 of `math/big`'s 4 and part of
 `encoding/gob`'s 99 of 106.
 
+> **r58b (2026-08-09) closed the reflection half and A/B'd the rest of that claim, which was wrong.**
+> `Value.Interface()` now packs the typed nil, and it pays `math/big` exactly (222 → 224 of 226) —
+> but `encoding/gob` measures **99 of 106 with AND without the fix, the same seven divergent rows**.
+> The root has two halves paying two different packages: the reflection READ path (closed; gob
+> reaches *math/big's* types through `reflect`, which is why math/big's rows moved) and the EMISSION
+> path — a nil pointer VARIABLE boxed into an interface by ordinary converted code, which is what
+> gob's own `TestNilPointerInsideInterface` and the `mustPanic` family need, and which remains
+> chip-class / design-with-user. gob's current seven: `TestBadData`, `TestEndToEnd`,
+> `TestIgnoreDepthLimit` (infrastructure-error), `TestIgnoreRecursiveType`,
+> `TestIndirectSliceMapArray`, `TestNilPointerInsideInterface`, `TestSingletons`.
+
+~~**`reflect.Value.MapIndex` is still the raw converted Go body — a bridge gap, found in passing
+(r58b, 2026-08-09).**~~ **CLOSED before it merged: r57b bridged `Value.MapKeys` and `Value.MapIndex`
+in its go/ast arc (`bfdb073be`), landing on master while r58b was still on its branch** — two lanes
+found the same gap independently, one recorded it and the other fixed it. The claim below is kept
+struck rather than deleted because its shape analysis was right (the `MapRange` iterator's
+`iter.mapValueType` → `makeTypedValue` machinery is exactly what the fix used): unlike
+`MapRange`/`SetMapIndex`, `MapIndex` read `v.ptr` as flat memory and called `mapaccess`, so it
+faulted on any Value the managed bridge produced; `internal/fmtsort` was its first roster consumer
+and re-validated 3/3 in r57b's recovered sweep.
+
 **`crypto/dsa` — the negative result, recorded so it is not re-derived.** This lane opened expecting
 the shift fix to be dsa's root too; a probabilistic prime search over the converted `math/big` is
 exactly the shape that defect corrupted. It is not. `TestParameterGeneration` passes in **1,156.8 s**
@@ -4920,3 +4976,247 @@ the third `$longTimeouts` entry at 30 m, beside `hash/maphash` and `index/suffix
 (28 of 38) and `net/smtp` (9 of 14). Both were attributed to the same reflection-driven DER walk that
 the `StructField.Tag` bridge just repaired for `crypto/rsa`, and neither has been run since.
 
+## r57b — the near-miss singles, re-measured: five rows were already banked (2026-08-09)
+
+A breadth pass over the board's smallest-gap rows, run under the r44a doctrine: measure cheaply,
+bank what clears, characterize what does not. Its most useful product is not the one bank — it is
+that **the ONE ROW AWAY table above is substantially stale**, and a lane that trusts it spends its
+budget re-deriving closed rows.
+
+### The stale table — verify before you plan
+
+Five of the eighteen entries no longer exist. `internal/profile` (roster line 117),
+`runtime/internal/math` (143), `net/http/fcgi` (133) and `syscall` are **banked**, and `internal/cpu`
+is already struck through. Each was re-measured this pass and each returned a clean
+`Validated N tests` — `net/http/fcgi` at 12/12, whose recorded `TestGetValues` byte-stream mismatch
+is gone. Treat every row below as a HYPOTHESIS to re-measure, never as a work item to start from;
+the roster table in `docs/ValidatedTestPackages.md` is the authority and the board is a lagging
+index of it.
+
+### `go/ast` — BANKED 9/9, and the row had two roots stacked
+
+The recorded root (`ast.Fprint` -> `reflect.MapKeys` -> `mapType.get_MapType()`) was right about the
+family and hid a second defect behind it. Both are closed in this arc's bank commit; the short form
+is that **the map READ pair was never bridged** — `MapRange`/`MapIter.*`/`SetMapIndex` all live in
+the bridge, `Value.MapKeys` and `Value.MapIndex` never joined them — and that with the panic gone,
+an **unnamed struct reported its LIFT's C# name** (`ast_internal_test.typeᴛ1`) where Go renders it
+structurally (`struct { X int; y int }`). The naming arm is corpus-wide and visible immediately:
+`internal/platform`'s failure text moved from `[]platform_test.listEntry` to
+`[]struct { GOOS string; GOARCH string; ... }` in the same pass. Its row does NOT close — the
+residual is `encoding/json` refusing to unmarshal an array into a slice whose element is a lifted
+struct, which is a Kind question about the lift, not a naming one.
+
+### `net/smtp` — the recorded root is CLOSED; what is behind it is the Windows-socket class
+
+The board's `loadcert: tls: failed to parse private key` is **gone**: the PEM/ASN.1 private-key
+parse now succeeds, which retires the shared attribution with `crypto/rsa`'s cctor panic for this
+package (that package is r57a's and is not re-measured here). All five rows now fail on ONE panic,
+and it is not a TLS defect at all:
+
+```
+panic: runtime error: index out of range [0] with length 0
+  at go.array`1.get_Item ... golib\array.cs:280
+  at go.syscall_package.sockaddr(ж`1 Ꮡsa) ... syscall\windows\syscall_windows.cs:881
+  at go.syscall_package.Bind(ΔHandle fd, ΔSockaddr sa)
+  at net.listenStream -> socket -> internetSocket -> listenTCP -> net.Listen
+```
+
+`(*SockaddrInet4).sockaddr` does `p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))` to write the port
+in network byte order. The emitted form is
+`var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(...ᏑPort)))`, and `ж<array<byte>>`
+over a raw address materializes `default(array<byte>)` — a LENGTH-ZERO array — so `p[0]` panics.
+`array<T>` is a managed container, not two inline bytes, so no address reinterpret can produce one.
+
+**This is `net.Listen` on Windows, so it is not one package's row.** `net/http/cgi` hits the
+identical stack through `httptest.NewServer` -> `newLocalListener`, and every package that listens
+on a TCP socket will. Note also that fixing the reinterpret alone is not enough: `Bind` then hands
+the kernel `unsafe.Pointer(&sa.raw)`, and `RawSockaddrInet4`'s `Addr [4]byte` / `Zero [8]uint8` are
+managed references — which is precisely the **open syscall STRUCT-PASSING seam** already censused
+above, whose remedy is the established blittable mirror (`GetTimeZoneInformation`,
+`findFirstFile1`/`findNextFile1`). The board predicted `net` would be the package that forces it.
+It has.
+
+### The `array<T>` unshaped-instance class has a sharper root than "producer (N)"
+
+`html`'s row is a **map MISS**. Go's `if x := entity2[string(entityName)]; x[0] != 0` reads the ZERO
+VALUE of `[2]rune` on a miss and indexes it legally; golib's indexer returns `default(array<rune>)`,
+length zero, and `x[0]` panics. `debug/pe` is the same class at a different site — its
+`_ [3]uint8` padding field prints `[0 0 0 0 0 0 0 0]` against Go's `[0 0 0]`, so there the shape is
+wrong rather than absent. The class is therefore **"an `array<T>` zero value produced without its Go
+length"**, with several distinct producer SITES, of which the map-miss is one.
+
+golib already carries the contract (`IGoZeroShaped` / `builtin.GoZero<T>`), but it recovers shape
+from a TEMPLATE, and a map miss has none. The natural general fix is the idiom the converter already
+emits for slices — `new slice<ΔValue>(mlen, () => new(nil))` — extended to a map's miss value, since
+the declared value type's Go shape is statically known at the construction site. That is a converter
++ golib arc with corpus-wide map-construction emission impact, not a near-miss single.
+
+### The converted-host WORKING-DIRECTORY class — why no cheap subset exists
+
+`go/build` re-measures unchanged at 57 of 58 (`TestLocalDirectory`: `ImportPath="."`), and
+`internal/testenv` at 3 of 4, now with its exact mechanism: the host's working directory is
+`<temp>/go2cs-tests/<flat pkg>/<guid>/<last segment>` (`TestHost.CreateRunDirectory`), so
+`../../../bin/go.exe` resolves to `go2cs-tests/internal_testenv/bin/go.exe`.
+
+All four members of the class (`internal/godebugs`, `io/ioutil`, `go/build`, `internal/testenv`)
+want the SAME thing: `CWD == $GOROOT/src/<pkg>`, which is the working directory `go test`
+guarantees. Reproducing it is honest — it is the harness's job to reproduce `go test`'s execution
+environment, and CWD is part of that environment exactly as GOROOT and the env are.
+
+**But there is no cheap subset, and the reason is worth recording.** Deepening the run directory to
+`<runRoot>/src/<full import path>` costs nothing and fixes the SHAPE — and closes none of the four,
+because every one of them needs CONTENT at the reconstructed ancestor: `bin/go.exe` for testenv,
+`doc/godebug.md` for godebugs, the package's own `.go` sources for `go/build`'s `ImportDir`, the
+sibling package's sources for `io/ioutil`. So the remedy really is the full synthetic-GOROOT
+staging the board suspected, it changes the execution contract for all 122 banked packages at once,
+and it interacts with the staging path that feeds the input-digest manifest. Design-with-user, not a
+breadth lane's — and NOT a disclosure, for the reason already recorded: it is satisfiable at a layer
+go2cs owns.
+
+`net/textproto` also re-measures unchanged at 25 of 26 — still the want-ZERO
+`canonicalMIMEHeaderKey allocs = 816` against the AllocsPerRun-reports-BYTES shim, still not a
+disclosure candidate under ruling #1.
+
+### Escalation — `InterfaceInheritance` fails on master, and it is not this lane's
+
+The full behavioral suite gating this arc came back **554/554 transpile + compile + target, 527 of
+528 output**, with one failure: `InterfaceInheritance`, `map[:2 :1]` against Go's `map[:1 :2]`.
+
+Confirmed **pre-existing**, by restoring `src/core/golib` and `src/core/reflect` to the merge base
+(`7c7bc7d69`) and re-running the project filtered — it fails identically there. It is also
+deterministic, not flaky: six consecutive runs give byte-identical output. The mechanism is
+`internal/fmtsort.compare`'s Interface arm, which orders two keys of differing dynamic type by
+comparing their type descriptors as VALUES — in Go a `Kind Pointer` compare of descriptor
+ADDRESSES, which the linker assigns in declaration order. go2cs's canonical interned
+`reflect.Type` has no such ordering, so the pair sorts by whatever box identity gives. Worth
+deciding deliberately rather than patching: this is an ordering Go's own documentation treats as an
+implementation detail, so the guard may be asserting something go2cs can only match by luck.
+
+### `encoding/asn1` — the fourth charter row, re-measured: 34 of 38, and the tag root DID close
+
+The board carried `encoding/asn1` at 28 of 38 with the standing hypothesis that it shared
+`crypto/rsa`'s DER/tag root. Re-measured on this branch it is **34 of 38**: six rows closed on
+their own, which is the hypothesis confirmed — the repaired tag handling reached here too. It is
+still not bankable, and the converted test artifacts were deliberately NOT committed, per the
+policy that test sources bank only when a suite validates.
+
+What the hypothesis got WRONG is the shape of the remainder. The four survivors are not one root
+waiting on one fix; they are four, and three of them belong to areas other lanes already own:
+
+- **`TestMarshalError` — the TYPED-NIL class, and it is r58b's.** `panic: interface conversion:
+  interface {} is nil, not *big.Int` inside `makeBody`. Go asserts a **nil `*big.Int`** out of an
+  interface and the assertion SUCCEEDS, yielding a typed nil the marshaller then rejects with its
+  own error; go2cs's `_<T>` sees an untyped nil and panics instead. That is exactly the state
+  `claude/r58b-typednil` is bounded to at `Value.Interface()`. **Re-measure this row first when
+  r58b lands** — it is a free second witness for that arc, on a package r58b is not otherwise
+  touching.
+- **`TestUnexportedStructField` — a reflection-bridge FIELD-FLAG gap, distinct from the map/naming
+  pair this lane closed.** Go expects `Unmarshal` to RETURN `structure error: struct contains
+  unexported fields`; go2cs returns `<nil>` and then panics in `mustBeAssignable`. So the read-only
+  flag is not propagated onto a `Value` reached through an unexported field: `CanSet()` answers
+  true where Go answers false, asn1's own guard never fires, and the write runs on to `setKinded`.
+  The guard is asn1's, but the defect is `flagRO` propagation in `Value.Field`, so it will surface
+  anywhere a package probes settability rather than trusting it.
+- **`TestMarshal` #37 — one byte, and it is the tag.** `300302010a` against `310302010a`: `0x30`
+  SEQUENCE emitted where Go writes `0x31` SET. The `set` field parameter is not reaching the
+  emitted tag in `makeField`. Narrow and self-contained — the likeliest single-row win of the four.
+- **`TestCertificate` — nested slice-of-slice-of-struct.** `sequence tag mismatch`, and the RDN
+  name comes back EMPTY (`[]` where Go has the full `[[{[2 5 4 6] XX}] …]`). The only one still
+  unattributed below the surface message.
+
+### The final sweep, recovered after the hardware failure (2026-08-10)
+
+This lane was parked mid-sweep when the coordinator machine died, so the verdict was lost with it.
+Re-run FILTERED over the lane's own banked and re-measured rows on a replacement box: **8 packages,
+137 verdicts, 8 pass / 0 fail** — `go/ast` 9, `syscall` 62, `go/printer` 45, `net/http/fcgi` 12,
+`go/format` 4, `internal/fmtsort` 3, `internal/profile` 1, `runtime/internal/math` 1. The last three
+of those are the rows this pass struck through as already-banked, so the strikethroughs are now
+gate-backed rather than argued. `internal/fmtsort` and `go/printer` were added on purpose beyond the
+lane's own list: the bank's real blast radius is the reflection bridge, and `internal/fmtsort` is the
+direct consumer of the `MapKeys`/`MapIndex` pair this lane moved into it.
+
+⚠ **The crash-save `wip` commit contained NOTHING that belonged.** All 22 files classified as
+standing aftermath and were dropped: nine production `.cs` in the `-tests`-closure restore family
+(the `Δio` alias and the root-qualification escape), four `package_init.cs` carrying the
+`initᴛᴛtests` hook, three `-text`-marked `compress/testdata` fixtures showing a pure CRLF flip —
+and six `log/slog/internal/benchmarks` files that were **100% NUL bytes**. That last group is a new
+shape worth naming: NTFS committed each file's SIZE and lost its DATA in the power failure, and the
+sizes match the committed content's CRLF-smudged length **exactly**, byte for byte, across all six.
+So the package had no real drift at all — a crash-save `git status` can be dirty for reasons that
+are neither a converter change nor a documented phantom, and a size-vs-content check separates them.
+
+## r57c — `archive/zip` banks 98/98; the "performance row" was a WRONG ASYMPTOTE in `@string` (2026-08-09)
+
+**Banked: `archive/zip` 98/98, no disclosures.** Roster 121 → **122** of 215 (56.3 % → **56.7 %**),
+13,890 → **13,988** matching verdicts, 50 disclosed (unchanged). *Lane-local arithmetic against this
+branch's base; the coordinator union-recomputes at merge.*
+
+The board's own `archive/zip` section closed by naming two routes to a bank — "either a measured
+deadline (the `index/suffixarray` route) or the string/slice throughput work that would make the
+measurement moot" — and advised a lane to "start by timing the C# host solo with no deadline rather
+than re-rooting anything". That advice was followed exactly, and it is what found the defect: the
+host, timed solo with no deadline, **still had not finished after 45 minutes** against Go's 13.2 s.
+A constant-factor throughput gap does not do that. Profiling it (`dotnet-stack`, both worker threads,
+every sample) put the entire cost in one frame — `detectUTF8` → `Buffer._Memmove`.
+
+`detectUTF8` is the ordinary Go rune walk, and the emission is a faithful 1:1 rendering of it:
+
+```go
+for i := 0; i < len(s); { r, size := utf8.DecodeRuneInString(s[i:]); i += size }
+```
+
+The defect was underneath, in the REPRESENTATION. A Go string header is a pointer **plus length**
+into shared immutable storage, so `s[i:]` is O(1) and allocates nothing. `@string` held a bare
+`byte[]`, so its range indexer had to *materialize* the sub-string: O(n), with an allocation. Over a
+65,535-byte file name that makes the loop **accidentally quadratic** — ~2.1 GB copied per call, two
+calls per record, 32,768 records. Not slowness; the wrong asymptote. `@string` now carries the
+header's real shape (backing array, offset, length) and slices into a window; the backing array is
+PRIVATE, so a consumer reading it instead of the window is a compile error rather than a wrong
+answer, which is how the last three raw-array readers were found. Detail in the two signed commits
+and in `ConversionStrategies-Reference.md`.
+
+`TestZip64LargeDirectory`: **>45 min (never completed) → 20.2 s**, against Go's 11.3 s.
+
+### What this row costs the sweep, and why the deadline entry is still needed
+
+The pipeline builds **Debug**, where the non-inlined golib window accessors cost ~22x, so the banked
+suite is minutes rather than seconds and `archive/zip` joins `hash/maphash` and
+`index/suffixarray` in `run-validated-sweep.ps1`'s `$longTimeouts` — authored at `'20m'`, **raised
+to `'30m'` at merge**: the i7-5820K re-measure below left 20m only ~35 % headroom, and a deadline
+is a safety net against a hung run, never a performance assumption. The 391 s figure was measured on the
+reference desktop (391 s for the whole suite). **Re-verified on the replacement box** (i7-5820K
+6C/12T, ~3x slower, with two sibling lanes building): the suite ran **792.6 s**, of which
+`TestZip64LargeDirectory` alone was **774.0 s**. Still inside 20 m, but with only ~35 % headroom on a
+slow loaded box — so if a future sweep reports `archive/zip` as an empty verdict, suspect the
+deadline before suspecting the package.
+
+### The crash-save classification refines r57b's NUL rule
+
+r57b found the first instance of crash corruption in a `wip(...)` snapshot — files that are 100 %
+NUL bytes, NTFS having committed each file's SIZE and lost its DATA — and proposed the
+size-vs-committed-content check as the test that separates it from real drift. **This lane's wip
+carried five more (`go/internal/gccgoimporter/{ar,gccgoinstallation,importer,package_info,parser}.cs`)
+and that test would have MISSED all five**: their sizes do not match the committed content, they
+match the *intended new* content, because each was mid-rewrite by a `-tests`-closure emission when
+the machine died. The reliable discriminator is therefore the content itself — **a file that is
+100 % NUL is corruption, whatever its size** — with the size comparison demoted to a corroborating
+detail. `git diff --stat` names them for free: a `.cs` reported as `Bin <old> -> <new> bytes` is
+never legitimate converter output.
+
+The rest of the wip classified into the standing families with nothing unexplained: the
+`-tests`-closure production restore family (`Δio` alias in `bufio`/`bytes`/`crypto`, the
+`global::go.*` root escape in `crypto/md5`, and one `initᴛᴛtests` package_init hook in
+`crypto/ecdh`), three `-text` `compress/testdata` CRLF phantoms, and a stray 16 MB `src/go2cs.exe`
+build artifact at the repository root — which is worth one line of its own: the converter's
+gitignore entry is `/src/go2cs/go2cs.exe`, so a binary built one directory up is **tracked**, and a
+crash-save picks it up.
+
+### Handoffs — neither owned by this lane
+
+- **`ByteSeqAllocationTests`' `@string` bound is stale-LOOSE.** The window makes a sub-string
+  allocation-free, so the test's asserted upper bound now passes with room to spare rather than
+  measuring anything. It belongs to **r58a**'s allocation-counting arc, which is the lane that will
+  have a true count to tighten it against.
+- **`InterfaceInheritance` / `ValueOf(Type).Pointer()`.** The one behavioral failure seen while
+  gating this lane was proven **pre-existing on master** (reproduced at the merge base), and its root
+  is in the reflection bridge — **r58b**'s area. This lane's only touch on that file is a comment.

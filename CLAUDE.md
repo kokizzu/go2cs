@@ -120,6 +120,10 @@ ONE stdlib in a build; there is now only one on disk.
     `-recurse=module` narrows the SCOPE to the input module's own packages: every third-party package is
     still referenced into `pkg\<import-path>` but none is converted, so a dependency closure go2cs cannot
     convert can't hold up the module's own code (issue #32). Values compose — `-recurse=module,nuget`.
+    A local-refs recurse conversion pins `$(go2csPath)` to the resolved runtime root in the output root's
+    generated `Directory.Build.props` (condition-guarded default; relative `$(MSBuildThisFileDirectory)`
+    form when the roots coincide, absolute otherwise) — before that pin an isolated output root fell back
+    to the csproj template's `$(USERPROFILE)/go2cs/` default and no stdlib reference resolved (issue #36).
     `-recurse=nuget` instead emits NuGet PackageReferences
     (`go.<pkg>`/`go.lib`/`go.gen`, versioned `$(GoStdLibVersion)`) for the go2cs stdlib/runtime/analyzer so a
     converted app restores from nuget.org with no `deploy-core` staging; the app's own converted packages
@@ -367,11 +371,27 @@ ONE stdlib in a build; there is now only one on disk.
   the full runs (re-measured 2026-08-04 by r40, corpus at 569 transpiled packages / 571 registered `.csproj`).** The
   corpus keeps growing (371 → 457 → 518 → 543 → 569 packages), and both full instruments
   legitimately exceed three minutes. Timeouts must clear the real number or a healthy run gets killed
-  mid-flight (a 600s ceiling killed a *passing* full suite once). ⚠ **These are DESKTOP numbers.** The
+  mid-flight (a 600s ceiling killed a *passing* full suite once). ⚠ **These are DESKTOP numbers —
+  and that desktop (the i9-13900K) DIED of hardware failure on 2026-08-09.** The
   same repo is also worked from a laptop (Ryzen 7 PRO 6850U, a 15–28W mobile part), where the parallel
   MSBuild phases run materially slower — a full behavioral suite measured **1,792s** there on 2026-08-07
   with nothing else running. A run over the table on the laptop is the machine, not corpus growth: do
-  **not** re-baseline these rows from a laptop run, and size timeouts from the top of the range:
+  **not** re-baseline these rows from a laptop run, and size timeouts from the top of the range.
+  ⚠ **The replacement coordinator machine (2026-08-10) is an i7-5820K — 2014 Haswell-E, 6C/12T,
+  32 GB — and runs the table's rows at roughly 3–4x the i9 numbers.** Measured there on day one:
+  full behavioral suite **4,131s** solo (cold-ish tree), CNR **1,505s** solo / **~3,190s** with two
+  sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded, full `go2cs.slnx` Debug
+  build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). Keep the i9
+  columns as the historical reference the ratios hang off; budget commands from the i7-5820K figures
+  (or 3–4x a row's i9 ceiling when unmeasured), and treat HARD-CODED harness watchdogs as suspects on
+  this class of machine — at the old sizes, `PerformanceRunner`'s 600s AOT-publish cap and
+  `BehavioralRunner`'s 300s build-all cap BOTH fired on healthy runs here and faked failures (each
+  was raised 2026-08-10 with the evidence in a source comment; a timeout is a safety net against a
+  hung child, never a performance assumption). Native-AOT perf publishes are the extreme case: ~7s
+  each on the i9 in the stub era, **~25 min each** on this machine now that ILC compiles the full
+  converted-stdlib closure per benchmark (post-unification), so a full perf run is hours, not
+  minutes — and it must run SOLO: concurrent lane load pushed a healthy publish past even an 1,800s
+  cap once, and only the Measure phase's numbers are trustworthy on a quiet machine anyway:
 
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
@@ -390,6 +410,36 @@ ONE stdlib in a build; there is now only one on disk.
   run-to-run variance on the same corpus (machine load), so budget from the TOP of the range, not the
   midpoint. A converter rebuild invalidates every project's up-to-date check, so the *next* full run
   after one always pays full price.
+
+  ⚠ **`BehavioralRunner` has its OWN internal timeout budgets, and no timeout the CALLER sets can
+  influence them** — a generous outer budget on the `run-behavioral.ps1` call does nothing if the
+  runner kills its own child first. They were hardcoded constants until 2026-08-10; they are now
+  overridable, in SECONDS, at **flag > environment variable > default**:
+  `--build-timeout`/`GO2CS_BUILD_TIMEOUT` (batch build, **2400**), `--build-one-timeout`/
+  `GO2CS_BUILD_ONE_TIMEOUT` (per-project build, shared-dep pre-build, `go build`, **300**),
+  `--transpile-timeout`/`GO2CS_TRANSPILE_TIMEOUT` (**60**), `--run-timeout`/`GO2CS_RUN_TIMEOUT`
+  (one program run in the Output phase, **30**). The build defaults are sized for the slowest
+  legitimate host per the safety-net doctrine (the i7-5820K measurement below is what sized them);
+  a fast lane that wants the old fail-fast behavior opts DOWN explicitly (`--build-timeout 300`).
+  **The slow-machine row this table was missing (measured 2026-08-10, i7-5820K 6C/12T, ~3x slower than
+  the desktop rows, at 555 packages):** the one-shot parallel build exceeded the stock 300 s **cold and
+  warm alike** — warm state cannot save it, because the Transpile phase rewrites every `.cs` immediately
+  before Compile, so the batch is never an incremental no-op. For scale, a full
+  `dotnet build src/go2cs.slnx -c Debug -m -p:UseSharedCompilation=false` of the same tree took **1,432 s
+  cold** (573 projects, 0 errors), ~5x the old 300 s batch budget; a single cold filtered project
+  measured 163 s. That measurement is what sized the current build defaults, so such a machine needs
+  no configuration; the overrides exist to opt a fast lane back down or to survive a still-slower host.
+  **A budget that expires is now reported as `NOT MEASURED`, never as a failure** — a fourth
+  `Status.Timeout` alongside Pass/Fail/Skip, borrowing CNR's word for the same idea. This closes a
+  **FALSE RED**, the mirror of the false-green routes catalogued above: on the cold slow machine the
+  batch timed out, all 555 projects fell to the sequential per-project fallback, each *also* exceeded
+  180 s (every one must first build the core dependency closure), and ~15 minutes produced zero
+  assemblies and 555 `Status.Fail` entries that read exactly like a corpus regression. Timeouts still
+  fail the run and still exit 1 — an unmeasured project must never read as a pass — but they are
+  counted, listed and summarized separately. Two related traps the same change closed: an Output-phase
+  run timeout used to surface as `exit code mismatch: C# -1 vs Go 0`, i.e. as a *behavioral* divergence
+  naming a real test; and the per-project fallback now bails out after **3 consecutive** timeouts rather
+  than spending the full budget on all 555 to re-learn one fact.
   ⚠ **Piping a long run through `Select-Object -Last N` buffers ALL output until it completes** — a
   backgrounded suite will look stuck at its first line for its entire duration. Check liveness with
   `Get-Process BehavioralRunner,dotnet`, not the output file.
@@ -410,7 +460,10 @@ ONE stdlib in a build; there is now only one on disk.
   globally breaks the netstandard2.0 `go2cs-gen` analyzer with NETSDK1207); AOT publish needs MSVC
   `link.exe` and the runner prepends the VS Installer dir to PATH for the SDK's `vswhere` probe; AOT trims
   with `TrimMode=partial` because golib `fmt` formatting and sort's `Interface<T>` bind members via
-  reflection. Full run ≈3–4 min warm (AOT publishes ≈7 s each); `--no-aot` well under a minute. Keep each
+  reflection. ⚠ Cost changed at the 2026-08-01 tree unification: each AOT publish now ILC-compiles the
+  full converted-stdlib closure (~7 s each in the stub era; **~25 min each on the i7-5820K**), so a full
+  run is HOURS and must run SOLO — concurrent lane load once pushed a healthy publish past an 1,800s
+  watchdog. `--no-aot` drops the whole column and stays fast. Keep each
   benchmark ≥50 ms and output deterministic (inline xorshift, no `math/rand`).
 
 ### Adding a regression test when a converter defect is fixed

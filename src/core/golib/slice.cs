@@ -989,9 +989,10 @@ public static class SliceExtensions
         return new slice<T>(array.m_array, offset + start, offset + end, offset + bound);
     }
 
-    // slice of a Go string helper function
+    // slice of a Go string helper function — bounds are relative to the string's own WINDOW, for the
+    // same reason the array<T> overload above bounds them by the array's (see @string.SliceBounds).
     public static slice<byte> slice(this @string source, nint low = -1, nint high = -1, nint max = -1)
     {
-        return source.m_value.slice(low, high, max);
+        return source.SliceBounds(low, high, max);
     }
 }

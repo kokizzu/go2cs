@@ -101,11 +101,48 @@ internal static ΔValue unpackEface(any i) {
 // yields its canonical nil box — a NON-nil `any` holding `(*T)(nil)`, exactly Go's packEface
 // (the type is never erased to a bare null one call after X2 restored it).
 public static any /*i*/ Interface(this ΔValue v) {
-    return v.live!;
+    return packInterfaceValue(v);
 }
 
 internal static any /*i*/ valueInterface(ΔValue v, bool safe) {
-    return v.live!;
+    return packInterfaceValue(v);
+}
+
+// packInterfaceValue is the bridge's packEface: it builds the interface value for v, and Go's
+// rule for that is entirely about the TYPE half. An eface carries (type, data word), so a
+// POINTER-kinded Value whose data word is nil packs as a NON-nil interface holding
+// (type=*T, value=nil) — Go's typed nil. Managed storage has no data word to keep the type
+// beside: a *T slot physically holds C# `null`, and handing that straight out ERASES the type.
+// Everything downstream then reads the nil INTERFACE instead: `i == nil` answers true, `%T`
+// prints <nil>, and `i.(Iface)` takes the failure arm — so a method written to handle its nil
+// receiver never runs. That last one is not hypothetical; it is the whole of
+// `func (x *Int) GobEncode() { if x == nil { … } }`, which encoding/gob reaches as
+// `v.Interface().(GobEncoder)` for every zero-filled element of a `make([]*Int, 1)`.
+//
+// So a null read out of a POINTER-kinded slot is re-encoded as the CANONICAL typed nil for
+// that slot's static type — ж<T>.NilBox, the one instance `reflect.Zero` of a pointer kind
+// already yields (GoReflect.ZeroValueOf) and every emitted nil→*T conversion already produces.
+// One nil encoding system-wide; this is the READ path joining the encoding the write path and
+// the fabrication path have always used. Because it is that same instance, the packed value
+// also compares equal to a language-level `(*T)(nil)` and asserts through the ordinary witness
+// machinery — nothing here is a second nil representation.
+//
+// POINTER KINDS ONLY. An interface- or func-typed slot holding null IS the nil interface / nil
+// func — Go packs THAT as the nil eface, and re-encoding it would invert the bug rather than
+// fix it. A slot whose static type resolves to no canonical nil (a shape with neither ж<T>'s
+// NilBox nor a generated wrapper's NilInstance) keeps the null it had, so this can only ever
+// ADD type information, never substitute a wrong one.
+internal static any /*i*/ packInterfaceValue(ΔValue v) {
+    object? cur = v.live;
+    if (cur is not null) {
+        return cur;
+    }
+    ΔKind k = v.kind();
+    if (k != ΔPointer && k != ΔUnsafePointer) {
+        return cur!;
+    }
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    return (st is null ? null : GoReflect.CanonicalNilPointer(st))!;
 }
 
 public static bool Bool(this ΔValue v) {
@@ -615,6 +652,11 @@ private static uintptr reflectPointerToken(ΔValue v) {
     if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
         return 0;
     }
+    // A TYPE DESCRIPTOR pointer is ordered by the type it describes, never by its box identity —
+    // see typeDescriptorOrderToken.
+    if (typeDescriptorOrderToken(cur) is {} descriptorToken) {
+        return descriptorToken;
+    }
     // Pointer-bearing golib values answer their own stable, order-consistent address token
     // (equal pointers token equally; same-storage element pointers order by index; channel
     // copies share their core's token — internal/fmtsort orders map keys by this). Anything
@@ -624,6 +666,56 @@ private static uintptr reflectPointerToken(ΔValue v) {
         IChannel c => ((uintptr)c.PointerOrderToken),
         _ => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur))
     };
+}
+
+// typeDescriptorOrderToken answers the order token for a pointer to a TYPE DESCRIPTOR (*rtype or
+// *abi.Type), which is the one pointer whose ordering is OBSERVABLE in ordinary program output:
+// internal/fmtsort compares interface-kinded map keys by their dynamic types, and it does that by
+// comparing the two descriptor pointers arithmetically (`compare(reflect.ValueOf(a.Elem().Type()),
+// …)` lands in the ΔPointer branch), so this token IS the printed order of
+// `fmt.Println(map[I]int{…})`.
+//
+// Go answers with the descriptor's machine address, i.e. the linker's type-section layout. That is
+// deliberately unspecified — fmtsort's own TestInterface says "the relative ordering of types is
+// unspecified" and asserts only that same-type keys form contiguous groups — and it is not a
+// function of anything the managed side can see (measured: Go orders `main.Apple` before
+// `main.Mango` in one program and after it in another).
+//
+// The box identity hash the general path falls back to is WORSE than unspecified, though: it is
+// drawn from a per-thread PRNG, so it is fixed for a given build but bears no relation to the type,
+// and the printed order flips whenever an unrelated edit shifts how many hashes are drawn before
+// these. Order descriptors by their Go type NAME instead — the only key that is stable across
+// builds, runs and unrelated edits — by packing the name's leading bytes big-endian, so comparing
+// tokens arithmetically compares the names lexically. The name is the one `Type.String()` prints,
+// so types that print alike token alike and same-type grouping is exact.
+//
+// Names agreeing over the whole packed prefix tie; fmtsort then falls through to its concrete-value
+// comparison, the same arm Go reaches for two keys of one type. Returns null for anything that is
+// not a descriptor, and for a descriptor with no managed type or an empty name, since zero is the
+// reserved nil token.
+private static uintptr? typeDescriptorOrderToken(object box) {
+    System.Type? st = null;
+    nint[]? dims = null;
+    switch (box) {
+    case ж<rtype> Ꮡrt:
+        st = Ꮡrt.Value.t.sysType;
+        dims = Ꮡrt.Value.t.arrayDims;
+        break;
+    case ж<abi.Type> Ꮡt:
+        st = Ꮡt.Value.sysType;
+        dims = Ꮡt.Value.arrayDims;
+        break;
+    }
+    if (st is null) {
+        return null;
+    }
+    byte[] name = System.Text.Encoding.UTF8.GetBytes(GoReflect.GoTypeName(st, dims));
+    nuint token = 0;
+    for (int i = 0; i < System.IntPtr.Size; i++) {
+        nuint b = i < name.Length ? name[i] : (nuint)0;
+        token = (token << 8) | b;
+    }
+    return token == 0 ? null : ((uintptr)token);
 }
 
 // The managed backing for a MapIter: the map's enumerator (a golib map<K,V> enumerates as
@@ -651,6 +743,60 @@ public static ж<MapIter> MapRange(this ΔValue v) {
     it.mapValueType = GoReflect.ElementType(mapType);
     it.mapRO = (flag)(v.flag & flagRO);
     return Ꮡit;
+}
+
+// MapKeys returns a slice containing all the keys present in the map, in unspecified order.
+//
+// The converted body reinterprets the descriptor as a *mapType (`v.typ().Reinterpret<abi.Type,
+// mapType>()`) to read the map's key type off the embedded abi.MapType. That reinterpret is NOT the
+// managed-box aliasing case toRType relies on: a synthesized descriptor is a bare abi.Type with no
+// abi.MapType allocated behind it, and the emitted mapType holds its embed as a REFERENCE (the
+// promoted ᏑʗMapType box), so the reinterpreted field reads whatever the descriptor's first word
+// happens to be — go/ast's TestPrint died on exactly that. Iteration is the same hiter/mapiterinit
+// machinery MapRange already replaced, so MapKeys is MapRange collected: the key-typing rule
+// (declared key type, nil key included, flagRO inherited) stays in ONE place.
+public static slice<ΔValue> MapKeys(this ΔValue v) {
+    v.flag.mustBe(Map);
+    // Presized from Len and TRIMMED to what iteration actually yielded, exactly as Go's own body
+    // does: the length is read before the walk, so a concurrent writer can only make the walk
+    // shorter (Go tolerates the race and documents it as the caller's problem).
+    var keys = new ΔValue[(nint)v.Len()];
+    nint i = 0;
+    var iter = v.MapRange();
+    while (i < keys.Length && iter.Next()) {
+        keys[i] = iter.Key();
+        i++;
+    }
+    return new slice<ΔValue>(keys)[..((int)i)];
+}
+
+// MapIndex returns the value associated with key in the map v, or the INVALID zero Value when the
+// key is absent or v is a nil map. Same root as MapKeys above — the converted body reinterprets the
+// descriptor as a *mapType and then reads the entry through Go's mapaccess/mapaccess_faststr
+// runtime intrinsics. The key marshals into the map's STATIC key type under Go assignability, the
+// same relation (and the same failure-text shape) SetMapIndex applies on the write side.
+public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
+    v.flag.mustBe(Map);
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? keyType = GoReflect.KeyType(st);
+    System.Type? elemType = GoReflect.ElementType(st);
+    object? liveMap = v.live;
+    // Go: indexing a nil map is legal and yields the zero Value — unlike ASSIGNING to one, which
+    // panics — so this is a miss, not an error.
+    if (liveMap is null || keyType is null || elemType is null || (liveMap is IMap nilProbe && nilProbe.IsNil)) {
+        return new ΔValue(nil);
+    }
+    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
+        throw panic("reflect.Value.MapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
+    if (!GoReflect.TryGetMapEntry(liveMap, keyType, elemType, k, out object? e)) {
+        return new ΔValue(nil);
+    }
+    // Typed by the map's DECLARED element type, inheriting BOTH operands' read-only bits (Go's
+    // `fl := (v.flag | key.flag).ro()`) — the same slot rule MapIter.Value follows, so a lookup and
+    // a range over one map agree.
+    return makeTypedValue(e, elemType, null, (flag)(v.flag | key.flag));
 }
 
 // ==== Phase-3 write-back: Set, Zero, methodName ====

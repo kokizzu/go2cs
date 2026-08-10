@@ -101,7 +101,16 @@ $ErrorActionPreference = 'Continue'
 # against seconds in Go. The board recorded it as "no -test-timeout is enough" after measuring at
 # 6m and again at 20m -- but 20m is just UNDER what the package needs end to end, so the deadline
 # cut a run that was converging. It validates 4/4 at 30m.
-$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m' }
+#
+# archive/zip is the mildest of the four and the one whose number MOVED. TestZip64LargeDirectory
+# builds a 4 GiB central directory out of ~128 KB records; before r57c it never completed at all
+# (>45 m) because @string's range indexer copied, making the rune walk over each 65,535-byte name
+# quadratic. With @string carrying a real window the whole suite runs 20 s in Release against Go's
+# 11.3 s -- honest. The deadline is here for the harness's DEBUG build, which the pipeline uses and
+# which pays ~22x for non-inlined golib accessors: 391 s measured solo on the reference desktop,
+# 774 s on an i7-5820K -- which leaves r57c's original 20m only ~35% headroom on slow hardware, so
+# the entry is 30m: a deadline is a safety net against a hung run, never a performance assumption.
+$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m'; 'archive/zip' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
@@ -169,14 +178,18 @@ if ($drift) {
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
     #                       variant's relocated initializers implement (unicode, internal/zstd,
-    #                       time, internal/profile, and internal/buildcfg -- whose test half
-    #                       implements nothing, so the hook is erased again and the committed file
-    #                       stays hookless. time previously landed in the "inspect" bucket every
-    #                       sweep, the exact false alarm this section exists to stop).
+    #                       time, internal/profile, syscall, and internal/buildcfg -- whose test
+    #                       half implements nothing, so the hook is erased again and the committed
+    #                       file stays hookless. time previously landed in the "inspect" bucket
+    #                       every sweep, the exact false alarm this section exists to stop).
     #                       ⚠ THIS LIST IS OWED BY EVERY BANK. A package whose production
     #                       package_init.cs relocates initializers gains the hook the moment its
     #                       suite is banked, and it reports as CONTENT drift on every sweep
     #                       thereafter until its row is added here (internal/profile, 2026-08-09).
+    #                       ⚠ AND THE PATH IS NOT ALWAYS FLAT. Under layout L3 a platform-varying
+    #                       package keeps package_init.cs in its per-GOOS folder, so the row to add
+    #                       is `<pkg>/<goos>/package_init.cs` -- which is why syscall's bank missed
+    #                       its own row while matching the class exactly (syscall, 2026-08-10).
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -205,6 +218,7 @@ if ($drift) {
         'src/core/regexp/regexp.cs'
         'src/core/strings/reader.cs'
         'src/core/strings/replace.cs'
+        'src/core/syscall/windows/package_init.cs'
         'src/core/time/package_init.cs'
         'src/core/unicode/package_init.cs'
     )

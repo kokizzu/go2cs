@@ -376,9 +376,17 @@ fmt.Printf("%T %v\n", ip, any(ip) == nil)   // *int false
 fmt.Printf("%T %v\n"u8, ip.OrTypedNil(), ((any)ip.OrTypedNil()) == default!);
 ```
 
+Reflection reaches the same boundary from the other side. `reflect.Value.Interface()` is Go's
+`packEface` — an interface built from a **type** and a **data word** — so a nil `*T` read out of a
+slot packs as a non-nil `(type=*T, value=nil)` and a type assertion on it SUCCEEDS, dispatching the
+method on the nil receiver. The bridge re-encodes a null pointer-kinded slot read as that same
+canonical instance, which is what lets `encoding/gob` reach `big.Int.GobEncode`'s `if x == nil` arm
+for a zero-filled `make([]*Int, 1)` element.
+
 Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction, and
 which slots the boundary covers):
-[Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing).
+[Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing)
+and [the reflection read path](ConversionStrategies-Reference.md#reflectvalueinterface-is-a-boundary-into-interface-space-so-it-packs-the-typed-nil-too).
 
 Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than
 throwing.
@@ -678,7 +686,11 @@ and slice-aliasing/write-through semantics.
 
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
 an immutable byte string whose `len`, indexing, ranging, concatenation, and comparisons are byte-oriented
-like Go's, not UTF-16-oriented like `System.String`. Plain string literals usually render as
+like Go's, not UTF-16-oriented like `System.String`. It also carries Go's string *header* — a backing array
+plus an **offset and length** — so `s[i:j]` is an O(1) window over shared storage rather than a copy, which
+is what keeps the ubiquitous `s = s[n:]` and `DecodeRuneInString(s[i:])` idioms linear instead of quadratic
+([detail](ConversionStrategies-Reference.md#slicing-a-string-is-a-window-not-a-copy--string-carries-an-offset-and-a-length)).
+Plain string literals usually render as
 `"..."u8` `ReadOnlySpan<byte>` values, then target-type into `@string` only when a heap string is actually
 needed. That keeps common literal-to-slice and literal-comparison forms allocation-free:
 

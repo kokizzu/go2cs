@@ -196,6 +196,41 @@ path bound and the reference side's agreement.
 
 [issue #35]: https://github.com/ritchiecarroll/go2cs/issues/35
 
+### The recurse output root records its runtime root: the `$(go2csPath)` default
+
+**A local-references `-recurse` conversion pins the runtime root it resolved against into the output
+root's generated `Directory.Build.props`** ([issue #36]):
+
+```xml
+<PropertyGroup Condition="'$(go2csPath)' == ''">
+  <go2csPath>C:/Users/mason/go2cs-runtime/</go2csPath>
+</PropertyGroup>
+```
+
+The `-go2cspath` command-line flag is a conversion-time input — it is where the converter reads each
+imported package's `package_info.cs` from and what it resolves `$(go2csPath)core/…` references
+against — but before this pin its value never reached the emitted build files. The MSBuild property
+of the same name then had only the csproj template's fallback (`$(USERPROFILE)/go2cs/`, or
+`$(SolutionDir)` under Debug), so converting into an isolated output root produced a solution whose
+stdlib/runtime/analyzer references could not resolve unless the runtime happened to live at
+`~/go2cs` or a deploy-core `Directory.Build.props` sat above the output. Three details:
+
+* When the output root IS the runtime root (the one-positional form), the pin stays relative —
+  `$(MSBuildThisFileDirectory)`, the deploy-core form — so the tree can move as a unit. An isolated
+  output root pins the absolute resolved root (forward slashes and a trailing separator, per the
+  section below); a re-conversion refreshes it.
+* The `Condition` keeps it a default: a `go2csPath` environment variable, a `-p:go2csPath` build
+  global, or a higher `Directory.Build.props` still wins.
+* `-recurse=nuget` deliberately emits **no** pin — it has no `$(go2csPath)` references to resolve,
+  and its props defaults `GoStdLibVersion` instead. A foreign `Directory.Build.props` at the output
+  root (deploy-core's, or user-authored) is never clobbered, per the generated-file marker rule.
+
+Guarded by the `go2csPath` assertions in `TestRecurseSyntheticModule` (absolute pin, isolated
+output root), `TestRecurseBuildFilesRelativePinWhenRootsCoincide` (relative form), and
+`TestRecurseNuGetReferences` (no pin under NuGet references).
+
+[issue #36]: https://github.com/ritchiecarroll/go2cs/issues/36
+
 ### Path separators in emitted MSBuild files: forward slashes, on every host
 
 **Every path the converter writes into a `.csproj`, `.slnx`, `.pubxml` or `Directory.Build.props` uses `/`, on every host.** There is no per-host emission and no host-conditional spelling: one converted corpus is correct on Windows, Linux and macOS.
@@ -2041,6 +2076,61 @@ Guarded by `TypedNilInterface` (extended with the slice/map/anonymous-struct typ
 `PointerToNilPointerIdentity`, and `NamedPointerReinterpret` (the canonical singleton keeps its
 `object`-reference nil compare working); part of the reflection-bridge Phase-3 chip (see
 `docs/phase4/DESIGN-reflection-bridge.md`).
+
+### `reflect.Value.Interface()` is a boundary into interface space, so it packs the typed nil too
+
+The rule above says the canonical instance is minted where the type becomes *observable* — at the
+boundary into interface space — and pointer slots themselves keep plain `null`, because their
+statically-typed world never needs the type carried. `reflect.Value.Interface()` is one of those
+boundaries, and it is the one a *slot read* arrives at: the Value's data came out of a slice
+element, an array element, a struct field, a map value or a `reflect.New(...).Elem()`, all of which
+hold `null` for a nil `*T`. Handing that `null` straight out erases the type at the one call whose
+entire job is to preserve it.
+
+Go's own form makes the obligation explicit. `packEface` builds an interface from a **type** and a
+**data word**, so a pointer-kinded Value with a nil data word packs as a non-nil interface holding
+`(type=*T, value=nil)`. Managed storage has no data word to keep the type beside, so the bridge
+reconstructs it from the Value's static type — which `makeTypedValue` recorded when the Value was
+built — and re-encodes a null pointer-kinded read as that type's canonical typed nil:
+
+```go
+in := make([]*Int, 1)              // one zero-filled *Int element
+v := reflect.ValueOf(in).Index(0)
+i := v.Interface()                 // (*Int)(nil), NOT nil
+data, err := i.(GobEncoder).GobEncode()   // assertion SUCCEEDS; nil receiver dispatches
+```
+
+The consumer that proves it is `encoding/gob`: `encodeGobEncoder` is literally
+`v.Interface().(GobEncoder).GobEncode()`, and `big.Int.GobEncode` opens with `if x == nil` because
+Go guarantees it will be reached that way. With the type erased, `i == nil` is true, `%T` prints
+`<nil>`, the assertion takes its failure arm, and the nil-receiver method never runs — which is the
+whole of math/big's `TestGobEncodingNilIntInSlice` / `TestGobEncodingNilRatInSlice`.
+
+Two boundaries of the rule, both load-bearing:
+
+- **Pointer kinds only.** An interface- or func-typed slot holding `null` *is* the nil interface /
+  nil func, and Go packs that as the nil eface. Re-encoding those would invert the bug.
+- **No new representation.** The value handed out is `ж<T>.NilBox` — the same singleton
+  `reflect.Zero` of a pointer kind already yields (`GoReflect.ZeroValueOf`) and every emitted
+  `nil`→`*T` conversion already mints. So the packed value compares equal to a language-level
+  `(*T)(nil)` and asserts through the ordinary witness machinery. A slot whose static type resolves
+  to no canonical nil keeps its `null`, so the rule can only *add* type information, never
+  substitute a wrong one.
+
+The fabrication path (`reflect.Zero`) and the write path were already on this encoding; this is the
+**read** path joining them, so there is one nil encoding system-wide rather than two.
+
+Guarded by `ReflectTypedNilInterface`, which runs typed nil → `Interface()` → `== nil` → type assert
+→ nil-receiver dispatch across every slot kind that funnels through `makeTypedValue`, each paired
+with a non-nil sibling so a blanket substitution fails as loudly as the erasure did, and pins
+`Elem()` of a typed nil as still **invalid** (how a walker tells a typed nil from a pointer to a zero
+value).
+
+⚠ **The emission side is a separate, open question.** A typed nil crossing into an interface in
+ordinary converted code — not through reflection — still collapses, because the pointer slot really
+does hold `null` and the conversion site is not always able to see that it needs the box. Closing
+that changes what `== nil` means for every converted interface and is a design decision, not a fix;
+`encoding/gob`'s own `TestNilPointerInsideInterface` is its standing witness.
 
 ### A pointer crossing into an interface carries its static type, however the pointer was produced
 The rule the boxing above is a special case of:
@@ -4354,6 +4444,26 @@ p.b = "hi"u8;
 ```
 
 This applies uniformly to every type-argument position — first, second-or-later, and nested (`Pair[int, Box[string]]` → `Pair<nint, Box<@string>>`). (The behavioral test `GenericStringTypeArg` guards these cases; `NestedGenericTypes` covers the nesting depth without string args.)
+
+### Slicing a string is a WINDOW, not a copy — `@string` carries an offset and a length
+
+A Go string header is a *pointer plus length* into shared immutable storage, which is what makes `s[i:j]` an **O(1)** operation that allocates nothing. `@string` originally held a bare `byte[]`, so its range indexer had to materialize the sub-string's bytes: `s[i:]` was **O(n) with an allocation**. That is invisible in the small and quadratic in the ordinary Go idiom for walking a string by runes —
+
+```go
+for i := 0; i < len(s); {
+    r, size := utf8.DecodeRuneInString(s[i:])
+    i += size
+}
+```
+
+— which is exactly what `archive/zip`'s `detectUTF8` does over every file name and comment. At the 65,535-byte names its `TestZip64LargeDirectory` builds, each call copied ~2.1 GB; the test takes 13.2 s in Go and had not finished in **45 minutes** in C#.
+
+`@string` therefore carries the Go header's shape — a backing array **plus an offset and a length** — and its range indexer returns a window over the same array. Slicing a string now allocates nothing and copies nothing, matching Go's cost model. The same test completes in 20.2 s against Go's 11.3 s, and `archive/zip` validates 98/98.
+
+Sharing the backing array is safe for precisely the reason it is safe in Go: **`@string` is immutable**, and every conversion *out* to storage the receiver may mutate — `[]byte(s)`, the `byte[]` operator — already copies (see the next section, and the `unicode/utf8` `TestDecodeRune` corruption that pinned those copies down). Two consequences worth carrying:
+
+- The backing array is **private** to `@string`. A consumer reading it directly instead of reading the window would silently see the *whole* backing rather than the string, so privacy makes that a compile error rather than a wrong answer — which is how the remaining raw-array readers (`sstring`'s mixed comparison/concat operators, `builtin.slice(@string,…)`, `ByteSeqExtensions.ToGoString`) were found and corrected. Bounds that were measured against the backing array are now measured against the window (`@string.SliceBounds`) — the same correction `array<T>.slice` already carried for an alias window.
+- `unsafe.StringData` pins a window that does not begin at the backing array's start by materializing its bytes first, since a `GCHandle` pins an object from its start. Whole-backing strings — the overwhelming majority, and every string that reached there before windows existed — pin in place unchanged.
 
 ### Converting a string to `[]byte` / `[]rune`
 A Go `[]byte(s)` / `[]rune(s)` element-decoding conversion is emitted as the golib element-slice form `slice<byte>(…)` / `slice<rune>(…)`, which relies on the `@string`→`slice<byte>`/`slice<rune>` conversion. When the source is a string **variable** it is already golib `@string`, so the conversion applies directly. When the source is a bare string **literal**, that literal would otherwise render as a `System.String` (no such conversion exists — CS1503/CS1929), so the converter casts it to `@string` first:
@@ -7618,6 +7728,8 @@ The synthesized value-equality body compares the struct's fields against a param
 A combined Go field declaration — `x, y int` — emits a single combined C# line (`internal nint x, y;`) so the output mirrors the Go source's line grouping. The combined form is only used when every name in the group shares the same emitted type and access modifier and none needs per-name special handling; otherwise the converter falls back to one line per name. The fallback applies when any of these hold: a blank field `_` (renamed per occurrence — `_`, `__`, …), a name equal to the enclosing struct type (renamed with the `Δ` collision marker), a per-field array initializer (` = new(N)`), or a mix of exported and unexported names in the same group (`X, y int` → `public nint X;` / `internal nint y;`). Field comments and tags attach to the whole Go field, so they never diverge within a group.
 
 C# does not allow inline or intra-function type definitions, so these are "lifted" out of the function. A **named** local type is lifted with its enclosing function's name as a prefix to avoid collisions — a `type x struct{…}` declared in `main` becomes `main_x`. An **anonymous** struct (or an anonymous struct used as a field/value) is lifted to a synthesized name with a `ᴛ`*N* suffix and marked dynamic, e.g. `[GoType("dyn")] partial struct settingsᴛ1`. Struct "definitions" that match structurally remain usable interchangeably (the generator and implicit conversions handle this). A reference to a lifted type as a bare identifier is renamed to the lifted name, and so is its use as a **slice or array element type** — `[]entry` (where `entry` is a local type) emits `slice<process_entry>`, not the short `slice<entry>` (which is unresolved at package scope → CS0246). The element is resolved through the same lift registry as the bare-identifier and anonymous-struct cases. (Guarded by the `LocalTypeSliceElement` behavioral test, covering both the slice and fixed-array forms; runtime hit this on `printDebugLog`'s `[]readState` and `traceAdvance`'s `[]untracedG`.)
+
+**The `dyn` marker is also the type's RUN-TIME identity, and it must not leak the synthesized name.** An unnamed Go struct has no name to report, so `reflect.Type.String()` and `%T` render it STRUCTURALLY — `struct { X int; y int }`, and `struct {}` for golib's `EmptyStruct`. Because a lift gives the type a synthesized C# name (`settingsᴛ1`), that name would otherwise be what reflection reports; `[GoType("dyn")]` is exactly what distinguishes a lift from an ordinary declared struct, whose Go name IS its own. golib's `GoReflect.TypeNaming` therefore renders a `dyn`-marked value type from the `GoFields` projection — the same field table `NumField`/`Field` and the value side read, so a type's reported name and the fields it hands out cannot disagree — following Go's format exactly: an embedded field contributes its type alone, a tagged field appends the `strconv.Quote`d tag. Before it, `go/ast`'s `TestPrint` reported `ast_internal_test.typeᴛ1` where Go prints `struct { X int; y int }`, and `internal/platform`'s decode error named `[]platform_test.listEntry` rather than Go's structural spelling. (Landed 2026-08-09 with `go/ast`'s 9/9 bank; see [`docs/phase4/DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md).)
 
 A **map whose VALUE type is an anonymous struct** is lifted the same way. A package-level `var m = map[K]struct{…}{…}` — crypto/internal/hpke's `SupportedKEMs` (`map[uint16]struct{ curve ecdh.Curve; hash crypto.Hash; nSecret uint16 }`) and `SupportedAEADs` — names its value struct through the lift so the map type reads `map<uint16, SupportedKEMsᴛ1>`; without it, `getAliasQualifiedTypeName`'s map arm stringified the value as raw Go `struct{…}` syntax straight into the C# map signature (`map<uint16, struct{ curve ecdh.Curve; … }>`) — which C# cannot parse (a CS1519/CS1003 syntax cascade). `extractStructType` already lifts a slice/array **element** struct (its `ArrayType` arm) but has no map arm, so a dedicated `extractMapValueStructType` lifts the map **VALUE** struct at the package-level value-spec composite-literal site. The keyed element literals stay the target-typed `new(…)` constructor form — `[0x0020] = new(ecdh.X25519(), crypto.SHA256, 32)` — which binds to the lifted struct's generated constructor; a func-typed value field (SupportedAEADs' `aead func([]byte) (cipher.AEAD, error)`) lifts to a `Func<…>` field that a method-group or func-value element still fills. Both the declaration type (`getCSharpTypeName` → the map arm) and the literal's own type render (`convMapType` → `getExpressionTypeName`) resolve the value through the shared `liftedTypeMap` (the lift runs before the initializer is converted). (Guarded by the `MapAnonStructValue` behavioral test — a package-level map with an anonymous-struct value type, including a func-typed field, constructed and read back by key, output-compared vs Go.)
 
@@ -13065,6 +13177,30 @@ key). Tokens are order keys consistent with pointer equality, never an identity 
 (distinct storages can collide); generated named pointer/channel wrappers keep the DIM default —
 a recorded fidelity residual with no consumer. The banked fmtsort suite (TestCompare/TestOrder)
 is the operational guard.
+
+**…except a TYPE DESCRIPTOR pointer, which orders by the type's NAME (2026-08-10).** The same
+`Value.Pointer()` carries one ordering that is visible in ordinary program output rather than only
+in a map of pointers: fmtsort's `reflect.Interface` arm orders interface-kinded map keys by dynamic
+type, and it does that by comparing the two descriptors as pointers —
+`compare(reflect.ValueOf(a.Elem().Type()), reflect.ValueOf(b.Elem().Type()))` recurses into the
+`ΔPointer` arm — so this token *is* the printed order of `fmt.Println(map[I]int{…})`. Go answers with
+the linker's type-section address, which is unspecified by its own admission (fmtsort's
+`TestInterface`: "the relative ordering of types is unspecified", asserting only that same-type keys
+group) and is not a function of anything the managed side can see. The identity-hash fallback above is
+*worse* than unspecified for this case — CoreCLR draws an object's identity hash from a per-thread
+PRNG, so the token is fixed per build but unrelated to the type, and the printed order flips whenever
+an unrelated edit shifts how many hashes are drawn first. `reflectPointerToken` therefore routes a
+`ж<rtype>`/`ж<abi.Type>` through `typeDescriptorOrderToken`, which packs the leading `IntPtr.Size`
+bytes of the descriptor's Go name (the one `Type.String()` prints) big-endian, so comparing tokens
+arithmetically compares the names lexically: **types that print alike token alike, and types that
+print differently order by that printed name** — stable across builds, runs and unrelated edits.
+Names agreeing over the whole packed prefix tie and fall through to fmtsort's concrete-value arm
+(Go's own "no good answer" `-1`, settled deterministically by `SortStableFunc`'s stability); matching
+Go's layout order for three or more key types is not on offer and would not be a property Go
+promises. Guarded by the banked fmtsort suite (TestInterface's grouping) and the
+`InterfaceInheritance` behavioral test's output comparison, which is what caught the PRNG model
+landing tails. Full derivation:
+[`docs/phase4/DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md).
 
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /

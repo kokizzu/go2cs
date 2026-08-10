@@ -404,6 +404,12 @@ dependencies under `<gopath>/src/go2cs/pkg/<import-path>`, with the standard lib
 `<gopath>/src/go2cs/core/`; build and run it exactly as in steps 3 and 4 from there. The converted C# is
 the same either way — only the reference style in the generated projects differs.
 
+The output root does not have to be the deploy root: `go2cs -recurse -go2cspath <gopath>/src/go2cs . csharp`
+keeps the generated tree in `csharp/` while still referencing the deploy root. The conversion records that
+root as the `$(go2csPath)` default in the output root's generated `Directory.Build.props`, so the generated
+solution builds from anywhere with no extra configuration — override with a `go2csPath` environment variable
+or a `-p:go2csPath` build global if the runtime root later moves.
+
 ## Project layout
 
 | Path | Contents |

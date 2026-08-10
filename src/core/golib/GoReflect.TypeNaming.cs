@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Numerics;
+using System.Text;
 using static go2cs.Symbols;
 
 namespace go;
@@ -128,7 +129,101 @@ public static partial class GoReflect
         if (TryAdapterWrappedType(t, out Type? wrapped, out bool pointerSourced))
             return pointerSourced ? "*" + GoTypeName(wrapped) : GoTypeName(wrapped);
 
+        // An UNNAMED struct type has no Go name to report, so Go renders it STRUCTURALLY —
+        // `struct { X int; y int }`. golib's EmptyStruct IS Go's `struct{}`, and the converter
+        // LIFTS every other anonymous struct into a named C# type stamped [GoType("dyn")]; that
+        // stamp is what distinguishes a lift from an ordinary declared struct, whose Go name is
+        // its own. Without this arm the lift's synthesized C# name leaked out of
+        // reflect.Type.String()/%T — go/ast's TestPrint reported `ast_internal_test.typeᴛ1`.
+        // A lift that ALSO carries [GoLocalName] is not anonymous at all: it is a NAMED
+        // function-local type (`type Person struct{...}` inside a func), which Go renders by
+        // name — the stamp GoQualifiedName prefers — so the structural arm must skip it
+        // (guarded by GolibTests' ALiftedTypesLocalNameStampIsNotReReadPerCall).
+        if (t == typeof(EmptyStruct))
+            return "struct {}";
+
+        if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
+            return goStructTypeString(t);
+
         return GoQualifiedName(t);
+    }
+
+    /// <summary>
+    /// Go's structural spelling of an unnamed struct type — the text
+    /// <c>reflect.Type.String()</c> reports for a type literal.
+    /// </summary>
+    /// <remarks>
+    /// Built from <see cref="GoFields"/>, the SAME projection <c>NumField</c>/<c>Field</c> and the
+    /// value side read, so the name a type reports and the fields it hands out cannot disagree. Go's
+    /// format, verified against the toolchain: <c>struct {}</c> when empty, otherwise
+    /// <c>struct { </c> + <c>Name Type</c> members joined by <c>"; "</c> + <c> }</c>; an EMBEDDED
+    /// field contributes its type alone, and a tagged field appends the Go-quoted tag.
+    /// </remarks>
+    private static string goStructTypeString(Type t)
+    {
+        GoFieldInfo[] fields = GoFields(t);
+
+        if (fields.Length == 0)
+            return "struct {}";
+
+        StringBuilder builder = new("struct { ");
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (i > 0)
+                builder.Append("; ");
+
+            string fieldType = GoTypeName(fields[i].Type, fields[i].ArrayDims);
+
+            // Go names an EMBEDDED field after its type's unqualified name, and prints only the
+            // type — so that coincidence is exactly how the embed is recognized here.
+            bool embedded = fields[i].Name.Length > 0 &&
+                            (fieldType == fields[i].Name || fieldType.EndsWith("." + fields[i].Name, StringComparison.Ordinal));
+
+            if (!embedded)
+                builder.Append(fields[i].Name).Append(' ');
+
+            builder.Append(fieldType);
+
+            if (fields[i].Tag.Length > 0)
+                builder.Append(' ').Append(quoteGoTag(fields[i].Tag));
+        }
+
+        return builder.Append(" }").ToString();
+    }
+
+    /// <summary>
+    /// Go's <c>strconv.Quote</c> of a struct tag, which is how a tag appears inside a struct type's
+    /// string. Tags are printable text by convention, where Quote escapes only the quote and the
+    /// backslash; the C0 controls carry Go's own escapes so an unconventional tag still round-trips.
+    /// </summary>
+    private static string quoteGoTag(string tag)
+    {
+        StringBuilder builder = new("\"");
+
+        foreach (char c in tag)
+        {
+            switch (c)
+            {
+                case '"': builder.Append("\\\""); break;
+                case '\\': builder.Append("\\\\"); break;
+                case '\a': builder.Append("\\a"); break;
+                case '\b': builder.Append("\\b"); break;
+                case '\f': builder.Append("\\f"); break;
+                case '\n': builder.Append("\\n"); break;
+                case '\r': builder.Append("\\r"); break;
+                case '\t': builder.Append("\\t"); break;
+                case '\v': builder.Append("\\v"); break;
+                default:
+                    if (c < 0x20 || c == 0x7F)
+                        builder.Append("\\x").Append(((int)c).ToString("x2"));
+                    else
+                        builder.Append(c);
+                    break;
+            }
+        }
+
+        return builder.Append('"').ToString();
     }
 
     private static readonly ConcurrentDictionary<Type, GoLocalNameAttribute?> s_goLocalNames = new();

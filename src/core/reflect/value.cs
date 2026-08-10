@@ -1475,79 +1475,20 @@ internal static nint lenNonSlice(this ΔValue v) {
 
 internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectValueMapIndexˢ = "reflect.Value.MapIndex"u8;
+// go2cs generated this placeholder — func MapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// MapIndex returns the value associated with key in the map v.
-// It panics if v's Kind is not [Map].
-// It returns the zero Value if key is not found in the map or if v represents a nil map.
-// As in Go, the key's value must be assignable to the map's key type.
-public static ΔValue MapIndex(this ΔValue v, ΔValue keyʗp) {
-    ref var key = ref heap(keyʗp, out var Ꮡkey);
+// go2cs generated this placeholder — func MapKeys is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    v.mustBe(Map);
-    var tt = v.typ().Reinterpret<abi.Type, mapType>();
-    // Do not require key to be exported, so that DeepEqual
-    // and other programs can use all the keys returned by
-    // MapKeys as arguments to MapIndex. If either the map
-    // or the key is unexported, though, the result will be
-    // considered unexported. This is consistent with the
-    // behavior for structs, which allow read but not write
-    // of unexported fields.
-    @unsafe.Pointer e = default!;
-    if (((~tt).Key == stringType || key.kind() == ΔString) && (~tt).Key == key.typ() && (~tt).Elem.Size() <= abi.MapMaxElemBytes){
-        @string k = ~(ж<@string>)(uintptr)(key.ptr);
-        e = (uintptr)mapaccess_faststr(v.typ(), (uintptr)v.pointer(), k);
-    } else {
-        key = key.assignTo(reflectValueMapIndexˢ, (~tt).Key, nil);
-        @unsafe.Pointer k = default!;
-        if ((flag)(key.flag & flagIndir) != 0){
-            k = key.ptr;
-        } else {
-            k = @unsafe.Pointer.FromRef(ref (Ꮡkey.of(reflect_package.ΔValue.Ꮡptr)).Value);
-        }
-        e = (uintptr)mapaccess(v.typ(), (uintptr)v.pointer(), k);
-    }
-    if (e == nil) {
-        return new ΔValue(nil);
-    }
-    var typ = tt.Value.Elem;
-    var fl = ((flag)(v.flag | key.flag)).ro();
-    fl |= (flag)(((flag)(uintptr)(uint8)typ.Kind()));
-    return copyVal(typ, fl, e);
-}
-
-// MapKeys returns a slice containing all the keys present in the map,
-// in unspecified order.
-// It panics if v's Kind is not [Map].
-// It returns an empty slice if v represents a nil map.
-public static slice<ΔValue> MapKeys(this ΔValue v) {
-    v.mustBe(Map);
-    var tt = v.typ().Reinterpret<abi.Type, mapType>();
-    var keyType = tt.Value.Key;
-    var fl = (flag)(v.flag.ro() | ((flag)(uintptr)(uint8)keyType.Kind()));
-    @unsafe.Pointer m = (uintptr)v.pointer();
-    nint mlen = (nint)0;
-    if (m != nil) {
-        mlen = maplen(m);
-    }
-    ref var it = ref heap(new hiter(), out var Ꮡit);
-    mapiterinit(v.typ(), m, Ꮡit);
-    var a = new slice<ΔValue>(mlen, () => new(nil));
-    nint i = default!;
-    for (i = 0; i < len(a); i++) {
-        @unsafe.Pointer key = (uintptr)mapiterkey(Ꮡit);
-        if (key == nil) {
-            // Someone deleted an entry from the map since we
-            // called maplen above. It's a data race, but nothing
-            // we can do about it.
-            break;
-        }
-        a[i] = copyVal(keyType, fl, key);
-        mapiternext(Ꮡit);
-    }
-    return a[..(int)(i)];
-}
+// Do not require key to be exported, so that DeepEqual
+// and other programs can use all the keys returned by
+// MapKeys as arguments to MapIndex. If either the map
+// or the key is unexported, though, the result will be
+// considered unexported. This is consistent with the
+// behavior for structs, which allow read but not write
+// of unexported fields.
+// Someone deleted an entry from the map since we
+// called maplen above. It's a data race, but nothing
+// we can do about it.
 
 // hiter's structure matches runtime.hiter's structure.
 // Having a clone here allows us to embed a map iterator
