@@ -4390,6 +4390,26 @@ p.b = "hi"u8;
 
 This applies uniformly to every type-argument position — first, second-or-later, and nested (`Pair[int, Box[string]]` → `Pair<nint, Box<@string>>`). (The behavioral test `GenericStringTypeArg` guards these cases; `NestedGenericTypes` covers the nesting depth without string args.)
 
+### Slicing a string is a WINDOW, not a copy — `@string` carries an offset and a length
+
+A Go string header is a *pointer plus length* into shared immutable storage, which is what makes `s[i:j]` an **O(1)** operation that allocates nothing. `@string` originally held a bare `byte[]`, so its range indexer had to materialize the sub-string's bytes: `s[i:]` was **O(n) with an allocation**. That is invisible in the small and quadratic in the ordinary Go idiom for walking a string by runes —
+
+```go
+for i := 0; i < len(s); {
+    r, size := utf8.DecodeRuneInString(s[i:])
+    i += size
+}
+```
+
+— which is exactly what `archive/zip`'s `detectUTF8` does over every file name and comment. At the 65,535-byte names its `TestZip64LargeDirectory` builds, each call copied ~2.1 GB; the test takes 13.2 s in Go and had not finished in **45 minutes** in C#.
+
+`@string` therefore carries the Go header's shape — a backing array **plus an offset and a length** — and its range indexer returns a window over the same array. Slicing a string now allocates nothing and copies nothing, matching Go's cost model. The same test completes in 20.2 s against Go's 11.3 s, and `archive/zip` validates 98/98.
+
+Sharing the backing array is safe for precisely the reason it is safe in Go: **`@string` is immutable**, and every conversion *out* to storage the receiver may mutate — `[]byte(s)`, the `byte[]` operator — already copies (see the next section, and the `unicode/utf8` `TestDecodeRune` corruption that pinned those copies down). Two consequences worth carrying:
+
+- The backing array is **private** to `@string`. A consumer reading it directly instead of reading the window would silently see the *whole* backing rather than the string, so privacy makes that a compile error rather than a wrong answer — which is how the remaining raw-array readers (`sstring`'s mixed comparison/concat operators, `builtin.slice(@string,…)`, `ByteSeqExtensions.ToGoString`) were found and corrected. Bounds that were measured against the backing array are now measured against the window (`@string.SliceBounds`) — the same correction `array<T>.slice` already carried for an alias window.
+- `unsafe.StringData` pins a window that does not begin at the backing array's start by materializing its bytes first, since a `GCHandle` pins an object from its start. Whole-backing strings — the overwhelming majority, and every string that reached there before windows existed — pin in place unchanged.
+
 ### Converting a string to `[]byte` / `[]rune`
 A Go `[]byte(s)` / `[]rune(s)` element-decoding conversion is emitted as the golib element-slice form `slice<byte>(…)` / `slice<rune>(…)`, which relies on the `@string`→`slice<byte>`/`slice<rune>` conversion. When the source is a string **variable** it is already golib `@string`, so the conversion applies directly. When the source is a bare string **literal**, that literal would otherwise render as a `System.String` (no such conversion exists — CS1503/CS1929), so the converter casts it to `@string` first:
 

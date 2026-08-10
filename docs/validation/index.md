@@ -11,6 +11,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 
 | Package | Proof | Converted package |
 |:--|:--|:--|
+| `archive/zip` | [`archive.zip.md`](current/archive.zip.md) | [`src/core/archive/zip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/zip) |
 | `bufio` | [`bufio.md`](current/bufio.md) | [`src/core/bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bufio) |
 | `bytes` | [`bytes.md`](current/bytes.md) | [`src/core/bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) |
 | `cmp` | [`cmp.md`](current/cmp.md) | [`src/core/cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/cmp) |

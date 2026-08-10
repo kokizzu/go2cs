@@ -101,10 +101,12 @@ public static class ByteSeqExtensions
     // Go's `string(s)` over the same — bytealg's Rabin-Karp compares `string(s[i:j])`.
     public static @string ToGoString<TSeq>(this TSeq seq) where TSeq : IByteSeq<TSeq, byte>
     {
-        // An @string source is already the result, and @string is immutable, so the backing
-        // array is shared rather than copied (what @string's own copy constructor does).
+        // An @string source IS the result — `string(s)` over a string is the identity conversion,
+        // and @string is immutable, so there is nothing to copy or rebuild. (This used to
+        // reconstruct the value from its backing array; now that @string is a WINDOW over shared
+        // storage, that would silently widen a sub-string back to its whole backing.)
         if (typeof(TSeq) == typeof(@string))
-            return new @string(Unsafe.As<TSeq, @string>(ref seq).BackingBytes);
+            return Unsafe.As<TSeq, @string>(ref seq);
 
         return new @string(seq.ꓸꓸꓸ.ToArray());
     }

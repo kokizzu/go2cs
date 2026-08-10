@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **124 / 215 testable packages validated — 57.7%**
+> ### Phase 4 progress: **125 / 215 testable packages validated — 58.1%**
 >
-> **13,985 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
+> **14,083 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -35,6 +35,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
+| [`archive/zip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/zip) | 98 | | ZIP archives end to end — central-directory and data-descriptor parsing over a corpus of real archives written by 7-Zip, InfoZip, WinRAR, WinZip and OS X, `fs.FS` traversal, UTF-8 vs CP-437 name/comment detection, the CVE regression set, and the zip64 boundaries at `uint16max`/`uint32max` — including a **4 GiB central directory**, the case whose rune walk over 65,535-byte names proved `@string` slicing had to become a window. · [proof](validation/current/archive.zip.md) |
 | [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. · [proof](validation/current/bufio.md) |
 | [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 82 | 6 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/cmp) | 4 | | Generics with an ordered-type constraint. · [proof](validation/current/cmp.md) |

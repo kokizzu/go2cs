@@ -40,31 +40,60 @@ public readonly struct @string :
     IAdditionOperators<@string, @string, @string>,
     IByteSeq<@string, byte>
 {
-    internal readonly byte[] m_value;
+    // A Go string header is a POINTER PLUS LENGTH into shared immutable storage, which is what makes
+    // `s[i:j]` an O(1) WINDOW rather than a copy. Modeling @string as a bare byte[] made that slice
+    // O(n)-with-an-allocation, so the most ordinary Go idiom there is —
+    //
+    //      for i := 0; i < len(s); { r, size := utf8.DecodeRuneInString(s[i:]); i += size }
+    //
+    // — was ACCIDENTALLY QUADRATIC. archive/zip's detectUTF8 walks exactly that loop over a
+    // 65,535-byte file name and copied ~2.1 GB per call; its TestZip64LargeDirectory (13.2 s in Go)
+    // had not finished in 45 minutes (r57c). Carrying the offset/length window here restores Go's
+    // cost model: slicing a string allocates nothing and copies nothing.
+    //
+    // Sharing the backing array is safe for precisely the reason it is safe in Go — @string is
+    // IMMUTABLE, and every conversion OUT to storage the receiver may mutate (`[]byte(s)`, the
+    // byte[] operator) already copies. m_value is deliberately PRIVATE: a consumer reading the raw
+    // array instead of the window would silently see the whole backing, and privacy makes that a
+    // compile error rather than a wrong answer.
+    private readonly byte[] m_value;
+    private readonly int m_offset;
+    private readonly int m_length;
 
-    // Null-safe view of the backing bytes: `default(@string)` runs no constructor, so m_value is
+    // Null-safe view of this string's bytes: `default(@string)` runs no constructor, so m_value is
     // null; treat that zero value as Go's empty string ("") for all reads (length, index, concat,
     // print, range) instead of throwing NRE. Mirrors the nil-map / nil-slice null-safe approach.
-    private byte[] Bytes => m_value ?? [];
+    internal ReadOnlySpan<byte> Bytes => m_value is null ? default : new ReadOnlySpan<byte>(m_value, m_offset, m_length);
 
-    // If @string needs to match sizeof in Go, it would need to be 16 bytes,
-    // in this case 8-byte length value would need to be added here:
-    //      private readonly int64 m_length;
-    // Currently goal is to match Go's string behavior, not memory layout.
+    // The canonical window constructor — every other constructor funnels here or assigns the three
+    // fields directly. Not public: a caller handing in a backing array it can still write through
+    // would break the immutability the sharing depends on.
+    private @string(byte[] backing, int offset, int length)
+    {
+        m_value = backing;
+        m_offset = offset;
+        m_length = length;
+    }
 
     public @string()
     {
         m_value = [];
+        m_offset = 0;
+        m_length = 0;
     }
 
     public @string(byte[]? bytes)
     {
         m_value = bytes ?? [];
+        m_offset = 0;
+        m_length = m_value.Length;
     }
 
     public @string(in ReadOnlySpan<byte> bytes)
     {
         m_value = bytes.ToArray();
+        m_offset = 0;
+        m_length = m_value.Length;
     }
 
     public @string(char[] value) : this(new string(value)) { }
@@ -92,25 +121,37 @@ public readonly struct @string :
             bytes[i] = value[i];
 
         m_value = bytes;
+        m_offset = 0;
+        m_length = bytes.Length;
     }
 
     public @string(string? value)
     {
         m_value = Encoding.UTF8.GetBytes(value ?? "");
+        m_offset = 0;
+        m_length = m_value.Length;
     }
 
-    public @string(@string value) : this(value.Bytes) { }
+    // Shares the source's window rather than copying it — @string is immutable, so a "copy" of one
+    // is indistinguishable from the original. (This is what the byte[]-backed form did too, by
+    // handing its backing array straight to the byte[] constructor.)
+    public @string(@string value)
+    {
+        m_value = value.m_value ?? [];
+        m_offset = value.m_offset;
+        m_length = value.m_length;
+    }
 
-    public int Length => Bytes.Length;
+    public int Length => m_length;
 
     public byte this[int index]
     {
         get
         {
-            if (index < 0 || index >= Bytes.Length)
-                throw RuntimeErrorPanic.IndexOutOfRange(index, Bytes.Length);
+            if (index < 0 || index >= m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            return Bytes[index];
+            return m_value![m_offset + index];
         }
     }
 
@@ -118,66 +159,104 @@ public readonly struct @string :
     {
         get
         {
-            if (index < 0 || index >= Bytes.Length)
-                throw RuntimeErrorPanic.IndexOutOfRange(index, Bytes.Length);
+            if (index < 0 || index >= m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            return Bytes[index];
+            return m_value![m_offset + (int)index];
         }
     }
 
     public byte this[ulong index] => this[(nint)index];
-    
+
     // Slicing a Go string yields a string (e.g. `s[a:b]`), so the range indexer
     // returns @string. Returning slice<byte> here would break string comparisons
     // (slice<byte> != string) and put a ref-struct-convertible value into tuples.
-    public @string this[Range range] => new(new slice<byte>(Bytes, range.Start.GetOffset(Bytes.Length), range.End.GetOffset(Bytes.Length)));
+    //
+    // The result WINDOWS the same backing array — no allocation, no copy, exactly as in Go. The
+    // bounds checks reproduce what the slice<byte> construction this used to route through
+    // reported, measured against the receiver's window instead of the whole backing.
+    public @string this[Range range]
+    {
+        get
+        {
+            int low = range.Start.GetOffset(m_length);
+            int high = range.End.GetOffset(m_length);
+
+            if (low < 0)
+                throw new ArgumentOutOfRangeException(nameof(range), "Value is less than zero.");
+
+            if (high < low || high > m_length)
+                throw new ArgumentException($"Indices low and high represent a range outside bounds of the string.", nameof(range));
+
+            return new @string(m_value ?? [], m_offset + low, high - low);
+        }
+    }
 
     // IByteSeq<@string, byte> — models Go's `string | []byte` union constraint. The byte indexer
     // (this[nint]) implicitly implements IByteSeq<byte>.this[nint], and the @string range indexer
     // above implicitly implements IByteSeq<@string, byte>.this[Range] — self-referential, so a
     // generic body's sub-slice stays an @string instead of boxing into the interface. Only Length
     // needs an explicit form, to widen @string's int Length to the interface's nint.
-    nint IByteSeq.Length => Bytes.Length;
+    nint IByteSeq.Length => m_length;
 
-    // Null-safe backing array, exposed to ByteSeqExtensions.ToGoString so its `string(s)` fast
-    // path can hand the bytes straight to the result instead of copying them. Safe to share
-    // because @string is immutable — the same thing @string's own copy constructor does.
-    internal byte[] BackingBytes => Bytes;
+    // True when this string spans its whole backing array — the case where the array can stand in
+    // for the window without copying.
+    private bool IsWholeBacking => m_offset == 0 && m_length == (m_value?.Length ?? 0);
 
     public slice<byte> Slice(int start, int length)
     {
-        return new slice<byte>(Bytes, start, start + length);
+        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + start + length);
     }
 
     public slice<byte> Slice(nint start, nint length)
     {
-        return new slice<byte>(Bytes, start, start + length);
+        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + start + length);
+    }
+
+    // The explicit-bounds slice path behind `builtin.slice(s, low, high, max)`, bounded by this
+    // string's WINDOW rather than by its whole backing array — the same correction array<T>.slice
+    // already carries for an alias window. Shares the backing, as Go's slicing always does.
+    internal slice<byte> SliceBounds(nint low, nint high, nint max)
+    {
+        nint start = low == -1 ? 0 : low;
+        nint end = high == -1 ? m_length : high;
+        nint bound = max == -1 ? m_length : max;
+
+        if (start < 0 || end < start || bound < end || bound > m_length)
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(start, end, bound, m_length);
+
+        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + end, m_offset + bound);
     }
 
     public Span<byte> ToSpan()
     {
-        return new Span<byte>(Bytes);
+        return m_value is null ? default : new Span<byte>(m_value, m_offset, m_length);
     }
 
     public Span<byte> ꓸꓸꓸ => ToSpan(); // Spread operator
 
-    internal PinnedBuffer buffer => new(Bytes, Length);
+    // A pinned VIEW for unsafe.StringData. GCHandle pins an object from its start, so a window that
+    // does not begin at the backing array's start cannot be handed out as a pinned pointer — it
+    // materializes its own bytes first, which is what the byte[]-backed form did for EVERY
+    // sub-string anyway (slicing copied). Whole-backing strings — the overwhelming majority, and
+    // every string that ever reached here before windows existed — pin in place as before.
+    internal PinnedBuffer buffer => IsWholeBacking ? new(m_value, m_length) : new(Bytes.ToArray(), m_length);
 
     public override string ToString()
     {
-        return Encoding.UTF8.GetString(new ReadOnlySpan<byte>(Bytes));
+        return Encoding.UTF8.GetString(Bytes);
     }
 
     public bool Equals(@string other)
     {
-        return BytesAreEqual(Bytes, other.Bytes);
+        return Bytes.SequenceEqual(other.Bytes);
     }
 
     // Go compares strings as raw bytes; for valid UTF-8 this is also code-point order. Comparing the
     // backing bytes directly avoids transcoding both sides to UTF-16 strings per comparison.
     public int CompareTo(@string other)
     {
-        return Bytes.AsSpan().SequenceCompareTo(other.Bytes);
+        return Bytes.SequenceCompareTo(other.Bytes);
     }
 
     public override bool Equals(object? obj)
@@ -215,12 +294,17 @@ public readonly struct @string :
 
     public IEnumerator<(nint, rune)> GetEnumerator()
     {
-        return new RuneSpanEnumerator(Bytes);
+        return new RuneSpanEnumerator(m_value ?? [], m_offset, m_length);
     }
 
-    private class RuneSpanEnumerator(byte[] bytes) : IEnumerator<(nint, rune)>
+    // Holds the backing array plus this string's window: a class cannot hold the ReadOnlySpan the
+    // rest of the type reads through, and re-materializing the window as its own array would put an
+    // allocation back into `for i, r := range s`.
+    private class RuneSpanEnumerator(byte[] bytes, int offset, int length) : IEnumerator<(nint, rune)>
     {
         private readonly byte[] m_bytes = bytes;
+        private readonly int m_offset = offset;
+        private readonly int m_length = length;
         private int m_byteIndex;
         private (nint, rune) m_current;
 
@@ -232,10 +316,10 @@ public readonly struct @string :
 
         public bool MoveNext()
         {
-            if (m_byteIndex >= m_bytes.Length)
+            if (m_byteIndex >= m_length)
                 return false;
 
-            ReadOnlySpan<byte> remainingBytes = new(m_bytes, m_byteIndex, m_bytes.Length - m_byteIndex);
+            ReadOnlySpan<byte> remainingBytes = new(m_bytes, m_offset + m_byteIndex, m_length - m_byteIndex);
             OperationStatus status = Rune.DecodeFromUtf8(remainingBytes, out Rune rune, out int bytesConsumed);
 
             if (status == OperationStatus.Done)
@@ -268,7 +352,7 @@ public readonly struct @string :
     public rune[] ToRunes()
     {
         // Estimate the rune length (1 rune per byte as worst case)
-        int estimatedLength = Bytes.Length;
+        int estimatedLength = m_length;
 
         Span<rune> runes = estimatedLength <= StackAllocThreshold / 4 ?
             stackalloc rune[estimatedLength] :
@@ -280,7 +364,7 @@ public readonly struct @string :
 
     private int DecodeRunes(Span<rune> runes)
     {
-        if (Bytes.Length == 0)
+        if (m_length == 0)
             return 0;
 
         int index = 0;
@@ -496,12 +580,12 @@ public readonly struct @string :
     // now have the same literal-comparison cost model.
     public static bool operator ==(@string a, ReadOnlySpan<byte> b)
     {
-        return a.Bytes.AsSpan().SequenceEqual(b);
+        return a.Bytes.SequenceEqual(b);
     }
 
     public static bool operator !=(@string a, ReadOnlySpan<byte> b)
     {
-        return !a.Bytes.AsSpan().SequenceEqual(b);
+        return !a.Bytes.SequenceEqual(b);
     }
 
     public static bool operator ==(ReadOnlySpan<byte> a, @string b)
@@ -516,22 +600,22 @@ public readonly struct @string :
 
     public static bool operator <(@string a, ReadOnlySpan<byte> b)
     {
-        return a.Bytes.AsSpan().SequenceCompareTo(b) < 0;
+        return a.Bytes.SequenceCompareTo(b) < 0;
     }
 
     public static bool operator <=(@string a, ReadOnlySpan<byte> b)
     {
-        return a.Bytes.AsSpan().SequenceCompareTo(b) <= 0;
+        return a.Bytes.SequenceCompareTo(b) <= 0;
     }
 
     public static bool operator >(@string a, ReadOnlySpan<byte> b)
     {
-        return a.Bytes.AsSpan().SequenceCompareTo(b) > 0;
+        return a.Bytes.SequenceCompareTo(b) > 0;
     }
 
     public static bool operator >=(@string a, ReadOnlySpan<byte> b)
     {
-        return a.Bytes.AsSpan().SequenceCompareTo(b) >= 0;
+        return a.Bytes.SequenceCompareTo(b) >= 0;
     }
 
     public static bool operator <(ReadOnlySpan<byte> a, @string b)
@@ -556,10 +640,11 @@ public readonly struct @string :
 
     public static @string operator +(@string a, @string b)
     {
-        byte[] bytes = new byte[a.Bytes.Length + b.Bytes.Length];
+        ReadOnlySpan<byte> sa = a.Bytes, sb = b.Bytes;
+        byte[] bytes = new byte[sa.Length + sb.Length];
 
-        Buffer.BlockCopy(a.Bytes, 0, bytes, 0, a.Bytes.Length);
-        Buffer.BlockCopy(b.Bytes, 0, bytes, a.Bytes.Length, b.Bytes.Length);
+        sa.CopyTo(new Span<byte>(bytes, 0, sa.Length));
+        sb.CopyTo(new Span<byte>(bytes, sa.Length, sb.Length));
 
         return new @string(bytes);
     }
@@ -572,10 +657,10 @@ public readonly struct @string :
     // per-concat path is affected — no change to the far hotter `[]byte`→`@string` conversion path.
     public static @string operator +(@string a, ReadOnlySpan<byte> b)
     {
-        byte[] a1 = a.Bytes;
+        ReadOnlySpan<byte> a1 = a.Bytes;
         byte[] bytes = new byte[a1.Length + b.Length];
 
-        Buffer.BlockCopy(a1, 0, bytes, 0, a1.Length);
+        a1.CopyTo(new Span<byte>(bytes, 0, a1.Length));
         b.CopyTo(new Span<byte>(bytes, a1.Length, b.Length));
 
         return new @string(bytes);
@@ -583,11 +668,11 @@ public readonly struct @string :
 
     public static @string operator +(ReadOnlySpan<byte> a, @string b)
     {
-        byte[] b1 = b.Bytes;
+        ReadOnlySpan<byte> b1 = b.Bytes;
         byte[] bytes = new byte[a.Length + b1.Length];
 
         a.CopyTo(new Span<byte>(bytes, 0, a.Length));
-        Buffer.BlockCopy(b1, 0, bytes, a.Length, b1.Length);
+        b1.CopyTo(new Span<byte>(bytes, a.Length, b1.Length));
 
         return new @string(bytes);
     }
@@ -680,13 +765,18 @@ public readonly struct @string :
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return Bytes.GetEnumerator();
+        return ((IEnumerable<byte>)this).GetEnumerator();
     }
 
+    // Walks the backing array over this string's window: an iterator method cannot hold the
+    // ReadOnlySpan the rest of the type reads through (CS4013).
     IEnumerator<byte> IEnumerable<byte>.GetEnumerator()
     {
-        foreach (byte item in Bytes)
-            yield return item;
+        byte[] backing = m_value ?? [];
+        int end = m_offset + m_length;
+
+        for (int i = m_offset; i < end; i++)
+            yield return backing[i];
     }
 
     IEnumerator<rune> IEnumerable<rune>.GetEnumerator()
@@ -698,11 +788,6 @@ public readonly struct @string :
     IEnumerator<char> IEnumerable<char>.GetEnumerator()
     {
         return ToString().GetEnumerator();
-    }
-
-    private static bool BytesAreEqual(byte[] data1, byte[] data2)
-    {
-        return data1 == data2 || new ReadOnlySpan<byte>(data1).SequenceEqual(new ReadOnlySpan<byte>(data2));
     }
 
     private const rune RuneReplacementChar = 0xFFFD;

@@ -678,7 +678,11 @@ and slice-aliasing/write-through semantics.
 
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
 an immutable byte string whose `len`, indexing, ranging, concatenation, and comparisons are byte-oriented
-like Go's, not UTF-16-oriented like `System.String`. Plain string literals usually render as
+like Go's, not UTF-16-oriented like `System.String`. It also carries Go's string *header* — a backing array
+plus an **offset and length** — so `s[i:j]` is an O(1) window over shared storage rather than a copy, which
+is what keeps the ubiquitous `s = s[n:]` and `DecodeRuneInString(s[i:])` idioms linear instead of quadratic
+([detail](ConversionStrategies-Reference.md#slicing-a-string-is-a-window-not-a-copy--string-carries-an-offset-and-a-length)).
+Plain string literals usually render as
 `"..."u8` `ReadOnlySpan<byte>` values, then target-type into `@string` only when a heap string is actually
 needed. That keeps common literal-to-slice and literal-comparison forms allocation-free:
 

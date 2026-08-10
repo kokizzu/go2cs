@@ -101,7 +101,16 @@ $ErrorActionPreference = 'Continue'
 # against seconds in Go. The board recorded it as "no -test-timeout is enough" after measuring at
 # 6m and again at 20m -- but 20m is just UNDER what the package needs end to end, so the deadline
 # cut a run that was converging. It validates 4/4 at 30m.
-$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m' }
+#
+# archive/zip is the mildest of the four and the one whose number MOVED. TestZip64LargeDirectory
+# builds a 4 GiB central directory out of ~128 KB records; before r57c it never completed at all
+# (>45 m) because @string's range indexer copied, making the rune walk over each 65,535-byte name
+# quadratic. With @string carrying a real window the whole suite runs 20 s in Release against Go's
+# 11.3 s -- honest. The deadline is here for the harness's DEBUG build, which the pipeline uses and
+# which pays ~22x for non-inlined golib accessors: 391 s measured solo on the reference desktop,
+# 774 s on an i7-5820K -- which leaves r57c's original 20m only ~35% headroom on slow hardware, so
+# the entry is 30m: a deadline is a safety net against a hung run, never a performance assumption.
+$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m'; 'archive/zip' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
