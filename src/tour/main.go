@@ -71,6 +71,7 @@ func main() {
 	deployedRoot := flag.String("deployed-root", "", "deploy-core root for the deployed stdlib runtime")
 	nugetSource := flag.String("nuget-source", "", "NuGet feed or folder containing go2cs packages")
 	nugetVersion := flag.String("nuget-version", "", "version of go2cs NuGet packages")
+	toolTimeout := flag.String("tool-timeout", "", fmt.Sprintf("budget for the one-time go2cs build (duration such as 15m, or a whole number of seconds; default %s; %s)", defaultToolTimeout, toolTimeoutEnv))
 	solutionsURL := flag.String("solutions-url", defaultSolutionsURL, "header link to exercise solutions (empty hides the link)")
 	solutionsText := flag.String("solutions-text", defaultSolutionsText, "text for the exercise-solutions link")
 	noTour := flag.Bool("no-tour", false, "do not start the official Tour process")
@@ -82,11 +83,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// A budget typed on the command line is checked here rather than defaulted quietly: the
+	// operator asked for a specific one, and starting with a different budget than the one they
+	// named is how a timeout stops meaning what its caller thinks it means.
+	toolBudget, err := parseTimeoutSetting(*toolTimeout)
+	if err != nil {
+		log.Fatalf("invalid -tool-timeout option: %v", err)
+	}
+
 	pipeline := newPipelineRunner(root, pipelineOptions{
 		defaultRuntime: *defaultRuntime,
 		deployedRoot:   *deployedRoot,
 		nugetSource:    *nugetSource,
 		nugetVersion:   *nugetVersion,
+		toolTimeout:    toolBudget,
 	})
 	if _, err := pipeline.resolveRuntime(""); err != nil {
 		log.Fatalf("invalid -runtime option: %v", err)

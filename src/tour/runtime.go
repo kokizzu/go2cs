@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -20,6 +21,7 @@ type pipelineOptions struct {
 	deployedRoot   string
 	nugetSource    string
 	nugetVersion   string
+	toolTimeout    time.Duration
 }
 
 type runtimeConfiguration struct {
@@ -46,6 +48,7 @@ var (
 
 func resolvePipelineOptions(repoRoot string, supplied pipelineOptions) pipelineOptions {
 	supplied.defaultRuntime = strings.ToLower(strings.TrimSpace(supplied.defaultRuntime))
+	supplied.toolTimeout = resolveToolTimeout(supplied.toolTimeout)
 
 	if supplied.deployedRoot == "" {
 		supplied.deployedRoot = strings.TrimSpace(os.Getenv("GO2CS_DEPLOYED_ROOT"))

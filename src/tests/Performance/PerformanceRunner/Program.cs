@@ -52,11 +52,21 @@ namespace PerformanceRunner
 
     internal static class Runner
     {
+        // Timeouts are SAFETY NETS against a hung child, not performance assumptions -- size them
+        // for the slowest host this suite legitimately runs on, never from one machine's measured
+        // time. A publish that legitimately outlives its timeout is killed and reported as a
+        // failed COLUMN ("n/a"), which reads exactly like a real AOT defect: at 600s an i7-5820K
+        // (2014 Haswell-E) timed out on PerfStartup -- the SMALLEST benchmark -- where an
+        // i9-13900K published in seconds; the same publish then completed in 1,574s once given
+        // room. ILC compiles the full converted-stdlib closure per benchmark since the trees
+        // unified (2026-08-01), so a slow host legitimately spends tens of minutes per publish
+        // (2026-08-10; the same shape as the -test-timeout lesson in CLAUDE.md, where both
+        // sides' hidden 10-minute defaults faked a failing tail).
         private const int TranspileTimeoutMs = 60_000;
-        private const int GoBuildTimeoutMs = 180_000;
-        private const int BuildAllTimeoutMs = 300_000;
-        private const int BuildOneTimeoutMs = 180_000;
-        private const int AotPublishTimeoutMs = 600_000;
+        private const int GoBuildTimeoutMs = 300_000;
+        private const int BuildAllTimeoutMs = 600_000;
+        private const int BuildOneTimeoutMs = 300_000;
+        private const int AotPublishTimeoutMs = 3_600_000;
         private const int RunTimeoutMs = 120_000;
 
         private const string Config = "Release";
@@ -69,12 +79,15 @@ namespace PerformanceRunner
         // docs/PLAN-linux-operation.md).
         private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
-        // Preferred report order; projects not listed are appended alphabetically.
+        // Preferred report order; projects not listed are appended alphabetically. Related
+        // benchmarks are grouped (compute, strings, containers, interfaces), matching the
+        // benchmark-description table in README.md.
         private static readonly string[] s_reportOrder =
         {
             "PerfStartup", "PerfFib", "PerfSieve", "PerfMatMul",
-            "PerfString", "PerfMap", "PerfSort", "PerfChannel",
-            "PerfStringView", "PerfStringMatch", "PerfIfaceCall", "PerfIface", "PerfIfaceShell"
+            "PerfString", "PerfStringView", "PerfStringMatch",
+            "PerfMap", "PerfSort", "PerfChannel",
+            "PerfIfaceCall", "PerfIface", "PerfIfaceShell"
         };
 
         private static string s_srcRoot = null!;
@@ -429,10 +442,16 @@ namespace PerformanceRunner
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                 "Microsoft Visual Studio", "Installer");
 
-            Dictionary<string, string>? env = null;
+            // MSBUILDDISABLENODEREUSE: the PATH prepend below reaches only nodes THIS publish
+            // spawns. Without it, dotnet publish hands the ILC targets to any idle MSBuild worker
+            // node machine-wide -- including nodes another session started with an environment
+            // lacking the VS Installer dir -- and the linker probe's vswhere then fails INSIDE the
+            // node, its cmd error text captured into the linker path and executed as a garbage
+            // command (MSB3073 exit 123; observed 2026-08-10 with two sibling sessions building).
+            Dictionary<string, string> env = new() { ["MSBUILDDISABLENODEREUSE"] = "1" };
 
             if (Directory.Exists(vsInstaller))
-                env = new Dictionary<string, string> { ["PATH"] = vsInstaller + ";" + Environment.GetEnvironmentVariable("PATH") };
+                env["PATH"] = vsInstaller + ";" + Environment.GetEnvironmentVariable("PATH");
 
             Console.WriteLine($"[Build]    C# Native AOT ({projects.Count} publish(es), sequential -- slow)...");
 
@@ -444,9 +463,33 @@ namespace PerformanceRunner
                 Console.Write($"           {p}... ");
                 Stopwatch sw = Stopwatch.StartNew();
 
-                ProcResult r = Exec("dotnet",
-                    $"publish \"{csproj}\" -nologo -clp:ErrorsOnly -c {Config} -p:PerfAot=true -p:go2csPath={go2csPathArg} -o \"{outDir}\"",
-                    s_perfDir, AotPublishTimeoutMs, env);
+                string publishArgs =
+                    $"publish \"{csproj}\" -nologo -clp:ErrorsOnly -c {Config} -p:PerfAot=true -p:go2csPath={go2csPathArg} -o \"{outDir}\"";
+
+                ProcResult r = Exec("dotnet", publishArgs, s_perfDir, AotPublishTimeoutMs, env);
+
+                // A publish killed mid-ILC (a watchdog, a stopped run, a machine crash) leaves a
+                // TRUNCATED native obj behind, and the next incremental publish sees unchanged
+                // inputs, skips ILC, and hands the linker the poisoned file -- a fast LNK1106
+                // ("cannot seek to ...") that reads like a toolchain defect and recurs forever
+                // until the intermediate is deleted (observed 2026-08-10 after a killed run).
+                // Self-heal: on any failure, drop this project's native intermediates and retry
+                // once from clean. A retry that also fails is a real failure, reported with both
+                // messages.
+                if (r.ExitCode != 0)
+                {
+                    string nativeObj = Path.Combine(s_perfDir, p, "obj", "aot");
+                    string firstError = Truncate(r.StdOut + r.StdErr);
+
+                    if (Directory.Exists(nativeObj))
+                        Directory.Delete(nativeObj, recursive: true);
+
+                    Console.Write($"retrying from clean intermediates (first attempt: exit {r.ExitCode})... ");
+                    r = Exec("dotnet", publishArgs, s_perfDir, AotPublishTimeoutMs, env);
+
+                    if (r.ExitCode != 0)
+                        results[p].Messages.Add($"AOT publish first attempt exit: {firstError}");
+                }
 
                 if (r.ExitCode == 0)
                 {

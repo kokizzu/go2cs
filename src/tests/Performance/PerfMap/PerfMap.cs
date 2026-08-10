@@ -8,7 +8,7 @@ partial class main_package {
 internal static nint run(nint n) {
     var m = new map<nint, nint>();
     for (nint i = 0; i < n; i++) {
-        m[i * (nint)2654435761L % n] = i;
+        m[i * unchecked((nint)2654435761L) % n] = i;
     }
     nint total = len(m);
     for (nint i = 0; i < n; i++) {

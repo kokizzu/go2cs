@@ -65,6 +65,18 @@
     return { id, status, output: message, segments: [{ kind, text: message }], durationMs: 0 };
   }
 
+  // A convert request can end before the converter ever runs -- building go2cs is its own stage,
+  // and on a slow host that build is what runs out of time -- so the status line names the stage
+  // the server reported and says whether it failed or was never measured. Reading "Transpile
+  // failed" for a build that never produced a converter blames the conversion for work the
+  // converter was not present for.
+  function stageFailureMessage(stage) {
+    const label = stage?.label || "Transpile";
+    if (stage?.timedOut) return `${label} timed out`;
+    if (stage?.status === "killed") return `${label} killed`;
+    return `${label} failed`;
+  }
+
   function setConnection(online, text) {
     connectionDot.className = online ? "online" : "offline";
     connectionLabel.textContent = text;
@@ -244,7 +256,7 @@
         conversionID = "";
         conversionStatus.textContent = "Go source changed -- convert to refresh";
       } else {
-        conversionStatus.textContent = "Transpile failed";
+        conversionStatus.textContent = stageFailureMessage(result.stage);
       }
     } catch (error) {
       if (error.name !== "AbortError" && pagePath === pathAtStart && goSource === sourceAtStart) {
