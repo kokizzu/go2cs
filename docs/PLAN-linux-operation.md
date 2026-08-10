@@ -1117,6 +1117,16 @@ Rationale, in order of weight:
 3. **`src/tour/scripts/start.sh` is the counter-example that proves the rule.** It is a 19-line
    `go install` + `go run` wrapper with essentially no logic — a twin is cheap and stays correct. Nothing
    else in the inventory is that thin. Keep it; do not generalize from it.
+   ⚠ **Fixed 2026-08-10 — the documented invocation was broken TWO ways, the second masked by DrvFs.**
+   (a) No `*.sh` attributes rule existed, so `core.autocrlf=true` materialized the LF blob as CRLF on a
+   Windows checkout and bash failed on the shebang; `.gitattributes` now carries `*.sh text eol=lf`
+   (after the CRLF pins, before the `-text` exemptions — last match wins). (b) The index mode was
+   **100644**, so on a real Linux filesystem `./start.sh` is `Permission denied` exit 126 — invisible
+   in any `/mnt/*` repro, because DrvFs without the `metadata` mount option reports every file 0777
+   (the same mount behavior §A6's `ls -la` table records). Mode is now 100755. **The class rule for
+   future shell scripts:** a new `.sh` needs nothing (the attributes rule is a glob) but MUST be added
+   with its exec bit (`git update-index --chmod=+x`), and a DrvFs "it runs" is not evidence the mode
+   is right — check `git ls-files -s` for `100755`, not the mount's view.
 
 **Mechanics of the parameterization** — three small, uniform rules, applied once:
 
