@@ -4970,6 +4970,45 @@ even a favourable ruling on `TestDiscard` banks nothing here — 7 of 9 — whic
 made and the reason `log` stays off the roster. What the counter adds is the alloc row's real
 number: **4 objects/run against a budget of 1**, where the shim used to say 424.
 
+**`crypto/internal/nistec` re-measured: still 2,195 of 2,200, and the count CORROBORATES r56d.**
+The five `TestAllocations` rows now report objects instead of bytes, against Go's budget of **0**:
+
+| Curve | objects/run | bytes/run |
+|:--|--:|--:|
+| P224 | 264,540 | 23,625,160 |
+| P256 | **242,665** | 21,964,357 |
+| P384 | 471,424 | 40,755,611 |
+| P521 | 870,534 | 72,244,419 |
+
+P256's **242,665** lands within 0.7 % of the **241,077** r56d derived through a temporary hand-built
+probe, which is an independent corroboration of that decomposition by a different instrument — and
+the byte column reproduces r56d's 21,964,011 to four significant figures. **It still does not bank,
+and the reason is unchanged**: ruling #1 holds that a want-ZERO assert is satisfiable in principle,
+so it is not a disclosure, and the counter does not alter that — it only replaces a modelled number
+with a measured one. The 2,200 verdicts remain gated on the `ж<T>` box arc, whose value this
+measurement re-confirms rather than revises.
+
+**`io` retires a disclosure — the counter satisfied the assert instead of excusing it.**
+`TestMultiWriter_WriteStringSingleAlloc` asserts EXACTLY ONE malloc. The byte shim measured 406–407
+and was disclosed `alloc-count-semantics`, which was the honest call while nobody had measured the
+number the assert was about. The counter measures it: **1,024 objects over 1,000 runs = 1 per run**,
+against a want of 1. It PASSES — the first want-exactly-one assert in the corpus the managed runtime
+has ever satisfied — so the disclosure was DELETED rather than left dormant, a dormant one being a
+signature-pinned licence to ignore that exact failure if it ever returns. `io` moves to **60 matched
++ 1 disclosed** (`TestPipeAllocations` remains a genuine divergence). This is the shape to look for
+elsewhere in the class: not every disclosed alloc row is permanent.
+
+⚠ **A roster verdict COUNT can be host-dependent, and `path/filepath` is the first proven case.**
+The targeted sweep reported `COUNT path/filepath 67, banked 61` — not a regression and not an
+improvement in the corpus, but six symlink tests (`TestEvalSymlinks*`, `TestGlobSymlink`, …) that
+**Go itself skips** without symlink-creation privilege. On the machine that banked the row both
+runtimes skipped 20 identically; on the current coordinator box both PASS 16 of them identically.
+Either way the two sides AGREE, so the package is equally valid on both hosts — only the count
+differs. The row is deliberately LEFT at 61 rather than raised: banking 67 would false-red every
+sweep on a host without the privilege, which is the larger population. Worth a general remedy
+(record privilege-gated skips as such, or normalize the count over identically-skipped tests)
+before the next roster-wide arithmetic pass — flagged, not fixed here.
+
 **`encoding/asn1` re-measures 35 of 38** (was 34 at r57b): r58b's typed-nil packing closed
 `TestMarshalError` exactly as predicted. The three that remain are already characterized above —
 `TestCertificate` (sequence tag mismatch), `TestMarshal` #37 (SET emitted where a SEQUENCE tag is
