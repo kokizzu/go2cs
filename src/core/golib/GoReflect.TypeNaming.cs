@@ -135,10 +135,14 @@ public static partial class GoReflect
         // stamp is what distinguishes a lift from an ordinary declared struct, whose Go name is
         // its own. Without this arm the lift's synthesized C# name leaked out of
         // reflect.Type.String()/%T — go/ast's TestPrint reported `ast_internal_test.typeᴛ1`.
+        // A lift that ALSO carries [GoLocalName] is not anonymous at all: it is a NAMED
+        // function-local type (`type Person struct{...}` inside a func), which Go renders by
+        // name — the stamp GoQualifiedName prefers — so the structural arm must skip it
+        // (guarded by GolibTests' ALiftedTypesLocalNameStampIsNotReReadPerCall).
         if (t == typeof(EmptyStruct))
             return "struct {}";
 
-        if (t.IsValueType && goTypeMarkerOf(t) is { Definition: "dyn" })
+        if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
             return goStructTypeString(t);
 
         return GoQualifiedName(t);

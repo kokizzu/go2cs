@@ -1582,7 +1582,36 @@ after the flush and the neutered control PASSED — a guard that proved nothing.
 fire for all three mechanisms (drop `offered`: 315–483 of 600; drop the drain: 477 stale of 600;
 drop the `seq` check: stale ticks in all four race sections).
 
-## `math/big` — **222 of 226** (re-measured 2026-08-09, r57a); three roots left, two of them the alloc model
+## `math/big` — **224 of 226** (re-measured 2026-08-09, r58b); root 3 CLOSED, the two left are both the alloc model
+
+> **r58b (2026-08-09): root 3 below is FIXED and both gob rows pass.** The reflection bridge now
+> packs the typed nil — `reflect.Value.Interface()` re-encodes a null read out of a POINTER-kinded
+> slot as that slot's canonical typed nil (`ж<T>.NilBox`, the same instance `reflect.Zero` and every
+> emitted `nil`→`*T` conversion already produce), so `v.Interface().(GobEncoder)` succeeds and
+> `big.Int.GobEncode`'s `if x == nil` arm is reached. `TestGobEncodingNilIntInSlice` and
+> `TestGobEncodingNilRatInSlice` both pass: **222 → 224 of 226**, exactly those two rows. Guarded by
+> the `ReflectTypedNilInterface` behavioral test.
+>
+> **`math/big` still does NOT bank**, for the reason root 3's own paragraph predicted: rows 1 and 2
+> are the alloc model and neither is disclosable. Both re-measured on this tree — `TestNewIntAllocs`:
+> *"measured 81,600 allocated BYTES over 100 run(s) … got 816.000000"*; `TestMulUnbalanced`:
+> *"multiplication uses too much memory (20487208 > 51 times the size of inputs)"* (inputs =
+> (50000+40)×8 = 400,320 B, so the converted `nat.mul` allocates ~51× where Go bounds at 10×). Row 1
+> waits on the AllocsPerRun ownership decision; row 2 is a truthful, comparable measurement of the
+> box model, which a disclosure would launder rather than explain.
+>
+> **⚠ Attribution correction, measured as an A/B rather than reasoned.** The paragraph below says
+> this root "also blocks part of `encoding/gob` (99 of 106)". The bridge half does **not**. r58b ran
+> gob's full pipeline with and without the fix on the same tree: **99 of 106 both ways, the same seven
+> divergent rows.** The typed-nil root has TWO halves that pay DIFFERENT packages — the reflection
+> READ path (fixed here; it pays *math/big's* gob rows, because gob reaches math/big's types through
+> `reflect`) and the EMISSION path (`var ip *int` boxed into an interface by ordinary converted
+> code), which is what gob's own `TestNilPointerInsideInterface` and the `mustPanic` family need. The
+> emission half remains chip-class / design-with-user and is untouched.
+
+### Historical — the r57a state (superseded above)
+
+## `math/big` — **222 of 226** (measured 2026-08-09, r57a); three roots left, two of them the alloc model
 
 > **Supersedes the 2026-08-02 state below and the board's `9 of 226` census.** Both were taken with
 > r56f's named-numeric shift-masking defect live — the defect whose corrupted Lehmer cosequences made
@@ -4914,6 +4943,27 @@ interface as a plain `null` instead of a non-nil interface carrying `(type=*Int,
 (`IsNilStandardPointer`), so the narrow starting point is the reflection bridge's `Value.Interface()`,
 which knows the static type at the moment the box is made. Blocks 2 of `math/big`'s 4 and part of
 `encoding/gob`'s 99 of 106.
+
+> **r58b (2026-08-09) closed the reflection half and A/B'd the rest of that claim, which was wrong.**
+> `Value.Interface()` now packs the typed nil, and it pays `math/big` exactly (222 → 224 of 226) —
+> but `encoding/gob` measures **99 of 106 with AND without the fix, the same seven divergent rows**.
+> The root has two halves paying two different packages: the reflection READ path (closed; gob
+> reaches *math/big's* types through `reflect`, which is why math/big's rows moved) and the EMISSION
+> path — a nil pointer VARIABLE boxed into an interface by ordinary converted code, which is what
+> gob's own `TestNilPointerInsideInterface` and the `mustPanic` family need, and which remains
+> chip-class / design-with-user. gob's current seven: `TestBadData`, `TestEndToEnd`,
+> `TestIgnoreDepthLimit` (infrastructure-error), `TestIgnoreRecursiveType`,
+> `TestIndirectSliceMapArray`, `TestNilPointerInsideInterface`, `TestSingletons`.
+
+~~**`reflect.Value.MapIndex` is still the raw converted Go body — a bridge gap, found in passing
+(r58b, 2026-08-09).**~~ **CLOSED before it merged: r57b bridged `Value.MapKeys` and `Value.MapIndex`
+in its go/ast arc (`bfdb073be`), landing on master while r58b was still on its branch** — two lanes
+found the same gap independently, one recorded it and the other fixed it. The claim below is kept
+struck rather than deleted because its shape analysis was right (the `MapRange` iterator's
+`iter.mapValueType` → `makeTypedValue` machinery is exactly what the fix used): unlike
+`MapRange`/`SetMapIndex`, `MapIndex` read `v.ptr` as flat memory and called `mapaccess`, so it
+faulted on any Value the managed bridge produced; `internal/fmtsort` was its first roster consumer
+and re-validated 3/3 in r57b's recovered sweep.
 
 **`crypto/dsa` — the negative result, recorded so it is not re-derived.** This lane opened expecting
 the shift fix to be dsa's root too; a probabilistic prime search over the converted `math/big` is

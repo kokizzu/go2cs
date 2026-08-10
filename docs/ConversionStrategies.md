@@ -376,9 +376,17 @@ fmt.Printf("%T %v\n", ip, any(ip) == nil)   // *int false
 fmt.Printf("%T %v\n"u8, ip.OrTypedNil(), ((any)ip.OrTypedNil()) == default!);
 ```
 
+Reflection reaches the same boundary from the other side. `reflect.Value.Interface()` is Go's
+`packEface` — an interface built from a **type** and a **data word** — so a nil `*T` read out of a
+slot packs as a non-nil `(type=*T, value=nil)` and a type assertion on it SUCCEEDS, dispatching the
+method on the nil receiver. The bridge re-encodes a null pointer-kinded slot read as that same
+canonical instance, which is what lets `encoding/gob` reach `big.Int.GobEncode`'s `if x == nil` arm
+for a zero-filled `make([]*Int, 1)` element.
+
 Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction, and
 which slots the boundary covers):
-[Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing).
+[Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing)
+and [the reflection read path](ConversionStrategies-Reference.md#reflectvalueinterface-is-a-boundary-into-interface-space-so-it-packs-the-typed-nil-too).
 
 Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than
 throwing.

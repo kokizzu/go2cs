@@ -101,11 +101,48 @@ internal static ΔValue unpackEface(any i) {
 // yields its canonical nil box — a NON-nil `any` holding `(*T)(nil)`, exactly Go's packEface
 // (the type is never erased to a bare null one call after X2 restored it).
 public static any /*i*/ Interface(this ΔValue v) {
-    return v.live!;
+    return packInterfaceValue(v);
 }
 
 internal static any /*i*/ valueInterface(ΔValue v, bool safe) {
-    return v.live!;
+    return packInterfaceValue(v);
+}
+
+// packInterfaceValue is the bridge's packEface: it builds the interface value for v, and Go's
+// rule for that is entirely about the TYPE half. An eface carries (type, data word), so a
+// POINTER-kinded Value whose data word is nil packs as a NON-nil interface holding
+// (type=*T, value=nil) — Go's typed nil. Managed storage has no data word to keep the type
+// beside: a *T slot physically holds C# `null`, and handing that straight out ERASES the type.
+// Everything downstream then reads the nil INTERFACE instead: `i == nil` answers true, `%T`
+// prints <nil>, and `i.(Iface)` takes the failure arm — so a method written to handle its nil
+// receiver never runs. That last one is not hypothetical; it is the whole of
+// `func (x *Int) GobEncode() { if x == nil { … } }`, which encoding/gob reaches as
+// `v.Interface().(GobEncoder)` for every zero-filled element of a `make([]*Int, 1)`.
+//
+// So a null read out of a POINTER-kinded slot is re-encoded as the CANONICAL typed nil for
+// that slot's static type — ж<T>.NilBox, the one instance `reflect.Zero` of a pointer kind
+// already yields (GoReflect.ZeroValueOf) and every emitted nil→*T conversion already produces.
+// One nil encoding system-wide; this is the READ path joining the encoding the write path and
+// the fabrication path have always used. Because it is that same instance, the packed value
+// also compares equal to a language-level `(*T)(nil)` and asserts through the ordinary witness
+// machinery — nothing here is a second nil representation.
+//
+// POINTER KINDS ONLY. An interface- or func-typed slot holding null IS the nil interface / nil
+// func — Go packs THAT as the nil eface, and re-encoding it would invert the bug rather than
+// fix it. A slot whose static type resolves to no canonical nil (a shape with neither ж<T>'s
+// NilBox nor a generated wrapper's NilInstance) keeps the null it had, so this can only ever
+// ADD type information, never substitute a wrong one.
+internal static any /*i*/ packInterfaceValue(ΔValue v) {
+    object? cur = v.live;
+    if (cur is not null) {
+        return cur;
+    }
+    ΔKind k = v.kind();
+    if (k != ΔPointer && k != ΔUnsafePointer) {
+        return cur!;
+    }
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    return (st is null ? null : GoReflect.CanonicalNilPointer(st))!;
 }
 
 public static bool Bool(this ΔValue v) {
