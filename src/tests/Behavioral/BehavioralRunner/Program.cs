@@ -45,8 +45,10 @@ namespace BehavioralRunner
 
         // Executable suffix for a built .NET apphost or Go binary. Windows only; empty everywhere else.
         // Hard-coding ".exe" made every File.Exists probe below fail on Linux, which the Output phase
-        // reports as "missing C# or Go exe" -- a SKIP, not a failure, so the run stays green while
-        // comparing nothing (F4, docs/PLAN-linux-operation.md).
+        // reported as "missing C# or Go exe" -- a SKIP, not a failure, so the run stayed green while
+        // comparing nothing (F4, docs/PLAN-linux-operation.md). Both halves are closed now: the suffix
+        // here, and the verdict in RunOutputComparison, where a missing binary is a named failure rather
+        // than a silent skip -- so a future way of losing a binary cannot reproduce that vacuous green.
         private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
         // A path fragment matching a build-output directory at any depth, built from the host's own
@@ -597,10 +599,35 @@ namespace BehavioralRunner
                 string goExe = Path.Combine(projPath, "bin", Config, "Go", $"{p}{s_exeSuffix}");
                 string workDir = Path.GetDirectoryName(projPath)!;
 
-                if (!File.Exists(csExe) || !File.Exists(goExe))
+                // Both binaries must exist by now: the project declared itself output-compared and its C#
+                // compile PASSED, so an absent binary is a broken invariant, never a legitimate state.
+                // Reporting it as a SKIP made that invisible -- Report counts a Skip as neither a failure
+                // nor a reason to exit non-zero -- so the run stayed GREEN having compared nothing. That
+                // is exactly the vacuous green the hard-coded ".exe" produced across the WHOLE corpus on
+                // Linux, where every probe here missed (F4, docs/PLAN-linux-operation.md). The suffix
+                // CAUSE is fixed above (s_exeSuffix); this closes the SYMPTOM, so the next way to lose a
+                // binary -- a renamed AssemblyName, a moved output path, a new host -- cannot pass
+                // silently the way that one did. The verdict follows the same document's 2026-08-08
+                // coordinator ruling for this shape in check-no-regression.ps1: a gate that stopped
+                // measuring fails BY NAME with exit 1, and being loud on a host where a project cannot
+                // run is the honest outcome rather than a reason to stay quiet. Fail rather than a
+                // not-measured bucket of its own because nothing here expired -- both builds ran to a
+                // verdict and the artifact is still missing. The one legitimate no-binary case, a
+                // library-style project with no `package main`, never reaches this line: MatchConsoleOutput
+                // skipped it at the top of the loop. A `go build` that FAILED does land here (it is
+                // already fatal via s_goBuildFailures); naming it in the phase it cost is strictly more
+                // attribution than the silent Skip it used to get.
+                bool haveCs = File.Exists(csExe), haveGo = File.Exists(goExe);
+
+                if (!haveCs || !haveGo)
                 {
-                    results[p].Phases[Phase.Output] = Status.Skip;
-                    results[p].Messages.Add("missing C# or Go exe");
+                    string missing = !haveCs && !haveGo ? $"neither binary exists ({csExe}; {goExe})"
+                        : !haveCs ? $"no C# binary at {csExe}"
+                        : $"no Go binary at {goExe}";
+
+                    results[p].Phases[Phase.Output] = Status.Fail;
+                    results[p].Messages.Add($"NOT MEASURED: nothing to compare -- {missing}");
+                    failed++;
                     continue;
                 }
 
