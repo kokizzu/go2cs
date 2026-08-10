@@ -385,9 +385,9 @@ public static partial class builtin
         // Estimate buffer size (4 bytes per rune as worst case)
         int estimatedBytes = runes.Length * 4;
         
-        Span<byte> buffer = estimatedBytes <= StackAllocThreshold ? 
-            stackalloc byte[estimatedBytes] : 
-            new byte[estimatedBytes];
+        Span<byte> buffer = estimatedBytes <= StackAllocThreshold ?
+            stackalloc byte[estimatedBytes] :
+            AllocationCounter.NewArray<byte>(estimatedBytes);
 
         int bytesWritten = 0;
 
@@ -406,7 +406,7 @@ public static partial class builtin
             bytesWritten += runeBytes;
         }
 
-        return buffer[..bytesWritten].ToArray();
+        return AllocationCounter.CopyOf<byte>(buffer[..bytesWritten]);
     }
 
     /// <summary>
@@ -1611,6 +1611,13 @@ public static partial class builtin
     /// </remarks>
     public static ж<T> Ꮡ<T>(IArray<T> target, int index)
     {
+        // ONE object beyond the box: the caller's boxing temp. A slice<T>/array<T> header is a
+        // struct, so `Ꮡ(s, i)` — the only shape the converter emits for Go's `&s[i]` — boxes one on
+        // every call. That box is emitted at the CALL SITE rather than inside golib, but this
+        // overload is the only thing it can be handed to, so charging it here attributes it exactly.
+        // (A caller already holding an IArray<T> reference would be overcharged by one; the
+        // converter never emits that shape, and overstating is the safe direction for a budget.)
+        AllocationCounter.Count();
         return new ж<T>(target, index);
     }
 
@@ -1624,6 +1631,8 @@ public static partial class builtin
     /// <remarks>By value, for the lifetime reason the <see cref="int"/> overload documents.</remarks>
     public static ж<T> Ꮡ<T>(IArray<T> target, nint index)
     {
+        // The caller's boxing temp, exactly as in the int overload above.
+        AllocationCounter.Count();
         return new ж<T>(target, (int)index);
     }
 
@@ -1695,6 +1704,11 @@ public static partial class builtin
     /// <returns>New reference for <typeparamref name="T"/>.</returns>
     public static ж<T> @new<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object[] inputs)
     {
+        // Activator returns its result as object, so a value-type T arrives BOXED and is then
+        // unboxed into the box below — one object beyond what the ж constructor charges. The
+        // caller's params array and the boxes of its arguments are emitted at the call site and,
+        // like every other compiler-emitted allocation in converted code, are not charged.
+        AllocationCounter.Count();
         return new ж<T>((T)Activator.CreateInstance(typeof(T), inputs)!);
     }
 

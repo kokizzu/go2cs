@@ -68,6 +68,12 @@ public static class TestHost
 
     public static int Run(TestRegistry registry, string[] args)
     {
+        // The go2cs runtime allocation counter is off by default, and this is the ONLY thing that
+        // turns it on: testing.AllocsPerRun is its only reader, so a converted application that
+        // never runs a test must not pay for it. Enabled at the very top of the run rather than
+        // lazily, so that everything a test can observe is inside the counting window.
+        AllocationCounter.Enable();
+
         TestOptions options;
 
         try

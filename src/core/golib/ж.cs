@@ -139,9 +139,20 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     public ж(in T value)
     {
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            // One object: this box. A managed T lives in m_val, a field of the box itself.
             m_val = value;
+            AllocationCounter.Count();
+        }
         else
+        {
+            // TWO objects for Go's ONE malloc — the box, plus the one-element pinnable slot whose
+            // eager allocation the m_slot commentary above explains cannot be deferred. The count
+            // says two because two is what the CLR heap receives; see AllocationCounter's remarks
+            // on why the unit is the managed object and not the logical Go allocation.
             m_slot = [value];
+            AllocationCounter.Count(2);
+        }
     }
 
     // Create a new reference to a field in a heap allocated struct. fieldIdentity carries the
@@ -151,6 +162,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         m_structFieldRef = (source, fieldRefFunc, fieldIdentity ?? fieldRefFunc);
         m_val = default!;
+
+        // The box only. The nullable ValueTuple is a struct stored INLINE in m_structFieldRef, so
+        // it costs no object of its own; the accessor delegate is the caller's (typically a
+        // compiler-cached static), and any per-call closure wrapper is charged where it is minted.
+        AllocationCounter.Count();
     }
 
     // Create a new indexed reference into an existing heap allocated array
@@ -158,6 +174,9 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         m_arrayIndexRef = (array, index);
         m_val = default!;
+
+        // The box only — the array is the caller's, already charged when it was created.
+        AllocationCounter.Count();
     }
 
     // Create a pointer that ALIASES a native address (see m_nativeAddr). A zero address is the
@@ -170,6 +189,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         m_val = default!;
         m_isNull = nativeAddress == 0;
         m_pin = pin;
+
+        // The box only. The memory it aliases is native — never charged, because the CLR heap never
+        // received it — and the pin, when there is one, is charged by whoever constructed it.
+        AllocationCounter.Count();
     }
 
     /// <summary>
@@ -180,6 +203,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         m_val = default!;
         m_isNull = true;
+
+        // Counted, even though Go's nil pointer is a word and allocates nothing: this constructor
+        // really does hand the CLR heap an object, and the counter's contract is what the heap
+        // received. A nil box that cost nothing to report would be a model, not a measurement.
+        AllocationCounter.Count();
     }
 
     // Creates a box that HOLDS value but is nonetheless the nil pointer. Needed by
@@ -189,10 +217,17 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // a value, never both.
     protected ж(in T value, bool isNull)
     {
+        // Same two shapes, and the same charge, as the public value constructor above.
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
             m_val = value;
+            AllocationCounter.Count();
+        }
         else
+        {
             m_slot = [value];
+            AllocationCounter.Count(2);
+        }
 
         m_isNull = isNull;
     }

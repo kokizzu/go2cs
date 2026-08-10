@@ -63,19 +63,19 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public array(int length)
     {
-        m_array = new T[length];
+        m_array = AllocationCounter.NewArray<T>(length);
         m_length = length;
     }
 
     public array(nint length)
     {
-        m_array = new T[length];
+        m_array = AllocationCounter.NewArray<T>(length);
         m_length = (int)length;
     }
 
     public array(ulong length)
     {
-        m_array = new T[length];
+        m_array = AllocationCounter.NewArray<T>(length);
         m_length = (int)length;
     }
 
@@ -90,7 +90,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     // wrapper's underlying nint rather than an int (CS1503 against an int-only overload).
     public array(nint length, Func<T> elementFactory)
     {
-        m_array = new T[length];
+        m_array = AllocationCounter.NewArray<T>(length);
         m_length = (int)length;
 
         for (nint i = 0; i < length; i++)
@@ -118,7 +118,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     {
         checkArrayConversionLength(source.Length, length);
 
-        m_array = source.ToSpan()[..(int)length].ToArray();
+        m_array = AllocationCounter.CopyOf<T>(source.ToSpan()[..(int)length]);
         m_length = (int)length;
     }
 
@@ -222,25 +222,25 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public array(Span<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf((ReadOnlySpan<T>)source);
         m_length = m_array.Length;
     }
 
     public array(ReadOnlySpan<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf(source);
         m_length = m_array.Length;
     }
 
     public array(Memory<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf((ReadOnlySpan<T>)source.Span);
         m_length = m_array.Length;
     }
 
     public array(ReadOnlyMemory<T> source)
     {
-        m_array = source.ToArray();
+        m_array = AllocationCounter.CopyOf(source.Span);
         m_length = m_array.Length;
     }
 
@@ -331,7 +331,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         get
         {
             T[] backing = Backing;
-            return m_low == 0 && m_length == backing.Length ? backing : backing.AsSpan(m_low, m_length).ToArray();
+            return m_low == 0 && m_length == backing.Length ? backing : AllocationCounter.CopyOf<T>(backing.AsSpan(m_low, m_length));
         }
     }
 
@@ -342,7 +342,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public T[] ToArray()
     {
-        return ToSpan().ToArray();
+        return AllocationCounter.CopyOf<T>(ToSpan());
     }
 
     public Span<T> ToSpan()
@@ -355,7 +355,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         // ToSpan().ToArray() rather than Backing.Clone(): a Go array copy is of the ARRAY, and an
         // Alias window's array is its window, not the slice storage behind it — so the copy is a
         // full, offset-free array again.
-        T[] copy = ToSpan().ToArray();
+        T[] copy = AllocationCounter.CopyOf<T>(ToSpan());
 
         // Go array copy semantics are DEEP for nested arrays: assigning a [2][3]int copies the
         // inner arrays too. An element that is itself an array wrapper (array<T> or a generated
@@ -694,7 +694,7 @@ public static class ArrayExtensions
     // constructor set leaves array<T>'s ctor overloads untouched.
     public static array<T> array<T>(this T[] array, int length)
     {
-        T[] padded = new T[length];
+        T[] padded = AllocationCounter.NewArray<T>(length);
 
         // An over-long source cannot arise from a valid Go literal (the compiler rejects an index
         // past the declared length), so it is truncated rather than checked.
@@ -708,6 +708,9 @@ public static class ArrayExtensions
     // SparseArray's own Count is `max index + 1`, which is the literal's extent, not the array's.
     public static array<T> array<T>(this IEnumerable<T> source, int length)
     {
+        // Enumerable.ToArray's own result is charged here; the growth buffers it discards on the
+        // way are BCL-internal and, like every other BCL internal, deliberately uncharged.
+        AllocationCounter.Count();
         return source.ToArray().array(length);
     }
 
@@ -720,6 +723,8 @@ public static class ArrayExtensions
     // array initializer from an enumerable
     public static array<T> array<T>(this IEnumerable<T> source)
     {
+        // As above: the materialized array is charged, its BCL-internal growth buffers are not.
+        AllocationCounter.Count();
         return new array<T>(source.ToArray());
     }
 }

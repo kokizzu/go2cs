@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `io` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f6e9c0cf0`*
+*Validated 2026-08-10 · converter `1d21396bf`*
 
-**59 matched · 2 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**60 matched · 1 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io).
 
 ## Verdicts
@@ -42,7 +42,7 @@ comparison — it is the evidence behind the `io` row in
 | `TestMultiWriterSingleChainFlatten` | pass | pass |
 | `TestMultiWriter_String` | pass | pass |
 | `TestMultiWriter_StringCheckCall` | pass | pass |
-| `TestMultiWriter_WriteStringSingleAlloc` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestMultiWriter_WriteStringSingleAlloc` | pass | pass |
 | `TestNopCloserWriterToForwarding` | pass | pass |
 | `TestOffsetWriter_Seek` | pass | pass |
 | `TestOffsetWriter_Seek/errOffset` | pass | pass |
@@ -86,7 +86,6 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestMultiWriter_WriteStringSingleAlloc` | `alloc-count-semantics` | exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree - measured 406-407, which is BYTES allocated per WriteString across the two WriteString-hiding sinks, not a malloc count; see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md |
 | `TestPipeAllocations` | `alloc-count-semantics` | count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, so Pipe() - measured 1184 bytes per call, for the two heap-boxed ends plus the pipe struct's three channels and its Mutex/Once/onceError members - can never satisfy a four-MALLOC bound whatever its allocation behavior |
 
 ## Excluded declarations

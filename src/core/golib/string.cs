@@ -91,12 +91,14 @@ public readonly struct @string :
 
     public @string(in ReadOnlySpan<byte> bytes)
     {
-        m_value = bytes.ToArray();
+        m_value = AllocationCounter.CopyOf(bytes);
         m_offset = 0;
         m_length = m_value.Length;
     }
 
-    public @string(char[] value) : this(new string(value)) { }
+    // Charges the intermediate UTF-16 string on the way through; the UTF-8 backing the delegated
+    // constructor then encodes is charged there, so this shape costs two objects and says so.
+    public @string(char[] value) : this(AllocationCounter.NewString(value)) { }
 
     public @string(in ReadOnlySpan<rune> value) : this(value.ToUTF8Bytes()) { }
 
@@ -115,7 +117,7 @@ public readonly struct @string :
     // A concrete slice<byte>/@string argument still prefers its own more-specific constructor.
     public @string(IByteSeq<byte> value)
     {
-        byte[] bytes = new byte[value.Length];
+        byte[] bytes = AllocationCounter.NewArray<byte>(value.Length);
 
         for (nint i = 0; i < value.Length; i++)
             bytes[i] = value[i];
@@ -127,7 +129,7 @@ public readonly struct @string :
 
     public @string(string? value)
     {
-        m_value = Encoding.UTF8.GetBytes(value ?? "");
+        m_value = AllocationCounter.Utf8ToBytes(value);
         m_offset = 0;
         m_length = m_value.Length;
     }
@@ -240,11 +242,21 @@ public readonly struct @string :
     // materializes its own bytes first, which is what the byte[]-backed form did for EVERY
     // sub-string anyway (slicing copied). Whole-backing strings — the overwhelming majority, and
     // every string that ever reached here before windows existed — pin in place as before.
-    internal PinnedBuffer buffer => IsWholeBacking ? new(m_value, m_length) : new(Bytes.ToArray(), m_length);
+    // PinnedBuffer is a class, so this costs one object on the whole-backing path and two on the
+    // windowed one — the materialized copy plus the buffer around it.
+    internal PinnedBuffer buffer
+    {
+        get
+        {
+            AllocationCounter.Count();
+
+            return IsWholeBacking ? new(m_value, m_length) : new(AllocationCounter.CopyOf(Bytes), m_length);
+        }
+    }
 
     public override string ToString()
     {
-        return Encoding.UTF8.GetString(Bytes);
+        return AllocationCounter.Utf8ToString(Bytes);
     }
 
     public bool Equals(@string other)
@@ -294,6 +306,10 @@ public readonly struct @string :
 
     public IEnumerator<(nint, rune)> GetEnumerator()
     {
+        // RuneSpanEnumerator is a class: `for range s` over a Go string allocates nothing, ours
+        // allocates the enumerator, and the count is where that difference becomes visible.
+        AllocationCounter.Count();
+
         return new RuneSpanEnumerator(m_value ?? [], m_offset, m_length);
     }
 
@@ -356,10 +372,10 @@ public readonly struct @string :
 
         Span<rune> runes = estimatedLength <= StackAllocThreshold / 4 ?
             stackalloc rune[estimatedLength] :
-            new rune[estimatedLength];
+            AllocationCounter.NewArray<rune>(estimatedLength);
 
         int runesDecoded = DecodeRunes(runes);
-        return runes[..runesDecoded].ToArray();
+        return AllocationCounter.CopyOf<rune>(runes[..runesDecoded]);
     }
 
     private int DecodeRunes(Span<rune> runes)
@@ -428,7 +444,7 @@ public readonly struct @string :
     // (see the string-literal-allocation arc): a shared backing array must never become writable.
     public static implicit operator slice<byte>(@string value)
     {
-        return new slice<byte>(value.Bytes.ToArray());
+        return new slice<byte>(AllocationCounter.CopyOf(value.Bytes));
     }
 
     public static implicit operator @string(slice<rune> value)
@@ -438,6 +454,8 @@ public readonly struct @string :
 
     public static implicit operator slice<rune>(@string value)
     {
+        AllocationCounter.Count();
+
         return new slice<rune>(((IEnumerable<rune>)value).ToArray());
     }
 
@@ -458,6 +476,8 @@ public readonly struct @string :
 
     public static implicit operator slice<char>(@string value)
     {
+        AllocationCounter.Count();
+
         return new slice<char>(((IEnumerable<char>)value).ToArray());
     }
 
@@ -468,7 +488,7 @@ public readonly struct @string :
         // write THROUGH into the string (unicode/utf8's TestDecodeRune corrupted the package's
         // utf8map string table for every later test). Zero-copy read-only access uses sstring
         // views / ToSpan() internally — never this conversion.
-        return value.Bytes.ToArray();
+        return AllocationCounter.CopyOf(value.Bytes);
     }
 
     // NOTE: stores WITHOUT copying — every LIVE Go []byte value is a slice<byte> in converted
@@ -502,6 +522,8 @@ public readonly struct @string :
 
     public static explicit operator char[](@string value)
     {
+        AllocationCounter.Count();
+
         return ((IEnumerable<char>)value).ToArray();
     }
 
@@ -641,7 +663,7 @@ public readonly struct @string :
     public static @string operator +(@string a, @string b)
     {
         ReadOnlySpan<byte> sa = a.Bytes, sb = b.Bytes;
-        byte[] bytes = new byte[sa.Length + sb.Length];
+        byte[] bytes = AllocationCounter.NewArray<byte>(sa.Length + sb.Length);
 
         sa.CopyTo(new Span<byte>(bytes, 0, sa.Length));
         sb.CopyTo(new Span<byte>(bytes, sa.Length, sb.Length));
@@ -658,7 +680,7 @@ public readonly struct @string :
     public static @string operator +(@string a, ReadOnlySpan<byte> b)
     {
         ReadOnlySpan<byte> a1 = a.Bytes;
-        byte[] bytes = new byte[a1.Length + b.Length];
+        byte[] bytes = AllocationCounter.NewArray<byte>(a1.Length + b.Length);
 
         a1.CopyTo(new Span<byte>(bytes, 0, a1.Length));
         b.CopyTo(new Span<byte>(bytes, a1.Length, b.Length));
@@ -669,7 +691,7 @@ public readonly struct @string :
     public static @string operator +(ReadOnlySpan<byte> a, @string b)
     {
         ReadOnlySpan<byte> b1 = b.Bytes;
-        byte[] bytes = new byte[a.Length + b1.Length];
+        byte[] bytes = AllocationCounter.NewArray<byte>(a.Length + b1.Length);
 
         a.CopyTo(new Span<byte>(bytes, 0, a.Length));
         b1.CopyTo(new Span<byte>(bytes, a.Length, b1.Length));
@@ -781,12 +803,16 @@ public readonly struct @string :
 
     IEnumerator<rune> IEnumerable<rune>.GetEnumerator()
     {
+        AllocationCounter.Count();
+
         foreach (rune codePoint in ToRunes())
             yield return codePoint;
     }
 
     IEnumerator<char> IEnumerable<char>.GetEnumerator()
     {
+        AllocationCounter.Count();
+
         return ToString().GetEnumerator();
     }
 
