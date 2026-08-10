@@ -5188,7 +5188,15 @@ reference desktop (391 s for the whole suite). **Re-verified on the replacement 
 6C/12T, ~3x slower, with two sibling lanes building): the suite ran **792.6 s**, of which
 `TestZip64LargeDirectory` alone was **774.0 s**. Still inside 20 m, but with only ~35 % headroom on a
 slow loaded box — so if a future sweep reports `archive/zip` as an empty verdict, suspect the
-deadline before suspecting the package.
+deadline before suspecting the package. **Two remedies landed 2026-08-10:** `$longTimeouts` is now
+a FLOOR rather than an override, so a larger `-TestTimeout` raises these entries like it raises
+every other package (a *smaller* value still loses to the table) — until that fix the table won
+unconditionally and the flag was silently ignored for exactly the four packages that need it (an
+i7-5820K sweep reported `hash/maphash` and `crypto/dsa` as `FAIL … package timeout after 00:30:00`
+and re-running at `60m` died at 30:00 again, while the same package's pipeline driven by hand at
+`60m` validated its banked 22/22). And the floors themselves were recalibrated to the slow host at
+merge (maphash/dsa `60m`, suffixarray `120m`; archive/zip's `30m` stands on its 774 s measurement),
+so a bare sweep passes on this machine class with tight nets kept on the other 121 packages.
 
 ### The crash-save classification refines r57b's NUL rule
 
