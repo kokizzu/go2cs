@@ -4352,7 +4352,8 @@ the batch CONVERTED; only the C# build or the run failed. This one has a one-lin
   `net/netip`'s initializer complete and the value render correctly). The seven remaining failures
   are the same gob-internal set.
 - **`crypto/elliptic` 4 of 82, `math/big` 9 of 226, `go/doc` 24 of 85, `go/parser` 6 of 173,
-  `mime/multipart` 7 of 52, `encoding/asn1` 28 of 38, `net/rpc` 6 of 15, `net/http/httputil` 16 of
+  `mime/multipart` 7 of 52, ~~`encoding/asn1` 28 of 38~~ (**re-measured 34 of 38 by r57b**, below),
+  `net/rpc` 6 of 15, `net/http/httputil` 16 of
   53, `net/http/httptest` 24 of 55, `net/http/cookiejar` 10 of 17, `debug/dwarf` 7 of 40,
   `internal/coverage/cfile` 4 of 16, `go/internal/gcimporter` 399 of 583** — first censuses, all
   recorded here rather than in prose.
@@ -4931,3 +4932,56 @@ ADDRESSES, which the linker assigns in declaration order. go2cs's canonical inte
 `reflect.Type` has no such ordering, so the pair sorts by whatever box identity gives. Worth
 deciding deliberately rather than patching: this is an ordering Go's own documentation treats as an
 implementation detail, so the guard may be asserting something go2cs can only match by luck.
+
+### `encoding/asn1` — the fourth charter row, re-measured: 34 of 38, and the tag root DID close
+
+The board carried `encoding/asn1` at 28 of 38 with the standing hypothesis that it shared
+`crypto/rsa`'s DER/tag root. Re-measured on this branch it is **34 of 38**: six rows closed on
+their own, which is the hypothesis confirmed — the repaired tag handling reached here too. It is
+still not bankable, and the converted test artifacts were deliberately NOT committed, per the
+policy that test sources bank only when a suite validates.
+
+What the hypothesis got WRONG is the shape of the remainder. The four survivors are not one root
+waiting on one fix; they are four, and three of them belong to areas other lanes already own:
+
+- **`TestMarshalError` — the TYPED-NIL class, and it is r58b's.** `panic: interface conversion:
+  interface {} is nil, not *big.Int` inside `makeBody`. Go asserts a **nil `*big.Int`** out of an
+  interface and the assertion SUCCEEDS, yielding a typed nil the marshaller then rejects with its
+  own error; go2cs's `_<T>` sees an untyped nil and panics instead. That is exactly the state
+  `claude/r58b-typednil` is bounded to at `Value.Interface()`. **Re-measure this row first when
+  r58b lands** — it is a free second witness for that arc, on a package r58b is not otherwise
+  touching.
+- **`TestUnexportedStructField` — a reflection-bridge FIELD-FLAG gap, distinct from the map/naming
+  pair this lane closed.** Go expects `Unmarshal` to RETURN `structure error: struct contains
+  unexported fields`; go2cs returns `<nil>` and then panics in `mustBeAssignable`. So the read-only
+  flag is not propagated onto a `Value` reached through an unexported field: `CanSet()` answers
+  true where Go answers false, asn1's own guard never fires, and the write runs on to `setKinded`.
+  The guard is asn1's, but the defect is `flagRO` propagation in `Value.Field`, so it will surface
+  anywhere a package probes settability rather than trusting it.
+- **`TestMarshal` #37 — one byte, and it is the tag.** `300302010a` against `310302010a`: `0x30`
+  SEQUENCE emitted where Go writes `0x31` SET. The `set` field parameter is not reaching the
+  emitted tag in `makeField`. Narrow and self-contained — the likeliest single-row win of the four.
+- **`TestCertificate` — nested slice-of-slice-of-struct.** `sequence tag mismatch`, and the RDN
+  name comes back EMPTY (`[]` where Go has the full `[[{[2 5 4 6] XX}] …]`). The only one still
+  unattributed below the surface message.
+
+### The final sweep, recovered after the hardware failure (2026-08-10)
+
+This lane was parked mid-sweep when the coordinator machine died, so the verdict was lost with it.
+Re-run FILTERED over the lane's own banked and re-measured rows on a replacement box: **8 packages,
+137 verdicts, 8 pass / 0 fail** — `go/ast` 9, `syscall` 62, `go/printer` 45, `net/http/fcgi` 12,
+`go/format` 4, `internal/fmtsort` 3, `internal/profile` 1, `runtime/internal/math` 1. The last three
+of those are the rows this pass struck through as already-banked, so the strikethroughs are now
+gate-backed rather than argued. `internal/fmtsort` and `go/printer` were added on purpose beyond the
+lane's own list: the bank's real blast radius is the reflection bridge, and `internal/fmtsort` is the
+direct consumer of the `MapKeys`/`MapIndex` pair this lane moved into it.
+
+⚠ **The crash-save `wip` commit contained NOTHING that belonged.** All 22 files classified as
+standing aftermath and were dropped: nine production `.cs` in the `-tests`-closure restore family
+(the `Δio` alias and the root-qualification escape), four `package_init.cs` carrying the
+`initᴛᴛtests` hook, three `-text`-marked `compress/testdata` fixtures showing a pure CRLF flip —
+and six `log/slog/internal/benchmarks` files that were **100% NUL bytes**. That last group is a new
+shape worth naming: NTFS committed each file's SIZE and lost its DATA in the power failure, and the
+sizes match the committed content's CRLF-smudged length **exactly**, byte for byte, across all six.
+So the package had no real drift at all — a crash-save `git status` can be dirty for reasons that
+are neither a converter change nor a documented phantom, and a size-vs-content check separates them.
