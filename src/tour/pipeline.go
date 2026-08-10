@@ -7,29 +7,46 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 const (
-	maxSourceBytes    = 256 << 10
-	maxRequestBytes   = maxSourceBytes + (16 << 10)
-	commandTimeout    = 20 * time.Second
+	maxSourceBytes  = 256 << 10
+	maxRequestBytes = maxSourceBytes + (16 << 10)
+	commandTimeout  = 20 * time.Second
 	// buildTimeout covers the dotnet build stages, which under the "core" and
 	// "deployed" runtimes compile the lesson's full converted-stdlib project
 	// closure on a cold cache (dozens of projects for an fmt import) -- minutes,
 	// not seconds. This is a hang guard, not a pacing device.
 	buildTimeout      = 5 * time.Minute
 	dependencyTimeout = 2 * time.Minute
-	conversionMaxAge  = 30 * time.Minute
-	maxSavedArtifacts = 20
-	tourModulePath    = "tour.local/session"
-	tourProjectName   = "tour.local.session.csproj"
+	// defaultToolTimeout covers the one-time `go build` of the converter that the first conversion
+	// of a server process performs. It was a hardcoded 2 minutes until 2026-08-10, which made it a
+	// performance assumption rather than a hang guard: measured that day on an i7-5820K under WSL2
+	// with the repository on a /mnt DrvFs mount, a cold build of src/go2cs took 1m58.8s and a warm
+	// one (module cache hot) 1m44.3s -- roughly one second inside the old cap. So the first
+	// conversion after a restart timed out having printed only the golang.org/x/mod, x/tools and
+	// x/sync downloads, and the interface reported it as a failed transpile of source the converter
+	// had never seen. Sized here for the slowest host this is expected to run on, per the safety-net
+	// doctrine; a caller who wants a tighter net asks for one (-tool-timeout / GO2CS_TOOL_TIMEOUT).
+	defaultToolTimeout = 10 * time.Minute
+	toolTimeoutEnv     = "GO2CS_TOOL_TIMEOUT"
+	// converterProbeTimeout bounds the identity probe a cached converter must pass before it is
+	// reused. It runs the executable with no arguments, which reaches the usage banner after at
+	// most a `go env` call, so anything near this budget is a file that is not going to answer.
+	converterProbeTimeout = 20 * time.Second
+	conversionMaxAge      = 30 * time.Minute
+	maxSavedArtifacts     = 20
+	tourModulePath        = "tour.local/session"
+	tourProjectName       = "tour.local.session.csproj"
 )
 
 type convertRequest struct {
@@ -59,9 +76,14 @@ type runResult struct {
 }
 
 type stageResult struct {
-	ID         string          `json:"id"`
-	Label      string          `json:"label"`
-	Status     string          `json:"status"`
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Status string `json:"status"`
+	// TimedOut separates "this stage's own budget expired" from "the tool ran and reported a
+	// problem". Only the first leaves the question unanswered -- nothing was measured -- and the
+	// two need different words in front of the operator, which is the distinction BehavioralRunner
+	// draws between Fail and NOT MEASURED. It rides the wire so the interface can draw it too.
+	TimedOut   bool            `json:"timedOut,omitempty"`
 	Output     string          `json:"output,omitempty"`
 	Segments   []outputSegment `json:"segments,omitempty"`
 	DurationMS int64           `json:"durationMs"`
@@ -88,6 +110,7 @@ type pipelineRunner struct {
 	deployedRoot   string
 	nugetSource    string
 	nugetVersion   string
+	toolTimeout    time.Duration
 }
 
 func newPipelineRunner(repoRoot string, supplied ...pipelineOptions) *pipelineRunner {
@@ -105,6 +128,7 @@ func newPipelineRunner(repoRoot string, supplied ...pipelineOptions) *pipelineRu
 		deployedRoot:   options.deployedRoot,
 		nugetSource:    options.nugetSource,
 		nugetVersion:   options.nugetVersion,
+		toolTimeout:    options.toolTimeout,
 	}
 }
 
@@ -164,9 +188,12 @@ func (p *pipelineRunner) convert(ctx context.Context, request convertRequest) (c
 
 	go2csBin, toolStage := p.ensureGo2CS(ctx)
 	if toolStage != nil && toolStage.Status != "passed" {
-		toolStage.ID = "transpile"
-		toolStage.Label = "Transpile"
-		toolStage.Output, toolStage.Segments = formatTranspileTranscript(resolve.Output, toolStage.Output, outputDir, toolStage.Status, runtime.label), nil
+		// The stage keeps its own identity. Rewriting it to "transpile"/"Transpile" (as this did
+		// until 2026-08-10) charged a converter BUILD that produced no binary to the conversion of
+		// the operator's code: on a slow host the build's fixed budget expired and the interface
+		// reported "Transpile failed" for source go2cs had never been handed.
+		toolStage.Output, toolStage.Segments = formatConverterBuildTranscript(
+			resolve.Output, toolStage.Output, cleanDisplayPath(go2csBin, p.repoRoot), toolStage.Status, toolStage.TimedOut), nil
 		return convertResult{Runtime: runtime.mode, Stage: *toolStage}, nil
 	}
 
@@ -316,20 +343,180 @@ func (p *pipelineRunner) ensureGo2CS(ctx context.Context) (string, *stageResult)
 		stage := failedStage("tool", "Build go2cs", err.Error())
 		return target, &stage
 	}
-	// This is the first build for this server process. Discard an executable left by an older
-	// process before invoking `go build`: Go may refuse to overwrite a stale or invalid Windows
-	// executable, and cross-process cache reuse is precisely what this rebuild is intended to avoid.
+	// This is the first conversion of this server process, so the cached executable is one an
+	// earlier process left behind. What must never happen is a converter built from an older
+	// checkout being driven by a newer pipeline; rebuilding unconditionally certainly prevents
+	// that, but it also charges every restart a full converter build (~2 minutes on the machine
+	// the budget above was measured on) to re-derive a binary that is already current. The
+	// freshness test the behavioral harnesses apply to go2cs.exe answers the same question
+	// directly -- newer than every converter source -- and the probe additionally requires the
+	// file to identify itself, so nothing is trusted on its path alone.
+	if converterIsCurrent(ctx, target, p.converterSourceDir()) {
+		p.go2csBin = target
+		return target, nil
+	}
+	// Discard the rejected executable before invoking `go build`: Go may refuse to overwrite a
+	// stale or invalid Windows executable.
 	if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
 		stage := failedStage("tool", "Build go2cs", fmt.Sprintf("remove stale converter %q: %v", target, err))
 		return target, &stage
 	}
 
-	stage := p.runStage(ctx, "tool", "Build go2cs", filepath.Join(p.repoRoot, "src", "go2cs"),
-		2*time.Minute, "go", "build", "-o", target, ".")
+	stage := p.runStage(ctx, "tool", "Build go2cs", p.converterSourceDir(),
+		p.buildToolTimeout(), "go", "build", "-o", target, ".")
 	if stage.Status == "passed" {
 		p.go2csBin = target
 	}
 	return target, &stage
+}
+
+func (p *pipelineRunner) converterSourceDir() string {
+	return filepath.Join(p.repoRoot, "src", "go2cs")
+}
+
+// buildToolTimeout reports the resolved converter-build budget, defaulting an unset one rather
+// than letting a zero value through: a zero budget expires before the child starts, which would
+// report every host as too slow to build the converter at all.
+func (p *pipelineRunner) buildToolTimeout() time.Duration {
+	if p.toolTimeout > 0 {
+		return p.toolTimeout
+	}
+	return defaultToolTimeout
+}
+
+// converterIsCurrent reports whether the cached executable can stand in for a fresh build: newer
+// than every converter source, and able to say what it is when run.
+//
+// The two halves answer different questions and both are load-bearing. The timestamp answers "was
+// this built from the checkout the pipeline is about to drive?" -- a checkout that moves rewrites
+// its source timestamps, so a converter predating the move is rejected. The probe answers "is this
+// a converter at all?", which no timestamp can: a partially written build, or a file another tool
+// parked at the cache path, is newer than everything and runs nothing.
+func converterIsCurrent(ctx context.Context, target, sourceDir string) bool {
+	return converterIsFresh(target, sourceDir) && converterIdentifies(ctx, target)
+}
+
+// converterIsFresh reports whether target is newer than every file the converter is built from.
+// go.mod and go.sum count alongside the sources, since a dependency change alters the binary while
+// leaving every .go file untouched. An unreadable source tree reports false: the build that
+// follows will produce a far better diagnostic than a reuse decision could.
+func converterIsFresh(target, sourceDir string) bool {
+	binary, err := os.Stat(target)
+	if err != nil {
+		return false
+	}
+
+	newest, err := newestConverterSource(sourceDir)
+	if err != nil {
+		return false
+	}
+	return binary.ModTime().After(newest)
+}
+
+func newestConverterSource(sourceDir string) (time.Time, error) {
+	var newest time.Time
+	found := false
+
+	err := filepath.WalkDir(sourceDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		switch strings.ToLower(filepath.Ext(entry.Name())) {
+		case ".go", ".mod", ".sum":
+		default:
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if modified := info.ModTime(); modified.After(newest) {
+			newest = modified
+		}
+		found = true
+		return nil
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	if !found {
+		return time.Time{}, fmt.Errorf("no converter sources under %s", sourceDir)
+	}
+	return newest, nil
+}
+
+// converterIdentifies runs the cached executable with no arguments, where go2cs prints its usage
+// banner and exits 1 -- so the banner, not the exit status, is what identifies it. A file that
+// merely occupies the cache path prints nothing, and neither does a text file with the executable
+// bit set, which is what the integration test plants to prove the cache is not trusted on its
+// filename alone.
+func converterIdentifies(ctx context.Context, target string) bool {
+	ctx, cancel := context.WithTimeout(ctx, converterProbeTimeout)
+	defer cancel()
+
+	command := newCommand(ctx, target)
+	hideCommandWindow(command)
+	var banner strings.Builder
+	command.Stdout = &banner
+	command.Stderr = &banner
+	_ = command.Run()
+
+	return strings.Contains(banner.String(), "Usage: go2cs")
+}
+
+// resolveToolTimeout reports the converter-build budget for a supplied option, falling back to the
+// environment and then to the default. A malformed FLAG is a usage error the caller reports,
+// because it was typed deliberately; a malformed VARIABLE only warns and falls back, because it
+// may have been inherited from a shell the operator never set up.
+func resolveToolTimeout(supplied time.Duration) time.Duration {
+	if supplied > 0 {
+		return supplied
+	}
+
+	setting := strings.TrimSpace(os.Getenv(toolTimeoutEnv))
+	if setting == "" {
+		return defaultToolTimeout
+	}
+
+	timeout, err := parseTimeoutSetting(setting)
+	if err != nil {
+		log.Printf("ignoring %s: %v; using %s", toolTimeoutEnv, err, defaultToolTimeout)
+		return defaultToolTimeout
+	}
+	return timeout
+}
+
+// parseTimeoutSetting reads a budget written either in Go duration syntax ("90s", "15m") or as a
+// bare whole number of SECONDS, the unit every sibling GO2CS_*_TIMEOUT variable is written in. An
+// empty value means "not set" and reports zero so the caller can fall through to the next source;
+// anything else that does not name a positive duration is an error rather than a silent zero,
+// since a zero budget expires before its child starts and would report a healthy host as a slow one.
+func parseTimeoutSetting(value string) (time.Duration, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, nil
+	}
+
+	timeout, err := time.ParseDuration(value)
+	if err != nil {
+		seconds, secondsErr := strconv.Atoi(value)
+		if secondsErr != nil {
+			return 0, fmt.Errorf("%q is neither a duration (10m) nor a whole number of seconds (600)", value)
+		}
+		timeout = time.Duration(seconds) * time.Second
+	}
+	if timeout <= 0 {
+		return 0, fmt.Errorf("%q is not a positive duration", value)
+	}
+	// A bare number this large is far likelier to be milliseconds, copied from a harness that
+	// stores its budgets that way, than a genuine multi-day budget for a two-minute build.
+	if timeout > 24*time.Hour {
+		return 0, fmt.Errorf("%q exceeds a day; write seconds (600) or a duration (10m), not milliseconds", value)
+	}
+	return timeout, nil
 }
 
 func formatTranspileTranscript(resolveOutput, output, root, status, runtime string) string {
@@ -354,6 +541,32 @@ func formatTranspileTranscript(resolveOutput, output, root, status, runtime stri
 		lines = append(lines, "Transpile killed.")
 	default:
 		lines = append(lines, "Transpile failed.")
+	}
+	return strings.Join(lines, "\n")
+}
+
+// formatConverterBuildTranscript reports the one-time converter build in its own words, so a build
+// that never finished cannot be read as a conversion that went wrong. A timed-out build says
+// plainly that the converter never ran -- nothing about the submitted Go was measured -- and names
+// the two ways out, since neither the budget nor GO2CS_BIN is discoverable from the transcript.
+func formatConverterBuildTranscript(resolveOutput, output, target, status string, timedOut bool) string {
+	lines := []string{"$ go mod tidy"}
+	if resolveOutput = strings.TrimSpace(resolveOutput); resolveOutput != "" {
+		lines = append(lines, resolveOutput)
+	}
+	lines = append(lines, "$ go build -o "+target+" ./src/go2cs")
+	if output = strings.TrimSpace(output); output != "" {
+		lines = append(lines, output)
+	}
+	switch {
+	case timedOut:
+		lines = append(lines,
+			"Building go2cs ran out of time, so the converter never ran and nothing was converted.",
+			"Raise the budget with -tool-timeout (or "+toolTimeoutEnv+"), or set GO2CS_BIN to a prebuilt converter.")
+	case status == "killed":
+		lines = append(lines, "Building go2cs killed.")
+	default:
+		lines = append(lines, "Building go2cs failed.")
 	}
 	return strings.Join(lines, "\n")
 }
@@ -436,6 +649,7 @@ func (p *pipelineRunner) runStage(parent context.Context, id, label, dir string,
 		segments = trimSegments(segments)
 	}
 	status := "passed"
+	timedOut := false
 	if err != nil {
 		status = "failed"
 		switch {
@@ -445,6 +659,7 @@ func (p *pipelineRunner) runStage(parent context.Context, id, label, dir string,
 				segments = appendSystemSegment(segments, "Killed.")
 			}
 		case errors.Is(ctx.Err(), context.DeadlineExceeded):
+			timedOut = true
 			if id != "run" {
 				segments = appendSystemSegment(segments, fmt.Sprintf("Timed out after %s.", timeout))
 			}
@@ -460,6 +675,7 @@ func (p *pipelineRunner) runStage(parent context.Context, id, label, dir string,
 		ID:         id,
 		Label:      label,
 		Status:     status,
+		TimedOut:   timedOut,
 		Output:     joinSegments(segments),
 		Segments:   segments,
 		DurationMS: time.Since(started).Milliseconds(),

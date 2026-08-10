@@ -93,6 +93,8 @@ Useful options:
 - `-solutions-url=https://…`: target of the header's exercise-solutions link;
   empty removes the link, and only `http`/`https` targets are shown
 - `-solutions-text=Exercise solutions`: text for that link
+- `-tool-timeout=15m`: budget for the one-time go2cs build described below —
+  a duration (`15m`) or a whole number of seconds (`900`)
 - `-no-tour`: do not launch the upstream Tour process
 - `-no-open`: do not open a browser
 
@@ -101,9 +103,25 @@ through, so `.\src\tour\scripts\start.ps1 -Runtime nuget -solutions-url=` starts
 the app with the header link removed.
 
 `GO_TOUR_BIN` can point to the upstream `tour` executable. `GO2CS_BIN` can point
-to an explicitly managed prebuilt go2cs executable; otherwise each server process builds the
-current checkout once into `src/tour/.cache` and reuses it for that process. Rebuilding on restart
-prevents a converter cached by an older checkout from being used with a newer Tour pipeline.
+to an explicitly managed prebuilt go2cs executable, which skips the build entirely.
+
+## The first conversion builds go2cs
+
+Otherwise the converter is built into `src/tour/.cache` from the current
+checkout, as part of the first conversion — so that conversion can take minutes
+while later ones take seconds. A cached executable is reused across restarts
+only when it is newer than every file under `src/go2cs` and still identifies
+itself when run, so a converter left by an older checkout is rebuilt rather than
+driven by a newer pipeline.
+
+That build gets ten minutes, which is a guard against a hung `go build` rather
+than an expectation about pace: it was two minutes until 2026-08-10, and a cold
+build measured 1m58.8s on an i7-5820K under WSL2 with the repository on a
+`/mnt` DrvFs mount — inside the cap by about a second. Raise or lower it with
+`-tool-timeout` or `GO2CS_TOOL_TIMEOUT` (a duration such as `15m`, or a whole
+number of seconds). A build that runs out of time is reported as the **Build
+go2cs** stage, not as a failed transpile: the converter never ran, so nothing
+was converted.
 
 ## .NET runtime sources
 
@@ -150,12 +168,13 @@ go test ./...
 go vet ./...
 ```
 
-The first conversion can take longer because go2cs is built lazily. Each submission gets a temporary
+The first conversion can take longer because go2cs is built lazily (above). Each submission gets a temporary
 Go module; the server runs `go mod tidy`, recursively converts imported third-party packages, and keeps
 the generated app/dependency graph isolated from the selected runtime tree. The Code and Project tabs
 still show only the submitted app. Converted workspaces expire after 30 minutes. The request body is
-limited to 256 KiB; normal tool stages have a 20-second timeout and dependency resolution has two minutes
-for an initial download. Aborting the Run request cancels the active build or program.
+limited to 256 KiB; normal tool stages have a 20-second timeout, dependency resolution has two minutes
+for an initial download, and the one-time converter build has ten. Aborting the Run request cancels the
+active build or program.
 
 ## Integration design
 

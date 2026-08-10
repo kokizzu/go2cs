@@ -39,8 +39,10 @@ func TestPipelineResolvesAndRecursivelyConvertsDependency(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		converterName += ".exe"
 	}
-	// A cache left by an older checkout must never be trusted across server processes. The first
-	// conversion rebuilds the current checkout and replaces this deliberately invalid executable.
+	// A cached executable is never trusted on its path alone. This one is newer than every
+	// converter source, so only the identity probe can reject it -- and it must, because a file
+	// that cannot run is not the converter the pipeline is about to drive. The first conversion
+	// therefore rebuilds the current checkout over it.
 	if err := os.WriteFile(filepath.Join(runner.cacheDir, converterName), []byte("stale converter"), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -94,6 +96,16 @@ func main() {}
 	}
 	if !minimal.Successful {
 		t.Fatalf("one-package conversion failed:\n%s", minimal.Stage.Output)
+	}
+
+	// The other direction of the same rule: a restart must not pay for the converter again. The
+	// executable the first process just built is newer than every converter source and identifies
+	// itself, so a fresh runner over the same cache reports no build stage at all.
+	restarted := newPipelineRunner(repoRoot)
+	defer restarted.close()
+	restarted.cacheDir = runner.cacheDir
+	if _, stage := restarted.ensureGo2CS(context.Background()); stage != nil {
+		t.Fatalf("a restart rebuilt a converter that matches the checkout: %+v", stage)
 	}
 }
 

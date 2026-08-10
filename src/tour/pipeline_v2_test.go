@@ -182,6 +182,221 @@ func TestCollectCSharpRejectsMetadataOnlyOutput(t *testing.T) {
 	}
 }
 
+func TestParseTimeoutSetting(t *testing.T) {
+	for _, testCase := range []struct {
+		value string
+		want  time.Duration
+	}{
+		{"", 0},
+		{"15m", 15 * time.Minute},
+		{"90s", 90 * time.Second},
+		// A bare number is seconds, the unit every sibling GO2CS_*_TIMEOUT variable is written in.
+		{"600", 10 * time.Minute},
+		{" 5m ", 5 * time.Minute},
+	} {
+		got, err := parseTimeoutSetting(testCase.value)
+		if err != nil {
+			t.Fatalf("parseTimeoutSetting(%q) failed: %v", testCase.value, err)
+		}
+		if got != testCase.want {
+			t.Fatalf("parseTimeoutSetting(%q) = %s, want %s", testCase.value, got, testCase.want)
+		}
+	}
+
+	// A budget that cannot guard anything is a usage error, never a silent zero: a zero budget
+	// expires before its child starts, so every host would look too slow to build the converter.
+	for _, value := range []string{"0", "-5m", "later", "600000"} {
+		if got, err := parseTimeoutSetting(value); err == nil {
+			t.Fatalf("parseTimeoutSetting(%q) = %s, want an error", value, got)
+		}
+	}
+}
+
+func TestResolveToolTimeoutPrefersFlagThenEnvironment(t *testing.T) {
+	t.Setenv(toolTimeoutEnv, "45m")
+	if got := resolveToolTimeout(0); got != 45*time.Minute {
+		t.Fatalf("environment budget = %s, want 45m", got)
+	}
+	if got := resolveToolTimeout(90 * time.Second); got != 90*time.Second {
+		t.Fatalf("supplied budget = %s, want the caller's 90s to win over the environment", got)
+	}
+
+	// An unreadable variable may have been inherited from a shell the operator never set up, so it
+	// warns and falls back rather than refusing to start.
+	t.Setenv(toolTimeoutEnv, "whenever")
+	if got := resolveToolTimeout(0); got != defaultToolTimeout {
+		t.Fatalf("malformed environment budget = %s, want the default %s", got, defaultToolTimeout)
+	}
+
+	t.Setenv(toolTimeoutEnv, "")
+	if got := resolveToolTimeout(0); got != defaultToolTimeout {
+		t.Fatalf("unset budget = %s, want the default %s", got, defaultToolTimeout)
+	}
+
+	runner := newPipelineRunner(t.TempDir(), pipelineOptions{toolTimeout: 3 * time.Minute})
+	defer runner.close()
+	if got := runner.buildToolTimeout(); got != 3*time.Minute {
+		t.Fatalf("runner budget = %s, want the configured 3m", got)
+	}
+	if got := newPipelineRunner(t.TempDir()).buildToolTimeout(); got != defaultToolTimeout {
+		t.Fatalf("default runner budget = %s, want %s", got, defaultToolTimeout)
+	}
+}
+
+// A cached converter is reused only while it is newer than the checkout it will be driven with,
+// which is the freshness test the behavioral harnesses apply to go2cs.exe.
+func TestConverterIsFreshComparesAgainstEveryConverterSource(t *testing.T) {
+	root := t.TempDir()
+	sourceDir := filepath.Join(root, "go2cs")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "internal"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sources := []string{
+		filepath.Join(sourceDir, "main.go"),
+		filepath.Join(sourceDir, "go.mod"),
+		filepath.Join(sourceDir, "internal", "nested.go"),
+	}
+	for _, source := range sources {
+		if err := os.WriteFile(source, []byte("package main"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	target := filepath.Join(root, "go2cs.bin")
+	if err := os.WriteFile(target, []byte("binary"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	built := time.Now()
+	if err := os.Chtimes(target, built, built); err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		converted := built.Add(-time.Hour)
+		if err := os.Chtimes(source, converted, converted); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !converterIsFresh(target, sourceDir) {
+		t.Fatal("a converter newer than every source was treated as stale")
+	}
+
+	// Any one source moving ahead of the binary is enough, including a nested one and a dependency
+	// change that leaves every .go file untouched.
+	for _, source := range sources {
+		touched := built.Add(time.Minute)
+		if err := os.Chtimes(source, touched, touched); err != nil {
+			t.Fatal(err)
+		}
+		if converterIsFresh(target, sourceDir) {
+			t.Fatalf("a converter older than %s was reused", filepath.Base(source))
+		}
+		restored := built.Add(-time.Hour)
+		if err := os.Chtimes(source, restored, restored); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if converterIsFresh(filepath.Join(root, "absent.bin"), sourceDir) {
+		t.Fatal("a missing converter was reported fresh")
+	}
+	if converterIsFresh(target, filepath.Join(root, "absent")) {
+		t.Fatal("a converter was reported fresh against a source tree that does not exist")
+	}
+}
+
+// Timestamps cannot tell a converter from a file that merely occupies the cache path, so a cached
+// executable is also made to identify itself before it is trusted.
+func TestConverterIdentifiesRejectsAnythingButTheConverter(t *testing.T) {
+	root := t.TempDir()
+	sourceDir := filepath.Join(root, "go2cs")
+	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(sourceDir, "main.go")
+	if err := os.WriteFile(source, []byte("package main"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Dated deliberately: two files written in one clock tick carry the same timestamp, which
+	// reads as stale and would make this test pass for the wrong reason.
+	written := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(source, written, written); err != nil {
+		t.Fatal(err)
+	}
+
+	imposter := filepath.Join(root, "go2cs")
+	if filepath.Separator == '\\' {
+		imposter += ".exe"
+	}
+	if err := os.WriteFile(imposter, []byte("stale converter"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	if converterIdentifies(context.Background(), imposter) {
+		t.Fatal("a file that is not the converter identified itself as one")
+	}
+	if !converterIsFresh(imposter, sourceDir) {
+		t.Fatal("test setup: the imposter should be newer than the sources, so only the probe rejects it")
+	}
+	if converterIsCurrent(context.Background(), imposter, sourceDir) {
+		t.Fatal("a newer-but-unrunnable file was accepted as the current converter")
+	}
+}
+
+// A converter build that fails keeps its own identity all the way to the interface. It used to be
+// rewritten to the transpile stage, which reported a build that produced no converter as a failed
+// conversion of source the converter had never been handed.
+func TestEnsureGo2CSReportsTheBuildAsItsOwnStage(t *testing.T) {
+	t.Setenv("GO2CS_BIN", "")
+
+	// A repository root with no src/go2cs fails the build immediately, so this costs no compile.
+	runner := newPipelineRunner(t.TempDir())
+	defer runner.close()
+
+	_, stage := runner.ensureGo2CS(context.Background())
+	if stage == nil {
+		t.Fatal("no stage was reported for a converter build that cannot run")
+	}
+	if stage.Status == "passed" {
+		t.Fatalf("build of an absent converter passed: %s", stage.Output)
+	}
+	if stage.ID != "tool" || stage.Label != "Build go2cs" {
+		t.Fatalf("stage identity = %q/%q, want tool/Build go2cs", stage.ID, stage.Label)
+	}
+}
+
+func TestFormatConverterBuildTranscriptNamesTheBuildNotTheConversion(t *testing.T) {
+	timedOut := formatConverterBuildTranscript("module diagnostic", "go: downloading golang.org/x/mod",
+		"<repo>/src/tour/.cache/go2cs", "failed", true)
+	for _, want := range []string{
+		"$ go mod tidy",
+		"module diagnostic",
+		"$ go build -o <repo>/src/tour/.cache/go2cs ./src/go2cs",
+		"go: downloading golang.org/x/mod",
+		"the converter never ran",
+		"-tool-timeout",
+		toolTimeoutEnv,
+		"GO2CS_BIN",
+	} {
+		if !strings.Contains(timedOut, want) {
+			t.Fatalf("timed-out transcript missing %q:\n%s", want, timedOut)
+		}
+	}
+	if strings.Contains(timedOut, "Transpile") {
+		t.Fatalf("a converter build that never ran was reported as a transpile:\n%s", timedOut)
+	}
+
+	failed := formatConverterBuildTranscript("", "undefined: symbol", "go2cs", "failed", false)
+	if !strings.Contains(failed, "Building go2cs failed.") || strings.Contains(failed, "-tool-timeout") {
+		t.Fatalf("failed build transcript = %q, want a plain failure with no budget advice", failed)
+	}
+
+	killed := formatConverterBuildTranscript("", "", "go2cs", "killed", false)
+	if !strings.Contains(killed, "Building go2cs killed.") {
+		t.Fatalf("killed build transcript = %q", killed)
+	}
+}
+
 func TestTourAppOutputDir(t *testing.T) {
 	root := filepath.FromSlash("C:/temp/output")
 	want := filepath.Join(root, "src", "tour.local", "session")
