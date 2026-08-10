@@ -10,7 +10,8 @@
 #
 #   ./run-validated-sweep.ps1                       # every banked package
 #   ./run-validated-sweep.ps1 -Filter compress      # just the ones whose path contains "compress"
-#   ./run-validated-sweep.ps1 -TestTimeout 15m      # slower machine / contended box
+#   ./run-validated-sweep.ps1 -TestTimeout 15m      # slower machine / contended box (a value LARGER
+#                                                   #   than a $longTimeouts floor raises that too)
 #   ./run-validated-sweep.ps1 -SkipBuild            # reuse the current go2cs.exe as-is
 [CmdletBinding()]
 param(
@@ -89,6 +90,55 @@ $pass = 0; $fail = 0; $failed = @(); $started = Get-Date
 # not from $?, so a non-terminating preference is the correct setting here.
 $ErrorActionPreference = 'Continue'
 
+# Go duration text -> TimeSpan, so two -test-timeout values can be COMPARED rather than merely
+# swapped for one another. Returns $null for anything it cannot read -- the empty string, a bare
+# number with no unit, an unknown unit -- all of which the converter would reject too; every caller
+# treats $null as "the comparison cannot be made, keep the safer value".
+function ConvertTo-GoDuration([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $null }
+
+    $text = $value.Trim()
+    $sign = 1
+    if ($text.StartsWith('-')) { $sign = -1; $text = $text.Substring(1) }
+    elseif ($text.StartsWith('+')) { $text = $text.Substring(1) }
+    if ($text -eq '0') { return [TimeSpan]::Zero }
+
+    # TICKS per unit, not milliseconds: [TimeSpan]::FromMilliseconds rounds to the nearest whole
+    # millisecond on .NET Framework (PS 5.1), which silently flattens every sub-second value to zero.
+    # Those units are here for completeness -- Go accepts them, so a value naming one must not be
+    # misread as unparseable and demoted to the floor. The two micro signs Go accepts are spelled by
+    # code point so this file needs no non-ASCII literal.
+    $perUnit = @{
+        'ns' = 0.01; 'us' = 10.0; "$([char]0xB5)s" = 10.0; "$([char]0x3BC)s" = 10.0
+        'ms' = 10000.0; 's' = 1e7; 'm' = 6e8; 'h' = 3.6e10
+    }
+
+    $ticks = 0.0
+    $consumed = 0
+
+    foreach ($part in [regex]::Matches($text, '(\d+(?:\.\d*)?|\.\d+)([^\d.]+)')) {
+        # Parts must tile the string end to end: a gap means it holds something that is not a
+        # <number><unit> pair, which is a value this script must not pretend to understand.
+        if ($part.Index -ne $consumed) { return $null }
+
+        $unit = $part.Groups[2].Value
+        if (-not $perUnit.ContainsKey($unit)) { return $null }
+
+        # InvariantCulture explicitly: a fractional duration ('1.5h') must not read as 15 under a
+        # comma-decimal culture.
+        $ticks += [double]::Parse($part.Groups[1].Value, [Globalization.CultureInfo]::InvariantCulture) * $perUnit[$unit]
+        $consumed = $part.Index + $part.Length
+    }
+
+    # Also catches "no parts matched at all", since $text is non-empty by here.
+    if ($consumed -ne $text.Length) { return $null }
+    # A duration too large for TimeSpan is unreadable rather than fatal -- Go rejects one too, and
+    # $null routes it to the caller's safe branch instead of throwing mid-sweep.
+    if ($ticks -gt [double][long]::MaxValue) { return $null }
+
+    return [TimeSpan]::FromTicks([long][math]::Round($sign * $ticks))
+}
+
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
@@ -110,6 +160,22 @@ $ErrorActionPreference = 'Continue'
 # which pays ~22x for non-inlined golib accessors: 391 s measured solo on the reference desktop,
 # 774 s on an i7-5820K -- which leaves r57c's original 20m only ~35% headroom on slow hardware, so
 # the entry is 30m: a deadline is a safety net against a hung run, never a performance assumption.
+#
+# PRECEDENCE -- the table is a FLOOR, not an override (2026-08-10). The effective budget is the
+# LONGER of the entry and an explicitly-passed -TestTimeout, so a larger -TestTimeout raises these
+# four like it raises everything else. It used to win unconditionally, which meant -TestTimeout was
+# silently ignored for exactly the packages that need a long budget: an i7-5820K desktop reported
+# hash/maphash and crypto/dsa as FAIL "package timeout after 00:30:00", and `-TestTimeout 60m` died
+# at 30:00 again -- while driving the same package's pipeline by hand at 60m validated its banked
+# 22/22. A SMALLER -TestTimeout still loses to the table: under-budgeting these four is the exact
+# false red the table exists to prevent, and the usage line above advertises the flag for slow boxes.
+# Every value here is MACHINE-CALIBRATED against the reference desktop (archive/zip's 391 s vs the
+# same suite's 774 s on the i7-5820K is the measured spread), so on slower hardware RAISE them with
+# -TestTimeout rather than editing the table -- these numbers are the floor a fast box needs, and a
+# slow box needing more is not a reason to move the number everyone else runs under. Measured proof
+# of both halves, i7-5820K solo 2026-08-10: `-Filter maphash -TestTimeout 60m` validated 22/22 in
+# **2,406 s (40.1 min)** -- comfortably past the 30m floor that had been reporting it as FAIL, and
+# comfortably short of a raise anyone would want made permanent for every other box.
 $longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m'; 'crypto/dsa' = '30m'; 'archive/zip' = '30m' }
 
 foreach ($row in $rows) {
@@ -120,7 +186,16 @@ foreach ($row in $rows) {
     $outDir = Join-Path $src "core/$pkg"
     $goDir = Join-Path $goroot "src/$pkg"
     $label = '{0,-34}' -f $pkg
-    $pkgTimeout = if ($longTimeouts.ContainsKey($pkg)) { $longTimeouts[$pkg] } else { $TestTimeout }
+    # The longer of the two, passed VERBATIM -- whichever string wins reaches the converter exactly
+    # as it was written, never re-formatted through the TimeSpan the comparison went by.
+    $pkgTimeout = $TestTimeout
+
+    if ($longTimeouts.ContainsKey($pkg)) {
+        $floor = ConvertTo-GoDuration $longTimeouts[$pkg]
+        $asked = ConvertTo-GoDuration $TestTimeout
+        $raisesTheFloor = ($null -ne $asked) -and ($null -ne $floor) -and ($asked -gt $floor)
+        if (-not $raisesTheFloor) { $pkgTimeout = $longTimeouts[$pkg] }
+    }
 
     # -go2cspath is pinned to $src (this script's own directory) rather than inherited from the
     # ambient GO2CSPATH. A -tests run already self-locates the root from its output path, which lands
