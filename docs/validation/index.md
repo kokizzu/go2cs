@@ -38,6 +38,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto/md5` | [`crypto.md5.md`](current/crypto.md5.md) | [`src/core/crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) |
 | `crypto/rand` | [`crypto.rand.md`](current/crypto.rand.md) | [`src/core/crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) |
 | `crypto/rc4` | [`crypto.rc4.md`](current/crypto.rc4.md) | [`src/core/crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) |
+| `crypto/rsa` | [`crypto.rsa.md`](current/crypto.rsa.md) | [`src/core/crypto/rsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rsa) |
 | `crypto/sha1` | [`crypto.sha1.md`](current/crypto.sha1.md) | [`src/core/crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha1) |
 | `crypto/sha256` | [`crypto.sha256.md`](current/crypto.sha256.md) | [`src/core/crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256) |
 | `crypto/sha512` | [`crypto.sha512.md`](current/crypto.sha512.md) | [`src/core/crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) |

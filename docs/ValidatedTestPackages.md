@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **125 / 215 testable packages validated — 58.1%**
+> ### Phase 4 progress: **126 / 215 testable packages validated — 58.6%**
 >
-> **14,083 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
+> **14,642 matching test verdicts · 51 disclosed** *(updated 2026-08-10 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -62,6 +62,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) | 11 | 1 | MD5 — the golden digest matrix, binary marshal/unmarshal of a half-written state, large-input block handling, and `cryptotest.TestHash`'s stateful-write matrix; alloc-profile disclosure. · [proof](validation/current/crypto.md5.md) |
 | [`crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) | 298 |  | Cryptographically secure random integers over the real `math/big` arithmetic — `Int`'s rejection-sampled bit-mask loop across the whole modulus matrix, `Prime` generation and its degenerate bit-length errors, the `Read`/`Reader` surface, and the empty-max panic contract. · [proof](validation/current/crypto.rand.md) |
 | [`crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) | 2 | | RC4 keystream golden vectors across every key length, and the in-place `XORKeyStream` block matrix. · [proof](validation/current/crypto.rc4.md) |
+| [`crypto/rsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rsa) | 559 | 1 | RSA end to end over the converted `math/big` and `crypto/internal/bigmod` — key generation at every size including multi-prime, PKCS#1 v1.5 and OAEP encrypt/decrypt with and without a blinding source, PSS sign/verify across every salt-length mode against the OpenSSL and RSA-Labs golden vectors, key validation and the small-key/overlong/unpadded rejection paths, and the several-hundred-case `TestEverything` matrix over the key-size × hash × scheme cross-product; alloc-profile disclosure. · [proof](validation/current/crypto.rsa.md) |
 | [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. · [proof](validation/current/crypto.sha1.md) |
 | [`crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256) | 23 | 1 | SHA-224/256 golden vectors and `cryptotest.TestHash`'s stateful-write matrix. · [proof](validation/current/crypto.sha256.md) |
 | [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. · [proof](validation/current/crypto.sha512.md) |

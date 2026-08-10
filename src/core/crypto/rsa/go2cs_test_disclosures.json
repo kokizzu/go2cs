@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAllocations",
+      "class": "alloc-profile",
+      "signature": "expected less than 10 allocations, got ",
+      "reason": "budget-10 AllocsPerRun assert around DecryptPKCS1v15, measured as a true object COUNT rather than the byte figure this shim reported before r58a: 34,075,600 go2cs-runtime object allocations over 100 runs = 340,756 per run (2,851,392,000 bytes, an 83.7 B/object average consistent with the box model). Five orders of magnitude from the budget, so no residual in golib's census - which is a lower bound, compiler-emitted closures and interface boxing in converted code being outside it - can move the verdict. The divergence is the ж<T> heap-box allocation model, decomposed to the byte for the same shapes in r56d (crypto/internal/nistec): Go's escape analysis proves the address-taken bigmod/nat locals non-escaping and keeps them stack-resident, while the CLR cannot hand out an interior or stack pointer that outlives its frame, so every `&x` on the modular-arithmetic path is a heap box plus the eager one-element pinnable slot its address stability requires. r56d checked the r39-killed waste classes explicitly and found them absent, so this is the architecture's floor and not a defect in this package's conversion. See docs/phase4/DESIGN-allocation-counting.md for the counter's site census and coverage boundary."
+    }
+  ]
+}
