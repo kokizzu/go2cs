@@ -13178,6 +13178,30 @@ key). Tokens are order keys consistent with pointer equality, never an identity 
 a recorded fidelity residual with no consumer. The banked fmtsort suite (TestCompare/TestOrder)
 is the operational guard.
 
+**…except a TYPE DESCRIPTOR pointer, which orders by the type's NAME (2026-08-10).** The same
+`Value.Pointer()` carries one ordering that is visible in ordinary program output rather than only
+in a map of pointers: fmtsort's `reflect.Interface` arm orders interface-kinded map keys by dynamic
+type, and it does that by comparing the two descriptors as pointers —
+`compare(reflect.ValueOf(a.Elem().Type()), reflect.ValueOf(b.Elem().Type()))` recurses into the
+`ΔPointer` arm — so this token *is* the printed order of `fmt.Println(map[I]int{…})`. Go answers with
+the linker's type-section address, which is unspecified by its own admission (fmtsort's
+`TestInterface`: "the relative ordering of types is unspecified", asserting only that same-type keys
+group) and is not a function of anything the managed side can see. The identity-hash fallback above is
+*worse* than unspecified for this case — CoreCLR draws an object's identity hash from a per-thread
+PRNG, so the token is fixed per build but unrelated to the type, and the printed order flips whenever
+an unrelated edit shifts how many hashes are drawn first. `reflectPointerToken` therefore routes a
+`ж<rtype>`/`ж<abi.Type>` through `typeDescriptorOrderToken`, which packs the leading `IntPtr.Size`
+bytes of the descriptor's Go name (the one `Type.String()` prints) big-endian, so comparing tokens
+arithmetically compares the names lexically: **types that print alike token alike, and types that
+print differently order by that printed name** — stable across builds, runs and unrelated edits.
+Names agreeing over the whole packed prefix tie and fall through to fmtsort's concrete-value arm
+(Go's own "no good answer" `-1`, settled deterministically by `SortStableFunc`'s stability); matching
+Go's layout order for three or more key types is not on offer and would not be a property Go
+promises. Guarded by the banked fmtsort suite (TestInterface's grouping) and the
+`InterfaceInheritance` behavioral test's output comparison, which is what caught the PRNG model
+landing tails. Full derivation:
+[`docs/phase4/DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md).
+
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /
 `v.pointer()`) — eface addresses the managed bridge never populates — so the first slice/map/pointer

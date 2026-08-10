@@ -483,3 +483,63 @@ sound for the same reason `canonType`'s intern above is: type descriptors are pe
 type's own attributes cannot change. Full measurement and the two remaining non-attribute residuals
 are in [`DESIGN-iface-shell-caching.md`](DESIGN-iface-shell-caching.md) §11.2, which is where the
 audit that found them lives.
+
+## Fix — a type descriptor's order token is its NAME, not its box identity (2026-08-10)
+
+The section above made two `reflect.Type`s for one Go type compare **equal**. This one is about what
+happens next, when they compare **unequal**: `internal/fmtsort.compare`'s `reflect.Interface` arm
+orders interface-kinded map keys by their dynamic types, and it does that by comparing the two type
+descriptors as POINTERS —
+
+```go
+c := compare(reflect.ValueOf(aVal.Elem().Type()), reflect.ValueOf(bVal.Elem().Type()))
+```
+
+`reflect.ValueOf(aType)` is a `*reflect.rtype`, so `compare` recurses into its `reflect.Pointer` arm
+and returns `cmp.Compare(aVal.Pointer(), bVal.Pointer())`. That token is therefore not an internal
+detail: it **is** the printed order of `fmt.Println(map[I]int{…})`.
+
+Go answers with the descriptor's machine address — the linker's type-section layout. That ordering is
+deliberately unspecified: fmtsort's own `TestInterface` says *"the relative ordering of types is
+unspecified"* and asserts only that same-type keys form contiguous sorted subgroups. It is also not a
+function of anything the managed side can observe; measured against Go 1.23.1, one program lays
+`main.Mango` before `main.Zebra` before `main.Apple` while another lays the same three names in
+alphabetical order.
+
+The managed bridge has no addresses, so `reflect.Value.Pointer` answers `ж<T>.PointerOrderToken`,
+which for a descriptor box composes `RuntimeHelpers.GetHashCode` of the underlying `abi.Type`. That
+is **worse than unspecified**. CoreCLR draws an object's identity hash from a per-thread PRNG, so the
+token is fixed for a given build but bears no relation to the type it describes, and the printed
+order flips whenever an unrelated edit changes how many hashes are drawn before these two. That is a
+coin flip re-tossed on every commit, and it landed tails: `tests/Behavioral/InterfaceInheritance`
+(a `map[I]int` keyed by `main.T1`/`main.T2`, both rendering as `""`, so only the values reveal the
+order) was graduated to output comparison green at `c87a7f145` and printed `map[:2 :1]` against Go's
+`map[:1 :2]` by `c7b297c87`. No commit in that window broke it — bisecting names a bystander. The
+demonstration is direct: adding a diagnostic that merely touches `reflect` BEFORE the `Println` moves
+both tokens and restores the correct order.
+
+**Fix:** `reflectPointerToken` (`reflect/value_impl.cs`) now routes a pointer to a type descriptor —
+`ж<rtype>` or `ж<abi.Type>` — through `typeDescriptorOrderToken`, which packs the leading
+`IntPtr.Size` bytes of the type's Go name big-endian, so comparing tokens arithmetically compares the
+names lexically. The name is the one `Type.String()` prints (`GoReflect.GoTypeName` over the
+descriptor's `sysType` + `arrayDims`), which gives the invariant worth stating: **types that print
+alike token alike, and types that print differently order by that printed name.** Same-type grouping
+is therefore exact, and the order is stable across builds, runs and unrelated edits — the one
+property the address model cannot offer and the PRNG model actively destroys.
+
+Two bounded residuals, both deliberate:
+
+- **Names agreeing over the whole packed prefix tie** (8 bytes on a 64-bit host). `compare` then
+  falls through to `compare(aVal.Elem(), bVal.Elem())`, the same arm Go reaches for two keys of one
+  type; for two *different* types that arm returns `-1` either way, so the pair's relative order is
+  settled by `slices.SortStableFunc`'s stability rather than by the comparison. Deterministic, which
+  is the property being bought here.
+- **Matching Go exactly is not on offer** for three or more distinct key types, since Go's order is
+  its linker's. `InterfaceInheritance` agrees because `main.T1` precedes `main.T2` both ways; a
+  program whose layout order diverges from name order would not, and a behavioral test asserting one
+  would be asserting something Go does not promise.
+
+Only two call sites in the corpus read `reflect.Value.Pointer`: `internal/fmtsort` (this ordering,
+validated 3/3 including `TestInterface`'s grouping assertion) and
+`vendor/golang.org/x/crypto/internal/alias`, which compares slice-element pointers and never reaches
+the descriptor branch.

@@ -652,6 +652,11 @@ private static uintptr reflectPointerToken(ΔValue v) {
     if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
         return 0;
     }
+    // A TYPE DESCRIPTOR pointer is ordered by the type it describes, never by its box identity —
+    // see typeDescriptorOrderToken.
+    if (typeDescriptorOrderToken(cur) is {} descriptorToken) {
+        return descriptorToken;
+    }
     // Pointer-bearing golib values answer their own stable, order-consistent address token
     // (equal pointers token equally; same-storage element pointers order by index; channel
     // copies share their core's token — internal/fmtsort orders map keys by this). Anything
@@ -661,6 +666,56 @@ private static uintptr reflectPointerToken(ΔValue v) {
         IChannel c => ((uintptr)c.PointerOrderToken),
         _ => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur))
     };
+}
+
+// typeDescriptorOrderToken answers the order token for a pointer to a TYPE DESCRIPTOR (*rtype or
+// *abi.Type), which is the one pointer whose ordering is OBSERVABLE in ordinary program output:
+// internal/fmtsort compares interface-kinded map keys by their dynamic types, and it does that by
+// comparing the two descriptor pointers arithmetically (`compare(reflect.ValueOf(a.Elem().Type()),
+// …)` lands in the ΔPointer branch), so this token IS the printed order of
+// `fmt.Println(map[I]int{…})`.
+//
+// Go answers with the descriptor's machine address, i.e. the linker's type-section layout. That is
+// deliberately unspecified — fmtsort's own TestInterface says "the relative ordering of types is
+// unspecified" and asserts only that same-type keys form contiguous groups — and it is not a
+// function of anything the managed side can see (measured: Go orders `main.Apple` before
+// `main.Mango` in one program and after it in another).
+//
+// The box identity hash the general path falls back to is WORSE than unspecified, though: it is
+// drawn from a per-thread PRNG, so it is fixed for a given build but bears no relation to the type,
+// and the printed order flips whenever an unrelated edit shifts how many hashes are drawn before
+// these. Order descriptors by their Go type NAME instead — the only key that is stable across
+// builds, runs and unrelated edits — by packing the name's leading bytes big-endian, so comparing
+// tokens arithmetically compares the names lexically. The name is the one `Type.String()` prints,
+// so types that print alike token alike and same-type grouping is exact.
+//
+// Names agreeing over the whole packed prefix tie; fmtsort then falls through to its concrete-value
+// comparison, the same arm Go reaches for two keys of one type. Returns null for anything that is
+// not a descriptor, and for a descriptor with no managed type or an empty name, since zero is the
+// reserved nil token.
+private static uintptr? typeDescriptorOrderToken(object box) {
+    System.Type? st = null;
+    nint[]? dims = null;
+    switch (box) {
+    case ж<rtype> Ꮡrt:
+        st = Ꮡrt.Value.t.sysType;
+        dims = Ꮡrt.Value.t.arrayDims;
+        break;
+    case ж<abi.Type> Ꮡt:
+        st = Ꮡt.Value.sysType;
+        dims = Ꮡt.Value.arrayDims;
+        break;
+    }
+    if (st is null) {
+        return null;
+    }
+    byte[] name = System.Text.Encoding.UTF8.GetBytes(GoReflect.GoTypeName(st, dims));
+    nuint token = 0;
+    for (int i = 0; i < System.IntPtr.Size; i++) {
+        nuint b = i < name.Length ? name[i] : (nuint)0;
+        token = (token << 8) | b;
+    }
+    return token == 0 ? null : ((uintptr)token);
 }
 
 // The managed backing for a MapIter: the map's enumerator (a golib map<K,V> enumerates as
