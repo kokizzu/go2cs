@@ -8,6 +8,7 @@
 // ReSharper disable InconsistentNaming
 
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace go;
 
@@ -53,7 +54,8 @@ namespace go;
 ///   </description></item>
 ///   <item><description>
 ///     allocations INTERNAL to a BCL method golib calls (<c>Encoding.GetString</c>'s working buffers,
-///     a <c>List&lt;T&gt;</c> growth, a <c>Task</c> the thread pool mints);
+///     a <c>List&lt;T&gt;</c> growth, a <c>Task</c> the thread pool mints) — golib charges the object
+///     it asked for, not the ones that object allocates for itself;
 ///   </description></item>
 ///   <item><description>
 ///     allocations in hand-owned <c>*_impl.cs</c> package code that does not route through golib.
@@ -177,6 +179,21 @@ public static class AllocationCounter
         return new T[length];
     }
 
+    /// <inheritdoc cref="NewArray{T}(int)"/>
+    /// <remarks>
+    /// Takes <see cref="ulong"/> unchanged rather than narrowing to <see cref="nint"/>, so that an
+    /// absurd length raises exactly the exception <c>new T[length]</c> always raised here — a cast
+    /// would wrap it negative and change which one.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T[] NewArray<T>(ulong length)
+    {
+        if (s_enabled)
+            t_count++;
+
+        return new T[length];
+    }
+
     /// <summary>
     /// Copies <paramref name="source"/> into a freshly allocated array and charges it.
     /// </summary>
@@ -193,5 +210,54 @@ public static class AllocationCounter
             t_count++;
 
         return source.ToArray();
+    }
+
+    /// <summary>
+    /// Materializes a <see cref="string"/> from UTF-16 characters and charges it.
+    /// </summary>
+    /// <remarks>
+    /// The empty case is charged nothing: <c>new string(char[0])</c> returns the interned
+    /// <see cref="string.Empty"/>, so no object reaches the heap — the same rule
+    /// <see cref="CopyOf{T}"/> applies to <c>Array.Empty</c>. A null array is the empty case too,
+    /// which the pattern below handles rather than dereferencing: <c>new string((char[])null)</c>
+    /// yields <see cref="string.Empty"/>, and counting must never turn a legal call into a throw.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string NewString(char[] value)
+    {
+        if (s_enabled && value is { Length: > 0 })
+            t_count++;
+
+        return new string(value);
+    }
+
+    /// <summary>
+    /// Decodes UTF-8 <paramref name="utf8"/> bytes into a <see cref="string"/> and charges it.
+    /// </summary>
+    /// <inheritdoc cref="NewString(char[])" path="/remarks"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string Utf8ToString(scoped ReadOnlySpan<byte> utf8)
+    {
+        if (s_enabled && utf8.Length > 0)
+            t_count++;
+
+        return Encoding.UTF8.GetString(utf8);
+    }
+
+    /// <summary>
+    /// Encodes <paramref name="value"/> to a freshly allocated UTF-8 byte array and charges it.
+    /// </summary>
+    /// <remarks>
+    /// This is the site every C# string literal reaching a <c>@string</c> passes through, so it is
+    /// the single busiest member here. The empty case is charged nothing for the reason
+    /// <see cref="CopyOf{T}"/> gives.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte[] Utf8ToBytes(string? value)
+    {
+        if (s_enabled && value is { Length: > 0 })
+            t_count++;
+
+        return Encoding.UTF8.GetBytes(value ?? "");
     }
 }

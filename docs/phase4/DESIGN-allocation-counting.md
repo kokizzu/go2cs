@@ -1,7 +1,9 @@
 # The go2cs runtime allocation counter — site census and coverage statement
 
-> Landed r58a (2026-08-09). Companion to `src/core/golib/AllocationCounter.cs` (the mechanism) and
-> `testing.AllocsPerRun` in `src/core/testing/testing.cs` (its only consumer). Read
+> Landed r58a (2026-08-09); the `@string` census §5 item 3 deferred was taken in the same lane once
+> r57c's `@string` window merged (2026-08-10). Companion to `src/core/golib/AllocationCounter.cs`
+> (the mechanism), `testing.AllocsPerRun` in `src/core/testing/testing.cs` (its only consumer) and
+> `src/tests/GolibTests/AllocationCounterTests.cs` (the guard that holds §4 to its word). Read
 > [`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md)'s AllocsPerRun rows
 > for the packages this unblocks and the ones it does not.
 
@@ -85,6 +87,22 @@ rather than an insertion**: a site cannot allocate through them and forget to ch
 | `channel.cs` | `ChanCore<T>(nint)` | +1 ring buffer when buffered |
 | `channel.cs` | blocking send / blocking receive park | 2 (waiter + its park semaphore) |
 | `channel.cs` | blocking select | 2 (select state + semaphore) + 1 waiter array + 2 per live case |
+| `string.cs` | `@string(ReadOnlySpan<byte>)`, `@string(IByteSeq<byte>)` | 1 backing copy |
+| `string.cs` | `@string(char[])` | 2 (the intermediate UTF-16 `string`, then its UTF-8 backing) |
+| `string.cs` | `@string(string?)` — the site every C# literal passes through | 1 UTF-8 backing |
+| `string.cs` | `ToString()` / `implicit operator string` | 1 materialized `System.String` |
+| `string.cs` | `ToRunes()` | 1 copy, +1 when the estimate exceeds the stackalloc threshold |
+| `string.cs` | `buffer` (`unsafe.StringData`) | 1 `PinnedBuffer`, +1 materialized copy on a windowed string |
+| `string.cs` | `operator +` ×3 (`@string` / `ReadOnlySpan<byte>` operands) | 1 result buffer |
+| `string.cs` | `implicit operator slice<byte>`, `implicit operator byte[]` — Go's copying `[]byte(s)` | 1 copy |
+| `string.cs` | `slice<rune>` / `slice<char>` / `char[]` conversions | 1 materialized array |
+| `string.cs` | `GetEnumerator()` and the explicit `IEnumerable<rune>` / `IEnumerable<char>` forms | 1 enumerator |
+| `builtin.cs` | `ToUTF8Bytes(ReadOnlySpan<rune>)` | 1 copy, +1 when the estimate exceeds the stackalloc threshold |
+
+**`this[Range]` — Go's `s[a:b]` — charges NOTHING, and that is a RESULT rather than an omission.**
+Since r57c an `@string` is a WINDOW (backing + offset + length), so slicing one allocates nothing and
+copies nothing, exactly as in Go. Before that rewrite every sub-string copied, and this census would
+have carried its busiest site here.
 
 `Ꮡ(IArray<T>, index)` is the one site that charges an allocation emitted *outside* golib. A
 `slice<T>`/`array<T>` header is a struct, so `Ꮡ(s, i)` — the only shape the converter emits for Go's
@@ -111,14 +129,12 @@ structurally:
    growth buffers, `Encoding.GetString`'s working storage, a `SemaphoreSlim`'s internal objects, a
    `Task` the thread pool mints. golib charges the object it asked for, not the ones that object
    allocates for itself.
-3. **`@string` materialization — a DEFERRED gap, not a structural one.** `string.cs` has roughly a
-   dozen sites that materialize new `byte[]` storage (the `ReadOnlySpan`/`char[]`/`slice<byte>`
-   constructors, `Encoding.UTF8.GetBytes` for every C# literal, `this[Range]` for Go's `s[a:b]`, the
-   three `operator +` overloads, and the defensive `[]byte(s)` copies), plus `ToString()`. They are
-   **not instrumented in r58a** because a sibling lane (r57c) is rewriting that file's constructor
-   region wholesale this cycle, and taking it would have meant a merge conflict across fourteen
-   hunks. This is the one class that could be closed by ordinary work, and it should be, immediately
-   after r57c lands.
+3. ~~**`@string` materialization — a DEFERRED gap, not a structural one.**~~ **CLOSED** once r57c's
+   `@string` window landed, exactly as this section said it should be: the census above now covers
+   `string.cs`'s materializing constructors, `Encoding.UTF8.GetBytes`/`GetString`, `ToRunes`, the
+   three `operator +` overloads, the defensive `[]byte(s)` copies, the enumerator entry points and
+   `builtin.ToUTF8Bytes`. `this[Range]` needed no instrumentation at all — after r57c it allocates
+   nothing. What this changed in practice is recorded in §7.
 4. **Hand-owned `*_impl.cs` package code that does not route through golib.**
 
 golib's own reflection, adapter and enumerator machinery (the `ConcurrentDictionary` caches, the
@@ -157,12 +173,25 @@ the budget is one or two objects and the residual could be the difference:
 |---|---|---|
 | `crypto/rsa` `TestAllocations` | `allocs > 10` | Decision-grade. Five orders from the budget. |
 | `crypto/internal/nistec` `TestAllocations` | `want 0` | Decision-grade. r56d's byte-exact bill closed with `ж`/`array`/`slice` alone, so the uncounted classes are provably ~absent on this path. |
-| `log` `TestDiscard` | `at most 1` | **NOT decision-grade.** r56d measured 424 bytes; the path is dominated by `@string` and formatting closures, both uncounted. Blocked on §5 item 3. |
-| `net/http/internal` `TestChunkReaderAllocs` | `want 1` | **NOT decision-grade**, same reason. |
-| `log/slog/internal/buffer` `TestAlloc` | small budget | **NOT decision-grade**, same reason. |
+| `log` `TestDiscard` | `at most 1` | Re-measured with the `@string` census — see the row below. |
+| `net/http/internal` `TestChunkReaderAllocs` | `want 1` | Re-measured with the `@string` census. |
+| `log/slog/internal/buffer` `TestAlloc` | small budget | Re-measured with the `@string` census. |
 
-Reporting those three as bankable on a lower-bound count would be exactly the laundering r56d refused
-to do. They wait for the `@string` census.
+Reporting the bottom three as bankable on a *lower-bound* count near a budget of one would be exactly
+the laundering r56d refused to do, which is why they waited for the `@string` census rather than being
+disclosed on the partial one. With that census taken, what remains uncounted on their paths is the
+compiler-emitted class (§5 item 1) — structural, and the reason each is re-measured and reported
+rather than self-ruled.
+
+**The census gap the guard found.** `ByteSeqExtensions.ToSlice`/`ToGoString` — the `[]byte(s)` and
+`string(s)` conversions the converter emits for a `string | []byte`-constrained value — materialized
+their copies without charging them. A `parseRFC3339`-shaped body measured **192 B/parse and ZERO
+counted objects**, arithmetic that cannot close, which is precisely the failure mode r56d warned
+about. It is instrumented now and the shape charges exactly its six conversions. The lesson is that
+the census is only as good as what checks it, which is what
+`GolibTests/AllocationCounterTests.cs` is for: every row of §4 is asserted there as an exact object
+count, and the monotonicity invariant (`count ≤ bytes / 24`) that makes reporting the count in place
+of the byte figure safe is asserted across twelve shapes.
 
 ## 8. Overhead
 
@@ -180,6 +209,12 @@ that never runs a test pays one static `bool` read and one never-taken, perfectl
 and never touches the thread-static slot. **Counting on costs 11–15 %** on the tightest allocation
 loops — real, and the reason the counter is off by default and enabled only by
 `TestHost.Run`. The overhead does not distort the measurement, which is a delta.
+
+The table was taken on the `ж`/`slice` shapes before the `@string` census, and the census does not
+change its shape: every added site is the same one static read plus a never-taken branch when
+counting is off, and every one of them sits next to an allocation that already dominates it. The
+`@string` sites are if anything cheaper relative to their work — a `GetBytes` or a backing copy is
+far more expensive than the `ж` box the 11 % was measured against.
 
 The benchmark defeats .NET 9's stack-allocation optimization deliberately: with a literal `16` the
 `make` loop measured 0.187 ns/op because the backing array was never heap-allocated at all. The size

@@ -488,8 +488,8 @@ public static partial class testing_package
     /// <para>
     /// <b>Bytes are still measured, as the cross-check that keeps the count honest.</b> The counted
     /// set cannot be total (see <see cref="AllocationCounter"/>'s coverage statement: allocations
-    /// the C# compiler emits in converted code, BCL internals, and <c>@string</c> materialization
-    /// are outside it), so the count is never trusted on its own:
+    /// the C# compiler emits in converted code and BCL internals are outside it), so the count is
+    /// never trusted on its own:
     /// </para>
     /// <list type="bullet">
     ///   <item><description>
@@ -592,7 +592,7 @@ public static partial class testing_package
             return 0.0D;
 
         // Something allocated. If the counter saw none of it, the census missed this path
-        // (compiler-emitted closures in converted code, a BCL internal, an @string materialization)
+        // (compiler-emitted closures in converted code, or a BCL internal)
         // and the count is not usable: reporting its zero would turn a real allocation into a
         // passing assert. Fall back to the byte figure, which at least cannot understate.
         bool countUsable = AllocationCounter.Enabled && counted > 0L;
@@ -612,13 +612,13 @@ public static partial class testing_package
               "sites), which is the structural mirror of Go's runtime.MemStats.Mallocs. The CLR " +
               "publishes no in-process malloc counter (see the measured survey on " +
               "testing.AllocsPerRun). The count covers golib's sites only: allocations the C# " +
-              "compiler emits in converted code, BCL internals, and @string materialization are " +
-              "outside it, so this is a LOWER BOUND on the true object count."
+              "compiler emits in converted code (closures, params arrays, interface boxing) and " +
+              "BCL internals are outside it, so this is a LOWER BOUND on the true object count."
             : $"go2cs: testing.AllocsPerRun measured {allocated:N0} allocated BYTES over {runs:N0} " +
               "run(s) — the figure reported above is BYTES PER RUN, not an allocation count. The " +
               "go2cs runtime allocation counter charged none of it, so every object on this path " +
-              "was allocated outside golib (compiler-emitted closures in converted code, a BCL " +
-              "internal, or an @string materialization) and no count is available; bytes is what " +
+              "was allocated outside golib (compiler-emitted closures in converted code, or a " +
+              "BCL internal) and no count is available; bytes is what " +
               "is measurable here. Zero is exact in both units; a nonzero value is not comparable " +
               "to a Go malloc count.");
 

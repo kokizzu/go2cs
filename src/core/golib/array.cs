@@ -75,7 +75,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public array(ulong length)
     {
-        m_array = AllocationCounter.NewArray<T>((nint)length);
+        m_array = AllocationCounter.NewArray<T>(length);
         m_length = (int)length;
     }
 

@@ -385,9 +385,9 @@ public static partial class builtin
         // Estimate buffer size (4 bytes per rune as worst case)
         int estimatedBytes = runes.Length * 4;
         
-        Span<byte> buffer = estimatedBytes <= StackAllocThreshold ? 
-            stackalloc byte[estimatedBytes] : 
-            new byte[estimatedBytes];
+        Span<byte> buffer = estimatedBytes <= StackAllocThreshold ?
+            stackalloc byte[estimatedBytes] :
+            AllocationCounter.NewArray<byte>(estimatedBytes);
 
         int bytesWritten = 0;
 
@@ -406,7 +406,7 @@ public static partial class builtin
             bytesWritten += runeBytes;
         }
 
-        return buffer[..bytesWritten].ToArray();
+        return AllocationCounter.CopyOf<byte>(buffer[..bytesWritten]);
     }
 
     /// <summary>

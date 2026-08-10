@@ -1,0 +1,224 @@
+// AllocationCounterTests.cs - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+using System;
+using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using go;
+
+namespace GolibTests;
+
+/// <summary>
+/// Pins the go2cs runtime allocation counter's census — the per-site object counts
+/// <see cref="AllocationCounter"/> claims, and the invariant that makes reporting them safe.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The counter exists because Go's <c>testing.AllocsPerRun</c> reports a malloc COUNT and the CLR
+/// publishes none; golib is the runtime here, so it counts at its own allocation sites exactly as
+/// Go's runtime does. The census is documented in <c>docs/phase4/DESIGN-allocation-counting.md</c>,
+/// and a documented census that nothing checks is a census that drifts — every charge below is a
+/// claim that document makes, asserted as an exact number rather than a range.
+/// </para>
+/// <para>
+/// <b>The invariant in <see cref="CountedObjectsNeverExceedTheirByteCost"/> is the load-bearing
+/// one.</b> `AllocsPerRun` reports the count in place of the byte figure, and that substitution is
+/// only safe while it is MONOTONE — a counted object costs at least the CLR's 24-byte object header
+/// minimum, so `count ≤ bytes / 24` must hold and the reported value can only ever fall. A site that
+/// charged more objects than it allocated would break that and could turn a passing assert into a
+/// failing one corpus-wide.
+/// </para>
+/// <para>
+/// Counting is process-global and one-way by design (<see cref="AllocationCounter.Enable"/> has no
+/// inverse: a run that begins counting counts for its lifetime), so these tests enable it and leave
+/// it on. That is harmless here and matches how the test host uses it.
+/// </para>
+/// </remarks>
+[TestClass]
+public class AllocationCounterTests
+{
+    [ClassInitialize]
+    public static void EnableCounting(TestContext _) => AllocationCounter.Enable();
+
+    // Runs `action` and returns the objects golib charged to this thread for it, with the byte cost
+    // alongside so a charge can be audited against what actually reached the heap.
+    private static (long objects, long bytes) Charge(Action action)
+    {
+        // Warm up so JIT and first-call lazy initialization land outside the window, exactly as
+        // AllocsPerRun's own warm-up run does.
+        action();
+
+        long beforeCount = AllocationCounter.CurrentThreadCount;
+        long beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+
+        action();
+
+        long bytes = GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+
+        return (AllocationCounter.CurrentThreadCount - beforeCount, bytes);
+    }
+
+    private static void AssertCharge(long expected, Action action, string what)
+    {
+        (long objects, long bytes) = Charge(action);
+
+        Assert.AreEqual(expected, objects,
+            $"{what} charged {objects} object(s), expected {expected} ({bytes} B measured). The " +
+            "census in docs/phase4/DESIGN-allocation-counting.md §4 and this assertion have to " +
+            "agree — update both, or neither.");
+    }
+
+    // ---- the r57c result the census depends on ----
+
+    [TestMethod]
+    public void SlicingAStringChargesNothing()
+    {
+        @string s = new("the quick brown fox jumps over the lazy dog");
+
+        // Go's `s[a:b]` is an O(1) window over shared immutable storage and allocates nothing. Since
+        // r57c @string carries backing+offset+length, so ours does too — this is the one census row
+        // whose correct charge is ZERO, and it is a result rather than an omission.
+        AssertCharge(0L, () =>
+        {
+            @string sub = s[4..9];
+
+            if (sub.Length != 5)
+                throw new InvalidOperationException("slice window is wrong");
+        }, "s[a:b] (string window)");
+    }
+
+    // ---- @string materialization ----
+
+    [TestMethod]
+    public void StringMaterializationChargesItsBacking()
+    {
+        AssertCharge(1L, () => { @string _ = new("a literal reaching @string"); },
+            "@string(string) — the UTF-8 backing every C# literal encodes into");
+
+        @string source = new("materialize me");
+
+        AssertCharge(1L, () => { string _ = source.ToString(); },
+            "@string.ToString() — the materialized System.String");
+
+        AssertCharge(1L, () => { slice<byte> _ = source; },
+            "[]byte(s) — Go's copying conversion");
+
+        AssertCharge(1L, () => { @string _ = source + source; },
+            "s + t — the single result buffer");
+
+        // char[] costs two: the intermediate UTF-16 string, then the UTF-8 backing it encodes into.
+        char[] chars = ['g', 'o', '2', 'c', 's'];
+
+        AssertCharge(2L, () => { @string _ = new(chars); },
+            "@string(char[]) — intermediate string plus its UTF-8 backing");
+    }
+
+    [TestMethod]
+    public void RangingAStringChargesItsEnumerator()
+    {
+        @string s = new("räng");
+
+        // Go's `for range s` allocates nothing; ours hands out an enumerator object, and the count
+        // is precisely where that difference is supposed to become visible.
+        AssertCharge(1L, () =>
+        {
+            foreach ((nint _, rune _) in s)
+            {
+            }
+        }, "for range s — the enumerator");
+    }
+
+    // ---- the shapes r56d decomposed, which the rsa and nistec verdicts rest on ----
+
+    [TestMethod]
+    public void HeapBoxOverAnUnmanagedValueChargesBoxAndSlot()
+    {
+        // The canonical divergence: Go's `&x` is ONE malloc; the CLR box additionally allocates the
+        // one-element pinnable slot its address stability requires. Two objects, and the count says
+        // two — this is the shape r56d decomposed nistec's per-run bill into.
+        AssertCharge(2L, () => { ж<long> _ = new(42L); }, "ж<long> — box plus eager pinnable slot");
+    }
+
+    [TestMethod]
+    public void MakeAndAppendChargeTheirBackingArrays()
+    {
+        // Non-const so .NET 9's stack-allocation optimization cannot keep the backing off the heap;
+        // with a literal length this measures zero objects because nothing is allocated at all.
+        nint length = s_sliceLength;
+
+        AssertCharge(1L, () => { slice<byte> _ = new(length); }, "make([]byte, n) — the backing array");
+
+        // Made OUTSIDE the window: appending to an at-capacity slice regrows without mutating the
+        // source header, so each measured run allocates exactly the one new backing array.
+        slice<byte> full = new(length, length);
+
+        AssertCharge(1L, () => { _ = append(full, (byte)1); },
+            "append past capacity — the regrown backing array");
+    }
+
+    private static readonly nint s_sliceLength = 16;
+
+    // ---- the invariant that makes the substitution safe ----
+
+    [TestMethod]
+    public void CountedObjectsNeverExceedTheirByteCost()
+    {
+        // 24 bytes is the CLR's minimum heap object size on x64 (header + method table + a field
+        // slot, rounded to the allocation granularity). No charged object can cost less, so a census
+        // that charges more objects than bytes/24 is over-counting somewhere -- and over-counting is
+        // the one direction that could turn a passing assert into a failing one.
+        const long MinimumObjectBytes = 24L;
+
+        (string what, Action action)[] shapes =
+        [
+            ("@string(string)",   () => { @string _ = new("a literal reaching @string"); }),
+            ("@string(char[])",   () => { @string _ = new(new[] { 'g', 'o' }); }),
+            ("s + t",             () => { @string _ = new @string("left") + new @string("right"); }),
+            ("[]byte(s)",         () => { slice<byte> _ = new @string("convert me"); }),
+            ("string(b)",         () => { @string _ = new(new slice<byte>(4)); }),
+            ("ToString()",        () => { string _ = new @string("materialize").ToString(); }),
+            ("ToRunes()",         () => { rune[] _ = new @string("räng").ToRunes(); }),
+            ("for range s",       () => { foreach ((nint _, rune _) in new @string("räng")) { } }),
+            ("ж<long>",           () => { ж<long> _ = new(42L); }),
+            ("make([]byte, n)",   () => { slice<byte> _ = new(s_sliceLength); }),
+            ("make(map)",         () => { map<@string, nint> _ = new(); }),
+            ("make(chan, 4)",     () => { channel<nint> _ = new(4); })
+        ];
+
+        List<string> violations = [];
+
+        foreach ((string what, Action action) in shapes)
+        {
+            (long objects, long bytes) = Charge(action);
+
+            if (objects * MinimumObjectBytes > bytes)
+                violations.Add($"{what}: charged {objects} object(s) = at least " +
+                               $"{objects * MinimumObjectBytes} B, but only {bytes} B reached the heap");
+
+            Console.WriteLine($"{what,-18} {objects,3} object(s) {bytes,6} B");
+        }
+
+        Assert.AreEqual(0, violations.Count,
+            "AllocsPerRun reports the COUNT in place of the byte figure, which is only safe while " +
+            "count <= bytes/24 holds — the substitution has to be monotone downward so that no test " +
+            "passing on bytes can fail on the count. Over-charged site(s):" +
+            Environment.NewLine + string.Join(Environment.NewLine, violations));
+    }
+
+    // ---- the gate itself ----
+
+    [TestMethod]
+    public void CountingIsOffUntilAHostEnablesIt()
+    {
+        // Not a behavioral assertion about the current process (ClassInitialize has already enabled
+        // counting, and there is deliberately no way back). It pins the SHAPE: the gate is readable,
+        // so a converted application can be shown to pay nothing, and TestHost.Run is the only
+        // caller of Enable in the tree.
+        Assert.IsTrue(AllocationCounter.Enabled,
+            "counting must be observable through the public gate — AllocsPerRun's fallback arm " +
+            "reads it to decide whether a zero count means 'nothing allocated' or 'not counting'");
+    }
+}

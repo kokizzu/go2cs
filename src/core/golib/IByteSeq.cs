@@ -94,8 +94,9 @@ public static class ByteSeqExtensions
         if (typeof(TSeq) == typeof(slice<byte>))
             return Unsafe.As<TSeq, slice<byte>>(ref seq);
 
-        // Any other source materializes its own bytes, as Go's []byte(string) does.
-        return new slice<byte>(seq.ꓸꓸꓸ.ToArray());
+        // Any other source materializes its own bytes, as Go's []byte(string) does — one object,
+        // charged here because this extension IS the conversion the converter emits for it.
+        return new slice<byte>(AllocationCounter.CopyOf<byte>(seq.ꓸꓸꓸ));
     }
 
     // Go's `string(s)` over the same — bytealg's Rabin-Karp compares `string(s[i:j])`.
@@ -108,6 +109,6 @@ public static class ByteSeqExtensions
         if (typeof(TSeq) == typeof(@string))
             return Unsafe.As<TSeq, @string>(ref seq);
 
-        return new @string(seq.ꓸꓸꓸ.ToArray());
+        return new @string(AllocationCounter.CopyOf<byte>(seq.ꓸꓸꓸ));
     }
 }

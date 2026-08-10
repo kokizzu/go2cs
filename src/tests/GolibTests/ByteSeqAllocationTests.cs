@@ -147,12 +147,18 @@ public class ByteSeqAllocationTests
 
     private static long Measure<TSeq>(Func<TSeq, nint> shape, TSeq s, out nint result)
     {
+        return Measure(shape, s, out result, out _);
+    }
+
+    private static long Measure<TSeq>(Func<TSeq, nint> shape, TSeq s, out nint result, out long objects)
+    {
         nint acc = 0;
 
         // Warm up so tiering/JIT allocations land outside the measurement window.
         for (int warm = 0; warm < 32; warm++)
             acc = shape(s);
 
+        long beforeCount = AllocationCounter.CurrentThreadCount;
         long before = GC.GetAllocatedBytesForCurrentThread();
 
         for (int run = 0; run < LoopCount; run++)
@@ -160,6 +166,7 @@ public class ByteSeqAllocationTests
 
         long after = GC.GetAllocatedBytesForCurrentThread();
 
+        objects = AllocationCounter.CurrentThreadCount - beforeCount;
         result = acc;
         return after - before;
     }
@@ -189,19 +196,38 @@ public class ByteSeqAllocationTests
     [TestMethod]
     public void UnionConstrainedParseOverStringAllocatesOnlyItsCopies()
     {
-        long bytes = Measure(ParseShape, StringInput(), out nint result);
+        // The counter is what makes the assertion below a COUNT rather than a byte budget; it is
+        // process-global, one-way and idempotent, so enabling it here costs nothing anyone else owns.
+        AllocationCounter.Enable();
+
+        long bytes = Measure(ParseShape, StringInput(), out nint result, out long objects);
 
         Assert.AreEqual(Expected, result, "the parse shape did not read the expected fields");
 
-        Console.WriteLine($"@string: {bytes / (double)LoopCount:F1} B/parse");
+        Console.WriteLine($"@string: {bytes / (double)LoopCount:F1} B/parse, " +
+                          $"{objects / (double)LoopCount:F1} objects/parse");
 
-        // @string cannot reach zero: `[]byte(string)` copies in Go too, so the six per-parse
-        // conversions are fidelity, not overhead — as is the byte[] each @string sub-slice owns.
-        // What must be gone is the BOXING on top of them, measured at 360 B of the pre-redesign
-        // 776 B/parse (776 before, 416 after).
-        Assert.IsTrue(bytes / (double)LoopCount < 600,
-            $"a parseRFC3339-shaped body over @string allocated {bytes / (double)LoopCount:F1} B/parse; " +
-            "the boxing the redesign removed was worth 360 B of the 776 B/parse baseline.");
+        // EXACTLY the six `[]byte(s)` conversions the shape performs — one per parseUint call.
+        // Everything else in the body is now allocation-free: since r57c an @string is a WINDOW
+        // (backing+offset+length), so the seven sub-slices allocate nothing, and the IByteSeq
+        // redesign before it removed the boxing on len/conversion. The history of this one figure
+        // is the history of both fixes: 776 B/parse originally, 416 B after the boxing went, and
+        // 192 B once sub-slicing stopped copying.
+        //
+        // Asserted as an object COUNT, not a byte bound, because the count is the quantity that is
+        // actually invariant here — the byte figure moves with the input's length, the number of
+        // copies does not.
+        Assert.AreEqual(6L * LoopCount, objects,
+            $"a parseRFC3339-shaped body over @string allocated {objects / (double)LoopCount:F1} " +
+            "objects/parse; it must be exactly the six []byte(s) conversions parseUint performs. " +
+            "More means a sub-slice started copying again or a conversion started boxing; fewer " +
+            "means golib's allocation census stopped seeing this path.");
+
+        // The byte bound is kept as the cross-check on the count — with 4-byte-ish copies the six
+        // conversions cost ~32 B each, so anything near the old 600 B ceiling means the copies grew.
+        Assert.IsTrue(bytes / (double)LoopCount < 250,
+            $"a parseRFC3339-shaped body over @string allocated {bytes / (double)LoopCount:F1} B/parse, " +
+            "against 192 B measured when the @string window landed (r57c).");
     }
 
     [TestMethod]
