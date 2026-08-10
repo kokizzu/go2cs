@@ -35,8 +35,13 @@ namespace BehavioralRunner
     {
         // Timeouts (ms). A build/transpile/run that exceeds these is treated as hung and killed with
         // its whole process tree -- the runner never blocks indefinitely the way the MSTest Exec did.
-        private const int BuildAllTimeoutMs = 300_000;  // one-shot parallel build of every C# target
-        private const int BuildOneTimeoutMs = 180_000;  // per-project fallback build / go build
+        // These are SAFETY NETS against a hung child, sized for the slowest host the suite
+        // legitimately runs on -- never performance assumptions from one machine's measured time.
+        // At 300s the one-shot build-all ALWAYS fired on an i7-5820K (2014 Haswell-E, ~24 min for a
+        // cold-tree build-all), silently dropping every run onto the per-project fallback path,
+        // which is slower and -- on a cold tree -- can report false compile failures (2026-08-10).
+        private const int BuildAllTimeoutMs = 2_400_000;  // one-shot parallel build of every C# target
+        private const int BuildOneTimeoutMs = 300_000;    // per-project fallback build / go build
         private const int TranspileTimeoutMs = 60_000;
         private const int RunTimeoutMs = 30_000;
 

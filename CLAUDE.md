@@ -371,11 +371,27 @@ ONE stdlib in a build; there is now only one on disk.
   the full runs (re-measured 2026-08-04 by r40, corpus at 569 transpiled packages / 571 registered `.csproj`).** The
   corpus keeps growing (371 → 457 → 518 → 543 → 569 packages), and both full instruments
   legitimately exceed three minutes. Timeouts must clear the real number or a healthy run gets killed
-  mid-flight (a 600s ceiling killed a *passing* full suite once). ⚠ **These are DESKTOP numbers.** The
+  mid-flight (a 600s ceiling killed a *passing* full suite once). ⚠ **These are DESKTOP numbers —
+  and that desktop (the i9-13900K) DIED of hardware failure on 2026-08-09.** The
   same repo is also worked from a laptop (Ryzen 7 PRO 6850U, a 15–28W mobile part), where the parallel
   MSBuild phases run materially slower — a full behavioral suite measured **1,792s** there on 2026-08-07
   with nothing else running. A run over the table on the laptop is the machine, not corpus growth: do
-  **not** re-baseline these rows from a laptop run, and size timeouts from the top of the range:
+  **not** re-baseline these rows from a laptop run, and size timeouts from the top of the range.
+  ⚠ **The replacement coordinator machine (2026-08-10) is an i7-5820K — 2014 Haswell-E, 6C/12T,
+  32 GB — and runs the table's rows at roughly 3–4x the i9 numbers.** Measured there on day one:
+  full behavioral suite **4,131s** solo (cold-ish tree), CNR **1,505s** solo / **~3,190s** with two
+  sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded, full `go2cs.slnx` Debug
+  build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). Keep the i9
+  columns as the historical reference the ratios hang off; budget commands from the i7-5820K figures
+  (or 3–4x a row's i9 ceiling when unmeasured), and treat HARD-CODED harness watchdogs as suspects on
+  this class of machine — at the old sizes, `PerformanceRunner`'s 600s AOT-publish cap and
+  `BehavioralRunner`'s 300s build-all cap BOTH fired on healthy runs here and faked failures (each
+  was raised 2026-08-10 with the evidence in a source comment; a timeout is a safety net against a
+  hung child, never a performance assumption). Native-AOT perf publishes are the extreme case: ~7s
+  each on the i9 in the stub era, **~25 min each** on this machine now that ILC compiles the full
+  converted-stdlib closure per benchmark (post-unification), so a full perf run is hours, not
+  minutes — and it must run SOLO: concurrent lane load pushed a healthy publish past even an 1,800s
+  cap once, and only the Measure phase's numbers are trustworthy on a quiet machine anyway:
 
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
@@ -414,7 +430,10 @@ ONE stdlib in a build; there is now only one on disk.
   globally breaks the netstandard2.0 `go2cs-gen` analyzer with NETSDK1207); AOT publish needs MSVC
   `link.exe` and the runner prepends the VS Installer dir to PATH for the SDK's `vswhere` probe; AOT trims
   with `TrimMode=partial` because golib `fmt` formatting and sort's `Interface<T>` bind members via
-  reflection. Full run ≈3–4 min warm (AOT publishes ≈7 s each); `--no-aot` well under a minute. Keep each
+  reflection. ⚠ Cost changed at the 2026-08-01 tree unification: each AOT publish now ILC-compiles the
+  full converted-stdlib closure (~7 s each in the stub era; **~25 min each on the i7-5820K**), so a full
+  run is HOURS and must run SOLO — concurrent lane load once pushed a healthy publish past an 1,800s
+  watchdog. `--no-aot` drops the whole column and stays fast. Keep each
   benchmark ≥50 ms and output deterministic (inline xorshift, no `math/rand`).
 
 ### Adding a regression test when a converter defect is fixed
