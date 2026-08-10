@@ -20,7 +20,14 @@ namespace BehavioralRunner
 {
     internal enum Phase { Transpile, Compile, Target, Output }
 
-    internal enum Status { Pass, Fail, Skip }
+    // Timeout is a verdict distinct from Fail, and the distinction is the whole point: Fail means a
+    // tool ran to completion and reported the project broken, Timeout means the runner's own budget
+    // expired first and nothing was learned either way. Collapsing them (as this enum did until
+    // 2026-08-10) makes an under-sized budget indistinguishable from a corpus regression in the
+    // summary -- a FALSE RED, the mirror of the false-green routes CLAUDE.md catalogs. It is
+    // reported as NOT MEASURED, the same word check-no-regression.ps1 uses for the same situation,
+    // and it still fails the run: an unmeasured project must never read as a pass.
+    internal enum Status { Pass, Fail, Skip, Timeout }
 
     internal sealed class ProjectResult
     {
@@ -28,22 +35,62 @@ namespace BehavioralRunner
         public Dictionary<Phase, Status> Phases { get; } = new();
         public List<string> Messages { get; } = new();
 
-        public bool Failed => Phases.Values.Any(s => s == Status.Fail);
+        // Deliberately NOT collapsed into a single `Failed`. One existed and was left unreferenced
+        // after Report started distinguishing the two, which is a trap rather than a convenience: the
+        // next caller reaching for an obviously-named `Failed` to build a failure roster would sweep
+        // every timeout back in with the real breaks and reinstate exactly the false red this
+        // distinction removes. Callers state which one they mean.
+        public bool HasFail => Phases.Values.Any(s => s == Status.Fail);
+        public bool HasTimeout => Phases.Values.Any(s => s == Status.Timeout);
     }
 
     internal static class Runner
     {
-        // Timeouts (ms). A build/transpile/run that exceeds these is treated as hung and killed with
-        // its whole process tree -- the runner never blocks indefinitely the way the MSTest Exec did.
-        // These are SAFETY NETS against a hung child, sized for the slowest host the suite
-        // legitimately runs on -- never performance assumptions from one machine's measured time.
-        // At 300s the one-shot build-all ALWAYS fired on an i7-5820K (2014 Haswell-E, ~24 min for a
-        // cold-tree build-all), silently dropping every run onto the per-project fallback path,
-        // which is slower and -- on a cold tree -- can report false compile failures (2026-08-10).
-        private const int BuildAllTimeoutMs = 2_400_000;  // one-shot parallel build of every C# target
-        private const int BuildOneTimeoutMs = 300_000;    // per-project fallback build / go build
-        private const int TranspileTimeoutMs = 60_000;
-        private const int RunTimeoutMs = 30_000;
+        // Timeout budgets (ms). A build/transpile/run that exceeds one is treated as hung and killed
+        // with its whole process tree -- the runner never blocks indefinitely the way the MSTest Exec
+        // did. These were CONSTANTS until 2026-08-10, which made them the one input to the run that no
+        // caller could influence: a wall-clock budget measured on one machine, applied unchanged to
+        // every machine and every future corpus size. They now resolve flag > environment > default
+        // (see Main), and an expired budget reports NOT MEASURED rather than impersonating a failure.
+        //
+        // Measured 2026-08-10 on an i7-5820K (6C/12T, ~3x slower than the desktop CLAUDE.md's timing
+        // table is baselined on) at 555 enumerated packages: the one-shot parallel build exceeded
+        // 300 s on a cold tree AND on a warm one. Warm state cannot save it -- the Transpile phase
+        // rewrites every .cs immediately before Compile, so the batch is never an incremental no-op
+        // and every project genuinely recompiles. The batch therefore timed out on every run and
+        // dropped the whole corpus onto the per-project fallback, where each project must first build
+        // the core dependency closure and so ALSO exceeded 180 s cold: ~15 minutes producing zero
+        // assemblies and 555 Fail entries that were pure infrastructure. For scale, a full
+        // `dotnet build src/go2cs.slnx` of the same tree took 1,432 s cold -- roughly 5x this batch
+        // budget.
+        //
+        // The build defaults are sized from that slow-host measurement, per the safety-net doctrine
+        // (a timeout is a net against a HUNG child, never a performance assumption): a default that
+        // always expires on a legitimate host makes the runner unusable out of the box on exactly
+        // the machine that runs it most, while a fast lane's only cost is how long a genuine hang
+        // takes to be declared -- and a lane that wants the old fail-fast behavior opts DOWN
+        // explicitly (--build-timeout 300 / GO2CS_BUILD_TIMEOUT=300). Transpile and Run keep their
+        // original sizes: neither has ever expired on a healthy run on any measured host (528
+        // output runs at 30 s on the i7-5820K), and Run is the phase where a real deadlock is the
+        // likeliest cause, so its net stays tight.
+        private const int DefaultBuildAllTimeoutMs = 2_400_000;  // one-shot parallel build of every C# target
+        private const int DefaultBuildOneTimeoutMs = 300_000;    // per-project fallback build / go build
+        private const int DefaultTranspileTimeoutMs = 60_000;
+        private const int DefaultRunTimeoutMs = 30_000;
+
+        private static int s_buildAllTimeoutMs = DefaultBuildAllTimeoutMs;
+        private static int s_buildOneTimeoutMs = DefaultBuildOneTimeoutMs;
+        private static int s_transpileTimeoutMs = DefaultTranspileTimeoutMs;
+        private static int s_runTimeoutMs = DefaultRunTimeoutMs;
+
+        // Consecutive per-project build timeouts that mean the budget itself is too small rather than
+        // that some individual project hangs. Once the fallback has burned this many in a row there is
+        // nothing left to learn by spending BuildOne on each remaining suspect -- on the cold i7-5820K
+        // run that was ~15 minutes to discover an already-known fact -- so the rest are marked NOT
+        // MEASURED without being attempted. Three in a row, because no healthy corpus has three
+        // adjacent projects that each individually exceed the per-project budget while the batch also
+        // failed. Nothing is marked Pass by this path, so it cannot manufacture a false green.
+        private const int ConsecutiveTimeoutBailout = 3;
 
         private const string Config = "Release";
         private const string NetVersion = "net9.0";
@@ -70,6 +117,14 @@ namespace BehavioralRunner
         // it must still surface and fail the run, since it blocks output comparison).
         private static readonly List<string> s_goBuildFailures = new();
 
+        // Projects whose Go oracle could not be rebuilt this run, split by cause so the Output phase can
+        // report each honestly. Both must block the comparison: the Output phase gates only on the C#
+        // Compile status, so without these a project whose `go build` failed would be compared against
+        // whatever bin\Release\Go\<p>.exe an EARLIER run left behind -- today's C# against yesterday's
+        // Go, scored as a Pass.
+        private static readonly HashSet<string> s_goBuildBroken = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> s_goBuildTimedOut = new(StringComparer.OrdinalIgnoreCase);
+
         // Newest shared-dependency output (golib, the analyzer, core/* and any redirected package) as of
         // the pre-build. A target assembly older than this predates its own dependencies, so it cannot be
         // treated as evidence that the target still compiles -- see SuspectProjects.
@@ -83,6 +138,11 @@ namespace BehavioralRunner
             bool listOnly = false;
             HashSet<Phase> phases = new() { Phase.Transpile, Phase.Compile, Phase.Target, Phase.Output };
 
+            // Held as nullable so "not given on the command line" stays distinguishable from "given a
+            // value that happens to equal the default" -- the environment fallback below must apply
+            // only in the former case.
+            int? buildAllFlagMs = null, buildOneFlagMs = null, transpileFlagMs = null, runFlagMs = null;
+
             for (int i = 0; i < args.Length; i++)
             {
                 string a = args[i];
@@ -92,7 +152,24 @@ namespace BehavioralRunner
                         filter = args[++i];
                         break;
                     case "--phase" when i + 1 < args.Length:
-                        phases = ParsePhases(args[++i]);
+                        if (ParsePhases(args[++i]) is not { } parsed) return 2;
+                        phases = parsed;
+                        break;
+                    case "--build-timeout" when i + 1 < args.Length:
+                        if (!TryParseSeconds(args[++i], a, out int buildAll)) return 2;
+                        buildAllFlagMs = buildAll;
+                        break;
+                    case "--build-one-timeout" when i + 1 < args.Length:
+                        if (!TryParseSeconds(args[++i], a, out int buildOne)) return 2;
+                        buildOneFlagMs = buildOne;
+                        break;
+                    case "--transpile-timeout" when i + 1 < args.Length:
+                        if (!TryParseSeconds(args[++i], a, out int transpile)) return 2;
+                        transpileFlagMs = transpile;
+                        break;
+                    case "--run-timeout" when i + 1 < args.Length:
+                        if (!TryParseSeconds(args[++i], a, out int run)) return 2;
+                        runFlagMs = run;
                         break;
                     case "--update-targets":
                         updateTargets = true;
@@ -109,6 +186,12 @@ namespace BehavioralRunner
                         return 2;
                 }
             }
+
+            // ----- resolve timeout budgets: flag > environment > default -----
+            s_buildAllTimeoutMs = ResolveTimeout(buildAllFlagMs, "GO2CS_BUILD_TIMEOUT", DefaultBuildAllTimeoutMs);
+            s_buildOneTimeoutMs = ResolveTimeout(buildOneFlagMs, "GO2CS_BUILD_ONE_TIMEOUT", DefaultBuildOneTimeoutMs);
+            s_transpileTimeoutMs = ResolveTimeout(transpileFlagMs, "GO2CS_TRANSPILE_TIMEOUT", DefaultTranspileTimeoutMs);
+            s_runTimeoutMs = ResolveTimeout(runFlagMs, "GO2CS_RUN_TIMEOUT", DefaultRunTimeoutMs);
 
             // ----- resolve paths -----
             // Runner lives at src\tests\Behavioral\BehavioralRunner; behavioral dir is its parent.
@@ -162,6 +245,16 @@ namespace BehavioralRunner
             }
 
             Console.WriteLine($"go2cs behavioral runner: {projects.Count} project(s), phases [{string.Join(", ", phases)}]");
+
+            // Always echo the budgets, overridden or not. The failure this whole mechanism exists for
+            // was invisible precisely because the caps were invisible: a run that timed out printed the
+            // number only in the "build-all TIMED OUT" line it emitted AFTER paying the cost. One line
+            // up front makes every log self-describing about what it was allowed to spend.
+            Console.WriteLine($"  timeouts: build-all {Describe(s_buildAllTimeoutMs, DefaultBuildAllTimeoutMs)}, " +
+                              $"build-one {Describe(s_buildOneTimeoutMs, DefaultBuildOneTimeoutMs)}, " +
+                              $"transpile {Describe(s_transpileTimeoutMs, DefaultTranspileTimeoutMs)}, " +
+                              $"run {Describe(s_runTimeoutMs, DefaultRunTimeoutMs)}");
+
             Stopwatch total = Stopwatch.StartNew();
 
             Dictionary<string, ProjectResult> results = projects.ToDictionary(p => p, p => new ProjectResult { Name = p });
@@ -176,9 +269,30 @@ namespace BehavioralRunner
 
                 if (updateTargets)
                 {
-                    UpdateTargets(projects, results);
-                    Console.WriteLine($"Updated .cs.target goldens for {projects.Count} project(s). Done.");
-                    return 0;
+                    int rebaselined = UpdateTargets(projects, results, out List<string> refused);
+
+                    Console.WriteLine($"Updated .cs.target goldens for {rebaselined} project(s).");
+
+                    if (refused.Count == 0)
+                        return 0;
+
+                    // Never re-baseline from a transpile that did not complete. A killed converter
+                    // leaves either the PREVIOUS converter's .cs or a truncated partial write, and
+                    // copying that over the golden writes the unmeasured state into the authoritative
+                    // record -- worse than a false green, because UpToDate then sees a .cs newer than
+                    // both its .go and go2cs.exe and skips re-transpiling it on every later run, hiding
+                    // the drift permanently. Exit non-zero so a wrapper cannot read this as success.
+                    Console.Error.WriteLine();
+                    Console.Error.WriteLine($"REFUSED to re-baseline {refused.Count} project(s) whose transpile did not complete:");
+
+                    foreach (string p in refused.Take(20))
+                        Console.Error.WriteLine($"  {p}");
+
+                    if (refused.Count > 20)
+                        Console.Error.WriteLine($"  ... and {refused.Count - 20} more.");
+
+                    Console.Error.WriteLine("Their goldens are UNCHANGED. Fix the transpile (or raise --transpile-timeout) and re-run.");
+                    return 1;
                 }
             }
 
@@ -221,7 +335,7 @@ namespace BehavioralRunner
             }
 
             Console.WriteLine("Building go2cs.exe (converter sources changed)...");
-            ProcResult r = Exec("go", $"build -o \"{s_go2csExe}\"", s_converterSrc, BuildOneTimeoutMs);
+            ProcResult r = Exec("go", $"build -o \"{s_go2csExe}\"", s_converterSrc, s_buildOneTimeoutMs);
 
             if (r.ExitCode != 0)
             {
@@ -244,7 +358,7 @@ namespace BehavioralRunner
         private static void RunTranspile(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Transpile] {projects.Count} project(s)... ");
-            int failed = 0;
+            int failed = 0, timedOut = 0;
 
             foreach (string p in projects)
             {
@@ -256,16 +370,21 @@ namespace BehavioralRunner
                     continue;
                 }
 
-                bool ok = true;
+                bool ok = true, hitTimeout = false;
 
                 foreach (string pkgPath in GoPackageDirs(projPath))
                 {
-                    ProcResult r = Exec(s_go2csExe, $"-go2cspath \"{s_srcRoot}\" \"{pkgPath}\"", pkgPath, TranspileTimeoutMs);
+                    ProcResult r = Exec(s_go2csExe, $"-go2cspath \"{s_srcRoot}\" \"{pkgPath}\"", pkgPath, s_transpileTimeoutMs);
 
                     if (r.ExitCode == 0)
                         continue;
 
-                    results[p].Messages.Add($"transpile exit {r.ExitCode} in {Path.GetFileName(pkgPath)}: {Truncate(r.StdErr)}");
+                    hitTimeout = TimedOut(r);
+
+                    results[p].Messages.Add(hitTimeout
+                        ? $"transpile TIMED OUT after {Seconds(s_transpileTimeoutMs)} in {Path.GetFileName(pkgPath)} (raise --transpile-timeout)"
+                        : $"transpile exit {r.ExitCode} in {Path.GetFileName(pkgPath)}: {Truncate(r.StdErr)}");
+
                     ok = false;
                     break;
                 }
@@ -274,6 +393,11 @@ namespace BehavioralRunner
                 {
                     results[p].Phases[Phase.Transpile] = Status.Pass;
                 }
+                else if (hitTimeout)
+                {
+                    results[p].Phases[Phase.Transpile] = Status.Timeout;
+                    timedOut++;
+                }
                 else
                 {
                     results[p].Phases[Phase.Transpile] = Status.Fail;
@@ -281,7 +405,9 @@ namespace BehavioralRunner
                 }
             }
 
-            Console.WriteLine(failed == 0 ? "ok" : $"{failed} failed");
+            Console.WriteLine(failed == 0 && timedOut == 0
+                ? "ok"
+                : $"{failed} failed{(timedOut > 0 ? $", {timedOut} timed out" : "")}");
         }
 
         // A project is up to date when every .cs is newer than BOTH its matching .go source and the
@@ -349,7 +475,10 @@ namespace BehavioralRunner
 
             foreach (string p in projects)
             {
-                if (results[p].Phases.TryGetValue(Phase.Transpile, out Status t) && t == Status.Fail)
+                // A timed-out transpile is skipped for the same reason a failed one is: there is no
+                // trustworthy .cs to compare, and comparing the PREVIOUS run's leftover output against
+                // its own golden would report a pass that proves nothing.
+                if (results[p].Phases.TryGetValue(Phase.Transpile, out Status t) && t is Status.Fail or Status.Timeout)
                 {
                     results[p].Phases[Phase.Target] = Status.Skip;
                     continue;
@@ -377,9 +506,29 @@ namespace BehavioralRunner
             Console.WriteLine(failed == 0 ? "ok" : $"{failed} failed");
         }
 
-        private static void RunCompileCSharp(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
+        private static void RunCompileCSharp(IReadOnlyList<string> allProjects, Dictionary<string, ProjectResult> results)
         {
             string go2csPathArg = s_srcRoot.Replace('\\', '/').TrimEnd('/') + "/";
+
+            // A project whose transpile did not complete has no trustworthy .cs to compile: what is on
+            // disk is the PREVIOUS converter's output or a partial write from a killed process, so
+            // building it would report Pass for code THIS run never produced. RunTargetComparison
+            // already refuses to compare such a project; compile must refuse for the same reason, or a
+            // summary can read "Transpile timeout 1 / Compile pass 555" -- a phase vouching for a
+            // project the run did not measure. Absent status (transpile phase not run at all) is
+            // treated as buildable, preserving the behavior when phases are selected individually.
+            List<string> projects = allProjects
+                .Where(p => !results[p].Phases.TryGetValue(Phase.Transpile, out Status t) || t == Status.Pass)
+                .ToList();
+
+            foreach (string p in allProjects.Except(projects, StringComparer.OrdinalIgnoreCase))
+                results[p].Phases[Phase.Compile] = Status.Skip;
+
+            if (projects.Count == 0)
+            {
+                Console.WriteLine("[Compile]  C# skipped: no project has a completed transpile.");
+                return;
+            }
 
             // Pre-build the shared dependencies (golib, the go2cs-gen analyzer, and the core/* packages
             // the targets reference) SEQUENTIALLY first. The one-shot parallel build of 180 targets that
@@ -410,7 +559,7 @@ namespace BehavioralRunner
 
             ProcResult restore = Exec("dotnet",
                 $"build \"{traversal}\" -t:RestoreAll {commonArgs}",
-                s_behavioralDir, BuildAllTimeoutMs);
+                s_behavioralDir, s_buildAllTimeoutMs);
 
             Console.WriteLine(restore.ExitCode == 0 ? "ok" : $"restore reported errors (exit {restore.ExitCode})");
 
@@ -421,7 +570,7 @@ namespace BehavioralRunner
 
             ProcResult all = Exec("dotnet",
                 $"build \"{traversal}\" -t:BuildAll {commonArgs}",
-                s_behavioralDir, BuildAllTimeoutMs);
+                s_behavioralDir, s_buildAllTimeoutMs);
 
             if (all.ExitCode == 0)
             {
@@ -440,7 +589,7 @@ namespace BehavioralRunner
             // a rebuild. When the suspect set cannot be determined -- an empty set, or a timeout, where
             // the batch was killed mid-flight and the assembly evidence is meaningless -- every project
             // is attributed, preserving the original conservative behavior.
-            bool timedOut = all.ExitCode == -1 && all.StdErr.StartsWith("TIMEOUT", StringComparison.Ordinal);
+            bool timedOut = TimedOut(all);
             string buildOutput = all.StdOut + all.StdErr;
 
             List<string> suspects = timedOut
@@ -451,8 +600,15 @@ namespace BehavioralRunner
                 suspects = projects.ToList();
 
             Console.WriteLine(timedOut
-                ? $"build-all TIMED OUT after {BuildAllTimeoutMs} ms; attributing all {suspects.Count} per project..."
+                ? $"build-all TIMED OUT after {Seconds(s_buildAllTimeoutMs)}; attributing all {suspects.Count} per project..."
                 : $"build-all reported errors; attributing {suspects.Count} suspect project(s) per project...");
+
+            if (timedOut)
+            {
+                Console.Error.WriteLine($"  NOTE: the batch budget, not any project, expired. If this run is on a slower machine or a");
+                Console.Error.WriteLine($"        grown corpus, raise it (--build-timeout <sec> / GO2CS_BUILD_TIMEOUT) rather than reading");
+                Console.Error.WriteLine($"        the per-project attribution below as a corpus regression.");
+            }
 
             // Always surface why the batch failed -- silently discarding it (as this path used to) makes
             // an infrastructure failure indistinguishable from a real compile break.
@@ -461,29 +617,61 @@ namespace BehavioralRunner
             foreach (string p in projects.Except(suspects, StringComparer.OrdinalIgnoreCase))
                 results[p].Phases[Phase.Compile] = Status.Pass;
 
-            int failed = 0;
+            int failed = 0, timeouts = 0, consecutiveTimeouts = 0;
+            bool budgetExhausted = false;
 
             foreach (string p in suspects)
             {
+                // Circuit breaker. Once the per-project budget has proven too small several times in a
+                // row, every remaining suspect is marked NOT MEASURED rather than attempted: spending
+                // BuildOne on each of 555 projects to re-learn the same fact is the ~15-minute,
+                // zero-assembly path that made this whole failure mode expensive as well as misleading.
+                if (budgetExhausted)
+                {
+                    results[p].Phases[Phase.Compile] = Status.Timeout;
+                    results[p].Messages.Add($"compile NOT ATTEMPTED: per-project budget ({Seconds(s_buildOneTimeoutMs)}) already exceeded {ConsecutiveTimeoutBailout}x consecutively");
+                    timeouts++;
+                    continue;
+                }
+
                 string csproj = Path.Combine(s_behavioralDir, p, $"{p}.csproj");
 
                 ProcResult r = Exec("dotnet",
                     $"build \"{csproj}\" -nologo -clp:ErrorsOnly -p:Configuration={Config} -p:go2csPath={go2csPathArg}",
-                    s_behavioralDir, BuildOneTimeoutMs);
+                    s_behavioralDir, s_buildOneTimeoutMs);
 
                 if (r.ExitCode == 0)
                 {
                     results[p].Phases[Phase.Compile] = Status.Pass;
+                    consecutiveTimeouts = 0;
+                }
+                else if (TimedOut(r))
+                {
+                    // NOT a compile break: the compiler never got to report on this project. On a cold
+                    // tree each per-project build must first build the core dependency closure, which
+                    // alone can exceed the budget.
+                    results[p].Phases[Phase.Compile] = Status.Timeout;
+                    results[p].Messages.Add($"compile TIMED OUT after {Seconds(s_buildOneTimeoutMs)} (raise --build-one-timeout)");
+                    timeouts++;
+
+                    if (++consecutiveTimeouts >= ConsecutiveTimeoutBailout)
+                    {
+                        budgetExhausted = true;
+                        Console.WriteLine();
+                        Console.Error.WriteLine($"  {ConsecutiveTimeoutBailout} consecutive per-project build timeouts: the budget is too small for this machine,");
+                        Console.Error.WriteLine($"  not the corpus broken. Skipping the remaining suspects as NOT MEASURED.");
+                    }
                 }
                 else
                 {
                     results[p].Phases[Phase.Compile] = Status.Fail;
                     results[p].Messages.Add($"compile exit {r.ExitCode}: {Truncate(r.StdOut + r.StdErr)}");
                     failed++;
+                    consecutiveTimeouts = 0;
                 }
             }
 
-            Console.WriteLine($"[Compile]  C# per-project: {failed} failed");
+            Console.WriteLine($"[Compile]  C# per-project: {failed} failed{(timeouts > 0 ? $", {timeouts} NOT MEASURED (timed out)" : "")}");
         }
 
         // Projects that could be responsible for a failed batch build: those MSBuild named in an error
@@ -547,7 +735,8 @@ namespace BehavioralRunner
         private static void RunCompileGo(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Compile]  Go (per project)... ");
-            int failed = 0;
+            int failed = 0, consecutiveTimeouts = 0;
+            bool budgetExhausted = false;
 
             foreach (string p in projects)
             {
@@ -557,20 +746,70 @@ namespace BehavioralRunner
                 if (!MatchConsoleOutput(p))
                     continue;
 
+                // Building the Go oracle for a project whose C# side did not compile is pure waste: the
+                // Output phase requires Phase.Compile == Pass and will skip it regardless. This matters
+                // most in the case that motivated the whole change -- when the C# batch times out,
+                // RunCompileCSharp now returns in milliseconds, and without this the run would go on to
+                // spend a full budget per project building oracles for comparisons that cannot happen.
+                if (!results[p].Phases.TryGetValue(Phase.Compile, out Status c) || c != Status.Pass)
+                    continue;
+
+                // Same circuit breaker as the C# fallback, and needed for the same reason: `go build` is
+                // sequential here, so on a slow cold machine a systemically undersized budget would
+                // otherwise be paid once per project. At the 600 s this change's own documentation
+                // recommends for such a machine, that is days across the corpus -- with every result
+                // discarded downstream anyway.
+                if (budgetExhausted)
+                {
+                    string skipped = $"go build NOT ATTEMPTED: per-project budget ({Seconds(s_buildOneTimeoutMs)}) already exceeded {ConsecutiveTimeoutBailout}x consecutively";
+
+                    s_goBuildTimedOut.Add(p);
+                    results[p].Messages.Add(skipped);
+                    s_goBuildFailures.Add($"{p}: {skipped}");
+                    failed++;
+                    continue;
+                }
+
                 string projPath = Path.Combine(s_behavioralDir, p);
                 string goExeDir = Path.Combine(projPath, "bin", Config, "Go");
                 Directory.CreateDirectory(goExeDir);
 
                 if (!File.Exists(Path.Combine(projPath, "go.mod")))
-                    Exec("go", $"mod init go2cs/{p}", projPath, BuildOneTimeoutMs);
+                    Exec("go", $"mod init go2cs/{p}", projPath, s_buildOneTimeoutMs);
 
-                ProcResult r = Exec("go", $"build -o \"{goExeDir}\"", projPath, BuildOneTimeoutMs);
+                ProcResult r = Exec("go", $"build -o \"{goExeDir}\"", projPath, s_buildOneTimeoutMs);
 
-                if (r.ExitCode != 0)
+                if (r.ExitCode == 0)
                 {
-                    results[p].Messages.Add($"go build exit {r.ExitCode}: {Truncate(r.StdErr)}");
-                    s_goBuildFailures.Add($"{p}: {Truncate(r.StdErr, 200)}");
+                    consecutiveTimeouts = 0;
+                }
+                else
+                {
+                    // A Go build that ran out of budget is labelled as such rather than left to read as
+                    // a toolchain error, since the two want opposite responses (raise the budget vs.
+                    // fix the Go source).
+                    bool expired = TimedOut(r);
+
+                    string detail = expired
+                        ? $"go build TIMED OUT after {Seconds(s_buildOneTimeoutMs)} (raise --build-one-timeout)"
+                        : $"go build exit {r.ExitCode}: {Truncate(r.StdErr)}";
+
+                    (expired ? s_goBuildTimedOut : s_goBuildBroken).Add(p);
+                    results[p].Messages.Add(detail);
+                    s_goBuildFailures.Add($"{p}: {Truncate(detail, 200)}");
                     failed++;
+
+                    if (!expired)
+                    {
+                        consecutiveTimeouts = 0;
+                    }
+                    else if (++consecutiveTimeouts >= ConsecutiveTimeoutBailout)
+                    {
+                        budgetExhausted = true;
+                        Console.WriteLine();
+                        Console.Error.WriteLine($"  {ConsecutiveTimeoutBailout} consecutive `go build` timeouts: the budget is too small for this machine.");
+                        Console.Error.WriteLine($"  Skipping the remaining Go builds; their Output comparisons are NOT MEASURED.");
+                    }
                 }
             }
 
@@ -580,7 +819,7 @@ namespace BehavioralRunner
         private static void RunOutputComparison(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Output]   running C# vs Go, comparing exit code + stdout... ");
-            int failed = 0, compared = 0;
+            int failed = 0, compared = 0, timeouts = 0;
 
             foreach (string p in projects)
             {
@@ -590,10 +829,34 @@ namespace BehavioralRunner
                     continue;
                 }
 
-                // A failed compile means there is no C# exe to run.
-                if (results[p].Phases.TryGetValue(Phase.Compile, out Status c) && c == Status.Fail)
+                // Require an explicit compile PASS rather than excluding known-bad statuses. A failed
+                // compile means there is no C# exe to run; a timed-out or skipped one means there may
+                // still be an exe on disk from an earlier run, and comparing that against today's Go
+                // source scores a stale binary. Allow-listing the one good status is what makes a new
+                // Status automatically safe here instead of silently falling through to a comparison.
+                if (!results[p].Phases.TryGetValue(Phase.Compile, out Status c) || c != Status.Pass)
                 {
                     results[p].Phases[Phase.Output] = Status.Skip;
+                    continue;
+                }
+
+                // Same reasoning for the other side of the comparison: the Go binary is the ORACLE, so
+                // a run whose `go build` did not succeed has nothing to measure against. Without this
+                // the stale bin\Release\Go\<p>.exe from a previous run passes File.Exists below and the
+                // comparison is scored as though both sides were current.
+                if (s_goBuildTimedOut.Contains(p))
+                {
+                    results[p].Phases[Phase.Output] = Status.Timeout;
+                    results[p].Messages.Add("no current Go oracle: go build timed out");
+                    timeouts++;
+                    continue;
+                }
+
+                if (s_goBuildBroken.Contains(p))
+                {
+                    results[p].Phases[Phase.Output] = Status.Fail;
+                    results[p].Messages.Add("no current Go oracle: go build failed");
+                    failed++;
                     continue;
                 }
 
@@ -609,9 +872,31 @@ namespace BehavioralRunner
                     continue;
                 }
 
+                ProcResult cs = Exec(csExe, null, workDir, s_runTimeoutMs);
+                ProcResult go = Exec(goExe, null, workDir, s_runTimeoutMs);
+
+                // Check for an expired budget BEFORE comparing, because Exec's timeout path returns
+                // exit code -1 -- which the comparison below would otherwise report as
+                // "exit code mismatch: C# -1 vs Go 0", i.e. as a genuine behavioral divergence. That is
+                // the same false red as the compile phase, and a more insidious one: it names a real
+                // test and a plausible symptom. A transpiled program is slower than its Go original by
+                // a wide and variable margin (see the maphash case in CLAUDE.md, ~15 min vs 7.6 s), so
+                // on a slower machine the C# side is exactly what runs out of budget first.
+                if (TimedOut(cs) || TimedOut(go))
+                {
+                    string side = TimedOut(cs) && TimedOut(go) ? "both" : TimedOut(cs) ? "C#" : "Go";
+
+                    results[p].Phases[Phase.Output] = Status.Timeout;
+                    results[p].Messages.Add($"run TIMED OUT after {Seconds(s_runTimeoutMs)} ({side} side); raise --run-timeout");
+                    timeouts++;
+                    continue;
+                }
+
+                // Counted only once both sides have actually run to completion, so the reported figure
+                // is comparisons PERFORMED. Incrementing before the timeout check above made a run where
+                // every attempt expired report "20 compared, 0 failed, 20 timed out" -- asserting twenty
+                // comparisons that never happened.
                 compared++;
-                ProcResult cs = Exec(csExe, null, workDir, RunTimeoutMs);
-                ProcResult go = Exec(goExe, null, workDir, RunTimeoutMs);
 
                 // The Go binary is the oracle: exit codes must MATCH rather than both be zero, so a
                 // program that legitimately crashes (e.g. an unrecovered panic exits 2, like Go) is
@@ -643,13 +928,26 @@ namespace BehavioralRunner
                 }
             }
 
-            Console.WriteLine($"{compared} compared, {failed} failed");
+            Console.WriteLine($"{compared} compared, {failed} failed{(timeouts > 0 ? $", {timeouts} NOT MEASURED (timed out)" : "")}");
         }
 
-        private static void UpdateTargets(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
+        // Copies each project's freshly transpiled .cs over its .cs.target golden. Only projects whose
+        // transpile PASSED are touched; the rest are reported through `refused` so the caller can fail
+        // the run rather than silently baking unmeasured output into the goldens. `results` used to be
+        // an unread parameter here, which is precisely how that hole stayed open.
+        private static int UpdateTargets(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results, out List<string> refused)
         {
+            refused = new List<string>();
+            int updated = 0;
+
             foreach (string p in projects)
             {
+                if (!results[p].Phases.TryGetValue(Phase.Transpile, out Status t) || t != Status.Pass)
+                {
+                    refused.Add(p);
+                    continue;
+                }
+
                 string projPath = Path.Combine(s_behavioralDir, p);
 
                 foreach (string go in ProductionGoFiles(projPath))
@@ -659,7 +957,11 @@ namespace BehavioralRunner
                     if (File.Exists(cs))
                         File.Copy(cs, cs + ".target", overwrite: true);
                 }
+
+                updated++;
             }
+
+            return updated;
         }
 
         // Builds the deduped union of ProjectReferences across the target csprojs (golib, the analyzer,
@@ -719,10 +1021,21 @@ namespace BehavioralRunner
             {
                 ProcResult r = Exec("dotnet",
                     $"build \"{dep}\" -nologo -clp:ErrorsOnly -p:Configuration={Config} -p:go2csPath={go2csPathArg}",
-                    s_behavioralDir, BuildOneTimeoutMs);
+                    s_behavioralDir, s_buildOneTimeoutMs);
 
-                if (r.ExitCode != 0)
+                if (TimedOut(r))
+                {
+                    // This one deserves its own wording: the pre-build is what makes the shared closure
+                    // up to date before the fan-out, so a dep that ran out of budget here guarantees the
+                    // whole batch that follows will fail too -- and it is the FIRST thing a cold tree on
+                    // a slow machine hits, since a single core package can take a minute of its own.
+                    Console.Error.WriteLine($"\n  WARNING: shared dep build TIMED OUT after {Seconds(s_buildOneTimeoutMs)} ({Path.GetFileName(dep)});");
+                    Console.Error.WriteLine($"           the batch build below will almost certainly fail as a consequence. Raise --build-one-timeout.");
+                }
+                else if (r.ExitCode != 0)
+                {
                     Console.Error.WriteLine($"\n  WARNING: shared dep build failed ({Path.GetFileName(dep)}): {Truncate(r.StdOut + r.StdErr)}");
+                }
 
                 // Record how fresh the dependency outputs are, for the staleness test in SuspectProjects.
                 string depBin = Path.Combine(Path.GetDirectoryName(dep)!, "bin");
@@ -836,7 +1149,12 @@ namespace BehavioralRunner
         private static int Report(IEnumerable<ProjectResult> results, TimeSpan elapsed)
         {
             List<ProjectResult> all = results.ToList();
-            List<ProjectResult> failures = all.Where(r => r.Failed).ToList();
+            List<ProjectResult> failures = all.Where(r => r.HasFail).ToList();
+
+            // Reported separately from the failures, and only when a project has NO real failure --
+            // a project that genuinely broke somewhere belongs under "failing", where the break is the
+            // actionable fact, not under "not measured".
+            List<ProjectResult> notMeasured = all.Where(r => !r.HasFail && r.HasTimeout).ToList();
 
             int Count(Phase ph, Status st) => all.Count(r => r.Phases.TryGetValue(ph, out Status s) && s == st);
 
@@ -844,9 +1162,12 @@ namespace BehavioralRunner
             Console.WriteLine("================ summary ================");
             foreach (Phase ph in Enum.GetValues<Phase>())
             {
-                int pass = Count(ph, Status.Pass), fail = Count(ph, Status.Fail), skip = Count(ph, Status.Skip);
-                if (pass + fail + skip == 0) continue;
-                Console.WriteLine($"  {ph,-9}  pass {pass,4}   fail {fail,4}   skip {skip,4}");
+                int pass = Count(ph, Status.Pass), fail = Count(ph, Status.Fail);
+                int skip = Count(ph, Status.Skip), timeout = Count(ph, Status.Timeout);
+
+                if (pass + fail + skip + timeout == 0) continue;
+
+                Console.WriteLine($"  {ph,-9}  pass {pass,4}   fail {fail,4}   skip {skip,4}   timeout {timeout,4}");
             }
 
             if (failures.Count > 0)
@@ -862,22 +1183,65 @@ namespace BehavioralRunner
                 }
             }
 
-            if (s_goBuildFailures.Count > 0)
+            if (notMeasured.Count > 0)
             {
                 Console.WriteLine();
-                Console.WriteLine($"---- {s_goBuildFailures.Count} Go build failure(s) ----");
+                Console.WriteLine($"---- {notMeasured.Count} project(s) NOT MEASURED (a timeout budget expired) ----");
+                Console.WriteLine("  These are NOT failures: no tool reported them broken, the runner stopped waiting. This run");
+                Console.WriteLine("  proves nothing about them either way, so it is reported as FAIL rather than silently passed.");
+                Console.WriteLine("  Raise the budget and re-run -- see --build-timeout / --build-one-timeout / --run-timeout,");
+                Console.WriteLine("  or the GO2CS_BUILD_TIMEOUT / GO2CS_BUILD_ONE_TIMEOUT / GO2CS_RUN_TIMEOUT variables.");
+
+                // Cap the roster: the pathological case is the whole corpus timing out, and 555 identical
+                // lines bury the diagnosis above them rather than adding to it.
+                foreach (ProjectResult r in notMeasured.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase).Take(20))
+                {
+                    string phs = string.Join(",", r.Phases.Where(kv => kv.Value == Status.Timeout).Select(kv => kv.Key));
+                    Console.WriteLine($"  {r.Name} [{phs}]");
+                }
+
+                if (notMeasured.Count > 20)
+                    Console.WriteLine($"  ... and {notMeasured.Count - 20} more.");
+            }
+
+            if (s_goBuildFailures.Count > 0)
+            {
+                // "problem(s)", not "failure(s)": this roster now carries expired budgets alongside real
+                // toolchain errors, and heading a timeout as a failure is the same conflation the rest of
+                // this report exists to undo. The per-entry text says which each one is.
+                string expired = s_goBuildTimedOut.Count > 0 ? $" ({s_goBuildTimedOut.Count} timed out)" : "";
+
+                Console.WriteLine();
+                Console.WriteLine($"---- {s_goBuildFailures.Count} Go build problem(s){expired} ----");
                 foreach (string m in s_goBuildFailures)
                     Console.WriteLine($"  {m}");
             }
 
-            bool ok = failures.Count == 0 && s_goBuildFailures.Count == 0;
+            bool ok = failures.Count == 0 && notMeasured.Count == 0 && s_goBuildFailures.Count == 0;
+
+            // The headline distinguishes the two, because they call for opposite responses: a real
+            // failure is investigated, an unmeasured run is re-run with a bigger budget. The arms key
+            // off `failures` and `notMeasured` ONLY -- an earlier version also required
+            // s_goBuildFailures to be empty for the "purely unmeasured" arm, which meant a run whose
+            // only problem was expired `go build` budgets fell through to the mixed arm and announced
+            // the self-contradictory "FAIL (0 failing, N not measured)".
+            string verdict = ok ? "PASS"
+                : failures.Count == 0 && notMeasured.Count > 0 ? $"FAIL (NOT MEASURED: {notMeasured.Count})"
+                : notMeasured.Count > 0 ? $"FAIL ({failures.Count} failing, {notMeasured.Count} not measured)"
+                : "FAIL";
 
             Console.WriteLine();
-            Console.WriteLine($"{(ok ? "PASS" : "FAIL")}  ({all.Count} projects, {elapsed.TotalSeconds:N1}s)");
+            Console.WriteLine($"{verdict}  ({all.Count} projects, {elapsed.TotalSeconds:N1}s)");
             return ok ? 0 : 1;
         }
 
-        private static HashSet<Phase> ParsePhases(string csv)
+        // Returns null on any unrecognized token or an empty result, which the caller turns into a
+        // usage error. Warning and continuing (as this did) meant a single typo -- `--phase compil` --
+        // produced an EMPTY phase set: every phase guard in Main is then false, no project acquires any
+        // status, and Report finds no failures and prints `PASS (555 projects, 0.1s)` with exit 0. That
+        // is a vacuous run reported as a green one, the same class of hazard the enumeration floor in
+        // Main exists to catch, and it is far likelier to be a mistyped flag than a deliberate no-op.
+        private static HashSet<Phase>? ParsePhases(string csv)
         {
             HashSet<Phase> set = new();
 
@@ -890,8 +1254,16 @@ namespace BehavioralRunner
                     case "target": set.Add(Phase.Target); break;
                     case "output": set.Add(Phase.Output); break;
                     case "all": set.UnionWith(Enum.GetValues<Phase>()); break;
-                    default: Console.Error.WriteLine($"Unknown phase: {token}"); break;
+                    default:
+                        Console.Error.WriteLine($"Unknown phase: {token}");
+                        return null;
                 }
+            }
+
+            if (set.Count == 0)
+            {
+                Console.Error.WriteLine($"--phase '{csv}' selects no phases; a run that measures nothing would report a vacuous pass.");
+                return null;
             }
 
             return set;
@@ -899,11 +1271,13 @@ namespace BehavioralRunner
 
         private static void PrintUsage()
         {
-            Console.WriteLine("""
+            Console.WriteLine($"""
                 BehavioralRunner -- standalone go2cs behavioral test runner (no testhost).
 
                 Usage:
                   BehavioralRunner [--filter <substr>] [--phase <list>] [--update-targets] [--list]
+                                   [--build-timeout <sec>] [--build-one-timeout <sec>]
+                                   [--transpile-timeout <sec>] [--run-timeout <sec>]
 
                 Options:
                   --filter <substr>     Only projects whose name contains <substr> (case-insensitive).
@@ -912,13 +1286,102 @@ namespace BehavioralRunner
                   --list                List matched projects and exit.
                   -h, --help            Show this help.
 
-                Exit code 0 = all matched projects pass; 1 = at least one failure; 2 = usage error.
+                Timeout budgets (SECONDS; flag > environment variable > default):
+                  --build-timeout       One-shot parallel build of every C# target.
+                                        Env GO2CS_BUILD_TIMEOUT, default {DefaultBuildAllTimeoutMs / 1000}.
+                  --build-one-timeout   Per-project fallback build, shared-dependency pre-build, go build.
+                                        Env GO2CS_BUILD_ONE_TIMEOUT, default {DefaultBuildOneTimeoutMs / 1000}.
+                  --transpile-timeout   One converter invocation.
+                                        Env GO2CS_TRANSPILE_TIMEOUT, default {DefaultTranspileTimeoutMs / 1000}.
+                  --run-timeout         One transpiled-program or Go-binary run in the Output phase.
+                                        Env GO2CS_RUN_TIMEOUT, default {DefaultRunTimeoutMs / 1000}.
+
+                  The defaults are sized for the fast desktop this suite is baselined on, so that lane
+                  keeps failing fast. A slower machine (or a larger corpus) needs them raised: exceeding
+                  a budget is reported as NOT MEASURED, never as a compile or behavioral failure, but it
+                  still fails the run -- an unmeasured project must not read as a pass.
+
+                Exit code 0 = all matched projects pass; 1 = at least one failure or unmeasured project;
+                2 = usage error.
                 """);
         }
 
+        // ---- timeout budget resolution ----
+
+        // Flag > environment > default. A malformed FLAG is a usage error (TryParseSeconds returns
+        // false and Main exits 2) because it was typed deliberately; a malformed ENVIRONMENT value only
+        // warns and falls back, because it may have been inherited from a shell the caller did not set
+        // up. Either way the resolved value is echoed in the run header, so a misread cannot stay
+        // invisible -- which is the failure mode this whole mechanism exists to end.
+        private static int ResolveTimeout(int? flagMs, string environmentVariable, int defaultMs)
+        {
+            if (flagMs is not null)
+                return flagMs.Value;
+
+            string? setting = Environment.GetEnvironmentVariable(environmentVariable);
+
+            if (string.IsNullOrWhiteSpace(setting))
+                return defaultMs;
+
+            if (TryParseSeconds(setting, environmentVariable, out int fromEnvironment))
+                return fromEnvironment;
+
+            Console.Error.WriteLine($"  WARNING: ignoring {environmentVariable}; using the default {Seconds(defaultMs)}.");
+            return defaultMs;
+        }
+
+        // Parses a whole number of SECONDS into milliseconds. The unit is the trap here: every budget
+        // is stored in ms and was written as ms when these were constants, so a caller reaching for
+        // "300000" out of habit would silently ask for 300 ms -- a budget nothing can meet, producing a
+        // total-timeout run that looks like catastrophic breakage. Anything above a day is therefore
+        // rejected as a suspected millisecond value rather than honored.
+        private static bool TryParseSeconds(string text, string option, out int milliseconds)
+        {
+            milliseconds = 0;
+
+            if (!int.TryParse(text, out int seconds))
+            {
+                Console.Error.WriteLine($"{option}: '{text}' is not a whole number of seconds.");
+                return false;
+            }
+
+            if (seconds <= 0)
+            {
+                Console.Error.WriteLine($"{option}: must be greater than zero (got {seconds}).");
+                return false;
+            }
+
+            if (seconds > 86_400)
+            {
+                Console.Error.WriteLine($"{option}: {seconds} exceeds 24 hours -- this option is in SECONDS, not milliseconds.");
+                return false;
+            }
+
+            milliseconds = seconds * 1000;
+            return true;
+        }
+
+        // True only for a ProcResult produced by Exec's timeout path, never by a child exiting on its
+        // own -- see the note on ProcResult for why this is a field and not a heuristic.
+        private static bool TimedOut(in ProcResult result) => result.TimedOut;
+
+        private static string Seconds(int milliseconds) => $"{milliseconds / 1000}s";
+
+        // Renders a budget, marking it when it is not the built-in default, so the header line shows at
+        // a glance whether a run was given a custom budget or inherited one from the environment.
+        private static string Describe(int milliseconds, int defaultMs) =>
+            milliseconds == defaultMs ? Seconds(milliseconds) : $"{Seconds(milliseconds)} (overridden)";
+
         // ---- process execution with timeout + whole-tree kill ----
 
-        private readonly record struct ProcResult(int ExitCode, string StdOut, string StdErr);
+        // TimedOut is carried as a FIELD rather than inferred from the exit code and a stderr prefix.
+        // Sniffing for "exit -1 and stderr starting with TIMEOUT" very nearly works -- Exec is the only
+        // producer and it writes that marker itself -- but the non-timeout return passes the child's
+        // stderr through verbatim, so a child that exits -1 (0xFFFFFFFF, which .NET surfaces as -1 on
+        // Windows) while its first stderr line happens to begin with "TIMEOUT" would be indistinguishable
+        // from a real expiry. No program in this corpus does that, but the whole point of this verdict is
+        // that infrastructure and corpus signals must never be confusable, and a flag costs nothing.
+        private readonly record struct ProcResult(int ExitCode, string StdOut, string StdErr, bool TimedOut = false);
 
         private static ProcResult Exec(string application, string? arguments, string workingDir, int timeoutMs)
         {
@@ -955,7 +1418,7 @@ namespace BehavioralRunner
                 catch { /* may have exited in the race */ }
 
                 process.WaitForExit(5000);
-                return new ProcResult(-1, outBuf.ToString(), $"TIMEOUT after {timeoutMs} ms; killed process tree.\n{errBuf}");
+                return new ProcResult(-1, outBuf.ToString(), $"TIMEOUT after {timeoutMs} ms; killed process tree.\n{errBuf}", TimedOut: true);
             }
 
             process.WaitForExit();

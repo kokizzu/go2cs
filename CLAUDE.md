@@ -410,6 +410,36 @@ ONE stdlib in a build; there is now only one on disk.
   run-to-run variance on the same corpus (machine load), so budget from the TOP of the range, not the
   midpoint. A converter rebuild invalidates every project's up-to-date check, so the *next* full run
   after one always pays full price.
+
+  ⚠ **`BehavioralRunner` has its OWN internal timeout budgets, and no timeout the CALLER sets can
+  influence them** — a generous outer budget on the `run-behavioral.ps1` call does nothing if the
+  runner kills its own child first. They were hardcoded constants until 2026-08-10; they are now
+  overridable, in SECONDS, at **flag > environment variable > default**:
+  `--build-timeout`/`GO2CS_BUILD_TIMEOUT` (batch build, **2400**), `--build-one-timeout`/
+  `GO2CS_BUILD_ONE_TIMEOUT` (per-project build, shared-dep pre-build, `go build`, **300**),
+  `--transpile-timeout`/`GO2CS_TRANSPILE_TIMEOUT` (**60**), `--run-timeout`/`GO2CS_RUN_TIMEOUT`
+  (one program run in the Output phase, **30**). The build defaults are sized for the slowest
+  legitimate host per the safety-net doctrine (the i7-5820K measurement below is what sized them);
+  a fast lane that wants the old fail-fast behavior opts DOWN explicitly (`--build-timeout 300`).
+  **The slow-machine row this table was missing (measured 2026-08-10, i7-5820K 6C/12T, ~3x slower than
+  the desktop rows, at 555 packages):** the one-shot parallel build exceeded the stock 300 s **cold and
+  warm alike** — warm state cannot save it, because the Transpile phase rewrites every `.cs` immediately
+  before Compile, so the batch is never an incremental no-op. For scale, a full
+  `dotnet build src/go2cs.slnx -c Debug -m -p:UseSharedCompilation=false` of the same tree took **1,432 s
+  cold** (573 projects, 0 errors), ~5x the old 300 s batch budget; a single cold filtered project
+  measured 163 s. That measurement is what sized the current build defaults, so such a machine needs
+  no configuration; the overrides exist to opt a fast lane back down or to survive a still-slower host.
+  **A budget that expires is now reported as `NOT MEASURED`, never as a failure** — a fourth
+  `Status.Timeout` alongside Pass/Fail/Skip, borrowing CNR's word for the same idea. This closes a
+  **FALSE RED**, the mirror of the false-green routes catalogued above: on the cold slow machine the
+  batch timed out, all 555 projects fell to the sequential per-project fallback, each *also* exceeded
+  180 s (every one must first build the core dependency closure), and ~15 minutes produced zero
+  assemblies and 555 `Status.Fail` entries that read exactly like a corpus regression. Timeouts still
+  fail the run and still exit 1 — an unmeasured project must never read as a pass — but they are
+  counted, listed and summarized separately. Two related traps the same change closed: an Output-phase
+  run timeout used to surface as `exit code mismatch: C# -1 vs Go 0`, i.e. as a *behavioral* divergence
+  naming a real test; and the per-project fallback now bails out after **3 consecutive** timeouts rather
+  than spending the full budget on all 555 to re-learn one fact.
   ⚠ **Piping a long run through `Select-Object -Last N` buffers ALL output until it completes** — a
   backgrounded suite will look stuck at its first line for its entire duration. Check liveness with
   `Get-Process BehavioralRunner,dotnet`, not the output file.
