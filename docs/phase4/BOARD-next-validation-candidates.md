@@ -4163,7 +4163,7 @@ Eighteen packages match every verdict but one or two. Each cell is the whole gap
 | ~~`go/ast`~~ | ~~8 of 9~~ | **BANKED by r57b at 9/9** — two roots: the unbridged map read pair, then the lift's leaked C# name |
 | `debug/gosym` | 8 of 9 | `TestPCLine`'s child process exits 1 |
 | `debug/pe` | 9 of 10 | the `array<T>` unshaped class — `_ [3]uint8` prints `[0 0 0 0 0 0 0 0]` vs Go's `[0 0 0]` (r57b) |
-| `net/http/internal` | 9 of 10 | the `AllocsPerRun` byte/count shim, below |
+| `net/http/internal` | 9 of 10 | `TestChunkReaderAllocs` — re-measured r58a as **2 objects/run against Go's budget of 1**, a lower bound; ruling pending, below |
 | ~~`net/http/fcgi`~~ | ~~11 of 12~~ | **BANKED** (roster line 133) — re-measured 12/12 by r57b; the `TestGetValues` mismatch is gone |
 | `crypto/cipher` | 13 of 14 | the oracle's build tags, below |
 | `crypto/internal/edwards25519/field` | 13 of 16 | the `array<T>` class, producer (3) |
@@ -4689,14 +4689,14 @@ discard at `file_test.cs:1195`, a build root this fix does not touch.)
 |:--|:--:|:--|
 | `internal/runtime/syscall` | — | *"build constraints exclude all Go files"* on windows/amd64. Joins `net/internal/socktest`, `internal/syscall/unix`, `log/syslog` and `runtime/race`: in the naive 215 denominator, cannot bank on this target. |
 | `runtime/trace` | 0 of 2 | `NotImplementedException: getg: external (assembly or cgo) function is not implemented`. Both tests enter the tracer through `getg`; no managed body exists. |
-| `log/slog/internal/buffer` | 1 of 2 | `TestAlloc`: *"got 304 allocs, want 1"* — **the AllocsPerRun-reports-BYTES shim, third package** after `log`'s `TestDiscard` and `net/http/internal`'s `TestChunkReaderAllocs`. Still not a disclosure candidate for the reason r44a gave: until the shim reports a COUNT, nobody has measured the number the assert is about. |
+| `log/slog/internal/buffer` | 1 of 2 | `TestAlloc`: *"got 304 allocs, want 0"*. **Re-measured r58a with the counter live: golib charged NONE of the 304 B/run**, so AllocsPerRun fell back to bytes rather than report a zero it could not vouch for. Every object on this path is compiler-emitted or BCL-internal — the structural class no golib census reaches — so it is still not a disclosure candidate, now for a measured reason rather than an assumed one. |
 | `internal/trace/internal/oldtrace` | 2 of 3 | `TestParseCanned`: the pre-1.22 trace parser rejects two of its own canned good traces — *"p 3 is running before start (time 369986239)"* and *"previous sweeping is not ended before a new one"*. Parser-state semantics, not I/O. |
 | `internal/testenv` | 3 of 4 | `TestGoToolLocation` looks for `<staging root>/bin/go.exe`; the converted host's GOROOT is the pipeline's exported root, which has no `bin`. Same shape as `internal/godebugs`' GOROOT-relative `doc/godebug.md`. |
 | `internal/fuzz` | 0 (build) | `minimize_test.cs(177): CS1003` — a **func-literal parameter whose type is an ALIAS to an anonymous struct** emits the Go type STRING verbatim: `(struct{Parent string; Path string; …} e) => …`. `CorpusEntry` is `type CorpusEntry = struct{…}`, and production emission handles it correctly (`global using CorpusEntry = …CorpusEntryᴛ1`), so the lift exists and the func-literal parameter position does not consult it. |
 | `internal/trace` | 0 (build) | `batchcursor_test.cs(92): CS0149 Method name expected` — a parameter **named `heap`** shadows golib's `heap()` intrinsic that the same body calls (`ref var sb = ref heap(new strings.Builder(), …)`). A name-collision rule the analysis does not cover: a local or parameter whose name collides with a golib intrinsic the body invokes. |
 | `crypto/internal/edwards25519` | 0 of 55 | **Package-var initialization ORDER.** Go initializes package-level vars in DEPENDENCY order; the converter emits C# static field initializers in DECLARATION order. `identity` is declared at line 66 and reads `feOne`, declared at line 140 — so `identity`'s initializer sees `null`, `field.Subtract` null-derefs, and the package cctor throws before any test runs. This is the board's init-ORDER arc (design-with-user), and this is its first WHOLE-PACKAGE casualty. |
 | `net/smtp` | 9 of 14 | `TestNewClientWithTLS` fails with `loadcert: tls: failed to parse private key`; `TestSendMail`, `TestSendMailWithAuth`, `TestTLSClient` and `TestTLSConnState` infrastructure-error behind it. Shares its root with `crypto/rsa` below — PEM/ASN.1 private-key parsing. |
-| `crypto/rsa` | **559 of 560 — ONE row away (re-measured 2026-08-09, r57a)** | ~~0 of 592; the test package's own static initializer panics in `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` "sequence truncated".~~ **The cctor panic is GONE**, closed by r56f's `reflect.StructField.Tag` bridge exactly as that write-back predicted: `parseField` reaches its `asn1:"…"` parameters through `field.Tag.Get("asn1")` (`asn1.cs:971`, `marshal.cs:509/514`), so while every converted struct reported UNTAGGED the DER walk read every field as having no `optional`/`explicit`/`tag:` modifiers and desynchronized on the first one that mattered. With tags bridged the whole suite runs: **560 verdicts, 559 matching, 13 excluded** (8 benchmarks + 5 examples, Phase-4D). The single mismatch is **`TestAllocations`** — `testing.AllocsPerRun(100, …)` around `DecryptPKCS1v15` — and it is the **AllocsPerRun-reports-BYTES shim**, now its FOURTH member after `log`'s `TestDiscard`, `net/http/internal`'s `TestChunkReaderAllocs` and `log/slog/internal/buffer`'s `TestAlloc`. Measured: **2,851,392,000 bytes over 100 runs = 28,513,920 B/run**, reported where Go reports a malloc COUNT. **Not banked and NOT disclosable** on the standing rule — the shim has never reported the number the assert is actually about, so disclosing it would launder an unmeasured quantity. This is now the largest prize gated on that one decision: **560 verdicts held by a single row**, which is the strongest argument yet for the carried AllocsPerRun-ownership item (r56d showed golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT — that is the design-with-user path to banking this package). `net/smtp`'s five and `encoding/asn1`'s 28-of-38 shared this root and are both worth an immediate re-measure. |
+| `crypto/rsa` | **BANKED r58a — 559 matching + 1 disclosed = 560** | ~~0 of 592; the test package's own static initializer panics in `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` "sequence truncated".~~ **The cctor panic is GONE**, closed by r56f's `reflect.StructField.Tag` bridge exactly as that write-back predicted: `parseField` reaches its `asn1:"…"` parameters through `field.Tag.Get("asn1")` (`asn1.cs:971`, `marshal.cs:509/514`), so while every converted struct reported UNTAGGED the DER walk read every field as having no `optional`/`explicit`/`tag:` modifiers and desynchronized on the first one that mattered. With tags bridged the whole suite runs: **560 verdicts, 559 matching, 13 excluded** (8 benchmarks + 5 examples, Phase-4D). The single mismatch is **`TestAllocations`** — `testing.AllocsPerRun(100, …)` around `DecryptPKCS1v15` — and it is the **AllocsPerRun-reports-BYTES shim**, now its FOURTH member after `log`'s `TestDiscard`, `net/http/internal`'s `TestChunkReaderAllocs` and `log/slog/internal/buffer`'s `TestAlloc`. Measured: **2,851,392,000 bytes over 100 runs = 28,513,920 B/run**, reported where Go reports a malloc COUNT. **Not banked and NOT disclosable** on the standing rule — the shim has never reported the number the assert is actually about, so disclosing it would launder an unmeasured quantity. This is now the largest prize gated on that one decision: **560 verdicts held by a single row**, which is the strongest argument yet for the carried AllocsPerRun-ownership item (r56d showed golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT — that is the design-with-user path to banking this package). `net/smtp`'s five and `encoding/asn1`'s 28-of-38 shared this root and are both worth an immediate re-measure. |
 | `go/build` | 57 of 58 verdicts (34 of 35 top-level) | `TestLocalDirectory`: `ImportPath="."`, want `"go/build"`. The test calls `ImportDir(os.Getwd())`; `go test` runs from the GOROOT package dir, the converted host runs from `src/core/go/build`, which is not inside a Go source tree. **The converted-host WORKING-DIRECTORY class**, third member after `internal/godebugs` (0 of 1) and `io/ioutil` (27 of 28). Not a disclosure: it is satisfiable at a layer go2cs owns (the staging root's identity), so disclosing it would launder a harness limitation as an unsatisfiable assert. |
 | ~~`crypto/dsa`~~ | **DONE 2026-08-09 (r57a) — 4 of 4, banked.** The row's diagnosis was right and its conclusion was wrong by about ninety seconds. `TestParameterGeneration` **passes in 1,156.8 s (19.3 min)**, so the 20 m package deadline this row measured at was just UNDER what the package needs end to end — the deadline has to cover conversion, the C# host's startup and the `go test` oracle beside it, so it cut a run that was converging. At **30 m** it validates first try, and `crypto/dsa` is now the third `$longTimeouts` entry beside `hash/maphash` and `index/suffixarray`. ⚠ Two lessons worth carrying: "no `-test-timeout` is enough" is a claim no timeout can ever establish — only a completed run distinguishes a slow suite from a hung one — and this lane opened expecting r56f's named-numeric shift fix to be the root (a prime search over the converted `math/big` is precisely the shape that defect corrupted) and it was **not**: DSA reaches its slowness honestly, every verdict matching Go. |
 
@@ -4925,14 +4925,56 @@ against the corpus it was taken on**, and a lane that inherits one is cheaper re
 reasoning from it. The r44a lesson ("the yield is in what NOBODY HAS RUN") has a sibling: the yield
 is also in what nobody has re-run since the thing that was blocking it got fixed.
 
-**`crypto/rsa` is the campaign's largest single-row prize.** 560 verdicts held by `TestAllocations`,
-which is the AllocsPerRun-reports-BYTES shim measuring 28,513,920 B/run where Go reports a malloc
-count. It is now the **fourth** member of that class (`log`, `net/http/internal`,
-`log/slog/internal/buffer`) and `math/big`'s `TestNewIntAllocs` is the **fifth**. Two full packages
-and 560 + 226 verdicts now sit behind one unmade decision. r56d already demonstrated the missing
-half: golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT, which is the
-number the asserts are actually about. Recommend promoting the AllocsPerRun-ownership item from
-"carried" to the next design-with-user slot on that evidence.
+**`crypto/rsa` was the campaign's largest single-row prize — CLOSED r58a.** 560 verdicts held by
+`TestAllocations`, which was the AllocsPerRun-reports-BYTES shim measuring 28,513,920 B/run where Go
+reports a malloc count. What unblocked it was not a disclosure ruling but an INSTRUMENT: golib now
+keeps its own allocation counter (`AllocationCounter`), the structural mirror of what Go's
+`runtime.MemStats.Mallocs` already is — a counter the runtime keeps at its own sites, not a platform
+facility. Census, coverage boundary and overhead:
+[`DESIGN-allocation-counting.md`](DESIGN-allocation-counting.md).
+
+### r58a — the AllocsPerRun class, re-measured as a COUNT
+
+Every row below is measured through the counter with the `@string` census taken (the gap that
+document's §5 item 3 deferred to r57c is closed). The count is a **lower bound** — the C# compiler
+emits closures, `params` arrays and interface boxing in CONVERTED code that golib never sees — so
+each row is reported with that residual named, not laundered into a verdict.
+
+| Row | Go's budget | Reported BEFORE (bytes) | Reported NOW (objects) | Outcome |
+|:--|--:|--:|--:|:--|
+| `crypto/rsa` `TestAllocations` | < 10 | 28,513,920 | **340,756** | **BANKED** — `alloc-profile`, five orders clear |
+| `math/big` `TestNewIntAllocs` | 0 | 816 | **1** | not disclosable — see below |
+| `log` `TestDiscard` | ≤ 1 | 424 | **4** | ruling; and `log` has a SECOND root |
+| `net/http/internal` `TestChunkReaderAllocs` | 1 | 640 | **2** | ruling |
+| `log/slog/internal/buffer` `TestAlloc` | 0 | 304 | **counter saw none** | still bytes — not decision-grade |
+
+**The instrument did its job most visibly on `math/big`.** `TestNewIntAllocs` reported *"wanted 0
+allocations, got 816"* — a figure no reader could act on, because 816 was bytes. It now reports
+*"wanted 0 allocations, got 1"*, seven times, one per operand shape. That is not a disclosure
+candidate under ruling #1 (a want-zero assert is satisfiable in principle) — it is a tractable
+engineering target that was previously invisible: **one** golib object per `x.Add(x, NewInt(n))`.
+Whoever takes it next knows exactly what to hunt. (`math/big` re-measures **224 of 226**; the other
+miss, `TestMulUnbalanced`, is a memory-VOLUME assert, not an allocation-count one.)
+
+**`log/slog/internal/buffer` is the honest negative.** The counter charged NONE of its 304 B/run, so
+`AllocsPerRun` correctly fell back to the byte figure rather than reporting a zero it could not
+vouch for — the false-pass arm working exactly as designed. Every object on that path is
+compiler-emitted or BCL-internal, the structural class (§5 item 1) no golib census can reach. It
+stays blocked, and now for a MEASURED reason rather than an assumed one.
+
+**`log` was never one row away, and this re-measure confirms the earlier reading rather than adding
+to it.** `TestAll` still fails on the `runtime.Caller` file-name capability already characterized
+above as an architectural arc: Go asserts `^.*/[A-Za-z0-9_\-]+\.go:(63|65): hello 23 world$` and the
+converted host emits the absolute path of the `.cs` file (`D:\…\src\core\log\log_test.cs:69`). So
+even a favourable ruling on `TestDiscard` banks nothing here — 7 of 9 — which is the same call r43f
+made and the reason `log` stays off the roster. What the counter adds is the alloc row's real
+number: **4 objects/run against a budget of 1**, where the shim used to say 424.
+
+**`encoding/asn1` re-measures 35 of 38** (was 34 at r57b): r58b's typed-nil packing closed
+`TestMarshalError` exactly as predicted. The three that remain are already characterized above —
+`TestCertificate` (sequence tag mismatch), `TestMarshal` #37 (SET emitted where a SEQUENCE tag is
+wanted) and `TestUnexportedStructField` (a `reflect.setKinded` panic on a value obtained through an
+unexported field). None is an allocation row.
 
 **One new root, characterized and escalated rather than half-fixed: Go's TYPED-NIL interface does not
 survive the conversion.** Detail in the `math/big` section above. A nil `*Int` in a slice reaches an
