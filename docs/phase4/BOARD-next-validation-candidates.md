@@ -3707,7 +3707,7 @@ keeps classifying them rather than reporting them as content drift.
 | ~~`log`, `go/scanner`~~ | ~~CS0012~~ | **CLOSED 2026-08-07 (r43f-closure-edge): both edges landed, `go/scanner` BANKED 11/11, `log` does NOT bank — two roots stand behind the closure one. Full account in the last section of this file.** The rooting below called both mechanisms correctly and was wrong about two details worth carrying: `log`'s literal is not `log.Logger{}` but `var l Logger` (a zero-value DECLARATION, in the INTERNAL white-box half — no composite literal exists, which is exactly why no literal walk could see it), and the implemented-interface gate is not `types.Implements` but the package's own emitted VALUE-form `GoImplement` RECORDS: satisfaction alone drifts 16 of the 96 banked projects. Original rooting: ~~**A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.**~~ |
 | `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
 | `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
-| ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. |
+| ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. — **BANKED 98/98 2026-08-09 (r57c)**: the performance row was `@string` slicing in O(n); see *r57c* at the end of this file. |
 | `testing/fstest` | CS0030 | Converting the test-local named type `shuffledFS` to its underlying `map[string]*MapFile`. |
 | `internal/types/errors` | CS0246 | `Error` / `Info` — names the emitted code does not declare for a test-local enumeration. |
 | `crypto/ecdh` (CS1001), `crypto/ed25519` (CS0030), `crypto/internal/mlkem768` (CS0315), `runtime/debug` (CS0264) | — | not taken past the first diagnostic. |
@@ -4737,6 +4737,11 @@ internal defeats its own purpose. Every other promotion keeps the conservative h
 
 ### `archive/zip` — 95 of 98, and the residual is the SLOW class, not a defect
 
+> **SUPERSEDED 2026-08-09 (r57c-zipperf) — the package BANKS at 98 of 98.** Everything measured
+> below stands; the closing paragraph offered two routes and the *second* one was taken. The
+> "throughput" was an ASYMPTOTE: `@string` held a bare `byte[]`, so `s[i:]` copied where Go's
+> string header slices in O(1). See *r57c* at the end of this file.
+
 The three residual rows are `TestZip64LargeDirectory` and its two subtests, and they are not
 mismatches: the C# verdict is **empty**, with `{"action":"timeout","elapsed":900}` and all three still
 in `run` state. That is the signature `run-validated-sweep.ps1`'s own `$longTimeouts` comment
@@ -4815,3 +4820,77 @@ of `type ruleKind int`), so a converter fix landed after `time` was banked and i
 went stale. Confirmed NOT this branch's by building the converter at the merge base `363e728bb` and
 re-running `time`'s `-tests` conversion: the base reproduces the identical flip. It needs a
 re-bank of that one file by whoever owns the fix, not a restore in perpetuity.
+
+## r57c — `archive/zip` banks 98/98; the "performance row" was a WRONG ASYMPTOTE in `@string` (2026-08-09)
+
+**Banked: `archive/zip` 98/98, no disclosures.** Roster 121 → **122** of 215 (56.3 % → **56.7 %**),
+13,890 → **13,988** matching verdicts, 50 disclosed (unchanged). *Lane-local arithmetic against this
+branch's base; the coordinator union-recomputes at merge.*
+
+The board's own `archive/zip` section closed by naming two routes to a bank — "either a measured
+deadline (the `index/suffixarray` route) or the string/slice throughput work that would make the
+measurement moot" — and advised a lane to "start by timing the C# host solo with no deadline rather
+than re-rooting anything". That advice was followed exactly, and it is what found the defect: the
+host, timed solo with no deadline, **still had not finished after 45 minutes** against Go's 13.2 s.
+A constant-factor throughput gap does not do that. Profiling it (`dotnet-stack`, both worker threads,
+every sample) put the entire cost in one frame — `detectUTF8` → `Buffer._Memmove`.
+
+`detectUTF8` is the ordinary Go rune walk, and the emission is a faithful 1:1 rendering of it:
+
+```go
+for i := 0; i < len(s); { r, size := utf8.DecodeRuneInString(s[i:]); i += size }
+```
+
+The defect was underneath, in the REPRESENTATION. A Go string header is a pointer **plus length**
+into shared immutable storage, so `s[i:]` is O(1) and allocates nothing. `@string` held a bare
+`byte[]`, so its range indexer had to *materialize* the sub-string: O(n), with an allocation. Over a
+65,535-byte file name that makes the loop **accidentally quadratic** — ~2.1 GB copied per call, two
+calls per record, 32,768 records. Not slowness; the wrong asymptote. `@string` now carries the
+header's real shape (backing array, offset, length) and slices into a window; the backing array is
+PRIVATE, so a consumer reading it instead of the window is a compile error rather than a wrong
+answer, which is how the last three raw-array readers were found. Detail in the two signed commits
+and in `ConversionStrategies-Reference.md`.
+
+`TestZip64LargeDirectory`: **>45 min (never completed) → 20.2 s**, against Go's 11.3 s.
+
+### What this row costs the sweep, and why the 20m entry is still needed
+
+The pipeline builds **Debug**, where the non-inlined golib window accessors cost ~22x, so the banked
+suite is minutes rather than seconds and `archive/zip = '20m'` joins `hash/maphash` and
+`index/suffixarray` in `run-validated-sweep.ps1`'s `$longTimeouts`. That figure was measured on the
+reference desktop (391 s for the whole suite). **Re-verified on the replacement box** (i7-5820K
+6C/12T, ~3x slower, with two sibling lanes building): the suite ran **792.6 s**, of which
+`TestZip64LargeDirectory` alone was **774.0 s**. Still inside 20 m, but with only ~35 % headroom on a
+slow loaded box — so if a future sweep reports `archive/zip` as an empty verdict, suspect the
+deadline before suspecting the package.
+
+### The crash-save classification refines r57b's NUL rule
+
+r57b found the first instance of crash corruption in a `wip(...)` snapshot — files that are 100 %
+NUL bytes, NTFS having committed each file's SIZE and lost its DATA — and proposed the
+size-vs-committed-content check as the test that separates it from real drift. **This lane's wip
+carried five more (`go/internal/gccgoimporter/{ar,gccgoinstallation,importer,package_info,parser}.cs`)
+and that test would have MISSED all five**: their sizes do not match the committed content, they
+match the *intended new* content, because each was mid-rewrite by a `-tests`-closure emission when
+the machine died. The reliable discriminator is therefore the content itself — **a file that is
+100 % NUL is corruption, whatever its size** — with the size comparison demoted to a corroborating
+detail. `git diff --stat` names them for free: a `.cs` reported as `Bin <old> -> <new> bytes` is
+never legitimate converter output.
+
+The rest of the wip classified into the standing families with nothing unexplained: the
+`-tests`-closure production restore family (`Δio` alias in `bufio`/`bytes`/`crypto`, the
+`global::go.*` root escape in `crypto/md5`, and one `initᴛᴛtests` package_init hook in
+`crypto/ecdh`), three `-text` `compress/testdata` CRLF phantoms, and a stray 16 MB `src/go2cs.exe`
+build artifact at the repository root — which is worth one line of its own: the converter's
+gitignore entry is `/src/go2cs/go2cs.exe`, so a binary built one directory up is **tracked**, and a
+crash-save picks it up.
+
+### Handoffs — neither owned by this lane
+
+- **`ByteSeqAllocationTests`' `@string` bound is stale-LOOSE.** The window makes a sub-string
+  allocation-free, so the test's asserted upper bound now passes with room to spare rather than
+  measuring anything. It belongs to **r58a**'s allocation-counting arc, which is the lane that will
+  have a true count to tighten it against.
+- **`InterfaceInheritance` / `ValueOf(Type).Pointer()`.** The one behavioral failure seen while
+  gating this lane was proven **pre-existing on master** (reproduced at the merge base), and its root
+  is in the reflection bridge — **r58b**'s area. This lane's only touch on that file is a comment.
