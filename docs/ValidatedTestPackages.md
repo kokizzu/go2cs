@@ -25,7 +25,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **126 / 215 testable packages validated — 58.6%**
 >
-> **14,642 matching test verdicts · 51 disclosed** *(updated 2026-08-10 — maintained as part of the
+> **14,643 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -123,7 +123,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 534 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. · [proof](validation/current/internal.zstd.md) |
-| [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 59 | 2 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · [proof](validation/current/io.md) |
+| [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 60 | 1 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · [proof](validation/current/io.md) |
 | [`io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) | 18 | | The `fs.FS` interface family — named-interface runtime shells, `fs.Glob` deep recursion, `dirFS` walks. · [proof](validation/current/io.fs.md) |
 | [`log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) | 3 |  | The two hand-written `slog.Handler` implementations `log/slog`'s benchmarks measure against, checked for correctness rather than speed — a minimal text handler's rendered output byte-for-byte, and an async handler's ring-buffered `Record` compared attribute by attribute through `slices.EqualFunc` over `slog.Attr.Equal`. · [proof](validation/current/log.slog.internal.benchmarks.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · [proof](validation/current/maps.md) |
