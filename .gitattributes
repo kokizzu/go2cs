@@ -39,6 +39,34 @@
 *.targets    text eol=crlf
 src/core/**/README.md text eol=crlf
 
+# ---------------------------------------------------------------------------
+# LF pin for shell scripts
+# ---------------------------------------------------------------------------
+# The mirror image of the block above, for the one file type where the CHECKOUT
+# form is not cosmetic but a hard runtime requirement: a POSIX shell reads the
+# shebang literally, so a CR at the end of line 1 makes the interpreter name
+# `sh\r` and the script dies before it runs --
+#   $ ./src/tour/scripts/start.sh -runtime=nuget
+#   /usr/bin/env: 'sh\r': No such file or directory        (exit 127)
+# The damage is not confined to the shebang: every trailing CR survives into
+# command substitution, so `tour_root=$(... && pwd)` and `export GO_TOUR_BIN=`
+# would carry CRs into paths even if the interpreter resolved.
+#
+# With no attribute these files inherited autocrlf's default text handling and
+# materialized CRLF on any Windows clone (core.autocrlf=true is this repo's
+# working default), breaking the README's documented "Start on macOS or Linux"
+# path -- ./src/tour/scripts/start.sh -- for WSL, containers and a Linux CI lane
+# alike. Blobs are already LF in the object store, so this pin does NOT rewrite
+# the index (`git add --renormalize '*.sh'` stages nothing); it makes the ONE
+# correct checkout form explicit instead of dependent on a per-machine setting.
+#
+# ORDER: above the -text blocks, same as the CRLF pins, so a byte-sensitive
+# testdata fixture that happens to be a .sh keeps its verbatim-bytes exemption
+# (src/core/**/testdata/** below). There are no such fixtures today; the
+# ordering costs nothing and keeps the file's one rule -- last match wins,
+# -text has the last word -- intact.
+*.sh text eol=lf
+
 # go2cs behavioral TargetComparison tests compare transpiled C# to .cs.target
 # golden files BYTE-FOR-BYTE (TargetComparisonTests.FileMatch). The converter
 # preserves the Go source's LF inside multi-line string literals, so these files
