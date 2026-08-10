@@ -653,6 +653,60 @@ public static ж<MapIter> MapRange(this ΔValue v) {
     return Ꮡit;
 }
 
+// MapKeys returns a slice containing all the keys present in the map, in unspecified order.
+//
+// The converted body reinterprets the descriptor as a *mapType (`v.typ().Reinterpret<abi.Type,
+// mapType>()`) to read the map's key type off the embedded abi.MapType. That reinterpret is NOT the
+// managed-box aliasing case toRType relies on: a synthesized descriptor is a bare abi.Type with no
+// abi.MapType allocated behind it, and the emitted mapType holds its embed as a REFERENCE (the
+// promoted ᏑʗMapType box), so the reinterpreted field reads whatever the descriptor's first word
+// happens to be — go/ast's TestPrint died on exactly that. Iteration is the same hiter/mapiterinit
+// machinery MapRange already replaced, so MapKeys is MapRange collected: the key-typing rule
+// (declared key type, nil key included, flagRO inherited) stays in ONE place.
+public static slice<ΔValue> MapKeys(this ΔValue v) {
+    v.flag.mustBe(Map);
+    // Presized from Len and TRIMMED to what iteration actually yielded, exactly as Go's own body
+    // does: the length is read before the walk, so a concurrent writer can only make the walk
+    // shorter (Go tolerates the race and documents it as the caller's problem).
+    var keys = new ΔValue[(nint)v.Len()];
+    nint i = 0;
+    var iter = v.MapRange();
+    while (i < keys.Length && iter.Next()) {
+        keys[i] = iter.Key();
+        i++;
+    }
+    return new slice<ΔValue>(keys)[..((int)i)];
+}
+
+// MapIndex returns the value associated with key in the map v, or the INVALID zero Value when the
+// key is absent or v is a nil map. Same root as MapKeys above — the converted body reinterprets the
+// descriptor as a *mapType and then reads the entry through Go's mapaccess/mapaccess_faststr
+// runtime intrinsics. The key marshals into the map's STATIC key type under Go assignability, the
+// same relation (and the same failure-text shape) SetMapIndex applies on the write side.
+public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
+    v.flag.mustBe(Map);
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? keyType = GoReflect.KeyType(st);
+    System.Type? elemType = GoReflect.ElementType(st);
+    object? liveMap = v.live;
+    // Go: indexing a nil map is legal and yields the zero Value — unlike ASSIGNING to one, which
+    // panics — so this is a miss, not an error.
+    if (liveMap is null || keyType is null || elemType is null || (liveMap is IMap nilProbe && nilProbe.IsNil)) {
+        return new ΔValue(nil);
+    }
+    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
+        throw panic("reflect.Value.MapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
+    if (!GoReflect.TryGetMapEntry(liveMap, keyType, elemType, k, out object? e)) {
+        return new ΔValue(nil);
+    }
+    // Typed by the map's DECLARED element type, inheriting BOTH operands' read-only bits (Go's
+    // `fl := (v.flag | key.flag).ro()`) — the same slot rule MapIter.Value follows, so a lookup and
+    // a range over one map agree.
+    return makeTypedValue(e, elemType, null, (flag)(v.flag | key.flag));
+}
+
 // ==== Phase-3 write-back: Set, Zero, methodName ====
 
 // Set assigns x to the value v (v must be addressable and x assignable to v's type — Go's

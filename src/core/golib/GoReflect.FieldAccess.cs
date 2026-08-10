@@ -526,4 +526,32 @@ public static partial class GoReflect
     {
         ((IDictionary<K, V>)map)[(K)key!] = (V)value!;
     }
+
+    private static readonly ConcurrentDictionary<(Type keyType, Type elemType), Func<object, object?, (bool, object?)>> s_mapGetters = new();
+
+    /// <summary>
+    /// Reads the value stored under a key in a live golib map, reporting Go's comma-ok presence
+    /// (<c>reflect.Value.MapIndex</c>, whose missing-key answer is the INVALID zero Value).
+    /// </summary>
+    /// <remarks>
+    /// Routed through <see cref="IMap{TKey, TValue}"/>'s comma-ok indexer rather than the
+    /// non-generic <see cref="IDictionary"/> walk <c>mapBacking</c> uses, so the NIL key is found
+    /// like any other: the backing <see cref="Dictionary{TKey, TValue}"/> cannot hold one and golib
+    /// keeps that entry in a dedicated slot, invisible to the non-generic surface.
+    /// </remarks>
+    public static bool TryGetMapEntry(object map, Type keyType, Type elemType, object? key, out object? value)
+    {
+        (bool present, object? found) = s_mapGetters.GetOrAdd((keyType, elemType), static k =>
+            typeof(GoReflect).GetMethod(nameof(getMapEntry), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(k.keyType, k.elemType).CreateDelegate<Func<object, object?, (bool, object?)>>())(map, key);
+
+        value = found;
+        return present;
+    }
+
+    private static (bool present, object? value) getMapEntry<K, V>(object map, object? key) where K : notnull
+    {
+        (V value, bool present) = ((IMap<K, V>)map)[(K)key!, true];
+        return (present, present ? value : null);
+    }
 }
