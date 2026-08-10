@@ -196,6 +196,41 @@ path bound and the reference side's agreement.
 
 [issue #35]: https://github.com/ritchiecarroll/go2cs/issues/35
 
+### The recurse output root records its runtime root: the `$(go2csPath)` default
+
+**A local-references `-recurse` conversion pins the runtime root it resolved against into the output
+root's generated `Directory.Build.props`** ([issue #36]):
+
+```xml
+<PropertyGroup Condition="'$(go2csPath)' == ''">
+  <go2csPath>C:/Users/mason/go2cs-runtime/</go2csPath>
+</PropertyGroup>
+```
+
+The `-go2cspath` command-line flag is a conversion-time input — it is where the converter reads each
+imported package's `package_info.cs` from and what it resolves `$(go2csPath)core/…` references
+against — but before this pin its value never reached the emitted build files. The MSBuild property
+of the same name then had only the csproj template's fallback (`$(USERPROFILE)/go2cs/`, or
+`$(SolutionDir)` under Debug), so converting into an isolated output root produced a solution whose
+stdlib/runtime/analyzer references could not resolve unless the runtime happened to live at
+`~/go2cs` or a deploy-core `Directory.Build.props` sat above the output. Three details:
+
+* When the output root IS the runtime root (the one-positional form), the pin stays relative —
+  `$(MSBuildThisFileDirectory)`, the deploy-core form — so the tree can move as a unit. An isolated
+  output root pins the absolute resolved root (forward slashes and a trailing separator, per the
+  section below); a re-conversion refreshes it.
+* The `Condition` keeps it a default: a `go2csPath` environment variable, a `-p:go2csPath` build
+  global, or a higher `Directory.Build.props` still wins.
+* `-recurse=nuget` deliberately emits **no** pin — it has no `$(go2csPath)` references to resolve,
+  and its props defaults `GoStdLibVersion` instead. A foreign `Directory.Build.props` at the output
+  root (deploy-core's, or user-authored) is never clobbered, per the generated-file marker rule.
+
+Guarded by the `go2csPath` assertions in `TestRecurseSyntheticModule` (absolute pin, isolated
+output root), `TestRecurseBuildFilesRelativePinWhenRootsCoincide` (relative form), and
+`TestRecurseNuGetReferences` (no pin under NuGet references).
+
+[issue #36]: https://github.com/ritchiecarroll/go2cs/issues/36
+
 ### Path separators in emitted MSBuild files: forward slashes, on every host
 
 **Every path the converter writes into a `.csproj`, `.slnx`, `.pubxml` or `Directory.Build.props` uses `/`, on every host.** There is no per-host emission and no host-conditional spelling: one converted corpus is correct on Windows, Linux and macOS.

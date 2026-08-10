@@ -156,6 +156,48 @@ func TestRecurseSyntheticModule(t *testing.T) {
 	if strings.Contains(appSlnx, "fmt.csproj") {
 		t.Errorf("app per-project solution should not list stdlib projects (found fmt.csproj):\n%s", appSlnx)
 	}
+
+	// Issue #36: the emitted output-root Directory.Build.props defaults go2csPath to the runtime
+	// root the conversion resolved against, so the $(go2csPath)core/... references resolve without
+	// an environment variable or a -p:go2csPath global. The output root here is isolated from the
+	// runtime root, so the pin is the absolute resolved path (a re-conversion refreshes it); the
+	// Condition keeps every consumer override winning.
+	props := readGenerated(t, filepath.Join(options.recurseOutputRoot, "Directory.Build.props"))
+
+	if !strings.Contains(props, `<PropertyGroup Condition="'$(go2csPath)' == ''">`) {
+		t.Errorf("output-root Directory.Build.props missing the conditional go2csPath default:\n%s", props)
+	}
+
+	runtimeRoot, err := filepath.Abs(options.go2csPath)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "<go2csPath>" + filepath.ToSlash(runtimeRoot) + "/</go2csPath>"; !strings.Contains(props, want) {
+		t.Errorf("output-root Directory.Build.props missing the runtime-root pin %q:\n%s", want, props)
+	}
+}
+
+// TestRecurseBuildFilesRelativePinWhenRootsCoincide covers the established one-positional CLI form,
+// where the runtime root doubles as the output root: the go2csPath default then stays relative
+// ($(MSBuildThisFileDirectory), the deploy-core form) so the tree can move as a unit. No module
+// conversion is needed — the build files are a pure function of the two roots.
+func TestRecurseBuildFilesRelativePinWhenRootsCoincide(t *testing.T) {
+	root := t.TempDir()
+	m := NewModuleConverter(Options{go2csPath: root, recurse: true})
+
+	m.generateRecurseBuildFiles()
+
+	props := readGenerated(t, filepath.Join(root, "Directory.Build.props"))
+
+	if !strings.Contains(props, "<go2csPath>$(MSBuildThisFileDirectory)</go2csPath>") {
+		t.Errorf("coinciding roots should pin go2csPath relatively:\n%s", props)
+	}
+
+	if !strings.Contains(props, `<PropertyGroup Condition="'$(go2csPath)' == ''">`) {
+		t.Errorf("go2csPath pin is not condition-guarded:\n%s", props)
+	}
 }
 
 // TestRecurseNuGetReferences is the -recurse=nuget counterpart to TestRecurseSyntheticModule: it runs the
