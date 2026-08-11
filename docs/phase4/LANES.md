@@ -37,11 +37,16 @@ so the coordinator can calibrate assignments.
 
 ## Assignments
 
-| Lane | Machine | Status |
-|---|---|---|
-| L1 host-conditional roster | laptop-1 | OPEN |
-| L2 allowlist derivation | laptop-1 (after L1) | OPEN |
-| L3 ж-box implementation | laptop-1 | BLOCKED — post-1.23.1.6 harvest only (design **SIGNED OFF** 2026-08-10, doc landed on master) |
+| Lane | Machine | Status | Merge window |
+|---|---|---|---|
+| L1 host-conditional roster | laptop-1 | OPEN | anytime (harness-only) |
+| L2 allowlist derivation | laptop-1 (after L1 — same file) | OPEN | anytime (harness-only) |
+| L3 ж-box implementation | laptop-1 | BLOCKED — post-1.23.1.6 harvest only (design **SIGNED OFF** 2026-08-10, doc landed on master) | post-harvest |
+| L4 init-order tuple-spec fix (Option A) | laptop-1 (parallel with L1/L2 — disjoint files; use a second clone or worktree if truly concurrent) | OPEN to develop | **post-1.23.1.6** (converter change; the release ships from the current gated tree) |
+
+⚠ Two lanes running concurrently on one machine need **separate checkouts** (second clone or
+`git worktree`) — CNR/behavioral gates re-transpile the tree they run in, and two lanes sharing
+one checkout will trample each other's state even when their diffs are disjoint.
 
 ---
 
@@ -89,6 +94,34 @@ Gates: a filtered sweep over 3-4 banked packages including at least one L3 packa
 one) and one hook-carrying package, classification output matching today's; the negative test; a
 PS 5.1 parse check. Update the script's comment block to describe derivation instead of
 maintenance. Commit on your branch (subject starts "L2:"), push, signal.
+
+## L4 — init-order tuple-spec fix (Option A, ratified)
+
+CONVERTER FIX, fully specified by [`FINDING-init-order-tuple-specs.md`](FINDING-init-order-tuple-specs.md)
+(read it first, end to end — it carries the root cause, the census with positive controls, the
+hand-simulated 0/55 → 52/55 measurement, and the reproduction commands). Branch from current
+origin/master.
+
+The work: extend the EXISTING init-order relocation (`src/go2cs/initOrderOperations.go`, landed
+`e39855770`) to package-level tuple var specs — the refusal sits at `visitValueSpec.go:1158`.
+Reuse `packageInitMethodName`/`recordMovedInitMethod`/`writePackageInitFile` unchanged; Go's
+`InitOrder` yields one entry per spec, so ordinals need no new bookkeeping. Cover BOTH emission
+sub-shapes the census found (edwards25519's deconstructing form AND the darwin `os`
+`initCwd`/`initCwdErr` hoisted form — a fix that misses the second is half a fix). Remove the
+falsified "no stdlib occurrence" comment and the warning it guards.
+
+Gates: converter `go test ./...` (add a unit guard beside the existing init-order tests); a NEW
+behavioral test exercising a tuple-spec package var whose initializer depends on a later-declared
+var (per CLAUDE.md's regression-test steps — goldens, slnx registration, integrity check); CNR —
+expect movement ONLY in that new test plus any behavioral package with tuple package-vars
+(justify each; re-baseline via UpdateTestTargets after re-transpiling); the edwards25519 pipeline
+re-measure (`-tests -test-action all -test-timeout 30m`) expecting **52 of 55** with the three
+residuals matching the FINDING's attribution; a darwin single-package census
+(`-comments -platforms darwin/amd64` over GOROOT's `os`) showing the refusal warning GONE.
+Corpus impact: exactly the two edwards25519 files plus their package_init.cs on Windows — a
+seeded single-package reconvert proves it; do NOT run a whole-corpus regen (r59 owns the next
+one). Commit on your branch (subjects start "L4:"), push, signal. **Merges only after 1.23.1.6
+ships** — develop freely, the branch waits.
 
 ## L3 — ж-box allocation-reduction implementation
 
