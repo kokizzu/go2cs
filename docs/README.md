@@ -47,7 +47,7 @@ easily, and a .NET developer can use Go code directly within the .NET ecosystem.
 ### Frequently asked questions
 
 * Why is a Go to C# transpiler needed? _[Integration opportunities](Background.md#background)._
-* Won't converted C# code be slower? _[Usually — but no longer always](#performance)._
+* Won't converted C# code be slower? _[Usually — but not always](#performance)._
 
 ## Transpiler Goals
 
@@ -497,7 +497,7 @@ strictly.
 
 _Everyone asks:_ how fast is the transpiled C# compared to the original Go — including startup time,
 memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _usually
-slower than native Go, [but no longer always](Background.md#why-convert-go-to-c)_: maps, channels and the
+slower than native Go, [but not always](Background.md#why-convert-go-to-c)_: maps, channels and the
 optimized [stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go
 or faster in both C# variants**, and Native AOT adds more rows to that list. Most compute-shaped code sits
 within a small multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
