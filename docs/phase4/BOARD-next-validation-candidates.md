@@ -5367,3 +5367,72 @@ GOROOT-tree-reproduction is DEFERRED past 75% (four packages against a harness-c
 re-validating all 126); r59 runs as the next dedicated lane after the harvest with backlog 24
 riding its regen; NuGet 1.23.1.6 is approved after the day's final consolidated sweep (release
 push user-owned).
+
+## Harvest r60 — the post-1.23.1.6 collection (2026-08-11)
+
+The first release-gated harvest, run across two machines the same day the fixes landed. Every item
+below supersedes its older census row; the roster is the authority as always.
+
+**`encoding/asn1` — BANKED 38/38** (roster 127, `74cec76e3`). The full arc: 28/38 under one
+hypothesized DER root → r57a's `StructField.Tag` bridge closed six for free → r57b split the
+remainder into four TRUE roots → r58b's typed-nil packing took one, L6 took two
+(`TestMarshal` #37 AND `TestCertificate` — via `reflect.Type.Name()` blanking defined container
+types, NOT the hypothesized converter SET-tag defect; converter unmodified), L7 took the last
+(`StructField.PkgPath` unset on the type side — NOT flagRO; the value side was already refusing
+writes correctly). The two lanes' residual sets were exactly complementary and neither could
+observe the union; the pinned-machine measurement confirmed 38/38.
+
+**`crypto/internal/edwards25519` — measured 54/55 on merged L4+L7** (was 0/55, a whole-package
+cctor casualty). L4's tuple-spec relocation lets the package RUN; L7's array-dims fix greens both
+`quick.Check` rows with real `[32]byte`/`[64]byte` values. Sole residual: `TestAllocations`
+(109 objects vs want 0 — the ж-box arc's row; NOT disclosed per the near-budget ruling). NOT
+banked. ⚠ The fix's production emission (a new ordered `package_init.cs`) is deliberately
+UNCOMMITTED — additive-only drift owed to r59's queued whole-corpus regen, per the
+no-casual-regens rule.
+
+**`math/big` (224/226) and `nistec` (2,195/2,200) — refresh deliberately SKIPPED.** Nothing in
+this harvest touches their residual roots (the want-zero counter rows and TestMulUnbalanced's
+truthful performance measurement — all ж-box territory). Their recent measurements stand; a
+refresh would have measured the same defect-free packages against the same open arcs.
+
+### New open items from the lanes' re-attributions
+
+- **`rtype.PkgPath()` answers "main" for an UNNAMED struct where Go answers ""** — the sibling of
+  L6's Name() fix, found by L7's cross-validation, fixed by neither. Latent until a consumer
+  compares package paths of anonymous types.
+- **`abi.Type.HasName()` is false for every synthesized descriptor** — dormant, but populating it
+  changes `directlyAssignable`'s short-circuit corpus-wide; wants its own lane, not a drive-by.
+- **`StructField.Anonymous` + embedded-field ORDER** — go2cs-gen emits promoted-embed boxes after
+  declared fields, so bridge walk order differs from Go's declaration order. One increment, needs
+  a demonstrated consumer.
+- **`Out(i).Len()` for a func returning a fixed-size array** — no attribute position exists on a
+  ValueTuple; recorded, unowned.
+- **A bridge-minted method value keeps a dims-less descriptor** — adjacent to L7's fix, same
+  remedy shape, needs a consumer.
+
+### Machine traps (both cost real time on laptop-1; both now protocol)
+
+- **`-tests` self-location does NOT fire when a deployed root exists**: a valid machine-global
+  `%USERPROFILE%\go2cs` pre-empts self-location ("an explicitly configured working root always
+  wins"), and the resulting version-mixed build dies with `MSB4006 circular dependency ...
+  unsafe.csproj` — which reads exactly like a corpus defect and is not one. EVERY pipeline
+  measurement passes an explicit `-go2cspath <checkout>\src`.
+- **`Copy-Item` preserves `LastWriteTime`**, so a copy-aside/restore A/B leaves the restored file
+  OLDER than build output and MSBuild skips the rebuild — surfacing as a phantom `CS0117` against
+  source that plainly contains the member. Touch restored files; `git checkout` stamps fresh.
+
+### Process rulings recorded in passing
+
+- **Version flips belong to the release ritual; hand-fixes own numbers.** The io/rsa badge
+  regeneration pinned 1.23.1.6 pre-release (safe only because Phase 1 had already bumped); the
+  clean rule is mid-cycle regens pin the published version and the ritual does all flipping.
+- **`push-nuget.ps1`'s badge preflight is blind to a MISSING badge** — a banked package with no
+  Tests badge ships silently (crypto/rsa nearly did). Hardening owed: a banked proof page with no
+  corresponding badge claim fails as loudly as a wrong one.
+- **L5's publish-stamp follow-up stands**: the preflight still proxies "published" via the build
+  release; the repo-recorded stamp written by the publish ritual (feed query advisory-only) is the
+  ruled remedy.
+- **The proof pages are an L8-guarded surface too**: a sweep on a mispinned toolchain rewrites
+  `docs/validation/current/*`'s Go-version stamp with counts unchanged (observed:
+  `encoding.binary.md` 1.23.1 → 1.23.2, restored not banked). L8's guard covers the sweep; this
+  is the second thing it protects.
