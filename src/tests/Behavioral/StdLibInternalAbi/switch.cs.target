@@ -2,13 +2,13 @@ namespace go;
 
 partial class main_package {
 
-[GoType] [GoValueClone("Cases")] partial struct InterfaceSwitch {
+[GoType] partial struct InterfaceSwitch {
     public ж<InterfaceSwitchCache> Cache;
     public nint NCases;
     public array<ж<ΔInterfaceType>> Cases = new(1);
 }
 
-[GoType] [GoValueClone("Entries")] partial struct InterfaceSwitchCache {
+[GoType] partial struct InterfaceSwitchCache {
     public uintptr Mask;
     public array<InterfaceSwitchCacheEntry> Entries = new(1);
 }
@@ -41,7 +41,7 @@ public static bool UseInterfaceSwitchCache(@string goarch) {
     public bool CanFail;
 }
 
-[GoType] [GoValueClone("Entries")] partial struct TypeAssertCache {
+[GoType] partial struct TypeAssertCache {
     public uintptr Mask;
     public array<TypeAssertCacheEntry> Entries = new(1);
 }

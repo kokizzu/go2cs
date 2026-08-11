@@ -8,7 +8,7 @@ internal static slice<@string> take(slice<@string> s) {
     return s;
 }
 
-[GoLocalName("rec")] [GoType("dyn")] partial struct main_rec {
+[GoType("dyn")] partial struct main_rec {
     internal @string a, b;
 }
 

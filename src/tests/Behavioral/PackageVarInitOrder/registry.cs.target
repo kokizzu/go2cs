@@ -27,7 +27,7 @@ internal static UntypedInt numChunks => /* 1 << chunkBits */ 16;
 
 internal static UntypedInt tableSize => 37;
 
-[GoType] [GoValueClone("chunks")] partial struct holder {
+[GoType] partial struct holder {
     internal array<uint32> chunks = new(numChunks);
 }
 

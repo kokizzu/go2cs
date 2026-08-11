@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-[GoType] [GoValueClone("h", "x")] partial struct digest {
+[GoType] partial struct digest {
     internal array<nint> h = new(4);
     internal array<byte> x = new(2);
     internal nint nx;
@@ -24,7 +24,7 @@ internal static @string show(this digest d) {
     return fmt.Sprintf("%v %v %d"u8, d.h, d.x, d.nx);
 }
 
-[GoType] [GoValueClone("d")] partial struct nest {
+[GoType] partial struct nest {
     internal digest d;
     internal nint tag;
 }

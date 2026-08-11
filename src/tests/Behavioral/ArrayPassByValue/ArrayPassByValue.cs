@@ -34,7 +34,7 @@ internal static void Main() {
 
 internal static array<nint> garr = new nint[]{1, 2, 3}.array();
 
-[GoType] [GoValueClone("arr")] partial struct arrHolder {
+[GoType] partial struct arrHolder {
     internal array<nint> arr = new(3);
 }
 

@@ -112,7 +112,7 @@ public static nint Total(this Grid g) {
 
 [GoType("[4]uint64")] partial struct nonMont;
 
-[GoType] [GoValueClone("s")] partial struct scal {
+[GoType] partial struct scal {
     internal mont s;
 }
 

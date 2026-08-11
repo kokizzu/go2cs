@@ -8,7 +8,7 @@ partial class main_package {
     internal nint n;
 }
 
-[GoType] [GoValueClone("future")] partial struct rec {
+[GoType] partial struct rec {
     internal array<cycle> future = new(3);
 }
 

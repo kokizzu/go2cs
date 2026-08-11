@@ -4,7 +4,7 @@ using @unsafe = unsafe_package;
 
 partial class main_package {
 
-[GoType] [GoValueClone("Ints", "Floats", "Ptrs", "ReturnIsPtr")] partial struct RegArgs {
+[GoType] partial struct RegArgs {
     public array<uintptr> Ints = new(IntArgRegs);
     public array<uint64> Floats = new(FloatArgRegs);
     public array<@unsafe.Pointer> Ptrs = new(IntArgRegs);

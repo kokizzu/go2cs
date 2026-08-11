@@ -20,12 +20,15 @@ func main() {
 	b = a
 	fmt.Println(a == b)
 
-	// A function-local named type keeps its Go source name for reflection (%T prints
-	// main.point, never the lifted C# identifier) — pinned at emission level by the golden's
-	// [GoLocalName("point")] attribute (encoding/binary's TestNoFixedSize error text).
+	// A function-local named type keeps its Go source name for reflection: %T must print
+	// main.point, never the lifted C# identifier (encoding/binary's TestNoFixedSize asserts
+	// the exact error text this feeds). Printing it is what pins the [GoLocalName] stamp —
+	// the stamp itself rides package_info.cs, which has no golden, so an emission-level pin
+	// would guard nothing.
 	type point struct{ X, Y int }
 	p := point{X: 1, Y: 2}
 	fmt.Println(p.X + p.Y)
+	fmt.Printf("%T %T\n", p, &p)
 
 	describe(func(x int) int { return 0 })
 }

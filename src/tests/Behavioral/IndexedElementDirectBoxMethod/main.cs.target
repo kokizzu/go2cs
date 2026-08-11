@@ -17,7 +17,7 @@ internal static void inc(this ж<counter> Ꮡc) {
     return c.n;
 }
 
-[GoType] [GoValueClone("arr")] partial struct holder {
+[GoType] partial struct holder {
     internal array<counter> arr = new(3);
 }
 

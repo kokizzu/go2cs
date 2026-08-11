@@ -9,13 +9,13 @@ partial class main_package {
     public uint64 Count;
 }
 
-[GoType] [GoValueClone("BySize")] partial struct Stats {
+[GoType] partial struct Stats {
     public nint Total;
     public array<Stats_BySize> BySize = new(3);
 }
 
 
-[GoType("dyn")] [GoValueClone("pad")] partial struct poolᴛ1 {
+[GoType("dyn")] partial struct poolᴛ1 {
     internal nint item;
     internal array<byte> pad = new(4);
 }
@@ -42,7 +42,7 @@ internal static ref array<nint> addr => ref Ꮡaddr.Value;
     @string Tag();
 }
 
-[GoType] [GoValueClone("Ptrs")] partial struct Composed {
+[GoType] partial struct Composed {
     public array<ж<Composed_Ptrs>> Ptrs = new(2);
     public slice<ж<Composed_Slice>> Slice;
     public map<@string, Composed_ByKey> ByKey;

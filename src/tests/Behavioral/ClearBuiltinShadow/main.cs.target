@@ -6,7 +6,7 @@ partial class main_package {
 
 [GoType("map[@string, slice<@string>]")] partial struct header;
 
-[GoType] [GoValueClone("v")] partial struct cell {
+[GoType] partial struct cell {
     internal array<int32> v = new(4);
     internal map<@string, nint> m;
 }

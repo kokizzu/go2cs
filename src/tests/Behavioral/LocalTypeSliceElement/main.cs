@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-[GoLocalName("entry")] [GoType("dyn")] partial struct process_entry {
+[GoType("dyn")] partial struct process_entry {
     internal nint id;
     internal nint val;
 }
@@ -21,7 +21,7 @@ internal static nint process() {
     return total;
 }
 
-[GoLocalName("pair")] [GoType("dyn")] partial struct arr_pair {
+[GoType("dyn")] partial struct arr_pair {
     internal nint a, b;
 }
 

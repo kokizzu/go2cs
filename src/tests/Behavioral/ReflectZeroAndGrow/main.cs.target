@@ -19,7 +19,7 @@ partial class main_package {
     public nint N;
 }
 
-[GoType] [GoValueClone("A")] partial struct outer {
+[GoType] partial struct outer {
     public inner I;
     public NA A;
     public ж<nint> P;

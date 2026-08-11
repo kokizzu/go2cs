@@ -13,7 +13,7 @@ internal static void describe(any f) {
     public nint X;
 }
 
-[GoLocalName("point")] [GoType("dyn")] partial struct main_point {
+[GoType("dyn")] partial struct main_point {
     public nint X, Y;
 }
 
@@ -22,8 +22,10 @@ internal static void Main() {
     main_a b = default!;
     b = a;
     fmt.Println(a == b);
-    var p = new main_point(X: 1, Y: 2);
+    ref var p = ref heap<main_point>(out var Ꮡp);
+    p = new main_point(X: 1, Y: 2);
     fmt.Println(p.X + p.Y);
+    fmt.Printf("%T %T\n"u8, p, Ꮡp);
     describe(nint (nint x) => 0);
 }
 

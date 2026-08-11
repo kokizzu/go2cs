@@ -6,7 +6,7 @@ using sync;
 
 partial class main_package {
 
-[GoType] [GoValueClone("c", "d")] partial struct counters {
+[GoType] partial struct counters {
     internal array<atomic.Int32> c = new(3);
     internal array<atomic.Uint64> d = new(2);
 }
