@@ -5449,3 +5449,10 @@ also that trim is not the dominant startup lever -- Go package initializers are 
 trim can never remove; the larger honest lever is lazy/dead-strippable package inits (Go's
 linker dead-strips unreachable packages; go2cs loads and inits the whole referenced closure),
 recorded beside the working-set note in the performance README.
+
+One sharpening from the user (2026-08-11): hoisted string literals materialize at package init
+(module initializers run eagerly at assembly load), so the hoist cost -- deliberately moved to
+startup to kill per-use allocations and UTF16->UTF8 conversions, and still the right trade by the
+StringMatch numbers -- COMPOUNDS with the eager-closure cost. The lazy-package-init arc therefore
+recovers both at once: unused packages skip their init() AND their literal materialization. The
+two items are one lever.
