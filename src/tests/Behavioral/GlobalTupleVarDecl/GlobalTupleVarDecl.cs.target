@@ -25,9 +25,9 @@ internal static (nint, @string) pair() {
 internal static ж<box> defaultBox = makeBox(7).Item1;
 internal static error _ᴛ1ʗ;
 
-internal static (nint, @string) tupleᴛ1ʗ = pair();
-internal static nint n = tupleᴛ1ʗ.Item1;
-internal static @string s = tupleᴛ1ʗ.Item2;
+internal static nint n;
+internal static @string s;
+internal static void initᴛn() { var tupleᴛ1ʗ = pair(); n = tupleᴛ1ʗ.Item1; s = tupleᴛ1ʗ.Item2; }
 
 internal static void Main() {
     fmt.Println((~defaultBox).v);

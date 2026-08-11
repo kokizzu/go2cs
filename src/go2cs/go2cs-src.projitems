@@ -81,6 +81,7 @@
     <None Include="$(MSBuildThisFileDirectory)implicitConvValueType_test.go" />
     <None Include="$(MSBuildThisFileDirectory)importOperations_test.go" />
     <None Include="$(MSBuildThisFileDirectory)initOrderOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)initOrderTupleSpec_test.go" />
     <None Include="$(MSBuildThisFileDirectory)interfaceConversion.go" />
     <None Include="$(MSBuildThisFileDirectory)internal\genstdlibmeta\main.go" />
     <None Include="$(MSBuildThisFileDirectory)internal\gensymbols\main.go" />

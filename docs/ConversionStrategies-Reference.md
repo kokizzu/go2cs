@@ -1039,7 +1039,31 @@ partial class syscall_package {
 
 This is correct by C#'s own initialization guarantees: **all** static field initializers (every partial-class file) run **before** the static-constructor body, so every non-relocated dependency is already initialized when the ctor runs; the ctor then applies the relocated initializers in Go's order. Vars with no order hazard (the overwhelming majority — only 25 of the 302 stdlib packages relocate anything) keep their readable inline form. Cross-**package** order needs no handling: accessing another package's static field triggers that type's initialization first (.NET guarantees), matching Go's imported-packages-first rule. Adding an explicit static ctor also removes `beforefieldinit` from the package class, giving it *precise* initialization semantics.
 
-Notes: a **blank** (`_`) initializer never relocates (its value is unreadable, so its order is immaterial — it still runs as a field initializer for its side effect); the `initᴛ` method name composes the TempVarMarker so it cannot collide with any Go identifier; an **addressed** global relocates as a default-valued heap box whose ctor assignment writes through the ref property into the same box; the rare multi-value forms (tuple-deconstructing package vars, hoisted multi-value initializers) are not yet relocatable and warn loudly if flagged (no stdlib occurrence). Guarded by the `PackageVarInitOrder` behavioral test (all three hazard shapes plus IIFE and moved-dependency closure, output-compared vs Go).
+Notes: a **blank** (`_`) initializer never relocates (its value is unreadable, so its order is immaterial — it still runs as a field initializer for its side effect); the `initᴛ` method name composes the TempVarMarker so it cannot collide with any Go identifier; an **addressed** global relocates as a default-valued heap box whose ctor assignment writes through the ref property into the same box; a **tuple-deconstructing** spec relocates as one unit (see the next subsection). The one remaining warn-and-stay-inline fallback is a moved PLAIN var whose initializer carries a multi-value hoisted inner call (`globalDeclHoist` — the `template.Must(template.New(…).Parse(…))` spread shape); the whole-corpus census found zero flagged occurrences of it. Guarded by the `PackageVarInitOrder` behavioral test (all three hazard shapes plus IIFE and moved-dependency closure, output-compared vs Go).
+
+### A TUPLE-deconstructing package var relocates as ONE unit
+
+A package-level `var a, b = f()` — one multi-value call deconstructed across the names — is a single initialization step in Go: `types.Info.InitOrder` carries **one entry for the whole spec** with every name in its `Lhs`, so `collectMovedInitVars` flags all of a spec's non-blank names together under one shared ordinal, and the emission registers **one `initᴛ` method per spec** at that ordinal — `writeOrderedInitCalls` needs no new bookkeeping. Until 2026-08-11 this path *refused* to relocate ("unsupported for tuple specs", warn and leave inline), on a "no stdlib occurrence" premise the census falsified: `crypto/internal/edwards25519`'s `var identity, _ = new(Point).SetBytes(…)` and `var generator, _ = …` reach `feOne` and `d` — declared *later* in the same file — through the package's own `(*Point).SetBytes`, so the inline field initializers ran first, `identity` read a null `feOne`, `field.Subtract` null-dereferenced, and the package cctor threw before any test ran (the corpus's only whole-package casualty: 0 of 55 verdicts, restored to 52 of 55 by the relocation — the three residuals are separate pre-existing roots). Census: exactly two production occurrences on Windows (both edwards25519) and two latent on darwin (`os`'s `executable_darwin.go`); full detail in [`docs/phase4/FINDING-init-order-tuple-specs.md`](phase4/FINDING-init-order-tuple-specs.md).
+
+Two emission sub-shapes (`writeMovedPackageTupleVarSpec`, `visitValueSpec.go`), both turning every name into a **bare field**:
+
+**One non-blank name** (the edwards25519 shape): the method assigns its component directly from the once-run call; blank siblings keep their uninitialized `_ᴛNʗ` fields — the call now runs in the ctor, so no blank ever carries it (from the `InitOrderTupleSpecs` golden, `var single, _ = makeGreeting()`):
+
+```csharp
+internal static @string single;
+internal static error _ᴛ1ʗ;
+internal static void initᴛsingle() { single = makeGreeting().Item1; }
+```
+
+**Two or more non-blank names** (darwin `os`'s `var initCwd, initCwdErr = Getwd()` shape; golden: `var cwd, cwdErr = fakeGetwd()`): the method evaluates the call **once into a method-local** and assigns each non-blank component from it — the inline path's hidden static tuple holder is unnecessary, because the method body itself sequences the call before its reads. The local reuses the holder's minted `tupleᴛNʗ` name shape so it cannot collide with anything the rendered call expression references:
+
+```csharp
+internal static @string cwd;
+internal static error cwdErr;
+internal static void initᴛcwd() { var tupleᴛ1ʗ = fakeGetwd(); cwd = tupleᴛ1ʗ.Item1; cwdErr = tupleᴛ1ʗ.Item2; }
+```
+
+An **all-blank** spec (`var _, _ = f()`) never relocates — blanks are excluded from the moved set, so it keeps the inline emission where the first blank's field initializer carries the call for its side effect. An **addressed** name relocates as the default-valued heap box with the method assignment writing through the ref property, exactly like the plain path. A blank in the **middle** of a spec simply drops out of the assignment list (the golden's `var head, _, tail = makeTrio()` assigns `.Item1` and `.Item3`). (Guarded by the `InitOrderTupleSpecs` behavioral test — both sub-shapes, the mid-spec blank, a plain var chained onto a moved tuple var, an addressed moved tuple var, and an order-safe inline control, output-compared vs Go — and by the converter unit test `TestPackageTupleVarSpecInitOrderRelocation`, which additionally pins that the refusal warning no longer fires and that an order-safe spec keeps the inline holder emission.)
 
 ### Test-variant (`-tests`) initializers relocate too — through the erasable static-ctor hook
 

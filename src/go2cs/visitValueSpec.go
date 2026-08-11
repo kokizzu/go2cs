@@ -1147,6 +1147,9 @@ func (v *Visitor) convInterfaceDeclValue(value ast.Expr, ifaceDeclType types.Typ
 // C# static field initializers run in textual order within a class part, so the reads follow the
 // temp. `.ItemN` binds both unnamed and named result tuples. (Comma-ok package vars —
 // `var v, ok = m[k]` — are not calls and keep the existing path; no stdlib occurrence.)
+//
+// A spec collectMovedInitVars flagged for init-order relocation relocates as ONE unit instead —
+// see writeMovedPackageTupleVarSpec.
 func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *types.Tuple) {
 	nonBlankCount := 0
 
@@ -1154,20 +1157,39 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 		if ident.Name != "_" {
 			nonBlankCount++
 		}
+	}
 
-		// A tuple-deconstructing package var flagged for init-order relocation is not yet
-		// supported (no stdlib occurrence) — surface it loudly instead of silently misordering.
-		if def := v.info.Defs[ident]; def != nil {
-			if _, moved := v.movedInitOrdinal(def); moved {
-				v.showWarning("package tuple var '%s' needs init-order relocation (unsupported for tuple specs) - left inline (init order NOT guaranteed)", ident.Name)
-			}
+	// Go's InitOrder yields ONE entry per spec with every name in its Lhs, so
+	// collectMovedInitVars flags all of a spec's non-blank names together under one shared
+	// ordinal — the first non-blank name answers for the whole spec. Blank names are never
+	// flagged (their values are unreadable, so their order is immaterial), which also means an
+	// all-blank spec (`var _, _ = f()`) always keeps the inline path below, where the first
+	// blank's field initializer carries the call for its side effect.
+	ordinal := 0
+	moved := false
+
+	for _, ident := range valueSpec.Names {
+		if ident.Name == "_" {
+			continue
 		}
+
+		if def := v.info.Defs[ident]; def != nil {
+			ordinal, moved = v.movedInitOrdinal(def)
+		}
+
+		break
 	}
 
 	context := DefaultBasicLitContext()
 	context.u8StringOK = true
 
 	callExpr := v.convExpr(valueSpec.Values[0], []ExprContext{context})
+
+	if moved {
+		v.writeMovedPackageTupleVarSpec(valueSpec, tuple, callExpr, nonBlankCount, ordinal)
+		return
+	}
+
 	componentSource := callExpr
 	firstLine := true
 
@@ -1214,5 +1236,70 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 		}
 	}
 
+	v.writeComment(valueSpec.Comment, valueSpec.End())
+}
+
+// writeMovedPackageTupleVarSpec emits a package-level tuple var spec whose initialization
+// collectMovedInitVars flagged for relocation into the ordered static ctor (package_init.cs).
+// Every name becomes a BARE field — blank names keep their uninitialized `_ᴛNʗ` fields (the call
+// now runs in the ctor, so no blank ever carries it), and an addressed global's box is declared
+// default-valued with the relocated assignment writing through its ref property into the same
+// box, both mirroring the plain moved path — and the call moves into ONE per-file initᴛ method
+// registered at the spec's InitOrder ordinal (one method per spec, matching Go's one InitOrder
+// entry per spec, so writeOrderedInitCalls needs no new bookkeeping). With a single non-blank
+// name the method assigns its component directly (`identity = f(…).Item1;`); with two or more it
+// evaluates the call once into a method-local and assigns each non-blank component from it — the
+// inline path's hidden static tuple holder is unnecessary here, because the method body itself
+// sequences the call before its reads. The local reuses the holder's minted `tupleᴛNʗ` name shape
+// so it cannot collide with anything the rendered call expression references.
+func (v *Visitor) writeMovedPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *types.Tuple, callExpr string, nonBlankCount int, ordinal int) {
+	componentSource := callExpr
+
+	if nonBlankCount > 1 {
+		componentSource = getGlobalTempVarName("tuple") + CapturedVarMarker
+	}
+
+	assignments := make([]string, 0, nonBlankCount)
+	methodName := ""
+	firstLine := true
+
+	for i, ident := range valueSpec.Names {
+		goIDName := v.getIdentName(ident)
+		csIDName := getSanitizedIdentifier(goIDName)
+
+		if csIDName == "_" {
+			csIDName = getGlobalTempVarName("_") + CapturedVarMarker
+		} else {
+			if len(methodName) == 0 {
+				methodName = packageInitMethodName(csIDName)
+			}
+
+			assignments = append(assignments, fmt.Sprintf("%s = %s.Item%d;", csIDName, componentSource, i+1))
+		}
+
+		if !firstLine {
+			v.outputBuilder.WriteString(v.newline)
+		}
+
+		firstLine = false
+		csTypeName := v.getCSharpTypeName(tuple.At(i).Type())
+		access := getAccess(goIDName)
+
+		if v.isAddressedGlobal(ident) {
+			v.writeAddressedGlobalDecl(access, csTypeName, csIDName, "", isInherentlyHeapAllocatedType(tuple.At(i).Type()))
+		} else {
+			v.writeOutput("%s static %s %s;", access, csTypeName, csIDName)
+		}
+	}
+
+	v.outputBuilder.WriteString(v.newline)
+
+	if nonBlankCount > 1 {
+		v.writeOutput("internal static void %s() { var %s = %s; %s }", methodName, componentSource, callExpr, strings.Join(assignments, " "))
+	} else {
+		v.writeOutput("internal static void %s() { %s }", methodName, assignments[0])
+	}
+
+	recordMovedInitMethod(ordinal, methodName)
 	v.writeComment(valueSpec.Comment, valueSpec.End())
 }

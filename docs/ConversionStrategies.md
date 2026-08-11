@@ -164,8 +164,9 @@ initialization order for constants at all, so that edge is one the conversion ha
 
 **Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference.md#package-level-variable-initialization-order) —
 the three hazard shapes, transitive dependency analysis, moved-dependency closure, addressed globals,
+[tuple-deconstructing specs relocated as one unit](ConversionStrategies-Reference.md#a-tuple-deconstructing-package-var-relocates-as-one-unit),
 the [constant-dependency edge](ConversionStrategies-Reference.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
-and the `PackageVarInitOrder` behavioral guard.
+and the `PackageVarInitOrder` / `InitOrderTupleSpecs` behavioral guards.
 
 ---
 

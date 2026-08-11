@@ -661,6 +661,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckInferredForeignTypeNoImport() => CheckTarget("InferredForeignTypeNoImport");
 
     [TestMethod]
+    public void CheckInitOrderTupleSpecs() => CheckTarget("InitOrderTupleSpecs");
+
+    [TestMethod]
     public void CheckInterfaceCasting() => CheckTarget("InterfaceCasting");
 
     [TestMethod]
