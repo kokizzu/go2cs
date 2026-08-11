@@ -82,7 +82,7 @@ silently report a benchmark that computes something different in C#.
 
 <!-- PERF-RESULTS:BEGIN -->
 
-**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-07-26
+**Environment:** Intel(R) Core(TM) i7-5820K CPU @ 3.30GHz · Microsoft Windows 10.0.26100 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-11
 
 C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
 
@@ -90,61 +90,69 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 14.5 | 38.6 (2.65×) | 16.8 (1.16×) |
-| Fib | 79.6 | 97.9 (1.23×) | 87.5 (1.10×) |
-| Sieve | 72.4 | 94.8 (1.31×) | 138.7 (1.92×) |
-| MatMul | 55.3 | 132.6 (2.40×) | 199.4 (3.61×) |
-| String | 70.3 | 749.4 (10.66×) | 764.1 (10.87×) |
-| Map | 302.8 | 257.8 (0.85×) | 95.8 (0.32×) |
-| Sort | 112.8 | 422.8 (3.75×) | 431.3 (3.82×) |
-| Channel | 43.6 | 88.3 (2.03×) | 94.3 (2.16×) |
-| StringView | 7.2 | 21.0 (2.91×) | 14.2 (1.97×) |
-| StringMatch | 149.4 | 1,368.8 (9.16×) | 1,354.1 (9.06×) |
-| IfaceCall | 98.3 | 274.0 (2.79×) | 241.4 (2.46×) |
-| Iface | 63.5 | 370.8 (5.84×) | 265.7 (4.18×) |
-| IfaceShell | 13.3 | 530.9 (39.83×) | 599.6 (44.99×) |
+| Startup | 23.4 | 293.1 (12.51×) | 80.8 (3.45×) |
+| Fib | 133.1 | 159.0 (1.19×) | 126.9 (0.95×) |
+| Sieve | 122.2 | 158.4 (1.30×) | 380.3 (3.11×) |
+| MatMul | 150.1 | 305.1 (2.03×) | 507.3 (3.38×) |
+| String | 165.1 | 997.6 (6.04×) | 1,247.7 (7.55×) |
+| StringView | 30.7 | 28.3 (0.92×) | 25.9 (0.84×) |
+| StringMatch | 552.6 | 1,398.7 (2.53×) | 1,857.3 (3.36×) |
+| Map | 596.5 | 567.4 (0.95×) | 240.3 (0.40×) |
+| Sort | 159.1 | 437.7 (2.75×) | 415.0 (2.61×) |
+| Channel | 105.7 | 97.3 (0.92×) | 92.2 (0.87×) |
+| IfaceCall | 257.3 | 761.4 (2.96×) | 743.0 (2.89×) |
+| Iface | 123.7 | 859.8 (6.95×) | 603.9 (4.88×) |
+| IfaceShell | 29.4 | 941.8 (32.05×) | 1,474.9 (50.19×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.5 | 19.3 | 2.6 |
-| Fib | 5.4 | 18.5 | 10.8 |
-| Sieve | 34.9 | 39.6 | 30.1 |
-| MatMul | 10.6 | 28.3 | 17.0 |
-| String | 5.4 | 39.8 | 29.2 |
-| Map | 158.8 | 138.0 | 128.5 |
-| Sort | 21.7 | 43.0 | 29.3 |
-| Channel | 5.4 | 25.6 | 17.3 |
-| StringView | 5.4 | 20.0 | 10.8 |
-| StringMatch | 5.4 | 43.2 | 29.1 |
-| IfaceCall | 5.3 | 21.5 | 10.8 |
-| Iface | 5.3 | 20.9 | 11.1 |
-| IfaceShell | 5.3 | 44.6 | 31.4 |
+| Startup | 3.8 | 43.9 | 77.9 |
+| Fib | 5.3 | 45.5 | 78.1 |
+| Sieve | 34.6 | 65.1 | 97.7 |
+| MatMul | 10.5 | 51.9 | 84.4 |
+| String | 5.2 | 54.1 | 86.4 |
+| StringView | 5.3 | 45.6 | 78.1 |
+| StringMatch | 5.2 | 53.8 | 87.7 |
+| Map | 158.3 | 164.3 | 196.6 |
+| Sort | 21.4 | 70.3 | 102.0 |
+| Channel | 5.2 | 50.1 | 81.4 |
+| IfaceCall | 5.2 | 44.9 | 78.2 |
+| Iface | 5.3 | 45.2 | 78.4 |
+| IfaceShell | 5.3 | 65.2 | 96.8 |
 
 <!-- PERF-RESULTS:END -->
 
 ### Reading the results
 
-- **Startup:** Go wins cold process start against the JIT (runtime load + JIT-on-the-fly), and
-  **Native AOT closes most of the gap** at a few MB of memory — the deployment story for CLI-shaped
-  transpiled programs, and why C# can *appear* faster in casual warm-process timing comparisons.
-- **Function calls / integers (Fib):** the closest workload — transpiled C# runs within a few tens
-  of percent of Go.
+- **Startup:** Go wins cold process start decisively. The JIT pays runtime load plus
+  assembly-loading and Go package initialization for the full converted-stdlib closure the binary
+  references; **Native AOT removes the JIT-on-the-fly cost and starts several times faster than
+  the JIT**, but still runs the same package initializers, so a gap to Go remains. For CLI-shaped
+  programs AOT is the deployment story on time — see the memory note below for its trade.
+- **Memory:** the working-set columns carry the cost of the full converted standard library. The
+  JIT column's floor is the .NET runtime plus loaded assemblies; the AOT column's is *higher* —
+  the self-contained binary maps the whole compiled closure into the process — so AOT currently
+  trades memory for its startup and per-benchmark wins. Reducing both floors is optimization
+  surface (trimming eligibility, lazy package init), not a semantic cost.
+- **Function calls / integers (Fib):** the closest workload — the JIT runs within ~20% of Go and
+  **Native AOT edges past Go outright**.
 - **Slices & floats (Sieve, MatMul):** the gap is `slice<T>` header emulation and bounds checks the
   JIT can't always elide, compounded on nested `[][]float64` access. **AOT is *slower* than the JIT
   here** — ILC lacks the JIT's dynamic PGO/OSR loop optimizations, trading tight-loop throughput for
   AOT's startup and memory wins.
-- **String:** the biggest honest gap — every `[]byte`→`string` round-trip is an allocation + copy
-  through the `@string` emulation, versus Go's `append` chain inlining to a few instructions. This
+- **String:** the price of materialization — every `[]byte`→`string` round-trip is an allocation +
+  copy through the `@string` emulation, versus Go's `append` chain inlining to a few instructions. This
   benchmark's conversions are all **ineligible** for the stack-string optimization (its `s` is a
   concat operand and its buffer is mutated), so they stay `@string` — see StringView for the eligible case.
 - **StringView:** the same `[]byte`→`string` cost, but for the subset the converter proves
   non-escaping and read/compare-only, where it emits a zero-copy stack string (`sstring`) instead of
   `@string` (see [ConversionStrategies-Reference](https://github.com/ritchiecarroll/go2cs/blob/master/docs/ConversionStrategies-Reference.md)).
   The converter hoists one `sstring` view per call rather than re-materializing it per comparison,
-  since the JIT won't lift a `ref struct` view out of a loop on its own. Much closer to Go than
-  String, and the number to watch as the eligibility surface widens — arc detail in
+  since the JIT won't lift a `ref struct` view out of a loop on its own. **Runs at parity with Go
+  or better in both C# variants** — and the number to watch as the eligibility surface widens; arc
+  detail in
   [DESIGN-string-literal-allocation.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-string-literal-allocation.md).
 - **StringMatch:** literal-heavy hot paths — switch-on-string dispatch, `strings.HasPrefix` against
   a literal prefix, literal returns, literal map-key counters. The instrument for the same
@@ -156,7 +164,8 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 - **Sort:** the runtime's `sort.Interface` shim (`Interface<T>`) binds `Len`/`Less`/`Swap` via
   reflection-created delegates — cached, but a delegate hop per comparison.
 - **Channel:** `channel<T>` + goroutine emulation over managed threading vs Go's runtime scheduler —
-  real unbuffered rendezvous, single-fire select, operand-once hoisting.
+  real unbuffered rendezvous, single-fire select, operand-once hoisting. **Runs at parity with Go
+  or better in both C# variants** on this producer→consumer churn.
 - **IfaceCall:** pure interface method dispatch — no asserts, no shell construction, just calling
   through an interface value built once, in a megamorphic hot loop. The floor for what *calling*
   through an interface costs, distinct from *obtaining* one (the two rows below).
