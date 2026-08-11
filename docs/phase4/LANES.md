@@ -41,7 +41,7 @@ so the coordinator can calibrate assignments.
 |---|---|---|
 | L1 host-conditional roster | laptop-1 | OPEN |
 | L2 allowlist derivation | laptop-1 (after L1) | OPEN |
-| L3 ж-box implementation | laptop-1 | BLOCKED — design sign-off + post-1.23.1.6 harvest first |
+| L3 ж-box implementation | laptop-1 | BLOCKED — post-1.23.1.6 harvest only (design **SIGNED OFF** 2026-08-10, doc landed on master) |
 
 ---
 
@@ -92,10 +92,12 @@ maintenance. Commit on your branch (subject starts "L2:"), push, signal.
 
 ## L3 — ж-box allocation-reduction implementation
 
-**BLOCKED until (a) the design chip's document lands with user sign-off and (b) the coordinator
-confirms the post-1.23.1.6 harvest is complete.** When unblocked: branch from current
-origin/master, read the signed-off `docs/phase4/DESIGN-zh-box-reduction.md` (its staged landing
-plan is the work order), `<clone>/CLAUDE.md`'s corpus mechanics, and the charter's §5 gate table —
+**BLOCKED until the coordinator confirms the post-1.23.1.6 harvest is complete** (the design is
+signed off — all six §10 rulings ratified 2026-08-10 and the doc is on master). When unblocked:
+branch from current origin/master, read `docs/phase4/DESIGN-zh-box-reduction.md` (§9's staging
+table is the work order — **start at stage A1**, the zero-emission census whose report confirms
+the projection branch and classifies the 347 exported candidates before any golden moves), then
+`<clone>/CLAUDE.md`'s corpus mechanics and the charter's §5 gate table —
 this is golib-wide, so the full behavioral suite, GolibTests, the go2cs.slnx build, the corpus
 build, and the validated sweep all apply, plus the allocation-counter instrument
 (`src/tests/GolibTests/AllocationCounterTests.cs`) measuring each stage against the design's named
