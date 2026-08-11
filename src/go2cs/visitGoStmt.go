@@ -100,6 +100,15 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 		renderLambdaParams = true
 	}
 
+	// A ж-box ref-LOWERED callee (A2, the §3.3 boxed carve-out): its `ref` parameters make the
+	// method group inconvertible to goǃ's Action<…>, so the goroutine call always takes the
+	// temp-param lambda form — eager arguments stay boxed and the thunk derives each ref at
+	// invoke time (`ᴛ1 => f(ref ᴛ1.DerefOrNull())`), preserving Go's spawn-time argument
+	// evaluation. (A func-literal callee never resolves to a lowered package function.)
+	if paramCount > 0 && v.refLoweredCalleePositions(goStmt.Call) != nil {
+		renderLambdaParams = true
+	}
+
 	if paramCount > 0 {
 		lambdaContext.callArgs = make([]string, paramCount)
 		lambdaContext.renderParams = renderLambdaParams

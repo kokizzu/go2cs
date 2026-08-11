@@ -1108,6 +1108,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	var replacementArgs []string
 	funcSignature := v.getFunctionSignature(callExpr)
 
+	// ж-box A2 (DESIGN-zh-box-reduction §3.3): the callee's Phase-A ref-lowered parameter
+	// positions, resolved once per call. Ordinary sites replace the boxed argument with a `ref`
+	// expression; a defer/go site is a BOXED site categorically — its eager arguments keep
+	// today's emission and the invoke-time thunk derives each ref (marked for convExprList).
+	refLoweredPositions := v.refLoweredCalleePositions(callExpr)
+
 	if funcSignature != nil {
 		// Check if any parameters of callExpr.Fun are interface or pointer types
 		params := funcSignature.Params()
@@ -1569,6 +1575,16 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						}
 					}
 				}
+			} else if paramHasArg && refLoweredPositions[i] && callExprContext.callArgs == nil && !(callExprContext.hasSpreadOperator && i == params.Len()-1) {
+				// ж-box A2: a Phase-A ref-lowered position takes a `ref` argument (the §3.3
+				// emission rows) instead of a box — a TOTAL replacement, so convExprList skips
+				// the boxed render entirely. Defer/go sites never reach this arm (callArgs is
+				// non-nil there) and keep the boxed carve-out below.
+				if replacementArgs == nil {
+					replacementArgs = make([]string, params.Len())
+				}
+
+				replacementArgs[i] = v.refLoweredArgReplacement(callExpr.Args[i], paramType, callExprContext.deferredDecls)
 			} else if paramHasArg && (isPointer(paramType) || signatureErasedParamPointerOk(funcSignature, paramType) || v.instantiatedParamIsPointer(callExpr, paramType, i)) && !(callExprContext.hasSpreadOperator && i == params.Len()-1) {
 				// paramHasArg guards Args[i]: a variadic pointer parameter called with no
 				// trailing arguments (e.g. `In(r)` for `In(r rune, ...*RangeTable)`) has no
@@ -1585,6 +1601,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				// ambiguous — e.g. `add(p, x)` between the free `add(@unsafe.Pointer,…)` and a
 				// `notInHeap.add(ж<…>,…)` extension (CS0121). The struct is an exact match for the
 				// parameter, so it disambiguates.
+				// ж-box A2, the defer/go boxed carve-out (§3.3): the eager argument keeps the
+				// boxed emission below; the temp-param lambda body derives the ref at invoke
+				// time (`ᴛN` renders as `ref ᴛN.DerefOrNull()` — see convExprList). visitDeferStmt/
+				// visitGoStmt force the lambda form whenever the callee has lowered positions.
+				if callExprContext.callArgs != nil && refLoweredPositions[i] {
+					if callExprContext.refLoweredTempArgs == nil {
+						callExprContext.refLoweredTempArgs = make(map[int]bool)
+					}
+
+					callExprContext.refLoweredTempArgs[i] = true
+				}
+
 				paramIsUnsafePtr := false
 
 				if basic, ok := paramType.Underlying().(*types.Basic); ok && basic.Kind() == types.UnsafePointer {

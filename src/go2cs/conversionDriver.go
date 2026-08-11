@@ -319,6 +319,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// full resolution) — the array-reinterpret emission in convCallExpr consults it.
 		collectTypeSpecRHS(pkg)
 
+		// ж-box A2 (DESIGN-zh-box-reduction §3.3/§3.4): classify every package-level function's
+		// pointer parameters for ref-lowering BEFORE escape analysis — the reversion refinement
+		// ("address-taken only into lowered positions → stack") is consulted by the escape
+		// analysis, and the signature/call-site emission reads the verdicts during the visits.
+		performRefLoweringAnalysis(files, packageTypes, info, options)
+
 		performEscapeAnalysis(files, fset, packageTypes, info)
 
 		// Find package-level vars whose address is taken (cross-file) so their
@@ -350,12 +356,9 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// Find this package's definition-side one-arg //go:linkname handles (Go 1.23's opt-in that
 		// authorizes cross-package linkname pulls) so the handled vars emit `public` — letting a
 		// puller in another assembly reach them through its forwarding property (see linknameOperations).
+		// (The ref-lowering pass above reads its OWN production-file linkname scan — never this
+		// global — so this ordering is a display concern only; see performRefLoweringAnalysis.)
 		collectLinknameHandles(pkg.Syntax)
-
-		// ж-box A1 (DESIGN-zh-box-reduction §3.5): classify every package-level function's pointer
-		// parameters for ref-lowering and record the verdict on the package context. Analysis only —
-		// no emission visitor reads it yet; the -debug census and the -ref-census instrument do.
-		performRefLoweringAnalysis(files, packageTypes, info, options)
 
 		// Preload the imported type aliases of every package these files import, BEFORE converting any
 		// file, so a foreign renamed type reached transitively (through a value whose package this file

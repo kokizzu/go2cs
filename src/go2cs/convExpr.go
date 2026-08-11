@@ -98,6 +98,11 @@ type CallExprContext struct {
 	// statement. Threaded from the statement emitter (visitExprStmt/visitAssignStmt) through
 	// convCallExpr → convExprList → the func-literal arg's convFuncLit. Nil when not hoisting.
 	deferredDecls *strings.Builder
+	// refLoweredTempArgs marks defer/go lambda-form positions whose callee parameter is ж-box
+	// ref-LOWERED (A2, the boxed carve-out): the eager argument stays boxed, and the lambda
+	// body's `ᴛN` marker renders as `ref ᴛN.DerefOrNull()` so the thunk derives the ref at
+	// invoke time (see convExprList).
+	refLoweredTempArgs map[int]bool
 }
 
 func DefaultCallExprContext() *CallExprContext {

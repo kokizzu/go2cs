@@ -134,6 +134,7 @@
     <None Include="$(MSBuildThisFileDirectory)refLoweringAnalysisOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringAnalysis_test.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringCensus.go" />
+    <None Include="$(MSBuildThisFileDirectory)refLoweringEmissionOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)requiresUnsafeMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveBuildTags_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveGo2CSPath_test.go" />

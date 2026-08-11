@@ -1417,22 +1417,10 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 
 	collectCaptureModeMethods(pkg)
 	collectTypeSpecRHS(pkg)
-	performEscapeAnalysis(allEntries, pkg.Fset, pkg.Types, pkg.TypesInfo)
-	collectAddressedGlobals(allEntries, pkg.Types, pkg.TypesInfo)
-	computeImportAliasRenames(allEntries, pkg.Types, packageNamespace)
-	collectPublicizedTypes(pkg.Types)
-	preloadImportedTypeAliases(allEntries, options)
 
-	// Tier C hoisted string literals (§4.4's `-tests` invariants). The INTERNAL test variant
-	// recompiles the package under test into this assembly and emits into the SAME package class,
-	// so its test files must REFERENCE the fields the production `.cs` on disk already declares —
-	// never re-declare them (a `_test.go` can sort BEFORE its production owner, so this, not name
-	// luck, is what prevents CS0102). The production map is recomputed from the production files
-	// exactly as processConversion computed it (same collector, same order, same manual-conversion
-	// flags), then handed to the real pass as a seed; only `_test.go` files may claim a NEW field.
-	// The EXTERNAL variant carries no production files, so its seed is empty and its own class
-	// (`<pkg>_test_package`) claims freely — which is required, since a production field is
-	// `private` to a different class.
+	// The production-file entry list (manual-conversion flags resolved against the production
+	// `.cs` on disk) — input to the ref-lowering classification, the hoist seed, and every other
+	// production-only sub-pass below.
 	prodEntries := make([]FileEntry, 0, len(allEntries))
 
 	for _, entry := range allEntries {
@@ -1449,6 +1437,32 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 
 		prodEntries = append(prodEntries, prodEntry)
 	}
+
+	// ж-box A2 (three-driver rule, DESIGN-zh-box-reduction §3.5): the ref-lowering classification
+	// runs in the -tests driver too — over the PRODUCTION files only (prodEntries; the entry point
+	// additionally filters `_test.go` structurally), so the merged white-box package's test-side
+	// func-value aliases can never desynchronize this classification from the -stdlib emission's
+	// (§3.5's determinism invariant). The EXTERNAL variant carries no production files and records
+	// an empty result. Runs BEFORE escape analysis, which consults the reversion verdicts; the
+	// signature/call-site emission reads the lowered sets during the visits.
+	performRefLoweringAnalysis(prodEntries, pkg.Types, pkg.TypesInfo, options)
+
+	performEscapeAnalysis(allEntries, pkg.Fset, pkg.Types, pkg.TypesInfo)
+	collectAddressedGlobals(allEntries, pkg.Types, pkg.TypesInfo)
+	computeImportAliasRenames(allEntries, pkg.Types, packageNamespace)
+	collectPublicizedTypes(pkg.Types)
+	preloadImportedTypeAliases(allEntries, options)
+
+	// Tier C hoisted string literals (§4.4's `-tests` invariants). The INTERNAL test variant
+	// recompiles the package under test into this assembly and emits into the SAME package class,
+	// so its test files must REFERENCE the fields the production `.cs` on disk already declares —
+	// never re-declare them (a `_test.go` can sort BEFORE its production owner, so this, not name
+	// luck, is what prevents CS0102). The production map is recomputed from the production files
+	// exactly as processConversion computed it (same collector, same order, same manual-conversion
+	// flags), then handed to the real pass as a seed; only `_test.go` files may claim a NEW field.
+	// The EXTERNAL variant carries no production files, so its seed is empty and its own class
+	// (`<pkg>_test_package`) claims freely — which is required, since a production field is
+	// `private` to a different class.
 
 	// The seed run SIMULATES processConversion, which does relocate an out-of-order initializer
 	// (initOrderRelocated=true), so it reproduces the production `.cs` on disk exactly. The real
@@ -1470,14 +1484,6 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// internal/fmtsort's sort_test.go (compareTests reads chans/ints declared later in the file
 	// — every test died in the class cctor on the default slice).
 	collectMovedInitVars(pkg.Fset, pkg.Types, pkg.TypesInfo, pkg.Syntax)
-
-	// ж-box A1 (three-driver rule, DESIGN-zh-box-reduction §3.5): the ref-lowering classification
-	// runs in the -tests driver too — over the PRODUCTION files only (prodEntries; the entry point
-	// additionally filters `_test.go` structurally), so the merged white-box package's test-side
-	// func-value aliases can never desynchronize this classification from the -stdlib emission's
-	// (§3.5's determinism invariant). The EXTERNAL variant carries no production files and records
-	// an empty result. Analysis only; nothing emission-side reads it at A1.
-	performRefLoweringAnalysis(prodEntries, pkg.Types, pkg.TypesInfo, options)
 
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution

@@ -220,8 +220,18 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			return appendValueClone(rendered, v.getExprType(expr))
 		}
 
+		// A TOTAL replacement (no DynamicCastArgMarker) supplies the argument's complete text —
+		// the ж-box A2 `ref` argument forms — so the default render is SKIPPED entirely: running
+		// it would only re-hoist any nested capture declarations (duplicate `var xʗ1 = x;`,
+		// CS0128) and waste the walk. A replacement CONTAINING the marker still needs the default
+		// render to substitute in (the dynamic-struct and widen shapes).
+		totalReplacement := replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 &&
+			!strings.Contains(replacementArgs[i], DynamicCastArgMarker)
+
 		if tupleExpanded {
 			// expanded above — skip the per-argument conversion chain
+		} else if totalReplacement {
+			resultExpr = replacementArgs[i]
 		} else if interfaceType, ok := interfaceTypes[i]; ok && interfaceType != nil && !spreadArg {
 			// A POINTER argument converting to an interface must render as the pointer VALUE —
 			// the box `Ꮡfs`, not the deref'd receiver ref-local `fs` — since Go's interface
@@ -242,11 +252,11 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 		// null box renders as the canonical typed nil (typedNilInterfaceBoxing.go). The
 		// box-vs-value-alias half of the same boundary is already applied above, through
 		// argTypeIsPtr's identContext.isPointer.
-		if callContext != nil && callContext.anyBoxedPtrArgs[i] && !spreadArg && !v.pointerExprNeverRendersNull(expr) {
+		if callContext != nil && callContext.anyBoxedPtrArgs[i] && !spreadArg && !totalReplacement && !v.pointerExprNeverRendersNull(expr) {
 			resultExpr += "." + TypedNilBoxAccessor
 		}
 
-		if replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 {
+		if !totalReplacement && replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 {
 			resultExpr = strings.ReplaceAll(replacementArgs[i], DynamicCastArgMarker, resultExpr)
 		}
 
@@ -406,7 +416,15 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 				}
 			}
 
-			result.WriteString(fmt.Sprintf("%s%d", TempVarMarker, i+1))
+			// A ж-box ref-LOWERED position under defer/go (the §3.3 boxed carve-out): the eager
+			// argument (callArgs[i], written below) carries the box; the lambda BODY derives the
+			// ref at invoke time — `ᴛN` becomes `ref ᴛN.DerefOrNull()`.
+			if callContext != nil && callContext.refLoweredTempArgs != nil && callContext.refLoweredTempArgs[i] {
+				result.WriteString(fmt.Sprintf("ref %s%d.DerefOrNull()", TempVarMarker, i+1))
+			} else {
+				result.WriteString(fmt.Sprintf("%s%d", TempVarMarker, i+1))
+			}
+
 			callArgs[i] = arg.String()
 		}
 

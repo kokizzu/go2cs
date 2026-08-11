@@ -202,6 +202,19 @@ type refLoweringPackageResult struct {
 	// TypeParamPointerCoreParams counts parameters typed by a type parameter whose core type is a
 	// pointer (`p P` under `[P *T]`) — not classified in Phase A, counted for honesty.
 	TypeParamPointerCoreParams int `json:"typeParamPointerCoreParams,omitempty"`
+
+	// ---- A2 emission-facing sets (never serialized — object identities, not census data) ----
+
+	// LoweredPositions is the resolved Phase-A fixed point — the positions call-site emission
+	// rewrites to `ref` arguments (refLoweringEmissionOperations.go).
+	LoweredPositions map[refPosKey]bool `json:"-"`
+	// LoweredParamVars keys the same verdict by parameter OBJECT identity, for the signature and
+	// preamble emission in visitFuncDecl (immune to receiver-offset indices and shadow renames).
+	LoweredParamVars map[*types.Var]bool `json:"-"`
+	// RevertedLocalVars holds every address-taken local/value-parameter/named-result whose EVERY
+	// address-connected use feeds a lowered position (§3.3's reversion predicate) — the escape
+	// analysis consults it to leave the variable a plain local (no heap box, no eager slot).
+	RevertedLocalVars map[*types.Var]bool `json:"-"`
 }
 
 // packageRefLoweringResult is the package-scope registry the conversion drivers record into —
@@ -295,6 +308,18 @@ func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Pack
 	// because an unexported function's call sites are all within its package.
 	lowered, stripped := resolveRefLoweringFixedPoint(analysis.result.Funcs, analysis.result.CallArgs, false)
 	applyRefLoweringVerdicts(analysis.result.Funcs, lowered, stripped, false)
+
+	// A2 emission-facing sets: the resolved position set, and the same verdict keyed by
+	// parameter object identity for the signature/preamble emission.
+	analysis.result.LoweredPositions = lowered
+	analysis.result.LoweredParamVars = map[*types.Var]bool{}
+	analysis.result.RevertedLocalVars = map[*types.Var]bool{}
+
+	for paramVar, key := range analysis.paramOwner {
+		if lowered[key] {
+			analysis.result.LoweredParamVars[paramVar] = true
+		}
+	}
 
 	// Pass 4: the address-taken-local reversion census, against the resolved A-scope lowered set.
 	for _, file := range syntax {
@@ -578,6 +603,33 @@ func (a *refLoweringAnalysis) classifyFile(file *ast.File, parents map[ast.Node]
 
 		deferGo := callIsDeferOrGo(call, parents)
 		params := signature.Params()
+
+		// A tuple-SPLAT call — `f(g())` where g's multi-value result expands into f's parameters —
+		// has no per-position argument expressions at all: the emission expands the tuple into
+		// plain temps (`var (ᴛ1, ᴛ2) = g(); f(ᴛ1, ᴛ2)`), which carry boxes, not refs. No §3.3 row
+		// covers it, so every candidate pointer position of such a call strips via the two-sided
+		// fixed point (caller-side emittability, exactly like any other-veto shape).
+		if !signature.Variadic() && len(call.Args) == 1 && params.Len() > 1 {
+			if _, isSplat := ast.Unparen(call.Args[0]).(*ast.CallExpr); isSplat {
+				position := a.positionOf(call)
+
+				for paramIndex := 0; paramIndex < params.Len(); paramIndex++ {
+					if _, isPtr := types.Unalias(params.At(paramIndex).Type()).(*types.Pointer); !isPtr {
+						continue
+					}
+
+					a.result.CallArgs = append(a.result.CallArgs, refCallArg{
+						Target: refPosKey{PkgPath: callee.Pkg().Path(), Func: callee.Name(), Index: paramIndex},
+						Shape:  refShapeOtherVeto,
+						Detail: "tuple-splat",
+						File:   position.Filename,
+						Line:   position.Line,
+					})
+				}
+
+				return true
+			}
+		}
 
 		for argIndex, arg := range call.Args {
 			paramIndex := argIndex
@@ -1609,14 +1661,21 @@ func (a *refLoweringAnalysis) censusFuncLocals(funcDecl *ast.FuncDecl, funcName 
 
 	for _, obj := range names {
 		state := states[obj]
+		lowers := len(state.keptReasons) == 0
 
 		a.result.Locals = append(a.result.Locals, refLocalVerdict{
 			Func:        funcName,
 			Name:        obj.Name(),
 			Origin:      origins[obj],
-			Lowers:      len(state.keptReasons) == 0,
+			Lowers:      lowers,
 			KeptReasons: state.keptReasons,
 		})
+
+		// A2: record the reverting objects by identity for the escape-analysis consult and the
+		// row-2 emission (nil-guarded: the census driver runs this pass without the A2 sets).
+		if lowers && a.result.RevertedLocalVars != nil {
+			a.result.RevertedLocalVars[obj] = true
+		}
 	}
 }
 

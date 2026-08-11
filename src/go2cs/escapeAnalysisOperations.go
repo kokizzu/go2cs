@@ -430,6 +430,14 @@ func (v *Visitor) markCaptureModeBoxedParams(params *ast.FieldList, body *ast.Bl
 			// form does — see pointerMethodValueAddressTaken.
 			captureMode := v.bodyCallsCaptureModeMethodOn(ident, body) || v.pointerMethodValueAddressTaken(obj, body)
 
+			// ж-box A2 (§3.3's reversion): a value parameter address-taken ONLY into ref-lowered
+			// positions stays a plain parameter — `ref x` at those sites aliases its own storage.
+			// A reverting verdict is mutually exclusive with captureMode (a pointer-receiver
+			// call/value records a kept-reason in the census), so nothing capture-shaped is lost.
+			if refLoweringLocalReverts(obj) {
+				continue
+			}
+
 			if captureMode || v.paramAddressTakenNeedsBox(obj, body) {
 				v.identEscapesHeap[obj] = true
 
@@ -481,6 +489,12 @@ func (v *Visitor) analyzeNamedResults(results *ast.FieldList, body *ast.BlockStm
 
 			// Already analyzed (it also sits on a `:=` LHS) — keep the existing verdict.
 			if _, found := v.identEscapesHeap[obj]; found {
+				continue
+			}
+
+			// ж-box A2 (§3.3's reversion): a named result address-taken ONLY into ref-lowered
+			// positions stays a plain result local — same refinement as the parameter arm.
+			if refLoweringLocalReverts(obj) {
 				continue
 			}
 
@@ -624,6 +638,27 @@ func (v *Visitor) objectAddressTaken(obj types.Object, body ast.Node, directOnly
 	return found
 }
 
+// refLoweringLocalReverts reports whether obj is an address-taken local/value-parameter/named-
+// result the ж-box classification (stage A2, DESIGN-zh-box-reduction §3.3) proved reverts to a
+// plain stack local: its EVERY address-connected use feeds a Phase-A ref-lowered position —
+// directly, outside defer/go, outside any nested closure — so no heap box (and no eager pinnable
+// slot) is needed; the lowered call sites take `ref obj` into the plain local's own storage.
+// The classification pass runs BEFORE escape analysis in every conversion driver, so the verdict
+// is always resolved by the time this is consulted. Deliberately consulted only for types that
+// are NOT inherently heap-allocated: an inherently-heap ident's identEscapesHeap verdict serves
+// purposes beyond boxing, so those keep today's behavior (allocation-neutral, conservative).
+func refLoweringLocalReverts(obj types.Object) bool {
+	result := packageRefLoweringResult
+
+	if result == nil || result.RevertedLocalVars == nil {
+		return false
+	}
+
+	objVar, ok := obj.(*types.Var)
+
+	return ok && result.RevertedLocalVars[objVar]
+}
+
 // Perform escape analysis on the given identifier within the specified block
 func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.BlockStmt) {
 	if parentBlock == nil {
@@ -658,6 +693,15 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 			packageCaptureModeBoxIdents[identObj] = true
 		}
 
+		return
+	}
+
+	// ж-box A2 (§3.3's reversion): address-taken ONLY into Phase-A ref-lowered positions →
+	// stack. The classification already proved no other box-forcing use exists (no closure
+	// crossing, no defer/go feed, no pointer-receiver call, no escape), so the address-of walk
+	// below could only re-derive the box this refinement exists to remove.
+	if refLoweringLocalReverts(identObj) {
+		v.identEscapesHeap[identObj] = false
 		return
 	}
 
