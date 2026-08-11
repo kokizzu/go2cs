@@ -2,7 +2,9 @@
 #
 # The charter's operational gate: after any change to golib, go2cs-gen, the converter or the
 # corpus, every already-validated package must still validate -- verdict for verdict, at its
-# exact banked count. This script is that gate.
+# exact banked count. This script is that gate. (One narrow, named exception: a row that declares
+# HOST-CONDITIONAL verdicts may exceed its banked floor by exactly those named rows -- see
+# Test-HostConditionalDelta below. Any other count movement is still a failure.)
 #
 # The roster is READ FROM docs/ValidatedTestPackages.md rather than hardcoded, so it can never
 # drift from the table a banking commit just updated: the table is the single source of truth for
@@ -46,12 +48,34 @@ if (-not $goroot) { throw 'Could not resolve GOROOT -- is the Go toolchain on PA
 # ---- roster: parse the table's rows -------------------------------------------------------------
 # Row shape:  | [`net/http/internal/ascii`](https://...) | 13 | 1 | What it exercises. |
 # Column 2 is the matching-verdict count, column 3 the disclosed count (blank when none).
+# A row may additionally declare HOST-CONDITIONAL verdicts inside its What-it-exercises cell:
+#
+#   host-conditional (<why, colon-free>): `Name`, `Name`, ...
+#
+# naming verdict rows that exist only on a host with some capability (path/filepath's six
+# TestWalkSymlinkRoot subtests exist only where symlink creation is permitted -- the parent test
+# skips before spawning them otherwise). Column 2 stays the FLOOR every host produces; the names
+# bound what a more-capable host may legitimately add. The phrase "host-conditional" is reserved
+# for this annotation. Acceptance rules live on Test-HostConditionalDelta below.
 $rows = foreach ($line in Get-Content $table) {
     if ($line -match '^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*(\d+)\s*\|\s*(\d*)\s*\|') {
+        # Row fields FIRST: the annotation -match below overwrites $Matches.
+        $rowPackage = $Matches[1]
+        $rowExpected = [int]$Matches[2]
+        $rowDisclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+
+        # The capture takes the run of backticked, comma-separated names right after the colon and
+        # stops at the first text that is not one -- the cell's next " * [proof]" segment ends it.
+        $rowConditional = @()
+        if ($line -match 'host-conditional\s*(?:\([^)]*\))?\s*:\s*((?:`[^`]+`\s*,\s*)*`[^`]+`)') {
+            $rowConditional = @([regex]::Matches($Matches[1], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value })
+        }
+
         [PSCustomObject]@{
-            Package   = $Matches[1]
-            Expected  = [int]$Matches[2]
-            Disclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+            Package     = $rowPackage
+            Expected    = $rowExpected
+            Disclosed   = $rowDisclosed
+            Conditional = $rowConditional
         }
     }
 }
@@ -139,6 +163,134 @@ function ConvertTo-GoDuration([string] $value) {
     return [TimeSpan]::FromTicks([long][math]::Round($sign * $ticks))
 }
 
+# ---- host-conditional verdicts ------------------------------------------------------------------
+# A banked count is normally exact, but a verdict COUNT can be legitimately host-dependent:
+# path/filepath banks 61 on a host without symlink-creation privilege, where Go itself skips
+# TestWalkSymlinkRoot -- and on a host WITH the privilege the test runs and spawns its six
+# table-driven subtests, six verdict rows that simply do not exist on the banking host (the
+# skip->pass flips of the other privilege-gated tests are count-NEUTRAL; only rows that appear or
+# vanish move the count). Banking the larger number would false-red every unprivileged host, the
+# larger population -- so the roster banks the FLOOR and names the conditional verdicts, and the
+# sweep accepts floor+k ONLY when the k extra rows are exactly k of the named tests, agreeing on
+# both runtimes, with no banked verdict missing. Anything outside the named set still fails
+# loudly, exactly as before.
+#
+# The check needs the banked verdict NAME SET, not just the count -- count arithmetic alone would
+# wave through a lost banked row canceling against a rogue new one. That set is the package's
+# committed proof page (docs/validation/current/<pkg-dots>.md), read from HEAD deliberately: the
+# sweep run that just validated at the larger count has already REWRITTEN the working-tree page to
+# match itself, so only the committed copy still records what was banked.
+function Test-HostConditionalDelta {
+    param(
+        [int] $Expected,           # banked matching-verdict count (roster column 2, the floor)
+        [int] $Disclosed,          # banked disclosed count (roster column 3)
+        [string[]] $Conditional,   # the named host-conditional verdicts (roster annotation)
+        [int] $Got,                # the live run's validated count
+        $Comparison,               # the run's go2cs_test_comparison.json, ConvertFrom-Json form
+        [string[]] $BankedNames    # verdict names from the committed proof page's Verdicts table
+    )
+
+    # Local to this function -- nested definitions do not leak into the script scope.
+    function New-HostConditionalVerdictResult([bool] $accepted, [string[]] $extras, [string] $reason) {
+        return [PSCustomObject]@{ Accepted = $accepted; Extras = $extras; Reason = $reason }
+    }
+
+    $k = $Got - $Expected
+    if ($k -lt 1) {
+        return New-HostConditionalVerdictResult $false @() "count $Got is below the banked floor $Expected -- a lost verdict is never host-conditional"
+    }
+    if ($k -gt $Conditional.Count) {
+        return New-HostConditionalVerdictResult $false @() "count $Got exceeds the floor by $k, more than the $($Conditional.Count) named host-conditional verdicts"
+    }
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-HostConditionalVerdictResult $false @() 'comparison record carries no per-test verdict maps'
+    }
+
+    # A moved disclosed count shifts the same arithmetic this check relies on, and a disclosure
+    # appearing or retiring is roster maintenance, never host capability.
+    $liveDisclosed = if ($null -eq $Comparison.disclosed) { 0 } else { @($Comparison.disclosed).Count }
+    if ($liveDisclosed -ne $Disclosed) {
+        return New-HostConditionalVerdictResult $false @() "disclosed count moved ($liveDisclosed live vs $Disclosed banked) -- not a host-conditional shape"
+    }
+
+    # The proof page lists every compared verdict: the matched rows plus the disclosed-divergent
+    # ones. If page and roster disagree the banked evidence is inconsistent -- absorb nothing.
+    if ($BankedNames.Count -ne ($Expected + $Disclosed)) {
+        return New-HostConditionalVerdictResult $false @() "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
+    }
+
+    $goProperties = $Comparison.go.PSObject.Properties
+    $csProperties = $Comparison.csharp.PSObject.Properties
+    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+
+    $missing = @($BankedNames | Where-Object { $liveNames -notcontains $_ })
+    if ($missing.Count -gt 0) {
+        return New-HostConditionalVerdictResult $false @() "banked verdicts missing from this run: $($missing -join ', ')"
+    }
+
+    $extras = @($liveNames | Where-Object { $BankedNames -notcontains $_ })
+    $outside = @($extras | Where-Object { $Conditional -notcontains $_ })
+    if ($outside.Count -gt 0) {
+        return New-HostConditionalVerdictResult $false @() "extra verdicts outside the named host-conditional set: $($outside -join ', ')"
+    }
+
+    # With nothing missing this equals $k by construction; a mismatch means the count and the
+    # verdict maps have come apart (a converter-side accounting change) -- refuse to absorb.
+    if ($extras.Count -ne $k) {
+        return New-HostConditionalVerdictResult $false @() "the $($extras.Count) extra verdict rows do not account for the count delta of $k"
+    }
+
+    foreach ($name in $extras) {
+        $goVerdict = $goProperties[$name].Value
+        $csProperty = $csProperties[$name]
+        if ($null -eq $csProperty -or $csProperty.Value -ne $goVerdict) {
+            $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+            return New-HostConditionalVerdictResult $false @() "conditional verdict ${name}: go '$goVerdict' vs C# '$csVerdict' -- the sides do not agree"
+        }
+    }
+
+    return New-HostConditionalVerdictResult $true $extras $null
+}
+
+# Reads the two evidence artifacts the delta check needs -- the run's own comparison record and
+# the committed proof page -- and applies Test-HostConditionalDelta. Every unreadable input is a
+# rejection with its reason, never an acceptance: the mechanism only absorbs what it can prove.
+function Get-HostConditionalVerdict {
+    param([PSCustomObject] $Row, [int] $Got, [string] $OutDir)
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    if (-not (Test-Path $comparisonPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "no comparison record at $comparisonPath" }
+    }
+
+    $comparison = $null
+    try { $comparison = [System.IO.File]::ReadAllText($comparisonPath) | ConvertFrom-Json } catch {}
+    if ($null -eq $comparison) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "unreadable comparison record at $comparisonPath" }
+    }
+
+    # 2>$null is safe here: the sweep loop runs under 'Continue', so a missing page's stderr lines
+    # become discarded ErrorRecords rather than a terminating abort (the 'Stop' hazard the drift
+    # section documents), and the rejection below already names the path loudly.
+    $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
+    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "no committed proof page at HEAD:$pageRel" }
+    }
+
+    # Verdict names come from the page's "## Verdicts" table alone -- a disclosed package repeats
+    # its divergent tests' names in a later Disclosed-divergences table, which must not be counted.
+    $bankedNames = New-Object System.Collections.Generic.List[string]
+    $inVerdicts = $false
+    foreach ($pageLine in @($pageLines)) {
+        if ($pageLine -match '^##\s') { $inVerdicts = [bool]($pageLine -match '^##\s+Verdicts\b'); continue }
+        if ($inVerdicts -and $pageLine -match '^\|\s*`([^`]+)`\s*\|') { [void]$bankedNames.Add($Matches[1]) }
+    }
+
+    return Test-HostConditionalDelta -Expected $Row.Expected -Disclosed $Row.Disclosed -Conditional $Row.Conditional `
+        -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
+}
+
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
@@ -221,10 +373,27 @@ foreach ($row in $rows) {
             Write-Host "  PASS  $label $got" -ForegroundColor Green
         }
         else {
-            # Validated, but NOT at its banked count -- a silent change in what the suite asserts.
-            # Treat as a failure: the table and reality must agree, one of them is now wrong.
-            $fail++; $failed += "$pkg (count $got, banked $($row.Expected))"
-            Write-Host "  COUNT $label $got, banked $($row.Expected)" -ForegroundColor Yellow
+            # Validated, but NOT at its banked count -- normally a silent change in what the suite
+            # asserts, and a failure: the table and reality must agree, one of them is now wrong.
+            # A row that declares host-conditional verdicts gets one chance to PROVE the surplus is
+            # exactly those named rows materializing on a more-capable host; anything unprovable
+            # falls through to the same failure as before, with the rejection reason attached.
+            $hostConditional = $null
+            if ($row.Conditional.Count -gt 0) {
+                $hostConditional = Get-HostConditionalVerdict -Row $row -Got $got -OutDir $outDir
+            }
+
+            if ($null -ne $hostConditional -and $hostConditional.Accepted) {
+                $pass++
+                Write-Host "  PASS  $label $got = $($row.Expected) banked + $($hostConditional.Extras.Count) host-conditional" -ForegroundColor Green
+            }
+            else {
+                $fail++; $failed += "$pkg (count $got, banked $($row.Expected))"
+                Write-Host "  COUNT $label $got, banked $($row.Expected)" -ForegroundColor Yellow
+                if ($null -ne $hostConditional -and $hostConditional.Reason) {
+                    Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
+                }
+            }
         }
     }
     else {
