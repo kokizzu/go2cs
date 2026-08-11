@@ -178,7 +178,13 @@ function ConvertTo-GoDuration([string] $value) {
 # hence 60m; index/suffixarray's ~35 min on the i9 extrapolates to 70-105 min, hence 120m;
 # archive/zip measured 774 s here, so its 30m stands. -TestTimeout raises any of these further on
 # a still-slower box; re-measure and move a floor when a slower legitimate host proves one short.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '60m'; 'archive/zip' = '30m' }
+#
+# crypto/dsa's floor is sized to its VARIANCE, not its typical run: TestParameterGeneration is a
+# randomized prime search, and two same-machine samples an hour apart measured 1,496 s (25 min)
+# and >3,600 s (blew the then-60m floor mid-run) -- the heavy tail, not load, is the variable, so
+# the deadline must clear the tail. 120m holds both observed extremes with 2x headroom on the
+# fast sample (2026-08-11, i7-5820K).
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
