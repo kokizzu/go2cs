@@ -79,7 +79,30 @@ const (
 	refFuncVetoBodiless  = "X5-bodiless"   // Body == nil: the assembly/cgo partial-stub shape
 	refFuncVetoLinkname  = "X5-linkname"   // appears in a //go:linkname registry (handle/forward/push)
 	refFuncVetoFuncValue = "X5-func-value" // used as a func value somewhere in the package
+	// X5-hand-owned (A2, coordinator-approved from the A1 census §2c): the function is DECLARED in a
+	// Go file whose emission target is a [module: GoManualConversion] hand-own — its C# declaration
+	// is frozen at the boxed convention, so lowering it would make every REGENERATED caller emit ref
+	// arguments against a signature that never changes (CS1503/CS1620 in a different file than the
+	// cause). Detected mechanically from the same per-file marker probe the conversion driver
+	// already runs.
+	refFuncVetoHandOwned = "X5-hand-owned"
+	// X5-hand-own-caller: the function is CALLED from a hand-owned file's frozen C# (the A1
+	// census's textual cross-reference, resolved per instance) — the caller cannot be regenerated,
+	// so the callee keeps its boxed signature. Curated, exactly like the linkname registries and
+	// for the same reason: the frozen C# is invisible to a per-package Go scan.
+	refFuncVetoHandOwnCaller = "X5-hand-own-caller"
 )
+
+// refLoweringHandOwnCallers is the curated called-from-hand-own exclusion set — the THREE real
+// references the A1 census resolved (docs/phase4/CENSUS-zh-box-a1.md §2c; coordinator-approved
+// 2026-08-11): functions whose only conflicting exposure is a call in a hand-owned file's frozen
+// C#. Keyed "<pkgPath>.<name>". crc32's castagnoliShift needs no row here — it is DECLARED in the
+// hand-own, so the mechanical arm above already vetoes it.
+var refLoweringHandOwnCallers = map[string]bool{
+	"hash/crc32.slicingUpdate":       true, // called from crc32_amd64.cs (marked hand-own), line ~371
+	"runtime.getLockRank":            true, // called from mfinal.cs (marked hand-own), line ~112
+	"runtime.lockWithRankMayAcquire": true, // same call site as getLockRank
+}
 
 // Call-site argument shapes — the §3.3 emission rows plus the defer/go carve-out and the veto
 // bucket. Shape names are stable strings because they land in the census JSON.
@@ -195,6 +218,7 @@ var packageRefLoweringResult *refLoweringPackageResult
 // global) and can never perturb conversion state of its own.
 func performRefLoweringAnalysis(files []FileEntry, pkg *types.Package, info *types.Info, options Options) {
 	syntax := make([]*ast.File, 0, len(files))
+	manualFiles := map[*ast.File]bool{}
 
 	for _, entry := range files {
 		if strings.HasSuffix(strings.ToLower(entry.filePath), "_test.go") {
@@ -202,9 +226,15 @@ func performRefLoweringAnalysis(files []FileEntry, pkg *types.Package, info *typ
 		}
 
 		syntax = append(syntax, entry.file)
+
+		// The X5-hand-owned arm rides the flag the driver already resolved per file (the same
+		// containsManualConversionMarker probe that redirects the file's emission to .cs.auto).
+		if entry.manualConversion {
+			manualFiles[entry.file] = true
+		}
 	}
 
-	packageRefLoweringResult = analyzeRefLowering(nil, syntax, pkg, info, censusLinknameHandles(syntax))
+	packageRefLoweringResult = analyzeRefLowering(nil, syntax, pkg, info, censusLinknameHandles(syntax), manualFiles)
 
 	if options.debugMode {
 		printRefLoweringDebugCensus(packageRefLoweringResult)
@@ -217,7 +247,7 @@ func performRefLoweringAnalysis(files []FileEntry, pkg *types.Package, info *typ
 // against the resolved lowered set. handles is the package's one-arg //go:linkname handle set
 // (linknameHandles in the drivers; a local scan in the census driver). fset is optional — with
 // one, call-arg records carry file:line detail (the census driver passes it).
-func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Package, info *types.Info, handles HashSet[string]) *refLoweringPackageResult {
+func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Package, info *types.Info, handles HashSet[string], manualFiles map[*ast.File]bool) *refLoweringPackageResult {
 	analysis := &refLoweringAnalysis{
 		pkg:     pkg,
 		info:    info,
@@ -232,8 +262,10 @@ func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Pack
 	}
 
 	// Pass 1: collect package-level function candidates (and the X5 function-level exclusions that
-	// are visible from the declaration alone).
+	// are visible from the declaration alone — including the hand-own arms).
 	for _, file := range syntax {
+		fileIsHandOwned := manualFiles[file]
+
 		for _, decl := range file.Decls {
 			funcDecl, ok := decl.(*ast.FuncDecl)
 
@@ -241,7 +273,7 @@ func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Pack
 				continue
 			}
 
-			analysis.collectFunc(funcDecl)
+			analysis.collectFunc(funcDecl, fileIsHandOwned)
 		}
 	}
 
@@ -294,7 +326,8 @@ type refLoweringAnalysis struct {
 
 // collectFunc records one FuncDecl: package-level functions become candidate records (with X5
 // function-level vetoes applied); methods contribute only the B′-context pointer-param count.
-func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl) {
+// fileIsHandOwned carries the declaring file's manual-conversion status (the X5-hand-owned arm).
+func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl, fileIsHandOwned bool) {
 	obj, ok := a.info.Defs[funcDecl.Name].(*types.Func)
 
 	if !ok {
@@ -344,6 +377,17 @@ func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl) {
 		// A linkname pull publicizes an unexported function across the assembly boundary in the
 		// boxed convention, invisibly to a per-package scan (§3.2 X5, panel C-F4).
 		verdict.FuncVetoes = append(verdict.FuncVetoes, refFuncVetoLinkname)
+	}
+
+	if fileIsHandOwned {
+		// Declared in a file whose emission is hand-owned: the C# declaration is frozen at the
+		// boxed convention (X5-hand-owned — the A2 mechanical arm).
+		verdict.FuncVetoes = append(verdict.FuncVetoes, refFuncVetoHandOwned)
+	}
+
+	if refLoweringHandOwnCallers[a.pkg.Path()+"."+obj.Name()] {
+		// Called from a hand-owned file's frozen C# (the curated set the A1 census resolved).
+		verdict.FuncVetoes = append(verdict.FuncVetoes, refFuncVetoHandOwnCaller)
 	}
 
 	params := signature.Params()
@@ -673,8 +717,19 @@ func (a *refLoweringAnalysis) classifyArgShape(arg ast.Expr, deferGo bool) (shap
 
 		switch inner := operand.(type) {
 		case *ast.SelectorExpr:
+			if a.chainCrossesPointerField(operand) {
+				// The address roots in a DIFFERENT object than the chain's base variable (an
+				// auto-deref through a pointer field); the row-1 emission (nonnil-wrapped base +
+				// field path) cannot express it, so the position strips (A2 emittability).
+				return refShapeOtherVeto, "ptr-field-chain"
+			}
+
 			return refShapeFieldAddr, ""
 		case *ast.IndexExpr:
+			if a.chainCrossesPointerField(operand) {
+				return refShapeOtherVeto, "ptr-field-chain"
+			}
+
 			return refShapeElemAddr, ""
 		case *ast.CompositeLit:
 			return refShapeTempNeeded, "composite-lit"
@@ -698,7 +753,29 @@ func (a *refLoweringAnalysis) classifyArgShape(arg ast.Expr, deferGo bool) (shap
 	case *ast.CallExpr:
 		if a.exprIsTypeConversion(e) {
 			if _, isPtr := types.Unalias(a.info.TypeOf(e)).(*types.Pointer); isPtr {
-				return refShapePtrConv, a.ptrConvDetail(e)
+				detail := a.ptrConvDetail(e)
+
+				// A2 emittability narrowing (coordinator-approved from the A1 census): the RULED
+				// row-5 mechanism is the hoisted-temp over `(*T2)(&v.x)` — a conversion of an
+				// ADDRESS whose chain stays in the base variable's own storage. A conversion of a
+				// pointer VALUE or a conversion CHAIN has no priced emission; those positions
+				// strip via the two-sided fixed point instead of dead-ending emission later
+				// (census-measured cost: 3 positions corpus-wide — mlkem768.pkeEncrypt#2 and the
+				// two os newFileStatFrom* feeds; runtime.semawakeup's chain site is already
+				// X5-hand-owned).
+				if detail != "conv-of-address" {
+					return refShapeOtherVeto, detail
+				}
+
+				if len(e.Args) == 1 {
+					if unary, ok := ast.Unparen(e.Args[0]).(*ast.UnaryExpr); ok && unary.Op == token.AND {
+						if a.chainCrossesPointerField(ast.Unparen(unary.X)) {
+							return refShapeOtherVeto, "ptr-field-chain"
+						}
+					}
+				}
+
+				return refShapePtrConv, detail
 			}
 
 			return refShapeOtherVeto, "non-pointer-conversion"
@@ -1126,6 +1203,43 @@ func (a *refLoweringAnalysis) classifyPointeeUse(chainRoot ast.Node, parents map
 	}
 }
 
+// chainCrossesPointerField reports whether a selector/index chain auto-derefs through a POINTER
+// field below its root — `&p.f.g` with `f *U` forms an address into f's pointee, not into the
+// base variable's storage, and neither the D1′ classification nor the row-1/row-5 emission
+// templates cover that shape (the address's true base is the box the field holds). The chain
+// ROOT being a pointer is the normal deref'd-base case and is allowed; only INTERMEDIATE
+// pointer-typed hops trip this.
+func (a *refLoweringAnalysis) chainCrossesPointerField(chain ast.Expr) bool {
+	for {
+		chain = ast.Unparen(chain)
+
+		var base ast.Expr
+
+		switch e := chain.(type) {
+		case *ast.SelectorExpr:
+			base = e.X
+		case *ast.IndexExpr:
+			base = e.X
+		case *ast.StarExpr:
+			base = e.X
+		default:
+			return false
+		}
+
+		inner := ast.Unparen(base)
+
+		if _, isRootIdent := inner.(*ast.Ident); !isRootIdent {
+			if baseType := a.info.TypeOf(base); baseType != nil {
+				if _, isPtr := types.Unalias(baseType).(*types.Pointer); isPtr {
+					return true
+				}
+			}
+		}
+
+		chain = base
+	}
+}
+
 // exprTypeIsPointer reports whether node's static type is (or underlies to) a pointer — the
 // operand test that separates an implicit auto-& receiver call from a call through a pointer the
 // expression already carries.
@@ -1165,6 +1279,14 @@ func methodHasPointerReceiver(method *types.Func) bool {
 // position outside defer/go. Any other disposition (stored, returned, compared) re-creates the
 // field-ref box requirement and vetoes.
 func (a *refLoweringAnalysis) classifyDerivedAddress(addrExpr ast.Expr, parents map[ast.Node]ast.Node) (string, *refForward) {
+	// A chain that auto-derefs through a pointer FIELD addresses a different object than the
+	// parameter's storage — outside the D1′ row and the A2 emission templates alike.
+	if unary, ok := addrExpr.(*ast.UnaryExpr); ok {
+		if a.chainCrossesPointerField(ast.Unparen(unary.X)) {
+			return refVetoOtherUse, nil
+		}
+	}
+
 	node := ast.Node(addrExpr)
 	conversionSeen := false
 
