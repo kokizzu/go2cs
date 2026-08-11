@@ -558,26 +558,26 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         return fieldPtrFunc(ref Value);
     }
 
-    // Materializes a value-type IArray implementer's lazy backing ON THE REAL STORAGE (see the
-    // comment in at<Telem> below). Built once per T when T is a struct implementing IArray; the
-    // constrained generic call (`value.Source` on `ref TVal`) does not box, so the wrapper's
-    // `m_value ??= …` runs against the caller's ref. Null for every other T (zero overhead).
-    private delegate void EnsureBackingFunc(ref T value);
-
-    private static readonly EnsureBackingFunc? s_ensureArrayBacking = BuildEnsureArrayBacking();
-
-    private static EnsureBackingFunc? BuildEnsureArrayBacking()
+    // Materializes a value-type IArray implementer's lazy backing on the REAL STORAGE (see the
+    // comment in at<Telem> below): the wrapper is boxed, its `Source` getter materializes the
+    // backing on the boxed copy, and the whole wrapper — a struct over a SHARED backing
+    // reference — is copied back, which lands that reference in the caller's storage. One box on
+    // a rare shape; nothing for every other T (the guard is a JIT/ILC per-instantiation constant).
+    //
+    // ⚠ This was a reflection-built constrained delegate (GetMethod + MakeGenericMethod(typeof(T))
+    // in the static initializer) until 2026-08-10, and that shape is FATAL under Native AOT: the
+    // value-type generic instantiation is reachable only through reflection, ILC generates no
+    // native code for it, and the FIRST ж<> type-init of any AOT-published program threw
+    // NotSupportedException — all 13 perf-suite AOT binaries died at startup. No JIT-hosted gate
+    // can see this class of defect; the perf suite's Verify phase is the corpus's only AOT
+    // execution and is the gate that caught it.
+    private static void ensureArrayBacking(ref T value)
     {
-        if (!typeof(T).IsValueType || !typeof(IArray).IsAssignableFrom(typeof(T)))
-            return null;
-
-        MethodInfo method = typeof(ж<T>).GetMethod(nameof(EnsureArrayBackingImpl), BindingFlags.Static | BindingFlags.NonPublic)!;
-        return (EnsureBackingFunc)method.MakeGenericMethod(typeof(T)).CreateDelegate(typeof(EnsureBackingFunc));
-    }
-
-    private static void EnsureArrayBackingImpl<TVal>(ref TVal value) where TVal : IArray
-    {
-        _ = value.Source; // constrained call — lazy backings materialize on the real storage
+        if (typeof(T).IsValueType && value is IArray boxedView)
+        {
+            _ = boxedView.Source; // materializes the lazy backing on the boxed copy
+            value = (T)(object)boxedView; // copy the wrapper (and its backing reference) back
+        }
     }
 
     /// <inheritdoc/>
@@ -590,9 +590,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // touched on the copy, the backing allocates on the copy and the REAL storage stays
         // virgin, silently dropping every write through the returned element pointer (the
         // pallocBits lesson, resurfacing at the box-element seam). Materialize the backing on
-        // the real storage FIRST via a non-boxing constrained interface call; the copy then
-        // SHARES the materialized backing (array<T> is a readonly struct over a shared T[]).
-        s_ensureArrayBacking?.Invoke(ref Value);
+        // the real storage FIRST (box, touch, copy the wrapper back — AOT-safe, see
+        // ensureArrayBacking); the copies below then SHARE the materialized backing
+        // (array<T> is a readonly struct over a shared T[]).
+        ensureArrayBacking(ref Value);
 
         // Read through `Value`, not `m_val` — when this pointer is itself a field reference (from
         // `of(...)`) or an array-element reference, the real array storage lives behind `Value` and
