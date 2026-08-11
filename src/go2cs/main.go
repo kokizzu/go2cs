@@ -108,6 +108,7 @@ func main() {
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
 	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which with -stdlib emits the multi-platform (layout L3) corpus — one GOOS per target")
 	platformCensusCmd := commandLine.String("platform-census", "", "With -stdlib and two or more -platforms targets: convert once per target into an isolated seeded staging root under this directory, classify the emissions (shared/variant/partial/exclusive) and write platform-manifest.json there. Emits NO corpus output")
+	refCensusCmd := commandLine.String("ref-census", "", "With -stdlib: run the ж-box A1 ref-lowering classification census (analysis only, never emits) over the standard library — once per -platforms target — and write the JSON report to this path. See docs/phase4/DESIGN-zh-box-reduction.md §9 stage A1")
 	platformStageCmd := commandLine.String("platform-stage", "", "Directory a multi-platform -stdlib EMISSION stages its per-target conversions in (kept afterwards for inspection); a temporary directory is created and removed when omitted")
 	buildTagsCmd := commandLine.String("tags", "", "Comma-separated build tags applied when loading packages, e.g. -tags purego to select the portable Go implementations over assembly ones (with -stdlib, purego is applied by default and any explicit -tags value replaces it)")
 	indentSpacesCmd := commandLine.Int("indent", 4, "Number of spaces for indentation")
@@ -258,6 +259,11 @@ Examples:
 	}
 
 	platformCensusDir := strings.TrimSpace(*platformCensusCmd)
+	refCensusPath := strings.TrimSpace(*refCensusCmd)
+
+	if refCensusPath != "" && !convertStdLib {
+		log.Fatalln("-ref-census requires -stdlib: the census classifies the standard library (analysis only)")
+	}
 
 	if platformCensusDir != "" {
 		if !convertStdLib {
@@ -291,6 +297,7 @@ Examples:
 		targetPlatforms:     targetPlatforms,
 		platformCensusDir:   platformCensusDir,
 		platformStageDir:    strings.TrimSpace(*platformStageCmd),
+		refCensusPath:       refCensusPath,
 		buildTags:           buildTags,
 		tagsExplicit:        tagsExplicit,
 		indentSpaces:        *indentSpacesCmd,
@@ -348,6 +355,17 @@ Examples:
 			}
 
 			fmt.Printf("Only converting specified packages: %s\n", strings.Join(packageFilter, ", "))
+		}
+
+		if options.refCensusPath != "" {
+			// ж-box A1 ref-lowering census: pure analysis — the standard library is LOADED once
+			// per target and classified, nothing is emitted anywhere. -go2cspath is read only to
+			// locate src/core for the hand-own cross-reference (see refLoweringCensus.go).
+			if err := runRefLoweringCensus(options, options.refCensusPath, packageFilter); err != nil {
+				log.Fatalf("Ref-lowering census failed: %v", err)
+			}
+
+			return
 		}
 
 		if options.platformCensusDir != "" {

@@ -91,6 +91,7 @@ func resetPackageState(pkg *packages.Package) {
 	initFuncCounter = 0
 	usesUnsafeCode = false
 	packageBlankImportForces = HashSet[string]{}
+	packageRefLoweringResult = nil
 
 	// Capture the package-level Go doc (rendered to Markdown) for the NuGet README
 	packageDoc = extractPackageDoc(pkg.Syntax)

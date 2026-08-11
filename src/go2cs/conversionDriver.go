@@ -280,6 +280,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 				collectHoistedLiterals(files, packageTypes, info, goosOfTarget(options.targetPlatform), nil, true)
 				collectMovedInitVars(fset, packageTypes, info, pkg.Syntax)
 				collectPublicizedTypes(packageTypes)
+
+				// ж-box A1: the ref-lowering classification runs in the hand-owned-sibling driver
+				// too (the three-driver rule, DESIGN-zh-box-reduction §3.5) — analysis only, no
+				// emission reads it; -debug surfaces the census.
+				performRefLoweringAnalysis(files, packageTypes, info, options)
+
 				emitAutoConversionSiblings(files, fset, packageTypes, info, map[*ast.Ident]string{}, map[string]*types.Var{}, packageOutputPath, options)
 			} else {
 				showMessage("Skipping conversion: no target Go source files found for conversion in input path \"%s\"", packageInputPath)
@@ -345,6 +351,11 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// authorizes cross-package linkname pulls) so the handled vars emit `public` — letting a
 		// puller in another assembly reach them through its forwarding property (see linknameOperations).
 		collectLinknameHandles(pkg.Syntax)
+
+		// ж-box A1 (DESIGN-zh-box-reduction §3.5): classify every package-level function's pointer
+		// parameters for ref-lowering and record the verdict on the package context. Analysis only —
+		// no emission visitor reads it yet; the -debug census and the -ref-census instrument do.
+		performRefLoweringAnalysis(files, packageTypes, info, options)
 
 		// Preload the imported type aliases of every package these files import, BEFORE converting any
 		// file, so a foreign renamed type reached transitively (through a value whose package this file

@@ -5456,3 +5456,45 @@ startup to kill per-use allocations and UTF16->UTF8 conversions, and still the r
 StringMatch numbers -- COMPOUNDS with the eager-closure cost. The lazy-package-init arc therefore
 recovers both at once: unused packages skip their init() AND their literal materialization. The
 two items are one lever.
+
+## ж-box arc stage A1 — the census is in, the projection HOLDS (lane L3, 2026-08-11)
+
+The zero-emission census the design gated every golden move behind ran corpus-wide, three GOOS
+targets, on laptop-1 (⚠ go1.23.2 — developmental until the pinned-machine re-derivation, which is
+ONE command). Full report: [`CENSUS-zh-box-a1.md`](CENSUS-zh-box-a1.md). The instrument is
+`-ref-census` over the new classification pass (`refLoweringAnalysisOperations.go`, wired into all
+three drivers, `-debug` census per package; CNR byte-identical — analysis only). The headline
+verdicts, so the next session doesn't have to open the report to know where the arc stands:
+
+- **§3.6's projection CONFIRMED on the recommended (§10.3 hoisted-temp) branch** — fiat lowers
+  **96/96** pointer params and **150/158** address-taken locals; every class the ~7k-P256-residual
+  projection zeroes is statically covered (row-5 conversion sites measured *wider* than the
+  panel's 16: 20 fiat + 7 edwards25519-scalar, all `conv-of-address` at lowered positions). The
+  branch question stays CLOSED.
+- **The §3.3 emission table covers the corpus**: zero `other-veto` argument shapes at lowered
+  positions on all three targets (the caller-side strip never fired outside unit tests).
+- **Per-GOOS delta = 25 positions across 5 packages, ALL already layout-L3** (runtime 14, net 7,
+  os 2, filepathlite 1, syscall 1) — zero new L3 memberships; A2's merge churn is within-package.
+- **Hand-own audit closes small**: census re-measured **49 marked / 41 `*_impl.cs` / 59 distinct**
+  (the design's 44+26 moved, as CLAUDE.md says it does); 17 textual candidate references resolve
+  to **4 real** (crc32's `castagnoliShift`/`slicingUpdate`, runtime's `getLockRank`/
+  `lockWithRankMayAcquire` from `mfinal.cs`) + 13 comment collisions. A2 remedy: an X5
+  declared-in-hand-own arm (mechanical, reuses the marker probe) + a 3-function curated list;
+  **zero hand-own edits owed**.
+- **A′'s prize measures small** (§10.1's checkpoint input): strict exported candidates **64**
+  funcs / **69** corpus call-site records / +68 lowered positions (564→632). The design's 347 was
+  a looser screen (census L1 = 354 ≈ 347; buckets and the constructor-shaped count deviate —
+  reported, not reconciled; re-derive on the pinned machine before deciding A′).
+- Findings that reprice A2 details, none the branch: the §3.2-vs-§3.3 defer/go tension resolved
+  toward §3.3 (defer/go never strips the callee; the caller-side param mirror vetoes as
+  `X2-defer-arg`); `p[:]` pointer-slice is a real non-D shape (19 params, tagged, copyFieldElement
+  the fiat instance); `SetBytes`'s `in` keeps its box under the design's own `x[:]` predicate (§7's
+  probe rows gain a small named residual term); `edwards25519/field`'s `feMul`/`feSquare` strip on
+  the trailing `carryPropagate()` METHOD call — the second fiat family's field half is B′
+  constituency, its scalar half lowers fully.
+
+**Pinned-machine re-derivation (coordinator, go1.23.1, 2026-08-11): the instrument reproduces.**
+Exact agreement on every aggregate the census itself prints — 25 positions / 5 packages
+all-already-L3, hand-own 49/41/17, exported return-shaped 3 — with exported candidates 62 vs the
+laptop's 64, exactly the GOROOT patch-release shape the developmental flag existed for. A2 is
+GO on the go-ahead ratifications recorded with its opening.
