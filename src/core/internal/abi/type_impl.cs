@@ -30,9 +30,19 @@ partial class abi_package {
 // initializers, a pointee behind an addressable Value) — reflect.Type interning stays keyed on the
 // System.Type alone, so identity is deliberately length-blind (the recorded §5 limitation) while
 // Len()/Size()/New/Zero consume real lengths wherever one is knowable. Null = unknown ([0]T is [0]).
+// funcParamDims is the same NON-IDENTITY cargo one level out: a FUNC descriptor's per-parameter
+// array dims, one entry per Go parameter and null where that parameter is not a fixed-size array.
+// It exists because the parameter position is the one place no other dims source reaches — a
+// `[32]byte` parameter has no value to measure and no field initializer to read, and the emitted
+// delegate type is a bare Func<array<byte>, bool> that func([32]byte) bool and func([64]byte) bool
+// share — so the converter stamps [GoArrayDims] on the parameter and GoReflect.FuncParamDims reads
+// it back off the delegate INSTANCE here. RESULT dims are deliberately not carried: a multi-result
+// Go func returns a ValueTuple, which has no per-element attribute position, and no measured
+// consumer reads Out(i).Len().
 partial struct Type {
     [GoReflectCompanion] public System.Type? sysType;
     [GoReflectCompanion] public nint[]? arrayDims;
+    [GoReflectCompanion] public nint[]?[]? funcParamDims;
 }
 
 // synthType builds a managed-backed abi.Type from a System.Type: Kind_ classified from it (GoReflect),
@@ -40,27 +50,53 @@ partial struct Type {
 // reads Size_ for the scalar kinds), and array dims carried as cargo when the caller knew them. The
 // single builder behind both TypeOf (from a value) and reflect's Type.Elem/Field (from a type).
 public static ж<Type> synthType(System.Type? st) {
-    return synthType(st, null);
+    return synthType(st, null, null);
+}
+
+public static ж<Type> synthType(System.Type? st, nint[]? arrayDims) {
+    return synthType(st, arrayDims, null);
 }
 
 // Descriptors are immutable once synthesized — intern them per (managed type, dims) so the
 // per-TypeOf cost (kind classification + size stamping's field walk) is paid once, not per
-// call (fmt classifies every argument; binary sizes in loops).
+// call (fmt classifies every argument; binary sizes in loops). The func param dims join the key
+// for the same reason the array dims are in it: func([32]byte) bool and func([64]byte) bool are
+// DISTINCT Go types over ONE managed delegate type, so interning them together would let the
+// first to arrive answer In(0).Len() for both.
 private static readonly System.Collections.Concurrent.ConcurrentDictionary<(System.Type, string), ж<Type>> s_descriptors = new();
 
-public static ж<Type> synthType(System.Type? st, nint[]? arrayDims) {
+public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
     if (st is null) {
         return default!;
     }
-    string dimsKey = arrayDims is null ? "" : string.Join(',', arrayDims);
-    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims));
+    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims);
+    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims));
 }
 
-private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims) {
+// descriptorDimsKey renders the descriptor's dims cargo as the interning key's second component —
+// shared with reflect's canonType so a Type wrapper and the descriptor it wraps are interned under
+// the same knowledge classes.
+public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims) {
+    string key = arrayDims is null ? "" : string.Join(',', arrayDims);
+    if (funcParamDims is null) {
+        return key;
+    }
+    var builder = new System.Text.StringBuilder(key);
+    foreach (nint[]? paramDims in funcParamDims) {
+        builder.Append('|');
+        if (paramDims is not null) {
+            builder.Append(string.Join(',', paramDims));
+        }
+    }
+    return builder.ToString();
+}
+
+private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
     ref var t = ref heap<Type>(out var Ꮡt);
     t.Kind_ = (ΔKind)((uint8)GoReflect.KindOf(st));
     t.sysType = st;
     t.arrayDims = arrayDims;
+    t.funcParamDims = funcParamDims;
     nint size = GoReflect.GoSizeOf(st, arrayDims);
     if (size >= 0) {
         t.Size_ = (uintptr)(nuint)size;
@@ -84,14 +120,18 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims) 
 // type: an interface-carrier wrapper (IжAdapter / IInterfaceAdapter chain) unwraps to the *T box
 // / original value it stands for (GoReflect.GoDynamicTypeOf, R10), so adapter-held and raw-box
 // values of one Go type share one canonical descriptor. A live array value reveals its real
-// dims, carried on the descriptor as non-identity cargo (increment 2).
+// dims, carried on the descriptor as non-identity cargo (increment 2) — and a live FUNC value
+// reveals its parameters' dims the same way, off the [GoArrayDims] the converter stamped, which is
+// the only route by which a `[32]byte` PARAMETER's length reaches reflect at all.
 public static ж<Type> TypeOf(any a) {
     if (a == default!) {
         return default!;
     }
     System.Type dyn = GoReflect.GoDynamicTypeOf(a);
-    nint[]? dims = GoReflect.KindOf(dyn) == GoReflect.Array ? GoReflect.ArrayDimsOfValue(a) : null;
-    return synthType(dyn, dims);
+    nint kind = GoReflect.KindOf(dyn);
+    nint[]? dims = kind == GoReflect.Array ? GoReflect.ArrayDimsOfValue(a) : null;
+    nint[]?[]? paramDims = kind == GoReflect.Func ? GoReflect.FuncParamDims(a) : null;
+    return synthType(dyn, dims, paramDims);
 }
 
 // ==== the descriptor SPECIALIZATIONS: StructType() / ArrayType() ====

@@ -13202,6 +13202,123 @@ promises. Guarded by the banked fmtsort suite (TestInterface's grouping) and the
 landing tails. Full derivation:
 [`docs/phase4/DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md).
 
+**EXPORTEDNESS is a descriptor read too, and the value side had been right about it all along —
+`StructField.PkgPath` (2026-08-11).** `reflect.StructField.IsExported()` is nothing but
+`f.PkgPath == ""`, and Go fills `PkgPath` with the declaring package's import path for an
+unexported field (`type.go`: `if !p.Name.IsExported() { f.PkgPath = t.PkgPath.Name() }`). The
+hand-owned `rtype.Field(i)` left it unset — the field's own comment said so, on the reading that no
+truthful read backed it — so `IsExported()` answered **true for every field of every converted
+struct**. Silent, like every member of this family: `""` is the correct `PkgPath` for the exported
+fields that are most fields, so nothing faulted and nothing looked wrong.
+
+The consequence is a **guard that can never fire**. `encoding/asn1` opens both its struct arms —
+`parseField` and `makeField` — with
+
+```go
+for i := 0; i < structType.NumField(); i++ {
+    if !structType.Field(i).IsExported() {
+        return StructuralError{"struct contains unexported fields"}
+    }
+}
+```
+
+so `Marshal(unexported{X: 5, y: 1})` returned a **nil** error where Go returns that structural
+error, and `Unmarshal` ran straight past the refusal into `parseField(val.Field(i), …)` on the
+unexported field, where `SetInt` reached `mustBeAssignable` and panicked
+(`TestUnexportedStructField`). Note what that panic proves: the two halves of the read-only model
+had degraded **independently**. `Value.Field` already stamped `flagStickyRO` for an unexported
+field — from `GoReflect.GoFields`, the same projection the type side walks — so `CanSet()`/
+`CanInterface()` were correct and the write was correctly refused; it was only the TYPE-side
+descriptor that had no answer, which is why a package that *probes* settability got no warning
+while a package that simply *writes* got a clean Go-shaped panic. `PkgPath` now derives from the
+same projection's `Exported` bit plus `GoReflect.GoPackagePath` (the package identity the managed
+nesting carries, already `rtype.PkgPath`'s source), so a probe of the type and a write through the
+value cannot disagree about a field.
+
+Two neighbouring `StructField` members stay unpopulated, for two different reasons worth keeping
+apart. **`Offset`** is the r39d rule — a descriptor field whose read cannot be honored must not be
+populated to look truthful: a Go byte offset exists to be added to a data pointer, and managed
+storage has no such pointer. (`abi.StructType` does populate `Offset`, and correctly: its consumers
+— `unique`'s clone sequencer, `internal/reflectlite` — read it as layout metadata, never as an
+address to walk.) **`Anonymous`** is the opposite case: it IS knowable, since an embedded field
+arrives through golib's promoted-embed box hop, but no measured consumer demands it and the
+recorded next gap of that shape is larger — go2cs-gen emits the promoted-embed backing box AFTER
+the declared fields, so `struct{X; y; Inner; inner; Ptr}` walks as `X, y, Ptr, Inner, inner` here
+where Go walks it in declaration order. Field ORDER and `Anonymous` want one increment together,
+with a consumer that demonstrates them.
+
+Guard: `tests/Behavioral/ReflectUnexportedFieldFlags`, byte-identical to `go run` — the indexed
+walk's `IsExported`/`PkgPath`/`Tag`, `FieldByName` carrying the same flags (including the blank
+field, which Go also reports unexported), a field-for-field assertion that the type side and the
+value side AGREE (`v.Field(i).CanSet() == t.Field(i).IsExported()`), and the consumer shape itself:
+a decoder that probes before writing must be able to refuse with a returned error rather than a
+panic. Demonstrated consumer: `encoding/asn1`'s `TestUnexportedStructField`.
+
+**A func PARAMETER is the one position an array's LENGTH cannot be recovered from — `[GoArrayDims]`
+(2026-08-11).** A Go array's length is part of its type, and it is the one part the managed emission
+cannot carry: `[32]byte` renders as golib `array<byte>`, and C# has no const generic parameter to
+hold the 32. The bridge has always answered that by recovering the dimension from a live source
+instead, and the two it had covered every position that mattered — a VALUE measures itself
+(`GoReflect.ArrayDimsOfValue`), and a struct FIELD reads it off a cached zero instance of the
+declaring struct, because the converter emits the dimension as a field initializer (`= new(32)`)
+that the generated parameterless constructor runs.
+
+A func parameter has neither. There is no value at a type-only position, no initializer to read,
+and the emitted delegate type is a bare `Func<array<byte>, bool>` that `func([32]byte) bool` and
+`func([64]byte) bool` **share**. So `reflect.TypeOf(f).In(0)` answered a dims-less array descriptor:
+`Len()` 0 and `String()` `"[]uint8"` — which does not even read as an array — and `reflect.New`/
+`reflect.Zero` of it built a **zero-length** array. `testing/quick` is the consumer that shows what
+that costs, because its generator allocates the argument from the parameter type alone
+(`v := reflect.New(concrete).Elem()`, then `for i := 0; i < v.Len(); i++`): every property test over
+a fixed-size array ran against the EMPTY value. `crypto/internal/edwards25519`'s
+`TestScalarSetCanonicalBytes` indexed `in[len(in)-1]` and panicked with `index out of range [-1]
+with length 0`; its sibling `TestScalarSetUniformBytes` reported `failed on input [0]uint8{}`, which
+names the empty array outright.
+
+The datum therefore has to live at the parameter, and it does: the converter stamps
+`[GoArrayDims(32)]` there (outermost dimension first — `[2][3]int` ⇒ `[GoArrayDims(2, 3)]`), from
+the single `generateParametersSignature` all three signature builders share, so declarations,
+methods, func literals, func types and interface methods are all covered by one emission point.
+
+```go
+f1 := func(in [32]byte, sc Scalar) bool { … }      // edwards25519's scalar_test.go
+```
+```csharp
+var f1 = ([GoArrayDims(32)] array<byte> @in, Scalar sc) => { … };
+```
+
+`GoReflect.FuncParamDims` reads it back off the delegate **INSTANCE** —
+`Delegate.Method.GetParameters()`, which resolves to the real declaration for every shape go2cs
+emits (a declared func used as a method group, a non-capturing lambda, a capturing lambda's
+display-class method, a natural-typed lambda, a local function) — and `abi.TypeOf` stamps it as
+descriptor cargo beside `arrayDims`, so `reflect.Type.In(i)` hands out an array type that knows its
+length. The cargo joins BOTH interning keys (`abi.descriptorDimsKey`, shared with reflect's
+`canonType`) for the reason the array dims are already in them: `func([32]byte) bool` and
+`func([64]byte) bool` are distinct Go types over one managed delegate type, so interning them
+together would let whichever arrived first answer `In(0).Len()` for both.
+
+Three boundaries are deliberate. A **defined** (named) array type is not stamped — its managed form
+is a generated wrapper, not `array<T>`, so dims cargo could not be consumed even if carried — while
+an **alias** for an array is, because a Go alias *is* its target type. **Result** dims are not
+carried at all: a multi-result Go func returns a `ValueTuple`, which has no per-element attribute
+position, and no measured consumer reads `Out(i).Len()`. And a delegate whose target method's
+parameter list does not line up one-for-one with `Invoke`'s — an open instance delegate carries the
+receiver as an extra leading parameter, and the bridge's own method values are expression-compiled
+closures with no attributes — is answered `null` rather than mis-indexed, which is the r39d rule in
+its usual form: a dims-less descriptor is a state the bridge already handles, a mis-indexed one is
+not.
+
+Guard: `tests/Behavioral/ReflectFuncArrayParamDims`, byte-identical to `go run` — `In(0)`'s
+`String`/`Kind`/`Len` and the `New`/`Zero` lengths across a literal, a multi-parameter literal, a
+nested `[2][3]int`, a declared func used as a value and a func with no array parameter at all; the
+distinctness of `[32]byte` and `[64]byte` as `In(0)` types; the inner dimension surviving `Elem()`;
+the struct-field route still answering; and quick's generation loop in miniature (allocate from the
+parameter type, fill through `Index(i).Set`, `Call`), so a zero-length synthesis shows up as the
+callee's wrong answer rather than a silent pass. Converter unit guard:
+`TestGoArrayDimsAttribute`. Corpus footprint, measured by re-transpiling all 557 behavioral
+packages: **3 files, 6 declarations** — every func in the tree with an unnamed fixed-size-array
+parameter, and nothing else.
+
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /
 `v.pointer()`) — eface addresses the managed bridge never populates — so the first slice/map/pointer

@@ -293,6 +293,46 @@
 > Format verified against the toolchain (embedded field contributes its type alone; a tagged field
 > appends the `strconv.Quote`d tag). This partially answers open question 3 on the READ side.
 >
+> **The two Value-layer gaps asn1 and edwards25519 measured, closed (L7, 2026-08-11).** Both are
+> descriptor reads that had degraded to a CONSTANT, and both were rooted against the real code
+> rather than the board's attribution — which was half right in the first case and pointed one layer
+> off in the second.
+>
+> - **Exportedness — `StructField.PkgPath`.** `IsExported()` is nothing but `PkgPath == ""`, and the
+>   hand-owned `rtype.Field(i)` left `PkgPath` unset, so it answered TRUE for every field of every
+>   converted struct. `encoding/asn1` opens both its struct arms with `if !t.Field(i).IsExported()
+>   { return StructuralError{"struct contains unexported fields"} }`, so `Marshal` returned a nil
+>   error and `Unmarshal` ran past the refusal into the unexported field and panicked in
+>   `mustBeAssignable`. That panic is the evidence for the actual root: the two halves of the
+>   read-only model had degraded INDEPENDENTLY — `Value.Field` already stamped `flagStickyRO` from
+>   `GoReflect.GoFields`, so `CanSet()` was correct and the write WAS refused; only the type-side
+>   descriptor had no answer. The board's "flagRO propagation in `Value.Field`" therefore names the
+>   half that was already right. `PkgPath` now derives from the same projection's `Exported` bit
+>   plus `GoReflect.GoPackagePath`. `Offset` stays unpopulated on the r39d rule (a Go byte offset
+>   exists to be added to a data pointer); **`Anonymous` is the recorded next gap**, and wants ONE
+>   increment with the field ORDER beside it — go2cs-gen emits a promoted-embed backing box AFTER
+>   the declared fields, so `struct{X; y; Inner; inner; Ptr}` walks as `X, y, Ptr, Inner, inner`
+>   here where Go walks it in declaration order. Guard:
+>   `tests/Behavioral/ReflectUnexportedFieldFlags`.
+> - **Fixed-size-array synthesis — `[GoArrayDims]` on the parameter.** `testing/quick` allocates its
+>   argument from the parameter type alone, and `reflect.TypeOf(f).In(0)` of a `[32]byte` parameter
+>   answered a dims-less array (`Len()` 0, `String()` `"[]uint8"`), so `New`/`Zero` built a
+>   zero-length one. The root is NOT in quick or in the bridge's array construction: it is that a
+>   func parameter is the one position no dims source reaches — no value to measure, no field
+>   initializer to read, and a delegate type (`Func<array<byte>, bool>`) shared by every
+>   `func([N]byte) bool`. So the converter now stamps the dimension at the parameter and
+>   `GoReflect.FuncParamDims` reads it back off the delegate INSTANCE
+>   (`Delegate.Method.GetParameters()` — verified to resolve for method groups, non-capturing and
+>   capturing lambdas, natural-typed lambdas and local functions), which `abi.TypeOf` carries as
+>   descriptor cargo and `rtype.In(i)` consumes. The cargo joins both interning keys, or
+>   `func([32]byte) bool` and `func([64]byte) bool` — distinct Go types over ONE managed delegate
+>   type — would share a descriptor. RESULT dims are deliberately not carried (a multi-result Go
+>   func returns a `ValueTuple`, which has no per-element attribute position; no measured consumer
+>   reads `Out(i).Len()`), and a bridge-minted method value keeps the dims-less descriptor because
+>   its expression-compiled target carries no attributes. Guard:
+>   `tests/Behavioral/ReflectFuncArrayParamDims`. Corpus footprint over all 557 behavioral packages:
+>   3 files, 6 declarations.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
 > (text/template); `SetMapIndex` delete-on-invalid (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
