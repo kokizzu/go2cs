@@ -176,6 +176,37 @@ shared surface: check LANES/board for any live lock before editing `value_impl.c
 diff disjoint from L4's files (it is, structurally — `initOrderOperations`/`visitValueSpec` vs
 the bridge).
 
+## L8 — the toolchain pin becomes a guard (GOVERSION vs the corpus base)
+
+HARNESS + CONVERTER GUARD, the sibling axis to L5's NuGet guard, found by laptop-1 running
+go1.23.2 against a corpus pinned at 1.23.1 with nothing anywhere asserting the pin. Branch from
+current origin/master. ⚠ Prerequisite for the lane machine itself: install go1.23.1 and run the
+lane under it — a toolchain-guard lane developed on the wrong toolchain is its own punchline.
+
+Two layers, both FAIL (not warn) in their guarded modes:
+
+1. **The converter** — `-stdlib` and `-tests` conversions read GOROOT's sources as INPUT, so a
+   mismatched toolchain silently mixes versions (a `-tests` run converts the OTHER version's test
+   sources against this version's corpus — no roster number can come from that). The converter
+   already resolves `version.props` by upward walk for the badge machinery; compare
+   `go env GOVERSION`'s base against `<GoStdLibVersion>`'s base in those two modes and refuse
+   with a message naming both versions and the remedy. Plain single-package/`-recurse`
+   conversions of user code stay unguarded — converting arbitrary Go with any toolchain is
+   legitimate; only corpus-defining modes carry the pin.
+2. **`run-validated-sweep.ps1`** — a preflight beside the GOROOT resolution: same comparison,
+   same failure shape (the sweep's own words: a run that measured against the wrong sources
+   would be NOT MEASURED, never a verdict).
+
+Gates: converter `go test ./...` with unit guards for both accept and refuse paths (the refuse
+path needs a positive control — fake the version via the test seam, never by installing a second
+toolchain in CI); a filtered sweep on a correctly-pinned machine proving zero behavior change;
+the refuse message verified to name both versions. Note for the guard's text: laptop-1's L1/L2
+gates passed at banked counts even on 1.23.2 and the coordinator re-gated on 1.23.1 at merge —
+the guard exists because that outcome was LUCK about patch-release test-set stability, not
+protection. Commit ("L8:"), push, signal. Merge window: anytime (guard-only), but if the
+converter side lands first it must not block L6/L7's development machine until that machine
+repins — sequence the lane AFTER laptop-1 installs 1.23.1.
+
 ## L3 — ж-box allocation-reduction implementation
 
 **BLOCKED until the coordinator confirms the post-1.23.1.6 harvest is complete** (the design is
