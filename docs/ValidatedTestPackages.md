@@ -31,7 +31,15 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 <!-- Row format is machine-parsed by src/run-validated-sweep.ps1 (regex:
      ^\|\s*\[`pkg`\]\(...\)\s*\|\s*tests\s*\|\s*disclosed\s*\|). Keep one row per line in this exact
-     column order — reflowing, reordering, or adding columns breaks the sweep's roster parser. -->
+     column order — reflowing, reordering, or adding columns breaks the sweep's roster parser.
+     Host-conditional verdicts: a package whose verdict COUNT depends on a host capability keeps
+     the FLOOR every host produces in its Tests column and appends, inside its What-it-exercises
+     cell, the annotation host-conditional (<why, colon-free>): `Name`, `Name`, … naming the
+     verdict rows that exist only on the more-capable host. The sweep then accepts floor+k only
+     when the k extra rows are exactly k of the named tests, agreeing on both runtimes, with no
+     banked verdict missing — proven against the package's committed proof page at HEAD. Anything
+     outside the named set still fails. The phrase "host-conditional" is reserved for this
+     annotation; an older sweep that predates it simply keeps enforcing the floor. -->
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
@@ -140,7 +148,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. · [proof](validation/current/os.signal.md) |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · [proof](validation/current/path.md) |
-| [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's. · [proof](validation/current/path.filepath.md) |
+| [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's · host-conditional (symlink-creation privilege — the parent test skips before spawning them without it): `TestWalkSymlinkRoot/no_slash`, `TestWalkSymlinkRoot/slash`, `TestWalkSymlinkRoot/abs_no_slash`, `TestWalkSymlinkRoot/abs_with_slash`, `TestWalkSymlinkRoot/double_link_no_slash`, `TestWalkSymlinkRoot/double_link_with_slash` · [proof](validation/current/path.filepath.md) |
 | [`plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) | 1 |  | That a program importing `plugin` links and starts at all — Go's own regression test for issue 28789 is an empty body asserting precisely that, and the converted binary runs it. · [proof](validation/current/plugin.md) |
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · [proof](validation/current/regexp.syntax.md) |
