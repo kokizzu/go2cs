@@ -90,12 +90,15 @@ corpus-wide; veto/kept tallies are in the JSON.
 **Zero `other-veto` shapes on every target** is the completeness proof A1 existed to obtain: no
 call-site argument shape at any lowered position falls outside the seven rows plus the defer/go
 carve-out, so the caller-side strip of the two-sided fixed point never fired on the real corpus
-(it is unit-guarded synthetically). Two row-5 sub-shapes to carry into A2: **`conv-of-address`**
-(the priced `(*T2)(&v.x)` fiat shape — all 20 fiat sites and 6 of 7 edwards25519 scalar sites)
-and **`conv-of-value`** (2 sites at lowered positions: `crypto/internal/mlkem768.pkeEncrypt#2`,
-`edwards25519/scalar.go:166` — the temp rule hoists an already-computed value; same mechanics,
-listed so A2 prices them). The syscall-seam `conv-chain` sites (`WSAIoctl` etc.) all target
-X3-vetoed positions and are inert.
+(it is unit-guarded synthetically). The 31 lowered-position row-5 sites decompose completely:
+**20 fiat + 7 edwards25519-scalar + 4 elsewhere** — `crypto/internal/mlkem768.pkeEncrypt#2`
+(conv-of-value), `os.newFileStatFromFileIDBothDirInfo#0`/`…FullDirInfo#0` (conv-of-value,
+dir_windows.go), and `runtime.semawakeup#0` (conv-chain, lock_sema windows — moot: that function
+falls to the declared-in-hand-own X5 arm of §2 c). Sub-shapes to carry into A2:
+**`conv-of-address`** (the priced `(*T2)(&v.x)` fiat shape — all 20 fiat sites and 6 of 7
+edwards25519 sites) and **`conv-of-value`** (4 sites — the temp rule hoists an already-computed
+value; same mechanics, listed so A2 prices them). The remaining syscall-seam `conv-chain` sites
+(`WSAIoctl` etc.) target X3-vetoed positions and are inert.
 
 Row-5 count vs the panel's: the panel priced "16 sites across the four curve files" (C-F1); the
 census measures **20** in fiat (per curve: `Select` 3 + `ToBytes` 1 + `FromBytes` 1) plus **7** in
