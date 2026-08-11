@@ -1324,12 +1324,39 @@ private static bool isExportedGoName(string name) {
 // back empty for EVERY converted struct and every tag-driven decoder saw an untagged type —
 // encoding/asn1 marshalled crypto/x509's `optional` NamedCurveOID instead of omitting its nil
 // value, which is the "asn1: structure error: invalid object identifier" behind crypto/ecdsa's
-// TestEqual. Offset/PkgPath/Anonymous stay unpopulated: no truthful read backs them here.
+// TestEqual.
+//
+// PkgPath is a real read too, and the same silent-degradation class as the Tag: Go sets it to
+// the declaring package's import path for an UNEXPORTED field and leaves it empty for an
+// exported one, so `StructField.IsExported()` — which is nothing but `PkgPath == ""` — answered
+// TRUE for every field of every converted struct. Silently, because "" is the correct answer for
+// most fields. The consequence is a guard that can never fire: encoding/asn1 opens both its
+// struct arms with `if !t.Field(i).IsExported() { return StructuralError{"struct contains
+// unexported fields"} }`, so `Marshal(unexported{X:5,y:1})` returned a nil error where Go returns
+// that error, and `Unmarshal` ran on to write through the unexported field and panicked in
+// mustBeAssignable instead (asn1's TestUnexportedStructField). Note the two halves of the
+// read-only model degraded INDEPENDENTLY: the VALUE side was already right (Value.Field stamps
+// flagStickyRO from the same GoReflect.GoFields projection, which is why the write panicked
+// rather than silently succeeding) — it was the TYPE-side descriptor that had no answer. Both
+// now read exportedness from that one projection, so a probe of the type and a write through the
+// value can never disagree about a field.
+//
+// Offset stays unpopulated on the r39d rule — a descriptor field whose read cannot be honored
+// must not be populated to look truthful. A Go byte offset exists only to be added to a data
+// pointer, and managed storage has no such pointer to add it to; abi.StructType populates
+// Offset because its consumers (unique's clone sequencer, reflectlite) read it as layout
+// METADATA, never as an address to walk. Anonymous stays unpopulated for a different reason —
+// it IS knowable (an embedded field arrives through golib's promoted-embed box hop) but no
+// measured consumer demands it, and the recorded next gap of this shape is the field ORDER an
+// embedded field lands in: go2cs-gen emits the promoted-embed backing box AFTER the declared
+// fields, so `Host{X; y; Inner; inner; Ptr}` walks as X, y, Ptr, Inner, inner here where Go
+// walks it in declaration order.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
     GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
     return new StructField(
         Name: (@string)f.Name,
+        PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
         Type: toType(abi.synthType(f.Type, f.ArrayDims)),
         Tag: ((StructTag)(@string)f.Tag),
         Index: new slice<nint>(new nint[] { i })

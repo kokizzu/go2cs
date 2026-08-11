@@ -13202,6 +13202,58 @@ promises. Guarded by the banked fmtsort suite (TestInterface's grouping) and the
 landing tails. Full derivation:
 [`docs/phase4/DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md).
 
+**EXPORTEDNESS is a descriptor read too, and the value side had been right about it all along —
+`StructField.PkgPath` (2026-08-11).** `reflect.StructField.IsExported()` is nothing but
+`f.PkgPath == ""`, and Go fills `PkgPath` with the declaring package's import path for an
+unexported field (`type.go`: `if !p.Name.IsExported() { f.PkgPath = t.PkgPath.Name() }`). The
+hand-owned `rtype.Field(i)` left it unset — the field's own comment said so, on the reading that no
+truthful read backed it — so `IsExported()` answered **true for every field of every converted
+struct**. Silent, like every member of this family: `""` is the correct `PkgPath` for the exported
+fields that are most fields, so nothing faulted and nothing looked wrong.
+
+The consequence is a **guard that can never fire**. `encoding/asn1` opens both its struct arms —
+`parseField` and `makeField` — with
+
+```go
+for i := 0; i < structType.NumField(); i++ {
+    if !structType.Field(i).IsExported() {
+        return StructuralError{"struct contains unexported fields"}
+    }
+}
+```
+
+so `Marshal(unexported{X: 5, y: 1})` returned a **nil** error where Go returns that structural
+error, and `Unmarshal` ran straight past the refusal into `parseField(val.Field(i), …)` on the
+unexported field, where `SetInt` reached `mustBeAssignable` and panicked
+(`TestUnexportedStructField`). Note what that panic proves: the two halves of the read-only model
+had degraded **independently**. `Value.Field` already stamped `flagStickyRO` for an unexported
+field — from `GoReflect.GoFields`, the same projection the type side walks — so `CanSet()`/
+`CanInterface()` were correct and the write was correctly refused; it was only the TYPE-side
+descriptor that had no answer, which is why a package that *probes* settability got no warning
+while a package that simply *writes* got a clean Go-shaped panic. `PkgPath` now derives from the
+same projection's `Exported` bit plus `GoReflect.GoPackagePath` (the package identity the managed
+nesting carries, already `rtype.PkgPath`'s source), so a probe of the type and a write through the
+value cannot disagree about a field.
+
+Two neighbouring `StructField` members stay unpopulated, for two different reasons worth keeping
+apart. **`Offset`** is the r39d rule — a descriptor field whose read cannot be honored must not be
+populated to look truthful: a Go byte offset exists to be added to a data pointer, and managed
+storage has no such pointer. (`abi.StructType` does populate `Offset`, and correctly: its consumers
+— `unique`'s clone sequencer, `internal/reflectlite` — read it as layout metadata, never as an
+address to walk.) **`Anonymous`** is the opposite case: it IS knowable, since an embedded field
+arrives through golib's promoted-embed box hop, but no measured consumer demands it and the
+recorded next gap of that shape is larger — go2cs-gen emits the promoted-embed backing box AFTER
+the declared fields, so `struct{X; y; Inner; inner; Ptr}` walks as `X, y, Ptr, Inner, inner` here
+where Go walks it in declaration order. Field ORDER and `Anonymous` want one increment together,
+with a consumer that demonstrates them.
+
+Guard: `tests/Behavioral/ReflectUnexportedFieldFlags`, byte-identical to `go run` — the indexed
+walk's `IsExported`/`PkgPath`/`Tag`, `FieldByName` carrying the same flags (including the blank
+field, which Go also reports unexported), a field-for-field assertion that the type side and the
+value side AGREE (`v.Field(i).CanSet() == t.Field(i).IsExported()`), and the consumer shape itself:
+a decoder that probes before writing must be able to refuse with a returned error rather than a
+panic. Demonstrated consumer: `encoding/asn1`'s `TestUnexportedStructField`.
+
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /
 `v.pointer()`) — eface addresses the managed bridge never populates — so the first slice/map/pointer

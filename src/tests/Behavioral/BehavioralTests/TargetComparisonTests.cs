@@ -1273,6 +1273,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckReflectTypedNilInterface() => CheckTarget("ReflectTypedNilInterface");
 
     [TestMethod]
+    public void CheckReflectUnexportedFieldFlags() => CheckTarget("ReflectUnexportedFieldFlags");
+
+    [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]

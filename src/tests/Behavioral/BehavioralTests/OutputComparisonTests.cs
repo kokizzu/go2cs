@@ -1211,6 +1211,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectTypedNilInterface() => CheckTarget("ReflectTypedNilInterface");
 
     [TestMethod]
+    public void CheckReflectUnexportedFieldFlags() => CheckTarget("ReflectUnexportedFieldFlags");
+
+    [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]
