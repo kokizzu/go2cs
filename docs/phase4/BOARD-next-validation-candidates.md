@@ -5436,3 +5436,16 @@ refresh would have measured the same defect-free packages against the same open 
   `docs/validation/current/*`'s Go-version stamp with counts unchanged (observed:
   `encoding.binary.md` 1.23.1 → 1.23.2, restored not banked). L8's guard covers the sweep; this
   is the second thing it protects.
+
+### Backlog: the AOT full-trim column, deferred with its reasoning (user query, 2026-08-11)
+
+Full trimming (vs the suite's TrimMode=partial) would shrink the AOT binary and some of its
+startup/memory floor -- but it strips exactly the metadata golib reaches reflectively (fmt's
+formatting, sort's Interface<T>, the bridge's walks), so today it fails Verify rather than
+producing numbers: a column of n/a at ~25 min of ILC per benchmark on the current coordinator
+machine. DEFERRED, not declined: when the zh-box arc and a trim-eligibility pass shrink the
+reflection surface, the fourth column measures a thing that works and shows the payoff. Note
+also that trim is not the dominant startup lever -- Go package initializers are semantic roots
+trim can never remove; the larger honest lever is lazy/dead-strippable package inits (Go's
+linker dead-strips unreachable packages; go2cs loads and inits the whole referenced closure),
+recorded beside the working-set note in the performance README.
