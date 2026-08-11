@@ -61,6 +61,12 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial class intPtr {}
+    internal partial struct byteArray {}
+    internal partial struct counter {}
+    internal partial struct intChan {}
+    internal partial struct intSET {}
     internal partial struct record {}
+    internal partial struct stringMap {}
     // </TypeAccessibility>
 }
