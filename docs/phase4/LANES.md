@@ -43,6 +43,7 @@ so the coordinator can calibrate assignments.
 | L2 allowlist derivation | laptop-1 (after L1 — same file) | OPEN | anytime (harness-only) |
 | L3 ж-box implementation | laptop-1 | BLOCKED — post-1.23.1.6 harvest only (design **SIGNED OFF** 2026-08-10, doc landed on master) | post-harvest |
 | L4 init-order tuple-spec fix (Option A) | laptop-1 (parallel with L1/L2 — disjoint files; use a second clone or worktree if truly concurrent) | OPEN to develop | **post-1.23.1.6** (converter change; the release ships from the current gated tree) |
+| L5 nuget toolchain guard | laptop-1 (self-initiated, retro-assigned) | COMPLETE on `claude/l5-nuget-toolchain-guard`, gates green inline; section text arrives with its completion report | **post-1.23.1.6** — carries a coordinator ruling: the publish fact is REPO-RECORDED by the publish ritual (a published-version stamp written by `push-nuget.ps1` beside the build version), preflight compares against that; a nuget.org feed query is advisory warn-only, never a hard gate. Trap for every lane touching go.mod parsing: `modfile.ParseLax` silently drops the `toolchain` directive (`File.Toolchain` always nil), so `go 1.21` + `toolchain go1.25.0` reads as a 1.21 request — use `modfile.Parse` where the toolchain matters, and guard it with a unit test |
 
 ⚠ Two lanes running concurrently on one machine need **separate checkouts** (second clone or
 `git worktree`) — CNR/behavioral gates re-transpile the tree they run in, and two lanes sharing
