@@ -5309,3 +5309,31 @@ crash-save picks it up.
 - **`InterfaceInheritance` / `ValueOf(Type).Pointer()`.** The one behavioral failure seen while
   gating this lane was proven **pre-existing on master** (reproduced at the merge base), and its root
   is in the reflection bridge — **r58b**'s area. This lane's only touch on that file is a comment.
+
+## Coordinator ratifications — the alloc-count rulings, user-confirmed (2026-08-10)
+
+The user ratified the r58a merge's disclosure rulings, with the honest assessment carried here so
+the decision and its evidence stay together:
+
+- **`crypto/rsa` `TestAllocations` — DISCLOSED, ratified.** The true count is **340,756 objects
+  per run against a budget of 10** — five orders of magnitude, dominated by managed big-integer
+  arithmetic no golib optimization can remove. Squarely the provably-cannot-satisfy class the 38
+  existing `alloc-profile` disclosures pin.
+- **`net/http/internal` (2 objects vs budget 1) and `math/big` `TestNewIntAllocs` (1 vs 0) — NOT
+  disclosED, ratified.** These are near-budget lower-bound counts: nothing proves the extra object
+  is unavoidable rather than a golib inefficiency, and disclosing them would launder an
+  optimization target as an impossibility — the exact move r56d refused. They stay characterized
+  and undisclosed until either an optimization closes them honestly (the ж-box arc is the likely
+  instrument) or a proof of unavoidability emerges. `log` (4 vs 1) is moot for banking regardless:
+  its `TestAll` fails on the `runtime.Caller` architectural arc the board already carries.
+- **`path/filepath` stays banked at 61 — ratified.** The six symlink rows are host-privilege-
+  dependent and BOTH runtimes agree in both states; a general roster mechanism for
+  host-conditional verdicts is commissioned as a chip rather than a count bump that would
+  false-red unprivileged boxes.
+
+Also ruled in the same pass: the ж-box arc is commissioned chip-class AFTER the near-miss harvest
+(the counter gives it an exact instrument); the init-ORDER arc starts as a characterization scout;
+GOROOT-tree-reproduction is DEFERRED past 75% (four packages against a harness-contract change
+re-validating all 126); r59 runs as the next dedicated lane after the harvest with backlog 24
+riding its regen; NuGet 1.23.1.6 is approved after the day's final consolidated sweep (release
+push user-owned).
