@@ -207,6 +207,37 @@ protection. Commit ("L8:"), push, signal. Merge window: anytime (guard-only), bu
 converter side lands first it must not block L6/L7's development machine until that machine
 repins — sequence the lane AFTER laptop-1 installs 1.23.1.
 
+## L9 — the stale-census re-measure wave (the next 75% push)
+
+MEASUREMENT WAVE, cheap by construction. ⚠ Runs only on a PINNED go1.23.1 machine (the
+coordinator desktop post-r59, or laptop-1 after it installs 1.23.1) — an unpinned measure is
+non-bankable by the L8 doctrine. Branch from current origin/master.
+
+Nine corpus-wide fixes have landed since the board's ONE-ROW-AWAY censuses were taken (r56f's
+shift fix and Tag bridge, r58b's typed-nil, r57b's MapKeys/MapIndex, L6's defined-type Name(),
+L7's PkgPath and array dims, r57c's @string window, r58a's counter). Per the timestamped-census
+doctrine, every row below is a HYPOTHESIS to re-measure, not a work item — and the r57a precedent
+(4→82, 9→222, 0→559 with zero new code) says several will move dramatically.
+
+Re-measure through the pipeline (`-tests -test-action all -test-timeout 30m`, explicit
+`-go2cspath <checkout>\src` ALWAYS — the self-location trap is board-recorded), in this order:
+
+1. `net/textproto` (25/26 — its single row was the counter-shim class; the counter now reports a
+   true count, so it may simply pass: the likeliest instant bank)
+2. `mime/multipart` (7/52), `net/http/httputil` (16/53), `net/http/httptest` (24/55),
+   `net/http/cookiejar` (10/17), `net/rpc` (6/15) — the net cluster short of the socket seam
+3. `go/doc` (24/85), `go/parser` (6/173) — the go/* cluster behind the bridge fixes
+4. `debug/dwarf` (7/40), `internal/coverage/cfile` (4/16)
+5. `go/internal/gcimporter` (399/583 — the largest single package on the board)
+
+For each: BANK what validates (full commit policy — test sources, roster row with lane-local
+arithmetic, proof page, converter-composed README badge pinned at the PUBLISHED version); for
+what does not, write the differential's real roots to the board (attribution discipline per
+harvest r60 — the board's four-for-four wrong-hypothesis record this week says characterize
+from evidence, never inherit). Do not spin on a blocked package; record and move. Gates: filtered
+sweep per banked package; the standing families classify the aftermath. Commit per package
+("L9:"), push, signal per bank so the coordinator can integrate incrementally.
+
 ## L3 — ж-box allocation-reduction implementation
 
 **BLOCKED until the coordinator confirms the post-1.23.1.6 harvest is complete** (the design is
