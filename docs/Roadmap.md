@@ -778,16 +778,42 @@ stubs; each implemented member has a real companion or a documented target exclu
 packages are Phase 4 **validated**; and the full converted standard-library test run passes for the supported
 package/target matrix.
 
+## Platforms — Linux and the multi-target corpus (in progress)
+
+Running alongside the numbered phases rather than inside one: making the converted corpus real on
+more than Windows.
+
+**Where it stands (2026-08-10):**
+
+- **Converting works on Windows and Linux.** Releases since **1.23.1.5** carry Linux converter
+  binaries alongside Windows; a Go module converts identically on either host.
+- **The corpus is multi-target on disk.** Since 2026-08-08 the standard library uses layout **L3**:
+  platform-shared files sit flat, platform-varying emissions live in per-GOOS folders
+  (`<pkg>/{windows,linux,darwin}/`, 37 packages vary), and each affected `.csproj` compiles exactly
+  one set via `$(GoTargetOS)` — defaulting to `windows`, so a plain build still means the Windows
+  corpus. Design: [`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md).
+- **Running on Linux works today for programs whose import closure stays within the
+  `fmt`/`os`/`time` class** — the first native Linux run of a converted program landed 2026-08-08
+  (tag `linux-first-run-2026-08-08`).
+- **The remaining wall is the platform-divergent `syscall` surface.** A closure reaching it (e.g.
+  anything pulling `x/sys`) still builds only for the Windows target: the
+  `-p:GoTargetOS=linux` corpus build does not yet complete
+  ([`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md) §12), and the
+  syscall struct-passing seam solved on Windows with blittable mirrors needs its Linux
+  counterpart. The operational plan, harness findings and remaining F-items live in
+  [`PLAN-linux-operation.md`](PLAN-linux-operation.md).
+
 ## Progress tracking
 
 | Metric | Source | Status |
 |---|---|---|
 | Baseline + tests build clean | `dotnet build src/go2cs.slnx` | ✅ green |
-| Behavioral suite passing | `BehavioralTests` / `BehavioralRunner` | ✅ 371 projects |
-| Full packages compiling | `src/go-src-converted.slnx` | ✅ **302 / 302** (2026-07-10, `51ba5d9cf`) |
+| Behavioral suite passing | `BehavioralTests` / `BehavioralRunner` | ✅ 555 projects transpile+compile+golden, 529 output-compared (2026-08-10) |
+| Full packages compiling | `src/go2cs-stdlib.slnx` (307 projects since layout L3) | ✅ **302 / 302** packages (2026-07-10, `51ba5d9cf`) |
 | Full-conversion error count | build-error buckets | ✅ **0** |
-| Converted package tests | Per-package Phase 4 manifests/results | ◻ Phase 4 — next; requirements complete |
+| Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight — 126 / 215 validated (58.6%)**, 14,643 matching verdicts, 50 disclosed (2026-08-10) |
 | Assembly-backed implementations | Phase 5 external-declaration ledger | ◻ Phase 5 planned — gated by Phase 4 validation |
+| Linux / multi-target | Platforms section above | ◻ converts + runs `fmt`/`os`/`time`-class programs; `syscall` surface in progress |
 
 ## Reference: open converter items (`src/go2cs/ToDo.md`)
 

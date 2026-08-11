@@ -322,7 +322,9 @@ internal static void Main() {
 > binaries alongside Windows. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
 > on Linux for programs whose import closure stays within the `fmt`/`os`/`time` class. A closure reaching
 > platform-divergent `syscall` surface (as this example's `x/sys` dependency does) still builds only on
-> Windows — the remaining Linux piece is in progress, see the [Roadmap](Roadmap.md)._
+> Windows — the remaining piece is the Linux side of that `syscall` surface, tracked in the Roadmap's
+> [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress) with the
+> operational detail in [PLAN-linux-operation.md](PLAN-linux-operation.md)._
 
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
 converted dependency tree, restoring the go2cs packages on the way; opening it in Visual Studio makes the
