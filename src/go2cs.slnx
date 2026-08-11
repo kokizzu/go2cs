@@ -662,6 +662,8 @@
     <Project Path="tests/Behavioral/ReflectUnexportedFieldFlags/ReflectUnexportedFieldFlags.csproj" />
     <Project Path="tests/Behavioral/ReflectZeroAndGrow/ReflectZeroAndGrow.csproj" />
     <Project Path="tests/Behavioral/ReflectliteTypeName/ReflectliteTypeName.csproj" />
+    <Project Path="tests/Behavioral/RefLoweredNilTiming/RefLoweredNilTiming.csproj" />
+    <Project Path="tests/Behavioral/RefLoweredParams/RefLoweredParams.csproj" />
     <Project Path="tests/Behavioral/ReinterpretPinLifetime/ReinterpretPinLifetime.csproj" />
     <Project Path="tests/Behavioral/ReinterpretPointerLifetime/ReinterpretPointerLifetime.csproj" />
     <Project Path="tests/Behavioral/RecvArrayFieldElementAddress/RecvArrayFieldElementAddress.csproj" />
