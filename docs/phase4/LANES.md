@@ -13,8 +13,11 @@
 2. **Prompts are self-contained.** Each lane section below IS the session prompt — paste it (or
    point the session at this file and name the lane). Paths are written repo-relative; `<clone>`
    means your clone root.
-3. **Gates run on the lane machine, inline.** The coordinator re-gates at merge regardless — but a
-   lane that arrives with its own gates green merges same-day.
+3. **Gates run on the lane machine, inline — with BLOCKING waits, not notification waits.** A lane
+   turn that ends expecting a background-completion wake-up may never receive it (measured: L1 lost
+   ~25 minutes to exactly this); poll the child's output with bounded in-call waits instead. The
+   coordinator re-gates at merge regardless — but a lane that arrives with its own gates green
+   merges same-day.
 4. **Merge signal.** Finish with a signed (or plain, if no key on that machine) commit whose subject
    starts with the lane id, push the branch, and tell the coordinator session "lane `<branch>`
    complete" (a one-line relay is enough; paste the session's final report if convenient). Do not
@@ -39,8 +42,8 @@ so the coordinator can calibrate assignments.
 
 | Lane | Machine | Status | Merge window |
 |---|---|---|---|
-| L1 host-conditional roster | laptop-1 | OPEN | anytime (harness-only) |
-| L2 allowlist derivation | laptop-1 (after L1 — same file) | OPEN | anytime (harness-only) |
+| L1 host-conditional roster | laptop-1 | **MERGED** `8977a0f57` — gated on the privileged host: `path/filepath 67 = 61 banked + 6 host-conditional` | done |
+| L2 allowlist derivation | laptop-1 (stacked on L1) | **MERGED** `f339d628e` — gated: ecdh 47/47 with its hook classifying as known-not-drift; retires 5 missing allowlist rows incl. 4 per-GOOS mines | done |
 | L3 ж-box implementation | laptop-1 | BLOCKED — post-1.23.1.6 harvest only (design **SIGNED OFF** 2026-08-10, doc landed on master) | post-harvest |
 | L4 init-order tuple-spec fix (Option A) | laptop-1 (parallel with L1/L2 — disjoint files; use a second clone or worktree if truly concurrent) | OPEN to develop | **post-1.23.1.6** (converter change; the release ships from the current gated tree) |
 | L5 nuget toolchain guard | laptop-1 (self-initiated, retro-assigned) | COMPLETE on `claude/l5-nuget-toolchain-guard`, gates green inline; section text arrives with its completion report | **post-1.23.1.6** — carries a coordinator ruling: the publish fact is REPO-RECORDED by the publish ritual (a published-version stamp written by `push-nuget.ps1` beside the build version), preflight compares against that; a nuget.org feed query is advisory warn-only, never a hard gate. Trap for every lane touching go.mod parsing: `modfile.ParseLax` silently drops the `toolchain` directive (`File.Toolchain` always nil), so `go 1.21` + `toolchain go1.25.0` reads as a 1.21 request — use `modfile.Parse` where the toolchain matters, and guard it with a unit test |
