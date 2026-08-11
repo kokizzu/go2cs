@@ -8,7 +8,10 @@ Each benchmark is a tiny Go program (same shape as the
 [behavioral tests](https://github.com/ritchiecarroll/go2cs/tree/master/src/tests/Behavioral)),
 chosen to exercise one Go construct with a real C# cost model — slices, strings, maps, channels,
 interface dispatch — plus raw compute loops where the two runtimes should be close. This is not an
-exhaustive benchmark game; it gives the common expected range of differences.
+exhaustive benchmark game; it gives the common expected range of differences. The short version:
+transpiled C# is **usually slower than Go, but not universally** — maps, channels and the
+stack-string path run at parity or faster in both C# variants, and Native AOT adds more rows;
+the structural-interface assert is the honest outlier at the other end.
 
 ## The benchmarks
 
