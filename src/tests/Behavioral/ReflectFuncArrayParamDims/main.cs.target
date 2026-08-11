@@ -5,7 +5,7 @@ using reflect = reflect_package;
 
 partial class main_package {
 
-[GoType] [GoValueClone("Buf")] partial struct wrap {
+[GoType] partial struct wrap {
     public array<byte> Buf = new(8);
 }
 
