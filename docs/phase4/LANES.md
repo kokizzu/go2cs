@@ -220,15 +220,20 @@ doctrine, every row below is a HYPOTHESIS to re-measure, not a work item — and
 (4→82, 9→222, 0→559 with zero new code) says several will move dramatically.
 
 Re-measure through the pipeline (`-tests -test-action all -test-timeout 30m`, explicit
-`-go2cspath <checkout>\src` ALWAYS — the self-location trap is board-recorded), in this order:
+`-go2cspath <checkout>\src` ALWAYS — the self-location trap is board-recorded), in this order —
+REORDERED 2026-08-11 by a GOROOT `_test.go` pre-scan for known-open walls:
 
 1. `net/textproto` (25/26 — its single row was the counter-shim class; the counter now reports a
    true count, so it may simply pass: the likeliest instant bank)
-2. `mime/multipart` (7/52), `net/http/httputil` (16/53), `net/http/httptest` (24/55),
-   `net/http/cookiejar` (10/17), `net/rpc` (6/15) — the net cluster short of the socket seam
-3. `go/doc` (24/85), `go/parser` (6/173) — the go/* cluster behind the bridge fixes
-4. `debug/dwarf` (7/40), `internal/coverage/cfile` (4/16)
-5. `go/internal/gcimporter` (399/583 — the largest single package on the board)
+2. `mime/multipart` (7/52), `go/parser` (6/173), `debug/dwarf` (7/40), `go/doc` (24/85) — the
+   scan found NO known walls in any of them; pure stale-census candidates
+3. `internal/coverage/cfile` (4/16), `go/internal/gcimporter` (399/583) — both exec the Go
+   toolchain, so expect the GOROOT-tree/cwd class in the residue; still worth the measure
+4. `net/rpc` (6/15) — run ONE of the socket-walled rows as the seam's canary, then STOP:
+   the pre-scan shows `net/http/httputil`, `net/http/httptest`, `net/http/cookiejar` and rpc all
+   spin real listeners, and the blittable-sockaddr seam (board: `(*SockaddrInet4).sockaddr`'s
+   `ж<array<byte>>` reinterpret) is a KNOWN-OPEN wall no landed fix touches — their censuses are
+   walled, not stale. The three held rows join the wave when the seam arc lands.
 
 For each: BANK what validates (full commit policy — test sources, roster row with lane-local
 arithmetic, proof page, converter-composed README badge pinned at the PUBLISHED version); for
