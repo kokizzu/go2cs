@@ -9,8 +9,63 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 	"strings"
 )
+
+// goArrayDims returns the Go fixed-size array dimensions of t, outermost first ([4][8]byte -> 4, 8),
+// or nil when t is not an unnamed array type.
+//
+// The dimension is the ONE part of a Go array type the managed emission cannot carry: `[32]byte`
+// renders as golib `array<byte>`, and C# has no const generic parameter to hold the 32 in the TYPE.
+// Every other position recovers it from a live source instead -- a value reveals its own length
+// (GoReflect.ArrayDimsOfValue), and a struct FIELD recovers it from the declaring type's zero
+// instance, because the converter emits the dimension as a field initializer (`= new(32)`) that the
+// generated parameterless constructor runs. A func PARAMETER has neither: there is no value at a
+// type-only position and no initializer to read, so `reflect.TypeOf(f).In(0)` answered a dims-less
+// array descriptor, `Len()` 0 and `String()` "[]uint8" -- which is why testing/quick synthesized a
+// ZERO-length array for a `[32]byte` parameter and every property test over a fixed-size array ran
+// against the empty value. See emitGoArrayDimsAttribute for the carrier.
+func goArrayDims(t types.Type) []int64 {
+	var dims []int64
+
+	for {
+		array, ok := types.Unalias(t).(*types.Array)
+
+		if !ok {
+			return dims
+		}
+
+		dims = append(dims, array.Len())
+		t = array.Elem()
+	}
+}
+
+// emitGoArrayDimsAttribute renders the `[GoArrayDims(...)]` parameter attribute carrying t's Go
+// array dimensions, or "" when t is not an unnamed array type.
+//
+// It is a PARAMETER attribute rather than anything on the type because the parameter position is
+// the only place the datum can live: the emitted delegate type is a bare `Func<array<byte>, bool>`,
+// shared by `func([32]byte) bool` and `func([64]byte) bool` alike. The reflection bridge reads it
+// back off the delegate INSTANCE (`Delegate.Method.GetParameters()`), which resolves for every
+// shape go2cs emits -- a declared func used as a method group, a non-capturing lambda, a capturing
+// lambda's display-class method, and a natural-typed lambda -- and stamps it as descriptor cargo in
+// abi.TypeOf, so reflect.Type.In(i) hands out an array type that knows its length.
+func emitGoArrayDimsAttribute(t types.Type) string {
+	dims := goArrayDims(t)
+
+	if len(dims) == 0 {
+		return ""
+	}
+
+	values := make([]string, len(dims))
+
+	for i, dim := range dims {
+		values[i] = fmt.Sprintf("%d", dim)
+	}
+
+	return fmt.Sprintf("[GoArrayDims(%s)] ", strings.Join(values, ", "))
+}
 
 func (v *Visitor) convArrayType(arrayType *ast.ArrayType, context ArrayTypeContext) string {
 	typeName := v.getExpressionTypeName(arrayType, false)

@@ -8,6 +8,8 @@ package main
 
 import (
 	"fmt"
+	"go/token"
+	"go/types"
 	"os"
 	"os/exec"
 	"runtime/debug"
@@ -165,5 +167,50 @@ func TestUnclosedBracketTerminates(t *testing.T) {
 	// actionable instead of a silent wrong name.
 	if !strings.Contains(string(output), mangled) {
 		t.Errorf("unrenderable type expression was not reported by name; child output:\n%s", output)
+	}
+}
+
+// TestGoArrayDimsAttribute pins the ONE datum a Go array type carries that the managed emission
+// cannot: its LENGTH. `[32]byte` renders as golib `array<byte>` and C# has no const generic to hold
+// the 32, so every other position recovers it from a live source — a value measures itself, a
+// struct field reads the declaring type's zero instance — while a func PARAMETER has neither and
+// gets the attribute instead. The cases below are the boundary: an unnamed array is stamped
+// (outermost dimension first), an ALIAS for one is stamped because a Go alias IS its target type,
+// and a DEFINED (named) array type is NOT — its managed form is a generated wrapper rather than
+// `array<T>`, so dims cargo could not be consumed even if it were carried.
+func TestGoArrayDimsAttribute(t *testing.T) {
+	byteType := types.Typ[types.Byte]
+	intType := types.Typ[types.Int]
+	pkg := types.NewPackage("go2cs/test", "test")
+
+	array32 := types.NewArray(byteType, 32)
+	nested := types.NewArray(types.NewArray(intType, 3), 2)
+	aliased := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "words", nil), types.NewArray(intType, 4))
+	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Row", nil), types.NewArray(intType, 3), nil)
+
+	cases := []struct {
+		name string
+		typ  types.Type
+		want string
+	}{
+		{"unnamed array", array32, "[GoArrayDims(32)] "},
+		{"nested array", nested, "[GoArrayDims(2, 3)] "},
+		{"alias for an array", aliased, "[GoArrayDims(4)] "},
+		{"defined array type", named, ""},
+		{"slice", types.NewSlice(byteType), ""},
+		{"scalar", intType, ""},
+		{"pointer to array", types.NewPointer(array32), ""},
+	}
+
+	for _, c := range cases {
+		if got := emitGoArrayDimsAttribute(c.typ); got != c.want {
+			t.Errorf("%s: emitGoArrayDimsAttribute(%s) = %q, want %q", c.name, c.typ, got, c.want)
+		}
+	}
+
+	// The dimensions are outermost-first, matching the Go source order `[2][3]int`, because that is
+	// the order GoReflect.ArrayDimsOfValue produces and reflect.Type.Elem consumes (dims[1:]).
+	if dims := goArrayDims(nested); len(dims) != 2 || dims[0] != 2 || dims[1] != 3 {
+		t.Errorf("goArrayDims([2][3]int) = %v, want [2 3]", dims)
 	}
 }

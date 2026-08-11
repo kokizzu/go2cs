@@ -1174,8 +1174,12 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
             "resulting reflect.Type is non-canonical. Route the feeding path through abi.synthType.");
         return new rtypeжΔType(toRType(Ꮡt));
     }
-    nint[]? dims = Ꮡt.Value.arrayDims;
-    string dimsKey = dims is null ? "" : string.Join(',', dims);
+    // The key is the descriptor's OWN dims-knowledge rendering (abi.descriptorDimsKey), so a Type
+    // wrapper and the descriptor it wraps intern under exactly the same classes — including a func
+    // type's per-parameter dims, without which `func([32]byte) bool` and `func([64]byte) bool`
+    // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
+    // intern would answer In(0).Len() for both.
+    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims);
     return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
@@ -1474,8 +1478,20 @@ internal static nint NumIn(this ж<rtype> Ꮡt) {
     return funcShapeOf(Ꮡt, "NumIn"u8).ins.Length;
 }
 
+// In returns the i'th input parameter type. Its ARRAY DIMENSION rides the descriptor's
+// funcParamDims cargo: a `[32]byte` parameter emits as a bare `array<byte>` and the delegate type
+// is a `Func<array<byte>, bool>` shared with every other `func([N]byte) bool`, so the length has no
+// managed type to live in and no value or field initializer to be recovered from — the converter
+// stamps it on the parameter as [GoArrayDims] and abi.TypeOf reads it off the delegate instance.
+// Without it In(0) answered a dims-less array: Len() 0, String() "[]uint8", and reflect.New of it a
+// ZERO-length array — which is why testing/quick generated the empty value for every property test
+// over a fixed-size array (edwards25519's TestScalarSetCanonicalBytes indexed `in[len(in)-1]` and
+// panicked with index -1). A parameter the cargo does not cover keeps the dims-less descriptor,
+// which is the state every other type-only path already produces.
 internal static ΔType In(this ж<rtype> Ꮡt, nint i) {
-    return toType(abi.synthType(funcShapeOf(Ꮡt, "In"u8).ins[(int)i]));
+    nint[]?[]? paramDims = Ꮡt.Value.t.funcParamDims;
+    nint[]? dims = paramDims is not null && i >= 0 && (int)i < paramDims.Length ? paramDims[(int)i] : null;
+    return toType(abi.synthType(funcShapeOf(Ꮡt, "In"u8).ins[(int)i], dims));
 }
 
 internal static nint NumOut(this ж<rtype> Ꮡt) {

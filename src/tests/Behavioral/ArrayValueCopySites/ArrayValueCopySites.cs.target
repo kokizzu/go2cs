@@ -34,7 +34,7 @@ internal static array<nint> get(this holder h) {
     return h.arr.Clone();
 }
 
-internal static void modDirect(array<nint> a) {
+internal static void modDirect([GoArrayDims(3)] array<nint> a) {
     a = a.Clone();
 
     a[0] = 99;
@@ -46,7 +46,7 @@ internal static void modNamed(Row r) {
     r[0] = 99;
 }
 
-internal static void modDeep(array<array<nint>> m) {
+internal static void modDeep([GoArrayDims(2, 3)] array<array<nint>> m) {
     m = m.Clone();
 
     m[0][0] = 99;
@@ -247,7 +247,7 @@ private static readonly object funcLitParamˢ = (@string)"funcLitParam:"u8;
 
 internal static void funcLitParam() {
     var a = new nint[]{1, 2, 3}.array();
-    void fl(array<nint> x) {
+    void fl([GoArrayDims(3)] array<nint> x) {
         x = x.Clone();
         x[0] = 99;
     }
