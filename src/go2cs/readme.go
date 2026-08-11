@@ -56,6 +56,9 @@ var goVersionValue string
 
 // goVersion returns the active Go toolchain version without the "go" prefix (e.g. "1.23.1"),
 // resolved once from `go env GOVERSION`. Returns "" if it cannot be determined.
+//
+// "Active" means the toolchain that LOADED the packages, which is not always the one on PATH — see
+// pinGoVersion.
 func goVersion() string {
 	goVersionOnce.Do(func() {
 		if value, err := getGoEnv("GOVERSION"); err == nil {
@@ -64,6 +67,27 @@ func goVersion() string {
 	})
 
 	return goVersionValue
+}
+
+// pinGoVersion fixes the release goVersion reports, for the case where the module being converted
+// selects a toolchain other than the one on PATH (see resolveLoaderGoRoot). It must be called before
+// the first goVersion() — main does, right after resolving GOROOT — and is a no-op afterwards.
+//
+// This matters beyond cosmetics: under -recurse=nuget the reported release becomes the emitted
+// $(GoStdLibVersion), i.e. the VERSION of every go.<pkg> package the generated project restores. Left
+// ambient, a switched run converts the newer toolchain's standard library while asking NuGet for the
+// PATH toolchain's release — two different standard libraries in one project, and the mismatch only
+// surfaces as unresolvable package ids at restore time.
+func pinGoVersion(resolved string) {
+	resolved = strings.TrimPrefix(strings.TrimSpace(resolved), "go")
+
+	if resolved == "" {
+		return
+	}
+
+	goVersionOnce.Do(func() {
+		goVersionValue = resolved
+	})
 }
 
 // writeReadmeFile emits a README.md into a converted library package directory, wrapping the

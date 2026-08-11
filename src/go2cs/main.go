@@ -46,6 +46,11 @@ func main() {
 	var goRoot, goPath, go2csPath string
 	var err error
 
+	// goRootPinned records that the OPERATOR chose GOROOT rather than the converter deriving it. A
+	// pinned value is honored verbatim; a DERIVED one is re-resolved below against the toolchain the
+	// loader will actually run, which is not necessarily the one on PATH.
+	goRootPinned := false
+
 	// Resolve GOROOT and GOPATH variables, any defined environment
 	// variables will take precedence over derived values and command
 	// line flags will override all
@@ -59,6 +64,8 @@ func main() {
 		}
 
 		os.Setenv("GOROOT", goRoot)
+	} else {
+		goRootPinned = true
 	}
 
 	if goPath = os.Getenv("GOPATH"); len(goPath) == 0 {
@@ -197,6 +204,45 @@ Examples:
                                           # .csproj selects one with $(GoTargetOS)
  `)
 		os.Exit(1)
+	}
+
+	// GOROOT must describe the toolchain that will actually LOAD the packages, not whichever one is
+	// on PATH. Since Go 1.21 a module can require a newer release and the go command silently
+	// re-execs a downloaded toolchain to satisfy it; go/packages follows that choice, the converter
+	// did not, and every stdlib-versus-third-party decision keys off GOROOT — so the mismatch
+	// reclassified the ENTIRE standard library and emitted references to projects nothing generates,
+	// with a 0 exit code. Re-resolve from the input's own module context unless the operator pinned
+	// GOROOT, in which case their value stands untouched.
+	// See docs/phase4/FINDING-toolchain-goroot-divergence.md.
+	commandLine.Visit(func(f *flag.Flag) {
+		if f.Name == "goroot" {
+			goRootPinned = true
+		}
+	})
+
+	if !goRootPinned {
+		if resolved, loaderVersion, switched := resolveLoaderGoRoot(inputFilePath, *goRootCmd); switched {
+			showWarning("the Go module being converted selects a toolchain other than the one on PATH; "+
+				"resolving GOROOT as %s (PATH toolchain: %s). Conversion follows the module's toolchain", resolved, *goRootCmd)
+
+			*goRootCmd = resolved
+			build.Default.GOROOT = resolved
+
+			// Must precede the first goVersion(): it fixes the release reported everywhere,
+			// including the $(GoStdLibVersion) a -recurse=nuget project restores its go.<pkg>
+			// references at.
+			pinGoVersion(loaderVersion)
+		}
+	}
+
+	// -recurse=nuget references a PUBLISHED corpus, which exists for exactly one Go release. Converting
+	// a different release's standard library against it yields a project that cannot restore, and the
+	// user meets that as NU1101s naming packages they never imported. Refuse while the diagnosis is
+	// still legible. See docs/phase4/FINDING-toolchain-goroot-divergence.md.
+	if recurseVal.nuget && !convertStdLib {
+		if err := checkNuGetStdLibCompatibility(goVersion(), publishedStdLibRelease()); err != nil {
+			log.Fatalf("%v\n", err)
+		}
 	}
 
 	// -platforms is a LIST as of the multiplatform-corpus design's increment 1. A single conversion
