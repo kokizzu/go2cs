@@ -418,9 +418,9 @@ $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 
 if ($drift) {
-    # Twenty production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
-    # converts the package in its TEST closure, which imports more than the production closure, and
-    # a wider closure legitimately changes three things in the production emission:
+    # A couple of dozen production files drift on EVERY sweep, and none of them is a problem. A
+    # `-tests` run converts the package in its TEST closure, which imports more than the production
+    # closure, and a wider closure legitimately changes three things in the production emission:
     #
     #   Delta-io alias      `using io = io_package;` becomes a shadow-renamed alias, because the
     #                       test closure pulls in a `go.io` CHILD namespace that `io` would collide
@@ -429,19 +429,29 @@ if ($drift) {
     #                       closure imports a package whose own namespace shadows the root
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
-    #                       variant's relocated initializers implement (unicode, internal/zstd,
-    #                       time, internal/profile, syscall, and internal/buildcfg -- whose test
-    #                       half implements nothing, so the hook is erased again and the committed
-    #                       file stays hookless. time previously landed in the "inspect" bucket
-    #                       every sweep, the exact false alarm this section exists to stop).
-    #                       ⚠ THIS LIST IS OWED BY EVERY BANK. A package whose production
-    #                       package_init.cs relocates initializers gains the hook the moment its
-    #                       suite is banked, and it reports as CONTENT drift on every sweep
-    #                       thereafter until its row is added here (internal/profile, 2026-08-09).
-    #                       ⚠ AND THE PATH IS NOT ALWAYS FLAT. Under layout L3 a platform-varying
-    #                       package keeps package_init.cs in its per-GOOS folder, so the row to add
-    #                       is `<pkg>/<goos>/package_init.cs` -- which is why syscall's bank missed
-    #                       its own row while matching the class exactly (syscall, 2026-08-10).
+    #                       variant's relocated initializers implement -- and the compiler erases
+    #                       it again when that half implements nothing, which is why NO committed
+    #                       package_init.cs carries the hook and the drift is always the hook
+    #                       APPEARING, never changing or vanishing.
+    #                       ⚠ THIS CLASS IS DERIVED, AND A BANK OWES IT NOTHING. It used to be six
+    #                       hand-maintained rows in the list below under the standing warning "THIS
+    #                       LIST IS OWED BY EVERY BANK" -- a debt that went unpaid twice, and each
+    #                       time false-redded EVERY full sweep against a healthy package until
+    #                       someone re-derived the missing row from the failure (internal/profile,
+    #                       2026-08-09; syscall, 2026-08-10). Nothing is listed now. The candidates
+    #                       are every package_init.cs in the corpus, recognized by their PATH shape
+    #                       ($initHookPathShape), and membership is decided entirely by CONTENT in
+    #                       Test-InitTestsHookDrift -- which is also STRICTLY TIGHTER than the list
+    #                       it replaces: it requires the hook to be the thing that appeared and
+    #                       rejects any removed line, where a listed file was judged on its added
+    #                       lines alone.
+    #                       ⚠ THE PATH SHAPE COUNTS NO DIRECTORY SEGMENTS, deliberately. Under
+    #                       layout L3 a platform-varying package keeps its copy at
+    #                       `<pkg>/<goos>/package_init.cs` while every other package keeps it flat
+    #                       at `<pkg>/package_init.cs`; one depth-agnostic pattern matches both, so
+    #                       the flat-shape assumption that hid syscall's row is not even available
+    #                       to make. Spelling the GOOS names instead would have re-created exactly
+    #                       the maintenance this retires, at the first new port.
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -450,6 +460,11 @@ if ($drift) {
     # Listing them under the same warning as real drift trains the reader to skip the warning, which
     # is how a genuine regression gets waved through. They get their own section instead -- and only
     # if their content still MATCHES the class, so a stale entry cannot hide a real change.
+    #
+    # What stays a NAME LIST is the alias/qualification class alone. Those are ordinary production
+    # sources with no structural signature to enumerate by, and -- unlike the hook class -- they do
+    # not gain a member every time a package banks: the set moves only when the converter's aliasing
+    # or qualification changes, which is a converter arc with its own review, not a bank's paperwork.
     $closureFiles = @(
         'src/core/bufio/bufio.cs'
         'src/core/bufio/scan.cs'
@@ -460,9 +475,6 @@ if ($drift) {
         'src/core/crypto/md5/md5block.cs'
         'src/core/hash/hash.cs'
         'src/core/image/format.cs'
-        'src/core/internal/buildcfg/package_init.cs'
-        'src/core/internal/profile/package_init.cs'
-        'src/core/internal/zstd/package_init.cs'
         'src/core/math/rand/v2/pcg.cs'
         'src/core/math/rand/v2/rand.cs'
         'src/core/regexp/backtrack.cs'
@@ -470,10 +482,14 @@ if ($drift) {
         'src/core/regexp/regexp.cs'
         'src/core/strings/reader.cs'
         'src/core/strings/replace.cs'
-        'src/core/syscall/windows/package_init.cs'
-        'src/core/time/package_init.cs'
-        'src/core/unicode/package_init.cs'
     )
+
+    # The DERIVED class's candidate set: any package_init.cs anywhere under the corpus. `.+` spans
+    # any number of directory segments, so `syscall/windows/package_init.cs` (layout L3) and
+    # `unicode/package_init.cs` (flat) are the same pattern and no GOOS name appears anywhere.
+    # Being a candidate decides nothing on its own -- Test-InitTestsHookDrift below still has to
+    # recognize the content.
+    $initHookPathShape = '^src/core/.+/package_init\.cs$'
 
     # Marker glyphs come from the canonical symbol table, never spelled here -- the standing rule
     # for every consumer of the converter's naming constants.
@@ -489,11 +505,14 @@ if ($drift) {
         [regex]::Escape("$shadow" + 'io')                     # the shadow-renamed io alias
         [regex]::Escape('global::' + $root + '.')             # root-qualified reference
         [regex]::Escape($root + '.@internal')                 # root-qualified internal package
-        [regex]::Escape('init' + $temp + $temp + 'tests')     # the -tests init hook
-        '^\s*//'                                              # the hook's explanatory comment
+        [regex]::Escape('init' + $temp + $temp + 'tests')     # the -tests init hook (see below)
+        '^\s*//'                                              # a comment carried by the reorder
         '^\s*$'                                               # blank separator
     )
 
+    # Judges the NAME-LISTED alias/qualification class only. (The hook shape stays in the list
+    # above because this predicate is generic, but no listed file can gain one: the hook is emitted
+    # into package_init.cs alone, and those are routed to Test-InitTestsHookDrift instead.)
     function Test-ClosureClassDrift([string] $path) {
         $added = & git -C $repo -c core.safecrlf=false diff --ignore-cr-at-eol -U0 -- $path |
             Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' } |
@@ -506,6 +525,39 @@ if ($drift) {
         return $true
     }
 
+    # Judges the DERIVED init-tests hook class, and it is the whole safety argument for having no
+    # name list: a candidate is absorbed only when its diff IS the hook, exactly as
+    # writePackageInitFile emits it (initOrderOperations.go) -- the call inside the static ctor, a
+    # blank line, the four-line explanation, and the erasable declaration. Seven added lines, none
+    # removed. Three conditions, each closing a way a real change could pass for the class:
+    #
+    #   nothing removed   The committed corpus holds the production emission and the -tests
+    #                     emission is that PLUS the hook, so this class only ever adds. A
+    #                     package_init.cs that LOSES a line has lost a relocated initializer --
+    #                     a real regression, and the one the name list waved through, since it
+    #                     inspected added lines only.
+    #   the hook appears  Without this anchor the comment and blank shapes below would absorb any
+    #                     comment-only edit to any package_init.cs in the corpus.
+    #   nothing else      Every added line must be the hook, a comment, or blank. One added line
+    #                     of real code -- an extra relocated init call, say -- and the file goes
+    #                     back to the warning block, hook or no hook.
+    function Test-InitTestsHookDrift([string] $path) {
+        $hook = [regex]::Escape('init' + $temp + $temp + 'tests')
+        $changed = & git -C $repo -c core.safecrlf=false diff --ignore-cr-at-eol -U0 -- $path
+
+        $added = @($changed | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' } | ForEach-Object { $_.Substring(1) })
+        $removed = @($changed | Where-Object { $_ -match '^-' -and $_ -notmatch '^---' })
+
+        if ($removed.Count -gt 0) { return $false }
+        if (-not ($added | Where-Object { $_ -match $hook })) { return $false }
+
+        foreach ($line in $added) {
+            if ($line -notmatch $hook -and $line -notmatch '^\s*//' -and $line -notmatch '^\s*$') { return $false }
+        }
+
+        return $true
+    }
+
     $known = @()
     $real = @()
 
@@ -513,7 +565,16 @@ if ($drift) {
         # numstat row: added <tab> removed <tab> path
         $path = ($entry -split "`t")[-1]
 
-        if ($closureFiles -contains $path -and (Test-ClosureClassDrift $path)) { $known += $entry } else { $real += $entry }
+        # A package_init.cs is judged by the derived check ALONE -- the name list has no say over
+        # it, in either direction, which is what makes a bank owe this section nothing.
+        $isKnown = if ($path -match $initHookPathShape) {
+            Test-InitTestsHookDrift $path
+        }
+        else {
+            ($closureFiles -contains $path) -and (Test-ClosureClassDrift $path)
+        }
+
+        if ($isKnown) { $known += $entry } else { $real += $entry }
     }
 
     if ($known) {
